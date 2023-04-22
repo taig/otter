@@ -4,8 +4,8 @@ import cats.{Eq, Eval}
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.*
-import io.taig.screening.{identifiers, Constraint, Validation, Violation}
-import io.taig.screening.syntax.*
+import io.taig.validation.{identifiers, Constraint, Validation, Violation}
+import io.taig.validation.syntax.*
 
 sealed abstract class Branch[A, B](
     val name: A,

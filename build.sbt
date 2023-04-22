@@ -55,7 +55,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, screening, schema, http, authentication, csv, dsl, circe, http4s)
+  .aggregate(core, validation, schema, http, authentication, csv, dsl, circe, http4s)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -71,7 +71,7 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
-lazy val screening = module(identifier = Some("screening"))
+lazy val validation = module(identifier = Some("validation"))
   .settings(
     libraryDependencies ++=
       "org.typelevel" %%% "cats-core" % Version.Cats ::
@@ -88,7 +88,7 @@ lazy val schema = module(identifier = Some("schema"))
       Seq(sumInstances)
     }.taskValue
   )
-  .dependsOn(core % "compile->compile;test->test", screening)
+  .dependsOn(core % "compile->compile;test->test", validation)
 
 lazy val circe = module(identifier = Some("circe"))
   .settings(

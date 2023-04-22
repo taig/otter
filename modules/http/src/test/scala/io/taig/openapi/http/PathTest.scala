@@ -4,10 +4,10 @@ import cats.data.Chain
 import cats.syntax.all.*
 import munit.FunSuite
 import io.taig.openapi.http.syntax.*
-import io.taig.screening.Violation
+import io.taig.validation.Violation
 import io.taig.openapi.{History, OpenApi}
-import io.taig.screening.identifiers
-import io.taig.screening.syntax.*
+import io.taig.validation.identifiers
+import io.taig.validation.syntax.*
 import io.taig.openapi.http.schemas.*
 import io.taig.openapi.schema.Violations
 import io.taig.openapi.schema.schemas.*

@@ -4,7 +4,7 @@ import cats.Eval
 import cats.data.Validated
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.{Schema, Violations}
-import io.taig.screening.Violation
+import io.taig.validation.Violation
 
 final case class Cell[A](name: String, schema: Eval[Schema.Of[A, OpenApi.Primitive]]):
   def decode(openapi: OpenApi): Validated[Violations, A] = schema.value.decode(openapi)

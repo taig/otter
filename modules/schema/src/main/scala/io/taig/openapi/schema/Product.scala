@@ -5,7 +5,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
-import io.taig.screening.{Constraint, Validation}
+import io.taig.validation.{Constraint, Validation}
 
 import scala.Tuple.Concat
 import scala.deriving.Mirror

@@ -4,9 +4,9 @@ import cats.{ApplicativeThrow, Eval, Monad}
 import cats.data.{Chain, Validated}
 import cats.effect.Concurrent
 import cats.syntax.all.*
-import io.taig.screening.identifiers
-import io.taig.screening.syntax.*
-import io.taig.screening.Validation
+import io.taig.validation.identifiers
+import io.taig.validation.syntax.*
+import io.taig.validation.Validation
 import scodec.bits.ByteVector
 import fs2.Stream
 import fs2.Chunk

@@ -5,9 +5,9 @@ import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.schema.{andThenValidate, Evidence, Schema, Violations}
-import io.taig.screening.Validation
-import io.taig.screening.identifiers
-import io.taig.screening.syntax.*
+import io.taig.validation.Validation
+import io.taig.validation.identifiers
+import io.taig.validation.syntax.*
 import org.typelevel.ci.CIString
 
 final case class Output[A](results: Output.Results[A], violations: Output.Result[Violations]):

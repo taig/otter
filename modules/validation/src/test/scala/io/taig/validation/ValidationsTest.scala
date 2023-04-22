@@ -1,8 +1,9 @@
-package io.taig.screening
+package io.taig.validation
 
 import cats.syntax.all.*
-import io.taig.screening.syntax.*
-import io.taig.screening.validations.*
+import io.taig.validation.syntax.*
+import io.taig.validation.validations.*
+import io.taig.validation.validations.{numeric, text}
 import munit.FunSuite
 
 import java.time.*

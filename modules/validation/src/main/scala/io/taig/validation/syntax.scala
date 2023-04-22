@@ -1,6 +1,6 @@
-package io.taig.screening
+package io.taig.validation
 
-import io.taig.screening.Constraint
+import io.taig.validation.Constraint
 
 object syntax:
   extension [A](self: Constraint[A]) def toViolation[B](actual: B): Violation[A, B] = Violation(self, actual)

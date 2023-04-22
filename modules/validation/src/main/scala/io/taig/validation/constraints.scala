@@ -1,4 +1,4 @@
-package io.taig.screening
+package io.taig.validation
 
 import cats.syntax.all.*
 

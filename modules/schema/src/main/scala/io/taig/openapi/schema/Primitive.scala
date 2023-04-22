@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.syntax.*
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.{Constraint, Validation}
+import io.taig.validation.{Constraint, Validation}
 
 sealed abstract class Primitive[A](
     val constraints: Chain[Constraint[OpenApi]],

@@ -5,8 +5,8 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.syntax.*
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.syntax.*
-import io.taig.screening.*
+import io.taig.validation.syntax.*
+import io.taig.validation.*
 
 import scala.deriving.Mirror
 import scala.quoted.{Type as QType, *}

@@ -2,7 +2,7 @@ package io.taig.openapi.schema
 
 import cats.{Invariant, InvariantMonoidal, Semigroupal}
 import io.taig.openapi.Encoder
-import io.taig.screening.{Validation, Violation}
+import io.taig.validation.{Validation, Violation}
 
 import scala.{deriving, Product as SProduct}
 import scala.compiletime.*

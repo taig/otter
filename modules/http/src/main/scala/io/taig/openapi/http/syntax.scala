@@ -8,8 +8,8 @@ import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.schema.syntax.*
 import io.taig.openapi.schema.{Discriminator, Schema, Sum}
-import io.taig.screening.*
-import io.taig.screening.syntax.*
+import io.taig.validation.*
+import io.taig.validation.syntax.*
 import org.typelevel.ci.CIString
 import scodec.bits.ByteVector
 import io.taig.openapi.circe.*

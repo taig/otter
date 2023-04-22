@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.data.{Chain, Validated}
 import cats.{Eq, Eval}
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.{Constraint, Validation}
+import io.taig.validation.{Constraint, Validation}
 
 import scala.deriving.*
 

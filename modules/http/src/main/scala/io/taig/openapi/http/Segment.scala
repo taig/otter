@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.{Schema, Violations}
-import io.taig.screening.{identifiers, Violation}
-import io.taig.screening.syntax.*
+import io.taig.validation.{identifiers, Violation}
+import io.taig.validation.syntax.*
 
 import java.nio.charset.StandardCharsets
 

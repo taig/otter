@@ -1,9 +1,9 @@
-package io.taig.screening
+package io.taig.validation
 
 import cats.data.Chain
 import cats.syntax.all.*
 import cats.{Applicative, Eq, Foldable, Monoid, MonoidK, Semigroup, SemigroupK, Traverse, UnorderedFoldable}
-import io.taig.screening.syntax.*
+import io.taig.validation.syntax.*
 
 import java.util.UUID
 import scala.Numeric.Implicits.*

@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import cats.{Eval, Invariant}
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.schema.{Evidence, InvariantValidation, Schema, Violations}
-import io.taig.screening.{Validation, Violation}
+import io.taig.validation.{Validation, Violation}
 import org.typelevel.ci.CIString
 
 final case class Header[A](name: CIString, schema: Eval[Header.Value[A]]):

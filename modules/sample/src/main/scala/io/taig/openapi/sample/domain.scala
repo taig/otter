@@ -2,8 +2,8 @@ package io.taig.openapi.sample
 
 import cats.Eq
 import cats.syntax.all.*
-import io.taig.screening.Validation
-import io.taig.screening.validations.*
+import io.taig.validation.Validation
+import io.taig.validation.validations.*
 
 final case class Pet(name: Pet.Name, animal: Animal)
 

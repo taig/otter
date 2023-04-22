@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.schema.{andThenValidate, Evidence, InvariantValidation, Violations}
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.Validation
+import io.taig.validation.Validation
 
 sealed abstract class Url[A](val path: Path[?], val queries: Queries[?]):
   self =>

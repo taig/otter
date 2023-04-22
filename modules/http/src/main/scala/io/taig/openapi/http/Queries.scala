@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.schema.{andThenValidate, Evidence, InvariantValidation, Violations}
-import io.taig.screening.{Validation, Violation}
+import io.taig.validation.{Validation, Violation}
 
 sealed abstract class Queries[A](val toChain: Chain[Query[?]]):
   self =>

@@ -1,16 +1,14 @@
 package io.taig.openapi
 
-import io.taig.screening
-
 object dsl:
-  export screening.syntax.*
+  export io.taig.validation.syntax.*
 
   export syntax.*
 
   object validation:
-    export screening.validations.*
-    export screening.identifiers as identifier
-    export screening.constraints as constraint
+    export io.taig.validation.validations.*
+    export io.taig.validation.identifiers as identifier
+    export io.taig.validation.constraints as constraint
 
   export schema.syntax.*
   export schema.schemas.*

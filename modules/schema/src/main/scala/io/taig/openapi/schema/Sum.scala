@@ -5,7 +5,7 @@ import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
-import io.taig.screening.{Constraint, Validation}
+import io.taig.validation.{Constraint, Validation}
 
 sealed abstract class Sum[A, B](
     val branches: NonEmptyChain[Branch[A, ?]],

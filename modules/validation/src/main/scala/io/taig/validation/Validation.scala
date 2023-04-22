@@ -1,10 +1,10 @@
-package io.taig.screening
+package io.taig.validation
 
 import cats.arrow.Arrow
 import cats.data.*
 import cats.syntax.all.*
 import cats.{Applicative, Eq, Foldable, Traverse, UnorderedFoldable}
-import io.taig.screening.Validation.valid
+import io.taig.validation.Validation.valid
 
 sealed abstract class Validation[+Ref, +Act, -In, +Out]:
   def constraints: Chain[Constraint[Ref]]

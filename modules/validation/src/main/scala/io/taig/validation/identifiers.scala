@@ -1,4 +1,4 @@
-package io.taig.screening
+package io.taig.validation
 
 object identifiers:
   inline def apply(inline value: String): Constraint.Identifier = Constraint.Identifier(value)

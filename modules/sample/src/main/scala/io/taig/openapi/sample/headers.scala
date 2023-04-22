@@ -4,8 +4,8 @@ import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.openapi.http.Header
 import io.taig.openapi.dsl.*
-import io.taig.screening.Validation
-import io.taig.screening.validations.*
+import io.taig.validation.Validation
+import io.taig.validation.validations.*
 import org.typelevel.ci.*
 
 import java.util.UUID

@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import cats.{Eval, Invariant}
 import io.taig.openapi.schema.{Evidence, InvariantValidation, Schema, Violations}
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.Validation
+import io.taig.validation.Validation
 
 final case class Query[A](name: String, schema: Eval[Query.Value[A]]):
   def modifyName(f: String => String): Query[A] = copy(name = f(name))

@@ -4,7 +4,7 @@ import cats.Show
 import cats.data.{NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.screening.{validations, Validation, Violation}
+import io.taig.validation.{validations, Validation, Violation}
 
 import scala.BigDecimal as SBigDecimal
 import scala.BigInt as SBigInt

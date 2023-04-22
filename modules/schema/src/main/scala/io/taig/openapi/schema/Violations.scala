@@ -4,7 +4,7 @@ import cats.Semigroup
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.implicits.*
 import io.taig.openapi.{History, OpenApi}
-import io.taig.screening.Violation
+import io.taig.validation.Violation
 
 import scala.collection.immutable.SortedMap
 

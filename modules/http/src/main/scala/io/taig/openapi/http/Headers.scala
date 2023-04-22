@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.openapi.schema.{andThenValidate, Evidence, InvariantValidation, Violations}
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
-import io.taig.screening.{Validation, Violation}
+import io.taig.validation.{Validation, Violation}
 import org.typelevel.ci.CIString
 
 sealed abstract class Headers[A](val toChain: Chain[Header[?]]):

@@ -5,7 +5,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
-import io.taig.screening.{identifiers, Constraint, Validation, Violation}
+import io.taig.validation.{identifiers, Constraint, Validation, Violation}
 
 sealed abstract class Collection[A](
     val constraints: Chain[Constraint[OpenApi]],

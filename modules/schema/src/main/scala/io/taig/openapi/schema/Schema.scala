@@ -4,8 +4,8 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import cats.{Eq, Eval, Semigroup}
 import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.screening.syntax.*
-import io.taig.screening.{identifiers, Constraint, Validation, Violation}
+import io.taig.validation.syntax.*
+import io.taig.validation.{identifiers, Constraint, Validation, Violation}
 
 import scala.Tuple.Append
 import scala.deriving.*

@@ -5,7 +5,7 @@ import cats.implicits.*
 import cats.{Eq, Eval, Order}
 import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.schema.syntax.*
-import io.taig.screening.*
+import io.taig.validation.*
 
 import java.util.UUID
 import scala.collection.immutable.SortedMap
