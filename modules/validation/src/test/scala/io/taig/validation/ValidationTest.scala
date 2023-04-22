@@ -2,7 +2,6 @@ package io.taig.validation
 
 import cats.data.{Chain, NonEmptyChain, NonEmptyList}
 import cats.syntax.all.*
-import io.taig.validation.syntax.*
 import munit.FunSuite
 
 final class ValidationTest extends FunSuite:
