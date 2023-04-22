@@ -22,7 +22,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .withoutSuffixFor(JVMPlatform)
     .build()
     .settings(
-      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: Nil,
+      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
       name := "openapi" + identifier.fold("")("-" + _)
     )
 }
@@ -39,8 +39,8 @@ inThisBuild(
   )
 )
 
-addCommandAlias("start", s"${sample.jvm.id}/reStart")
-addCommandAlias("stop", s"${sample.jvm.id}/reStop")
+//addCommandAlias("start", s"${sample.jvm.id}/reStart")
+//addCommandAlias("stop", s"${sample.jvm.id}/reStop")
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
@@ -55,7 +55,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, validation, schema, http, authentication, csv, dsl, circe, http4s)
+  .aggregate(core, validation, schema)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -89,48 +89,3 @@ lazy val schema = module(identifier = Some("schema"))
     }.taskValue
   )
   .dependsOn(core % "compile->compile;test->test", validation)
-
-lazy val circe = module(identifier = Some("circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-parser" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(core % "compile->compile;test->test")
-
-lazy val http = module(identifier = Some("http"))
-  .settings(
-    libraryDependencies ++=
-      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-        Nil
-  )
-  .dependsOn(schema % "compile->compile;test->test", circe)
-
-lazy val authentication = module(identifier = Some("authentication"))
-  .dependsOn(http % "compile->compile;test->test")
-
-lazy val csv = module(identifier = Some("csv"))
-  .dependsOn(schema % "compile->compile;test->test")
-
-lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(http % "compile->compile;test->test")
-
-lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %% "http4s-circe" % Version.Http4s ::
-        Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
-
-lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        Nil
-  )
-  .dependsOn(http4s % "compile->compile;test->test", dsl)

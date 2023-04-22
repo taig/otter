@@ -3,9 +3,6 @@ package io.taig.openapi.schema
 import cats.Eval
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.openapi.schema.schemas.*
-import io.taig.openapi.schema.syntax.*
-import io.taig.openapi.syntax.*
 import munit.FunSuite
 
 final class SumTest extends FunSuite:
