@@ -10,7 +10,7 @@ val Version = new {
   val Java = "17"
   val Munit = "0.7.29"
   val MunitCatsEffect = "1.0.7"
-  val Scala3 = "3.3.0-RC3"
+  val Scala3 = "3.3.0-RC4"
   val ScalaJavaTime = "2.5.0"
   val Slf4j = "2.0.7"
 }
