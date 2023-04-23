@@ -1,20 +1,20 @@
-//package io.taig.validation
-//
-//import cats.data.Chain
-//import cats.syntax.all.*
-//import cats.{Applicative, Eq, Foldable, Monoid, MonoidK, Semigroup, SemigroupK, Traverse, UnorderedFoldable}
-//
-//import java.util.UUID
-//import scala.Numeric.Implicits.*
-//import scala.Ordering.Implicits.*
-//import scala.collection.IterableOps
-//import scala.collection.immutable.SortedMap
-//import scala.util.matching.Regex
-//
-//object validations:
-//  def refine[A, B](tpe: String)(f: A => Option[B]): Validation[String, A, A, B] =
-//    Validation.fromOptionNec(identifiers.tpe.toConstraint(tpe.some))(f)
-//
+package io.taig.validation
+
+import cats.data.Chain
+import cats.syntax.all.*
+import cats.{Applicative, Eq, Foldable, Monoid, MonoidK, Semigroup, SemigroupK, Traverse, UnorderedFoldable}
+
+import java.util.UUID
+import scala.Numeric.Implicits.*
+import scala.Ordering.Implicits.*
+import scala.collection.IterableOps
+import scala.collection.immutable.SortedMap
+import scala.util.matching.Regex
+
+object validations:
+  def refine[In, Out](tpe: String)(f: In => Option[Out]): Validation[String, In, In, Out] =
+    Validation.fromOptionNec(Constraint(s"type.$tpe", reference = tpe.some))(f)
+
 //  abstract class collection[F[_]]:
 //    protected def size[A](fa: F[A]): Long
 //    protected def contains[A: Eq](fa: F[A], a: A): Boolean
@@ -63,21 +63,21 @@
 //  object map:
 //    val default: map[Map] = new map[Map]
 //    val sorted: map[SortedMap] = new map[SortedMap]
-//
-//  object numeric:
-//    def greaterThan[In: Numeric](
-//        reference: In,
-//        equal: Boolean = false,
-//        delta: Option[In] = none
-//    ): Validation[In, In, In, Unit] =
-//      Validation.condNec(identifiers.numeric.greaterThan.toConstraint(reference.some, equal, delta)) { input =>
-//        delta match
-//          case Some(delta) if equal => input - reference >= -delta
-//          case Some(delta)          => input - reference > -delta
-//          case None if equal        => input >= reference
-//          case None                 => input > reference
-//      }
-//
+
+  object numeric:
+    def greaterThan[In: Numeric](
+        reference: In,
+        equal: Boolean = false,
+        delta: Option[In] = none
+    ): Validation[In, In, In, Unit] =
+      // TODO ref obj with equal & delta
+      Validation.condNec(Constraint("numeric.greaterThan", reference.some)): input =>
+        delta match
+          case Some(delta) if equal => input - reference >= -delta
+          case Some(delta)          => input - reference > -delta
+          case None if equal        => input >= reference
+          case None                 => input > reference
+
 //    def lessThan[In: Numeric](
 //        reference: In,
 //        equal: Boolean = false,
@@ -104,10 +104,10 @@
 //      catch { case _: IllegalArgumentException => None }
 //    }
 //
-//  object text:
-//    val length: Validation[Nothing, Nothing, String, Int] = Validation.fromFunction(_.length)
-//    val trim: Validation[Nothing, Nothing, String, String] = Validation.fromFunction(_.trim)
-//
+  object text:
+    val length: Validation[Nothing, Nothing, String, Int] = Validation.lift(_.length)
+    val trim: Validation[Nothing, Nothing, String, String] = Validation.lift(_.trim)
+
 //    def atLeast(reference: Int): Validation[Int, String, String, Unit] =
 //      length
 //        .andThen(numeric.greaterThan(reference, equal = true))

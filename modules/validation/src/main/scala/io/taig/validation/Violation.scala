@@ -1,5 +1,3 @@
 package io.taig.validation
 
-import io.taig.openapi.OpenApi
-
-final case class Violation(constraint: Constraint, actual: OpenApi)
+final case class Violation[+Ref, +Act](constraint: Constraint[Ref], actual: Act)

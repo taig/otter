@@ -79,7 +79,6 @@ lazy val validation = module(identifier = Some("validation"))
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-  .dependsOn(core)
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(
