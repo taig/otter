@@ -25,13 +25,7 @@ abstract class Primitive[A](val metadata: Primitive.Metadata[A]) extends Value[A
   override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Primitive[B] =
     new Primitive[B](metadata.flatMap(validation.run(_).toOption)):
       override def decode(openapi: OpenApi.Primitive): Validated[Violations, B] =
-        self
-          .decode(openapi)
-          .andThen: a =>
-            validation
-              .run(a)
-              .leftMap: violations =>
-                Violations.root(violations.map(_.mapReference(self.encode).mapActual(self.encode)))
+        self.decode(openapi).andThen(andThenValidate(validation, self.encode))
       override def encode(b: B): OpenApi.Primitive = self.encode(g(b))
 
   final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match

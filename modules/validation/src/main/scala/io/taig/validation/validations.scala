@@ -125,10 +125,10 @@ object validations:
 //      .withConstraint(_ => identifiers.text.email.toConstraint(none))
 //
 //    val empty: Validation[Int, String, String, Unit] = atMost(reference = 0)
-//
-//    def equal(reference: String): Validation[String, String, String, Unit] =
-//      Validation.condNec(identifiers.text.equal.toConstraint(reference.some))(_ === reference)
-//
+
+    def equal(reference: String): Validation[String, String, String, Unit] =
+      Validation.condNec(Constraint("text.equal", reference.some))(_ === reference)
+
 //    def exactly(reference: Int): Validation[Int, String, String, Unit] = length
 //      .andThen(numeric.equal(reference))
 //      .withConstraint(identifiers.text.exactly.toConstraint(_))

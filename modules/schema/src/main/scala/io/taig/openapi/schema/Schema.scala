@@ -36,6 +36,9 @@ abstract class Schema[A]:
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
+  final def validate(validation: Validation[A, A, A, Unit]): Self[A] { type Codec = self.Codec } =
+    ivalidate(validation.tap)(identity)
+
   final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =
     ivalidate(Validation.lift(f))(g)
 

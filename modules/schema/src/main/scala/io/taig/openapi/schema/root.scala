@@ -13,9 +13,9 @@ private def typeViolations(tpe: String, actual: OpenApi): Violations =
   val constraint = Constraint("type", OpenApi.fromString(s"OpenApi.$tpe").some)
   Violations.rootNec(Violation(constraint, actual))
 
-private[openapi] def andThenValidate[A, B, C, D](validation: Validation[A, B, C, D], encode: B => OpenApi)(
-    b: B
-): Validated[Violations, D] = ???
-//validation.run(b).leftMap { violations =>
-//  Violations.root(violations.map(_.mapConstraint(_.asOpenApi).mapActual(encode)))
-//}
+private[openapi] def andThenValidate[A, B](validation: Validation[A, A, A, B], encode: A => OpenApi)(
+    a: A
+): Validated[Violations, B] = validation
+  .run(a)
+  .leftMap: violations =>
+    Violations.root(violations.map(_.mapReference(encode).mapActual(encode)))
