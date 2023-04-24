@@ -12,7 +12,7 @@ abstract class Primitive[A](val metadata: Primitive.Metadata[A]) extends Value[A
   override type Codec = OpenApi.Primitive
   override type Metadata[a] = Primitive.Metadata[a]
 
-  def format: Field[String] = Field(metadata.format, f => self.copy(metadata.copy(format = f(metadata.format))))
+  def format: Field[String] = ??? // Field(metadata.format, f => self.copy(metadata.copy(format = f(metadata.format))))
   def tpe: Type[?] = metadata.tpe
 
   override def copy(metadata: Primitive.Metadata[A]): Primitive[A] = new Primitive[A](metadata):

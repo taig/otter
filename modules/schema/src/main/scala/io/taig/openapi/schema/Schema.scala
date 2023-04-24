@@ -10,7 +10,10 @@ abstract class Schema[A]:
   type Codec <: OpenApi
   type Metadata[a] <: Schema.Metadata[a] { type Self[a] <: Metadata[a] }
 
-  final class Field[B](val value: Option[B], val modify: (Option[B] => Option[B]) => Self[A]):
+  abstract class Field[B]:
+    def value: Option[B]
+    protected def update(f: Option[B] => Option[B]): Metadata[A]
+    final def modify(f: Option[B] => Option[B]): Self[A] = self.copy(update(f))
     def set(value: Option[B]): Self[A] = modify(_ => value)
     def as(value: B): Self[A] = modify(_ => Some(value))
     def clear: Self[A] = modify(_ => None)
@@ -24,15 +27,14 @@ abstract class Schema[A]:
 
   final def constrains: Constraints = Constraints(metadata.constraints)
 
-  final def description: Field[String] = Field(
-    metadata.description,
-    f => self.copy(metadata.updated(f(metadata.description), metadata.example))
-  )
+  object description extends Field[String]:
+    override def value: Option[String] = metadata.description
+    override protected def update(f: Option[String] => Option[String]): Metadata[A] =
+      metadata.updated(f(value), metadata.example)
 
-  final def example: Field[A] = Field(
-    metadata.example,
-    f => self.copy(metadata.updated(metadata.description, f(metadata.example)))
-  )
+  object example extends Field[A]:
+    override def value: Option[A] = metadata.example
+    override protected def update(f: Option[A] => Option[A]): Metadata[A] = metadata.updated(metadata.description, f(value))
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
