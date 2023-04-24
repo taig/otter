@@ -94,16 +94,15 @@ object validations:
 //    def equal[In: Numeric](reference: In, delta: Option[In] = none): Validation[In, In, In, Unit] =
 //      (greaterThan(reference, equal = true, delta) *> lessThan(reference, equal = true, delta))
 //        .withConstraint(_ => identifiers.numeric.equal.toConstraint(reference.some))
-//
-//  object parser:
-//    def apply[A](name: String)(f: String => Option[A]): Validation[String, String, String, A] =
-//      Validation.fromOptionNec(identifiers.parser(name.toLowerCase).toConstraint(name.some))(f)
-//
-//    val uuid: Validation[String, String, String, UUID] = parser("UUID") { value =>
-//      try Some(UUID.fromString(value))
-//      catch { case _: IllegalArgumentException => None }
-//    }
-//
+
+  object parser:
+    def apply[A](name: String)(f: String => Option[A]): Validation[String, String, String, A] =
+      Validation.fromOptionNec(Constraint(s"parser.${name.toLowerCase}", name.some))(f)
+
+    val uuid: Validation[String, String, String, UUID] = parser("UUID"): value =>
+      try Some(UUID.fromString(value))
+      catch { case _: IllegalArgumentException => None }
+
   object text:
     val length: Validation[Nothing, Nothing, String, Int] = Validation.lift(_.length)
     val trim: Validation[Nothing, Nothing, String, String] = Validation.lift(_.trim)

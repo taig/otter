@@ -4,7 +4,7 @@ import cats.Show
 import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.openapi.OpenApi
-import io.taig.validation.{validations, Validation}
+import io.taig.validation.{validations, Constraint, Validation, Violation}
 
 enum Type[A]:
   self =>
@@ -22,16 +22,24 @@ enum Type[A]:
     def refine(f: OpenApi.Primitive => Option[A]) =
       validations.refine(self.toString)(f).mapReference(OpenApi.fromString)
 
-    self.match {
-      case Type.BigDecimal => refine(_.toBigDecimal.map(_.value))
-      case Type.BigInt     => refine(_.toBigInt.map(_.value))
-      case Type.Boolean    => refine(_.toBoolean.map(_.value))
-      case Type.Double     => refine(_.toDouble.map(_.value))
-      case Type.Float      => refine(_.toFloat.map(_.value))
-      case Type.Int        => refine(_.toInt.map(_.value))
-      case Type.Long       => refine(_.toLong.map(_.value))
-      case Type.String     => refine(_.print.some)
-    }.run(openapi).leftMap(Violations.root)
+    (self, openapi) match
+      case (Type.Int, OpenApi.Int(value))       => value.valid
+      case (Type.String, OpenApi.String(value)) => value.valid
+      case _ =>
+        Violations
+          .rootNec(Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi))
+          .invalid
+//
+//    self.match {
+//      case Type.BigDecimal => refine(_.toBigDecimal.map(_.value))
+//      case Type.BigInt     => refine(_.toBigInt.map(_.value))
+//      case Type.Boolean    => refine(_.toBoolean.map(_.value))
+//      case Type.Double     => refine(_.toDouble.map(_.value))
+//      case Type.Float      => refine(_.toFloat.map(_.value))
+//      case Type.Int        => refine(_.toInt.map(_.value))
+//      case Type.Long       => refine(_.toLong.map(_.value))
+//      case Type.String     => refine(_.print.some)
+//    }.run(openapi).leftMap(Violations.root)
 
   def encode(a: A): OpenApi.Primitive = self match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)

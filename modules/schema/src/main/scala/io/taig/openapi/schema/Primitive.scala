@@ -67,6 +67,6 @@ object Primitive:
   object Metadata:
     def empty[A](tpe: Type[A]): Primitive.Metadata[A] = Metadata(Chain.empty, None, None, None, None, tpe)
 
-  def empty[A](of: Type[A]): Primitive[A] = new Primitive[A](Metadata.empty(of)):
+  def apply[A](of: Type[A]): Primitive[A] = new Primitive[A](Metadata.empty(of)):
     override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] = of.decode(openapi)
     override def encode(a: A): OpenApi.Primitive = of.encode(a)
