@@ -12,10 +12,7 @@ abstract class Primitive[A](val metadata: Primitive.Metadata[A]) extends Value[A
   override type Codec = OpenApi.Primitive
   override type Metadata[a] = Primitive.Metadata[a]
 
-  def format: Field[String] = Field(
-    metadata.format,
-    f => self.copy(metadata.copy(metadata.default, metadata.description, metadata.example, f(metadata.format)))
-  )
+  def format: Field[String] = Field(metadata.format, f => self.copy(metadata.copy(format = f(metadata.format))))
   def tpe: Type[?] = metadata.tpe
 
   override def copy(metadata: Primitive.Metadata[A]): Primitive[A] = new Primitive[A](metadata):
@@ -47,15 +44,12 @@ object Primitive:
       tpe: Type[?]
   ) extends Value.Metadata[A]:
     override type Self[a] = Primitive.Metadata[a]
-    override def map[B](f: A => B): Primitive.Metadata[B] =
-      Metadata(constraints, default.map(f), description, example.map(f), format, tpe)
+    override def map[B](f: A => B): Primitive.Metadata[B] = copy(default = default.map(f), example = example.map(f))
     override def flatMap[B](f: A => Option[B]): Metadata[B] =
-      Metadata(constraints, default.flatMap(f), description, example.flatMap(f), format, tpe)
-    def copy(default: Option[A], description: Option[String], example: Option[A], format: Option[String]): Metadata[A] =
+      copy(default = default.flatMap(f), example = example.flatMap(f))
+    override def updated(default: Option[A], description: Option[String], example: Option[A]): Metadata[A] =
       Metadata(constraints, default, description, example, format, tpe)
-    override def copy(default: Option[A], description: Option[String], example: Option[A]): Metadata[A] =
-      copy(default, description, example, format)
-    override def append(constrains: Chain[Constraint[OpenApi]]): Metadata[A] =
+    override def append(constraints: Chain[Constraint[OpenApi]]): Metadata[A] =
       Metadata(this.constraints ++ constraints, default, description, example, format, tpe)
 
   object Metadata:

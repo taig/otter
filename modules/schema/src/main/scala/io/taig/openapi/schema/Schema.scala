@@ -26,12 +26,12 @@ abstract class Schema[A]:
 
   final def description: Field[String] = Field(
     metadata.description,
-    f => self.copy(metadata.copy(f(metadata.description), metadata.example))
+    f => self.copy(metadata.updated(f(metadata.description), metadata.example))
   )
 
   final def example: Field[A] = Field(
     metadata.example,
-    f => self.copy(metadata.copy(metadata.description, f(metadata.example)))
+    f => self.copy(metadata.updated(metadata.description, f(metadata.example)))
   )
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
@@ -44,9 +44,9 @@ abstract class Schema[A]:
 
   def decode(openapi: OpenApi): Validated[Violations, A]
 
-  def encode(a: A): OpenApi
+  def encode(a: A): Codec
 
-// final def optional: Optional.Of[Option[A], Codec] = Optional(this)
+  final def optional: Optional.Of[Option[A], Codec] = Optional(this)
 
 object Schema:
   type Of[A, B <: OpenApi] = Schema[A] { type Codec = B }
@@ -58,5 +58,5 @@ object Schema:
     def example: Option[A]
     def map[B](f: A => B): Self[B]
     def flatMap[B](f: A => Option[B]): Self[B]
-    def copy(description: Option[String], example: Option[A]): Self[A]
-    def append(constrains: Chain[Constraint[OpenApi]]): Self[A]
+    def updated(description: Option[String], example: Option[A]): Self[A]
+    def append(constraints: Chain[Constraint[OpenApi]]): Self[A]
