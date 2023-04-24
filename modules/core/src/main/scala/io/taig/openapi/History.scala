@@ -41,10 +41,9 @@ object History:
 
     def toJsonPath: String = if history.isEmpty then "."
     else
-      history.foldLeft("") {
+      history.foldLeft(""):
         case (result, Step.Field(name))  => s"$result.$name"
         case (result, Step.Index(index)) => s"$result[$index]"
-      }
 
     def toString: String = toJsonPath
 

@@ -31,6 +31,9 @@ sealed abstract class Validation[+Ref, +Act, -In, +Out]:
       validation: Validation[Ref2, Act2, In2, Out2]
   ): Validation[Ref2, Act2, In2, Out2] = product(validation).map(_._2)
 
+  final def mapReference[Ref2](f: Ref => Ref2): Validation[Ref2, Act, In, Out] =
+    Validation(constraints.map(_.map(f)))(run(_).leftMap(_.map(_.mapReference(f))))
+
   def run(input: In): ValidatedNec[Violation[Ref, Act], Out]
 
 object Validation:
