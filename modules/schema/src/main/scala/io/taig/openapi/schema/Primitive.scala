@@ -1,50 +1,72 @@
 package io.taig.openapi.schema
 
-import cats.data.Chain
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
 import io.taig.openapi.{schema, OpenApi}
 import io.taig.validation.{Constraint, Validation}
 
-final case class Primitive[A](
-    metadata: Primitive.Metadata[A],
-    tpe: Type
-) extends Value[A]:
+abstract class Primitive[A](val metadata: Primitive.Metadata[A]) extends Value[A]:
   self =>
 
   override type Self[a] = Primitive[a]
   override type Codec = OpenApi.Primitive
   override type Metadata[a] = Primitive.Metadata[a]
 
-  override def withMetadata(metadata: Primitive.Metadata[A]): Primitive[A] = copy(metadata = metadata)
+  def format: Field[String] = Field(
+    metadata.format,
+    f => self.copy(metadata.copy(metadata.default, metadata.description, metadata.example, f(metadata.format)))
+  )
+  def tpe: Type[?] = metadata.tpe
 
-  override def imap[B](f: A => B)(g: B => A): Primitive[B] = copy(metadata = metadata.map(f), tpe = tpe)
+  override def copy(metadata: Primitive.Metadata[A]): Primitive[A] = new Primitive[A](metadata):
+    export self.{decode, encode}
 
-  override def ivalidate[B, C, D](validation: Validation[B, C, A, D])(g: D => A): Primitive[C] =
-    copy(metadata = ???, tpe = tpe)
+  // TODO are the types too restrictive???
+  override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Primitive[B] =
+    new Primitive[B](metadata.flatMap(validation.run(_).toOption)):
+      override def decode(openapi: OpenApi.Primitive): Validated[Violations, B] =
+        self
+          .decode(openapi)
+          .andThen: a =>
+            validation
+              .run(a)
+              .leftMap: violations =>
+                Violations.root(violations.map(_.mapReference(self.encode).mapActual(self.encode)))
+      override def encode(b: B): OpenApi.Primitive = self.encode(g(b))
+
+  final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
+    case OpenApi.Null               => default.value.toValid(nonNullViolations("Primitive"))
+    case openapi: OpenApi.Primitive => decode(openapi)
+    case _                          => typeViolations("Primitive", openapi).invalid
+
+  def decode(openapi: OpenApi.Primitive): Validated[Violations, A]
+
+  def encode(a: A): OpenApi.Primitive
 
 object Primitive:
-  type Of[A <: Type] = A match
-    case Type.BigDecimal.type => BigDecimal
-    case Type.BigInt.type     => BigInt
-    case Type.Boolean.type    => Boolean
-    case Type.Double.type     => Double
-    case Type.Float.type      => Float
-    case Type.Int.type        => Int
-    case Type.Long.type       => Long
-    case Type.String.type     => String
-
   final case class Metadata[A](
       constraints: Chain[Constraint[OpenApi]],
       default: Option[A],
       description: Option[String],
-      example: Option[A]
+      example: Option[A],
+      format: Option[String],
+      tpe: Type[?]
   ) extends Value.Metadata[A]:
     override type Self[a] = Primitive.Metadata[a]
     override def map[B](f: A => B): Primitive.Metadata[B] =
-      Metadata(constraints, default.map(f), description, example.map(f))
+      Metadata(constraints, default.map(f), description, example.map(f), format, tpe)
+    override def flatMap[B](f: A => Option[B]): Metadata[B] =
+      Metadata(constraints, default.flatMap(f), description, example.flatMap(f), format, tpe)
+    def copy(default: Option[A], description: Option[String], example: Option[A], format: Option[String]): Metadata[A] =
+      Metadata(constraints, default, description, example, format, tpe)
     override def copy(default: Option[A], description: Option[String], example: Option[A]): Metadata[A] =
-      Metadata(constraints, default, description, example)
+      copy(default, description, example, format)
+    override def append(constrains: Chain[Constraint[OpenApi]]): Metadata[A] =
+      Metadata(this.constraints ++ constraints, default, description, example, format, tpe)
 
   object Metadata:
-    def empty[A]: Primitive.Metadata[A] = Metadata(Chain.empty, None, None, None)
+    def empty[A](tpe: Type[A]): Primitive.Metadata[A] = Metadata(Chain.empty, None, None, None, None, tpe)
 
-  def empty[A <: Type & Singleton](tpe: A): Primitive[Of[A]] = new Primitive[Of[A]](Metadata.empty, tpe)
+  def empty[A](of: Type[A]): Primitive[A] = new Primitive[A](Metadata.empty(of)):
+    override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] = of.decode(openapi)
+    override def encode(a: A): OpenApi.Primitive = of.encode(a)

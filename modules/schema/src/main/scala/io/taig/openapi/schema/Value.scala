@@ -8,7 +8,7 @@ abstract class Value[A] extends Schema[A]:
 
   final def default: Field[A] = Field(
     metadata.default,
-    f => withMetadata(metadata.copy(f(metadata.default), metadata.description, metadata.example))
+    f => copy(metadata.copy(f(metadata.default), metadata.description, metadata.example))
   )
 
 object Value:

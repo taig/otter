@@ -1,6 +1,6 @@
 package io.taig.openapi.schema
 
-import cats.data.Chain
+import cats.data.{Chain, Validated}
 import io.taig.openapi.OpenApi
 import io.taig.validation.{Constraint, Validation}
 
@@ -15,23 +15,33 @@ abstract class Schema[A]:
     def as(value: B): Self[A] = modify(_ => Some(value))
     def clear: Self[A] = modify(_ => None)
 
+  final class Constraints(val value: Chain[Constraint[OpenApi]]):
+    def append(constrains: Chain[Constraint[OpenApi]]): Self[A] = self.copy(metadata.append(constrains))
+
   def metadata: Metadata[A]
 
-  def withMetadata(metadata: Metadata[A]): Self[A]
+  def copy(metadata: Metadata[A]): Self[A]
 
-  def description: Field[String] = Field(
+  final def constrains: Constraints = Constraints(metadata.constraints)
+
+  final def description: Field[String] = Field(
     metadata.description,
-    f => withMetadata(metadata.copy(f(metadata.description), metadata.example))
+    f => self.copy(metadata.copy(f(metadata.description), metadata.example))
   )
 
-  def example: Field[A] = Field(
+  final def example: Field[A] = Field(
     metadata.example,
-    f => withMetadata(metadata.copy(metadata.description, f(metadata.example)))
+    f => self.copy(metadata.copy(metadata.description, f(metadata.example)))
   )
 
-  def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec }
+  def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
-  def ivalidate[B, C, D](validation: Validation[B, C, A, D])(g: D => A): Self[C] { type Codec = self.Codec }
+  final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =
+    ivalidate(Validation.lift(f))(g)
+
+  def decode(openapi: OpenApi): Validated[Violations, A]
+
+  def encode(a: A): OpenApi
 
 // final def optional: Optional.Of[Option[A], Codec] = Optional(this)
 
@@ -44,4 +54,6 @@ object Schema:
     def description: Option[String]
     def example: Option[A]
     def map[B](f: A => B): Self[B]
+    def flatMap[B](f: A => Option[B]): Self[B]
     def copy(description: Option[String], example: Option[A]): Self[A]
+    def append(constrains: Chain[Constraint[OpenApi]]): Self[A]
