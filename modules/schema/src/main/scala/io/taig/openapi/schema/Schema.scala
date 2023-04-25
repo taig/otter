@@ -18,14 +18,13 @@ abstract class Schema[A]:
     def as(value: B): Self[A] = modify(_ => Some(value))
     def clear: Self[A] = modify(_ => None)
 
-  final class Constraints(val value: Chain[Constraint[OpenApi]]):
-    def append(constrains: Chain[Constraint[OpenApi]]): Self[A] = self.copy(metadata.append(constrains))
-
   def metadata: Metadata[A]
 
   def copy(metadata: Metadata[A]): Self[A]
 
-  final def constrains: Constraints = Constraints(metadata.constraints)
+  object constraints:
+    def value: Chain[Constraint[OpenApi]] = metadata.constraints
+    def append(constraints: Chain[Constraint[OpenApi]]): Self[A] = self.copy(metadata.append(constraints))
 
   object description extends Attribute[String]:
     override def value: Option[String] = metadata.description

@@ -17,7 +17,7 @@ sealed abstract class Product[A](val metadata: Product.Metadata[A]) extends Valu
 
   override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Product[B] = ???
 
-  override final def decode(openapi: OpenApi): Validated[Violations, A] = ???
+  final override def decode(openapi: OpenApi): Validated[Violations, A] = ???
 
   def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)]
 
