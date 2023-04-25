@@ -19,11 +19,14 @@ enum Type[A]:
   case String extends Type[String]
 
   def decode(openapi: OpenApi.Primitive): Validated[Violations, A] =
-    def refine(f: OpenApi.Primitive => Option[A]) =
-      validations.refine(self.toString)(f).mapReference(OpenApi.fromString)
-
     (self, openapi) match
+      case (Type.BigDecimal, OpenApi.BigDecimal(value))       => value.valid
+      case (Type.BigInt, OpenApi.BigInt(value))       => value.valid
+      case (Type.Boolean, OpenApi.Boolean(value))       => value.valid
+      case (Type.Double, OpenApi.Double(value))       => value.valid
+      case (Type.Float, OpenApi.Float(value))       => value.valid
       case (Type.Int, OpenApi.Int(value))       => value.valid
+      case (Type.Long, OpenApi.Long(value))       => value.valid
       case (Type.String, OpenApi.String(value)) => value.valid
       case _ =>
         Violations

@@ -20,10 +20,12 @@ final case class Field[A](metadata: Field.Metadata, schema: Eval[Schema[A]]):
     def inherit: Field[A] = as(Field.Null.Inherit)
     def show: Field[A] = as(Field.Null.Show)
 
-  infix def zip[B](field: Field[B]) = ???
-  def :*[B](field: Field[B]) = ???
+  def optional: Field[Option[A]] = copy(schema = schema.map(_.optional))
 
-  def toProduct = ???
+  infix def zip[B](field: Field[B]): Product[(A, B)] = ???
+  def :*[B](field: Field[B]): Product[(A, B)] = zip(field)
+
+  def toProduct: Product[A] = ???
 
   def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)] = ???
 

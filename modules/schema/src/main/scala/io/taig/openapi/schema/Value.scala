@@ -6,7 +6,7 @@ abstract class Value[A] extends Schema[A]:
   override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
   override type Metadata[a] <: Value.Metadata[a] { type Self[a] <: Metadata[a] }
 
-  final def default: Field[A] = ???
+  final def default: Attribute[A] = ???
 //  Field(
 //    metadata.default,
 //    f => copy(metadata.updated(f(metadata.default), metadata.description, metadata.example))

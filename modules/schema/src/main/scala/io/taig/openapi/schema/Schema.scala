@@ -10,7 +10,7 @@ abstract class Schema[A]:
   type Codec <: OpenApi
   type Metadata[a] <: Schema.Metadata[a] { type Self[a] <: Metadata[a] }
 
-  abstract class Field[B]:
+  abstract class Attribute[B]:
     def value: Option[B]
     protected def update(f: Option[B] => Option[B]): Metadata[A]
     final def modify(f: Option[B] => Option[B]): Self[A] = self.copy(update(f))
@@ -27,14 +27,15 @@ abstract class Schema[A]:
 
   final def constrains: Constraints = Constraints(metadata.constraints)
 
-  object description extends Field[String]:
+  object description extends Attribute[String]:
     override def value: Option[String] = metadata.description
     override protected def update(f: Option[String] => Option[String]): Metadata[A] =
       metadata.updated(f(value), metadata.example)
 
-  object example extends Field[A]:
+  object example extends Attribute[A]:
     override def value: Option[A] = metadata.example
-    override protected def update(f: Option[A] => Option[A]): Metadata[A] = metadata.updated(metadata.description, f(value))
+    override protected def update(f: Option[A] => Option[A]): Metadata[A] =
+      metadata.updated(metadata.description, f(value))
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
