@@ -6,8 +6,7 @@ abstract class Value[A] extends Schema[A]:
   override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
   override type Metadata[a] <: Value.Metadata[a] { type Self[a] <: Metadata[a] }
 
-  object default extends Attribute[A]:
-    override def value: Option[A] = metadata.default
+  object default extends Attribute.Optional[A](metadata.default):
     override protected def update(f: Option[A] => Option[A]): Metadata[A] =
       metadata.updated(f(value), metadata.description, metadata.example)
 

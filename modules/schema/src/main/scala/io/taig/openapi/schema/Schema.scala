@@ -10,29 +10,27 @@ abstract class Schema[A]:
   type Codec <: OpenApi
   type Metadata[a] <: Schema.Metadata[a] { type Self[a] <: Metadata[a] }
 
-  abstract class Attribute[B]:
-    def value: Option[B]
-    protected def update(f: Option[B] => Option[B]): Metadata[A]
-    final def modify(f: Option[B] => Option[B]): Self[A] = self.copy(update(f))
-    def set(value: Option[B]): Self[A] = modify(_ => value)
-    def as(value: B): Self[A] = modify(_ => Some(value))
-    def clear: Self[A] = modify(_ => None)
+  abstract class Attribute[B](val value: B):
+    protected def update(f: B => B): Metadata[A]
+    final def modify(f: B => B): Self[A] = self.copy(update(f))
+    def set(value: B): Self[A] = modify(_ => value)
+
+  object Attribute:
+    abstract class Optional[B](value: Option[B]) extends Attribute[Option[B]](value):
+      def as(value: B): Self[A] = modify(_ => Some(value))
+      def clear: Self[A] = modify(_ => None)
 
   def metadata: Metadata[A]
 
   def copy(metadata: Metadata[A]): Self[A]
 
-  object constraints:
-    def value: Chain[Constraint[OpenApi]] = metadata.constraints
-    def append(constraints: Chain[Constraint[OpenApi]]): Self[A] = self.copy(metadata.append(constraints))
+  def constraints: Chain[Constraint[OpenApi]]
 
-  object description extends Attribute[String]:
-    override def value: Option[String] = metadata.description
+  object description extends Attribute.Optional[String](metadata.description):
     override protected def update(f: Option[String] => Option[String]): Metadata[A] =
       metadata.updated(f(value), metadata.example)
 
-  object example extends Attribute[A]:
-    override def value: Option[A] = metadata.example
+  object example extends Attribute.Optional[A](metadata.example):
     override protected def update(f: Option[A] => Option[A]): Metadata[A] =
       metadata.updated(metadata.description, f(value))
 
@@ -55,10 +53,8 @@ object Schema:
 
   trait Metadata[A]:
     type Self[a] <: Schema.Metadata[a]
-    def constraints: Chain[Constraint[OpenApi]]
     def description: Option[String]
     def example: Option[A]
     def map[B](f: A => B): Self[B]
     def flatMap[B](f: A => Option[B]): Self[B]
     def updated(description: Option[String], example: Option[A]): Self[A]
-    def append(constraints: Chain[Constraint[OpenApi]]): Self[A]

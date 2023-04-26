@@ -24,7 +24,7 @@ final case class Field[A](metadata: Field.Metadata, schema: Eval[Schema[A]]):
   def optional: Field[Option[A]] = copy(schema = schema.map(_.optional))
 
   infix def zip[B](field: Field[B]): Product[(A, B)] = toProduct zip field.toProduct
-  def :*[B](field: Field[B]): Product[(A, B)] = zip(field)
+  transparent inline def :*[B](field: Field[B]): Product[?] = toProduct :* field
 
   def toProduct: Product[A] = Product.fromField(this)
 
