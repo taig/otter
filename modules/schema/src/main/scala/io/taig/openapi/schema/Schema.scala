@@ -11,27 +11,27 @@ abstract class Schema[A]:
   type Metadata[a] <: Schema.Metadata[a] { type Self[a] <: Metadata[a] }
 
   abstract class Attribute[B](val value: B):
-    protected def update(f: B => B): Metadata[A]
-    final def modify(f: B => B): Self[A] = self.copy(update(f))
-    def set(value: B): Self[A] = modify(_ => value)
+    def updated(f: B => B): Metadata[A]
+    final def modify(f: B => B): Self[A] { type Codec = self.Codec } = self.copy(updated(f))
+    def set(value: B): Self[A] { type Codec = self.Codec } = modify(_ => value)
 
   object Attribute:
     abstract class Optional[B](value: Option[B]) extends Attribute[Option[B]](value):
-      def as(value: B): Self[A] = modify(_ => Some(value))
-      def clear: Self[A] = modify(_ => None)
+      def as(value: B): Self[A] { type Codec = self.Codec } = modify(_ => Some(value))
+      def clear: Self[A] { type Codec = self.Codec } = modify(_ => None)
 
   def metadata: Metadata[A]
 
-  def copy(metadata: Metadata[A]): Self[A]
+  def copy(metadata: Metadata[A]): Self[A] { type Codec = self.Codec }
 
   def constraints: Chain[Constraint[OpenApi]]
 
   object description extends Attribute.Optional[String](metadata.description):
-    override protected def update(f: Option[String] => Option[String]): Metadata[A] =
+    override def updated(f: Option[String] => Option[String]): Metadata[A] =
       metadata.updated(f(value), metadata.example)
 
   object example extends Attribute.Optional[A](metadata.example):
-    override protected def update(f: Option[A] => Option[A]): Metadata[A] =
+    override def updated(f: Option[A] => Option[A]): Metadata[A] =
       metadata.updated(metadata.description, f(value))
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
@@ -42,11 +42,11 @@ abstract class Schema[A]:
   final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =
     ivalidate(Validation.lift(f))(g)
 
+  def optional: Self[Option[A]] { type Codec = self.Codec | OpenApi.Null.type }
+
   def decode(openapi: OpenApi): Validated[Violations, A]
 
   def encode(a: A): Codec
-
-  final def optional: Optional.Of[Option[A], Codec] = Optional(this)
 
 object Schema:
   type Of[A, B <: OpenApi] = Schema[A] { type Codec = B }

@@ -5,4 +5,4 @@ import cats.Eq
 sealed trait Void extends Serializable
 
 object Void extends Void:
-  val eq: Eq[Void] = Eq.fromUniversalEquals
+  given eq: Eq[Void] = Eq.fromUniversalEquals

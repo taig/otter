@@ -24,13 +24,6 @@ final class PrimitiveTest extends FunSuite:
     )
   }
 
-  test("decode: null (with default)") {
-    assertEquals(
-      obtained = string.default.as("foobar").decode(OpenApi.Null),
-      expected = "foobar".valid
-    )
-  }
-
   test("decode: type mismatch") {
     val value = OpenApi.fromInt(42)
 
