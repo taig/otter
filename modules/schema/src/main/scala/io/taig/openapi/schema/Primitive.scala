@@ -12,6 +12,7 @@ abstract class Primitive[A](
 ) extends Schema[A]:
   self =>
 
+  override type Codec <: OpenApi.Primitive | OpenApi.Null.type
   override type Self[a] = Primitive[a]
   override type Metadata[a] = Primitive.Metadata[a]
 

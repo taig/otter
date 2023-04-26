@@ -19,7 +19,7 @@ object Violations:
     ): Violations = violations.map(f)
     def modifyViolation(f: Violation[OpenApi, OpenApi] => Violation[OpenApi, OpenApi]): Violations =
       modifyViolations(_.map(f))
-    def merge(right: Violations): Violations = violations |+| right
+    infix def merge(right: Violations): Violations = violations |+| right
     def get(history: History): Chain[Violation[OpenApi, OpenApi]] = violations.apply(history).map(_.toChain).orEmpty
     def head(history: History): Option[Violation[OpenApi, OpenApi]] = violations.apply(history).map(_.head)
 
