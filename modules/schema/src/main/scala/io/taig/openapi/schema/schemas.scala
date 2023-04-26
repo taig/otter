@@ -1,5 +1,6 @@
 package io.taig.openapi.schema
 
+import cats.Eval
 import io.taig.validation.validations
 
 import java.util.UUID
@@ -14,3 +15,5 @@ object schemas:
   val long: Primitive[Long] = Primitive(Type.Long).format.as("int64")
   val string: Primitive[String] = Primitive(Type.String)
   val uuid: Primitive[UUID] = string.ivalidate(validations.parser.uuid)(_.toString).format.as("uuid")
+
+  def field[A](name: String, schema: => Schema[A]): Field[A] = Field(name, Eval.later(schema))

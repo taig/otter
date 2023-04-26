@@ -10,6 +10,7 @@ sealed abstract class Product[A](val metadata: Product.Metadata[A]) extends Valu
   final override type Codec = OpenApi.Object
   final override type Metadata[a] = Product.Metadata[a]
 
+  final infix def zip[B](product: Product[B]): Product[(A, B)] = ???
   transparent inline def :*[B](field: Field[B]): Product[?] = ???
 
   override def copy(metadata: Product.Metadata[A]): Product[A] = new Product[A](metadata):
@@ -24,6 +25,10 @@ sealed abstract class Product[A](val metadata: Product.Metadata[A]) extends Valu
   override def encode(a: A): OpenApi.Object
 
 object Product:
+  enum Nulls:
+    case Show
+    case Hide
+
   final case class Metadata[A](
       constraints: Chain[Constraint[OpenApi]],
       default: Option[A],
@@ -38,3 +43,16 @@ object Product:
       copy(default = default.flatMap(f), example = example.flatMap(f))
     override def append(constraints: Chain[Constraint[OpenApi]]): Product.Metadata[A] =
       copy(constraints = this.constraints ++ constraints)
+
+  object Metadata:
+    def empty[A]: Product.Metadata[A] = Metadata(Chain.empty, None, None, None)
+
+  val Empty: Product[Unit] = new Product[Unit](Metadata.empty):
+    override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Unit)] = ???
+
+    override def encode(a: Unit): OpenApi.Object = ???
+
+  def fromField[A](field: Field[A]): Product[A] = new Product[A](Metadata.empty):
+    override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)] = ???
+
+    override def encode(a: A): OpenApi.Object = ???

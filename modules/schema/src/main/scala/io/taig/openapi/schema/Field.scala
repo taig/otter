@@ -1,6 +1,7 @@
 package io.taig.openapi.schema
 
 import cats.data.Validated
+import cats.syntax.all.*
 import cats.{Eq, Eval}
 import io.taig.openapi.OpenApi
 
@@ -22,12 +23,24 @@ final case class Field[A](metadata: Field.Metadata, schema: Eval[Schema[A]]):
 
   def optional: Field[Option[A]] = copy(schema = schema.map(_.optional))
 
-  infix def zip[B](field: Field[B]): Product[(A, B)] = ???
+  infix def zip[B](field: Field[B]): Product[(A, B)] = toProduct zip field.toProduct
   def :*[B](field: Field[B]): Product[(A, B)] = zip(field)
 
-  def toProduct: Product[A] = ???
+  def toProduct: Product[A] = Product.fromField(this)
 
-  def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)] = ???
+  def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)] =
+    schema.value
+      .decode(openapi.getOrNull(metadata.name))
+      .bimap(_.modifyHistory(metadata.name /: _), (openapi.remove(metadata.name), _))
+
+  def encode(a: A, parent: Product.Nulls): OpenApi.Object =
+    val dropNull = (metadata.nulls, parent) match
+      case (Field.Null.Inherit, Product.Nulls.Hide) | (Field.Null.Hide, _) => true
+      case _                                                               => false
+
+    schema.value.encode(a) match
+      case OpenApi.Null if dropNull => OpenApi.Object.Empty
+      case value                    => OpenApi.Object.one(metadata.name, value)
 
 object Field:
   enum Null:
