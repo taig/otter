@@ -23,31 +23,27 @@ sealed abstract class Product[A](
     def show: Product[A] = set(Product.Null.Show)
     def hide: Product[A] = set(Product.Null.Hide)
 
-  final infix def zip[B](product: Product[B]): Product[(A, B)] = new Product[(A, B)](
-    self.constraints ++ product.constraints,
-    self.fields ++ product.fields,
+  final def product[B](b: Product[B]): Product[(A, B)] = new Product[(A, B)](
+    self.constraints ++ b.constraints,
+    self.fields ++ b.fields,
     metadata.flatMap(_ => None)
   ):
     override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, (A, B))] =
       self.decodeWithRemainders(openapi) match
-        case Validated.Valid((remainders, a)) => product.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+        case Validated.Valid((remainders, a)) => b.decodeWithRemainders(remainders).map(_.tupleLeft(a))
         case Validated.Invalid(violations) =>
-          product.decodeWithRemainders(openapi).fold(violations merge _, _ => violations).invalid
-    override def encode(ab: (A, B)): OpenApi.Object =
-      val a = self.encode(ab._1).asObject.getOrElse(OpenApi.Object.Empty)
-      val b = product.encode(ab._2).asObject.getOrElse(OpenApi.Object.Empty)
-      a ++ b
+          b.decodeWithRemainders(openapi).fold(violations merge _, _ => violations).invalid
 
-  final transparent inline def :*[B](field: Field[B]): Product[?] = inline (this, field) match
-    case (left: Product[Void], right: Field[B]) =>
-      left.zip(right.toProduct).imap[B] { case (_, b) => b }(b => (Void, b))
-    case (left: Product[A], right: Field[Void]) =>
-      left.zip(right.toProduct).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (left: Product[Tuple], right) =>
-      left
-        .zip(right.toProduct)
-        .imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
-    case (left, right) => left.zip(right.toProduct)
+    override def encode(ab: (A, B)): OpenApi.Object = self.encode(ab._1) ++ b.encode(ab._2)
+
+  final transparent inline infix def zip[B](b: Product[B]): Product[?] = inline (this, b) match
+    case (a: Product[Void], b: Product[B]) => a.product(b).imap[B] { case (_, b) => b }(b => (Void, b))
+    case (a: Product[A], b: Product[Void]) => a.product(b).imap[A] { case (a, _) => a }(a => (a, Void))
+    case (a: Product[Tuple], b) =>
+      a.product(b).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
+    case (a, b) => a.product(b)
+
+  final transparent inline def :*[B](field: Field[B]): Product[?] = this zip field.toProduct
 
   final override def copy(metadata: Product.Metadata[A]): Product[A] =
     new Product[A](constraints, fields, metadata) { export self.{decodeWithRemainders, encode} }

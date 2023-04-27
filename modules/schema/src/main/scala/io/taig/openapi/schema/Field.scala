@@ -44,7 +44,7 @@ abstract class Field[A](val metadata: Field.Metadata[A], val schema: Eval[Schema
 
         if dropNull then OpenApi.Object.Empty else OpenApi.Object.one(metadata.name, OpenApi.Null)
 
-  final infix def zip[B](field: Field[B]): Product[(A, B)] = toProduct zip field.toProduct
+  final transparent inline infix def zip[B](field: Field[B]): Product[?] = toProduct zip field.toProduct
   final transparent inline def :*[B](field: Field[B]): Product[?] = toProduct :* field
 
   final def toProduct: Product[A] = Product.fromField(this)
