@@ -42,8 +42,6 @@ abstract class Schema[A]:
   final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =
     ivalidate(Validation.lift(f))(g)
 
-  def optional: Self[Option[A]] { type Codec = self.Codec | OpenApi.Null.type }
-
   def decode(openapi: OpenApi): Validated[Violations, A]
 
   def encode(a: A): Codec
