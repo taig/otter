@@ -6,47 +6,26 @@ import cats.{Eq, Eval}
 import io.taig.openapi.OpenApi
 import io.taig.validation.{Constraint, Violation}
 
-sealed abstract class Field[A, B](
-    val key: Eval[Value[A]],
-    val metadata: Field.Metadata[A, B],
-    val schema: Eval[Schema[?]]
-):
+sealed abstract class Field[A, B]:
   self =>
 
-  object default:
-    def value: Option[B] = metadata.default
-    def modify(f: Option[B] => Option[B]): Field[A, B] = self.copy(metadata.copy(default = f(value)))
-    def as(value: Option[B]): Field[A, B] = modify(_ => value)
+  def default: Option[B]
 
-  object name:
-    def value: A = metadata.name
-    def modify(f: A => A): Field[A, B] = self.copy(metadata.copy(name = f(value)))
-    def as(value: A): Field[A, B] = modify(_ => value)
+  def key: Eval[Value[A]]
 
-  object nulls:
-    def value: Field.Null = metadata.nulls
-    def modify(f: Field.Null => Field.Null): Field[A, B] = self.copy(metadata.copy(nulls = f(value)))
-    def as(value: Field.Null): Field[A, B] = modify(_ => value)
-    def hide: Field[A, B] = as(Field.Null.Hide)
-    def inherit: Field[A, B] = as(Field.Null.Inherit)
-    def show: Field[A, B] = as(Field.Null.Show)
+  def name: A
+  final def renderName: String = key.value.render(name)
 
-  final def copy(metadata: Field.Metadata[A, B]): Field[A, B] =
-    new Field[A, B](key, metadata, schema) { export self.{decode, encode} }
+  def nulls: Field.Null
+  def modifyNulls(f: Field.Null => Field.Null): Field[A, B]
+  final def withNulls(value: Field.Null): Field[A, B] = modifyNulls(_ => value)
+  final def hideNulls: Field[A, B] = withNulls(Field.Null.Hide)
+  final def showNulls: Field[A, B] = withNulls(Field.Null.Show)
+  final def inheritNulls: Field[A, B] = withNulls(Field.Null.Inherit)
 
-  final def optional: Field[A, Option[B]] = new Field[A, Option[B]](key, metadata.map(_.some), schema):
-    override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Option[B])] =
-      openapi.get(key.value.render(metadata.name)) match
-        case Some(_) => self.decode(openapi).map(_.map(_.some))
-        case None    => (openapi, none[B]).valid
-    override def encode(b: Option[B], parent: Product.Null, nulls: Field.Null): OpenApi.Object = b match
-      case Some(a) => self.encode(a, parent)
-      case None =>
-        val dropNull = (nulls, parent) match
-          case (Field.Null.Inherit, Product.Null.Hide) | (Field.Null.Hide, _) => true
-          case _                                                              => false
+  def schema: Eval[Schema[?]]
 
-        if dropNull then OpenApi.Object.Empty else OpenApi.Object.one(key.value.render(metadata.name), OpenApi.Null)
+  final def optional: Field[A, Option[B]] = Field.Optional(this)
 
   // TODO imap, ivalidate, ...
 
@@ -55,11 +34,10 @@ sealed abstract class Field[A, B](
 
   final def toProduct: Product[A, B] = Product(this)
 
-  def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)]
+  final def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
+    Field.decode(this)(openapi)
 
-  final def encode(b: B, parent: Product.Null): OpenApi.Object = encode(b, parent, metadata.nulls)
-
-  protected def encode(b: B, parent: Product.Null, nulls: Field.Null): OpenApi.Object
+  final def encode(b: B, parent: Product.Null): OpenApi.Object = Field.encode(this)(b, parent)
 
 object Field:
   enum Null:
@@ -72,26 +50,62 @@ object Field:
 
     given Eq[Null] = Eq.fromUniversalEquals
 
-  final case class Metadata[A, B](default: Option[B], name: A, nulls: Field.Null):
-    def map[C](f: B => C): Field.Metadata[A, C] = copy(default = default.map(f))
+  final case class Required[A, B](
+      default: Option[B],
+      key: Eval[Value[A]],
+      name: A,
+      nulls: Field.Null,
+      schema: Eval[Schema[B]]
+  ) extends Field[A, B]:
+    override def modifyNulls(f: Field.Null => Field.Null): Field[A, B] = copy(nulls = f(nulls))
 
-  object Metadata:
-    def empty[A, B](name: A): Field.Metadata[A, B] = Metadata(None, name, Null.Default)
+  object Required:
+    def decode[A, B](field: Field.Required[A, B])(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
+      val name = field.renderName
 
-  def apply[A, B](name: A, ofKey: Eval[Value[A]], ofSchema: Eval[Schema[B]]): Field[A, B] =
-    new Field[A, B](ofKey, Metadata.empty(name), ofSchema):
-      override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
-        val key = ofKey.value.render(metadata.name)
+      openapi.get(name) match
+        case Some(value) =>
+          field.schema.value
+            .decode(value)
+            .bimap(_.modifyHistory(name /: _), (openapi.remove(name), _))
+        case None =>
+          val constraint = Constraint("required", reference = none)
+          val violations = Violations.rootNec(Violation(constraint, actual = OpenApi.Null))
+          field.default.toValid(violations).tupleLeft(openapi)
 
-        openapi.get(key) match
-          case Some(value) =>
-            ofSchema.value
-              .decode(value)
-              .bimap(_.modifyHistory(key /: _), (openapi.remove(key), _))
-          case None =>
-            val constraint = Constraint("required", reference = none)
-            val violations = Violations.rootNec(Violation(constraint, actual = OpenApi.Null))
-            metadata.default.toValid(violations).tupleLeft(openapi)
+    def encode[A, B](field: Field.Required[A, B])(b: B): OpenApi.Object =
+      OpenApi.Object.one(field.renderName, field.schema.value.encode(b))
 
-      override def encode(b: B, parent: Product.Null, nulls: Field.Null): OpenApi.Object =
-        OpenApi.Object.one(ofKey.value.render(metadata.name), ofSchema.value.encode(b))
+  final case class Optional[A, B](field: Field[A, B]) extends Field[A, Option[B]]:
+    export field.{key, name, nulls, schema}
+    override def default: Option[Option[B]] = field.default.map(_.some)
+    override def modifyNulls(f: Null => Null): Field[A, Option[B]] = copy(field.modifyNulls(f))
+
+  object Optional:
+    def decode[A, B](field: Field.Optional[A, B])(
+        openapi: OpenApi.Object
+    ): Validated[Violations, (OpenApi.Object, Option[B])] =
+      if openapi.contains(field.renderName)
+      then field.field.decode(openapi).map(_.map(_.some))
+      else (openapi, none[B]).valid
+
+    def encode[A, B](field: Field.Optional[A, B])(b: Option[B], parent: Product.Null): OpenApi.Object = b match
+      case Some(b) => field.field.encode(b, parent)
+      case None =>
+        val dropNull = (field.nulls, parent) match
+          case (Field.Null.Inherit, Product.Null.Hide) | (Field.Null.Hide, _) => true
+          case _                                                              => false
+
+        if dropNull then OpenApi.Object.Empty else OpenApi.Object.one(field.renderName, OpenApi.Null)
+
+  def decode[A, B](field: Field[A, B])(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
+    field match
+      case field: Required[?, ?] => Required.decode(field)(openapi)
+      case field: Optional[?, ?] => Optional.decode(field)(openapi)
+
+  def encode[A, B](field: Field[A, B])(b: B, parent: Product.Null): OpenApi.Object = field match
+    case field: Required[?, ?] => Required.encode(field)(b)
+    case field: Optional[?, ?] => Optional.encode(field)(b, parent)
+
+  def apply[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]): Field[A, B] =
+    Required[A, B](none, key, name, Null.Default, schema)
