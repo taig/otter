@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.validation.{Constraint, Validation}
 
-abstract class Collection[A](
+sealed abstract class Collection[A](
     val constraints: Chain[Constraint[OpenApi]],
     val metadata: Collection.Metadata[A],
     val schema: Eval[Schema[?]]

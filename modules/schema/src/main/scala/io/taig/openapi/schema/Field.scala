@@ -1,12 +1,16 @@
 package io.taig.openapi.schema
 
-import cats.data.Validated
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import cats.{Eq, Eval}
 import io.taig.openapi.OpenApi
 import io.taig.validation.{Constraint, Violation}
 
-abstract class Field[A, B](val key: Eval[Value[A]], val metadata: Field.Metadata[A, B], val schema: Eval[Schema[?]]):
+sealed abstract class Field[A, B](
+    val key: Eval[Value[A]],
+    val metadata: Field.Metadata[A, B],
+    val schema: Eval[Schema[?]]
+):
   self =>
 
   object default:

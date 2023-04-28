@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.openapi.{schema, OpenApi}
 import io.taig.validation.{Constraint, Validation}
 
-abstract class Primitive[A](
+sealed abstract class Primitive[A](
     val constraints: Chain[Constraint[OpenApi]],
     val metadata: Primitive.Metadata[A],
     val tpe: Type[?]
