@@ -9,31 +9,29 @@ import io.taig.openapi.schema.schemas.*
 import io.taig.validation.{Constraint, Validation, Violation}
 import io.taig.validation.validations
 
-sealed abstract class Branch[A, B](
-    val metadata: Branch.Metadata[A],
-    val key: Eval[Value[A]],
-    val schema: Eval[Schema[B]]
-):
-  def matches(name: A): Boolean
+final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]):
+  def renderName: String = key.value.render(name)
 
-  object name:
-    def value: A = metadata.name
-    def set[C: Eq](name: C, key: => Value[C]): Branch[C, B] =
-      new Branch[C, B](metadata.copy(name = name), Eval.later(key), schema):
-        override def matches(name: C): Boolean = name === metadata.name
-    def set(name: String): Branch[String, B] = set(name, string)
+  infix def orElse[C](branch: Branch[A, C]) = ???
+  infix def :+[C](branch: Branch[A, C]) = ???
 
-  final infix def orElse[C](branch: Branch[A, C]) = ???
-  final infix def :+[C](branch: Branch[A, C]) = ???
+  def imap[C](f: B => C)(g: C => B): Branch[A, C] = Branch(name, key, schema.map(_.imap(f)(g)))
+  // TODO ivalidate, etc.
 
-  final def toSum: Sum[A, B] = Sum(this)
+  def toSum: Sum[A, B] = Sum(this)
 
-  // TODO imap, ivalidate, etc.
+  def decode(openapi: OpenApi, discriminator: Discriminator): Validated[Violations, Option[B]] =
+    Branch.decode(this)(openapi, discriminator)
 
-  private def refine[A](tpe: String)(f: OpenApi => Option[A]): Validation[OpenApi, OpenApi, OpenApi, A] =
-    validations.refine(tpe)(f).mapReference(OpenApi.fromString)
+  def encode(b: B, discriminator: Discriminator): OpenApi = Branch.encode(this)(b, discriminator)
 
-  final def decode(openapi: OpenApi, discriminator: Discriminator): Validated[Violations, Option[B]] =
+object Branch:
+  def decode[A, B](
+      branch: Branch[A, B]
+  )(openapi: OpenApi, discriminator: Discriminator): Validated[Violations, Option[B]] =
+    def refine[A](tpe: String)(f: OpenApi => Option[A]): Validation[OpenApi, OpenApi, OpenApi, A] =
+      validations.refine(tpe)(f).mapReference(OpenApi.fromString)
+
     discriminator match
       case Discriminator.Nested(identifier, value) =>
         refine("OpenApi.Object")(_.asObject).run(openapi).leftMap(Violations.root).andThen { obj =>
@@ -45,10 +43,10 @@ sealed abstract class Branch[A, B](
               }
             )
             .andThen(refine("OpenApi.Primitive")(_.asPrimitive).run(_).leftMap(Violations.root))
-            .andThen(key.value.decode)
+            .andThen(branch.key.value.decode)
             .leftMap(_.modifyHistory(identifier /: _))
             .andThen { name =>
-              if matches(name) then
+              if branch.renderName === branch.key.value.render(name) then
                 Validated
                   .fromOption(
                     obj.get(value), {
@@ -56,28 +54,23 @@ sealed abstract class Branch[A, B](
                       Violations.rootNec(Violation(constraint, obj))
                     }
                   )
-                  .andThen(schema.value.decode)
+                  .andThen(branch.schema.value.decode)
                   .bimap(_.modifyHistory(value /: _), _.some)
               else none[B].valid
             }
         }
-      case _ => ??? // TODO
+      case Discriminator.Merged(identifier) => ???
+      case Discriminator.Keyed              => ???
+      case Discriminator.None               => branch.schema.value.decode(openapi).toOption.valid
 
-  final def encode(b: B, discriminator: Discriminator): OpenApi = discriminator match
+  def encode[A, B](branch: Branch[A, B])(b: B, discriminator: Discriminator): OpenApi = discriminator match
     case Discriminator.Nested(identifier, value) =>
-      OpenApi.obj(identifier -> key.value.encode(metadata.name), value -> schema.value.encode(b))
+      OpenApi.obj(identifier -> branch.key.value.encode(branch.name), value -> branch.schema.value.encode(b))
     case Discriminator.Merged(identifier) =>
-      schema.value.encode(b).asObject match
+      branch.schema.value.encode(b).asObject match
         case Some(obj) if obj.contains(identifier) => OpenApi.Object.Empty
-        case Some(obj) => obj.deepMerge(OpenApi.obj(identifier -> key.value.encode(metadata.name)))
+        case Some(obj) => obj.deepMerge(OpenApi.obj(identifier -> branch.key.value.encode(branch.name)))
         case None      => OpenApi.Object.Empty
     case Discriminator.Keyed =>
-      OpenApi.obj(key.value.encode(metadata.name).render -> schema.value.encode(b))
-    case Discriminator.None => schema.value.encode(b)
-
-object Branch:
-  final case class Metadata[A](name: A)
-
-  def apply[A: Eq, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]): Branch[A, B] =
-    new Branch[A, B](Metadata(name), key, schema):
-      override def matches(name: A): Boolean = name === metadata.name
+      OpenApi.obj(branch.renderName -> branch.schema.value.encode(b))
+    case Discriminator.None => branch.schema.value.encode(b)
