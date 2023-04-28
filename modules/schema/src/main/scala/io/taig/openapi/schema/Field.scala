@@ -1,6 +1,6 @@
 package io.taig.openapi.schema
 
-import cats.data.{Chain, Validated}
+import cats.data.Validated
 import cats.syntax.all.*
 import cats.{Eq, Eval}
 import io.taig.openapi.OpenApi
@@ -39,10 +39,10 @@ sealed abstract class Field[A, B](
       openapi.get(key.value.render(metadata.name)) match
         case Some(_) => self.decode(openapi).map(_.map(_.some))
         case None    => (openapi, none[B]).valid
-    override def encode(a: Option[B], parent: Product.Null): OpenApi.Object = a match
+    override def encode(b: Option[B], parent: Product.Null, nulls: Field.Null): OpenApi.Object = b match
       case Some(a) => self.encode(a, parent)
       case None =>
-        val dropNull = (metadata.nulls, parent) match
+        val dropNull = (nulls, parent) match
           case (Field.Null.Inherit, Product.Null.Hide) | (Field.Null.Hide, _) => true
           case _                                                              => false
 
@@ -57,7 +57,9 @@ sealed abstract class Field[A, B](
 
   def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)]
 
-  def encode(a: B, parent: Product.Null): OpenApi.Object
+  final def encode(b: B, parent: Product.Null): OpenApi.Object = encode(b, parent, metadata.nulls)
+
+  protected def encode(b: B, parent: Product.Null, nulls: Field.Null): OpenApi.Object
 
 object Field:
   enum Null:
@@ -91,5 +93,5 @@ object Field:
             val violations = Violations.rootNec(Violation(constraint, actual = OpenApi.Null))
             metadata.default.toValid(violations).tupleLeft(openapi)
 
-      override def encode(b: B, parent: Product.Null): OpenApi.Object =
+      override def encode(b: B, parent: Product.Null, nulls: Field.Null): OpenApi.Object =
         OpenApi.Object.one(ofKey.value.render(metadata.name), ofSchema.value.encode(b))
