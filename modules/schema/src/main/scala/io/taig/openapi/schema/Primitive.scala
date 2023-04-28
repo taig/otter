@@ -21,7 +21,7 @@ abstract class Primitive[A](
       metadata.copy(format = f(value))
 
   final override def copy(metadata: Primitive.Metadata[A]): Primitive[A] =
-    new Primitive[A](constraints, metadata, tpe) { export self.{decode, encode} }
+    new Primitive[A](constraints, metadata, tpe) { export self.{decode, encode, parse} }
 
   final override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Primitive[B] = new Primitive[B](
     constraints ++ validation.constraints.map(_.map(self.encode)),
@@ -31,6 +31,10 @@ abstract class Primitive[A](
     override def decode(openapi: OpenApi): Validated[Violations, B] =
       self.decode(openapi).andThen(andThenValidate(validation, self.encode))
     override def encode(b: B): self.Codec = self.encode(g(b))
+    override def parse(value: String): Validated[Violations, B] =
+      self.parse(value).andThen(andThenValidate(validation, self.encode))
+
+  def parse(value: String): Validated[Violations, A]
 
 object Primitive:
   final case class Metadata[A](
@@ -53,3 +57,4 @@ object Primitive:
       case OpenApi.Null               => nonNullViolations("Primitive").invalid
       case _                          => typeViolations("Primitive", openapi).invalid
     override def encode(a: A): OpenApi.Primitive = of.encode(a)
+    override def parse(value: String): Validated[Violations, A] = of.parse(value)

@@ -32,6 +32,8 @@ enum Type[A]:
         .rootNec(Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi))
         .invalid
 
+  def parse(value: String): Validated[Violations, A] = ???
+
   def encode(a: A): OpenApi.Primitive = self match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)
     case Type.BigInt     => OpenApi.fromBigInt(a)
