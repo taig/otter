@@ -18,7 +18,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  def decode(openapi: OpenApi.Primitive): Validated[Violations, A] = (self, openapi) match
+  def decode(openapi: OpenApi.Primitive): Validated[Violation[OpenApi, OpenApi], A] = (self, openapi) match
     case (Type.BigDecimal, OpenApi.BigDecimal(value)) => value.valid
     case (Type.BigInt, OpenApi.BigInt(value))         => value.valid
     case (Type.Boolean, OpenApi.Boolean(value))       => value.valid
@@ -28,9 +28,17 @@ enum Type[A]:
     case (Type.Long, OpenApi.Long(value))             => value.valid
     case (Type.String, OpenApi.String(value))         => value.valid
     case _ =>
-      Violations
-        .rootNec(Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi))
-        .invalid
+      Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi).invalid
+
+  def encode(a: A): OpenApi.Primitive = self match
+    case Type.BigDecimal => OpenApi.fromBigDecimal(a)
+    case Type.BigInt     => OpenApi.fromBigInt(a)
+    case Type.Boolean    => OpenApi.fromBoolean(a)
+    case Type.Double     => OpenApi.fromDouble(a)
+    case Type.Float      => OpenApi.fromFloat(a)
+    case Type.Int        => OpenApi.fromInt(a)
+    case Type.Long       => OpenApi.fromLong(a)
+    case Type.String     => OpenApi.fromString(a)
 
   def parse(value: String): Option[A] =
     val openapi = OpenApi.fromString(value)
@@ -44,16 +52,6 @@ enum Type[A]:
       case Type.Int        => openapi.toInt.map(_.value)
       case Type.Long       => openapi.toLong.map(_.value)
       case Type.String     => openapi.render.some
-
-  def encode(a: A): OpenApi.Primitive = self match
-    case Type.BigDecimal => OpenApi.fromBigDecimal(a)
-    case Type.BigInt     => OpenApi.fromBigInt(a)
-    case Type.Boolean    => OpenApi.fromBoolean(a)
-    case Type.Double     => OpenApi.fromDouble(a)
-    case Type.Float      => OpenApi.fromFloat(a)
-    case Type.Int        => OpenApi.fromInt(a)
-    case Type.Long       => OpenApi.fromLong(a)
-    case Type.String     => OpenApi.fromString(a)
 
   def render(a: A): String = encode(a).render
 

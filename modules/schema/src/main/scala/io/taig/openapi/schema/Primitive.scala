@@ -51,9 +51,10 @@ object Primitive:
 
   def apply[A](of: Type[A]): Primitive[A] = new Primitive[A](Chain.empty, Metadata.empty, of):
     override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
-      case openapi: OpenApi.Primitive => of.decode(openapi)
+      case openapi: OpenApi.Primitive => of.decode(openapi).leftMap(Violations.rootNec)
       case OpenApi.Null               => nonNullViolations("Primitive").invalid
       case _                          => typeViolations("Primitive", openapi).invalid
     override def encode(a: A): OpenApi.Primitive = of.encode(a)
-    override def parse(value: String): Validated[Violations, A] = ???
-    override def render(a: A): String = ???
+    override def parse(value: String): Validated[Violations, A] =
+      of.parse(value).toValid(typeViolations(of.show, OpenApi.fromString(value)))
+    override def render(a: A): String = of.render(a)
