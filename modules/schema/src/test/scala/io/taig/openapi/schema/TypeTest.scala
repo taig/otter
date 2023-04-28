@@ -1,9 +1,187 @@
 package io.taig.openapi.schema
 
 import cats.syntax.all.*
+import io.taig.openapi.OpenApi
+import io.taig.validation.{Constraint, Violation}
 import munit.FunSuite
 
 final class TypeTest extends FunSuite:
+  test("decode: bigDecimal") {
+    assertEquals(
+      obtained = Type.BigDecimal.decode(OpenApi.fromBigDecimal(BigDecimal(0))),
+      expected = BigDecimal(0).valid
+    )
+    assertEquals(
+      obtained = Type.BigDecimal.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("BigDecimal")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: bigInt") {
+    assertEquals(
+      obtained = Type.BigInt.decode(OpenApi.fromBigInt(BigInt(0))),
+      expected = BigInt(0).valid
+    )
+    assertEquals(
+      obtained = Type.BigInt.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("BigInt")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: boolean") {
+    assertEquals(
+      obtained = Type.Boolean.decode(OpenApi.fromBoolean(true)),
+      expected = true.valid
+    )
+    assertEquals(
+      obtained = Type.Boolean.decode(OpenApi.fromBoolean(false)),
+      expected = false.valid
+    )
+    assertEquals(
+      obtained = Type.Boolean.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("Boolean")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: double") {
+    assertEquals(
+      obtained = Type.Double.decode(OpenApi.fromDouble(0d)),
+      expected = 0d.valid
+    )
+    assertEquals(
+      obtained = Type.Double.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("Double")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: float") {
+    assertEquals(
+      obtained = Type.Float.decode(OpenApi.fromFloat(0f)),
+      expected = 0f.valid
+    )
+    assertEquals(
+      obtained = Type.Float.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("Float")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: int") {
+    assertEquals(
+      obtained = Type.Int.decode(OpenApi.fromInt(0)),
+      expected = 0.valid
+    )
+    assertEquals(
+      obtained = Type.Int.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("Int")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("decode: string") {
+    assertEquals(
+      obtained = Type.String.decode(OpenApi.fromString("foobar")),
+      expected = "foobar".valid
+    )
+    assertEquals(
+      obtained = Type.String.decode(OpenApi.fromInt(0)),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("String")),
+        OpenApi.fromInt(0)
+      ).invalid
+    )
+  }
+
+  test("decode: long") {
+    assertEquals(
+      obtained = Type.Long.decode(OpenApi.fromLong(0L)),
+      expected = 0L.valid
+    )
+    assertEquals(
+      obtained = Type.Long.decode(OpenApi.fromString("foobar")),
+      expected = Violation(
+        Constraint.withReference("type", OpenApi.fromString("Long")),
+        OpenApi.fromString("foobar")
+      ).invalid
+    )
+  }
+
+  test("encode: bigDecimal") {
+    assertEquals(
+      obtained = Type.BigDecimal.encode(BigDecimal(0)),
+      expected = OpenApi.fromBigDecimal(BigDecimal(0))
+    )
+  }
+
+  test("encode: bigInt") {
+    assertEquals(
+      obtained = Type.BigInt.encode(BigInt(0)),
+      expected = OpenApi.fromBigInt(BigInt(0))
+    )
+  }
+
+  test("encode: boolean") {
+    assertEquals(
+      obtained = Type.Boolean.encode(true),
+      expected = OpenApi.fromBoolean(true)
+    )
+    assertEquals(
+      obtained = Type.Boolean.encode(false),
+      expected = OpenApi.fromBoolean(false)
+    )
+  }
+
+  test("encode: double") {
+    assertEquals(
+      obtained = Type.Double.encode(0d),
+      expected = OpenApi.fromDouble(0d)
+    )
+  }
+
+  test("encode: float") {
+    assertEquals(
+      obtained = Type.Float.encode(0f),
+      expected = OpenApi.fromFloat(0f)
+    )
+  }
+
+  test("encode: int") {
+    assertEquals(
+      obtained = Type.Int.encode(0),
+      expected = OpenApi.fromInt(0)
+    )
+  }
+
+  test("encode: long") {
+    assertEquals(
+      obtained = Type.Long.encode(0L),
+      expected = OpenApi.fromLong(0L)
+    )
+  }
+
+  test("encode: string") {
+    assertEquals(
+      obtained = Type.String.encode("foobar"),
+      expected = OpenApi.fromString("foobar")
+    )
+  }
+
   test("parse: bigDecimal") {
     assertEquals(
       obtained = Type.BigDecimal.parse("0"),
