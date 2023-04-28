@@ -11,14 +11,13 @@ sealed abstract class Enumeration[A](
     val metadata: Enumeration.Metadata[A],
     val schema: Eval[Schema.Of[?, OpenApi.Primitive]],
     val values: Eval[Set[OpenApi.Primitive]]
-) extends Schema[A]:
+) extends Value[A]:
   self =>
   final override type Self[a] = Enumeration[a]
-  final override type Codec = OpenApi.Primitive
   final override type Metadata[a] = Enumeration.Metadata[a]
 
   final override def copy(metadata: Enumeration.Metadata[A]): Enumeration[A] =
-    new Enumeration[A](constraints, metadata, schema, values) { export self.{decode, encode} }
+    new Enumeration[A](constraints, metadata, schema, values) { export self.{decode, encode, parse, render} }
 
   final override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Enumeration[B] = ???
 
@@ -39,20 +38,25 @@ object Enumeration:
   object Metadata:
     def empty[A]: Enumeration.Metadata[A] = Metadata(None, None)
 
-  def apply[A, B](of: Eval[Schema.Of[A, OpenApi.Primitive]], values: Set[B], mapping: B => A): Enumeration[B] =
+  def apply[A, B](of: Eval[Value[A]], values: Set[B], mapping: B => A): Enumeration[B] =
     val lookup: Eval[A => Option[B]] = Eval.later(values.map(b => mapping(b) -> b).toMap.get(_))
     val openapis = of.map(schema => values.map(mapping).map(schema.encode))
 
     new Enumeration[B](Chain.empty, Metadata.empty, of, openapis):
       override def decode(openapi: OpenApi.Primitive): Validated[Violations, B] =
-        of.value.decode(openapi).andThen { key =>
-          Validated.fromOption(
-            lookup.value(key), {
-              val references = OpenApi.fromList(openapis.value.toList)
-              val constraint = Constraint("enumeration", references.some)
-              Violations.rootNec(Violation(constraint, of.value.encode(key)))
-            }
-          )
-        }
+        of.value
+          .decode(openapi)
+          .andThen: key =>
+            Validated.fromOption(
+              lookup.value(key), {
+                val references = OpenApi.fromList(openapis.value.toList)
+                val constraint = Constraint("enumeration", references.some)
+                Violations.rootNec(Violation(constraint, of.value.encode(key)))
+              }
+            )
 
       override def encode(b: B): OpenApi.Primitive = of.value.encode(mapping(b))
+
+      override def parse(value: String): Validated[Violations, B] = of.value.parse(value).andThen(???)
+
+      override def render(b: B): String = of.value.render(mapping(b))

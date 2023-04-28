@@ -11,7 +11,7 @@ sealed abstract class Dictionary[A](
     val key: Eval[Schema.Of[?, OpenApi.Primitive]],
     val metadata: Dictionary.Metadata[A],
     val schema: Eval[Schema[?]]
-) extends Schema[A] {
+) extends Schema[A]:
   self =>
 
   final override type Self[a] = Dictionary[a]
@@ -36,7 +36,6 @@ sealed abstract class Dictionary[A](
     case _                       => typeViolations("Object", openapi).invalid
 
   def decode(openapi: OpenApi.Object): Validated[Violations, A]
-}
 
 object Dictionary:
   final case class Metadata[A](description: Option[String], example: Option[A]) extends Schema.Metadata[A]:
@@ -61,4 +60,4 @@ object Dictionary:
           .map(_.toMap)
 
       override def encode(abs: Map[A, B]): OpenApi.Object =
-        OpenApi.Object(abs.map { case (key, value) => (ofKey.value.encode(key).print, ofSchema.value.encode(value)) })
+        OpenApi.Object(abs.map { case (key, value) => (ofKey.value.encode(key).render, ofSchema.value.encode(value)) })

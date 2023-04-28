@@ -32,7 +32,18 @@ enum Type[A]:
         .rootNec(Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi))
         .invalid
 
-  def parse(value: String): Validated[Violations, A] = ???
+  def parse(value: String): Option[A] =
+    val openapi = OpenApi.fromString(value)
+
+    this match
+      case Type.BigDecimal => openapi.toBigDecimal.map(_.value)
+      case Type.BigInt     => openapi.toBigInt.map(_.value)
+      case Type.Boolean    => openapi.toBoolean.map(_.value)
+      case Type.Double     => openapi.toDouble.map(_.value)
+      case Type.Float      => openapi.toFloat.map(_.value)
+      case Type.Int        => openapi.toInt.map(_.value)
+      case Type.Long       => openapi.toLong.map(_.value)
+      case Type.String     => openapi.render.some
 
   def encode(a: A): OpenApi.Primitive = self match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)
@@ -43,6 +54,8 @@ enum Type[A]:
     case Type.Int        => OpenApi.fromInt(a)
     case Type.Long       => OpenApi.fromLong(a)
     case Type.String     => OpenApi.fromString(a)
+
+  def render(a: A): String = encode(a).render
 
   override def toString: String = this match
     case BigDecimal => "BigDecimal"

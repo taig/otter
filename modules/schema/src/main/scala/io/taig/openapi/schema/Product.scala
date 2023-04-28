@@ -6,63 +6,62 @@ import cats.data.{Chain, Validated}
 import io.taig.openapi.OpenApi
 import io.taig.validation.{Constraint, Validation}
 
-sealed abstract class Product[A](
+sealed abstract class Product[A, B](
     val constraints: Chain[Constraint[OpenApi]],
-    val fields: Chain[Field[?]],
-    val metadata: Product.Metadata[A]
-) extends Schema[A]:
+    val fields: Chain[Field[A, ?]],
+    val metadata: Product.Metadata[B]
+) extends Schema[B]:
   self =>
 
   final override type Codec = OpenApi.Object
-  final override type Self[a] = Product[a]
+  final override type Self[a] = Product[A, a]
   final override type Metadata[a] = Product.Metadata[a]
 
   object nulls extends Attribute[Product.Null](metadata.nulls):
-    override def updated(f: Product.Null => Product.Null): Product.Metadata[A] =
+    override def updated(f: Product.Null => Product.Null): Product.Metadata[B] =
       metadata.copy(nulls = f(metadata.nulls))
-    def show: Product[A] = set(Product.Null.Show)
-    def hide: Product[A] = set(Product.Null.Hide)
+    def show: Product[A, B] = set(Product.Null.Show)
+    def hide: Product[A, B] = set(Product.Null.Hide)
 
-  final def product[B](b: Product[B]): Product[(A, B)] = new Product[(A, B)](
-    self.constraints ++ b.constraints,
-    self.fields ++ b.fields,
+  final def product[C](c: Product[A, C]): Product[A, (B, C)] = new Product[A, (B, C)](
+    self.constraints ++ c.constraints,
+    self.fields ++ c.fields,
     metadata.flatMap(_ => None)
   ):
-    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, (A, B))] =
+    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, (B, C))] =
       self.decodeWithRemainders(openapi) match
-        case Validated.Valid((remainders, a)) => b.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+        case Validated.Valid((remainders, a)) => c.decodeWithRemainders(remainders).map(_.tupleLeft(a))
         case Validated.Invalid(violations) =>
-          b.decodeWithRemainders(openapi).fold(violations merge _, _ => violations).invalid
+          c.decodeWithRemainders(openapi).fold(violations merge _, _ => violations).invalid
+    override def encode(bc: (B, C)): OpenApi.Object = self.encode(bc._1) ++ c.encode(bc._2)
 
-    override def encode(ab: (A, B)): OpenApi.Object = self.encode(ab._1) ++ b.encode(ab._2)
+  final transparent inline infix def zip[C](c: Product[A, C]): Product[A, ?] = inline (this, c) match
+    case (b: Product[A, Void], c: Product[A, C]) => b.product(c).imap[C] { case (_, c) => c }(c => (Void, c))
+    case (b: Product[A, B], c: Product[A, Void]) => b.product(c).imap[B] { case (c, _) => c }(c => (c, Void))
+    case (a: Product[A, Tuple], b) =>
+      a.product(b).imap[Tuple.Append[B, C]] { case (b, c) => b :* c }(bc => (bc.init, bc.last.asInstanceOf[C]))
+    case (b, c) => b.product(c)
 
-  final transparent inline infix def zip[B](b: Product[B]): Product[?] = inline (this, b) match
-    case (a: Product[Void], b: Product[B]) => a.product(b).imap[B] { case (_, b) => b }(b => (Void, b))
-    case (a: Product[A], b: Product[Void]) => a.product(b).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (a: Product[Tuple], b) =>
-      a.product(b).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
-    case (a, b) => a.product(b)
+  final transparent inline def :*[C](field: Field[A, C]): Product[A, ?] = this zip field.toProduct
 
-  final transparent inline def :*[B](field: Field[B]): Product[?] = this zip field.toProduct
+  final override def copy(metadata: Product.Metadata[B]): Product[A, B] =
+    new Product[A, B](constraints, fields, metadata) { export self.{decodeWithRemainders, encode} }
 
-  final override def copy(metadata: Product.Metadata[A]): Product[A] =
-    new Product[A](constraints, fields, metadata) { export self.{decodeWithRemainders, encode} }
-
-  final override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Product[B] =
-    new Product[B](
+  final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Product[A, C] =
+    new Product[A, C](
       constraints ++ validation.constraints.map(_.map(self.encode)),
       fields,
       metadata.flatMap(validation.run(_).toOption)
     ):
-      override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
+      override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, C)] =
         self.decodeWithRemainders(openapi).andThen(_.traverse(andThenValidate(validation, self.encode)))
-      override def encode(b: B): self.Codec = self.encode(g(b))
+      override def encode(b: C): self.Codec = self.encode(g(b))
 
-  final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
+  final override def decode(openapi: OpenApi): Validated[Violations, B] = openapi match
     case openapi: OpenApi.Object => decodeWithRemainders(openapi).map(_._2)
     case _                       => typeViolations("Object", openapi).invalid
 
-  def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)]
+  def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)]
 
 object Product:
   enum Null:
@@ -91,12 +90,12 @@ object Product:
   object Metadata:
     def empty[A]: Product.Metadata[A] = Metadata(None, None, Null.Default)
 
-  val Empty: Product[Void] = new Product[Void](Chain.empty, Chain.empty, Metadata.empty):
+  def empty[A]: Product[A, Void] = new Product[A, Void](Chain.empty, Chain.empty, Metadata.empty):
     override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Void)] =
       (openapi, Void).valid
     override def encode(a: Void): OpenApi.Object = OpenApi.Object.Empty
 
-  def fromField[A](field: Field[A]): Product[A] = new Product[A](Chain.empty, Chain.one(field), Metadata.empty):
-    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, A)] =
+  def apply[A, B](field: Field[A, B]): Product[A, B] = new Product[A, B](Chain.empty, Chain.one(field), Metadata.empty):
+    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
       field.decode(openapi)
-    override def encode(a: A): OpenApi.Object = field.encode(a, metadata.nulls)
+    override def encode(a: B): OpenApi.Object = field.encode(a, metadata.nulls)

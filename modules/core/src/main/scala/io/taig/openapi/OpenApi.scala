@@ -160,7 +160,7 @@ object OpenApi:
       case String("false")  => Boolean.False.some
       case _                => none
 
-    final def print: SString = this match
+    final def render: SString = this match
       case OpenApi.BigDecimal(value) => value.toString()
       case OpenApi.BigInt(value)     => value.toString()
       case OpenApi.Boolean(value)    => SString.valueOf(value)

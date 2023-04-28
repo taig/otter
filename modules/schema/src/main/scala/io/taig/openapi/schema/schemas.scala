@@ -16,4 +16,7 @@ object schemas:
   val string: Primitive[String] = Primitive(Type.String)
   val uuid: Primitive[UUID] = string.ivalidate(validations.parser.uuid)(_.toString).format.as("uuid")
 
-  def field[A](name: String, schema: => Schema[A]): Field[A] = Field(name, Eval.later(schema))
+  def field[A, B](name: A, key: => Value[A], schema: => Schema[B]): Field[A, B] =
+    Field(name, Eval.later(key), Eval.later(schema))
+  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
+  def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)

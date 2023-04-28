@@ -9,10 +9,9 @@ abstract class Primitive[A](
     val constraints: Chain[Constraint[OpenApi]],
     val metadata: Primitive.Metadata[A],
     val tpe: Type[?]
-) extends Schema[A]:
+) extends Value[A]:
   self =>
 
-  final override type Codec = OpenApi.Primitive
   final override type Self[a] = Primitive[a]
   final override type Metadata[a] = Primitive.Metadata[a]
 
@@ -21,7 +20,7 @@ abstract class Primitive[A](
       metadata.copy(format = f(value))
 
   final override def copy(metadata: Primitive.Metadata[A]): Primitive[A] =
-    new Primitive[A](constraints, metadata, tpe) { export self.{decode, encode, parse} }
+    new Primitive[A](constraints, metadata, tpe) { export self.{decode, encode, parse, render} }
 
   final override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Primitive[B] = new Primitive[B](
     constraints ++ validation.constraints.map(_.map(self.encode)),
@@ -33,8 +32,7 @@ abstract class Primitive[A](
     override def encode(b: B): self.Codec = self.encode(g(b))
     override def parse(value: String): Validated[Violations, B] =
       self.parse(value).andThen(andThenValidate(validation, self.encode))
-
-  def parse(value: String): Validated[Violations, A]
+    override def render(b: B): String = self.render(g(b))
 
 object Primitive:
   final case class Metadata[A](
@@ -57,4 +55,5 @@ object Primitive:
       case OpenApi.Null               => nonNullViolations("Primitive").invalid
       case _                          => typeViolations("Primitive", openapi).invalid
     override def encode(a: A): OpenApi.Primitive = of.encode(a)
-    override def parse(value: String): Validated[Violations, A] = of.parse(value)
+    override def parse(value: String): Validated[Violations, A] = ???
+    override def render(a: A): String = ???
