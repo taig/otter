@@ -19,12 +19,12 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
 
   def toSum: Sum[A, B] = Sum(this)
 
-  def decode(openapi: OpenApi, discriminator: Discriminator): Validated[Violations, Option[B]] =
+  def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] =
     def refine[A](tpe: String)(f: OpenApi => Option[A]): Validation[OpenApi, OpenApi, OpenApi, A] =
       validations.refine(tpe)(f).mapReference(OpenApi.fromString)
 
     discriminator match
-      case Discriminator.Nested(identifier, value) =>
+      case Sum.Discriminator.Nested(identifier, value) =>
         refine("OpenApi.Object")(_.asObject).run(openapi).leftMap(Violations.root).andThen { obj =>
           Validated
             .fromOption(
@@ -50,18 +50,18 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
               else none[B].valid
             }
         }
-      case Discriminator.Merged(identifier) => ???
-      case Discriminator.Keyed              => ???
-      case Discriminator.None               => schema.value.decode(openapi).toOption.valid
+      case Sum.Discriminator.Merged(identifier) => ???
+      case Sum.Discriminator.Keyed              => ???
+      case Sum.Discriminator.None               => schema.value.decode(openapi).toOption.valid
 
-  def encode(b: B, discriminator: Discriminator): OpenApi =
+  def encode(b: B, discriminator: Sum.Discriminator): OpenApi =
     discriminator match
-      case Discriminator.Nested(identifier, value) =>
+      case Sum.Discriminator.Nested(identifier, value) =>
         OpenApi.obj(identifier -> key.value.encode(name), value -> schema.value.encode(b))
-      case Discriminator.Merged(identifier) =>
+      case Sum.Discriminator.Merged(identifier) =>
         schema.value.encode(b).asObject match
           case Some(obj) if obj.contains(identifier) => OpenApi.Object.Empty
           case Some(obj)                             => obj.deepMerge(OpenApi.obj(identifier -> key.value.encode(name)))
           case None                                  => OpenApi.Object.Empty
-      case Discriminator.Keyed => OpenApi.obj(renderName -> schema.value.encode(b))
-      case Discriminator.None  => schema.value.encode(b)
+      case Sum.Discriminator.Keyed => OpenApi.obj(renderName -> schema.value.encode(b))
+      case Sum.Discriminator.None  => schema.value.encode(b)

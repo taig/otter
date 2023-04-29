@@ -1,5 +1,6 @@
 package io.taig.openapi.schema
 
+import cats.Eq
 import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
@@ -12,7 +13,7 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   final override type Codec = OpenApi
 
   def branches: NonEmptyChain[Branch[A, ?]]
-  def discriminator: Discriminator
+  def discriminator: Sum.Discriminator
 
   final def orElse[C](sum: Sum[A, C]): Sum[A, B + C] =
     Sum.OrElse(this, sum, none, discriminator, none)
@@ -27,10 +28,27 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   def decodeOption(openapi: OpenApi): Validated[Violations, Option[B]]
 
 object Sum:
+  enum Discriminator:
+    case Nested(identifier: String, value: String)
+    case Merged(identifier: String)
+    case Keyed
+    case None
+
+  object Discriminator:
+    object Nested:
+      val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
+
+    object Merged:
+      val Default: Discriminator.Merged = Merged(identifier = "type")
+
+    val Default: Discriminator = Nested.Default
+
+    given Eq[Discriminator] = Eq.fromUniversalEquals
+
   final case class Root[A, B](
       branch: Branch[A, B],
       description: Option[String],
-      discriminator: Discriminator,
+      discriminator: Sum.Discriminator,
       example: Option[B]
   ) extends Sum[A, B]:
     override def branches: NonEmptyChain[Branch[A, ?]] = NonEmptyChain.one(branch)
@@ -45,7 +63,7 @@ object Sum:
       left: Sum[A, B],
       right: Sum[A, C],
       description: Option[String],
-      discriminator: Discriminator,
+      discriminator: Sum.Discriminator,
       example: Option[B + C]
   ) extends Sum[A, B + C]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
