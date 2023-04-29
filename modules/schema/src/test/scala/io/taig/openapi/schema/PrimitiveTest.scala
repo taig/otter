@@ -18,7 +18,7 @@ final class PrimitiveTest extends FunSuite:
       obtained = string.decode(OpenApi.Null),
       expected = Violations
         .rootNec(
-          Violation(Constraint.withReference("required", OpenApi.fromString("OpenApi.Primitive")), OpenApi.Null)
+          Violation(Constraint.withReference("type", OpenApi.fromString("OpenApi.Primitive")), OpenApi.Null)
         )
         .invalid
     )

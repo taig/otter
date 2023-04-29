@@ -37,40 +37,40 @@ final class FieldTest extends FunSuite:
 
   test("encode") {
     assertEquals(
-      obtained = field("foo", int).encode(42, Product.Null.Show),
+      obtained = field("foo", int).encode(42, Product.Nulls.Show),
       expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
     )
   }
 
   test("encode: show nulls") {
     assertEquals(
-      obtained = field("foo", int).optional.showNulls.encode(42.some, Product.Null.Show),
+      obtained = field("foo", int).optional.showNulls.encode(42.some, Product.Nulls.Show),
       expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
     )
     assertEquals(
-      obtained = field("foo", int).optional.showNulls.encode(none, Product.Null.Show),
+      obtained = field("foo", int).optional.showNulls.encode(none, Product.Nulls.Show),
       expected = OpenApi.obj("foo" -> OpenApi.Null)
     )
   }
 
   test("encode: hide nulls") {
     assertEquals(
-      obtained = field("foo", int).optional.hideNulls.encode(42.some, Product.Null.Show),
+      obtained = field("foo", int).optional.hideNulls.encode(42.some, Product.Nulls.Show),
       expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
     )
     assertEquals(
-      obtained = field("foo", int).optional.hideNulls.encode(none, Product.Null.Show),
+      obtained = field("foo", int).optional.hideNulls.encode(none, Product.Nulls.Show),
       expected = OpenApi.Object.Empty
     )
   }
 
   test("encode: inherit nulls") {
     assertEquals(
-      obtained = field("foo", int).optional.inheritNulls.encode(none, Product.Null.Show),
+      obtained = field("foo", int).optional.inheritNulls.encode(none, Product.Nulls.Show),
       expected = OpenApi.obj("foo" -> OpenApi.Null)
     )
     assertEquals(
-      obtained = field("foo", int).optional.inheritNulls.encode(none, Product.Null.Hide),
+      obtained = field("foo", int).optional.inheritNulls.encode(none, Product.Nulls.Hide),
       expected = OpenApi.Object.Empty
     )
   }
