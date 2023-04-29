@@ -4,7 +4,7 @@ import cats.Show
 import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Violation}
+import io.taig.validation.{Constraint, Validation, Violation}
 
 enum Type[A]:
   self =>
@@ -18,7 +18,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  def decode(openapi: OpenApi.Primitive): Validated[Violation[OpenApi, OpenApi], A] = (self, openapi) match
+  final def decode(openapi: OpenApi.Primitive): Validated[Violation[OpenApi, OpenApi], A] = (self, openapi) match
     case (Type.BigDecimal, OpenApi.BigDecimal(value)) => value.valid
     case (Type.BigInt, OpenApi.BigInt(value))         => value.valid
     case (Type.Boolean, OpenApi.Boolean(value))       => value.valid

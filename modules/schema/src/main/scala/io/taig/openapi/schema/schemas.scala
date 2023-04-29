@@ -9,14 +9,14 @@ object schemas:
   val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
   val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
   val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-  val double: Primitive[Double] = Primitive(Type.Double).format.as("double")
-  val int: Primitive[Int] = Primitive(Type.Int).format.as("int32")
-  val float: Primitive[Float] = Primitive(Type.Float).format.as("float")
-  val long: Primitive[Long] = Primitive(Type.Long).format.as("int64")
+//  val double: Primitive[Double] = Primitive(Type.Double).format.as("double")
+//  val int: Primitive[Int] = Primitive(Type.Int).format.as("int32")
+//  val float: Primitive[Float] = Primitive(Type.Float).format.as("float")
+//  val long: Primitive[Long] = Primitive(Type.Long).format.as("int64")
   val string: Primitive[String] = Primitive(Type.String)
-  val uuid: Primitive[UUID] = string.ivalidate(validations.parser.uuid)(_.toString).format.as("uuid")
-
-  def field[A, B](name: A, key: => Value[A], schema: => Schema[B]): Field[A, B] =
-    Field(name, Eval.later(key), Eval.later(schema))
-  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
-  def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)
+//  val uuid: Primitive[UUID] = string.ivalidate(validations.parser.uuid)(_.toString).format.as("uuid")
+//
+//  def field[A, B](name: A, key: => Value[A], schema: => Schema[B]): Field[A, B] =
+//    Field(name, Eval.later(key), Eval.later(schema))
+//  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
+//  def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)

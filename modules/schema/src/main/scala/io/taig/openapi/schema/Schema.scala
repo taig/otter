@@ -8,31 +8,17 @@ abstract class Schema[A]:
   self =>
   type Self[a] <: Schema[a] { type Self[a] = self.Self[a] }
   type Codec <: OpenApi
-  type Metadata[a] <: Schema.Metadata[a] { type Self[a] <: Metadata[a] }
-
-  abstract class Attribute[B](val value: B):
-    def updated(f: B => B): Metadata[A]
-    final def modify(f: B => B): Self[A] { type Codec = self.Codec } = self.copy(updated(f))
-    def set(value: B): Self[A] { type Codec = self.Codec } = modify(_ => value)
-
-  object Attribute:
-    abstract class Optional[B](value: Option[B]) extends Attribute[Option[B]](value):
-      def as(value: B): Self[A] { type Codec = self.Codec } = modify(_ => Some(value))
-      def clear: Self[A] { type Codec = self.Codec } = modify(_ => None)
-
-  def metadata: Metadata[A]
-
-  def copy(metadata: Metadata[A]): Self[A] { type Codec = self.Codec }
 
   def constraints: Chain[Constraint[OpenApi]]
 
-  object description extends Attribute.Optional[String](metadata.description):
-    override def updated(f: Option[String] => Option[String]): Metadata[A] =
-      metadata.updated(f(value), metadata.example)
+  def description: Option[String]
+  def modifyDescription(f: Option[String] => Option[String]): Self[A]
+  final def setDescription(value: Option[String]): Self[A] = modifyDescription(_ => value)
+  final def withDescription(value: String): Self[A] = setDescription(Some(value))
+  final def withoutDescription: Self[A] = setDescription(None)
 
-  object example extends Attribute.Optional[A](metadata.example):
-    override def updated(f: Option[A] => Option[A]): Metadata[A] =
-      metadata.updated(metadata.description, f(value))
+  def example: Option[A]
+  def modifyExample(f: Option[A] => Option[A]): Self[A]
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
@@ -50,11 +36,3 @@ abstract class Schema[A]:
 
 object Schema:
   type Of[A, B <: OpenApi] = Schema[A] { type Codec = B }
-
-  trait Metadata[A]:
-    type Self[a] <: Schema.Metadata[a]
-    def description: Option[String]
-    def example: Option[A]
-    def map[B](f: A => B): Self[B]
-    def flatMap[B](f: A => Option[B]): Self[B]
-    def updated(description: Option[String], example: Option[A]): Self[A]
