@@ -19,6 +19,9 @@ abstract class Schema[A]:
 
   def example: Option[A]
   def modifyExample(f: Option[A] => Option[A]): Self[A]
+  final def setExample(example: Option[A]): Self[A] = modifyExample(_ => example)
+  final def withExample(example: A): Self[A] = setExample(Some(example))
+  final def withoutExample: Self[A] = setExample(None)
 
   def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
 
