@@ -2,7 +2,7 @@ package io.taig.openapi.schema
 
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Violation}
+import io.taig.openapi.validation.{Constraint, Violation}
 import munit.FunSuite
 
 final class TypeTest extends FunSuite:

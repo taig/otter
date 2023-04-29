@@ -1,4 +1,4 @@
-package io.taig.validation
+package io.taig.openapi.validation
 
 final case class Violation[+Ref, +Act](constraint: Constraint[Ref], actual: Act):
   def modifyConstraint[Ref2](f: Constraint[Ref] => Constraint[Ref2]): Violation[Ref2, Act] =

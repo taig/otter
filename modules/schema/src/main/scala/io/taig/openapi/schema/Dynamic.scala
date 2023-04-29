@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Validation}
+import io.taig.openapi.validation.{Constraint, Validation}
 
 // TODO fan out into subclasses to have a Value for primitive variants
 sealed abstract class Dynamic[A] extends Schema[A]:

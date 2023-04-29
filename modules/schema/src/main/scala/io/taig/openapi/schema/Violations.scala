@@ -3,8 +3,8 @@ package io.taig.openapi.schema
 import cats.Semigroup
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.syntax.all.*
+import io.taig.openapi.validation.Violation
 import io.taig.openapi.{History, OpenApi}
-import io.taig.validation.Violation
 
 import scala.collection.immutable.SortedMap
 

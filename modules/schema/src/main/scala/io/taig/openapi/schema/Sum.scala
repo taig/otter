@@ -4,7 +4,7 @@ import cats.Eq
 import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Validation}
+import io.taig.openapi.validation.{Constraint, Validation}
 
 sealed abstract class Sum[A, B] extends Schema[B]:
   self =>

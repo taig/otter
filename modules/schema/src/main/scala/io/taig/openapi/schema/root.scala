@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Validation, Violation}
+import io.taig.openapi.validation.{Constraint, Validation, Violation}
 
 private def nonNullViolations(tpe: String): Violations =
   val constraint = Constraint("required", OpenApi.fromString(s"OpenApi.$tpe").some)

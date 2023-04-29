@@ -3,8 +3,8 @@ package io.taig.openapi.schema
 import cats.data.Validated
 import cats.syntax.all.*
 import cats.{Eq, Eval}
+import io.taig.openapi.validation.{Constraint, Violation}
 import io.taig.openapi.{History, OpenApi}
-import io.taig.validation.{Constraint, Violation}
 
 sealed abstract class Field[A, B]:
   self =>

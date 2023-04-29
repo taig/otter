@@ -5,8 +5,7 @@ import cats.Eq
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Validation, Violation}
-import io.taig.validation.validations
+import io.taig.openapi.validation.{validations, Constraint, Validation, Violation}
 
 final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]):
   def renderName: String = key.value.render(name)

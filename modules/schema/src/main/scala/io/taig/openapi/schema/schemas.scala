@@ -1,7 +1,7 @@
 package io.taig.openapi.schema
 
 import cats.Eval
-import io.taig.validation.validations
+import io.taig.openapi.validation.validations
 
 import java.util.UUID
 

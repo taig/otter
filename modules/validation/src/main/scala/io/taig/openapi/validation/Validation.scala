@@ -1,4 +1,4 @@
-package io.taig.validation
+package io.taig.openapi.validation
 
 import cats.Applicative
 import cats.arrow.Arrow

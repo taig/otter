@@ -2,8 +2,8 @@ package io.taig.openapi.schema
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
+import io.taig.openapi.validation.{Constraint, Validation}
 import io.taig.openapi.{schema, OpenApi}
-import io.taig.validation.{Constraint, Validation}
 
 abstract class Primitive[A] extends Value[A]:
   self =>

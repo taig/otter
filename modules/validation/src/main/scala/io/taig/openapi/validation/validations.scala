@@ -1,4 +1,4 @@
-package io.taig.validation
+package io.taig.openapi.validation
 
 import cats.data.Chain
 import cats.syntax.all.*

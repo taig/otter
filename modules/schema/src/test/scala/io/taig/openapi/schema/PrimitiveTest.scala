@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
-import io.taig.validation.{validations, Constraint, Violation}
+import io.taig.openapi.validation.{validations, Constraint, Violation}
 import munit.FunSuite
 
 import java.util.UUID

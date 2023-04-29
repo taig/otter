@@ -4,7 +4,7 @@ import cats.Eval
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.validation.{Constraint, Validation, Violation}
+import io.taig.openapi.validation.{Constraint, Validation, Violation}
 
 sealed abstract class Enumeration[A] extends Value[A]:
   self =>
