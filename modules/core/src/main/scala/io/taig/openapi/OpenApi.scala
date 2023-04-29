@@ -4,6 +4,7 @@ import cats.data.Chain
 import cats.syntax.all.*
 
 import java.lang.String as SString
+import scala.collection.immutable.SeqMap
 import scala.{
   BigDecimal as SBigDecimal,
   BigInt as SBigInt,
@@ -202,30 +203,29 @@ object OpenApi:
     val Empty: OpenApi.Array[Nothing] = OpenApi.Array(Vector.empty)
     def one[A <: OpenApi](value: A): OpenApi.Array[A] = Array(Vector(value))
 
-  final case class Object(toMap: Map[SString, OpenApi]) extends Value:
+  final case class Object(toSeqMap: SeqMap[SString, OpenApi]) extends Value:
+    def toMap: Map[SString, OpenApi] = toSeqMap
     def isEmpty: SBoolean = toMap.isEmpty
     def contains(key: SString): SBoolean = toMap.contains(key)
     def get(key: SString): Option[OpenApi] = toMap.get(key)
     def getOrNull(key: SString): OpenApi = get(key).getOrElse(Null)
-    def remove(key: SString): OpenApi.Object = Object(toMap.removed(key))
+    def remove(key: SString): OpenApi.Object = Object(toSeqMap.removed(key))
     def keys: Set[SString] = toMap.keySet
     def values: List[OpenApi] = toMap.values.toList
-    def ++(obj: OpenApi.Object): OpenApi.Object = Object(toMap ++ obj.toMap)
-    def toChain: Chain[(SString, OpenApi)] = Chain.fromIterableOnce(toMap)
+    def ++(obj: OpenApi.Object): OpenApi.Object = Object(toSeqMap ++ obj.toSeqMap)
+    def toChain: Chain[(SString, OpenApi)] = Chain.fromIterableOnce(toSeqMap)
     def toList: List[(SString, OpenApi)] = toMap.toList
 
-    def deepMerge(obj: OpenApi.Object): OpenApi.Object = Object {
-      obj.toMap.foldLeft(this.toMap) { case (result, (key, value)) =>
-        result.updatedWith(key) {
-          case Some(current) => Some(current.merge(value))
-          case None          => Some(value)
+    def deepMerge(obj: OpenApi.Object): OpenApi.Object = Object:
+        obj.toSeqMap.foldLeft(this.toSeqMap) { case (result, (key, value)) =>
+          result.updatedWith(key):
+            case Some(current) => Some(current.merge(value))
+            case None          => Some(value)
         }
-      }
-    }
 
   object Object:
-    val Empty: OpenApi.Object = Object(Map.empty)
-    def one(key: SString, value: OpenApi): OpenApi.Object = Object(Map(key -> value))
+    val Empty: OpenApi.Object = Object(SeqMap.empty)
+    def one(key: SString, value: OpenApi): OpenApi.Object = Object(SeqMap(key -> value))
 
   def fromBigDecimal(value: SBigDecimal): OpenApi.Primitive = BigDecimal(value)
   def fromBigInt(value: SBigInt): OpenApi.Primitive = BigInt(value)
@@ -234,7 +234,8 @@ object OpenApi:
   def fromFloat(value: SFloat): OpenApi.Primitive = Float(value)
   def fromInt(value: SInt): OpenApi.Primitive = Int(value)
   def fromLong(value: SLong): OpenApi.Primitive = Long(value)
-  def fromMap(values: Map[SString, OpenApi]): OpenApi.Object = Object(values)
+  def fromMap(values: Map[SString, OpenApi]): OpenApi.Object = Object(values.to(SeqMap))
+  def fromSeqMap(values: SeqMap[SString, OpenApi]): OpenApi.Object = Object(values)
   def fromShort(value: Short): OpenApi.Primitive = fromInt(value.toInt)
   def fromByte(value: Byte): OpenApi.Primitive = fromInt(value.toInt)
   def fromString(value: SString): OpenApi.Primitive = String(value)
@@ -244,4 +245,4 @@ object OpenApi:
   def fromOption[A <: OpenApi](value: Option[A]): OpenApi.Null.type | A = value.getOrElse(Null)
 
   def arr[A <: OpenApi](values: A*): OpenApi.Array[A] = Array(values.toVector)
-  def obj(values: (SString, OpenApi)*): OpenApi.Object = Object(values.toMap)
+  def obj(values: (SString, OpenApi)*): OpenApi.Object = Object(values.to(SeqMap))

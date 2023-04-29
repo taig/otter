@@ -41,10 +41,17 @@ object Sum:
       branch.decode(openapi, discriminator)
     override def encode(b: B): OpenApi = branch.encode(b, discriminator)
 
-  final case class OrElse[A, B, C](left: Sum[A, B], right: Sum[A, C], description: Option[String], discriminator: Discriminator, example: Option[B + C]) extends Sum[A, B + C]:
+  final case class OrElse[A, B, C](
+      left: Sum[A, B],
+      right: Sum[A, C],
+      description: Option[String],
+      discriminator: Discriminator,
+      example: Option[B + C]
+  ) extends Sum[A, B + C]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
     override def branches: NonEmptyChain[Branch[A, ?]] = left.branches ++ right.branches
-    override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] = copy(description = f(description))
+    override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] =
+      copy(description = f(description))
     override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
     override def decodeOption(openapi: OpenApi): Validated[Violations, Option[B + C]] =
       left.decodeOption(openapi).map(_.map(_.asLeft)).orElse(right.decodeOption(openapi).map(_.map(_.asRight)))

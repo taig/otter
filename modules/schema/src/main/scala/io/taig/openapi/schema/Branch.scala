@@ -5,7 +5,6 @@ import cats.Eq
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.openapi.schema.schemas.*
 import io.taig.validation.{Constraint, Validation, Violation}
 import io.taig.validation.validations
 
