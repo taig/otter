@@ -14,6 +14,7 @@ abstract class Primitive[A] extends Value[A]:
   def modifyFormat(f: Option[String] => Option[String]): Primitive[A]
   final def setFormat(format: Option[String]): Primitive[A] = modifyFormat(_ => format)
   final def withFormat(format: String): Primitive[A] = setFormat(Some(format))
+  final def withoutFormat: Primitive[A] = setFormat(None)
 
   def tpe: Type[?]
 

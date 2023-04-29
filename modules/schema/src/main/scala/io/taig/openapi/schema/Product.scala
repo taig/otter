@@ -16,9 +16,9 @@ sealed abstract class Product[A, B] extends Schema[B]:
 
   def nulls: Product.Nulls
   def modifyNulls(f: Product.Nulls => Product.Nulls): Product[A, B]
-  def withNulls(nulls: Product.Nulls): Product[A, B] = modifyNulls(_ => nulls)
-  def showNulls: Product[A, B] = withNulls(Product.Nulls.Show)
-  def hideNulls: Product[A, B] = withNulls(Product.Nulls.Hide)
+  final def withNulls(nulls: Product.Nulls): Product[A, B] = modifyNulls(_ => nulls)
+  final def showNulls: Product[A, B] = withNulls(Product.Nulls.Show)
+  final def hideNulls: Product[A, B] = withNulls(Product.Nulls.Hide)
 
   final def product[C](right: Product[A, C]): Product[A, (B, C)] = Product.Zip(this, right, none, none, nulls)
 
@@ -30,6 +30,8 @@ sealed abstract class Product[A, B] extends Schema[B]:
     case (b, c) => b.product(c)
 
   final transparent inline def :*[C](field: Field[A, C]): Product[A, ?] = this zip field.toProduct
+
+  // TODO gimap / as
 
   final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Product[A, C] =
     Product.Validate(this, validation, g, example.flatMap(validation.run(_).toOption))
