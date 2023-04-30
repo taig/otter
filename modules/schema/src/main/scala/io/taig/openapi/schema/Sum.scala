@@ -15,10 +15,10 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   def branches: NonEmptyChain[Branch[A, ?]]
   def discriminator: Sum.Discriminator
 
-  final def orElse[C](sum: Sum[A, C]): Sum[A, B + C] =
+  final infix def orElse[C](sum: Sum[A, C]): Sum[A, B + C] =
     Sum.OrElse(this, sum, none, discriminator, none)
 
-  final def :+[C](branch: Branch[A, C]): Sum[A, B + C] = orElse(branch.toSum)
+  final infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = orElse(branch.toSum)
 
   final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Sum[A, C] =
     Sum.Validate(this, validation, g)

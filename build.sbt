@@ -82,10 +82,10 @@ lazy val validation = module(identifier = Some("validation"))
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(
-//    Compile / sourceGenerators += Def.task {
-//      val sumInstances = (Compile / sourceManaged).value / "SumInstances.scala"
-//      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".openapi.schema"))
-//      Seq(sumInstances)
-//    }.taskValue
+    Compile / sourceGenerators += Def.task {
+      val sumInstances = (Compile / sourceManaged).value / "SumInstances.scala"
+      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".openapi.schema"))
+      Seq(sumInstances)
+    }.taskValue
   )
   .dependsOn(core % "compile->compile;test->test", validation)

@@ -38,7 +38,7 @@ object Evidence:
     def to(a: A): Out
     def from(out: Out): A
 
-  object Sum:
+  object Sum extends SumInstances:
     type Aux[A, B] = Evidence.Sum[A] { type Out = B }
     inline def apply[A](using evidence: Evidence.Sum[A]): evidence.type = evidence
     inline def instance[A, B](f: A => B)(g: B => A): Evidence.Sum.Aux[A, B] = new Sum[A]:
@@ -49,5 +49,3 @@ object Evidence:
     given sum1[A, B <: A](using
         mirror: Mirror.SumOf[A] { type MirroredElemTypes = B *: EmptyTuple }
     ): Evidence.Sum.Aux[A, B] = instance[A, B](_.asInstanceOf[B])(identity)
-
-//    given sumN[A, B, C]: Evidence.Sum.Aux[A, B] = ???

@@ -26,12 +26,22 @@ final class SumTest extends FunSuite:
       branch("dog", dog)
   ).as[Animal]
 
-  test("as: enum 1") {
+  test("as: foo") {
     assertEquals(
       obtained = foo.encode(Foo.Bar("foobar")),
       expected = OpenApi.obj(
         "type" -> OpenApi.fromString("bar"),
         "value" -> OpenApi.obj("name" -> OpenApi.fromString("foobar"))
+      )
+    )
+  }
+
+  test("as: animal") {
+    assertEquals(
+      obtained = animal.encode(Animal.Dog(goodBoy = true)),
+      expected = OpenApi.obj(
+        "type" -> OpenApi.fromString("dog"),
+        "value" -> OpenApi.obj("goodBoy" -> OpenApi.fromBoolean(true))
       )
     )
   }
