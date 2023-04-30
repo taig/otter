@@ -31,7 +31,7 @@ sealed abstract class Product[A, B] extends Schema[B]:
 
   final transparent inline def :*[C](field: Field[A, C]): Product[A, ?] = this zip field.toProduct
 
-  // TODO gimap / as
+  final def as[C](using evidence: Evidence.Product.Aux[B, C]): Product[A, C] = imap(evidence.to)(evidence.from)
 
   final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Product[A, C] =
     Product.Validate(this, validation, g, example.flatMap(validation.run(_).toOption))
