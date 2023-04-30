@@ -23,7 +23,7 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Sum[A, C] =
     Sum.Validate(this, validation, g)
 
-  final def as[C](using evidence: Evidence.Sum.Aux[B, C]): Sum[A, C] = imap(evidence.to)(evidence.from)
+  final def as[C](using evidence: Evidence.Sum.Aux[C, B]): Sum[A, C] = imap(evidence.from)(evidence.to)
 
   final override def decode(openapi: OpenApi): Validated[Violations, B] =
     decodeOption(openapi).andThen(_.toValid(typeViolations("Sum", openapi)))

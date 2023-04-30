@@ -20,3 +20,8 @@ object schemas:
     Field(name, Eval.later(key), Eval.later(schema))
   def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
   def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)
+
+  def branch[A, B](name: A, key: => Value[A], schema: => Schema[B]): Branch[A, B] =
+    Branch(name, Eval.later(key), Eval.later(schema))
+  def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
+  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)

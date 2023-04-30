@@ -50,4 +50,4 @@ object Evidence:
         mirror: Mirror.SumOf[A] { type MirroredElemTypes = B *: EmptyTuple }
     ): Evidence.Sum.Aux[A, B] = instance[A, B](_.asInstanceOf[B])(identity)
 
-    given sumN[A, B, C]: Evidence.Sum.Aux[A, B] = ???
+//    given sumN[A, B, C]: Evidence.Sum.Aux[A, B] = ???
