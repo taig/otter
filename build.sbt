@@ -55,7 +55,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, validation, schema)
+  .aggregate(core, validation, schema, http)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -89,3 +89,13 @@ lazy val schema = module(identifier = Some("schema"))
     }.taskValue
   )
   .dependsOn(core % "compile->compile;test->test", validation)
+
+lazy val http = module(identifier = Some("http"))
+  .settings(
+    libraryDependencies ++=
+      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
+        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+        Nil
+  )
+  .dependsOn(schema % "compile->compile;test->test")
