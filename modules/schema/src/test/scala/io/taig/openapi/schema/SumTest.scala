@@ -2,7 +2,7 @@ package io.taig.openapi.schema
 
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
-import io.taig.openapi
+import io.taig.openapi.syntax.*
 import munit.FunSuite
 
 final class SumTest extends FunSuite:
@@ -31,10 +31,7 @@ final class SumTest extends FunSuite:
 
     assertEquals(
       obtained = animal.withNestedDiscriminator(identifier = "type", value = "value").encode(cat),
-      expected = OpenApi.obj(
-        "type" -> OpenApi.fromString("cat"),
-        "value" -> OpenApi.obj("lives" -> OpenApi.fromInt(7))
-      )
+      expected = OpenApi.obj("type" := "cat", "value" := OpenApi.obj("lives" := 7))
     )
   }
 
@@ -43,10 +40,7 @@ final class SumTest extends FunSuite:
 
     assertEquals(
       obtained = animal.withMergedDiscriminator(identifier = "type").encode(cat),
-      expected = OpenApi.obj(
-        "type" -> OpenApi.fromString("cat"),
-        "lives" -> OpenApi.fromInt(7)
-      )
+      expected = OpenApi.obj("type" := "cat", "lives" := 7)
     )
   }
 
@@ -74,9 +68,7 @@ final class SumTest extends FunSuite:
 
     assertEquals(
       obtained = animal.withKeyedDiscriminator.encode(cat),
-      expected = OpenApi.obj(
-        "cat" -> OpenApi.obj("lives" -> OpenApi.fromInt(7))
-      )
+      expected = OpenApi.obj("cat" := OpenApi.obj("lives" := 7))
     )
   }
 
@@ -85,7 +77,7 @@ final class SumTest extends FunSuite:
 
     assertEquals(
       obtained = animal.withoutDiscriminator.encode(cat),
-      expected = OpenApi.obj("lives" -> OpenApi.fromInt(7))
+      expected = OpenApi.obj("lives" := 7)
     )
   }
 
@@ -93,8 +85,8 @@ final class SumTest extends FunSuite:
     assertEquals(
       obtained = foo.encode(Foo.Bar("foobar")),
       expected = OpenApi.obj(
-        "type" -> OpenApi.fromString("bar"),
-        "value" -> OpenApi.obj("name" -> OpenApi.fromString("foobar"))
+        "type" := "bar",
+        "value" := OpenApi.obj("name" := "foobar")
       )
     )
   }
@@ -102,9 +94,6 @@ final class SumTest extends FunSuite:
   test("as: animal") {
     assertEquals(
       obtained = animal.encode(Animal.Dog(goodBoy = true)),
-      expected = OpenApi.obj(
-        "type" -> OpenApi.fromString("dog"),
-        "value" -> OpenApi.obj("goodBoy" -> OpenApi.fromBoolean(true))
-      )
+      expected = OpenApi.obj("type" := "dog", "value" := OpenApi.obj("goodBoy" := true))
     )
   }

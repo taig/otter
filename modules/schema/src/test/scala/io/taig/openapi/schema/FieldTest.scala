@@ -1,15 +1,16 @@
 package io.taig.openapi.schema
 
 import cats.syntax.all.*
-import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.schema.schemas.*
+import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.{History, OpenApi}
 import munit.FunSuite
 
 final class FieldTest extends FunSuite:
   test("decode") {
     assertEquals(
-      obtained = field("foo", int).decode(OpenApi.obj("foo" -> OpenApi.fromInt(42))),
+      obtained = field("foo", int).decode(OpenApi.obj("foo" := 42)),
       expected = (OpenApi.Object.Empty, 42).valid
     )
   }
@@ -17,9 +18,9 @@ final class FieldTest extends FunSuite:
   test("decode: remainder") {
     assertEquals(
       obtained = field("foo", int).decode(
-        OpenApi.obj("foo" -> OpenApi.fromInt(42), "bar" -> OpenApi.fromBoolean(true))
+        OpenApi.obj("foo" := 42, "bar" := true)
       ),
-      expected = (OpenApi.obj("bar" -> OpenApi.fromBoolean(true)), 42).valid
+      expected = (OpenApi.obj("bar" := true), 42).valid
     )
   }
 
@@ -38,14 +39,14 @@ final class FieldTest extends FunSuite:
   test("encode") {
     assertEquals(
       obtained = field("foo", int).encode(42, Product.Nulls.Show),
-      expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
+      expected = OpenApi.obj("foo" := 42)
     )
   }
 
   test("encode: show nulls") {
     assertEquals(
       obtained = field("foo", int).optional.showNulls.encode(42.some, Product.Nulls.Show),
-      expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
+      expected = OpenApi.obj("foo" := 42)
     )
     assertEquals(
       obtained = field("foo", int).optional.showNulls.encode(none, Product.Nulls.Show),
@@ -56,7 +57,7 @@ final class FieldTest extends FunSuite:
   test("encode: hide nulls") {
     assertEquals(
       obtained = field("foo", int).optional.hideNulls.encode(42.some, Product.Nulls.Show),
-      expected = OpenApi.obj("foo" -> OpenApi.fromInt(42))
+      expected = OpenApi.obj("foo" := 42)
     )
     assertEquals(
       obtained = field("foo", int).optional.hideNulls.encode(none, Product.Nulls.Show),
