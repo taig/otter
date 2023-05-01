@@ -21,14 +21,14 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
         .leftMap(Violations.root)
         .andThen: obj =>
           Validated
-            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
+            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.required.toViolation(OpenApi.Null)))
             .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
             .andThen(key.value.decode)
             .leftMap(_.modifyHistory(identifier /: _))
             .andThen: name =>
               if renderName === key.value.render(name) then
                 Validated
-                  .fromOption(obj.get(value), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
+                  .fromOption(obj.get(value), Violations.rootNec(Constraint.required.toViolation(OpenApi.Null)))
                   .andThen(schema.value.decode)
                   .bimap(_.modifyHistory(value /: _), _.some)
               else none[B].valid
@@ -38,7 +38,7 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
         .leftMap(Violations.root)
         .andThen: obj =>
           Validated
-            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.obj.required.toViolation(obj)))
+            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.required.toViolation(obj)))
             .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
             .andThen(key.value.decode)
             .leftMap(_.modifyHistory(identifier /: _))
@@ -52,7 +52,7 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
         .leftMap(Violations.root)
         .andThen: obj =>
           Validated
-            .fromOption(obj.get(renderName), Violations.rootNec(Constraint.obj.required.toViolation(obj)))
+            .fromOption(obj.get(renderName), Violations.rootNec(Constraint.required.toViolation(obj)))
             .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
             .andThen(key.value.decode)
             .andThen: name =>

@@ -65,7 +65,7 @@ object Field:
             .decode(value)
             .bimap(_.modifyHistory(name /: _), (openapi.remove(name), _))
         case None =>
-          val violation = Constraint.obj.required.toViolation(actual = OpenApi.Null)
+          val violation = Constraint.required.toViolation(actual = OpenApi.Null)
           val violations = Violations.oneNec(History.Root / name, violation)
           default.toValid(violations).tupleLeft(openapi)
     override def encode(b: B, parent: Product.Nulls): OpenApi.Object =

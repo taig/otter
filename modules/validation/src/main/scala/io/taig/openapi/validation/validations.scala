@@ -151,5 +151,5 @@ object validations:
 
     val required: Validation[Nothing, String, String, String] = trim
       .andThen(nonEmpty.tap)
-      .withConstraint(_ => Constraint.text.required)
+      .withConstraint(_ => Constraint.required)
       .reset
