@@ -18,7 +18,7 @@ sealed abstract class Dictionary[A] extends Schema[A]:
   def key: Eval[Value[?]]
   def schema: Eval[Schema[?]]
 
-  override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Dictionary[C] =
+  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Dictionary[C] =
     Dictionary.Validate(this, validation, g)
 
   final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match

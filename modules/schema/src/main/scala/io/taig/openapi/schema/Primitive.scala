@@ -19,7 +19,7 @@ abstract class Primitive[A] extends Value[A]:
 
   def tpe: Type[?]
 
-  override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Primitive[C] =
+  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Primitive[C] =
     Primitive.Validate(this, validation, g)
 
 object Primitive:

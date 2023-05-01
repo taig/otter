@@ -16,7 +16,7 @@ sealed abstract class Collection[A] extends Schema[A]:
 
   def schema: Eval[Schema[?]]
 
-  override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Collection.Of[C, Of] =
+  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Collection.Of[C, Of] =
     Collection.Validate(this, validation, g)
 
   final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match

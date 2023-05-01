@@ -17,40 +17,49 @@ object validations:
 
   abstract class collection[F[_]]:
     protected def size[A](fa: F[A]): Long
+    protected def isEmpty[A](fa: F[A]): Boolean
     protected def contains[A: Eq](fa: F[A], a: A): Boolean
     protected def uncons[A](fa: F[A]): Option[(A, F[A])]
 
     final def size[A]: Validation[Nothing, Nothing, F[A], Long] = Validation.lift(size)
 
-    final def atLeast[A](reference: Long): Validation[Long, F[A], F[A], Unit] =
+    final def atLeast[A](reference: Long): Validation[Long, Long, F[A], Unit] =
       size[A]
-        .andThen(numeric.lessThan(reference, equal = true))
+        .andThen(numeric.greaterThan(reference, equal = true))
         .withConstraint(_ => Constraint.collection.atLeast(reference))
-        .reset
 
-    final def atMost[A](reference: Long): Validation[Long, F[A], F[A], Unit] =
+    final def atMost[A](reference: Long): Validation[Long, Long, F[A], Unit] =
       size[A]
         .andThen(numeric.lessThan(reference, equal = true))
         .withConstraint(_ => Constraint.collection.atMost(reference))
-        .reset
 
-    final def contains[A: Eq](a: A): Validation[A, F[A], F[A], Unit] =
-      Validation.condNec(Constraint.collection.contains(reference = a))(contains(_, a))
+    final def contains[A: Eq](reference: A): Validation[A, F[A], F[A], Unit] =
+      Validation.condNec(Constraint.collection.contains(reference))(contains(_, reference))
 
-    def nonEmpty[A]: Validation[Nothing, F[A], F[A], (A, F[A])] =
+    final def empty[A]: Validation[Nothing, F[A], F[A], Unit] =
+      Validation.condNec(Constraint.collection.empty)(isEmpty)
+
+    final def exactly[A](reference: Long): Validation[Long, Long, F[A], Unit] =
+      size[A]
+        .andThen(numeric.equal(reference))
+        .withConstraint(_ => Constraint.collection.exactly(reference))
+
+    final def nonEmpty[A]: Validation[Nothing, F[A], F[A], (A, F[A])] =
       Validation.fromOptionNec(Constraint.collection.nonEmpty)(uncons)
 
   object collection:
     class seq[F[a] <: IterableOps[a, F, F[a]]] extends collection[F]:
       override def size[A](fa: F[A]): Long = fa.size.toLong
+      override def isEmpty[A](fa: F[A]): Boolean = fa.isEmpty
       override def contains[A: Eq](fa: F[A], a: A): Boolean = fa.exists(_ === a)
-      override def uncons[A](fa: F[A]): Option[(A, F[A])] = fa.headOption.tupleRight(fa.tail)
+      override def uncons[A](fa: F[A]): Option[(A, F[A])] = fa.headOption.map(head => (head, fa.tail))
 
     val list: collection[List] = new seq[List]
     val seq: collection[Seq] = new seq[Seq]
     val vector: collection[Vector] = new seq[Vector]
     val chain: collection[Chain] = new collection[Chain]:
       override def size[A](fa: Chain[A]): Long = fa.length
+      override def isEmpty[A](fa: Chain[A]): Boolean = fa.isEmpty
       override def contains[A: Eq](fa: Chain[A], a: A): Boolean = fa.contains(a)
       override def uncons[A](fa: Chain[A]): Option[(A, Chain[A])] = fa.uncons
 
@@ -113,32 +122,29 @@ object validations:
     val length: Validation[Nothing, Nothing, String, Int] = Validation.lift(_.length)
     val trim: Validation[Nothing, Nothing, String, String] = Validation.lift(_.trim)
 
-    def atLeast(reference: Int): Validation[Int, String, String, Unit] =
+    def atLeast(reference: Int): Validation[Int, Int, String, Unit] =
       length
         .andThen(numeric.greaterThan(reference, equal = true))
         .withConstraint(_ => Constraint.text.atLeast(reference))
-        .reset
 
-    def atMost(reference: Int): Validation[Int, String, String, Unit] =
+    def atMost(reference: Int): Validation[Int, Int, String, Unit] =
       length
         .andThen(numeric.lessThan(reference, equal = true))
         .withConstraint(_ => Constraint.text.atMost(reference))
-        .reset
 
-    val nonEmpty: Validation[Int, String, String, Unit] = atLeast(reference = 1)
+    val nonEmpty: Validation[Int, Int, String, Unit] = atLeast(reference = 1)
 
     val email: Validation[Nothing, String, String, Unit] = matches("""^.+@.+$""".r)
       .withConstraint(_ => Constraint.text.email)
 
-    val empty: Validation[Int, String, String, Unit] = atMost(reference = 0)
+    val empty: Validation[Int, Int, String, Unit] = atMost(reference = 0)
 
     def equal(reference: String): Validation[String, String, String, Unit] =
       Validation.condNec(Constraint.text.equal(reference))(_ === reference)
 
-    def exactly(reference: Int): Validation[Int, String, String, Unit] = length
+    def exactly(reference: Int): Validation[Int, Int, String, Unit] = length
       .andThen(numeric.equal(reference))
       .withConstraint(_ => Constraint.text.exactly(reference))
-      .reset
 
     def matches(regex: Regex): Validation[Regex, String, String, Unit] =
       Validation.condNec(Constraint.text.matches(regex))(regex.matches)

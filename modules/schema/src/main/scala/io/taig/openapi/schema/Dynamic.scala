@@ -12,7 +12,8 @@ sealed abstract class Dynamic[A] extends Schema[A]:
 
   final override type Self[a] = Dynamic[a] { type Codec = self.Codec }
 
-  override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] = ???
+  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] =
+    Dynamic.Validate(this, validation, g)
 
 object Dynamic:
   type Codec[A, B <: OpenApi] = Dynamic[A] { type Codec = B }

@@ -34,7 +34,7 @@ sealed abstract class Product[A, B] extends Schema[B]:
 
   final def as[C](using evidence: Evidence.Product.Aux[C, B]): Product[A, C] = imap(evidence.from)(evidence.to)
 
-  override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Product[A, D] =
+  final override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Product[A, D] =
     Product.Validate(this, validation, g)
 
   final override def decode(openapi: OpenApi): Validated[Violations, B] = openapi match

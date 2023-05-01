@@ -20,6 +20,10 @@ object Constraint:
 
     def contains[A](reference: A): Constraint[A] = Constraint("collection.contains", reference.some)
 
+    val empty: Constraint[Nothing] = Constraint("collection.empty", none)
+
+    def exactly(reference: Long): Constraint[Long] = Constraint("collection.exactly", reference.some)
+
     val nonEmpty: Constraint[Nothing] = Constraint("collection.nonEmpty", none)
 
   object numeric:
