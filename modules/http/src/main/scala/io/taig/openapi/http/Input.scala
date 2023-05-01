@@ -1,6 +1,6 @@
 package io.taig.openapi.http
 
-import cats.Applicative
+import cats.{Applicative, Functor}
 import cats.data.Validated
 import cats.effect.Concurrent
 import cats.syntax.all.*
@@ -15,6 +15,7 @@ object Input:
   abstract class Body[A]:
     type Effect[f[_], a]
     def optional: Body[Option[A]] = Body.Optional(this)
+    def peek[F[_]: Applicative](a: Effect[F, A]): F[(Boolean, Effect[F, A])]
     def decode[F[_]: Concurrent](body: Request.Body[F]): Validated[Violations, Effect[F, A]]
     def encode[F[_]: Applicative](a: Effect[F, A]): F[Request.Body[F]]
 
@@ -36,12 +37,15 @@ object Input:
     object Singlepart:
       object Empty extends Input.Body.Singlepart[Void]:
         override type Effect[_[_], a] = a
+        override def peek[F[_]: Applicative](a: Void): F[(Boolean, Void)] = (false, Void).pure[F]
         override def decode[F[_]: Concurrent](body: Request.Body.Singlepart[F]): Validated[Violations, Void] =
           Void.valid
         override def encode[F[_]: Applicative](a: Void): F[Request.Body[F]] = Request.Body.Singlepart.Empty.pure[F]
 
       object Strict extends Input.Body.Singlepart[ByteVector]:
         override type Effect[f[_], a] = f[a]
+        override def peek[F[_]: Applicative](a: F[ByteVector]): F[(Boolean, F[ByteVector])] = a.map: bytes =>
+          (bytes.nonEmpty, bytes.pure[F])
         override def decode[F[_]: Concurrent](body: Request.Body.Singlepart[F]): Validated[Violations, F[ByteVector]] =
           body.data.compile.to(ByteVector).valid
         override def encode[F[_]: Applicative](a: F[ByteVector]): F[Request.Body[F]] =
@@ -49,6 +53,7 @@ object Input:
 
       object Streaming extends Input.Body.Singlepart[Byte]:
         override type Effect[f[_], a] = Stream[f, a]
+        override def peek[F[_]: Applicative](a: Stream[F, Byte]): F[(Boolean, Stream[F, Byte])] = ???
         override def decode[F[_]: Concurrent](
             body: Request.Body.Singlepart[F]
         ): Validated[Violations, Stream[F, Byte]] = body.data.valid
@@ -57,5 +62,10 @@ object Input:
 
     final private case class Optional[A](body: Body[A]) extends Input.Body[Option[A]]:
       override type Effect[f[_], a] = body.Effect[f, a]
-      override def decode[F[_]: Concurrent](body: Request.Body[F]): Validated[Violations, Effect[F, Option[A]]] = ???
+      override def peek[F[_]: Applicative](a: body.Effect[F, Option[A]]): F[(Boolean, body.Effect[F, Option[A]])] = ???
+      override def decode[F[_]: Concurrent](body: Request.Body[F]): Validated[Violations, Effect[F, Option[A]]] =
+        body match
+          case Request.Body.Multipart(parts) => ???
+          case Request.Body.Singlepart(data) => ???
+
       override def encode[F[_]: Applicative](a: Effect[F, Option[A]]): F[Request.Body[F]] = ???
