@@ -2,8 +2,8 @@ package io.taig.openapi.http
 
 import cats.data.Chain
 import cats.syntax.all.*
-import org.typelevel.ci.CIString
 import fs2.{Pure, Stream}
+import org.typelevel.ci.CIString
 import io.taig.openapi.OpenApi
 
 final case class Request[+F[_]](
