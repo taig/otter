@@ -17,6 +17,8 @@ sealed abstract class Header[A]:
 
   final def optional: Header[Option[A]] = Header.Optional(this)
 
+  final def toHeaders: Headers[A] = Headers(this)
+
   def decode(
       values: VectorMap[CIString, OpenApi.Primitive]
   ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], A)]
@@ -41,7 +43,6 @@ object Header:
 
   final private case class Optional[A](header: Header[A]) extends Header[Option[A]]:
     export header.{name, schema}
-
     override def decode(
         values: VectorMap[CIString, OpenApi.Primitive]
     ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], Option[A])] = values.get(name) match
