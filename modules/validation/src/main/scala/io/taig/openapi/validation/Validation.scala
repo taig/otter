@@ -8,6 +8,20 @@ import cats.syntax.all.*
 sealed abstract class Validation[+Ref, +Act, -In, +Out]:
   def constraints: Chain[Constraint[Ref]]
 
+  final def modifyConstraints[Ref2](f: Constraint[Ref] => Constraint[Ref2]): Validation[Ref2, Act, In, Out] =
+    Validation(constraints.map(f))(run(_).leftMap(_.map(_.modifyConstraint(f))))
+
+  final def modifyConstraint[Ref2](
+      pf: PartialFunction[Constraint[Ref], Constraint[Ref2]]
+  ): Validation[Ref | Ref2, Act, In, Out] = Validation(constraints.mapFilter(pf.lift)) { input =>
+    run(input).leftMap(_.map(_.modifyConstraint { constraint =>
+      if pf.isDefinedAt(constraint) then pf.apply(constraint) else constraint
+    }))
+  }
+
+  final def withConstraint[Ref2](f: Option[Ref] => Constraint[Ref2]): Validation[Ref2, Act, In, Out] =
+    modifyConstraints(constraint => f(constraint.reference))
+
   final def contramap[In2](f: In2 => In): Validation[Ref, Act, In2, Out] =
     Validation(constraints)(input => run(f(input)))
 
@@ -38,6 +52,10 @@ sealed abstract class Validation[+Ref, +Act, -In, +Out]:
 
 object Validation:
   extension [Ref, Act, In, Out](self: Validation[Ref, Act, In, Out])
+    /** Reset the `actual` value of a `Violation` to the initial input */
+    def reset: Validation[Ref, In, In, Out] = Validation(self.constraints): input =>
+      self.run(input).leftMap(_.map(_.withActual(input)))
+
     /** Return the input of this validation as the output */
     def tap: Validation[Ref, Act, In, In] = Validation(self.constraints)(input => self.run(input).as(input))
 

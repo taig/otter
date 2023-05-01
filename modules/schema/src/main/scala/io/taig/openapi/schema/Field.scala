@@ -70,7 +70,7 @@ object Field:
             .decode(value)
             .bimap(_.modifyHistory(name /: _), (openapi.remove(name), _))
         case None =>
-          val constraint = Constraint.withReference("required", reference = OpenApi.fromString("OpenApi.Primitive"))
+          val constraint = Constraint.apply("required", reference = OpenApi.fromString("OpenApi.Primitive"))
           val violations = Violations.oneNec(History.Root / name, Violation(constraint, actual = OpenApi.Null))
           default.toValid(violations).tupleLeft(openapi)
 

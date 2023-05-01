@@ -18,7 +18,7 @@ final class PrimitiveTest extends FunSuite:
       obtained = string.decode(OpenApi.Null),
       expected = Violations
         .rootNec(
-          Violation(Constraint.withReference("type", OpenApi.fromString("OpenApi.Primitive")), OpenApi.Null)
+          Violation(Constraint.apply("type", OpenApi.fromString("OpenApi.Primitive")), OpenApi.Null)
         )
         .invalid
     )
@@ -31,7 +31,7 @@ final class PrimitiveTest extends FunSuite:
       obtained = string.decode(value),
       expected = Violations
         .rootNec(
-          Violation(Constraint.withReference("type", OpenApi.fromString("String")), value)
+          Violation(Constraint.apply("type", OpenApi.fromString("String")), value)
         )
         .invalid
     )
@@ -64,7 +64,7 @@ final class PrimitiveTest extends FunSuite:
       obtained = foobar.decode(OpenApi.fromString("foo")),
       expected = Violations
         .rootNec(
-          Violation(Constraint.withReference("text.equal", OpenApi.fromString("foobar")), OpenApi.fromString("foo"))
+          Violation(Constraint.apply("text.equal", OpenApi.fromString("foobar")), OpenApi.fromString("foo"))
         )
         .invalid
     )

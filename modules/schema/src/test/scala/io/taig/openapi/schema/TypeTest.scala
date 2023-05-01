@@ -14,7 +14,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.BigDecimal.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("BigDecimal")),
+        Constraint.apply("type", OpenApi.fromString("BigDecimal")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -28,7 +28,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.BigInt.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("BigInt")),
+        Constraint.apply("type", OpenApi.fromString("BigInt")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -46,7 +46,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.Boolean.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("Boolean")),
+        Constraint.apply("type", OpenApi.fromString("Boolean")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -60,7 +60,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.Double.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("Double")),
+        Constraint.apply("type", OpenApi.fromString("Double")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -74,7 +74,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.Float.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("Float")),
+        Constraint.apply("type", OpenApi.fromString("Float")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -88,7 +88,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.Int.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("Int")),
+        Constraint.apply("type", OpenApi.fromString("Int")),
         OpenApi.fromString("foobar")
       ).invalid
     )
@@ -102,7 +102,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.String.decode(OpenApi.fromInt(0)),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("String")),
+        Constraint.apply("type", OpenApi.fromString("String")),
         OpenApi.fromInt(0)
       ).invalid
     )
@@ -116,7 +116,7 @@ final class TypeTest extends FunSuite:
     assertEquals(
       obtained = Type.Long.decode(OpenApi.fromString("foobar")),
       expected = Violation(
-        Constraint.withReference("type", OpenApi.fromString("Long")),
+        Constraint.apply("type", OpenApi.fromString("Long")),
         OpenApi.fromString("foobar")
       ).invalid
     )
