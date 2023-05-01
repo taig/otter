@@ -13,7 +13,7 @@ import scala.util.matching.Regex
 
 object validations:
   def refine[In, Out](tpe: String)(f: In => Option[Out]): Validation[String, In, In, Out] =
-    Validation.fromOptionNec(Constraint("type", reference = tpe.some))(f)
+    Validation.fromOptionNec(Constraint.tpe(tpe))(f)
 
   abstract class collection[F[_]]:
     protected def size[A](fa: F[A]): Long
@@ -25,20 +25,20 @@ object validations:
     final def atLeast[A](reference: Long): Validation[Long, F[A], F[A], Unit] =
       size[A]
         .andThen(numeric.lessThan(reference, equal = true))
-        .withConstraint(reference => Constraint("collection.atLeast", reference.map(_.value)))
+        .withConstraint(_ => Constraint.collection.atLeast(reference))
         .reset
 
     final def atMost[A](reference: Long): Validation[Long, F[A], F[A], Unit] =
       size[A]
         .andThen(numeric.lessThan(reference, equal = true))
-        .withConstraint(reference => Constraint("collection.atMost", reference.map(_.value)))
+        .withConstraint(_ => Constraint.collection.atMost(reference))
         .reset
 
     final def contains[A: Eq](a: A): Validation[A, F[A], F[A], Unit] =
-      Validation.condNec(Constraint("collection.contains", reference = a))(contains(_, a))
+      Validation.condNec(Constraint.collection.contains(reference = a))(contains(_, a))
 
     def nonEmpty[A]: Validation[Nothing, F[A], F[A], (A, F[A])] =
-      Validation.fromOptionNec(Constraint("collection.nonEmpty"))(uncons)
+      Validation.fromOptionNec(Constraint.collection.nonEmpty)(uncons)
 
   object collection:
     class seq[F[a] <: IterableOps[a, F, F[a]]] extends collection[F]:
@@ -56,7 +56,7 @@ object validations:
 
   class map[F[a, b] <: Map[a, b]]:
     def nonEmpty[A, B]: Validation[Nothing, F[A, B], F[A, B], ((A, B), Map[A, B])] =
-      Validation.fromOptionNec(Constraint("collection.nonEmpty")): fa =>
+      Validation.fromOptionNec(Constraint.collection.nonEmpty): fa =>
         fa.headOption.tupleRight(fa.tail)
 
   object map:
@@ -66,36 +66,44 @@ object validations:
 
   object numeric:
     def greaterThan[In: Numeric](
+        comparison: NumericComparison[In]
+    ): Validation[NumericComparison[In], In, In, Unit] =
+      Validation.condNec(Constraint.numeric.greaterThan(comparison)): input =>
+        comparison.delta match
+          case Some(delta) if comparison.equal => input - comparison.reference >= -delta
+          case Some(delta)                     => input - comparison.reference > -delta
+          case None if comparison.equal        => input >= comparison.reference
+          case None                            => input > comparison.reference
+
+    def greaterThan[In: Numeric](
         reference: In,
         equal: Boolean = false,
         delta: Option[In] = none
-    ): Validation[NumericReference[In], In, In, Unit] =
-      Validation.condNec(Constraint("numeric.greaterThan", NumericReference(reference, equal, delta))): input =>
-        delta match
-          case Some(delta) if equal => input - reference >= -delta
-          case Some(delta)          => input - reference > -delta
-          case None if equal        => input >= reference
-          case None                 => input > reference
+    ): Validation[NumericComparison[In], In, In, Unit] = greaterThan(NumericComparison(reference, equal, delta))
+
+    def lessThan[In: Numeric](
+        comparison: NumericComparison[In]
+    ): Validation[NumericComparison[In], In, In, Unit] =
+      Validation.condNec(Constraint.numeric.lessThan(comparison)): input =>
+        comparison.delta match
+          case Some(delta) if comparison.equal => comparison.reference - input >= -delta
+          case Some(delta)                     => comparison.reference - input > -delta
+          case None if comparison.equal        => input <= comparison.reference
+          case None                            => input < comparison.reference
 
     def lessThan[In: Numeric](
         reference: In,
         equal: Boolean = false,
         delta: Option[In] = none
-    ): Validation[NumericReference[In], In, In, Unit] =
-      Validation.condNec(Constraint("numeric.lessThan", NumericReference(reference, equal, delta))): input =>
-        delta match
-          case Some(delta) if equal => reference - input >= -delta
-          case Some(delta)          => reference - input > -delta
-          case None if equal        => input <= reference
-          case None                 => input < reference
+    ): Validation[NumericComparison[In], In, In, Unit] = lessThan(NumericComparison(reference, equal, delta))
 
-    def equal[In: Numeric](reference: In, delta: Option[In] = none): Validation[NumericReference[In], In, In, Unit] =
+    def equal[In: Numeric](reference: In, delta: Option[In] = none): Validation[NumericComparison[In], In, In, Unit] =
       (greaterThan(reference, equal = true, delta) *> lessThan(reference, equal = true, delta)).withConstraint: _ =>
-        Constraint("numeric.equal", NumericReference(reference, equal = true, delta))
+        Constraint.numeric.equal(NumericComparison(reference, equal = true, delta))
 
   object parser:
     def apply[A](name: String)(f: String => Option[A]): Validation[String, String, String, A] =
-      Validation.fromOptionNec(Constraint(s"parser.${name.toLowerCase}", name.some))(f)
+      Validation.fromOptionNec(Constraint.parser(name))(f)
 
     val uuid: Validation[String, String, String, UUID] = parser("UUID"): value =>
       try Some(UUID.fromString(value))
@@ -108,34 +116,34 @@ object validations:
     def atLeast(reference: Int): Validation[Int, String, String, Unit] =
       length
         .andThen(numeric.greaterThan(reference, equal = true))
-        .withConstraint(reference => Constraint("text.atLeast", reference.map(_.value)))
+        .withConstraint(_ => Constraint.text.atLeast(reference))
         .reset
 
     def atMost(reference: Int): Validation[Int, String, String, Unit] =
       length
         .andThen(numeric.lessThan(reference, equal = true))
-        .withConstraint(reference => Constraint("text.atMost", reference.map(_.value)))
+        .withConstraint(_ => Constraint.text.atMost(reference))
         .reset
 
     val nonEmpty: Validation[Int, String, String, Unit] = atLeast(reference = 1)
 
     val email: Validation[Nothing, String, String, Unit] = matches("""^.+@.+$""".r)
-      .withConstraint(_ => Constraint("text.email"))
+      .withConstraint(_ => Constraint.text.email)
 
     val empty: Validation[Int, String, String, Unit] = atMost(reference = 0)
 
     def equal(reference: String): Validation[String, String, String, Unit] =
-      Validation.condNec(Constraint("text.equal", reference.some))(_ === reference)
+      Validation.condNec(Constraint.text.equal(reference))(_ === reference)
 
     def exactly(reference: Int): Validation[Int, String, String, Unit] = length
       .andThen(numeric.equal(reference))
-      .withConstraint(reference => Constraint("text.exactly", reference.map(_.value)))
+      .withConstraint(_ => Constraint.text.exactly(reference))
       .reset
 
     def matches(regex: Regex): Validation[Regex, String, String, Unit] =
-      Validation.condNec(Constraint("text.matches", reference = regex))(regex.matches)
+      Validation.condNec(Constraint.text.matches(regex))(regex.matches)
 
     val required: Validation[Nothing, String, String, String] = trim
       .andThen(nonEmpty.tap)
-      .withConstraint(_ => Constraint("text.required"))
+      .withConstraint(_ => Constraint.text.required)
       .reset
