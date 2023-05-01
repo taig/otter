@@ -90,7 +90,7 @@ object Product:
       copy(product = product.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def modifyNulls(f: Nulls => Nulls): Product[A, D] = copy(product = product.modifyNulls(f))
     override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, D)] =
-      product.decodeWithRemainders(openapi).andThen(_.traverse(andThenValidate(validation, product.encode)))
+      product.decodeWithRemainders(openapi).andThen(_.traverse(applyValidation(validation, product.encode)))
     override def encode(c: D): OpenApi.Object = product.encode(g(c))
 
   final private case class Zip[A, B, C](

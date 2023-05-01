@@ -14,27 +14,53 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
 
   def toSum: Sum[A, B] = Sum(this)
 
-  def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] =
-    discriminator match
-      case Sum.Discriminator.Nested(identifier, value) =>
-        validations.openapi.obj.run(openapi).leftMap(Violations.root).andThen { obj =>
+  def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] = discriminator match
+    case Sum.Discriminator.Nested(identifier, value) =>
+      validations.openapi.obj
+        .run(openapi)
+        .leftMap(Violations.root)
+        .andThen: obj =>
           Validated
             .fromOption(obj.get(identifier), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
             .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
             .andThen(key.value.decode)
             .leftMap(_.modifyHistory(identifier /: _))
-            .andThen { name =>
+            .andThen: name =>
               if renderName === key.value.render(name) then
                 Validated
                   .fromOption(obj.get(value), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
                   .andThen(schema.value.decode)
                   .bimap(_.modifyHistory(value /: _), _.some)
               else none[B].valid
-            }
-        }
-      case Sum.Discriminator.Merged(identifier) => ???
-      case Sum.Discriminator.Keyed              => ???
-      case Sum.Discriminator.None               => schema.value.decode(openapi).toOption.valid
+    case Sum.Discriminator.Merged(identifier) =>
+      validations.openapi.obj
+        .run(openapi)
+        .leftMap(Violations.root)
+        .andThen: obj =>
+          Validated
+            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.obj.required.toViolation(obj)))
+            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
+            .andThen(key.value.decode)
+            .leftMap(_.modifyHistory(identifier /: _))
+            .andThen: name =>
+              if renderName === key.value.render(name)
+              then schema.value.decode(obj.remove(identifier)).map(_.some)
+              else none[B].valid
+    case Sum.Discriminator.Keyed =>
+      validations.openapi.obj
+        .run(openapi)
+        .leftMap(Violations.root)
+        .andThen: obj =>
+          Validated
+            .fromOption(obj.get(renderName), Violations.rootNec(Constraint.obj.required.toViolation(obj)))
+            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
+            .andThen(key.value.decode)
+            .andThen: name =>
+              if renderName === key.value.render(name)
+              then schema.value.decode(obj.remove(renderName)).map(_.some)
+              else none[B].valid
+            .leftMap(_.modifyHistory(renderName /: _))
+    case Sum.Discriminator.None => schema.value.decode(openapi).toOption.valid
 
   def encode(b: B, discriminator: Sum.Discriminator): OpenApi = discriminator match
     case Sum.Discriminator.Nested(identifier, value) =>

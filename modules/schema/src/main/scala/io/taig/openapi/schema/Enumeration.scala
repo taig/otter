@@ -50,8 +50,14 @@ object Enumeration:
           }
         )
     override def encode(b: B): OpenApi.Primitive = schema.value.encode(mapping(b))
-    override def parse(value: String): Validated[Violations, B] =
-      schema.value.parse(value).andThen(a => lookup.value(a).toValid(???))
+    override def parse(value: String): Validated[Violations, B] = schema.value
+      .parse(value)
+      .andThen: a =>
+        lookup.value(a).toValid {
+          val references = OpenApi.fromList(values.value.toList)
+          Violations.rootNec(Constraint("enumeration", references.some).toViolation(schema.value.encode(a)))
+        }
+
     override def render(b: B): String = schema.value.render(mapping(b))
 
   final private case class Validate[A, B: Encoder, C](
@@ -70,10 +76,10 @@ object Enumeration:
     override def modifyExample(f: Option[C] => Option[C]): Enumeration[C] =
       copy(enumeration = enumeration.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def decode(openapi: OpenApi.Primitive): Validated[Violations, C] =
-      enumeration.decode(openapi).andThen(andThenValidate(validation, enumeration.encode))
+      enumeration.decode(openapi).andThen(applyValidation(validation, enumeration.encode))
     override def encode(b: C): OpenApi.Primitive = enumeration.encode(g(b))
     override def parse(value: String): Validated[Violations, C] =
-      enumeration.parse(value).andThen(andThenValidate(validation, enumeration.encode))
+      enumeration.parse(value).andThen(applyValidation(validation, enumeration.encode))
     override def render(b: C): String = enumeration.render(g(b))
 
   def apply[A, B](schema: Eval[Value[A]], values: Set[B], mapping: B => A): Enumeration[B] =

@@ -49,7 +49,7 @@ object Dynamic:
     override def modifyExample(f: Option[D] => Option[D]): Dynamic.Codec[D, C] =
       copy(dynamic = dynamic.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def decode(openapi: OpenApi): Validated[Violations, D] =
-      dynamic.decode(openapi).andThen(andThenValidate(validation, dynamic.encode))
+      dynamic.decode(openapi).andThen(applyValidation(validation, dynamic.encode))
     override def encode(b: D): C = dynamic.encode(g(b))
 
   def apply[A <: OpenApi](tpe: String)(f: OpenApi => Option[A]): Dynamic.Of[A] = Root(f, none, none, tpe)

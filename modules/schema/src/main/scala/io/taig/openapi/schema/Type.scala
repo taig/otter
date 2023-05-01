@@ -4,7 +4,7 @@ import cats.Show
 import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.openapi.OpenApi
-import io.taig.openapi.validation.{Constraint, Validation, Violation}
+import io.taig.openapi.validation.{Constraint, Violation}
 
 enum Type[A]:
   self =>

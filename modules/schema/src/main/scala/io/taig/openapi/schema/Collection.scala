@@ -60,7 +60,7 @@ object Collection:
     override def modifyExample(f: Option[D] => Option[D]): Collection.Of[D, C] =
       copy(collection = collection.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def decode(openapi: OpenApi.Array[?]): Validated[Violations, D] =
-      collection.decode(openapi).andThen(andThenValidate(validation, collection.encode))
+      collection.decode(openapi).andThen(applyValidation(validation, collection.encode))
     override def encode(c: D): OpenApi.Array[C] = collection.encode(g(c))
 
   def apply[A, B <: OpenApi](schema: Eval[Schema.Of[A, B]]): Collection.Of[Vector[A], B] =

@@ -107,7 +107,7 @@ object Sum:
     override def modifyExample(f: Option[D] => Option[D]): Sum[A, D] =
       copy(sum = sum.modifyExample(b => f(b.flatMap(validation.run(_).toOption)).map(g)))
     override def decodeOption(openapi: OpenApi): Validated[Violations, Option[D]] =
-      sum.decodeOption(openapi).andThen(_.traverse(andThenValidate(validation, sum.encode)))
+      sum.decodeOption(openapi).andThen(_.traverse(applyValidation(validation, sum.encode)))
     override def encode(c: D): OpenApi = sum.encode(g(c))
 
   def apply[A, B](branch: Branch[A, B]): Sum[A, B] = Root(branch, none, Discriminator.Default, none)

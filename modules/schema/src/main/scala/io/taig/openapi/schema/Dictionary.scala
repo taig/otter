@@ -63,7 +63,7 @@ object Dictionary:
     override def modifyExample(f: Option[C] => Option[C]): Dictionary[C] =
       copy(dictionary = dictionary.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def decode(openapi: OpenApi.Object): Validated[Violations, C] =
-      dictionary.decode(openapi).andThen(andThenValidate(validation, dictionary.encode))
+      dictionary.decode(openapi).andThen(applyValidation(validation, dictionary.encode))
     override def encode(b: C): OpenApi.Object = dictionary.encode(g(b))
 
   def apply[A, B](key: Eval[Value[A]], schema: Eval[Schema[B]]): Dictionary[SeqMap[A, B]] =

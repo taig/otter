@@ -60,10 +60,10 @@ object Primitive:
     override def modifyExample(f: Option[C] => Option[C]): Primitive[C] =
       copy(primitive = primitive.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
     override def decode(openapi: OpenApi): Validated[Violations, C] =
-      primitive.decode(openapi).andThen(andThenValidate(validation, primitive.encode))
+      primitive.decode(openapi).andThen(applyValidation(validation, primitive.encode))
     override def encode(b: C): OpenApi.Primitive = primitive.encode(g(b))
     override def parse(value: String): Validated[Violations, C] =
-      primitive.parse(value).andThen(andThenValidate(validation, primitive.encode))
+      primitive.parse(value).andThen(applyValidation(validation, primitive.encode))
     override def render(b: C): String = primitive.render(g(b))
 
   def apply[A](tpe: Type[A]): Primitive[A] = Root(none, none, none, tpe)
