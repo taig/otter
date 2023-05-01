@@ -14,9 +14,18 @@ sealed abstract class Sum[A, B] extends Schema[B]:
 
   def branches: NonEmptyChain[Branch[A, ?]]
   def discriminator: Sum.Discriminator
+  def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Self[B]
+  final def withDiscriminator(discriminator: Sum.Discriminator): Self[B] = modifyDiscriminator(_ => discriminator)
+  final def withNestedDiscriminator(identifier: String, value: String): Self[B] =
+    withDiscriminator(Sum.Discriminator.Nested(identifier, value))
+  final def withMergedDiscriminator(identifier: String): Self[B] = withDiscriminator(
+    Sum.Discriminator.Merged(identifier)
+  )
+  final def withKeyedDiscriminator: Self[B] = withDiscriminator(Sum.Discriminator.Keyed)
+  final def withoutDiscriminator: Self[B] = withDiscriminator(Sum.Discriminator.None)
 
   final infix def orElse[C](sum: Sum[A, C]): Sum[A, B + C] =
-    Sum.OrElse(this, sum, none, discriminator, none)
+    Sum.OrElse(this, sum.withDiscriminator(discriminator), none, none)
 
   final infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = orElse(branch.toSum)
 
@@ -57,6 +66,8 @@ object Sum:
     override def branches: NonEmptyChain[Branch[A, ?]] = NonEmptyChain.one(branch)
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B] = copy(description = f(description))
+    override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B] =
+      copy(discriminator = f(discriminator))
     override def modifyExample(f: Option[B] => Option[B]): Sum[A, B] = copy(example = f(example))
     override def decodeOption(openapi: OpenApi): Validated[Violations, Option[B]] =
       branch.decode(openapi, discriminator)
@@ -66,13 +77,15 @@ object Sum:
       left: Sum[A, B],
       right: Sum[A, C],
       description: Option[String],
-      discriminator: Sum.Discriminator,
       example: Option[B + C]
   ) extends Sum[A, B + C]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
+    override def discriminator: Discriminator = left.discriminator
     override def branches: NonEmptyChain[Branch[A, ?]] = left.branches ++ right.branches
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] =
       copy(description = f(description))
+    override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B + C] =
+      copy(left = left.modifyDiscriminator(f), right = right.modifyDiscriminator(f))
     override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
     override def decodeOption(openapi: OpenApi): Validated[Violations, Option[B + C]] =
       left.decodeOption(openapi).map(_.map(_.asLeft)).orElse(right.decodeOption(openapi).map(_.map(_.asRight)))
@@ -88,6 +101,8 @@ object Sum:
     override def example: Option[C] = sum.example.flatMap(validation.run(_).toOption)
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, C] =
       copy(sum = sum.modifyDescription(f))
+    override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, C] =
+      copy(sum = sum.modifyDiscriminator(f))
     override def modifyExample(f: Option[C] => Option[C]): Sum[A, C] =
       copy(sum = sum.modifyExample(b => f(b.flatMap(validation.run(_).toOption)).map(g)))
     override def decodeOption(openapi: OpenApi): Validated[Violations, Option[C]] =

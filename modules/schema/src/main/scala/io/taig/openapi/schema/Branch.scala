@@ -53,14 +53,13 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
       case Sum.Discriminator.Keyed              => ???
       case Sum.Discriminator.None               => schema.value.decode(openapi).toOption.valid
 
-  def encode(b: B, discriminator: Sum.Discriminator): OpenApi =
-    discriminator match
-      case Sum.Discriminator.Nested(identifier, value) =>
-        OpenApi.obj(identifier -> key.value.encode(name), value -> schema.value.encode(b))
-      case Sum.Discriminator.Merged(identifier) =>
-        schema.value.encode(b).asObject match
-          case Some(obj) if obj.contains(identifier) => OpenApi.Object.Empty
-          case Some(obj)                             => obj.deepMerge(OpenApi.obj(identifier -> key.value.encode(name)))
-          case None                                  => OpenApi.Object.Empty
-      case Sum.Discriminator.Keyed => OpenApi.obj(renderName -> schema.value.encode(b))
-      case Sum.Discriminator.None  => schema.value.encode(b)
+  def encode(b: B, discriminator: Sum.Discriminator): OpenApi = discriminator match
+    case Sum.Discriminator.Nested(identifier, value) =>
+      OpenApi.obj(identifier -> key.value.encode(name), value -> schema.value.encode(b))
+    case Sum.Discriminator.Merged(identifier) =>
+      schema.value.encode(b).asObject match
+        case Some(obj) if obj.contains(identifier) => OpenApi.Object.Empty
+        case Some(obj)                             => obj.deepMerge(OpenApi.obj(identifier -> key.value.encode(name)))
+        case None                                  => OpenApi.Object.Empty
+    case Sum.Discriminator.Keyed => OpenApi.obj(renderName -> schema.value.encode(b))
+    case Sum.Discriminator.None  => schema.value.encode(b)

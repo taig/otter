@@ -26,6 +26,69 @@ final class SumTest extends FunSuite:
       branch("dog", dog)
   ).as[Animal]
 
+  test("encode: discriminator (nested)") {
+    val cat = Animal.Cat(lives = 7)
+
+    assertEquals(
+      obtained = animal.withNestedDiscriminator(identifier = "type", value = "value").encode(cat),
+      expected = OpenApi.obj(
+        "type" -> OpenApi.fromString("cat"),
+        "value" -> OpenApi.obj("lives" -> OpenApi.fromInt(7))
+      )
+    )
+  }
+
+  test("encode: merged discriminator") {
+    val cat = Animal.Cat(lives = 7)
+
+    assertEquals(
+      obtained = animal.withMergedDiscriminator(identifier = "type").encode(cat),
+      expected = OpenApi.obj(
+        "type" -> OpenApi.fromString("cat"),
+        "lives" -> OpenApi.fromInt(7)
+      )
+    )
+  }
+
+  test("encode: merged discriminator (key conflict)") {
+    val cat = Animal.Cat(lives = 7)
+
+    assertEquals(
+      obtained = animal.withMergedDiscriminator(identifier = "lives").encode(cat),
+      expected = OpenApi.Object.Empty
+    )
+  }
+
+  test("encode: merged discriminator (no object)") {
+    val bar: Primitive[Foo.Bar] = string.imap[Foo.Bar](Foo.Bar.apply)(_.name)
+    val foo: Sum[String, Foo] = branch("bar", bar).toSum.as[Foo]
+
+    assertEquals(
+      obtained = foo.withMergedDiscriminator(identifier = "type").encode(Foo.Bar("foobar")),
+      expected = OpenApi.Object.Empty
+    )
+  }
+
+  test("encode: keyed discriminator") {
+    val cat = Animal.Cat(lives = 7)
+
+    assertEquals(
+      obtained = animal.withKeyedDiscriminator.encode(cat),
+      expected = OpenApi.obj(
+        "cat" -> OpenApi.obj("lives" -> OpenApi.fromInt(7))
+      )
+    )
+  }
+
+  test("encode: none discriminator") {
+    val cat = Animal.Cat(lives = 7)
+
+    assertEquals(
+      obtained = animal.withoutDiscriminator.encode(cat),
+      expected = OpenApi.obj("lives" -> OpenApi.fromInt(7))
+    )
+  }
+
   test("as: foo") {
     assertEquals(
       obtained = foo.encode(Foo.Bar("foobar")),
