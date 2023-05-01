@@ -1,46 +1,32 @@
 package io.taig.openapi.schema
 
 import cats.Eval
-import cats.Eq
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
-import io.taig.openapi.validation.{validations, Constraint, Validation, Violation}
+import io.taig.openapi.{History, OpenApi}
+import io.taig.openapi.validation.Constraint
 
 final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]):
   def renderName: String = key.value.render(name)
 
-  infix def orElse[C](branch: Branch[A, C]) = toSum orElse branch.toSum
+  infix def orElse[C](branch: Branch[A, C]): Sum[A, B + C] = toSum orElse branch.toSum
   infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = toSum :+ branch
 
   def toSum: Sum[A, B] = Sum(this)
 
   def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] =
-    def refine[A](tpe: String)(f: OpenApi => Option[A]): Validation[OpenApi, OpenApi, OpenApi, A] =
-      validations.refine(tpe)(f).mapReference(OpenApi.fromString)
-
     discriminator match
       case Sum.Discriminator.Nested(identifier, value) =>
-        refine("OpenApi.Object")(_.asObject).run(openapi).leftMap(Violations.root).andThen { obj =>
+        validations.openapi.obj.run(openapi).leftMap(Violations.root).andThen { obj =>
           Validated
-            .fromOption(
-              obj.get(identifier), {
-                val constraint = Constraint("object.contains", OpenApi.fromString(identifier).some)
-                Violations.rootNec(Violation(constraint, obj))
-              }
-            )
-            .andThen(refine("OpenApi.Primitive")(_.asPrimitive).run(_).leftMap(Violations.root))
+            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
+            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
             .andThen(key.value.decode)
             .leftMap(_.modifyHistory(identifier /: _))
             .andThen { name =>
               if renderName === key.value.render(name) then
                 Validated
-                  .fromOption(
-                    obj.get(value), {
-                      val constraint = Constraint("object.contains", OpenApi.fromString(value).some)
-                      Violations.rootNec(Violation(constraint, obj))
-                    }
-                  )
+                  .fromOption(obj.get(value), Violations.rootNec(Constraint.obj.required.toViolation(OpenApi.Null)))
                   .andThen(schema.value.decode)
                   .bimap(_.modifyHistory(value /: _), _.some)
               else none[B].valid
