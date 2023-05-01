@@ -3,7 +3,8 @@ package io.taig.openapi.schema
 import cats.Eq
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.{Constraint, Validation}
 
 sealed abstract class Product[A, B] extends Schema[B]:
@@ -33,8 +34,8 @@ sealed abstract class Product[A, B] extends Schema[B]:
 
   final def as[C](using evidence: Evidence.Product.Aux[C, B]): Product[A, C] = imap(evidence.from)(evidence.to)
 
-  final override def ivalidate[C](validation: Validation[B, B, B, C])(g: C => B): Product[A, C] =
-    Product.Validate(this, validation, g, example.flatMap(validation.run(_).toOption))
+  override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Product[A, D] =
+    Product.Validate(this, validation, g)
 
   final override def decode(openapi: OpenApi): Validated[Violations, B] = openapi match
     case openapi: OpenApi.Object => decodeWithRemainders(openapi).map(_._2)
@@ -72,26 +73,25 @@ object Product:
       field.decode(openapi)
     override def encode(b: B): OpenApi.Object = field.encode(b, nulls)
 
-  final private case class Validate[A, B, C](
+  final private case class Validate[A, B, C: Encoder, D](
       product: Product[A, B],
-      validation: Validation[B, B, B, C],
-      g: C => B,
-      example: Option[C]
-  ) extends Product[A, C]:
+      validation: Validation[C, B, B, D],
+      g: D => B
+  ) extends Product[A, D]:
     override def constraints: Chain[Constraint[OpenApi]] =
-      product.constraints ++ validation.constraints.map(_.map(product.encode))
+      product.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def description: Option[String] = product.description
+    override def example: Option[D] = product.example.flatMap(validation.run(_).toOption)
     override def fields: Chain[Field[A, ?]] = product.fields
     override def nulls: Nulls = product.nulls
-    override def modifyDescription(f: Option[String] => Option[String]): Product[A, C] =
+    override def modifyDescription(f: Option[String] => Option[String]): Product[A, D] =
       copy(product = product.modifyDescription(f))
-    override def modifyExample(f: Option[C] => Option[C]): Product[A, C] = copy(example = f(example))
-    override def modifyNulls(f: Nulls => Nulls): Product[A, C] = copy(product = product.modifyNulls(f))
-
-    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, C)] =
+    override def modifyExample(f: Option[D] => Option[D]): Product[A, D] =
+      copy(product = product.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
+    override def modifyNulls(f: Nulls => Nulls): Product[A, D] = copy(product = product.modifyNulls(f))
+    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, D)] =
       product.decodeWithRemainders(openapi).andThen(_.traverse(andThenValidate(validation, product.encode)))
-
-    override def encode(c: C): OpenApi.Object = product.encode(g(c))
+    override def encode(c: D): OpenApi.Object = product.encode(g(c))
 
   final private case class Zip[A, B, C](
       left: Product[A, B],

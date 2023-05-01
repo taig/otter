@@ -1,7 +1,7 @@
 package io.taig.openapi.schema
 
 import cats.data.{Chain, Validated}
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.validation.{Constraint, Validation}
 
 abstract class Schema[A]:
@@ -23,9 +23,9 @@ abstract class Schema[A]:
   final def withExample(example: A): Self[A] = setExample(Some(example))
   final def withoutExample: Self[A] = setExample(None)
 
-  def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Self[B] { type Codec = self.Codec }
+  def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] { type Codec = self.Codec }
 
-  final def validate(validation: Validation[A, A, A, Unit]): Self[A] { type Codec = self.Codec } =
+  final def validate[B: Encoder](validation: Validation[B, A, A, Unit]): Self[A] { type Codec = self.Codec } =
     ivalidate(validation.tap)(identity)
 
   final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =

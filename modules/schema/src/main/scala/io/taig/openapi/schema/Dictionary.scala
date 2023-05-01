@@ -3,7 +3,8 @@ package io.taig.openapi.schema
 import cats.Eval
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.{Constraint, Validation}
 
 import scala.collection.immutable.{SeqMap, VectorMap}
@@ -17,8 +18,8 @@ sealed abstract class Dictionary[A] extends Schema[A]:
   def key: Eval[Value[?]]
   def schema: Eval[Schema[?]]
 
-  final override def ivalidate[B](validation: Validation[A, A, A, B])(g: B => A): Dictionary[B] =
-    Dictionary.Validate(this, validation, g, example.flatMap(validation.run(_).toOption))
+  override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Dictionary[C] =
+    Dictionary.Validate(this, validation, g)
 
   final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
     case openapi: OpenApi.Object => decode(openapi)
@@ -46,23 +47,24 @@ object Dictionary:
     override def encode(abs: SeqMap[A, B]): OpenApi.Object =
       OpenApi.Object(abs.map { case (k, v) => (key.value.encode(k).render, schema.value.encode(v)) }.to(VectorMap))
 
-  final private case class Validate[A, B](
+  final private case class Validate[A, B: Encoder, C](
       dictionary: Dictionary[A],
-      validation: Validation[A, A, A, B],
-      g: B => A,
-      example: Option[B]
-  ) extends Dictionary[B]:
+      validation: Validation[B, A, A, C],
+      g: C => A
+  ) extends Dictionary[C]:
     override def constraints: Chain[Constraint[OpenApi]] =
-      dictionary.constraints ++ validation.constraints.map(_.map(dictionary.encode))
+      dictionary.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def description: Option[String] = dictionary.description
+    override def example: Option[C] = dictionary.example.flatMap(validation.run(_).toOption)
     override def key: Eval[Value[?]] = dictionary.key
     override def schema: Eval[Schema[?]] = dictionary.schema
-    override def modifyDescription(f: Option[String] => Option[String]): Dictionary[B] =
+    override def modifyDescription(f: Option[String] => Option[String]): Dictionary[C] =
       copy(dictionary = dictionary.modifyDescription(f))
-    override def modifyExample(f: Option[B] => Option[B]): Dictionary[B] = copy(example = f(example))
-    override def decode(openapi: OpenApi.Object): Validated[Violations, B] =
+    override def modifyExample(f: Option[C] => Option[C]): Dictionary[C] =
+      copy(dictionary = dictionary.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
+    override def decode(openapi: OpenApi.Object): Validated[Violations, C] =
       dictionary.decode(openapi).andThen(andThenValidate(validation, dictionary.encode))
-    override def encode(b: B): OpenApi.Object = dictionary.encode(g(b))
+    override def encode(b: C): OpenApi.Object = dictionary.encode(g(b))
 
   def apply[A, B](key: Eval[Value[A]], schema: Eval[Schema[B]]): Dictionary[SeqMap[A, B]] =
     Root(none, none, key, schema)

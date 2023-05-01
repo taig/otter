@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.data.Validated
 import cats.syntax.all.*
 import cats.{Eq, Eval}
-import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.validation.Constraint
 import io.taig.openapi.{History, OpenApi}
 
 sealed abstract class Field[A, B]:
@@ -27,8 +27,6 @@ sealed abstract class Field[A, B]:
   def schema: Eval[Schema[?]]
 
   final def optional: Field[A, Option[B]] = Field.Optional(this)
-
-  // TODO imap, ivalidate, ...
 
   final transparent inline infix def zip[C](field: Field[A, C]): Product[A, ?] = toProduct zip field.toProduct
   final transparent inline infix def :*[C](field: Field[A, C]): Product[A, ?] = toProduct :* field
@@ -58,39 +56,31 @@ object Field:
       schema: Eval[Schema[B]]
   ) extends Field[A, B]:
     override def modifyDefault(f: Option[B] => Option[B]): Field[A, B] = copy(default = f(default))
-
     override def modifyNulls(f: Field.Null => Field.Null): Field[A, B] = copy(nulls = f(nulls))
-
     override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
       val name = renderName
-
       openapi.get(name) match
         case Some(value) =>
           schema.value
             .decode(value)
             .bimap(_.modifyHistory(name /: _), (openapi.remove(name), _))
         case None =>
-          val constraint = Constraint.apply("required", reference = OpenApi.fromString("OpenApi.Primitive"))
-          val violations = Violations.oneNec(History.Root / name, Violation(constraint, actual = OpenApi.Null))
+          val violation = Constraint.obj.required.toViolation(actual = OpenApi.Null)
+          val violations = Violations.oneNec(History.Root / name, violation)
           default.toValid(violations).tupleLeft(openapi)
-
     override def encode(b: B, parent: Product.Nulls): OpenApi.Object =
       OpenApi.Object.one(renderName, schema.value.encode(b))
 
   final private case class Optional[A, B](field: Field[A, B]) extends Field[A, Option[B]]:
     export field.{key, name, nulls, schema}
     override def default: Option[Option[B]] = field.default.map(_.some)
-
     override def modifyDefault(f: Option[Option[B]] => Option[Option[B]]): Field[A, Option[B]] =
       copy(field.modifyDefault(value => f(value.map(_.some)).flatten))
-
     override def modifyNulls(f: Null => Null): Field[A, Option[B]] = copy(field.modifyNulls(f))
-
     override def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Option[B])] =
       if openapi.contains(renderName)
       then field.decode(openapi).map(_.map(_.some))
       else (openapi, none[B]).valid
-
     override def encode(b: Option[B], parent: Product.Nulls): OpenApi.Object = b match
       case Some(b) => field.encode(b, parent)
       case None =>

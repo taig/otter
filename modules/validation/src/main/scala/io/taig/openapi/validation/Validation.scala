@@ -32,18 +32,18 @@ sealed abstract class Validation[+Ref, +Act, -In, +Out]:
   ): Validation[Ref2, Act2, In, Out2] =
     Validation(constraints ++ validation.constraints)(run(_).andThen(validation.run))
 
-  final def product[Ref2 >: Ref, Act2 >: Act, In2 <: In, Out2](
+  final def product[Ref2, Act2 >: Act, In2 <: In, Out2](
       validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref2, Act2, In2, (Out, Out2)] =
+  ): Validation[Ref | Ref2, Act2, In2, (Out, Out2)] =
     Validation(constraints ++ validation.constraints)(input => run(input).product(validation.run(input)))
 
-  final def <*[Ref2 >: Ref, Act2 >: Act, In2 <: In, Out2](
+  final def <*[Ref2, Act2 >: Act, In2 <: In, Out2](
       validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref2, Act2, In2, Out] = product(validation).map(_._1)
+  ): Validation[Ref | Ref2, Act2, In2, Out] = product(validation).map(_._1)
 
-  final def *>[Ref2 >: Ref, Act2 >: Act, In2 <: In, Out2](
+  final def *>[Ref2, Act2 >: Act, In2 <: In, Out2](
       validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref2, Act2, In2, Out2] = product(validation).map(_._2)
+  ): Validation[Ref | Ref2, Act2, In2, Out2] = product(validation).map(_._2)
 
   final def mapReference[Ref2](f: Ref => Ref2): Validation[Ref2, Act, In, Out] =
     Validation(constraints.map(_.map(f)))(run(_).leftMap(_.map(_.mapReference(f))))

@@ -13,9 +13,6 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
   infix def orElse[C](branch: Branch[A, C]) = toSum orElse branch.toSum
   infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = toSum :+ branch
 
-  def imap[C](f: B => C)(g: C => B): Branch[A, C] = Branch(name, key, schema.map(_.imap(f)(g)))
-  // TODO ivalidate, etc.
-
   def toSum: Sum[A, B] = Sum(this)
 
   def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] =

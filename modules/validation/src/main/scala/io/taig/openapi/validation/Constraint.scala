@@ -32,6 +32,9 @@ object Constraint:
     def lessThan[A](comparison: NumericComparison[A]): Constraint[NumericComparison[A]] =
       Constraint("numeric.lessThan", comparison.some)
 
+  object obj:
+    val required: Constraint[Nothing] = Constraint("object.required", none)
+
   object text:
     def atLeast(reference: Int): Constraint[Int] = Constraint("text.atLeast", reference.some)
 
