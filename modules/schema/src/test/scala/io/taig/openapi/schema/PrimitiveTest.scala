@@ -3,7 +3,8 @@ package io.taig.openapi.schema
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
-import io.taig.openapi.validation.{validations, Constraint, Violation}
+import io.taig.openapi.syntax.*
+import io.taig.openapi.validation.{validations, Constraint}
 import munit.FunSuite
 
 import java.util.UUID
@@ -17,9 +18,7 @@ final class PrimitiveTest extends FunSuite:
     assertEquals(
       obtained = string.decode(OpenApi.Null),
       expected = Violations
-        .rootNec(
-          Violation(Constraint.apply("type", OpenApi.fromString("OpenApi.Primitive")), OpenApi.Null)
-        )
+        .rootNec(Constraint.tpe("OpenApi.Primitive".asOpenApi).toViolation(OpenApi.Null))
         .invalid
     )
   }
@@ -30,9 +29,7 @@ final class PrimitiveTest extends FunSuite:
     assertEquals(
       obtained = string.decode(value),
       expected = Violations
-        .rootNec(
-          Violation(Constraint.apply("type", OpenApi.fromString("String")), value)
-        )
+        .rootNec(Constraint.tpe("String".asOpenApi).toViolation(value))
         .invalid
     )
   }
@@ -63,9 +60,7 @@ final class PrimitiveTest extends FunSuite:
     assertEquals(
       obtained = foobar.decode(OpenApi.fromString("foo")),
       expected = Violations
-        .rootNec(
-          Violation(Constraint.apply("text.equal", OpenApi.fromString("foobar")), OpenApi.fromString("foo"))
-        )
+        .rootNec(Constraint.text.equal("foobar".asOpenApi).toViolation("foo".asOpenApi))
         .invalid
     )
   }

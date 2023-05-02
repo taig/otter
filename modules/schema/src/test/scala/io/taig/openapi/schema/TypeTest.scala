@@ -2,7 +2,8 @@ package io.taig.openapi.schema
 
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
-import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.syntax.*
+import io.taig.openapi.validation.Constraint
 import munit.FunSuite
 
 final class TypeTest extends FunSuite:
@@ -13,10 +14,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.BigDecimal.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("BigDecimal")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("BigDecimal".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -27,10 +25,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.BigInt.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("BigInt")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("BigInt".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -45,10 +40,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.Boolean.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("Boolean")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("Boolean".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -59,10 +51,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.Double.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("Double")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("Double".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -73,10 +62,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.Float.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("Float")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("Float".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -87,10 +73,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.Int.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("Int")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("Int".asOpenApi).toViolation("foobar".asOpenApi).invalid
     )
   }
 
@@ -101,10 +84,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.String.decode(OpenApi.fromInt(0)),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("String")),
-        OpenApi.fromInt(0)
-      ).invalid
+      expected = Constraint.tpe("String".asOpenApi).toViolation(0.asOpenApi).invalid
     )
   }
 
@@ -115,10 +95,7 @@ final class TypeTest extends FunSuite:
     )
     assertEquals(
       obtained = Type.Long.decode(OpenApi.fromString("foobar")),
-      expected = Violation(
-        Constraint.apply("type", OpenApi.fromString("Long")),
-        OpenApi.fromString("foobar")
-      ).invalid
+      expected = Constraint.tpe("Long".asOpenApi).toViolation(("foobar").asOpenApi).invalid
     )
   }
 

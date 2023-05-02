@@ -27,8 +27,7 @@ enum Type[A]:
     case (Type.Int, OpenApi.Int(value))               => value.valid
     case (Type.Long, OpenApi.Long(value))             => value.valid
     case (Type.String, OpenApi.String(value))         => value.valid
-    case _ =>
-      Violation(Constraint("type", reference = OpenApi.fromString(self.show).some), openapi).invalid
+    case _ => Constraint.tpe(name = OpenApi.fromString(self.show)).toViolation(openapi).invalid
 
   def encode(a: A): OpenApi.Primitive = self match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)

@@ -3,7 +3,7 @@ package io.taig.openapi.schema
 import cats.syntax.all.*
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.syntax.*
-import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.validation.Constraint
 import io.taig.openapi.{History, OpenApi}
 import munit.FunSuite
 
@@ -28,10 +28,7 @@ final class FieldTest extends FunSuite:
     assertEquals(
       obtained = field("foo", int).decode(OpenApi.Object.Empty),
       expected = Violations
-        .oneNec(
-          History.Root / "foo",
-          Violation(Constraint("required", OpenApi.fromString("OpenApi.Primitive").some), OpenApi.Null)
-        )
+        .oneNec(History.Root / "foo", Constraint.required.toViolation(OpenApi.Null))
         .invalid
     )
   }

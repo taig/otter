@@ -11,7 +11,7 @@ final case class Constraint[+Ref](name: String, reference: Option[Ref]):
 object Constraint:
   def parser(name: String): Constraint[String] = Constraint("parser", name.some)
 
-  def tpe(name: String): Constraint[String] = Constraint("type", name.some)
+  def tpe[A](name: A): Constraint[A] = Constraint("type", name.some)
 
   val required: Constraint[Nothing] = Constraint("required", none)
 
@@ -45,7 +45,7 @@ object Constraint:
 
     val email: Constraint[Nothing] = Constraint("text.email", none)
 
-    def equal(reference: String): Constraint[String] = Constraint("text.equal", reference.some)
+    def equal[A](reference: A): Constraint[A] = Constraint("text.equal", reference.some)
 
     def exactly(reference: Int): Constraint[Int] = Constraint("text.exactly", reference.some)
 

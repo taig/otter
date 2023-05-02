@@ -32,3 +32,7 @@ object Segment:
     override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] =
       schema.value.decode(openapi).leftMap(_.modifyHistory(name /: _))
     override def encode(a: A): OpenApi.Primitive = schema.value.encode(a)
+
+  def static(name: String): Segment[Void] = Static(name)
+
+  def parameter[A](name: String, schema: Eval[Value[A]]): Segment[A] = Parameter(name, schema)
