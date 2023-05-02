@@ -9,30 +9,25 @@ import io.taig.openapi.validation.Constraint
 
 sealed abstract class Segment[A]:
   def name: String
-  def matches(segment: OpenApi.Primitive): Boolean
-  def decode(openapi: OpenApi.Primitive): Validated[Violations, A]
-  def encode(a: A): OpenApi.Primitive
+  def matches(segment: String): Boolean
+  def decode(value: String): Validated[Violations, A]
+  def encode(a: A): String
 
 object Segment:
-  final private case class Static(name: String) extends Segment[Void]:
-    override def matches(segment: OpenApi.Primitive): Boolean = name === segment.render
-    override def decode(openapi: OpenApi.Primitive): Validated[Violations, Void] =
-      Validated.cond(
-        matches(openapi),
-        Void,
-        Violations.oneNec(
-          History.Root / name,
-          Constraint.text.equal(name).toViolation(openapi).mapReference(OpenApi.fromString)
-        )
+  final case class Static(name: String) extends Segment[Void]:
+    override def matches(segment: String): Boolean = name === segment
+    override def decode(value: String): Validated[Violations, Void] = Validated.cond(
+      matches(value),
+      Void,
+      Violations.oneNec(
+        History.Root / name,
+        Constraint.text.equal(OpenApi.fromString(name)).toViolation(OpenApi.fromString(value))
       )
-    override def encode(a: Void): OpenApi.Primitive = OpenApi.fromString(name)
+    )
+    override def encode(a: Void): String = name
 
-  final private case class Parameter[A](name: String, schema: Eval[Value[A]]) extends Segment[A]:
-    override def matches(segment: OpenApi.Primitive): Boolean = true
-    override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] =
-      schema.value.decode(openapi).leftMap(_.modifyHistory(name /: _))
-    override def encode(a: A): OpenApi.Primitive = schema.value.encode(a)
-
-  def static(name: String): Segment[Void] = Static(name)
-
-  def parameter[A](name: String, schema: Eval[Value[A]]): Segment[A] = Parameter(name, schema)
+  final case class Parameter[A](name: String, schema: Eval[Value[A]]) extends Segment[A]:
+    override def matches(segment: String): Boolean = true
+    override def decode(value: String): Validated[Violations, A] =
+      schema.value.parse(value).leftMap(_.modifyHistory(name /: _))
+    override def encode(a: A): String = schema.value.render(a)
