@@ -18,14 +18,15 @@ sealed abstract class Url[A]:
   final transparent inline def /[B](segment: Segment[B]): Url[?] = inline (this, segment) match
     case (left: Url[Void], right)     => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
     case (left, right: Segment[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (left: Url[Tuple], right) =>
-      left.product(right).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
+    case (left: Url[? *: ?], right) =>
+      left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
+  final def /(segment: String): Url[A] = product(Segment.static(segment)).imap { case (a, _) => a }(a => (a, Void))
   final transparent inline def &[B](query: Query[B]): Url[?] = inline (this, query) match
     case (left: Url[Void], right)   => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
     case (left, right: Query[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (left: Url[Tuple], right) =>
-      left.product(right).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
+    case (left: Url[? *: ?], right) =>
+      left.product(right).imap { case (a, b) => a :* b } { ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]) }
     case (left, right) => left.product(right)
   final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Url[C] =
     Url.Validate(this, validation, g)

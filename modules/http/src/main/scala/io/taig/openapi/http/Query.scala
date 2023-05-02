@@ -38,3 +38,5 @@ object Query:
     ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], Option[A])] =
       if queries.contains(name) then query.decode(queries).map(_.map(_.some)) else (queries, none[A]).valid
     override def encode(a: Option[A]): VectorMap[String, OpenApi.Primitive] = a.fold(VectorMap.empty)(query.encode)
+
+  def apply[A](name: String, schema: Eval[Value[A]]): Query[A] = Root(name, schema)
