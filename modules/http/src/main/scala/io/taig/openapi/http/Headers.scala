@@ -38,13 +38,6 @@ sealed abstract class Headers[A]:
   def encode(a: A): VectorMap[CIString, OpenApi.Primitive]
 
 object Headers:
-  case object Empty extends Headers[Void]:
-    override def decodeWithRemainders(
-        headers: VectorMap[CIString, OpenApi.Primitive]
-    ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], Void)] =
-      (headers, Void).valid
-    override def encode(a: Void): VectorMap[CIString, OpenApi.Primitive] = VectorMap.empty
-
   final private case class Root[A](header: Header[A]) extends Headers[A]:
     override def decodeWithRemainders(
         headers: VectorMap[CIString, OpenApi.Primitive]
@@ -78,5 +71,11 @@ object Headers:
         )
       )
     override def encode(c: C): VectorMap[CIString, OpenApi.Primitive] = headers.encode(g(c))
+
+  val Empty: Headers[Void] = new Headers[Void]:
+    override def decodeWithRemainders(
+        headers: VectorMap[CIString, OpenApi.Primitive]
+    ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], Void)] = (headers, Void).valid
+    override def encode(a: Void): VectorMap[CIString, OpenApi.Primitive] = VectorMap.empty
 
   def apply[A](header: Header[A]): Headers[A] = Root(header)

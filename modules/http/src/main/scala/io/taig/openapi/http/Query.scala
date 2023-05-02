@@ -16,6 +16,8 @@ sealed abstract class Query[A]:
 
   final def optional: Query[Option[A]] = Query.Optional(this)
 
+  final def toQueries: Queries[A] = Queries(this)
+
   def decode(
       queries: VectorMap[String, OpenApi.Primitive]
   ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], A)]
