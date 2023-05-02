@@ -94,7 +94,7 @@ object Url:
   final private case class ProductQuery[A, B](url: Url[A], query: Query[B]) extends Url[(A, B)]:
     override def constraint: Chain[Constraint[OpenApi]] = url.constraint
     override def matches(path: Chain[OpenApi.Primitive], queries: VectorMap[String, OpenApi.Primitive]): Boolean =
-      if query.isOptional then true else queries.contains(query.name)
+      url.matches(path, queries) && (query.isOptional || queries.contains(query.name))
     override def decodeWithRemainders(
         path: Chain[OpenApi.Primitive],
         queries: VectorMap[String, OpenApi.Primitive]
