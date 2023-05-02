@@ -12,35 +12,30 @@ import scala.collection.immutable.VectorMap
 
 sealed abstract class Queries[A]:
   def constraints: Chain[Constraint[OpenApi]]
-
+  def matches(queries: VectorMap[String, String]): Boolean
   final def product[B](queries: Queries[B]): Queries[(A, B)] = Queries.Product(this, queries)
-
   final transparent inline def zip[B](queries: Queries[B]): Queries[?] = inline (this, queries) match
     case (left: Queries[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
     case (left, right: Queries[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
     case (left: Queries[Tuple], right) =>
       left.product(right).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
-
   final transparent inline def :&[B](query: Query[B]): Queries[?] = zip(query.toQueries)
-
   final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Queries[C] =
     Queries.Validate(this, validation, g)
-
   final def imap[B](f: A => B)(g: B => A): Queries[B] = ivalidate(Validation.lift(f))(g)
-
   final def decode(values: VectorMap[String, String]): Validated[Violations, A] =
     decodeWithRemainders(values).map(_._2)
-
   def decodeWithRemainders(
       queries: VectorMap[String, String]
   ): Validated[Violations, (VectorMap[String, String], A)]
-
   def encode(a: A): VectorMap[String, String]
 
 object Queries:
   final private case class Root[A](query: Query[A]) extends Queries[A]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
+    override def matches(queries: VectorMap[String, String]): Boolean =
+      if query.isOptional then true else queries.contains(query.name)
     override def decodeWithRemainders(
         queries: VectorMap[String, String]
     ): Validated[Violations, (VectorMap[String, String], A)] = query.decode(queries)
@@ -48,6 +43,7 @@ object Queries:
 
   final private case class Product[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
+    override def matches(queries: VectorMap[String, String]): Boolean = left.matches(queries) && right.matches(queries)
     override def decodeWithRemainders(
         queries: VectorMap[String, String]
     ): Validated[Violations, (VectorMap[String, String], (A, B))] = left.decodeWithRemainders(queries) match
@@ -62,6 +58,7 @@ object Queries:
   ) extends Queries[C]:
     override def constraints: Chain[Constraint[OpenApi]] =
       queries.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
+    override def matches(queries: VectorMap[String, String]): Boolean = this.queries.matches(queries)
     override def decodeWithRemainders(
         values: VectorMap[String, String]
     ): Validated[Violations, (VectorMap[String, String], C)] = queries
@@ -78,6 +75,7 @@ object Queries:
 
   val Empty: Queries[Void] = new Queries[Void]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
+    override def matches(queries: VectorMap[String, String]): Boolean = true
     override def decodeWithRemainders(
         queries: VectorMap[String, String]
     ): Validated[Violations, (VectorMap[String, String], Void)] = (queries, Void).valid
