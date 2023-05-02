@@ -1,6 +1,7 @@
 package io.taig.openapi.http
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import munit.FunSuite
 import io.taig.openapi.schema.schemas.*
@@ -124,5 +125,48 @@ final class UrlTest extends FunSuite:
     assertEquals(
       obtained = Url.Root.matches(path = Chain(OpenApi.fromString("foobar")), queries = VectorMap.empty),
       expected = false
+    )
+  }
+
+  test("encode") {
+    val uuid = UUID.fromString("00000000-0000-0000-0000-000000000000")
+
+    assertEquals(
+      obtained = url.encode(("asdf", 42, 3L, uuid.some, "foobar")),
+      expected = (
+        Chain(
+          OpenApi.fromString("foo"),
+          OpenApi.fromString("asdf"),
+          OpenApi.fromString("bar"),
+          OpenApi.fromInt(42)
+        ),
+        VectorMap(
+          "x" -> OpenApi.fromLong(3L),
+          "y" -> OpenApi.fromString(uuid.toString),
+          "z" -> OpenApi.fromString("foobar")
+        )
+      )
+    )
+    assertEquals(
+      obtained = url.encode(("asdf", 42, 3L, none, "foobar")),
+      expected = (
+        Chain(
+          OpenApi.fromString("foo"),
+          OpenApi.fromString("asdf"),
+          OpenApi.fromString("bar"),
+          OpenApi.fromInt(42)
+        ),
+        VectorMap(
+          "x" -> OpenApi.fromLong(3L),
+          "z" -> OpenApi.fromString("foobar")
+        )
+      )
+    )
+  }
+
+  test("encode: Url.Root") {
+    assertEquals(
+      obtained = Url.Root.encode(Void),
+      expected = (Chain.empty, VectorMap.empty)
     )
   }
