@@ -17,7 +17,7 @@ sealed abstract class Input[A]:
   def body: Input.Body[?]
 
 object Input:
-  abstract class Body[A]:
+  sealed abstract class Body[A]:
     type Effect[f[_], a]
     final def optional: Body[Option[A]] = Body.Optional(this)
     def decode[F[_]: Concurrent](body: Request.Body[F]): Validated[Violations, Effect[F, A]]
