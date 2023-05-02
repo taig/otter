@@ -7,7 +7,7 @@ import munit.FunSuite
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.http.syntax.*
 import io.taig.openapi.schema.{Violations, Void}
-import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.validation.Constraint
 
 import java.util.UUID
 import scala.collection.immutable.VectorMap
@@ -35,9 +35,9 @@ final class UrlTest extends FunSuite:
           OpenApi.fromInt(42)
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "y" -> OpenApi.fromString("not a UUID"),
-          "z" -> OpenApi.fromString("foobar")
+          "x" -> "42",
+          "y" -> "not a UUID",
+          "z" -> "foobar"
         )
       ),
       expected = true
@@ -51,8 +51,8 @@ final class UrlTest extends FunSuite:
           OpenApi.fromInt(42)
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "z" -> OpenApi.fromString("foobar")
+          "x" -> "42",
+          "z" -> "foobar"
         )
       ),
       expected = true
@@ -66,8 +66,8 @@ final class UrlTest extends FunSuite:
           OpenApi.fromInt(42)
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "z" -> OpenApi.fromString("foobar")
+          "x" -> "42",
+          "z" -> "foobar"
         )
       ),
       expected = false
@@ -81,8 +81,8 @@ final class UrlTest extends FunSuite:
           OpenApi.fromInt(42)
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "z" -> OpenApi.fromString("foobar")
+          "x" -> "42",
+          "z" -> "foobar"
         )
       ),
       expected = false
@@ -94,8 +94,8 @@ final class UrlTest extends FunSuite:
           OpenApi.fromString("bar")
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "z" -> OpenApi.fromString("foobar")
+          "x" -> "42",
+          "z" -> "foobar"
         )
       ),
       expected = false
@@ -109,7 +109,7 @@ final class UrlTest extends FunSuite:
           OpenApi.fromInt(42)
         ),
         queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L)
+          "x" -> "42"
         )
       ),
       expected = false
@@ -122,7 +122,7 @@ final class UrlTest extends FunSuite:
       expected = true
     )
     assertEquals(
-      obtained = Url.Root.matches(path = Chain.empty, queries = VectorMap("foo" -> OpenApi.fromString("bar"))),
+      obtained = Url.Root.matches(path = Chain.empty, queries = VectorMap("foo" -> "bar")),
       expected = true
     )
     assertEquals(
@@ -131,7 +131,7 @@ final class UrlTest extends FunSuite:
     )
   }
 
-  test("decodeWithRemainders".only) {
+  test("decodeWithRemainders") {
     assertEquals(
       obtained = url.decodeWithRemainders(
         path = Chain(
@@ -140,13 +140,17 @@ final class UrlTest extends FunSuite:
           OpenApi.fromString("bar"),
           OpenApi.fromInt(42)
         ),
-        queries = VectorMap(
-          "x" -> OpenApi.fromLong(42L),
-          "y" -> OpenApi.fromString(zeroUuid.toString),
-          "z" -> OpenApi.fromString("foobar")
-        )
+        queries = VectorMap("x" -> "42", "y" -> zeroUuid.toString, "z" -> "foobar")
       ),
       expected = (Chain.empty, VectorMap.empty, ("xxx", 42, 42L, zeroUuid.some, "foobar")).valid
+    )
+  }
+
+  test("decodeWithRemainders: query validation error") {
+    assertEquals(
+      obtained = (Url.Root & query("foo", int))
+        .decodeWithRemainders(path = Chain.empty, queries = VectorMap("foo" -> "42")),
+      expected = (Chain.empty, VectorMap.empty, 42).valid
     )
   }
 
@@ -156,9 +160,8 @@ final class UrlTest extends FunSuite:
       expected = (Chain.empty, VectorMap.empty, Void).valid
     )
     assertEquals(
-      obtained =
-        Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap("foo" -> OpenApi.fromString("bar"))),
-      expected = (Chain.empty, VectorMap("foo" -> OpenApi.fromString("bar")), Void).valid
+      obtained = Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap("foo" -> "bar")),
+      expected = (Chain.empty, VectorMap("foo" -> "bar"), Void).valid
     )
     assertEquals(
       obtained = Url.Root.decodeWithRemainders(path = Chain(OpenApi.fromString("foobar")), queries = VectorMap.empty),
@@ -183,11 +186,7 @@ final class UrlTest extends FunSuite:
           OpenApi.fromString("bar"),
           OpenApi.fromInt(42)
         ),
-        VectorMap(
-          "x" -> OpenApi.fromLong(3L),
-          "y" -> OpenApi.fromString(uuid.toString),
-          "z" -> OpenApi.fromString("foobar")
-        )
+        VectorMap("x" -> "3", "y" -> uuid.toString, "z" -> "foobar")
       )
     )
     assertEquals(
@@ -199,10 +198,7 @@ final class UrlTest extends FunSuite:
           OpenApi.fromString("bar"),
           OpenApi.fromInt(42)
         ),
-        VectorMap(
-          "x" -> OpenApi.fromLong(3L),
-          "z" -> OpenApi.fromString("foobar")
-        )
+        VectorMap("x" -> "3", "z" -> "foobar")
       )
     )
   }

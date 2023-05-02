@@ -29,32 +29,31 @@ sealed abstract class Queries[A]:
 
   final def imap[B](f: A => B)(g: B => A): Queries[B] = ivalidate(Validation.lift(f))(g)
 
-  final def decode(values: VectorMap[String, OpenApi.Primitive]): Validated[Violations, A] =
+  final def decode(values: VectorMap[String, String]): Validated[Violations, A] =
     decodeWithRemainders(values).map(_._2)
 
   def decodeWithRemainders(
-      queries: VectorMap[String, OpenApi.Primitive]
-  ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], A)]
+      queries: VectorMap[String, String]
+  ): Validated[Violations, (VectorMap[String, String], A)]
 
-  def encode(a: A): VectorMap[String, OpenApi.Primitive]
+  def encode(a: A): VectorMap[String, String]
 
 object Queries:
   final private case class Root[A](query: Query[A]) extends Queries[A]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def decodeWithRemainders(
-        queries: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], A)] =
-      query.decode(queries).leftMap(_.modifyHistory("queries" /: _))
-    override def encode(a: A): VectorMap[String, OpenApi.Primitive] = query.encode(a)
+        queries: VectorMap[String, String]
+    ): Validated[Violations, (VectorMap[String, String], A)] = query.decode(queries)
+    override def encode(a: A): VectorMap[String, String] = query.encode(a)
 
   final private case class Product[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
     override def decodeWithRemainders(
-        queries: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], (A, B))] = left.decodeWithRemainders(queries) match
+        queries: VectorMap[String, String]
+    ): Validated[Violations, (VectorMap[String, String], (A, B))] = left.decodeWithRemainders(queries) match
       case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
       case Validated.Invalid(violations)    => right.decode(queries).fold(violations merge _, _ => violations).invalid
-    override def encode(ab: (A, B)): VectorMap[String, OpenApi.Primitive] = left.encode(ab._1) ++ right.encode(ab._2)
+    override def encode(ab: (A, B)): VectorMap[String, String] = left.encode(ab._1) ++ right.encode(ab._2)
 
   final private case class Validate[A, B: Encoder, C](
       queries: Queries[A],
@@ -64,18 +63,24 @@ object Queries:
     override def constraints: Chain[Constraint[OpenApi]] =
       queries.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def decodeWithRemainders(
-        values: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], C)] =
-      queries
-        .decodeWithRemainders(values)
-        .andThen(_.traverse(applyValidation(validation, a => OpenApi.fromSeqMap(queries.encode(a)))))
-    override def encode(c: C): VectorMap[String, OpenApi.Primitive] = queries.encode(g(c))
+        values: VectorMap[String, String]
+    ): Validated[Violations, (VectorMap[String, String], C)] = queries
+      .decodeWithRemainders(values)
+      .andThen(
+        _.traverse(
+          applyValidation(
+            validation,
+            a => OpenApi.fromMap((queries.encode(a): Map[String, String]).fmap(OpenApi.fromString))
+          )
+        )
+      )
+    override def encode(c: C): VectorMap[String, String] = queries.encode(g(c))
 
   val Empty: Queries[Void] = new Queries[Void]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def decodeWithRemainders(
-        queries: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (VectorMap[String, OpenApi.Primitive], Void)] = (queries, Void).valid
-    override def encode(a: Void): VectorMap[String, OpenApi.Primitive] = VectorMap.empty
+        queries: VectorMap[String, String]
+    ): Validated[Violations, (VectorMap[String, String], Void)] = (queries, Void).valid
+    override def encode(a: Void): VectorMap[String, String] = VectorMap.empty
 
   def apply[A](query: Query[A]): Queries[A] = Root(query)
