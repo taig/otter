@@ -2,11 +2,12 @@ package io.taig.openapi.http
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{History, OpenApi}
 import munit.FunSuite
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.http.syntax.*
-import io.taig.openapi.schema.Void
+import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.validation.{Constraint, Violation}
 
 import java.util.UUID
 import scala.collection.immutable.VectorMap
@@ -17,6 +18,8 @@ final class UrlTest extends FunSuite:
       & query("x", long)
       & query("y", uuid).optional
       & query("z", string)
+
+  val zeroUuid = UUID.fromString("00000000-0000-0000-0000-000000000000")
 
   test("matches") {
     assertEquals(
@@ -125,6 +128,46 @@ final class UrlTest extends FunSuite:
     assertEquals(
       obtained = Url.Root.matches(path = Chain(OpenApi.fromString("foobar")), queries = VectorMap.empty),
       expected = false
+    )
+  }
+
+  test("decodeWithRemainders".only) {
+    assertEquals(
+      obtained = url.decodeWithRemainders(
+        path = Chain(
+          OpenApi.fromString("foo"),
+          OpenApi.fromString("xxx"),
+          OpenApi.fromString("bar"),
+          OpenApi.fromInt(42)
+        ),
+        queries = VectorMap(
+          "x" -> OpenApi.fromLong(42L),
+          "y" -> OpenApi.fromString(zeroUuid.toString),
+          "z" -> OpenApi.fromString("foobar")
+        )
+      ),
+      expected = (Chain.empty, VectorMap.empty, ("xxx", 42, 42L, zeroUuid.some, "foobar")).valid
+    )
+  }
+
+  test("decodeWithRemainders: Url.Empty") {
+    assertEquals(
+      obtained = Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap.empty),
+      expected = (Chain.empty, VectorMap.empty, Void).valid
+    )
+    assertEquals(
+      obtained =
+        Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap("foo" -> OpenApi.fromString("bar"))),
+      expected = (Chain.empty, VectorMap("foo" -> OpenApi.fromString("bar")), Void).valid
+    )
+    assertEquals(
+      obtained = Url.Root.decodeWithRemainders(path = Chain(OpenApi.fromString("foobar")), queries = VectorMap.empty),
+      expected = Violations
+        .oneNec(
+          History.Root / "path",
+          Constraint.text.equal(OpenApi.fromString("/")).toViolation(OpenApi.fromString("/foobar"))
+        )
+        .invalid
     )
   }
 

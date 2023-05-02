@@ -43,7 +43,7 @@ sealed abstract class Url[A]:
 
 object Url:
   private def renderPath(path: Chain[OpenApi.Primitive]): String =
-    path.map(_.render).mkString_("/")
+    "/" + path.map(_.render).mkString_("/")
   private def renderQueries(queries: VectorMap[String, OpenApi.Primitive]): String =
     queries.toSeq.map { case (name, value) => s"$name=${value.render}" }.mkString_("&")
   private def renderUrl(path: Chain[OpenApi.Primitive], queries: VectorMap[String, OpenApi.Primitive]): String =
@@ -56,12 +56,14 @@ object Url:
     override def decodeWithRemainders(
         path: Chain[OpenApi.Primitive],
         queries: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive], Void)] =
-      Validated.cond(
-        matches(path, queries),
-        (path, queries, Void),
-        Violations.rootNec(Constraint.text.equal("/").toViolation(renderPath(path).asOpenApi).mapReference(_.asOpenApi))
+    ): Validated[Violations, (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive], Void)] = Validated.cond(
+      matches(path, queries),
+      (path, queries, Void),
+      Violations.oneNec(
+        History.Root / "path",
+        Constraint.text.equal(OpenApi.fromString("/")).toViolation(renderPath(path).asOpenApi)
       )
+    )
     override def encode(a: Void): (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive]) =
       (Chain.empty, VectorMap.empty)
 
@@ -74,19 +76,14 @@ object Url:
     override def decodeWithRemainders(
         path: Chain[OpenApi.Primitive],
         queries: VectorMap[String, OpenApi.Primitive]
-    ): Validated[Violations, (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive], (A, B))] =
-      url.decodeWithRemainders(path, queries).andThen { case (path, queries, a) =>
-        path.uncons match
-          case Some((head, tail)) =>
-            if tail.isEmpty
-            then segment.decode(head).map(b => (tail, queries, (a, b)))
-            else
-              val actual = renderPath(tail).asOpenApi
-              val violation = Constraint.text.equal("/").toViolation(actual).mapReference(_.asOpenApi)
-              Violations.rootNec(violation).invalid
-          case None =>
-            Violations.oneNec(History.Root / segment.name, Constraint.required.toViolation(OpenApi.Null)).invalid
-      }
+    ): Validated[Violations, (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive], (A, B))] = 
+      path.initLast match
+        case Some((init, last)) =>
+          segment.decode(last).andThen(b => url.decodeWithRemainders(init, queries).map(_.tupleRight(b)))
+        case None =>
+          Violations
+            .oneNec(History.Root / "path" / segment.name, Constraint.required.toViolation("/".asOpenApi))
+            .invalid
     override def encode(ab: (A, B)): (Chain[OpenApi.Primitive], VectorMap[String, OpenApi.Primitive]) =
       val (segments, queries) = url.encode(ab._1)
       (segments :+ segment.encode(ab._2), queries)
