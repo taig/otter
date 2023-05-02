@@ -1,17 +1,20 @@
 package io.taig.openapi.http
 
-import cats.data.Validated
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import io.taig.openapi.schema.Void
 import io.taig.openapi.schema.applyValidation
 import io.taig.openapi.schema.Violations
-import io.taig.openapi.validation.Validation
+import io.taig.openapi.validation.{Constraint, Validation}
 import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
 
 sealed abstract class Headers[A]:
+  def constraints: Chain[Constraint[OpenApi]]
+
   final def product[B](headers: Headers[B]): Headers[(A, B)] = Headers.Product(this, headers)
 
   final transparent inline def zip[B](headers: Headers[B]): Headers[?] = inline (this, headers) match
@@ -39,12 +42,14 @@ sealed abstract class Headers[A]:
 
 object Headers:
   final private case class Root[A](header: Header[A]) extends Headers[A]:
+    override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def decodeWithRemainders(
         headers: VectorMap[CIString, OpenApi.Primitive]
     ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], A)] = header.decode(headers)
     override def encode(a: A): VectorMap[CIString, OpenApi.Primitive] = header.encode(a)
 
   final private case class Product[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
+    override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
     override def decodeWithRemainders(
         headers: VectorMap[CIString, OpenApi.Primitive]
     ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], (A, B))] =
@@ -58,6 +63,8 @@ object Headers:
       validation: Validation[B, A, A, C],
       g: C => A
   ) extends Headers[C]:
+    override def constraints: Chain[Constraint[OpenApi]] =
+      headers.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def decodeWithRemainders(
         values: VectorMap[CIString, OpenApi.Primitive]
     ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], C)] = headers
@@ -73,6 +80,7 @@ object Headers:
     override def encode(c: C): VectorMap[CIString, OpenApi.Primitive] = headers.encode(g(c))
 
   val Empty: Headers[Void] = new Headers[Void]:
+    override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def decodeWithRemainders(
         headers: VectorMap[CIString, OpenApi.Primitive]
     ): Validated[Violations, (VectorMap[CIString, OpenApi.Primitive], Void)] = (headers, Void).valid
