@@ -14,8 +14,14 @@ sealed abstract class Path[A]:
     matches && remainders.isEmpty
   def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean)
   final def product[B](path: Path[B]): Path[(A, B)] = Path.Product(this, path)
-  final transparent inline def zip[B](path: Path[B]): Path[?] = ???
+  final transparent inline def zip[B](path: Path[B]): Path[?] = inline (this, path) match
+    case (left: Path[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
+    case (left, right: Path[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
+    case (left: Path[? *: ?], right) =>
+      left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+    case (left, right) => left.product(right)
   final transparent inline def /[B](segment: Segment[B]): Path[?] = zip(segment.toPath)
+  final transparent inline def /(name: String): Path[?] = /(Segment.Static(name))
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(this, f, g)
   final def decode(path: Chain[String]): Validated[Violations, A] =
     decodeWithRemainders(path).andThen { case (remainders, a) =>
