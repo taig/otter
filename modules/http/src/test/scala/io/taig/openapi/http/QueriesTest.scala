@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.data.Chain
 import io.taig.openapi.http.syntax.*
 import io.taig.openapi.schema.schemas.*
 import munit.FunSuite
@@ -7,7 +8,15 @@ import munit.FunSuite
 import scala.collection.immutable.VectorMap
 
 final class QueriesTest extends FunSuite:
-  val queries: Queries[(String, Option[Int], Long)] = query("x", string) & query("y", int).optional & query("z", long)
+  val x: Query[String] = query("x", string)
+  val y: Query[Option[Int]] = query("y", int).optional
+  val z: Query[Long] = query("z", long)
+  val queries: Queries[(String, Option[Int], Long)] = x & y & z
+
+  test("toChain") {
+    assertEquals(obtained = queries.toChain, expected = Chain(x, y, z))
+    assertEquals(obtained = Queries.Empty.toChain, expected = Chain.empty)
+  }
 
   test("matches") {
     assertEquals(
