@@ -12,6 +12,7 @@ sealed abstract class Segment[A]:
   def matches(segment: String): Boolean
   def decode(value: String): Validated[Violations, A]
   def encode(a: A): String
+  def print: String
 
 object Segment:
   final case class Static(name: String) extends Segment[Void]:
@@ -25,9 +26,11 @@ object Segment:
       )
     )
     override def encode(a: Void): String = name
+    override def print: String = name
 
   final case class Parameter[A](name: String, schema: Eval[Value[A]]) extends Segment[A]:
     override def matches(segment: String): Boolean = true
     override def decode(value: String): Validated[Violations, A] =
       schema.value.parse(value).leftMap(_.modifyHistory(name /: _))
     override def encode(a: A): String = schema.value.render(a)
+    override def print: String = s"{${name}}"
