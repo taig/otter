@@ -2,7 +2,7 @@ package io.taig.openapi.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.History
+import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.schema.{Violations, Void}
 import io.taig.openapi.validation.Constraint
@@ -47,7 +47,7 @@ object Path:
         case Some((head, tail)) => segment.decode(head).tupleLeft(tail)
         case None =>
           Violations
-            .oneNec(History.Root / segment.name, Constraint.required.toViolation(printPath(path).asOpenApi))
+            .oneNec(History.Root / segment.name, Constraint.required.toViolation(OpenApi.Null))
             .invalid
     override def encode(a: A): Chain[String] = Chain.one(segment.encode(a))
 

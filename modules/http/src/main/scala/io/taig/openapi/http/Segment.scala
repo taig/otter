@@ -3,8 +3,9 @@ package io.taig.openapi.http
 import cats.Eval
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.openapi.{History, OpenApi}
+import io.taig.openapi.History
 import io.taig.openapi.schema.{Value, Violations, Void}
+import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.Constraint
 
 sealed abstract class Segment[A]:
@@ -23,7 +24,7 @@ object Segment:
       Void,
       Violations.oneNec(
         History.Root / name,
-        Constraint.text.equal(OpenApi.fromString(name)).toViolation(OpenApi.fromString(value))
+        Constraint.required.toViolation(value.asOpenApi)
       )
     )
     override def encode(a: Void): String = name
