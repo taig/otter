@@ -16,8 +16,8 @@ final class PathTest extends FunSuite:
   val z: Segment[Long] = parameter("z", long)
   val path: Path[(String, Int, Long)] = Path.Root / x / "foo" / y / "bar" / z
 
-  test("segments") {
-    assertEquals(obtained = path.segments, expected = Chain(x, Segment.Static("foo"), y, Segment.Static("bar"), z))
+  test("toChain") {
+    assertEquals(obtained = path.toChain, expected = Chain(x, Segment.Static("foo"), y, Segment.Static("bar"), z))
   }
 
   test("matches") {

@@ -8,7 +8,7 @@ import io.taig.openapi.schema.{Violations, Void}
 import io.taig.openapi.validation.Constraint
 
 sealed abstract class Path[A]:
-  def segments: Chain[Segment[?]]
+  def toChain: Chain[Segment[?]]
   final def matches(path: Chain[String]): Boolean =
     val (remainders, matches) = matchesWithRemainders(path)
     matches && remainders.isEmpty
@@ -38,7 +38,7 @@ object Path:
   private def printPath(path: Chain[String]): String = "/" + path.mkString_("/")
 
   final private case class One[A](segment: Segment[A]) extends Path[A]:
-    override def segments: Chain[Segment[?]] = Chain.one(segment)
+    override def toChain: Chain[Segment[?]] = Chain.one(segment)
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = path.uncons match
       case Some((head, tail)) => (tail, segment.matches(head))
       case None               => (path, false)
@@ -52,7 +52,7 @@ object Path:
     override def encode(a: A): Chain[String] = Chain.one(segment.encode(a))
 
   final private case class Product[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
-    override def segments: Chain[Segment[?]] = left.segments ++ right.segments
+    override def toChain: Chain[Segment[?]] = left.toChain ++ right.toChain
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
       val (remainders1, result1) = left.matchesWithRemainders(path)
       val (remainders2, result2) = right.matchesWithRemainders(remainders1)
@@ -64,7 +64,7 @@ object Path:
     override def encode(ab: (A, B)): Chain[String] = left.encode(ab._1) ++ right.encode(ab._2)
 
   final private case class Modify[A, B](path: Path[A], f: A => B, g: B => A) extends Path[B]:
-    override def segments: Chain[Segment[?]] = path.segments
+    override def toChain: Chain[Segment[?]] = path.toChain
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
       this.path.matchesWithRemainders(path)
     override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], B)] =
@@ -72,7 +72,7 @@ object Path:
     override def encode(b: B): Chain[String] = path.encode(g(b))
 
   val Root: Path[Void] = new Path[Void]:
-    override def segments: Chain[Segment[?]] = Chain.empty
+    override def toChain: Chain[Segment[?]] = Chain.empty
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = (path, true)
     override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], Void)] =
       (path, Void).valid
