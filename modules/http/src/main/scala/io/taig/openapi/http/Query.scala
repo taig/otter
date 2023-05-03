@@ -25,12 +25,13 @@ object Query:
   final private case class Root[A](name: String, schema: Eval[Value[A]]) extends Query[A]:
     override def isOptional: Boolean = false
     override def decode(queries: VectorMap[String, String]): Validated[Violations, (VectorMap[String, String], A)] =
-      queries.get(name) match
-        case Some(value) => schema.value.parse(value).tupleLeft(queries.removed(name))
-        case None =>
-          val actual = OpenApi.fromMap((queries: Map[String, String]).fmap(OpenApi.fromString))
-          val violation = Constraint.required.toViolation(actual)
-          Violations.rootNec(violation).invalid
+      queries
+        .get(name)
+        .match {
+          case Some(value) => schema.value.parse(value).tupleLeft(queries.removed(name))
+          case None        => Violations.rootNec(Constraint.required.toViolation(OpenApi.Null)).invalid
+        }
+        .leftMap(_.modifyHistory(name /: _))
     override def encode(a: A): VectorMap[String, String] = VectorMap(name -> schema.value.render(a))
 
   final private case class Optional[A](query: Query[A]) extends Query[Option[A]]:
