@@ -2,7 +2,7 @@ package io.taig.openapi.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.{History, OpenApi}
+import io.taig.openapi.History
 import io.taig.openapi.syntax.*
 import io.taig.openapi.schema.{Violations, Void}
 import io.taig.openapi.validation.Constraint
@@ -14,6 +14,8 @@ sealed abstract class Path[A]:
     matches && remainders.isEmpty
   def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean)
   final def product[B](path: Path[B]): Path[(A, B)] = Path.Product(this, path)
+  final transparent inline def zip[B](path: Path[B]): Path[?] = ???
+  final transparent inline def /[B](segment: Segment[B]): Path[?] = zip(segment.toPath)
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(this, f, g)
   final def decode(path: Chain[String]): Validated[Violations, A] =
     decodeWithRemainders(path).andThen { case (remainders, a) =>
@@ -29,21 +31,19 @@ sealed abstract class Path[A]:
 object Path:
   private def printPath(path: Chain[String]): String = "/" + path.mkString_("/")
 
-  final private case class Append[A, B](path: Path[A], segment: Segment[B]) extends Path[(A, B)]:
+  final private case class One[A](segment: Segment[A]) extends Path[A]:
     override def segments: Chain[Segment[?]] = Chain.one(segment)
-    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = path.initLast match
-      case Some((head, tail)) =>
-        val (remainders, result) = this.path.matchesWithRemainders(head)
-        (remainders, result && segment.matches(tail))
-      case None => (path, false)
-    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], (A, B))] =
-      this.path.decodeWithRemainders(path).andThen { case (remainders, a) =>
-        remainders.uncons match
-          case Some((head, tail)) => segment.decode(head).map(b => (tail, (a, b)))
-          case None =>
-            Violations.oneNec(History.Root / segment.name, Constraint.required.toViolation(OpenApi.Null)).invalid
-      }
-    override def encode(ab: (A, B)): Chain[String] = path.encode(ab._1) :+ segment.encode(ab._2)
+    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = path.uncons match
+      case Some((head, tail)) => (tail, segment.matches(head))
+      case None               => (path, false)
+    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], A)] =
+      path.uncons match
+        case Some((head, tail)) => segment.decode(head).tupleLeft(tail)
+        case None =>
+          Violations
+            .oneNec(History.Root / segment.name, Constraint.required.toViolation(printPath(path).asOpenApi))
+            .invalid
+    override def encode(a: A): Chain[String] = Chain.one(segment.encode(a))
 
   final private case class Product[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
     override def segments: Chain[Segment[?]] = left.segments ++ right.segments
@@ -71,3 +71,5 @@ object Path:
     override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], Void)] =
       (path, Void).valid
     override def encode(a: Void): Chain[String] = Chain.empty
+
+  def apply[A](segment: Segment[A]): Path[A] = One(segment)

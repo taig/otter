@@ -13,6 +13,7 @@ sealed abstract class Segment[A]:
   def decode(value: String): Validated[Violations, A]
   def encode(a: A): String
   def print: String
+  final def toPath: Path[A] = Path(this)
 
 object Segment:
   final case class Static(name: String) extends Segment[Void]:
@@ -33,4 +34,4 @@ object Segment:
     override def decode(value: String): Validated[Violations, A] =
       schema.value.parse(value).leftMap(_.modifyHistory(name /: _))
     override def encode(a: A): String = schema.value.render(a)
-    override def print: String = s"{${name}}"
+    override def print: String = s"{$name}"
