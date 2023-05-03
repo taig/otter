@@ -11,8 +11,14 @@ import io.taig.openapi.validation.Constraint
 import munit.FunSuite
 
 final class PathTest extends FunSuite:
-  val path: Path[(String, Int, Long)] =
-    Path.Root / parameter("x", string) / "foo" / parameter("y", int) / "bar" / parameter("z", long)
+  val x: Segment[String] = parameter("x", string)
+  val y: Segment[Int] = parameter("y", int)
+  val z: Segment[Long] = parameter("z", long)
+  val path: Path[(String, Int, Long)] = Path.Root / x / "foo" / y / "bar" / z
+
+  test("segments") {
+    assertEquals(obtained = path.segments, expected = Chain(x, Segment.Static("foo"), y, Segment.Static("bar"), z))
+  }
 
   test("matches") {
     assertEquals(
