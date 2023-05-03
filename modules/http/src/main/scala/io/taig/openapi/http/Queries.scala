@@ -18,10 +18,10 @@ sealed abstract class Queries[A]:
   final transparent inline def zip[B](queries: Queries[B]): Queries[?] = inline (this, queries) match
     case (left: Queries[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
     case (left, right: Queries[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (left: Queries[Tuple], right) =>
-      left.product(right).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
+    case (left: Queries[? *: ?], right) =>
+      left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
-  final transparent inline def :&[B](query: Query[B]): Queries[?] = zip(query.toQueries)
+  final transparent inline def &[B](query: Query[B]): Queries[?] = zip(query.toQueries)
   final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Queries[C] =
     Queries.Validate(this, validation, g)
   final def imap[B](f: A => B)(g: B => A): Queries[B] = ivalidate(Validation.lift(f))(g)

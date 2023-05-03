@@ -14,6 +14,7 @@ sealed abstract class Query[A]:
   def name: String
   def schema: Eval[Value[?]]
   final def optional: Query[Option[A]] = Query.Optional(this)
+  final transparent inline def &[B](query: Query[B]): Queries[?] = toQueries & query
   final def toQueries: Queries[A] = Queries(this)
   def decode(
       queries: VectorMap[String, String]
