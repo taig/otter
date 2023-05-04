@@ -22,6 +22,7 @@ sealed abstract class Path[A]:
     case (left, right) => left.product(right)
   final transparent inline def /[B](segment: Segment[B]): Path[?] = zip(segment.toPath)
   final transparent inline def /(name: String): Path[?] = /(Segment.Static(name))
+  final def toUrl: Url[A] = Url(this)
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(this, f, g)
   final def decode(path: Chain[String]): Validated[Violations, A] =
     decodeWithRemainders(path).andThen { case (remainders, a) =>

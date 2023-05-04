@@ -18,6 +18,7 @@ sealed abstract class Queries[A]:
       left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
   final transparent inline def &[B](query: Query[B]): Queries[?] = zip(query.toQueries)
+  final def toUrl: Url[A] = Url(this)
   final def imap[B](f: A => B)(g: B => A): Queries[B] = Queries.Modify(this, f, g)
   final def decode(values: VectorMap[String, String]): Validated[Violations, A] =
     decodeWithRemainders(values).map(_._2)
