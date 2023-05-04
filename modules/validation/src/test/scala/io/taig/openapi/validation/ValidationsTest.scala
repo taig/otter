@@ -183,21 +183,11 @@ final class ValidationsTest extends FunSuite:
   }
 
   test("text.nonEmpty") {
+    assert(text.nonEmpty.run("foobar").isValid)
+    assert(text.nonEmpty.run(" ").isValid)
     assertEquals(
-      obtained = text.required.run("foobar"),
-      expected = "foobar".valid
-    )
-    assertEquals(
-      obtained = text.required.run(" foo bar "),
-      expected = "foo bar".valid
-    )
-    assertEquals(
-      obtained = text.required.run(""),
-      expected = Constraint.text.required.toViolation(actual = "").invalidNec
-    )
-    assertEquals(
-      obtained = text.required.run("   "),
-      expected = Constraint.text.required.toViolation(actual = "   ").invalidNec
+      obtained = text.nonEmpty.run(""),
+      expected = Constraint.required.toViolation(actual = "").invalidNec
     )
   }
 
@@ -206,7 +196,7 @@ final class ValidationsTest extends FunSuite:
     assertEquals(obtained = text.required.run(" foo  bar  "), expected = "foo  bar".valid)
     assertEquals(
       obtained = text.required.run(""),
-      expected = Constraint.text.required.toViolation(actual = "").invalidNec
+      expected = Constraint.required.toViolation(actual = "").invalidNec
     )
   }
 

@@ -132,7 +132,9 @@ object validations:
         .andThen(numeric.lessThan(reference, equal = true))
         .withConstraint(_ => Constraint.text.atMost(reference))
 
-    val nonEmpty: Validation[Int, Int, String, Unit] = atLeast(reference = 1)
+    val nonEmpty: Validation[Nothing, String, String, Unit] = atLeast(reference = 1)
+      .withConstraint(_ => Constraint.required)
+      .reset
 
     val email: Validation[Nothing, String, String, Unit] = matches("""^.+@.+$""".r)
       .withConstraint(_ => Constraint.text.email)
@@ -149,7 +151,4 @@ object validations:
     def matches(regex: Regex): Validation[Regex, String, String, Unit] =
       Validation.condNec(Constraint.text.matches(regex))(regex.matches)
 
-    val required: Validation[Nothing, String, String, String] = trim
-      .andThen(nonEmpty.tap)
-      .withConstraint(_ => Constraint.required)
-      .reset
+    val required: Validation[Nothing, String, String, String] = trim.andThen(nonEmpty.tap)
