@@ -2,10 +2,8 @@ package io.taig.openapi.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.{Encoder, History, OpenApi}
-import io.taig.openapi.syntax.*
+import io.taig.openapi.History
 import io.taig.openapi.schema.{Violations, Void}
-import io.taig.openapi.validation.Constraint
 
 import scala.collection.immutable.VectorMap
 
@@ -63,11 +61,10 @@ object Url:
     override def decodeWithRemainders(
         path: Chain[String],
         queries: VectorMap[String, String]
-    ): Validated[Violations, (Chain[String], VectorMap[String, String], A)] =
-      this.path
-        .decodeWithRemainders(path)
-        .map { case (remainders, a) => (remainders, queries, a) }
-        .leftMap(_.modifyHistory("path" /: _))
+    ): Validated[Violations, (Chain[String], VectorMap[String, String], A)] = this.path
+      .decodeWithRemainders(path)
+      .map { case (remainders, a) => (remainders, queries, a) }
+      .leftMap(_.modifyHistory("path" /: _))
     override def encode(a: A): (Chain[String], VectorMap[String, String]) = (path.encode(a), VectorMap.empty)
 
   final private case class FromQueries[A](queries: Queries[A]) extends Url[A]:
@@ -81,11 +78,10 @@ object Url:
     override def decodeWithRemainders(
         path: Chain[String],
         queries: VectorMap[String, String]
-    ): Validated[Violations, (Chain[String], VectorMap[String, String], A)] =
-      this.queries
-        .decodeWithRemainders(queries)
-        .map { case (remainders, a) => (path, remainders, a) }
-        .leftMap(_.modifyHistory("queries" /: _))
+    ): Validated[Violations, (Chain[String], VectorMap[String, String], A)] = this.queries
+      .decodeWithRemainders(queries)
+      .map { case (remainders, a) => (path, remainders, a) }
+      .leftMap(_.modifyHistory("queries" /: _))
     override def encode(a: A): (Chain[String], VectorMap[String, String]) = (Chain.empty, queries.encode(a))
 
   final private case class Product[A, B](left: Url[A], right: Url[B]) extends Url[(A, B)]:
@@ -131,19 +127,11 @@ object Url:
     override def matchesWithRemainders(
         path: Chain[String],
         queries: VectorMap[String, String]
-    ): (Chain[String], VectorMap[String, String], Boolean) =
-      (path, queries, true)
+    ): (Chain[String], VectorMap[String, String], Boolean) = (path, queries, true)
     override def decodeWithRemainders(
         path: Chain[String],
         queries: VectorMap[String, String]
-    ): Validated[Violations, (Chain[String], VectorMap[String, String], Void)] = Validated.cond(
-      matches(path, queries),
-      (path, queries, Void),
-      Violations.oneNec(
-        History.Root / "path",
-        Constraint.text.equal(OpenApi.fromString("/")).toViolation(renderPath(path).asOpenApi)
-      )
-    )
+    ): Validated[Violations, (Chain[String], VectorMap[String, String], Void)] = (path, queries, Void).valid
     override def encode(a: Void): (Chain[String], VectorMap[String, String]) = (Chain.empty, VectorMap.empty)
 
   def apply[A](path: Path[A]): Url[A] = FromPath(path)
