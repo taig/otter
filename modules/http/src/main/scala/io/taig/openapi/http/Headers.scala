@@ -12,8 +12,8 @@ sealed abstract class Headers[A]:
   final transparent inline def zip[B](headers: Headers[B]): Headers[?] = inline (this, headers) match
     case (left: Headers[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
     case (left, right: Headers[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
-    case (left: Headers[Tuple], right) =>
-      left.product(right).imap[Tuple.Append[A, B]] { case (a, b) => a :* b }(ab => (ab.init, ab.last.asInstanceOf[B]))
+    case (left: Headers[? *: ?], right) =>
+      left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
   final transparent inline def :*[B](header: Header[B]): Headers[?] = zip(header.toHeaders)
   final def imap[B](f: A => B)(g: B => A): Headers[B] = Headers.Modify(this, f, g)
@@ -34,10 +34,9 @@ object Headers:
   final private case class Product[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
     override def decodeWithRemainders(
         headers: VectorMap[CIString, String]
-    ): Validated[Violations, (VectorMap[CIString, String], (A, B))] =
-      left.decodeWithRemainders(headers) match
-        case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-        case Validated.Invalid(violations)    => right.decode(headers).fold(violations merge _, _ => violations).invalid
+    ): Validated[Violations, (VectorMap[CIString, String], (A, B))] = left.decodeWithRemainders(headers) match
+      case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+      case Validated.Invalid(violations)    => right.decode(headers).fold(violations merge _, _ => violations).invalid
     override def encode(ab: (A, B)): VectorMap[CIString, String] = left.encode(ab._1) ++ right.encode(ab._2)
 
   final private case class Modify[A, B](

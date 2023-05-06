@@ -11,6 +11,7 @@ import org.typelevel.ci.CIString
 import scala.collection.immutable.VectorMap
 
 // TODO multiple headers with same name (?)
+// TODO default
 sealed abstract class Header[A]:
   def name: CIString
   def schema: Eval[Value[?]]
