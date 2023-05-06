@@ -4,25 +4,25 @@ import cats.data.Chain
 import cats.syntax.all.*
 import fs2.{Pure, Stream}
 import org.typelevel.ci.CIString
-import io.taig.openapi.OpenApi
+
+import scala.collection.immutable.VectorMap
 
 final case class Request[+F[_]](
     method: Method,
-    path: Chain[OpenApi.Primitive],
-    queries: Chain[(String, OpenApi.Primitive)],
-    headers: Chain[(CIString, OpenApi.Primitive)],
+    path: Chain[String],
+    queries: VectorMap[String, String],
+    headers: VectorMap[CIString, String],
     body: Request.Body[F]
 ):
-  def modifyPath(f: Chain[OpenApi.Primitive] => Chain[OpenApi.Primitive]): Request[F] = copy(path = f(path))
-  def withPath(path: Chain[OpenApi.Primitive]): Request[F] = modifyPath(_ => path)
+  def modifyPath(f: Chain[String] => Chain[String]): Request[F] = copy(path = f(path))
+  def withPath(path: Chain[String]): Request[F] = modifyPath(_ => path)
 
-  def modifyQueries(f: Chain[(String, OpenApi.Primitive)] => Chain[(String, OpenApi.Primitive)]): Request[F] =
-    copy(queries = f(queries))
-  def withQueries(queries: Chain[(String, OpenApi.Primitive)]): Request[F] = modifyQueries(_ => queries)
+  def modifyQueries(f: VectorMap[String, String] => VectorMap[String, String]): Request[F] = copy(queries = f(queries))
+  def withQueries(queries: VectorMap[String, String]): Request[F] = modifyQueries(_ => queries)
 
-  def modifyHeaders(f: Chain[(CIString, OpenApi.Primitive)] => Chain[(CIString, OpenApi.Primitive)]): Request[F] =
+  def modifyHeaders(f: VectorMap[CIString, String] => VectorMap[CIString, String]): Request[F] =
     copy(headers = f(headers))
-  def withHeaders(headers: Chain[(CIString, OpenApi.Primitive)]): Request[F] = modifyHeaders(_ => headers)
+  def withHeaders(headers: VectorMap[CIString, String]): Request[F] = modifyHeaders(_ => headers)
 
   def modifyBody[G[_]](f: Request.Body[F] => Request.Body[G]): Request[G] = copy(body = f(body))
   def withBody[G[_]](body: Request.Body[G]): Request[G] = modifyBody(_ => body)
@@ -45,7 +45,7 @@ object Request:
   def empty(method: Method): Request[Pure] = Request[Pure](
     method,
     path = Chain.empty,
-    queries = Chain.empty,
-    headers = Chain.empty,
+    queries = VectorMap.empty,
+    headers = VectorMap.empty,
     Body.Singlepart.Empty
   )
