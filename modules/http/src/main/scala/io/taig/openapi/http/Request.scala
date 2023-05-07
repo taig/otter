@@ -2,7 +2,6 @@ package io.taig.openapi.http
 
 import cats.data.Chain
 import cats.syntax.all.*
-import fs2.{Pure, Stream}
 import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
@@ -28,15 +27,18 @@ object Request:
   sealed abstract class Body
 
   object Body:
-    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Body
+    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
 
     object Multipart:
       final case class Part(name: String, filename: Option[String], body: Request.Body.Singlepart)
 
-    final case class Singlepart(data: Streaming[Byte]) extends Body
+    sealed abstract class Singlepart extends Request.Body
 
     object Singlepart:
-      val Empty: Request.Body.Singlepart = Singlepart(Streaming.empty)
+      final case class Strict(data: Array[Byte]) extends Request.Body.Singlepart
+      final case class Streaming(data: Stream[Byte]) extends Request.Body.Singlepart
+
+      val Empty: Request.Body.Singlepart = Strict(Array.empty)
 
   def empty(method: Method): Request = Request(
     method,
