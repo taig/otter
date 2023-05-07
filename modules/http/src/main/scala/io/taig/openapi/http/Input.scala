@@ -2,18 +2,21 @@ package io.taig.openapi.http
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
+import io.taig.openapi.schema.applyValidation
 import io.taig.openapi.http.Input.Body
 import io.taig.openapi.http.Request.Body
 import io.taig.openapi.http.Request.Body.Singlepart
 import io.taig.openapi.schema.{Violations, Void}
-import io.taig.openapi.validation.Constraint
+import io.taig.openapi.validation.{Constraint, Validation}
 
 sealed abstract class Input[A]:
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
   def body: Input.Body[?]
+  def matches(request: Request): Boolean
   final def imap[B](f: A => B)(g: B => A): Input[B] = Input.Modify(this, f, g)
   def decode(request: Request): Validated[Violations, A]
   def encode(a: A): Request
@@ -26,6 +29,9 @@ object Input:
   object Body:
     abstract class Singlepart[A] extends Body[A]:
       final def optional: Body[Option[A]] = Singlepart.Optional(this)
+      final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
+        Input.Body.Singlepart.Validate(this, validation, g)
+      final def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ivalidate(Validation.lift(f))(g)
       final override def decode(body: Request.Body): Validated[Violations, A] = body match
         case body: Request.Body.Singlepart => decode(body)
         case _: Request.Body.Multipart =>
@@ -44,6 +50,15 @@ object Input:
           case Request.Body.Singlepart.Streaming(data) =>
             if data.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
         override def encode(a: Option[A]): Request.Body.Singlepart = a.fold(Request.Body.Singlepart.Empty)(body.encode)
+
+      final private case class Validate[A, B: Encoder, C](
+          body: Input.Body.Singlepart[A],
+          validation: Validation[B, A, A, C],
+          g: C => A
+      ) extends Input.Body.Singlepart[C]:
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, C] =
+          this.body.decode(body).andThen(applyValidation(validation, this.body.encode(_).asOpenApi))
+        override def encode(c: C): Request.Body.Singlepart = body.encode(g(c))
 
       val Empty: Input.Body.Singlepart[Void] = new Singlepart[Void]:
         override def decode(body: Request.Body.Singlepart): Validated[Violations, Void] = Void.valid
@@ -78,13 +93,15 @@ object Input:
 
   final private case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])
       extends Input[(A, B, C)]:
+    override def matches(request: Request): Boolean =
+      url.matches(request.path, request.queries) && headers.matches(request.headers)
     override def decode(request: Request): Validated[Violations, (A, B, C)] = ???
     override def encode(abc: (A, B, C)): Request =
       val (path, queries) = url.encode(abc._1)
       Request(method, path, queries, headers.encode(abc._2), body.encode(abc._3))
 
   final private case class Modify[A, B](input: Input[A], f: A => B, g: B => A) extends Input[B]:
-    export input.{body, headers, method, url}
+    export input.{body, headers, matches, method, url}
     override def decode(request: Request): Validated[Violations, B] = input.decode(request).map(f)
     override def encode(b: B): Request = input.encode(g(b))
 

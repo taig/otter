@@ -2,6 +2,7 @@ package io.taig.openapi.http
 
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.openapi.{Encoder, OpenApi}
 import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
@@ -32,13 +33,16 @@ object Request:
     object Multipart:
       final case class Part(name: String, filename: Option[String], body: Request.Body.Singlepart)
 
-    sealed abstract class Singlepart extends Request.Body
+    enum Singlepart extends Request.Body:
+      case Strict(data: Array[Byte])
+      case Streaming(data: Stream[Byte])
 
     object Singlepart:
-      final case class Strict(data: Array[Byte]) extends Request.Body.Singlepart
-      final case class Streaming(data: Stream[Byte]) extends Request.Body.Singlepart
-
       val Empty: Request.Body.Singlepart = Strict(Array.empty)
+
+      given Encoder[Request.Body.Singlepart] =
+        case _: Strict    => OpenApi.fromString("Request.Body.Singlepart.Strict")
+        case _: Streaming => OpenApi.fromString("Request.Body.Singlepart.Streaming")
 
   def empty(method: Method): Request = Request(
     method,

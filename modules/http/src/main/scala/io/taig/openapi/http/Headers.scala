@@ -8,6 +8,7 @@ import org.typelevel.ci.CIString
 import scala.collection.immutable.VectorMap
 
 sealed abstract class Headers[A]:
+  def matches(headers: VectorMap[CIString, String]): Boolean
   final def product[B](headers: Headers[B]): Headers[(A, B)] = Headers.Product(this, headers)
   final transparent inline def zip[B](headers: Headers[B]): Headers[?] = inline (this, headers) match
     case (left: Headers[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
@@ -26,12 +27,14 @@ sealed abstract class Headers[A]:
 
 object Headers:
   final private case class Root[A](header: Header[A]) extends Headers[A]:
+    override def matches(headers: VectorMap[CIString, String]): Boolean = ???
     override def decodeWithRemainders(
         headers: VectorMap[CIString, String]
     ): Validated[Violations, (VectorMap[CIString, String], A)] = header.decode(headers)
     override def encode(a: A): VectorMap[CIString, String] = header.encode(a)
 
   final private case class Product[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
+    override def matches(headers: VectorMap[CIString, String]): Boolean = ???
     override def decodeWithRemainders(
         headers: VectorMap[CIString, String]
     ): Validated[Violations, (VectorMap[CIString, String], (A, B))] = left.decodeWithRemainders(headers) match
@@ -44,12 +47,14 @@ object Headers:
       f: A => B,
       g: B => A
   ) extends Headers[B]:
+    export headers.matches
     override def decodeWithRemainders(
         values: VectorMap[CIString, String]
     ): Validated[Violations, (VectorMap[CIString, String], B)] = headers.decodeWithRemainders(values).map(_.map(f))
     override def encode(b: B): VectorMap[CIString, String] = headers.encode(g(b))
 
   val Empty: Headers[Void] = new Headers[Void]:
+    override def matches(headers: VectorMap[CIString, String]): Boolean = true
     override def decodeWithRemainders(
         headers: VectorMap[CIString, String]
     ): Validated[Violations, (VectorMap[CIString, String], Void)] = (headers, Void).valid
