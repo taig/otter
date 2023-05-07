@@ -3,13 +3,16 @@ package io.taig.openapi.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
-import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.schema.{+, Violations, Void}
 import io.taig.openapi.validation.Constraint
 
 sealed abstract class Result[A]:
   def code: Code
   def headers: Headers[?]
+  final def :+[B](result: Result[B]): Results[A + B] = toResults :+ result
+  final def +:[B](result: Result[B]): Results[B + A] = result +: toResults
   final def imap[B](f: A => B)(g: B => A): Result[B] = Result.Modify(this, f, g)
+  final def toResults: Results[A] = Results(this)
   final def decode(response: Response): Validated[Violations, A] = decodeWithRemainders(response).map(_._2)
   def decodeWithRemainders(response: Response): Validated[Violations, (Response, A)]
   def encode(a: A): Response
