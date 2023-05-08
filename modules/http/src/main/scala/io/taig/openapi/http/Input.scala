@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.Invariant
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
@@ -44,11 +45,8 @@ object Input:
 
     object Singlepart:
       final private case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
-        override def decode(body: Request.Body.Singlepart): Validated[Violations, Option[A]] = body match
-          case Request.Body.Singlepart.Strict(data) =>
-            if data.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
-          case Request.Body.Singlepart.Streaming(data) =>
-            if data.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, Option[A]] =
+          if body.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
         override def encode(a: Option[A]): Request.Body.Singlepart = a.fold(Request.Body.Singlepart.Empty)(body.encode)
 
       final private case class Validate[A, B: Encoder, C](
@@ -79,6 +77,10 @@ object Input:
           case Request.Body.Singlepart.Strict(data)    => Stream.from(data).valid
           case Request.Body.Singlepart.Streaming(data) => data.valid
         override def encode(a: Stream[Byte]): Request.Body.Singlepart = Request.Body.Singlepart.Streaming(a)
+
+      given Invariant[Input.Body.Singlepart] with
+        override def imap[A, B](fa: Input.Body.Singlepart[A])(f: A => B)(g: B => A): Input.Body.Singlepart[B] =
+          fa.imap(f)(g)
 
     abstract class Multipart[A] extends Input.Body[A]:
       override def decode(body: Request.Body): Validated[Violations, A] = body match
@@ -119,3 +121,6 @@ object Input:
       Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
     // TODO more cases
     case _ => Root(method, url, headers, body)
+
+  given Invariant[Input] with
+    override def imap[A, B](fa: Input[A])(f: A => B)(g: B => A): Input[B] = fa.imap(f)(g)

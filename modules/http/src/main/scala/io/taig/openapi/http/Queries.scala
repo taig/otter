@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.schema.{Violations, Void}
@@ -73,3 +74,7 @@ object Queries:
     override def encode(a: Void): VectorMap[String, String] = VectorMap.empty
 
   def apply[A](query: Query[A]): Queries[A] = Root(query)
+
+  given InvariantSemigroupal[Queries] with
+    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Queries[A], fb: Queries[B]): Queries[(A, B)] = fa.product(fb)

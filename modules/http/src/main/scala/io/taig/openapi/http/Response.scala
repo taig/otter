@@ -1,6 +1,7 @@
 package io.taig.openapi.http
 
 import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
@@ -15,9 +16,20 @@ object Response:
     case Strict(data: Array[Byte])
     case Streaming(data: Stream[Byte])
 
+    def isEmpty: Boolean = this match
+      case Strict(data)    => data.isEmpty
+      case Streaming(data) => data.isEmpty
+
   object Body:
     val Empty: Response.Body = Strict(Array.empty)
 
     given Encoder[Response.Body] =
-      case _: Strict    => OpenApi.fromString("Response.Body.Strict")
-      case _: Streaming => OpenApi.fromString("Response.Body.Streaming")
+      case _: Strict    => OpenApi.fromString("Strict(...)")
+      case _: Streaming => OpenApi.fromString("Streaming(...)")
+
+  given Encoder[Response] = response =>
+    OpenApi.obj(
+      "code" := response.code,
+      "headers" := OpenApi.fromSeqMap(response.headers.map { case (key, value) => (key.toString, value.asOpenApi) }),
+      "body" := response.body.asOpenApi
+    )

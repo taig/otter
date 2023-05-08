@@ -3,6 +3,7 @@ package io.taig.openapi.http
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
@@ -33,16 +34,30 @@ object Request:
     object Multipart:
       final case class Part(name: String, filename: Option[String], body: Request.Body.Singlepart)
 
+      object Part:
+        given Encoder[Request.Body.Multipart.Part] = part =>
+          OpenApi.obj("name" := part.name, "filename" := part.filename, "body" := part.body)
+
+      given Encoder[Request.Body.Multipart] = multipart => OpenApi.Array(multipart.parts.map(_.asOpenApi).toVector)
+
     enum Singlepart extends Request.Body:
       case Strict(data: Array[Byte])
       case Streaming(data: Stream[Byte])
+
+      def isEmpty: Boolean = this match
+        case Strict(data)    => data.isEmpty
+        case Streaming(data) => data.isEmpty
 
     object Singlepart:
       val Empty: Request.Body.Singlepart = Strict(Array.empty)
 
       given Encoder[Request.Body.Singlepart] =
-        case _: Strict    => OpenApi.fromString("Request.Body.Singlepart.Strict")
-        case _: Streaming => OpenApi.fromString("Request.Body.Singlepart.Streaming")
+        case _: Strict    => OpenApi.fromString("Singlepart.Strict(...)")
+        case _: Streaming => OpenApi.fromString("Singlepart.Streaming(...)")
+
+    given Encoder[Request.Body] =
+      case body: Singlepart => body.asOpenApi
+      case body: Multipart  => body.asOpenApi
 
   def empty(method: Method): Request = Request(
     method,
@@ -51,3 +66,12 @@ object Request:
     headers = VectorMap.empty,
     Body.Singlepart.Empty
   )
+
+  given Encoder[Request] = request =>
+    OpenApi.obj(
+      "method" := request.method,
+      "path" := OpenApi.fromString("/" + request.path.mkString_("/")),
+      "queries" := OpenApi.fromSeqMap(request.queries.map { case (key, value) => (key, value.asOpenApi) }),
+      "headers" := OpenApi.fromSeqMap(request.headers.map { case (key, value) => (key.toString, value.asOpenApi) }),
+      "body" := request.body
+    )

@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
@@ -80,3 +81,7 @@ object Path:
     override def encode(a: Void): Chain[String] = Chain.empty
 
   def apply[A](segment: Segment[A]): Path[A] = One(segment)
+
+  given InvariantSemigroupal[Path] with
+    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Path[A], fb: Path[B]): Path[(A, B)] = fa.product(fb)

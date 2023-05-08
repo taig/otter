@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.History
@@ -136,3 +137,7 @@ object Url:
 
   def apply[A](path: Path[A]): Url[A] = FromPath(path)
   def apply[A](queries: Queries[A]): Url[A] = FromQueries(queries)
+
+  given InvariantSemigroupal[Url] with
+    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.product(fb)

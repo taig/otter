@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.{Invariant, InvariantSemigroupal}
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.schema.{Violations, Void}
@@ -61,3 +62,7 @@ object Headers:
     override def encode(a: Void): VectorMap[CIString, String] = VectorMap.empty
 
   def apply[A](header: Header[A]): Headers[A] = Root(header)
+
+  given InvariantSemigroupal[Headers] with
+    override def imap[A, B](fa: Headers[A])(f: A => B)(g: B => A): Headers[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Headers[A], fb: Headers[B]): Headers[(A, B)] = fa.product(fb)

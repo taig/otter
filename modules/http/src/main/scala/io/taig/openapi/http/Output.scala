@@ -1,16 +1,25 @@
 package io.taig.openapi.http
 
+import cats.Invariant
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.http.Response.Body
-import io.taig.openapi.schema.applyValidation
-import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.schema.{applyValidation, Violations, Void}
 import io.taig.openapi.validation.{Constraint, Validation}
 
-sealed abstract class Output[A]:
-  def imap[B](f: A => B)(g: B => A): Output[B] = ???
+final case class Output[A](results: Results[A], violations: Result[Violations]):
+  def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Output[C] =
+    copy(results = results.ivalidate(validation)(g))
+  def imap[B](f: A => B)(g: B => A): Output[B] = copy(results = results.imap(f)(g))
+  def decode(response: Response): Validated[Violations, A] = results.decode(response) match
+    case Validated.Valid(Some(a)) => a.valid
+    case Validated.Valid(None)    =>
+      // TODO error saying that nothing matches
+      ???
+    case invalid: Validated.Invalid[?] => invalid
+  def encode(a: Validated[Violations, A]): Response = a.fold(violations.encode, results.encode)
 
 object Output:
   abstract class Body[A]:
@@ -23,9 +32,8 @@ object Output:
 
   object Body:
     final private case class Optional[A](body: Body[A]) extends Body[Option[A]]:
-      override def decode(body: Response.Body): Validated[Violations, Option[A]] = body match
-        case Response.Body.Strict(data)    => if data.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
-        case Response.Body.Streaming(data) => if data.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
+      override def decode(body: Response.Body): Validated[Violations, Option[A]] =
+        if body.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
       override def encode(a: Option[A]): Response.Body = a.fold(Response.Body.Empty)(body.encode)
 
     final private case class Validate[A, B: Encoder, C](
@@ -56,3 +64,9 @@ object Output:
         case Response.Body.Strict(data)    => Stream.from(data).valid
         case Response.Body.Streaming(data) => data.valid
       override def encode(a: Stream[Byte]): Response.Body = Response.Body.Streaming(a)
+
+    given Invariant[Output.Body] with
+      override def imap[A, B](fa: Body[A])(f: A => B)(g: B => A): Body[B] = fa.imap(f)(g)
+
+  given Invariant[Output] with
+    override def imap[A, B](fa: Output[A])(f: A => B)(g: B => A): Output[B] = fa.imap(f)(g)

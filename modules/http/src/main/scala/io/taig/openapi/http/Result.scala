@@ -1,5 +1,6 @@
 package io.taig.openapi.http
 
+import cats.Invariant
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
@@ -44,3 +45,6 @@ object Result:
       case (headers: Headers[Void], body)     => Root(code, headers, body).imap { case (_, b) => b }(b => (Void, b))
       case (headers, body: Output.Body[Void]) => Root(code, headers, body).imap { case (a, _) => a }(a => (a, Void))
       case _                                  => Root(code, headers, body)
+
+  given Invariant[Result] with
+    override def imap[A, B](fa: Result[A])(f: A => B)(g: B => A): Result[B] = fa.imap(f)(g)
