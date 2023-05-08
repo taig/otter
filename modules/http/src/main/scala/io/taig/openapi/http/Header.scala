@@ -11,7 +11,7 @@ import org.typelevel.ci.CIString
 import scala.collection.immutable.VectorMap
 
 // TODO multiple headers with same name (?)
-// TODO default
+// TODO default (?)
 sealed abstract class Header[A]:
   def name: CIString
   def schema: Eval[Value[?]]
@@ -44,3 +44,5 @@ object Header:
       case Some(_) => header.decode(values).map(_.map(_.some))
       case None    => (values, none[A]).valid
     override def encode(a: Option[A]): VectorMap[CIString, String] = a.fold(VectorMap.empty)(header.encode)
+
+  def apply[A](name: CIString, schema: Eval[Value[A]]): Header[A] = Root(name, schema)

@@ -107,20 +107,16 @@ object Input:
     override def decode(request: Request): Validated[Violations, B] = input.decode(request).map(f)
     override def encode(b: B): Request = input.encode(g(b))
 
-  transparent inline def apply[A, B, C](
-      method: Method,
-      url: Url[A],
-      headers: Headers[B],
-      body: Body[C]
-  ): Input[?] = inline (url, headers, body) match
-    case (url: Url[Void], headers: Headers[Void], body) =>
-      Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
-    case (url: Url[Void], headers, body: Body[Void]) =>
-      Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
-    case (url, headers: Headers[Void], body: Body[Void]) =>
-      Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
-    // TODO more cases
-    case _ => Root(method, url, headers, body)
+  transparent inline def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C]): Input[?] =
+    inline (url, headers, body) match
+      case (url: Url[Void], headers: Headers[Void], body) =>
+        Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
+      case (url: Url[Void], headers, body: Body[Void]) =>
+        Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
+      case (url, headers: Headers[Void], body: Body[Void]) =>
+        Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
+      // TODO more cases
+      case _ => Root(method, url, headers, body)
 
   given Invariant[Input] with
     override def imap[A, B](fa: Input[A])(f: A => B)(g: B => A): Input[B] = fa.imap(f)(g)
