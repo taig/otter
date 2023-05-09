@@ -32,7 +32,7 @@ sealed abstract class Product[A, B] extends Schema[B]:
 
   final transparent inline def :*[C](field: Field[A, C]): Product[A, ?] = this zip field.toProduct
 
-  final def as[C](using evidence: Evidence.Product.Aux[C, B]): Product[A, C] = imap(evidence.from)(evidence.to)
+  final def to[C](using evidence: Evidence.Product.Aux[C, B]): Product[A, C] = imap(evidence.from)(evidence.to)
 
   final override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Product[A, D] =
     Product.Validate(this, validation, g)
