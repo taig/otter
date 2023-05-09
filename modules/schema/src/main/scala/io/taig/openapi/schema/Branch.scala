@@ -13,6 +13,7 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
   infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = toSum :+ branch
 
   def toSum: Sum[A, B] = Sum(this)
+  def to[C](using Evidence.Sum.Aux[C, B]): Sum[A, C] = toSum.to[C]
 
   def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] = discriminator match
     case Sum.Discriminator.Nested(identifier, value) =>

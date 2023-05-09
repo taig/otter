@@ -32,6 +32,7 @@ sealed abstract class Field[A, B]:
   final transparent inline infix def :*[C](field: Field[A, C]): Product[A, ?] = toProduct :* field
 
   final def toProduct: Product[A, B] = Product(this)
+  final def to[C](using Evidence.Product.Aux[C, B]): Product[A, C] = toProduct.to[C]
 
   def decode(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)]
 

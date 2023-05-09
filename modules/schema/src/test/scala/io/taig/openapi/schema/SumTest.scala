@@ -10,22 +10,22 @@ final class SumTest extends FunSuite:
   enum Foo:
     case Bar(name: String)
 
-  val bar: Product[String, Foo.Bar] = field("name", string).toProduct.to[Foo.Bar]
-  val foo: Sum[String, Foo] = branch("bar", bar).toSum.to[Foo]
+  val bar: Product[String, Foo.Bar] = field("name", string).to
+  val foo: Sum[String, Foo] = branch("bar", bar).to
 
   enum Animal:
     case Bird(name: String)
     case Cat(lives: Int)
     case Dog(goodBoy: Boolean)
 
-  val bird: Product[String, Animal.Bird] = field("name", string).toProduct.to[Animal.Bird]
-  val cat: Product[String, Animal.Cat] = field("lives", int).toProduct.to[Animal.Cat]
-  val dog: Product[String, Animal.Dog] = field("goodBoy", boolean).toProduct.to[Animal.Dog]
+  val bird: Product[String, Animal.Bird] = field("name", string).to
+  val cat: Product[String, Animal.Cat] = field("lives", int).to
+  val dog: Product[String, Animal.Dog] = field("goodBoy", boolean).to
   val animal: Sum[String, Animal] = (
     branch("bird", bird) :+
       branch("cat", cat) :+
       branch("dog", dog)
-  ).to[Animal]
+  ).to
 
   test("decode: nested discriminator") {
     assertEquals(
@@ -34,12 +34,21 @@ final class SumTest extends FunSuite:
         .decode(
           OpenApi.obj(
             "type" := "cat",
-            "value" -> OpenApi.obj("lives" := 7)
+            "value" := OpenApi.obj("lives" := 7)
           )
         ),
       expected = Animal.Cat(lives = 7).valid
     )
   }
+
+//  test("decode: nested discriminator (identifier missing)") {
+//    assertEquals(
+//      obtained = animal
+//        .withNestedDiscriminator(identifier = "type", value = "value")
+//        .decode(OpenApi.obj("value" := OpenApi.obj("lives" := 7))),
+//      expected = Animal.Cat(lives = 7).valid
+//    )
+//  }
 
   test("decode: merged discriminator") {
     assertEquals(
