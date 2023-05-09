@@ -1,5 +1,6 @@
 package io.taig.openapi.schema
 
+import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.syntax.*
@@ -26,7 +27,50 @@ final class SumTest extends FunSuite:
       branch("dog", dog)
   ).as[Animal]
 
-  test("encode: discriminator (nested)") {
+  test("decode: nested discriminator") {
+    assertEquals(
+      obtained = animal
+        .withNestedDiscriminator(identifier = "type", value = "value")
+        .decode(
+          OpenApi.obj(
+            "type" := "cat",
+            "value" -> OpenApi.obj("lives" := 7)
+          )
+        ),
+      expected = Animal.Cat(lives = 7).valid
+    )
+  }
+
+  test("decode: merged discriminator") {
+    assertEquals(
+      obtained = animal
+        .withMergedDiscriminator(identifier = "type")
+        .decode(
+          OpenApi.obj(
+            "type" := "cat",
+            "lives" := 7
+          )
+        ),
+      expected = Animal.Cat(lives = 7).valid
+    )
+  }
+
+  test("decode: keyed discriminator") {
+    assertEquals(
+      obtained = animal.withKeyedDiscriminator
+        .decode(OpenApi.obj("cat" := OpenApi.obj("lives" := 7))),
+      expected = Animal.Cat(lives = 7).valid
+    )
+  }
+
+  test("decode: none discriminator") {
+    assertEquals(
+      obtained = animal.withoutDiscriminator.decode(OpenApi.obj("lives" := 7)),
+      expected = Animal.Cat(lives = 7).valid
+    )
+  }
+
+  test("encode: nested discriminator") {
     val cat = Animal.Cat(lives = 7)
 
     assertEquals(
