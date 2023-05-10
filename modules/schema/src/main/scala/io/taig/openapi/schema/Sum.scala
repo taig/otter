@@ -27,20 +27,19 @@ sealed abstract class Sum[A, B] extends Schema[B]:
 
   final infix def orElse[C](sum: Sum[A, C]): Sum[A, B + C] =
     Sum.OrElse(this, sum.withDiscriminator(discriminator), none, none)
-
   final infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = orElse(branch.toSum)
+  final infix def +:[C](branch: Branch[A, C]): Sum[A, C + B] = branch.toSum.orElse(this)
 
   final override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Sum[A, D] =
     Sum.Validate(this, validation, g)
-
   final def to[C](using evidence: Evidence.Sum.Aux[C, B]): Sum[A, C] = imap(evidence.from)(evidence.to)
 
-  final override def decode(openapi: OpenApi): Validated[Violations, B] =
-    decodeOption(openapi).andThen(_.toValid(typeViolations("Sum", openapi)))
+  final override def decode(openapi: OpenApi): Validated[Violations, B] = tryDecode(openapi) match
+    case Ior.Left(violations)    => violations.invalid
+    case Ior.Right(b)            => b.toValid(typeViolations("Sum", openapi))
+    case Ior.Both(violations, b) => b.toValid(violations)
 
-  def decodeOption(openapi: OpenApi): Validated[Violations, Option[B]]
-
-  def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]] = ???
+  def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]]
 
 object Sum:
   enum Discriminator:
@@ -72,8 +71,7 @@ object Sum:
     override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B] =
       copy(discriminator = f(discriminator))
     override def modifyExample(f: Option[B] => Option[B]): Sum[A, B] = copy(example = f(example))
-    override def decodeOption(openapi: OpenApi): Validated[Violations, Option[B]] =
-      branch.decode(openapi, discriminator)
+    override def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]] = branch.decode(openapi, discriminator)
     override def encode(b: B): OpenApi = branch.encode(b, discriminator)
 
   final private case class OrElse[A, B, C](
@@ -90,8 +88,20 @@ object Sum:
     override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B + C] =
       copy(left = left.modifyDiscriminator(f), right = right.modifyDiscriminator(f))
     override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
-    override def decodeOption(openapi: OpenApi): Validated[Violations, Option[B + C]] =
-      left.decodeOption(openapi).map(_.map(_.asLeft)).orElse(right.decodeOption(openapi).map(_.map(_.asRight)))
+    override def tryDecode(openapi: OpenApi): Ior[Violations, Option[B + C]] = left.tryDecode(openapi) match
+      case Ior.Left(left) =>
+        right.tryDecode(openapi) match
+          case Ior.Left(a)        => ???
+          case Ior.Right(c)       => ???
+          case Ior.Both(right, c) => ???
+      case Ior.Right(Some(b)) => b.asLeft.some.rightIor
+      case Ior.Right(None) =>
+        right.tryDecode(openapi) match
+          case Ior.Left(right)    => ???
+          case Ior.Right(c)       => ???
+          case Ior.Both(right, c) => ???
+      case Ior.Both(violations, Some(b)) => b.asLeft.some.rightIor
+      case Ior.Both(violations, None)    => ???
     override def encode(bc: B + C): OpenApi = bc.fold(left.encode, right.encode)
 
   final private case class Validate[A, B, C: Encoder, D](sum: Sum[A, B], validation: Validation[C, B, B, D], g: D => B)
@@ -108,8 +118,16 @@ object Sum:
       copy(sum = sum.modifyDiscriminator(f))
     override def modifyExample(f: Option[D] => Option[D]): Sum[A, D] =
       copy(sum = sum.modifyExample(b => f(b.flatMap(validation.run(_).toOption)).map(g)))
-    override def decodeOption(openapi: OpenApi): Validated[Violations, Option[D]] =
-      sum.decodeOption(openapi).andThen(_.traverse(applyValidation(validation, sum.encode)))
+    override def tryDecode(openapi: OpenApi): Ior[Violations, Option[D]] = sum.tryDecode(openapi) match
+      case left @ Ior.Left(_) => left
+      case Ior.Right(b) =>
+        b.traverse(validation.run) match
+          case Validated.Valid(d)            => Ior.Right(d)
+          case Validated.Invalid(violations) => Ior.Left(???)
+      case Ior.Both(violations, b) =>
+        b.traverse(validation.run) match
+          case Validated.Valid(d)            => ???
+          case Validated.Invalid(violations) => ???
     override def encode(c: D): OpenApi = sum.encode(g(c))
 
   def apply[A, B](branch: Branch[A, B]): Sum[A, B] = Root(branch, none, Discriminator.Default, none)
