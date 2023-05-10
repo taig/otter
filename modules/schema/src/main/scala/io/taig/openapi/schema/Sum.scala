@@ -89,19 +89,19 @@ object Sum:
       copy(left = left.modifyDiscriminator(f), right = right.modifyDiscriminator(f))
     override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
     override def tryDecode(openapi: OpenApi): Ior[Violations, Option[B + C]] = left.tryDecode(openapi) match
-      case Ior.Left(left) =>
-        right.tryDecode(openapi) match
-          case Ior.Left(a)        => ???
-          case Ior.Right(c)       => ???
-          case Ior.Both(right, c) => ???
       case Ior.Right(Some(b)) => b.asLeft.some.rightIor
       case Ior.Right(None) =>
         right.tryDecode(openapi) match
-          case Ior.Left(right)    => ???
-          case Ior.Right(c)       => ???
-          case Ior.Both(right, c) => ???
-      case Ior.Both(violations, Some(b)) => b.asLeft.some.rightIor
-      case Ior.Both(violations, None)    => ???
+          case Ior.Left(right)    => right.leftIor
+          case Ior.Right(c)       => c.map(_.asRight).rightIor
+          case Ior.Both(right, c) => right.leftIor.putRight(c.map(_.asRight))
+      case Ior.Left(left)          => Ior.Left(left)
+      case Ior.Both(left, Some(b)) => left.leftIor.putRight(b.asLeft.some)
+      case Ior.Both(left, None) =>
+        right.tryDecode(openapi) match
+          case Ior.Left(right)    => (left merge right).leftIor
+          case Ior.Right(c)       => left.leftIor.putRight(c.map(_.asRight))
+          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
     override def encode(bc: B + C): OpenApi = bc.fold(left.encode, right.encode)
 
   final private case class Validate[A, B, C: Encoder, D](sum: Sum[A, B], validation: Validation[C, B, B, D], g: D => B)

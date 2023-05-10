@@ -1,9 +1,10 @@
 package io.taig.openapi.schema
 
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
+import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.syntax.*
+import io.taig.openapi.validation.Constraint
 import munit.FunSuite
 
 final class SumTest extends FunSuite:
@@ -31,24 +32,38 @@ final class SumTest extends FunSuite:
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")
-        .decode(
-          OpenApi.obj(
-            "type" := "cat",
-            "value" := OpenApi.obj("lives" := 7)
-          )
-        ),
+        .decode(OpenApi.obj("type" := "cat", "value" := OpenApi.obj("lives" := 7))),
       expected = Animal.Cat(lives = 7).valid
     )
   }
 
-//  test("decode: nested discriminator (identifier missing)") {
-//    assertEquals(
-//      obtained = animal
-//        .withNestedDiscriminator(identifier = "type", value = "value")
-//        .decode(OpenApi.obj("value" := OpenApi.obj("lives" := 7))),
-//      expected = Animal.Cat(lives = 7).valid
-//    )
-//  }
+  test("decode: nested discriminator (identifier missing)".only) {
+    assertEquals(
+      obtained = animal
+        .withNestedDiscriminator(identifier = "type", value = "value")
+        .decode(OpenApi.obj("value" := OpenApi.obj("lives" := 7))),
+      expected = Violations.oneNec(History.Root / "type", Constraint.required.toViolation(OpenApi.Null)).invalid
+    )
+  }
+
+  test("decode: nested discriminator (value missing)".only) {
+    assertEquals(
+      obtained = animal
+        .withNestedDiscriminator(identifier = "type", value = "value")
+        .decode(OpenApi.obj("type" := "cat")),
+      expected = Violations.oneNec(History.Root / "value", Constraint.required.toViolation(OpenApi.Null)).invalid
+    )
+  }
+
+  test("decode: nested discriminator (value error)".only) {
+    assertEquals(
+      obtained = animal
+        .withNestedDiscriminator(identifier = "type", value = "value")
+        .decode(OpenApi.obj("type" := "cat", "value" := OpenApi.obj())),
+      expected =
+        Violations.oneNec(History.Root / "value" / "lives", Constraint.required.toViolation(OpenApi.Null)).invalid
+    )
+  }
 
   test("decode: merged discriminator") {
     assertEquals(
