@@ -120,14 +120,13 @@ object Sum:
       copy(sum = sum.modifyExample(b => f(b.flatMap(validation.run(_).toOption)).map(g)))
     override def tryDecode(openapi: OpenApi): Ior[Violations, Option[D]] = sum.tryDecode(openapi) match
       case left @ Ior.Left(_) => left
-      case Ior.Right(b) =>
-        b.traverse(validation.run) match
-          case Validated.Valid(d)            => Ior.Right(d)
-          case Validated.Invalid(violations) => Ior.Left(???)
-      case Ior.Both(violations, b) =>
-        b.traverse(validation.run) match
-          case Validated.Valid(d)            => ???
-          case Validated.Invalid(violations) => ???
+      case Ior.Right(Some(b)) => applyValidation(validation, sum.encode)(b).map(_.some).toIor
+      case Ior.Right(None)    => none[D].rightIor
+      case Ior.Both(left, Some(b)) =>
+        applyValidation(validation, sum.encode)(b) match
+          case Validated.Valid(d)       => left.leftIor.putRight(d.some)
+          case Validated.Invalid(right) => (left merge right).leftIor
+      case Ior.Both(violations, None) => none[D].rightIor.putLeft(violations)
     override def encode(c: D): OpenApi = sum.encode(g(c))
 
   def apply[A, B](branch: Branch[A, B]): Sum[A, B] = Root(branch, none, Discriminator.Default, none)

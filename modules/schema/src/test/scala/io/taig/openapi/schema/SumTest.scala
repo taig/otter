@@ -28,7 +28,7 @@ final class SumTest extends FunSuite:
       branch("dog", dog)
   ).to
 
-  test("decode: nested discriminator".only) {
+  test("decode: nested discriminator") {
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")
@@ -37,7 +37,7 @@ final class SumTest extends FunSuite:
     )
   }
 
-  test("decode: nested discriminator (identifier missing)".only) {
+  test("decode: nested discriminator (identifier missing)") {
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")
@@ -46,7 +46,7 @@ final class SumTest extends FunSuite:
     )
   }
 
-  test("decode: nested discriminator (value missing)".only) {
+  test("decode: nested discriminator (value missing)") {
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")
@@ -55,7 +55,7 @@ final class SumTest extends FunSuite:
     )
   }
 
-  test("decode: nested discriminator (value error)".only) {
+  test("decode: nested discriminator (value error)") {
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")
@@ -91,6 +91,19 @@ final class SumTest extends FunSuite:
     assertEquals(
       obtained = animal.withoutDiscriminator.decode(OpenApi.obj("lives" := 7)),
       expected = Animal.Cat(lives = 7).valid
+    )
+  }
+
+  test("decode: none discriminator (error)") {
+    assertEquals(
+      obtained = animal.withoutDiscriminator.decode(OpenApi.obj()),
+      expected = Violations
+        .ofNec(
+          History.Root / "bird" / "name" -> Constraint.required.toViolation(OpenApi.Null),
+          History.Root / "cat" / "lives" -> Constraint.required.toViolation(OpenApi.Null),
+          History.Root / "dog" / "goodBoy" -> Constraint.required.toViolation(OpenApi.Null)
+        )
+        .invalid
     )
   }
 
@@ -146,22 +159,5 @@ final class SumTest extends FunSuite:
     assertEquals(
       obtained = animal.withoutDiscriminator.encode(cat),
       expected = OpenApi.obj("lives" := 7)
-    )
-  }
-
-  test("as: foo") {
-    assertEquals(
-      obtained = foo.encode(Foo.Bar("foobar")),
-      expected = OpenApi.obj(
-        "type" := "bar",
-        "value" := OpenApi.obj("name" := "foobar")
-      )
-    )
-  }
-
-  test("as: animal") {
-    assertEquals(
-      obtained = animal.encode(Animal.Dog(goodBoy = true)),
-      expected = OpenApi.obj("type" := "dog", "value" := OpenApi.obj("goodBoy" := true))
     )
   }
