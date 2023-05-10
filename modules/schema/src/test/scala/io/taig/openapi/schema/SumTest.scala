@@ -46,6 +46,15 @@ final class SumTest extends FunSuite:
     )
   }
 
+  test("decode: nested discriminator (identifier unknown)") {
+    val obj = OpenApi.obj("type" := "tiger", "value" := OpenApi.obj("lives" := 7))
+    val names = OpenApi.Array(Vector("bird", "cat", "dog").map(_.asOpenApi))
+    assertEquals(
+      obtained = animal.withNestedDiscriminator(identifier = "type", value = "value").decode(obj),
+      expected = Violations.rootNec(Constraint.collection.oneOf(names).toViolation(obj)).invalid
+    )
+  }
+
   test("decode: nested discriminator (value missing)") {
     assertEquals(
       obtained = animal

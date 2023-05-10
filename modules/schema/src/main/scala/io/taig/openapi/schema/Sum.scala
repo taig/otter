@@ -3,6 +3,7 @@ package io.taig.openapi.schema
 import cats.Eq
 import cats.data.{Chain, Ior, NonEmptyChain, Validated}
 import cats.syntax.all.*
+import io.taig.openapi.schema.Sum.Discriminator
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.{Constraint, Validation}
@@ -13,7 +14,7 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   final override type Self[a] = Sum[A, a]
   final override type Codec = OpenApi
 
-  def branches: NonEmptyChain[Branch[A, ?]]
+  def toNonEmptyChain: NonEmptyChain[Branch[A, ?]]
   def discriminator: Sum.Discriminator
   def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Self[B]
   final def withDiscriminator(discriminator: Sum.Discriminator): Self[B] = modifyDiscriminator(_ => discriminator)
@@ -35,8 +36,12 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   final def to[C](using evidence: Evidence.Sum.Aux[C, B]): Sum[A, C] = imap(evidence.from)(evidence.to)
 
   final override def decode(openapi: OpenApi): Validated[Violations, B] = tryDecode(openapi) match
-    case Ior.Left(violations)    => violations.invalid
-    case Ior.Right(b)            => b.toValid(typeViolations("Sum", openapi))
+    case Ior.Left(violations) => violations.invalid
+    case Ior.Right(Some(b))   => b.valid
+    case Ior.Right(None)      =>
+      // TODO resolve actual name or fall back to a generic error
+      val names = toNonEmptyChain.map(branch => OpenApi.fromString(branch.renderName)).toNonEmptyVector.toVector
+      Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(openapi)).invalid
     case Ior.Both(violations, b) => b.toValid(violations)
 
   def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]]
@@ -65,7 +70,7 @@ object Sum:
       discriminator: Sum.Discriminator,
       example: Option[B]
   ) extends Sum[A, B]:
-    override def branches: NonEmptyChain[Branch[A, ?]] = NonEmptyChain.one(branch)
+    override def toNonEmptyChain: NonEmptyChain[Branch[A, ?]] = NonEmptyChain.one(branch)
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B] = copy(description = f(description))
     override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B] =
@@ -82,7 +87,7 @@ object Sum:
   ) extends Sum[A, B + C]:
     override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
     override def discriminator: Discriminator = left.discriminator
-    override def branches: NonEmptyChain[Branch[A, ?]] = left.branches ++ right.branches
+    override def toNonEmptyChain: NonEmptyChain[Branch[A, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] =
       copy(description = f(description))
     override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B + C] =
@@ -106,11 +111,9 @@ object Sum:
 
   final private case class Validate[A, B, C: Encoder, D](sum: Sum[A, B], validation: Validation[C, B, B, D], g: D => B)
       extends Sum[A, D]:
-    override def branches: NonEmptyChain[Branch[A, ?]] = sum.branches
+    export sum.{description, discriminator, toNonEmptyChain}
     override def constraints: Chain[Constraint[OpenApi]] =
       sum.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
-    override def description: Option[String] = sum.description
-    override def discriminator: Discriminator = sum.discriminator
     override def example: Option[D] = sum.example.flatMap(validation.run(_).toOption)
     override def modifyDescription(f: Option[String] => Option[String]): Sum[A, D] =
       copy(sum = sum.modifyDescription(f))
