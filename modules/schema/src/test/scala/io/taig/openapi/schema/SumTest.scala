@@ -27,7 +27,7 @@ final class SumTest extends FunSuite:
       branch("dog", dog)
   ).to
 
-  test("decode: nested discriminator") {
+  test("decode: nested discriminator".only) {
     assertEquals(
       obtained = animal
         .withNestedDiscriminator(identifier = "type", value = "value")

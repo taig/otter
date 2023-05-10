@@ -1,7 +1,7 @@
 package io.taig.openapi.schema
 
 import cats.Eq
-import cats.data.{Chain, NonEmptyChain, Validated}
+import cats.data.{Chain, Ior, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
@@ -39,6 +39,8 @@ sealed abstract class Sum[A, B] extends Schema[B]:
     decodeOption(openapi).andThen(_.toValid(typeViolations("Sum", openapi)))
 
   def decodeOption(openapi: OpenApi): Validated[Violations, Option[B]]
+
+  def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]] = ???
 
 object Sum:
   enum Discriminator:
