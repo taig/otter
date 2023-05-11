@@ -20,68 +20,43 @@ final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[
     case Discriminator.Nested(identifier, value) =>
       for
         root <- validations.openapi.obj.run(openapi).leftMap(Violations.root).toIor
-        identifier <- root
+        discriminator <- root
           .get(identifier)
           .toRightIor(Violations.oneNec(History.Root / identifier, Constraint.required.toViolation(OpenApi.Null)))
-        identifier <- key.value.decode(identifier).toIor
+        discriminator <- key.value.decode(discriminator).toIor
         obj <- root
           .get(value)
           .toRightIor(Violations.oneNec(History.Root / value, Constraint.required.toViolation(OpenApi.Null)))
         result <-
-          if renderName === key.value.render(identifier)
+          if renderName === key.value.render(discriminator)
           then schema.value.decode(obj).bimap(_.modifyHistory(value /: _), _.some).toIor
           else none[B].rightIor
       yield result
-    case Discriminator.Merged(identifier) => ???
+    case Discriminator.Merged(identifier) =>
+      for
+        root <- validations.openapi.obj.run(openapi).leftMap(Violations.root).toIor
+        discriminator <- root
+          .get(identifier)
+          .toRightIor(Violations.oneNec(History.Root / identifier, Constraint.required.toViolation(OpenApi.Null)))
+        discriminator <- key.value.decode(discriminator).toIor
+        result <-
+          if renderName === key.value.render(discriminator)
+          then schema.value.decode(root.remove(identifier)).map(_.some).toIor
+          else none[B].rightIor
+      yield result
     case Discriminator.Keyed =>
       validations.openapi.obj
         .run(openapi)
         .leftMap(Violations.root)
-        .andThen: obj =>
-          Validated
-            .fromOption(obj.get(renderName), Violations.rootNec(Constraint.required.toViolation(obj)))
-            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
-            .andThen(key.value.decode)
-            .andThen: name =>
-              if renderName === key.value.render(name)
-              then schema.value.decode(obj.remove(renderName)).map(_.some)
-              else none[B].valid
-            .leftMap(_.modifyHistory(renderName /: _))
-      ???
+        .toIor
+        .flatMap: root =>
+          root.get(renderName) match
+            case Some(openapi) => schema.value.decode(openapi).bimap(_.modifyHistory(renderName /: _), _.some).toIor
+            case None          => none[B].rightIor
     case Discriminator.None =>
       schema.value.decode(openapi) match
         case Validated.Valid(b)            => b.some.rightIor
         case Validated.Invalid(violations) => violations.modifyHistory(renderName /: _).leftIor.putRight(none[B])
-
-//  def decode(openapi: OpenApi, discriminator: Sum.Discriminator): Validated[Violations, Option[B]] = discriminator match
-//    case Sum.Discriminator.Merged(identifier) =>
-//      validations.openapi.obj
-//        .run(openapi)
-//        .leftMap(Violations.root)
-//        .andThen: obj =>
-//          Validated
-//            .fromOption(obj.get(identifier), Violations.rootNec(Constraint.required.toViolation(obj)))
-//            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
-//            .andThen(key.value.decode)
-//            .leftMap(_.modifyHistory(identifier /: _))
-//            .andThen: name =>
-//              if renderName === key.value.render(name)
-//              then schema.value.decode(obj.remove(identifier)).map(_.some)
-//              else none[B].valid
-//    case Sum.Discriminator.Keyed =>
-//      validations.openapi.obj
-//        .run(openapi)
-//        .leftMap(Violations.root)
-//        .andThen: obj =>
-//          Validated
-//            .fromOption(obj.get(renderName), Violations.rootNec(Constraint.required.toViolation(obj)))
-//            .andThen(validations.openapi.primitive.run(_).leftMap(Violations.root))
-//            .andThen(key.value.decode)
-//            .andThen: name =>
-//              if renderName === key.value.render(name)
-//              then schema.value.decode(obj.remove(renderName)).map(_.some)
-//              else none[B].valid
-//            .leftMap(_.modifyHistory(renderName /: _))
 
   def encode(b: B, discriminator: Sum.Discriminator): OpenApi = discriminator match
     case Sum.Discriminator.Nested(identifier, value) =>

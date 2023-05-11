@@ -38,13 +38,23 @@ sealed abstract class Sum[A, B] extends Schema[B]:
   final override def decode(openapi: OpenApi): Validated[Violations, B] = tryDecode(openapi) match
     case Ior.Left(violations) => violations.invalid
     case Ior.Right(Some(b))   => b.valid
-    case Ior.Right(None)      =>
-      // TODO resolve actual name or fall back to a generic error
-      val names = toNonEmptyChain.map(branch => OpenApi.fromString(branch.renderName)).toNonEmptyVector.toVector
-      Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(openapi)).invalid
+    case Ior.Right(None) =>
+      renderDiscriminator(openapi) match
+        case Some(discriminator) =>
+          val names = toNonEmptyChain.map(branch => OpenApi.fromString(branch.renderName)).toNonEmptyVector.toVector
+          Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(discriminator)).invalid
+        case None => typeViolations("Sum", openapi).invalid
     case Ior.Both(violations, b) => b.toValid(violations)
 
   def tryDecode(openapi: OpenApi): Ior[Violations, Option[B]]
+
+  final private def renderDiscriminator(openapi: OpenApi): Option[OpenApi.Primitive] = discriminator match
+    case Discriminator.Nested(identifier, _) =>
+      openapi.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
+    case Discriminator.Merged(identifier) =>
+      openapi.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
+    case Discriminator.Keyed => openapi.asObject.flatMap(_.keys.headOption.map(OpenApi.fromString))
+    case Discriminator.None  => None
 
 object Sum:
   enum Discriminator:
