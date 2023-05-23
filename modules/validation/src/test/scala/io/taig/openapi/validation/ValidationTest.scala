@@ -1,6 +1,6 @@
 package io.taig.openapi.validation
 
-import cats.data.{Chain, NonEmptyChain, NonEmptyList}
+import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import munit.FunSuite
 

@@ -1,9 +1,6 @@
 package io.taig.openapi.http
 
-import cats.Applicative
-import cats.effect.std.Dispatcher
-import cats.effect.{Async, Concurrent, IO, LiftIO}
-import cats.syntax.all.*
+import cats.effect.Concurrent
 
 import scala.reflect.ClassTag
 import fs2.Stream as Fs2Stream
@@ -11,7 +8,6 @@ import fs2.Stream as Fs2Stream
 abstract class Stream[A]:
   type Effect[_]
   def isEmpty: Boolean
-//  def imap[B](f: A => B)(g: B => A): TestStream[B]
   def toArray: Effect[Array[A]]
 
 object Stream:
