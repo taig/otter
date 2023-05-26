@@ -44,12 +44,12 @@ sealed abstract class Url[A]:
   def encode(a: A): (Chain[String], VectorMap[String, String])
 
 object Url:
-  private def renderPath(path: Chain[String]): String =
-    "/" + path.mkString_("/")
-  private def renderQueries(queries: VectorMap[String, String]): String =
-    queries.toSeq.map { case (name, value) => s"$name=$value" }.mkString_("&")
-  private def renderUrl(path: Chain[String], queries: VectorMap[String, String]): String =
-    if queries.isEmpty then renderPath(path) else renderPath(path) + "?" + renderQueries(queries)
+//  private def renderPath(path: Chain[String]): String =
+//    "/" + path.mkString_("/")
+//  private def renderQueries(queries: VectorMap[String, String]): String =
+//    queries.toSeq.map { case (name, value) => s"$name=$value" }.mkString_("&")
+//  private def renderUrl(path: Chain[String], queries: VectorMap[String, String]): String =
+//    if queries.isEmpty then renderPath(path) else renderPath(path) + "?" + renderQueries(queries)
 
   final private case class FromPath[A](path: Path[A]) extends Url[A]:
     override def queries: Queries[?] = Queries.Empty
