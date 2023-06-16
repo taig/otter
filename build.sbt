@@ -5,6 +5,7 @@ val Version = new {
   val Cats = "2.9.0"
   val CatsEffect = "3.5.1"
   val Circe = "0.14.5"
+  val EnumerationExt = "0.0.1"
   val Fs2 = "3.7.0"
   val Http4s = "1.0.0-M39"
   val Java = "17"
@@ -86,7 +87,10 @@ lazy val schema = module(identifier = Some("schema"))
       val sumInstances = (Compile / sourceManaged).value / "SumInstances.scala"
       IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".openapi.schema"))
       Seq(sumInstances)
-    }.taskValue
+    }.taskValue,
+    libraryDependencies ++=
+      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        Nil
   )
   .dependsOn(core % "compile->compile;test->test", validation)
 

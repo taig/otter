@@ -217,11 +217,11 @@ object OpenApi:
     def toList: List[(SString, OpenApi)] = toMap.toList
 
     def deepMerge(obj: OpenApi.Object): OpenApi.Object = Object:
-        obj.toSeqMap.foldLeft(this.toSeqMap) { case (result, (key, value)) =>
-          result.updatedWith(key):
-            case Some(current) => Some(current.merge(value))
-            case None          => Some(value)
-        }
+      obj.toSeqMap.foldLeft(this.toSeqMap) { case (result, (key, value)) =>
+        result.updatedWith(key):
+          case Some(current) => Some(current.merge(value))
+          case None          => Some(value)
+      }
 
   object Object:
     val Empty: OpenApi.Object = Object(SeqMap.empty)
