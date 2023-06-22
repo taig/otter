@@ -19,16 +19,19 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  def decode(openapi: OpenApi.Primitive): Validated[Violations, A] = this.match {
-    case Type.BigDecimal => refine(_.toBigDecimal.map(_.value))
-    case Type.BigInt     => refine(_.toBigInt.map(_.value))
-    case Type.Boolean    => refine(_.toBoolean.map(_.value))
-    case Type.Double     => refine(_.toDouble.map(_.value))
-    case Type.Float      => refine(_.toFloat.map(_.value))
-    case Type.Int        => refine(_.toInt.map(_.value))
-    case Type.Long       => refine(_.toLong.map(_.value))
-    case Type.String     => refine(_.print.some)
-  }.run(openapi).leftMap(Violations.root)
+  def decode(openapi: OpenApi.Primitive): Validated[Violations, A] = this
+    .match {
+      case Type.BigDecimal => refine(_.toBigDecimal.map(_.value))
+      case Type.BigInt     => refine(_.toBigInt.map(_.value))
+      case Type.Boolean    => refine(_.toBoolean.map(_.value))
+      case Type.Double     => refine(_.toDouble.map(_.value))
+      case Type.Float      => refine(_.toFloat.map(_.value))
+      case Type.Int        => refine(_.toInt.map(_.value))
+      case Type.Long       => refine(_.toLong.map(_.value))
+      case Type.String     => refine(_.print.some)
+    }
+    .run(openapi)
+    .leftMap(Violations.root)
 
   private def refine(f: OpenApi.Primitive => Option[A]): Validation[OpenApi, OpenApi.Primitive, OpenApi.Primitive, A] =
     validations.refine(show)(f).mapReference(OpenApi.fromString)
