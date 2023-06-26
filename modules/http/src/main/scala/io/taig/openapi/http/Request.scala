@@ -38,6 +38,8 @@ object Request:
         given Encoder[Request.Body.Multipart.Part] = part =>
           OpenApi.obj("name" := part.name, "filename" := part.filename, "body" := part.body)
 
+      val Empty: Request.Body.Multipart = Multipart(Chain.empty)
+
       given Encoder[Request.Body.Multipart] = multipart => OpenApi.Array(multipart.parts.map(_.asOpenApi).toVector)
 
     enum Singlepart extends Request.Body:

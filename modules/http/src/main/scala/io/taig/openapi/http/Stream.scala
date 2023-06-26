@@ -1,6 +1,7 @@
 package io.taig.openapi.http
 
 import cats.effect.Concurrent
+import cats.syntax.all.*
 
 import scala.reflect.ClassTag
 import fs2.Stream as Fs2Stream
@@ -21,7 +22,9 @@ object Stream:
     override def isEmpty: Boolean = values.isEmpty
     override def toArray: Array[A] = values
 
-  def from[F[_]: Concurrent, A: ClassTag](fs2: Fs2Stream[F, A]): Stream[A] = new Stream[A]:
+  // TODO seek for isEmpty
+  def from[F[_]: Concurrent, A: ClassTag](fs2: Fs2Stream[F, A]): F[Stream[A]] = new Stream[A] {
     override type Effect[a] = F[a]
     override def isEmpty: Boolean = ???
     override def toArray: F[Array[A]] = fs2.compile.to(Array)
+  }.pure[F]

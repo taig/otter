@@ -1,14 +1,14 @@
 package io.taig.openapi.http
 
 import cats.Invariant
-import cats.data.Validated
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.schema.applyValidation
 import io.taig.openapi.http.Input.Body
 import io.taig.openapi.http.Request.Body
-import io.taig.openapi.http.Request.Body.Singlepart
+import io.taig.openapi.http.Request.Body.{Multipart, Singlepart}
 import io.taig.openapi.schema.{Violations, Void}
 import io.taig.openapi.validation.{Constraint, Validation}
 
@@ -92,12 +92,50 @@ object Input:
             .mapReference(OpenApi.fromString)
           Violations.rootNec(violation).invalid
       def decode(body: Request.Body.Multipart): Validated[Violations, A]
+      override def encode(a: A): Request.Body.Multipart
+
+    object Multipart:
+      abstract class Part[A]:
+        def name: String
+        def body: Input.Body.Singlepart[?]
+        final def optional: Input.Body.Multipart.Part[Option[A]] = Part.Optional(this)
+        def decode(
+            parts: Chain[Request.Body.Multipart.Part]
+        ): Validated[Violations, (Chain[Request.Body.Multipart.Part], A)]
+        def encode(a: A): Chain[Request.Body.Multipart.Part]
+
+      object Part:
+        final private case class Optional[A](part: Input.Body.Multipart.Part[A])
+            extends Input.Body.Multipart.Part[Option[A]]:
+          export part.{body, name}
+          override def decode(
+              parts: Chain[Request.Body.Multipart.Part]
+          ): Validated[Violations, (Chain[Request.Body.Multipart.Part], Option[A])] = parts.headOption match
+            case Some(head) if head.name === part.name => part.decode(parts).map(_.map(_.some))
+            case _                                     => (parts, none[A]).valid
+          override def encode(a: Option[A]): Chain[Request.Body.Multipart.Part] =
+            Chain.fromOption(a).flatMap(part.encode)
+
+      final private case class Product[A, B](left: Input.Body.Multipart[A], right: Input.Body.Multipart[B])
+          extends Input.Body.Multipart[(A, B)]:
+        override def decode(body: Request.Body.Multipart): Validated[Violations, (A, B)] = ???
+        override def encode(ab: (A, B)): Request.Body.Multipart = ???
+
+      val Empty: Input.Body.Multipart[Void] = new Multipart[Void]:
+        override def decode(body: Request.Body.Multipart): Validated[Violations, Void] = Void.valid
+        override def encode(a: Void): Request.Body.Multipart = Request.Body.Multipart.Empty
 
   final private case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])
       extends Input[(A, B, C)]:
     override def matches(request: Request): Boolean =
       url.matches(request.path, request.queries) && headers.matches(request.headers)
-    override def decode(request: Request): Validated[Violations, (A, B, C)] = ???
+    override def decode(request: Request): Validated[Violations, (A, B, C)] = (
+      // TODO adjust violation paths (?)
+      // TODO check remainders (?)
+      url.decode(request.path, request.queries),
+      headers.decode(request.headers),
+      body.decode(request.body)
+    ).tupled
     override def encode(abc: (A, B, C)): Request =
       val (path, queries) = url.encode(abc._1)
       Request(method, path, queries, headers.encode(abc._2), body.encode(abc._3))
@@ -109,13 +147,18 @@ object Input:
 
   transparent inline def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C]): Input[?] =
     inline (url, headers, body) match
-      case (url: Url[Void], headers: Headers[Void], body) =>
-        Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
-      case (url: Url[Void], headers, body: Body[Void]) =>
-        Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
       case (url, headers: Headers[Void], body: Body[Void]) =>
         Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
-      // TODO more cases
+      case (url: Url[Void], headers, body: Body[Void]) =>
+        Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
+      case (url: Url[Void], headers: Headers[Void], body) =>
+        Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
+      case (url, headers, body: Body[Void]) =>
+        Root(method, url, headers, body).imap { case (a, b, _) => (a, b) } { case (a, b) => (a, b, Void) }
+      case (url, headers: Headers[Void], body) =>
+        Root(method, url, headers, body).imap { case (a, _, c) => (a, c) } { case (a, c) => (a, Void, c) }
+      case (url: Url[Void], headers, body) =>
+        Root(method, url, headers, body).imap { case (_, b, c) => (b, c) } { case (b, c) => (Void, b, c) }
       case _ => Root(method, url, headers, body)
 
   given Invariant[Input] with
