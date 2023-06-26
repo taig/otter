@@ -29,22 +29,24 @@ import org.typelevel.ci.CIString
 import scodec.bits.ByteVector
 import org.typelevel.ci.*
 
+import scala.collection.immutable.VectorMap
+
 def jsonCodecOf[F[_]: Monad, A](
     decoder: EntityDecoder[F, Json],
     schema: Schema[A]
 ): EntityDecoder[F, A] = new EntityDecoder[F, A]:
   override def decode(media: Media[F], strict: Boolean): DecodeResult[F, A] = decoder
-      .decode(media, strict)
-      .subflatMap: json =>
-        schema
-          .decode(toOpenApi(json))
-          .leftMap { violations =>
-            InvalidMessageBodyFailure(
-              s"Failed to validate: ${json.spaces2}",
-              cause = ??? // OpenApiHttpException(violations).some
-            )
-          }
-          .toEither
+    .decode(media, strict)
+    .subflatMap: json =>
+      schema
+        .decode(toOpenApi(json))
+        .leftMap { violations =>
+          InvalidMessageBodyFailure(
+            s"Failed to validate: ${json.spaces2}",
+            cause = ??? // OpenApiHttpException(violations).some
+          )
+        }
+        .toEither
 
   override def consumes: Set[MediaRange] = decoder.consumes
 
@@ -54,18 +56,18 @@ def toHttp4sMethod(method: Method): Option[Http4sMethod] = Http4sMethod.all.find
 
 def toHttp4sUri(path: Chain[OpenApi.Primitive], queries: Chain[(String, OpenApi.Primitive)]): ParseResult[Uri] =
   if path.isEmpty && queries.isEmpty then uri"/".asRight
-  else if queries.isEmpty then ??? // Uri.fromString("/" + path.map(_.print).mkString_("/"))
-  else if path.isEmpty then ???
-//    Uri.fromString("?" + queries.map { case (key, value) => s"$key=${value.print}" }.mkString_("&"))
-  else ???
-//    Uri.fromString(
-//      "/" + path.map(_.print).mkString_("/") + "?" + queries
-//        .map { case (key, value) => s"$key=${value.print}" }
-//        .mkString_("&")
-//    )
+  else if queries.isEmpty then Uri.fromString("/" + path.map(_.render).mkString_("/"))
+  else if path.isEmpty then
+    Uri.fromString("?" + queries.map { case (key, value) => s"$key=${value.render}" }.mkString_("&"))
+  else
+    Uri.fromString(
+      "/" + path.map(_.render).mkString_("/") + "?" + queries
+        .map { case (key, value) => s"$key=${value.render}" }
+        .mkString_("&")
+    )
 
-def fromHttp4sHeaders(headers: Http4sHeaders): Chain[(CIString, OpenApi.Primitive)] =
-  Chain.fromSeq(headers.headers).map(header => header.name -> OpenApi.fromString(header.value))
+def fromHttp4sHeaders(headers: Http4sHeaders): VectorMap[CIString, String] =
+  headers.headers.map(header => header.name -> header.value).to(VectorMap)
 
-def toHttp4sHeaders(headers: Chain[(CIString, OpenApi.Primitive)]): Http4sHeaders = ???
-//  Http4sHeaders(headers.map { case (name, value) => Http4sHeader.Raw(name, value.print) })
+def toHttp4sHeaders(headers: VectorMap[CIString, String]): Http4sHeaders =
+  new Http4sHeaders(headers.map { case (name, value) => Http4sHeader.Raw(name, value) }.toList)
