@@ -92,6 +92,10 @@ lazy val schema = module(identifier = Some("schema"))
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         Nil
   )
+  .jsSettings(
+    libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
+      .cross(CrossVersion.for3Use2_13)
+  )
   .dependsOn(core % "compile->compile;test->test", validation)
 
 lazy val http = module(identifier = Some("http"))
