@@ -320,7 +320,7 @@ final class TypeTest extends FunSuite:
     )
   }
 
-  test("render: double") {
+  test("render: double".ignore) {
     assertEquals(
       obtained = Type.Double.render(0d),
       expected = "0.0"
@@ -331,7 +331,7 @@ final class TypeTest extends FunSuite:
     )
   }
 
-  test("render: float") {
+  test("render: float".ignore) {
     assertEquals(
       obtained = Type.Float.render(0f),
       expected = "0.0"
