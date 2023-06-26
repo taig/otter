@@ -83,6 +83,19 @@ object Input:
           fa.imap(f)(g)
 
     abstract class Multipart[A] extends Input.Body[A]:
+      def toChain: Chain[Input.Body.Multipart.Part[?]]
+      final def product[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[(A, B)] =
+        Multipart.Product(this, multipart)
+      final transparent inline def zip[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[?] =
+        inline (this, multipart) match
+          case (left: Multipart[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
+          case (left, right: Multipart[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
+          case (left: Multipart[? *: ?], right) =>
+            left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+          case (left, right) => left.product(right)
+      final transparent inline def :*[B](part: Input.Body.Multipart.Part[B]): Input.Body.Multipart[?] =
+        zip(part.toMultipart)
+      final def imap[B](f: A => B)(g: B => A): Input.Body.Multipart[B] = Multipart.Modify(this, f, g)
       override def decode(body: Request.Body): Validated[Violations, A] = body match
         case body: Request.Body.Multipart => decode(body)
         case _: Request.Body.Singlepart =>
@@ -103,6 +116,7 @@ object Input:
             parts: Chain[Request.Body.Multipart.Part]
         ): Validated[Violations, (Chain[Request.Body.Multipart.Part], A)]
         def encode(a: A): Chain[Request.Body.Multipart.Part]
+        final def toMultipart: Input.Body.Multipart[A] = Multipart.Root(this)
 
       object Part:
         final private case class Optional[A](part: Input.Body.Multipart.Part[A])
@@ -116,12 +130,30 @@ object Input:
           override def encode(a: Option[A]): Chain[Request.Body.Multipart.Part] =
             Chain.fromOption(a).flatMap(part.encode)
 
+      final private case class Root[A](part: Input.Body.Multipart.Part[A]) extends Input.Body.Multipart[A]:
+        override def toChain: Chain[Part[?]] = Chain.one(part)
+        override def decode(body: Request.Body.Multipart): Validated[Violations, A] =
+          part.decode(body.parts).map(_._2)
+        override def encode(a: A): Request.Body.Multipart = Request.Body.Multipart(part.encode(a))
+
       final private case class Product[A, B](left: Input.Body.Multipart[A], right: Input.Body.Multipart[B])
           extends Input.Body.Multipart[(A, B)]:
-        override def decode(body: Request.Body.Multipart): Validated[Violations, (A, B)] = ???
-        override def encode(ab: (A, B)): Request.Body.Multipart = ???
+        override def toChain: Chain[Part[?]] = left.toChain ++ right.toChain
+        override def decode(body: Request.Body.Multipart): Validated[Violations, (A, B)] =
+          // TODO we actually need remainders here
+          (left.decode(body), right.decode(body)).tupled
+        override def encode(ab: (A, B)): Request.Body.Multipart =
+          Request.Body.Multipart(left.encode(ab._1).parts ++ right.encode(ab._2).parts)
+
+      final private case class Modify[A, B](multipart: Input.Body.Multipart[A], f: A => B, g: B => A)
+          extends Input.Body.Multipart[B]:
+        export multipart.toChain
+        override def decode(body: Request.Body.Multipart): Validated[Violations, B] =
+          multipart.decode(body).map(f)
+        override def encode(b: B): Request.Body.Multipart = multipart.encode(g(b))
 
       val Empty: Input.Body.Multipart[Void] = new Multipart[Void]:
+        override def toChain: Chain[Part[?]] = Chain.empty
         override def decode(body: Request.Body.Multipart): Validated[Violations, Void] = Void.valid
         override def encode(a: Void): Request.Body.Multipart = Request.Body.Multipart.Empty
 
