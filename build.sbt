@@ -107,3 +107,34 @@ lazy val http = module(identifier = Some("http"))
         Nil
   )
   .dependsOn(schema % "compile->compile;test->test")
+
+lazy val csv = module(identifier = Some("csv"))
+  .dependsOn(schema % "compile->compile;test->test")
+
+lazy val circe = module(identifier = Some("circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-parser" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
+
+lazy val dsl = module(identifier = Some("dsl"))
+  .dependsOn(http % "compile->compile;test->test")
+
+lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-circe" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
+lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+        Nil
+  )
+  .dependsOn(http4s % "compile->compile;test->test", dsl)
