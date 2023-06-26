@@ -128,7 +128,7 @@ lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
       "org.http4s" %% "http4s-circe" % Version.Http4s ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test")
+  .dependsOn(http % "compile->compile;test->test", circe)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(
