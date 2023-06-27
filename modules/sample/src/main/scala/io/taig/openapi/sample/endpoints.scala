@@ -5,7 +5,7 @@ import io.taig.openapi.http.*
 import io.taig.openapi.http4s.Http4s
 
 object endpoints {
-  val reqBody: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Root(???)
+  val reqBody: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict
   val resBody: Output.Body[Int] = ???
   val get: Endpoint[Array[Byte], Int] = Endpoint(
     Input(Method("GET"), Url.Root, Headers.Empty, reqBody),

@@ -29,10 +29,11 @@ object Input:
 
   object Body:
     abstract class Singlepart[A] extends Body[A]:
-      final def optional: Input.Body.Singlepart[Option[A]] = ??? // Singlepart.Optional(this)
-//      final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
-//        Input.Body.Singlepart.Validate(this, validation, g)
-      final def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ??? // ivalidate(Validation.lift(f))(g)
+      def isStrict: Boolean
+      final def optional: Input.Body.Singlepart[Option[A]] = Singlepart.Optional(this)
+      final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
+        Input.Body.Singlepart.Validate(this, validation, g)
+      final def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ivalidate(Validation.lift(f))(g)
       final override def decode(body: Request.Body): Validated[Violations, A] = body match
         case body: Request.Body.Singlepart => decode(body)
         case _: Request.Body.Multipart =>
@@ -44,25 +45,29 @@ object Input:
       override def encode(a: A): Request.Body.Singlepart
 
     object Singlepart:
-//      final private case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
-//        override def decode(body: Request.Body.Singlepart): Validated[Violations, Option[A]] =
-//          if body.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
-//        override def encode(a: Option[A]): Request.Body.Singlepart = a.fold(Request.Body.Singlepart.Empty)(body.encode)
-//
-//      final private case class Validate[A, B: Encoder, C](
-//          body: Input.Body.Singlepart[A],
-//          validation: Validation[B, A, A, C],
-//          g: C => A
-//      ) extends Input.Body.Singlepart[C]:
-//        override def decode(body: Request.Body.Singlepart): Validated[Violations, C] =
-//          this.body.decode(body).andThen(applyValidation(validation, this.body.encode(_).asOpenApi))
-//        override def encode(c: C): Request.Body.Singlepart = body.encode(g(c))
-//
-//      val Empty: Input.Body.Singlepart[Void] = new Singlepart[Void]:
-//        override def decode(body: Request.Body.Singlepart): Validated[Violations, Void] = Void.valid
-//        override def encode(a: Void): Request.Body.Singlepart = Request.Body.Singlepart.Empty
+      final private case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
+        export body.isStrict
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, Option[A]] =
+          if body.isEmpty then none[A].valid else this.body.decode(body).map(_.some)
+        override def encode(a: Option[A]): Request.Body.Singlepart = a
+          .map(body.encode)
+          .getOrElse:
+            if isStrict
+            then Request.Body.Singlepart.Strict(Array.empty)
+            else ??? // Request.Body.Singlepart.Streaming(Stream.Empty)
+
+      final private case class Validate[A, B: Encoder, C](
+          body: Input.Body.Singlepart[A],
+          validation: Validation[B, A, A, C],
+          g: C => A
+      ) extends Input.Body.Singlepart[C]:
+        export body.isStrict
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, C] =
+          this.body.decode(body).andThen(applyValidation(validation, this.body.encode(_).asOpenApi))
+        override def encode(c: C): Request.Body.Singlepart = body.encode(g(c))
 
       val Strict: Input.Body.Singlepart[Array[Byte]] = new Singlepart[Array[Byte]]:
+        override def isStrict: Boolean = true
         override def decode(body: Request.Body.Singlepart): Validated[Violations, Array[Byte]] = body match
           case Request.Body.Singlepart.Strict(data) => data.valid
           case _: Request.Body.Singlepart.Streaming =>
@@ -73,8 +78,13 @@ object Input:
         override def encode(as: Array[Byte]): Request.Body.Singlepart = Request.Body.Singlepart.Strict(as)
 
       val Streaming: Input.Body.Singlepart[Stream[Byte]] = new Singlepart[Stream[Byte]]:
+        override def isStrict: Boolean = false
         override def decode(body: Request.Body.Singlepart): Validated[Violations, Stream[Byte]] = body match
-          case Request.Body.Singlepart.Strict(data)    => ??? // Stream.from(data).valid
+          case _: Request.Body.Singlepart.Strict =>
+            val violation = Constraint
+              .tpe(OpenApi.fromString("Request.Body.Singlepart.Streaming"))
+              .toViolation(OpenApi.fromString("Request.Body.Singlepart.Strict"))
+            Violations.rootNec(violation).invalid
           case Request.Body.Singlepart.Streaming(data) => data.valid
         override def encode(a: Stream[Byte]): Request.Body.Singlepart = Request.Body.Singlepart.Streaming(a)
 
@@ -183,11 +193,20 @@ object Input:
       url: Url[A],
       headers: Headers[B],
       body: Input.Body[C]
-  ): Input[?] =
-    inline (url, headers, body) match
-      // TODO cases
-      case _: (Url[Void], Headers[Void], Input.Body[C]) =>
-        Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
+  ): Input[?] = inline (url, headers, body) match
+    case _: (Url[A], Headers[Void], Input.Body[Void]) =>
+      Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
+    case _: (Url[Void], Headers[B], Input.Body[Void]) =>
+      Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
+    case _: (Url[Void], Headers[Void], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
+    case _: (Url[A], Headers[B], Input.Body[Void]) =>
+      Root(method, url, headers, body).imap { case (a, b, _) => (a, b) } { case (a, b) => (a, b, Void) }
+    case _: (Url[Void], Headers[B], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (_, b, c) => (b, c) } { case (b, c) => (Void, b, c) }
+    case _: (Url[A], Headers[Void], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (a, _, c) => (a, c) } { case (a, c) => (a, Void, c) }
+    case _ => Root(method, url, headers, body)
 
   given Invariant[Input] with
     override def imap[A, B](fa: Input[A])(f: A => B)(g: B => A): Input[B] = fa.imap(f)(g)

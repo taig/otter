@@ -33,21 +33,18 @@ import scala.collection.immutable.VectorMap
 import scala.reflect.ClassTag
 
 final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
-//  final class EntityBodyStream[A](val isEmpty: Boolean, val toFs2: Fs2Stream[F, A]) extends Stream[A] {}
-//
-//  final class EntityBodyStrict[A](val run: F[A]) extends Strict[A] {}
+  final class EntityBodyStream[A](val isEmpty: Boolean, val toFs2: Fs2Stream[F, A]) extends Stream[A]
 
-//  object EntityBodyStream:
-//    def apply[A: ClassTag](source: Fs2Stream[F, A]): F[Stream[A]] =
-//      source.pull.peek1
-//        .flatMap {
-//          case Some((_, tail)) => Pull.output1(new EntityBodyStream(isEmpty = false, tail))
-//          case None            => Pull.output1(new EntityBodyStream(isEmpty = true, Fs2Stream.empty))
-//        }
-//        .stream
-//        .head
-//        .compile
-//        .lastOrError
+  object EntityBodyStream:
+    def apply[A](source: Fs2Stream[F, A]): F[Stream[A]] = source.pull.peek1
+      .flatMap {
+        case Some((_, tail)) => Pull.output1(new EntityBodyStream(isEmpty = false, tail))
+        case None            => Pull.output1(new EntityBodyStream(isEmpty = true, Fs2Stream.empty))
+      }
+      .stream
+      .head
+      .compile
+      .lastOrError
 
   def jsonCodecOf[A](
       decoder: EntityDecoder[F, Json],
@@ -88,12 +85,16 @@ final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
     new Http4sHeaders(headers.map { case (name, value) => Http4sHeader.Raw(name, value) }.toList)
 
   def fromHttp4sEntity(request: Http4sRequest[F], input: Input[?]): F[Request.Body] = input.body match
-    case _: Input.Body.Singlepart[?] if request.contentLength.contains(0) =>
-      Request.Body.Singlepart.Empty.pure[F]
-//    case _: Input.Body.Singlepart.Strict[?] =>
-//      request.entity.body.compile.to(Array).map(Request.Body.Singlepart.Strict.apply)
+    case input: Input.Body.Singlepart[?] if input.isStrict && request.contentLength.contains(0) =>
+      Request.Body.Singlepart.Strict(Array.empty).pure[F]
+    case input: Input.Body.Singlepart[?] if !input.isStrict && request.contentLength.contains(0) =>
+      Request.Body.Singlepart.Streaming(new EntityBodyStream(isEmpty = true, Fs2Stream.empty)).pure[F]
+    case input: Input.Body.Singlepart[?] if input.isStrict =>
+      request.entity.body.compile.to(Array).map(Request.Body.Singlepart.Strict.apply)
+    case input: Input.Body.Singlepart[?] if !input.isStrict =>
+      Request.Body.Singlepart.Streaming(new EntityBodyStream(isEmpty = false, request.entity.body)).pure[F]
     case _: Input.Body.Multipart[?] if request.contentLength.contains(0) =>
-      Request.Body.Multipart.Empty.pure[F]
+      ???
     case _: Input.Body.Multipart[?] => ???
 
   def fromHttp4sRequest(request: Http4sRequest[F]): F[Request] =
@@ -116,7 +117,7 @@ final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
           ???
         }
       case _ =>
-        if request.contentLength.contains(0) then Request.Body.Singlepart.Empty.pure[F]
+        if request.contentLength.contains(0) then ??? // Request.Body.Singlepart.Empty.pure[F]
         else Request.Body.Singlepart.Streaming(???).pure[F]
 
     body.map(Request(fromHttp4sMethod(request.method), path, queries, headers, _))

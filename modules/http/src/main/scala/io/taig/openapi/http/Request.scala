@@ -50,8 +50,6 @@ object Request:
         case Streaming(data) => data.isEmpty
 
     object Singlepart:
-      val Empty: Request.Body.Singlepart = Strict(Array.empty)
-
       given Encoder[Request.Body.Singlepart] =
         case _: Strict    => OpenApi.fromString("Singlepart.Strict(...)")
         case _: Streaming => OpenApi.fromString("Singlepart.Streaming(...)")
@@ -59,14 +57,6 @@ object Request:
     given Encoder[Request.Body] =
       case body: Singlepart => body.asOpenApi
       case body: Multipart  => body.asOpenApi
-
-  def empty(method: Method): Request = Request(
-    method,
-    path = Chain.empty,
-    queries = VectorMap.empty,
-    headers = VectorMap.empty,
-    Body.Singlepart.Empty
-  )
 
   given Encoder[Request] = request =>
     OpenApi.obj(

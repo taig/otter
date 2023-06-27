@@ -102,7 +102,7 @@ lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
 //      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
 //        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
         Nil
   )
