@@ -44,14 +44,14 @@ object Input:
       override def encode(a: A): Request.Body.Singlepart
 
     object Singlepart:
-      abstract class Strict[A] extends Input.Body.Singlepart[A] {
-        override def decode(body: Request.Body.Singlepart): Validated[Violations, A] = ???
-        override def encode(a: A): Request.Body.Singlepart = ???
+      case object Root extends Input.Body.Singlepart[Stream[Byte]] {
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, Stream[Byte]] = ???
+        override def encode(a: Stream[Byte]): Request.Body.Singlepart = ???
       }
 
-      abstract class Streaming[A] extends Input.Body.Singlepart[A] {
-        override def decode(body: Request.Body.Singlepart): Validated[Violations, A] = ???
-        override def encode(a: A): Request.Body.Singlepart = ???
+      final case class Strict[A](singlepart: Input.Body.Singlepart[Stream[A]]) extends Input.Body.Singlepart[Array[A]] {
+        override def decode(body: Request.Body.Singlepart): Validated[Violations, Array[A]] = ???
+        override def encode(a: Array[A]): Request.Body.Singlepart = ???
       }
 //      final private case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
 //        override def decode(body: Request.Body.Singlepart): Validated[Violations, Option[A]] =

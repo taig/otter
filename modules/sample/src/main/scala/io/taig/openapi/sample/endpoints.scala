@@ -5,9 +5,9 @@ import io.taig.openapi.http.*
 import io.taig.openapi.http4s.Http4s
 
 object endpoints {
-  val reqBody: Input.Body.Singlepart[Stream[Byte]] = ???
+  val reqBody: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Root(???)
   val resBody: Output.Body[Int] = ???
-  val get: Endpoint[Stream[Byte], Int] = Endpoint(
+  val get: Endpoint[Array[Byte], Int] = Endpoint(
     Input(Method("GET"), Url.Root, Headers.Empty, reqBody),
     Output(Results(Result(Code(200), Headers.Empty, resBody)), ???)
   )
@@ -20,13 +20,17 @@ object endpoints {
       def implementedBy(f: I => IO[O]): Endpoint.Implementation[IO, I, O] =
         ???
 
-    extension [A](stream: Stream[A]) def toFs2: fs2.Stream[IO, A] = ???
+//    extension [A](stream: Stream[A]) def toFs2: fs2.Stream[IO, A] = ???
+//    extension [A](consumed: Strict[A])
+//      def value: IO[A] = consumed match {
+//        case c: http4s.EntityBodyStrict[A] => c.run
+//      }
 
   val implementation: EndpointImplementation = ???
   import implementation.*
 
   get.implementedBy { input =>
-    input.toFs2
+//    input.value
     IO(3)
   }
 }
