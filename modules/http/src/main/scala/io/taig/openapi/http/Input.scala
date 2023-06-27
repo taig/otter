@@ -74,7 +74,7 @@ object Input:
 
       val Streaming: Input.Body.Singlepart[Stream[Byte]] = new Singlepart[Stream[Byte]]:
         override def decode(body: Request.Body.Singlepart): Validated[Violations, Stream[Byte]] = body match
-          case Request.Body.Singlepart.Strict(data)    => Stream.from(data).valid
+          case Request.Body.Singlepart.Strict(data)    => ??? // Stream.from(data).valid
           case Request.Body.Singlepart.Streaming(data) => data.valid
         override def encode(a: Stream[Byte]): Request.Body.Singlepart = Request.Body.Singlepart.Streaming(a)
 

@@ -61,7 +61,7 @@ object Output:
 
     val Streaming: Output.Body[Stream[Byte]] = new Body[Stream[Byte]]:
       override def decode(body: Response.Body): Validated[Violations, Stream[Byte]] = body match
-        case Response.Body.Strict(data)    => Stream.from(data).valid
+        case Response.Body.Strict(data)    => ??? // Stream.from(data).valid
         case Response.Body.Streaming(data) => data.valid
       override def encode(a: Stream[Byte]): Response.Body = Response.Body.Streaming(a)
 

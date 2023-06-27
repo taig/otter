@@ -101,9 +101,9 @@ lazy val schema = module(identifier = Some("schema"))
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
+//      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+//        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
         Nil
   )
   .dependsOn(schema % "compile->compile;test->test")
