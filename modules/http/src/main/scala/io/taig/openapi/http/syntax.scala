@@ -13,20 +13,20 @@ object syntax:
 
   def query[A](name: String, schema: => Value[A]): Query[A] = Query(name, Eval.later(schema))
 
-  object input:
-    val empty: Input.Body.Singlepart[Void] = Input.Body.Singlepart.Empty
-    val strict: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict
-    // TODO get proper charset
-    val text: Input.Body.Singlepart[String] = strict.imap(bytes => new String(bytes))(_.getBytes)
+//  object input:
+//    val empty: Input.Body.Singlepart[Void] = Input.Body.Singlepart.Empty
+//    val strict: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict
+//     TODO get proper charset
+//    val text: Input.Body.Singlepart[String] = strict.imap(bytes => new String(bytes))(_.getBytes)
 
-    inline def apply[A](method: Method, url: Url[A]): Input[?] =
-      Input(method, url, Headers.Empty, Input.Body.Singlepart.Empty)
-
-    inline def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Input[?] =
-      Input(method, url, headers, Input.Body.Singlepart.Empty)
-
-    inline def apply[A, B](method: Method, url: Url[A], body: Input.Body[B]): Input[?] =
-      Input(method, url, Headers.Empty, body)
-
-    inline def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Input.Body[C]): Input[?] =
-      Input(method, url, headers, body)
+//    inline def apply[A](method: Method, url: Url[A]): Input[?] =
+//      Input(method, url, Headers.Empty, Input.Body.Singlepart.Empty)
+//
+//    inline def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Input[?] =
+//      Input(method, url, headers, Input.Body.Singlepart.Empty)
+//
+//    inline def apply[A, B](method: Method, url: Url[A], body: Input.Body[B]): Input[?] =
+//      Input(method, url, Headers.Empty, body)
+//
+//    inline def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Input.Body[C]): Input[?] =
+//      Input(method, url, headers, body)

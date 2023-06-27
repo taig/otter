@@ -56,7 +56,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, validation, schema, http)
+  .aggregate(core, validation, schema, http, csv, circe, http4s, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -131,6 +131,7 @@ lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .dependsOn(http % "compile->compile;test->test", circe)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .settings(noPublishSettings)
   .settings(
     libraryDependencies ++=
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::

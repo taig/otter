@@ -32,11 +32,10 @@ object Request:
     final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
 
     object Multipart:
-      final case class Part(name: String, filename: Option[String], body: Request.Body.Singlepart)
+      final case class Part(headers: VectorMap[CIString, String], body: Request.Body.Singlepart)
 
       object Part:
-        given Encoder[Request.Body.Multipart.Part] = part =>
-          OpenApi.obj("name" := part.name, "filename" := part.filename, "body" := part.body)
+        given Encoder[Request.Body.Multipart.Part] = part => OpenApi.obj("headers" := part.headers, "body" := part.body)
 
       val Empty: Request.Body.Multipart = Multipart(Chain.empty)
 
