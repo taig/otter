@@ -24,11 +24,9 @@ sealed abstract class Input[A]:
 object Input:
   sealed abstract class Body[A]:
     def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body[C]
-    def ivalidateWithHeaders[B: Encoder, C](validation: Validation[B, A, (Http.Headers, A), C])(
-        g: C => (Http.Headers, A)
-    ): Input.Body[C]
     def imap[B](f: A => B)(g: B => A): Input.Body[B]
-    def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Input.Body[B]
+    def withHeaders: Input.Body[(Http.Headers, A)]
+    def withoutHeaders[B](using A =:= (Http.Headers, B)): Input.Body[B]
     def decode[F[_]: ApplicativeThrow](headers: Http.Headers, body: Request.Body[F]): F[Validated[Violations, A]]
     def encode[F[_]: ApplicativeThrow](a: A): F[Request.Body[F]]
 
@@ -36,14 +34,9 @@ object Input:
     abstract class Singlepart[A] extends Input.Body[A]:
       override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
         ???
-
-      override def ivalidateWithHeaders[B: Encoder, C](validation: Validation[B, A, (Http.Headers, A), C])(
-          g: C => (Http.Headers, A)
-      ): Input.Body.Singlepart[C] = ???
-
       override def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ???
-      override def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Input.Body.Singlepart[B] =
-        ???
+      override def withHeaders: Input.Body.Singlepart[(Http.Headers, A)] = ???
+      override def withoutHeaders[B](using A =:= (Http.Headers, B)): Input.Body.Singlepart[B] = ???
       override def decode[F[_]: ApplicativeThrow](
           headers: Http.Headers,
           body: Request.Body[F]

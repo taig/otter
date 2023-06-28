@@ -4,6 +4,7 @@ import cats.Eval
 import cats.syntax.all.*
 import io.taig.openapi.schema.{Collection, Schema, Void}
 import io.taig.openapi.validation.Validation
+import io.taig.openapi.validation.Constraint
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -25,34 +26,32 @@ object syntax:
     object body:
       object strict:
         val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict
-        def string(mediaType: String, charset: Charset): Input.Body.Singlepart[String] =
-          // TODO verify media type
-          binary.imapWithHeaders { case (headers, bytes) =>
-            val charsetOrFallback = headers
-              .getFirst(ci"Content-Type")
-              .flatMap { value =>
-                value
-                  .split(";\\s*")
-                  .map(_.split("\\s*=\\s*", 2))
-                  .collectFirst { case Array(name, value) if name.equalsIgnoreCase("charset") => value }
-                  .map(charset =>
-                    if charset.startsWith("\"") && charset.endsWith("\"") then charset.tail.init else charset
-                  )
-                  .flatMap { charset =>
-                    try Charset.forName(charset).some
-                    catch {
-                      case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
-                    }
-                  }
-              }
-              .getOrElse(charset)
 
-            new String(bytes, charsetOrFallback)
-          } { value =>
-            (Http.Headers.one(ci"Content-Type", s"$mediaType; charset=${charset.name()}"), value.getBytes(charset))
+        def string(mediaType: Option[String]): Input.Body.Singlepart[String] =
+          val validation: Validation[
+            String,
+            (Http.Headers, Array[Byte]),
+            (Http.Headers, Array[Byte]),
+            (Option[String], Charset, Array[Byte])
+          ] = Validation.fromOptionNec(Constraint.parser("Content-Type")) { case (headers, bytes) =>
+            headers.getFirst(ci"Content-Type").flatMap(parseContentType) match
+              case Some(contentType) if mediaType.forall(_ === contentType.mediaType) =>
+                (mediaType, contentType.charset.getOrElse(StandardCharsets.UTF_8), bytes).some
+              case Some(_) => none
+              case None    => (none, StandardCharsets.UTF_8, bytes).some
           }
 
-        val string: Input.Body.Singlepart[String] = string(mediaType = "text/plain", charset = StandardCharsets.UTF_8)
+          binary.withHeaders
+            .ivalidate(validation) {
+              case (Some(mediaType), charset, bytes) =>
+                (Http.Headers.one(ci"Content-Type", s"$mediaType; charset=${charset.name()}"), bytes)
+              case (None, _, bytes) => (Http.Headers.Empty, bytes)
+            }
+            .imap { case (_, charset, bytes) => new String(bytes, charset) } { value =>
+              (mediaType, StandardCharsets.UTF_8, value.getBytes(StandardCharsets.UTF_8))
+            }
+
+        val text: Input.Body.Singlepart[String] = string(mediaType = "text/plain".some)
 
       object streaming:
         val binary: Input.Body.Singlepart[Entity[Byte]] = Input.Body.Singlepart.Streaming
