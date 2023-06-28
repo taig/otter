@@ -41,18 +41,10 @@ object Request:
 
       given Encoder[Request.Body.Multipart] = multipart => OpenApi.Array(multipart.parts.map(_.asOpenApi).toVector)
 
-    enum Singlepart extends Request.Body:
-      case Strict(data: Array[Byte])
-      case Streaming(data: Stream[Byte])
-
-      def isEmpty: Boolean = this match
-        case Strict(data)    => data.isEmpty
-        case Streaming(data) => data.isEmpty
+    final case class Singlepart(data: Stream[Byte]) extends Request.Body
 
     object Singlepart:
-      given Encoder[Request.Body.Singlepart] =
-        case _: Strict    => OpenApi.fromString("Singlepart.Strict(...)")
-        case _: Streaming => OpenApi.fromString("Singlepart.Streaming(...)")
+      given Encoder[Request.Body.Singlepart] = _ => OpenApi.fromString("[...]")
 
     given Encoder[Request.Body] =
       case body: Singlepart => body.asOpenApi
