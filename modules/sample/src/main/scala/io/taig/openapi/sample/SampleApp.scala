@@ -33,7 +33,7 @@ object SampleApp extends ResourceApp.Forever {
     Stream.chunk(chunk) ++
     Stream.chunk(chunk) ++
     Stream.chunk(chunk)
-  
+
   val routes: HttpRoutes[IO] = HttpRoutes.of { case GET -> Root =>
     Ok(data)
   }

@@ -7,7 +7,7 @@ opaque type Routes[F[_]] = Chain[Endpoint.Implementation[F, ?, ?]]
 object Routes:
   extension [F[_]](self: Routes[F])
     def toChain: Chain[Endpoint.Implementation[F, ?, ?]] = self
-    def find(request: Request): Option[Endpoint.Implementation[F, ?, ?]] =
+    def find(request: Request[?]): Option[Endpoint.Implementation[F, ?, ?]] =
       self.find(_.endpoint.input.matches(request))
     def :+(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = self :+ endpoint
     def +:(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = endpoint +: self

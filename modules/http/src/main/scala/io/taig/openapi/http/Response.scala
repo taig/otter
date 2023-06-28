@@ -14,7 +14,7 @@ final case class Response(code: Code, headers: VectorMap[CIString, String], body
 object Response:
   enum Body:
     case Strict(data: Array[Byte])
-    case Streaming(data: Stream[Byte])
+    case Streaming(data: Entity[Byte])
 
     def isEmpty: Boolean = this match
       case Strict(data)    => data.isEmpty
