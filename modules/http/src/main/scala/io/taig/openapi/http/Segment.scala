@@ -4,7 +4,7 @@ import cats.Eval
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.History
-import io.taig.openapi.schema.{Value, Violations, Void}
+import io.taig.openapi.schema.{Schema, Violations, Void}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.Constraint
 
@@ -30,7 +30,7 @@ object Segment:
     override def encode(a: Void): String = name
     override def print: String = name
 
-  final case class Parameter[A](name: String, schema: Eval[Value[A]]) extends Segment[A]:
+  final case class Parameter[A](name: String, schema: Eval[Schema.Value[A]]) extends Segment[A]:
     override def matches(segment: String): Boolean = true
     override def decode(value: String): Validated[Violations, A] =
       schema.value.parse(value).leftMap(_.modifyHistory(name /: _))

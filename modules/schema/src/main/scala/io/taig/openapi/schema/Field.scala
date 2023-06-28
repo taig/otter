@@ -12,7 +12,7 @@ sealed abstract class Field[A, B]:
   def default: Option[B]
   def modifyDefault(f: Option[B] => Option[B]): Field[A, B]
 
-  def key: Eval[Value[A]]
+  def key: Eval[Schema.Value[A]]
 
   def name: A
   final def renderName: String = key.value.render(name)
@@ -51,7 +51,7 @@ object Field:
 
   final private case class Required[A, B](
       default: Option[B],
-      key: Eval[Value[A]],
+      key: Eval[Schema.Value[A]],
       name: A,
       nulls: Field.Null,
       schema: Eval[Schema[B]]
@@ -91,5 +91,5 @@ object Field:
 
         if dropNull then OpenApi.Object.Empty else OpenApi.Object.one(field.renderName, OpenApi.Null)
 
-  def apply[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]): Field[A, B] =
+  def apply[A, B](name: A, key: Eval[Schema.Value[A]], schema: Eval[Schema[B]]): Field[A, B] =
     Required[A, B](none, key, name, Null.Default, schema)

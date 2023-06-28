@@ -7,7 +7,7 @@ import io.taig.openapi.schema.Sum.Discriminator
 import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.validation.Constraint
 
-final case class Branch[A, B](name: A, key: Eval[Value[A]], schema: Eval[Schema[B]]):
+final case class Branch[A, B](name: A, key: Eval[Schema.Value[A]], schema: Eval[Schema[B]]):
   def renderName: String = key.value.render(name)
 
   infix def orElse[C](branch: Branch[A, C]): Sum[A, B + C] = toSum orElse branch.toSum

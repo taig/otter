@@ -6,7 +6,7 @@ import io.taig.openapi.validation.{Constraint, Validation}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.{schema, Encoder, OpenApi}
 
-abstract class Primitive[A] extends Value[A]:
+abstract class Primitive[A] extends Schema.Value[A]:
   self =>
 
   override type Self[a] = Primitive[a]

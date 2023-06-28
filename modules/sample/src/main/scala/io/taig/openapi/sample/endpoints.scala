@@ -2,13 +2,14 @@ package io.taig.openapi.sample
 
 import cats.effect.IO
 import io.taig.openapi.http.*
+import io.taig.openapi.http.syntax.*
 import io.taig.openapi.http4s.Http4s
 
 object endpoints {
-  val reqBody: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict
+  val strictBody: Input.Body.Singlepart[Array[Byte]] = input.body.strict.binary
   val resBody: Output.Body[Int] = ???
   val get: Endpoint[Array[Byte], Int] = Endpoint(
-    Input(Method("GET"), Url.Root, Headers.Empty, reqBody),
+    Input(Method("GET"), Url.Root, Headers.Empty, strictBody),
     Output(Results(Result(Code(200), Headers.Empty, resBody)), ???)
   )
 

@@ -20,7 +20,7 @@ object Constraint:
     def atMost(reference: Long): Constraint[Long] = Constraint("collection.atMost", reference.some)
     def contains[A](reference: A): Constraint[A] = Constraint("collection.contains", reference.some)
     val empty: Constraint[Nothing] = Constraint("collection.empty", none)
-    def exactly(reference: Long): Constraint[Long] = Constraint("collection.exactly", reference.some)
+    def exactly[A](reference: A): Constraint[A] = Constraint("collection.exactly", reference.some)
     val nonEmpty: Constraint[Nothing] = Constraint("collection.nonEmpty", none)
     def oneOf[A](reference: A): Constraint[A] = Constraint("collection.oneOf", reference.some)
 

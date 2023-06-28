@@ -28,6 +28,30 @@ sealed abstract class Collection[A] extends Schema[A]:
 object Collection:
   type Of[A, B <: OpenApi] = Collection[A] { type Of = B }
 
+  sealed abstract class Value[A] extends Collection[A] {
+    final override type Of = OpenApi.Primitive
+    override def schema: Eval[Schema.Value[?]]
+    def parse(value: Chain[String]): Validated[Violations, A]
+    def render(a: A): Chain[String]
+  }
+
+  object Value:
+    final private case class Root[A](
+        description: Option[String],
+        example: Option[Vector[A]],
+        schema: Eval[Schema.Value[A]]
+    ) extends Collection.Value[Vector[A]]:
+      override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
+      override def modifyDescription(f: Option[String] => Option[String]): Collection.Of[Vector[A], OpenApi.Primitive] =
+        ???
+      override def modifyExample(
+          f: Option[Vector[A]] => Option[Vector[A]]
+      ): Collection.Of[Vector[A], OpenApi.Primitive] = ???
+      override def decode(openapi: OpenApi.Array[?]): Validated[Violations, Vector[A]] = ???
+      override def encode(a: Vector[A]): OpenApi.Array[OpenApi.Primitive] = ???
+      override def parse(value: Chain[String]): Validated[Violations, Vector[A]] = ???
+      override def render(a: Vector[A]): Chain[String] = ???
+
   final private case class Root[A, B <: OpenApi](
       description: Option[String],
       example: Option[Vector[A]],

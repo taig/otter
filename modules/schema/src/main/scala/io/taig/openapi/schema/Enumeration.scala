@@ -8,11 +8,11 @@ import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.{Constraint, Validation, Violation}
 
-sealed abstract class Enumeration[A] extends Value[A]:
+sealed abstract class Enumeration[A] extends Schema.Value[A]:
   self =>
   final override type Self[a] = Enumeration[a]
 
-  def schema: Eval[Value[?]]
+  def schema: Eval[Schema.Value[?]]
 
   def values: Eval[List[OpenApi.Primitive]]
 
@@ -30,7 +30,7 @@ object Enumeration:
       description: Option[String],
       example: Option[B],
       mapping: Mapping[B, A],
-      schema: Eval[Value[A]]
+      schema: Eval[Schema.Value[A]]
   ) extends Enumeration[B]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def values: Eval[List[OpenApi.Primitive]] =
@@ -67,7 +67,7 @@ object Enumeration:
       enumeration.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def description: Option[String] = enumeration.description
     override def example: Option[C] = enumeration.example.flatMap(validation.run(_).toOption)
-    override def schema: Eval[Value[?]] = enumeration.schema
+    override def schema: Eval[Schema.Value[?]] = enumeration.schema
     override def modifyDescription(f: Option[String] => Option[String]): Enumeration[C] =
       copy(enumeration = enumeration.modifyDescription(f))
     override def modifyExample(f: Option[C] => Option[C]): Enumeration[C] =
@@ -79,4 +79,5 @@ object Enumeration:
       enumeration.parse(value).andThen(applyValidation(validation, enumeration.encode))
     override def render(b: C): String = enumeration.render(g(b))
 
-  def apply[A, B](schema: Eval[Value[A]], mapping: Mapping[B, A]): Enumeration[B] = Root(none, none, mapping, schema)
+  def apply[A, B](schema: Eval[Schema.Value[A]], mapping: Mapping[B, A]): Enumeration[B] =
+    Root(none, none, mapping, schema)

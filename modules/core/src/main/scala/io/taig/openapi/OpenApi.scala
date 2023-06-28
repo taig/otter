@@ -197,7 +197,7 @@ object OpenApi:
     def isEmpty: SBoolean = toVector.isEmpty
     def get(index: SInt): Option[A] = toVector.lift(index)
     def ++[B >: A <: OpenApi](array: OpenApi.Array[B]): OpenApi.Array[B] = Array(toVector ++ array.toVector)
-    def toChain: Chain[OpenApi] = Chain.fromSeq(toVector)
+    def toChain: Chain[A] = Chain.fromSeq(toVector)
 
   object Array:
     val Empty: OpenApi.Array[Nothing] = OpenApi.Array(Vector.empty)

@@ -15,7 +15,7 @@ sealed abstract class Dictionary[A] extends Schema[A]:
   final override type Self[a] = Dictionary[a]
   final override type Codec = OpenApi.Object
 
-  def key: Eval[Value[?]]
+  def key: Eval[Schema.Value[?]]
   def schema: Eval[Schema[?]]
 
   final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Dictionary[C] =
@@ -31,7 +31,7 @@ object Dictionary:
   final private case class Root[A, B](
       description: Option[String],
       example: Option[SeqMap[A, B]],
-      key: Eval[Value[A]],
+      key: Eval[Schema.Value[A]],
       schema: Eval[Schema[B]]
   ) extends Dictionary[SeqMap[A, B]]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
@@ -56,7 +56,7 @@ object Dictionary:
       dictionary.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
     override def description: Option[String] = dictionary.description
     override def example: Option[C] = dictionary.example.flatMap(validation.run(_).toOption)
-    override def key: Eval[Value[?]] = dictionary.key
+    override def key: Eval[Schema.Value[?]] = dictionary.key
     override def schema: Eval[Schema[?]] = dictionary.schema
     override def modifyDescription(f: Option[String] => Option[String]): Dictionary[C] =
       copy(dictionary = dictionary.modifyDescription(f))
@@ -66,5 +66,5 @@ object Dictionary:
       dictionary.decode(openapi).andThen(applyValidation(validation, dictionary.encode))
     override def encode(b: C): OpenApi.Object = dictionary.encode(g(b))
 
-  def apply[A, B](key: Eval[Value[A]], schema: Eval[Schema[B]]): Dictionary[SeqMap[A, B]] =
+  def apply[A, B](key: Eval[Schema.Value[A]], schema: Eval[Schema[B]]): Dictionary[SeqMap[A, B]] =
     Root(none, none, key, schema)

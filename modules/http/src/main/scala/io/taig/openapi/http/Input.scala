@@ -1,14 +1,15 @@
 package io.taig.openapi.http
 
-import cats.{ApplicativeThrow, Invariant}
-import cats.data.{Chain, Validated}
+import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.openapi.{Encoder, OpenApi}
-import io.taig.openapi.syntax.*
-import io.taig.openapi.schema.applyValidation
+import cats.{ApplicativeThrow, Invariant}
+import io.taig.openapi.Encoder
 import io.taig.openapi.http.Request.Body
-import io.taig.openapi.schema.{Violations, Void}
-import io.taig.openapi.validation.{Constraint, Validation}
+import io.taig.openapi.schema.Violations
+import io.taig.openapi.validation.Validation
+import org.typelevel.ci.CIString
+
+import scala.collection.immutable.VectorMap
 
 sealed abstract class Input[A]:
   def method: Method
@@ -22,19 +23,42 @@ sealed abstract class Input[A]:
 
 object Input:
   sealed abstract class Body[A]:
-    def decode[F[_]: ApplicativeThrow](body: Request.Body[F]): F[Validated[Violations, A]]
+    def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body[C]
+    def ivalidateWithHeaders[B: Encoder, C](validation: Validation[B, A, (Http.Headers, A), C])(
+        g: C => (Http.Headers, A)
+    ): Input.Body[C]
+    def imap[B](f: A => B)(g: B => A): Input.Body[B]
+    def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Input.Body[B]
+    def decode[F[_]: ApplicativeThrow](headers: Http.Headers, body: Request.Body[F]): F[Validated[Violations, A]]
     def encode[F[_]: ApplicativeThrow](a: A): F[Request.Body[F]]
 
   object Body:
-    abstract class Singlepart[A] extends Input.Body[A] {
-      override def decode[F[_]: ApplicativeThrow](body: Request.Body[F]): F[Validated[Violations, A]] = ???
-      def decode[F[_]: ApplicativeThrow](body: Request.Body.Singlepart[F]): F[Validated[Violations, A]]
+    abstract class Singlepart[A] extends Input.Body[A]:
+      override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
+        ???
+
+      override def ivalidateWithHeaders[B: Encoder, C](validation: Validation[B, A, (Http.Headers, A), C])(
+          g: C => (Http.Headers, A)
+      ): Input.Body.Singlepart[C] = ???
+
+      override def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ???
+      override def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Input.Body.Singlepart[B] =
+        ???
+      override def decode[F[_]: ApplicativeThrow](
+          headers: Http.Headers,
+          body: Request.Body[F]
+      ): F[Validated[Violations, A]] = body match
+        case body: Request.Body.Singlepart[F] => decode(headers, body)
+      def decode[F[_]: ApplicativeThrow](
+          headers: Http.Headers,
+          body: Request.Body.Singlepart[F]
+      ): F[Validated[Violations, A]]
       override def encode[F[_]: ApplicativeThrow](a: A): F[Request.Body[F]]
-    }
 
     object Singlepart:
       val Strict: Input.Body.Singlepart[Array[Byte]] = new Singlepart[Array[Byte]]:
         override def decode[F[_]: ApplicativeThrow](
+            headers: Http.Headers,
             body: Request.Body.Singlepart[F]
         ): F[Validated[Violations, Array[Byte]]] =
           body.entity.consume.map(_.valid)
@@ -43,9 +67,9 @@ object Input:
 
       val Streaming: Input.Body.Singlepart[Entity[Byte]] = new Singlepart[Entity[Byte]]:
         override def decode[F[_]: ApplicativeThrow](
+            headers: Http.Headers,
             body: Request.Body.Singlepart[F]
         ): F[Validated[Violations, Entity[Byte]]] = body.entity.valid.pure[F]
-
         override def encode[F[_]](data: Entity[Byte])(using F: ApplicativeThrow[F]): F[Request.Body[F]] =
           F.catchNonFatal(data.asInstanceOf[Entity.Aux[F, Byte]]).map(Request.Body.Singlepart.apply)
 
@@ -233,8 +257,8 @@ object Input:
   transparent inline def apply[A, B, C](
       method: Method,
       url: Url[A],
-      headers: Headers[B]
-//      body: Input.Body[C]
+      headers: Headers[B],
+      body: Input.Body[C]
   ): Input[?] = ???
 //  inline (url, headers, body) match
 //    case _: (Url[A], Headers[Void], Input.Body[Void]) =>
