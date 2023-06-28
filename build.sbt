@@ -3,10 +3,8 @@ import sbtcrossproject.CrossProject
 val Version = new {
   val CaseInsensitive = "1.4.0"
   val Cats = "2.9.0"
-  val CatsEffect = "3.5.1"
   val Circe = "0.14.5"
   val EnumerationExt = "0.0.2"
-  val Fs2 = "3.7.0"
   val Http4s = "1.0.0-M39"
   val Java = "17"
   val Munit = "0.7.29"
@@ -40,8 +38,8 @@ inThisBuild(
   )
 )
 
-//addCommandAlias("start", s"${sample.jvm.id}/reStart")
-//addCommandAlias("stop", s"${sample.jvm.id}/reStop")
+addCommandAlias("start", s"${sample.jvm.id}/reStart")
+addCommandAlias("stop", s"${sample.jvm.id}/reStop")
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
@@ -101,9 +99,7 @@ lazy val schema = module(identifier = Some("schema"))
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-//      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
         Nil
   )
   .dependsOn(schema % "compile->compile;test->test")
@@ -135,6 +131,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.http4s" %% "http4s-dsl" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
         Nil
   )

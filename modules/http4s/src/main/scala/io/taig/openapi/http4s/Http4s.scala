@@ -104,36 +104,35 @@ final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
             .fromSeq(multipart.parts)
             .zipWith(body.toChain)((part, input) => (part, input))
             .traverse { case (part, input) =>
-              fromHttp4sSinglepartEntity(part.entity, input.body).map { body =>
+              fromHttp4sSinglepartEntity(part.entity, input.body).map: body =>
                 Request.Body.Multipart.Part(fromHttp4sHeaders(part.headers), body)
-              }
             }
             .map(Request.Body.Multipart.apply)
 
-  def fromHttp4sRequest(request: Http4sRequest[F]): F[Request] =
+  def fromHttp4sRequest(request: Http4sRequest[F], input: Input[?]): F[Request] =
+    val method = fromHttp4sMethod(request.method)
     val path = Chain.fromSeq(request.uri.path.segments.map(_.decoded()))
     val queries = request.uri.query.toVector.mapFilter { case (name, value) => value.tupleLeft(name) }.to(VectorMap)
     val headers = fromHttp4sHeaders(request.headers)
+    fromHttp4sEntity(request, input).map(Request(method, path, queries, headers, _))
 
-    val body: F[Request.Body] = request.headers.get[`Content-Type`].map(_.mediaType) match
-      case Some(contentType) if MediaRange.`multipart/*`.satisfiedBy(contentType) =>
-        request.as[Multipart[F]].flatMap { multipart =>
-//          Chain
-//            .fromSeq(multipart.parts)
-//            .traverse { part =>
-//              for
-//                //                name <- part.name.liftTo[F](new IllegalArgumentException("Multipart form-data name missing"))
-//                body <- EntityBodyStream(part.body)
-//              yield Request.Body.Multipart.Part(???, Request.Body.Singlepart.Streaming(body))
-//            }
-//            .map(Request.Body.Multipart.apply)
-          ???
-        }
-      case _ =>
-        if request.contentLength.contains(0) then ??? // Request.Body.Singlepart.Empty.pure[F]
-        else Request.Body.Singlepart.Streaming(???).pure[F]
-
-    body.map(Request(fromHttp4sMethod(request.method), path, queries, headers, _))
+//    val body: F[Request.Body] = request.headers.get[`Content-Type`].map(_.mediaType) match
+//      case Some(contentType) if MediaRange.`multipart/*`.satisfiedBy(contentType) =>
+//        request.as[Multipart[F]].flatMap { multipart =>
+////          Chain
+////            .fromSeq(multipart.parts)
+////            .traverse { part =>
+////              for
+////                //                name <- part.name.liftTo[F](new IllegalArgumentException("Multipart form-data name missing"))
+////                body <- EntityBodyStream(part.body)
+////              yield Request.Body.Multipart.Part(???, Request.Body.Singlepart.Streaming(body))
+////            }
+////            .map(Request.Body.Multipart.apply)
+//          ???
+//        }
+//      case _ =>
+//        if request.contentLength.contains(0) then ??? // Request.Body.Singlepart.Empty.pure[F]
+//        else Request.Body.Singlepart.Streaming(???).pure[F]
 
   def toHttp4sEntity(body: Request.Body): F[Http4sEntity[F]] = body match
     case body: Request.Body.Multipart =>
