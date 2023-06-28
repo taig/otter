@@ -54,7 +54,7 @@ object Input:
           .getOrElse:
             if isStrict
             then Request.Body.Singlepart.Strict(Array.empty)
-            else ??? // Request.Body.Singlepart.Streaming(Stream.Empty)
+            else Request.Body.Singlepart.Streaming(Stream.Empty)
 
       final private case class Validate[A, B: Encoder, C](
           body: Input.Body.Singlepart[A],
