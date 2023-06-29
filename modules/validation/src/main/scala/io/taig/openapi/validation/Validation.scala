@@ -25,6 +25,9 @@ sealed abstract class Validation[+Ref, +Act, -In, +Out]:
   final def contramap[In2](f: In2 => In): Validation[Ref, Act, In2, Out] =
     Validation(constraints)(input => run(f(input)))
 
+  final def mapActual[Act2](f: Act => Act2): Validation[Ref, Act2, In, Out] =
+    Validation(constraints)(input => run(input).leftMap(_.map(_.mapActual(f))))
+
   final def map[Out2](f: Out => Out2): Validation[Ref, Act, In, Out2] = Validation(constraints)(run(_).map(f))
 
   final def andThen[Ref2 >: Ref, Act2 >: Act, Out2](
@@ -81,9 +84,8 @@ object Validation:
   def lift[In, Out](f: In => Out): Validation[Nothing, Nothing, In, Out] = Validation(Chain.empty)(f(_).valid)
 
   def cond[Ref, In](constraints: NonEmptyChain[Constraint[Ref]])(f: In => Boolean): Validation[Ref, In, In, Unit] =
-    Validation(constraints.toChain) { input =>
+    Validation(constraints.toChain): input =>
       Validated.cond(f(input), (), constraints.map(Violation(_, input)))
-    }
 
   def condNec[Ref, In](constraint: Constraint[Ref])(f: In => Boolean): Validation[Ref, In, In, Unit] =
     cond(NonEmptyChain.one(constraint))(f)
@@ -99,13 +101,11 @@ object Validation:
 
   def collect[Ref, In, Out](constraints: NonEmptyChain[Constraint[Ref]])(
       pf: PartialFunction[In, Out]
-  ): Validation[Ref, In, In, Out] =
-    Validation.fromOption(constraints)(pf.lift)
+  ): Validation[Ref, In, In, Out] = Validation.fromOption(constraints)(pf.lift)
 
   def collectNec[Ref, In, Out](constraint: Constraint[Ref])(
       pf: PartialFunction[In, Out]
-  ): Validation[Ref, In, In, Out] =
-    collect(NonEmptyChain.one(constraint))(pf)
+  ): Validation[Ref, In, In, Out] = collect(NonEmptyChain.one(constraint))(pf)
 
   given [Ref, Act, In]: Applicative[Validation[Ref, Act, In, *]] with
     override def pure[A](x: A): Validation[Ref, Act, In, A] = valid(x)

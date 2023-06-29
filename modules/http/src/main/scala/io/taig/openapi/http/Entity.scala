@@ -3,6 +3,8 @@ package io.taig.openapi.http
 import cats.Applicative
 import cats.syntax.all.*
 
+import scala.reflect.ClassTag
+
 sealed abstract class Entity[A]:
   type Effect[a]
   def isEmpty: Boolean
@@ -21,3 +23,8 @@ object Entity:
   abstract class Streaming[F[_], A] extends Entity[A]:
     override type Effect[a] = F[a]
     override def isStreaming: Boolean = true
+
+  object Streaming:
+    def empty[F[_]: Applicative, A: ClassTag]: Entity.Streaming[F, A] = new Streaming[F, A]:
+      override def isEmpty: Boolean = true
+      override def consume: F[Array[A]] = Array.empty[A].pure[F]

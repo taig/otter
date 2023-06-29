@@ -29,10 +29,10 @@ object Result:
             Constraint.text.equal(OpenApi.fromInt(code.toInt)).toViolation(OpenApi.fromInt(response.code.toInt))
           )
           .invalid
-      else
-        (headers.decodeWithRemainders(response.headers), body.decode(response.body))
-          .mapN { case ((remainders, a), b) => (response.withHeaders(remainders), (a, b)) }
-    override def encode(ab: (A, B)): Response = Response(code, headers.encode(ab._1), body.encode(ab._2))
+      else ???
+//        (headers.decodeWithRemainders(response.headers), body.decode(response.body))
+//          .mapN { case ((remainders, a), b) => (response.withHeaders(remainders), (a, b)) }
+    override def encode(ab: (A, B)): Response = ??? // Response(code, headers.encode(ab._1), body.encode(ab._2))
 
   final private case class Modify[A, B](result: Result[A], f: A => B, g: B => A) extends Result[B]:
     export result.{code, headers}

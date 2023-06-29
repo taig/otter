@@ -4,9 +4,6 @@ import cats.{Invariant, InvariantSemigroupal}
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.schema.{Violations, Void}
-import org.typelevel.ci.CIString
-
-import scala.collection.immutable.VectorMap
 
 sealed abstract class Headers[A]:
   def matches(headers: Http.Headers): Boolean
@@ -19,27 +16,23 @@ sealed abstract class Headers[A]:
     case (left, right) => left.product(right)
   final transparent inline def :*[B](header: Header[B]): Headers[?] = zip(header.toHeaders)
   final def imap[B](f: A => B)(g: B => A): Headers[B] = Headers.Modify(this, f, g)
-  final def decode(headers: Http.Headers): Validated[Violations, A] =
-    decodeWithRemainders(headers).map(_._2)
-  def decodeWithRemainders(
-      headers: Http.Headers
-  ): Validated[Violations, (Http.Headers, A)]
+  final def decode(headers: Http.Headers): Validated[Violations, A] = decodeWithRemainders(headers).map(_._2)
+  def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)]
   def encode(a: A): Http.Headers
 
 object Headers:
   final private case class Root[A](header: Header[A]) extends Headers[A]:
     override def matches(headers: Http.Headers): Boolean = ???
     override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      header.decode(headers)
-    override def encode(a: A): Http.Headers = header.encode(a)
+      ??? // header.decode(headers)
+    override def encode(a: A): Http.Headers = ??? // header.encode(a)
 
   final private case class Product[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
     override def matches(headers: Http.Headers): Boolean = ???
-    override def decodeWithRemainders(
-        headers: Http.Headers
-    ): Validated[Violations, (Http.Headers, (A, B))] = left.decodeWithRemainders(headers) match
-      case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-      case Validated.Invalid(violations)    => right.decode(headers).fold(violations merge _, _ => violations).invalid
+    override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, (A, B))] =
+      left.decodeWithRemainders(headers) match
+        case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+        case Validated.Invalid(violations)    => right.decode(headers).fold(violations merge _, _ => violations).invalid
     override def encode(ab: (A, B)): Http.Headers = ??? // left.encode(ab._1) ++ right.encode(ab._2)
 
   final private case class Modify[A, B](
@@ -48,16 +41,14 @@ object Headers:
       g: B => A
   ) extends Headers[B]:
     export headers.matches
-    override def decodeWithRemainders(
-        values: Http.Headers
-    ): Validated[Violations, (Http.Headers, B)] = headers.decodeWithRemainders(values).map(_.map(f))
+    override def decodeWithRemainders(values: Http.Headers): Validated[Violations, (Http.Headers, B)] =
+      headers.decodeWithRemainders(values).map(_.map(f))
     override def encode(b: B): Http.Headers = headers.encode(g(b))
 
   val Empty: Headers[Void] = new Headers[Void]:
     override def matches(headers: Http.Headers): Boolean = true
-    override def decodeWithRemainders(
-        headers: Http.Headers
-    ): Validated[Violations, (Http.Headers, Void)] = (headers, Void).valid
+    override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, Void)] =
+      (headers, Void).valid
     override def encode(a: Void): Http.Headers = Http.Headers.Empty
 
   def apply[A](header: Header[A]): Headers[A] = Root(header)
