@@ -30,10 +30,13 @@ object Input:
 
   object Body:
     abstract class Singlepart[A] extends Input.Body[A]:
+      self =>
       def isStrict: Boolean
       final def isStreaming: Boolean = !isStrict
       final def optional: Input.Body.Singlepart[Option[A]] = Singlepart.Optional(this)
-      override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body.Singlepart[C] =
+      final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(
+          g: C => A
+      ): Input.Body.Singlepart[C] =
         Singlepart.Validate(this, validation, g)
       final override def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ivalidate(Validation.lift(f))(g)
       override def decode[F[+_]: ApplicativeThrow](

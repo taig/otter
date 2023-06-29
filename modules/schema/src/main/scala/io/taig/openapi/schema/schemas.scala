@@ -1,6 +1,8 @@
 package io.taig.openapi.schema
 
-import cats.Eval
+import cats.{Eval, Hash}
+import io.taig.enumeration.ext.{EnumerationValues, Mapping}
+import io.taig.openapi.OpenApi
 import io.taig.openapi.validation.validations
 
 import java.util.UUID
@@ -25,3 +27,16 @@ object schemas:
     Branch(name, Eval.later(key), Eval.later(schema))
   def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
   def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
+
+  object collection:
+    def vector[A, B <: OpenApi](schema: => Schema.Of[A, B]): Collection.Object.Of[Vector[A], B] =
+      Collection.Object(Eval.later(schema))
+    def vector[A, B <: OpenApi](schema: => Schema.Value[A]): Collection.Value[Vector[A]] =
+      Collection.Value(Eval.later(schema))
+
+  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
+    Enumeration(Eval.later(schema), mapping)
+  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
+      EnumerationValues.Aux[B, B]
+  ): Enumeration[B] =
+    enumeration(schema)(using Mapping.enumeration(f))
