@@ -4,6 +4,8 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
+import scala.collection.immutable.SortedMap
+
 object Http:
   opaque type Path = Chain[String]
   object Path:
@@ -14,6 +16,8 @@ object Http:
   object Headers:
     extension (self: Http.Headers)
       def toChain: Chain[(CIString, String)] = self
+      def toMap: SortedMap[CIString, NonEmptyChain[String]] =
+        toChain.groupMap { case (name, _) => name } { case (_, value) => value }
       def contains(name: CIString): Boolean = toChain.exists { case (current, _) => name === current }
       def get(name: CIString): Option[NonEmptyChain[String]] =
         NonEmptyChain.fromChain(toChain.collect { case (`name`, value) => value })
@@ -35,15 +39,23 @@ object Http:
       def getFirstWithRemainders(name: CIString): Option[(String, Http.Headers)] =
         getFirst(name).tupleRight(removeFirst(name))
       def ++(headers: Http.Headers): Http.Headers = self.toChain ++ headers.toChain
+      infix def merge(headers: Http.Headers): Http.Headers =
+        Headers.fromMap(self.toMap.combine(headers.toMap))
 
     val Empty: Http.Headers = Chain.empty
     def apply(headers: Chain[(CIString, String)]): Http.Headers = headers
+    def fromMap(values: Map[CIString, NonEmptyChain[String]]): Http.Headers =
+      Chain.fromIterableOnce(values).flatMap { case (name, values) =>
+        values.toChain.tupleLeft(name)
+      }
     def one(name: CIString, value: String): Http.Headers = Chain.one((name, value))
 
   opaque type Queries = Chain[(String, String)]
   object Queries:
     extension (self: Http.Queries)
       def toChain: Chain[(String, String)] = self
+      def toMap: SortedMap[String, NonEmptyChain[String]] =
+        toChain.groupMap { case (name, _) => name } { case (_, value) => value }
       def contains(name: String): Boolean = toChain.exists { case (current, _) => name === current }
       def get(name: String): Option[NonEmptyChain[String]] =
         NonEmptyChain.fromChain(toChain.collect { case (`name`, value) => value })
@@ -64,10 +76,16 @@ object Http:
         get(name).tupleRight(remove(name))
       def getFirstWithRemainders(name: String): Option[(String, Http.Queries)] =
         getFirst(name).tupleRight(removeFirst(name))
-      infix def merge(queries: Http.Queries): Http.Queries = ???
+      def ++(queries: Http.Queries): Http.Queries = self.toChain ++ queries.toChain
+      infix def merge(queries: Http.Queries): Http.Queries =
+        Queries.fromMap(self.toMap.combine(queries.toMap))
 
     val Empty: Http.Queries = Chain.empty
     def apply(queries: Chain[(String, String)]): Http.Queries = queries
+    def fromMap(values: Map[String, NonEmptyChain[String]]): Http.Queries =
+      Chain.fromIterableOnce(values).flatMap { case (name, values) =>
+        values.toChain.tupleLeft(name)
+      }
     def one(name: String, value: String): Http.Queries = Chain.one((name, value))
 
   final case class Request(

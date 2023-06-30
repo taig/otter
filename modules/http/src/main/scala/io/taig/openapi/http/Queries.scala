@@ -5,8 +5,6 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.schema.Violations
 
-import scala.collection.immutable.VectorMap
-
 sealed abstract class Queries[A]:
   def toChain: Chain[Query[?]]
   final def matches(queries: Http.Queries): Boolean = matchesWithRemainders(queries)._2

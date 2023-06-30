@@ -6,8 +6,6 @@ import cats.syntax.all.*
 import io.taig.openapi.History
 import io.taig.openapi.schema.Violations
 
-import scala.collection.immutable.VectorMap
-
 sealed abstract class Url[A]:
   def path: Path[?]
   def queries: Queries[?]
