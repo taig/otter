@@ -7,8 +7,6 @@ import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.{Collection, Schema, Violations}
 import io.taig.openapi.validation.Constraint
 
-import scala.collection.immutable.VectorMap
-
 sealed abstract class Query[A]:
   def isOptional: Boolean
   def name: String

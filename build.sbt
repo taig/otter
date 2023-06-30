@@ -100,6 +100,7 @@ lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
   .dependsOn(schema % "compile->compile;test->test")

@@ -15,9 +15,9 @@ sealed abstract class Input[A]:
   def headers: Headers[?]
   def body: Input.Body[?]
   def matches(request: Request[?]): Boolean
-  final def imap[B](f: A => B)(g: B => A): Input[B] = ??? // Input.Modify(this, f, g)
-  def decode[F[_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, A]]
-  def encode[F[_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body[F])]
+  final def imap[B](f: A => B)(g: B => A): Input[B] = Input.Modify(this, f, g)
+  def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, A]]
+  def encode[F[+_]: ApplicativeThrow](a: A): F[Request[F]]
 
 object Input:
   sealed abstract class Body[A]:
@@ -118,6 +118,17 @@ object Input:
         override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart[F])] =
           body.encode(g(c)._2)
 
+      val Empty: Input.Body.Singlepart[Unit] = new Singlepart[Unit] {
+        override def isStrict: Boolean = true
+        override def headers: Headers[?] = Headers.Empty
+        override def decode[F[+_]: ApplicativeThrow](
+            headers: Http.Headers,
+            body: Request.Body.Singlepart[F]
+        ): F[Validated[Violations, Unit]] = ().valid.pure[F]
+        override def encode[F[+_]: ApplicativeThrow](a: Unit): F[(Http.Headers, Request.Body.Singlepart[F])] =
+          (Http.Headers.Empty, Request.Body.Singlepart(Entity.Strict(Array.empty))).pure[F]
+      }
+
       transparent inline def strict[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
         case _: Headers[Unit] =>
           Strict(Headers.Empty)
@@ -205,53 +216,42 @@ object Input:
 ////        override def decode(body: Request.Body.Multipart): Validated[Violations, Void] = Void.valid
 //        override def encode(a: Void): Request.Body.Multipart = Request.Body.Multipart.Empty
 
-//  final private case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])
-//      extends Input[(A, B, C)]:
-//    override def matches(request: Request): Boolean =
-//      url.matches(request.path, request.queries) && headers.matches(request.headers)
-////    override def decode(request: Request): Validated[Violations, (A, B, C)] = (
-////      // TODO adjust violation paths (?)
-////      // TODO check remainders (?)
-////      url.decode(request.path, request.queries),
-////      headers.decode(request.headers),
-////      body.decode(request.body)
-////    ).tupled
-//
-//    override def decode[F[_]](request: Request): F[Validated[Violations, (A, B, C)]] = ???
-//
-//    override def encode(abc: (A, B, C)): Request =
-//      val (path, queries) = url.encode(abc._1)
-////      Request(method, path, queries, headers.encode(abc._2), body.encode(abc._3))
-//      ???
+  final private case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])
+      extends Input[(A, B, C)]:
+    override def matches(request: Request[?]): Boolean =
+      url.matches(request.path, request.queries) && headers.matches(request.headers)
+    override def encode[F[+_]: ApplicativeThrow](abc: (A, B, C)): F[Request[F]] =
+      body.encode(abc._3).map { case (headers, body) =>
+        val (path, queries) = url.encode(abc._1)
+        Request[F](method, path, queries, this.headers.encode(abc._2) merge headers, body)
+      }
+    override def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, (A, B, C)]] = ???
 
-//  final private case class Modify[A, B](input: Input[A], f: A => B, g: B => A) extends Input[B]:
-//    export input.{body, headers, matches, method, url}
-//
-//    override def decode[F[_]](request: Request): F[Validated[Violations, B]] = ???
-//
-//    //    override def decode(request: Request): Validated[Violations, B] = input.decode(request).map(f)
-//    override def encode(b: B): Request = input.encode(g(b))
+  final private case class Modify[A, B](input: Input[A], f: A => B, g: B => A) extends Input[B]:
+    export input.{body, headers, matches, method, url}
+    override def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, B]] =
+      input.decode(request).map(_.map(f))
+    override def encode[F[+_]: ApplicativeThrow](b: B): F[Request[F]] = input.encode(g(b))
 
   transparent inline def apply[A, B, C](
       method: Method,
       url: Url[A],
       headers: Headers[B],
       body: Input.Body[C]
-  ): Input[?] = ???
-//  inline (url, headers, body) match
-//    case _: (Url[A], Headers[Void], Input.Body[Void]) =>
-//      Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, Void, Void))
-//    case _: (Url[Void], Headers[B], Input.Body[Void]) =>
-//      Root(method, url, headers, body).imap { case (_, b, _) => b }(b => (Void, b, Void))
-//    case _: (Url[Void], Headers[Void], Input.Body[C]) =>
-//      Root(method, url, headers, body).imap { case (_, _, c) => c }(c => (Void, Void, c))
-//    case _: (Url[A], Headers[B], Input.Body[Void]) =>
-//      Root(method, url, headers, body).imap { case (a, b, _) => (a, b) } { case (a, b) => (a, b, Void) }
-//    case _: (Url[Void], Headers[B], Input.Body[C]) =>
-//      Root(method, url, headers, body).imap { case (_, b, c) => (b, c) } { case (b, c) => (Void, b, c) }
-//    case _: (Url[A], Headers[Void], Input.Body[C]) =>
-//      Root(method, url, headers, body).imap { case (a, _, c) => (a, c) } { case (a, c) => (a, Void, c) }
-//    case _ => Root(method, url, headers, body)
+  ): Input[?] = inline (url, headers, body) match
+    case _: (Url[A], Headers[Unit], Input.Body[Unit]) =>
+      Root(method, url, headers, body).imap { case (a, _, _) => a }(a => (a, (), ()))
+    case _: (Url[Unit], Headers[B], Input.Body[Unit]) =>
+      Root(method, url, headers, body).imap { case (_, b, _) => b }(b => ((), b, ()))
+    case _: (Url[Unit], Headers[Unit], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (_, _, c) => c }(c => ((), (), c))
+    case _: (Url[A], Headers[B], Input.Body[Unit]) =>
+      Root(method, url, headers, body).imap { case (a, b, _) => (a, b) } { case (a, b) => (a, b, ()) }
+    case _: (Url[Unit], Headers[B], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (_, b, c) => (b, c) } { case (b, c) => ((), b, c) }
+    case _: (Url[A], Headers[Unit], Input.Body[C]) =>
+      Root(method, url, headers, body).imap { case (a, _, c) => (a, c) } { case (a, c) => (a, (), c) }
+    case _ => Root(method, url, headers, body)
 
   given Invariant[Input] with
     override def imap[A, B](fa: Input[A])(f: A => B)(g: B => A): Input[B] = fa.imap(f)(g)

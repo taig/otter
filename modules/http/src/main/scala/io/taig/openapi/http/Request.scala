@@ -8,28 +8,27 @@ import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
 
-final case class Request[F[_]](
+final case class Request[F[+_]](
     method: Method,
     path: Chain[String],
-    queries: VectorMap[String, String],
-    headers: VectorMap[CIString, String],
+    queries: Http.Queries,
+    headers: Http.Headers,
     body: Request.Body[F]
 ):
   def modifyPath(f: Chain[String] => Chain[String]): Request[F] = copy(path = f(path))
   def withPath(path: Chain[String]): Request[F] = modifyPath(_ => path)
 
-  def modifyQueries(f: VectorMap[String, String] => VectorMap[String, String]): Request[F] = copy(queries = f(queries))
-  def withQueries(queries: VectorMap[String, String]): Request[F] = modifyQueries(_ => queries)
+  def modifyQueries(f: Http.Queries => Http.Queries): Request[F] = copy(queries = f(queries))
+  def withQueries(queries: Http.Queries): Request[F] = modifyQueries(_ => queries)
 
-  def modifyHeaders(f: VectorMap[CIString, String] => VectorMap[CIString, String]): Request[F] =
-    copy(headers = f(headers))
-  def withHeaders(headers: VectorMap[CIString, String]): Request[F] = modifyHeaders(_ => headers)
+  def modifyHeaders(f: Http.Headers => Http.Headers): Request[F] = copy(headers = f(headers))
+  def withHeaders(headers: Http.Headers): Request[F] = modifyHeaders(_ => headers)
 
 object Request:
-  sealed abstract class Body[F[_]]
+  sealed abstract class Body[F[+_]]
 
   object Body:
-    final case class Singlepart[F[_]](entity: Entity.Aux[F, Byte]) extends Request.Body[F]
+    final case class Singlepart[F[+_]](entity: Entity.Aux[F, Byte]) extends Request.Body[F]
 
 //
 //object Request:
@@ -39,7 +38,7 @@ object Request:
 //    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
 //
 //    object Multipart:
-//      final case class Part(headers: VectorMap[CIString, String], body: Request.Body.Singlepart)
+//      final case class Part(headers: Http.Headers, body: Request.Body.Singlepart)
 //
 //      object Part:
 //        given Encoder[Request.Body.Multipart.Part] = part => OpenApi.obj("headers" := part.headers, "body" := part.body)
