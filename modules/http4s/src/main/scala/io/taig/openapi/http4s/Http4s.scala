@@ -2,10 +2,9 @@ package io.taig.openapi.http4s
 
 import cats.Applicative
 import cats.data.Chain
-import cats.effect.Async
-import cats.effect.Concurrent
+import cats.effect.{Async, Concurrent, LiftIO}
 import cats.syntax.all.*
-import fs2.{Pull, Stream as Fs2Stream}
+import fs2.{Chunk, Pull, Stream as Fs2Stream}
 import io.circe.Json
 import io.circe.jawn.JawnParser
 import io.taig.openapi.circe.*
@@ -17,16 +16,7 @@ import org.http4s.circe.*
 import org.http4s.headers.`Content-Type`
 import org.http4s.implicits.*
 import org.http4s.multipart.{Multipart, Multiparts, Part}
-import org.http4s.{
-  Entity as Http4sEntity,
-  Header as Http4sHeader,
-  Headers as Http4sHeaders,
-  Method as Http4sMethod,
-  Request as Http4sRequest,
-  Response as Http4sResponse,
-  Status as Http4sStatus,
-  *
-}
+import org.http4s.{Entity as Http4sEntity, Header as Http4sHeader, Headers as Http4sHeaders, Http as Http4sHttp, Method as Http4sMethod, Query as Http4sQuery, Request as Http4sRequest, Response as Http4sResponse, Status as Http4sStatus, *}
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
 
@@ -34,16 +24,15 @@ import scala.collection.immutable.VectorMap
 import scala.reflect.ClassTag
 
 final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
-  final class EntityBodyStream[A: ClassTag](val isEmpty: Boolean, val toFs2: Fs2Stream[F, A])
-      extends Entity.Streaming[F, A] {
-    override def consume: F[Array[A]] = toFs2.compile.to(Array)
-  }
+  final class Fs2Entity(val isEmpty: Boolean, val toFs2: Fs2Stream[F, Byte]) extends Entity:
+    // TODO at least catch the cast if it goes wrong? ):
+    override def consume[G[_]: Applicative]: G[Array[Byte]] = toFs2.compile.to(Array).asInstanceOf[G[Array[Byte]]]
 
-  object EntityBodyStream:
-    def apply[A: ClassTag](source: Fs2Stream[F, A]): F[Entity[A]] = source.pull.peek1
+  object Fs2Entity:
+    def apply(source: Fs2Stream[F, Byte]): F[Entity] = source.pull.peek1
       .flatMap {
-        case Some((_, tail)) => Pull.output1(new EntityBodyStream(isEmpty = false, tail))
-        case None            => Pull.output1(new EntityBodyStream(isEmpty = true, Fs2Stream.empty))
+        case Some((_, tail)) => Pull.output1(new Fs2Entity(isEmpty = false, tail))
+        case None            => Pull.output1(new Fs2Entity(isEmpty = true, Fs2Stream.empty))
       }
       .stream
       .head
@@ -73,92 +62,42 @@ final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
 
   def toHttp4sMethod(method: Method): Option[Http4sMethod] = Http4sMethod.all.find(_.name === method.toString)
 
-  def toHttp4sUri(path: Chain[String], queries: VectorMap[String, String]): ParseResult[Uri] =
+  def toHttp4sUri(path: Chain[String], queries: Http.Queries): ParseResult[Uri] =
     if path.isEmpty && queries.isEmpty then uri"/".asRight
     else if queries.isEmpty then Uri.fromString("/" + path.mkString_("/"))
-    else if path.isEmpty then Uri.fromString("?" + queries.map { case (key, value) => s"$key=$value" }.mkString("&"))
-    else
-      Uri.fromString(
-        "/" + path.mkString_("/") + "?" + queries.map { case (key, value) => s"$key=$value" }.mkString("&")
-      )
+    else if path.isEmpty then Uri.fromString("?" + queries.render)
+    else Uri.fromString("/" + path.mkString_("/") + "?" + queries.render)
 
-  def fromHttp4sHeaders(headers: Http4sHeaders): VectorMap[CIString, String] =
-    headers.headers.map(header => header.name -> header.value).to(VectorMap)
+  def fromHttp4sHeaders(headers: Http4sHeaders): Http.Headers =
+    Http.Headers.fromSeq(headers.headers.map(header => header.name -> header.value))
 
-  def toHttp4sHeaders(headers: VectorMap[CIString, String]): Http4sHeaders =
-    new Http4sHeaders(headers.map { case (name, value) => Http4sHeader.Raw(name, value) }.toList)
+  def fromHttp4sQueries(queries: Http4sQuery): Http.Queries =
+    Http.Queries.fromSeq(queries.toVector.mapFilter { case (name, value) => value.tupleLeft(name) })
 
-  def fromHttp4sEntity(request: Http4sRequest[F]): F[Request.Body[F]] =
+  def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
+    new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
+
+  def fromHttp4sEntity(request: Http4sRequest[F]): F[Request.Body] =
     val isEmpty = request.contentLength.contains(0)
-    Request.Body.Singlepart[F](new EntityBodyStream(isEmpty, request.entity.body)).pure[F]
+    Request.Body.Singlepart(new Fs2Entity(isEmpty, request.entity.body)).pure[F]
 
-//  def fromHttp4sEntity(request: Http4sRequest[F], input: Input[?]): F[Request.Body] = input.body match
-//    case _: Input.Body.Singlepart[?] => fromHttp4sSinglepartEntity(request.entity).pure[F]
-//    case _: Input.Body.Multipart[?] if request.contentLength.contains(0) => Request.Body.Multipart.Empty.pure[F]
-//    case body: Input.Body.Multipart[?]                                   => ???
-////      request
-////        .as[Multipart[F]]
-////        .flatMap: multipart =>
-////          Chain
-////            .fromSeq(multipart.parts)
-////            .zipWith(body.toChain)((part, input) => (part, input))
-////            .traverse { case (part, input) =>
-////              fromHttp4sSinglepartEntity(part.entity, input.body).map: body =>
-////                Request.Body.Multipart.Part(fromHttp4sHeaders(part.headers), body)
-////            }
-////            .map(Request.Body.Multipart.apply)
-
-  def fromHttp4sRequest(request: Http4sRequest[F]): F[Request[F]] =
+  def fromHttp4sRequest(request: Http4sRequest[F]): F[Request] =
     val method = fromHttp4sMethod(request.method)
     val path = Chain.fromSeq(request.uri.path.segments.map(_.decoded()))
-    val queries = request.uri.query.toVector.mapFilter { case (name, value) => value.tupleLeft(name) }.to(VectorMap)
+    val queries = fromHttp4sQueries(request.uri.query)
     val headers = fromHttp4sHeaders(request.headers)
     fromHttp4sEntity(request).map(Request(method, path, queries, headers, _))
 
-//    val body: F[Request.Body] = request.headers.get[`Content-Type`].map(_.mediaType) match
-//      case Some(contentType) if MediaRange.`multipart/*`.satisfiedBy(contentType) =>
-//        request.as[Multipart[F]].flatMap { multipart =>
-////          Chain
-////            .fromSeq(multipart.parts)
-////            .traverse { part =>
-////              for
-////                //                name <- part.name.liftTo[F](new IllegalArgumentException("Multipart form-data name missing"))
-////                body <- EntityBodyStream(part.body)
-////              yield Request.Body.Multipart.Part(???, Request.Body.Singlepart.Streaming(body))
-////            }
-////            .map(Request.Body.Multipart.apply)
-//          ???
-//        }
-//      case _ =>
-//        if request.contentLength.contains(0) then ??? // Request.Body.Singlepart.Empty.pure[F]
-//        else Request.Body.Singlepart.Streaming(???).pure[F]
+  def toHttp4sEntity(body: Request.Body): Http4sEntity[F] = body match
+    case body: Request.Body.Singlepart =>
+      body.entity match
+        case entity: Fs2Entity => Http4sEntity(entity.toFs2)
+        case entity            => Http4sEntity(Fs2Stream.evalUnChunk(entity.consume[F].map(Chunk.array(_))))
 
-  def toHttp4sEntity(body: Request.Body[F]): F[Http4sEntity[F]] = body match {
-    case body: Request.Body.Singlepart[F] =>
-      body.entity match {
-        case Entity.Strict(values)          => Http4sEntity.strict(ByteVector(values)).pure[F]
-        case entity: EntityBodyStream[Byte] => Http4sEntity(entity.toFs2).pure[F]
-        case _                              => F.raiseError(new IllegalStateException("no"))
-      }
-  }
-
-//  def toHttp4sEntity(body: Request.Body): F[Http4sEntity[F]] = body match
-//    case body: Request.Body.Multipart =>
-//      for
-//        multiparts <- Multiparts.forSync[F]
-//        parts <- body.parts.toVector.traverse: part =>
-//          toHttp4sEntity(part.body).map(entity => Part(toHttp4sHeaders(part.headers), entity))
-//        multipart <- multiparts.multipart(parts)
-//      yield EntityEncoder[F, Multipart[F]].toEntity(multipart)
-////    case Request.Body.Singlepart.Streaming(body: EntityBodyStream[Byte]) => Entity(body.toFs2).pure[F]
-////    case Request.Body.Singlepart.Streaming(body) =>
-////      F.raiseError(new IllegalStateException(s"Unexpected body stream: $body"))
-////    case Request.Body.Singlepart.Strict(data) => Http4sEntity.strict(ByteVector(data)).pure[F]
-
-  def toHttp4sRequest(request: Request[F]): F[Http4sRequest[F]] = for
+  def toHttp4sRequest(request: Request): F[Http4sRequest[F]] = for
     method <- toHttp4sMethod(request.method).liftTo[F]:
       new IllegalArgumentException(s"Unknown method: '${request.method}'")
     uri <- toHttp4sUri(request.path, request.queries).liftTo[F]
     headers = toHttp4sHeaders(request.headers)
-    entity <- toHttp4sEntity(request.body)
+    entity = toHttp4sEntity(request.body)
   yield Http4sRequest(method, uri, headers = headers, entity = entity)

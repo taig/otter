@@ -8,27 +8,27 @@ import org.typelevel.ci.CIString
 
 import scala.collection.immutable.VectorMap
 
-final case class Request[F[+_]](
+final case class Request(
     method: Method,
     path: Chain[String],
     queries: Http.Queries,
     headers: Http.Headers,
-    body: Request.Body[F]
+    body: Request.Body
 ):
-  def modifyPath(f: Chain[String] => Chain[String]): Request[F] = copy(path = f(path))
-  def withPath(path: Chain[String]): Request[F] = modifyPath(_ => path)
+  def modifyPath(f: Chain[String] => Chain[String]): Request = copy(path = f(path))
+  def withPath(path: Chain[String]): Request = modifyPath(_ => path)
 
-  def modifyQueries(f: Http.Queries => Http.Queries): Request[F] = copy(queries = f(queries))
-  def withQueries(queries: Http.Queries): Request[F] = modifyQueries(_ => queries)
+  def modifyQueries(f: Http.Queries => Http.Queries): Request = copy(queries = f(queries))
+  def withQueries(queries: Http.Queries): Request = modifyQueries(_ => queries)
 
-  def modifyHeaders(f: Http.Headers => Http.Headers): Request[F] = copy(headers = f(headers))
-  def withHeaders(headers: Http.Headers): Request[F] = modifyHeaders(_ => headers)
+  def modifyHeaders(f: Http.Headers => Http.Headers): Request = copy(headers = f(headers))
+  def withHeaders(headers: Http.Headers): Request = modifyHeaders(_ => headers)
 
 object Request:
-  sealed abstract class Body[F[+_]]
+  sealed abstract class Body
 
   object Body:
-    final case class Singlepart[F[+_]](entity: Entity.Aux[F, Byte]) extends Request.Body[F]
+    final case class Singlepart(entity: Entity) extends Request.Body
 
 //
 //object Request:

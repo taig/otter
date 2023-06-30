@@ -3,28 +3,13 @@ package io.taig.openapi.http
 import cats.Applicative
 import cats.syntax.all.*
 
-import scala.reflect.ClassTag
-
-sealed abstract class Entity[A]:
-  type Effect[a]
+abstract class Entity:
   def isEmpty: Boolean
-  def isStreaming: Boolean
-  def consume: Effect[Array[A]]
+  def consume[F[_]: Applicative]: F[Array[Byte]]
 
 object Entity:
-  type Aux[F[_], A] = Entity[A] { type Effect[a] = F[a] }
+  def strict(body: Array[Byte]): Entity = new Entity:
+    override def isEmpty: Boolean = body.isEmpty
+    override def consume[F[_]: Applicative]: F[Array[Byte]] = body.pure[F]
 
-  final case class Strict[F[_]: Applicative, A](values: Array[A]) extends Entity[A]:
-    override type Effect[a] = F[a]
-    override def isEmpty: Boolean = values.isEmpty
-    override def isStreaming: Boolean = false
-    override def consume: F[Array[A]] = values.pure[F]
-
-  abstract class Streaming[F[_], A] extends Entity[A]:
-    override type Effect[a] = F[a]
-    override def isStreaming: Boolean = true
-
-  object Streaming:
-    def empty[F[_]: Applicative, A: ClassTag]: Entity.Streaming[F, A] = new Streaming[F, A]:
-      override def isEmpty: Boolean = true
-      override def consume: F[Array[A]] = Array.empty[A].pure[F]
+  val Empty: Entity = strict(Array.emptyByteArray)

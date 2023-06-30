@@ -16,6 +16,7 @@ object Http:
   object Headers:
     extension (self: Http.Headers)
       def toChain: Chain[(CIString, String)] = self
+      def toList: List[(CIString, String)] = toChain.toList
       def toMap: SortedMap[CIString, NonEmptyChain[String]] =
         toChain.groupMap { case (name, _) => name } { case (_, value) => value }
       def contains(name: CIString): Boolean = toChain.exists { case (current, _) => name === current }
@@ -44,6 +45,7 @@ object Http:
 
     val Empty: Http.Headers = Chain.empty
     def apply(headers: Chain[(CIString, String)]): Http.Headers = headers
+    def fromSeq(headers: Seq[(CIString, String)]): Http.Headers = Chain.fromSeq(headers)
     def fromMap(values: Map[CIString, NonEmptyChain[String]]): Http.Headers =
       Chain.fromIterableOnce(values).flatMap { case (name, values) =>
         values.toChain.tupleLeft(name)
@@ -56,6 +58,7 @@ object Http:
       def toChain: Chain[(String, String)] = self
       def toMap: SortedMap[String, NonEmptyChain[String]] =
         toChain.groupMap { case (name, _) => name } { case (_, value) => value }
+      def isEmpty: Boolean = toChain.isEmpty
       def contains(name: String): Boolean = toChain.exists { case (current, _) => name === current }
       def get(name: String): Option[NonEmptyChain[String]] =
         NonEmptyChain.fromChain(toChain.collect { case (`name`, value) => value })
@@ -79,9 +82,11 @@ object Http:
       def ++(queries: Http.Queries): Http.Queries = self.toChain ++ queries.toChain
       infix def merge(queries: Http.Queries): Http.Queries =
         Queries.fromMap(self.toMap.combine(queries.toMap))
+      def render: String = toChain.map { case (name, value) => s"$name=$value" }.mkString_("&")
 
     val Empty: Http.Queries = Chain.empty
     def apply(queries: Chain[(String, String)]): Http.Queries = queries
+    def fromSeq(queries: Seq[(String, String)]): Http.Queries = Chain.fromSeq(queries)
     def fromMap(values: Map[String, NonEmptyChain[String]]): Http.Queries =
       Chain.fromIterableOnce(values).flatMap { case (name, values) =>
         values.toChain.tupleLeft(name)
@@ -113,7 +118,7 @@ object Http:
 
   object Request:
     enum Body:
-      case Singlepart(entity: Entity[Byte])
+      case Singlepart(entity: Entity)
       case Multipart
 
   final case class Response(code: Int, headers: Http.Headers, body: Http.Response.Body):
@@ -127,4 +132,4 @@ object Http:
     def withBody(body: Http.Response.Body): Http.Response = modifyBody(_ => body)
 
   object Response:
-    final case class Body(entity: Entity[Byte])
+    final case class Body(entity: Entity)

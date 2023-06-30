@@ -2,11 +2,10 @@ package io.taig.openapi.http
 
 import cats.Eval
 import cats.syntax.all.*
-import io.taig.openapi.http.Input.Body
 import io.taig.openapi.http.headers.{ContentType, MediaType}
 import io.taig.openapi.schema.{Collection, Schema}
 import io.taig.openapi.schema.schemas.*
-import io.taig.openapi.validation.{Constraint, Validation}
+import io.taig.openapi.validation.Validation
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}

@@ -14,10 +14,10 @@ sealed abstract class Input[A]:
   def url: Url[?]
   def headers: Headers[?]
   def body: Input.Body[?]
-  def matches(request: Request[?]): Boolean
+  def matches(request: Request): Boolean
   final def imap[B](f: A => B)(g: B => A): Input[B] = Input.Modify(this, f, g)
-  def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, A]]
-  def encode[F[+_]: ApplicativeThrow](a: A): F[Request[F]]
+  def decode[F[+_]: ApplicativeThrow](request: Request): F[Validated[Violations, A]]
+  def encode[F[+_]: ApplicativeThrow](a: A): F[Request]
 
 object Input:
   sealed abstract class Body[A]:
@@ -34,8 +34,8 @@ object Input:
     final def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Self[B] =
       ivalidateWithHeaders(Validation.lift(f.tupled))(g)
     final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
-    def decode[F[+_]: ApplicativeThrow](headers: Http.Headers, body: Request.Body[F]): F[Validated[Violations, A]]
-    def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body[F])]
+    def decode[F[+_]: ApplicativeThrow](headers: Http.Headers, body: Request.Body): F[Validated[Violations, A]]
+    def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body)]
 
   object Body:
     abstract class Singlepart[A] extends Input.Body[A]:
@@ -49,52 +49,46 @@ object Input:
       )(g: C => (Http.Headers, A)): Input.Body.Singlepart[C] = Singlepart.ValidateWithHeaders(this, validation, g)
       override def decode[F[+_]: ApplicativeThrow](
           headers: Http.Headers,
-          body: Request.Body[F]
+          body: Request.Body
       ): F[Validated[Violations, A]] = body match
-        case body: Request.Body.Singlepart[F] => decode(headers, body)
+        case body: Request.Body.Singlepart => decode(headers, body)
       def decode[F[+_]: ApplicativeThrow](
           headers: Http.Headers,
-          body: Request.Body.Singlepart[F]
+          body: Request.Body.Singlepart
       ): F[Validated[Violations, A]]
-      override def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body.Singlepart[F])]
+      override def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body.Singlepart)]
 
     object Singlepart:
       final private case class Strict[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Array[Byte])]:
         override def isStrict: Boolean = true
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
-            body: Request.Body.Singlepart[F]
+            body: Request.Body.Singlepart
         ): F[Validated[Violations, (A, Array[Byte])]] =
-          body.entity.consume.map(this.headers.decode(headers).tupleRight)
+          body.entity.consume[F].map(this.headers.decode(headers).tupleRight)
         override def encode[F[+_]: ApplicativeThrow](
             ab: (A, Array[Byte])
-        ): F[(Http.Headers, Request.Body.Singlepart[F])] =
-          (headers.encode(ab._1), Request.Body.Singlepart(Entity.Strict(ab._2))).pure[F]
+        ): F[(Http.Headers, Request.Body.Singlepart)] =
+          (headers.encode(ab._1), Request.Body.Singlepart(Entity.strict(ab._2))).pure[F]
 
-      final private case class Streaming[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Entity[Byte])]:
+      final private case class Streaming[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Entity)]:
         override def isStrict: Boolean = false
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
-            body: Request.Body.Singlepart[F]
-        ): F[Validated[Violations, (A, Entity[Byte])]] = this.headers.decode(headers).tupleRight(body.entity).pure[F]
-        override def encode[F[+_]](
-            ab: (A, Entity[Byte])
-        )(using F: ApplicativeThrow[F]): F[(Http.Headers, Request.Body.Singlepart[F])] =
-          F.catchNonFatal(ab._2.asInstanceOf[Entity.Aux[F, Byte]])
-            .map(entity => (headers.encode(ab._1), Request.Body.Singlepart(entity)))
+            body: Request.Body.Singlepart
+        ): F[Validated[Violations, (A, Entity)]] = this.headers.decode(headers).tupleRight(body.entity).pure[F]
+        override def encode[F[+_]](ab: (A, Entity))(using
+            F: ApplicativeThrow[F]
+        ): F[(Http.Headers, Request.Body.Singlepart)] =
+          (headers.encode(ab._1), Request.Body.Singlepart(ab._2)).pure[F]
 
       final case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
         export body.{headers, isStrict}
-        override def encode[F[+_]: ApplicativeThrow](a: Option[A]): F[(Http.Headers, Request.Body.Singlepart[F])] =
-          a.fold {
-            // TODO there must be a better way to do this. The Entity type is probably more complex than it needs to be ...
-            val entity: Entity.Aux[F, Byte] =
-              if isStrict then Entity.Strict(Array.empty[Byte]) else Entity.Streaming.empty[F, Byte]
-            (Http.Headers.Empty, Request.Body.Singlepart(entity)).pure[F]
-          }(body.encode(_))
+        override def encode[F[+_]: ApplicativeThrow](a: Option[A]): F[(Http.Headers, Request.Body.Singlepart)] =
+          a.fold((Http.Headers.Empty, Request.Body.Singlepart(Entity.Empty)).pure[F])(body.encode(_))
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
-            body: Request.Body.Singlepart[F]
+            body: Request.Body.Singlepart
         ): F[Validated[Violations, Option[A]]] =
           if body.entity.isEmpty
           then none[A].valid.pure[F]
@@ -108,14 +102,14 @@ object Input:
         export body.{headers, isStrict}
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
-            body: Request.Body.Singlepart[F]
+            body: Request.Body.Singlepart
         ): F[Validated[Violations, C]] = this.body
           .decode(headers, body)
           .map:
             _.andThen(a =>
               applyValidation(validation, _ => OpenApi.fromString("Input.Body.Singlepart(...)"))((headers, a))
             )
-        override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart[F])] =
+        override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart)] =
           body.encode(g(c)._2)
 
       val Empty: Input.Body.Singlepart[Unit] = new Singlepart[Unit] {
@@ -123,10 +117,10 @@ object Input:
         override def headers: Headers[?] = Headers.Empty
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
-            body: Request.Body.Singlepart[F]
+            body: Request.Body.Singlepart
         ): F[Validated[Violations, Unit]] = ().valid.pure[F]
-        override def encode[F[+_]: ApplicativeThrow](a: Unit): F[(Http.Headers, Request.Body.Singlepart[F])] =
-          (Http.Headers.Empty, Request.Body.Singlepart(Entity.Strict(Array.empty))).pure[F]
+        override def encode[F[+_]: ApplicativeThrow](a: Unit): F[(Http.Headers, Request.Body.Singlepart)] =
+          (Http.Headers.Empty, Request.Body.Singlepart(Entity.Empty)).pure[F]
       }
 
       transparent inline def strict[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
@@ -218,20 +212,20 @@ object Input:
 
   final private case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])
       extends Input[(A, B, C)]:
-    override def matches(request: Request[?]): Boolean =
+    override def matches(request: Request): Boolean =
       url.matches(request.path, request.queries) && headers.matches(request.headers)
-    override def encode[F[+_]: ApplicativeThrow](abc: (A, B, C)): F[Request[F]] =
+    override def encode[F[+_]: ApplicativeThrow](abc: (A, B, C)): F[Request] =
       body.encode(abc._3).map { case (headers, body) =>
         val (path, queries) = url.encode(abc._1)
-        Request[F](method, path, queries, this.headers.encode(abc._2) merge headers, body)
+        Request(method, path, queries, this.headers.encode(abc._2) merge headers, body)
       }
-    override def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, (A, B, C)]] = ???
+    override def decode[F[+_]: ApplicativeThrow](request: Request): F[Validated[Violations, (A, B, C)]] = ???
 
   final private case class Modify[A, B](input: Input[A], f: A => B, g: B => A) extends Input[B]:
     export input.{body, headers, matches, method, url}
-    override def decode[F[+_]: ApplicativeThrow](request: Request[F]): F[Validated[Violations, B]] =
+    override def decode[F[+_]: ApplicativeThrow](request: Request): F[Validated[Violations, B]] =
       input.decode(request).map(_.map(f))
-    override def encode[F[+_]: ApplicativeThrow](b: B): F[Request[F]] = input.encode(g(b))
+    override def encode[F[+_]: ApplicativeThrow](b: B): F[Request] = input.encode(g(b))
 
   transparent inline def apply[A, B, C](
       method: Method,

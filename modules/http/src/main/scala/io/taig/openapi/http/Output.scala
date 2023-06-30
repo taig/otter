@@ -59,11 +59,11 @@ object Output:
           Violations.rootNec(violation).invalid
       override def encode(a: Array[Byte]): Response.Body = Response.Body.Strict(a)
 
-    val Streaming: Output.Body[Entity[Byte]] = new Body[Entity[Byte]]:
-      override def decode(body: Response.Body): Validated[Violations, Entity[Byte]] = body match
+    val Streaming: Output.Body[Entity] = new Body[Entity]:
+      override def decode(body: Response.Body): Validated[Violations, Entity] = body match
         case Response.Body.Strict(data)    => ??? // Stream.from(data).valid
         case Response.Body.Streaming(data) => data.valid
-      override def encode(a: Entity[Byte]): Response.Body = Response.Body.Streaming(a)
+      override def encode(a: Entity): Response.Body = Response.Body.Streaming(a)
 
     given Invariant[Output.Body] with
       override def imap[A, B](fa: Body[A])(f: A => B)(g: B => A): Body[B] = fa.imap(f)(g)
