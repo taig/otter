@@ -87,6 +87,7 @@ object Http:
         values.toChain.tupleLeft(name)
       }
     def one(name: String, value: String): Http.Queries = Chain.one((name, value))
+    def of(values: (String, String)*): Http.Queries = apply(Chain.fromSeq(values))
 
   final case class Request(
       method: String,

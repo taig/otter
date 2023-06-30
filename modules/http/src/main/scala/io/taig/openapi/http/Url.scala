@@ -104,8 +104,7 @@ object Url:
     override def matchesWithRemainders(
         path: Chain[String],
         queries: Http.Queries
-    ): (Chain[String], Http.Queries, Boolean) =
-      url.matchesWithRemainders(path, queries)
+    ): (Chain[String], Http.Queries, Boolean) = url.matchesWithRemainders(path, queries)
     override def decodeWithRemainders(
         path: Chain[String],
         queries: Http.Queries

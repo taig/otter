@@ -45,7 +45,7 @@ final class ValidationsTest extends FunSuite:
     assert(collection.list.exactly(reference = 0).run(Nil).isValid)
     assertEquals(
       obtained = collection.list.exactly(reference = 3).run(List(1)),
-      expected = Constraint.collection.exactly(reference = 3).toViolation(actual = 1L).invalidNec
+      expected = Constraint.collection.exactly(reference = 3L).toViolation(actual = 1L).invalidNec
     )
   }
 

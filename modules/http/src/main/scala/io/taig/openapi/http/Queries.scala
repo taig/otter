@@ -33,7 +33,7 @@ object Queries:
       (queries.remove(query.name), query.isOptional || queries.contains(query.name))
     override def decodeWithRemainders(
         queries: Http.Queries
-    ): Validated[Violations, (Http.Queries, A)] = query.decode(queries)
+    ): Validated[Violations, (Http.Queries, A)] = query.decode(queries).leftMap(_.modifyHistory(query.name /: _))
     override def encode(a: A): Http.Queries = query.encode(a)
 
   final private case class Product[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]:

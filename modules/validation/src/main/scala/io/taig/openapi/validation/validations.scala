@@ -39,10 +39,9 @@ object validations:
     final def empty[A]: Validation[Nothing, F[A], F[A], Unit] =
       Validation.condNec(Constraint.collection.empty)(isEmpty)
 
-    final def exactly[A](reference: Long): Validation[Long, Long, F[A], Unit] =
-      size[A]
-        .andThen(numeric.equal(reference))
-        .withConstraint(_ => Constraint.collection.exactly(reference))
+    final def exactly[A](reference: Long): Validation[Long, Long, F[A], Unit] = size[A]
+      .andThen(numeric.equal(reference))
+      .withConstraint(_ => Constraint.collection.exactly(reference))
 
     final def nonEmpty[A]: Validation[Nothing, F[A], F[A], (A, F[A])] =
       Validation.fromOptionNec(Constraint.collection.nonEmpty)(uncons)
