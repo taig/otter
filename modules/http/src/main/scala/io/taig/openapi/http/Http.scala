@@ -1,9 +1,7 @@
 package io.taig.openapi.http
 
-import cats.{Eq, Order}
-import cats.syntax.all.*
 import cats.data.{Chain, NonEmptyChain}
-import io.taig.openapi.{Encoder, OpenApi}
+import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
 object Http:
@@ -16,6 +14,7 @@ object Http:
   object Headers:
     extension (self: Http.Headers)
       def toChain: Chain[(CIString, String)] = self
+      def contains(name: CIString): Boolean = toChain.exists { case (current, _) => name === current }
       def get(name: CIString): Option[NonEmptyChain[String]] =
         NonEmptyChain.fromChain(toChain.collect { case (`name`, value) => value })
       def getFirst(name: CIString): Option[String] = toChain.collectFirst { case (`name`, value) => value }
@@ -45,12 +44,31 @@ object Http:
   object Queries:
     extension (self: Http.Queries)
       def toChain: Chain[(String, String)] = self
+      def contains(name: String): Boolean = toChain.exists { case (current, _) => name === current }
       def get(name: String): Option[NonEmptyChain[String]] =
         NonEmptyChain.fromChain(toChain.collect { case (`name`, value) => value })
-      def first(name: String): Option[String] = toChain.collectFirst { case (`name`, value) => value }
+      def getFirst(name: String): Option[String] = toChain.collectFirst { case (`name`, value) => value }
+      def remove(name: String): Http.Queries = toChain.filter {
+        case (`name`, _) => false
+        case _           => true
+      }
+      def removeFirst(name: String): Http.Queries =
+        var removed = false
+        val result = List.newBuilder[(String, String)]
+        toChain.iterator.foreach {
+          case (`name`, _) if !removed => removed = true; ()
+          case entry                   => result += entry
+        }
+        Chain.fromSeq(result.result())
+      def getWithRemainders(name: String): Option[(NonEmptyChain[String], Http.Queries)] =
+        get(name).tupleRight(remove(name))
+      def getFirstWithRemainders(name: String): Option[(String, Http.Queries)] =
+        getFirst(name).tupleRight(removeFirst(name))
+      infix def merge(queries: Http.Queries): Http.Queries = ???
 
     val Empty: Http.Queries = Chain.empty
     def apply(queries: Chain[(String, String)]): Http.Queries = queries
+    def one(name: String, value: String): Http.Queries = Chain.one((name, value))
 
   final case class Request(
       method: String,

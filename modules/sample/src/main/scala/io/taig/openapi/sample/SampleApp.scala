@@ -8,7 +8,7 @@ import org.http4s.dsl.io.*
 import org.http4s.ember.server.EmberServerBuilder
 import fs2.{Chunk, Stream}
 
-object SampleApp extends ResourceApp.Forever {
+object SampleApp extends ResourceApp.Forever:
   val chunk = Chunk("lorem", "ipsum", "dolar", "sit", "amet")
   val data = Stream.chunk(chunk) ++
     Stream.chunk(chunk) ++
@@ -44,4 +44,3 @@ object SampleApp extends ResourceApp.Forever {
       .withHttpApp(routes.orNotFound)
       .build
       .void
-}

@@ -3,7 +3,6 @@ package io.taig.openapi.http
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.openapi.http.syntax.*
-import io.taig.openapi.schema.Void
 import io.taig.openapi.schema.schemas.*
 import munit.FunSuite
 
@@ -101,15 +100,15 @@ final class UrlTest extends FunSuite:
   test("decodeWithRemainders: Url.Empty") {
     assertEquals(
       obtained = Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap.empty),
-      expected = (Chain.empty, VectorMap.empty, Void).valid
+      expected = (Chain.empty, VectorMap.empty, ()).valid
     )
     assertEquals(
       obtained = Url.Root.decodeWithRemainders(path = Chain.empty, queries = VectorMap("foo" -> "bar")),
-      expected = (Chain.empty, VectorMap("foo" -> "bar"), Void).valid
+      expected = (Chain.empty, VectorMap("foo" -> "bar"), ()).valid
     )
     assertEquals(
       obtained = Url.Root.decodeWithRemainders(path = Chain("foobar"), queries = VectorMap.empty),
-      expected = (Chain("foobar"), VectorMap.empty, Void).valid
+      expected = (Chain("foobar"), VectorMap.empty, ()).valid
     )
   }
 
@@ -126,7 +125,7 @@ final class UrlTest extends FunSuite:
 
   test("encode: Url.Root") {
     assertEquals(
-      obtained = Url.Root.encode(Void),
+      obtained = Url.Root.encode(()),
       expected = (Chain.empty, VectorMap.empty)
     )
   }

@@ -6,7 +6,7 @@ import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.http.syntax.*
 import io.taig.openapi.schema.schemas.*
-import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.schema.Violations
 import io.taig.openapi.validation.Constraint
 import munit.FunSuite
 
@@ -119,22 +119,22 @@ final class QueriesTest extends FunSuite:
   test("decode: Queries.Empty") {
     assertEquals(
       obtained = Queries.Empty.decode(VectorMap.empty),
-      expected = Void.valid
+      expected = ().valid
     )
     assertEquals(
       obtained = Queries.Empty.decode(VectorMap("x" -> "foobar")),
-      expected = Void.valid
+      expected = ().valid
     )
   }
 
   test("decodeWithRemainders: Queries.Empty") {
     assertEquals(
       obtained = Queries.Empty.decodeWithRemainders(VectorMap.empty),
-      expected = (VectorMap.empty, Void).valid
+      expected = (VectorMap.empty, ()).valid
     )
     assertEquals(
       obtained = Queries.Empty.decodeWithRemainders(VectorMap("x" -> "foobar")),
-      expected = (VectorMap("x" -> "foobar"), Void).valid
+      expected = (VectorMap("x" -> "foobar"), ()).valid
     )
   }
 
@@ -162,7 +162,7 @@ final class QueriesTest extends FunSuite:
 
   test("encode: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.encode(Void),
+      obtained = Queries.Empty.encode(()),
       expected = VectorMap.empty
     )
   }

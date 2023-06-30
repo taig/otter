@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.http.syntax.*
 import io.taig.openapi.syntax.*
-import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.schema.Violations
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.validation.Constraint
 import munit.FunSuite
@@ -141,7 +141,7 @@ final class PathTest extends FunSuite:
   test("decode: Path.Root") {
     assertEquals(
       obtained = Path.Root.decode(Chain.empty),
-      expected = Void.valid
+      expected = ().valid
     )
     assertEquals(
       obtained = Path.Root.decode(Chain("foobar")),
@@ -158,7 +158,7 @@ final class PathTest extends FunSuite:
 
   test("encode: Path.Root") {
     assertEquals(
-      obtained = Path.Root.encode(Void),
+      obtained = Path.Root.encode(()),
       expected = Chain.empty
     )
   }

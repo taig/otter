@@ -8,7 +8,6 @@ import io.taig.openapi.http.Request.Body
 import io.taig.openapi.schema.Violations
 import io.taig.openapi.schema.applyValidation
 import io.taig.openapi.validation.Validation
-import io.taig.openapi.schema.Void
 
 sealed abstract class Input[A]:
   def method: Method
@@ -44,13 +43,10 @@ object Input:
       final override type Self[a] = Input.Body.Singlepart[a]
       def isStrict: Boolean
       final def isStreaming: Boolean = !isStrict
-
       final def optional: Input.Body.Singlepart[Option[A]] = Singlepart.Optional(this)
-
       override def ivalidateWithHeaders[B: Encoder, C](
           validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
       )(g: C => (Http.Headers, A)): Input.Body.Singlepart[C] = Singlepart.ValidateWithHeaders(this, validation, g)
-
       override def decode[F[+_]: ApplicativeThrow](
           headers: Http.Headers,
           body: Request.Body[F]
@@ -122,12 +118,14 @@ object Input:
         override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart[F])] =
           body.encode(g(c)._2)
 
-      def strict[A](headers: Headers[A]): Input.Body.Singlepart[(A, Array[Byte])] = Strict(headers)
-      val strict: Input.Body.Singlepart[Array[Byte]] =
-        Strict(Headers.Empty).imap { case (_, bytes) => bytes }(bytes => (Void, bytes))
+      transparent inline def strict[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
+        case _: Headers[Unit] =>
+          Strict(Headers.Empty)
+            .imap { case (_, bytes) => bytes }(bytes => ((), bytes)): Input.Body.Singlepart[Array[Byte]]
+        case _ => Strict(headers): Input.Body.Singlepart[(A, Array[Byte])]
 
       transparent inline def streaming[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
-        case _: Headers[Void] => Strict(headers).imap { case (_, bytes) => bytes }(bytes => (Void, bytes))
+        case _: Headers[Unit] => Strict(headers).imap { case (_, bytes) => bytes }(bytes => ((), bytes))
         case _                => Strict(headers)
 
 //    abstract class Multipart[A] extends Input.Body[A]:

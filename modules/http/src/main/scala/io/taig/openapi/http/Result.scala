@@ -4,7 +4,7 @@ import cats.Invariant
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
-import io.taig.openapi.schema.{+, Violations, Void}
+import io.taig.openapi.schema.{+, Violations}
 import io.taig.openapi.validation.Constraint
 
 sealed abstract class Result[A]:
@@ -42,8 +42,8 @@ object Result:
 
   transparent inline def apply[A, B](code: Code, headers: Headers[A], body: Output.Body[B]): Result[?] =
     inline (headers, body) match
-      case (headers: Headers[Void], body)     => Root(code, headers, body).imap { case (_, b) => b }(b => (Void, b))
-      case (headers, body: Output.Body[Void]) => Root(code, headers, body).imap { case (a, _) => a }(a => (a, Void))
+      case (headers: Headers[Unit], body)     => Root(code, headers, body).imap { case (_, b) => b }(b => ((), b))
+      case (headers, body: Output.Body[Unit]) => Root(code, headers, body).imap { case (a, _) => a }(a => (a, ()))
       case _                                  => Root(code, headers, body)
 
   given Invariant[Result] with

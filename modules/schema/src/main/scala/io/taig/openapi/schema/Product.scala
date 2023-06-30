@@ -24,8 +24,8 @@ sealed abstract class Product[A, B] extends Schema[B]:
   final def product[C](right: Product[A, C]): Product[A, (B, C)] = Product.Zip(this, right, none, none, nulls)
 
   final transparent inline infix def zip[C](product: Product[A, C]): Product[A, ?] = inline (this, product) match
-    case (b: Product[A, Void], c: Product[A, C]) => b.product(c).imap[C] { case (_, c) => c }(c => (Void, c))
-    case (b: Product[A, B], c: Product[A, Void]) => b.product(c).imap[B] { case (c, _) => c }(c => (c, Void))
+    case (b: Product[A, Unit], c: Product[A, C]) => b.product(c).imap[C] { case (_, c) => c }(c => ((), c))
+    case (b: Product[A, B], c: Product[A, Unit]) => b.product(c).imap[B] { case (c, _) => c }(c => (c, ()))
     case (a: Product[A, Tuple], b) =>
       a.product(b).imap[Tuple.Append[B, C]] { case (b, c) => b :* c }(bc => (bc.init, bc.last.asInstanceOf[C]))
     case (b, c) => b.product(c)
@@ -44,18 +44,18 @@ sealed abstract class Product[A, B] extends Schema[B]:
   def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)]
 
 object Product:
-  final private case class Empty[A](description: Option[String], example: Option[Void], nulls: Nulls)
-      extends Product[A, Void]:
+  final private case class Empty[A](description: Option[String], example: Option[Unit], nulls: Nulls)
+      extends Product[A, Unit]:
     override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
     override def fields: Chain[Field[A, ?]] = Chain.empty
-    override def modifyDescription(f: Option[String] => Option[String]): Product[A, Void] =
+    override def modifyDescription(f: Option[String] => Option[String]): Product[A, Unit] =
       copy(description = f(description))
-    override def modifyExample(f: Option[Void] => Option[Void]): Product[A, Void] = copy(example = f(example))
-    override def modifyNulls(f: Nulls => Nulls): Product[A, Void] = copy(nulls = f(nulls))
+    override def modifyExample(f: Option[Unit] => Option[Unit]): Product[A, Unit] = copy(example = f(example))
+    override def modifyNulls(f: Nulls => Nulls): Product[A, Unit] = copy(nulls = f(nulls))
 
-    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Void)] =
-      (openapi, Void).valid
-    override def encode(a: Void): OpenApi.Object = OpenApi.Object.Empty
+    override def decodeWithRemainders(openapi: OpenApi.Object): Validated[Violations, (OpenApi.Object, Unit)] =
+      (openapi, ()).valid
+    override def encode(a: Unit): OpenApi.Object = OpenApi.Object.Empty
 
   final private case class Root[A, B](
       description: Option[String],
@@ -124,6 +124,6 @@ object Product:
 
     given Eq[Product.Nulls] = Eq.fromUniversalEquals
 
-  def empty[A]: Product[A, Void] = Empty(none, none, Nulls.Default)
+  def empty[A]: Product[A, Unit] = Empty(none, none, Nulls.Default)
 
   def apply[A, B](field: Field[A, B]): Product[A, B] = Root(none, none, field, Nulls.Default)

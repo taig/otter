@@ -5,7 +5,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.{History, OpenApi}
 import io.taig.openapi.syntax.*
-import io.taig.openapi.schema.{Violations, Void}
+import io.taig.openapi.schema.Violations
 import io.taig.openapi.validation.Constraint
 
 sealed abstract class Path[A]:
@@ -16,8 +16,8 @@ sealed abstract class Path[A]:
   def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean)
   final def product[B](path: Path[B]): Path[(A, B)] = Path.Product(this, path)
   final transparent inline def zip[B](path: Path[B]): Path[?] = inline (this, path) match
-    case (left: Path[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
-    case (left, right: Path[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
+    case (left: Path[Unit], right) => left.product(right).imap[B] { case (_, b) => b }(b => ((), b))
+    case (left, right: Path[Unit]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, ()))
     case (left: Path[? *: ?], right) =>
       left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
     case (left, right) => left.product(right)
@@ -73,12 +73,12 @@ object Path:
       this.path.decodeWithRemainders(path).map(_.map(f))
     override def encode(b: B): Chain[String] = path.encode(g(b))
 
-  val Root: Path[Void] = new Path[Void]:
+  val Root: Path[Unit] = new Path[Unit]:
     override def toChain: Chain[Segment[?]] = Chain.empty
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = (path, true)
-    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], Void)] =
-      (path, Void).valid
-    override def encode(a: Void): Chain[String] = Chain.empty
+    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], Unit)] =
+      (path, ()).valid
+    override def encode(a: Unit): Chain[String] = Chain.empty
 
   def apply[A](segment: Segment[A]): Path[A] = One(segment)
 

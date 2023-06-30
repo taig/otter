@@ -4,7 +4,7 @@ import cats.Eval
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.openapi.History
-import io.taig.openapi.schema.{Schema, Violations, Void}
+import io.taig.openapi.schema.{Schema, Violations}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.validation.Constraint
 
@@ -17,17 +17,17 @@ sealed abstract class Segment[A]:
   final def toPath: Path[A] = Path(this)
 
 object Segment:
-  final case class Static(name: String) extends Segment[Void]:
+  final case class Static(name: String) extends Segment[Unit]:
     override def matches(segment: String): Boolean = name === segment
-    override def decode(value: String): Validated[Violations, Void] = Validated.cond(
+    override def decode(value: String): Validated[Violations, Unit] = Validated.cond(
       matches(value),
-      Void,
+      (),
       Violations.oneNec(
         History.Root / name,
         Constraint.required.toViolation(value.asOpenApi)
       )
     )
-    override def encode(a: Void): String = name
+    override def encode(a: Unit): String = name
     override def print: String = name
 
   final case class Parameter[A](name: String, schema: Eval[Schema.Value[A]]) extends Segment[A]:

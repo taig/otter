@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import io.taig.openapi.{Encoder, OpenApi}
 import io.taig.openapi.syntax.*
 import io.taig.openapi.http.Response.Body
-import io.taig.openapi.schema.{applyValidation, Violations, Void}
+import io.taig.openapi.schema.{applyValidation, Violations}
 import io.taig.openapi.validation.{Constraint, Validation}
 
 final case class Output[A](results: Results[A], violations: Result[Violations]):
@@ -45,9 +45,9 @@ object Output:
         this.body.decode(body).andThen(applyValidation(validation, this.body.encode(_).asOpenApi))
       override def encode(c: C): Response.Body = body.encode(g(c))
 
-    val Empty: Output.Body[Void] = new Body[Void]:
-      override def decode(body: Response.Body): Validated[Violations, Void] = Void.valid
-      override def encode(a: Void): Response.Body = Response.Body.Empty
+    val Empty: Output.Body[Unit] = new Body[Unit]:
+      override def decode(body: Response.Body): Validated[Violations, Unit] = ().valid
+      override def encode(a: Unit): Response.Body = Response.Body.Empty
 
     val Strict: Output.Body[Array[Byte]] = new Body[Array[Byte]]:
       override def decode(body: Response.Body): Validated[Violations, Array[Byte]] = body match

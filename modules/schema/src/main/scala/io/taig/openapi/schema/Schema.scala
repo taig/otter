@@ -29,7 +29,7 @@ abstract class Schema[A]:
   final def imap[B](f: A => B)(g: B => A): Self[B] { type Codec = self.Codec } =
     ivalidate(Validation.lift(f))(g)
 
-  final def const(value: A): Self[Void] = imap(_ => Void)(_ => value)
+  final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
 
   def decode(openapi: OpenApi): Validated[Violations, A]
   def encode(a: A): Codec
