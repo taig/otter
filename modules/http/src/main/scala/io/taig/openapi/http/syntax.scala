@@ -2,11 +2,8 @@ package io.taig.openapi.http
 
 import cats.Eval
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
 import io.taig.openapi.http.headers.{ContentType, MediaType}
-import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.schema.{Collection, Schema, Void}
-import io.taig.openapi.validation.{Constraint, Validation}
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -31,33 +28,22 @@ object syntax:
         def binary[A](header: Header[A]): Input.Body.Singlepart[(A, Array[Byte])] = binary(header.toHeaders)
         val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.strict
 
-        val text: Input.Body.Singlepart[(Option[Charset], String)] =
-          val validation: Validation[String, String, String, Option[Charset]] =
-            ContentType.validation.andThen:
-              val textPlain: Validation[String, String, ContentType, Unit] = Validation
-                .condNec(Constraint.text.equal(MediaType.text.plain.toString)) { (contentType: ContentType) =>
-                  contentType.mediaType === MediaType.text.plain
-                }
-                .mapActual(_.mediaType.toString)
-              val charset: Validation[String, String, ContentType, Option[Charset]] =
-                Validation
-                  .fromOptionNec(Constraint("encoding", reference = none)) { (contentType: ContentType) =>
-                    contentType.charset.map: charset =>
-                      try Charset.forName(charset).some
-                      catch {
-                        case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
-                      }
-                  }
-                  .mapActual(_.charset.getOrElse(StandardCharsets.UTF_8.name()))
-
-              textPlain *> charset
-
-          val contentType = string.ivalidate(validation) { charset =>
-            ContentType(MediaType.text.plain, charset.map(_.name())).render
-          }
-
-          binary(header(ci"Content-Type", contentType)).imap { case (charset, bytes) =>
-            (charset, new String(bytes, charset.getOrElse(StandardCharsets.UTF_8)))
-          } { case (charset, value) =>
-            (charset, value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)))
-          }
+        val text: Input.Body.Singlepart[String] = binary.imapWithHeaders { (headers, bytes) =>
+          val charset = headers
+            .getFirst(ci"Content-Type")
+            .flatMap(ContentType.parse)
+            .flatMap(_.charset)
+            .flatMap { charset =>
+              try Charset.forName(charset).some
+              catch {
+                case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
+              }
+            }
+            .getOrElse(StandardCharsets.UTF_8)
+          new String(bytes, charset)
+        } { value =>
+          (
+            Http.Headers.one(ci"Content-Type", ContentType(MediaType.text.plain, "utf-8".some).render),
+            value.getBytes(StandardCharsets.UTF_8)
+          )
+        }

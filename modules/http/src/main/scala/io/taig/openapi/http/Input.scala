@@ -22,33 +22,45 @@ sealed abstract class Input[A]:
 
 object Input:
   sealed abstract class Body[A]:
+    self =>
+    type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
     def headers: Headers[?]
-    def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Input.Body[C]
-    def imap[B](f: A => B)(g: B => A): Input.Body[B]
+    def ivalidateWithHeaders[B: Encoder, C](validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C])(
+        g: C => (Http.Headers, A)
+    ): Self[C]
+    final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] =
+      ivalidateWithHeaders(validation.mapActual((Http.Headers.Empty, _)).contramap { case (_, a) => a })(c =>
+        (Http.Headers.Empty, g(c))
+      )
+    final def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Self[B] =
+      ivalidateWithHeaders(Validation.lift(f.tupled))(g)
+    final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
     def decode[F[+_]: ApplicativeThrow](headers: Http.Headers, body: Request.Body[F]): F[Validated[Violations, A]]
     def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body[F])]
 
   object Body:
     abstract class Singlepart[A] extends Input.Body[A]:
       self =>
+      final override type Self[a] = Input.Body.Singlepart[a]
       def isStrict: Boolean
       final def isStreaming: Boolean = !isStrict
+
       final def optional: Input.Body.Singlepart[Option[A]] = Singlepart.Optional(this)
-      final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(
-          g: C => A
-      ): Input.Body.Singlepart[C] =
-        Singlepart.Validate(this, validation, g)
-      final override def imap[B](f: A => B)(g: B => A): Input.Body.Singlepart[B] = ivalidate(Validation.lift(f))(g)
+
+      override def ivalidateWithHeaders[B: Encoder, C](
+          validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
+      )(g: C => (Http.Headers, A)): Input.Body.Singlepart[C] = Singlepart.ValidateWithHeaders(this, validation, g)
+
       override def decode[F[+_]: ApplicativeThrow](
           headers: Http.Headers,
           body: Request.Body[F]
       ): F[Validated[Violations, A]] = body match
         case body: Request.Body.Singlepart[F] => decode(headers, body)
-      override def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body.Singlepart[F])]
       def decode[F[+_]: ApplicativeThrow](
           headers: Http.Headers,
           body: Request.Body.Singlepart[F]
       ): F[Validated[Violations, A]]
+      override def encode[F[+_]: ApplicativeThrow](a: A): F[(Http.Headers, Request.Body.Singlepart[F])]
 
     object Singlepart:
       final private case class Strict[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Array[Byte])]:
@@ -92,20 +104,23 @@ object Input:
           then none[A].valid.pure[F]
           else this.body.decode(headers, body).map(_.map(_.some))
 
-      final case class Validate[A, B: Encoder, C](
+      final case class ValidateWithHeaders[A, B: Encoder, C](
           body: Input.Body.Singlepart[A],
-          validation: Validation[B, A, A, C],
-          g: C => A
+          validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C],
+          g: C => (Http.Headers, A)
       ) extends Input.Body.Singlepart[C]:
         export body.{headers, isStrict}
-        override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart[F])] =
-          body.encode(g(c))
         override def decode[F[+_]: ApplicativeThrow](
             headers: Http.Headers,
             body: Request.Body.Singlepart[F]
         ): F[Validated[Violations, C]] = this.body
           .decode(headers, body)
-          .map(_.andThen(a => applyValidation(validation, _ => OpenApi.fromString("Input.Body.Singlepart(...)"))(a)))
+          .map:
+            _.andThen(a =>
+              applyValidation(validation, _ => OpenApi.fromString("Input.Body.Singlepart(...)"))((headers, a))
+            )
+        override def encode[F[+_]: ApplicativeThrow](c: C): F[(Http.Headers, Request.Body.Singlepart[F])] =
+          body.encode(g(c)._2)
 
       def strict[A](headers: Headers[A]): Input.Body.Singlepart[(A, Array[Byte])] = Strict(headers)
       val strict: Input.Body.Singlepart[Array[Byte]] =

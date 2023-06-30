@@ -27,14 +27,15 @@ object Http:
         var removed = false
         val result = List.newBuilder[(CIString, String)]
         toChain.iterator.foreach {
-          case (`name`, value) if !removed => removed = true; ()
-          case entry                       => result += entry
+          case (`name`, _) if !removed => removed = true; ()
+          case entry                   => result += entry
         }
         Chain.fromSeq(result.result())
       def getWithRemainders(name: CIString): Option[(NonEmptyChain[String], Http.Headers)] =
         get(name).tupleRight(remove(name))
       def getFirstWithRemainders(name: CIString): Option[(String, Http.Headers)] =
         getFirst(name).tupleRight(removeFirst(name))
+      def ++(headers: Http.Headers): Http.Headers = self.toChain ++ headers.toChain
 
     val Empty: Http.Headers = Chain.empty
     def apply(headers: Chain[(CIString, String)]): Http.Headers = headers
