@@ -16,7 +16,18 @@ import org.http4s.circe.*
 import org.http4s.headers.`Content-Type`
 import org.http4s.implicits.*
 import org.http4s.multipart.{Multipart, Multiparts, Part}
-import org.http4s.{Entity as Http4sEntity, Header as Http4sHeader, Headers as Http4sHeaders, Http as Http4sHttp, Method as Http4sMethod, Query as Http4sQuery, Request as Http4sRequest, Response as Http4sResponse, Status as Http4sStatus, *}
+import org.http4s.{
+  Entity as Http4sEntity,
+  Header as Http4sHeader,
+  Headers as Http4sHeaders,
+  Http as Http4sHttp,
+  Method as Http4sMethod,
+  Query as Http4sQuery,
+  Request as Http4sRequest,
+  Response as Http4sResponse,
+  Status as Http4sStatus,
+  *
+}
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
 

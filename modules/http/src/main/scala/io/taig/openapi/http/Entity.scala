@@ -1,15 +1,17 @@
 package io.taig.openapi.http
 
-import cats.Applicative
-import cats.syntax.all.*
+import cats.Id
 
-abstract class Entity:
+sealed abstract class Entity:
+  type Effect[_]
   def isEmpty: Boolean
-  def consume[F[_]: Applicative]: F[Array[Byte]]
+  def consume: Effect[Array[Byte]]
 
 object Entity:
-  def strict(body: Array[Byte]): Entity = new Entity:
-    override def isEmpty: Boolean = body.isEmpty
-    override def consume[F[_]: Applicative]: F[Array[Byte]] = body.pure[F]
+  type Aux[F[_]] = Entity { type Effect[a] = F[a] }
 
-  val Empty: Entity = strict(Array.emptyByteArray)
+  final case class Strict(consume: Array[Byte]) extends Entity:
+    override type Effect[a] = Id[a]
+    override def isEmpty: Boolean = consume.isEmpty
+
+  val Empty: Entity = Strict(Array.emptyByteArray)

@@ -28,7 +28,12 @@ object Request:
   sealed abstract class Body
 
   object Body:
-    final case class Singlepart(entity: Entity) extends Request.Body
+    enum Singlepart extends Request.Body:
+      case Strict(data: Array[Byte])
+
+    object Singlepart:
+      object Strict:
+        val Empty: Request.Body.Singlepart.Strict = Singlepart.Strict(Array.emptyByteArray)
 
 //
 //object Request:
