@@ -4,6 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import cats.{ApplicativeThrow, Invariant}
 import io.taig.openapi.{Encoder, OpenApi}
+import io.taig.openapi.syntax.*
 import io.taig.openapi.http.Request.Body
 import io.taig.openapi.http.Request.Body.Singlepart
 import io.taig.openapi.schema.Violations
@@ -29,9 +30,8 @@ object Input:
         g: C => (Http.Headers, A)
     ): Self[C]
     final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] =
-      ivalidateWithHeaders(validation.mapActual((Http.Headers.Empty, _)).contramap { case (_, a) => a })(c =>
-        (Http.Headers.Empty, g(c))
-      )
+      ivalidateWithHeaders(validation.mapActual((Http.Headers.Empty, _))
+        .contramap { case (_, a) => a })(c => (Http.Headers.Empty, g(c)))
     final def imapWithHeaders[B](f: (Http.Headers, A) => B)(g: B => (Http.Headers, A)): Self[B] =
       ivalidateWithHeaders(Validation.lift(f.tupled))(g)
     final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
@@ -54,21 +54,36 @@ object Input:
         override def optional: Input.Body.Singlepart.Strict[Option[A]] = ???
         override def ivalidateWithHeaders[B: Encoder, C](
             validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
-        )(g: C => (Http.Headers, A)): Strict[C] = ???
+        )(g: C => (Http.Headers, A)): Strict[C] = Strict.ValidateWithHeaders(this, validation, g)
         override def decode(headers: Http.Headers, body: Request.Body.Singlepart): Validated[Violations, A] = ???
         def decode(headers: Http.Headers, body: Request.Body.Singlepart.Strict): Validated[Violations, A]
         override def encode(a: A): (Http.Headers, Request.Body.Singlepart.Strict)
       }
 
       object Strict:
-        final private case class Root[A](headers: Headers[A]) extends Input.Body.Singlepart.Strict[(A, Array[Byte])] {
+        final private case class Root[A](headers: Headers[A]) extends Input.Body.Singlepart.Strict[(A, Array[Byte])]:
           override def decode(
               headers: Http.Headers,
               body: Request.Body.Singlepart.Strict
           ): Validated[Violations, (A, Array[Byte])] = this.headers.decode(headers).tupleRight(body.bytes)
           override def encode(ab: (A, Array[Byte])): (Http.Headers, Request.Body.Singlepart.Strict) =
             (headers.encode(ab._1), Request.Body.Singlepart.Strict.Empty)
-        }
+
+        final private case class ValidateWithHeaders[A, B: Encoder, C](
+            body: Input.Body.Singlepart.Strict[A],
+            validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C],
+            g: C => (Http.Headers, A)
+        ) extends Input.Body.Singlepart.Strict[C]:
+          export body.headers
+          override def decode(headers: Http.Headers, body: Request.Body.Singlepart.Strict): Validated[Violations, C] =
+            this.body
+              .decode(headers, body)
+              .andThen(
+                applyValidation(validation.mapActual(_._2).contramap((headers, _)), this.body.encode(_)._2.asOpenApi)
+              )
+          override def encode(c: C): (Http.Headers, Request.Body.Singlepart.Strict) =
+            val (headers, a) = g(c)
+            body.encode(a).leftMap(_ merge headers)
 
         val Empty: Input.Body.Singlepart.Strict[Unit] = new Strict[Unit] {
           override def headers: Headers[?] = Headers.Empty

@@ -36,6 +36,8 @@ object Request:
       object Strict:
         val Empty: Request.Body.Singlepart.Strict = Singlepart.Strict(Array.emptyByteArray)
 
+        given Encoder[Request.Body.Singlepart.Strict] = _ => "[...]".asOpenApi
+
       object Streaming:
         val Empty: Request.Body.Singlepart.Streaming = Singlepart.Streaming(Stream.Empty)
 
