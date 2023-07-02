@@ -29,11 +29,15 @@ object Request:
 
   object Body:
     enum Singlepart extends Request.Body:
-      case Strict(data: Array[Byte])
+      case Strict(bytes: Array[Byte])
+      case Streaming(stream: Stream)
 
     object Singlepart:
       object Strict:
         val Empty: Request.Body.Singlepart.Strict = Singlepart.Strict(Array.emptyByteArray)
+
+      object Streaming:
+        val Empty: Request.Body.Singlepart.Streaming = Singlepart.Streaming(Stream.Empty)
 
 //
 //object Request:

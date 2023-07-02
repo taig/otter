@@ -35,12 +35,12 @@ import scala.collection.immutable.VectorMap
 import scala.reflect.ClassTag
 
 final class Http4s[F[_]: JsonDecoder](using F: Async[F]):
-  final class Fs2Entity(val isEmpty: Boolean, val toFs2: Fs2Stream[F, Byte]) extends Entity:
+  final class Fs2Entity(val isEmpty: Boolean, val toFs2: Fs2Stream[F, Byte]) extends Stream:
     // TODO at least catch the cast if it goes wrong? ):
     override def consume[G[_]: Applicative]: G[Array[Byte]] = toFs2.compile.to(Array).asInstanceOf[G[Array[Byte]]]
 
   object Fs2Entity:
-    def apply(source: Fs2Stream[F, Byte]): F[Entity] = source.pull.peek1
+    def apply(source: Fs2Stream[F, Byte]): F[Stream] = source.pull.peek1
       .flatMap {
         case Some((_, tail)) => Pull.output1(new Fs2Entity(isEmpty = false, tail))
         case None            => Pull.output1(new Fs2Entity(isEmpty = true, Fs2Stream.empty))

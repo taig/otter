@@ -16,7 +16,7 @@ final class InputTest extends CatsEffectSuite:
           Chain.empty,
           Http.Queries.Empty,
           Http.Headers.Empty,
-          Request.Body.Singlepart(Entity.Empty)
+          Request.Body.Singlepart(Stream.Empty)
         )
       )
     }

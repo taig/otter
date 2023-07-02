@@ -118,7 +118,7 @@ object Http:
 
   object Request:
     enum Body:
-      case Singlepart(entity: Entity)
+      case Singlepart(entity: Stream)
       case Multipart
 
   final case class Response(code: Int, headers: Http.Headers, body: Http.Response.Body):
@@ -132,4 +132,4 @@ object Http:
     def withBody(body: Http.Response.Body): Http.Response = modifyBody(_ => body)
 
   object Response:
-    final case class Body(entity: Entity)
+    final case class Body(entity: Stream)

@@ -65,10 +65,40 @@ object Input:
           override def decode(
               headers: Http.Headers,
               body: Request.Body.Singlepart.Strict
-          ): Validated[Violations, (A, Array[Byte])] = this.headers.decode(headers).tupleRight(body.data)
+          ): Validated[Violations, (A, Array[Byte])] = this.headers.decode(headers).tupleRight(body.bytes)
           override def encode(ab: (A, Array[Byte])): (Http.Headers, Request.Body.Singlepart.Strict) =
             (headers.encode(ab._1), Request.Body.Singlepart.Strict.Empty)
         }
+
+        val Empty: Input.Body.Singlepart.Strict[Unit] = new Strict[Unit] {
+          override def headers: Headers[?] = Headers.Empty
+          override def decode(
+              headers: Http.Headers,
+              body: Request.Body.Singlepart.Strict
+          ): Validated[Violations, Unit] = ().valid
+          override def encode(a: Unit): (Http.Headers, Request.Body.Singlepart.Strict) =
+            (Http.Headers.Empty, Request.Body.Singlepart.Strict.Empty)
+        }
+
+        transparent inline def apply[A](headers: Headers[A]): Input.Body.Singlepart.Strict[?] = inline headers match {
+          case _: Headers[Unit] =>
+            Input.Body.Singlepart.Strict
+              .Root(headers)
+              .imap { case (_, headers) => headers } { case bytes => ((), bytes) }
+          case _ => Input.Body.Singlepart.Strict.Root(headers)
+        }
+
+      sealed abstract class Streaming[A] extends Input.Body.Singlepart[A] {
+        final override type Self[a] = Input.Body.Singlepart.Streaming[a]
+        final override def optional: Streaming[Option[A]] = ???
+        final override def ivalidateWithHeaders[B: Encoder, C](
+            validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
+        )(g: C => (Http.Headers, A)): Streaming[C] = ???
+        final override def decode(headers: Http.Headers, body: Request.Body.Singlepart): Validated[Violations, A] = ???
+        def decode(headers: Http.Headers, body: Request.Body.Singlepart.Streaming): Validated[Violations, A]
+        override def encode(a: A): (Http.Headers, Request.Body.Singlepart.Streaming)
+      }
+
 //      final private case class Strict[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Array[Byte])]:
 //        override def decode(
 //            headers: Http.Headers,

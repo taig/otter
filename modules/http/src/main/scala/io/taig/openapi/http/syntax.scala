@@ -53,14 +53,14 @@ object syntax:
   object input:
     object body:
       object strict:
-        val empty: Input.Body.Singlepart[Unit] = Input.Body.Singlepart.Empty
-        transparent inline def binary[A](headers: Headers[A]): Input.Body.Singlepart[?] =
-          Input.Body.Singlepart.strict(headers)
-        transparent inline def binary[A](header: Header[A]): Input.Body.Singlepart[?] = binary(header.toHeaders)
-        def binary(mediaType: MediaType): Input.Body.Singlepart[Array[Byte]] =
+        val empty: Input.Body.Singlepart.Strict[Unit] = Input.Body.Singlepart.Strict.Empty
+        transparent inline def binary[A](headers: Headers[A]): Input.Body.Singlepart.Strict[?] =
+          Input.Body.Singlepart.Strict(headers)
+        transparent inline def binary[A](header: Header[A]): Input.Body.Singlepart.Strict[?] = binary(header.toHeaders)
+        def binary(mediaType: MediaType): Input.Body.Singlepart.Strict[Array[Byte]] =
           val validation: Validation[String, String, String, MediaType] = ContentType.validation.map(_.mediaType)
           binary(header(ci"Content-Type", string.ivalidate(validation)(_.toString).const(mediaType)))
-        val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.strict(Headers.Empty)
+        val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict(Headers.Empty)
 
         val text: Input.Body.Singlepart[String] = binary.imapWithHeaders { (headers, bytes) =>
           val charset = headers
