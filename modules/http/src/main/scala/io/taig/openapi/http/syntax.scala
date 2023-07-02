@@ -3,8 +3,8 @@ package io.taig.openapi.http
 import cats.Eval
 import cats.syntax.all.*
 import io.taig.openapi.http.headers.{ContentType, MediaType}
-import io.taig.openapi.schema.{Collection, Schema}
 import io.taig.openapi.schema.schemas.*
+import io.taig.openapi.schema.{Collection, Schema}
 import io.taig.openapi.validation.Validation
 import org.typelevel.ci.{CIString, CIStringSyntax}
 
@@ -54,13 +54,12 @@ object syntax:
     object body:
       object strict:
         val empty: Input.Body.Singlepart.Strict[Unit] = Input.Body.Singlepart.Strict.Empty
-        transparent inline def binary[A](headers: Headers[A]): Input.Body.Singlepart.Strict[?] =
-          Input.Body.Singlepart.Strict(headers)
+        transparent inline def binary[A](headers: Headers[A]): Input.Body.Singlepart.Strict[?] = ???
         transparent inline def binary[A](header: Header[A]): Input.Body.Singlepart.Strict[?] = binary(header.toHeaders)
         def binary(mediaType: MediaType): Input.Body.Singlepart.Strict[Array[Byte]] =
           val validation: Validation[String, String, String, MediaType] = ContentType.validation.map(_.mediaType)
           binary(header(ci"Content-Type", string.ivalidate(validation)(_.toString).const(mediaType)))
-        val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict(Headers.Empty)
+        val binary: Input.Body.Singlepart[Array[Byte]] = Input.Body.Singlepart.Strict.Bytes
 
         val text: Input.Body.Singlepart[String] = binary.imapWithHeaders { (headers, bytes) =>
           val charset = headers

@@ -24,19 +24,19 @@ sealed abstract class Headers[A]:
 object Headers:
   final private case class Root[A](header: Header[A]) extends Headers[A]:
     override def toChain: Chain[Header[?]] = Chain.one(header)
-    override def matches(headers: Http.Headers): Boolean = ???
+    override def matches(headers: Http.Headers): Boolean = headers.contains(header.name)
     override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      ??? // header.decode(headers)
-    override def encode(a: A): Http.Headers = ??? // header.encode(a)
+      header.decode(headers)
+    override def encode(a: A): Http.Headers = header.encode(a)
 
   final private case class Product[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
     override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
-    override def matches(headers: Http.Headers): Boolean = ???
+    override def matches(headers: Http.Headers): Boolean = left.matches(headers) && right.matches(headers)
     override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, (A, B))] =
       left.decodeWithRemainders(headers) match
         case Validated.Valid((remainders, a)) => right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
         case Validated.Invalid(violations)    => right.decode(headers).fold(violations merge _, _ => violations).invalid
-    override def encode(ab: (A, B)): Http.Headers = ??? // left.encode(ab._1) ++ right.encode(ab._2)
+    override def encode(ab: (A, B)): Http.Headers = left.encode(ab._1) merge right.encode(ab._2)
 
   final private case class Modify[A, B](
       headers: Headers[A],
