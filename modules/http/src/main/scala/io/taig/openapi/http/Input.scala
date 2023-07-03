@@ -45,7 +45,7 @@ object Input:
       self =>
       override type Self[a] <: Input.Body.Singlepart[a] { type Self[a] = self.Self[a] }
       def optional: Self[Option[A]]
-      transparent inline def zip[B](headers: Headers[B]): Self[Any]
+      transparent inline def zip[B](headers: Headers[B]): Input.Body.Singlepart[?]
       override def decodeWithRemainders(
           headers: Http.Headers,
           body: Request.Body
@@ -62,7 +62,17 @@ object Input:
         final override type Self[a] = Input.Body.Singlepart.Strict[a]
         override def optional: Input.Body.Singlepart.Strict[Option[A]] = Strict.Optional(this)
 
-        override transparent inline def zip[B](headers: Headers[B]): Input.Body.Singlepart.Strict[Any] = ???
+        final def product[B](headers: Headers[B]): Input.Body.Singlepart.Strict[(A, B)] = Strict.Product(this, headers)
+        final transparent inline def zip[B](headers: Headers[B]): Input.Body.Singlepart.Strict[?] =
+          inline (this, headers) match
+            case (left: Body[Unit], right)    => left.product(right).imap[B] { case (_, b) => b }(b => ((), b))
+            case (left, right: Headers[Unit]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, ()))
+            case (left: Body[? *: ?], right) =>
+              left
+                .product(right)
+                .imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+            case (left, right) => left.product(right)
+        final transparent inline def :*[B](header: Header[B]): Input.Body.Singlepart.Strict[?] = zip(header.toHeaders)
 
         override def ivalidateWithHeaders[B: Encoder, C](
             validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
