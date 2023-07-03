@@ -9,7 +9,7 @@ final case class Constraint[+Ref](name: String, reference: Option[Ref]):
   def toViolation[Act](actual: Act): Violation[Ref, Act] = Violation(this, actual)
 
 object Constraint:
-  def parser(name: String): Constraint[String] = Constraint("parser", name.some)
+  def parser[A](name: A): Constraint[A] = Constraint("parser", name.some)
 
   def tpe[A](name: A): Constraint[A] = Constraint("type", name.some)
 

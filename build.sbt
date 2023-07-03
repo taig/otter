@@ -54,7 +54,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, validation, schema, http, csv, circe, http4s, sample)
+  .aggregate(core, validation, schema, http, csv, circe, dsl, http4s, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -117,7 +117,7 @@ lazy val circe = module(identifier = Some("circe"))
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(http % "compile->compile;test->test")
+  .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(

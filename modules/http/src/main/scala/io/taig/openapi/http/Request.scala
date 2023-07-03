@@ -41,25 +41,11 @@ object Request:
       object Streaming:
         val Empty: Request.Body.Singlepart.Streaming = Singlepart.Streaming(Stream.Empty)
 
-//
-//object Request:
-//  sealed abstract class Body
-//
-//  object Body:
-//    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
-//
-//    object Multipart:
-//      final case class Part(headers: Http.Headers, body: Request.Body.Singlepart)
-//
-//      object Part:
-//        given Encoder[Request.Body.Multipart.Part] = part => OpenApi.obj("headers" := part.headers, "body" := part.body)
-//
-//      val Empty: Request.Body.Multipart = Multipart(Chain.empty)
-//
-//      given Encoder[Request.Body.Multipart] = multipart => OpenApi.Array(multipart.parts.map(_.asOpenApi).toVector)
-//
-//    final case class Singlepart(data: Stream[Byte]) extends Request.Body
-//
+    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
+
+    object Multipart:
+      final case class Part(headers: Http.Headers, body: Request.Body.Singlepart)
+
 //    object Singlepart:
 //      given Encoder[Request.Body.Singlepart] = _ => OpenApi.fromString("[...]")
 //

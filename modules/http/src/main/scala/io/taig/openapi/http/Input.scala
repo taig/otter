@@ -1,7 +1,7 @@
 package io.taig.openapi.http
 
 import cats.Invariant
-import cats.data.Validated
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.openapi.Encoder
 import io.taig.openapi.http.Request.Body
@@ -203,43 +203,50 @@ object Input:
           override def encode(a: Stream): (Http.Headers, Request.Body.Singlepart.Streaming) =
             (Http.Headers.Empty, Request.Body.Singlepart.Streaming(a))
 
-//    abstract class Multipart[A] extends Input.Body[A]:
-//      def toChain: Chain[Input.Body.Multipart.Part[?]]
-//      final def product[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[(A, B)] =
-//        Multipart.Product(this, multipart)
-//      final transparent inline def zip[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[?] =
-//        inline (this, multipart) match
-//          case (left: Multipart[Void], right) => left.product(right).imap[B] { case (_, b) => b }(b => (Void, b))
-//          case (left, right: Multipart[Void]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, Void))
-//          case (left: Multipart[? *: ?], right) =>
-//            left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
-//          case (left, right) => left.product(right)
-//      final transparent inline def :*[B](part: Input.Body.Multipart.Part[B]): Input.Body.Multipart[?] =
-//        zip(part.toMultipart)
-//      final def imap[B](f: A => B)(g: B => A): Input.Body.Multipart[B] = Multipart.Modify(this, f, g)
-////      override def decode(body: Request.Body): Validated[Violations, A] = body match
-////        case body: Request.Body.Multipart => decode(body)
-////        case _: Request.Body.Singlepart =>
-////          val violation = Constraint
-////            .tpe("Request.Body.Multipart")
-////            .toViolation(OpenApi.fromString("Request.Body.Singlepart"))
-////            .mapReference(OpenApi.fromString)
-////          Violations.rootNec(violation).invalid
-////      def decode(body: Request.Body.Multipart): Validated[Violations, A]
-//      override def decode[F[_]](body: Request.Body): F[Validated[Violations, A]] = ???
-//      override def encode(a: A): Request.Body.Multipart
-//
-//    object Multipart:
-//      abstract class Part[A]:
-//        def name: String
-//        def body: Input.Body.Singlepart[?]
-//        final def optional: Input.Body.Multipart.Part[Option[A]] = Part.Optional(this)
-//        def decode(
-//            parts: Chain[Request.Body.Multipart.Part]
-//        ): Validated[Violations, (Chain[Request.Body.Multipart.Part], A)]
-//        def encode(a: A): Chain[Request.Body.Multipart.Part]
-//        final def toMultipart: Input.Body.Multipart[A] = Multipart.Root(this)
-//
+    abstract class Multipart[A] extends Input.Body[A]:
+      override type Self[a] = Input.Body.Multipart[a]
+      def toChain: Chain[Input.Body.Multipart.Part[?]]
+      final def product[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[(A, B)] = ???
+      // Multipart.Product(this, multipart)
+      final transparent inline def zip[B](multipart: Input.Body.Multipart[B]): Input.Body.Multipart[?] =
+        inline (this, multipart) match
+          case (left: Multipart[Unit], right) => left.product(right).imap[B] { case (_, b) => b }(b => ((), b))
+          case (left, right: Multipart[Unit]) => left.product(right).imap[A] { case (a, _) => a }(a => (a, ()))
+          case (left: Multipart[? *: ?], right) =>
+            left.product(right).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+          case (left, right) => left.product(right)
+      final transparent inline def :*[B](part: Input.Body.Multipart.Part[B]): Input.Body.Multipart[?] =
+        zip(part.toMultipart)
+//      override def decode(body: Request.Body): Validated[Violations, A] = body match
+//        case body: Request.Body.Multipart => decode(body)
+//        case _: Request.Body.Singlepart =>
+//          val violation = Constraint
+//            .tpe("Request.Body.Multipart")
+//            .toViolation(OpenApi.fromString("Request.Body.Singlepart"))
+//            .mapReference(OpenApi.fromString)
+//          Violations.rootNec(violation).invalid
+//      def decode(body: Request.Body.Multipart): Validated[Violations, A]
+
+      override def ivalidateWithHeaders[B: Encoder, C](
+          validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
+      )(g: C => (Http.Headers, A)): Multipart[C] = ???
+      override def decodeWithRemainders(
+          headers: Http.Headers,
+          body: Request.Body
+      ): Validated[Violations, (Http.Headers, A)] = ???
+      override def encode(a: A): (Http.Headers, Request.Body.Multipart)
+
+    object Multipart:
+      abstract class Part[A]:
+        def name: String
+        def body: Input.Body.Singlepart[?]
+        final def optional: Input.Body.Multipart.Part[Option[A]] = ??? // Part.Optional(this)
+        def decode(
+            parts: Chain[Request.Body.Multipart.Part]
+        ): Validated[Violations, (Chain[Request.Body.Multipart.Part], A)]
+        def encode(a: A): Chain[Request.Body.Multipart.Part]
+        final def toMultipart: Input.Body.Multipart[A] = ??? // Multipart.Root(this)
+
 //      object Part:
 //        final private case class Optional[A](part: Input.Body.Multipart.Part[A])
 //            extends Input.Body.Multipart.Part[Option[A]]:
