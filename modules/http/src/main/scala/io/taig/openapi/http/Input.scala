@@ -157,89 +157,51 @@ object Input:
           override def encode(a: Unit): (Http.Headers, Request.Body.Singlepart.Strict) =
             (Http.Headers.Empty, Request.Body.Singlepart.Strict.Empty)
 
-      sealed abstract class Streaming[A] extends Input.Body.Singlepart[A] {
+      sealed abstract class Streaming[A] extends Input.Body.Singlepart[A]:
         final override type Self[a] = Input.Body.Singlepart.Streaming[a]
-        final override def optional: Streaming[Option[A]] = ???
+        final override def optional: Streaming[Option[A]] = Streaming.Optional(this)
         final override def ivalidateWithHeaders[B: Encoder, C](
             validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C]
-        )(g: C => (Http.Headers, A)): Streaming[C] = ???
+        )(g: C => (Http.Headers, A)): Input.Body.Singlepart.Streaming[C] = ???
+        override transparent inline def zip[B](headers: Headers[B]): Input.Body.Singlepart.Streaming[?] = ???
         final override def decodeWithRemainders(
             headers: Http.Headers,
             body: Request.Body.Singlepart
-        ): Validated[Violations, (Http.Headers, A)] = ???
-        def decode(headers: Http.Headers, body: Request.Body.Singlepart.Streaming): Validated[Violations, A]
+        ): Validated[Violations, (Http.Headers, A)] = body match
+          case body: Request.Body.Singlepart.Streaming => decodeWithRemainders(headers, body)
+          case _: Request.Body.Singlepart.Strict =>
+            val violation = Violation(
+              Constraint.tpe("Request.Body.Singlepart.Streaming".asOpenApi),
+              "Request.Body.Singlepart.Strict".asOpenApi
+            )
+            Violations.rootNec(violation).invalid
+        def decodeWithRemainders(
+            headers: Http.Headers,
+            body: Request.Body.Singlepart.Streaming
+        ): Validated[Violations, (Http.Headers, A)]
         override def encode(a: A): (Http.Headers, Request.Body.Singlepart.Streaming)
-      }
 
-//      final private case class Strict[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Array[Byte])]:
-//        override def decode(
-//            headers: Http.Headers,
-//            body: Request.Body.Singlepart
-//        ): F[Validated[Violations, (A, Array[Byte])]] =
-//          body.entity.consume.map(this.headers.decode(headers).tupleRight)
-//        override def encode(
-//            ab: (A, Array[Byte])
-//        ): F[(Http.Headers, Request.Body.Singlepart)] =
-//          (headers.encode(ab._1), Request.Body.Singlepart(Entity.strict(ab._2))).pure[F]
-//
-//      final private case class Streaming[A](headers: Headers[A]) extends Input.Body.Singlepart[(A, Entity)]:
-//        override def decode(
-//            headers: Http.Headers,
-//            body: Request.Body.Singlepart
-//        ): F[Validated[Violations, (A, Entity)]] = this.headers.decode(headers).tupleRight(body.entity).pure[F]
-//        override def encode[F[+_]](ab: (A, Entity))(using
-//            F: ApplicativeThrow[F]
-//        ): F[(Http.Headers, Request.Body.Singlepart)] =
-//          (headers.encode(ab._1), Request.Body.Singlepart(ab._2)).pure[F]
-//
-//      final case class Optional[A](body: Input.Body.Singlepart[A]) extends Input.Body.Singlepart[Option[A]]:
-//        export body.headers
-//        override def encode(a: Option[A]): F[(Http.Headers, Request.Body.Singlepart)] =
-//          a.fold((Http.Headers.Empty, Request.Body.Singlepart(Entity.Empty)).pure[F])(body.encode(_))
-//        override def decode(
-//            headers: Http.Headers,
-//            body: Request.Body.Singlepart
-//        ): F[Validated[Violations, Option[A]]] =
-//          if body.entity.isEmpty
-//          then none[A].valid.pure[F]
-//          else this.body.decode(headers, body).map(_.map(_.some))
-//
-//      final case class ValidateWithHeaders[A, B: Encoder, C](
-//          body: Input.Body.Singlepart[A],
-//          validation: Validation[B, (Http.Headers, A), (Http.Headers, A), C],
-//          g: C => (Http.Headers, A)
-//      ) extends Input.Body.Singlepart[C]:
-//        export body.headers
-//        override def decode(
-//            headers: Http.Headers,
-//            body: Request.Body.Singlepart
-//        ): F[Validated[Violations, C]] = this.body
-//          .decode(headers, body)
-//          .map:
-//            _.andThen(a =>
-//              applyValidation(validation, _ => OpenApi.fromString("Input.Body.Singlepart(...)"))((headers, a))
-//            )
-//        override def encode(c: C): F[(Http.Headers, Request.Body.Singlepart)] =
-//          body.encode(g(c)._2)
-//
-//      val Empty: Input.Body.Singlepart[Unit] = new Singlepart[Unit]:
-//        override def headers: Headers[?] = Headers.Empty
-//        override def decode(
-//            headers: Http.Headers,
-//            body: Request.Body.Singlepart
-//        ): F[Validated[Violations, Unit]] = ().valid.pure[F]
-//        override def encode(a: Unit): F[(Http.Headers, Request.Body.Singlepart)] =
-//          (Http.Headers.Empty, Request.Body.Singlepart(Entity.Empty)).pure[F]
-//
-//      transparent inline def strict[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
-//        case _: Headers[Unit] =>
-//          Strict(Headers.Empty)
-//            .imap { case (_, bytes) => bytes }(bytes => ((), bytes)): Input.Body.Singlepart[Array[Byte]]
-//        case _ => Strict(headers): Input.Body.Singlepart[(A, Array[Byte])]
-//
-//      transparent inline def streaming[A](headers: Headers[A]): Input.Body.Singlepart[?] = inline headers match
-//        case _: Headers[Unit] => Strict(headers).imap { case (_, bytes) => bytes }(bytes => ((), bytes))
-//        case _                => Strict(headers)
+      object Streaming:
+        final private case class Optional[A](body: Input.Body.Singlepart.Streaming[A])
+            extends Input.Body.Singlepart.Streaming[Option[A]]:
+          export body.headers
+          override def decodeWithRemainders(
+              headers: Http.Headers,
+              body: Request.Body.Singlepart.Streaming
+          ): Validated[Violations, (Http.Headers, Option[A])] =
+            if body.stream.isEmpty then (headers, none[A]).valid
+            else this.body.decodeWithRemainders(headers, body).map(_.map(_.some))
+          override def encode(a: Option[A]): (Http.Headers, Request.Body.Singlepart.Streaming) =
+            a.fold((Http.Headers.Empty, Request.Body.Singlepart.Streaming.Empty))(this.body.encode)
+
+        val Bytes: Input.Body.Singlepart.Streaming[Stream] = new Streaming[Stream]:
+          override def headers: Headers[?] = Headers.Empty
+          override def decodeWithRemainders(
+              headers: Http.Headers,
+              body: Request.Body.Singlepart.Streaming
+          ): Validated[Violations, (Http.Headers, Stream)] = (headers, body.stream).valid
+          override def encode(a: Stream): (Http.Headers, Request.Body.Singlepart.Streaming) =
+            (Http.Headers.Empty, Request.Body.Singlepart.Streaming(a))
 
 //    abstract class Multipart[A] extends Input.Body[A]:
 //      def toChain: Chain[Input.Body.Multipart.Part[?]]
