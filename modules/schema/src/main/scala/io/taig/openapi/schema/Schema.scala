@@ -13,7 +13,7 @@ abstract class Schema[A]:
   def constraints: Chain[Constraint]
 
   def description: Property.Optional[Self[A], String]
-  def example: Property.Optional[Self[A], A]
+  def example: Property.Example[Self[A], A]
 
   def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B] { type Codec = self.Codec }
   final def validate[B](validation: Validation[A, Unit]): Self[A] { type Codec = self.Codec } =

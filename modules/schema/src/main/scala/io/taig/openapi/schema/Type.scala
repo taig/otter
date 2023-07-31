@@ -25,7 +25,7 @@ enum Type[A]:
     case (Type.Int, OpenApi.Int(value))               => value.some
     case (Type.Long, OpenApi.Long(value))             => value.some
     case (Type.String, OpenApi.String(value))         => value.some
-    case _ => none
+    case _                                            => none
 
   def encode(a: A): OpenApi.Primitive = this match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)

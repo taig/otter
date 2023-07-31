@@ -1,5 +1,6 @@
 package io.taig.openapi.schema
 
+import io.taig.openapi.OpenApi
 import io.taig.openapi.validation.Validation
 
 import scala.annotation.targetName
@@ -34,3 +35,9 @@ object Property:
       override def value: Option[B] = property.value.flatMap(validation(_).toOption)
       override def modify(f: Option[B] => Option[B]): F[B] =
         copy(property.modify(_.flatMap(validation(_).toOption.map(g))))
+
+  abstract class Example[A, B] extends Optional[A, B]:
+    def encode: Option[OpenApi]
+
+  abstract class Default[A, B] extends Optional[A, B]:
+    def encode: Option[OpenApi]

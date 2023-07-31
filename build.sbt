@@ -113,6 +113,9 @@ lazy val circe = module(identifier = Some("circe"))
 lazy val dsl = module(identifier = Some("dsl"))
   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
+lazy val generator = module(identifier = Some("generator"))
+  .dependsOn(schema)
+
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
