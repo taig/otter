@@ -8,7 +8,7 @@ import io.taig.openapi.http.Request.Body
 import io.taig.openapi.http.Request.Body.Singlepart
 import io.taig.openapi.schema.{applyValidation, Violations}
 import io.taig.openapi.syntax.*
-import io.taig.openapi.validation.{Constraint, Validation, Violation}
+import io.taig.openapi.validation.{Constraint, Validation}
 
 sealed abstract class Input[A]:
   def method: Method

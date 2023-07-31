@@ -79,88 +79,6 @@ object OpenApi:
   sealed abstract class Value extends OpenApi
 
   sealed abstract class Primitive extends Value:
-    final def toBigDecimal: Option[OpenApi.BigDecimal] = this match
-      case openapi: BigDecimal => openapi.some
-      case BigInt(value)       => BigDecimal(SBigDecimal(value)).some
-      case Double(value) =>
-        try BigDecimal(SBigDecimal.valueOf(value)).some
-        catch case _: NumberFormatException => none
-      case Float(value) =>
-        try BigDecimal(SBigDecimal.valueOf(value.toDouble)).some
-        catch case _: NumberFormatException => none
-      case Int(value)  => BigDecimal(SBigDecimal(value)).some
-      case Long(value) => BigDecimal(SBigDecimal(value)).some
-      case String(value) =>
-        try BigDecimal(SBigDecimal(value)).some
-        catch case _: NumberFormatException => none
-      case _: Boolean => none
-
-    final def toBigInt: Option[OpenApi.BigInt] = this match
-      case openapi: BigInt   => openapi.some
-      case BigDecimal(value) => value.toBigIntExact.map(BigInt.apply)
-      case Double(value) =>
-        try SBigDecimal.valueOf(value).toBigIntExact.map(BigInt.apply)
-        catch case _: NumberFormatException => none
-      case Float(value) =>
-        try SBigDecimal.valueOf(value.toDouble).toBigIntExact.map(BigInt.apply)
-        catch case _: NumberFormatException => none
-      case Int(value)  => BigInt(SBigInt(value)).some
-      case Long(value) => BigInt(SBigInt(value)).some
-      case String(value) =>
-        try BigInt(SBigInt(value)).some
-        catch case _: NumberFormatException => none
-      case _: Boolean => none
-
-    final def toDouble: Option[OpenApi.Double] = this match
-      case openapi: Double   => openapi.some
-      case BigDecimal(value) => Double(value.doubleValue).some
-      case BigInt(value)     => Double(value.doubleValue).some
-      case Float(value)      => Double(value.toDouble).some
-      case Int(value)        => Double(value.toDouble).some
-      case Long(value)       => Double(value.toDouble).some
-      case String(value)     => value.toDoubleOption.map(Double.apply)
-      case _: Boolean        => none
-
-    final def toFloat: Option[OpenApi.Float] = this match
-      case openapi: Float    => openapi.some
-      case BigDecimal(value) => Float(value.floatValue).some
-      case BigInt(value)     => Float(value.floatValue).some
-      case Double(value)     => Float(value.toFloat).some
-      case Int(value)        => Float(value.toFloat).some
-      case Long(value)       => Float(value.toFloat).some
-      case String(value)     => value.toFloatOption.map(Float.apply)
-      case _: Boolean        => none
-
-    final def toInt: Option[OpenApi.Int] = this match
-      case openapi: Int => openapi.some
-      case BigDecimal(value) =>
-        try Int(value.toIntExact).some
-        catch case _: ArithmeticException => none
-      case BigInt(value) => Option.when(value.isValidInt)(Int(value.intValue))
-      case Double(value) => Some(value.toInt).filter(_ == value).map(Int.apply)
-      case Float(value)  => Some(value.toInt).filter(_ == value).map(Int.apply)
-      case Long(value)   => Some(value.toInt).filter(_ == value).map(Int.apply)
-      case String(value) => value.toIntOption.map(Int.apply)
-      case _: Boolean    => none
-
-    final def toLong: Option[OpenApi.Long] = this match
-      case openapi: Long => openapi.some
-      case BigDecimal(value) =>
-        try Long(value.toLongExact).some
-        catch case _: ArithmeticException => none
-      case BigInt(value) => Option.when(value.isValidLong)(Long(value.intValue))
-      case Double(value) => Some(value.toLong).filter(_ == value).map(Long.apply)
-      case Float(value)  => Some(value.toLong).filter(_ == value).map(Long.apply)
-      case Int(value)    => Long(value.toLong).some
-      case String(value) => value.toLongOption.map(Long.apply)
-      case _: Boolean    => none
-
-    final def toBoolean: Option[OpenApi.Boolean] = this match
-      case openapi: Boolean => openapi.some
-      case String("true")   => Boolean.True.some
-      case String("false")  => Boolean.False.some
-      case _                => none
-
     final def render: SString = this match
       case OpenApi.BigDecimal(value) => value.toString()
       case OpenApi.BigInt(value)     => value.toString()
@@ -176,20 +94,48 @@ object OpenApi:
   sealed abstract class Decimal extends Number
 
   final case class BigDecimal(value: SBigDecimal) extends Decimal
+
+  object BigDecimal:
+    def parse(value: SString): Option[OpenApi.BigDecimal] =
+      try BigDecimal(SBigDecimal(value)).some
+      catch case _: NumberFormatException => none
+
   final case class Double(value: SDouble) extends Decimal
+
+  object Double:
+    def parse(value: SString): Option[OpenApi.Double] = value.toDoubleOption.map(apply)
+
   final case class Float(value: SFloat) extends Decimal
+
+  object Float:
+    def parse(value: SString): Option[OpenApi.Float] = value.toFloatOption.map(apply)
 
   sealed abstract class Integer extends Number
 
   final case class BigInt(value: SBigInt) extends Integer
+
+  object BigInt:
+    def parse(value: SString): Option[OpenApi.BigInt] =
+      try BigInt(SBigInt(value)).some
+      catch case _: NumberFormatException => none
+
   final case class Int(value: SInt) extends Integer
+
+  object Int:
+    def parse(value: SString): Option[OpenApi.Int] = value.toIntOption.map(apply)
+
   final case class Long(value: SLong) extends Integer
+
+  object Long:
+    def parse(value: SString): Option[OpenApi.Long] = value.toLongOption.map(apply)
 
   final case class Boolean(value: SBoolean) extends Primitive
 
   object Boolean:
     val True: OpenApi.Boolean = Boolean(true)
     val False: OpenApi.Boolean = Boolean(false)
+
+    def parse(value: SString): Option[OpenApi.Boolean] = value.toBooleanOption.map(apply)
 
   final case class String(value: SString) extends Primitive
 

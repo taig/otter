@@ -2,128 +2,42 @@ package io.taig.openapi.validation
 
 import cats.Applicative
 import cats.arrow.Arrow
-import cats.data.*
+import cats.data.{Validated, ValidatedNel}
 import cats.syntax.all.*
+import io.taig.openapi.OpenApi
 
-sealed abstract class Validation[+Ref, +Act, -In, +Out]:
-  def constraints: Chain[Constraint[Ref]]
+sealed abstract class Validation[-A, +B]:
+  self =>
+  def constraints: List[Constraint]
+  def apply(a: A): ValidatedNel[Violation, B]
 
-  final def modifyConstraints[Ref2](f: Constraint[Ref] => Constraint[Ref2]): Validation[Ref2, Act, In, Out] =
-    Validation(constraints.map(f))(run(_).leftMap(_.map(_.modifyConstraint(f))))
-
-  final def modifyConstraint[Ref2](
-      pf: PartialFunction[Constraint[Ref], Constraint[Ref2]]
-  ): Validation[Ref | Ref2, Act, In, Out] = Validation(constraints.mapFilter(pf.lift)) { input =>
-    run(input).leftMap(_.map(_.modifyConstraint { constraint =>
-      if pf.isDefinedAt(constraint) then pf.apply(constraint) else constraint
-    }))
+  final def first[C]: Validation[(A, C), (B, C)] = Validation(self.constraints) { case (a, c) =>
+    self(a).map(b => (b, c))
   }
-
-  final def withConstraint[Ref2](f: Option[Ref] => Constraint[Ref2]): Validation[Ref2, Act, In, Out] =
-    modifyConstraints(constraint => f(constraint.reference))
-
-  final def contramap[In2](f: In2 => In): Validation[Ref, Act, In2, Out] =
-    Validation(constraints)(input => run(f(input)))
-
-  final def mapActual[Act2](f: Act => Act2): Validation[Ref, Act2, In, Out] =
-    Validation(constraints)(input => run(input).leftMap(_.map(_.mapActual(f))))
-
-  final def map[Out2](f: Out => Out2): Validation[Ref, Act, In, Out2] = Validation(constraints)(run(_).map(f))
-
-  final def andThen[Ref2 >: Ref, Act2 >: Act, Out2](
-      validation: => Validation[Ref2, Act2, Out, Out2]
-  ): Validation[Ref2, Act2, In, Out2] =
-    Validation(constraints ++ validation.constraints)(run(_).andThen(validation.run))
-
-  final def product[Ref2, Act2 >: Act, In2 <: In, Out2](
-      validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref | Ref2, Act2, In2, (Out, Out2)] =
-    Validation(constraints ++ validation.constraints)(input => run(input).product(validation.run(input)))
-
-  final def <*[Ref2, Act2 >: Act, In2 <: In, Out2](
-      validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref | Ref2, Act2, In2, Out] = product(validation).map(_._1)
-
-  final def *>[Ref2, Act2 >: Act, In2 <: In, Out2](
-      validation: Validation[Ref2, Act2, In2, Out2]
-  ): Validation[Ref | Ref2, Act2, In2, Out2] = product(validation).map(_._2)
-
-  final def mapReference[Ref2](f: Ref => Ref2): Validation[Ref2, Act, In, Out] =
-    Validation(constraints.map(_.map(f)))(run(_).leftMap(_.map(_.mapReference(f))))
-
-  def run(input: In): ValidatedNec[Violation[Ref, Act], Out]
+  final def compose[C](fbc: Validation[B, C]): Validation[A, C] =
+    Validation(self.constraints ++ fbc.constraints)(a => self(a).andThen(fbc.apply))
 
 object Validation:
-  extension [Ref, Act, In, Out](self: Validation[Ref, Act, In, Out])
-    /** Reset the `actual` value of a `Violation` to the initial input */
-    def reset: Validation[Ref, In, In, Out] = Validation(self.constraints): input =>
-      self.run(input).leftMap(_.map(_.withActual(input)))
-
-    /** Return the input of this validation as the output */
-    def tap: Validation[Ref, Act, In, In] = Validation(self.constraints)(input => self.run(input).as(input))
-
-  inline def apply[Ref, Act, In, Out](constraints: => Chain[Constraint[Ref]])(
-      f: In => ValidatedNec[Violation[Ref, Act], Out]
-  ): Validation[Ref, Act, In, Out] =
+  def apply[A, B](constraints: List[Constraint])(f: A => ValidatedNel[Violation, B]): Validation[A, B] =
     val c = constraints
-    new Validation[Ref, Act, In, Out]:
-      final override def constraints: Chain[Constraint[Ref]] = c
-      final override def run(input: In): ValidatedNec[Violation[Ref, Act], Out] = f(input)
+    new Validation[A, B]:
+      override def constraints: List[Constraint] = c
+      override def apply(a: A): ValidatedNel[Violation, B] = f(a)
 
-  def invalid[Ref, Act](violations: NonEmptyChain[Violation[Ref, Act]]): Validation[Ref, Act, Any, Nothing] =
-    Validation(violations.map(_.constraint).toChain)(_ => Validated.invalid(violations))
+  def apply[A, B](constraint: Constraint)(f: A => ValidatedNel[Option[OpenApi], B]): Validation[A, B] =
+    Validation(List(constraint))(a => f(a).leftMap(_.map(Violation(constraint, _))))
 
-  def invalidNec[Ref, Act](violation: Violation[Ref, Act]): Validation[Ref, Act, Any, Nothing] =
-    invalid(NonEmptyChain.one(violation))
+  def lift[A, B](f: A => B): Validation[A, B] = Validation(Nil)(f(_).valid)
+  def valid[A](a: A): Validation[Any, A] = lift(_ => a)
 
-  def valid[Out](output: => Out): Validation[Nothing, Nothing, Any, Out] =
-    Validation(Chain.empty)(_ => Validated.validNec(output))
+  extension [A, B](self: Validation[A, B]) def tap: Validation[A, A] = Validation(self.constraints)(a => self(a).as(a))
 
-  def ask[A]: Validation[Nothing, Nothing, A, A] = Validation(Chain.empty)(Validated.valid)
+  given [A]: Applicative[Validation[A, *]] = new Applicative[Validation[A, *]]:
+    override def pure[B](b: B): Validation[A, B] = valid(b)
+    override def ap[B, C](ff: Validation[A, B => C])(fa: Validation[A, B]): Validation[A, C] =
+      Validation(fa.constraints ++ ff.constraints)(a => (ff(a), fa(a)).mapN(_ apply _))
 
-  def lift[In, Out](f: In => Out): Validation[Nothing, Nothing, In, Out] = Validation(Chain.empty)(f(_).valid)
-
-  def cond[Ref, In](constraints: NonEmptyChain[Constraint[Ref]])(f: In => Boolean): Validation[Ref, In, In, Unit] =
-    Validation(constraints.toChain): input =>
-      Validated.cond(f(input), (), constraints.map(Violation(_, input)))
-
-  def condNec[Ref, In](constraint: Constraint[Ref])(f: In => Boolean): Validation[Ref, In, In, Unit] =
-    cond(NonEmptyChain.one(constraint))(f)
-
-  def fromOption[Ref, In, Out](constraints: NonEmptyChain[Constraint[Ref]])(
-      f: In => Option[Out]
-  ): Validation[Ref, In, In, Out] = Validation(constraints.toChain) { input =>
-    Validated.fromOption(f(input), constraints.map(Violation(_, input)))
-  }
-
-  def fromOptionNec[Ref, In, Out](constraint: Constraint[Ref])(f: In => Option[Out]): Validation[Ref, In, In, Out] =
-    fromOption(NonEmptyChain.one(constraint))(f)
-
-  def collect[Ref, In, Out](constraints: NonEmptyChain[Constraint[Ref]])(
-      pf: PartialFunction[In, Out]
-  ): Validation[Ref, In, In, Out] = Validation.fromOption(constraints)(pf.lift)
-
-  def collectNec[Ref, In, Out](constraint: Constraint[Ref])(
-      pf: PartialFunction[In, Out]
-  ): Validation[Ref, In, In, Out] = collect(NonEmptyChain.one(constraint))(pf)
-
-  given [Ref, Act, In]: Applicative[Validation[Ref, Act, In, *]] with
-    override def pure[A](x: A): Validation[Ref, Act, In, A] = valid(x)
-    override def product[A, B](
-        fa: Validation[Ref, Act, In, A],
-        fb: Validation[Ref, Act, In, B]
-    ): Validation[Ref, Act, In, (A, B)] = fa.product(fb)
-    override def ap[A, B](ff: Validation[Ref, Act, In, A => B])(
-        fa: Validation[Ref, Act, In, A]
-    ): Validation[Ref, Act, In, B] = Validation(ff.constraints ++ fa.constraints) { input =>
-      (ff.run(input), fa.run(input)).mapN(_ apply _)
-    }
-
-  given [Ref, Act]: Arrow[Validation[Ref, Act, *, *]] with
-    override def lift[A, B](f: A => B): Validation[Ref, Act, A, B] = Validation.lift(f)
-    override def compose[A, B, C](
-        f: Validation[Ref, Act, B, C],
-        g: Validation[Ref, Act, A, B]
-    ): Validation[Ref, Act, A, C] = g.andThen(f)
-    override def first[A, B, C](fa: Validation[Ref, Act, A, B]): Validation[Ref, Act, (A, C), (B, C)] =
-      Validation(fa.constraints) { case (a, c) => fa.run(a).tupleRight(c) }
+  given Arrow[Validation] with
+    override def lift[A, B](f: A => B): Validation[A, B] = Validation.lift(f)
+    override def first[A, B, C](fa: Validation[A, B]): Validation[(A, C), (B, C)] = fa.first
+    override def compose[A, B, C](f: Validation[B, C], g: Validation[A, B]): Validation[A, C] = g.compose(f)

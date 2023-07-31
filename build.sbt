@@ -71,13 +71,7 @@ lazy val core = module(identifier = Some("core"))
   )
 
 lazy val validation = module(identifier = Some("validation"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "cats-core" % Version.Cats ::
-        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
-        Nil
-  )
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(

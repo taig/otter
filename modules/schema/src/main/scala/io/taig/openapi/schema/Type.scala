@@ -4,11 +4,9 @@ import cats.Show
 import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.openapi.OpenApi
-import io.taig.openapi.validation.{Constraint, Violation}
+import io.taig.openapi.validation.Violation
 
 enum Type[A]:
-  self =>
-
   case BigDecimal extends Type[BigDecimal]
   case BigInt extends Type[BigInt]
   case Boolean extends Type[Boolean]
@@ -18,7 +16,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  final def decode(openapi: OpenApi.Primitive): Validated[Violation[OpenApi, OpenApi], A] = (self, openapi) match
+  def decode(openapi: OpenApi.Primitive): Validated[Violation, A] = (this, openapi) match
     case (Type.BigDecimal, OpenApi.BigDecimal(value)) => value.valid
     case (Type.BigInt, OpenApi.BigInt(value))         => value.valid
     case (Type.Boolean, OpenApi.Boolean(value))       => value.valid
@@ -27,9 +25,10 @@ enum Type[A]:
     case (Type.Int, OpenApi.Int(value))               => value.valid
     case (Type.Long, OpenApi.Long(value))             => value.valid
     case (Type.String, OpenApi.String(value))         => value.valid
-    case _ => Constraint.tpe(name = OpenApi.fromString(self.show)).toViolation(openapi).invalid
+    case _ =>
+      Violation(identifier = "type", reference = OpenApi.fromString(toString).some, actual = openapi.some).invalid
 
-  def encode(a: A): OpenApi.Primitive = self match
+  def encode(a: A): OpenApi.Primitive = this match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)
     case Type.BigInt     => OpenApi.fromBigInt(a)
     case Type.Boolean    => OpenApi.fromBoolean(a)
@@ -39,18 +38,15 @@ enum Type[A]:
     case Type.Long       => OpenApi.fromLong(a)
     case Type.String     => OpenApi.fromString(a)
 
-  def parse(value: String): Option[A] =
-    val openapi = OpenApi.fromString(value)
-
-    this match
-      case Type.BigDecimal => openapi.toBigDecimal.map(_.value)
-      case Type.BigInt     => openapi.toBigInt.map(_.value)
-      case Type.Boolean    => openapi.toBoolean.map(_.value)
-      case Type.Double     => openapi.toDouble.map(_.value)
-      case Type.Float      => openapi.toFloat.map(_.value)
-      case Type.Int        => openapi.toInt.map(_.value)
-      case Type.Long       => openapi.toLong.map(_.value)
-      case Type.String     => openapi.render.some
+  def parse(value: String): Option[A] = this match
+    case Type.BigDecimal => OpenApi.BigDecimal.parse(value).map(_.value)
+    case Type.BigInt     => OpenApi.BigInt.parse(value).map(_.value)
+    case Type.Boolean    => OpenApi.Boolean.parse(value).map(_.value)
+    case Type.Double     => OpenApi.Double.parse(value).map(_.value)
+    case Type.Float      => OpenApi.Float.parse(value).map(_.value)
+    case Type.Int        => OpenApi.Int.parse(value).map(_.value)
+    case Type.Long       => OpenApi.Long.parse(value).map(_.value)
+    case Type.String     => value.some
 
   def render(a: A): String = encode(a).render
 

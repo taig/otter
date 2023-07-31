@@ -2,7 +2,6 @@ package io.taig.openapi.validation
 
 import cats.data.ValidatedNec
 import cats.syntax.all.*
-import io.taig.openapi.validation.validations.*
 import munit.FunSuite
 
 final class ValidationsTest extends FunSuite:

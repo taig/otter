@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 import io.taig.openapi.schema.schemas.*
 import io.taig.openapi.syntax.*
-import io.taig.openapi.validation.{validations, Constraint}
+import io.taig.openapi.validation.Constraint
 import munit.FunSuite
 
 import java.util.UUID
