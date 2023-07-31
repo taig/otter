@@ -1,4 +1,4 @@
-package io.taig.openapi
+package io.taig.openapi.schema
 
 import cats.Order
 import cats.data.Chain

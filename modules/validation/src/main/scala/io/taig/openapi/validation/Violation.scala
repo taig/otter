@@ -1,9 +1,8 @@
 package io.taig.openapi.validation
 
 import cats.syntax.all.*
-import io.taig.openapi.OpenApi
 
-final case class Violation(constraint: Constraint, actual: Option[OpenApi])
+final case class Violation[+A](constraint: Constraint, actual: Option[A])
 
 object Violation:
-  def tpe(name: String, actual: OpenApi): Violation = Violation(Constraint.Type(name), actual.some)
+  def tpe[A](name: String, actual: A): Violation[A] = Violation(Constraint.Type(name), actual.some)

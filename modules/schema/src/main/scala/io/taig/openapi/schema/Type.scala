@@ -11,3 +11,13 @@ enum Type[A]:
   case Int extends Type[Int]
   case Long extends Type[Long]
   case String extends Type[String]
+
+  override def toString: String = this match
+    case BigDecimal => "bigDecimal"
+    case BigInt     => "bigInt"
+    case Boolean    => "boolean"
+    case Double     => "double"
+    case Float      => "float"
+    case Int        => "int"
+    case Long       => "long"
+    case String     => "string"

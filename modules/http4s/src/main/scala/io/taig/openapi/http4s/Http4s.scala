@@ -7,7 +7,6 @@ import cats.syntax.all.*
 import fs2.{Chunk, Pull, Stream as Fs2Stream}
 import io.circe.Json
 import io.circe.jawn.JawnParser
-import io.taig.openapi.circe.*
 import io.taig.openapi.http.*
 import io.taig.openapi.http.Input.Body
 import io.taig.openapi.http.Request.Body

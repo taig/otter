@@ -1,7 +1,6 @@
 package io.taig.openapi.schema
 
 import cats.data.{Chain, Validated}
-import io.taig.openapi.OpenApi
 import io.taig.openapi.validation.{Constraint, Validation}
 
 abstract class Schema[A]:

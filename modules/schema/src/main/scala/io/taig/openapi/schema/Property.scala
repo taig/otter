@@ -1,8 +1,5 @@
 package io.taig.openapi.schema
 
-import io.taig.openapi.OpenApi
-import io.taig.openapi.validation.Validation
-
 import scala.annotation.targetName
 
 abstract class Property[A, B]:
