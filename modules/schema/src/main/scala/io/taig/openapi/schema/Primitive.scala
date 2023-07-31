@@ -1,69 +1,58 @@
-//package io.taig.openapi.schema
-//
-//import cats.data.{Chain, Validated}
-//import cats.syntax.all.*
-//import io.taig.openapi.validation.{Constraint, Validation}
-//import io.taig.openapi.syntax.*
-//import io.taig.openapi.{schema, Encoder, OpenApi}
-//
-//abstract class Primitive[A] extends Schema.Value[A]:
-//  self =>
-//
-//  override type Self[a] = Primitive[a]
-//
-//  def format: Option[String]
-//  def modifyFormat(f: Option[String] => Option[String]): Primitive[A]
-//  final def setFormat(format: Option[String]): Primitive[A] = modifyFormat(_ => format)
-//  final def withFormat(format: String): Primitive[A] = setFormat(Some(format))
-//  final def withoutFormat: Primitive[A] = setFormat(None)
-//
-//  def tpe: Type[?]
-//
-//  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Primitive[C] =
-//    Primitive.Validate(this, validation, g)
-//
-//object Primitive:
-//  final private case class Root[A](
-//      description: Option[String],
-//      example: Option[A],
-//      format: Option[String],
-//      tpe: Type[A]
-//  ) extends Primitive[A]:
-//    override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
-//    override def modifyDescription(f: Option[String] => Option[String]): Primitive[A] =
-//      copy(description = f(description))
-//    override def modifyExample(f: Option[A] => Option[A]): Primitive[A] = copy(example = f(example))
-//    override def modifyFormat(f: Option[String] => Option[String]): Primitive[A] = copy(format = f(format))
-//    override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
-//      case openapi: OpenApi.Primitive => tpe.decode(openapi).leftMap(Violations.rootNec)
-//      case _                          => typeViolations("Primitive", openapi).invalid
-//    override def encode(a: A): OpenApi.Primitive = tpe.encode(a)
-//    override def parse(value: String): Validated[Violations, A] =
-//      tpe.parse(value).toValid(typeViolations(tpe.show, OpenApi.fromString(value)))
-//    override def render(a: A): String = tpe.render(a)
-//
-//  final private case class Validate[A, B: Encoder, C](
-//      primitive: Primitive[A],
-//      validation: Validation[B, A, A, C],
-//      g: C => A
-//  ) extends Primitive[C]:
-//    override def constraints: Chain[Constraint[OpenApi]] =
-//      primitive.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
-//    override def description: Option[String] = primitive.description
-//    override def example: Option[C] = primitive.example.flatMap(validation.run(_).toOption)
-//    override def format: Option[String] = primitive.format
-//    override def tpe: Type[?] = primitive.tpe
-//    override def modifyFormat(f: Option[String] => Option[String]): Primitive[C] =
-//      copy(primitive = primitive.modifyFormat(f))
-//    override def modifyDescription(f: Option[String] => Option[String]): Primitive[C] =
-//      copy(primitive = primitive.modifyDescription(f))
-//    override def modifyExample(f: Option[C] => Option[C]): Primitive[C] =
-//      copy(primitive = primitive.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
-//    override def decode(openapi: OpenApi): Validated[Violations, C] =
-//      primitive.decode(openapi).andThen(applyValidation(validation, primitive.encode))
-//    override def encode(b: C): OpenApi.Primitive = primitive.encode(g(b))
-//    override def parse(value: String): Validated[Violations, C] =
-//      primitive.parse(value).andThen(applyValidation(validation, primitive.encode))
-//    override def render(b: C): String = primitive.render(g(b))
-//
-//  def apply[A](tpe: Type[A]): Primitive[A] = Root(none, none, none, tpe)
+package io.taig.openapi.schema
+
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+import io.taig.openapi.validation.{Constraint, Validation}
+import io.taig.openapi.{schema, OpenApi}
+
+sealed abstract class Primitive[A] extends Schema.Value[A]:
+  final override type Self[a] = Primitive[a]
+
+  def tpe: Type[?]
+
+  def format: Property.Optional[Primitive[A], String]
+
+  final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
+    case openapi: OpenApi.Primitive => decode(openapi)
+    case _                          => ???
+  def decode(openapi: OpenApi.Primitive): Validated[Violations, A]
+
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
+    Primitive.Validate(this, validation, g)
+
+object Primitive:
+  final private case class Root[A](
+      _description: Option[String],
+      _example: Option[A],
+      _format: Option[String],
+      tpe: Type[A]
+  ) extends Primitive[A]:
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def description: Property.Optional[Primitive[A], String] =
+      Property.Optional(_description, f => copy(_description = f(_description)))
+    override def example: Property.Optional[Primitive[A], A] =
+      Property.Optional(_example, f => copy(_example = f(_example)))
+    override def format: Property.Optional[Primitive[A], String] =
+      Property.Optional(_format, f => copy(_format = f(_format)))
+    override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] =
+      tpe.decode(openapi).leftMap(Violations.rootNec)
+    override def encode(a: A): OpenApi.Primitive = tpe.encode(a)
+    override def parse(value: String): Validated[Violations, A] = tpe.parse(value).toValid(???)
+    override def render(a: A): String = tpe.render(a)
+
+  final private case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, B], g: B => A)
+      extends Primitive[B]:
+    export primitive.tpe
+    override def constraints: Chain[Constraint] = primitive.constraints ++ validation.constraints
+    override def description: Property.Optional[Primitive[B], String] =
+      Property.Optional(primitive.description, fa => copy(primitive = fa))
+    override def example: Property.Optional[Primitive[B], B] =
+      Property.Optional(primitive.example, fa => copy(primitive = fa), validation, g)
+    override def format: Property.Optional[Primitive[B], String] =
+      Property.Optional(primitive.format, fa => copy(primitive = fa))
+    override def decode(openapi: OpenApi.Primitive): Validated[Violations, B] = ???
+    override def encode(b: B): OpenApi.Primitive = primitive.encode(g(b))
+    override def parse(value: String): Validated[Violations, B] = ???
+    override def render(b: B): String = primitive.render(g(b))
+
+  def apply[A](tpe: Type[A]): Primitive[A] = Root(None, None, None, tpe)

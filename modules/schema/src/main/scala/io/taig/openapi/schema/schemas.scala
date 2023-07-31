@@ -1,22 +1,24 @@
-//package io.taig.openapi.schema
-//
-//import cats.{Eval, Hash}
-//import io.taig.enumeration.ext.{EnumerationValues, Mapping}
-//import io.taig.openapi.OpenApi
-//
-//import java.util.UUID
-//
-//object schemas:
-//  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-//  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-//  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-//  val double: Primitive[Double] = Primitive(Type.Double).withFormat("double")
-//  val int: Primitive[Int] = Primitive(Type.Int).withFormat("int32")
-//  val float: Primitive[Float] = Primitive(Type.Float).withFormat("float")
-//  val long: Primitive[Long] = Primitive(Type.Long).withFormat("int64")
-//  val string: Primitive[String] = Primitive(Type.String)
-//  val uuid: Primitive[UUID] = string.ivalidate(validations.parser.uuid)(_.toString).withFormat("uuid")
-//
+package io.taig.openapi.schema
+
+import io.taig.openapi.validation.validations
+
+import java.time.{LocalDate, LocalDateTime}
+import java.util.UUID
+
+object schemas:
+  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
+  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
+  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
+  val double: Primitive[Double] = Primitive(Type.Double).format("double")
+  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
+  val float: Primitive[Float] = Primitive(Type.Float).format("float")
+  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
+  val string: Primitive[String] = Primitive(Type.String)
+  val password: Primitive[String] = string.format("password")
+  val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
+  val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
+  val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
+
 //  def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[A, B] =
 //    Field(name, Eval.later(key), Eval.later(schema))
 //  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)

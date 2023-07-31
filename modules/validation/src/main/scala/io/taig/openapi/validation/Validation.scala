@@ -2,14 +2,14 @@ package io.taig.openapi.validation
 
 import cats.Applicative
 import cats.arrow.Arrow
-import cats.data.{Validated, ValidatedNel}
+import cats.data.{Chain, NonEmptyChain, Validated, ValidatedNec}
 import cats.syntax.all.*
 import io.taig.openapi.OpenApi
 
 sealed abstract class Validation[-A, +B]:
   self =>
-  def constraints: List[Constraint]
-  def apply(a: A): ValidatedNel[Violation, B]
+  def constraints: Chain[Constraint]
+  def apply(a: A): ValidatedNec[Violation, B]
 
   final def first[C]: Validation[(A, C), (B, C)] = Validation(self.constraints) { case (a, c) =>
     self(a).map(b => (b, c))
@@ -18,17 +18,21 @@ sealed abstract class Validation[-A, +B]:
     Validation(self.constraints ++ fbc.constraints)(a => self(a).andThen(fbc.apply))
 
 object Validation:
-  def apply[A, B](constraints: List[Constraint])(f: A => ValidatedNel[Violation, B]): Validation[A, B] =
+  def apply[A, B](constraints: Chain[Constraint])(f: A => ValidatedNec[Violation, B]): Validation[A, B] =
     val c = constraints
     new Validation[A, B]:
-      override def constraints: List[Constraint] = c
-      override def apply(a: A): ValidatedNel[Violation, B] = f(a)
+      override def constraints: Chain[Constraint] = c
+      override def apply(a: A): ValidatedNec[Violation, B] = f(a)
 
-  def apply[A, B](constraint: Constraint)(f: A => ValidatedNel[Option[OpenApi], B]): Validation[A, B] =
-    Validation(List(constraint))(a => f(a).leftMap(_.map(Violation(constraint, _))))
+  def apply[A, B](constraint: Constraint)(f: A => ValidatedNec[Option[OpenApi], B]): Validation[A, B] =
+    Validation(Chain.one(constraint))(a => f(a).leftMap(_.map(Violation(constraint, _))))
 
-  def lift[A, B](f: A => B): Validation[A, B] = Validation(Nil)(f(_).valid)
+  def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
   def valid[A](a: A): Validation[Any, A] = lift(_ => a)
+
+  def parse[A](identifier: String)(f: String => Option[A]): Validation[String, A] =
+    Validation(Constraint(identifier, reference = None)): value =>
+      Validated.fromOption(f(value), NonEmptyChain.one(OpenApi.fromString(value).some))
 
   extension [A, B](self: Validation[A, B]) def tap: Validation[A, A] = Validation(self.constraints)(a => self(a).as(a))
 
