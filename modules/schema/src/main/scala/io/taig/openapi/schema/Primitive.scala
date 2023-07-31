@@ -2,8 +2,8 @@ package io.taig.openapi.schema
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.openapi.validation.{Constraint, Validation}
-import io.taig.openapi.{schema, OpenApi}
+import io.taig.openapi.validation.{Constraint, Validation, Violation}
+import io.taig.openapi.{OpenApi, schema}
 
 sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override type Self[a] = Primitive[a]
@@ -35,9 +35,10 @@ object Primitive:
     override def format: Property.Optional[Primitive[A], String] =
       Property.Optional(_format, f => copy(_format = f(_format)))
     override def decode(openapi: OpenApi.Primitive): Validated[Violations, A] =
-      tpe.decode(openapi).leftMap(Violations.rootNec)
+      tpe.decode(openapi).toValid(Violations.rootNec(Violation.tpe(tpe.show, openapi)))
     override def encode(a: A): OpenApi.Primitive = tpe.encode(a)
-    override def parse(value: String): Validated[Violations, A] = tpe.parse(value).toValid(???)
+    override def parse(value: String): Validated[Violations, A] =
+      tpe.parse(value).toValid(Violations.rootNec(Violation.tpe(tpe.show, OpenApi.fromString(value))))
     override def render(a: A): String = tpe.render(a)
 
   final private case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, B], g: B => A)

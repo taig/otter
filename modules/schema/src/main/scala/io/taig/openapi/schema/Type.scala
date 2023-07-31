@@ -16,17 +16,16 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  def decode(openapi: OpenApi.Primitive): Validated[Violation, A] = (this, openapi) match
-    case (Type.BigDecimal, OpenApi.BigDecimal(value)) => value.valid
-    case (Type.BigInt, OpenApi.BigInt(value))         => value.valid
-    case (Type.Boolean, OpenApi.Boolean(value))       => value.valid
-    case (Type.Double, OpenApi.Double(value))         => value.valid
-    case (Type.Float, OpenApi.Float(value))           => value.valid
-    case (Type.Int, OpenApi.Int(value))               => value.valid
-    case (Type.Long, OpenApi.Long(value))             => value.valid
-    case (Type.String, OpenApi.String(value))         => value.valid
-    case _ =>
-      Violation(identifier = "type", reference = OpenApi.fromString(toString).some, actual = openapi.some).invalid
+  def decode(openapi: OpenApi.Primitive): Option[A] = (this, openapi) match
+    case (Type.BigDecimal, OpenApi.BigDecimal(value)) => value.some
+    case (Type.BigInt, OpenApi.BigInt(value))         => value.some
+    case (Type.Boolean, OpenApi.Boolean(value))       => value.some
+    case (Type.Double, OpenApi.Double(value))         => value.some
+    case (Type.Float, OpenApi.Float(value))           => value.some
+    case (Type.Int, OpenApi.Int(value))               => value.some
+    case (Type.Long, OpenApi.Long(value))             => value.some
+    case (Type.String, OpenApi.String(value))         => value.some
+    case _ => none
 
   def encode(a: A): OpenApi.Primitive = this match
     case Type.BigDecimal => OpenApi.fromBigDecimal(a)
@@ -51,14 +50,14 @@ enum Type[A]:
   def render(a: A): String = encode(a).render
 
   override def toString: String = this match
-    case BigDecimal => "BigDecimal"
-    case BigInt     => "BigInt"
-    case Boolean    => "Boolean"
-    case Double     => "Double"
-    case Float      => "Float"
-    case Int        => "Int"
-    case Long       => "Long"
-    case String     => "String"
+    case BigDecimal => "bigDecimal"
+    case BigInt     => "bigInt"
+    case Boolean    => "boolean"
+    case Double     => "double"
+    case Float      => "float"
+    case Int        => "int"
+    case Long       => "long"
+    case String     => "string"
 
 object Type:
   given [A]: Show[Type[A]] = Show.fromToString
