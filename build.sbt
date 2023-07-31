@@ -82,6 +82,7 @@ lazy val schema = module(identifier = Some("schema"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         Nil
   )
   .jsSettings(
@@ -93,8 +94,7 @@ lazy val schema = module(identifier = Some("schema"))
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+      "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
   .dependsOn(schema % "compile->compile;test->test")

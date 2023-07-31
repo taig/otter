@@ -1,6 +1,7 @@
 package io.taig.openapi.schema
 
 import io.taig.openapi.validation.validations
+import org.typelevel.ci.CIString
 
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
@@ -18,6 +19,7 @@ object schemas:
   val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
   val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
   val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
+  val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
 //  def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[A, B] =
 //    Field(name, Eval.later(key), Eval.later(schema))
