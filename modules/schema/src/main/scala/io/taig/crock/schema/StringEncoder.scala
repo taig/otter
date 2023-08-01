@@ -1,14 +1,14 @@
 package io.taig.crock.schema
 
-import scala.annotation.tailrec
+import cats.syntax.all.*
 
 object StringEncoder:
-  val value: Encoder[Schema.Value, String] = new Encoder[Schema.Value, String]:
-    override def encode[B](schema: Schema.Value[B], b: B): String = schema match
+  val value: Encoder[Schema.Value, Option[String]] = new Encoder[Schema.Value, Option[String]]:
+    override def encode[B](schema: Schema.Value[B], b: B): Option[String] = schema match
       case schema: Primitive[?]   => primitive.encode(schema, b)
       case schema: Enumeration[?] => enumeration.encode(schema, b)
 
-  val primitive: Encoder[Primitive, String] = new Encoder[Primitive, String]:
+  val primitive: Encoder[Primitive, Option[String]] = new Encoder[Primitive, Option[String]]:
     def encode[B](b: B): Type[B] => String =
       case Type.BigDecimal => b.bigDecimal.toPlainString
       case Type.BigInt     => b.toString
@@ -19,13 +19,13 @@ object StringEncoder:
       case Type.Long       => String.valueOf(b)
       case Type.String     => b
 
-    @tailrec
-    override def encode[B](schema: Primitive[B], b: B): String = schema match
-      case Primitive.Root(_, tpe)              => encode(b)(tpe)
-      case Primitive.Validate(primitive, _, g) => encode(primitive, g(b))
+    override def encode[B](schema: Primitive[B], b: B): Option[String] = schema match
+      case Primitive.Root(_, tpe)         => encode(b)(tpe).some
+      case Primitive.Validate(self, _, g) => encode(self, g(b))
+      case Primitive.Optional(self)       => b.flatMap(encode(self, _))
 
-  val enumeration: Encoder[Enumeration, String] = new Encoder[Enumeration, String]:
-    @tailrec
-    override def encode[B](schema: Enumeration[B], b: B): String = schema match
-      case Enumeration.Root(mapping, schema, _)    => value.encode(schema.value, mapping.inj(b))
-      case Enumeration.Validate(enumeration, _, g) => encode(enumeration, g(b))
+  val enumeration: Encoder[Enumeration, Option[String]] = new Encoder[Enumeration, Option[String]]:
+    override def encode[B](schema: Enumeration[B], b: B): Option[String] = schema match
+      case Enumeration.Root(mapping, schema, _) => value.encode(schema.value, mapping.inj(b))
+      case Enumeration.Validate(self, _, g)     => encode(self, g(b))
+      case Enumeration.Optional(self)           => b.flatMap(encode(self, _))

@@ -34,12 +34,14 @@ object OpenApi:
     "enum" := schema.values(CirceEncoder.value)
   )
 
-  def record(schema: Record[?, ?]): JsonObject = JsonObject(
-    "type" := "object",
-    "properties" := Json.fromFields(schema.fields.toList.map { field =>
-      field.name(StringEncoder.value) := self.schema(field.schema.value)
-    })
-  )
+  def record(schema: Record[?, ?]): JsonObject =
+    val properties = schema.fields.toList.map: field =>
+      field.name(StringEncoder.value).getOrElse("") := self.schema(field.schema.value)
+
+    JsonObject(
+      "type" := "object",
+      "properties" := Json.fromFields(properties)
+    )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
     _.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint(tpe)(current)))

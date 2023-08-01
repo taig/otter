@@ -1,6 +1,7 @@
 package io.taig.crock.schema
 
 import cats.Eval
+import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
 import io.taig.enumeration.ext.Mapping
@@ -11,6 +12,8 @@ sealed abstract class Enumeration[A] extends Schema.Value[A]:
 
   def schema: Eval[Schema.Value[?]]
   def values[B](encoder: Encoder[Schema.Value, B]): List[B]
+
+  final override def optional: Enumeration[Option[A]] = Enumeration.Optional(this)
 
   override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] =
     Enumeration.Validate(this, validation, g)
@@ -38,17 +41,28 @@ object Enumeration:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
+  final case class Optional[A](self: Enumeration[A]) extends Enumeration[Option[A]]:
+    export self.{constraints, schema, values}
+    override def description: Property.Optional[String] = Property.Optional(
+      self.description.value,
+      f => copy(self = self.description.modify(f))
+    )
+    override def example: Property.Optional[Option[A]] = Property.Optional(
+      self.example.value.map(_.some),
+      f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
+    )
+
   final case class Validate[A, B](
-      enumeration: Enumeration[A],
+      self: Enumeration[A],
       validation: Validation[A, B],
       g: B => A
   ) extends Enumeration[B]:
-    export enumeration.{schema, values}
-    override def constraints: Chain[Constraint] = enumeration.constraints ++ validation.constraints
+    export self.{schema, values}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(enumeration, _.description, value => copy(enumeration = enumeration.description(value)))
+      Property.Optional(self, _.description, value => copy(self = self.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(enumeration, _.example, value => copy(enumeration = enumeration.example(value)), validation, g)
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
   def apply[A, B](schema: Eval[Schema.Value[A]], mapping: Mapping[B, A]): Enumeration[B] =
     Root(mapping, schema, Properties.Empty)

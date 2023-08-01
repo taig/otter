@@ -28,14 +28,18 @@ object CirceDecoder:
       case Type.Long       => json.as[Long]
       case Type.String     => json.as[String]
 
-    override def decode[A](schema: Primitive[A], json: Json): Validated[Violations, A] = schema match
+    override def decode[A](primitive: Primitive[A], json: Json): Validated[Violations, A] = primitive match
       case Primitive.Root(_, tpe) =>
         decode(json)(tpe).fold(_ => Violations.rootNec(Violation.tpe(tpe.toString, typeOf(json))).invalid, _.valid)
-      case Primitive.Validate(schema, validation, _) =>
-        decode(schema, json).andThen(validation(_).leftMap(Violations.root))
+      case Primitive.Validate(self, validation, _) =>
+        decode(self, json).andThen(validation(_).leftMap(Violations.root))
+      case primitive: Primitive.Optional[?] => decode(primitive, json)
+
+    def decode[A](primitive: Primitive.Optional[A], json: Json): Validated[Violations, Option[A]] =
+      if json.isNull then none[A].valid else decode(primitive.self, json).map(_.some)
 
   val collection: Decoder[Collection, Json] = new Decoder[Collection, Json]:
-    override def decode[B](schema: Collection[B], json: Json): Validated[Violations, B] = schema match
+    override def decode[B](collection: Collection[B], json: Json): Validated[Violations, B] = collection match
       case Collection.Root(of, _) =>
         json.asArray match
           case Some(json) =>
@@ -43,8 +47,12 @@ object CirceDecoder:
               CirceDecoder.schema.decode(of.value, json).leftMap(_.modifyHistory(index /: _))
             }
           case None => Violations.rootNec(Violation.tpe("array", typeOf(json))).invalid
-      case Collection.Validate(schema, validation, _) =>
-        decode(schema, json).andThen(validation(_).leftMap(Violations.root))
+      case collection: Collection.Validate[?, ?, ?] =>
+        decode(collection.self, json).andThen(collection.validation(_).leftMap(Violations.root))
+      case collection: Collection.Optional[?, ?] => decode(collection, json)
+
+    def decode[B](collection: Collection.Optional[?, B], json: Json): Validated[Violations, Option[B]] =
+      if json.isNull then none[B].valid else decode(collection.self, json).map(_.some)
 
   val enumeration: Decoder[Enumeration, Json] = new Decoder[Enumeration, Json]:
     override def decode[B](enumeration: Enumeration[B], json: Json): Validated[Violations, B] = enumeration match
@@ -55,11 +63,15 @@ object CirceDecoder:
             mapping
               .prj(b)
               .toValid:
-                val values = enumeration.values(StringEncoder.value)
+                val values = enumeration.values(StringEncoder.value).map(_.getOrElse("null"))
                 val actual = json.fold("null", String.valueOf, _.toString, identity, _ => "array", _ => "object")
                 Violations.rootNec(Violation(Constraint.OneOf(values), actual.some))
-      case Enumeration.Validate(enumeration, validation, _) =>
-        decode(enumeration, json).andThen(validation(_).leftMap(Violations.root))
+      case Enumeration.Validate(self, validation, _) =>
+        decode(self, json).andThen(validation(_).leftMap(Violations.root))
+      case enumeration: Enumeration.Optional[?] => decode(enumeration, json)
+
+    def decode[B](enumeration: Enumeration.Optional[B], json: Json): Validated[Violations, Option[B]] =
+      if json.isNull then none[B].valid else decode(enumeration.self, json).map(_.some)
 
   def typeOf(json: Json): String =
     json.fold("null", _ => "boolean", _ => "number", _ => "string", _ => "array", _ => "object")

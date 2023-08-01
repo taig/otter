@@ -1,6 +1,7 @@
 package io.taig.crock.schema
 
 import cats.Eq
+import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
 
@@ -13,10 +14,12 @@ sealed abstract class Record[A, B] extends Schema[B]:
 
   def fields: Chain[Field[A, ?]]
 
+  final infix def zip[C](right: Record[A, C]): Record[A, (B, C)] = Record.Zip(this, right, Record.Properties.Empty)
+
+  override def optional: Record[A, Option[B]] = ???
+
   final override def ivalidate[C](validation: Validation[B, C])(g: C => B): Record[A, C] =
     Record.Validate(this, validation, g)
-
-  final infix def zip[C](right: Record[A, C]): Record[A, (B, C)] = Record.Zip(this, right, Record.Properties.Empty)
 
   final def to[C](using evidence: Evidence.Product.Aux[C, B]): Record[A, C] = imap(evidence.from)(evidence.to)
 
@@ -49,7 +52,6 @@ object Record:
 
   object Nulls:
     val Default: Record.Nulls = Show
-
     given Eq[Record.Nulls] = Eq.fromUniversalEquals
 
   final case class Properties[+A](description: Option[String], example: Option[A])
@@ -92,6 +94,17 @@ object Record:
     override def example: Property.Optional[(B, C)] = Property.Optional(
       properties.example,
       f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+
+  final case class Optional[A, B](self: Record[A, B]) extends Record[A, Option[B]]:
+    export self.{constraints, fields}
+    override def description: Property.Optional[String] = Property.Optional(
+      self.description.value,
+      f => copy(self = self.description.modify(f))
+    )
+    override def example: Property.Optional[Option[B]] = Property.Optional(
+      self.example.value.map(_.some),
+      f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
     )
 
   final case class Validate[A, B, C](record: Record[A, B], validation: Validation[B, C], g: C => B)

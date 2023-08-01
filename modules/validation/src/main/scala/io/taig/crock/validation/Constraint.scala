@@ -16,4 +16,5 @@ enum Constraint:
   case MaxProperties(reference: Int)
   case Type(name: String)
   case OneOf(values: List[String])
+  case Required
   case Custom(identifier: String, reference: Option[String])

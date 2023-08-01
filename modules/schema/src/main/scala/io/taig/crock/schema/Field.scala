@@ -3,27 +3,18 @@ package io.taig.crock.schema
 import cats.syntax.all.*
 import cats.{Eq, Eval}
 
-import scala.annotation.targetName
-
-sealed abstract class Field[A, B]:
-  self =>
-
+final case class Field[A, B](
+    key: Eval[Schema.Value[A]],
+    name: A,
+    schema: Eval[Schema[B]],
+    properties: Field.Properties[B]
+):
   trait Property[C]:
     def value: C
     def modify(f: C => C): Field[A, B]
     final def apply(value: C): Field[A, B] = modify(_ => value)
 
   object Property:
-    trait Optional[C] extends Property[Option[C]]:
-      @targetName("as")
-      def apply(value: C): Field[A, B] = apply(Some(value))
-      def clear: Field[A, B] = apply(None)
-
-    object Optional:
-      def apply[C](c: Option[C], g: (Option[C] => Option[C]) => Field[A, B]): Property.Optional[C] = new Optional[C]:
-        override def value: Option[C] = c
-        override def modify(f: Option[C] => Option[C]): Field[A, B] = g(f)
-
     trait Nulls extends Property[Field.Null]:
       def inherit: Field[A, B] = apply(Field.Null.Inherit)
       def hide: Field[A, B] = apply(Field.Null.Hide)
@@ -34,19 +25,15 @@ sealed abstract class Field[A, B]:
         override def value: Field.Null = nulls
         override def modify(f: Field.Null => Field.Null): Field[A, B] = g(f)
 
-  def name: A
-  def name[C](encoder: Encoder[Schema.Value, C]): C
-  def key: Eval[Schema.Value[A]]
+  def name[C](encoder: Encoder[Schema.Value, C]): C = encoder.encode(key.value, name)
 
-  def default: Property.Optional[B]
-  def nulls: Property.Nulls
+  def nulls: Property.Nulls = Property.Nulls(
+    properties.nulls,
+    f => copy(properties = properties.copy(nulls = f(properties.nulls)))
+  )
 
-  def schema: Eval[Schema[?]]
-
-  final def optional: Field[A, Option[B]] = Field.Optional(this)
-
-  final def toRecord: Record[A, B] = Record(this)
-  final def to[C](using Evidence.Product.Aux[C, B]): Record[A, C] = toRecord.to[C]
+  def toRecord: Record[A, B] = Record(this)
+  def to[C](using Evidence.Product.Aux[C, B]): Record[A, C] = toRecord.to[C]
 
 object Field:
   extension [A](self: Field[A, Unit])
@@ -74,21 +61,21 @@ object Field:
   object Properties:
     val Empty: Field.Properties[Nothing] = Properties(None, Field.Null.Default)
 
-  final private case class Required[A, B](
-      key: Eval[Schema.Value[A]],
-      name: A,
-      schema: Eval[Schema[B]],
-      properties: Field.Properties[B]
-  ) extends Field[A, B]:
-    override def name[C](encoder: Encoder[Schema.Value, C]): C = encoder.encode(key.value, name)
-    override def default: Property.Optional[B] = Property.Optional(
-      properties.default,
-      f => copy(properties = properties.copy(default = f(properties.default)))
-    )
-    override def nulls: Property.Nulls = Property.Nulls(
-      properties.nulls,
-      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
-    )
+//  final private case class Required[A, B](
+//      key: Eval[Schema.Value[A]],
+//      name: A,
+//      schema: Eval[Schema[B]],
+//      properties: Field.Properties[B]
+//  ) extends Field[A, B]:
+//    override def name[C](encoder: Encoder[Schema.Value, C]): C = encoder.encode(key.value, name)
+//    override def default: Property.Optional[B] = Property.Optional(
+//      properties.default,
+//      f => copy(properties = properties.copy(default = f(properties.default)))
+//    )
+//    override def nulls: Property.Nulls = Property.Nulls(
+//      properties.nulls,
+//      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
+//    )
 
 //    override def decode(crock: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
 //      val name = renderName
@@ -104,14 +91,6 @@ object Field:
 //    override def encode(b: B, parent: Product.Nulls): OpenApi.Object =
 //      OpenApi.Object.one(renderName, schema.value.encode(b))
 //
-  final private case class Optional[A, B](field: Field[A, B]) extends Field[A, Option[B]]:
-    export field.{key, name, schema}
-    override def default: Property.Optional[Option[B]] = Property.Optional(
-      field.default.value.map(_.some),
-      f => copy(field = field.default.modify(value => f(value.map(_.some)).flatten))
-    )
-    override def nulls: Property.Nulls = Property.Nulls(field.nulls.value, f => copy(field = field.nulls.modify(f)))
-
 //    override def decode(crock: OpenApi.Object): Validated[Violations, (OpenApi.Object, Option[B])] =
 //      if crock.contains(renderName)
 //      then field.decode(crock).map(_.map(_.some))
@@ -126,4 +105,4 @@ object Field:
 //        if dropNull then OpenApi.Object.Empty else OpenApi.Object.one(field.renderName, OpenApi.Null)
 
   def apply[A, B](name: A, key: Eval[Schema.Value[A]], schema: Eval[Schema[B]]): Field[A, B] =
-    Required[A, B](key, name, schema, Properties.Empty)
+    Field[A, B](key, name, schema, Properties.Empty)

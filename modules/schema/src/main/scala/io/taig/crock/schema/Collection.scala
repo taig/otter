@@ -2,6 +2,7 @@ package io.taig.crock.schema
 
 import cats.Eval
 import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.crock.validation.{Constraint, Validation}
 
 sealed abstract class Collection[A] extends Schema[A]:
@@ -9,6 +10,8 @@ sealed abstract class Collection[A] extends Schema[A]:
   override type Self[a] = Collection.Of[Of, a]
   type Of[a] <: Schema[a]
   def of: Eval[Schema[?]]
+
+  final override def optional: Collection.Of[Of, Option[A]] = Collection.Optional(this)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] =
     Collection.Validate(this, validation, g)
@@ -34,16 +37,27 @@ object Collection:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
+  final case class Optional[F[a] <: Schema[a], A](self: Collection.Of[F, A]) extends Collection[Option[A]]:
+    export self.{constraints, of, Of}
+    override def description: Property.Optional[String] = Property.Optional(
+      self.description.value,
+      f => copy(self = self.description.modify(f))
+    )
+    override def example: Property.Optional[Option[A]] = Property.Optional(
+      self.example.value.map(_.some),
+      f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
+    )
+
   final case class Validate[F[a] <: Schema[a], A, B](
-      collection: Collection.Of[F, A],
+      self: Collection.Of[F, A],
       validation: Validation[A, B],
       g: B => A
   ) extends Collection[B]:
-    export collection.{of, Of}
-    override def constraints: Chain[Constraint] = collection.constraints ++ validation.constraints
+    export self.{of, Of}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(collection, _.description, value => copy(collection = collection.description(value)))
+      Property.Optional(self, _.description, value => copy(self = self.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(collection, _.example, value => copy(collection = collection.example(value)), validation, g)
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
   def apply[F[a] <: Schema[a], A](schema: Eval[F[A]]): Collection.Of[F, Vector[A]] = Root(schema, Properties.Empty)

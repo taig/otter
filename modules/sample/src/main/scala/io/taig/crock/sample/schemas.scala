@@ -6,7 +6,6 @@ import io.taig.crock.schema.{Collection, Enumeration, Primitive, Record}
 import io.taig.crock.schema.schemas.*
 import io.taig.crock.schema.Evidence
 import io.taig.crock.validation.validations.*
-import scala.deriving.*
 
 object schemas:
   val name: Primitive[User.Name] = string
@@ -25,5 +24,5 @@ object schemas:
     case User.Gender.ApacheHelicopter => "apacheHelicopter"
 
   val user: Record[String, User] = (
-    field("name", name) :* field("age", age) :* field("gender", gender).optional
+    field("name", name) :* field("age", age) :* field("gender", gender.optional)
   ).to
