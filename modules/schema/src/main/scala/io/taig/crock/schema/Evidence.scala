@@ -6,7 +6,7 @@ import scala.deriving.*
 
 object Evidence:
   @implicitNotFound(
-    "Can not construct a Product[${A}]: Make sure that all fields of the case class are covered in the correct order"
+    "Can not construct an Evidence.Product[${A}]: Make sure that all fields of the case class are covered in the correct order"
   )
   trait Product[A]:
     type Out
@@ -31,7 +31,7 @@ object Evidence:
     ): Evidence.Product.Aux[A, B] = instance[A, B](Tuple.fromProductTyped)(mirror.fromProduct)
 
   @implicitNotFound(
-    "Can not construct a Sum[${A}]: Make sure that all branches of the enum are covered in the correct order"
+    "Can not construct an Evidence.Sum[${A}]: Make sure that all branches of the enum are covered in the correct order"
   )
   trait Sum[A]:
     type Out

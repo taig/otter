@@ -35,6 +35,7 @@ sealed abstract class Field[A, B]:
         override def modify(f: Field.Null => Field.Null): Field[A, B] = g(f)
 
   def name: A
+  def name[C](encoder: Encoder[Schema.Value, C]): C
   def key: Eval[Schema.Value[A]]
 
   def default: Property.Optional[B]
@@ -44,13 +45,20 @@ sealed abstract class Field[A, B]:
 
   final def optional: Field[A, Option[B]] = Field.Optional(this)
 
-  final transparent inline infix def :*[C](field: Field[A, C]): Record[A, ?] = toRecord :* field
-  final transparent inline infix def *:[C](field: Field[A, C]): Record[A, ?] = field *: toRecord
-
   final def toRecord: Record[A, B] = Record(this)
   final def to[C](using Evidence.Product.Aux[C, B]): Record[A, C] = toRecord.to[C]
 
 object Field:
+  extension [A](self: Field[A, Unit])
+    inline def :*[B](other: Field[A, B]): Record[A, B] = self.toRecord :* other
+    inline def *:[B](other: Field[A, B]): Record[A, B] = self.toRecord :* other
+
+  extension [A, B](self: Field[A, B])
+    inline def :*(other: Field[A, Unit]): Record[A, B] = self.toRecord :* other
+    inline def *:(other: Field[A, Unit]): Record[A, B] = self.toRecord :* other
+    inline def :*[C](other: Field[A, C]): Record[A, (B, C)] = self.toRecord :* other
+    inline def *:[C](other: Field[A, C]): Record[A, (B, C)] = self.toRecord :* other
+
   enum Null:
     case Hide
     case Inherit
@@ -72,6 +80,7 @@ object Field:
       schema: Eval[Schema[B]],
       properties: Field.Properties[B]
   ) extends Field[A, B]:
+    override def name[C](encoder: Encoder[Schema.Value, C]): C = encoder.encode(key.value, name)
     override def default: Property.Optional[B] = Property.Optional(
       properties.default,
       f => copy(properties = properties.copy(default = f(properties.default)))

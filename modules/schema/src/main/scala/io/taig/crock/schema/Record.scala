@@ -4,6 +4,8 @@ import cats.Eq
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
 
+import scala.annotation.targetName
+
 sealed abstract class Record[A, B] extends Schema[B]:
   self =>
 
@@ -14,21 +16,33 @@ sealed abstract class Record[A, B] extends Schema[B]:
   final override def ivalidate[C](validation: Validation[B, C])(g: C => B): Record[A, C] =
     Record.Validate(this, validation, g)
 
-  final def product[C](right: Record[A, C]): Record[A, (B, C)] = Record.Zip(this, right, Record.Properties.Empty)
-
-  final transparent inline infix def zip[C](right: Record[A, C]): Record[A, ?] = inline (this, right) match
-    case (b: Record[A, Unit], c: Record[A, C]) => b.product(c).imap[C] { case (_, c) => c }(c => ((), c))
-    case (b: Record[A, B], c: Record[A, Unit]) => b.product(c).imap[B] { case (c, _) => c }(c => (c, ()))
-    case (a: Record[A, Tuple], b) =>
-      a.product(b).imap[Tuple.Append[B, C]] { case (b, c) => b :* c }(bc => (bc.init, bc.last.asInstanceOf[C]))
-    case (b, c) => b.product(c)
-
-  final transparent inline def :*[C](field: Field[A, C]): Record[A, ?] = this zip field.toRecord
-  final transparent inline def *:[C](field: Field[A, C]): Record[A, ?] = field.toRecord zip this
+  final infix def zip[C](right: Record[A, C]): Record[A, (B, C)] = Record.Zip(this, right, Record.Properties.Empty)
 
   final def to[C](using evidence: Evidence.Product.Aux[C, B]): Record[A, C] = imap(evidence.from)(evidence.to)
 
 object Record:
+  extension [A, B](self: Record[A, B])
+    inline infix def combine(other: Record[A, Unit]): Record[A, B] = other combine self
+    inline infix def combine[C](other: Record[A, C]): Record[A, (B, C)] = self.zip(other)
+    inline def :*(other: Field[A, Unit]): Record[A, B] = combine(other.toRecord)
+    inline def *:(other: Field[A, Unit]): Record[A, B] = combine(other.toRecord)
+    inline def :*[C](other: Field[A, C]): Record[A, (B, C)] = self zip other.toRecord
+    inline def *:[C](other: Field[A, C]): Record[A, (B, C)] = self zip other.toRecord
+
+  extension [A, B <: Tuple](self: Record[A, B])
+    @targetName("appendRecord")
+    inline infix def combine[C](other: Record[A, C]): Record[A, Tuple.Append[B, C]] =
+      self.zip(other).imap { case (b, c) => b :* c }(bc => (bc.init.asInstanceOf[B], bc.last.asInstanceOf[C]))
+    @targetName("appendField")
+    inline def :*[C](other: Field[A, C]): Record[A, Tuple.Append[B, C]] = combine(other.toRecord)
+    @targetName("prependField")
+    inline def *:[C](other: Field[A, C]): Record[A, Tuple.Append[B, C]] = combine(other.toRecord)
+
+  extension [A](self: Record[A, Unit])
+    inline infix def combine[B](other: Record[A, B]): Record[A, B] = self.zip(other).imap { case (_, b) => b }(((), _))
+    inline def :*[B](other: Field[A, B]): Record[A, B] = combine(other.toRecord)
+    inline def *:[B](other: Field[A, B]): Record[A, B] = combine(other.toRecord)
+
   enum Nulls:
     case Show
     case Hide

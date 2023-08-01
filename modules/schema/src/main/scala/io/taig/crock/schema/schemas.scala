@@ -24,11 +24,11 @@ object schemas:
   val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
   val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
-////  def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[A, B] =
-////    Field(name, Eval.later(key), Eval.later(schema))
-////  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
-////  def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)
-////
+  def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[A, B] =
+    Field(name, Eval.later(key), Eval.later(schema))
+  def field[A](name: String, schema: => Schema[A]): Field[String, A] = field(name, string, schema)
+  def field[A](name: Int, schema: => Schema[A]): Field[Int, A] = field(name, int, schema)
+
 ////  def branch[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Branch[A, B] =
 ////    Branch(name, Eval.later(key), Eval.later(schema))
 ////  def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)

@@ -15,6 +15,7 @@ object OpenApi:
     case schema: Primitive[?]   => primitive(schema)
     case schema: Collection[?]  => collection(schema)
     case schema: Enumeration[?] => enumeration(schema)
+    case schema: Record[?, ?]   => record(schema)
 
   def primitive(schema: Primitive[?]): JsonObject = JsonObject(
     "type" := typeOf(schema.tpe),
@@ -31,6 +32,13 @@ object OpenApi:
   def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
     "type" := typeOf(schema.schema.value),
     "enum" := schema.values(CirceEncoder.value)
+  )
+
+  def record(schema: Record[?, ?]): JsonObject = JsonObject(
+    "type" := "object",
+    "properties" := Json.fromFields(schema.fields.toList.map { field =>
+      field.name(StringEncoder.value) := self.schema(field.schema.value)
+    })
   )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =

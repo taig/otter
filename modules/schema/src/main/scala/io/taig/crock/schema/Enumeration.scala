@@ -38,30 +38,6 @@ object Enumeration:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
-//    override def values: Eval[List[OpenApi.Primitive]] =
-//      schema.map(schema => mapping.values.map(mapping.inj).map(schema.encode))
-//    override def modifyDescription(f: Option[String] => Option[String]): Enumeration[B] =
-//      copy(description = f(description))
-//    override def modifyExample(f: Option[B] => Option[B]): Enumeration[B] = copy(example = f(example))
-//    override def decode(crock: OpenApi.Primitive): Validated[Violations, B] = schema.value
-//      .decode(crock)
-//      .andThen: key =>
-//        mapping.prj(key).toValid {
-//          val references = OpenApi.fromList(values.value.toList)
-//          val constraint = Constraint("enumeration", references.some)
-//          Violations.rootNec(Violation(constraint, schema.value.encode(key)))
-//        }
-//    override def encode(b: B): OpenApi.Primitive = schema.value.encode(mapping(b))
-//    override def parse(value: String): Validated[Violations, B] = schema.value
-//      .parse(value)
-//      .andThen: a =>
-//        mapping.prj(a).toValid {
-//          val references = OpenApi.fromList(values.value.toList)
-//          Violations.rootNec(Constraint("enumeration", references.some).toViolation(schema.value.encode(a)))
-//        }
-//
-//    override def render(b: B): String = schema.value.render(mapping(b))
-
   final case class Validate[A, B](
       enumeration: Enumeration[A],
       validation: Validation[A, B],

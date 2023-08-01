@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.crock.validation.Validation
 import io.taig.crock.validation.validations.*
 
-final class User(name: String, age: Int)
+final case class User(name: User.Name, age: User.Age, gender: Option[User.Gender])
 
 object User:
   opaque type Name = String
