@@ -9,8 +9,8 @@ enum Constraint:
   case Minimum(reference: BigDecimal, exclusive: Boolean)
   case Maximum(reference: BigDecimal, exclusive: Boolean)
   case Multiple(reference: BigDecimal)
-  case MinItems(reference: Int)
-  case MaxItems(reference: Int)
+  case MinItems(reference: Long)
+  case MaxItems(reference: Long)
   case UniqueItems
   case MinProperties(reference: Int)
   case MaxProperties(reference: Int)

@@ -7,12 +7,23 @@ import io.taig.crock.schema.*
 import io.taig.crock.validation.*
 
 final class OpenApi(encoder: Encoder[Schema, Json]):
+  self =>
+
+  val schema: Schema[?] => JsonObject =
+    case schema: Primitive[?]  => primitive(schema)
+    case schema: Collection[?] => collection(schema)
+
   def primitive(schema: Primitive[?]): JsonObject = JsonObject(
     "type" := tpe(schema.tpe),
     "format" := schema.format.value,
     "description" := schema.description.value,
     "example" := schema.example.value.map(encoder.encode(schema, _))
   ).deepMerge(constraints(schema.tpe)(schema.constraints))
+
+  def collection(schema: Collection[?]): JsonObject = JsonObject(
+    "type" := "array",
+    "items" := self.schema(schema.of.value)
+  ).deepMerge(constraints(schema))
 
   val tpe: Type[?] => String =
     case Type.BigDecimal => "big-decimal"
@@ -26,6 +37,9 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
     _.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint(tpe)(current)))
+
+  def constraints(schema: Collection[?]): JsonObject =
+    schema.constraints.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint.array(current)))
 
   object constraint:
     def apply(tpe: Type[?]): Constraint => JsonObject = constraint =>
@@ -41,6 +55,12 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
         JsonObject("maximum" := reference, "exclusiveMaximum" := exclusive)
       case Constraint.Multiple(of) => JsonObject("multipleOf" := of)
       case _                       => JsonObject.empty
+
+    val array: Constraint => JsonObject =
+      case Constraint.MinItems(reference) => JsonObject("minItems" := reference)
+      case Constraint.MaxItems(reference) => JsonObject("maxItems" := reference)
+      case Constraint.UniqueItems         => JsonObject("unqiueItems" := true)
+      case _                              => JsonObject.empty
 
     val string: Constraint => JsonObject =
       case Constraint.MinLength(reference) => JsonObject("minLength" := reference)

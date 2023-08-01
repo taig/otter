@@ -7,32 +7,32 @@ import monocle.syntax.all.*
 
 sealed abstract class Collection[A] extends Schema[A]:
   self =>
-  override type Self[a] = Collection.Of[a, Of]
-  type Of <: Schema[?]
-  def of: Eval[Of]
+  override type Self[a] = Collection.Of[Of, a]
+  type Of[a] <: Schema[a]
+  def of: Eval[Schema[?]]
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[B, Of] =
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] =
     Collection.Validate(this, validation, g)
 
 object Collection:
-  type Of[A, B <: Schema[?]] = Collection[A] { type Of = B }
+  type Of[F[a] <: Schema[a], A] = Collection[A] { type Of[a] = F[a] }
 
   final case class Properties[+A](description: Option[String], example: Option[A])
 
   object Properties:
     val Empty: Collection.Properties[Nothing] = Properties(None, None)
 
-  final case class Root[A <: Schema[B], B](of: Eval[A], properties: Properties[Vector[B]])
-      extends Collection[Vector[B]]:
-    override type Of = A
+  final case class Root[F[a] <: Schema[a], A](of: Eval[F[A]], properties: Properties[Vector[A]])
+      extends Collection[Vector[A]]:
+    override type Of[a] = F[a]
     override def constraints: Chain[Constraint] = Chain.empty
     override def description: Property.Optional[String] =
       Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[Vector[B]] =
+    override def example: Property.Optional[Vector[A]] =
       Property.Optional(properties.example, this.focus(_.properties.example).modify)
 
-  final case class Validate[A, B, C <: Schema[?]](
-      schema: Collection.Of[A, C],
+  final case class Validate[F[a] <: Schema[a], A, B](
+      schema: Collection.Of[F, A],
       validation: Validation[A, B],
       g: B => A
   ) extends Collection[B]:
@@ -43,4 +43,4 @@ object Collection:
     override def example: Property.Optional[B] =
       Property.Optional(schema, _.example, value => copy(schema = schema.example(value)), validation, g)
 
-  def apply[A <: Schema[B], B](schema: Eval[A]): Collection.Of[Vector[B], A] = Root(schema, Properties.Empty)
+  def apply[F[a] <: Schema[a], A](schema: Eval[F[A]]): Collection.Of[F, Vector[A]] = Root(schema, Properties.Empty)

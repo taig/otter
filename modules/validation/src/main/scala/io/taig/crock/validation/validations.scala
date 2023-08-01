@@ -1,5 +1,6 @@
 package io.taig.crock.validation
 
+import cats.UnorderedFoldable
 import cats.data.Validated
 import cats.syntax.all.*
 
@@ -91,11 +92,19 @@ object validations:
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
     Validated.condNec(value.length <= reference, (), String.valueOf(value.length).some)
 
-  def minItems[A](reference: Int): Validation[Seq[A], Unit] = Validation(Constraint.MinItems(reference)): values =>
-    Validated.condNec(values.length >= reference, (), String.valueOf(values.length).some)
+  def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
+    Validation(Constraint.MinItems(reference)): values =>
+      val size = count(values)
+      Validated.condNec(size >= reference, (), String.valueOf(size).some)
 
-  def maxItems[A](reference: Int): Validation[Seq[A], Unit] = Validation(Constraint.MinItems(reference)): values =>
-    Validated.condNec(values.length <= reference, (), String.valueOf(values.length).some)
+  def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
+
+  def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
+    Validation(Constraint.MaxItems(reference)): values =>
+      val size = count(values)
+      Validated.condNec(size <= reference, (), String.valueOf(size).some)
+
+  def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
 
   val uuid: Validation[String, UUID] = Validation.parse("uuid"): value =>
     try UUID.fromString(value).some

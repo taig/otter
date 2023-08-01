@@ -34,9 +34,10 @@ object schemas:
 ////  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
 ////
   object collection:
-    def vector[A <: Schema[B], B](schema: => A): Collection.Of[Vector[B], A] = Collection(Eval.later(schema))
-    def list[A <: Schema[B], B](schema: => A): Collection.Of[List[B], A] = vector(schema).imap(_.toList)(_.toVector)
-    def chain[A <: Schema[B], B](schema: => A): Collection.Of[Chain[B], A] =
+    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Vector[A]] = Collection(Eval.later(schema))
+    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, List[A]] =
+      vector(schema).imap(_.toList)(_.toVector)
+    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Chain[A]] =
       vector(schema).imap(Chain.fromSeq)(_.toVector)
 
 ////  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
