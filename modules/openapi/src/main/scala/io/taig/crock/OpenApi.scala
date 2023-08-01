@@ -22,6 +22,7 @@ object OpenApi:
     JsonObject(
       "type" := typeOf(schema.tpe),
       "format" := schema.format.value,
+      "nullable" := schema.isOptional,
       "description" := schema.description.value,
       "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
     )
@@ -30,13 +31,15 @@ object OpenApi:
   def collection(schema: Collection[?]): JsonObject = constraints(schema).deepMerge(
     JsonObject(
       "type" := "array",
-      "items" := self.schema(schema.of.value)
+      "items" := self.schema(schema.of.value),
+      "nullable" := schema.isOptional
     )
   )
 
   def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
     "type" := typeOf(schema.schema.value),
-    "enum" := schema.values(CirceEncoder.value)
+    "enum" := schema.values(CirceEncoder.value),
+    "nullable" := schema.isOptional
   )
 
   def record(schema: Record[?, ?]): JsonObject =
@@ -51,7 +54,8 @@ object OpenApi:
     required.deepMerge(
       JsonObject(
         "type" := "object",
-        "properties" := Json.fromFields(properties)
+        "properties" := Json.fromFields(properties),
+        "nullable" := schema.isOptional
       )
     )
 
