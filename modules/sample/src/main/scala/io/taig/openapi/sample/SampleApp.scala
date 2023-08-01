@@ -1,4 +1,4 @@
-package io.taig.openapi.sample
+package io.taig.crock.sample
 
 import cats.syntax.all.*
 import cats.effect.{IO, IOApp, Resource, ResourceApp}

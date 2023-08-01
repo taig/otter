@@ -23,7 +23,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .build()
     .settings(
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
-      name := "openapi" + identifier.fold("")("-" + _)
+      name := "crock" + identifier.fold("")("-" + _)
     )
 }
 
@@ -31,8 +31,8 @@ inThisBuild(
   Def.settings(
     developers := List(Developer("taig", "Niklas Klein", "mail@taig.io", url("https://taig.io/"))),
     dynverVTagPrefix := false,
-    homepage := Some(url("https://github.com/taig/openapi/")),
-    licenses := List("MIT" -> url("https://raw.githubusercontent.com/taig/openapi/main/LICENSE")),
+    homepage := Some(url("https://github.com/taig/crock/")),
+    licenses := List("MIT" -> url("https://raw.githubusercontent.com/taig/crock/main/LICENSE")),
     organization := "io.taig",
     scalaVersion := Version.Scala3,
     versionScheme := Some("early-semver")
@@ -55,7 +55,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(validation, schema, http, csv, circe, dsl, http4s, sample)
+  .aggregate(validation, schema, http, csv, circe, dsl, openapi, http4s, sample)
 
 lazy val validation = module(identifier = Some("validation"))
   .settings(
@@ -70,7 +70,7 @@ lazy val schema = module(identifier = Some("schema"))
   .settings(
     Compile / sourceGenerators += Def.task {
       val sumInstances = (Compile / sourceManaged).value / "SumInstances.scala"
-      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".openapi.schema"))
+      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".crock.schema"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
@@ -108,7 +108,7 @@ lazy val circe = module(identifier = Some("circe"))
 lazy val dsl = module(identifier = Some("dsl"))
   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
-lazy val generator = module(identifier = Some("generator"))
+lazy val openapi = module(identifier = Some("openapi"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::

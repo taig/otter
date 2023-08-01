@@ -1,9 +1,6 @@
-package io.taig.openapi.sample
+package io.taig.crock.sample
 
 import cats.effect.IO
-import io.taig.openapi.http.*
-import io.taig.openapi.http.syntax.*
-import io.taig.openapi.http4s.Http4s
 
 object endpoints {
   val strictBody: Input.Body.Singlepart[Array[Byte]] = input.body.strict.binary

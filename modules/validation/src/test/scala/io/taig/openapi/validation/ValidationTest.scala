@@ -1,4 +1,4 @@
-package io.taig.openapi.validation
+package io.taig.crock.validation
 
 import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*

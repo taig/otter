@@ -1,4 +1,4 @@
-package io.taig.openapi.validation
+package io.taig.crock.validation
 
 import cats.data.ValidatedNec
 import cats.syntax.all.*
