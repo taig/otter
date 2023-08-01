@@ -18,15 +18,20 @@ object OpenApi:
     case schema: Enumeration[?] => enumeration(schema)
     case schema: Record[?, ?]   => record(schema)
 
-  def primitive(schema: Primitive[?]): JsonObject = constraints(schema.tpe)(schema.constraints).deepMerge(
-    JsonObject(
-      "type" := typeOf(schema.tpe),
-      "format" := schema.format.value,
-      "nullable" := schema.isOptional,
-      "description" := schema.description.value,
-      "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
-    )
-  )
+  def primitive(schema: Primitive[?]): JsonObject =
+    val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))
+    val description = schema.description.value
+      .fold(JsonObject.empty)(description => JsonObject("description" := description))
+    constraints(schema.tpe)(schema.constraints)
+      .deepMerge(format)
+      .deepMerge(description)
+      .deepMerge(
+        JsonObject(
+          "type" := typeOf(schema.tpe),
+          "nullable" := schema.isOptional,
+          "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
+        )
+      )
 
   def collection(schema: Collection[?]): JsonObject = constraints(schema).deepMerge(
     JsonObject(
