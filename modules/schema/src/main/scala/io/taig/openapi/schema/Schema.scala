@@ -10,6 +10,9 @@ abstract class Schema[A]:
 
   def constraints: Chain[Constraint]
 
+  def description: Property.Optional[Self[A], String]
+  def example: Property.Optional[Self[A], A]
+
   def imap[B](f: A => B)(g: B => A): Self[B]
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
 
