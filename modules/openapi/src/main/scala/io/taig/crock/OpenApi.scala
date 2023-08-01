@@ -88,7 +88,7 @@ object OpenApi:
     val array: Constraint => JsonObject =
       case Constraint.MinItems(reference) => JsonObject("minItems" := reference)
       case Constraint.MaxItems(reference) => JsonObject("maxItems" := reference)
-      case Constraint.UniqueItems         => JsonObject("unqiueItems" := true)
+      case Constraint.UniqueItems         => JsonObject("uniqueItems" := true)
       case _                              => JsonObject.empty
 
     val string: Constraint => JsonObject =
