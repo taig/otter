@@ -8,15 +8,13 @@ import io.taig.crock.validation.{Constraint, Validation}
 import scala.annotation.targetName
 
 sealed abstract class Record[A, B] extends Schema[B]:
-  self =>
-
   final override type Self[a] = Record[A, a]
 
   def fields: Chain[Field[A, ?]]
 
   final infix def zip[C](right: Record[A, C]): Record[A, (B, C)] = Record.Zip(this, right, Record.Properties.Empty)
 
-  override def optional: Record[A, Option[B]] = ???
+  override def optional: Record[A, Option[B]] = Record.Optional(this)
 
   final override def ivalidate[C](validation: Validation[B, C])(g: C => B): Record[A, C] =
     Record.Validate(this, validation, g)
@@ -62,6 +60,7 @@ object Record:
   final case class Empty[A](properties: Record.Properties[Unit]) extends Record[A, Unit]:
     override def fields: Chain[Field[A, ?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
       properties.description,
       f => copy(properties = properties.copy(description = f(properties.description)))
@@ -72,8 +71,9 @@ object Record:
     )
 
   final case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[A, B]:
-    override def constraints: Chain[Constraint] = Chain.empty
     override def fields: Chain[Field[A, ?]] = Chain.one(field)
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
       properties.description,
       f => copy(properties = properties.copy(description = f(properties.description)))
@@ -85,8 +85,9 @@ object Record:
 
   final case class Zip[A, B, C](left: Record[A, B], right: Record[A, C], properties: Properties[(B, C)])
       extends Record[A, (B, C)]:
-    override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
     override def fields: Chain[Field[A, ?]] = left.fields ++ right.fields
+    override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
+    override def isOptional: Boolean = left.isOptional && right.isOptional
     override def description: Property.Optional[String] = Property.Optional(
       properties.description,
       f => copy(properties = properties.copy(description = f(properties.description)))
@@ -96,8 +97,18 @@ object Record:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
+  final case class Validate[A, B, C](record: Record[A, B], validation: Validation[B, C], g: C => B)
+      extends Record[A, C]:
+    export record.{fields, isOptional}
+    override def constraints: Chain[Constraint] = record.constraints ++ validation.constraints
+    override def description: Property.Optional[String] =
+      Property.Optional(record, _.description, value => copy(record = record.description(value)))
+    override def example: Property.Optional[C] =
+      Property.Optional(record, _.example, value => copy(record = record.example(value)), validation, g)
+
   final case class Optional[A, B](self: Record[A, B]) extends Record[A, Option[B]]:
     export self.{constraints, fields}
+    override def isOptional: Boolean = true
     override def description: Property.Optional[String] = Property.Optional(
       self.description.value,
       f => copy(self = self.description.modify(f))
@@ -106,15 +117,6 @@ object Record:
       self.example.value.map(_.some),
       f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
     )
-
-  final case class Validate[A, B, C](record: Record[A, B], validation: Validation[B, C], g: C => B)
-      extends Record[A, C]:
-    export record.fields
-    override def constraints: Chain[Constraint] = record.constraints ++ validation.constraints
-    override def description: Property.Optional[String] =
-      Property.Optional(record, _.description, value => copy(record = record.description(value)))
-    override def example: Property.Optional[C] =
-      Property.Optional(record, _.example, value => copy(record = record.example(value)), validation, g)
 
   def empty[A]: Record[A, Unit] = Empty(Properties.Empty)
   def apply[A, B](field: Field[A, B]): Record[A, B] = One(field, Properties.Empty)

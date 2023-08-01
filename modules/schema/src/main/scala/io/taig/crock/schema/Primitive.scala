@@ -24,6 +24,7 @@ object Primitive:
 
   final case class Root[A](properties: Primitive.Properties[A], tpe: Type[A]) extends Primitive[A]:
     override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
       properties.description,
       f => copy(properties = properties.copy(description = f(properties.description)))
@@ -37,8 +38,19 @@ object Primitive:
       f => copy(properties = properties.copy(format = f(properties.format)))
     )
 
+  final case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
+    export self.{isOptional, tpe}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def description: Property.Optional[String] =
+      Property.Optional(self, _.description, value => copy(self = self.description(value)))
+    override def example: Property.Optional[B] =
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
+    override def format: Property.Optional[String] =
+      Property.Optional(self, _.format, value => copy(self = self.format(value)))
+
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.{constraints, tpe}
+    override def isOptional: Boolean = true
     override def format: Property.Optional[String] = Property.Optional(
       self.format.value,
       f => copy(self = self.format.modify(f))
@@ -51,15 +63,5 @@ object Primitive:
       self.example.value.map(_.some),
       f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
     )
-
-  final case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
-    export self.tpe
-    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def description: Property.Optional[String] =
-      Property.Optional(self, _.description, value => copy(self = self.description(value)))
-    override def example: Property.Optional[B] =
-      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
-    override def format: Property.Optional[String] =
-      Property.Optional(self, _.format, value => copy(self = self.format(value)))
 
   def apply[A](tpe: Type[A]): Primitive[A] = Root(Properties.Empty, tpe)

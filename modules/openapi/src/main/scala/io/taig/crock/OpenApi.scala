@@ -5,6 +5,7 @@ import io.circe.{Json, JsonObject}
 import io.circe.syntax.*
 import io.taig.crock.schema.*
 import io.taig.crock.validation.*
+import scala.util.chaining.*
 
 import scala.annotation.tailrec
 
@@ -17,17 +18,21 @@ object OpenApi:
     case schema: Enumeration[?] => enumeration(schema)
     case schema: Record[?, ?]   => record(schema)
 
-  def primitive(schema: Primitive[?]): JsonObject = JsonObject(
-    "type" := typeOf(schema.tpe),
-    "format" := schema.format.value,
-    "description" := schema.description.value,
-    "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
-  ).deepMerge(constraints(schema.tpe)(schema.constraints))
+  def primitive(schema: Primitive[?]): JsonObject = constraints(schema.tpe)(schema.constraints).deepMerge(
+    JsonObject(
+      "type" := typeOf(schema.tpe),
+      "format" := schema.format.value,
+      "description" := schema.description.value,
+      "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
+    )
+  )
 
-  def collection(schema: Collection[?]): JsonObject = JsonObject(
-    "type" := "array",
-    "items" := self.schema(schema.of.value)
-  ).deepMerge(constraints(schema))
+  def collection(schema: Collection[?]): JsonObject = constraints(schema).deepMerge(
+    JsonObject(
+      "type" := "array",
+      "items" := self.schema(schema.of.value)
+    )
+  )
 
   def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
     "type" := typeOf(schema.schema.value),
@@ -38,16 +43,23 @@ object OpenApi:
     val properties = schema.fields.toList.map: field =>
       field.name(StringEncoder.value).getOrElse("") := self.schema(field.schema.value)
 
-    JsonObject(
-      "type" := "object",
-      "properties" := Json.fromFields(properties)
+    val required = schema.fields
+      .filterNot(_.schema.value.isOptional)
+      .map(_.name(StringEncoder.value).getOrElse(""))
+      .pipe(required => if required.isEmpty then JsonObject.empty else JsonObject("required" := required))
+
+    required.deepMerge(
+      JsonObject(
+        "type" := "object",
+        "properties" := Json.fromFields(properties)
+      )
     )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
-    _.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint(tpe)(current)))
+    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
 
   def constraints(schema: Collection[?]): JsonObject =
-    schema.constraints.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint.array(current)))
+    schema.constraints.foldLeft(JsonObject.empty)((result, current) => constraint.array(current).deepMerge(result))
 
   object constraint:
     def apply(tpe: Type[?]): Constraint => JsonObject = constraint =>

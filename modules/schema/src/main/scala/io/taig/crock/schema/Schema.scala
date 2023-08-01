@@ -51,6 +51,7 @@ abstract class Schema[A]:
   def example: Property.Optional[A]
 
   def optional: Self[Option[A]]
+  def isOptional: Boolean
 
   def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
