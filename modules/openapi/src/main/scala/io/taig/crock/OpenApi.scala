@@ -6,15 +6,18 @@ import io.circe.syntax.*
 import io.taig.crock.schema.*
 import io.taig.crock.validation.*
 
+import scala.annotation.tailrec
+
 final class OpenApi(encoder: Encoder[Schema, Json]):
   self =>
 
   val schema: Schema[?] => JsonObject =
-    case schema: Primitive[?]  => primitive(schema)
-    case schema: Collection[?] => collection(schema)
+    case schema: Primitive[?]   => primitive(schema)
+    case schema: Collection[?]  => collection(schema)
+    case schema: Enumeration[?] => enumeration(schema)
 
   def primitive(schema: Primitive[?]): JsonObject = JsonObject(
-    "type" := tpe(schema.tpe),
+    "type" := typeOf(schema.tpe),
     "format" := schema.format.value,
     "description" := schema.description.value,
     "example" := schema.example.value.map(encoder.encode(schema, _))
@@ -25,15 +28,10 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
     "items" := self.schema(schema.of.value)
   ).deepMerge(constraints(schema))
 
-  val tpe: Type[?] => String =
-    case Type.BigDecimal => "big-decimal"
-    case Type.BigInt     => "big-int"
-    case Type.Boolean    => "boolean"
-    case Type.Double     => "double"
-    case Type.Float      => "float"
-    case Type.Int        => "integer"
-    case Type.Long       => "long"
-    case Type.String     => "string"
+  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
+    "type" := typeOf(schema.schema.value),
+    "enum" := schema.values(encoder)
+  )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
     _.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint(tpe)(current)))
@@ -67,3 +65,14 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
       case Constraint.MaxLength(reference) => JsonObject("maxLength" := reference)
       case Constraint.Matches(pattern)     => JsonObject("pattern" := pattern.pattern())
       case _                               => JsonObject.empty
+
+  @tailrec
+  def typeOf(schema: Schema.Value[?]): String = schema match
+    case enumeration: Enumeration[?] => typeOf(enumeration.schema.value)
+    case primitive: Primitive[?]     => typeOf(primitive.tpe)
+
+  val typeOf: Type[?] => String =
+    case Type.Double | Type.Float | Type.BigDecimal => "number"
+    case Type.Int | Type.Long | Type.BigInt         => "integer"
+    case Type.Boolean                               => "boolean"
+    case Type.String                                => "string"

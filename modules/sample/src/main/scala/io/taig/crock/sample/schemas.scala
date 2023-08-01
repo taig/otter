@@ -1,9 +1,8 @@
 package io.taig.crock.sample
 
 import cats.data.Chain
-import cats.syntax.all.*
 import io.taig.crock.sample.User.Name
-import io.taig.crock.schema.{Collection, Primitive}
+import io.taig.crock.schema.{Collection, Enumeration, Primitive}
 import io.taig.crock.schema.schemas.*
 import io.taig.crock.validation.validations.*
 
@@ -17,3 +16,8 @@ object schemas:
 
   val names: Collection.Of[Primitive, Chain[User.Name]] =
     collection.chain(name).validate(minItems(3)).validate(maxItems(10))
+
+  val gender: Enumeration[User.Gender] = enumeration(string):
+    case User.Gender.Male             => "male"
+    case User.Gender.Female           => "female"
+    case User.Gender.ApacheHelicopter => "apacheHelicopter"

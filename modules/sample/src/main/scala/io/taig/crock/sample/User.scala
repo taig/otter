@@ -18,3 +18,8 @@ object User:
     extension (self: User.Age) def toInt: Int = self
     def unsafeFromInt(value: Int): User.Age = value
     val validation: Validation[Int, User.Age] = (minimum(18) *> maximum(99)).tap
+
+  enum Gender:
+    case Male
+    case Female
+    case ApacheHelicopter

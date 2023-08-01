@@ -32,14 +32,15 @@ object Primitive:
     override def format: Property.Optional[String] =
       Property.Optional(properties.format, this.focus(_.properties.format).modify)
 
-  final case class Validate[A, B](schema: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
-    export schema.tpe
-    override def constraints: Chain[Constraint] = schema.constraints ++ validation.constraints
+  final case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, B], g: B => A)
+      extends Primitive[B]:
+    export primitive.tpe
+    override def constraints: Chain[Constraint] = primitive.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(schema, _.description, value => copy(schema = schema.description(value)))
+      Property.Optional(primitive, _.description, value => copy(primitive = primitive.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(schema, _.example, value => copy(schema = schema.example(value)), validation, g)
+      Property.Optional(primitive, _.example, value => copy(primitive = primitive.example(value)), validation, g)
     override def format: Property.Optional[String] =
-      Property.Optional(schema, _.format, value => copy(schema = schema.format(value)))
+      Property.Optional(primitive, _.format, value => copy(primitive = primitive.format(value)))
 
   def apply[A](tpe: Type[A]): Primitive[A] = Root(Properties.Empty, tpe)

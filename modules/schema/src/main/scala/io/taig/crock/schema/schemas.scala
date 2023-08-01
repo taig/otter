@@ -1,8 +1,9 @@
 package io.taig.crock.schema
 
-import cats.Eval
+import cats.{Eval, Hash}
 import cats.data.Chain
 import io.taig.crock.validation.validations
+import io.taig.enumeration.ext.{EnumerationValues, Mapping}
 import org.typelevel.ci.CIString
 
 import java.time.{LocalDate, LocalDateTime}
@@ -32,7 +33,7 @@ object schemas:
 ////    Branch(name, Eval.later(key), Eval.later(schema))
 ////  def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
 ////  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
-////
+
   object collection:
     def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Vector[A]] = Collection(Eval.later(schema))
     def list[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, List[A]] =
@@ -40,9 +41,8 @@ object schemas:
     def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Chain[A]] =
       vector(schema).imap(Chain.fromSeq)(_.toVector)
 
-////  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
-////    Enumeration(Eval.later(schema), mapping)
-////  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
-////      EnumerationValues.Aux[B, B]
-////  ): Enumeration[B] =
-////    enumeration(schema)(using Mapping.enumeration(f))
+  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
+    Enumeration(Eval.later(schema), mapping)
+  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
+      EnumerationValues.Aux[B, B]
+  ): Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))

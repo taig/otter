@@ -32,15 +32,15 @@ object Collection:
       Property.Optional(properties.example, this.focus(_.properties.example).modify)
 
   final case class Validate[F[a] <: Schema[a], A, B](
-      schema: Collection.Of[F, A],
+      collection: Collection.Of[F, A],
       validation: Validation[A, B],
       g: B => A
   ) extends Collection[B]:
-    export schema.{of, Of}
-    override def constraints: Chain[Constraint] = schema.constraints ++ validation.constraints
+    export collection.{of, Of}
+    override def constraints: Chain[Constraint] = collection.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(schema, _.description, value => copy(schema = schema.description(value)))
+      Property.Optional(collection, _.description, value => copy(collection = collection.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(schema, _.example, value => copy(schema = schema.example(value)), validation, g)
+      Property.Optional(collection, _.example, value => copy(collection = collection.example(value)), validation, g)
 
   def apply[F[a] <: Schema[a], A](schema: Eval[F[A]]): Collection.Of[F, Vector[A]] = Root(schema, Properties.Empty)
