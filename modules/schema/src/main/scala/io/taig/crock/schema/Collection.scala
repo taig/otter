@@ -3,7 +3,6 @@ package io.taig.crock.schema
 import cats.Eval
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
-import monocle.syntax.all.*
 
 sealed abstract class Collection[A] extends Schema[A]:
   self =>
@@ -26,10 +25,14 @@ object Collection:
       extends Collection[Vector[A]]:
     override type Of[a] = F[a]
     override def constraints: Chain[Constraint] = Chain.empty
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[Vector[A]] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[Vector[A]] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
 
   final case class Validate[F[a] <: Schema[a], A, B](
       collection: Collection.Of[F, A],

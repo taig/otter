@@ -2,7 +2,6 @@ package io.taig.crock.schema
 
 import cats.data.Chain
 import io.taig.crock.validation.*
-import monocle.syntax.all.*
 
 sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override type Self[a] = Primitive[a]
@@ -25,12 +24,18 @@ object Primitive:
       tpe: Type[A]
   ) extends Primitive[A]:
     override def constraints: Chain[Constraint] = Chain.empty
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[A] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
-    override def format: Property.Optional[String] =
-      Property.Optional(properties.format, this.focus(_.properties.format).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[A] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+    override def format: Property.Optional[String] = Property.Optional(
+      properties.format,
+      f => copy(properties = properties.copy(format = f(properties.format)))
+    )
 
   final case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, B], g: B => A)
       extends Primitive[B]:

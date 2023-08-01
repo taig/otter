@@ -7,7 +7,6 @@ val Version = new {
   val EnumerationExt = "0.0.2"
   val Http4s = "1.0.0-M40"
   val Java = "17"
-  val Monocle = "3.2.0"
   val Munit = "0.7.29"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.0"
@@ -74,9 +73,7 @@ lazy val schema = module(identifier = Some("schema"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
-      "dev.optics" %%% "monocle-core" % Version.Monocle ::
-        "dev.optics" %%% "monocle-macro" % Version.Monocle ::
-        "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         Nil
   )

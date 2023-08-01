@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import cats.{Eq, Eval}
 
 import scala.annotation.targetName
-import monocle.syntax.all.*
 
 sealed abstract class Field[A, B]:
   self =>
@@ -73,10 +72,14 @@ object Field:
       schema: Eval[Schema[B]],
       properties: Field.Properties[B]
   ) extends Field[A, B]:
-    override def default: Property.Optional[B] =
-      Property.Optional(properties.default, this.focus(_.properties.default).modify)
-    override def nulls: Property.Nulls =
-      Property.Nulls(properties.nulls, this.focus(_.properties.nulls).modify)
+    override def default: Property.Optional[B] = Property.Optional(
+      properties.default,
+      f => copy(properties = properties.copy(default = f(properties.default)))
+    )
+    override def nulls: Property.Nulls = Property.Nulls(
+      properties.nulls,
+      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
+    )
 
 //    override def decode(crock: OpenApi.Object): Validated[Violations, (OpenApi.Object, B)] =
 //      val name = renderName

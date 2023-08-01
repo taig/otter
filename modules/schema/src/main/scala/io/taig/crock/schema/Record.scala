@@ -3,7 +3,6 @@ package io.taig.crock.schema
 import cats.Eq
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
-import monocle.syntax.all.*
 
 sealed abstract class Record[A, B] extends Schema[B]:
   self =>
@@ -47,27 +46,39 @@ object Record:
   final case class Empty[A](properties: Record.Properties[Unit]) extends Record[A, Unit]:
     override def fields: Chain[Field[A, ?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[Unit] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[Unit] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
 
   final case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[A, B]:
     override def constraints: Chain[Constraint] = Chain.empty
     override def fields: Chain[Field[A, ?]] = Chain.one(field)
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[B] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[B] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
 
   final case class Zip[A, B, C](left: Record[A, B], right: Record[A, C], properties: Properties[(B, C)])
       extends Record[A, (B, C)]:
     override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
     override def fields: Chain[Field[A, ?]] = left.fields ++ right.fields
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[(B, C)] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[(B, C)] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
 
   final case class Validate[A, B, C](record: Record[A, B], validation: Validation[B, C], g: C => B)
       extends Record[A, C]:

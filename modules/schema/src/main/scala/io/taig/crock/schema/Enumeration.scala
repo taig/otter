@@ -4,7 +4,6 @@ import cats.Eval
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
 import io.taig.enumeration.ext.Mapping
-import monocle.syntax.all.*
 
 sealed abstract class Enumeration[A] extends Schema.Value[A]:
   self =>
@@ -30,10 +29,14 @@ object Enumeration:
     override def constraints: Chain[Constraint] = Chain.empty
     override def values[C](encoder: Encoder[Schema, C]): List[C] =
       mapping.values.map(b => encoder.encode(schema.value, mapping.inj(b)))
-    override def description: Property.Optional[String] =
-      Property.Optional(properties.description, this.focus(_.properties.description).modify)
-    override def example: Property.Optional[B] =
-      Property.Optional(properties.example, this.focus(_.properties.example).modify)
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[B] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
 
 //    override def values: Eval[List[OpenApi.Primitive]] =
 //      schema.map(schema => mapping.values.map(mapping.inj).map(schema.encode))
