@@ -1,18 +1,18 @@
 package io.taig.openapi.generator
 
 import cats.data.Chain
-import io.taig.openapi.OpenApi
-import io.taig.openapi.syntax.*
-import io.taig.openapi.schema.{Primitive, Type}
+import io.circe.{Json, JsonObject}
+import io.circe.syntax.*
+import io.taig.openapi.schema.{Encoder, Primitive, Schema, Type}
 import io.taig.openapi.validation.Constraint
 
-object OpenApiGenerator {
-  def primitive(schema: Primitive[?]): OpenApi = OpenApi.obj(
+final class OpenApiGenerator(encoder: Encoder[Schema, Json]):
+  def primitive(schema: Primitive[?]): JsonObject = JsonObject(
     "type" := tpe(schema.tpe),
     "format" := schema.format.value,
     "description" := schema.description.value,
-    "example" := schema.example.encode
-  ) ++ constraints(schema.tpe)(schema.constraints)
+    "example" := schema.example.value.map(encoder.encode(schema, _))
+  ).deepMerge(constraints(schema.tpe)(schema.constraints))
 
   val tpe: Type[?] => String =
     case Type.BigDecimal => "big-decimal"
@@ -24,27 +24,26 @@ object OpenApiGenerator {
     case Type.Long       => "long"
     case Type.String     => "string"
 
-  def constraints(tpe: Type[?]): Chain[Constraint] => OpenApi.Object =
-    _.foldLeft(OpenApi.Object.Empty)(_ ++ constraint(tpe)(_))
+  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
+    _.foldLeft(JsonObject.empty)((result, current) => result.deepMerge(constraint(tpe)(current)))
 
   object constraint:
-    def apply(tpe: Type[?]): Constraint => OpenApi.Object = constraint =>
+    def apply(tpe: Type[?]): Constraint => JsonObject = constraint =>
       tpe match
         case Type.Int | Type.BigInt | Type.BigDecimal | Type.Double | Type.Float | Type.Long => numeric(constraint)
         case Type.String                                                                     => string(constraint)
-        case Type.Boolean                                                                    => OpenApi.Object.Empty
+        case Type.Boolean                                                                    => JsonObject.empty
 
-    val numeric: Constraint => OpenApi.Object =
+    val numeric: Constraint => JsonObject =
       case Constraint.Minimum(reference, exclusive) =>
-        OpenApi.obj("minimum" := reference, "exclusiveMinimum" := exclusive)
+        JsonObject("minimum" := reference, "exclusiveMinimum" := exclusive)
       case Constraint.Maximum(reference, exclusive) =>
-        OpenApi.obj("maximum" := reference, "exclusiveMaximum" := exclusive)
-      case Constraint.Multiple(of) => OpenApi.obj("multipleOf" := of)
-      case _                       => OpenApi.Object.Empty
+        JsonObject("maximum" := reference, "exclusiveMaximum" := exclusive)
+      case Constraint.Multiple(of) => JsonObject("multipleOf" := of)
+      case _                       => JsonObject.empty
 
-    val string: Constraint => OpenApi.Object =
-      case Constraint.MinLength(reference) => OpenApi.obj("minLength" := reference)
-      case Constraint.MaxLength(reference) => OpenApi.obj("maxLength" := reference)
-      case Constraint.Matches(pattern)     => OpenApi.obj("pattern" := pattern.pattern())
-      case _                               => OpenApi.Object.Empty
-}
+    val string: Constraint => JsonObject =
+      case Constraint.MinLength(reference) => JsonObject("minLength" := reference)
+      case Constraint.MaxLength(reference) => JsonObject("maxLength" := reference)
+      case Constraint.Matches(pattern)     => JsonObject("pattern" := pattern.pattern())
+      case _                               => JsonObject.empty

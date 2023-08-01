@@ -7,6 +7,7 @@ val Version = new {
   val EnumerationExt = "0.0.2"
   val Http4s = "1.0.0-M40"
   val Java = "17"
+  val Monocle = "3.2.0"
   val Munit = "0.7.29"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.0"
@@ -56,20 +57,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(validation, schema, http, csv, circe, dsl, http4s, sample)
 
-//lazy val core = module(identifier = Some("core"))
-//  .settings(
-//    libraryDependencies ++=
-//      "org.typelevel" %%% "cats-core" % Version.Cats ::
-//        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-//        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
-//        Nil
-//  )
-//  .jsSettings(
-//    libraryDependencies ++=
-//      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
-//        Nil
-//  )
-
 lazy val validation = module(identifier = Some("validation"))
   .settings(
     libraryDependencies ++=
@@ -78,7 +65,6 @@ lazy val validation = module(identifier = Some("validation"))
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-//  .dependsOn(core % "compile->compile;test->test")
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(
@@ -88,7 +74,9 @@ lazy val schema = module(identifier = Some("schema"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
-      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+      "dev.optics" %%% "monocle-core" % Version.Monocle ::
+        "dev.optics" %%% "monocle-macro" % Version.Monocle ::
+        "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         Nil
   )
@@ -121,6 +109,11 @@ lazy val dsl = module(identifier = Some("dsl"))
   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
 lazy val generator = module(identifier = Some("generator"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
   .dependsOn(schema)
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
