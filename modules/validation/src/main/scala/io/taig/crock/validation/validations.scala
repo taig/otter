@@ -91,6 +91,12 @@ object validations:
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
     Validated.condNec(value.length <= reference, (), String.valueOf(value.length).some)
 
+  def minItems[A](reference: Int): Validation[Seq[A], Unit] = Validation(Constraint.MinItems(reference)): values =>
+    Validated.condNec(values.length >= reference, (), String.valueOf(values.length).some)
+
+  def maxItems[A](reference: Int): Validation[Seq[A], Unit] = Validation(Constraint.MinItems(reference)): values =>
+    Validated.condNec(values.length <= reference, (), String.valueOf(values.length).some)
+
   val uuid: Validation[String, UUID] = Validation.parse("uuid"): value =>
     try UUID.fromString(value).some
     catch case _: IllegalArgumentException => none
