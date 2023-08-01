@@ -1,10 +1,6 @@
 package io.taig.openapi.validation
 
-import cats.Id
-
 import java.util.regex.Pattern
-
-final case class Constraint2[+Ref, +Act](identifier: String, reference: Ref, schema: Id[Ref], actual: Id[Act])
 
 enum Constraint:
   case MinLength(reference: Int)
@@ -14,3 +10,4 @@ enum Constraint:
   case Maximum(reference: BigDecimal, exclusive: Boolean)
   case Multiple(reference: BigDecimal)
   case Type(name: String)
+  case Custom(identifier: String, reference: Option[String])

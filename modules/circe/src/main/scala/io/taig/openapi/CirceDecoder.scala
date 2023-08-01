@@ -3,7 +3,7 @@ package io.taig.openapi
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.{Decoder as JsonDecoder, Json}
-import io.taig.openapi.schema.{Decoder, Primitive, Schema, Type, Violations}
+import io.taig.openapi.schema.{Decoder, Primitive, Type, Violations}
 import io.taig.openapi.validation.{Validation, Violation}
 
 object CirceDecoder:
@@ -18,17 +18,16 @@ object CirceDecoder:
       case Type.Long       => json.as[Long]
       case Type.String     => json.as[String]
 
-    def decode[A, B, C](
+    def decode[A, B](
         fa: Primitive[A],
-        validation: Validation[B, A, C],
+        validation: Validation[A, B],
         json: Json
-    ): Validated[Violations[Json], C] =
-      val x: Schema[B] = ???
-      decode(fa, json).andThen(a =>
-        validation(a).leftMap(Violations.root(_).modifyViolation(_.map(b => CirceEncoder.schema.encode(x, b))))
-      )
+    ): Validated[Violations, B] = decode(fa, json).andThen(validation(_).leftMap(Violations.root))
 
-    override def decode[A](fa: Primitive[A], json: Json): Validated[Violations[Json], A] = fa match
+    def typeOf(json: Json): String =
+      json.fold("null", _ => "boolean", _ => "number", _ => "string", _ => "array", _ => "object")
+
+    override def decode[A](fa: Primitive[A], json: Json): Validated[Violations, A] = fa match
       case Primitive.Root(_, _, _, tpe) =>
-        decode(tpe, json).fold(_ => Violations.rootNec(Violation.tpe(tpe.toString, json)).invalid, _.valid)
+        decode(tpe, json).fold(_ => Violations.rootNec(Violation.tpe(tpe.toString, typeOf(json))).invalid, _.valid)
       case Primitive.Validate(primitive, validation, _) => decode(primitive, validation, json)

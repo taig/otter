@@ -7,44 +7,37 @@ import io.taig.openapi.validation.Violation
 
 import scala.collection.immutable.SortedMap
 
-opaque type Violations[+Act] = NonEmptyMap[History, NonEmptyChain[Violation[Act]]]
+opaque type Violations = NonEmptyMap[History, NonEmptyChain[Violation]]
 
 object Violations:
-  extension [Act](violations: Violations[Act])
-    def toNem: NonEmptyMap[History, NonEmptyChain[Violation[Act]]] = violations
-    def modifyHistory(f: History => History): Violations[Act] = violations.mapKeys(f)
-    def modifyViolations[Act2](
-        f: NonEmptyChain[Violation[Act]] => NonEmptyChain[Violation[Act2]]
-    ): Violations[Act2] = violations.map(f)
-    def modifyViolation[Act2](f: Violation[Act] => Violation[Act2]): Violations[Act2] = modifyViolations(_.map(f))
-    infix def merge(right: Violations[Act]): Violations[Act] = violations |+| right
-    def get(history: History): Chain[Violation[Act]] = violations.apply(history).map(_.toChain).orEmpty
-    def head(history: History): Option[Violation[Act]] = violations.apply(history).map(_.head)
+  extension (violations: Violations)
+    def toNem: NonEmptyMap[History, NonEmptyChain[Violation]] = violations
+    def modifyHistory(f: History => History): Violations = violations.mapKeys(f)
+    def modifyViolations(
+        f: NonEmptyChain[Violation] => NonEmptyChain[Violation]
+    ): Violations = violations.map(f)
+    def modifyViolation[Act2](f: Violation => Violation): Violations = modifyViolations(_.map(f))
+    infix def merge(right: Violations): Violations = violations |+| right
+    def get(history: History): Chain[Violation] = violations.apply(history).map(_.toChain).orEmpty
+    def head(history: History): Option[Violation] = violations.apply(history).map(_.head)
 
-  def apply[Act](violations: NonEmptyMap[History, NonEmptyChain[Violation[Act]]]): Violations[Act] = violations
+  def apply(violations: NonEmptyMap[History, NonEmptyChain[Violation]]): Violations = violations
 
-  def of[Act](
-      head: (History, NonEmptyChain[Violation[Act]]),
-      tail: (History, NonEmptyChain[Violation[Act]])*
-  ): Violations[Act] =
+  def of(head: (History, NonEmptyChain[Violation]), tail: (History, NonEmptyChain[Violation])*): Violations =
     NonEmptyMap.of(head, tail*)
 
-  def ofNec[Act](head: (History, Violation[Act]), tail: (History, Violation[Act])*): Violations[Act] =
+  def ofNec(head: (History, Violation), tail: (History, Violation)*): Violations =
     NonEmptyMap.of(head.map(NonEmptyChain.one), tail.map(_.map(NonEmptyChain.one))*)
 
-  def one[Act](history: History, violations: NonEmptyChain[Violation[Act]]): Violations[Act] =
+  def one(history: History, violations: NonEmptyChain[Violation]): Violations =
     NonEmptyMap.one(history, violations)
 
-  def oneNec[Act](history: History, violation: Violation[Act]): Violations[Act] =
-    one(history, NonEmptyChain.one(violation))
+  def oneNec(history: History, violation: Violation): Violations = one(history, NonEmptyChain.one(violation))
 
-  def root[Act](violations: NonEmptyChain[Violation[Act]]): Violations[Act] = one(History.Root, violations)
+  def root(violations: NonEmptyChain[Violation]): Violations = one(History.Root, violations)
 
-  def rootNec[Act](violation: Violation[Act]): Violations[Act] = oneNec(History.Root, violation)
+  def rootNec(violation: Violation): Violations = oneNec(History.Root, violation)
 
-  def fromMap[Act](values: SortedMap[History, NonEmptyChain[Violation[Act]]]): Option[Violations[Act]] =
-    NonEmptyMap.fromMap(values)
+  def fromMap(values: SortedMap[History, NonEmptyChain[Violation]]): Option[Violations] = NonEmptyMap.fromMap(values)
 
-  given [Act](using
-      semigroup: Semigroup[NonEmptyMap[History, NonEmptyChain[Violation[Act]]]]
-  ): Semigroup[Violations[Act]] = semigroup
+  given (using semigroup: Semigroup[NonEmptyMap[History, NonEmptyChain[Violation]]]): Semigroup[Violations] = semigroup

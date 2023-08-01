@@ -10,9 +10,9 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   def tpe: Type[?]
 
-  final def ivalidate[B, C](validation: Validation[B, A, C])(g: C => A): Primitive[C] =
+  final def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
     Primitive.Validate(this, validation, g)
-  final def validate[B](validation: Validation[B, A, Unit]): Primitive[A] = ivalidate(validation.tap)(identity)
+  final def validate(validation: Validation[A, Unit]): Primitive[A] = ivalidate(validation.tap)(identity)
   final override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
 
 object Primitive:
@@ -24,8 +24,8 @@ object Primitive:
   ) extends Primitive[A]:
     override def constraints: Chain[Constraint] = Chain.empty
 
-  final case class Validate[A, B, C](primitive: Primitive[A], validation: Validation[B, A, C], g: C => A)
-      extends Primitive[C]:
+  final case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, B], g: B => A)
+      extends Primitive[B]:
     export primitive.tpe
     override def constraints: Chain[Constraint] = primitive.constraints ++ validation.constraints
 
