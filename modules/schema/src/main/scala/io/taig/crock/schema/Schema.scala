@@ -50,7 +50,9 @@ abstract class Schema[A]:
   def description: Property.Optional[String]
   def example: Property.Optional[A]
 
-  def imap[B](f: A => B)(g: B => A): Self[B]
+  def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
+  final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
+  final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
 
 object Schema:

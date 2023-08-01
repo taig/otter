@@ -1,5 +1,7 @@
 package io.taig.crock.schema
 
+import cats.Eval
+import cats.data.Chain
 import io.taig.crock.validation.validations
 import org.typelevel.ci.CIString
 
@@ -31,12 +33,12 @@ object schemas:
 ////  def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
 ////  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
 ////
-////  object collection:
-////    def vector[A, B <: OpenApi](schema: => Schema.Of[A, B]): Collection.Object.Of[Vector[A], B] =
-////      Collection.Object(Eval.later(schema))
-////    def vector[A, B <: OpenApi](schema: => Schema.Value[A]): Collection.Value[Vector[A]] =
-////      Collection.Value(Eval.later(schema))
-////
+  object collection:
+    def vector[A <: Schema[B], B](schema: => A): Collection.Of[Vector[B], A] = Collection(Eval.later(schema))
+    def list[A <: Schema[B], B](schema: => A): Collection.Of[List[B], A] = vector(schema).imap(_.toList)(_.toVector)
+    def chain[A <: Schema[B], B](schema: => A): Collection.Of[Chain[B], A] =
+      vector(schema).imap(Chain.fromSeq)(_.toVector)
+
 ////  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
 ////    Enumeration(Eval.later(schema), mapping)
 ////  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using

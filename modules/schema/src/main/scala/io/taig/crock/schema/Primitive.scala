@@ -11,10 +11,8 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   def format: Property.Optional[String]
 
-  final def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
     Primitive.Validate(this, validation, g)
-  final def validate(validation: Validation[A, Unit]): Primitive[A] = ivalidate(validation.tap)(identity)
-  final override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
 
 object Primitive:
   final case class Properties[+A](description: Option[String], example: Option[A], format: Option[String])
