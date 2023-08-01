@@ -6,5 +6,5 @@ import io.taig.crock.{CirceEncoder, OpenApi}
 
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
-    val spec = OpenApi(CirceEncoder.schema).schema(schemas.gender)
+    val spec = OpenApi.schema(schemas.gender)
     IO.println(Json.fromJsonObject(spec).spaces2)

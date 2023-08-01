@@ -15,4 +15,5 @@ enum Constraint:
   case MinProperties(reference: Int)
   case MaxProperties(reference: Int)
   case Type(name: String)
+  case OneOf(values: List[String])
   case Custom(identifier: String, reference: Option[String])

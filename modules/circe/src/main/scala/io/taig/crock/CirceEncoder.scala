@@ -8,10 +8,13 @@ import scala.annotation.tailrec
 object CirceEncoder:
   val schema: Encoder[Schema, Json] = new Encoder[Schema, Json]:
     override def encode[B](schema: Schema[B], b: B): Json = schema match
+      case schema: Schema.Value[B] => value.encode(schema, b)
+      case schema: Collection[B]   => collection.encode(schema, b)
+
+  val value: Encoder[Schema.Value, Json] = new Encoder[Schema.Value, Json]:
+    override def encode[B](schema: Schema.Value[B], b: B): Json = schema match
       case schema: Primitive[B]   => primitive.encode(schema, b)
-      case schema: Collection[B]  => collection.encode(schema, b)
       case schema: Enumeration[B] => enumeration.encode(schema, b)
-      case _                      => ???
 
   val primitive: Encoder[Primitive, Json] = new Encoder[Primitive, Json]:
     def encode[B](tpe: Type[B], b: B): Json = tpe match

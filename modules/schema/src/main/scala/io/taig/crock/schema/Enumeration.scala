@@ -10,7 +10,7 @@ sealed abstract class Enumeration[A] extends Schema.Value[A]:
   final override type Self[a] = Enumeration[a]
 
   def schema: Eval[Schema.Value[?]]
-  def values[B](encoder: Encoder[Schema, B]): List[B]
+  def values[B](encoder: Encoder[Schema.Value, B]): List[B]
 
   override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] =
     Enumeration.Validate(this, validation, g)
@@ -27,7 +27,7 @@ object Enumeration:
       properties: Enumeration.Properties[B]
   ) extends Enumeration[B]:
     override def constraints: Chain[Constraint] = Chain.empty
-    override def values[C](encoder: Encoder[Schema, C]): List[C] =
+    override def values[C](encoder: Encoder[Schema.Value, C]): List[C] =
       mapping.values.map(b => encoder.encode(schema.value, mapping.inj(b)))
     override def description: Property.Optional[String] = Property.Optional(
       properties.description,

@@ -3,15 +3,19 @@ package io.taig.crock
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.crock.schema.*
-import io.taig.crock.validation.Violation
+import io.taig.crock.validation.{Constraint, Violation}
 import io.circe.{Decoder as JsonDecoder, Json}
 
 object CirceDecoder:
   val schema: Decoder[Schema, Json] = new Decoder[Schema, Json]:
     override def decode[B](schema: Schema[B], json: Json): Validated[Violations, B] = schema match
-      case schema: Primitive[?]  => primitive.decode(schema, json)
-      case schema: Collection[?] => collection.decode(schema, json)
-      case _                     => ???
+      case schema: Schema.Value[?] => value.decode(schema, json)
+      case schema: Collection[?]   => collection.decode(schema, json)
+
+  val value: Decoder[Schema.Value, Json] = new Decoder[Schema.Value, Json]:
+    override def decode[B](schema: Schema.Value[B], json: Json): Validated[Violations, B] = schema match
+      case schema: Primitive[?]   => primitive.decode(schema, json)
+      case schema: Enumeration[?] => enumeration.decode(schema, json)
 
   val primitive: Decoder[Primitive, Json] = new Decoder[Primitive, Json]:
     def decode[B](json: Json): Type[B] => JsonDecoder.Result[B] =
@@ -41,6 +45,21 @@ object CirceDecoder:
           case None => Violations.rootNec(Violation.tpe("array", typeOf(json))).invalid
       case Collection.Validate(schema, validation, _) =>
         decode(schema, json).andThen(validation(_).leftMap(Violations.root))
+
+  val enumeration: Decoder[Enumeration, Json] = new Decoder[Enumeration, Json]:
+    override def decode[B](enumeration: Enumeration[B], json: Json): Validated[Violations, B] = enumeration match
+      case Enumeration.Root(mapping, schema, _) =>
+        CirceDecoder.value
+          .decode(schema.value, json)
+          .andThen: b =>
+            mapping
+              .prj(b)
+              .toValid:
+                val values = enumeration.values(StringEncoder.value)
+                val actual = json.fold("null", String.valueOf, _.toString, identity, _ => "array", _ => "object")
+                Violations.rootNec(Violation(Constraint.OneOf(values), actual.some))
+      case Enumeration.Validate(enumeration, validation, _) =>
+        decode(enumeration, json).andThen(validation(_).leftMap(Violations.root))
 
   def typeOf(json: Json): String =
     json.fold("null", _ => "boolean", _ => "number", _ => "string", _ => "array", _ => "object")

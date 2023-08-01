@@ -8,7 +8,7 @@ import io.taig.crock.validation.*
 
 import scala.annotation.tailrec
 
-final class OpenApi(encoder: Encoder[Schema, Json]):
+object OpenApi:
   self =>
 
   val schema: Schema[?] => JsonObject =
@@ -20,7 +20,7 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
     "type" := typeOf(schema.tpe),
     "format" := schema.format.value,
     "description" := schema.description.value,
-    "example" := schema.example.value.map(encoder.encode(schema, _))
+    "example" := schema.example.value.map(CirceEncoder.schema.encode(schema, _))
   ).deepMerge(constraints(schema.tpe)(schema.constraints))
 
   def collection(schema: Collection[?]): JsonObject = JsonObject(
@@ -30,7 +30,7 @@ final class OpenApi(encoder: Encoder[Schema, Json]):
 
   def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
     "type" := typeOf(schema.schema.value),
-    "enum" := schema.values(encoder)
+    "enum" := schema.values(CirceEncoder.value)
   )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =

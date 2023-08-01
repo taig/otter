@@ -4,8 +4,8 @@ import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.crock.validation.Violation
 
-object StringParser extends Parser[Primitive, String]:
-  def parse[B](value: String): Type[B] => Option[B] =
+object StringDecoder extends Decoder[Primitive, String]:
+  def decode[B](value: String): Type[B] => Option[B] =
     case Type.String  => value.some
     case Type.Int     => value.toIntOption
     case Type.Long    => value.toLongOption
@@ -19,7 +19,7 @@ object StringParser extends Parser[Primitive, String]:
       try BigInt(value).some
       catch case _: NumberFormatException => none
 
-  override def parse[B](schema: Primitive[B], value: String): Validated[Violations, B] = schema match
-    case Primitive.Root(_, tpe) => parse(value)(tpe).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value)))
+  override def decode[B](schema: Primitive[B], value: String): Validated[Violations, B] = schema match
+    case Primitive.Root(_, tpe) => decode(value)(tpe).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value)))
     case Primitive.Validate(schema, validation, _) =>
-      parse(schema, value).andThen(validation(_).leftMap(Violations.root))
+      decode(schema, value).andThen(validation(_).leftMap(Violations.root))
