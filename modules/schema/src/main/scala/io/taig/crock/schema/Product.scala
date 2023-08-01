@@ -1,0 +1,79 @@
+package io.taig.crock.schema
+
+import cats.Eval
+import cats.syntax.all.*
+import cats.data.Chain
+import io.taig.crock.validation.{Constraint, Validation}
+
+sealed abstract class Product[A] extends Schema[A]:
+  override type Self[a] = Product[a]
+  final override def optional: Product[Option[A]] = Product.Optional(this)
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] =
+    Product.Validate(this, validation, g)
+  final def zip[B](other: Product[B]): Product[(A, B)] = Product.Zip(this, other, Product.Properties.Empty)
+
+object Product:
+  final case class Properties[+A](description: Option[String], example: Option[A])
+
+  object Properties:
+    val Empty: Product.Properties[Nothing] = Properties(None, None)
+
+  final case class Empty(properties: Properties[Unit]) extends Product[Unit]:
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[Unit] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+
+  final case class One[A](schema: Eval[Schema[A]], properties: Properties[A]) extends Product[A]:
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[A] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+
+  final case class Zip[A, B](left: Product[A], right: Product[B], properties: Properties[(A, B)])
+      extends Product[(A, B)]:
+    override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
+    override def isOptional: Boolean = left.isOptional && right.isOptional
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[(A, B)] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+
+  final case class Validate[A, B](record: Product[A], validation: Validation[A, B], g: B => A) extends Product[B]:
+    export record.isOptional
+    override def constraints: Chain[Constraint] = record.constraints ++ validation.constraints
+    override def description: Property.Optional[String] =
+      Property.Optional(record, _.description, value => copy(record = record.description(value)))
+    override def example: Property.Optional[B] =
+      Property.Optional(record, _.example, value => copy(record = record.example(value)), validation, g)
+
+  final case class Optional[A](self: Product[A]) extends Product[Option[A]]:
+    export self.constraints
+    override def isOptional: Boolean = true
+    override def description: Property.Optional[String] = Property.Optional(
+      self.description.value,
+      f => copy(self = self.description.modify(f))
+    )
+    override def example: Property.Optional[Option[A]] = Property.Optional(
+      self.example.value.map(_.some),
+      f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
+    )
+
+  val empty: Product[Unit] = Empty(Properties.Empty)
+  def apply[A](schema: => Schema[A]): Product[A] = One(Eval.later(schema), Properties.Empty)
