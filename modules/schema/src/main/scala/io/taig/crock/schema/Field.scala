@@ -45,11 +45,11 @@ sealed abstract class Field[A, B]:
 
   final def optional: Field[A, Option[B]] = Field.Optional(this)
 
-//  final transparent inline infix def zip[C](field: Field[A, C]): Product[A, ?] = toProduct zip field.toProduct
-//  final transparent inline infix def :*[C](field: Field[A, C]): Product[A, ?] = toProduct :* field
+  final transparent inline infix def :*[C](field: Field[A, C]): Record[A, ?] = toRecord :* field
+  final transparent inline infix def *:[C](field: Field[A, C]): Record[A, ?] = field *: toRecord
 
-//  final def toProduct: Product[A, B] = Product(this)
-//  final def to[C](using Evidence.Product.Aux[C, B]): Product[A, C] = toProduct.to[C]
+  final def toRecord: Record[A, B] = Record(this)
+  final def to[C](using Evidence.Product.Aux[C, B]): Record[A, C] = toRecord.to[C]
 
 object Field:
   enum Null:
