@@ -7,17 +7,16 @@ import io.taig.openapi.validation.Violation
 
 import scala.collection.immutable.SortedMap
 
-opaque type Violations[Act] = NonEmptyMap[History, NonEmptyChain[Violation[Act]]]
+opaque type Violations[+Act] = NonEmptyMap[History, NonEmptyChain[Violation[Act]]]
 
 object Violations:
   extension [Act](violations: Violations[Act])
     def toNem: NonEmptyMap[History, NonEmptyChain[Violation[Act]]] = violations
     def modifyHistory(f: History => History): Violations[Act] = violations.mapKeys(f)
-    def modifyViolations(
-        f: NonEmptyChain[Violation[Act]] => NonEmptyChain[Violation[Act]]
-    ): Violations[Act] = violations.map(f)
-    def modifyViolation(f: Violation[Act] => Violation[Act]): Violations[Act] =
-      modifyViolations(_.map(f))
+    def modifyViolations[Act2](
+        f: NonEmptyChain[Violation[Act]] => NonEmptyChain[Violation[Act2]]
+    ): Violations[Act2] = violations.map(f)
+    def modifyViolation[Act2](f: Violation[Act] => Violation[Act2]): Violations[Act2] = modifyViolations(_.map(f))
     infix def merge(right: Violations[Act]): Violations[Act] = violations |+| right
     def get(history: History): Chain[Violation[Act]] = violations.apply(history).map(_.toChain).orEmpty
     def head(history: History): Option[Violation[Act]] = violations.apply(history).map(_.head)

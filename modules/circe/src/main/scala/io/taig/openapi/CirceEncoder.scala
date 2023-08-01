@@ -1,11 +1,14 @@
 package io.taig.openapi
 
 import io.circe.Json
-import io.taig.openapi.schema.{Encoder, Primitive, Type}
+import io.taig.openapi.schema.{Encoder, Primitive, Schema, Type}
 
 import scala.annotation.tailrec
 
 object CirceEncoder:
+  val schema: Encoder[Schema, Json] = new Encoder[Schema, Json]:
+    override def encode[B](fb: Schema[B], b: B): Json = ???
+
   val primitive: Encoder[Primitive, Json] = new Encoder[Primitive, Json]:
     def encode[B](tpe: Type[B], b: B): Json = tpe match
       case Type.BigDecimal => Json.fromBigDecimal(b)

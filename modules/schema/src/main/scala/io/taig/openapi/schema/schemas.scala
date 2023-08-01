@@ -1,20 +1,20 @@
-//package io.taig.openapi.schema
-//
-//import io.taig.openapi.validation.validations
-//import org.typelevel.ci.CIString
-//
-//import java.time.{LocalDate, LocalDateTime}
-//import java.util.UUID
-//
-//object schemas:
-//  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-//  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-//  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
+package io.taig.openapi.schema
+
+import io.taig.openapi.validation.validations
+import org.typelevel.ci.CIString
+
+import java.time.{LocalDate, LocalDateTime}
+import java.util.UUID
+
+object schemas:
+  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
+  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
+  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
 //  val double: Primitive[Double] = Primitive(Type.Double).format("double")
 //  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
 //  val float: Primitive[Float] = Primitive(Type.Float).format("float")
 //  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
-//  val string: Primitive[String] = Primitive(Type.String)
+  val string: Primitive[String] = Primitive(Type.String)
 //  val password: Primitive[String] = string.format("password")
 //  val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
 //  val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")

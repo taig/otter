@@ -10,22 +10,23 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   def tpe: Type[?]
 
-  final def ivalidate[B](validation: Validation[A, A, B])(g: B => A): Primitive[B] =
+  final def ivalidate[B, C](validation: Validation[B, A, C])(g: C => A): Primitive[C] =
     Primitive.Validate(this, validation, g)
+  final def validate[B](validation: Validation[B, A, Unit]): Primitive[A] = ivalidate(validation.tap)(identity)
   final override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
 
 object Primitive:
   final case class Root[A](
       description: Property.Optional[Primitive[A], String],
-      _example: Option[A],
-      _format: Option[String],
+      example: Property.Optional[Primitive[A], A],
+      format: Property.Optional[Primitive[A], String],
       tpe: Type[A]
   ) extends Primitive[A]:
     override def constraints: Chain[Constraint] = Chain.empty
 
-  final case class Validate[A, B](primitive: Primitive[A], validation: Validation[A, A, B], g: B => A)
-      extends Primitive[B]:
+  final case class Validate[A, B, C](primitive: Primitive[A], validation: Validation[B, A, C], g: C => A)
+      extends Primitive[C]:
     export primitive.tpe
     override def constraints: Chain[Constraint] = primitive.constraints ++ validation.constraints
 
-  def apply[A](tpe: Type[A]): Primitive[A] = ??? // Root(Property.Optional.apply(???, ???), None, None, tpe)
+  def apply[A](tpe: Type[A]): Primitive[A] = Root(???, ???, ???, tpe)

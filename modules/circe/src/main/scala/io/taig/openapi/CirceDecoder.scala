@@ -3,8 +3,8 @@ package io.taig.openapi
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.{Decoder as JsonDecoder, Json}
-import io.taig.openapi.schema.{Decoder, Primitive, Type, Violations}
-import io.taig.openapi.validation.Violation
+import io.taig.openapi.schema.{Decoder, Primitive, Schema, Type, Violations}
+import io.taig.openapi.validation.{Validation, Violation}
 
 object CirceDecoder:
   val primitive: Decoder[Primitive, Json] = new Decoder[Primitive, Json]:
@@ -18,8 +18,17 @@ object CirceDecoder:
       case Type.Long       => json.as[Long]
       case Type.String     => json.as[String]
 
-    override def decode[B](fa: Primitive[B], json: Json): Validated[Violations[Json], B] = fa match
+    def decode[A, B, C](
+        fa: Primitive[A],
+        validation: Validation[B, A, C],
+        json: Json
+    ): Validated[Violations[Json], C] =
+      val x: Schema[B] = ???
+      decode(fa, json).andThen(a =>
+        validation(a).leftMap(Violations.root(_).modifyViolation(_.map(b => CirceEncoder.schema.encode(x, b))))
+      )
+
+    override def decode[A](fa: Primitive[A], json: Json): Validated[Violations[Json], A] = fa match
       case Primitive.Root(_, _, _, tpe) =>
         decode(tpe, json).fold(_ => Violations.rootNec(Violation.tpe(tpe.toString, json)).invalid, _.valid)
-      case Primitive.Validate(primitive, validation, _) =>
-        decode(primitive, json).andThen(_ => ???)
+      case Primitive.Validate(primitive, validation, _) => decode(primitive, validation, json)
