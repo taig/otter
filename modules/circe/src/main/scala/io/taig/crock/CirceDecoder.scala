@@ -2,6 +2,8 @@ package io.taig.crock
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.crock.schema.*
+import io.taig.crock.validation.{Validation, Violation}
 import io.circe.{Decoder as JsonDecoder, Json}
 
 object CirceDecoder:
@@ -26,6 +28,6 @@ object CirceDecoder:
       json.fold("null", _ => "boolean", _ => "number", _ => "string", _ => "array", _ => "object")
 
     override def decode[A](fa: Primitive[A], json: Json): Validated[Violations, A] = fa match
-      case Primitive.Root(_, _, _, tpe) =>
+      case Primitive.Root(_, tpe) =>
         decode(tpe, json).fold(_ => Violations.rootNec(Violation.tpe(tpe.toString, typeOf(json))).invalid, _.valid)
       case Primitive.Validate(primitive, validation, _) => decode(primitive, validation, json)

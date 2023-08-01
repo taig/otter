@@ -133,4 +133,4 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
         Nil
   )
-  .dependsOn(http4s % "compile->compile;test->test", dsl)
+  .dependsOn(openapi, circe)

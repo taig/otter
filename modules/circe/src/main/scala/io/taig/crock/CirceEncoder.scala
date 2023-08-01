@@ -1,12 +1,15 @@
 package io.taig.crock
 
 import io.circe.Json
+import io.taig.crock.schema.*
 
 import scala.annotation.tailrec
 
 object CirceEncoder:
   val schema: Encoder[Schema, Json] = new Encoder[Schema, Json]:
-    override def encode[B](fb: Schema[B], b: B): Json = ???
+    override def encode[B](schema: Schema[B], b: B): Json = schema match
+      case schema: Primitive[B] => primitive.encode(schema, b)
+      case _                    => ???
 
   val primitive: Encoder[Primitive, Json] = new Encoder[Primitive, Json]:
     def encode[B](tpe: Type[B], b: B): Json = tpe match
@@ -21,5 +24,5 @@ object CirceEncoder:
 
     @tailrec
     override def encode[B](fb: Primitive[B], b: B): Json = fb match
-      case Primitive.Root(_, _, _, tpe)        => encode(tpe, b)
+      case Primitive.Root(_, tpe)              => encode(tpe, b)
       case Primitive.Validate(primitive, _, g) => encode(primitive, g(b))

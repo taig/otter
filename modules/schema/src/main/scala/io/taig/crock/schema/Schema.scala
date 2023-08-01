@@ -31,21 +31,21 @@ abstract class Schema[A]:
       def apply[B, C](
           schema: Schema[B],
           property: schema.type => schema.Property.Optional[C],
-          copy: schema.type => Self[A]
+          copy: Option[C] => Self[A]
       ): Property.Optional[C] = new Optional[C]:
         override def value: Option[C] = property(schema).value
-        override def modify(f: Option[C] => Option[C]): Self[A] = copy(schema)
+        override def modify(f: Option[C] => Option[C]): Self[A] = copy(f(property(schema).value))
 
-      def apply[B, C, D](
+      def apply[B, C](
           schema: Schema[B],
           property: schema.type => schema.Property.Optional[B],
-          copy: schema.type => Self[A],
-          validation: Validation[B, D],
-          g: D => B
-      ): Property.Optional[D] = new Optional[D]:
-        override def value: Option[D] = property(schema).value.flatMap(validation(_).toOption)
-        override def modify(f: Option[D] => Option[D]): Self[A] =
-          copy(schema)
+          copy: Option[B] => Self[A],
+          validation: Validation[B, C],
+          g: C => B
+      ): Property.Optional[C] = new Optional[C]:
+        override def value: Option[C] = property(schema).value.flatMap(validation(_).toOption)
+        override def modify(f: Option[C] => Option[C]): Self[A] =
+          copy(f(property(schema).value.flatMap(validation(_).toOption)).map(g))
 
   def description: Property.Optional[String]
   def example: Property.Optional[A]

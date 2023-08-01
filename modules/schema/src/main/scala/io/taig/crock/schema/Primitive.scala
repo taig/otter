@@ -38,10 +38,10 @@ object Primitive:
     export schema.tpe
     override def constraints: Chain[Constraint] = schema.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(schema, _.description, this.focus(_.schema).replace)
+      Property.Optional(schema, _.description, value => copy(schema = schema.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(schema, _.example, this.focus(_.schema).replace, validation, g)
+      Property.Optional(schema, _.example, value => copy(schema = schema.example(value)), validation, g)
     override def format: Property.Optional[String] =
-      Property.Optional(schema, _.format, this.focus(_.schema).replace)
+      Property.Optional(schema, _.format, value => copy(schema = schema.format(value)))
 
   def apply[A](tpe: Type[A]): Primitive[A] = Root(Properties.Empty, tpe)
