@@ -6,5 +6,5 @@ import io.taig.crock.OpenApi
 
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
-    val spec = OpenApi.schema(schemas.user)
+    val spec = OpenApi.schema(schemas.userProduct)
     IO.println(Json.fromJsonObject(spec).spaces2)

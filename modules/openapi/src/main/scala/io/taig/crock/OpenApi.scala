@@ -17,6 +17,7 @@ object OpenApi:
     case schema: Collection[?]  => collection(schema)
     case schema: Enumeration[?] => enumeration(schema)
     case schema: Record[?, ?]   => record(schema)
+    case schema: Product[?]     => product(schema)
 
   def primitive(schema: Primitive[?]): JsonObject =
     val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))
@@ -63,6 +64,14 @@ object OpenApi:
         "nullable" := schema.isOptional
       )
     )
+
+  def product(schema: Product[?]): JsonObject = JsonObject(
+    "type" := "array",
+    "prefixItems" := schema.schemas.map(schema => self.schema(schema.value)),
+    "minItems" := schema.schemas.length,
+    "maxItems" := schema.schemas.length,
+    "additionalItems" := false
+  )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
     _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
