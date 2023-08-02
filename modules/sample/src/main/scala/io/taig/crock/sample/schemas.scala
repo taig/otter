@@ -24,7 +24,9 @@ object schemas:
     case User.Gender.ApacheHelicopter => "apacheHelicopter"
 
   val user: Record[User] = (
-    field("name", name) :* field("age", age) :* field("gender", gender.optional)
+    field("name", name) :*
+      field("age", age) :*
+      field("gender", gender.optional)
   ).to
 
   val userProduct: Product[User] = (name :* age :* gender.optional).to
