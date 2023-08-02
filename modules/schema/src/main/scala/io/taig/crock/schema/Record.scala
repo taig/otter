@@ -10,9 +10,16 @@ sealed abstract class Record[A] extends Schema[A]:
 
   def fields: Chain[Field[?, ?]]
 
-//  trait Nulls extends Property[Record.Nulls]
-//
-//  def nulls: Nulls = ???
+  trait Nulls extends Property[Record.Null]:
+    final def show: Record[A] = apply(Record.Null.Show)
+    final def hide: Record[A] = apply(Record.Null.Hide)
+
+  object Nulls:
+    def apply(a: Record.Null, g: (Record.Null => Record.Null) => Record[A]): Nulls = new Nulls:
+      override def value: Record.Null = a
+      override def modify(f: Record.Null => Record.Null): Record[A] = g(f)
+
+  def nulls: Nulls
 
   final infix def zip[B](right: Record[B]): Record[(A, B)] = Record.Zip(this, right, Record.Properties.Empty)
 
@@ -22,40 +29,18 @@ sealed abstract class Record[A] extends Schema[A]:
     Record.Validate(this, validation, g)
 
 object Record extends ToRecordOps:
-//  extension [A, B](self: Record[A, B])
-//    inline infix def combine(other: Record[A, Unit]): Record[A, B] = other combine self
-//    inline infix def combine[C](other: Record[A, C]): Record[A, (B, C)] = self.zip(other)
-//    inline def :*(other: Field[A, Unit]): Record[A, B] = combine(other.toRecord)
-//    inline def *:(other: Field[A, Unit]): Record[A, B] = combine(other.toRecord)
-//    inline def :*[C](other: Field[A, C]): Record[A, (B, C)] = self zip other.toRecord
-//    inline def *:[C](other: Field[A, C]): Record[A, (B, C)] = self zip other.toRecord
-//
-//  extension [A, B <: Tuple](self: Record[A, B])
-//    @targetName("appendRecord")
-//    inline infix def combine[C](other: Record[A, C]): Record[A, Tuple.Append[B, C]] =
-//      self.zip(other).imap { case (b, c) => b :* c }(bc => (bc.init.asInstanceOf[B], bc.last.asInstanceOf[C]))
-//    @targetName("appendField")
-//    inline def :*[C](other: Field[A, C]): Record[A, Tuple.Append[B, C]] = combine(other.toRecord)
-//    @targetName("prependField")
-//    inline def *:[C](other: Field[A, C]): Record[A, Tuple.Append[B, C]] = combine(other.toRecord)
-//
-//  extension [A](self: Record[A, Unit])
-//    inline infix def combine[B](other: Record[A, B]): Record[A, B] = self.zip(other).imap { case (_, b) => b }(((), _))
-//    inline def :*[B](other: Field[A, B]): Record[A, B] = combine(other.toRecord)
-//    inline def *:[B](other: Field[A, B]): Record[A, B] = combine(other.toRecord)
-
-  enum Nulls:
+  enum Null:
     case Show
     case Hide
 
-  object Nulls:
-    val Default: Record.Nulls = Show
-    given Eq[Record.Nulls] = Eq.fromUniversalEquals
+  object Null:
+    val Default: Record.Null = Show
+    given Eq[Record.Null] = Eq.fromUniversalEquals
 
-  final case class Properties[+A](description: Option[String], example: Option[A], nulls: Record.Nulls)
+  final case class Properties[+A](description: Option[String], example: Option[A], nulls: Record.Null)
 
   object Properties:
-    val Empty: Record.Properties[Nothing] = Properties(None, None, Nulls.Default)
+    val Empty: Record.Properties[Nothing] = Properties(None, None, Null.Default)
 
   final case class Empty(properties: Record.Properties[Unit]) extends Record[Unit]:
     override def fields: Chain[Field[?, ?]] = Chain.empty
@@ -68,6 +53,10 @@ object Record extends ToRecordOps:
     override def example: Property.Optional[Unit] = Property.Optional(
       properties.example,
       f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+    override def nulls: Nulls = Nulls(
+      properties.nulls,
+      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
     )
 
   final case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[B]:
@@ -82,6 +71,10 @@ object Record extends ToRecordOps:
       properties.example,
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
+    override def nulls: Nulls = Nulls(
+      properties.nulls,
+      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
+    )
 
   final case class Zip[A, B](left: Record[A], right: Record[B], properties: Properties[(A, B)]) extends Record[(A, B)]:
     override def fields: Chain[Field[?, ?]] = left.fields ++ right.fields
@@ -95,14 +88,19 @@ object Record extends ToRecordOps:
       properties.example,
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
+    override def nulls: Nulls = Nulls(
+      properties.nulls,
+      f => copy(properties = properties.copy(nulls = f(properties.nulls)))
+    )
 
-  final case class Validate[A, B](record: Record[A], validation: Validation[A, B], g: B => A) extends Record[B]:
-    export record.{fields, isOptional}
-    override def constraints: Chain[Constraint] = record.constraints ++ validation.constraints
+  final case class Validate[A, B](self: Record[A], validation: Validation[A, B], g: B => A) extends Record[B]:
+    export self.{fields, isOptional}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(record, _.description, value => copy(record = record.description(value)))
+      Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
     override def example: Property.Optional[B] =
-      Property.Optional(record, _.example, value => copy(record = record.example(value)), validation, g)
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
+    override def nulls: Nulls = Nulls(self.nulls.value, f => copy(self = self.nulls.modify(f)))
 
   final case class Optional[A](self: Record[A]) extends Record[Option[A]]:
     export self.{constraints, fields}
@@ -114,6 +112,10 @@ object Record extends ToRecordOps:
     override def example: Property.Optional[Option[A]] = Property.Optional(
       self.example.value.map(_.some),
       f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
+    )
+    override def nulls: Nulls = Nulls(
+      self.nulls.value,
+      f => copy(self = self.nulls.modify(f))
     )
 
   val empty: Record[Unit] = Empty(Properties.Empty)

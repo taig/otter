@@ -42,11 +42,11 @@ object Primitive:
     export self.{isOptional, tpe}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(self, _.description, value => copy(self = self.description(value)))
+      Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
     override def format: Property.Optional[String] =
-      Property.Optional(self, _.format, value => copy(self = self.format(value)))
+      Property.Optional(self.format.value, f => copy(self = self.format.modify(f)))
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.{constraints, tpe}

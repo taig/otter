@@ -49,7 +49,7 @@ object Enumeration:
     export self.{isOptional, schema, values}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(self, _.description, value => copy(self = self.description(value)))
+      Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 

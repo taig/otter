@@ -28,14 +28,6 @@ abstract class Schema[A]:
 
       def apply[B, C](
           schema: Schema[B],
-          property: schema.type => schema.Property.Optional[C],
-          copy: Option[C] => Self[A]
-      ): Property.Optional[C] = new Optional[C]:
-        override def value: Option[C] = property(schema).value
-        override def modify(f: Option[C] => Option[C]): Self[A] = copy(f(property(schema).value))
-
-      def apply[B, C](
-          schema: Schema[B],
           property: schema.type => schema.Property.Optional[B],
           copy: Option[B] => Self[A],
           validation: Validation[B, C],
