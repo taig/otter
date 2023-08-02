@@ -19,6 +19,7 @@ object OpenApi:
     case schema: Enumeration[?] => enumeration(schema)
     case schema: Record[?]      => record(schema)
     case schema: Product[?]     => product(schema)
+    case schema: Dictionary[?]  => dictionary(schema)
 
   def primitive(schema: Primitive[?]): JsonObject =
     val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))
@@ -72,6 +73,11 @@ object OpenApi:
     "minItems" := schema.schemas.length,
     "maxItems" := schema.schemas.length,
     "additionalItems" := false
+  )
+
+  def dictionary(schema: Dictionary[?]): JsonObject = JsonObject(
+    "type" := "object",
+    "additionalProperties" := self.schema(schema.schema.value)
   )
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
