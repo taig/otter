@@ -58,13 +58,13 @@ object Product:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
-  final case class Validate[A, B](record: Product[A], validation: Validation[A, B], g: B => A) extends Product[B]:
-    export record.{isOptional, schemas}
-    override def constraints: Chain[Constraint] = record.constraints ++ validation.constraints
+  final case class Validate[A, B](self: Product[A], validation: Validation[A, B], g: B => A) extends Product[B]:
+    export self.{isOptional, schemas}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
-      Property.Optional(record, _.description, value => copy(record = record.description(value)))
+      Property.Optional(self, _.description, value => copy(self = self.description(value)))
     override def example: Property.Optional[B] =
-      Property.Optional(record, _.example, value => copy(record = record.example(value)), validation, g)
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
   final case class Optional[A](self: Product[A]) extends Product[Option[A]]:
     export self.{constraints, schemas}

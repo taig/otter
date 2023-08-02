@@ -1,5 +1,7 @@
 package io.taig.crock
 
+import cats.data.Chain
+import cats.syntax.all.*
 import io.circe.Json
 import io.taig.crock.schema.*
 
@@ -41,3 +43,14 @@ object CirceEncoder:
       case Enumeration.Root(mapping, schema, _) => CirceEncoder.schema.encode(schema.value, mapping.inj(b))
       case Enumeration.Validate(self, _, g)     => encode(self, g(b))
       case Enumeration.Optional(self)           => b.fold(Json.Null)(encode(self, _))
+
+  val product: Encoder[Product, Json] = new Encoder[Product, Json]:
+    override def encode[B](product: Product[B], b: B): Json =
+      encodeValues(product, b).map(_.toList).fold(Json.Null)(Json.fromValues)
+
+    def encodeValues[B](product: Product[B], b: B): Option[Chain[Json]] = product match
+      case Product.Empty(_)             => Chain.empty.some
+      case Product.One(schema, _)       => Chain.one(CirceEncoder.schema.encode(schema.value, b)).some
+      case Product.Zip(left, right, _)  => encodeValues(left, b._1) |+| encodeValues(right, b._2)
+      case Product.Validate(self, _, g) => encodeValues(self, g(b))
+      case Product.Optional(self)       => b.flatMap(encodeValues(self, _))
