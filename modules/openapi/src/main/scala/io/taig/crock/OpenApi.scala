@@ -1,6 +1,7 @@
 package io.taig.crock
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.circe.{Json, JsonObject}
 import io.circe.syntax.*
 import io.taig.crock.schema.*
@@ -16,7 +17,7 @@ object OpenApi:
     case schema: Primitive[?]   => primitive(schema)
     case schema: Collection[?]  => collection(schema)
     case schema: Enumeration[?] => enumeration(schema)
-    case schema: Record[?, ?]   => record(schema)
+    case schema: Record[?]      => record(schema)
     case schema: Product[?]     => product(schema)
 
   def primitive(schema: Primitive[?]): JsonObject =
@@ -48,13 +49,13 @@ object OpenApi:
     "nullable" := schema.isOptional
   )
 
-  def record(schema: Record[?, ?]): JsonObject =
+  def record(schema: Record[?]): JsonObject =
     val properties = schema.fields.toList.map: field =>
-      field.name(StringEncoder.value).getOrElse("") := self.schema(field.schema.value)
+      StringEncoder.value.encode(field.key.value, field.name).orEmpty := self.schema(field.schema.value)
 
     val required = schema.fields
       .filterNot(_.schema.value.isOptional)
-      .map(_.name(StringEncoder.value).getOrElse(""))
+      .map(field => StringEncoder.value.encode(field.key.value, field.name).orEmpty)
       .pipe(required => if required.isEmpty then JsonObject.empty else JsonObject("required" := required))
 
     required.deepMerge(

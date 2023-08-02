@@ -25,8 +25,6 @@ final case class Field[A, B](
         override def value: Field.Null = nulls
         override def modify(f: Field.Null => Field.Null): Field[A, B] = g(f)
 
-  def name[C](encoder: Encoder[Schema.Value, C]): C = encoder.encode(key.value, name)
-
   def nulls: Property.Nulls = Property.Nulls(
     properties.nulls,
     f => copy(properties = properties.copy(nulls = f(properties.nulls)))

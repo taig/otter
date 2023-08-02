@@ -113,10 +113,7 @@ object Record extends ToRecordOps:
       self.example.value.map(_.some),
       f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
     )
-    override def nulls: Nulls = Nulls(
-      self.nulls.value,
-      f => copy(self = self.nulls.modify(f))
-    )
+    override def nulls: Nulls = Nulls(self.nulls.value, f => copy(self = self.nulls.modify(f)))
 
   val empty: Record[Unit] = Empty(Properties.Empty)
   def apply[A, B](field: Field[A, B]): Record[B] = One(field, Properties.Empty)

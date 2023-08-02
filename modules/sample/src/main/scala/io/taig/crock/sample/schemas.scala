@@ -23,7 +23,7 @@ object schemas:
     case User.Gender.Female           => "female"
     case User.Gender.ApacheHelicopter => "apacheHelicopter"
 
-  val user: Record[String, User] = (
+  val user: Record[User] = (
     field("name", name) :* field("age", age) :* field("gender", gender.optional)
   ).to
 

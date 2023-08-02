@@ -4,13 +4,15 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.{Json, JsonObject}
 import io.taig.crock.schema.*
+import io.taig.crock.schema.Field.Null
+import io.taig.crock.schema.Record.Null
 
 object CirceEncoder:
   val schema: Encoder[Schema, Json] = new Encoder[Schema, Json]:
     override def encode[A](schema: Schema[A], b: A): Json = schema match
       case schema: Schema.Value[A] => value.encode(schema, b)
       case schema: Collection[A]   => collection.encode(schema, b)
-      case schema: Record[?, A]    => Json.fromJsonObject(record.encode(schema, b))
+      case schema: Record[A]       => Json.fromJsonObject(record.encode(schema, b))
       case schema: Product[A]      => product.encode(schema, b)
 
   val value: Encoder[Schema.Value, Json] = new Encoder[Schema.Value, Json]:
@@ -46,19 +48,31 @@ object CirceEncoder:
       case Enumeration.Validate(self, _, g)     => encode(self, g(b))
       case Enumeration.Optional(self)           => b.fold(Json.Null)(encode(self, _))
 
-  def record[A]: Encoder[Record[A, *], JsonObject] = new Encoder[Record[A, *], JsonObject]:
-    override def encode[B](record: Record[A, B], b: B): JsonObject = record match
-      case Record.Empty(properties) => ???
+  val record: Encoder[Record, JsonObject] = new Encoder:
+    override def encode[A](record: Record[A], a: A): JsonObject = record match
+      case Record.Empty(_) => JsonObject.empty
       case Record.One(field, properties) =>
-        JsonObject.singleton.tupled(encodeField(field, b))
+        encodeField(field, a, properties.nulls).fold(JsonObject.empty)(JsonObject.singleton.tupled)
       case Record.Zip(left, right, properties)    => ???
       case Record.Validate(record, validation, g) => ???
       case Record.Optional(self)                  => ???
 
-    def encodeField[B](field: Field[A, B], b: B): (String, Json) =
-      val key = field.name(StringEncoder.value)
+    def encodeField[A, B](field: Field[A, B], b: B, nulls: Record.Null): Option[(String, Json)] =
+      val hideNull = field.nulls.value match
+        case Field.Null.Hide => true
+        case Field.Null.Inherit =>
+          nulls match
+            case Record.Null.Show => false
+            case Record.Null.Hide => true
+        case Field.Null.Show => false
+
       val value = CirceEncoder.schema.encode(field.schema.value, b)
-      (key.orEmpty, value)
+
+      if hideNull && value.isNull
+      then none
+      else
+        val key = StringEncoder.value.encode(field.key.value, field.name)
+        (key.orEmpty, value).some
 
   val product: Encoder[Product, Json] = new Encoder[Product, Json]:
     override def encode[A](product: Product[A], b: A): Json =
