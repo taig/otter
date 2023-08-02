@@ -1,19 +1,20 @@
 package io.taig.crock
 
-import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.{Json, JsonObject}
 import io.taig.crock.schema.*
 import io.taig.crock.schema.Field.Null
 import io.taig.crock.schema.Record.Null
 
+import scala.collection.mutable.ListBuffer
+
 object CirceEncoder:
   val schema: Encoder[Schema, Json] = new Encoder[Schema, Json]:
     override def encode[A](schema: Schema[A], b: A): Json = schema match
       case schema: Schema.Value[A] => value.encode(schema, b)
       case schema: Collection[A]   => collection.encode(schema, b)
-      case schema: Record[A]       => Json.fromJsonObject(record.encode(schema, b))
-      case schema: Product[A]      => product.encode(schema, b)
+      case schema: Record[A]       => record.encode(schema, b).fold(Json.Null)(Json.fromJsonObject)
+      case schema: Product[A]      => product.encode(schema, b).fold(Json.Null)(Json.fromValues)
 
   val value: Encoder[Schema.Value, Json] = new Encoder[Schema.Value, Json]:
     override def encode[A](schema: Schema.Value[A], b: A): Json = schema match
@@ -48,14 +49,20 @@ object CirceEncoder:
       case Enumeration.Validate(self, _, g)     => encode(self, g(b))
       case Enumeration.Optional(self)           => b.fold(Json.Null)(encode(self, _))
 
-  val record: Encoder[Record, JsonObject] = new Encoder:
-    override def encode[A](record: Record[A], a: A): JsonObject = record match
-      case Record.Empty(_) => JsonObject.empty
-      case Record.One(field, properties) =>
-        encodeField(field, a, properties.nulls).fold(JsonObject.empty)(JsonObject.singleton.tupled)
-      case Record.Zip(left, right, properties)    => ???
-      case Record.Validate(record, validation, g) => ???
-      case Record.Optional(self)                  => ???
+  val record: Encoder[Record, Option[JsonObject]] = new Encoder:
+    override def encode[A](record: Record[A], a: A): Option[JsonObject] =
+      val result = ListBuffer.empty[(String, Json)]
+      encode(record, a, result)
+      if result.isEmpty && record.isOptional then none else JsonObject.fromIterable(result).some
+
+    def encode[A](record: Record[A], a: A, result: ListBuffer[(String, Json)]): Unit = record match
+      case Record.Empty(_)               => ()
+      case Record.One(field, properties) => encodeField(field, a, properties.nulls).foreach(result.append)
+      case Record.Zip(left, right, _) =>
+        encode(left, a._1, result)
+        encode(right, a._2, result)
+      case Record.Validate(self, _, g) => encode(self, g(a), result)
+      case Record.Optional(self)       => a.foreach(encode(self, _, result))
 
     def encodeField[A, B](field: Field[A, B], b: B, nulls: Record.Null): Option[(String, Json)] =
       val hideNull = field.nulls.value match
@@ -74,13 +81,17 @@ object CirceEncoder:
         val key = StringEncoder.value.encode(field.key.value, field.name)
         (key.orEmpty, value).some
 
-  val product: Encoder[Product, Json] = new Encoder[Product, Json]:
-    override def encode[A](product: Product[A], b: A): Json =
-      encodeValues(product, b).map(_.toList).fold(Json.Null)(Json.fromValues)
+  val product: Encoder[Product, Option[List[Json]]] = new Encoder:
+    override def encode[A](product: Product[A], b: A): Option[List[Json]] =
+      val result = ListBuffer.empty[Json]
+      encode(product, b, result)
+      if result.isEmpty && product.isOptional then none else result.toList.some
 
-    def encodeValues[A](product: Product[A], b: A): Option[Chain[Json]] = product match
-      case Product.Empty(_)             => Chain.empty.some
-      case Product.One(schema, _)       => Chain.one(CirceEncoder.schema.encode(schema.value, b)).some
-      case Product.Zip(left, right, _)  => encodeValues(left, b._1) |+| encodeValues(right, b._2)
-      case Product.Validate(self, _, g) => encodeValues(self, g(b))
-      case Product.Optional(self)       => b.flatMap(encodeValues(self, _))
+    def encode[A](product: Product[A], b: A, result: ListBuffer[Json]): Unit = product match
+      case Product.Empty(_)       => ()
+      case Product.One(schema, _) => result.append(CirceEncoder.schema.encode(schema.value, b))
+      case Product.Zip(left, right, _) =>
+        encode(left, b._1, result)
+        encode(right, b._2, result)
+      case Product.Validate(self, _, g) => encode(self, g(b), result)
+      case Product.Optional(self)       => b.foreach(encode(self, _, result))
