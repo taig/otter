@@ -6,9 +6,7 @@ import io.taig.crock.validation.*
 import scala.annotation.targetName
 
 abstract class Schema[A]:
-  self =>
-
-  type Self[a] <: Schema[a] { type Self[a] = self.Self[a] }
+  type Self[a] <: Schema[a] { type Self[a] = Schema.this.Self[a] }
 
   def constraints: Chain[Constraint]
 
@@ -57,8 +55,38 @@ abstract class Schema[A]:
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Self[B] = imap(evidence.from)(evidence.to)
 
-object Schema:
+  final infix def zip[B](other: Schema[B]): Product[(A, B)] =
+    Product.Zip(toProduct, other.toProduct, Product.Properties.Empty)
+
+  final def toProduct: Product[A] = this match
+    case schema: Product[?] => schema
+    case schema             => Product(schema)
+
+object Schema extends ToSchemaStarOps:
   abstract class Value[A] extends Schema[A]:
-    self =>
-    override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
+    override type Self[a] <: Value[a] { type Self[a] = Value.this.Self[a] }
+
+final class SchemaStarOps[A](self: Schema[A]):
+  inline def :*[B](other: Schema[B]): Product[(A, B)] = self.zip(other)
+  inline def *:[B](other: Schema[B]): Product[(B, A)] = other.zip(self)
+  inline def :*(other: Schema[Unit]): Product[A] = self.zip(other).imap { case (a, _) => a }((_, ()))
+  inline def *:(other: Schema[Unit]): Product[A] = self :* other
+final class StarOpsUnit(self: Schema[Unit]):
+  inline def :*[A](other: Schema[A]): Product[A] = other :* self
+  inline def *:[A](other: Schema[A]): Product[A] = other :* self
+final class StarOpsTuple[A <: Tuple](self: Schema[A]):
+  inline def :*[B](other: Schema[B]): Product[Tuple.Append[A, B]] =
+    self.zip(other).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+  inline def *:[B](other: Schema[B]): Product[B *: A] =
+    self.zip(other).imap { case (a, b) => b *: a } { case b *: a => (a, b) }
+  inline def :*(other: Schema[Unit]): Product[A] = other :* self
+  inline def *:(other: Schema[Unit]): Product[A] = other :* self
+
+trait ToSchemaStarOps extends ToSchemaStarOps1:
+  implicit final def toStarOpsTuple[A <: Tuple](self: Schema[A]): StarOpsTuple[A] = new StarOpsTuple[A](self)
+  implicit final def toStarOpsUnit(self: Schema[Unit]): StarOpsUnit = new StarOpsUnit(self)
+
+trait ToSchemaStarOps1:
+  implicit final def toStarOps[A](self: Schema[A]): SchemaStarOps[A] = new SchemaStarOps[A](self)

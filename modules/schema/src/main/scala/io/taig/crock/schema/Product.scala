@@ -10,7 +10,6 @@ sealed abstract class Product[A] extends Schema[A]:
   final override def optional: Product[Option[A]] = Product.Optional(this)
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] =
     Product.Validate(this, validation, g)
-  final def zip[B](other: Product[B]): Product[(A, B)] = Product.Zip(this, other, Product.Properties.Empty)
 
 object Product:
   final case class Properties[+A](description: Option[String], example: Option[A])

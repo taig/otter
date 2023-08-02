@@ -19,8 +19,6 @@ sealed abstract class Record[A, B] extends Schema[B]:
   final override def ivalidate[C](validation: Validation[B, C])(g: C => B): Record[A, C] =
     Record.Validate(this, validation, g)
 
-  final def to[C](using evidence: Evidence.Product.Aux[C, B]): Record[A, C] = imap(evidence.from)(evidence.to)
-
 object Record:
   extension [A, B](self: Record[A, B])
     inline infix def combine(other: Record[A, Unit]): Record[A, B] = other combine self
