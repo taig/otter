@@ -27,7 +27,7 @@ sealed abstract class Path[A]:
 //  final def toUrl: Url[A] = Url(this)
 
 object Path extends ToPathOps:
-  final case class One[A](segment: Segment[A]) extends Path[A]:
+  final private[crock] case class One[A](segment: Segment[A]) extends Path[A]:
     override def toChain: Chain[Segment[?]] = Chain.one(segment)
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = path.uncons match
       case Some((head, tail)) => (tail, segment.matches(head))
@@ -41,7 +41,7 @@ object Path extends ToPathOps:
 //            .invalid
 //    override def encode(a: A): Chain[String] = Chain.one(segment.encode(a))
 
-  final case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
+  final private[crock] case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
     override def toChain: Chain[Segment[?]] = left.toChain ++ right.toChain
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
       val (remainders1, result1) = left.matchesWithRemainders(path)
@@ -53,7 +53,7 @@ object Path extends ToPathOps:
 //      }
 //    override def encode(ab: (A, B)): Chain[String] = left.encode(ab._1) ++ right.encode(ab._2)
 
-  final case class Modify[A, B](path: Path[A], f: A => B, g: B => A) extends Path[B]:
+  final private[crock] case class Modify[A, B](path: Path[A], f: A => B, g: B => A) extends Path[B]:
     override def toChain: Chain[Segment[?]] = path.toChain
     override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
       this.path.matchesWithRemainders(path)

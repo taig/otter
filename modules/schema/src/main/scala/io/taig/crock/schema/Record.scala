@@ -39,12 +39,12 @@ object Record extends ToRecordOps:
     val Default: Record.Null = Show
     given Eq[Record.Null] = Eq.fromUniversalEquals
 
-  final case class Properties[+A](description: Option[String], example: Option[A], nulls: Record.Null)
+  final private[crock] case class Properties[+A](description: Option[String], example: Option[A], nulls: Record.Null)
 
   object Properties:
     val Empty: Record.Properties[Nothing] = Properties(None, None, Null.Default)
 
-  final case class Empty(properties: Record.Properties[Unit]) extends Record[Unit]:
+  final private[crock] case class Empty(properties: Record.Properties[Unit]) extends Record[Unit]:
     override def toChain: Chain[Field[?, ?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -61,7 +61,7 @@ object Record extends ToRecordOps:
       f => copy(properties = properties.copy(nulls = f(properties.nulls)))
     )
 
-  final case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[B]:
+  final private[crock] case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[B]:
     override def toChain: Chain[Field[A, ?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -78,7 +78,8 @@ object Record extends ToRecordOps:
       f => copy(properties = properties.copy(nulls = f(properties.nulls)))
     )
 
-  final case class Zip[A, B](left: Record[A], right: Record[B], properties: Properties[(A, B)]) extends Record[(A, B)]:
+  final private[crock] case class Zip[A, B](left: Record[A], right: Record[B], properties: Properties[(A, B)])
+      extends Record[(A, B)]:
     override def toChain: Chain[Field[?, ?]] = left.toChain ++ right.toChain
     override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
     override def isOptional: Boolean = left.isOptional && right.isOptional
@@ -95,7 +96,8 @@ object Record extends ToRecordOps:
       f => copy(properties = properties.copy(nulls = f(properties.nulls)))
     )
 
-  final case class Validate[A, B](self: Record[A], validation: Validation[A, B], g: B => A) extends Record[B]:
+  final private[crock] case class Validate[A, B](self: Record[A], validation: Validation[A, B], g: B => A)
+      extends Record[B]:
     export self.{isOptional, toChain}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
@@ -104,7 +106,7 @@ object Record extends ToRecordOps:
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
     override def nulls: Nulls = Nulls(self.nulls.value, f => copy(self = self.nulls.modify(f)))
 
-  final case class Optional[A](self: Record[A]) extends Record[Option[A]]:
+  final private[crock] case class Optional[A](self: Record[A]) extends Record[Option[A]]:
     export self.{constraints, toChain}
     override def isOptional: Boolean = true
     override def description: Property.Optional[String] = Property.Optional(

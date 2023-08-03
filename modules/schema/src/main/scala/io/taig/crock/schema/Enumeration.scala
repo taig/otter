@@ -18,12 +18,12 @@ sealed abstract class Enumeration[A] extends Schema.Value[A]:
     Enumeration.Validate(this, validation, g)
 
 object Enumeration:
-  final case class Properties[+A](description: Option[String], example: Option[A])
+  final private[crock] case class Properties[+A](description: Option[String], example: Option[A])
 
   object Properties:
     val Empty: Enumeration.Properties[Nothing] = Properties(None, None)
 
-  final case class Root[A, B](
+  final private[crock] case class Root[A, B](
       mapping: Mapping[B, A],
       schema: Eval[Schema.Value[A]],
       properties: Enumeration.Properties[B]
@@ -41,7 +41,7 @@ object Enumeration:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
-  final case class Validate[A, B](
+  final private[crock] case class Validate[A, B](
       self: Enumeration[A],
       validation: Validation[A, B],
       g: B => A
@@ -53,7 +53,7 @@ object Enumeration:
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
-  final case class Optional[A](self: Enumeration[A]) extends Enumeration[Option[A]]:
+  final private[crock] case class Optional[A](self: Enumeration[A]) extends Enumeration[Option[A]]:
     export self.{constraints, schema, values}
     override def isOptional: Boolean = true
     override def description: Property.Optional[String] = Property.Optional(

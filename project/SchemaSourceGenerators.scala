@@ -11,11 +11,11 @@ object SchemaSourceGenerators {
           ("Left(" * level) + (if (right) s"Right($argument)" else s"Left($argument)") + (")" * level)
         }
 
-        s"""  given sum$n[A, ${types.map(tpe => s"$tpe <: A").mkString(", ")}](using
+        s"""  given coproduct$n[A, ${types.map(tpe => s"$tpe <: A").mkString(", ")}](using
            |    mirror: Mirror.SumOf[A],
            |    evidence: mirror.MirroredElemTypes =:= (${types.mkString(", ")})
-           |  ): Evidence.Sum.Aux[A, ${types.tail.foldLeft(types.head)((l, r) => s"Either[$l, $r]")}] =
-           |    Evidence.Sum.instance[A, ${types.tail.foldLeft(types.head)((l, r) => s"Either[$l, $r]")}] { a =>
+           |  ): Evidence.Coproduct.Aux[A, ${types.tail.foldLeft(types.head)((l, r) => s"$l + $r")}] =
+           |    Evidence.Coproduct.instance[A, ${types.tail.foldLeft(types.head)((l, r) => s"$l + $r")}] { a =>
            |      mirror.ordinal(a) match
            |        ${(0 until n)
             .map(i => s"case $i => ${nested(i, s"a.asInstanceOf[B${i + 1}]")}")
@@ -30,7 +30,7 @@ object SchemaSourceGenerators {
        |
        |import scala.deriving.*
        |
-       |trait SumInstances:
+       |trait CoproductInstances:
        |$instances""".stripMargin
   }
 }

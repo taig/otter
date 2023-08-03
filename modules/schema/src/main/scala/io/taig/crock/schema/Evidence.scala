@@ -31,21 +31,21 @@ object Evidence:
     ): Evidence.Product.Aux[A, B] = instance[A, B](Tuple.fromProductTyped)(mirror.fromProduct)
 
   @implicitNotFound(
-    "Can not construct an Evidence.Sum[${A}]: Make sure that all branches of the enum are covered in the correct order"
+    "Can not construct an Evidence.Coproduct[${A}]: Make sure that all branches of the enum are covered in the correct order"
   )
-  trait Sum[A]:
+  trait Coproduct[A]:
     type Out
     def to(a: A): Out
     def from(out: Out): A
 
-  object Sum extends SumInstances:
-    type Aux[A, B] = Evidence.Sum[A] { type Out = B }
-    inline def apply[A](using evidence: Evidence.Sum[A]): evidence.type = evidence
-    inline def instance[A, B](f: A => B)(g: B => A): Evidence.Sum.Aux[A, B] = new Sum[A]:
+  object Coproduct extends CoproductInstances:
+    type Aux[A, B] = Evidence.Coproduct[A] { type Out = B }
+    inline def apply[A](using evidence: Evidence.Coproduct[A]): evidence.type = evidence
+    inline def instance[A, B](f: A => B)(g: B => A): Evidence.Coproduct.Aux[A, B] = new Coproduct[A]:
       override type Out = B
       override def to(a: A): B = f(a)
       override def from(b: B): A = g(b)
 
-    given sum1[A, B <: A](using
+    given coproduct1[A, B <: A](using
         mirror: Mirror.SumOf[A] { type MirroredElemTypes = B *: EmptyTuple }
-    ): Evidence.Sum.Aux[A, B] = instance[A, B](_.asInstanceOf[B])(identity)
+    ): Evidence.Coproduct.Aux[A, B] = instance[A, B](_.asInstanceOf[B])(identity)

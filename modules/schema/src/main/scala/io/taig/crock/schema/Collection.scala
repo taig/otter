@@ -18,12 +18,12 @@ sealed abstract class Collection[A] extends Schema[A]:
 object Collection:
   type Of[F[a] <: Schema[a], A] = Collection[A] { type Of[a] = F[a] }
 
-  final case class Properties[+A](description: Option[String], example: Option[A])
+  final private[crock] case class Properties[+A](description: Option[String], example: Option[A])
 
   object Properties:
     val Empty: Collection.Properties[Nothing] = Properties(None, None)
 
-  final case class Root[F[a] <: Schema[a], A](of: Eval[F[A]], properties: Properties[Vector[A]])
+  final private[crock] case class Root[F[a] <: Schema[a], A](of: Eval[F[A]], properties: Properties[Vector[A]])
       extends Collection[Vector[A]]:
     override type Of[a] = F[a]
     override def constraints: Chain[Constraint] = Chain.empty
@@ -37,7 +37,7 @@ object Collection:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
-  final case class Validate[F[a] <: Schema[a], A, B](
+  final private[crock] case class Validate[F[a] <: Schema[a], A, B](
       self: Collection.Of[F, A],
       validation: Validation[A, B],
       g: B => A
@@ -49,7 +49,8 @@ object Collection:
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
-  final case class Optional[F[a] <: Schema[a], A](self: Collection.Of[F, A]) extends Collection[Option[A]]:
+  final private[crock] case class Optional[F[a] <: Schema[a], A](self: Collection.Of[F, A])
+      extends Collection[Option[A]]:
     export self.{constraints, of, Of}
     override def isOptional: Boolean = true
     override def description: Property.Optional[String] = Property.Optional(

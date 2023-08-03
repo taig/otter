@@ -17,12 +17,16 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     Primitive.Validate(this, validation, g)
 
 object Primitive:
-  final case class Properties[+A](description: Option[String], example: Option[A], format: Option[String])
+  final private[crock] case class Properties[+A](
+      description: Option[String],
+      example: Option[A],
+      format: Option[String]
+  )
 
   object Properties:
     val Empty: Primitive.Properties[Nothing] = Properties(None, None, None)
 
-  final case class Root[A](properties: Primitive.Properties[A], tpe: Type[A]) extends Primitive[A]:
+  final private[crock] case class Root[A](properties: Primitive.Properties[A], tpe: Type[A]) extends Primitive[A]:
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
@@ -38,7 +42,8 @@ object Primitive:
       f => copy(properties = properties.copy(format = f(properties.format)))
     )
 
-  final case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
+  final private[crock] case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A)
+      extends Primitive[B]:
     export self.{isOptional, tpe}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
@@ -48,7 +53,7 @@ object Primitive:
     override def format: Property.Optional[String] =
       Property.Optional(self.format.value, f => copy(self = self.format.modify(f)))
 
-  final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
+  final private[crock] case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.{constraints, tpe}
     override def isOptional: Boolean = true
     override def format: Property.Optional[String] = Property.Optional(

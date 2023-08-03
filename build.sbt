@@ -68,7 +68,7 @@ lazy val validation = module(identifier = Some("validation"))
 lazy val schema = module(identifier = Some("schema"))
   .settings(
     Compile / sourceGenerators += Def.task {
-      val sumInstances = (Compile / sourceManaged).value / "SumInstances.scala"
+      val sumInstances = (Compile / sourceManaged).value / "CoproductInstances.scala"
       IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".crock.schema"))
       Seq(sumInstances)
     }.taskValue,

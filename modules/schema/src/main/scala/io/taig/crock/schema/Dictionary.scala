@@ -19,12 +19,12 @@ sealed abstract class Dictionary[A] extends Schema[A]:
     Dictionary.Validate(this, validation, g)
 
 object Dictionary:
-  final case class Properties[+A](description: Option[String], example: Option[A])
+  final private[crock] case class Properties[+A](description: Option[String], example: Option[A])
 
   object Properties:
     val Empty: Dictionary.Properties[Nothing] = Properties(None, None)
 
-  final case class Root[A, B](
+  final private[crock] case class Root[A, B](
       key: Eval[Schema.Value[A]],
       schema: Eval[Schema[B]],
       properties: Properties[ListMap[A, B]]
@@ -48,7 +48,8 @@ object Dictionary:
 //    override def encode(abs: SeqMap[A, B]): OpenApi.Object =
 //      OpenApi.Object(abs.map { case (k, v) => (key.value.encode(k).render, schema.value.encode(v)) }.to(VectorMap))
 
-  final case class Validate[A, B](self: Dictionary[A], validation: Validation[A, B], g: B => A) extends Dictionary[B]:
+  final private[crock] case class Validate[A, B](self: Dictionary[A], validation: Validation[A, B], g: B => A)
+      extends Dictionary[B]:
     export self.{isOptional, key, schema}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
@@ -56,7 +57,7 @@ object Dictionary:
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
-  final case class Optional[A](self: Dictionary[A]) extends Dictionary[Option[A]]:
+  final private[crock] case class Optional[A](self: Dictionary[A]) extends Dictionary[Option[A]]:
     export self.{constraints, key, schema}
     override def isOptional: Boolean = false
     override def description: Property.Optional[String] =

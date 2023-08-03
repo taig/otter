@@ -37,7 +37,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
     Coproduct.Validate(this, validation, g)
-  final def to[B](using evidence: Evidence.Sum.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
 //  final override def decode(crock: OpenApi): Validated[Violations, B] = tryDecode(crock) match
 //    case Ior.Left(violations) => violations.invalid
@@ -83,12 +83,16 @@ object Coproduct:
     val Default: Discriminator = Nested.Default
     given Eq[Discriminator] = Eq.fromUniversalEquals
 
-  final case class Properties[+A](description: Option[String], discriminator: Discriminator, example: Option[A])
+  final private[crock] case class Properties[+A](
+      description: Option[String],
+      discriminator: Discriminator,
+      example: Option[A]
+  )
 
   object Properties:
     val Empty: Coproduct.Properties[Nothing] = Properties(None, Discriminator.Default, None)
 
-  final case class Root[A, B](
+  final private[crock] case class Root[A, B](
       branch: Branch[A, B],
       properties: Coproduct.Properties[B]
   ) extends Coproduct[B]:
@@ -108,7 +112,7 @@ object Coproduct:
       f => copy(properties = properties.copy(example = f(properties.example)))
     )
 
-  final case class OrElse[A, B](left: Coproduct[A], right: Coproduct[B], properties: Properties[A + B])
+  final private[crock] case class OrElse[A, B](left: Coproduct[A], right: Coproduct[B], properties: Properties[A + B])
       extends Coproduct[A + B] {
     override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
     override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
@@ -144,7 +148,8 @@ object Coproduct:
 //          case Ior.Right(c)       => left.leftIor.putRight(c.map(_.asRight))
 //          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
 
-  final case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A) extends Coproduct[B]:
+  final private[crock] case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A)
+      extends Coproduct[B]:
     export self.{isOptional, toNonEmptyChain}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def discriminator: Discriminators =
@@ -154,7 +159,7 @@ object Coproduct:
     override def example: Property.Optional[B] =
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
-  final case class Optional[A](self: Coproduct[A]) extends Coproduct[Option[A]]:
+  final private[crock] case class Optional[A](self: Coproduct[A]) extends Coproduct[Option[A]]:
     export self.{constraints, toNonEmptyChain}
     override def isOptional: Boolean = true
     override def discriminator: Discriminators =
