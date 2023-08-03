@@ -5,10 +5,11 @@ import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.crock.validation.{Constraint, Validation}
 
+// TODO add allow/disallow additional properties
 sealed abstract class Record[A] extends Schema[A]:
   final override type Self[a] = Record[a]
 
-  def fields: Chain[Field[?, ?]]
+  def toChain: Chain[Field[?, ?]]
 
   trait Nulls extends Property[Record.Null]:
     final def show: Record[A] = apply(Record.Null.Show)
@@ -44,7 +45,7 @@ object Record extends ToRecordOps:
     val Empty: Record.Properties[Nothing] = Properties(None, None, Null.Default)
 
   final case class Empty(properties: Record.Properties[Unit]) extends Record[Unit]:
-    override def fields: Chain[Field[?, ?]] = Chain.empty
+    override def toChain: Chain[Field[?, ?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
@@ -61,7 +62,7 @@ object Record extends ToRecordOps:
     )
 
   final case class One[A, B](field: Field[A, B], properties: Record.Properties[B]) extends Record[B]:
-    override def fields: Chain[Field[A, ?]] = Chain.one(field)
+    override def toChain: Chain[Field[A, ?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def description: Property.Optional[String] = Property.Optional(
@@ -78,7 +79,7 @@ object Record extends ToRecordOps:
     )
 
   final case class Zip[A, B](left: Record[A], right: Record[B], properties: Properties[(A, B)]) extends Record[(A, B)]:
-    override def fields: Chain[Field[?, ?]] = left.fields ++ right.fields
+    override def toChain: Chain[Field[?, ?]] = left.toChain ++ right.toChain
     override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
     override def isOptional: Boolean = left.isOptional && right.isOptional
     override def description: Property.Optional[String] = Property.Optional(
@@ -95,7 +96,7 @@ object Record extends ToRecordOps:
     )
 
   final case class Validate[A, B](self: Record[A], validation: Validation[A, B], g: B => A) extends Record[B]:
-    export self.{fields, isOptional}
+    export self.{isOptional, toChain}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Property.Optional[String] =
       Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
@@ -104,7 +105,7 @@ object Record extends ToRecordOps:
     override def nulls: Nulls = Nulls(self.nulls.value, f => copy(self = self.nulls.modify(f)))
 
   final case class Optional[A](self: Record[A]) extends Record[Option[A]]:
-    export self.{constraints, fields}
+    export self.{constraints, toChain}
     override def isOptional: Boolean = true
     override def description: Property.Optional[String] = Property.Optional(
       self.description.value,
@@ -136,7 +137,7 @@ final class RecordOpsTuple[A <: Tuple](self: Record[A]) extends AnyVal:
   inline def *:[B](other: Field[B, Unit]): Record[A] = other.toRecord.zip(self).imap { case (_, a) => a }(((), _))
 
 trait ToRecordOps extends ToRecordOps1:
-  implicit def toRecordOpsUnit(self: Record[Unit]): RecordOpsUnit = new RecordOpsUnit(self)
-  implicit def toRecordOpsTuple[A <: Tuple](self: Record[A]): RecordOpsTuple[A] = new RecordOpsTuple(self)
+  implicit def toRecordOpsUnit(self: Record[Unit]): RecordOpsUnit = RecordOpsUnit(self)
+  implicit def toRecordOpsTuple[A <: Tuple](self: Record[A]): RecordOpsTuple[A] = RecordOpsTuple(self)
 trait ToRecordOps1:
-  implicit def toRecordOps[A](self: Record[A]): RecordOps[A] = new RecordOps(self)
+  implicit def toRecordOps[A](self: Record[A]): RecordOps[A] = RecordOps(self)

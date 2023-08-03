@@ -51,10 +51,10 @@ object OpenApi:
   )
 
   def record(schema: Record[?]): JsonObject =
-    val properties = schema.fields.toList.map: field =>
+    val properties = schema.toChain.toList.map: field =>
       StringEncoder.value.encode(field.key.value, field.name).orEmpty := self.schema(field.schema.value)
 
-    val required = schema.fields
+    val required = schema.toChain
       .filterNot(_.schema.value.isOptional)
       .map(field => StringEncoder.value.encode(field.key.value, field.name).orEmpty)
       .pipe(required => if required.isEmpty then JsonObject.empty else JsonObject("required" := required))
@@ -69,9 +69,9 @@ object OpenApi:
 
   def product(schema: Product[?]): JsonObject = JsonObject(
     "type" := "array",
-    "prefixItems" := schema.schemas.map(schema => self.schema(schema.value)),
-    "minItems" := schema.schemas.length,
-    "maxItems" := schema.schemas.length,
+    "prefixItems" := schema.toChain.map(schema => self.schema(schema.value)),
+    "minItems" := schema.toChain.length,
+    "maxItems" := schema.toChain.length,
     "additionalItems" := false
   )
 

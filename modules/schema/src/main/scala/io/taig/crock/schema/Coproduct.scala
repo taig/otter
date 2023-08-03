@@ -9,7 +9,7 @@ import io.taig.crock.validation.{Constraint, Validation}
 sealed abstract class Coproduct[A] extends Schema[A]:
   final override type Self[a] = Coproduct[a]
 
-  def branches: NonEmptyChain[Branch[?, ?]]
+  def toNonEmptyChain: NonEmptyChain[Branch[?, ?]]
 
   abstract class Discriminators extends Property[Coproduct.Discriminator]:
     final def nested(identifier: String, value: String): Coproduct[A] =
@@ -93,7 +93,7 @@ object Coproduct:
       properties: Coproduct.Properties[B]
   ) extends Coproduct[B]:
     override def constraints: Chain[Constraint] = Chain.empty
-    override def branches: NonEmptyChain[Branch[A, B]] = NonEmptyChain.one(branch)
+    override def toNonEmptyChain: NonEmptyChain[Branch[A, B]] = NonEmptyChain.one(branch)
     override def isOptional: Boolean = false
     override def discriminator: Discriminators = Discriminators(
       properties.discriminator,
@@ -111,7 +111,7 @@ object Coproduct:
   final case class OrElse[A, B](left: Coproduct[A], right: Coproduct[B], properties: Properties[A + B])
       extends Coproduct[A + B] {
     override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
-    override def branches: NonEmptyChain[Branch[?, ?]] = left.branches ++ right.branches
+    override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
     override def isOptional: Boolean = left.isOptional && right.isOptional
 
     override def discriminator: Discriminators = Discriminators(
@@ -145,7 +145,7 @@ object Coproduct:
 //          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
 
   final case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A) extends Coproduct[B]:
-    export self.{branches, isOptional}
+    export self.{isOptional, toNonEmptyChain}
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def discriminator: Discriminators =
       Discriminators(self.discriminator.value, f => copy(self = self.discriminator.modify(f)))
@@ -155,7 +155,7 @@ object Coproduct:
       Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
 
   final case class Optional[A](self: Coproduct[A]) extends Coproduct[Option[A]]:
-    export self.{branches, constraints}
+    export self.{constraints, toNonEmptyChain}
     override def isOptional: Boolean = true
     override def discriminator: Discriminators =
       Discriminators(self.discriminator.value, f => copy(self = self.discriminator.modify(f)))
