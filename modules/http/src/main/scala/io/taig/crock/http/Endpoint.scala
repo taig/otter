@@ -11,4 +11,4 @@ object Endpoint:
   final case class Implementation[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
     def :+(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
     def +:(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = endpoint +: toRoutes
-    def toRoutes: Routes[F] = Chain.one(this)
+    def toRoutes: Routes[F] = Routes.one(this)
