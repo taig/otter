@@ -1,6 +1,7 @@
 package io.taig.crock.http
 
 import cats.data.Chain
+import io.taig.crock.http.syntax.*
 import cats.syntax.all.*
 
 trait HttpServer[F[_], R]:
@@ -30,26 +31,11 @@ trait HttpServer[F[_], R]:
     .foldLeft((true, input)) {
       case ((false, remainders), _) => (false, remainders)
       case ((true, remainders), query) =>
-        if query.isCollection then (true, removeAll(remainders, query.name))
-        else if query.isOptional then (true, removeFirst(remainders, query.name))
+        if query.isCollection then (true, remainders.removeAll(query.name))
+        else if query.isOptional then (true, remainders.removeFirst(query.name))
         else
-          getFirstWithRemainders(remainders, query.name)
+          remainders
+            .firstWithRemainders(query.name)
             .fold((false, remainders)) { case (_, remainders) => (true, remainders) }
     }
     ._1
-
-  final private def getFirst[A](fa: Chain[(String, A)], name: String): Option[A] =
-    fa.collectFirst { case (`name`, value) => value }
-  final private def removeAll[A](fa: Chain[(String, A)], name: String): Chain[(String, A)] = fa.filter:
-    case (`name`, _) => false
-    case _           => true
-  final private def removeFirst[A](fa: Chain[(String, A)], name: String): Chain[(String, A)] =
-    var removed = false
-    val result = List.newBuilder[(String, A)]
-    fa.iterator.foreach {
-      case (`name`, _) if !removed => removed = true; ()
-      case entry                   => result += entry
-    }
-    Chain.fromSeq(result.result())
-  final private def getFirstWithRemainders[A](fa: Chain[(String, A)], name: String): Option[(A, Chain[(String, A)])] =
-    getFirst(fa, name).tupleRight(removeFirst(fa, name))

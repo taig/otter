@@ -11,10 +11,10 @@ sealed abstract class Url[A]:
 object Url:
   private[crock] object Empty extends Url[Unit]:
     override def path: Path[?] = Path.Root
-    override def queries: Queries[?] = Queries.Empty
+    override def queries: Queries[?] = Queries.Root
 
   final private[crock] case class FromPath[A](path: Path[A]) extends Url[A]:
-    override def queries: Queries[?] = Queries.Empty
+    override def queries: Queries[?] = Queries.Root
 
   final private[crock] case class FromQueries[A](queries: Queries[A]) extends Url[A]:
     override def path: Path[?] = Path.Root

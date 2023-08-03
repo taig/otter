@@ -12,7 +12,7 @@ final class QueriesTest extends FunSuite:
 
   test("toChain") {
     assertEquals(obtained = queries.toChain, expected = Chain(x, y, z))
-    assertEquals(obtained = Queries.Empty.toChain, expected = Chain.empty)
+    assertEquals(obtained = Queries.Root.toChain, expected = Chain.empty)
   }
 
   test("matches") {
@@ -36,11 +36,11 @@ final class QueriesTest extends FunSuite:
 
   test("matches: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.matches(Http.Queries.Empty),
+      obtained = Queries.Root.matches(Http.Queries.Empty),
       expected = true
     )
     assertEquals(
-      obtained = Queries.Empty.matches(Http.Queries.of("x" -> "foo")),
+      obtained = Queries.Root.matches(Http.Queries.of("x" -> "foo")),
       expected = true
     )
   }
@@ -66,11 +66,11 @@ final class QueriesTest extends FunSuite:
 
   test("matchesWithRemainders: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.matchesWithRemainders(Http.Queries.Empty),
+      obtained = Queries.Root.matchesWithRemainders(Http.Queries.Empty),
       expected = (Http.Queries.Empty, true)
     )
     assertEquals(
-      obtained = Queries.Empty.matchesWithRemainders(Http.Queries.of("x" -> "foo")),
+      obtained = Queries.Root.matchesWithRemainders(Http.Queries.of("x" -> "foo")),
       expected = (Http.Queries.of("x" -> "foo"), true)
     )
   }
@@ -110,22 +110,22 @@ final class QueriesTest extends FunSuite:
 
   test("decode: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.decode(Http.Queries.Empty),
+      obtained = Queries.Root.decode(Http.Queries.Empty),
       expected = ().valid
     )
     assertEquals(
-      obtained = Queries.Empty.decode(Http.Queries.of("x" -> "foobar")),
+      obtained = Queries.Root.decode(Http.Queries.of("x" -> "foobar")),
       expected = ().valid
     )
   }
 
   test("decodeWithRemainders: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.decodeWithRemainders(Http.Queries.Empty),
+      obtained = Queries.Root.decodeWithRemainders(Http.Queries.Empty),
       expected = (Http.Queries.Empty, ()).valid
     )
     assertEquals(
-      obtained = Queries.Empty.decodeWithRemainders(Http.Queries.of("x" -> "foobar")),
+      obtained = Queries.Root.decodeWithRemainders(Http.Queries.of("x" -> "foobar")),
       expected = (Http.Queries.of("x" -> "foobar"), ()).valid
     )
   }
@@ -154,7 +154,7 @@ final class QueriesTest extends FunSuite:
 
   test("encode: Queries.Empty") {
     assertEquals(
-      obtained = Queries.Empty.encode(()),
+      obtained = Queries.Root.encode(()),
       expected = Http.Queries.Empty
     )
   }

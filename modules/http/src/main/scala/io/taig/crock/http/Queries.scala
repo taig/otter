@@ -27,7 +27,10 @@ sealed abstract class Queries[A]:
 //  def encode(a: A): Http.Queries
 
 object Queries:
-  final private[crock] case class Root[A](query: Query[A]) extends Queries[A]:
+  private[crock] case object Root extends Queries[Unit]:
+    override def toChain: Chain[Query[?]] = Chain.empty
+
+  final private[crock] case class One[A](query: Query[A]) extends Queries[A]:
     override def toChain: Chain[Query[?]] = Chain.one(query)
 //    override def matchesWithRemainders(queries: Http.Queries): (Http.Queries, Boolean) =
 //      (queries.remove(query.name), query.isOptional || queries.contains(query.name))
@@ -58,16 +61,7 @@ object Queries:
 //    ): Validated[Violations, (Http.Queries, B)] = queries.decodeWithRemainders(values).map(_.map(f))
 //    override def encode(b: B): Http.Queries = queries.encode(g(b))
 
-  val Empty: Queries[Unit] = new Queries[Unit]:
-    override def toChain: Chain[Query[?]] = Chain.empty
-//    override def matchesWithRemainders(queries: Http.Queries): (Http.Queries, Boolean) =
-//      (queries, true)
-//    override def decodeWithRemainders(
-//        queries: Http.Queries
-//    ): Validated[Violations, (Http.Queries, Unit)] = (queries, ()).valid
-//    override def encode(a: Unit): Http.Queries = Http.Queries.Empty
-//
-//  def apply[A](query: Query[A]): Queries[A] = Root(query)
+  val Empty: Queries[Unit] = Root
 
   given InvariantSemigroupal[Queries] with
     override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)

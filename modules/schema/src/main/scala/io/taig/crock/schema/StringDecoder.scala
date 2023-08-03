@@ -1,17 +1,17 @@
 package io.taig.crock.schema
 
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import cats.data.Validated
 import io.taig.crock.validation.{Constraint, Violation}
 
 object StringDecoder:
   val value: Decoder[Schema.Value, Option[String]] = new Decoder:
-    override def decode[B](schema: Schema.Value[B], value: Option[String]): Validated[Violations, B] = schema match
+    override def decode[A](schema: Schema.Value[A], value: Option[String]): Validated[Violations, A] = schema match
       case schema: Primitive[?]   => primitive.decode(schema, value)
       case schema: Enumeration[?] => enumeration.decode(schema, value)
 
   val primitive: Decoder[Primitive, Option[String]] = new Decoder:
-    override def decode[B](primitive: Primitive[B], value: Option[String]): Validated[Violations, B] = primitive match
+    override def decode[A](primitive: Primitive[A], value: Option[String]): Validated[Violations, A] = primitive match
       case Primitive.Root(_, tpe) =>
         value match
           case Some(value) => decode(value)(tpe).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value)))
@@ -20,10 +20,10 @@ object StringDecoder:
         decode(self, value).andThen(validation(_).leftMap(Violations.root))
       case primitive: Primitive.Optional[?] => decode(primitive, value)
 
-    def decode[B](schema: Primitive.Optional[B], value: Option[String]): Validated[Violations, Option[B]] =
-      value.fold(none[B].valid)(_ => decode(schema.self, value).map(_.some))
+    def decode[A](schema: Primitive.Optional[A], value: Option[String]): Validated[Violations, Option[A]] =
+      value.fold(none[A].valid)(_ => decode(schema.self, value).map(_.some))
 
-    def decode[B](value: String): Type[B] => Option[B] =
+    def decode[A](value: String): Type[A] => Option[A] =
       case Type.String  => value.some
       case Type.Int     => value.toIntOption
       case Type.Long    => value.toLongOption
@@ -54,5 +54,18 @@ object StringDecoder:
           decode(self, value).andThen(validation(_).leftMap(Violations.root))
         case enumeration: Enumeration.Optional[?] => decode(enumeration, value)
 
-    def decode[B](schema: Enumeration.Optional[B], value: Option[String]): Validated[Violations, Option[B]] =
-      value.fold(none[B].valid)(_ => decode(schema.self, value).map(_.some))
+    def decode[A](schema: Enumeration.Optional[A], value: Option[String]): Validated[Violations, Option[A]] =
+      value.fold(none[A].valid)(_ => decode(schema.self, value).map(_.some))
+
+  val collection: Decoder[Collection[Schema.Value, *], Chain[String]] = new Decoder:
+    override def decode[A](
+        collection: Collection[Schema.Value, A],
+        values: Chain[String]
+    ): Validated[Violations, A] = collection match
+      case Collection.Root(schema, _) =>
+        values.zipWithIndex.traverse { case (value, index) =>
+          StringDecoder.value.decode(schema.value, value.some).leftMap(_.modifyHistory(index /: _))
+        }
+      case Collection.Validate(self, validation, _) =>
+        decode(self, values).andThen(validation(_).leftMap(Violations.root))
+      case Collection.Optional(self) => decode(self, values).map(_.some)
