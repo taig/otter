@@ -1,0 +1,178 @@
+package io.taig.crock.schema
+
+import cats.Eq
+import cats.data.{Chain, NonEmptyChain}
+import cats.syntax.all.*
+import io.taig.crock.validation.{Constraint, Validation}
+
+sealed abstract class Coproduct[A] extends Schema[A]:
+  final override type Self[a] = Coproduct[a]
+
+  def branches: NonEmptyChain[Branch[?, ?]]
+
+  abstract class Discriminators extends Property[Coproduct.Discriminator]:
+    final def nested(identifier: String, value: String): Coproduct[A] =
+      apply(Coproduct.Discriminator.Nested(identifier, value))
+    final def merged(identifier: String): Coproduct[A] = apply(Coproduct.Discriminator.Merged(identifier))
+    final def keyed: Coproduct[A] = apply(Coproduct.Discriminator.Keyed)
+    final def none: Coproduct[A] = apply(Coproduct.Discriminator.None)
+
+  object Discriminators:
+    def apply(
+        discriminator: Coproduct.Discriminator,
+        g: (Coproduct.Discriminator => Coproduct.Discriminator) => Self[A]
+    ): Discriminators = new Discriminators:
+      override def value: Coproduct.Discriminator = discriminator
+      override def modify(f: Coproduct.Discriminator => Coproduct.Discriminator): Self[A] = g(f)
+
+  def discriminator: Discriminators
+
+  final infix def orElse[B](other: Coproduct[B]): Coproduct[A + B] =
+    Coproduct.OrElse(this, other, Coproduct.Properties.Empty)
+  final def :+[C](branch: Branch[A, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
+  final def +:[C](branch: Branch[A, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
+
+  final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
+
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
+    Coproduct.Validate(this, validation, g)
+
+//  final override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Sum[A, D] =
+//    Sum.Validate(this, validation, g)
+//  final def to[C](using evidence: Evidence.Sum.Aux[C, B]): Sum[A, C] = imap(evidence.from)(evidence.to)
+//
+//  final override def decode(crock: OpenApi): Validated[Violations, B] = tryDecode(crock) match
+//    case Ior.Left(violations) => violations.invalid
+//    case Ior.Right(Some(b))   => b.valid
+//    case Ior.Right(None) =>
+//      renderDiscriminator(crock) match
+//        case Some(discriminator) =>
+//          val names = toNonEmptyChain.map(branch => OpenApi.fromString(branch.renderName)).toNonEmptyVector.toVector
+//          Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(discriminator)).invalid
+//        case None => typeViolations("Sum", crock).invalid
+//    case Ior.Both(violations, b) => b.toValid(violations)
+//
+//  def tryDecode(crock: OpenApi): Ior[Violations, Option[B]]
+//
+//  final private def renderDiscriminator(crock: OpenApi): Option[OpenApi.Primitive] = discriminator match
+//    case Discriminator.Nested(identifier, _) =>
+//      crock.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
+//    case Discriminator.Merged(identifier) =>
+//      crock.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
+//    case Discriminator.Keyed => crock.asObject.flatMap(_.keys.headOption.map(OpenApi.fromString))
+//    case Discriminator.None  => None
+//
+object Coproduct:
+  enum Discriminator:
+    case Nested(identifier: String, value: String)
+    case Merged(identifier: String)
+    case Keyed
+    case None
+
+  object Discriminator:
+    object Nested:
+      val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
+    object Merged:
+      val Default: Discriminator.Merged = Merged(identifier = "type")
+    val Default: Discriminator = Nested.Default
+    given Eq[Discriminator] = Eq.fromUniversalEquals
+
+  final case class Properties[+A](description: Option[String], discriminator: Discriminator, example: Option[A])
+
+  object Properties:
+    val Empty: Coproduct.Properties[Nothing] = Properties(None, Discriminator.Default, None)
+
+  final case class Root[A, B](
+      branch: Branch[A, B],
+      properties: Coproduct.Properties[B]
+  ) extends Coproduct[B]:
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def branches: NonEmptyChain[Branch[A, B]] = NonEmptyChain.one(branch)
+    override def isOptional: Boolean = false
+    override def discriminator: Discriminators = Discriminators(
+      properties.discriminator,
+      f => copy(properties = properties.copy(discriminator = f(properties.discriminator)))
+    )
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[B] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+
+  final case class OrElse[A, B](left: Coproduct[A], right: Coproduct[B], properties: Properties[A + B])
+      extends Coproduct[A + B] {
+    override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
+    override def branches: NonEmptyChain[Branch[?, ?]] = left.branches ++ right.branches
+    override def isOptional: Boolean = left.isOptional && right.isOptional
+
+    override def discriminator: Discriminators = Discriminators(
+      properties.discriminator,
+      f => copy(properties = properties.copy(discriminator = f(properties.discriminator)))
+    )
+
+    override def description: Property.Optional[String] = Property.Optional(
+      properties.description,
+      f => copy(properties = properties.copy(description = f(properties.description)))
+    )
+    override def example: Property.Optional[A + B] = Property.Optional(
+      properties.example,
+      f => copy(properties = properties.copy(example = f(properties.example)))
+    )
+  }
+
+//  final private case class OrElse[A, B, C](
+//      left: Sum[A, B],
+//      right: Sum[A, C],
+//      description: Option[String],
+//      example: Option[B + C]
+//  ) extends Sum[A, B + C]:
+//    override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
+//    override def discriminator: Discriminator = left.discriminator
+//    override def toNonEmptyChain: NonEmptyChain[Branch[A, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
+//    override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] =
+//      copy(description = f(description))
+//    override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B + C] =
+//      copy(left = left.modifyDiscriminator(f), right = right.modifyDiscriminator(f))
+//    override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
+//    override def tryDecode(crock: OpenApi): Ior[Violations, Option[B + C]] = left.tryDecode(crock) match
+//      case Ior.Right(Some(b)) => b.asLeft.some.rightIor
+//      case Ior.Right(None) =>
+//        right.tryDecode(crock) match
+//          case Ior.Left(right)    => right.leftIor
+//          case Ior.Right(c)       => c.map(_.asRight).rightIor
+//          case Ior.Both(right, c) => right.leftIor.putRight(c.map(_.asRight))
+//      case Ior.Left(left)          => Ior.Left(left)
+//      case Ior.Both(left, Some(b)) => left.leftIor.putRight(b.asLeft.some)
+//      case Ior.Both(left, None) =>
+//        right.tryDecode(crock) match
+//          case Ior.Left(right)    => (left merge right).leftIor
+//          case Ior.Right(c)       => left.leftIor.putRight(c.map(_.asRight))
+//          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
+//    override def encode(bc: B + C): OpenApi = bc.fold(left.encode, right.encode)
+
+  final case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A) extends Coproduct[B]:
+    export self.{branches, isOptional}
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def discriminator: Discriminators =
+      Discriminators(self.discriminator.value, f => copy(self = self.discriminator.modify(f)))
+    override def description: Property.Optional[String] =
+      Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
+    override def example: Property.Optional[B] =
+      Property.Optional(self, _.example, value => copy(self = self.example(value)), validation, g)
+
+  final case class Optional[A](self: Coproduct[A]) extends Coproduct[Option[A]]:
+    export self.{branches, constraints}
+    override def isOptional: Boolean = true
+    override def discriminator: Discriminators =
+      Discriminators(self.discriminator.value, f => copy(self = self.discriminator.modify(f)))
+    override def description: Property.Optional[String] =
+      Property.Optional(self.description.value, f => copy(self = self.description.modify(f)))
+    override def example: Property.Optional[Option[A]] = Property.Optional(
+      self.example.value.map(_.some),
+      f => copy(self = self.example.modify(example => f(example.map(_.some)).flatten))
+    )
+
+  def apply[A, B](branch: Branch[A, B]): Coproduct[B] = Root(branch, Properties.Empty)

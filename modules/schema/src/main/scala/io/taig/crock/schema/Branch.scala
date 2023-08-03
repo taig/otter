@@ -1,20 +1,24 @@
-//package io.taig.crock.schema
-//
-//import cats.Eval
-//import cats.data.{Ior, Validated}
-//import cats.syntax.all.*
-//import io.taig.crock.schema.Sum.Discriminator
-//import io.taig.crock.{History, OpenApi}
-//import io.taig.crock.validation.Constraint
-//
-//final case class Branch[A, B](name: A, key: Eval[Schema.Value[A]], schema: Eval[Schema[B]]):
-//  def renderName: String = key.value.render(name)
-//
-//  infix def orElse[C](branch: Branch[A, C]): Sum[A, B + C] = toSum orElse branch.toSum
-//  infix def :+[C](branch: Branch[A, C]): Sum[A, B + C] = toSum :+ branch
-//
-//  def toSum: Sum[A, B] = Sum(this)
-//  def to[C](using Evidence.Sum.Aux[C, B]): Sum[A, C] = toSum.to[C]
+package io.taig.crock.schema
+
+import cats.Eval
+import cats.syntax.all.*
+
+final case class Branch[A, B](key: Eval[Schema.Value[A]], name: A, schema: Eval[Schema[B]]):
+  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = ???
+  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = ???
+
+  def toCoproduct: Coproduct[B] = Coproduct(this)
+  // def to[C](using Evidence.Sum.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
+
+object Branch:
+  extension [A, B <: Matchable](self: Branch[A, B])
+    inline def |[C, D <: Matchable](other: Branch[C, D]): Coproduct[B | D] = (self :+ other).imap[B | D] {
+      case Left(b)  => b
+      case Right(d) => d
+    } {
+      case b: B => Left(b)
+      case d: D => Right(d)
+    }
 //
 //  def decode(crock: OpenApi, discriminator: Sum.Discriminator): Ior[Violations, Option[B]] = discriminator match
 //    case Discriminator.Nested(identifier, value) =>

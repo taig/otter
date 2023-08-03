@@ -8,7 +8,7 @@ final class SumTest extends FunSuite:
     case Bar(name: String)
 
   val bar: Product[String, Foo.Bar] = field("name", string).to
-  val foo: Sum[String, Foo] = branch("bar", bar).to
+  val foo: Coproduct[String, Foo] = branch("bar", bar).to
 
   enum Animal:
     case Bird(name: String)
@@ -18,7 +18,7 @@ final class SumTest extends FunSuite:
   val bird: Product[String, Animal.Bird] = field("name", string).to
   val cat: Product[String, Animal.Cat] = field("lives", int).to
   val dog: Product[String, Animal.Dog] = field("goodBoy", boolean).to
-  val animal: Sum[String, Animal] = (
+  val animal: Coproduct[String, Animal] = (
     branch("bird", bird) :+
       branch("cat", cat) :+
       branch("dog", dog)
@@ -142,7 +142,7 @@ final class SumTest extends FunSuite:
 
   test("encode: merged discriminator (no object)") {
     val bar: Primitive[Foo.Bar] = string.imap[Foo.Bar](Foo.Bar.apply)(_.name)
-    val foo: Sum[String, Foo] = branch("bar", bar).toSum.to[Foo]
+    val foo: Coproduct[String, Foo] = branch("bar", bar).toSum.to[Foo]
 
     assertEquals(
       obtained = foo.withMergedDiscriminator(identifier = "type").encode(Foo.Bar("foobar")),
