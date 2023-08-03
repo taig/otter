@@ -2,8 +2,8 @@ package io.taig.crock.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.crock.schema.{Collection, Decoder, History, Schema, StringDecoder, Violations}
 import io.taig.crock.http.syntax.*
+import io.taig.crock.schema.*
 import io.taig.crock.validation.Constraint.Equals
 import io.taig.crock.validation.{Constraint, Violation}
 
@@ -59,15 +59,16 @@ final class HttpDecoder(plain: Decoder[Schema.Value, Option[String]]):
     ): Validated[Violations, (Chain[(String, String)], B)] = queries match
       case Queries.Root => (remainders, ()).valid
       case Queries.One(query) =>
-        query.schema.value match
-          case schema: Collection.Of[Schema.Value, ?] =>
-            decodeWithRemainders(schema, remainders)
-//            val (head, tail) = remainders.allWithRemainders(query.name)
-//            schema.of.value
-//            ???
-          case schema: Schema.Value[?] => ???
-//        else if query.isOptional then ???
-//        else ???
+        query.schema.value
+          .match
+            case schema: Collection.Of[Schema.Value, ?] =>
+              val (head, tail) = remainders.allWithRemainders(query.name)
+              StringDecoder.collection.decode(schema, head).tupleLeft(tail)
+            case schema: Schema.Value[?] =>
+              remainders.firstWithRemainders(query.name) match
+                case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
+                case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
+          .leftMap(_.modifyHistory(query.name /: _))
       case Queries.Zip(left, right) =>
         decodeWithRemainders(left, remainders) match
           case Validated.Valid((remainders, a)) => decodeWithRemainders(right, remainders).map(_.tupleLeft(a))
@@ -75,13 +76,7 @@ final class HttpDecoder(plain: Decoder[Schema.Value, Option[String]]):
             decodeWithRemainders(right, remainders) match
               case Validated.Valid(_)       => left.invalid
               case Validated.Invalid(right) => (left merge right).invalid
-      case Queries.Modify(queries, f, g) => ???
-
-    def decodeWithRemainders[A](
-        schema: Collection.Of[Schema.Value, ?],
-        remainders: Chain[(String, String)]
-    ): Validated[Violations, (Chain[(String, String)], A)] =
-      ???
+      case Queries.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
 
 object HttpDecoder:
   def default: HttpDecoder = new HttpDecoder(StringDecoder.value)
