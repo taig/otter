@@ -22,7 +22,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .build()
     .settings(
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
-      name := "crock" + identifier.fold("")("-" + _)
+      name := "otter" + identifier.fold("")("-" + _)
     )
 }
 
@@ -30,8 +30,8 @@ inThisBuild(
   Def.settings(
     developers := List(Developer("taig", "Niklas Klein", "mail@taig.io", url("https://taig.io/"))),
     dynverVTagPrefix := false,
-    homepage := Some(url("https://github.com/taig/crock/")),
-    licenses := List("MIT" -> url("https://raw.githubusercontent.com/taig/crock/main/LICENSE")),
+    homepage := Some(url("https://github.com/taig/otter/")),
+    licenses := List("MIT" -> url("https://raw.githubusercontent.com/taig/otter/main/LICENSE")),
     organization := "io.taig",
     scalaVersion := Version.Scala3,
     versionScheme := Some("early-semver")
@@ -69,7 +69,7 @@ lazy val schema = module(identifier = Some("schema"))
   .settings(
     Compile / sourceGenerators += Def.task {
       val sumInstances = (Compile / sourceManaged).value / "CoproductInstances.scala"
-      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".crock.schema"))
+      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".otter.schema"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
