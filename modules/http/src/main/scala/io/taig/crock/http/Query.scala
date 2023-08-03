@@ -1,18 +1,16 @@
-//package io.taig.crock.http
-//
-//import cats.Eval
-//import cats.syntax.all.*
-//import cats.data.Validated
-//
-//sealed abstract class Query[A]:
-//  def isOptional: Boolean
-//  def name: String
-//  def schema: Eval[Schema.Value[?] | Collection.Value[?]]
-//  final def optional: Query[Option[A]] = Query.Optional(this)
+package io.taig.crock.http
+
+import cats.Eval
+import cats.syntax.all.*
+import io.taig.crock.schema.{Collection, Schema}
+
+final case class Query[A](name: String, schema: Eval[Schema.Value[A] | Collection[A]]):
+  def isOptional: Boolean = schema.value.isOptional
+  def isCollection: Boolean = schema.value match
+    case _: Collection[?]   => true
+    case _: Schema.Value[?] => false
 //  final transparent inline def &[B](query: Query[B]): Queries[?] = toQueries & query
 //  final def toQueries: Queries[A] = Queries(this)
-//  def decode(queries: Http.Queries): Validated[Violations, (Http.Queries, A)]
-//  def encode(a: A): Http.Queries
 //
 //object Query:
 //  final private case class Single[A](name: String, schema: Eval[Schema.Value[A]]) extends Query[A]:
@@ -31,5 +29,3 @@
 //        case Some(_) => query.decode(queries).map(_.map(_.some))
 //        case None    => (queries, none[A]).valid
 //    override def encode(a: Option[A]): Http.Queries = a.fold(Http.Queries.Empty)(query.encode)
-//
-//  def apply[A](name: String, schema: Eval[Schema.Value[A]]): Query[A] = Single(name, schema)
