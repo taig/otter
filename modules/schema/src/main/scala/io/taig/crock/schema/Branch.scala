@@ -19,7 +19,7 @@ object Branch:
       case b: B => Left(b)
       case d: D => Right(d)
     }
-//
+
 //  def decode(crock: OpenApi, discriminator: Sum.Discriminator): Ior[Violations, Option[B]] = discriminator match
 //    case Discriminator.Nested(identifier, value) =>
 //      for
@@ -61,14 +61,3 @@ object Branch:
 //      schema.value.decode(crock) match
 //        case Validated.Valid(b)            => b.some.rightIor
 //        case Validated.Invalid(violations) => violations.modifyHistory(renderName /: _).leftIor.putRight(none[B])
-//
-//  def encode(b: B, discriminator: Sum.Discriminator): OpenApi = discriminator match
-//    case Sum.Discriminator.Nested(identifier, value) =>
-//      OpenApi.obj(identifier -> key.value.encode(name), value -> schema.value.encode(b))
-//    case Sum.Discriminator.Merged(identifier) =>
-//      schema.value.encode(b).asObject match
-//        case Some(obj) if obj.contains(identifier) => OpenApi.Object.Empty
-//        case Some(obj)                             => obj.deepMerge(OpenApi.obj(identifier -> key.value.encode(name)))
-//        case None                                  => OpenApi.Object.Empty
-//    case Sum.Discriminator.Keyed => OpenApi.obj(renderName -> schema.value.encode(b))
-//    case Sum.Discriminator.None  => schema.value.encode(b)

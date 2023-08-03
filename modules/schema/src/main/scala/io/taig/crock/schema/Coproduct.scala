@@ -5,6 +5,7 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.crock.validation.{Constraint, Validation}
 
+// TODO add null property
 sealed abstract class Coproduct[A] extends Schema[A]:
   final override type Self[a] = Coproduct[a]
 
@@ -128,20 +129,6 @@ object Coproduct:
     )
   }
 
-//  final private case class OrElse[A, B, C](
-//      left: Sum[A, B],
-//      right: Sum[A, C],
-//      description: Option[String],
-//      example: Option[B + C]
-//  ) extends Sum[A, B + C]:
-//    override def constraints: Chain[Constraint[OpenApi]] = left.constraints ++ right.constraints
-//    override def discriminator: Discriminator = left.discriminator
-//    override def toNonEmptyChain: NonEmptyChain[Branch[A, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
-//    override def modifyDescription(f: Option[String] => Option[String]): Sum[A, B + C] =
-//      copy(description = f(description))
-//    override def modifyDiscriminator(f: Sum.Discriminator => Sum.Discriminator): Sum[A, B + C] =
-//      copy(left = left.modifyDiscriminator(f), right = right.modifyDiscriminator(f))
-//    override def modifyExample(f: Option[B + C] => Option[B + C]): Sum[A, B + C] = copy(example = f(example))
 //    override def tryDecode(crock: OpenApi): Ior[Violations, Option[B + C]] = left.tryDecode(crock) match
 //      case Ior.Right(Some(b)) => b.asLeft.some.rightIor
 //      case Ior.Right(None) =>
@@ -156,7 +143,6 @@ object Coproduct:
 //          case Ior.Left(right)    => (left merge right).leftIor
 //          case Ior.Right(c)       => left.leftIor.putRight(c.map(_.asRight))
 //          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
-//    override def encode(bc: B + C): OpenApi = bc.fold(left.encode, right.encode)
 
   final case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A) extends Coproduct[B]:
     export self.{branches, isOptional}
