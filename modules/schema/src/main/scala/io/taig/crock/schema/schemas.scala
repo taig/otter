@@ -10,14 +10,14 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 object schemas:
-  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-  val double: Primitive[Double] = Primitive(Type.Double).format("double")
-  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
-  val float: Primitive[Float] = Primitive(Type.Float).format("float")
-  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
-  val string: Primitive[String] = Primitive(Type.String)
+  val bigDecimal: Primitive[BigDecimal] = Schema.Primitive(Type.BigDecimal)
+  val bigInt: Primitive[BigInt] = Schema.Primitive(Type.BigInt)
+  val boolean: Primitive[Boolean] = Schema.Primitive(Type.Boolean)
+  val double: Primitive[Double] = Schema.Primitive(Type.Double).format("double")
+  val int: Primitive[Int] = Schema.Primitive(Type.Int).format("int32")
+  val float: Primitive[Float] = Schema.Primitive(Type.Float).format("float")
+  val long: Primitive[Long] = Schema.Primitive(Type.Long).format("int64")
+  val string: Primitive[String] = Schema.Primitive(Type.String)
   val password: Primitive[String] = string.format("password")
   val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
   val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
@@ -35,14 +35,15 @@ object schemas:
 ////  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
 
   object collection:
-    def chain[Of[a] <: Schema[a], A](schema: => Of[A]): Collection[Of, Chain[A]] = Collection(Eval.later(schema))
-    def vector[Of[a] <: Schema[a], A](schema: => Of[A]): Collection[Of, Vector[A]] =
+    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Chain[A]] =
+      Schema.Collection(Eval.later(schema))
+    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Vector[A]] =
       chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[Of[a] <: Schema[a], A](schema: => Of[A]): Collection[Of, List[A]] =
+    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, List[A]] =
       chain(schema).imap(_.toList)(Chain.fromSeq)
 
-  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
-    Enumeration(Eval.later(schema), mapping)
-  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
+  def enumeration[A, B](schema: => Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
+    Schema.Enumeration(Eval.later(schema), mapping)
+  def enumeration[A: Hash, B](schema: => Value[A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
   ): Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))

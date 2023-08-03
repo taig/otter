@@ -20,6 +20,7 @@ object OpenApi:
     case schema: Record[?]      => record(schema)
     case schema: Product[?]     => product(schema)
     case schema: Dictionary[?]  => dictionary(schema)
+    case schema: Coproduct[?]   => ???
 
   def primitive(schema: Primitive[?]): JsonObject =
     val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))

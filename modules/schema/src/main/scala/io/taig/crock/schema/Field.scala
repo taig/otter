@@ -1,7 +1,7 @@
 package io.taig.crock.schema
 
 import cats.syntax.all.*
-import cats.{Eq, Eval}
+import cats.Eval
 
 final case class Field[A, B](
     key: Eval[Schema.Value[A]],
@@ -9,45 +9,32 @@ final case class Field[A, B](
     schema: Eval[Schema[B]],
     properties: Field.Properties[B]
 ):
-  trait Property[C]:
-    def value: C
-    def modify(f: C => C): Field[A, B]
-    final def apply(value: C): Field[A, B] = modify(_ => value)
+  trait Nulls:
+    def value: Option[Null]
+    def modify(f: Option[Null] => Option[Null]): Field[A, B]
+    final def apply(value: Option[Null]): Field[A, B] = modify(_ => value)
+    def inherit: Field[A, B] = apply(None)
+    def hide: Field[A, B] = apply(Some(Null.Hide))
+    def show: Field[A, B] = apply(Some(Null.Show))
 
-  object Property:
-    trait Nulls extends Property[Field.Null]:
-      def inherit: Field[A, B] = apply(Field.Null.Inherit)
-      def hide: Field[A, B] = apply(Field.Null.Hide)
-      def show: Field[A, B] = apply(Field.Null.Show)
+  object Nulls:
+    def apply(nulls: Option[Null], g: (Option[Null] => Option[Null]) => Field[A, B]): Nulls = new Nulls:
+      override def value: Option[Null] = nulls
+      override def modify(f: Option[Null] => Option[Null]): Field[A, B] = g(f)
 
-    object Nulls:
-      def apply(nulls: Field.Null, g: (Field.Null => Field.Null) => Field[A, B]): Property.Nulls = new Nulls:
-        override def value: Field.Null = nulls
-        override def modify(f: Field.Null => Field.Null): Field[A, B] = g(f)
-
-  def nulls: Property.Nulls = Property.Nulls(
+  def nulls: Nulls = Nulls(
     properties.nulls,
     f => copy(properties = properties.copy(nulls = f(properties.nulls)))
   )
 
-  def toRecord: Record[B] = Record(this)
+  def toRecord: Record[B] = Schema.Record(this)
   def to[C](using Evidence.Product.Aux[C, B]): Record[C] = toRecord.to[C]
 
 object Field extends ToFieldOps:
-  enum Null:
-    case Hide
-    case Inherit
-    case Show
-
-  object Null:
-    val Default: Field.Null = Null.Inherit
-
-    given Eq[Null] = Eq.fromUniversalEquals
-
-  final case class Properties[+A](default: Option[A], nulls: Field.Null)
+  final case class Properties[+A](default: Option[A], nulls: Option[Null])
 
   object Properties:
-    val Empty: Field.Properties[Nothing] = Properties(None, Field.Null.Default)
+    val Empty: Field.Properties[Nothing] = Properties(None, None)
 
 //  final private case class Required[A, B](
 //      key: Eval[Schema.Value[A]],

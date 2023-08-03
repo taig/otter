@@ -20,12 +20,12 @@ object StringEncoder:
       case Type.String     => b
 
     override def encode[B](schema: Primitive[B], b: B): Option[String] = schema match
-      case Primitive.Root(_, tpe)         => encode(b)(tpe).some
-      case Primitive.Validate(self, _, g) => encode(self, g(b))
-      case Primitive.Optional(self)       => b.flatMap(encode(self, _))
+      case Schema.Primitive.Root(_, tpe)         => encode(b)(tpe).some
+      case Schema.Primitive.Validate(self, _, g) => encode(self, g(b))
+      case Schema.Primitive.Optional(self)       => b.flatMap(encode(self, _))
 
   val enumeration: Encoder[Enumeration, Option[String]] = new Encoder[Enumeration, Option[String]]:
     override def encode[B](schema: Enumeration[B], b: B): Option[String] = schema match
-      case Enumeration.Root(mapping, schema, _) => value.encode(schema.value, mapping.inj(b))
-      case Enumeration.Validate(self, _, g)     => encode(self, g(b))
-      case Enumeration.Optional(self)           => b.flatMap(encode(self, _))
+      case Schema.Enumeration.Root(mapping, schema, _) => value.encode(schema.value, mapping.inj(b))
+      case Schema.Enumeration.Validate(self, _, g)     => encode(self, g(b))
+      case Schema.Enumeration.Optional(self)           => b.flatMap(encode(self, _))

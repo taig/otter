@@ -7,8 +7,8 @@ import io.taig.crock.schema.{Collection, Schema}
 final case class Query[A](name: String, schema: Eval[Schema.Value[A] | Collection.Of[Schema.Value, A]]):
   def isOptional: Boolean = schema.value.isOptional
   def isCollection: Boolean = schema.value match
-    case _: Collection[?]   => true
-    case _: Schema.Value[?] => false
+    case _: Collection.Of[Schema.Value, ?] => true
+    case _                                 => false
 //  final transparent inline def &[B](query: Query[B]): Queries[?] = toQueries & query
 //  final def toQueries: Queries[A] = Queries(this)
 //

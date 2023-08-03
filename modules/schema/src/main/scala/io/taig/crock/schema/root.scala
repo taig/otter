@@ -1,14 +1,12 @@
-//package io.taig.crock.schema
-//
-//import cats.data.Validated
-//import cats.syntax.all.*
-//import io.taig.crock.{Encoder, OpenApi}
-//import io.taig.crock.syntax.*
-//import io.taig.crock.validation.{Constraint, Validation, Violation}
-//
-////private[crock] def applyValidation[A: Encoder, B, C](validation: Validation[A, B, B, C], encode: B => OpenApi)(
-////    b: B
-////): Validated[Violations, C] = validation
-////  .run(b)
-////  .leftMap: violations =>
-////    Violations.root(violations.map(_.mapReference(_.asOpenApi).mapActual(encode)))
+package io.taig.crock.schema
+
+type Value[A] = Schema.Value[A]
+type Collection[A] = Schema.Collection[Schema, A]
+object Collection:
+  type Of[F[a] <: Schema[a], A] = Schema.Collection[F, A]
+type Dictionary[A] = Schema.Dictionary[A]
+type Coproduct[A] = Schema.Coproduct[A]
+type Enumeration[A] = Schema.Enumeration[A]
+type Primitive[A] = Schema.Primitive[A]
+type Product[A] = Schema.Product[A]
+type Record[A] = Schema.Record[A]
