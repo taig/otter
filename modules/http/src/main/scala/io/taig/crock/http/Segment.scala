@@ -10,8 +10,8 @@ sealed abstract class Segment[A]:
   final def toPath: Path[A] = Path(this)
 
 object Segment:
-  final case class Static(name: String) extends Segment[Unit]:
+  final private[crock] case class Static(name: String) extends Segment[Unit]:
     override def isOptional: Boolean = false
 
-  final case class Parameter[A](name: String, schema: Eval[Schema.Value[A]]) extends Segment[A]:
+  final private[crock] case class Parameter[A](name: String, schema: Eval[Schema.Value[A]]) extends Segment[A]:
     override def isOptional: Boolean = schema.value.isOptional

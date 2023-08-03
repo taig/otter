@@ -64,4 +64,5 @@ object StringDecoder:
         }
       case Schema.Collection.Validate(self, validation, _) =>
         decode(self, values).andThen(validation(_).leftMap(Violations.root))
-      case Schema.Collection.Optional(self) => decode(self, values).map(_.some)
+      case Schema.Collection.Optional(self) =>
+        if values.isEmpty then none.valid[Violations] else decode(self, values).map(_.some)

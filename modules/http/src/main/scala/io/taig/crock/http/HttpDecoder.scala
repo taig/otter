@@ -32,25 +32,34 @@ final class HttpDecoder(plain: Decoder[Schema.Value, Option[String]]):
         remainders: Chain[String]
     ): Validated[Violations, (Chain[String], A)] = path match
       case Path.Empty => (remainders, ()).valid
-      case Path.One(Segment.Static(name)) =>
+      case Path.One(segment) =>
+        self.segment.decodeWithRemainders(segment, remainders).leftMap(_.modifyHistory(segment.name /: _))
+      case Path.Zip(left, right) =>
+        decodeWithRemainders(left, remainders).andThen { case (remainders, a) =>
+          decodeWithRemainders(right, remainders).map(_.tupleLeft(a))
+        }
+      case Path.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
+
+  val segment: Decoder.WithRemainders[Segment, Chain[String]] = new Decoder.WithRemainders:
+    override def decodeWithRemainders[B](
+        segment: Segment[B],
+        remainders: Chain[String]
+    ): Validated[Violations, (Chain[String], B)] = segment match {
+      case Segment.Static(name) =>
         remainders.uncons match
           case Some((head, remainders)) =>
             if head === name then (remainders, ()).valid
-            else Violations.oneNec(History.Root / name, Violation.required(head)).invalid
-          case None => Violations.oneNec(History.Root / name, Violation.required).invalid
-      case Path.One(Segment.Parameter(name, schema)) =>
+            else Violations.rootNec(Violation.required(head)).invalid
+          case None => Violations.rootNec(Violation.required).invalid
+      case Segment.Parameter(name, schema) =>
         remainders.uncons match
           case Some((head, tail)) =>
             val result = plain.decode(schema.value, head.some).tupleLeft(tail)
             if schema.value.isOptional
             then result.orElse(plain.decode(schema.value, None).tupleLeft(remainders))
             else result
-          case None => Violations.oneNec(History.Root / name, Violation.required).invalid
-      case Path.Zip(left, right) =>
-        decodeWithRemainders(left, remainders).andThen { case (remainders, a) =>
-          decodeWithRemainders(right, remainders).map(_.tupleLeft(a))
-        }
-      case Path.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
+          case None => Violations.rootNec(Violation.required).invalid
+    }
 
   val queries: Decoder.WithRemainders[Queries, Chain[(String, String)]] = new Decoder.WithRemainders:
     override def decodeWithRemainders[B](
@@ -59,16 +68,7 @@ final class HttpDecoder(plain: Decoder[Schema.Value, Option[String]]):
     ): Validated[Violations, (Chain[(String, String)], B)] = queries match
       case Queries.Root => (remainders, ()).valid
       case Queries.One(query) =>
-        query.schema.value
-          .match
-            case schema: Collection.Of[Schema.Value, ?] =>
-              val (head, tail) = remainders.allWithRemainders(query.name)
-              StringDecoder.collection.decode(schema, head).tupleLeft(tail)
-            case schema: Schema.Value[?] =>
-              remainders.firstWithRemainders(query.name) match
-                case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
-                case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
-          .leftMap(_.modifyHistory(query.name /: _))
+        self.query.decodeWithRemainders(query, remainders).leftMap(_.modifyHistory(query.name /: _))
       case Queries.Zip(left, right) =>
         decodeWithRemainders(left, remainders) match
           case Validated.Valid((remainders, a)) => decodeWithRemainders(right, remainders).map(_.tupleLeft(a))
@@ -77,6 +77,19 @@ final class HttpDecoder(plain: Decoder[Schema.Value, Option[String]]):
               case Validated.Valid(_)       => left.invalid
               case Validated.Invalid(right) => (left merge right).invalid
       case Queries.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
+
+  val query: Decoder.WithRemainders[Query, Chain[(String, String)]] = new Decoder.WithRemainders:
+    override def decodeWithRemainders[A](
+        query: Query[A],
+        remainders: Chain[(String, String)]
+    ): Validated[Violations, (Chain[(String, String)], A)] = query.schema.value match
+      case schema: Collection.Of[Schema.Value, ?] =>
+        val (head, tail) = remainders.allWithRemainders(query.name)
+        StringDecoder.collection.decode(schema, head).tupleLeft(tail)
+      case schema: Schema.Value[?] =>
+        remainders.firstWithRemainders(query.name) match
+          case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
+          case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
 
 object HttpDecoder:
   def default: HttpDecoder = new HttpDecoder(StringDecoder.value)
