@@ -27,6 +27,7 @@ sealed abstract class Record[A] extends Schema[A]:
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] =
     Record.Validate(this, validation, g)
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 
 object Record extends ToRecordOps:
   enum Null:

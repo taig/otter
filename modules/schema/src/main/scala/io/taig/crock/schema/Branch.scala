@@ -4,11 +4,11 @@ import cats.Eval
 import cats.syntax.all.*
 
 final case class Branch[A, B](key: Eval[Schema.Value[A]], name: A, schema: Eval[Schema[B]]):
-  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = ???
-  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = ???
+  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
+  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
 
   def toCoproduct: Coproduct[B] = Coproduct(this)
-  // def to[C](using Evidence.Sum.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
+  def to[C](using Evidence.Sum.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
 
 object Branch:
   extension [A, B <: Matchable](self: Branch[A, B])

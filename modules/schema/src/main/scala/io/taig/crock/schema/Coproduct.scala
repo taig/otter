@@ -29,18 +29,15 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 
   final infix def orElse[B](other: Coproduct[B]): Coproduct[A + B] =
     Coproduct.OrElse(this, other, Coproduct.Properties.Empty)
-  final def :+[C](branch: Branch[A, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
-  final def +:[C](branch: Branch[A, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
+  final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
+  final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
 
   final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
     Coproduct.Validate(this, validation, g)
+  final def to[B](using evidence: Evidence.Sum.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
-//  final override def ivalidate[C: Encoder, D](validation: Validation[C, B, B, D])(g: D => B): Sum[A, D] =
-//    Sum.Validate(this, validation, g)
-//  final def to[C](using evidence: Evidence.Sum.Aux[C, B]): Sum[A, C] = imap(evidence.from)(evidence.to)
-//
 //  final override def decode(crock: OpenApi): Validated[Violations, B] = tryDecode(crock) match
 //    case Ior.Left(violations) => violations.invalid
 //    case Ior.Right(Some(b))   => b.valid
@@ -51,9 +48,6 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 //          Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(discriminator)).invalid
 //        case None => typeViolations("Sum", crock).invalid
 //    case Ior.Both(violations, b) => b.toValid(violations)
-//
-//  def tryDecode(crock: OpenApi): Ior[Violations, Option[B]]
-//
 //  final private def renderDiscriminator(crock: OpenApi): Option[OpenApi.Primitive] = discriminator match
 //    case Discriminator.Nested(identifier, _) =>
 //      crock.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
@@ -61,8 +55,19 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 //      crock.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
 //    case Discriminator.Keyed => crock.asObject.flatMap(_.keys.headOption.map(OpenApi.fromString))
 //    case Discriminator.None  => None
-//
+
 object Coproduct:
+  extension [A <: Matchable](self: Coproduct[A])
+    inline def |[B <: Matchable](other: Coproduct[B]): Coproduct[A | B] = self
+      .orElse(other)
+      .imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
+
   enum Discriminator:
     case Nested(identifier: String, value: String)
     case Merged(identifier: String)

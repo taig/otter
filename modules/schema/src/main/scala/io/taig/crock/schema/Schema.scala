@@ -47,7 +47,6 @@ abstract class Schema[A]:
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Self[B] = imap(evidence.from)(evidence.to)
 
   final infix def zip[B](other: Schema[B]): Product[(A, B)] =
     Product.Zip(toProduct, other.toProduct, Product.Properties.Empty)
