@@ -111,6 +111,7 @@ lazy val http4s = module(identifier = Some("http4s"))
   .settings(
     libraryDependencies ++=
       "org.http4s" %%% "http4s-circe" % Version.Http4s ::
+        "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
         Nil
   )
   .dependsOn(http % "compile->compile;test->test", circe)

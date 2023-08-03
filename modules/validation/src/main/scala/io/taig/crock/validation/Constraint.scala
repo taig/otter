@@ -3,6 +3,7 @@ package io.taig.crock.validation
 import java.util.regex.Pattern
 
 enum Constraint:
+  case Equals(reference: String)
   case MinLength(reference: Int)
   case MaxLength(reference: Int)
   case Matches(pattern: Pattern)

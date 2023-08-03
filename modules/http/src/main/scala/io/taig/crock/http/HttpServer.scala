@@ -11,8 +11,8 @@ trait HttpServer[F[_], R]:
       path: Chain[String],
       queries: Chain[(String, String)],
       routes: Routes[F]
-  ): Routes[F] = routes.filter: endpoint =>
-    val input = endpoint.endpoint.input
+  ): Routes[F] = routes.filter: route =>
+    val input = route.endpoint.input
     method === input.method &&
     isMatchingPath(path, input.url.path.toChain) &&
     isMatchingQueries(queries, input.url.queries.toChain)
