@@ -1,10 +1,10 @@
-//package io.taig.otter.http
-//
-//import cats.Invariant
-//import cats.data.Validated
-//import cats.syntax.all.*
-//
-//final case class Output[A](results: Results[A], violations: Result[Violations]):
+package io.taig.otter.http
+
+import cats.Invariant
+import cats.data.Validated
+import cats.syntax.all.*
+
+final case class Output[A]( /*results: Results[A], violations: Result[Violations]*/ )
 //  def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Output[C] =
 //    copy(results = results.ivalidate(validation)(g))
 //  def imap[B](f: A => B)(g: B => A): Output[B] = copy(results = results.imap(f)(g))

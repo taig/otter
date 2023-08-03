@@ -8,6 +8,8 @@ import io.taig.otter.validation.Constraint.Equals
 import io.taig.otter.validation.{Constraint, Violation}
 
 object HttpDecoder:
+  val input: Decoder[Input, (Chain[String], Chain[(String, String)])] = ???
+
   val url: Decoder.WithRemainders[Url, (Chain[String], Chain[(String, String)])] =
     new Decoder.WithRemainders[Url, (Chain[String], Chain[(String, String)])]:
       override def decode[A](url: Url[A], data: (Chain[String], Chain[(String, String)])): Validated[Violations, A] =
