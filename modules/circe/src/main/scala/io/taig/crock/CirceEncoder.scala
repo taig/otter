@@ -12,7 +12,7 @@ object CirceEncoder:
   val schema: Encoder[Schema, Json] = new Encoder:
     override def encode[A](schema: Schema[A], a: A): Json = schema match
       case schema: Schema.Value[A] => value.encode(schema, a)
-      case schema: Collection[A]   => collection.encode(schema, a)
+      case schema: Collection[A]   => collection.encode(schema, a).fold(Json.Null)(Json.fromValues)
       case schema: Dictionary[A]   => dictionary.encode(schema, a).fold(Json.Null)(Json.fromJsonObject)
       case schema: Record[A]       => record.encode(schema, a).fold(Json.Null)(Json.fromJsonObject)
       case schema: Product[A]      => product.encode(schema, a).fold(Json.Null)(Json.fromValues)
@@ -38,11 +38,11 @@ object CirceEncoder:
       case Primitive.Validate(self, _, g) => encode(self, g(b))
       case Primitive.Optional(self)       => b.fold(Json.Null)(encode(self, _))
 
-  val collection: Encoder[Collection, Json] = new Encoder:
-    override def encode[A](collection: Collection[A], a: A): Json = collection match
-      case Collection.Root(of, _)                   => Json.fromValues(a.map(CirceEncoder.schema.encode(of.value, _)))
+  val collection: Encoder[Collection, Option[Vector[Json]]] = new Encoder:
+    override def encode[A](collection: Collection[A], a: A): Option[Vector[Json]] = collection match
+      case Collection.Root(of, _)                   => a.map(CirceEncoder.schema.encode(of.value, _)).some
       case collection: Collection.Validate[?, ?, ?] => encode(collection.self, collection.g(a))
-      case collection: Collection.Optional[?, ?]    => a.fold(Json.Null)(encode(collection.self, _))
+      case collection: Collection.Optional[?, ?]    => a.flatMap(encode(collection.self, _))
 
   val dictionary: Encoder[Dictionary, Option[JsonObject]] = new Encoder:
     override def encode[A](dictionary: Dictionary[A], a: A): Option[JsonObject] = dictionary match
