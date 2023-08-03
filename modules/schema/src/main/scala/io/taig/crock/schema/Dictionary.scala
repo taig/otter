@@ -7,6 +7,7 @@ import io.taig.crock.validation.{Constraint, Validation}
 
 import scala.collection.immutable.ListMap
 
+// TODO add null property
 sealed abstract class Dictionary[A] extends Schema[A]:
   override type Self[a] = Dictionary[a]
   def key: Eval[Schema.Value[?]]
