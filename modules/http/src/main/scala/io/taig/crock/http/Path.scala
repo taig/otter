@@ -6,10 +6,6 @@ import cats.syntax.all.*
 
 sealed abstract class Path[A]:
   def toChain: Chain[Segment[?]]
-  final def matches(path: Chain[String]): Boolean =
-    val (remainders, matches) = matchesWithRemainders(path)
-    matches && remainders.isEmpty
-  def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean)
   final infix def zip[B](path: Path[B]): Path[(A, B)] = Path.Zip(this, path)
   final infix def zip[B](segment: Segment[B]): Path[(A, B)] = zip(segment.toPath)
   final def /(name: String): Path[A] = zip(Segment.Static(name)).imap { case (a, _) => a }(a => (a, ()))
@@ -29,9 +25,6 @@ sealed abstract class Path[A]:
 object Path extends ToPathOps:
   final private[crock] case class One[A](segment: Segment[A]) extends Path[A]:
     override def toChain: Chain[Segment[?]] = Chain.one(segment)
-    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = path.uncons match
-      case Some((head, tail)) => (tail, segment.matches(head))
-      case None               => (path, false)
 //    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], A)] =
 //      path.uncons match
 //        case Some((head, tail)) => segment.decode(head).tupleLeft(tail)
@@ -43,10 +36,6 @@ object Path extends ToPathOps:
 
   final private[crock] case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
     override def toChain: Chain[Segment[?]] = left.toChain ++ right.toChain
-    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
-      val (remainders1, result1) = left.matchesWithRemainders(path)
-      val (remainders2, result2) = right.matchesWithRemainders(remainders1)
-      (remainders2, result1 && result2)
 //    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], (A, B))] =
 //      left.decodeWithRemainders(path).andThen { case (remainders, a) =>
 //        right.decodeWithRemainders(remainders).map(_.tupleLeft(a))
@@ -55,15 +44,12 @@ object Path extends ToPathOps:
 
   final private[crock] case class Modify[A, B](path: Path[A], f: A => B, g: B => A) extends Path[B]:
     override def toChain: Chain[Segment[?]] = path.toChain
-    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) =
-      this.path.matchesWithRemainders(path)
 //    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], B)] =
 //      this.path.decodeWithRemainders(path).map(_.map(f))
 //    override def encode(b: B): Chain[String] = path.encode(g(b))
 
   val Root: Path[Unit] = new Path[Unit]:
     override def toChain: Chain[Segment[?]] = Chain.empty
-    override def matchesWithRemainders(path: Chain[String]): (Chain[String], Boolean) = (path, true)
 //    override def decodeWithRemainders(path: Chain[String]): Validated[Violations, (Chain[String], Unit)] =
 //      (path, ()).valid
 //    override def encode(a: Unit): Chain[String] = Chain.empty

@@ -1,12 +1,12 @@
-//package io.taig.crock.http
-//
-//import cats.InvariantSemigroupal
-//import cats.data.{Chain, Validated}
-//import cats.syntax.all.*
-//
-//sealed abstract class Url[A]:
-//  def path: Path[?]
-//  def queries: Queries[?]
+package io.taig.crock.http
+
+import cats.InvariantSemigroupal
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+
+sealed abstract class Url[A]:
+  def path: Path[?]
+  def queries: Queries[?]
 //  final def matches(path: Chain[String], queries: Http.Queries): Boolean =
 //    val (remainders, _, result) = matchesWithRemainders(path, queries)
 //    result && remainders.isEmpty
@@ -39,7 +39,7 @@
 //  ): Validated[Violations, (Chain[String], Http.Queries, A)]
 //  def encode(a: A): (Chain[String], Http.Queries)
 //
-//object Url:
+object Url:
 //  final private case class FromPath[A](path: Path[A]) extends Url[A]:
 //    override def queries: Queries[?] = Queries.Empty
 //    override def matchesWithRemainders(
@@ -96,9 +96,9 @@
 //      val (path2, queries2) = right.encode(ab._2)
 //      (path1 ++ path2, queries1 merge queries2)
 //
-//  final private case class Modify[A, B](url: Url[A], f: A => B, g: B => A) extends Url[B]:
-//    override def path: Path[?] = url.path
-//    override def queries: Queries[?] = url.queries
+  final private case class Modify[A, B](url: Url[A], f: A => B, g: B => A) extends Url[B]:
+    override def path: Path[?] = url.path
+    override def queries: Queries[?] = url.queries
 //    override def matchesWithRemainders(
 //        path: Chain[String],
 //        queries: Http.Queries
@@ -109,10 +109,10 @@
 //    ): Validated[Violations, (Chain[String], Http.Queries, B)] =
 //      url.decodeWithRemainders(path, queries).map(_.map(f))
 //    override def encode(b: B): (Chain[String], Http.Queries) = url.encode(g(b))
-//
-//  val Root: Url[Unit] = new Url[Unit]:
-//    override def path: Path[?] = Path.Root
-//    override def queries: Queries[?] = Queries.Empty
+
+  val Root: Url[Unit] = new Url[Unit]:
+    override def path: Path[?] = Path.Root
+    override def queries: Queries[?] = Queries.Empty
 //    override def matchesWithRemainders(
 //        path: Chain[String],
 //        queries: Http.Queries
@@ -122,10 +122,10 @@
 //        queries: Http.Queries
 //    ): Validated[Violations, (Chain[String], Http.Queries, Unit)] = (path, queries, ()).valid
 //    override def encode(a: Unit): (Chain[String], Http.Queries) = (Chain.empty, Http.Queries.Empty)
-//
+
 //  def apply[A](path: Path[A]): Url[A] = FromPath(path)
 //  def apply[A](queries: Queries[A]): Url[A] = FromQueries(queries)
 //
-//  given InvariantSemigroupal[Url] with
-//    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.imap(f)(g)
-//    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.product(fb)
+  given InvariantSemigroupal[Url] with
+    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.product(fb)

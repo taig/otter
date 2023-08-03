@@ -1,12 +1,12 @@
-//package io.taig.crock.http
-//
-//import cats.Invariant
-//import cats.data.{Chain, Validated}
-//import cats.syntax.all.*
-//
-//sealed abstract class Input[A]:
-//  def method: Method
-//  def url: Url[?]
+package io.taig.crock.http
+
+import cats.Invariant
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+
+sealed abstract class Input[A]:
+  def method: Method
+  def url: Url[?]
 //  def headers: Headers[?]
 //  def body: Input.Body[?]
 //  def matches(request: Request): Boolean

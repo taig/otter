@@ -107,10 +107,10 @@ lazy val dsl = module(identifier = Some("dsl"))
 
 lazy val openapi = module(identifier = Some("openapi")).dependsOn(circe, http)
 
-lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
+lazy val http4s = module(identifier = Some("http4s"))
   .settings(
     libraryDependencies ++=
-      "org.http4s" %% "http4s-circe" % Version.Http4s ::
+      "org.http4s" %%% "http4s-circe" % Version.Http4s ::
         Nil
   )
   .dependsOn(http % "compile->compile;test->test", circe)

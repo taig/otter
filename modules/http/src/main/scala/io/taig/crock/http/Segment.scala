@@ -5,13 +5,13 @@ import cats.syntax.all.*
 import io.taig.crock.schema.Schema
 
 sealed abstract class Segment[A]:
+  def isOptional: Boolean
   def name: String
-  def matches(segment: String): Boolean
   final def toPath: Path[A] = Path(this)
 
 object Segment:
   final case class Static(name: String) extends Segment[Unit]:
-    override def matches(segment: String): Boolean = name === segment
+    override def isOptional: Boolean = false
 
   final case class Parameter[A](name: String, schema: Eval[Schema.Value[A]]) extends Segment[A]:
-    override def matches(segment: String): Boolean = true
+    override def isOptional: Boolean = schema.value.isOptional
