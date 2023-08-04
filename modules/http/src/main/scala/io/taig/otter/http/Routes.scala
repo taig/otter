@@ -13,8 +13,8 @@ object Routes:
     def :+(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = self :+ endpoint
     def ++(routes: Routes[F]): Routes[F] = self ++ routes.toChain
 
-    def filter(method: Method, path: Chain[String], queries: Chain[(String, String)]): Routes[F] =
-      def isMatchingPath(remainders: Chain[String], path: Chain[Segment[?]]): Boolean =
+    def filter(request: Http.Request): Routes[F] =
+      def isMatchingPath(remainders: Http.Path, path: Chain[Segment[?]]): Boolean =
         (remainders.uncons, path.uncons) match
           case (Some((x, xs)), Some((Segment.Static(y), ys))) => x === y && isMatchingPath(xs, ys)
           case (Some((x, xs)), Some((segment: Segment.Parameter[?], ys))) =>
@@ -23,7 +23,7 @@ object Routes:
           case (Some(_), None) | (None, Some(_)) => false
           case (None, None)                      => path.isEmpty
 
-      def isMatchingQueries(remainders: Chain[(String, String)], queries: Chain[Query[?]]): Boolean = queries
+      def isMatchingQueries(remainders: Http.Queries, queries: Chain[Query[?]]): Boolean = queries
         .foldLeft((true, remainders)) {
           case ((false, remainders), _) => (false, remainders)
           case ((true, remainders), query) =>
@@ -38,9 +38,9 @@ object Routes:
 
       toChain.filter: route =>
         val input = route.endpoint.input
-        method === input.method &&
-        isMatchingPath(path, input.url.path.toChain) &&
-        isMatchingQueries(queries, input.url.queries.toChain)
+        request.method === input.method &&
+        isMatchingPath(request.url.path, input.url.path.toChain) &&
+        isMatchingQueries(request.url.queries, input.url.queries.toChain)
 
   extension [F[_]](self: Endpoint.Implementation[F, ?, ?]) def +:(routes: Routes[F]): Routes[F] = self +: routes
 
