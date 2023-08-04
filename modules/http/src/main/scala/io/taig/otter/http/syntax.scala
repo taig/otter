@@ -1,6 +1,6 @@
 package io.taig.otter.http
 
-import cats.Eval
+import cats.{Eq, Eval}
 import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.otter.schema.Schema
@@ -78,20 +78,19 @@ object syntax:
 //      val empty: Input.Body.Multipart[Unit] = ???
 //      def apply[A](part: Input.Body.Multipart.Part[A]): Input.Body.Multipart[A] = ???
 
-  extension [A](self: Chain[(String, A)])
-    def all(name: String): Chain[A] = self.collect { case (`name`, value) => value }
-    def first(name: String): Option[A] = self.collectFirst { case (`name`, value) => value }
-    def removeAll(name: String): Chain[(String, A)] = self.filter:
-      case (`name`, _) => false
-      case _           => true
-    def removeFirst(name: String): Chain[(String, A)] =
+  extension [A: Eq, B](self: Chain[(A, B)])
+    def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
+    def first(key: A): Option[B] = self.collectFirst { case (reference, value) if key === reference => value }
+    def removeAll(key: A): Chain[(A, B)] = self.filter:
+      case (reference, _) if key === reference => false
+      case _                                   => true
+    def removeFirst(key: A): Chain[(A, B)] =
       var removed = false
-      val result = List.newBuilder[(String, A)]
+      val result = List.newBuilder[(A, B)]
       self.iterator.foreach {
-        case (`name`, _) if !removed => removed = true; ()
-        case entry                   => result += entry
+        case (reference, _) if key == reference && !removed => removed = true; ()
+        case entry                                          => result += entry
       }
       Chain.fromSeq(result.result())
-    def allWithRemainders(name: String): (Chain[A], Chain[(String, A)]) = (all(name), (removeAll(name)))
-    def firstWithRemainders(name: String): Option[(A, Chain[(String, A)])] =
-      first(name).tupleRight(removeFirst(name))
+    def allWithRemainders(key: A): (Chain[B], Chain[(A, B)]) = (all(key), removeAll(key))
+    def firstWithRemainders(key: A): Option[(B, Chain[(A, B)])] = first(key).tupleRight(removeFirst(key))
