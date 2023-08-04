@@ -6,13 +6,15 @@ import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.net.Network
 import io.taig.otter.http.Input.Body
-import io.taig.otter.http.{Endpoint, Http, HttpDecoder, HttpServer, Input, Method, Output, Routes}
+import io.taig.otter.http.{Endpoint, Http, HttpDecoder, HttpEncoder, HttpServer, Input, Method, Output, Routes}
 import io.taig.otter.schema.Violations
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.{HttpRoutes, Request as Http4sRequest, Response as Http4sResponse}
 import org.typelevel.log4cats.LoggerFactory
 
 final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F, Http4sRequest[F]]:
+  def toHttp4sResponse(response: Http.Response): F[Http4sResponse[F]] = ???
+
   override def start(routes: Routes[F]): F[Unit] =
     val httpRoutes = HttpRoutes[F]: request =>
       val method = Method(request.method.name)
@@ -32,12 +34,13 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
               HttpDecoder.url.decode(endpoint.input.url, url) match {
                 case Validated.Valid(_) =>
                   decode(route.endpoint.input.body, request.entity.body)
+                  route.implementation(???).flatMap(b => encode(route.endpoint.output, b))
                   // Right(route.implementation(a).map(a => HttpEncoder.output.encode(route.endpoint.output, a)))
                   ???
                 case Validated.Invalid(violations) => Left(failures :+ (endpoint, violations))
               }
           result match
-            case Right(response) => OptionT.liftF(response.flatMap(encode(???, _)))
+            case Right(response) => OptionT.liftF(response.flatMap(toHttp4sResponse))
             case Left(failures)  => ??? // TODO 404 with tried routes
         case None => OptionT.none
 
@@ -49,4 +52,4 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
     case Input.Body.Singlepart.Strict.Validate(self, validation, _) =>
       decode(self, data).map(_.andThen(validation(_).leftMap(Violations.root)))
 
-  def encode[A](output: Output[A], response: Http.Response): F[Http4sResponse[F]] = ???
+  def encode[A](output: Output[A], a: A): F[Http.Response] = ???
