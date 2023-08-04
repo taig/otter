@@ -31,9 +31,15 @@ object Http:
     def withBody(body: Http.Request.Body): Http.Request = modifyBody(_ => body)
 
   object Request:
-    enum Body:
-      case Singlepart(entity: Stream)
-      case Multipart
+    sealed abstract class Body extends Product with Serializable
+
+    object Body:
+      enum Singlepart extends Request.Body:
+        case Strict(data: Array[Byte])
+        case Streaming(entity: Stream)
+
+      enum Multipart:
+        case Strict(data: Array[Byte])
 
   final case class Response(code: Code, headers: Http.Headers, body: Http.Response.Body):
     def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))

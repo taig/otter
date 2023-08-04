@@ -2,6 +2,10 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
+import io.taig.otter.http.Http.Request
+import io.taig.otter.http.Http.Request.Body.Singlepart
+import io.taig.otter.http.Input.Body.Singlepart
+import io.taig.otter.http.Input.Body.Singlepart.Strict
 import io.taig.otter.http.syntax.*
 import io.taig.otter.schema.*
 import io.taig.otter.validation.Constraint.Equals
