@@ -136,8 +136,8 @@ object HttpDecoder:
         headers: Headers[A],
         remaining: Http.Headers
     ): Validated[Violations, (Http.Headers, A)] = headers match
-        case Headers.Root        => (remaining, ()).valid
-        case Headers.One(header) => HttpDecoder.header.decodeWithRemainders(header, remaining)
+      case Headers.Root        => (remaining, ()).valid
+      case Headers.One(header) => HttpDecoder.header.decodeWithRemainders(header, remaining)
 
   val header: Decoder.WithRemainders[Header, Http.Headers] = new Decoder.WithRemainders:
     override def decode[A](header: Header[A], data: Http.Headers): Validated[Violations, A] =
@@ -152,3 +152,13 @@ object HttpDecoder:
       (body, data) match
         case (Request.Body.Singlepart.Strict.Empty, _)                                         => ().valid
         case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart.Strict(data)) => data.valid
+        case (Request.Body.Singlepart.Strict.Validate(self, validation, _), _) =>
+          decode(self, data).andThen(validation(_).leftMap(Violations.root))
+        case (Request.Body.Singlepart.Streaming.Empty, _)                                              => ().valid
+        case (Request.Body.Singlepart.Streaming.Bytes, Http.Request.Body.Singlepart.Streaming(stream)) => stream.valid
+        case (Request.Body.Singlepart.Streaming.Validate(self, validation, _), _) =>
+          decode(self, data).andThen(validation(_).leftMap(Violations.root))
+        case (_: Request.Body.Singlepart.Strict[?], _: Http.Request.Body.Singlepart.Streaming) =>
+          Violations.rootNec(Violation.tpe("strict", actual = "streaming")).invalid
+        case (_: Request.Body.Singlepart.Streaming[?], _: Http.Request.Body.Singlepart.Strict) =>
+          Violations.rootNec(Violation.tpe("streaming", actual = "strict")).invalid
