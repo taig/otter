@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.Id
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.schema.*
@@ -7,7 +8,7 @@ import io.taig.otter.validation.{Constraint, Violation}
 import io.circe.{Decoder as JsonDecoder, Json}
 
 object CirceDecoder:
-  val schema: Decoder[Schema, Json] = new Decoder[Schema, Json]:
+  val schema: Decoder[Id, Schema, Json] = new Decoder:
     override def decode[B](schema: Schema[B], json: Json): Validated[Violations, B] = schema match
       case schema: Schema.Value[?] => value.decode(schema, json)
       case schema: Collection[?]   => collection.decode(schema, json)
@@ -16,12 +17,12 @@ object CirceDecoder:
       case schema: Coproduct[?]    => ???
       case schema: Dictionary[?]   => ???
 
-  val value: Decoder[Schema.Value, Json] = new Decoder[Schema.Value, Json]:
+  val value: Decoder[Id, Schema.Value, Json] = new Decoder:
     override def decode[B](schema: Schema.Value[B], json: Json): Validated[Violations, B] = schema match
       case schema: Primitive[?]   => primitive.decode(schema, json)
       case schema: Enumeration[?] => enumeration.decode(schema, json)
 
-  val primitive: Decoder[Primitive, Json] = new Decoder[Primitive, Json]:
+  val primitive: Decoder[Id, Primitive, Json] = new Decoder:
     def decode[B](json: Json): Type[B] => JsonDecoder.Result[B] =
       case Type.BigDecimal => json.as[BigDecimal]
       case Type.BigInt     => json.as[BigInt]
@@ -40,7 +41,7 @@ object CirceDecoder:
       case Schema.Primitive.Optional(self) =>
         if json.isNull then none.valid[Violations] else decode(self, json).map(_.some)
 
-  val collection: Decoder[Collection.Of[Schema, *], Json] = new Decoder:
+  val collection: Decoder[Id, Collection.Of[Schema, *], Json] = new Decoder:
     override def decode[A](collection: Collection.Of[Schema, A], json: Json): Validated[Violations, A] =
       collection match
         case Schema.Collection.Root(of, _) =>
@@ -55,7 +56,7 @@ object CirceDecoder:
         case Schema.Collection.Optional(self) =>
           if json.isNull then none.valid[Violations] else decode(self, json).map(_.some)
 
-  val enumeration: Decoder[Enumeration, Json] = new Decoder[Enumeration, Json]:
+  val enumeration: Decoder[Id, Enumeration, Json] = new Decoder:
     override def decode[A](enumeration: Enumeration[A], json: Json): Validated[Violations, A] = enumeration match
       case Schema.Enumeration.Root(mapping, schema, _) =>
         CirceDecoder.value
