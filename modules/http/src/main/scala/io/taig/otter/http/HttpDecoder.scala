@@ -129,6 +129,26 @@ object HttpDecoder:
           case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
           case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
 
-  val headers: Decoder.WithRemainders[Headers, Http.Headers] = ???
+  val headers: Decoder.WithRemainders[Headers, Http.Headers] = new Decoder.WithRemainders:
+    override def decode[A](headers: Headers[A], data: Http.Headers): Validated[Violations, A] =
+      decodeWithRemainders(headers, data).map(_._2)
+    override def decodeWithRemainders[A](
+        headers: Headers[A],
+        remaining: Http.Headers
+    ): Validated[Violations, (Http.Headers, A)] = headers match
+        case Headers.Root        => (remaining, ()).valid
+        case Headers.One(header) => HttpDecoder.header.decodeWithRemainders(header, remaining)
 
-  val body: Decoder[Request.Body, Http.Request.Body] = ???
+  val header: Decoder.WithRemainders[Header, Http.Headers] = new Decoder.WithRemainders:
+    override def decode[A](header: Header[A], data: Http.Headers): Validated[Violations, A] =
+      decodeWithRemainders(header, data).map(_._2)
+    override def decodeWithRemainders[A](
+        fa: Header[A],
+        remaining: Http.Headers
+    ): Validated[Violations, (Http.Headers, A)] = ???
+
+  val body: Decoder[Request.Body, Http.Request.Body] = new Decoder:
+    override def decode[A](body: Request.Body[A], data: Http.Request.Body): Validated[Violations, A] =
+      (body, data) match
+        case (Request.Body.Singlepart.Strict.Empty, _)                                         => ().valid
+        case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart.Strict(data)) => data.valid
