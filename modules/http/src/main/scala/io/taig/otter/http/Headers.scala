@@ -12,4 +12,7 @@ object Headers:
   private[otter] case class One[A](header: Header[A]) extends Headers[A]:
     override def toChain: Chain[Header[A]] = Chain.one(header)
 
+  private[otter] case class Zip[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
+    override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
+
   val Empty: Headers[Unit] = Root
