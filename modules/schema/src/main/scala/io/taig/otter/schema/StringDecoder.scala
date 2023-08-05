@@ -1,17 +1,16 @@
 package io.taig.otter.schema
 
-import cats.Id
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Violation}
 
 object StringDecoder:
-  val value: Decoder[Id, Schema.Value, Option[String]] = new Decoder:
+  val value: Decoder[Schema.Value, Option[String]] = new Decoder:
     override def decode[A](schema: Schema.Value[A], value: Option[String]): Validated[Violations, A] = schema match
       case schema: Primitive[?]   => primitive.decode(schema, value)
       case schema: Enumeration[?] => enumeration.decode(schema, value)
 
-  val primitive: Decoder[Id, Primitive, Option[String]] = new Decoder:
+  val primitive: Decoder[Primitive, Option[String]] = new Decoder:
     override def decode[A](primitive: Primitive[A], value: Option[String]): Validated[Violations, A] = primitive match
       case Schema.Primitive.Root(_, tpe) =>
         value match
@@ -35,7 +34,7 @@ object StringDecoder:
         try BigInt(value).some
         catch case _: NumberFormatException => none
 
-  val enumeration: Decoder[Id, Enumeration, Option[String]] = new Decoder:
+  val enumeration: Decoder[Enumeration, Option[String]] = new Decoder:
     override def decode[A](enumeration: Enumeration[A], value: Option[String]): Validated[Violations, A] =
       enumeration match
         case Schema.Enumeration.Root(mapping, schema, _) =>
@@ -53,7 +52,7 @@ object StringDecoder:
         case Schema.Enumeration.Optional(self) =>
           value.fold(none.valid[Violations])(_ => decode(self, value).map(_.some))
 
-  val collection: Decoder[Id, Collection.Of[Value, *], Chain[String]] = new Decoder:
+  val collection: Decoder[Collection.Of[Value, *], Chain[String]] = new Decoder:
     override def decode[A](
         collection: Collection.Of[Value, A],
         values: Chain[String]

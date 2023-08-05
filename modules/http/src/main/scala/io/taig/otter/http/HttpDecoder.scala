@@ -1,26 +1,31 @@
 package io.taig.otter.http
 
-import cats.{Functor, Id}
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.Request.Body
 import io.taig.otter.http.syntax.*
 import io.taig.otter.schema.*
 import io.taig.otter.validation.Constraint.Equals
 import io.taig.otter.validation.{Constraint, Violation}
 
 object HttpDecoder:
-  def request[F[_]: Functor]: Decoder[F, Request, Http.Request] = new Decoder:
-    override def decode[B](request: Request[B], data: Http.Request): F[Validated[Violations, B]] = request match
+  val request: Decoder[Request, Http.Request] = new Decoder:
+    override def decode[A](request: Request[A], data: Http.Request): Validated[Violations, A] = request match
       case Request.Root(method, url, headers, body) =>
-        body match {
-          case Body.Singlepart.Strict.Empty => ()
-          case Body.Singlepart.Strict.Bytes => ()
-        }
-        ???
-      case Request.Modify(self, f, _) => decode(self, data).map(_.map(f))
+        Validated.cond(
+          request.method === method,
+          (),
+          Violations.oneNec(
+            History.Root / "method",
+            Violation(Constraint.Equals(request.method.toString), actual = method.toString.some)
+          )
+        ) *> (
+          HttpDecoder.url.decode(url, data.url).leftMap(_.modifyHistory("url" /: _)),
+          HttpDecoder.headers.decode(headers, data.headers).leftMap(_.modifyHistory("headers" /: _)),
+          HttpDecoder.body.decode(body, data.body).leftMap(_.modifyHistory("body" /: _))
+        ).tupled
+      case Request.Modify(self, f, _) => decode(self, data).map(f)
 
-  val url: Decoder.WithRemainders[Id, Url, Http.Url] = new Decoder.WithRemainders:
+  val url: Decoder.WithRemainders[Url, Http.Url] = new Decoder.WithRemainders:
     override def decode[A](url: Url[A], data: Http.Url): Validated[Violations, A] =
       decodeWithRemainders(url, data).andThen { case (remainders, a) =>
         if remainders.path.isEmpty then a.valid
@@ -46,7 +51,7 @@ object HttpDecoder:
       case Url.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
     }
 
-  val path: Decoder.WithRemainders[Id, Path, Http.Path] = new Decoder.WithRemainders:
+  val path: Decoder.WithRemainders[Path, Http.Path] = new Decoder.WithRemainders:
     override def decode[A](path: Path[A], a: Http.Path): Validated[Violations, A] =
       decodeWithRemainders(path, a).andThen { case (remainders, a) =>
         if remainders.isEmpty then a.valid
@@ -68,7 +73,7 @@ object HttpDecoder:
         }
       case Path.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
 
-  val segment: Decoder.WithRemainders[Id, Segment, Http.Path] = new Decoder.WithRemainders:
+  val segment: Decoder.WithRemainders[Segment, Http.Path] = new Decoder.WithRemainders:
     override def decode[A](segment: Segment[A], path: Http.Path): Validated[Violations, A] =
       decodeWithRemainders(segment, path).map(_._2)
     override def decodeWithRemainders[A](
@@ -84,13 +89,13 @@ object HttpDecoder:
       case Segment.Parameter(_, schema) =>
         remainders.uncons match
           case Some((head, tail)) =>
-            val result = StringDecoder.value.decode(schema.value, head.some).map((tail, _))
+            val result = StringDecoder.value.decode(schema.value, head.some).tupleLeft(tail)
             if schema.value.isOptional
-            then result.orElse(StringDecoder.value.decode(schema.value, None).map((remainders, _)))
+            then result.orElse(StringDecoder.value.decode(schema.value, None).tupleLeft(remainders))
             else result
           case None => Violations.rootNec(Violation.required).invalid
 
-  val queries: Decoder.WithRemainders[Id, Queries, Http.Queries] = new Decoder.WithRemainders:
+  val queries: Decoder.WithRemainders[Queries, Http.Queries] = new Decoder.WithRemainders:
     override def decode[A](queries: Queries[A], data: Http.Queries): Validated[Violations, A] =
       decodeWithRemainders(queries, data).map(_._2)
     override def decodeWithRemainders[A](
@@ -109,7 +114,7 @@ object HttpDecoder:
               case Validated.Invalid(right) => (left merge right).invalid
       case Queries.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
 
-  val query: Decoder.WithRemainders[Id, Query, Http.Queries] = new Decoder.WithRemainders:
+  val query: Decoder.WithRemainders[Query, Http.Queries] = new Decoder.WithRemainders:
     override def decode[A](query: Query[A], data: Http.Queries): Validated[Violations, A] =
       decodeWithRemainders(query, data).map(_._2)
     override def decodeWithRemainders[A](
@@ -118,8 +123,12 @@ object HttpDecoder:
     ): Validated[Violations, (Http.Queries, A)] = query.schema.value match
       case schema: Collection.Of[Schema.Value, ?] =>
         val (head, tail) = remainders.allWithRemainders(query.name)
-        StringDecoder.collection.decode(schema, head).map((tail, _))
+        StringDecoder.collection.decode(schema, head).tupleLeft(tail)
       case schema: Schema.Value[?] =>
         remainders.firstWithRemainders(query.name) match
-          case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).map((remainders, _))
-          case None                      => StringDecoder.value.decode(schema, None).map((remainders, _))
+          case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
+          case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
+
+  val headers: Decoder.WithRemainders[Headers, Http.Headers] = ???
+
+  val body: Decoder[Request.Body, Http.Request.Body] = ???
