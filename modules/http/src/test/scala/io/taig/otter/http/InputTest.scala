@@ -8,7 +8,7 @@ final class InputTest extends FunSuite:
   test("encode"):
 
     assertEquals(
-      obtained = Input(method.get, Url.Root, Headers.Empty, input.body.strict.empty).encode(()),
+      obtained = Request(method.get, Url.Root, Headers.Empty, input.body.strict.empty).encode(()),
       expected = Request(
         method.get,
         Chain.empty,

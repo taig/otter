@@ -1,61 +1,69 @@
-//package io.taig.otter.http
-//
-//import cats.data.Chain
-//import cats.syntax.all.*
-//import org.typelevel.ci.CIString
-//
-//import scala.collection.immutable.VectorMap
-//
-//final case class Request(
-//    method: Method,
-//    path: Chain[String],
-//    queries: Http.Queries,
-//    headers: Http.Headers,
-//    body: Request.Body
-//):
-//  def modifyPath(f: Chain[String] => Chain[String]): Request = copy(path = f(path))
-//  def withPath(path: Chain[String]): Request = modifyPath(_ => path)
-//
-//  def modifyQueries(f: Http.Queries => Http.Queries): Request = copy(queries = f(queries))
-//  def withQueries(queries: Http.Queries): Request = modifyQueries(_ => queries)
-//
-//  def modifyHeaders(f: Http.Headers => Http.Headers): Request = copy(headers = f(headers))
-//  def withHeaders(headers: Http.Headers): Request = modifyHeaders(_ => headers)
-//
-//object Request:
-//  sealed abstract class Body
-//
-//  object Body:
-//    enum Singlepart extends Request.Body:
-//      case Strict(bytes: Array[Byte])
-//      case Streaming(stream: Stream)
-//
-//    object Singlepart:
-//      object Strict:
-//        val Empty: Request.Body.Singlepart.Strict = Singlepart.Strict(Array.emptyByteArray)
-//
-//        given Encoder[Request.Body.Singlepart.Strict] = _ => "[...]".asOpenApi
-//
-//      object Streaming:
-//        val Empty: Request.Body.Singlepart.Streaming = Singlepart.Streaming(Stream.Empty)
-//
-//    final case class Multipart(parts: Chain[Request.Body.Multipart.Part]) extends Request.Body
-//
-//    object Multipart:
-//      final case class Part(headers: Http.Headers, body: Request.Body.Singlepart)
-//
-////    object Singlepart:
-////      given Encoder[Request.Body.Singlepart] = _ => OpenApi.fromString("[...]")
-////
-////    given Encoder[Request.Body] =
-////      case body: Singlepart => body.asOpenApi
-////      case body: Multipart  => body.asOpenApi
-////
-////  given Encoder[Request] = request =>
-////    OpenApi.obj(
-////      "method" := request.method,
-////      "path" := OpenApi.fromString("/" + request.path.mkString_("/")),
-////      "queries" := OpenApi.fromSeqMap(request.queries.map { case (key, value) => (key, value.asOpenApi) }),
-////      "headers" := OpenApi.fromSeqMap(request.headers.map { case (key, value) => (key.toString, value.asOpenApi) }),
-////      "body" := request.body
-////    )
+package io.taig.otter.http
+
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.schema.{Schema, Violations}
+import io.taig.otter.validation.{Validation, Violation}
+
+sealed abstract class Request[A]:
+  def method: Method
+  def url: Url[?]
+  def headers: Headers[?]
+  def body: Request.Body[?]
+  final def imap[B](f: A => B)(g: B => A): Request[B] = Request.Modify(this, f, g)
+
+object Request:
+  sealed abstract class Body[A]:
+    self =>
+    type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
+    def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
+    final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
+    final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
+
+  object Body:
+    sealed abstract class Singlepart[A] extends Request.Body[A]:
+      self =>
+      override type Self[a] <: Request.Body.Singlepart[a] { type Self[a] = self.Self[a] }
+
+    object Singlepart:
+      sealed abstract class Strict[A] extends Request.Body.Singlepart[A]:
+        final override type Self[a] = Request.Body.Singlepart.Strict[a]
+        final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Request.Body.Singlepart.Strict[B] =
+          Strict.Validate(this, validation, g)
+        final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request.Body.Singlepart.Strict[B] = ???
+
+      object Strict:
+        private[otter] case object Empty extends Request.Body.Singlepart.Strict[Unit]
+
+        private[otter] case object Bytes extends Request.Body.Singlepart.Strict[Array[Byte]]
+
+        final private[otter] case class Validate[A, B](
+            self: Request.Body.Singlepart.Strict[A],
+            validation: Validation[A, B],
+            g: B => A
+        ) extends Request.Body.Singlepart.Strict[B]
+
+      sealed abstract class Streaming[A] extends Request.Body.Singlepart[A]:
+        final override type Self[a] = Request.Body.Singlepart.Streaming[a]
+        final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Request.Body.Singlepart.Streaming[B] =
+          Streaming.Validate(this, validation, g)
+
+      object Streaming:
+        private[otter] case object Empty extends Request.Body.Singlepart.Streaming[Unit]
+
+        private[otter] case object Bytes extends Request.Body.Singlepart.Streaming[Stream]
+
+        final private[otter] case class Validate[A, B](
+            self: Request.Body.Singlepart.Streaming[A],
+            validation: Validation[A, B],
+            g: B => A
+        ) extends Request.Body.Singlepart.Streaming[B]
+
+  final private[otter] case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])
+      extends Request[(A, B, C)]
+
+  final private[otter] case class Modify[A, B](self: Request[A], f: A => B, g: B => A) extends Request[B]:
+    export self.{body, headers, method, url}
+
+  def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C]): Request[(A, B, C)] =
+    Root(method, url, headers, body)

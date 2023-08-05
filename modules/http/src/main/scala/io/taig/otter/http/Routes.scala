@@ -37,7 +37,7 @@ object Routes:
         ._1
 
       toChain.filter: route =>
-        val input = route.endpoint.input
+        val input = route.endpoint.request
         method === input.method &&
         isMatchingPath(url.path, input.url.path.toChain) &&
         isMatchingQueries(url.queries, input.url.queries.toChain)

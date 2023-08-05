@@ -1,19 +1,24 @@
 package io.taig.otter.http
 
-import cats.Id
+import cats.{Functor, Id}
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.Http.Request
-import io.taig.otter.http.Http.Request.Body.Singlepart
-import io.taig.otter.http.Input.Body.Singlepart
-import io.taig.otter.http.Input.Body.Singlepart.Strict
+import io.taig.otter.http.Request.Body
 import io.taig.otter.http.syntax.*
 import io.taig.otter.schema.*
 import io.taig.otter.validation.Constraint.Equals
 import io.taig.otter.validation.{Constraint, Violation}
 
 object HttpDecoder:
-  val input: Decoder[Id, Input, Http.Request] = ???
+  def request[F[_]: Functor]: Decoder[F, Request, Http.Request] = new Decoder:
+    override def decode[B](request: Request[B], data: Http.Request): F[Validated[Violations, B]] = request match
+      case Request.Root(method, url, headers, body) =>
+        body match {
+          case Body.Singlepart.Strict.Empty => ()
+          case Body.Singlepart.Strict.Bytes => ()
+        }
+        ???
+      case Request.Modify(self, f, _) => decode(self, data).map(_.map(f))
 
   val url: Decoder.WithRemainders[Id, Url, Http.Url] = new Decoder.WithRemainders:
     override def decode[A](url: Url[A], data: Http.Url): Validated[Violations, A] =

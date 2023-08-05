@@ -1,10 +1,10 @@
-//package io.taig.otter.http
-//
-//import cats.Invariant
-//import cats.data.{NonEmptyChain, Validated}
-//import cats.syntax.all.*
-//
-//sealed abstract class Results[A]:
+package io.taig.otter.http
+
+import cats.Invariant
+import cats.data.{NonEmptyChain, Validated}
+import cats.syntax.all.*
+
+sealed abstract class Results[+A]
 //  def toNonEmptyChain: NonEmptyChain[Result[?]]
 //  final def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Results[C] =
 //    Results.Validate(this, validation, g)

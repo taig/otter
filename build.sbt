@@ -5,6 +5,7 @@ val Version = new {
   val Cats = "2.9.0"
   val Circe = "0.14.5"
   val EnumerationExt = "0.0.2"
+  val Fs2 = "3.8.0"
   val Http4s = "1.0.0-M40"
   val Java = "17"
   val Munit = "0.7.29"
@@ -54,7 +55,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(validation, schema, http, csv, circe, dsl, openapi, http4s, sample)
+  .aggregate(validation, schema, http, httpFs2, csv, circe, dsl, openapi, http4s, sample)
 
 lazy val validation = module(identifier = Some("validation"))
   .settings(
@@ -91,6 +92,14 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(schema % "compile->compile;test->test")
 
+lazy val httpFs2 = module(identifier = Some("http-fs2"))
+  .settings(
+    libraryDependencies ++=
+      "co.fs2" %% "fs2-core" % Version.Fs2 ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
 lazy val csv = module(identifier = Some("csv"))
   .dependsOn(schema % "compile->compile;test->test")
 
@@ -114,7 +123,7 @@ lazy val http4s = module(identifier = Some("http4s"))
         "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test", circe)
+  .dependsOn(httpFs2 % "compile->compile;test->test", circe)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
