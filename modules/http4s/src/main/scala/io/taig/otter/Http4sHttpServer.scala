@@ -1,57 +1,70 @@
 package io.taig.otter
 
 import cats.ApplicativeThrow
-import cats.data.{Chain, OptionT, Validated}
+import cats.data.Chain
 import cats.effect.Async
 import cats.syntax.all.*
+import fs2.Stream
 import fs2.io.net.Network
 import io.taig.otter.http.*
-import io.taig.otter.schema.Violations
+import org.http4s.Uri.Path as Http4sPath
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.{
   Entity,
   Header as Http4sHeader,
   Headers as Http4sHeaders,
-  HttpRoutes,
-  Request as Http4sRequest,
+  HttpApp as Http4sApp,
+  Method as Http4sMethod,
+  Query as Http4sQuery,
   Response as Http4sResponse,
-  Status
+  Status,
+  Uri
 }
 import org.typelevel.log4cats.LoggerFactory
 
-final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F, Http4sRequest[F]]:
-  override def start(routes: Routes[F]): F[Unit] =
-    val httpRoutes = HttpRoutes[F]: request =>
-      val method = Method(request.method.name)
-      val url = Http.Url(
-        Chain.fromSeq(request.uri.path.segments.map(_.decoded())),
-        Chain.fromSeq(request.uri.query.toVector).mapFilter { case (name, value) => value.tupleLeft(name) }
-      )
+final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:
+  override def start(app: App[F]): F[Unit] =
+    EmberServerBuilder.default[F].withHttpApp(toHttp4sApp(app)).build.useForever
 
-      val headers = Chain.fromSeq(request.headers.headers.map(header => header.name -> header.value))
+  def toHttp4sApp(app: App[F]): Http4sApp[F] = Http4sApp: request =>
+    val method = toHttpMethod(request.method)
+    val url = toHttpUrl(request.uri)
+    val headers = toHttpHeaders(request.headers)
+    handle(app, method, url, headers, toHttpRequestBody(_, request.body)).flatMap(toHttp4sResponse)
 
-      routes.filter(method, url).toNec match
-        case Some(routes) =>
-          val result = routes.foldLeftM(Chain.empty[(Url[?], Violations)].asLeft[Http.Response]):
-            case (result @ Right(_), _) => result.pure[F]
-            case (Left(failures), route) =>
-              Fs2HttpDecoder
-                .decode(route.endpoint.request.body, request.body)
-                .map(Http.Request(method, url, headers, _))
-                .map(HttpDecoder.request.decode(route.endpoint.request, _))
-                .flatMap:
-                  case Validated.Valid(a) =>
-                    route.implementation(a).map(HttpEncoder.response.encode(route.endpoint.response, _)).map(_.asRight)
-                  case Validated.Invalid(violations) => Left(failures :+ (route.endpoint.request.url, violations)).pure
+  // TODO make this broadly available
+  def handle(
+      app: App[F],
+      method: Method,
+      url: Http.Url,
+      headers: Http.Headers,
+      body: Request.Body[?] => F[Http.Request.Body]
+  ): F[Http.Response] = app.routes
+    .find(method, url)
+    .fold(HttpEncoder.response(app.notFound, ().valid).pure): route =>
+      body(route.endpoint.request.body)
+        .map(Http.Request(method, url, headers, _))
+        .map(HttpDecoder.request.decode(route.endpoint.request, _))
+        .flatMap(_.traverse(route.implementation))
+        .map(HttpEncoder.response(route.endpoint.response, _))
+    .handleError: _ =>
+      HttpEncoder.response(app.failure, ().valid)
 
-          OptionT
-            .liftF(result)
-            .semiflatMap:
-              case Right(response) => toHttp4sResponse(response)
-              case Left(failures)  => ???
-        case None => OptionT.none
+  def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
+    case _: Request.Body.Singlepart.Strict[?] => data.compile.to(Array).map(Http.Request.Body.Singlepart.Strict.apply)
+    case _: Request.Body.Singlepart.Streaming[?] => Http4sStream(data).map(Http.Request.Body.Singlepart.Streaming.apply)
 
-    EmberServerBuilder.default[F].withHttpApp(httpRoutes.orNotFound).build.useForever
+  def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
+
+  def toHttpPath(path: Http4sPath): Http.Path = Chain.fromSeq(path.segments.map(_.decoded()))
+
+  def toHttpQueries(query: Http4sQuery): Http.Queries =
+    Chain.fromSeq(query.toVector).mapFilter { case (name, value) => value.tupleLeft(name) }
+
+  def toHttpUrl(uri: Uri): Http.Url = Http.Url(toHttpPath(uri.path), toHttpQueries(uri.query))
+
+  def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
+    Chain.fromSeq(headers.headers.map(header => header.name -> header.value))
 
   def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
     new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
@@ -59,5 +72,5 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
   def toHttp4sResponse(response: Http.Response): F[Http4sResponse[F]] = for
     status <- Status.fromInt(response.code.toInt).liftTo[F]
     headers = toHttp4sHeaders(response.headers)
-    body <- ApplicativeThrow[F].catchOnly[ClassCastException](response.body.entity.asInstanceOf[Fs2Stream[F]].toFs2)
+    body <- ApplicativeThrow[F].catchOnly[ClassCastException](response.body.entity.asInstanceOf[Http4sStream[F]].toFs2)
   yield Http4sResponse(status, headers = headers, entity = Entity.stream(body))

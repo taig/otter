@@ -1,18 +1,12 @@
 package io.taig.otter.http
 
-import cats.data.Chain
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.schema.{Encoder, StringEncoder}
-import io.taig.otter.schema.Schema.Collection
-import io.taig.otter.schema.Schema.Value
+import io.taig.otter.schema.Schema.{Collection, Value}
+import io.taig.otter.schema.{Encoder, StringEncoder, Violations}
 
 object HttpEncoder:
-  val response: Encoder[Response, Http.Response] = new Encoder:
-    override def encode[A](response: Response[A], a: A): Http.Response = Http.Response(
-      code = ???,
-      headers = ???,
-      body = ???
-    )
+  def response[A](response: Response[A], a: Validated[Violations, A]): Http.Response = ???
 
   val headers: Encoder[Headers, Http.Headers] = new Encoder:
     override def encode[A](headers: Headers[A], a: A): Http.Headers = headers match

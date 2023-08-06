@@ -4,16 +4,16 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.http.syntax.*
 
-opaque type Routes[F[_]] = Chain[Endpoint.Implementation[F, ?, ?]]
+opaque type Routes[F[_]] = Chain[Route[F, ?, ?]]
 
 object Routes:
   extension [F[_]](self: Routes[F])
-    def toChain: Chain[Endpoint.Implementation[F, ?, ?]] = self
-    def toNec: Option[NonEmptyChain[Endpoint.Implementation[F, ?, ?]]] = NonEmptyChain.fromChain(self)
-    def :+(endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = self :+ endpoint
+    def toChain: Chain[Route[F, ?, ?]] = self
+    def toNec: Option[NonEmptyChain[Route[F, ?, ?]]] = NonEmptyChain.fromChain(self)
+    def :+(endpoint: Route[F, ?, ?]): Routes[F] = self :+ endpoint
     def ++(routes: Routes[F]): Routes[F] = self ++ routes.toChain
 
-    def filter(method: Method, url: Http.Url): Routes[F] =
+    def find(method: Method, url: Http.Url): Option[Route[F, ?, ?]] =
       def isMatchingPath(remainders: Http.Path, path: Chain[Segment[?]]): Boolean =
         (remainders.uncons, path.uncons) match
           case (Some((x, xs)), Some((Segment.Static(y), ys))) => x === y && isMatchingPath(xs, ys)
@@ -36,15 +36,15 @@ object Routes:
         }
         ._1
 
-      toChain.filter: route =>
+      toChain.find: route =>
         val input = route.endpoint.request
         method === input.method &&
         isMatchingPath(url.path, input.url.path.toChain) &&
         isMatchingQueries(url.queries, input.url.queries.toChain)
 
-  extension [F[_]](self: Endpoint.Implementation[F, ?, ?]) def +:(routes: Routes[F]): Routes[F] = self +: routes
+  extension [F[_]](self: Route[F, ?, ?]) def +:(routes: Routes[F]): Routes[F] = self +: routes
 
-  def fromChain[F[_]](endpoints: Chain[Endpoint.Implementation[F, ?, ?]]): Routes[F] = endpoints
-  def fromSeq[F[_]](endpoints: Seq[Endpoint.Implementation[F, ?, ?]]): Routes[F] = fromChain(Chain.fromSeq(endpoints))
-  def apply[F[_]](endpoints: Endpoint.Implementation[F, ?, ?]*): Routes[F] = fromSeq(endpoints)
-  def one[F[_]](endpoint: Endpoint.Implementation[F, ?, ?]): Routes[F] = fromChain(Chain.one(endpoint))
+  def fromChain[F[_]](endpoints: Chain[Route[F, ?, ?]]): Routes[F] = endpoints
+  def fromSeq[F[_]](endpoints: Seq[Route[F, ?, ?]]): Routes[F] = fromChain(Chain.fromSeq(endpoints))
+  def apply[F[_]](endpoints: Route[F, ?, ?]*): Routes[F] = fromSeq(endpoints)
+  def one[F[_]](endpoint: Route[F, ?, ?]): Routes[F] = fromChain(Chain.one(endpoint))
