@@ -52,4 +52,6 @@ object Http:
     def withBody(body: Http.Response.Body): Http.Response = modifyBody(_ => body)
 
   object Response:
-    final case class Body(entity: Stream)
+    enum Body:
+      case Strict(data: Array[Byte])
+      case Streaming(stream: Stream)

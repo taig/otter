@@ -10,7 +10,7 @@ import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
 import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.{
-  Entity,
+  Entity as Http4sEntity,
   Header as Http4sHeader,
   Headers as Http4sHeaders,
   HttpApp as Http4sApp,
@@ -21,6 +21,7 @@ import org.http4s.{
   Uri
 }
 import org.typelevel.log4cats.LoggerFactory
+import scodec.bits.ByteVector
 
 final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:
   override def start(app: App[F]): F[Unit] =
@@ -72,5 +73,12 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
   def toHttp4sResponse(response: Http.Response): F[Http4sResponse[F]] = for
     status <- Status.fromInt(response.code.toInt).liftTo[F]
     headers = toHttp4sHeaders(response.headers)
-    body <- ApplicativeThrow[F].catchOnly[ClassCastException](response.body.entity.asInstanceOf[Http4sStream[F]].toFs2)
-  yield Http4sResponse(status, headers = headers, entity = Entity.stream(body))
+    entity <- toHttp4sEntity(response.body)
+  yield Http4sResponse(status, headers = headers, entity = entity)
+
+  def toHttp4sEntity(body: Http.Response.Body): F[Http4sEntity[F]] = body match
+    case Http.Response.Body.Strict(data) => Http4sEntity.strict(ByteVector(data)).pure
+    case Http.Response.Body.Streaming(stream) =>
+      ApplicativeThrow[F]
+        .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F]].toFs2)
+        .map(Http4sEntity.stream(_))
