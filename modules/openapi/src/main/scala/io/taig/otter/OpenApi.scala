@@ -20,7 +20,7 @@ object OpenApi:
     case schema: Record[?]      => record(schema)
     case schema: Product[?]     => product(schema)
     case schema: Dictionary[?]  => dictionary(schema)
-    case schema: Coproduct[?]   => ???
+    case schema: Coproduct[?]   => coproduct(schema)
 
   def primitive(schema: Primitive[?]): JsonObject =
     val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))
@@ -80,6 +80,8 @@ object OpenApi:
     "type" := "object",
     "additionalProperties" := self.schema(schema.schema.value)
   )
+
+  def coproduct(schema: Coproduct[?]): JsonObject = ???
 
   def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
     _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))

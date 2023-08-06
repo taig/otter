@@ -37,7 +37,7 @@ object HttpDecoder:
     override def decodeWithRemainders[A](
         url: Url[A],
         remainders: Http.Url
-    ): Validated[Violations, (Http.Url, A)] = url match {
+    ): Validated[Violations, (Http.Url, A)] = url match
       case Url.Empty => (remainders, ()).valid
       case Url.FromPath(path) =>
         HttpDecoder.path.decodeWithRemainders(path, remainders.path).map { case (path, a) =>
@@ -49,7 +49,6 @@ object HttpDecoder:
         }
       case Url.Zip(left, right)   => ???
       case Url.Modify(self, f, _) => decodeWithRemainders(self, remainders).map(_.map(f))
-    }
 
   val path: Decoder.WithRemainders[Path, Http.Path] = new Decoder.WithRemainders:
     override def decode[A](path: Path[A], a: Http.Path): Validated[Violations, A] =

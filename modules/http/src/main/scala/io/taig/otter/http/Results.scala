@@ -16,3 +16,5 @@ object Results:
 
   final private[otter] case class Modify[A, B](self: Results[A], f: A => B, g: B => A) extends Results[B]:
     export self.toNonEmptyChain
+
+  def apply[A](result: Result[A]): Results[A] = Root(result)

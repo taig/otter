@@ -16,8 +16,12 @@ object HttpEncoder:
   val result: Encoder[Result, Http.Response] = new Encoder:
     @tailrec
     override def encode[A](result: Result[A], a: A): Http.Response = result match
-      case Result.Root(code, headers, body) =>
-        Http.Response(code, HttpEncoder.headers.encode(headers, a._1), HttpEncoder.payload.encode(body, a._2))
+      case result: Result.Root[?, ?] =>
+        Http.Response(
+          result.code,
+          HttpEncoder.headers.encode(result.headers, a._1),
+          HttpEncoder.payload.encode(result.body, a._2)
+        )
       case Result.Modify(self, _, g) => encode(self, g(a))
 
   val headers: Encoder[Headers, Http.Headers] = new Encoder:
