@@ -4,7 +4,7 @@ import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.schema.+
 
-sealed abstract class Results[+A]:
+sealed abstract class Results[A]:
   def toNonEmptyChain: NonEmptyChain[Result[?]]
 
 object Results:
