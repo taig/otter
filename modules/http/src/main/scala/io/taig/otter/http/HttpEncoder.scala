@@ -5,15 +5,20 @@ import cats.syntax.all.*
 import io.taig.otter.schema.Schema.{Collection, Value}
 import io.taig.otter.schema.{Encoder, StringEncoder, Violations}
 
+import scala.annotation.tailrec
+
 object HttpEncoder:
   def response[A](response: Response[A], a: Validated[Violations, A]): Http.Response =
     a.fold(HttpEncoder.result.encode(response.violations, _), HttpEncoder.results.encode(response.results, _))
 
   val results: Encoder[Results, Http.Response] = ???
 
-  val result: Encoder[Result, Http.Response] = new Encoder[Result, Http.Response]:
+  val result: Encoder[Result, Http.Response] = new Encoder:
+    @tailrec
     override def encode[A](result: Result[A], a: A): Http.Response = result match
-      case Result.Root(code, body) => Http.Response(code, headers = Chain.empty, HttpEncoder.body.encode(body, a))
+      case Result.Root(code, headers, body) =>
+        Http.Response(code, HttpEncoder.headers.encode(headers, a._1), HttpEncoder.payload.encode(body, a._2))
+      case Result.Modify(self, _, g) => encode(self, g(a))
 
   val headers: Encoder[Headers, Http.Headers] = new Encoder:
     override def encode[A](headers: Headers[A], a: A): Http.Headers = headers match
@@ -26,5 +31,5 @@ object HttpEncoder:
       case schema: Collection[Value, ?] => StringEncoder.collection.encode(schema, a).orEmpty.tupleLeft(header.name)
       case schema: Value[?] => Chain.fromOption(StringEncoder.value.encode(schema, a)).tupleLeft(header.name)
 
-  val body: Encoder[Response.Body, Http.Response.Body] = new Encoder:
-    override def encode[A](body: Response.Body[A], a: A): Http.Response.Body = ???
+  val payload: Encoder[Response.Body, Http.Payload] = new Encoder:
+    override def encode[A](body: Response.Body[A], a: A): Http.Payload = ???

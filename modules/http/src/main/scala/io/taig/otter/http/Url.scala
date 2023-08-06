@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import cats.InvariantSemigroupal
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 
 sealed abstract class Url[A]:

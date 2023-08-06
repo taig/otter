@@ -1,13 +1,14 @@
 package io.taig.otter.http
 
-import cats.Eval
-import io.taig.otter.schema.Schema
-
 sealed abstract class Result[A]:
   def code: Code
   def headers: Headers[?]
   def body: Response.Body[?]
+  def toResults: Results[A] = ???
 
 object Result:
-  final case class Root[A](code: Code, body: Response.Body[A]) extends Result[A]:
-    override def headers: Headers[?] = Headers.Empty
+  final private[otter] case class Root[A, B](code: Code, headers: Headers[A], body: Response.Body[B])
+      extends Result[(A, B)]
+
+  final private[otter] case class Modify[A, B](self: Result[A], f: A => B, g: B => A) extends Result[B]:
+    export self.{body, code, headers}

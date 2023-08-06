@@ -52,8 +52,10 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       HttpEncoder.response(app.failure, ().valid)
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
-    case _: Request.Body.Singlepart.Strict[?] => data.compile.to(Array).map(Http.Request.Body.Singlepart.Strict.apply)
-    case _: Request.Body.Singlepart.Streaming[?] => Http4sStream(data).map(Http.Request.Body.Singlepart.Streaming.apply)
+    case _: Request.Body.Singlepart.Strict[?] =>
+      data.compile.to(Array).map(data => Http.Request.Body.Singlepart(Http.Payload.Strict(data)))
+    case _: Request.Body.Singlepart.Streaming[?] =>
+      Http4sStream(data).map(stream => Http.Request.Body.Singlepart(Http.Payload.Streaming(stream)))
 
   def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
 
@@ -76,9 +78,9 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
     entity <- toHttp4sEntity(response.body)
   yield Http4sResponse(status, headers = headers, entity = entity)
 
-  def toHttp4sEntity(body: Http.Response.Body): F[Http4sEntity[F]] = body match
-    case Http.Response.Body.Strict(data) => Http4sEntity.strict(ByteVector(data)).pure
-    case Http.Response.Body.Streaming(stream) =>
+  def toHttp4sEntity(body: Http.Payload): F[Http4sEntity[F]] = body match
+    case Http.Payload.Strict(data) => Http4sEntity.strict(ByteVector(data)).pure
+    case Http.Payload.Streaming(stream) =>
       ApplicativeThrow[F]
-        .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F]].toFs2)
+        .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F, Byte]].toFs2)
         .map(Http4sEntity.stream(_))

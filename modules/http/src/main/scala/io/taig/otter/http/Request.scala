@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.schema.{Schema, Violations}
-import io.taig.otter.validation.{Validation, Violation}
+import io.taig.otter.schema.Violations
+import io.taig.otter.validation.Validation
 
 sealed abstract class Request[A]:
   def method: Method
@@ -51,7 +51,7 @@ object Request:
       object Streaming:
         private[otter] case object Empty extends Request.Body.Singlepart.Streaming[Unit]
 
-        private[otter] case object Bytes extends Request.Body.Singlepart.Streaming[Stream]
+        private[otter] case object Bytes extends Request.Body.Singlepart.Streaming[Stream[Byte]]
 
         final private[otter] case class Validate[A, B](
             self: Request.Body.Singlepart.Streaming[A],

@@ -121,10 +121,10 @@ object HttpDecoder:
         query: Query[A],
         remainders: Http.Queries
     ): Validated[Violations, (Http.Queries, A)] = query.schema.value match
-      case schema: Collection.Of[Schema.Value, ?] =>
+      case schema: Collection.Of[Value, ?] =>
         val (head, tail) = remainders.allWithRemainders(query.name)
         StringDecoder.collection.decode(schema, head).tupleLeft(tail)
-      case schema: Schema.Value[?] =>
+      case schema: Value[?] =>
         remainders.firstWithRemainders(query.name) match
           case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
           case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
@@ -134,31 +134,48 @@ object HttpDecoder:
       decodeWithRemainders(headers, data).map(_._2)
     override def decodeWithRemainders[A](
         headers: Headers[A],
-        remaining: Http.Headers
+        remainders: Http.Headers
     ): Validated[Violations, (Http.Headers, A)] = headers match
-      case Headers.Root        => (remaining, ()).valid
-      case Headers.One(header) => HttpDecoder.header.decodeWithRemainders(header, remaining)
+      case Headers.Root        => (remainders, ()).valid
+      case Headers.One(header) => HttpDecoder.header.decodeWithRemainders(header, remainders)
+      case Headers.Zip(left, right) =>
+        decodeWithRemainders(left, remainders) match
+          case Validated.Valid((remaining, a)) => decodeWithRemainders(right, remaining).map(_.tupleLeft(a))
+          case Validated.Invalid(left) =>
+            decodeWithRemainders(right, remainders) match
+              case Validated.Valid(_)       => left.invalid
+              case Validated.Invalid(right) => (left |+| right).invalid
 
   val header: Decoder.WithRemainders[Header, Http.Headers] = new Decoder.WithRemainders:
     override def decode[A](header: Header[A], data: Http.Headers): Validated[Violations, A] =
       decodeWithRemainders(header, data).map(_._2)
     override def decodeWithRemainders[A](
-        fa: Header[A],
-        remaining: Http.Headers
-    ): Validated[Violations, (Http.Headers, A)] = ???
+        header: Header[A],
+        remainders: Http.Headers
+    ): Validated[Violations, (Http.Headers, A)] = header.schema.value match
+      case schema: Collection.Of[Value, ?] =>
+        val (head, tail) = remainders.allWithRemainders(header.name)
+        StringDecoder.collection.decode(schema, head).tupleLeft(tail)
+      case schema: Value[?] =>
+        remainders.firstWithRemainders(header.name) match
+          case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
+          case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
 
   val body: Decoder[Request.Body, Http.Request.Body] = new Decoder:
     override def decode[A](body: Request.Body[A], data: Http.Request.Body): Validated[Violations, A] =
       (body, data) match
-        case (Request.Body.Singlepart.Strict.Empty, _)                                         => ().valid
-        case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart.Strict(data)) => data.valid
+        case (Request.Body.Singlepart.Strict.Empty, _) => ().valid
+        case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart(Http.Payload.Strict(data))) =>
+          data.valid
         case (Request.Body.Singlepart.Strict.Validate(self, validation, _), _) =>
           decode(self, data).andThen(validation(_).leftMap(Violations.root))
-        case (Request.Body.Singlepart.Streaming.Empty, _)                                              => ().valid
-        case (Request.Body.Singlepart.Streaming.Bytes, Http.Request.Body.Singlepart.Streaming(stream)) => stream.valid
+        case (Request.Body.Singlepart.Streaming.Empty, _) => ().valid
+        case (Request.Body.Singlepart.Streaming.Bytes, Http.Request.Body.Singlepart(Http.Payload.Streaming(stream))) =>
+          stream.valid
         case (Request.Body.Singlepart.Streaming.Validate(self, validation, _), _) =>
           decode(self, data).andThen(validation(_).leftMap(Violations.root))
-        case (_: Request.Body.Singlepart.Strict[?], _: Http.Request.Body.Singlepart.Streaming) =>
+        case (_: Request.Body.Singlepart.Strict[?], Http.Request.Body.Singlepart(_: Http.Payload.Streaming)) =>
           Violations.rootNec(Violation.tpe("strict", actual = "streaming")).invalid
-        case (_: Request.Body.Singlepart.Streaming[?], _: Http.Request.Body.Singlepart.Strict) =>
+        case (_: Request.Body.Singlepart.Streaming[?], Http.Request.Body.Singlepart(_: Http.Payload.Strict)) =>
           Violations.rootNec(Violation.tpe("streaming", actual = "strict")).invalid
+        case (_, _: Http.Request.Body.Multipart) => ??? // TODO
