@@ -19,7 +19,15 @@ object Response:
       final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Response.Body.Strict[B] = ???
 
     object Strict:
-      val Empty: Response.Body.Strict[Unit] = ???
+      private[otter] case object Bytes extends Response.Body.Strict[Array[Byte]]
+
+      final private[otter] case class Validate[A, B](
+          self: Response.Body.Strict[A],
+          validation: Validation[A, B],
+          g: B => A
+      ) extends Response.Body.Strict[B]
+
+      val Empty: Response.Body.Strict[Unit] = Bytes.imap(_ => ())(_ => Array.emptyByteArray)
 
     sealed abstract class Streaming[A] extends Response.Body[A]:
       final override type Self[a] = Response.Body.Streaming[a]
