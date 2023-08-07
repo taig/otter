@@ -27,8 +27,10 @@ object schemas:
   val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
   val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
-  val anyValue: AnyValue[Any] = Schema.AnyValue.Root
-  def singleton[A <: Singleton](a: A): AnyValue[A] = anyValue.imap(_ => a)(_ => ())
+  val void: Void[Unit] = Schema.Void.Root
+  def singleton[A <: Singleton](a: A): Void[A] = void.imap(_ => a)(_ => ())
+
+  // val anyValue: AnyValue[Any] = ??? // Schema.AnyValue.Root
 
   def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[A, B] =
     Field(name, Eval.later(key), Eval.later(schema))

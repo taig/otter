@@ -1,10 +1,11 @@
 package io.taig.otter.sample
 
 import cats.syntax.all.*
+import io.circe.Json
 import io.taig.otter.validation.Validation
 import io.taig.otter.validation.validations.*
 
-final case class User(name: User.Name, age: User.Age, gender: Option[User.Gender])
+final case class User(name: User.Name, age: User.Age, gender: Option[User.Gender], props: Json)
 
 object User:
   opaque type Name = String

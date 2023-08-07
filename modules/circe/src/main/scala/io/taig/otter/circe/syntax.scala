@@ -5,7 +5,8 @@ import cats.syntax.all.*
 import io.circe.jawn.JawnParser
 import io.circe.{Json, Printer}
 import io.taig.otter.http.{Request, Response}
-import io.taig.otter.schema.Schema
+import io.taig.otter.schema.{AnyValue, Schema}
+import io.taig.otter.schema.schemas.*
 import io.taig.otter.validation.Constraint
 import io.taig.otter.validation.Validation
 import org.typelevel.ci.CIStringSyntax
@@ -13,6 +14,7 @@ import org.typelevel.ci.CIStringSyntax
 import java.nio.charset.StandardCharsets
 
 object syntax:
+  val json: AnyValue[Json] = ???
 
   object validations:
     val json: Validation[Array[Byte], Json] =

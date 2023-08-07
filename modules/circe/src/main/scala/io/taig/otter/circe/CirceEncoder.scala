@@ -5,19 +5,19 @@ import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter.schema.*
-import io.taig.otter.schema.Schema.AnyValue
 
 import scala.collection.mutable.ListBuffer
 
 object CirceEncoder:
-  val schema: Encoder[Schema, Option[Json]] = new Encoder:
-    override def encode[A](schema: Schema[A], a: A): Option[Json] = schema match
+  val schema: Encoder[[a] =>> Schema[a] { type Codec = Json }, Option[Json]] = new Encoder:
+    override def encode[A](schema: Schema[A] { type Codec = Json }, a: A): Option[Json] = schema match
       case schema: Schema.Value[A] => value.encode(schema, a)
       case schema: Collection[A]   => collection.encode(schema, a).map(values => Json.fromValues(values.toList))
       case schema: Dictionary[A]   => dictionary.encode(schema, a).map(Json.fromJsonObject)
       case schema: Record[A]       => record.encode(schema, a).map(Json.fromJsonObject)
       case schema: Product[A]      => product.encode(schema, a).map(Json.fromValues)
       case schema: Coproduct[A]    => coproduct.encode(schema, a)
+      case schema: Void[A]         => void.encode(schema, a)
       case schema: AnyValue[A]     => anyValue.encode(schema, a)
 
   val value: Encoder[Schema.Value, Option[Json]] = new Encoder:
@@ -142,7 +142,10 @@ object CirceEncoder:
             .some
         case Discriminator.None => CirceEncoder.schema.encode(branch.schema.value, b)
 
-  val anyValue: Encoder[AnyValue, Option[Json]] = new Encoder:
-    override def encode[A](anyValue: AnyValue[A], a: A): Option[Json] = anyValue match
-      case AnyValue.Root                 => None
-      case AnyValue.Validate(self, _, g) => encode(self, g(a))
+  val void: Encoder[Void, Option[Json]] = new Encoder:
+    override def encode[A](void: Void[A], a: A): Option[Json] = void match
+      case Schema.Void.Root                 => None
+      case Schema.Void.Validate(self, _, g) => encode(self, g(a))
+
+  val anyValue: Encoder[[a] =>> AnyValue[a] { type Codec = Json }, Option[Json]] = new Encoder:
+    override def encode[B](anyValue: AnyValue[B] { type Codec = Json }, b: B): Option[Json] = anyValue.encode(b).some

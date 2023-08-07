@@ -1,10 +1,11 @@
 package io.taig.otter.sample
 
 import cats.data.Chain
+import io.circe.Json
 import io.taig.otter.sample.User.{Age, Name}
-import io.taig.otter.schema.{Collection, Enumeration, Primitive, Product, Record}
+import io.taig.otter.schema.*
 import io.taig.otter.schema.schemas.*
-import io.taig.otter.schema.Evidence
+import io.taig.otter.circe.syntax.json
 import io.taig.otter.validation.validations.*
 
 object schemas:
@@ -26,7 +27,8 @@ object schemas:
   val user: Record[User] = (
     field("name", name) :*
       field("age", age) :*
-      field("gender", gender.optional)
+      field("gender", gender.optional) :*
+      field("props", json)
   ).to
 
-  val userProduct: Product[User] = (name :* age :* gender.optional).to
+  val userProduct: Product[User] = (name :* age :* gender.optional :* json).to
