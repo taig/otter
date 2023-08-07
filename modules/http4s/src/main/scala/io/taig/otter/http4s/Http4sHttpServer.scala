@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.http4s
 
 import cats.ApplicativeThrow
 import cats.data.Chain
@@ -6,6 +6,7 @@ import cats.effect.Async
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.net.Network
+import io.taig.otter.Http4sStream
 import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
 import org.http4s.ember.server.EmberServerBuilder

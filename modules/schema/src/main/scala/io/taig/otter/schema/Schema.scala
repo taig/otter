@@ -133,7 +133,7 @@ object Schema extends ToSchemaOps:
     final class Reference[B](val reference: Eval[Of[B]]):
       def value: Of[B] = reference.value
 
-    def of: Reference[?] // TODO def of: Eval[Of[?]] -> unreducible application of higher-kinded type Collection.this.Of to wildcard arguments :-(
+    def of: Reference[?]
 
     final override def optional: Collection[Of, Option[A]] = Collection.Optional(this)
 
@@ -220,14 +220,6 @@ object Schema extends ToSchemaOps:
         f => copy(properties = properties.copy(example = f(properties.example)))
       )
 
-    //    override def decode(otter: OpenApi.Object): Validated[Violations, SeqMap[A, B]] = otter.toChain
-    //      .traverse { case (k, v) =>
-    //        (key.value.parse(k), schema.value.decode(v)).tupled.leftMap(_.modifyHistory(k /: _))
-    //      }
-    //      .map(chain => SeqMap.from(chain.iterator))
-    //    override def encode(abs: SeqMap[A, B]): OpenApi.Object =
-    //      OpenApi.Object(abs.map { case (k, v) => (key.value.encode(k).render, schema.value.encode(v)) }.to(VectorMap))
-
     final private[otter] case class Validate[A, B](self: Dictionary[A], validation: Validation[A, B], g: B => A)
         extends Dictionary[B]:
       export self.{isOptional, key, schema}
@@ -280,24 +272,6 @@ object Schema extends ToSchemaOps:
       Coproduct.Validate(this, validation, g)
     final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
-  //  final override def decode(otter: OpenApi): Validated[Violations, B] = tryDecode(otter) match
-  //    case Ior.Left(violations) => violations.invalid
-  //    case Ior.Right(Some(b))   => b.valid
-  //    case Ior.Right(None) =>
-  //      renderDiscriminator(otter) match
-  //        case Some(discriminator) =>
-  //          val names = toNonEmptyChain.map(branch => OpenApi.fromString(branch.renderName)).toNonEmptyVector.toVector
-  //          Violations.rootNec(Constraint.collection.oneOf(OpenApi.Array(names)).toViolation(discriminator)).invalid
-  //        case None => typeViolations("Sum", otter).invalid
-  //    case Ior.Both(violations, b) => b.toValid(violations)
-  //  final private def renderDiscriminator(otter: OpenApi): Option[OpenApi.Primitive] = discriminator match
-  //    case Discriminator.Nested(identifier, _) =>
-  //      otter.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
-  //    case Discriminator.Merged(identifier) =>
-  //      otter.asObject.flatMap(_.get(identifier)).flatMap(_.asPrimitive)
-  //    case Discriminator.Keyed => otter.asObject.flatMap(_.keys.headOption.map(OpenApi.fromString))
-  //    case Discriminator.None  => None
-
   object Coproduct:
     extension [A <: Matchable](self: Coproduct[A])
       inline def |[B <: Matchable](other: Coproduct[B]): Coproduct[A | B] = self
@@ -340,7 +314,7 @@ object Schema extends ToSchemaOps:
       )
 
     final private[otter] case class OrElse[A, B](left: Coproduct[A], right: Coproduct[B], properties: Properties[A + B])
-        extends Coproduct[A + B] {
+        extends Coproduct[A + B]:
       override def constraints: Chain[Constraint] = left.constraints ++ right.constraints
       override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = left.toNonEmptyChain ++ right.toNonEmptyChain
       override def isOptional: Boolean = left.isOptional && right.isOptional
@@ -356,22 +330,6 @@ object Schema extends ToSchemaOps:
         properties.example,
         f => copy(properties = properties.copy(example = f(properties.example)))
       )
-    }
-
-    //    override def tryDecode(otter: OpenApi): Ior[Violations, Option[B + C]] = left.tryDecode(otter) match
-    //      case Ior.Right(Some(b)) => b.asLeft.some.rightIor
-    //      case Ior.Right(None) =>
-    //        right.tryDecode(otter) match
-    //          case Ior.Left(right)    => right.leftIor
-    //          case Ior.Right(c)       => c.map(_.asRight).rightIor
-    //          case Ior.Both(right, c) => right.leftIor.putRight(c.map(_.asRight))
-    //      case Ior.Left(left)          => Ior.Left(left)
-    //      case Ior.Both(left, Some(b)) => left.leftIor.putRight(b.asLeft.some)
-    //      case Ior.Both(left, None) =>
-    //        right.tryDecode(otter) match
-    //          case Ior.Left(right)    => (left merge right).leftIor
-    //          case Ior.Right(c)       => left.leftIor.putRight(c.map(_.asRight))
-    //          case Ior.Both(right, c) => (left merge right).leftIor.putRight(c.map(_.asRight))
 
     final private[otter] case class Validate[A, B](self: Coproduct[A], validation: Validation[A, B], g: B => A)
         extends Coproduct[B]:
@@ -640,49 +598,14 @@ object Schema extends ToSchemaOps:
     val empty: Record[Unit] = Empty(Properties.Empty)
     def apply[A, B](field: Field[A, B]): Record[B] = One(field, Properties.Empty)
 
-  final class RecordOps[A](self: Record[A]) extends AnyVal:
-    inline def :*[B, C](other: Field[B, C]): Record[(A, C)] = self.zip(other.toRecord)
-    inline def *:[B, C](other: Field[B, C]): Record[(C, A)] = other.toRecord.zip(self)
-    inline def :*[B](other: Field[B, Unit]): Record[A] = self.zip(other.toRecord).imap { case (a, _) => a }((_, ()))
-    inline def *:[B](other: Field[B, Unit]): Record[A] = other.toRecord.zip(self).imap { case (_, a) => a }(((), _))
+  sealed abstract class Dynamic[A] extends Schema[A]:
+    override type Self[a] = Schema.Dynamic[a]
+    final override def optional: Dynamic[Option[A]] = ???
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = ???
 
-  final class RecordOpsUnit(self: Record[Unit]) extends AnyVal:
-    inline def :*[A, B](other: Field[A, B]): Record[B] = self.zip(other.toRecord).imap { case (_, b) => b }(((), _))
-    inline def *:[A, B](other: Field[A, B]): Record[B] = other.toRecord.zip(self).imap { case (b, _) => b }((_, ()))
-
-  final class RecordOpsTuple[A <: Tuple](self: Record[A]) extends AnyVal:
-    inline def :*[B, C](other: Field[B, C]): Record[Tuple.Append[A, C]] =
-      self.zip(other.toRecord).imap { case (a, c) => a :* c }(ac => (ac.init.asInstanceOf[A], ac.last.asInstanceOf[C]))
-    inline def *:[B, C](other: Field[B, C]): Record[C *: A] =
-      other.toRecord.zip(self).imap { case (c, a) => c *: a } { case c *: a => (c, a) }
-    inline def :*[B](other: Field[B, Unit]): Record[A] = self.zip(other.toRecord).imap { case (a, _) => a }((_, ()))
-    inline def *:[B](other: Field[B, Unit]): Record[A] = other.toRecord.zip(self).imap { case (_, a) => a }(((), _))
-
-  trait ToRecordOps extends ToRecordOps1:
-    implicit def toRecordOpsUnit(self: Record[Unit]): RecordOpsUnit = RecordOpsUnit(self)
-    implicit def toRecordOpsTuple[A <: Tuple](self: Record[A]): RecordOpsTuple[A] = RecordOpsTuple(self)
-
-  trait ToRecordOps1:
-    implicit def toRecordOps[A](self: Record[A]): RecordOps[A] = RecordOps(self)
-
-final class SchemaOps[A](self: Schema[A]) extends AnyVal:
-  inline def :*[B](other: Schema[B]): Product[(A, B)] = self.zip(other)
-  inline def *:[B](other: Schema[B]): Product[(B, A)] = other.zip(self)
-  inline def :*(other: Schema[Unit]): Product[A] = self.zip(other).imap { case (a, _) => a }((_, ()))
-  inline def *:(other: Schema[Unit]): Product[A] = other.zip(self).imap { case (_, a) => a }(((), _))
-final class SchemaOpsUnit(self: Schema[Unit]) extends AnyVal:
-  inline def :*[A](other: Schema[A]): Product[A] = other :* self
-  inline def *:[A](other: Schema[A]): Product[A] = other :* self
-final class SchemaOpsTuple[A <: Tuple](self: Schema[A]) extends AnyVal:
-  inline def :*[B](other: Schema[B]): Product[Tuple.Append[A, B]] =
-    self.zip(other).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
-  inline def *:[B](other: Schema[B]): Product[B *: A] =
-    other.zip(self).imap { case (b, a) => b *: a } { case b *: a => (b, a) }
-  inline def :*(other: Schema[Unit]): Product[A] = self.zip(other).imap { case (a, _) => a }((_, ()))
-  inline def *:(other: Schema[Unit]): Product[A] = other.zip(self).imap { case (_, a) => a }(((), _))
-
-trait ToSchemaOps extends ToSchemaOps1:
-  implicit final def toSchemaOpsTuple[A <: Tuple](self: Schema[A]): SchemaOpsTuple[A] = new SchemaOpsTuple[A](self)
-  implicit final def toSchemaOpsUnit(self: Schema[Unit]): SchemaOpsUnit = new SchemaOpsUnit(self)
-trait ToSchemaOps1:
-  implicit final def toSchemaOps[A](self: Schema[A]): SchemaOps[A] = new SchemaOps[A](self)
+  object Dynamic:
+    final private[otter] case class Singleton[A](a: A) extends Dynamic[A]:
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def description: Property.Optional[String] = ???
+      override def example: Property.Optional[A] = ???
+      override def isOptional: Boolean = false

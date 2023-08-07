@@ -1,9 +1,9 @@
-package io.taig.otter
+package io.taig.otter.circe
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.circe.{Json, JsonObject}
 import io.circe.syntax.*
+import io.circe.{Json, JsonObject}
 import io.taig.otter.schema.*
 
 import scala.collection.mutable.ListBuffer

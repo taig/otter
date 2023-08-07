@@ -18,4 +18,3 @@ enum Constraint:
   case Type(name: String)
   case OneOf(values: List[String])
   case Required
-  case Custom(identifier: String, reference: Option[String])

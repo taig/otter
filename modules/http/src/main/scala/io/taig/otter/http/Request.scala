@@ -16,6 +16,7 @@ object Request:
   sealed abstract class Body[A]:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
+    def withHeaders: Self[(Http.Headers, A)] = ???
     def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B] = ???
     def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
     final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
@@ -31,7 +32,6 @@ object Request:
         final override type Self[a] = Request.Body.Singlepart.Strict[a]
         final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Request.Body.Singlepart.Strict[B] =
           Strict.Validate(this, validation, g)
-        final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request.Body.Singlepart.Strict[B] = ???
 
       object Strict:
         private[otter] case object Bytes extends Request.Body.Singlepart.Strict[Array[Byte]]
@@ -50,8 +50,6 @@ object Request:
           Streaming.Validate(this, validation, g)
 
       object Streaming:
-        private[otter] case object Empty extends Request.Body.Singlepart.Streaming[Unit]
-
         private[otter] case object Bytes extends Request.Body.Singlepart.Streaming[Stream[Byte]]
 
         final private[otter] case class Validate[A, B](
@@ -59,6 +57,8 @@ object Request:
             validation: Validation[A, B],
             g: B => A
         ) extends Request.Body.Singlepart.Streaming[B]
+
+        val Empty: Request.Body.Singlepart.Streaming[Unit] = Bytes.imap(_ => ())(_ => Stream.Empty)
 
   final private[otter] case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])
       extends Request[(A, B, C)]

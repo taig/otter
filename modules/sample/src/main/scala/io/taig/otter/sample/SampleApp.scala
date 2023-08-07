@@ -1,20 +1,19 @@
 package io.taig.otter.sample
 
 import cats.effect.{IO, IOApp}
-import io.circe.Json
-import io.taig.otter.http.{Path, Segment}
-import io.taig.otter.http.syntax.*
-import io.taig.otter.{CirceEncoder, OpenApi}
+import io.taig.otter.circe.syntax.request
+import io.taig.otter.circe.syntax.response
+import io.taig.otter.http.*
 import io.taig.otter.schema.schemas.*
+import io.taig.otter.http.syntax.*
 
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
-    val spec = OpenApi.schema(schemas.userProduct)
-    Path.Root / "foo" / "bar" / parameter("foobar", int)
-    IO.println(Json.fromJsonObject(spec).spaces2) *>
-      IO.println(
-        CirceEncoder.schema.encode(
-          schemas.user,
-          User(User.Name.unsafeFromString("Bonnie Bonus"), User.Age.unsafeFromInt(33), None)
-        )
-      )
+    val endpoint: Endpoint[User, Unit] = Endpoint(
+      Request(method.get, Url.Root, Headers.Empty, request.json(schemas.user)).imap { case (_, _, user) => user }(
+        user => ((), (), user)
+      ),
+      Response(Results(Result(code.ok)), Result(code.badRequest, response.json(violations)))
+    )
+
+    IO.println(endpoint)

@@ -4,10 +4,11 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.{Json, JsonObject}
 import io.circe.syntax.*
+import io.taig.otter.circe.CirceEncoder
 import io.taig.otter.schema.*
 import io.taig.otter.validation.*
-import scala.util.chaining.*
 
+import scala.util.chaining.*
 import scala.annotation.tailrec
 
 object OpenApi:

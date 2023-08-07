@@ -7,10 +7,9 @@ import io.taig.otter.http.headers.MediaType
 import io.taig.otter.http.headers.ContentType
 import io.taig.otter.schema.Collection
 import io.taig.otter.schema.{Schema, Value}
-import io.taig.otter.validation.Validation
-import org.typelevel.ci.CIString
+import org.typelevel.ci.{CIString, CIStringSyntax}
 
-import java.nio.charset.StandardCharsets
+import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
 
 object syntax:
   val __ : Url[Unit] = Url.Root
@@ -54,31 +53,35 @@ object syntax:
   object request:
     val empty: Request.Body.Singlepart.Strict[Unit] = Request.Body.Singlepart.Strict.Empty
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Bytes
-    val text: Request.Body.Singlepart.Strict[String] = binary.imapWithHeaders { (headers, bytes) =>
-      val charset = headers
-        .getFirst(ci"Content-Type")
-        .flatMap(ContentType.parse)
-        .flatMap(_.charset)
-        .flatMap { charset =>
-          try Charset.forName(charset).some
-          catch {
-            case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
+    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] = binary.withHeaders.imap {
+      case (headers, bytes) =>
+        val charset = headers
+          .first(ci"Content-Type")
+          .flatMap(ContentType.parse)
+          .flatMap(_.charset)
+          .flatMap { charset =>
+            try Charset.forName(charset).some
+            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
           }
-        }
-        .getOrElse(StandardCharsets.UTF_8)
-      new String(bytes, charset)
+          .getOrElse(StandardCharsets.UTF_8)
+        new String(bytes, charset)
     } { value =>
       (
-        Http.Headers.one(ci"Content-Type", ContentType(MediaType.text.plain, "utf-8".some).render),
-        value.getBytes(StandardCharsets.UTF_8)
+        Chain.one(ci"Content-Type" -> ContentType(MediaType.text.plain, charset.map(_.name)).render),
+        value.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
       )
     }
+    val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
 
-//    val streaming: Request.Body.Singlepart.Streaming[Stream] = ???
-//
-//    object multipart:
-//      val empty: Request.Body.Multipart[Unit] = ???
-//      def apply[A](part: Request.Body.Multipart.Part[A]): Request.Body.Multipart[A] = ???
+    object streaming:
+      val empty: Request.Body.Singlepart.Streaming[Unit] = Request.Body.Singlepart.Streaming.Empty
+      val bytes: Request.Body.Singlepart.Streaming[Stream[Byte]] = Request.Body.Singlepart.Streaming.Bytes
+
+  object response:
+    val empty: Response.Body.Strict[Unit] = Response.Body.Strict.Empty
+    val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Bytes
+    val text: Response.Body.Strict[String] =
+      binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
 
   extension [A: Eq, B](self: Chain[(A, B)])
     def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
