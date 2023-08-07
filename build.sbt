@@ -123,6 +123,8 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+        "org.typelevel" %% "log4cats-slf4j" % "2.6.0" ::
+        "org.slf4j" % "slf4j-simple" % "2.0.7" ::
         Nil
   )
-  .dependsOn(openapi, circe)
+  .dependsOn(openapi, http4s)

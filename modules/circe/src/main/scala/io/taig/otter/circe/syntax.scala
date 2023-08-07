@@ -35,7 +35,13 @@ object syntax:
     import io.taig.otter.http.syntax.response.binary
 
     def json(printer: Printer): Response.Body.Strict[Json] =
-      binary.ivalidate(validations.json)(printer.print(_).getBytes(StandardCharsets.UTF_8))
+      binary.withHeaders.ivalidate(validations.json.lmap { case (_, bytes) => bytes }) { json =>
+        (
+          Chain.one(ci"Content-Type" -> "application/json; charset=UTF-8"),
+          printer.print(json).getBytes(StandardCharsets.UTF_8)
+        )
+      }
+
     val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
     def json[A](schema: => Schema[A]): Response.Body.Strict[A] =
       json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))

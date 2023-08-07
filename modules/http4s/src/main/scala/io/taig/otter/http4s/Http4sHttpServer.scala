@@ -6,7 +6,6 @@ import cats.effect.Async
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.net.Network
-import io.taig.otter.Http4sStream
 import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
 import org.http4s.ember.server.EmberServerBuilder
@@ -49,8 +48,9 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
         .map(HttpDecoder.request.decode(route.endpoint.request, _))
         .flatMap(_.traverse(route.implementation))
         .map(HttpEncoder.response(route.endpoint.response, _))
-    .handleError: _ =>
-      HttpEncoder.response(app.failure, ().valid)
+    .handleErrorWith: throwable =>
+      throwable.printStackTrace()
+      HttpEncoder.response(app.failure, ().valid).pure[F]
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
     case _: Request.Body.Singlepart.Strict[?] =>
@@ -80,7 +80,8 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
   yield Http4sResponse(status, headers = headers, entity = entity)
 
   def toHttp4sEntity(body: Http.Payload): F[Http4sEntity[F]] = body match
-    case Http.Payload.Strict(data) => Http4sEntity.strict(ByteVector(data)).pure
+    case Http.Payload.Strict(data) if data.isEmpty => Http4sEntity.empty.pure
+    case Http.Payload.Strict(data)                 => Http4sEntity.strict(ByteVector(data)).pure
     case Http.Payload.Streaming(stream) =>
       ApplicativeThrow[F]
         .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F, Byte]].toFs2)

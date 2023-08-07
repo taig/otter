@@ -598,14 +598,22 @@ object Schema extends ToSchemaOps:
     val empty: Record[Unit] = Empty(Properties.Empty)
     def apply[A, B](field: Field[A, B]): Record[B] = One(field, Properties.Empty)
 
-  sealed abstract class Dynamic[A] extends Schema[A]:
-    override type Self[a] = Schema.Dynamic[a]
-    final override def optional: Dynamic[Option[A]] = ???
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = ???
+  sealed abstract class AnyValue[A] extends Schema[A]:
+    override type Self[a] = Schema.AnyValue[a]
+    final override def optional: AnyValue[Option[A]] = ???
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): AnyValue[B] =
+      AnyValue.Validate(this, validation, g)
 
-  object Dynamic:
-    final private[otter] case class Singleton[A](a: A) extends Dynamic[A]:
+  object AnyValue:
+    private[otter] case object Root extends AnyValue[Any]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def description: Property.Optional[String] = ???
-      override def example: Property.Optional[A] = ???
+      override def example: Property.Optional[Any] = ???
       override def isOptional: Boolean = false
+
+    final private[otter] case class Validate[A, B](self: Schema.AnyValue[A], validation: Validation[A, B], g: B => A)
+        extends Schema.AnyValue[B]:
+      export self.isOptional
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def description: Property.Optional[String] = ???
+      override def example: Property.Optional[B] = ???

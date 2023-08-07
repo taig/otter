@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter.schema.*
+import io.taig.otter.schema.Schema.AnyValue
 
 import scala.collection.mutable.ListBuffer
 
@@ -17,6 +18,7 @@ object CirceEncoder:
       case schema: Record[A]       => record.encode(schema, a).map(Json.fromJsonObject)
       case schema: Product[A]      => product.encode(schema, a).map(Json.fromValues)
       case schema: Coproduct[A]    => coproduct.encode(schema, a)
+      case schema: AnyValue[A]     => anyValue.encode(schema, a)
 
   val value: Encoder[Schema.Value, Option[Json]] = new Encoder:
     override def encode[A](schema: Schema.Value[A], a: A): Option[Json] = schema match
@@ -139,3 +141,8 @@ object CirceEncoder:
             )
             .some
         case Discriminator.None => CirceEncoder.schema.encode(branch.schema.value, b)
+
+  val anyValue: Encoder[AnyValue, Option[Json]] = new Encoder:
+    override def encode[A](anyValue: AnyValue[A], a: A): Option[Json] = anyValue match
+      case AnyValue.Root                 => None
+      case AnyValue.Validate(self, _, g) => encode(self, g(a))

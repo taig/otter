@@ -25,10 +25,11 @@ object HttpEncoder:
     @tailrec
     override def encode[A](result: Result[A], a: A): Http.Response = result match
       case result: Result.Root[?, ?] =>
+        val (additionalHeaders, payload) = HttpEncoder.payload.encode(result.body, a._2)
         Http.Response(
           result.code,
-          HttpEncoder.headers.encode(result.headers, a._1),
-          HttpEncoder.payload.encode(result.body, a._2)
+          HttpEncoder.headers.encode(result.headers, a._1) ++ additionalHeaders,
+          payload
         )
       case Result.Modify(self, _, g) => encode(self, g(a))
 
@@ -43,5 +44,9 @@ object HttpEncoder:
       case schema: Collection[Value, ?] => StringEncoder.collection.encode(schema, a).orEmpty.tupleLeft(header.name)
       case schema: Value[?] => Chain.fromOption(StringEncoder.value.encode(schema, a)).tupleLeft(header.name)
 
-  val payload: Encoder[Response.Body, Http.Payload] = new Encoder:
-    override def encode[A](body: Response.Body[A], a: A): Http.Payload = ???
+  val payload: Encoder[Response.Body, (Http.Headers, Http.Payload)] = new Encoder:
+    override def encode[A](body: Response.Body[A], a: A): (Http.Headers, Http.Payload) = body match
+      case Response.Body.Strict.Bytes                => (Chain.empty, Http.Payload.Strict(a))
+      case Response.Body.Strict.WithHeaders(self)    => encode(self, a._2).leftMap(a._1 ++ _)
+      case Response.Body.Strict.AndThen(self, _, g)  => encode(self, g(a))
+      case Response.Body.Strict.Validate(self, _, g) => encode(self, g(a))

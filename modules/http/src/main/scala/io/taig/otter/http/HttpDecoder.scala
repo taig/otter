@@ -21,7 +21,7 @@ object HttpDecoder:
         ) *> (
           HttpDecoder.url.decode(url, data.url).leftMap(_.modifyHistory("url" /: _)),
           HttpDecoder.headers.decode(headers, data.headers).leftMap(_.modifyHistory("headers" /: _)),
-          HttpDecoder.body.decode(body, data.body).leftMap(_.modifyHistory("body" /: _))
+          HttpDecoder.body(body, data.headers, data.body).leftMap(_.modifyHistory("body" /: _))
         ).tupled
       case Request.Modify(self, f, _) => decode(self, data).map(f)
 
@@ -160,21 +160,23 @@ object HttpDecoder:
           case Some((value, remainders)) => StringDecoder.value.decode(schema, value.some).tupleLeft(remainders)
           case None                      => StringDecoder.value.decode(schema, None).tupleLeft(remainders)
 
-  val body: Decoder[Request.Body, Http.Request.Body] = new Decoder:
-    override def decode[A](body: Request.Body[A], data: Http.Request.Body): Validated[Violations, A] =
-      (body, data) match
-        case (Request.Body.Singlepart.Strict.Empty, _) => ().valid
-        case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart(Http.Payload.Strict(data))) =>
-          data.valid
-        case (Request.Body.Singlepart.Strict.Validate(self, validation, _), _) =>
-          decode(self, data).andThen(validation(_).leftMap(Violations.root))
-        case (Request.Body.Singlepart.Streaming.Empty, _) => ().valid
-        case (Request.Body.Singlepart.Streaming.Bytes, Http.Request.Body.Singlepart(Http.Payload.Streaming(stream))) =>
-          stream.valid
-        case (Request.Body.Singlepart.Streaming.Validate(self, validation, _), _) =>
-          decode(self, data).andThen(validation(_).leftMap(Violations.root))
-        case (_: Request.Body.Singlepart.Strict[?], Http.Request.Body.Singlepart(_: Http.Payload.Streaming)) =>
-          Violations.rootNec(Violation.tpe("strict", actual = "streaming")).invalid
-        case (_: Request.Body.Singlepart.Streaming[?], Http.Request.Body.Singlepart(_: Http.Payload.Strict)) =>
-          Violations.rootNec(Violation.tpe("streaming", actual = "strict")).invalid
-        case (_, _: Http.Request.Body.Multipart) => ??? // TODO
+  def body[A](body: Request.Body[A], headers: Http.Headers, data: Http.Request.Body): Validated[Violations, A] =
+    (body, data) match
+      case (Request.Body.Singlepart.Strict.Empty, _) => ().valid
+      case (Request.Body.Singlepart.Strict.Bytes, Http.Request.Body.Singlepart(Http.Payload.Strict(data))) =>
+        data.valid
+      case (Request.Body.Singlepart.Strict.Validate(self, validation, _), _) =>
+        HttpDecoder.body(self, headers, data).andThen(validation(_).leftMap(Violations.root))
+      case (Request.Body.Singlepart.Streaming.Empty, _) => ().valid
+      case (Request.Body.Singlepart.Streaming.Bytes, Http.Request.Body.Singlepart(Http.Payload.Streaming(stream))) =>
+        stream.valid
+      case (Request.Body.Singlepart.Streaming.Validate(self, validation, _), _) =>
+        HttpDecoder.body(self, headers, data).andThen(validation(_).leftMap(Violations.root))
+      case (_: Request.Body.Singlepart.Strict[?], Http.Request.Body.Singlepart(_: Http.Payload.Streaming)) =>
+        Violations.rootNec(Violation.tpe("strict", actual = "streaming")).invalid
+      case (_: Request.Body.Singlepart.Streaming[?], Http.Request.Body.Singlepart(_: Http.Payload.Strict)) =>
+        Violations.rootNec(Violation.tpe("streaming", actual = "strict")).invalid
+      case (Request.Body.Singlepart.Strict.AndThen(self, f, _), _) => HttpDecoder.body(self, headers, data).andThen(f)
+      case (Request.Body.Singlepart.Strict.WithHeaders(self), _) =>
+        HttpDecoder.body(self, headers, data).tupleLeft(headers)
+      case (_, _: Http.Request.Body.Multipart) => ??? // TODO

@@ -78,8 +78,11 @@ object syntax:
       val bytes: Request.Body.Singlepart.Streaming[Stream[Byte]] = Request.Body.Singlepart.Streaming.Bytes
 
   object response:
-    val empty: Response.Body.Strict[Unit] = Response.Body.Strict.Empty
-    val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Bytes
+    val empty: Response.Body.Strict[Unit] =
+      Response.Body.Strict.Empty.withHeaders.imap(_ => ())(_ => (Chain.one(ci"Content-Length" -> "0"), ()))
+    val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Bytes.withHeaders.imap { case (_, bytes) =>
+      bytes
+    }(bytes => (Chain.one(ci"Content-Length" -> String.valueOf(bytes.length)), bytes))
     val text: Response.Body.Strict[String] =
       binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
 

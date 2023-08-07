@@ -2,7 +2,6 @@ package io.taig.otter.http4s
 
 import cats.effect.Concurrent
 import fs2.Pull
-import io.taig.otter.Http4sStream
 import io.taig.otter.http.Stream
 
 final class Http4sStream[F[_], A](val isEmpty: Boolean, val toFs2: fs2.Stream[F, A]) extends Stream[A]
