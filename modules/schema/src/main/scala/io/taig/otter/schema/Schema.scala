@@ -6,13 +6,12 @@ import cats.data.{Chain, NonEmptyChain}
 import io.taig.otter.validation.*
 import io.taig.enumeration.ext.Mapping
 
-import java.util.UUID
 import scala.annotation.targetName
 import scala.collection.immutable.ListMap
 
 sealed abstract class Schema[A]:
   self =>
-  type Self[a] <: Schema[a] { type Self[a] = Schema.this.Self[a] }
+  type Self[a] <: Schema.Of[Codec, a] { type Self[a] = Schema.this.Self[a] }
   type Codec
 
   def constraints: Chain[Constraint]
@@ -63,12 +62,14 @@ sealed abstract class Schema[A]:
     case schema             => Schema.Product(schema)
 
 object Schema extends ToSchemaOps:
+  type Of[A, B] = Schema[B] { type Codec <: A }
+
   sealed abstract class Value[A] extends Schema[A]:
     override type Self[a] <: Value[a] { type Self[a] = Value.this.Self[a] }
+    final override type Codec = Nothing
 
   sealed abstract class Primitive[A] extends Schema.Value[A]:
     final override type Self[a] = Primitive[a]
-    final override type Codec = Nothing
     def tpe: Type[?]
     def format: Property.Optional[String]
     final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
@@ -365,7 +366,6 @@ object Schema extends ToSchemaOps:
 
   sealed abstract class Enumeration[A] extends Schema.Value[A]:
     final override type Self[a] = Enumeration[a]
-    final override type Codec = Nothing
     def schema: Eval[Schema.Value[?]]
     def values[B](encoder: Encoder[Schema.Value, B]): List[B]
     final override def optional: Enumeration[Option[A]] = Enumeration.Optional(this)
@@ -608,16 +608,16 @@ object Schema extends ToSchemaOps:
     val empty: Record[Unit] = Empty(Properties.Empty)
     def apply[A, B](field: Field[A, B]): Record[B] = One(field, Properties.Empty)
 
-  abstract class AnyValue[A] extends Schema[A]:
-    override type Self[a] = AnyValue[a]
+  abstract class AnyValue[A, B] extends Schema[B]:
+    final override type Self[a] = AnyValue[A, a]
     final override type Codec = A
     override def constraints: Chain[Constraint] = ???
     override def isOptional: Boolean = ???
     final override def description: Property.Optional[String] = ???
-    final override def example: Property.Optional[A] = ???
-    final override def optional: AnyValue[Option[A]] = ???
-    final override def ivalidate[C](validation: Validation[A, C])(g: C => A): AnyValue[C] = ???
-    def encode(a: A): Codec
+    final override def example: Property.Optional[B] = ???
+    final override def optional: AnyValue[A, Option[B]] = ???
+    final override def ivalidate[C](validation: Validation[B, C])(g: C => B): AnyValue[A, C] = ???
+    def encode(a: B): A
 
   sealed abstract class Void[A] extends Schema[A]:
     final override type Self[a] = Schema.Void[a]

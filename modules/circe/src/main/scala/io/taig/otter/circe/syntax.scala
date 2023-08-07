@@ -6,7 +6,6 @@ import io.circe.jawn.JawnParser
 import io.circe.{Json, Printer}
 import io.taig.otter.http.{Request, Response}
 import io.taig.otter.schema.{AnyValue, Schema}
-import io.taig.otter.schema.schemas.*
 import io.taig.otter.validation.Constraint
 import io.taig.otter.validation.Validation
 import org.typelevel.ci.CIStringSyntax
@@ -14,7 +13,9 @@ import org.typelevel.ci.CIStringSyntax
 import java.nio.charset.StandardCharsets
 
 object syntax:
-  val json: AnyValue[Json] = ???
+  val json: AnyValue[Json, Json] = new Schema.AnyValue[Json, Json] {
+    override def encode(a: Json): Json = a
+  }
 
   object validations:
     val json: Validation[Array[Byte], Json] =
@@ -30,7 +31,7 @@ object syntax:
       (Chain.one(ci"Content-Type", "application/json"), printer.print(json).getBytes(StandardCharsets.UTF_8))
     }
     val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: => Schema[A]): Request.Body.Singlepart.Strict[A] =
+    def json[A](schema: => Schema.Of[Json, A]): Request.Body.Singlepart.Strict[A] =
       json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))
 
   object response:
@@ -45,5 +46,5 @@ object syntax:
       }
 
     val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: => Schema[A]): Response.Body.Strict[A] =
+    def json[A](schema: => Schema.Of[Json, A]): Response.Body.Strict[A] =
       json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))

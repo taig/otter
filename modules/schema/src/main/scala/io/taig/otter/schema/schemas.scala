@@ -68,7 +68,7 @@ object schemas:
       sortedMap(key, schema)
         .ivalidate(Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(none)))(_.toSortedMap)
 
-  val violations: Schema[Violations] =
+  val violations: Dictionary[Violations] =
     val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
     val constraint: Schema[Constraint] = (
