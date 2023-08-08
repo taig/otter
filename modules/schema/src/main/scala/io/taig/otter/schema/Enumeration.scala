@@ -61,7 +61,7 @@ object Enumeration:
           .prj(a)
           .toValid:
             val values = Chain.fromSeq(mapping.values).mapFilter(b => of.print(mapping.inj(b)))
-            Violations.rootNec(Violation(Constraint.OneOf(values), openapi.toValue))
+            Violations.rootNec(Violation(Constraint.OneOf(values), openapi.asValue))
     override def encode(b: B): Option[OpenApi.Primitive] = of.encode(mapping.inj(b))
     override def parse(value: Option[String]): Validated[Violations, B] = of
       .parse(value)
