@@ -1,6 +1,7 @@
 package io.taig.otter
 
-import cats.data.Chain
+import cats.data.{Chain, Validated}
+import io.taig.otter.validation.Violation
 
 import scala.collection.immutable.VectorMap
 
@@ -41,7 +42,7 @@ sealed abstract class OpenApi:
     case OpenApi.Null => Some(OpenApi.Null)
     case _            => None
 
-  final def as[A: Decoder]: Option[A] = Decoder[A].decode(this)
+  final def as[A: Decoder]: Validated[Violation, A] = Decoder[A].decode(this)
 
   final def tpe: String = this match
     case _: OpenApi.Array  => "array"

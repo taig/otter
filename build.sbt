@@ -54,7 +54,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(validation, schema, http, csv, circe, dsl, openapi, http4s, sample)
+  .aggregate(core, schema, http, csv, circe, dsl, openapi, http4s, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -64,8 +64,6 @@ lazy val core = module(identifier = Some("core"))
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-
-lazy val validation = module(identifier = Some("validation")).dependsOn(core)
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(
@@ -83,7 +81,7 @@ lazy val schema = module(identifier = Some("schema"))
     libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
       .cross(CrossVersion.for3Use2_13)
   )
-  .dependsOn(core, validation % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(

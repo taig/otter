@@ -5,8 +5,8 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.OpenApi
 
-import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeParseException
+import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 object validations:

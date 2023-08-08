@@ -54,8 +54,8 @@ object Primitive:
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] =
       openapi
         .toValid(Violations.rootNec(Violation.required))
-        .andThen(value => decodeType(value).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value.tpe))))
-    def decodeType(openapi: OpenApi.Value): Option[A] = tpe match
+        .andThen(value => decodeType(value).leftMap(Violations.rootNec))
+    def decodeType(openapi: OpenApi.Value): Validated[Violation, A] = tpe match
       case Type.BigDecimal => openapi.as[BigDecimal]
       case Type.BigInt     => openapi.as[BigInt]
       case Type.Boolean    => openapi.as[Boolean]
