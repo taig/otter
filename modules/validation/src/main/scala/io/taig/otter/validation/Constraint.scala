@@ -1,5 +1,7 @@
 package io.taig.otter.validation
 
+import cats.data.Chain
+
 import java.util.regex.Pattern
 
 enum Constraint:
@@ -16,5 +18,5 @@ enum Constraint:
   case MinProperties(reference: Int)
   case MaxProperties(reference: Int)
   case Type(name: String)
-  case OneOf(values: List[String])
+  case OneOf(values: Chain[String])
   case Required

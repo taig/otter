@@ -4,6 +4,7 @@ import cats.Applicative
 import cats.arrow.Arrow
 import cats.data.{Chain, NonEmptyChain, Validated, ValidatedNec}
 import cats.syntax.all.*
+import io.taig.otter.OpenApi
 
 sealed abstract class Validation[-In, +Out]:
   self =>
@@ -20,7 +21,7 @@ object Validation:
     override def constraints: Chain[Constraint] = cs
     override def apply(in: In): ValidatedNec[Violation, Out] = f(in)
 
-  def apply[In, Out](constraint: Constraint)(f: In => ValidatedNec[Option[String], Out]): Validation[In, Out] =
+  def apply[In, Out](constraint: Constraint)(f: In => ValidatedNec[Option[OpenApi], Out]): Validation[In, Out] =
     Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _))))
 
   def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
@@ -28,7 +29,7 @@ object Validation:
 
   def parse[A](tpe: String)(f: String => Option[A]): Validation[String, A] =
     Validation(Constraint.Type(tpe)): value =>
-      Validated.fromOption(f(value), NonEmptyChain.one(value.some))
+      Validated.fromOption(f(value), NonEmptyChain.one(OpenApi.Text(value).some))
 
   extension [In, Out](self: Validation[In, Out])
     def tap: Validation[In, In] =

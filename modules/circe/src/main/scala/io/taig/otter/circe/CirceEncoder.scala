@@ -148,10 +148,5 @@ object CirceEncoder:
 //            .some
 //        case Discriminator.None => CirceEncoder.schema.encode(branch.schema.value, b)
 
-  val void: Encoder[Void, Option[Json]] = new Encoder:
-    override def encode[A](void: Void[A], a: A): Option[Json] = void match
-      case Schema.Void.Root                 => None
-      case Schema.Void.Validate(self, _, g) => encode(self, g(a))
-
   val anyValue: Encoder[AnyValue[Json, *], Option[Json]] = new Encoder[AnyValue[Json, *], Option[Json]]:
-    override def encode[B](fb: AnyValue[Json, B], b: B): Option[Json] = fb.encode(b).some
+    override def encode[B](schema: AnyValue[Json, B], b: B): Option[Json] = schema.encode(b).some

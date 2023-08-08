@@ -3,6 +3,7 @@ package io.taig.otter.validation
 import cats.UnorderedFoldable
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.OpenApi
 
 import java.time.{LocalDate, LocalDateTime}
 import java.time.format.DateTimeParseException
@@ -19,7 +20,7 @@ object validations:
     Validated.condNec(
       if exclusive then gt(value, reference) else gteq(value, reference),
       (),
-      toBigDecimal(value).bigDecimal.toPlainString.some
+      OpenApi.Decimal(toBigDecimal(value)).some
     )
 
   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
@@ -56,7 +57,7 @@ object validations:
     Validated.condNec(
       if exclusive then lt(value, reference) else lteq(value, reference),
       (),
-      toBigDecimal(value).bigDecimal.toPlainString.some
+      OpenApi.Decimal(toBigDecimal(value)).some
     )
 
   def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
@@ -84,25 +85,25 @@ object validations:
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
   def multiple(reference: Int): Validation[Int, Unit] = Validation(Constraint.Multiple(reference)): value =>
-    Validated.condNec(value % reference == 0, (), String.valueOf(value).some)
+    Validated.condNec(value % reference == 0, (), OpenApi.Integer(value).some)
 
   def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
-    Validated.condNec(value.length >= reference, (), String.valueOf(value.length).some)
+    Validated.condNec(value.length >= reference, (), OpenApi.Integer(value.length).some)
 
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
-    Validated.condNec(value.length <= reference, (), String.valueOf(value.length).some)
+    Validated.condNec(value.length <= reference, (), OpenApi.Integer(value.length).some)
 
   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MinItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size >= reference, (), String.valueOf(size).some)
+      Validated.condNec(size >= reference, (), OpenApi.Integer(size).some)
 
   def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
 
   def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MaxItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size <= reference, (), String.valueOf(size).some)
+      Validated.condNec(size <= reference, (), OpenApi.Integer(size).some)
 
   def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
 

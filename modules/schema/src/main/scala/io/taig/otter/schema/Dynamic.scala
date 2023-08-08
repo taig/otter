@@ -1,55 +1,53 @@
-//package io.taig.otter.schema
-//
-//import cats.data.{Chain, Validated}
-//import cats.syntax.all.*
-//import io.taig.otter.{Encoder, OpenApi}
-//import io.taig.otter.syntax.*
-//import io.taig.otter.validation.{Constraint, Validation}
-//
-//// TODO fan out into subclasses to have a Value for primitive variants
-//sealed abstract class Dynamic[A] extends Schema[A]:
-//  self =>
-//
-//  final override type Self[a] = Dynamic[a] { type Codec = self.Codec }
-//
-//  final override def ivalidate[B: Encoder, C](validation: Validation[B, A, A, C])(g: C => A): Self[C] =
-//    Dynamic.Validate(this, validation, g)
-//
-//object Dynamic:
-//  type Codec[A, B <: OpenApi] = Dynamic[A] { type Codec = B }
-//  type Of[A <: OpenApi] = Codec[A, A]
-//
-//  final private case class Root[A <: OpenApi](
-//      check: OpenApi => Option[A],
-//      description: Option[String],
-//      example: Option[A],
-//      tpe: String
-//  ) extends Dynamic[A]:
-//    override type Codec = A
-//    override def constraints: Chain[Constraint[OpenApi]] = Chain.empty
-//    override def modifyDescription(f: Option[String] => Option[String]): Dynamic.Of[A] =
-//      copy(description = f(description))
-//    override def modifyExample(f: Option[A] => Option[A]): Dynamic.Of[A] = copy(example = f(example))
-//    override def decode(otter: OpenApi): Validated[Violations, A] =
-//      check(otter).toValid(typeViolations(tpe, otter))
-//    override def encode(a: A): A = a
-//
-//  final private case class Validate[A, B: Encoder, C <: OpenApi, D](
-//      dynamic: Dynamic.Codec[A, C],
-//      validation: Validation[B, A, A, D],
-//      g: D => A
-//  ) extends Dynamic[D]:
-//    override type Codec = C
-//    override def constraints: Chain[Constraint[OpenApi]] =
-//      dynamic.constraints ++ validation.constraints.map(_.map(_.asOpenApi))
-//    override def description: Option[String] = dynamic.description
-//    override def example: Option[D] = dynamic.example.flatMap(validation.run(_).toOption)
-//    override def modifyDescription(f: Option[String] => Option[String]): Dynamic.Codec[D, C] =
-//      copy(dynamic = dynamic.modifyDescription(f))
-//    override def modifyExample(f: Option[D] => Option[D]): Dynamic.Codec[D, C] =
-//      copy(dynamic = dynamic.modifyExample(a => f(a.flatMap(validation.run(_).toOption)).map(g)))
-//    override def decode(otter: OpenApi): Validated[Violations, D] =
-//      dynamic.decode(otter).andThen(applyValidation(validation, dynamic.encode))
-//    override def encode(b: D): C = dynamic.encode(g(b))
-//
-//  def apply[A <: OpenApi](tpe: String)(f: OpenApi => Option[A]): Dynamic.Of[A] = Root(f, none, none, tpe)
+package io.taig.otter.schema
+
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+import io.taig.otter.OpenApi
+import io.taig.otter.validation.{Constraint, Validation, Violation}
+
+sealed abstract class Dynamic[A] extends Schema[A]:
+  self =>
+  final override type Self[a] = Dynamic[a]
+  final override type Codec = OpenApi.Value
+  final override type Properties[a] = Dynamic.Properties[a]
+
+  final override def copy(update: Dynamic.Properties[A]): Dynamic[A] = new Dynamic[A]:
+    export self.{constraints, decode, encode, isOptional}
+    override def properties: Dynamic.Properties[A] = update
+
+  final override def optional: Dynamic[Option[A]] = new Dynamic[Option[A]]:
+    export self.constraints
+    override def properties: Dynamic.Properties[Option[A]] = self.properties.map(_.some)
+    override def isOptional: Boolean = true
+    override def decode(openapi: OpenApi): Validated[Violations, Option[A]] = openapi match
+      case OpenApi.Null => none.valid
+      case openapi      => self.decode(openapi).map(_.some)
+    override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
+
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = new Dynamic[B]:
+    export self.isOptional
+    override def properties: Dynamic.Properties[B] = self.properties.flatMap(validation(_).toOption)
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def decode(openapi: OpenApi): Validated[Violations, B] =
+      self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
+    override def encode(b: B): Option[Codec] = self.encode(g(b))
+
+object Dynamic:
+  final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:
+    override type Self[a] = Dynamic.Properties[a]
+    override def modifyDescription(f: Option[String] => Option[String]): Dynamic.Properties[A] =
+      copy(description = f(description))
+    override def modifyExample[B](f: Option[A] => Option[B]): Dynamic.Properties[B] = copy(example = f(example))
+    override def flatMap[B](f: A => Option[B]): Dynamic.Properties[B] = copy(example = example.flatMap(f))
+
+  object Properties:
+    val Default: Dynamic.Properties[Nothing] = Properties(None, None)
+
+  val Value: Dynamic[OpenApi.Value] = new Dynamic[OpenApi.Value]:
+    override def properties: Dynamic.Properties[OpenApi.Value] = Properties.Default
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
+    override def decode(openapi: OpenApi): Validated[Violations, OpenApi.Value] = openapi match
+      case OpenApi.Null           => Violations.rootNec(Violation.required).invalid
+      case openapi: OpenApi.Value => openapi.valid
+    override def encode(a: OpenApi.Value): Option[OpenApi.Value] = a.some

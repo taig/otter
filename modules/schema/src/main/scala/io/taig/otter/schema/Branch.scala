@@ -3,22 +3,22 @@ package io.taig.otter.schema
 import cats.Eval
 import cats.syntax.all.*
 
-final case class Branch[A, B](key: Eval[Schema.Value[A]], name: A, schema: Eval[Schema[B]]):
-  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
-  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
+final case class Branch[A, B](key: Eval[Schema.Value[A]], name: A, schema: Eval[Schema[B]])
+//  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
+//  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
 
-  def toCoproduct: Coproduct[B] = Schema.Coproduct(this)
-  def to[C](using Evidence.Coproduct.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
+//  def toCoproduct: Coproduct[B] = Schema.Coproduct(this)
+//  def to[C](using Evidence.Coproduct.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
 
-object Branch:
-  extension [A, B <: Matchable](self: Branch[A, B])
-    inline def |[C, D <: Matchable](other: Branch[C, D]): Coproduct[B | D] = (self :+ other).imap[B | D] {
-      case Left(b)  => b
-      case Right(d) => d
-    } {
-      case b: B => Left(b)
-      case d: D => Right(d)
-    }
+//object Branch:
+//  extension [A, B <: Matchable](self: Branch[A, B])
+//    inline def |[C, D <: Matchable](other: Branch[C, D]): Coproduct[B | D] = (self :+ other).imap[B | D] {
+//      case Left(b)  => b
+//      case Right(d) => d
+//    } {
+//      case b: B => Left(b)
+//      case d: D => Right(d)
+//    }
 
 //  def decode(otter: OpenApi, discriminator: Sum.Discriminator): Ior[Violations, Option[B]] = discriminator match
 //    case Discriminator.Nested(identifier, value) =>
