@@ -21,7 +21,8 @@ abstract class Enumeration[A] extends Schema.Value[A]:
   final override def optional: Enumeration[Option[A]] = new Enumeration[Option[A]]:
     export self.{constraints, isOptional, schema}
     override def properties: Enumeration.Properties[Option[A]] = self.properties.map(_.some)
-    override def decode(openapi: OpenApi): Validated[Violations, Option[A]] = self.decode(openapi).map(_.some)
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
+      openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[OpenApi.Primitive] = a.flatMap(self.encode)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] = self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
@@ -31,7 +32,7 @@ abstract class Enumeration[A] extends Schema.Value[A]:
     override def properties: Enumeration.Properties[B] = self.properties.flatMap(validation(_).toOption)
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = true
-    override def decode(openapi: OpenApi): Validated[Violations, B] =
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Primitive] = self.encode(g(b))
     override def parse(value: Option[String]): Validated[Violations, B] =
@@ -54,14 +55,14 @@ object Enumeration:
     override def properties: Enumeration.Properties[B] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: OpenApi): Validated[Violations, B] = of
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] = of
       .decode(openapi)
       .andThen: a =>
         mapping
           .prj(a)
           .toValid:
             val values = Chain.fromSeq(mapping.values).mapFilter(b => of.print(mapping.inj(b)))
-            Violations.rootNec(Violation(Constraint.OneOf(values), openapi.asValue))
+            Violations.rootNec(Violation(Constraint.OneOf(values), openapi))
     override def encode(b: B): Option[OpenApi.Primitive] = of.encode(mapping.inj(b))
     override def parse(value: Option[String]): Validated[Violations, B] = of
       .parse(value)

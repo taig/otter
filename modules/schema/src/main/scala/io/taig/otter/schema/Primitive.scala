@@ -17,27 +17,21 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     export self.{constraints, decode, encode, isOptional, parse, print}
     override def properties: Primitive.Properties[A] = update
 
-  final override def optional: Primitive[Option[A]] = new Primitive[Option[A]]:
-    export self.constraints
-    override def properties: Primitive.Properties[Option[A]] = self.properties.map(_.some)
-    override def isOptional: Boolean = true
-    override def decode(openapi: OpenApi): Validated[Violations, Option[A]] = self
-      .decode(openapi)
-      .map:
-        case OpenApi.Null => none
-        case openapi      => openapi.some
+  final override def optional: Primitive[Option[A]] = new Primitive[Option[A]] with Optional:
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
+      openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
-    override def parse(value: Option[String]): Validated[Violations, Option[A]] = ???
+    override def parse(value: Option[String]): Validated[Violations, Option[A]] =
+      self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]:
-    export self.isOptional
-    override def properties: Primitive.Properties[B] = self.properties.flatMap(validation(_).toOption)
-    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def decode(openapi: OpenApi): Validated[Violations, B] =
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]
+    with Validate[B](validation):
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[Codec] = self.encode(g(b))
-    override def parse(value: Option[String]): Validated[Violations, B] = ???
+    override def parse(value: Option[String]): Validated[Violations, B] =
+      self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(g(b))
 
 object Primitive:
@@ -57,9 +51,11 @@ object Primitive:
     override def properties: Primitive.Properties[A] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: OpenApi): Validated[Violations, A] =
-      decodeType(openapi).toValid(Violations.rootNec(Violation.tpe(tpe.toString, openapi.tpe)))
-    def decodeType(openapi: OpenApi): Option[A] = tpe match
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] =
+      openapi
+        .toValid(Violations.rootNec(Violation.required))
+        .andThen(value => decodeType(value).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value.tpe))))
+    def decodeType(openapi: OpenApi.Value): Option[A] = tpe match
       case Type.BigDecimal => openapi.as[BigDecimal]
       case Type.BigInt     => openapi.as[BigInt]
       case Type.Boolean    => openapi.as[Boolean]

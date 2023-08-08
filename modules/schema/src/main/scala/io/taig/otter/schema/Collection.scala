@@ -14,26 +14,24 @@ sealed abstract class Collection[A] extends Schema[A]:
   def schema: Schema[?]
 
   override def copy(properties: Collection.Properties[A]): Collection[A] = new Collection[A] with Copy(properties):
-    export self.{decode, schema}
+    export self.{decodeArray, schema}
 
   override def optional: Collection[Option[A]] = new Collection[Option[A]] with Optional:
     export self.schema
-    override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
-      openapi.traverse(openapi => self.decode(openapi.some))
+    override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
+      openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
 
   override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[B] = new Collection[B]
     with Validate[B](validation):
     export self.schema
-    override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
-      self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
+    override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
+      self.decodeArray(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
-
-  final override def decode(openapi: OpenApi): Validated[Violations, A] = openapi match
-    case openapi: OpenApi.Array => decode(openapi.some)
-    case OpenApi.Null           => decode(none)
-    case _                      => Violations.rootNec(Violation.tpe("array", openapi.tpe)).invalid
-  def decode(openapi: Option[OpenApi.Array]): Validated[Violations, A]
+  final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
+    .traverse(openapi => openapi.asArray.toValid(Violations.rootNec(Violation.tpe("array", openapi.tpe))))
+    .andThen(decodeArray)
+  protected def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, A]
 
 object Collection:
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:
@@ -52,12 +50,12 @@ object Collection:
 
     final override def copy(properties: Collection.Properties[A]): Collection.Value[A] = new Value[A]
       with Copy(properties):
-      export self.{decode, parse, print, schema}
+      export self.{decodeArray, parse, print, schema}
 
     final override def optional: Collection.Value[Option[A]] = new Value[Option[A]] with Optional:
       export self.schema
-      override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
-        openapi.traverse(openapi => self.decode(openapi.some))
+      override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
+        openapi.traverse(openapi => self.decodeArray(openapi.some))
       override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Option[A]] =
         values.traverse(values => self.parse(values.some))
@@ -66,8 +64,8 @@ object Collection:
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Value[B] = new Value[B]
       with Validate(validation):
       export self.schema
-      override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
-        self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
+      override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
+        self.decodeArray(openapi).andThen(validation(_).leftMap(Violations.root))
       override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, B] =
         self.parse(values).andThen(validation(_).leftMap(Violations.root))
@@ -82,7 +80,7 @@ object Collection:
       override def properties: Collection.Properties[Chain[A]] = Properties.Default
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
-      override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] =
+      override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] =
         Collection.decode(of, openapi)
       override def encode(as: Chain[A]): Option[OpenApi.Array] = Collection.encode(of, as)
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Chain[A]] =
@@ -97,16 +95,16 @@ object Collection:
     override def properties: Collection.Properties[Chain[A]] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] =
+    override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] =
       Collection.decode(of, openapi)
     override def encode(as: Chain[A]): Option[OpenApi.Array] = Collection.encode(of, as)
 
   private def decode[A](schema: Schema[A], openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] = openapi
     .toValid(Violations.rootNec(Violation.required))
     .andThen: openapi =>
-      Chain.fromSeq(openapi.toVector).zipWithIndex.traverse { case (value, index) =>
+      openapi.toChain.zipWithIndex.traverse { case (value, index) =>
         schema.decode(value).leftMap(_.modifyHistory(index /: _))
       }
 
   private def encode[A](schema: Schema[A], as: Chain[A]): Option[OpenApi.Array] =
-    OpenApi.Array(as.map(schema.encode(_).getOrElse(OpenApi.Null)).toVector).some
+    OpenApi.Array(as.map(schema.encode(_).getOrElse(OpenApi.Null))).some

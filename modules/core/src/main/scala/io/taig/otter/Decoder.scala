@@ -1,7 +1,11 @@
 package io.taig.otter
 
 trait Decoder[A]:
+  self =>
   def decode(openapi: OpenApi): Option[A]
+
+  final def map[B](f: A => B): Decoder[B] = new Decoder[B]:
+    override def decode(openapi: OpenApi): Option[B] = self.decode(openapi).map(f)
 
 object Decoder:
   inline def apply[A](using decoder: Decoder[A]): Decoder[A] = decoder

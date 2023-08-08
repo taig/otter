@@ -1,5 +1,7 @@
 package io.taig.otter
 
+import cats.data.Chain
+
 import scala.collection.immutable.VectorMap
 
 sealed abstract class OpenApi:
@@ -63,9 +65,16 @@ object OpenApi:
 
   final case class Bool(value: Boolean) extends Primitive
 
-  final case class Array(toVector: Vector[OpenApi]) extends OpenApi.Value
+  final case class Array(toChain: Chain[OpenApi]) extends OpenApi.Value:
+    def ++(other: OpenApi.Array): OpenApi.Array = Array(toChain ++ other.toChain)
+    def :+(other: OpenApi): OpenApi.Array = Array(toChain :+ other)
+
+  object Array:
+    val Empty: OpenApi.Array = Array(Chain.empty)
 
   final case class Object(toMap: VectorMap[String, OpenApi]) extends OpenApi.Value
 
   case object Null extends OpenApi
   type Null = Null.type
+
+  def arr(values: OpenApi*): OpenApi.Array = OpenApi.Array(Chain.fromSeq(values))

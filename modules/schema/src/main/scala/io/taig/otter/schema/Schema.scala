@@ -73,10 +73,13 @@ abstract class Schema[A]:
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
 
-  def decode(openapi: OpenApi): Validated[Violations, A]
+  final def decode(openapi: OpenApi): Validated[Violations, A] = decode(openapi.asValue)
+  def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A]
   def encode(a: A): Option[Codec]
 
-object Schema:
+  final def toProduct: Product[A] = Product(this)
+
+object Schema extends ToSchemaOps:
   type Of[A <: OpenApi, B] = Schema[B] { type Codec = A }
 
   trait Properties[+A]:

@@ -19,16 +19,15 @@ sealed abstract class Dynamic[A] extends Schema[A]:
     export self.constraints
     override def properties: Dynamic.Properties[Option[A]] = self.properties.map(_.some)
     override def isOptional: Boolean = true
-    override def decode(openapi: OpenApi): Validated[Violations, Option[A]] = openapi match
-      case OpenApi.Null => none.valid
-      case openapi      => self.decode(openapi).map(_.some)
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
+      openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = new Dynamic[B]:
     export self.isOptional
     override def properties: Dynamic.Properties[B] = self.properties.flatMap(validation(_).toOption)
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def decode(openapi: OpenApi): Validated[Violations, B] =
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[Codec] = self.encode(g(b))
 
@@ -47,7 +46,6 @@ object Dynamic:
     override def properties: Dynamic.Properties[OpenApi.Value] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: OpenApi): Validated[Violations, OpenApi.Value] = openapi match
-      case OpenApi.Null           => Violations.rootNec(Violation.required).invalid
-      case openapi: OpenApi.Value => openapi.valid
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, OpenApi.Value] =
+      openapi.toValid(Violations.rootNec(Violation.required))
     override def encode(a: OpenApi.Value): Option[OpenApi.Value] = a.some

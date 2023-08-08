@@ -59,18 +59,13 @@ lazy val root = module(identifier = None, jvmOnly = true)
 lazy val core = module(identifier = Some("core"))
   .settings(
     libraryDependencies ++=
-      "org.scalameta" %%% "munit" % Version.Munit % "test" ::
+      "org.typelevel" %%% "cats-core" % Version.Cats ::
+        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
 
-lazy val validation = module(identifier = Some("validation"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "cats-core" % Version.Cats ::
-        Nil
-  )
-  .dependsOn(core)
+lazy val validation = module(identifier = Some("validation")).dependsOn(core)
 
 lazy val schema = module(identifier = Some("schema"))
   .settings(
