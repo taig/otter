@@ -84,25 +84,25 @@ final class PathTest extends FunSuite:
 
   test("decode") {
     assertEquals(
-      obtained = path.decode(Chain("foobar", "foo", "42", "bar", "3")),
+      obtained = path.decodeWithRemainders(Chain("foobar", "foo", "42", "bar", "3")),
       expected = ("foobar", 42, 3L).valid
     )
     assertEquals(
-      obtained = path.decode(Chain.empty),
+      obtained = path.decodeWithRemainders(Chain.empty),
       expected = Violations.oneNec(History.Root / "x", Constraint.required.toViolation(OpenApi.Null)).invalid
     )
     assertEquals(
-      obtained = path.decode(Chain("foobar", "foo", "42", "bar", "3", "?")),
+      obtained = path.decodeWithRemainders(Chain("foobar", "foo", "42", "bar", "3", "?")),
       expected = Violations.rootNec(Constraint.text.equal("/".asOpenApi).toViolation("/?".asOpenApi)).invalid
     )
     assertEquals(
-      obtained = path.decode(Chain("foobar", "foo", "NaN", "bar", "3")),
+      obtained = path.decodeWithRemainders(Chain("foobar", "foo", "NaN", "bar", "3")),
       expected = Violations
         .oneNec(History.Root / "y", Constraint.tpe("OpenApi.Int".asOpenApi).toViolation("NaN".asOpenApi))
         .invalid
     )
     assertEquals(
-      obtained = path.decode(Chain("?", "foobar", "foo", "42", "bar", "3")),
+      obtained = path.decodeWithRemainders(Chain("?", "foobar", "foo", "42", "bar", "3")),
       expected = Violations.oneNec(History.Root / "foo", Constraint.required.toViolation("foobar".asOpenApi)).invalid
     )
   }
