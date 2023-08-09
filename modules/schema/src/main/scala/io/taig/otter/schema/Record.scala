@@ -15,14 +15,12 @@ sealed abstract class Record[A] extends Schema[A]:
 
   def toChain: Chain[Field[?]]
 
-  trait Nulls extends Property[Null]:
-    final def show: Record[A] = apply(Null.Show)
-    final def hide: Record[A] = apply(Null.Hide)
-    final def default: Record[A] = apply(Null.Default)
-
-  final def nulls: Nulls = new Nulls:
+  final def nulls = new Property[Null]:
     override def value: Null = properties.nulls
     override def modify(f: Null => Null): Record[A] = copy(properties.modifyNulls(f))
+    def show: Record[A] = apply(Null.Show)
+    def hide: Record[A] = apply(Null.Hide)
+    def default: Record[A] = apply(Null.Default)
 
   final override def copy(properties: Record.Properties[A]): Record[A] = new Record[A] with Copy(properties):
     export self.{decodeNone, decodeWithRemainders, encode, toChain}

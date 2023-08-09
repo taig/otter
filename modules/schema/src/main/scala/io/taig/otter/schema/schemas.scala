@@ -1,17 +1,17 @@
 package io.taig.otter.schema
 
-import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
-import cats.{Eval, Hash}
+import cats.Hash
+import cats.data.{Chain, NonEmptyMap}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
 import io.taig.otter.OpenApi
-import io.taig.otter.validation.{validations, Constraint, Validation, Violation}
+import io.taig.otter.validation.{validations, Constraint, Validation}
 import org.typelevel.ci.CIString
 
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 import java.util.regex.Pattern
-import scala.collection.immutable.{ListMap, SortedMap}
+import scala.collection.immutable.{SortedMap, VectorMap}
 
 object schemas:
   val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
@@ -38,14 +38,13 @@ object schemas:
   def field[A](name: String, schema: => Schema[A]): Field[A] = field(name, string, schema)
   def field[A](name: Int, schema: => Schema[A]): Field[A] = field(name, int, schema)
 
-//  def branch[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Branch[A, B] =
-//    Branch(Eval.later(key), name, Eval.later(schema))
-//  def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
-//  def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
-//
-//  object collection:
-//    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Chain[A]] =
-//      Schema.Collection(Eval.later(schema))
+  def branch[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Branch[B] = Branch(name, key, schema)
+  def branch[A](name: String, schema: => Schema[A]): Branch[A] = branch(name, string, schema)
+  def branch[A](name: Int, schema: => Schema[A]): Branch[A] = branch(name, int, schema)
+
+  object collection:
+    def chain[A](schema: => Schema[A]): Collection[Chain[A]] = Collection(schema)
+    def chain[A](schema: => Schema.Value[A]): Collection.Value[Chain[A]] = Collection.Value(schema)
 //    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Vector[A]] =
 //      chain(schema).imap(_.toVector)(Chain.fromSeq)
 //    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, List[A]] =
@@ -60,18 +59,18 @@ object schemas:
       EnumerationValues.Aux[B, B]
   ): Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))
 
-//  object dictionary:
-//    def listMap[A, B](key: => Value[A], schema: => Schema[B]): Dictionary[ListMap[A, B]] =
-//      Schema.Dictionary(Eval.later(key), Eval.later(schema))
-//    def sortedMap[A: Ordering, B](key: => Value[A], schema: => Schema[B]): Dictionary[SortedMap[A, B]] =
-//      listMap(key, schema).imap(SortedMap.from)(_.to(ListMap))
-//    def nonEmptyMap[A: Ordering, B](key: => Value[A], schema: => Schema[B]): Dictionary[NonEmptyMap[A, B]] =
-//      sortedMap(key, schema)
-//        .ivalidate(Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(none)))(_.toSortedMap)
-//
-//  val violations: Dictionary[Violations] =
-//    val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
-//
+  object dictionary:
+    def vectorMap[A, B](key: => Schema.Value[A], schema: => Schema[B]): Dictionary[VectorMap[A, B]] =
+      Dictionary(key, schema)
+    def sortedMap[A: Ordering, B](key: => Schema.Value[A], schema: => Schema[B]): Dictionary[SortedMap[A, B]] =
+      vectorMap(key, schema).imap(SortedMap.from)(_.to(VectorMap))
+    def nonEmptyMap[A: Ordering, B](key: => Schema.Value[A], schema: => Schema[B]): Dictionary[NonEmptyMap[A, B]] =
+      sortedMap(key, schema)
+        .ivalidate(Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(none)))(_.toSortedMap)
+
+  val violations: Dictionary[Violations] =
+    val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+
 //    val constraint: Schema[Constraint] = (
 //      branch("equals", field("reference", string).to[Constraint.Equals]) :+
 //        branch("minLength", field("reference", int).to[Constraint.MinLength]) :+
@@ -96,3 +95,4 @@ object schemas:
 //      string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 //
 //    dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
+    ???

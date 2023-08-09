@@ -1,19 +1,35 @@
 package io.taig.otter.schema
 
-import cats.Eval
+import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.OpenApi
+import io.taig.otter.syntax.*
 
-sealed abstract class Branch[A, B]:
-  def key: Schema.Value[A]
-  def name: A
-  def schema: Schema[B]
+sealed abstract class Branch[A]:
+  def key: String
+  def schema: Schema[A]
+
+  def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, A]
+  def encode(a: A, discriminator: Discriminator): Option[OpenApi.Value]
 
 //  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
 //  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
 //  def toCoproduct: Coproduct[B] = Schema.Coproduct(this)
 //  def to[C](using Evidence.Coproduct.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
 
-//object Branch:
+object Branch:
+  def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Branch[B] = new Branch[B]:
+    override def key: String = a.print(name).orEmpty
+    override def schema: Schema[B] = b
+    override def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, B] = ???
+    override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = discriminator match
+      case Discriminator.Nested(identifier, value) => OpenApi.obj(identifier := key, value := schema.encode(b)).some
+      case Discriminator.Merged(identifier) =>
+        val payload = schema.encode(b).flatMap(_.asObject).getOrElse(OpenApi.Object.Empty)
+        (payload ++ OpenApi.obj(identifier := key)).some
+      case Discriminator.Keyed => OpenApi.obj(key := schema.encode(b)).some
+      case Discriminator.None  => schema.encode(b)
+
 //  extension [A, B <: Matchable](self: Branch[A, B])
 //    inline def |[C, D <: Matchable](other: Branch[C, D]): Coproduct[B | D] = (self :+ other).imap[B | D] {
 //      case Left(b)  => b

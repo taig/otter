@@ -18,5 +18,8 @@ object Encoder:
   given Encoder[Long] with
     override def encode(a: Long): OpenApi = OpenApi.Integer(a)
 
+  given Encoder[String] with
+    override def encode(a: String): OpenApi = OpenApi.Text(a)
+
   given [A: Encoder]: Encoder[Option[A]] with
     override def encode(a: Option[A]): OpenApi = a.fold(OpenApi.Null)(_.asOpenApi)
