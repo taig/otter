@@ -75,7 +75,11 @@ object OpenApi:
 
   final case class Object(toMap: VectorMap[String, OpenApi]) extends OpenApi.Value
 
+  object Object:
+    val Empty: OpenApi.Object = Object(VectorMap.empty)
+
   case object Null extends OpenApi
   type Null = Null.type
 
   def arr(values: OpenApi*): OpenApi.Array = OpenApi.Array(Chain.fromSeq(values))
+  def obj(values: (String, OpenApi)*): OpenApi.Object = OpenApi.Object(VectorMap.from(values))

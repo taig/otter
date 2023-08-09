@@ -1,6 +1,8 @@
 package io.taig.otter
 
-trait Encoder[A]:
+import io.taig.otter.syntax.*
+
+trait Encoder[-A]:
   self =>
   def encode(a: A): OpenApi
 
@@ -10,5 +12,11 @@ trait Encoder[A]:
 object Encoder:
   inline def apply[A](using encoder: Encoder[A]): Encoder[A] = encoder
 
+  given Encoder[OpenApi] with
+    override def encode(a: OpenApi): OpenApi = a
+
   given Encoder[Long] with
     override def encode(a: Long): OpenApi = OpenApi.Integer(a)
+
+  given [A: Encoder]: Encoder[Option[A]] with
+    override def encode(a: Option[A]): OpenApi = a.fold(OpenApi.Null)(_.asOpenApi)
