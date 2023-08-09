@@ -15,34 +15,34 @@ sealed abstract class Product[A] extends Schema[A]:
   def toChain: Chain[Schema[?]]
 
   final override def copy(properties: Product.Properties[A]): Product[A] = new Product[A] with Copy(properties):
-    export self.{decodeValues, toChain}
+    export self.{decode, toChain}
 
   final override def optional: Product[Option[A]] = new Product[Option[A]] with Optional:
     export self.toChain
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
-    override def decodeValues(values: Chain[OpenApi]): Validated[Violations, Option[A]] =
-      self.decodeValues(values).map(_.some)
+    override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, Option[A]] =
+      self.decode(values, index).map(_.some)
     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] = new Product[B]
     with Validate[B](validation):
     export self.toChain
-    override def decodeValues(values: Chain[OpenApi]): Validated[Violations, B] =
-      self.decodeValues(values).andThen(validation(_).leftMap(Violations.root))
+    override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, B] =
+      self.decode(values, index).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
 
-  final def zip[B](schema: => Schema[B]): Product[(A, B)] = new Product[(A, B)]:
+  final def prepend[B](schema: => Schema[B]): Product[(B, A)] = new Product[(B, A)]:
     export self.constraints
-    override def toChain: Chain[Schema[?]] = self.toChain :+ schema
-    override def properties: Product.Properties[(A, B)] = Product.Properties.Default
+    override def properties: Product.Properties[(B, A)] = Product.Properties.Default
+    override def toChain: Chain[Schema[?]] = schema +: self.toChain
     override def isOptional: Boolean = self.isOptional && schema.isOptional
-    override def decodeValues(values: Chain[OpenApi]): Validated[Violations, (A, B)] = values.initLast match
-      case Some(init, last) =>
-        (self.decodeValues(init), schema.decode(last).leftMap(_.modifyHistory((values.length - 1).toInt /: _))).tupled
-      case None => throw new IllegalStateException("Unreachable")
-    override def encode(ab: (A, B)): Option[OpenApi.Array] =
-      self.encode(ab._1).map(_ :+ schema.encode(ab._2).getOrElse(OpenApi.Null))
+    override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, (B, A)] = values.uncons match
+      case Some((head, tail)) =>
+        (schema.decode(head).leftMap(_.modifyHistory(index /: _)), self.decode(tail, index + 1)).tupled
+      case None => Violations.oneNec(History.Root / index, Violation.required).invalid
+    override def encode(ba: (B, A)): Option[OpenApi.Array] =
+      self.encode(ba._2).map(schema.encode(ba._1).getOrElse(OpenApi.Null) +: _)
 
   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
     .traverse(openapi => openapi.asArray.toValid(Violations.rootNec(Violation.tpe("array", openapi.tpe))))
@@ -64,9 +64,9 @@ sealed abstract class Product[A] extends Schema[A]:
         )
       )
     }
-    .andThen(decodeValues)
+    .andThen(decode(_, index = 0))
 
-  protected def decodeValues(values: Chain[OpenApi]): Validated[Violations, A]
+  protected def decode(values: Chain[OpenApi], index: Int): Validated[Violations, A]
 
 object Product:
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:
@@ -84,7 +84,7 @@ object Product:
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toChain: Chain[Schema[?]] = Chain.empty
-    override def decodeValues(values: Chain[OpenApi]): Validated[Violations, Unit] = ().valid
+    override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, Unit] = ().valid
     override def encode(a: Unit): Option[OpenApi.Array] = OpenApi.Array.Empty.some
 
   def apply[A](schema: => Schema[A]): Product[A] = new Product[A]:
@@ -92,7 +92,7 @@ object Product:
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toChain: Chain[Schema[?]] = Chain.one(schema)
-    override def decodeValues(values: Chain[OpenApi]): Validated[Violations, A] = values.initLast match
-      case Some((_, last)) => schema.decode(last).leftMap(_.modifyHistory(0 /: _))
-      case None            => throw new IllegalStateException("Unreachable")
+    override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, A] = values.initLast match
+      case Some((_, last)) => schema.decode(last).leftMap(_.modifyHistory(index /: _))
+      case None            => Violations.oneNec(History.Root / index, Violation.required).invalid
     override def encode(a: A): Option[OpenApi.Array] = OpenApi.arr(schema.encode(a).getOrElse(OpenApi.Null)).some

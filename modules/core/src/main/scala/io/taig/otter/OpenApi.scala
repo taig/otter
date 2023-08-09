@@ -69,6 +69,7 @@ object OpenApi:
   final case class Array(toChain: Chain[OpenApi]) extends OpenApi.Value:
     def ++(other: OpenApi.Array): OpenApi.Array = Array(toChain ++ other.toChain)
     def :+(other: OpenApi): OpenApi.Array = Array(toChain :+ other)
+    def +:(other: OpenApi): OpenApi.Array = Array(other +: toChain)
 
   object Array:
     val Empty: OpenApi.Array = Array(Chain.empty)

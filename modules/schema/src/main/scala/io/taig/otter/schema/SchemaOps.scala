@@ -1,20 +1,22 @@
 package io.taig.otter.schema
 
 final class SchemaOps[A](self: Schema[A]) extends AnyVal:
-  inline def :*[B](other: Schema[B]): Product[(A, B)] = self.toProduct.zip(other)
-  inline def *:[B](other: Schema[B]): Product[(B, A)] = other.toProduct.zip(self)
-  inline def :*(other: Schema[Unit]): Product[A] = self.toProduct.zip(other).imap { case (a, _) => a }((_, ()))
-  inline def *:(other: Schema[Unit]): Product[A] = other.toProduct.zip(self).imap { case (_, a) => a }(((), _))
+  inline def :*[B](other: Schema[B]): Product[(A, B)] = other.toProduct.prepend(self)
+  inline def *:[B](other: Schema[B]): Product[(B, A)] = self.toProduct.prepend(other)
+  inline def :*(other: Schema[Unit]): Product[A] = other.toProduct.prepend(self).imap { case (a, _) => a }((_, ()))
+  inline def *:(other: Schema[Unit]): Product[A] = self.toProduct.prepend(other).imap { case (_, a) => a }(((), _))
 final class SchemaOpsUnit(self: Schema[Unit]) extends AnyVal:
-  inline def :*[A](other: Schema[A]): Product[A] = self.toProduct.zip(other).imap { case (_, a) => a }(((), _))
-  inline def *:[A](other: Schema[A]): Product[A] = other.toProduct.zip(self).imap { case (a, _) => a }((_, ()))
+  inline def :*[A](other: Schema[A]): Product[A] = other.toProduct.prepend(self).imap { case (_, a) => a }(((), _))
+  inline def *:[A](other: Schema[A]): Product[A] = self.toProduct.prepend(other).imap { case (a, _) => a }((_, ()))
 final class SchemaOpsTuple[A <: Tuple](self: Schema[A]) extends AnyVal:
   inline def :*[B](other: Schema[B]): Product[Tuple.Append[A, B]] =
-    self.toProduct.zip(other).imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
+    other.toProduct
+      .prepend(self)
+      .imap { case (a, b) => a :* b }(ab => (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B]))
   inline def *:[B](other: Schema[B]): Product[B *: A] =
-    other.toProduct.zip(self).imap { case (b, a) => b *: a } { case b *: a => (b, a) }
-  inline def :*(other: Schema[Unit]): Product[A] = self.toProduct.zip(other).imap { case (a, _) => a }((_, ()))
-  inline def *:(other: Schema[Unit]): Product[A] = other.toProduct.zip(self).imap { case (_, a) => a }(((), _))
+    self.toProduct.prepend(other).imap { case (b, a) => b *: a } { case b *: a => (b, a) }
+  inline def :*(other: Schema[Unit]): Product[A] = other.toProduct.prepend(self).imap { case (a, _) => a }((_, ()))
+  inline def *:(other: Schema[Unit]): Product[A] = self.toProduct.prepend(other).imap { case (_, a) => a }(((), _))
 
 trait ToSchemaOps extends ToSchemaOps1:
   implicit final def toSchemaOpsTuple[A <: Tuple](self: Schema[A]): SchemaOpsTuple[A] = new SchemaOpsTuple[A](self)
