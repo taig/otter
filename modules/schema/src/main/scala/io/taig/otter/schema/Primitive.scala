@@ -11,7 +11,9 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override type Codec = OpenApi.Primitive
   final override type Properties[a] = Primitive.Properties[a]
 
-  final def format: Property.Optional[String] = Property.Optional(_.format, _.modifyFormat)
+  final def format: Property.Optional[String] = new Property.Optional[String]:
+    override def value: Option[String] = properties.format
+    override def modify(f: Option[String] => Option[String]): Primitive[A] = copy(properties.modifyFormat(f))
 
   final override def copy(update: Primitive.Properties[A]): Primitive[A] = new Primitive[A]:
     export self.{constraints, decode, encode, isOptional, parse, print}

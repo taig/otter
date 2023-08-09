@@ -14,7 +14,7 @@ sealed abstract class Collection[A] extends Schema[A]:
   def schema: Schema[?]
 
   override def copy(properties: Collection.Properties[A]): Collection[A] = new Collection[A] with Copy(properties):
-    export self.{decodeArray, schema}
+    export self.{decodeArray, encode, schema}
 
   override def optional: Collection[Option[A]] = new Collection[Option[A]] with Optional:
     export self.schema
@@ -50,7 +50,7 @@ object Collection:
 
     final override def copy(properties: Collection.Properties[A]): Collection.Value[A] = new Value[A]
       with Copy(properties):
-      export self.{decodeArray, parse, print, schema}
+      export self.{decodeArray, encode, parse, print, schema}
 
     final override def optional: Collection.Value[Option[A]] = new Value[Option[A]] with Optional:
       export self.schema

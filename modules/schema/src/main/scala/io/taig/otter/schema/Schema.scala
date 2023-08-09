@@ -27,25 +27,9 @@ abstract class Schema[A]:
       def apply(value: B): Self[A] { type Codec = self.Codec } = apply(Some(value))
       def clear: Self[A] { type Codec = self.Codec } = apply(None)
 
-    object Optional:
-      def apply[B](
-          select: Properties[A] => Option[B],
-          update: Properties[A] => (Option[B] => Option[B]) => Properties[A]
-      ): Property.Optional[B] =
-        new Optional[B]:
-          override def value: Option[B] = select(properties)
-          override def modify(f: Option[B] => Option[B]): Self[A] { type Codec = Schema.this.Codec } = copy(
-            update(properties)(f)
-          )
-
-    def apply[B](select: Properties[A] => B, update: Properties[A] => (B => B) => Properties[A]): Property[B] =
-      new Property[B]:
-        override def value: B = select(properties)
-        override def modify(f: B => B): Self[A] { type Codec = Schema.this.Codec } = copy(update(properties)(f))
-
   trait Copy(update: Properties[A]):
     this: Self[A] =>
-    export self.{constraints, encode, isOptional}
+    export self.{constraints, isOptional}
     final override def properties: Properties[A] = update
 
   trait Optional:
@@ -60,8 +44,15 @@ abstract class Schema[A]:
     final override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     final override def properties: self.Properties[B] = self.properties.flatMap(validation(_).toOption)
 
-  final def description: Property.Optional[String] = Property.Optional(_.description, _.modifyDescription)
-  final def example: Property.Optional[A] = Property.Optional(_.example, _.modifyExample)
+  final def description: Property.Optional[String] = new Property.Optional[String]:
+    override def value: Option[String] = properties.description
+    override def modify(f: Option[String] => Option[String]): Self[A] { type Codec = Schema.this.Codec } =
+      copy(properties.modifyDescription(f))
+
+  final def example: Property.Optional[A] = new Property.Optional[A]:
+    override def value: Option[A] = properties.example
+    override def modify(f: Option[A] => Option[A]): Self[A] { type Codec = Schema.this.Codec } =
+      copy(properties.modifyExample(f))
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
