@@ -31,7 +31,8 @@ object schemas:
 
   object dynamic:
     val value: Dynamic[OpenApi.Value] = Dynamic.Value
-    def singleton[A <: Singleton](a: A): Dynamic[A] = value.optional.imap(_ => a)(_ => none)
+    val any: Dynamic[OpenApi] = value.optional.imap(_.getOrElse(OpenApi.Null))(_.asValue)
+    def singleton[A <: Singleton](a: A): Dynamic[A] = any.imap(_ => a)(_ => OpenApi.Null)
 
   def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[B] = Field(name, key, schema)
   def field[A](name: String, schema: => Schema[A]): Field[A] = field(name, string, schema)

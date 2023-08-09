@@ -40,15 +40,15 @@ object Field extends ToFieldOps:
   object Properties:
     val Default: Field.Properties[Nothing] = Properties(None, None)
 
-  def apply[A, B](name: A, _key: => Schema.Value[A], of: => Schema[B]): Field[B] = new Field[B]:
-    override val key: String = _key.print(name).getOrElse("")
-    override def schema: Schema[B] = of
+  def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Field[B] = new Field[B]:
+    override val key: String = a.print(name).getOrElse("")
+    override def schema: Schema[B] = b
     override def properties: Properties[B] = Properties.Default
     override def decodeWithRemainders(
         openapi: VectorMap[String, OpenApi]
     ): Validated[Violations, (VectorMap[String, OpenApi], B)] =
-      of.decode(openapi.get(key).flatMap(_.asValue)).tupleLeft(openapi.removed(key))
-    override def encodeWithNull(b: B, nulls: Null): OpenApi.Object = (of.encode(b), nulls) match
+      schema.decode(openapi.get(key).flatMap(_.asValue)).tupleLeft(openapi.removed(key))
+    override def encodeWithNull(b: B, nulls: Null): OpenApi.Object = (schema.encode(b), nulls) match
       case (Some(value), _)  => OpenApi.obj(key := value)
       case (None, Null.Show) => OpenApi.obj(key := OpenApi.Null)
       case (None, Null.Hide) => OpenApi.Object.Empty
