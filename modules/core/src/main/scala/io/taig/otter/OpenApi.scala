@@ -67,14 +67,15 @@ object OpenApi:
   final case class Bool(value: Boolean) extends Primitive
 
   final case class Array(toChain: Chain[OpenApi]) extends OpenApi.Value:
-    def ++(other: OpenApi.Array): OpenApi.Array = Array(toChain ++ other.toChain)
-    def :+(other: OpenApi): OpenApi.Array = Array(toChain :+ other)
-    def +:(other: OpenApi): OpenApi.Array = Array(other +: toChain)
+    def ++(array: OpenApi.Array): OpenApi.Array = Array(toChain ++ array.toChain)
+    def :+(openapi: OpenApi): OpenApi.Array = Array(toChain :+ openapi)
+    def +:(openapi: OpenApi): OpenApi.Array = Array(openapi +: toChain)
 
   object Array:
     val Empty: OpenApi.Array = Array(Chain.empty)
 
-  final case class Object(toMap: VectorMap[String, OpenApi]) extends OpenApi.Value
+  final case class Object(toMap: VectorMap[String, OpenApi]) extends OpenApi.Value:
+    def ++(obj: OpenApi.Object): OpenApi.Object = Object(toMap ++ obj.toMap)
 
   object Object:
     val Empty: OpenApi.Object = Object(VectorMap.empty)

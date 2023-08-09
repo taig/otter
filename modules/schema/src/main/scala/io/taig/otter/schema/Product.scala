@@ -19,7 +19,7 @@ sealed abstract class Product[A] extends Schema[A]:
 
   final override def optional: Product[Option[A]] = new Product[Option[A]] with Optional:
     export self.toChain
-    override def decodeNone: Validated[Violations, Option[A]] = none.valid
+    override def decodeNone(index: Int): Validated[Violations, Option[A]] = none.valid
     override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, Option[A]] =
       self.decode(values, index).map(_.some)
     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
@@ -27,7 +27,8 @@ sealed abstract class Product[A] extends Schema[A]:
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] = new Product[B]
     with Validate[B](validation):
     export self.toChain
-    override def decodeNone: Validated[Violations, B] = self.decodeNone.andThen(validation(_).leftMap(Violations.root))
+    override def decodeNone(index: Int): Validated[Violations, B] =
+      self.decodeNone(index).andThen(validation(_).leftMap(Violations.root))
     override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, B] =
       self.decode(values, index).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
@@ -37,7 +38,8 @@ sealed abstract class Product[A] extends Schema[A]:
     override def properties: Product.Properties[(B, A)] = Product.Properties.Default
     override def toChain: Chain[Schema[?]] = schema +: self.toChain
     override def isOptional: Boolean = self.isOptional && schema.isOptional
-    override def decodeNone: Validated[Violations, (B, A)] = Violations.rootNec(Violation.required).invalid
+    override def decodeNone(index: Int): Validated[Violations, (B, A)] =
+      (schema.decode(None).leftMap(_.modifyHistory(index /: _)), self.decodeNone(index + 1)).tupled
     override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, (B, A)] = values.uncons match
       case Some((head, tail)) =>
         (schema.decode(head).leftMap(_.modifyHistory(index /: _)), self.decode(tail, index + 1)).tupled
@@ -61,8 +63,8 @@ sealed abstract class Product[A] extends Schema[A]:
         )
         .andThen(decode(_, index = 0))
     case Some(openapi) => Violations.rootNec(Violation.tpe("array", openapi.tpe)).invalid
-    case None          => decodeNone
-  protected def decodeNone: Validated[Violations, A]
+    case None          => decodeNone(index = 0)
+  protected def decodeNone(index: Int): Validated[Violations, A]
   protected def decode(values: Chain[OpenApi], index: Int): Validated[Violations, A]
 
 object Product:
@@ -81,7 +83,8 @@ object Product:
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toChain: Chain[Schema[?]] = Chain.empty
-    override def decodeNone: Validated[Violations, Unit] = Violations.rootNec(Violation.required).invalid
+    override def decodeNone(index: Int): Validated[Violations, Unit] =
+      Violations.rootNec(Violation.tpe("array", actual = "null")).invalid
     override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, Unit] = ().valid
     override def encode(a: Unit): Option[OpenApi.Array] = OpenApi.Array.Empty.some
 
@@ -90,7 +93,8 @@ object Product:
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toChain: Chain[Schema[?]] = Chain.one(schema)
-    override def decodeNone: Validated[Violations, A] = Violations.rootNec(Violation.required).invalid
+    override def decodeNone(index: Int): Validated[Violations, A] =
+      Violations.oneNec(History.Root / index, Violation.required).invalid
     override def decode(values: Chain[OpenApi], index: Int): Validated[Violations, A] = values.initLast match
       case Some((_, last)) => schema.decode(last).leftMap(_.modifyHistory(index /: _))
       case None            => Violations.oneNec(History.Root / index, Violation.required).invalid

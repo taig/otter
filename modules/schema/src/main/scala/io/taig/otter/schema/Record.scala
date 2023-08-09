@@ -31,9 +31,9 @@ sealed abstract class Record[A] extends Schema[A]:
     export self.toChain
     override def decodeNone: Validated[Violations, Option[A]] = none.valid
     override def decodeWithRemainders(
-        values: VectorMap[String, OpenApi]
+        remainders: VectorMap[String, OpenApi]
     ): Validated[Violations, (VectorMap[String, OpenApi], Option[A])] =
-      self.decodeWithRemainders(values).map(_.map(_.some))
+      self.decodeWithRemainders(remainders).map(_.map(_.some))
     override def encode(a: Option[A], nulls: Null): Option[OpenApi.Object] = a.flatMap(self.encode(_, nulls))
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] = new Record[B]
@@ -42,10 +42,28 @@ sealed abstract class Record[A] extends Schema[A]:
     override def decodeNone: Validated[Violations, B] =
       self.decodeNone.andThen(validation(_).leftMap(Violations.root))
     override def decodeWithRemainders(
-        values: VectorMap[String, OpenApi]
+        remainders: VectorMap[String, OpenApi]
     ): Validated[Violations, (VectorMap[String, OpenApi], B)] =
-      self.decodeWithRemainders(values).andThen(_.traverse(validation(_).leftMap(Violations.root)))
+      self.decodeWithRemainders(remainders).andThen(_.traverse(validation(_).leftMap(Violations.root)))
     override def encode(b: B, nulls: Null): Option[OpenApi.Object] = self.encode(g(b), nulls)
+
+  final def zip[B](record: Record[B]): Record[(A, B)] = new Record[(A, B)]:
+    override def toChain: Chain[Field[?]] = self.toChain ++ record.toChain
+    override def properties: Record.Properties[(A, B)] = Record.Properties.Default
+    override def constraints: Chain[Constraint] = self.constraints ++ record.constraints
+    override def isOptional: Boolean = self.isOptional && record.isOptional
+    override def decodeNone: Validated[Violations, (A, B)] =
+      (self.decode(None), record.decode(None)).tupled
+    override def decodeWithRemainders(
+        remainders: VectorMap[String, OpenApi]
+    ): Validated[Violations, (VectorMap[String, OpenApi], (A, B))] = self.decodeWithRemainders(remainders) match
+      case Validated.Valid((remainders, a)) => record.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+      case Validated.Invalid(left) =>
+        record.decodeWithRemainders(remainders) match
+          case Validated.Valid(_)       => left.invalid
+          case Validated.Invalid(right) => (left |+| right).invalid
+    override def encode(ab: (A, B), nulls: Null): Option[OpenApi.Object] =
+      (self.encode(ab._1), record.encode(ab._2)).mapN(_ ++ _)
 
   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi match
     case Some(openapi: OpenApi.Object) => decodeWithRemainders(openapi.toMap).map(_._2)
@@ -53,7 +71,7 @@ sealed abstract class Record[A] extends Schema[A]:
     case None                          => decodeNone
   protected def decodeNone: Validated[Violations, A]
   protected def decodeWithRemainders(
-      values: VectorMap[String, OpenApi]
+      remainders: VectorMap[String, OpenApi]
   ): Validated[Violations, (VectorMap[String, OpenApi], A)]
 
   final override def encode(a: A): Option[OpenApi.Object] = encode(a, properties.nulls)
@@ -78,18 +96,21 @@ object Record:
     override def isOptional: Boolean = false
     override def properties: Record.Properties[Unit] = Properties.Default
     override def encode(a: Unit, nulls: Null): Option[OpenApi.Object] = OpenApi.Object.Empty.some
-    override def decodeNone: Validated[Violations, Unit] = Violations.rootNec(Violation.required).invalid
+    override def decodeNone: Validated[Violations, Unit] =
+      Violations.rootNec(Violation.tpe("object", actual = "null")).invalid
     override def decodeWithRemainders(
-        values: VectorMap[String, OpenApi]
-    ): Validated[Violations, (VectorMap[String, OpenApi], Unit)] = (values, ()).valid
+        remainders: VectorMap[String, OpenApi]
+    ): Validated[Violations, (VectorMap[String, OpenApi], Unit)] = (remainders, ()).valid
 
   def apply[A](field: => Field[A]): Record[A] = new Record[A]:
     override def toChain: Chain[Field[?]] = Chain.one(field)
     override def properties: Record.Properties[A] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decodeNone: Validated[Violations, A] = Violations.rootNec(Violation.required).invalid
+    override def decodeNone: Validated[Violations, A] =
+      Violations.oneNec(History.Root / field.key, Violation.required).invalid
     override def decodeWithRemainders(
-        values: VectorMap[String, OpenApi]
-    ): Validated[Violations, (VectorMap[String, OpenApi], A)] = field.decodeWithRemainders(values)
+        remainders: VectorMap[String, OpenApi]
+    ): Validated[Violations, (VectorMap[String, OpenApi], A)] =
+      field.decodeWithRemainders(remainders).leftMap(_.modifyHistory(field.key /: _))
     override def encode(b: A, nulls: Null): Option[OpenApi.Object] = field.encode(b, nulls).some
