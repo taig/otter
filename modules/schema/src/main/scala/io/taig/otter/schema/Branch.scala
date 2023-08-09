@@ -9,19 +9,29 @@ sealed abstract class Branch[A]:
   def key: String
   def schema: Schema[A]
 
-  def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, A]
+  def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, Option[A]]
   def encode(a: A, discriminator: Discriminator): Option[OpenApi.Value]
 
 //  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
 //  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
-//  def toCoproduct: Coproduct[B] = Schema.Coproduct(this)
-//  def to[C](using Evidence.Coproduct.Aux[C, B]): Coproduct[C] = toCoproduct.to[C]
+  def toCoproduct: Coproduct[A] = Coproduct(this)
+  def to[B](using Evidence.Coproduct.Aux[B, A]): Coproduct[B] = toCoproduct.to[B]
 
 object Branch:
   def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Branch[B] = new Branch[B]:
     override def key: String = a.print(name).orEmpty
     override def schema: Schema[B] = b
-    override def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, B] = ???
+    override def decode(
+        openapi: Option[OpenApi.Value],
+        discriminator: Discriminator
+    ): Validated[Violations, Option[B]] = discriminator match
+      case Discriminator.Nested(identifier, value) => ???
+      case Discriminator.Merged(identifier)        => ???
+      case Discriminator.Keyed                     => ???
+      case Discriminator.None =>
+        schema.decode(openapi) match
+          case Validated.Valid(b)            => b.some.valid
+          case Validated.Invalid(violations) => violations.modifyHistory(key /: _).invalid
     override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = discriminator match
       case Discriminator.Nested(identifier, value) => OpenApi.obj(identifier := key, value := schema.encode(b)).some
       case Discriminator.Merged(identifier) =>

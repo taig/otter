@@ -39,6 +39,8 @@ sealed abstract class Coproduct[A] extends Schema[A]:
       self.decode(openapi, discriminator).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = self.encode(g(b), discriminator)
 
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
+
   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] =
     decode(openapi, properties.discriminator)
   def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, A]
