@@ -4,8 +4,6 @@ import cats.data.Chain
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
-import scala.collection.immutable.VectorMap
-
 object Http:
   type Path = Chain[String]
 
@@ -17,19 +15,9 @@ object Http:
   object Url:
     val Empty: Http.Url = Url(Chain.empty, Chain.empty)
 
-  opaque type Headers = VectorMap[CIString, Http.Headers.Value]
+  type Headers = Chain[(CIString, String)]
 
-  object Headers:
-    enum Value:
-      case Single(value: String)
-      case Multiple(values: Chain[String])
-
-  final case class Request(
-      method: Method,
-      url: Http.Url,
-      headers: Http.Headers,
-      body: Http.Request.Body
-  ):
+  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Request.Body):
     def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))
     def withMethod(method: Method): Http.Request = modifyMethod(_ => method)
 

@@ -32,18 +32,14 @@ object Url:
   val Root: Url[Unit] = new Url[Unit]:
     override def path: Path[?] = Path.Root
     override def queries: Queries[?] = Queries.Empty
-    override def decodeWithRemainders(
-        remainders: Http.Url
-    ): Validated[Violations, (Http.Url, Unit)] =
+    override def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, Unit)] =
       (remainders, ()).valid
     override def encode(a: Unit): Http.Url = Http.Url.Empty
 
   def apply[A](of: Path[A]): Url[A] = new Url[A]:
     override def path: Path[A] = of
     override def queries: Queries[Unit] = Queries.Empty
-    override def decodeWithRemainders(
-        remainders: Http.Url
-    ): Validated[Violations, (Http.Url, A)] =
+    override def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, A)] =
       path.decodeWithRemainders(remainders._1).map { case (path, a) => (Http.Url(path, remainders.queries), a) }
     override def encode(a: A): Http.Url = Http.Url(path.encode(a), Chain.empty)
 
@@ -56,4 +52,4 @@ object Url:
 
   given InvariantSemigroupal[Url] with
     override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.imap(f)(g)
-    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.product(fb)
+    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.zip(fb)
