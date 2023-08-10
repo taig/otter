@@ -1,17 +1,17 @@
-//package io.taig.otter.http
-//
-//import cats.{Eq, Eval}
-//import cats.syntax.all.*
-//import cats.data.Chain
-//import io.taig.otter.http.headers.MediaType
-//import io.taig.otter.http.headers.ContentType
-//import io.taig.otter.schema.Collection
-//import io.taig.otter.schema.{Schema, Value}
-//import org.typelevel.ci.{CIString, CIStringSyntax}
-//
-//import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
-//
-//object syntax:
+package io.taig.otter.http
+
+import cats.{Eq, Eval}
+import cats.syntax.all.*
+import cats.data.Chain
+import io.taig.otter.http.headers.MediaType
+import io.taig.otter.http.headers.ContentType
+import io.taig.otter.schema.Collection
+import io.taig.otter.schema.Schema
+import org.typelevel.ci.{CIString, CIStringSyntax}
+
+import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
+
+object syntax:
 //  val __ : Url[Unit] = Url.Root
 //
 //  object header:
@@ -85,20 +85,20 @@
 //    }(bytes => (Chain.one(ci"Content-Length" -> String.valueOf(bytes.length)), bytes))
 //    val text: Response.Body.Strict[String] =
 //      binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
-//
-//  extension [A: Eq, B](self: Chain[(A, B)])
-//    def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
-//    def first(key: A): Option[B] = self.collectFirst { case (reference, value) if key === reference => value }
-//    def removeAll(key: A): Chain[(A, B)] = self.filter:
-//      case (reference, _) if key === reference => false
-//      case _                                   => true
-//    def removeFirst(key: A): Chain[(A, B)] =
-//      var removed = false
-//      val result = List.newBuilder[(A, B)]
-//      self.iterator.foreach {
-//        case (reference, _) if key == reference && !removed => removed = true; ()
-//        case entry                                          => result += entry
-//      }
-//      Chain.fromSeq(result.result())
-//    def allWithRemainders(key: A): (Chain[B], Chain[(A, B)]) = (all(key), removeAll(key))
-//    def firstWithRemainders(key: A): Option[(B, Chain[(A, B)])] = first(key).tupleRight(removeFirst(key))
+
+  extension [A: Eq, B](self: Chain[(A, B)])
+    def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
+    def first(key: A): Option[B] = self.collectFirst { case (reference, value) if key === reference => value }
+    def removeAll(key: A): Chain[(A, B)] = self.filter:
+      case (reference, _) if key === reference => false
+      case _                                   => true
+    def removeFirst(key: A): Chain[(A, B)] =
+      var removed = false
+      val result = List.newBuilder[(A, B)]
+      self.iterator.foreach {
+        case (reference, _) if key == reference && !removed => removed = true; ()
+        case entry                                          => result += entry
+      }
+      Chain.fromSeq(result.result())
+    def allWithRemainders(key: A): (Chain[B], Chain[(A, B)]) = (all(key), removeAll(key))
+    def firstWithRemainders(key: A): Option[(B, Chain[(A, B)])] = first(key).tupleRight(removeFirst(key))

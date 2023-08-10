@@ -1,29 +1,39 @@
-//package io.taig.otter.http
-//
-//import cats.InvariantSemigroupal
-//import cats.data.Chain
-//import cats.syntax.all.*
-//
-//sealed abstract class Queries[A]:
-//  def toChain: Chain[Query[?]]
-//  final def zip[B](other: Queries[B]): Queries[(A, B)] = Queries.Zip(this, other)
-//  final def imap[B](f: A => B)(g: B => A): Queries[B] = Queries.Modify(this, f, g)
-//
-//object Queries:
-//  private[otter] case object Root extends Queries[Unit]:
-//    override def toChain: Chain[Query[?]] = Chain.empty
-//
-//  final private[otter] case class One[A](query: Query[A]) extends Queries[A]:
-//    override def toChain: Chain[Query[?]] = Chain.one(query)
-//
-//  final private[otter] case class Zip[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]:
-//    override def toChain: Chain[Query[?]] = left.toChain ++ right.toChain
-//
-//  final private[otter] case class Modify[A, B](self: Queries[A], f: A => B, g: B => A) extends Queries[B]:
-//    override def toChain: Chain[Query[?]] = self.toChain
-//
-//  val Empty: Queries[Unit] = Root
-//
-//  given InvariantSemigroupal[Queries] with
-//    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)
-//    override def product[A, B](fa: Queries[A], fb: Queries[B]): Queries[(A, B)] = fa.product(fb)
+package io.taig.otter.http
+
+import cats.InvariantSemigroupal
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+import io.taig.otter.schema.Violations
+
+sealed abstract class Queries[A]:
+  self =>
+  def toChain: Chain[Query[?]]
+
+  final def imap[B](f: A => B)(g: B => A): Queries[B] = new Queries[B]:
+    export self.toChain
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, B)] =
+      self.decodeWithRemainders(remainders).map(_.map(f))
+    override def encode(b: B): Http.Queries = self.encode(g(b))
+
+  final def zip[B](queries: Queries[B]): Queries[(A, B)] = ???
+
+  final def decode(queries: Http.Queries): Validated[Violations, A] = decodeWithRemainders(queries).map(_._2)
+  def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
+  def encode(a: A): Http.Queries
+
+object Queries:
+  val Empty: Queries[Unit] = new Queries[Unit]:
+    override def toChain: Chain[Query[?]] = Chain.empty
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, Unit)] =
+      (remainders, ()).valid
+    override def encode(a: Unit): Http.Queries = Chain.empty
+
+  def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
+    override def toChain: Chain[Query[?]] = Chain.one(query)
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
+      query.decodeWithRemainders(remainders)
+    override def encode(a: A): Http.Queries = query.encode(a)
+
+  given InvariantSemigroupal[Queries] with
+    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)
+    override def product[A, B](fa: Queries[A], fb: Queries[B]): Queries[(A, B)] = fa.product(fb)

@@ -1,31 +1,45 @@
-//package io.taig.otter.http
-//
-//import cats.Eval
-//import cats.syntax.all.*
-//import io.taig.otter.schema.{Collection, Schema}
-//
-//final case class Query[A](name: String, schema: Eval[Schema.Value[A] | Collection.Of[Schema.Value, A]]):
-//  def isOptional: Boolean = schema.value.isOptional
-//  def isCollection: Boolean = schema.value match
-//    case _: Collection.Of[Schema.Value, ?] => true
-//    case _                                 => false
-////  final transparent inline def &[B](query: Query[B]): Queries[?] = toQueries & query
-////  final def toQueries: Queries[A] = Queries(this)
-////
-////object Query:
-////  final private case class Single[A](name: String, schema: Eval[Schema.Value[A]]) extends Query[A]:
-////    override def isOptional: Boolean = false
-////    override def decode(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
-////      queries.getFirstWithRemainders(name) match
-////        case Some((head, remainders)) => schema.value.parse(head).tupleLeft(remainders)
-////        case None                     => Violations.rootNec(Constraint.required.toViolation(OpenApi.Null)).invalid
-////    override def encode(a: A): Http.Queries = Http.Queries.one(name, schema.value.render(a))
-////
-////  final private case class Optional[A](query: Query[A]) extends Query[Option[A]]:
-////    export query.{name, schema}
-////    override def isOptional: Boolean = true
-////    override def decode(queries: Http.Queries): Validated[Violations, (Http.Queries, Option[A])] =
-////      queries.getFirst(name) match
-////        case Some(_) => query.decode(queries).map(_.map(_.some))
-////        case None    => (queries, none[A]).valid
-////    override def encode(a: Option[A]): Http.Queries = a.fold(Http.Queries.Empty)(query.encode)
+package io.taig.otter.http
+
+import cats.data.{Chain, Validated}
+import cats.syntax.all.*
+import io.taig.otter.schema.{Collection, Schema, Violations}
+import io.taig.otter.http.syntax.*
+
+sealed abstract class Query[A]:
+  self =>
+  def name: String
+  def schema: Schema.Value[?] | Collection.Value[?]
+  final def isOptional: Boolean = schema.isOptional
+  final def isCollection: Boolean = schema match
+    case _: Collection[?] => true
+    case _                => false
+
+  final def imap[B](f: A => B)(g: B => A): Query[B] = new Query[B]:
+    export self.{name, schema}
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, B)] =
+      self.decodeWithRemainders(remainders).map(_.map(f))
+    override def encode(b: B): Http.Queries = self.encode(g(b))
+
+  final def toQueries: Queries[A] = Queries(this)
+
+  def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
+  def encode(a: A): Http.Queries
+
+object Query:
+  def apply[A](value: String, of: Schema.Value[A]): Query[A] = new Query[A]:
+    override def name: String = value
+    override def schema: Schema.Value[A] = of
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
+      remainders.firstWithRemainders(name) match
+        case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
+        case None               => schema.parse(none).tupleLeft(remainders)
+    override def encode(a: A): Http.Queries = Chain.fromOption(schema.print(a)).tupleLeft(name)
+
+  def apply[A](collection: String, of: Collection.Value[A]): Query[A] = new Query[A]:
+    override def name: String = collection
+    override def schema: Collection.Value[A] = of
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
+      val (head, tail) = remainders.allWithRemainders(name)
+      schema.parse(head.map(_.some).some).tupleLeft(tail)
+    override def encode(a: A): Http.Queries =
+      Chain.fromOption(schema.print(a)).flatMap(_.mapFilter(identity)).tupleLeft(name)

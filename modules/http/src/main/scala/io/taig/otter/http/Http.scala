@@ -9,12 +9,7 @@ import scala.collection.immutable.VectorMap
 object Http:
   type Path = Chain[String]
 
-  opaque type Queries = VectorMap[String, Http.Queries.Value]
-
-  object Queries:
-    enum Value:
-      case Single(value: String)
-      case Multiple(values: Chain[String])
+  type Queries = Chain[(String, String)]
 
   final case class Url(path: Http.Path, queries: Http.Queries)
 
