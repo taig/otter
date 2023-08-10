@@ -11,7 +11,11 @@ object Http:
 
   type Queries = Chain[(String, String)]
 
-  final case class Url(path: Http.Path, queries: Http.Queries)
+  final case class Url(path: Http.Path, queries: Http.Queries):
+    def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
+
+  object Url:
+    val Empty: Http.Url = Url(Chain.empty, Chain.empty)
 
   opaque type Headers = VectorMap[CIString, Http.Headers.Value]
 
