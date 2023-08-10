@@ -13,9 +13,11 @@ sealed abstract class Segment[A]:
   final def isOptional: Boolean = schema.exists(_.isOptional)
 
   final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
-    export self.{name, schema}
+    export self.{matches, name, schema}
     override def decode(a: Option[String]): Validated[Violations, B] = self.decode(a).map(f)
     override def encode(b: B): Option[String] = self.encode(g(b))
+
+  def matches(value: String): Boolean
 
   def decode(a: Option[String]): Validated[Violations, A]
   def encode(a: A): Option[String]
@@ -26,18 +28,20 @@ object Segment:
   def apply(static: String): Segment[Unit] = new Segment[Unit]:
     override def schema: Option[Schema.Value[?]] = none
     override def name: String = static
+    override def matches(value: String): Boolean = value === static
     override def decode(a: Option[String]): Validated[Violations, Unit] = a match
-      case Some(a) =>
+      case Some(value) =>
         Validated.cond(
-          a === name,
+          matches(value),
           (),
-          Violations.rootNec(Violation(Constraint.Equals(name), actual = a.asOpenApi.some))
+          Violations.rootNec(Violation(Constraint.Equals(name), actual = value.asOpenApi.some))
         )
       case None => Violations.rootNec(Violation.required).invalid
     override def encode(a: Unit): Option[String] = static.some
 
   def apply[A](parameter: String, of: => Schema.Value[A]): Segment[A] = new Segment[A]:
-    override def schema: Option[Schema.Value[?]] = of.some
+    override def schema: Option[Schema.Value[A]] = of.some
     override def name: String = parameter
+    override def matches(value: String): Boolean = true
     override def decode(a: Option[String]): Validated[Violations, A] = of.parse(a)
     override def encode(a: A): Option[String] = of.print(a)
