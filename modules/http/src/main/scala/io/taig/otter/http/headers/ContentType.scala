@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Validation
 
 final case class ContentType(mediaType: MediaType, charset: Option[String]):
-  def render: String = (mediaType.toString :: charset.map(charset => s"charset=$charset").toList).mkString("; ")
+  def print: String = (mediaType.toString :: charset.map(charset => s"charset=$charset").toList).mkString("; ")
 
 object ContentType:
   def parse(value: String): Option[ContentType] = value.split(";\\s*").toList match

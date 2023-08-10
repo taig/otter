@@ -15,11 +15,22 @@ sealed abstract class Queries[A]:
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Queries = self.encode(g(b))
 
-  final def zip[B](queries: Queries[B]): Queries[(A, B)] = ???
+  final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
+    override def toChain: Chain[Query[?]] = self.toChain ++ queries.toChain
+    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, (A, B))] =
+      self.decodeWithRemainders(remainders) match
+        case Validated.Valid((remainders, a)) => queries.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+        case Validated.Invalid(left) =>
+          queries.decodeWithRemainders(remainders) match
+            case Validated.Valid(_)       => left.invalid
+            case Validated.Invalid(right) => (left |+| right).invalid
+    override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
 
   final def decode(queries: Http.Queries): Validated[Violations, A] = decodeWithRemainders(queries).map(_._2)
   def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
   def encode(a: A): Http.Queries
+
+  final def toUrl: Url[A] = Url(this)
 
 object Queries:
   val Empty: Queries[Unit] = new Queries[Unit]:
