@@ -48,6 +48,10 @@ sealed abstract class Collection[A] extends Schema[A]:
 object Collection:
   type Of[F[a] <: Schema[a], A] = Collection[A] { type Of[a] = F[a] }
 
+  extension [A](self: Collection.Of[Schema.Value, A])
+    def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A] = self.parse(values)
+    def print(as: A): Option[Chain[Option[String]]] = self.print(as)
+
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:
     override type Self[a] = Collection.Properties[a]
     override def modifyDescription(f: Option[String] => Option[String]): Collection.Properties[A] =

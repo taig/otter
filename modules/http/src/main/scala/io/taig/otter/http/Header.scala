@@ -9,7 +9,7 @@ import org.typelevel.ci.CIString
 sealed abstract class Header[A]:
   self =>
   def name: CIString
-  def schema: Schema.Value[?] | Collection.Value[?]
+  def schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]
   final def isOptional: Boolean = schema.isOptional
   final def isCollection: Boolean = schema match
     case _: Collection[?] => true
@@ -37,9 +37,9 @@ object Header:
         case None               => schema.parse(none).tupleLeft(remainders)
     override def encode(a: A): Http.Headers = Chain.fromOption(of.print(a)).tupleLeft(name)
 
-  def apply[A](collection: CIString, of: Collection.Value[A]): Header[A] = new Header[A]:
+  def apply[A](collection: CIString, of: Collection.Of[Schema.Value, A]): Header[A] = new Header[A]:
     override def name: CIString = collection
-    override def schema: Collection.Value[A] = of
+    override def schema: Collection.Of[Schema.Value, A] = of
     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
       val (head, tail) = remainders.allWithRemainders(name)
       schema.parse(head.map(_.some).some).tupleLeft(tail)
