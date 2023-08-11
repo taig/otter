@@ -44,6 +44,7 @@ object Path extends ToPathOps:
 
   def apply[A](segment: Segment[A]): Path[A] = new Path[A]:
     override def toChain: Chain[Segment[?]] = Chain.one(segment)
+    // TODO test this, I don't think this will work
     override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.uncons match
       case Some((head, tail)) => Option.when(segment.matches(head))(tail)
       case None               => Option.when(segment.isOptional)(Chain.empty)

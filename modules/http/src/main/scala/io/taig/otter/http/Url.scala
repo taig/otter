@@ -24,6 +24,8 @@ sealed abstract class Url[A]:
       .andThen { case (remainders, a) => url.decodeWithRemainders(remainders).map(_.tupleLeft(a)) }
     override def encode(ab: (A, B)): Http.Url = self.encode(ab._1) ++ url.encode(ab._2)
 
+  final def matches(url: Http.Url): Boolean = path.matches(url.path) && queries.matches(url.queries)
+
   final def decode(url: Http.Url): Validated[Violations, A] = decodeWithRemainders(url).map(_._2)
   def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, A)]
   def encode(a: A): Http.Url

@@ -15,12 +15,14 @@ sealed abstract class Query[A]:
     case _                => false
 
   final def imap[B](f: A => B)(g: B => A): Query[B] = new Query[B]:
-    export self.{name, schema}
+    export self.{matchesWithRemainders, name, schema}
     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, B)] =
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Queries = self.encode(g(b))
 
   final def toQueries: Queries[A] = Queries(this)
+
+  def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries]
 
   def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
   def encode(a: A): Http.Queries
@@ -29,6 +31,8 @@ object Query:
   def apply[A](value: String, of: Schema.Value[A]): Query[A] = new Query[A]:
     override def name: String = value
     override def schema: Schema.Value[A] = of
+    override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
+      remainders.firstWithRemainders(name).map(_._2)
     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
       remainders.firstWithRemainders(name) match
         case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
@@ -38,6 +42,7 @@ object Query:
   def apply[A](collection: String, of: Collection.Value[A]): Query[A] = new Query[A]:
     override def name: String = collection
     override def schema: Collection.Value[A] = of
+    override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] = remainders.removeAll(name).some
     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
       val (head, tail) = remainders.allWithRemainders(name)
       schema.parse(head.map(_.some).some).tupleLeft(tail)
