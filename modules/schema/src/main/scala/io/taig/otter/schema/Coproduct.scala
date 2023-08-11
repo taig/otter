@@ -48,7 +48,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
   final override def encode(a: A): Option[OpenApi.Value] = encode(a, properties.discriminator)
   def encode(a: A, discriminator: Discriminator): Option[OpenApi.Value]
 
-object Coproduct:
+object Coproduct extends ToCoproductOps:
   final case class Properties[+A](description: Option[String], discriminator: Discriminator, example: Option[A])
       extends Schema.Properties[A]:
     override type Self[a] = Coproduct.Properties[a]

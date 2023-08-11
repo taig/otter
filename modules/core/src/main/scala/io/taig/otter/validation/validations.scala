@@ -20,7 +20,7 @@ object validations:
     Validated.condNec(
       if exclusive then gt(value, reference) else gteq(value, reference),
       (),
-      OpenApi.Decimal(toBigDecimal(value)).some
+      OpenApi.Decimal(toBigDecimal(value))
     )
 
   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
@@ -57,7 +57,7 @@ object validations:
     Validated.condNec(
       if exclusive then lt(value, reference) else lteq(value, reference),
       (),
-      OpenApi.Decimal(toBigDecimal(value)).some
+      OpenApi.Decimal(toBigDecimal(value))
     )
 
   def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
@@ -85,25 +85,25 @@ object validations:
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
   def multiple(reference: Int): Validation[Int, Unit] = Validation(Constraint.Multiple(reference)): value =>
-    Validated.condNec(value % reference == 0, (), OpenApi.Integer(value).some)
+    Validated.condNec(value % reference == 0, (), OpenApi.Integer(value))
 
   def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
-    Validated.condNec(value.length >= reference, (), OpenApi.Integer(value.length).some)
+    Validated.condNec(value.length >= reference, (), OpenApi.Integer(value.length))
 
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
-    Validated.condNec(value.length <= reference, (), OpenApi.Integer(value.length).some)
+    Validated.condNec(value.length <= reference, (), OpenApi.Integer(value.length))
 
   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MinItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size >= reference, (), OpenApi.Integer(size).some)
+      Validated.condNec(size >= reference, (), OpenApi.Integer(size))
 
   def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
 
   def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MaxItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size <= reference, (), OpenApi.Integer(size).some)
+      Validated.condNec(size <= reference, (), OpenApi.Integer(size))
 
   def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
 

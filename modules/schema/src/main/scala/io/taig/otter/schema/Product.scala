@@ -56,8 +56,8 @@ sealed abstract class Product[A] extends Schema[A]:
           values,
           Violations.root(
             NonEmptyChain(
-              Violation(Constraint.MinItems(size), size.asOpenApi.some),
-              Violation(Constraint.MaxItems(size), size.asOpenApi.some)
+              Violation(Constraint.MinItems(size), size.asOpenApi),
+              Violation(Constraint.MaxItems(size), size.asOpenApi)
             )
           )
         )

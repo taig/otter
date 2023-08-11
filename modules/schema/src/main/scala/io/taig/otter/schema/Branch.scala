@@ -17,7 +17,7 @@ sealed abstract class Branch[A]:
   def toCoproduct: Coproduct[A] = Coproduct(this)
   def to[B](using Evidence.Coproduct.Aux[B, A]): Coproduct[B] = toCoproduct.to[B]
 
-object Branch:
+object Branch extends ToBranchOps:
   def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Branch[B] = new Branch[B]:
     override def key: String = a.print(name).orEmpty
     override def schema: Schema[B] = b
@@ -39,15 +39,6 @@ object Branch:
         (payload ++ OpenApi.obj(identifier := key)).some
       case Discriminator.Keyed => OpenApi.obj(key := schema.encode(b)).some
       case Discriminator.None  => schema.encode(b)
-
-//  extension [A, B <: Matchable](self: Branch[A, B])
-//    inline def |[C, D <: Matchable](other: Branch[C, D]): Coproduct[B | D] = (self :+ other).imap[B | D] {
-//      case Left(b)  => b
-//      case Right(d) => d
-//    } {
-//      case b: B => Left(b)
-//      case d: D => Right(d)
-//    }
 
 //  def decode(otter: OpenApi, discriminator: Sum.Discriminator): Ior[Violations, Option[B]] = discriminator match
 //    case Discriminator.Nested(identifier, value) =>

@@ -32,7 +32,7 @@ abstract class Field[A]:
   protected def encodeWithNull(b: A, nulls: Null): OpenApi.Object
 
   def toRecord: Record[A] = Record(this)
-//  def to[C](using Evidence.Product.Aux[C, B]): Record[C] = toRecord.to[C]
+  def to[B](using Evidence.Product.Aux[B, A]): Record[B] = toRecord.to[B]
 
 object Field extends ToFieldOps:
   final case class Properties[+A](default: Option[A], nulls: Option[Null])

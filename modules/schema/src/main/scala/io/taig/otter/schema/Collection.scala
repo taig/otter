@@ -7,7 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation}
 
 sealed abstract class Collection[A] extends Schema[A]:
   self =>
-  final override type Self[a] = Collection[a]
+  override type Self[a] = Collection[a]
   final override type Properties[a] = Collection.Properties[a]
   final override type Codec = OpenApi.Array
 

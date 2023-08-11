@@ -63,6 +63,8 @@ sealed abstract class Record[A] extends Schema[A]:
     override def encode(ab: (A, B), nulls: Null): Option[OpenApi.Object] =
       (self.encode(ab._1), record.encode(ab._2)).mapN(_ ++ _)
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
+
   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi match
     case Some(openapi: OpenApi.Object) => decodeWithRemainders(openapi.toMap).map(_._2)
     case Some(openapi)                 => Violations.rootNec(Violation.tpe("object", actual = openapi.tpe)).invalid
