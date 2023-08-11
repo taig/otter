@@ -1,27 +1,27 @@
-//package io.taig.otter.http
-//
-//import cats.data.Validated
-//import cats.syntax.all.*
-//import io.taig.otter.schema.Violations
-//import io.taig.otter.validation.Validation
-//
-//sealed abstract class Request[A]:
-//  def method: Method
-//  def url: Url[?]
-//  def headers: Headers[?]
-//  def body: Request.Body[?]
-//  final def imap[B](f: A => B)(g: B => A): Request[B] = Request.Modify(this, f, g)
-//
-//object Request:
-//  sealed abstract class Body[A]:
-//    self =>
-//    type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
-//    def withHeaders: Self[(Http.Headers, A)]
-//    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
-//    def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
-//    final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
-//    final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
-//
+package io.taig.otter.http
+
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.schema.Violations
+import io.taig.otter.validation.Validation
+
+sealed abstract class Request[A]:
+  def method: Method
+  def url: Url[?]
+  def headers: Headers[?]
+  def body: Request.Body[?]
+  final def imap[B](f: A => B)(g: B => A): Request[B] = ???
+
+object Request:
+  sealed abstract class Body[A]:
+    self =>
+    type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
+    def withHeaders: Self[(Http.Headers, A)]
+    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
+    def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
+    final def validate(validation: Validation[A, Unit]): Self[A] = ???
+    final def imap[B](f: A => B)(g: B => A): Self[B] = ???
+
 //  object Body:
 //    sealed abstract class Singlepart[A] extends Request.Body[A]:
 //      self =>
@@ -73,12 +73,3 @@
 //        ) extends Request.Body.Singlepart.Streaming[B]
 //
 //        val Empty: Request.Body.Singlepart.Streaming[Unit] = Bytes.imap(_ => ())(_ => Stream.Empty)
-//
-//  final private[otter] case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])
-//      extends Request[(A, B, C)]
-//
-//  final private[otter] case class Modify[A, B](self: Request[A], f: A => B, g: B => A) extends Request[B]:
-//    export self.{body, headers, method, url}
-//
-//  def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C]): Request[(A, B, C)] =
-//    Root(method, url, headers, body)
