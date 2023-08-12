@@ -7,8 +7,8 @@ import io.taig.otter.validation.Violation
 import io.taig.otter.schema.{History, Violations}
 import io.taig.otter.validation.Validation
 
-//final case class Response[A](results: Results[A], violations: Result[Violations])
-//
+final case class Response[A](results: Results[A], violations: Result[Violations])
+
 object Response:
   sealed abstract class Body[A]:
     self =>
