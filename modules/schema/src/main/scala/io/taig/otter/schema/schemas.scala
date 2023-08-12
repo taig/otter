@@ -43,12 +43,12 @@ object schemas:
   def branch[A](name: Int, schema: => Schema[A]): Branch[A] = branch(name, int, schema)
 
   object collection:
-    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Chain[A]] = Collection(schema)
-    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, Vector[A]] =
+    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Chain[A]] = Collection(schema)
+    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Vector[A]] =
       chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, List[A]] =
+    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, List[A]] =
       chain(schema).imap(_.toList)(Chain.fromSeq)
-    def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection.Of[F, NonEmptyChain[A]] =
+    def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(OpenApi.Integer(0)))
       chain(schema).ivalidate(validation)(_.toChain)

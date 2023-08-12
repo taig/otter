@@ -5,21 +5,23 @@ import cats.syntax.all.*
 import io.taig.otter.OpenApi
 import io.taig.otter.validation.{Constraint, Validation, Violation}
 
-sealed abstract class Collection[A] extends Schema[A]:
+sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
   self =>
-  override type Self[a] = Collection.Of[Of, a]
+  override type Self[a] = Collection[F, a]
   final override type Properties[a] = Collection.Properties[a]
   final override type Codec = OpenApi.Array
-  type Of[a] <: Schema[a]
 
-  def schema: Schema[?]
+  final class Reference[B](val value: F[B])
 
-  override def copy(properties: Collection.Properties[A]): Collection.Of[Of, A] = new Collection[A]
+  def schema: Reference[?]
+
+  override def copy(properties: Collection.Properties[A]): Collection[F, A] = new Collection[F, A]
     with Copy(properties):
-    export self.{decodeArray, encode, parse, print, schema, Of}
+    export self.{decodeArray, encode, parse, print}
+    override def schema: Reference[?] = Reference(self.schema.value)
 
-  override def optional: Collection.Of[Of, Option[A]] = new Collection[Option[A]] with Optional:
-    export self.{schema, Of}
+  override def optional: Collection[F, Option[A]] = new Collection[F, Option[A]] with Optional:
+    override def schema: Reference[?] = Reference(self.schema.value)
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
@@ -27,9 +29,9 @@ sealed abstract class Collection[A] extends Schema[A]:
       self.parse(values).map(_.some)
     override def print(a: Option[A]): Option[Chain[Option[String]]] = a.flatMap(self.print)
 
-  override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] = new Collection[B]
+  override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[F, B] = new Collection[F, B]
     with Validate[B](validation):
-    export self.{schema, Of}
+    override def schema: Reference[?] = Reference(self.schema.value)
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
       self.decodeArray(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
@@ -46,9 +48,7 @@ sealed abstract class Collection[A] extends Schema[A]:
   protected def print(as: A): Option[Chain[Option[String]]]
 
 object Collection:
-  type Of[F[a] <: Schema[a], A] = Collection[A] { type Of[a] = F[a] }
-
-  extension [A](self: Collection.Of[Schema.Value, A])
+  extension [A](self: Collection[Schema.Value, A])
     def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A] = self.parse(values)
     def print(as: A): Option[Chain[Option[String]]] = self.print(as)
 
@@ -62,9 +62,8 @@ object Collection:
   object Properties:
     val Default: Collection.Properties[Nothing] = Properties(None, None)
 
-  def apply[F[a] <: Schema[a], A](of: => F[A]): Collection.Of[F, Chain[A]] = new Collection[Chain[A]]:
-    override type Of[a] = F[a]
-    override def schema: Schema[?] = of
+  def apply[F[a] <: Schema[a], A](of: => F[A]): Collection[F, Chain[A]] = new Collection[F, Chain[A]]:
+    override def schema: Reference[A] = Reference(of)
     override def properties: Collection.Properties[Chain[A]] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false

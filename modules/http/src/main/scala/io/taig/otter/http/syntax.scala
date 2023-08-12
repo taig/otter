@@ -15,7 +15,7 @@ import scala.annotation.targetName
 object syntax:
   val __ : Url[Unit] = Url.Root
 
-  def header[A](name: CIString, schema: => Schema.Value[A] | Collection.Of[Schema.Value, A]): Header[A] =
+  def header[A](name: CIString, schema: => Schema.Value[A] | Collection[Schema.Value, A]): Header[A] =
     Header(name, schema)
 
 //  def parameter[A](name: String, schema: => Value[A]): Segment[A] = Segment.Parameter(name, Eval.later(schema))

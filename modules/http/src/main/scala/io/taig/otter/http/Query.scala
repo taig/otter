@@ -8,11 +8,11 @@ import io.taig.otter.http.syntax.*
 sealed abstract class Query[A]:
   self =>
   def name: String
-  def schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]
+  def schema: Schema.Value[?] | Collection[Schema.Value, ?]
   final def isOptional: Boolean = schema.isOptional
   final def isCollection: Boolean = schema match
-    case _: Collection[?] => true
-    case _                => false
+    case _: Collection[?, ?] => true
+    case _                   => false
 
   final def imap[B](f: A => B)(g: B => A): Query[B] = new Query[B]:
     export self.{matchesWithRemainders, name, schema}
@@ -39,9 +39,9 @@ object Query:
         case None               => schema.parse(none).tupleLeft(remainders)
     override def encode(a: A): Http.Queries = Chain.fromOption(schema.print(a)).tupleLeft(name)
 
-  def apply[A](collection: String, of: Collection.Of[Schema.Value, A]): Query[A] = new Query[A]:
+  def apply[A](collection: String, of: Collection[Schema.Value, A]): Query[A] = new Query[A]:
     override def name: String = collection
-    override def schema: Collection.Of[Schema.Value, A] = of
+    override def schema: Collection[Schema.Value, A] = of
     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] = remainders.removeAll(name).some
     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
       val (head, tail) = remainders.allWithRemainders(name)
