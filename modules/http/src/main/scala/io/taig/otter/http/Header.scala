@@ -2,46 +2,35 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.schema.{Collection, Schema, Violations}
 import io.taig.otter.http.syntax.*
+import io.taig.otter.schema.{Collection, Schema, Violations}
 import org.typelevel.ci.CIString
 
-sealed abstract class Header[A]:
-  self =>
-  def name: CIString
-  def schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]
-  final def isOptional: Boolean = schema.isOptional
-  final def isCollection: Boolean = schema match
+final case class Header[A](name: CIString, schema: Schema.Value[A] | Collection.Of[Schema.Value, A]):
+  def isOptional: Boolean = schema.isOptional
+  def isCollection: Boolean = schema match
     case _: Collection[?] => true
     case _                => false
 
-  final def imap[B](f: A => B)(g: B => A): Header[B] = new Header[B]:
-    export self.{name, schema}
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, B)] =
-      self.decodeWithRemainders(remainders).map(_.map(f))
+  def optional: Header[Option[A]] = schema match
+    case schema: Schema.Value[A]     => copy(schema = schema.optional)
+    case schema: Collection.Of[?, ?] => copy(schema = schema.optional)
 
-    override def encode(b: B): Http.Headers = self.encode(g(b))
+  def imap[B](f: A => B)(g: B => A): Header[B] = schema match
+    case schema: Schema.Value[A]     => copy(schema = schema.imap(f)(g))
+    case schema: Collection.Of[?, A] => copy(schema = schema.imap(f)(g))
 
-  final def toHeaders: Headers[A] = Headers(this)
+  def toHeaders: Headers[A] = Headers(this)
 
-  def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)]
-  def encode(a: A): Http.Headers
-
-object Header:
-  def apply[A](value: CIString, of: Schema.Value[A]): Header[A] = new Header[A]:
-    override def name: CIString = value
-    override def schema: Schema.Value[A] = of
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
+  def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] = schema match
+    case schema: Schema.Value[A] =>
       remainders.firstWithRemainders(name) match
         case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
         case None               => schema.parse(none).tupleLeft(remainders)
-    override def encode(a: A): Http.Headers = Chain.fromOption(of.print(a)).tupleLeft(name)
-
-  def apply[A](collection: CIString, of: Collection.Of[Schema.Value, A]): Header[A] = new Header[A]:
-    override def name: CIString = collection
-    override def schema: Collection.Of[Schema.Value, A] = of
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
+    case schema: Collection.Of[Schema.Value, A] =>
       val (head, tail) = remainders.allWithRemainders(name)
       schema.parse(head.map(_.some).some).tupleLeft(tail)
-    override def encode(a: A): Http.Headers =
-      Chain.fromOption(of.print(a)).flatMap(_.mapFilter(identity)).tupleLeft(name)
+  def encode(a: A): Http.Headers = schema match
+    case schema: Schema.Value[A] => Chain.fromOption(schema.print(a)).tupleLeft(name)
+    case schema: Collection.Of[Schema.Value, A] =>
+      Chain.fromOption(schema.print(a)).flatMap(_.mapFilter(identity)).tupleLeft(name)
