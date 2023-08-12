@@ -2,10 +2,11 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
+import io.taig.otter.OpenApi
 import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.http.Http.Request.Body
-import io.taig.otter.schema.Violations
-import io.taig.otter.validation.Violation
+import io.taig.otter.schema.{History, Violations}
+import io.taig.otter.validation.{Constraint, Violation}
 
 sealed abstract class Request[A]:
   self =>
@@ -92,3 +93,25 @@ object Request:
               remainders: Http.Headers,
               payload: Array[Byte]
           ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
+
+  def apply[A, B, C](m: Method, a: Url[A], b: Headers[B], c: Request.Body[C]): Request[(A, B, C)] =
+    new Request[(A, B, C)]:
+      override def method: Method = m
+      override def url: Url[A] = a
+      override def headers: Headers[B] = b
+      override def body: Body[C] = c
+      override def decode(request: Http.Request): Validated[Violations, (A, B, C)] = Validated
+        .cond(
+          method === request.method,
+          (),
+          Violations.oneNec(
+            History.Root / "method",
+            Violation(Constraint.Equals(method.toString), OpenApi.Text(request.method.toString))
+          )
+        )
+        .andThen(_ => url.decode(request.url))
+        .andThen(a => headers.decodeWithRemainders(request.headers).map(_.tupleLeft(a)))
+        .andThen { case (headers, (a, b)) => body.decode(headers, request.body).map(c => (a, b, c)) }
+      override def encode(abc: (A, B, C)): Http.Request =
+        val (additionalHeaders, body) = this.body.encode(abc._3)
+        Http.Request(method, url.encode(abc._1), headers.encode(abc._2) ++ additionalHeaders, body)
