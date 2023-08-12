@@ -3,11 +3,11 @@ package io.taig.otter.http
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.Http.Payload
-import io.taig.otter.validation.Violation
 import io.taig.otter.schema.{History, Violations}
-import io.taig.otter.validation.Validation
+import io.taig.otter.validation.Violation
 
-final case class Response[A](results: Results[A], violations: Result[Violations])
+final case class Response[A](results: Results[A], violations: Result[Violations]):
+  def encode(a: Validated[Violations, A]): Http.Response = ???
 
 object Response:
   sealed abstract class Body[A]:

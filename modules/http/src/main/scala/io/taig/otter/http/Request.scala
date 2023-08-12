@@ -15,6 +15,8 @@ sealed abstract class Request[A]:
   def headers: Headers[?]
   def body: Request.Body[?]
 
+  final def matches(method: Method, url: Http.Url): Boolean = this.method === method && this.url.matches(url)
+
   final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request[B] = new Request[B]:
     export self.{body, headers, method, url}
     override def decode(request: Http.Request): Validated[Violations, B] = self.decode(request).andThen(f)

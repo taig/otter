@@ -40,23 +40,22 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       url: Http.Url,
       headers: Http.Headers,
       body: Request.Body[?] => F[Http.Request.Body]
-  ): F[Http.Response] = ???
-//  app.routes
-//    .find(method, url)
-//    .fold(HttpEncoder.response(app.notFound, ().valid).pure): route =>
-//      body(route.endpoint.request.body)
-//        .map(Http.Request(method, url, headers, _))
-//        .map(HttpDecoder.request.decode(route.endpoint.request, _))
-//        .flatMap(_.traverse(route.implementation))
-//        .map(HttpEncoder.response(route.endpoint.response, _))
-//    .handleErrorWith: throwable =>
-//      throwable.printStackTrace()
-//      HttpEncoder.response(app.failure, ().valid).pure[F]
+  ): F[Http.Response] = app.routes
+    .find(method, url)
+    .fold(app.notFound.encode(().valid).pure): route =>
+      body(route.endpoint.request.body)
+        .map(Http.Request(method, url, headers, _))
+        .map(route.endpoint.request.decode)
+        .flatMap(_.traverse(route.implementation))
+        .map(route.endpoint.response.encode)
+    .handleErrorWith: throwable =>
+      // TODO remove
+      throwable.printStackTrace()
+      app.failure.encode(().valid).pure
 
-  def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = ???
-//  body match
-//    case _: Request.Body.Singlepart.Strict[?] =>
-//      data.compile.to(Array).map(data => Http.Request.Body.Singlepart(Http.Payload.Strict(data)))
+  def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
+    case _: Request.Body.Singlepart.Strict[?] =>
+      data.compile.to(Array).map(data => Http.Request.Body.Singlepart(Http.Payload.Strict(data)))
 //    case _: Request.Body.Singlepart.Streaming[?] =>
 //      Http4sStream(data).map(stream => Http.Request.Body.Singlepart(Http.Payload.Streaming(stream)))
 
