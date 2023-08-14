@@ -5,9 +5,9 @@ import cats.syntax.all.*
 import io.circe.jawn.JawnParser
 import io.circe.{Json, JsonObject, Printer}
 import io.taig.otter.http.headers.{ContentType, MediaType}
-import io.taig.otter.http.{Request, headers}
+import io.taig.otter.http.{headers, Request, Response}
 import io.taig.otter.schema.schemas.*
-import io.taig.otter.schema.{Dynamic, Schema, Violations, schemas}
+import io.taig.otter.schema.{schemas, Dynamic, Schema, Violations}
 import io.taig.otter.validation.Violation
 
 import java.nio.charset.StandardCharsets
@@ -52,9 +52,11 @@ object circe:
     case OpenApi.Object(values)             => Json.fromFields(values.map { case (key, value) => (key, toJson(value)) })
     case OpenApi.Text(value)                => Json.fromString(value)
 
-  object syntax:
+  object schemas:
     object dynamic:
-      val json: Dynamic[Json] = schemas.dynamic.any.imap(toJson)(toOpenApi)
+      import io.taig.otter.schema.schemas.dynamic.any
+
+      val json: Dynamic[Json] = any.imap(toJson)(toOpenApi)
 
   object request:
     import io.taig.otter.http.syntax.request.binary
@@ -72,17 +74,17 @@ object circe:
     def json[A](schema: => Schema[A]): Request.Body.Singlepart.Strict[A] =
       json.andThen(json => schema.decode(toOpenApi(json)))(schema.encode(_).map(toJson).getOrElse(Json.Null))
 
-//  object response:
-//    import io.taig.otter.http.syntax.response.binary
-//
-//    def json(printer: Printer): Response.Body.Strict[Json] =
+  object response:
+    import io.taig.otter.http.syntax.response.binary
+
+    def json(printer: Printer): Response.Body.Strict[Json] = ???
 //      binary.withHeaders.ivalidate(validations.json.lmap { case (_, bytes) => bytes }) { json =>
 //        (
 //          Chain.one(ci"Content-Type" -> "application/json; charset=UTF-8"),
 //          printer.print(json).getBytes(StandardCharsets.UTF_8)
 //        )
 //      }
-//
+
 //    val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
 //    def json[A](schema: => Schema.Of[Json, A]): Response.Body.Strict[A] =
 //      json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))

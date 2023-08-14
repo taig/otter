@@ -13,15 +13,17 @@ object Response:
   sealed abstract class Body[A]:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
+
     def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
     final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
     def zip[B](headers: Headers[B]): Self[(A, B)]
+
     final def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A] =
       decodeWithRemainders(headers, payload).map(_._2)
     def decodeWithRemainders(remainders: Http.Headers, payload: Http.Payload): Validated[Violations, (Http.Headers, A)]
     def encode(a: A): (Http.Headers, Http.Payload)
 
-  object Body:
+  object Body extends ToResponseBodyOps:
     sealed abstract class Strict[A] extends Response.Body[A]:
       self =>
       final override type Self[a] = Response.Body.Strict[a]
