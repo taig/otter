@@ -15,8 +15,17 @@ object Encoder:
   given Encoder[OpenApi] with
     override def encode(a: OpenApi): OpenApi = a
 
+  given Encoder[Boolean] with
+    override def encode(a: Boolean): OpenApi = OpenApi.Bool(a)
+
   given Encoder[Long] with
     override def encode(a: Long): OpenApi = OpenApi.Integer(a)
+
+  given Encoder[Int] with
+    override def encode(a: Int): OpenApi = OpenApi.Integer(a)
+
+  given Encoder[BigInt] with
+    override def encode(a: BigInt): OpenApi = OpenApi.Integer(a)
 
   given Encoder[String] with
     override def encode(a: String): OpenApi = OpenApi.Text(a)
