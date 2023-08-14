@@ -40,20 +40,18 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       url: Http.Url,
       headers: Http.Headers,
       body: Request.Body[?] => F[Http.Request.Body]
-  ): F[Http.Response] = {
-    app.routes
-      .find(method, url)
-      .fold(app.notFound.encode(().valid).pure): route =>
-        body(route.endpoint.request.body)
-          .map(Http.Request(method, url, headers, _))
-          .map(route.endpoint.request.decode)
-          .flatMap(_.traverse(route.implementation))
-          .map(route.endpoint.response.encode)
-      .handleErrorWith: throwable =>
-        // TODO remove
-        throwable.printStackTrace()
-        app.failure.encode(().valid).pure
-  }
+  ): F[Http.Response] = app.routes
+    .find(method, url)
+    .fold(app.notFound.encode(().valid).pure): route =>
+      body(route.endpoint.request.body)
+        .map(Http.Request(method, url, headers, _))
+        .map(route.endpoint.request.decode)
+        .flatMap(_.traverse(route.implementation))
+        .map(route.endpoint.response.encode)
+    .handleErrorWith: throwable =>
+      // TODO remove
+      throwable.printStackTrace()
+      app.failure.encode(().valid).pure
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
     case _: Request.Body.Singlepart.Strict[?] =>
