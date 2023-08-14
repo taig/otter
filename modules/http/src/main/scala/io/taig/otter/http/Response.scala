@@ -7,7 +7,7 @@ import io.taig.otter.schema.{History, Violations}
 import io.taig.otter.validation.Violation
 
 final case class Response[A](results: Results[A], violations: Result[Violations]):
-  def encode(a: Validated[Violations, A]): Http.Response = ???
+  def encode(a: Validated[Violations, A]): Http.Response = a.fold(violations.encode, results.encode)
 
 object Response:
   sealed abstract class Body[A]:

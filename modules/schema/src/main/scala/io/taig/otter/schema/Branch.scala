@@ -12,12 +12,22 @@ sealed abstract class Branch[A]:
   def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, Option[A]]
   def encode(a: A, discriminator: Discriminator): Option[OpenApi.Value]
 
-//  def :+[C, D](other: Branch[C, D]): Coproduct[B + D] = toCoproduct :+ other
-//  def +:[C, D](other: Branch[C, D]): Coproduct[D + B] = other +: toCoproduct
+  def :+[B](other: Branch[B]): Coproduct[A + B] = toCoproduct :+ other
+  def +:[B](other: Branch[B]): Coproduct[B + A] = other +: toCoproduct
+
   def toCoproduct: Coproduct[A] = Coproduct(this)
   def to[B](using Evidence.Coproduct.Aux[B, A]): Coproduct[B] = toCoproduct.to[B]
 
-object Branch extends ToBranchOps:
+object Branch:
+  extension [A <: Matchable](self: Branch[A])
+    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = (self :+ branch).imap[A | B] {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
+
   def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Branch[B] = new Branch[B]:
     override def key: String = a.print(name).orEmpty
     override def schema: Schema[B] = b
