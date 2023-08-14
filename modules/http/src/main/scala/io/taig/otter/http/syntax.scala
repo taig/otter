@@ -5,7 +5,7 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.OpenApi
 import io.taig.otter.http.headers.{ContentType, MediaType}
-import io.taig.otter.schema.{Collection, Schema}
+import io.taig.otter.schema.{schemas, Collection, Schema}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -49,6 +49,13 @@ object syntax:
     val serviceUnavailable: Code = Code(503)
 
   object request:
+    inline def apply[A, B](method: Method, url: Url[A], body: Request.Body[B]): Request[(A, B)] =
+      Request(method, url, body)
+    inline def apply[A](method: Method, url: Url[Unit], body: Request.Body[A]): Request[A] =
+      Request(method, url, body).imap { case (_, a) => a }(((), _))
+    inline def apply(method: Method, url: Url[Unit]): Request[Unit] =
+      Request(method, url, empty).imap(_ => ())(_ => ((), ()))
+
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
@@ -78,7 +85,15 @@ object syntax:
 //      val empty: Request.Body.Singlepart.Streaming[Unit] = Request.Body.Singlepart.Streaming.Empty
 //      val bytes: Request.Body.Singlepart.Streaming[Stream[Byte]] = Request.Body.Singlepart.Streaming.Bytes
 
+  def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
+  def result(code: Code): Result[Unit] = Result(code, response.empty)
+
   object response:
+    def apply[A](results: Results[A]): Response[A] = Response(
+      results,
+      result(code.unprocessableEntity, response.of(???, schemas.violations))
+    )
+
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)

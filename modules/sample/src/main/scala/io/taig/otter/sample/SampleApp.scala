@@ -11,11 +11,10 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
     val endpoint: Endpoint[User, User] = Endpoint(
-      Request(method.post, Url.Root, request.of(io.taig.otter.circe.request.openapi, schemas.user))
-        .imap { case (_, user) => user }(user => ((), user)),
+      request(method.post, Url.Root, request.of(io.taig.otter.circe.request.openapi, schemas.user)),
       Response(
-        Results(Result(code.ok, response.of(io.taig.otter.circe.response.openapi, schemas.user))),
-        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
+        Results(result(code.ok, response.of(io.taig.otter.circe.response.openapi, schemas.user))),
+        result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       )
     )
 
@@ -24,12 +23,12 @@ object SampleApp extends IOApp.Simple:
     val app = App(
       route.toRoutes,
       Response(
-        Results(Result(code.notFound, response.empty)),
-        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
+        Results(result(code.notFound)),
+        result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       ),
       Response(
-        Results(Result(code.internalServerError, response.empty)),
-        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
+        Results(result(code.internalServerError)),
+        result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       )
     )
 

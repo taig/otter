@@ -39,14 +39,16 @@ sealed abstract class Coproduct[A] extends Schema[A]:
       self.decode(openapi, discriminator).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = self.encode(g(b), discriminator)
 
-  def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = new Coproduct[A + B]:
+  final infix def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = new Coproduct[A + B]:
     override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain `combine` coproduct.toNonEmptyChain
     override def isOptional: Boolean = self.isOptional && coproduct.isOptional
     override def properties: Coproduct.Properties[A + B] = Coproduct.Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, A + B] =
       ???
-    override def encode(a: A + B, discriminator: Discriminator): Option[OpenApi.Value] = ???
+    override def encode(ab: A + B, discriminator: Discriminator): Option[OpenApi.Value] = ab match
+      case Left(a)  => self.encode(a, discriminator)
+      case Right(b) => coproduct.encode(b, discriminator)
 
   def :+[B](branch: Branch[B]): Coproduct[A + B] = orElse(branch.toCoproduct)
   def +:[B](branch: Branch[B]): Coproduct[B + A] = branch.toCoproduct.orElse(this)
@@ -62,13 +64,15 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 
 object Coproduct:
   extension [A <: Matchable](self: Coproduct[A])
-    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = (self :+ branch).imap[A | B] {
+    inline def |[B <: Matchable](coproduct: Coproduct[B]): Coproduct[A | B] = (self orElse coproduct).imap[A | B] {
       case Left(a)  => a
       case Right(b) => b
     } {
       case a: A => Left(a)
       case b: B => Right(b)
     }
+
+    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = |(branch.toCoproduct)
 
   final case class Properties[+A](description: Option[String], discriminator: Discriminator, example: Option[A])
       extends Schema.Properties[A]:

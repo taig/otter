@@ -7,7 +7,7 @@ import io.circe.{Json, JsonObject, Printer}
 import io.taig.otter.http.headers.{ContentType, MediaType}
 import io.taig.otter.http.{headers, Request, Response}
 import io.taig.otter.schema.schemas.*
-import io.taig.otter.schema.{schemas, Dynamic, Schema, Violations}
+import io.taig.otter.schema.{schemas, Dynamic, Violations}
 import io.taig.otter.validation.Violation
 
 import java.nio.charset.StandardCharsets
