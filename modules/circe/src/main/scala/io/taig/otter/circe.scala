@@ -4,15 +4,13 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.jawn.JawnParser
 import io.circe.{Json, JsonObject, Printer}
-import io.taig.otter.http.{Header, Headers, Request}
-import io.taig.otter.http.headers
-import io.taig.otter.http.headers.ContentType
-import io.taig.otter.schema.Dynamic
-import io.taig.otter.schema.schemas
+import io.taig.otter.http.headers.{ContentType, MediaType}
+import io.taig.otter.http.{Request, headers}
 import io.taig.otter.schema.schemas.*
-import io.taig.otter.validation.{Constraint, Validation}
-import org.typelevel.ci.*
+import io.taig.otter.schema.{Dynamic, Schema, Violations, schemas}
+import io.taig.otter.validation.Violation
 
+import java.nio.charset.StandardCharsets
 import scala.collection.immutable.VectorMap
 
 object circe:
@@ -58,27 +56,22 @@ object circe:
     object dynamic:
       val json: Dynamic[Json] = schemas.dynamic.any.imap(toJson)(toOpenApi)
 
-  object validations:
-    val json: Validation[Array[Byte], Json] =
-      val parser: JawnParser = new JawnParser(maxValueSize = None, allowDuplicateKeys = true)
-      Validation(Constraint.Type("json"))(
-        parser.parseByteArray(_).leftMap(failure => OpenApi.Text(failure.message)).toValidatedNec
-      )
-
   object request:
     import io.taig.otter.http.syntax.request.binary
 
-    def json(printer: Printer): Request.Body.Singlepart.Strict[(Array[Byte], Option[ContentType])] =
-      (binary *> headers.contentType.optional)
-//    .ivalidate {
-//      validations.json.lmap { case (_, bytes) => bytes }
-//    } { json =>
-//      (Chain.one(ci"Content-Type", "application/json"), printer.print(json).getBytes(StandardCharsets.UTF_8))
-//    }
-//    val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
-//    def json[A](schema: => Schema.Of[Json, A]): Request.Body.Singlepart.Strict[A] =
-//      json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))
-//
+    private val parser: JawnParser = new JawnParser(maxValueSize = None, allowDuplicateKeys = true)
+
+    def json(printer: Printer): Request.Body.Singlepart.Strict[Json] =
+      (binary :* headers.contentType.optional).andThen { case (bytes, _) =>
+        parser.parseByteArray(bytes).toValidated.leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+      } { json =>
+        val utf8 = StandardCharsets.UTF_8
+        (printer.print(json).getBytes(utf8), ContentType(MediaType.text.plain, utf8.name.some).some)
+      }
+    val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
+    def json[A](schema: => Schema[A]): Request.Body.Singlepart.Strict[A] =
+      json.andThen(json => schema.decode(toOpenApi(json)))(schema.encode(_).map(toJson).getOrElse(Json.Null))
+
 //  object response:
 //    import io.taig.otter.http.syntax.response.binary
 //

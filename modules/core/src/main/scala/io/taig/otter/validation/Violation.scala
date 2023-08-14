@@ -7,5 +7,6 @@ final case class Violation(constraint: Constraint, actual: OpenApi)
 
 object Violation:
   def tpe(name: String, actual: String): Violation = Violation(Constraint.Type(name), OpenApi.Text(actual))
+  def tpe(name: String): Violation = Violation(Constraint.Type(name), OpenApi.Null)
   val required: Violation = Violation(Constraint.Required, actual = OpenApi.Null)
   def required(actual: OpenApi): Violation = Violation(Constraint.Required, actual)
