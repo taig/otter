@@ -10,5 +10,8 @@ object MediaType:
 
   given (using eq: Eq[String]): Eq[MediaType] = eq
 
+  object application:
+    val json: MediaType = "application/json"
+
   object text:
     val plain: MediaType = "text/plain"

@@ -14,12 +14,14 @@ abstract class Enumeration[A] extends Schema.Value[A]:
 
   def schema: Schema.Value[?]
 
+  def values: Chain[OpenApi]
+
   final override def copy(update: Enumeration.Properties[A]): Enumeration[A] = new Enumeration[A]:
-    export self.{constraints, decode, encode, isOptional, parse, print, schema}
+    export self.{constraints, decode, encode, isOptional, parse, print, schema, values}
     override def properties: Enumeration.Properties[A] = update
 
   final override def optional: Enumeration[Option[A]] = new Enumeration[Option[A]]:
-    export self.{constraints, isOptional, schema}
+    export self.{constraints, isOptional, schema, values}
     override def properties: Enumeration.Properties[Option[A]] = self.properties.map(_.some)
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
@@ -28,7 +30,7 @@ abstract class Enumeration[A] extends Schema.Value[A]:
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] = new Enumeration[B]:
-    export self.schema
+    export self.{schema, values}
     override def properties: Enumeration.Properties[B] = self.properties.flatMap(validation(_).toOption)
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = true
@@ -53,6 +55,8 @@ object Enumeration:
   def apply[A, B](of: => Schema.Value[A], mapping: Mapping[B, A]): Enumeration[B] = new Enumeration:
     override def schema: Schema.Value[A] = of
     override def properties: Enumeration.Properties[B] = Properties.Default
+    override def values: Chain[OpenApi] =
+      Chain.fromSeq(mapping.values).map(mapping.inj).map(of.encode(_).getOrElse(OpenApi.Null))
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] = of

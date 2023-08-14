@@ -77,7 +77,7 @@ sealed abstract class Record[A] extends Schema[A]:
   final override def encode(a: A): Option[OpenApi.Object] = encode(a, properties.nulls)
   protected def encode(a: A, nulls: Null): Option[OpenApi.Object]
 
-object Record:
+object Record extends ToRecordOps:
   final case class Properties[+A](description: Option[String], example: Option[A], nulls: Null)
       extends Schema.Properties[A]:
     override type Self[a] = Record.Properties[a]

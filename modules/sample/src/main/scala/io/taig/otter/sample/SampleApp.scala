@@ -1,8 +1,6 @@
 package io.taig.otter.sample
 
 import cats.effect.{IO, IOApp}
-import io.taig.otter.circe.syntax.request
-import io.taig.otter.circe.syntax.response
 import io.taig.otter.http.*
 import io.taig.otter.schema.schemas.*
 import io.taig.otter.http.syntax.*
@@ -13,11 +11,11 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
     val endpoint: Endpoint[User, User] = Endpoint(
-      Request(method.post, Url.Root, Headers.Empty, request.json(schemas.user))
+      Request(method.post, Url.Root, Headers.Empty, io.taig.otter.circe.request.json(schemas.user))
         .imap { case (_, _, user) => user }(user => ((), (), user)),
       Response(
-        Results(Result(code.ok, response.json(schemas.user))),
-        Result(code.badRequest, response.json(violations))
+        Results(Result(code.ok, io.taig.otter.circe.response.json(schemas.user))),
+        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
       )
     )
 
@@ -25,8 +23,14 @@ object SampleApp extends IOApp.Simple:
 
     val app = App(
       route.toRoutes,
-      Response(Results(Result(code.notFound)), Result(code.badRequest, response.json(violations))),
-      Response(Results(Result(code.internalServerError)), Result(code.badRequest, response.json(violations)))
+      Response(
+        Results(Result(code.notFound, response.empty)),
+        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
+      ),
+      Response(
+        Results(Result(code.internalServerError, response.empty)),
+        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
+      )
     )
 
     given LoggerFactory[IO] = Slf4jFactory.create[IO]

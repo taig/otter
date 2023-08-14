@@ -47,6 +47,8 @@ sealed abstract class Product[A] extends Schema[A]:
     override def encode(ba: (B, A)): Option[OpenApi.Array] =
       self.encode(ba._2).map(schema.encode(ba._1).getOrElse(OpenApi.Null) +: _)
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[B] = imap(evidence.from)(evidence.to)
+
   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi match
     case Some(OpenApi.Array(values)) =>
       val size = values.length

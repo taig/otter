@@ -58,17 +58,17 @@ object circe:
 
       val json: Dynamic[Json] = any.imap(toJson)(toOpenApi)
 
+  private val parser: JawnParser = new JawnParser(maxValueSize = None, allowDuplicateKeys = true)
+
   object request:
     import io.taig.otter.http.syntax.request.binary
-
-    private val parser: JawnParser = new JawnParser(maxValueSize = None, allowDuplicateKeys = true)
 
     def json(printer: Printer): Request.Body.Singlepart.Strict[Json] =
       (binary :* headers.contentType.optional).andThen { case (bytes, _) =>
         parser.parseByteArray(bytes).toValidated.leftMap(_ => Violations.rootNec(Violation.tpe("json")))
       } { json =>
         val utf8 = StandardCharsets.UTF_8
-        (printer.print(json).getBytes(utf8), ContentType(MediaType.text.plain, utf8.name.some).some)
+        (printer.print(json).getBytes(utf8), ContentType(MediaType.application.json, utf8.name.some).some)
       }
     val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
     def json[A](schema: => Schema[A]): Request.Body.Singlepart.Strict[A] =
@@ -77,14 +77,13 @@ object circe:
   object response:
     import io.taig.otter.http.syntax.response.binary
 
-    def json(printer: Printer): Response.Body.Strict[Json] = ???
-//      binary.withHeaders.ivalidate(validations.json.lmap { case (_, bytes) => bytes }) { json =>
-//        (
-//          Chain.one(ci"Content-Type" -> "application/json; charset=UTF-8"),
-//          printer.print(json).getBytes(StandardCharsets.UTF_8)
-//        )
-//      }
-
-//    val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
-//    def json[A](schema: => Schema.Of[Json, A]): Response.Body.Strict[A] =
-//      json.andThen(CirceDecoder.schema.decode(schema, _))(CirceEncoder.schema.encode(schema, _).getOrElse(Json.Null))
+    def json(printer: Printer): Response.Body.Strict[Json] =
+      (binary :* headers.contentType.optional).andThen { case (bytes, _) =>
+        parser.parseByteArray(bytes).toValidated.leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+      } { json =>
+        val utf8 = StandardCharsets.UTF_8
+        (printer.print(json).getBytes(utf8), ContentType(MediaType.application.json, utf8.name.some).some)
+      }
+    val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
+    def json[A](schema: => Schema[A]): Response.Body.Strict[A] =
+      json.andThen(json => schema.decode(toOpenApi(json)))(schema.encode(_).map(toJson).getOrElse(Json.Null))

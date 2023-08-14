@@ -11,15 +11,18 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override type Codec = OpenApi.Primitive
   final override type Properties[a] = Primitive.Properties[a]
 
+  def tpe: Type[?]
+
   final def format: Property.Optional[String] = new Property.Optional[String]:
     override def value: Option[String] = properties.format
     override def modify(f: Option[String] => Option[String]): Primitive[A] = copy(properties.modifyFormat(f))
 
   final override def copy(update: Primitive.Properties[A]): Primitive[A] = new Primitive[A]:
-    export self.{constraints, decode, encode, isOptional, parse, print}
+    export self.{constraints, decode, encode, isOptional, parse, print, tpe}
     override def properties: Primitive.Properties[A] = update
 
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]] with Optional:
+    export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
@@ -29,6 +32,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]
     with Validate[B](validation):
+    export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[Codec] = self.encode(g(b))
@@ -49,7 +53,8 @@ object Primitive:
   object Properties:
     val Default: Primitive.Properties[Nothing] = Properties(None, None, None)
 
-  def apply[A](tpe: Type[A]): Primitive[A] = new Primitive[A]:
+  def apply[A](of: Type[A]): Primitive[A] = new Primitive[A]:
+    override def tpe: Type[A] = of
     override def properties: Primitive.Properties[A] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false

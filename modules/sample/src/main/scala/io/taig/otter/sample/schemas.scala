@@ -2,10 +2,10 @@ package io.taig.otter.sample
 
 import cats.data.Chain
 import io.circe.Json
+import io.taig.otter.circe.schemas.dynamic.json
 import io.taig.otter.sample.User.{Age, Name}
 import io.taig.otter.schema.*
 import io.taig.otter.schema.schemas.*
-import io.taig.otter.circe.syntax.json
 import io.taig.otter.validation.validations.*
 
 object schemas:
@@ -16,7 +16,7 @@ object schemas:
 
   val age: Primitive[User.Age] = int.ivalidate(User.Age.validation)(_.toInt)
 
-  val names: Collection.Of[Primitive, Chain[User.Name]] =
+  val names: Collection[Primitive, Chain[User.Name]] =
     collection.chain(name).validate(minItems(3)).validate(maxItems(10))
 
   val gender: Enumeration[User.Gender] = enumeration(string):
