@@ -10,6 +10,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
   final override type Self[a] = Coproduct[a]
   final override type Codec = OpenApi.Value
   final override type Properties[a] = Coproduct.Properties[a]
+  
   def toNonEmptyChain: NonEmptyChain[Branch[?]]
 
   final def discriminator = new Property[Discriminator]:

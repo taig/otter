@@ -32,6 +32,7 @@ object Branch:
   def apply[A, B](name: A, a: => Schema.Value[A], b: => Schema[B]): Branch[B] = new Branch[B]:
     override def key: String = a.print(name).orEmpty
     override def schema: Schema[B] = b
+    
     override def decode(
         openapi: Option[OpenApi.Value],
         discriminator: Discriminator
@@ -51,12 +52,29 @@ object Branch:
                 else none.valid
           case Some(openapi) => Violations.rootNec(Violation.tpe("object", openapi.tpe)).invalid
           case None          => Violations.rootNec(Violation.required).invalid
-      case Discriminator.Merged(identifier) => ???
-      case Discriminator.Keyed              => ???
+      case Discriminator.Merged(identifier) =>
+        openapi match
+          case Some(openapi @ OpenApi.Object(values)) =>
+            values
+              .get(identifier)
+              .toValid(Violations.rootNec(Violation.required))
+              .andThen(a.decode)
+              .leftMap(_.modifyHistory(identifier /: _))
+              .map(a.print(_).orEmpty)
+              .andThen(a => if a == key then b.decode(openapi).map(_.some) else none.valid)
+          case Some(openapi) => Violations.rootNec(Violation.tpe("object", openapi.tpe)).invalid
+          case None          => Violations.rootNec(Violation.required).invalid
+      case Discriminator.Keyed =>
+        openapi match
+          case Some(OpenApi.Object(values)) =>
+            b.decode(values.getOrElse(key, OpenApi.Null)).leftMap(_.modifyHistory(key /: _)).map(_.some)
+          case Some(openapi) => Violations.rootNec(Violation.tpe("object", openapi.tpe)).invalid
+          case None          => Violations.rootNec(Violation.required).invalid
       case Discriminator.None =>
         schema.decode(openapi) match
           case Validated.Valid(b)            => b.some.valid
           case Validated.Invalid(violations) => violations.modifyHistory(key /: _).invalid
+          
     override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = discriminator match
       case Discriminator.Nested(identifier, value) => OpenApi.obj(identifier := key, value := schema.encode(b)).some
       case Discriminator.Merged(identifier) =>
