@@ -1,16 +1,14 @@
 package io.taig.otter.http
 
-import cats.{Eq, Eval}
-import cats.syntax.all.*
+import cats.Eq
 import cats.data.Chain
-import io.taig.otter.http.headers.MediaType
-import io.taig.otter.http.headers.ContentType
-import io.taig.otter.schema.Collection
-import io.taig.otter.schema.Schema
-import org.typelevel.ci.{CIString, CIStringSyntax}
+import cats.syntax.all.*
+import io.taig.otter.OpenApi
+import io.taig.otter.http.headers.{ContentType, MediaType}
+import io.taig.otter.schema.{Collection, Schema}
+import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
-import scala.annotation.targetName
 
 object syntax:
   val __ : Url[Unit] = Url.Root
@@ -70,6 +68,11 @@ object syntax:
         )
       }
     val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
+    def of[A](
+        openapi: Request.Body.Singlepart.Strict[OpenApi],
+        schema: => Schema[A]
+    ): Request.Body.Singlepart.Strict[A] =
+      openapi.andThen(schema.decode)(schema.encode(_).getOrElse(OpenApi.Null))
 
 //    object streaming:
 //      val empty: Request.Body.Singlepart.Streaming[Unit] = Request.Body.Singlepart.Streaming.Empty
@@ -81,6 +84,8 @@ object syntax:
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     val text: Response.Body.Strict[String] =
       binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
+    def of[A](openapi: Response.Body.Strict[OpenApi], schema: => Schema[A]): Response.Body.Strict[A] =
+      openapi.andThen(schema.decode)(schema.encode(_).getOrElse(OpenApi.Null))
 
   extension [A: Eq, B](self: Chain[(A, B)])
     def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }

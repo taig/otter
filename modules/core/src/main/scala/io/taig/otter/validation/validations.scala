@@ -10,6 +10,14 @@ import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 object validations:
+  def equal(reference: String): Validation[String, Unit] =
+    Validation(Constraint.Equals(reference)): value =>
+      Validated.condNec(
+        value == reference,
+        (),
+        OpenApi.Text(value)
+      )
+
   private def minimum[A](
       reference: A,
       exclusive: Boolean,

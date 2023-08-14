@@ -11,11 +11,11 @@ import org.typelevel.log4cats.slf4j.Slf4jFactory
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] =
     val endpoint: Endpoint[User, User] = Endpoint(
-      Request(method.post, Url.Root, Headers.Empty, io.taig.otter.circe.request.json(schemas.user))
-        .imap { case (_, _, user) => user }(user => ((), (), user)),
+      Request(method.post, Url.Root, request.of(io.taig.otter.circe.request.openapi, schemas.user))
+        .imap { case (_, user) => user }(user => ((), user)),
       Response(
-        Results(Result(code.ok, io.taig.otter.circe.response.json(schemas.user))),
-        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
+        Results(Result(code.ok, response.of(io.taig.otter.circe.response.openapi, schemas.user))),
+        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       )
     )
 
@@ -25,11 +25,11 @@ object SampleApp extends IOApp.Simple:
       route.toRoutes,
       Response(
         Results(Result(code.notFound, response.empty)),
-        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
+        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       ),
       Response(
         Results(Result(code.internalServerError, response.empty)),
-        Result(code.badRequest, io.taig.otter.circe.response.json(violations))
+        Result(code.badRequest, response.of(io.taig.otter.circe.response.openapi, violations))
       )
     )
 

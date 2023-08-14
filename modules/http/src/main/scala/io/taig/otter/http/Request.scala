@@ -24,6 +24,14 @@ sealed abstract class Request[A]:
 
   final def imap[B](f: A => B)(g: B => A): Request[B] = andThen(f(_).valid)(g)
 
+  final def zip[B](other: Headers[B]): Request[(A, B)] = new Request[(A, B)]:
+    export self.{body, method, url}
+    override def headers: Headers[?] = self.headers.zip(other)
+    override def decode(request: Http.Request): Validated[Violations, (A, B)] =
+      self.decode(request).andThen(a => other.decode(request.headers).map((a, _)))
+    override def encode(ab: (A, B)): Http.Request =
+      self.encode(ab._1).modifyHeaders(_ ++ other.encode(ab._2))
+
   def decode(request: Http.Request): Validated[Violations, A]
   def encode(a: A): Http.Request
 
@@ -96,24 +104,22 @@ object Request:
               payload: Array[Byte]
           ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
 
-  def apply[A, B, C](m: Method, a: Url[A], b: Headers[B], c: Request.Body[C]): Request[(A, B, C)] =
-    new Request[(A, B, C)]:
-      override def method: Method = m
-      override def url: Url[A] = a
-      override def headers: Headers[B] = b
-      override def body: Body[C] = c
-      override def decode(request: Http.Request): Validated[Violations, (A, B, C)] = Validated
-        .cond(
-          method === request.method,
-          (),
-          Violations.oneNec(
-            History.Root / "method",
-            Violation(Constraint.Equals(method.toString), OpenApi.Text(request.method.toString))
-          )
+  def apply[A, B](m: Method, a: Url[A], b: Request.Body[B]): Request[(A, B)] = new Request[(A, B)]:
+    override def method: Method = m
+    override def url: Url[A] = a
+    override def headers: Headers[Unit] = Headers.Empty
+    override def body: Body[B] = b
+    override def decode(request: Http.Request): Validated[Violations, (A, B)] = Validated
+      .cond(
+        method === request.method,
+        (),
+        Violations.oneNec(
+          History.Root / "method",
+          Violation(Constraint.Equals(method.toString), OpenApi.Text(request.method.toString))
         )
-        .andThen(_ => url.decode(request.url))
-        .andThen(a => headers.decodeWithRemainders(request.headers).map(_.tupleLeft(a)))
-        .andThen { case (headers, (a, b)) => body.decode(headers, request.body).map(c => (a, b, c)) }
-      override def encode(abc: (A, B, C)): Http.Request =
-        val (additionalHeaders, body) = this.body.encode(abc._3)
-        Http.Request(method, url.encode(abc._1), headers.encode(abc._2) ++ additionalHeaders, body)
+      )
+      .andThen(_ => url.decode(request.url))
+      .andThen { a => body.decode(request.headers, request.body).map(b => (a, b)) }
+    override def encode(ab: (A, B)): Http.Request =
+      val (additionalHeaders, body) = this.body.encode(ab._2)
+      Http.Request(method, url.encode(ab._1), additionalHeaders, body)

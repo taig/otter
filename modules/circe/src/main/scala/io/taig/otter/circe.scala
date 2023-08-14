@@ -71,8 +71,7 @@ object circe:
         (printer.print(json).getBytes(utf8), ContentType(MediaType.application.json, utf8.name.some).some)
       }
     val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: => Schema[A]): Request.Body.Singlepart.Strict[A] =
-      json.andThen(json => schema.decode(toOpenApi(json)))(schema.encode(_).map(toJson).getOrElse(Json.Null))
+    val openapi: Request.Body.Singlepart.Strict[OpenApi] = json.imap(toOpenApi)(toJson)
 
   object response:
     import io.taig.otter.http.syntax.response.binary
@@ -85,5 +84,4 @@ object circe:
         (printer.print(json).getBytes(utf8), ContentType(MediaType.application.json, utf8.name.some).some)
       }
     val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: => Schema[A]): Response.Body.Strict[A] =
-      json.andThen(json => schema.decode(toOpenApi(json)))(schema.encode(_).map(toJson).getOrElse(Json.Null))
+    val openapi: Response.Body.Strict[OpenApi] = json.imap(toOpenApi)(toJson)

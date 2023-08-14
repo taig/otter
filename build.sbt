@@ -7,6 +7,7 @@ val Version = new {
   val EnumerationExt = "0.0.2"
   val Http4s = "1.0.0-M40"
   val Java = "17"
+  val Log4Cats = "2.6.0"
   val Munit = "0.7.29"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.1-RC5"
@@ -94,20 +95,21 @@ lazy val http = module(identifier = Some("http"))
 lazy val csv = module(identifier = Some("csv"))
   .dependsOn(schema % "compile->compile;test->test")
 
-lazy val circe = module(identifier = Some("circe"))
+// TODO waiting for circe 0.15 with scala.js jawn support
+lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
-      "io.circe" %%% "circe-parser" % Version.Circe ::
+      "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
   )
   .dependsOn(http % "compile->compile;test->test")
 
-lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
+  .dependsOn(circe % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi")).dependsOn(circe, http)
+lazy val openapi = module(identifier = Some("openapi"), jvmOnly = true).dependsOn(circe)
 
-lazy val http4s = module(identifier = Some("http4s"))
+lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "org.http4s" %%% "http4s-circe" % Version.Http4s ::
@@ -123,8 +125,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        "org.typelevel" %% "log4cats-slf4j" % "2.6.0" ::
-        "org.slf4j" % "slf4j-simple" % "2.0.7" ::
+        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
         Nil
   )
   .dependsOn(openapi, http4s)
