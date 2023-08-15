@@ -11,7 +11,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
   final override type Codec = OpenApi.Value
   final override type Properties[a] = Coproduct.Properties[a]
 
-  def toNonEmptyChain: NonEmptyChain[Branch[?]]
+  def toNonEmptyChain: NonEmptyChain[Branch[?, ?]]
 
   final def discriminator = new Property[Discriminator]:
     override def value: Discriminator = properties.discriminator
@@ -41,7 +41,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
     override def encode(b: B, discriminator: Discriminator): Option[OpenApi.Value] = self.encode(g(b), discriminator)
 
   final infix def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = new Coproduct[A + B]:
-    override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain `combine` coproduct.toNonEmptyChain
+    override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = self.toNonEmptyChain `combine` coproduct.toNonEmptyChain
     override def isOptional: Boolean = self.isOptional && coproduct.isOptional
     override def properties: Coproduct.Properties[A + B] = Coproduct.Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
@@ -51,8 +51,8 @@ sealed abstract class Coproduct[A] extends Schema[A]:
       case Left(a)  => self.encode(a, discriminator)
       case Right(b) => coproduct.encode(b, discriminator)
 
-  def :+[B](branch: Branch[B]): Coproduct[A + B] = orElse(branch.toCoproduct)
-  def +:[B](branch: Branch[B]): Coproduct[B + A] = branch.toCoproduct.orElse(this)
+  def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
+  def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
@@ -73,7 +73,7 @@ object Coproduct:
       case b: B => Right(b)
     }
 
-    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = |(branch.toCoproduct)
+    inline def |[B, C <: Matchable](branch: Branch[B, C]): Coproduct[A | C] = |(branch.toCoproduct)
 
   final case class Properties[+A](description: Option[String], discriminator: Discriminator, example: Option[A])
       extends Schema.Properties[A]:
@@ -88,10 +88,10 @@ object Coproduct:
   object Properties:
     val Default: Coproduct.Properties[Nothing] = Properties(None, Discriminator.Default, None)
 
-  def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A]:
-    override def toNonEmptyChain: NonEmptyChain[Branch[A]] = NonEmptyChain.one(branch)
-    override def properties: Coproduct.Properties[A] = Properties.Default
+  def apply[A, B](branch: Branch[A, B]): Coproduct[B] = new Coproduct[B]:
+    override def toNonEmptyChain: NonEmptyChain[Branch[A, B]] = NonEmptyChain.one(branch)
+    override def properties: Coproduct.Properties[B] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, A] = ???
-    override def encode(a: A, discriminator: Discriminator): Option[OpenApi.Value] = branch.encode(a, discriminator)
+    override def decode(openapi: Option[OpenApi.Value], discriminator: Discriminator): Validated[Violations, B] = ???
+    override def encode(a: B, discriminator: Discriminator): Option[OpenApi.Value] = branch.encode(a, discriminator)
