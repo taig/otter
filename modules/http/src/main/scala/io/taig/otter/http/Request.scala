@@ -118,8 +118,8 @@ object Request:
           Violation(Constraint.Equals(method.toString), OpenApi.Text(request.method.toString))
         )
       )
-      .andThen(_ => url.decode(request.url))
-      .andThen { a => body.decode(request.headers, request.body).map(b => (a, b)) }
+      .andThen(_ => url.decode(request.url).leftMap(_.modifyHistory("url" /: _)))
+      .andThen(body.decode(request.headers, request.body).leftMap(_.modifyHistory("body" /: _)).tupleLeft)
     override def encode(ab: (A, B)): Http.Request =
       val (additionalHeaders, body) = this.body.encode(ab._2)
       Http.Request(method, url.encode(ab._1), additionalHeaders, body)

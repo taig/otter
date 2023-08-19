@@ -25,7 +25,8 @@ final case class Branch[A, B](name: A, key: Schema.Value[A], schema: Schema[B]):
               .map(key.print(_).orEmpty)
               .andThen: a =>
                 if a == printName
-                then schema.decode(values.getOrElse(value, OpenApi.Null)).leftMap(_.modifyHistory(value /: _)).map(_.some)
+                then
+                  schema.decode(values.getOrElse(value, OpenApi.Null)).leftMap(_.modifyHistory(value /: _)).map(_.some)
                 else none.valid
               .toIor
           case Some(openapi) => Violations.rootNec(Violation.tpe("object", openapi.tpe)).leftIor
