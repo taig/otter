@@ -30,7 +30,7 @@ sealed abstract class Url[A]:
   def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, A)]
   def encode(a: A): Http.Url
 
-object Url:
+object Url extends ToUrlOps:
   val Root: Url[Unit] = new Url[Unit]:
     override def path: Path[?] = Path.Root
     override def queries: Queries[?] = Queries.Empty

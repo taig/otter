@@ -13,13 +13,15 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 
   def toNonEmptyChain: NonEmptyChain[Branch[?, ?]]
 
-  final def discriminator = new Property[Discriminator]:
+  final class Discriminators extends Property[Discriminator]:
     override def value: Discriminator = properties.discriminator
     override def modify(f: Discriminator => Discriminator): Coproduct[A] = copy(properties.modifyDiscriminator(f))
     def nested(identifier: String, value: String): Coproduct[A] = apply(Discriminator.Nested(identifier, value))
     def merged(identifier: String): Coproduct[A] = apply(Discriminator.Merged(identifier))
     def keyed: Coproduct[A] = apply(Discriminator.Keyed)
     def none: Coproduct[A] = apply(Discriminator.None)
+
+  final def discriminator: Discriminators = new Discriminators
 
   final override def copy(properties: Coproduct.Properties[A]): Coproduct[A] = new Coproduct[A] with Copy(properties):
     export self.{decode, encode, toNonEmptyChain}

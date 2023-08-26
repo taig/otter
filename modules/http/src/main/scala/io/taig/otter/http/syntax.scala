@@ -93,6 +93,7 @@ object syntax:
       results,
       result(code.unprocessableEntity, response.of(???, schemas.violations))
     )
+    def apply[A](result: Result[A]): Response[A] = response(result.toResults)
 
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
