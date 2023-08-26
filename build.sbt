@@ -128,4 +128,4 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
         Nil
   )
-  .dependsOn(openapi, http4s)
+  .dependsOn(openapi, http4s, dsl)
