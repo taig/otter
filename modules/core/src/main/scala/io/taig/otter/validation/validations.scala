@@ -9,7 +9,7 @@ import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
-object validations:
+trait validations:
   def equal(reference: String): Validation[String, Unit] =
     Validation(Constraint.Equals(reference)): value =>
       Validated.condNec(
@@ -126,3 +126,5 @@ object validations:
   val dateTime: Validation[String, LocalDateTime] = Validation.parse("date-time"): value =>
     try LocalDateTime.parse(value).some
     catch case _: DateTimeParseException => none
+
+object validations extends validations

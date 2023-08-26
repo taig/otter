@@ -1,5 +1,6 @@
 package io.taig.otter.sample
 
+import cats.Order
 import cats.syntax.all.*
 import io.taig.otter.validation.Validation
 import io.taig.otter.validation.validations.{maxLength, minLength}
@@ -22,3 +23,12 @@ object Book:
     case Poetry
     case Romance
     case Thriller
+
+  object Genre:
+    given Order[Book.Genre] = Order.by:
+      case Biography => 0
+      case Children  => 1
+      case Fantasy   => 2
+      case Poetry    => 3
+      case Romance   => 4
+      case Thriller  => 5
