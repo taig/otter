@@ -10,36 +10,20 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override type Self[a] = Primitive[a]
   final override type Properties[a] = Primitive.Properties[a]
 
-  def tpe: Type[?]
-
-  final def format(value: Option[String]): Primitive[A] = new Primitive[A] {
-    override def tpe: Type[_] = ???
-
-    override def encode(a: A): Option[OpenApi.Primitive] = ???
-
-    override def parse(value: Option[String]): Validated[Violations, A] = ???
-
-    override def print(a: A): Option[String] = ???
-
-    override def properties: Primitive.Properties[A] = ???
-
+  final def format(value: Option[String]): Primitive[A] = new Primitive[A]:
     override def constraints: Chain[Constraint] = ???
-
+    override def properties: Primitive.Properties[A] = ???
+    override def encode(a: A): Option[OpenApi.Primitive] = ???
+    override def parse(value: Option[String]): Validated[Violations, A] = ???
+    override def print(a: A): Option[String] = ???
     override def isOptional: Boolean = ???
-
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = ???
-
-    override def toSpecification: Specification.Primitive = ??? // self.toSpecification.copy(format = value)
-  }
-
-//  final def format: Property.Optional[String] = new Property.Optional[String]:
-//    override def value: Option[String] = properties.format
-//    override def modify(f: Option[String] => Option[String]): Primitive[A] = copy(properties.modifyFormat(f))
+    override def specification: Specification.Primitive = ??? // self.toSpecification.copy(format = value)
 
   final override def copy(update: Primitive.Properties[A]): Primitive[A] = new Primitive[A]:
-    export self.{constraints, decode, encode, isOptional, parse, print, tpe}
+    export self.{constraints, decode, encode, isOptional, parse, print}
     override def properties: Primitive.Properties[A] = update
-    override def toSpecification: Specification.Primitive = self.toSpecification
+    override def specification: Specification.Primitive = self.specification
 
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]] with Optional:
     export self.tpe
@@ -48,20 +32,19 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     override def encode(a: Option[A]): Option[OpenApi.Primitive] = a.flatMap(self.encode)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] = self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
-    override def toSpecification: Specification.Primitive = self.toSpecification
+    override def specification: Specification.Primitive = self.specification
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]
     with Validate[B](validation):
-    export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Primitive] = self.encode(g(b))
     override def parse(value: Option[String]): Validated[Violations, B] =
       self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(g(b))
-    override def toSpecification: Specification.Primitive = self.toSpecification
+    override def specification: Specification.Primitive = self.specification
 
-  override def toSpecification: Specification.Primitive
+  override def specification: Specification.Primitive
 
 object Primitive:
   final case class Properties[+A](description: Option[String], example: Option[A], format: Option[String])
@@ -77,7 +60,6 @@ object Primitive:
     val Default: Primitive.Properties[Nothing] = Properties(None, None, None)
 
   val int: Primitive[Int] = new Primitive[Int]:
-    override def tpe: Type[_] = ???
     override def encode(a: Int): Option[OpenApi.Primitive] = ???
     override def parse(value: Option[String]): Validated[Violations, Int] = ???
     override def print(a: Int): Option[String] = ???
@@ -85,17 +67,16 @@ object Primitive:
     override def constraints: Chain[Constraint] = ???
     override def isOptional: Boolean = ???
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Int] = ???
-    override def toSpecification: Specification.Primitive = ???
+    override def specification: Specification.Primitive = ???
 
   def apply[A](of: Type[A]): Primitive[A] = new Primitive[A]:
-    override def tpe: Type[A] = of
     override def properties: Primitive.Properties[A] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
       .toValid(Violations.rootNec(Violation.required))
       .andThen(value => decodeType(value).leftMap(Violations.rootNec))
-    def decodeType(openapi: OpenApi.Value): Validated[Violation, A] = tpe match
+    def decodeType(openapi: OpenApi.Value): Validated[Violation, A] = of match
       case Type.BigDecimal => openapi.as[BigDecimal]
       case Type.BigInt     => openapi.as[BigInt]
       case Type.Boolean    => openapi.as[Boolean]
@@ -105,7 +86,7 @@ object Primitive:
       case Type.Long       => openapi.as[Long]
       case Type.String     => openapi.as[String]
     override def encode(a: A): Option[OpenApi.Primitive] = encodeType(a).some
-    def encodeType(a: A): OpenApi.Primitive = tpe match
+    def encodeType(a: A): OpenApi.Primitive = of match
       case Type.BigDecimal => OpenApi.Decimal(a)
       case Type.BigInt     => OpenApi.Integer(a)
       case Type.Boolean    => OpenApi.Bool(a)
@@ -116,8 +97,8 @@ object Primitive:
       case Type.String     => OpenApi.Text(a)
     override def parse(value: Option[String]): Validated[Violations, A] = value
       .toValid(Violations.rootNec(Violation.required))
-      .andThen(value => parseType(value).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value))))
-    def parseType(value: String): Option[A] = tpe match
+      .andThen(value => parseType(value).toValid(Violations.rootNec(Violation.tpe(of.toString, value))))
+    def parseType(value: String): Option[A] = of match
       case Type.BigDecimal =>
         try Some(BigDecimal(value))
         catch case _: NumberFormatException => None
@@ -131,7 +112,7 @@ object Primitive:
       case Type.Long    => value.toLongOption
       case Type.String  => Some(value)
     override def print(a: A): Option[String] = Some(printType(a))
-    def printType(a: A): String = tpe match
+    def printType(a: A): String = of match
       case Type.BigDecimal => a.toString
       case Type.BigInt     => a.toString
       case Type.Boolean    => String.valueOf(a)
@@ -140,4 +121,4 @@ object Primitive:
       case Type.Int        => String.valueOf(a)
       case Type.Long       => String.valueOf(a)
       case Type.String     => a
-    override def toSpecification: Specification.Primitive = ???
+    override def specification: Specification.Primitive = ???

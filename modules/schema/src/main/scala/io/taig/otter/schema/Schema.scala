@@ -9,47 +9,27 @@ import scala.annotation.targetName
 
 abstract class Schema[A]:
   self =>
-  type Self[a] <: Schema[a] { type Self[a] = self.Self[a]; type Properties[a] = self.Properties[a] }
-  type Properties[a] <: Schema.Properties[a] { type Self[a] = self.Properties[a] }
-
-  def properties: Properties[A]
-  def copy(properties: Properties[A]): Self[A]
-
-  trait Property[B]:
-    def value: B
-    def modify(f: B => B): Self[A]
-    final def apply(value: B): Self[A] = modify(_ => value)
-
-  object Property:
-    trait Optional[B] extends Property[Option[B]]:
-      @targetName("as")
-      def apply(value: B): Self[A] = apply(Some(value))
-      def clear: Self[A] = apply(None)
-
-  trait Copy(update: Properties[A]):
-    this: Self[A] =>
-    export self.{constraints, isOptional}
-    final override def properties: Properties[A] = update
+  type Self[a] <: Schema[a] { type Self[a] = self.Self[a] }
 
   trait Optional:
     this: Self[Option[A]] =>
     export self.constraints
-    final override def properties: self.Properties[Option[A]] = self.properties.map(_.some)
     final override def isOptional: Boolean = true
 
   trait Validate[B](validation: Validation[A, B]):
     this: Self[B] =>
     export self.isOptional
     final override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    final override def properties: self.Properties[B] = self.properties.flatMap(validation(_).toOption)
 
-  final def description: Property.Optional[String] = new Property.Optional[String]:
-    override def value: Option[String] = properties.description
-    override def modify(f: Option[String] => Option[String]): Self[A] = copy(properties.modifyDescription(f))
+  def specification: Specification.Value
+  def modifySpecification(f: Specification.Value => Specification.Value): Self[A]
 
-  final def example: Property.Optional[A] = new Property.Optional[A]:
-    override def value: Option[A] = properties.example
-    override def modify(f: Option[A] => Option[A]): Self[A] = copy(properties.modifyExample(f))
+  final def description(f: Option[String] => Option[String]): Self[A] = modifySpecification(_.modifyDescription(f))
+  final def description(value: Option[String]): Self[A] = description(_ => value)
+  final def description(value: String): Self[A] = description(Some(value))
+  final def example(f: Option[OpenApi] => Option[OpenApi]): Self[A] = modifySpecification(_.modifyExample(f))
+  final def example(value: Option[A]): Self[A] = example(_ => value.flatMap(encode))
+  final def example(value: A): Self[A] = example(Some(value))
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
@@ -65,26 +45,12 @@ abstract class Schema[A]:
   def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A]
   def encode(a: A): Option[OpenApi.Value]
 
-  def toSpecification: Specification.Schema
-
   final def toProduct: Product[A] = Product(this)
 
 object Schema extends ToSchemaOps:
-  trait Properties[+A]:
-    type Self[+a] <: Schema.Properties[a]
-
-    def description: Option[String]
-    def modifyDescription(f: Option[String] => Option[String]): Self[A]
-
-    def example: Option[A]
-    def modifyExample[B](f: Option[A] => Option[B]): Self[B]
-
-    def flatMap[B](f: A => Option[B]): Self[B]
-    final def map[B](f: A => B): Self[B] = flatMap(f(_).some)
-
   abstract class Value[A] extends Schema[A]:
     self =>
-    override type Self[a] <: Value[a] { type Self[a] = self.Self[a]; type Properties[a] = self.Properties[a] }
+    override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
     override def encode(a: A): Option[OpenApi.Primitive]
     def parse(value: Option[String]): Validated[Violations, A]
     def print(a: A): Option[String]

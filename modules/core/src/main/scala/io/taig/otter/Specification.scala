@@ -18,6 +18,9 @@ object Specification:
     def example: Option[OpenApi]
     def name: Option[JString]
 
+    def modifyDescription(f: Option[JString] => Option[JString]): Specification.Value
+    def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Value
+
   sealed abstract class Primitive extends Specification.Value:
     def format: Option[JString]
     def nullable: Option[SBoolean]
@@ -37,6 +40,10 @@ object Specification:
         multipleOf: Option[BigDecimal]
     ) extends Specification.Primitive:
       override val tpe: JString = "number"
+      override def modifyDescription(f: Option[JString] => Option[JString]): Specification.Primitive.Number =
+        copy(description = f(description))
+      override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Primitive.Number =
+        copy(example = f(example))
 
     final case class String(
         description: Option[JString],
@@ -49,6 +56,10 @@ object Specification:
         pattern: Option[Pattern]
     ) extends Specification.Primitive:
       override val tpe: JString = "string"
+      override def modifyDescription(f: Option[JString] => Option[JString]): Specification.Primitive.String =
+        copy(description = f(description))
+      override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Primitive.String =
+        copy(example = f(example))
 
     final case class Boolean(
         description: Option[JString],
@@ -58,6 +69,10 @@ object Specification:
         nullable: Option[SBoolean]
     ) extends Specification.Primitive:
       override val tpe: JString = "boolean"
+      override def modifyDescription(f: Option[JString] => Option[JString]): Specification.Primitive.Boolean =
+        copy(description = f(description))
+      override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Primitive.Boolean =
+        copy(example = f(example))
 
   final case class Array(
       description: Option[JString],
@@ -67,14 +82,22 @@ object Specification:
       minItems: Option[Long],
       maxItems: Option[Long],
       uniqueItems: Option[Boolean]
-  ) extends Specification.Value
+  ) extends Specification.Value:
+    override def modifyDescription(f: Option[JString] => Option[JString]): Specification.Array =
+      copy(description = f(description))
+    override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Array =
+      copy(example = f(example))
 
   final case class OneOf(
       branches: NonEmptyChain[Specification.Schema],
       description: Option[JString],
       example: Option[OpenApi],
       name: Option[JString]
-  ) extends Specification.Value
+  ) extends Specification.Value:
+    override def modifyDescription(f: Option[JString] => Option[JString]): Specification.OneOf =
+      copy(description = f(description))
+    override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.OneOf =
+      copy(example = f(example))
 
   final case class Object(
       description: Option[JString],
@@ -82,4 +105,8 @@ object Specification:
       name: Option[JString],
       properties: Chain[(String, Specification.Schema)],
       required: Chain[String]
-  ) extends Specification.Value
+  ) extends Specification.Value:
+    override def modifyDescription(f: Option[JString] => Option[JString]): Specification.Object =
+      copy(description = f(description))
+    override def modifyExample(f: Option[OpenApi] => Option[OpenApi]): Specification.Object =
+      copy(example = f(example))
