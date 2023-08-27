@@ -17,11 +17,6 @@ object Specification:
     def description: Option[JString]
     def example: Option[OpenApi]
     def name: Option[JString]
-    def copy(
-        description: Option[JString] = description,
-        example: Option[OpenApi] = example,
-        name: Option[JString] = name
-    ): Specification.Value
 
   sealed abstract class Primitive extends Specification.Value:
     def format: Option[JString]
@@ -42,7 +37,6 @@ object Specification:
         multipleOf: Option[BigDecimal]
     ) extends Specification.Primitive:
       override val tpe: JString = "number"
-      override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
 
     final case class String(
         description: Option[JString],
@@ -54,7 +48,6 @@ object Specification:
         maxLength: Option[Int],
         pattern: Option[Pattern]
     ) extends Specification.Primitive:
-      override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
       override val tpe: JString = "string"
 
     final case class Boolean(
@@ -64,7 +57,6 @@ object Specification:
         name: Option[JString],
         nullable: Option[SBoolean]
     ) extends Specification.Primitive:
-      override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
       override val tpe: JString = "boolean"
 
   final case class Array(
@@ -75,16 +67,14 @@ object Specification:
       minItems: Option[Long],
       maxItems: Option[Long],
       uniqueItems: Option[Boolean]
-  ) extends Specification.Value:
-    override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
+  ) extends Specification.Value
 
   final case class OneOf(
       branches: NonEmptyChain[Specification.Schema],
       description: Option[JString],
       example: Option[OpenApi],
       name: Option[JString]
-  ) extends Specification.Value:
-    override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
+  ) extends Specification.Value
 
   final case class Object(
       description: Option[JString],
@@ -92,5 +82,4 @@ object Specification:
       name: Option[JString],
       properties: Chain[(String, Specification.Schema)],
       required: Chain[String]
-  ) extends Specification.Value:
-    override def copy(description: Option[JString], example: Option[OpenApi], name: Option[JString]): Value = ???
+  ) extends Specification.Value

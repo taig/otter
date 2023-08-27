@@ -12,14 +12,34 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   def tpe: Type[?]
 
-  final def format: Property.Optional[String] = new Property.Optional[String]:
-    override def value: Option[String] = properties.format
-    override def modify(f: Option[String] => Option[String]): Primitive[A] = copy(properties.modifyFormat(f))
+  final def format(value: Option[String]): Primitive[A] = new Primitive[A] {
+    override def tpe: Type[_] = ???
+
+    override def encode(a: A): Option[OpenApi.Primitive] = ???
+
+    override def parse(value: Option[String]): Validated[Violations, A] = ???
+
+    override def print(a: A): Option[String] = ???
+
+    override def properties: Primitive.Properties[A] = ???
+
+    override def constraints: Chain[Constraint] = ???
+
+    override def isOptional: Boolean = ???
+
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = ???
+
+    override def toSpecification: Specification.Primitive = ??? // self.toSpecification.copy(format = value)
+  }
+
+//  final def format: Property.Optional[String] = new Property.Optional[String]:
+//    override def value: Option[String] = properties.format
+//    override def modify(f: Option[String] => Option[String]): Primitive[A] = copy(properties.modifyFormat(f))
 
   final override def copy(update: Primitive.Properties[A]): Primitive[A] = new Primitive[A]:
     export self.{constraints, decode, encode, isOptional, parse, print, tpe}
     override def properties: Primitive.Properties[A] = update
-    override def toSpecification: Specification.Schema = self.toSpecification
+    override def toSpecification: Specification.Primitive = self.toSpecification
 
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]] with Optional:
     export self.tpe
@@ -28,7 +48,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     override def encode(a: Option[A]): Option[OpenApi.Primitive] = a.flatMap(self.encode)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] = self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
-    override def toSpecification: Specification.Schema = self.toSpecification
+    override def toSpecification: Specification.Primitive = self.toSpecification
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]
     with Validate[B](validation):
@@ -39,7 +59,9 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     override def parse(value: Option[String]): Validated[Violations, B] =
       self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(g(b))
-    override def toSpecification: Specification.Schema = self.toSpecification
+    override def toSpecification: Specification.Primitive = self.toSpecification
+
+  override def toSpecification: Specification.Primitive
 
 object Primitive:
   final case class Properties[+A](description: Option[String], example: Option[A], format: Option[String])
@@ -63,7 +85,7 @@ object Primitive:
     override def constraints: Chain[Constraint] = ???
     override def isOptional: Boolean = ???
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Int] = ???
-    override def toSpecification: Specification.Schema = ???
+    override def toSpecification: Specification.Primitive = ???
 
   def apply[A](of: Type[A]): Primitive[A] = new Primitive[A]:
     override def tpe: Type[A] = of
@@ -118,4 +140,4 @@ object Primitive:
       case Type.Int        => String.valueOf(a)
       case Type.Long       => String.valueOf(a)
       case Type.String     => a
-    override def toSpecification: Specification.Schema = ???
+    override def toSpecification: Specification.Primitive = ???
