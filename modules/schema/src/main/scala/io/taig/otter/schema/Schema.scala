@@ -2,7 +2,7 @@ package io.taig.otter.schema
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
+import io.taig.otter.{OpenApi, Specification}
 import io.taig.otter.validation.{Constraint, Validation}
 
 import scala.annotation.targetName
@@ -45,13 +45,11 @@ abstract class Schema[A]:
 
   final def description: Property.Optional[String] = new Property.Optional[String]:
     override def value: Option[String] = properties.description
-    override def modify(f: Option[String] => Option[String]): Self[A] =
-      copy(properties.modifyDescription(f))
+    override def modify(f: Option[String] => Option[String]): Self[A] = copy(properties.modifyDescription(f))
 
   final def example: Property.Optional[A] = new Property.Optional[A]:
     override def value: Option[A] = properties.example
-    override def modify(f: Option[A] => Option[A]): Self[A] =
-      copy(properties.modifyExample(f))
+    override def modify(f: Option[A] => Option[A]): Self[A] = copy(properties.modifyExample(f))
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
@@ -66,6 +64,8 @@ abstract class Schema[A]:
   final def decode(openapi: OpenApi): Validated[Violations, A] = decode(openapi.asValue)
   def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A]
   def encode(a: A): Option[OpenApi.Value]
+
+  def toSpecification: Specification.Schema
 
   final def toProduct: Product[A] = Product(this)
 

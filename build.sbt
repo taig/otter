@@ -129,3 +129,11 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         Nil
   )
   .dependsOn(openapi, http4s, dsl)
+
+lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.7.3" ::
+        Nil
+  )

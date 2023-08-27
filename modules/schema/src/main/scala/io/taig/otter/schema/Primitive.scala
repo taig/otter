@@ -2,7 +2,7 @@ package io.taig.otter.schema
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
+import io.taig.otter.{OpenApi, Specification}
 import io.taig.otter.validation.{Constraint, Validation, Violation}
 
 sealed abstract class Primitive[A] extends Schema.Value[A]:
@@ -19,15 +19,16 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
   final override def copy(update: Primitive.Properties[A]): Primitive[A] = new Primitive[A]:
     export self.{constraints, decode, encode, isOptional, parse, print, tpe}
     override def properties: Primitive.Properties[A] = update
+    override def toSpecification: Specification.Schema = self.toSpecification
 
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]] with Optional:
     export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[OpenApi.Primitive] = a.flatMap(self.encode)
-    override def parse(value: Option[String]): Validated[Violations, Option[A]] =
-      self.parse(value).map(_.some)
+    override def parse(value: Option[String]): Validated[Violations, Option[A]] = self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
+    override def toSpecification: Specification.Schema = self.toSpecification
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B]
     with Validate[B](validation):
@@ -38,6 +39,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     override def parse(value: Option[String]): Validated[Violations, B] =
       self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(g(b))
+    override def toSpecification: Specification.Schema = self.toSpecification
 
 object Primitive:
   final case class Properties[+A](description: Option[String], example: Option[A], format: Option[String])
@@ -52,15 +54,25 @@ object Primitive:
   object Properties:
     val Default: Primitive.Properties[Nothing] = Properties(None, None, None)
 
+  val int: Primitive[Int] = new Primitive[Int]:
+    override def tpe: Type[_] = ???
+    override def encode(a: Int): Option[OpenApi.Primitive] = ???
+    override def parse(value: Option[String]): Validated[Violations, Int] = ???
+    override def print(a: Int): Option[String] = ???
+    override def properties: Primitive.Properties[Int] = ???
+    override def constraints: Chain[Constraint] = ???
+    override def isOptional: Boolean = ???
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Int] = ???
+    override def toSpecification: Specification.Schema = ???
+
   def apply[A](of: Type[A]): Primitive[A] = new Primitive[A]:
     override def tpe: Type[A] = of
     override def properties: Primitive.Properties[A] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] =
-      openapi
-        .toValid(Violations.rootNec(Violation.required))
-        .andThen(value => decodeType(value).leftMap(Violations.rootNec))
+    override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
+      .toValid(Violations.rootNec(Violation.required))
+      .andThen(value => decodeType(value).leftMap(Violations.rootNec))
     def decodeType(openapi: OpenApi.Value): Validated[Violation, A] = tpe match
       case Type.BigDecimal => openapi.as[BigDecimal]
       case Type.BigInt     => openapi.as[BigInt]
@@ -80,10 +92,9 @@ object Primitive:
       case Type.Int        => OpenApi.Integer(a)
       case Type.Long       => OpenApi.Integer(a)
       case Type.String     => OpenApi.Text(a)
-    override def parse(value: Option[String]): Validated[Violations, A] =
-      value
-        .toValid(Violations.rootNec(Violation.required))
-        .andThen(value => parseType(value).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value))))
+    override def parse(value: Option[String]): Validated[Violations, A] = value
+      .toValid(Violations.rootNec(Violation.required))
+      .andThen(value => parseType(value).toValid(Violations.rootNec(Violation.tpe(tpe.toString, value))))
     def parseType(value: String): Option[A] = tpe match
       case Type.BigDecimal =>
         try Some(BigDecimal(value))
@@ -107,3 +118,4 @@ object Primitive:
       case Type.Int        => String.valueOf(a)
       case Type.Long       => String.valueOf(a)
       case Type.String     => a
+    override def toSpecification: Specification.Schema = ???
