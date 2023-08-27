@@ -8,7 +8,6 @@ import io.taig.otter.validation.{Constraint, Validation}
 sealed abstract class Coproduct[A] extends Schema[A]:
   self =>
   final override type Self[a] = Coproduct[a]
-  final override type Codec = OpenApi.Value
   final override type Properties[a] = Coproduct.Properties[a]
 
   def toNonEmptyChain: NonEmptyChain[Branch[?, ?]]

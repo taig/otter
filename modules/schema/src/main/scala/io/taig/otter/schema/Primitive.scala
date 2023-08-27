@@ -8,7 +8,6 @@ import io.taig.otter.validation.{Constraint, Validation, Violation}
 sealed abstract class Primitive[A] extends Schema.Value[A]:
   self =>
   final override type Self[a] = Primitive[a]
-  final override type Codec = OpenApi.Primitive
   final override type Properties[a] = Primitive.Properties[a]
 
   def tpe: Type[?]
@@ -25,7 +24,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
-    override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
+    override def encode(a: Option[A]): Option[OpenApi.Primitive] = a.flatMap(self.encode)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] =
       self.parse(value).map(_.some)
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
@@ -35,7 +34,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
     export self.tpe
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
-    override def encode(b: B): Option[Codec] = self.encode(g(b))
+    override def encode(b: B): Option[OpenApi.Primitive] = self.encode(g(b))
     override def parse(value: Option[String]): Validated[Violations, B] =
       self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(g(b))

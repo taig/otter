@@ -9,7 +9,6 @@ import io.taig.otter.validation.{Constraint, Validation, Violation}
 sealed abstract class Product[A] extends Schema[A]:
   self =>
   final override type Self[a] = Product[a]
-  final override type Codec = OpenApi.Array
   final override type Properties[a] = Product.Properties[a]
 
   def toChain: Chain[Schema[?]]
@@ -68,6 +67,7 @@ sealed abstract class Product[A] extends Schema[A]:
     case None          => decodeNone(index = 0)
   protected def decodeNone(index: Int): Validated[Violations, A]
   protected def decode(values: Chain[OpenApi], index: Int): Validated[Violations, A]
+  override def encode(a: A): Option[OpenApi.Array]
 
 object Product:
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:

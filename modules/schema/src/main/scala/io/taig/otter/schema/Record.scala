@@ -10,7 +10,6 @@ import scala.collection.immutable.VectorMap
 sealed abstract class Record[A] extends Schema[A]:
   self =>
   override type Self[a] = Record[a]
-  override type Codec = OpenApi.Object
   override type Properties[a] = Record.Properties[a]
 
   def toChain: Chain[Field[?]]

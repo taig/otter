@@ -8,7 +8,6 @@ import io.taig.otter.validation.{Constraint, Validation, Violation}
 sealed abstract class Dynamic[A] extends Schema[A]:
   self =>
   final override type Self[a] = Dynamic[a]
-  final override type Codec = OpenApi.Value
   final override type Properties[a] = Dynamic.Properties[a]
 
   final override def copy(update: Dynamic.Properties[A]): Dynamic[A] = new Dynamic[A]:
@@ -21,7 +20,7 @@ sealed abstract class Dynamic[A] extends Schema[A]:
     override def isOptional: Boolean = true
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
-    override def encode(a: Option[A]): Option[Codec] = a.flatMap(self.encode)
+    override def encode(a: Option[A]): Option[OpenApi.Value] = a.flatMap(self.encode)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = new Dynamic[B]:
     export self.isOptional
@@ -29,7 +28,7 @@ sealed abstract class Dynamic[A] extends Schema[A]:
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
       self.decode(openapi).andThen(validation(_).leftMap(Violations.root))
-    override def encode(b: B): Option[Codec] = self.encode(g(b))
+    override def encode(b: B): Option[OpenApi.Value] = self.encode(g(b))
 
 object Dynamic:
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:

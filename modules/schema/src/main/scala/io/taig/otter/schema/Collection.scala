@@ -9,7 +9,6 @@ sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
   self =>
   override type Self[a] = Collection[F, a]
   final override type Properties[a] = Collection.Properties[a]
-  final override type Codec = OpenApi.Array
 
   final class Reference[B](val value: F[B])
 
@@ -43,6 +42,7 @@ sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
     .traverse(openapi => openapi.asArray.toValid(Violations.rootNec(Violation.tpe("array", openapi.tpe))))
     .andThen(decodeArray)
   protected def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, A]
+  override def encode(a: A): Option[OpenApi.Array]
 
   protected def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A]
   protected def print(as: A): Option[Chain[Option[String]]]

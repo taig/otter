@@ -10,7 +10,6 @@ import scala.collection.immutable.VectorMap
 sealed abstract class Dictionary[A] extends Schema[A]:
   self =>
   override type Self[a] = Dictionary[a]
-  override type Codec = OpenApi.Object
   override type Properties[a] = Dictionary.Properties[a]
 
   def schema: Schema[?]
@@ -40,6 +39,7 @@ sealed abstract class Dictionary[A] extends Schema[A]:
     case None                         => decodeNone
   protected def decodeNone: Validated[Violations, A]
   protected def decode(values: VectorMap[String, OpenApi]): Validated[Violations, A]
+  override def encode(a: A): Option[OpenApi.Object]
 
 object Dictionary:
   final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:

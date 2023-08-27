@@ -9,7 +9,6 @@ import io.taig.otter.validation.{Constraint, Validation, Violation}
 abstract class Enumeration[A] extends Schema.Value[A]:
   self =>
   final override type Self[a] = Enumeration[a]
-  final override type Codec = OpenApi.Primitive
   final override type Properties[a] = Enumeration.Properties[a]
 
   def schema: Schema.Value[?]
