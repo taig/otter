@@ -2,22 +2,18 @@ package io.taig.otter.schema
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
+import io.taig.otter.{OpenApi, Specification}
 import io.taig.otter.validation.{Constraint, Validation, Violation}
 
 sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
   self =>
   override type Self[a] = Collection[F, a]
-  final override type Properties[a] = Collection.Properties[a]
 
   final class Reference[B](val value: F[B])
 
   def schema: Reference[?]
 
-  override def copy(properties: Collection.Properties[A]): Collection[F, A] = new Collection[F, A]
-    with Copy(properties):
-    export self.{decodeArray, encode, parse, print}
-    override def schema: Reference[?] = Reference(self.schema.value)
+  override final def modifySpecification(f: Specification.Value => Specification.Value): Collection[F, Chain[A]] = ???
 
   override def optional: Collection[F, Option[A]] = new Collection[F, Option[A]] with Optional:
     override def schema: Reference[?] = Reference(self.schema.value)
@@ -52,19 +48,8 @@ object Collection:
     def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A] = self.parse(values)
     def print(as: A): Option[Chain[Option[String]]] = self.print(as)
 
-  final case class Properties[+A](description: Option[String], example: Option[A]) extends Schema.Properties[A]:
-    override type Self[a] = Collection.Properties[a]
-    override def modifyDescription(f: Option[String] => Option[String]): Collection.Properties[A] =
-      copy(description = f(description))
-    override def modifyExample[B](f: Option[A] => Option[B]): Collection.Properties[B] = copy(example = f(example))
-    override def flatMap[B](f: A => Option[B]): Collection.Properties[B] = copy(example = example.flatMap(f))
-
-  object Properties:
-    val Default: Collection.Properties[Nothing] = Properties(None, None)
-
   def apply[F[a] <: Schema[a], A](of: => F[A]): Collection[F, Chain[A]] = new Collection[F, Chain[A]]:
     override def schema: Reference[A] = Reference(of)
-    override def properties: Collection.Properties[Chain[A]] = Properties.Default
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] = openapi
@@ -84,6 +69,9 @@ object Collection:
               schema.parse(value).leftMap(_.modifyHistory(index /: _))
             }
       case _ => throw new IllegalStateException
+
+    override def specification: Specification.Array = ???
+
     override def print(as: Chain[A]): Option[Chain[Option[String]]] = of match
       case schema: Schema.Value[A] => as.map(schema.print).some
       case _                       => throw new IllegalStateException
