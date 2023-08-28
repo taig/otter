@@ -29,7 +29,7 @@ object Validation:
 
   def parse[A](tpe: String)(f: String => Option[A]): Validation[String, A] =
     Validation(Constraint.Type(tpe)): value =>
-      Validated.fromOption(f(value), NonEmptyChain.one(OpenApi.Text(value)))
+      Validated.fromOption(f(value), NonEmptyChain.one(OpenApi.String(value)))
 
   extension [In, Out](self: Validation[In, Out])
     def tap: Validation[In, In] =

@@ -115,7 +115,7 @@ object Request:
         (),
         Violations.oneNec(
           History.Root / "method",
-          Violation(Constraint.Equals(method.toString), OpenApi.Text(request.method.toString))
+          Violation(Constraint.Equals(method.toString), OpenApi.String(request.method.toString))
         )
       )
       .andThen(_ => url.decode(request.url).leftMap(_.modifyHistory("url" /: _)))

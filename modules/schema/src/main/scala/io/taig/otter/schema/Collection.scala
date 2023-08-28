@@ -9,14 +9,9 @@ sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
   self =>
   override type Self[a] = Collection[F, a]
 
-  final class Reference[B](val value: F[B])
-
-  def schema: Reference[?]
-
-  override final def modifySpecification(f: Specification.Value => Specification.Value): Collection[F, Chain[A]] = ???
+  final override def modifySpecification(f: Specification.Value => Specification.Value): Collection[F, Chain[A]] = ???
 
   override def optional: Collection[F, Option[A]] = new Collection[F, Option[A]] with Optional:
-    override def schema: Reference[?] = Reference(self.schema.value)
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
       openapi.traverse(self.decode)
     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
@@ -26,7 +21,6 @@ sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
 
   override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[F, B] = new Collection[F, B]
     with Validate[B](validation):
-    override def schema: Reference[?] = Reference(self.schema.value)
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
       self.decodeArray(openapi).andThen(validation(_).leftMap(Violations.root))
     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
@@ -49,7 +43,6 @@ object Collection:
     def print(as: A): Option[Chain[Option[String]]] = self.print(as)
 
   def apply[F[a] <: Schema[a], A](of: => F[A]): Collection[F, Chain[A]] = new Collection[F, Chain[A]]:
-    override def schema: Reference[A] = Reference(of)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] = openapi

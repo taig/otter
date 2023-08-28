@@ -28,26 +28,26 @@ final class PrimitiveTest extends FunSuite:
 
   test("decode: uuid"):
     val value = UUID.fromString("b8db8a93-9aef-43ee-90a9-68cf72069867")
-    assertEquals(obtained = uuid.decode(OpenApi.Text(value.toString)), expected = value.valid)
+    assertEquals(obtained = uuid.decode(OpenApi.String(value.toString)), expected = value.valid)
 
   test("encode"):
     assertEquals(obtained = int.encode(42), expected = OpenApi.Integer(42).some)
 
   test("encode: UUID"):
     val value = UUID.fromString("b8db8a93-9aef-43ee-90a9-68cf72069867")
-    assertEquals(obtained = uuid.encode(value), expected = OpenApi.Text(value.toString).some)
+    assertEquals(obtained = uuid.encode(value), expected = OpenApi.String(value.toString).some)
 
   test("validate"):
     val foobar = string.validate(validations.equal("foobar"))
 
     assertEquals(
-      obtained = foobar.decode(OpenApi.Text("foobar")),
+      obtained = foobar.decode(OpenApi.String("foobar")),
       expected = "foobar".valid
     )
 
     assertEquals(
-      obtained = foobar.decode(OpenApi.Text("foo")),
+      obtained = foobar.decode(OpenApi.String("foo")),
       expected = Violations
-        .rootNec(Violation(Constraint.Equals("foobar"), OpenApi.Text("foo")))
+        .rootNec(Violation(Constraint.Equals("foobar"), OpenApi.String("foo")))
         .invalid
     )

@@ -15,7 +15,7 @@ trait validations:
       Validated.condNec(
         value == reference,
         (),
-        OpenApi.Text(value)
+        OpenApi.String(value)
       )
 
   private def minimum[A](

@@ -16,7 +16,7 @@ import scala.collection.immutable.VectorMap
 object circe:
   def toOpenApi(json: Json): OpenApi = json.fold(
     jsonNull = OpenApi.Null,
-    jsonBoolean = OpenApi.Bool.apply,
+    jsonBoolean = OpenApi.Boolean.apply,
     jsonNumber = number =>
       number.toInt.map(OpenApi.Integer.apply) orElse
         number.toLong.map(OpenApi.Integer.apply) orElse
@@ -29,7 +29,7 @@ object circe:
           .map(OpenApi.Decimal.apply) orElse
         number.toBigDecimal.map(OpenApi.Decimal.apply) getOrElse
         OpenApi.Decimal(number.toDouble),
-    jsonString = OpenApi.Text.apply,
+    jsonString = OpenApi.String.apply,
     jsonArray = toOpenApiArray,
     jsonObject = toOpenApiObject
   )
@@ -47,10 +47,10 @@ object circe:
     case OpenApi.Integer(value: BigInt)     => Json.fromBigInt(value)
     case OpenApi.Integer(value: Int)        => Json.fromInt(value)
     case OpenApi.Integer(value: Long)       => Json.fromLong(value)
-    case OpenApi.Bool(value)                => Json.fromBoolean(value)
+    case OpenApi.Boolean(value)             => Json.fromBoolean(value)
     case OpenApi.Null                       => Json.Null
     case OpenApi.Object(values)             => Json.fromFields(values.map { case (key, value) => (key, toJson(value)) })
-    case OpenApi.Text(value)                => Json.fromString(value)
+    case OpenApi.String(value)              => Json.fromString(value)
 
   object schemas:
     object dynamic:

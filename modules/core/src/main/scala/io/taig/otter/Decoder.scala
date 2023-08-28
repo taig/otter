@@ -16,13 +16,13 @@ object Decoder:
 
   given Decoder[String] with
     override def decode(openapi: OpenApi): Validated[Violation, String] = openapi match
-      case OpenApi.Text(value) => value.valid
-      case _                   => Violation.tpe("string", openapi.tpe).invalid
+      case OpenApi.String(value) => value.valid
+      case _                     => Violation.tpe("string", openapi.tpe).invalid
 
   given Decoder[Boolean] with
     override def decode(openapi: OpenApi): Validated[Violation, Boolean] = openapi match
-      case OpenApi.Bool(value) => value.valid
-      case _                   => Violation.tpe("boolean", openapi.tpe).invalid
+      case OpenApi.Boolean(value) => value.valid
+      case _                      => Violation.tpe("boolean", openapi.tpe).invalid
 
   given Decoder[BigDecimal] with
     override def decode(openapi: OpenApi): Validated[Violation, BigDecimal] = openapi match
@@ -32,7 +32,7 @@ object Decoder:
       case OpenApi.Decimal(value: Float)      => BigDecimal(value).valid
       case OpenApi.Decimal(value: Double)     => BigDecimal(value).valid
       case OpenApi.Decimal(value: BigDecimal) => value.valid
-      case OpenApi.Text(value) =>
+      case OpenApi.String(value) =>
         Validated
           .catchOnly[NumberFormatException](BigDecimal(value))
           .leftMap(_ => Violation.tpe("bigDecimal", openapi.tpe))
@@ -48,7 +48,7 @@ object Decoder:
       case OpenApi.Decimal(value: Double) =>
         Validated.cond(value.isWhole, BigInt(value.toLong), Violation.tpe("bigInt", openapi.tpe))
       case OpenApi.Decimal(value: BigDecimal) => value.toBigIntExact.toValid(Violation.tpe("bigInt", openapi.tpe))
-      case OpenApi.Text(value) =>
+      case OpenApi.String(value) =>
         Validated.catchOnly[NumberFormatException](BigInt(value)).leftMap(_ => Violation.tpe("bigInt", openapi.tpe))
       case _ => Violation.tpe("bigInt", openapi.tpe).invalid
 
@@ -71,8 +71,8 @@ object Decoder:
           value.toFloat,
           Violation.tpe("float", openapi.tpe)
         )
-      case OpenApi.Text(value) => value.toFloatOption.toValid(Violation.tpe("float", openapi.tpe))
-      case _                   => Violation.tpe("float", openapi.tpe).invalid
+      case OpenApi.String(value) => value.toFloatOption.toValid(Violation.tpe("float", openapi.tpe))
+      case _                     => Violation.tpe("float", openapi.tpe).invalid
 
   given Decoder[Double] with
     override def decode(openapi: OpenApi): Validated[Violation, Double] = openapi match
@@ -82,7 +82,7 @@ object Decoder:
       case OpenApi.Integer(value: BigInt)     => value.toDouble.valid
       case OpenApi.Integer(value: Int)        => value.toDouble.valid
       case OpenApi.Integer(value: Long)       => value.toDouble.valid
-      case OpenApi.Text(value)                => value.toDoubleOption.toValid(Violation.tpe("double", openapi.tpe))
+      case OpenApi.String(value)              => value.toDoubleOption.toValid(Violation.tpe("double", openapi.tpe))
       case _                                  => Violation.tpe("double", openapi.tpe).invalid
 
   given Decoder[Int] with
@@ -98,8 +98,8 @@ object Decoder:
       case OpenApi.Integer(value: Int) => value.valid
       case OpenApi.Integer(value: Long) =>
         Validated.cond(value.isValidInt, value.toInt, Violation.tpe("int", openapi.tpe))
-      case OpenApi.Text(value) => value.toIntOption.toValid(Violation.tpe("int", openapi.tpe))
-      case _                   => Violation.tpe("int", openapi.tpe).invalid
+      case OpenApi.String(value) => value.toIntOption.toValid(Violation.tpe("int", openapi.tpe))
+      case _                     => Violation.tpe("int", openapi.tpe).invalid
 
   given Decoder[Long] with
     override def decode(openapi: OpenApi): Validated[Violation, Long] = openapi match
@@ -117,5 +117,5 @@ object Decoder:
         Validated.cond(value.isValidLong, value.toLong, Violation.tpe("long", openapi.tpe))
       case OpenApi.Integer(value: Int)  => value.toLong.valid
       case OpenApi.Integer(value: Long) => value.valid
-      case OpenApi.Text(value)          => value.toLongOption.toValid(Violation.tpe("long", openapi.tpe))
+      case OpenApi.String(value)        => value.toLongOption.toValid(Violation.tpe("long", openapi.tpe))
       case _                            => Violation.tpe("long", openapi.tpe).invalid
