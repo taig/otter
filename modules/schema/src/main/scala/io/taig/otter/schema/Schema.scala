@@ -1,11 +1,8 @@
 package io.taig.otter.schema
 
 import cats.data.{Chain, Validated}
-import cats.syntax.all.*
 import io.taig.otter.{OpenApi, Specification}
 import io.taig.otter.validation.{Constraint, Validation}
-
-import scala.annotation.targetName
 
 abstract class Schema[A]:
   self =>
@@ -27,6 +24,7 @@ abstract class Schema[A]:
   final def description(f: Option[String] => Option[String]): Self[A] = modifySpecification(_.modifyDescription(f))
   final def description(value: Option[String]): Self[A] = description(_ => value)
   final def description(value: String): Self[A] = description(Some(value))
+
   final def example(f: Option[OpenApi] => Option[OpenApi]): Self[A] = modifySpecification(_.modifyExample(f))
   final def example(value: Option[A]): Self[A] = example(_ => value.flatMap(encode))
   final def example(value: A): Self[A] = example(Some(value))
