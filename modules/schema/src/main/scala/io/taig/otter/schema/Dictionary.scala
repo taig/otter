@@ -11,7 +11,7 @@ sealed abstract class Dictionary[A] extends Schema[A]:
   self =>
   override type Self[a] = Dictionary[a]
 
-  override final def modifySpecification(f: Specification.Value => Specification.Value): Dictionary[A] = ???
+  final override def modifySpecification(f: Specification.Value => Specification.Value): Dictionary[A] = ???
 
   final override def optional: Dictionary[Option[A]] = new Dictionary[Option[A]] with Optional:
     override def specification: Specification.Value = ???

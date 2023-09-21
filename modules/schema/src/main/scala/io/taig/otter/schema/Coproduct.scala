@@ -22,7 +22,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
   def discriminator: Discriminator
   final def discriminator(value: Discriminator): Coproduct[A] = ???
 
-  override final def modifySpecification(f: Specification.Value => Specification.Value): Coproduct[A] = ???
+  final override def modifySpecification(f: Specification.Value => Specification.Value): Coproduct[A] = ???
 
   final override def optional: Coproduct[Option[A]] = new Coproduct[Option[A]] with Optional:
     export self.{discriminator, toNonEmptyChain}

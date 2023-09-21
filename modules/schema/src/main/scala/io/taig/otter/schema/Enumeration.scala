@@ -21,7 +21,7 @@ abstract class Enumeration[A] extends Schema.Value[A]:
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] = new Enumeration[B]:
-    export self.{ values}
+    export self.values
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = true
     override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, B] =
