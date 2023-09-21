@@ -1,75 +1,51 @@
 package io.taig.otter.schema
 
-import cats.data.{Chain, Validated}
+import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
-import io.taig.otter.validation.{Constraint, Validation, Violation}
+import io.taig.otter.validation.{Constraint, Validation}
 
 sealed abstract class Primitive[A] extends Schema.Value[A]:
   self =>
   final override type Self[a] = Primitive[a]
 
-  final def format(value: Option[String]): Primitive[A] = ???
+  def format: Option[String]
+  def format(f: Option[String] => Option[String]): Primitive[A]
+  final def format(value: Option[String]): Primitive[A] = format(_ => value)
+  final def format(value: String): Primitive[A] = format(Some(value))
 
-  final def format(value: String): Primitive[A] = ???
-
-  final override def optional: Primitive[Option[A]] = ???
+  final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = ???
 
-// object Primitive:
-// val int: Primitive[Int] = new Primitive[Int]:
-//   override def constraints: Chain[Constraint] = ???
-//   override def isOptional: Boolean = ???
+object Primitive:
+  final case class Root[A](description: Option[String], example: Option[A], format: Option[String], tpe: Type[A])
+      extends Primitive[A]:
+    override def isOptional: Boolean = false
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def description(f: Option[String] => Option[String]): Primitive[A] = copy(description = f(description))
+    override def example(f: Option[A] => Option[A]): Primitive[A] = copy(example = f(example))
+    override def format(f: Option[String] => Option[String]): Primitive[A] = copy(format = f(format))
 
-// def apply[A](of: Type[A]): Primitive[A] = new Primitive[A]:
-//   override def constraints: Chain[Constraint] = Chain.empty
-//   override def isOptional: Boolean = false
-//   override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
-//     .toValid(Violations.rootNec(Violation.required))
-//     .andThen(value => decodeType(value).leftMap(Violations.rootNec))
-//   def decodeType(openapi: OpenApi.Value): Validated[Violation, A] = of match
-//     case Type.BigDecimal => openapi.as[BigDecimal]
-//     case Type.BigInt     => openapi.as[BigInt]
-//     case Type.Boolean    => openapi.as[Boolean]
-//     case Type.Double     => openapi.as[Double]
-//     case Type.Float      => openapi.as[Float]
-//     case Type.Int        => openapi.as[Int]
-//     case Type.Long       => openapi.as[Long]
-//     case Type.String     => openapi.as[String]
-//   override def encode(a: A): Option[OpenApi.Primitive] = encodeType(a).some
-//   def encodeType(a: A): OpenApi.Primitive = of match
-//     case Type.BigDecimal => OpenApi.Decimal(a)
-//     case Type.BigInt     => OpenApi.Integer(a)
-//     case Type.Boolean    => OpenApi.Boolean(a)
-//     case Type.Double     => OpenApi.Decimal(a)
-//     case Type.Float      => OpenApi.Decimal(a)
-//     case Type.Int        => OpenApi.Integer(a)
-//     case Type.Long       => OpenApi.Integer(a)
-//     case Type.String     => OpenApi.String(a)
-//   override def parse(value: Option[String]): Validated[Violations, A] = value
-//     .toValid(Violations.rootNec(Violation.required))
-//     .andThen(value => parseType(value).toValid(Violations.rootNec(Violation.tpe(of.toString, value))))
-//   def parseType(value: String): Option[A] = of match
-//     case Type.BigDecimal =>
-//       try Some(BigDecimal(value))
-//       catch case _: NumberFormatException => None
-//     case Type.BigInt =>
-//       try Some(BigInt(value))
-//       catch case _: NumberFormatException => None
-//     case Type.Boolean => value.toBooleanOption
-//     case Type.Double  => value.toDoubleOption
-//     case Type.Float   => value.toFloatOption
-//     case Type.Int     => value.toIntOption
-//     case Type.Long    => value.toLongOption
-//     case Type.String  => Some(value)
-//   override def print(a: A): Option[String] = Some(printType(a))
-//   def printType(a: A): String = of match
-//     case Type.BigDecimal => a.toString
-//     case Type.BigInt     => a.toString
-//     case Type.Boolean    => String.valueOf(a)
-//     case Type.Double     => String.valueOf(a)
-//     case Type.Float      => String.valueOf(a)
-//     case Type.Int        => String.valueOf(a)
-//     case Type.Long       => String.valueOf(a)
-//     case Type.String     => a
+  final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
+    override def constraints: Chain[Constraint] = self.constraints
+    override def isOptional: Boolean = true
+    override def example: Option[Option[A]] = self.example.map(_.some)
+    override def format: Option[String] = self.format
+    override def description: Option[String] = self.description
+    override def description(f: Option[String] => Option[String]): Primitive[Option[A]] =
+      copy(self = self.description(f))
+    override def example(f: Option[Option[A]] => Option[Option[A]]): Primitive[Option[A]] =
+      copy(self = self.example(fa => f(fa.map(_.some)).flatten))
+    override def format(f: Option[String] => Option[String]): Primitive[Option[A]] = copy(self = self.format(f))
+
+  final case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def isOptional: Boolean = self.isOptional
+    override def example: Option[B] = self.example.flatMap(validation(_).toOption)
+    override def format: Option[String] = self.format
+    override def description: Option[String] = self.description
+    override def format(f: Option[String] => Option[String]): Primitive[B] = copy(self = self.format(f))
+    override def description(f: Option[String] => Option[String]): Primitive[B] =
+      copy(self = self.description(f))
+    override def example(f: Option[B] => Option[B]): Primitive[B] =
+      copy(self = self.example(fa => fa.traverse(validation(_).toOption).flatten.map(g)))
