@@ -13,6 +13,7 @@ val Version = new {
   val Scala3 = "3.3.1-RC7"
   val ScalaJavaTime = "2.5.0"
   val Slf4j = "2.0.7"
+  val Tapir = "1.7.4"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -134,6 +135,6 @@ lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++=
-      "com.softwaremill.sttp.tapir" %% "tapir-core" % "1.7.3" ::
+      "com.softwaremill.sttp.tapir" %% "tapir-core" % Version.Tapir ::
         Nil
   )
