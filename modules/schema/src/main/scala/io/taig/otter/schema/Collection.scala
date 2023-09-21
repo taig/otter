@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation}
 
 sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
-  override type Self[a] = Collection[F, a]
+  final override type Self[a] = Collection[F, a]
 
   final override def optional: Collection[F, Option[A]] = ???
 
@@ -37,4 +37,4 @@ object Collection:
     override def description(f: Option[String] => Option[String]): Collection[F, B] = copy(self = self.description(f))
     override def example: Option[B] = self.example.flatMap(validation(_).toOption)
     override def example(f: Option[B] => Option[B]): Collection[F, B] =
-      copy(self = self.example(fa => fa.traverse(validation(_).toOption).flatten.map(g)))
+      copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))

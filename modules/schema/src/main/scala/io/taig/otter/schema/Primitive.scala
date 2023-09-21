@@ -47,4 +47,4 @@ object Primitive:
     override def description(f: Option[String] => Option[String]): Primitive[B] =
       copy(self = self.description(f))
     override def example(f: Option[B] => Option[B]): Primitive[B] =
-      copy(self = self.example(fa => fa.traverse(validation(_).toOption).flatten.map(g)))
+      copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
