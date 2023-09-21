@@ -1,75 +1,40 @@
-// package io.taig.otter.schema
+package io.taig.otter.schema
 
-// import cats.data.{Chain, Validated}
-// import cats.syntax.all.*
-// import io.taig.otter.{OpenApi, Specification}
-// import io.taig.otter.validation.{Constraint, Validation, Violation}
+import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.otter.validation.{Constraint, Validation}
 
-// sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
-//   self =>
-//   override type Self[a] = Collection[F, a]
+sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
+  override type Self[a] = Collection[F, a]
 
-//   override def specification: Specification.Array
+  final override def optional: Collection[F, Option[A]] = ???
 
-//   final override def modifySpecification(f: Specification.Value => Specification.Value): Collection[F, A] =
-//     ???
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[F, B] = ???
 
-//   override def optional: Collection[F, Option[A]] = new Collection[F, Option[A]] with Optional:
-//     export self.specification
-//     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Option[A]] =
-//       openapi.traverse(self.decode)
-//     override def encode(a: Option[A]): Option[OpenApi.Array] = a.flatMap(self.encode)
-//     override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Option[A]] =
-//       self.parse(values).map(_.some)
-//     override def print(a: Option[A]): Option[Chain[Option[String]]] = a.flatMap(self.print)
+object Collection:
+  final case class Root[F[a] <: Schema[a], A](description: Option[String], example: Option[Chain[A]], schema: F[A])
+      extends Collection[F, Chain[A]]:
+    override def isOptional: Boolean = false
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def description(f: Option[String] => Option[String]): Self[Chain[A]] = copy(description = f(description))
+    override def example(f: Option[Chain[A]] => Option[Chain[A]]): Self[Chain[A]] = copy(example = f(example))
 
-//   override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[F, B] = new Collection[F, B]
-//     with Validate[B](validation):
-//     export self.specification
-//     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, B] =
-//       self.decodeArray(openapi).andThen(validation(_).leftMap(Violations.root))
-//     override def encode(b: B): Option[OpenApi.Array] = self.encode(g(b))
-//     override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, B] =
-//       self.parse(values).andThen(validation(_).leftMap(Violations.root))
-//     override def print(b: B): Option[Chain[Option[String]]] = self.print(g(b))
+  final case class Optional[F[a] <: Schema[a], A](self: Collection[F, A]) extends Collection[F, Option[A]]:
+    override def isOptional: Boolean = true
+    override def constraints: Chain[Constraint] = self.constraints
+    override def description: Option[String] = self.description
+    override def description(f: Option[String] => Option[String]): Collection[F, Option[A]] =
+      copy(self = self.description(f))
+    override def example: Option[Option[A]] = self.example.map(_.some)
+    override def example(f: Option[Option[A]] => Option[Option[A]]): Collection[F, Option[A]] =
+      copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-//   final override def decode(openapi: Option[OpenApi.Value]): Validated[Violations, A] = openapi
-//     .traverse(openapi => openapi.asArray.toValid(Violations.rootNec(Violation.tpe("array", openapi.tpe))))
-//     .andThen(decodeArray)
-//   protected def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, A]
-//   override def encode(a: A): Option[OpenApi.Array]
-
-//   protected def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A]
-//   protected def print(as: A): Option[Chain[Option[String]]]
-
-// object Collection:
-//   extension [A](self: Collection[Schema.Value, A])
-//     def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A] = self.parse(values)
-//     def print(as: A): Option[Chain[Option[String]]] = self.print(as)
-
-//   def apply[F[a] <: Schema[a], A](of: => F[A]): Collection[F, Chain[A]] = new Collection[F, Chain[A]]:
-//     override def constraints: Chain[Constraint] = Chain.empty
-//     override def isOptional: Boolean = false
-//     override def decodeArray(openapi: Option[OpenApi.Array]): Validated[Violations, Chain[A]] = openapi
-//       .toValid(Violations.rootNec(Violation.required))
-//       .andThen: openapi =>
-//         openapi.toChain.zipWithIndex.traverse { case (value, index) =>
-//           of.decode(value).leftMap(_.modifyHistory(index /: _))
-//         }
-//     override def encode(as: Chain[A]): Option[OpenApi.Array] =
-//       OpenApi.Array(as.map(of.encode(_).getOrElse(OpenApi.Null))).some
-//     override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Chain[A]] = of match
-//       case schema: Schema.Value[A] =>
-//         values
-//           .toValid(Violations.rootNec(Violation.required))
-//           .andThen: values =>
-//             values.zipWithIndex.traverse { case (value, index) =>
-//               schema.parse(value).leftMap(_.modifyHistory(index /: _))
-//             }
-//       case _ => throw new IllegalStateException
-
-//     override def specification: Specification.Array = ???
-
-//     override def print(as: Chain[A]): Option[Chain[Option[String]]] = of match
-//       case schema: Schema.Value[A] => as.map(schema.print).some
-//       case _                       => throw new IllegalStateException
+  final case class Validate[F[a] <: Schema[a], A, B](self: Collection[F, A], validation: Validation[A, B], g: B => A)
+      extends Collection[F, B]:
+    override def isOptional: Boolean = self.isOptional
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def description: Option[String] = self.description
+    override def description(f: Option[String] => Option[String]): Collection[F, B] = copy(self = self.description(f))
+    override def example: Option[B] = self.example.flatMap(validation(_).toOption)
+    override def example(f: Option[B] => Option[B]): Collection[F, B] =
+      copy(self = self.example(fa => fa.traverse(validation(_).toOption).flatten.map(g)))

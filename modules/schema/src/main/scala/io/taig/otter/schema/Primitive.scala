@@ -5,7 +5,6 @@ import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation}
 
 sealed abstract class Primitive[A] extends Schema.Value[A]:
-  self =>
   final override type Self[a] = Primitive[a]
 
   def format: Option[String]
