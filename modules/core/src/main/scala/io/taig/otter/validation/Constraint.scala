@@ -9,9 +9,9 @@ enum Constraint:
   case MinLength(reference: Int)
   case MaxLength(reference: Int)
   case Matches(pattern: Pattern)
-  case Minimum(reference: BigDecimal, exclusive: Boolean)
-  case Maximum(reference: BigDecimal, exclusive: Boolean)
-  case Multiple(reference: BigDecimal)
+  case Minimum[A](reference: A, exclusive: Boolean)
+  case Maximum[A](reference: A, exclusive: Boolean)
+  case Multiple(reference: Int)
   case MinItems(reference: Long)
   case MaxItems(reference: Long)
   case UniqueItems

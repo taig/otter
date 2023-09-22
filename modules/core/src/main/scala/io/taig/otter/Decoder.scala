@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.data.Validated
+import io.taig.otter.validation.Violations
 
 trait Decoder[F[_], -A]:
   def decode[B](fa: F[B], a: A): Validated[Violations, B]

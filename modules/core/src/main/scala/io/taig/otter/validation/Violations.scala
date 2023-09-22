@@ -1,8 +1,9 @@
-package io.taig.otter
+package io.taig.otter.validation
 
 import cats.Semigroup
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.syntax.all.*
+import io.taig.otter.History
 import io.taig.otter.validation.Violation
 
 import scala.collection.immutable.SortedMap

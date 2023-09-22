@@ -1,6 +1,5 @@
 package io.taig.otter.sample.schemas
 
-import cats.data.Chain
 import cats.implicits.*
 import io.taig.otter.sample.Book
 import io.taig.otter.schemas.*
