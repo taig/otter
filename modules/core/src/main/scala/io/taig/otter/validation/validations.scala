@@ -3,14 +3,15 @@ package io.taig.otter.validation
 import cats.UnorderedFoldable
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.schemas.*
 
 import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
 
 trait validations:
-  def equal(reference: String): Validation[String, String, Unit] =
-    Validation(Constraint.Equals(reference)): value =>
+  def equal(reference: String): Validation[String, Unit] =
+    Validation(Constraint.Equals(reference), string): value =>
       Validated.condNec(value == reference, (), value)
 
 //  private def minimum[A](
@@ -90,10 +91,10 @@ trait validations:
 //  def multiple(reference: Int): Validation[Int, Unit] = Validation(Constraint.Multiple(reference)): value =>
 //    Validated.condNec(value % reference == 0, (), OpenApi.Integer(value))
 
-  def minLength(reference: Int): Validation[Int, String, Unit] = Validation(Constraint.MinLength(reference)): value =>
+  def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference), int): value =>
     Validated.condNec(value.length >= reference, (), value.length)
 
-  def maxLength(reference: Int): Validation[Int, String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
+  def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference), int): value =>
     Validated.condNec(value.length <= reference, (), value.length)
 
 //  def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
