@@ -38,7 +38,7 @@ object Schema: // extends ToSchemaOps:
     self =>
     override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
 
-sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
+sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema.Value[A]:
   final override type Self[a] = Collection[F, a]
 
   final override def optional: Collection[F, Option[A]] = Collection.Optional(this)
@@ -120,7 +120,7 @@ object Coproduct:
     override def example(f: Option[Option[A]] => Option[Option[A]]): Coproduct[Option[A]] =
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-sealed abstract class Dictionary[A] extends Schema[A]:
+sealed abstract class Dictionary[A] extends Schema.Value[A]:
   final override type Self[a] = Dictionary[a]
 
   final override def optional: Dictionary[Option[A]] = Dictionary.Optional(this)
