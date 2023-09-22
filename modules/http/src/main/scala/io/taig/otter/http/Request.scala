@@ -56,6 +56,7 @@ object Request:
 
       override def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A] = body match
         case Http.Request.Body.Singlepart(payload) => decode(headers, payload)
+        case Http.Request.Body.Multipart()         => ???
       def decode(headers: Http.Headers, body: Http.Payload): Validated[Violations, A]
       override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 

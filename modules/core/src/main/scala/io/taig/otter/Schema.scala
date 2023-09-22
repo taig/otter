@@ -131,10 +131,10 @@ object Schema: // extends ToSchemaOps:
 
   object Dictionary:
     final case class Root[A, B](
+        key: Schema.Value[A],
+        value: Schema[B],
         description: Option[String],
         example: Option[VectorMap[A, B]],
-        key: Schema.Value[A],
-        value: Schema[B]
     ) extends Dictionary[VectorMap[A, B]]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
@@ -161,6 +161,8 @@ object Schema: // extends ToSchemaOps:
       override def example: Option[B] = self.example.flatMap(validation(_).toOption)
       override def example(f: Option[B] => Option[B]): Dictionary[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
+
+    def apply[A, B](key: Schema.Value[A], value: Schema[B]): Dictionary[VectorMap[A, B]] = Root(key, value, None, None)
 
   sealed abstract class Enumeration[A] extends Schema.Value[A]:
     final override type Self[a] = Enumeration[a]
