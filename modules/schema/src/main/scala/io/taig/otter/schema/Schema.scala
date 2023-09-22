@@ -3,8 +3,10 @@ package io.taig.otter.schema
 import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.otter.validation.{Constraint, Validation}
+
 import scala.collection.immutable.VectorMap
 import io.taig.enumeration.ext.Mapping
+import io.taig.otter.schema.Discriminator.None
 
 sealed abstract class Schema[A]:
   self =>
@@ -72,6 +74,47 @@ object Collection:
     override def example: Option[B] = self.example.flatMap(validation(_).toOption)
     override def example(f: Option[B] => Option[B]): Collection[F, B] =
       copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
+
+sealed abstract class Coproduct[A] extends Schema[A]:
+  final override type Self[a] = Coproduct[a]
+
+  def discriminator: Discriminator
+  def discriminator(f: Discriminator => Discriminator): Coproduct[A]
+
+  final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
+
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] = ???
+
+  final def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = ???
+
+  final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = ???
+  final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = ???
+
+object Coproduct:
+  final case class Root[A, B](
+      branch: Branch[A, B],
+      description: Option[String],
+      discriminator: Discriminator,
+      example: Option[B]
+  ) extends Coproduct[B]:
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = branch.isOptional
+    override def description(f: Option[String] => Option[String]): Coproduct[B] = copy(description = f(description))
+    override def discriminator(f: Discriminator => Discriminator): Coproduct[B] = copy(discriminator = f(discriminator))
+    override def example(f: Option[B] => Option[B]): Coproduct[B] = copy(example = f(example))
+
+  final case class Optional[A](self: Coproduct[A]) extends Coproduct[Option[A]]:
+    override def constraints: Chain[Constraint] = self.constraints
+    override def isOptional: Boolean = true
+    override def discriminator: Discriminator = self.discriminator
+    override def discriminator(f: Discriminator => Discriminator): Coproduct[Option[A]] =
+      copy(self = self.discriminator(f))
+    override def description: Option[String] = self.description
+    override def description(f: Option[String] => Option[String]): Coproduct[Option[A]] =
+      copy(self = self.description(f))
+    override def example: Option[Option[A]] = self.example.map(_.some)
+    override def example(f: Option[Option[A]] => Option[Option[A]]): Coproduct[Option[A]] =
+      copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
 sealed abstract class Dictionary[A] extends Schema[A]:
   final override type Self[a] = Dictionary[a]
