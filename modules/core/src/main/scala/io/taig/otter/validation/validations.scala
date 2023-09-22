@@ -4,6 +4,7 @@ import cats.UnorderedFoldable
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.schemas.*
+import org.typelevel.ci.CIString
 
 import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
@@ -12,6 +13,10 @@ import java.util.UUID
 trait validations:
   def equal(reference: String): Validation[String, Unit] =
     Validation(Constraint.Equals(reference), string): value =>
+      Validated.condNec(value == reference, (), value)
+
+  def equal(reference: CIString): Validation[CIString, Unit] =
+    Validation(Constraint.Equals(reference.toString), cistring): value =>
       Validated.condNec(value == reference, (), value)
 
 //  private def minimum[A](

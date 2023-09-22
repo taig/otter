@@ -49,15 +49,15 @@ object schemas:
       chain(schema).imap(_.toList)(Chain.fromSeq)
     def sortedSet[F[a] <: Schema[a], A: Ordering](schema: => F[A]): Collection[F, SortedSet[A]] =
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-//     def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, NonEmptyChain[A]] =
-//       val validation: Validation[Chain[A], NonEmptyChain[A]] =
-//         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(OpenApi.Integer(0)))
-//       chain(schema).ivalidate(validation)(_.toChain)
-//     // TODO expose way to merge into record or product
-//     def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: => Schema[A], value: => Schema[B])(
-//         f: (Schema[A], Schema[B]) => F[(A, B)]
-//     ): Collection[F, SortedMap[A, B]] =
-//       chain(f(key, value)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
+    def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, NonEmptyChain[A]] =
+      val validation: Validation[Chain[A], NonEmptyChain[A]] =
+        Validation(Constraint.MinItems(1), int)(NonEmptyChain.fromChain(_).toValidNec(0))
+      chain(schema).ivalidate(validation)(_.toChain)
+    // TODO expose way to merge into record or product
+    def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: => Schema[A], value: => Schema[B])(
+        f: (Schema[A], Schema[B]) => F[(A, B)]
+    ): Collection[F, SortedMap[A, B]] =
+      chain(f(key, value)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
 //   def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
 //     Enumeration(schema, mapping)
