@@ -23,7 +23,7 @@ sealed abstract class Segment[A]:
   def decode(a: Option[String]): Validated[Violations, A]
   def encode(a: A): Option[String]
 
-//  final def toPath: Path[A] = Path(this)
+  final def toPath: Path[A] = Path(this)
 
 object Segment:
   def apply(static: String): Segment[Unit] = new Segment[Unit]:
