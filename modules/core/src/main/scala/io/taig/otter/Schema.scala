@@ -34,11 +34,11 @@ sealed abstract class Schema[A]:
   final def toProduct: Schema.Product[A] = Schema.Product(this)
 
 object Schema: // extends ToSchemaOps:
-  abstract class Value[A] extends Schema[A]:
+  sealed abstract class Value[A] extends Schema[A]:
     self =>
     override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
 
-  sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema.Value[A]:
+  sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
     final override type Self[a] = Collection[F, a]
 
     final override def optional: Collection[F, Option[A]] = Collection.Optional(this)
@@ -47,7 +47,7 @@ object Schema: // extends ToSchemaOps:
       Collection.Validate(this, validation, g)
 
   object Collection:
-    final case class Root[F[a] <: Schema[a], A](description: Option[String], example: Option[Chain[A]], schema: F[A])
+    final case class Root[F[a] <: Schema[a], A](schema: F[A], description: Option[String], example: Option[Chain[A]])
         extends Collection[F, Chain[A]]:
       override def isOptional: Boolean = false
       override def constraints: Chain[Constraint] = Chain.empty
@@ -77,7 +77,7 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[B] => Option[B]): Collection[F, B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
-    def apply[F[a] <: Schema[a], A](schema: F[A]): Collection[F, Chain[A]] = Root(None, None, schema)
+    def apply[F[a] <: Schema[a], A](schema: F[A]): Collection[F, Chain[A]] = Root(schema, None, None)
 
   sealed abstract class Coproduct[A] extends Schema[A]:
     final override type Self[a] = Coproduct[a]
@@ -121,7 +121,7 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[Option[A]] => Option[Option[A]]): Coproduct[Option[A]] =
         copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-  sealed abstract class Dictionary[A] extends Schema.Value[A]:
+  sealed abstract class Dictionary[A] extends Schema[A]:
     final override type Self[a] = Dictionary[a]
 
     final override def optional: Dictionary[Option[A]] = Dictionary.Optional(this)
@@ -162,7 +162,7 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[B] => Option[B]): Dictionary[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
-  abstract class Enumeration[A] extends Schema.Value[A]:
+  sealed abstract class Enumeration[A] extends Schema.Value[A]:
     final override type Self[a] = Enumeration[a]
 
     final override def optional: Enumeration[Option[A]] = Enumeration.Optional(this)

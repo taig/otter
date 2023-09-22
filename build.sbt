@@ -122,7 +122,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
         Nil
   )
-  .dependsOn(circe)
+  .dependsOn(http, circe)
 
 lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
   .settings(noPublishSettings)

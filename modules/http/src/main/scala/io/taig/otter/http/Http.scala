@@ -35,6 +35,7 @@ object Http:
 
     object Body:
       final case class Singlepart(payload: Http.Payload) extends Request.Body
+      final case class Multipart() extends Request.Body
 
   final case class Response(code: Code, headers: Http.Headers, body: Http.Payload):
     def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))

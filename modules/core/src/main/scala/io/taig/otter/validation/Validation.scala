@@ -24,8 +24,7 @@ object Validation:
 
   def apply[Act, In, Out](constraint: Constraint, schema: Schema[Act])(
       f: In => ValidatedNec[Act, Out]
-  ): Validation[In, Out] =
-    Validation(Chain.one(constraint))(f(_).leftMap(_.map(act => Violation(constraint, act, schema))))
+  ): Validation[In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _, schema))))
 
   def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
   def valid[A](a: A): Validation[Any, A] = lift(_ => a)
