@@ -56,34 +56,27 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, schema, http, csv, circe, dsl, openapi, http4s, sample)
+  .aggregate(core, http, csv, circe, dsl, openapi, http4s, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "cats-core" % Version.Cats ::
-        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
-        Nil
-  )
-
-lazy val schema = module(identifier = Some("schema"))
-  .settings(
     Compile / sourceGenerators += Def.task {
       val sumInstances = (Compile / sourceManaged).value / "CoproductInstances.scala"
-      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".otter.schema"))
+      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".otter"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
+        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
   .jsSettings(
     libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
       .cross(CrossVersion.for3Use2_13)
   )
-  .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(
@@ -91,10 +84,10 @@ lazy val http = module(identifier = Some("http"))
       "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
-  .dependsOn(schema % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val csv = module(identifier = Some("csv"))
-  .dependsOn(schema % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test")
 
 // TODO waiting for circe 0.15 with scala.js jawn support
 lazy val circe = module(identifier = Some("circe"), jvmOnly = true)

@@ -1,12 +1,11 @@
-package io.taig.otter.schema
+package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation}
 
 import scala.collection.immutable.VectorMap
-import io.taig.enumeration.ext.Mapping
-import io.taig.otter.schema.Discriminator.None
 
 sealed abstract class Schema[A]:
   self =>
@@ -27,8 +26,8 @@ sealed abstract class Schema[A]:
 
   def optional: Self[Option[A]]
 
-  def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
-  final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
+  def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Self[B]
+  final def validate(validation: Validation[Nothing, A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
 
@@ -44,7 +43,7 @@ sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
 
   final override def optional: Collection[F, Option[A]] = Collection.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[F, B] =
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Collection[F, B] =
     Collection.Validate(this, validation, g)
 
 object Collection:
@@ -65,8 +64,11 @@ object Collection:
     override def example(f: Option[Option[A]] => Option[Option[A]]): Collection[F, Option[A]] =
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-  final case class Validate[F[a] <: Schema[a], A, B](self: Collection[F, A], validation: Validation[A, B], g: B => A)
-      extends Collection[F, B]:
+  final case class Validate[F[a] <: Schema[a], A, B](
+      self: Collection[F, A],
+      validation: Validation[Nothing, A, B],
+      g: B => A
+  ) extends Collection[F, B]:
     override def isOptional: Boolean = self.isOptional
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def description: Option[String] = self.description
@@ -83,7 +85,7 @@ sealed abstract class Coproduct[A] extends Schema[A]:
 
   final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] = ???
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Coproduct[B] = ???
 
   final def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = ???
 
@@ -121,7 +123,7 @@ sealed abstract class Dictionary[A] extends Schema[A]:
 
   final override def optional: Dictionary[Option[A]] = Dictionary.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dictionary[B] =
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Dictionary[B] =
     Dictionary.Validate(this, validation, g)
 
 object Dictionary:
@@ -148,7 +150,8 @@ object Dictionary:
     override def example(f: Option[Option[A]] => Option[Option[A]]): Dictionary[Option[A]] =
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-  final case class Validate[A, B](self: Dictionary[A], validation: Validation[A, B], g: B => A) extends Dictionary[B]:
+  final case class Validate[A, B](self: Dictionary[A], validation: Validation[Nothing, A, B], g: B => A)
+      extends Dictionary[B]:
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = self.isOptional
     override def description: Option[String] = self.description
@@ -162,7 +165,7 @@ abstract class Enumeration[A] extends Schema.Value[A]:
 
   final override def optional: Enumeration[Option[A]] = Enumeration.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] =
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Enumeration[B] =
     Enumeration.Validate(this, validation, g)
 
 object Enumeration:
@@ -187,7 +190,8 @@ object Enumeration:
     override def example(f: Option[Option[A]] => Option[Option[A]]): Enumeration[Option[A]] =
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-  final case class Validate[A, B](self: Enumeration[A], validation: Validation[A, B], g: B => A) extends Enumeration[B]:
+  final case class Validate[A, B](self: Enumeration[A], validation: Validation[Nothing, A, B], g: B => A)
+      extends Enumeration[B]:
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = self.isOptional
     override def description: Option[String] = self.description
@@ -206,7 +210,7 @@ sealed abstract class Primitive[A] extends Schema.Value[A]:
 
   final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Primitive[B] =
     Primitive.Validate(this, validation, g)
 
 object Primitive:
@@ -230,7 +234,8 @@ object Primitive:
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
     override def format(f: Option[String] => Option[String]): Primitive[Option[A]] = copy(self = self.format(f))
 
-  final case class Validate[A, B](self: Primitive[A], validation: Validation[A, B], g: B => A) extends Primitive[B]:
+  final case class Validate[A, B](self: Primitive[A], validation: Validation[Nothing, A, B], g: B => A)
+      extends Primitive[B]:
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = self.isOptional
     override def example: Option[B] = self.example.flatMap(validation(_).toOption)
@@ -246,7 +251,7 @@ sealed abstract class Product[A] extends Schema[A]:
 
   final override def optional: Product[Option[A]] = Product.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] =
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Product[B] =
     Product.Validate(this, validation, g)
 
   final def prepend[B](schema: Schema[B]): Product[(B, A)] =
@@ -271,7 +276,8 @@ object Product:
     override def example(f: Option[Option[A]] => Option[Option[A]]): Product[Option[A]] =
       copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-  final case class Validate[A, B](self: Product[A], validation: Validation[A, B], g: B => A) extends Product[B]:
+  final case class Validate[A, B](self: Product[A], validation: Validation[Nothing, A, B], g: B => A)
+      extends Product[B]:
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = self.isOptional
     override def description: Option[String] = self.description
@@ -300,7 +306,7 @@ sealed abstract class Record[A] extends Schema[A]:
 
   final override def optional: Record[Option[A]] = Record.Optional(this)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] = ???
+  final override def ivalidate[B](validation: Validation[Nothing, A, B])(g: B => A): Record[B] = ???
 
   final def zip[B](record: Record[B]): Record[(A, B)] = Record.Zip(this, record, none, none, Null.Default)
 

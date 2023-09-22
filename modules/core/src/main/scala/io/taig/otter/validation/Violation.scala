@@ -1,12 +1,11 @@
 package io.taig.otter.validation
 
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
 
-final case class Violation(constraint: Constraint, actual: OpenApi)
+final case class Violation[+A](constraint: Constraint, actual: Option[A])
 
 object Violation:
-  def tpe(name: String, actual: String): Violation = Violation(Constraint.Type(name), OpenApi.String(actual))
-  def tpe(name: String): Violation = Violation(Constraint.Type(name), OpenApi.Null)
-  val required: Violation = Violation(Constraint.Required, actual = OpenApi.Null)
-  def required(actual: OpenApi): Violation = Violation(Constraint.Required, actual)
+  def tpe(name: String, actual: String): Violation[String] = Violation(Constraint.Type(name), actual.some)
+  def tpe(name: String): Violation[Nothing] = Violation(Constraint.Type(name), actual = none)
+  val required: Violation[Nothing] = Violation(Constraint.Required, actual = none)
+  def required[A](actual: A): Violation[A] = Violation(Constraint.Required, actual.some)

@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.Order
 import cats.data.Chain

@@ -1,3 +1,5 @@
+package io.taig.otter
+
 // package io.taig.otter.schema
 
 // final class SchemaOps[A](self: Schema[A]) extends AnyVal:

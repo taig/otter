@@ -1,9 +1,7 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.data.{Ior, Validated}
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
-import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violation
 
 final case class Branch[A, B](name: A, key: Schema.Value[A], value: Schema[B]):
