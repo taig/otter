@@ -1,57 +1,54 @@
 package io.taig.otter
 
-// package io.taig.otter.schema
+import cats.Hash
+import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
+import cats.implicits.*
+import io.taig.enumeration.ext.{EnumerationValues, Mapping}
+import io.taig.otter.validation.{validations, Constraint, Validation, Violation}
+import org.typelevel.ci.CIString
 
-// import cats.Hash
-// import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
-// import cats.implicits.*
-// import io.taig.enumeration.ext.{EnumerationValues, Mapping}
-// import io.taig.otter.OpenApi
-// import io.taig.otter.validation.{validations, Constraint, Validation, Violation}
-// import org.typelevel.ci.CIString
+import java.time.{LocalDate, LocalDateTime}
+import java.util.UUID
+import java.util.regex.Pattern
+import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
 
-// import java.time.{LocalDate, LocalDateTime}
-// import java.util.UUID
-// import java.util.regex.Pattern
-// import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
-
-// object schemas:
-//   val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-//   val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-//   val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-//   val double: Primitive[Double] = Primitive(Type.Double).format("double")
-//   val int: Primitive[Int] = Primitive(Type.Int).format("int32")
-//   val float: Primitive[Float] = Primitive(Type.Float).format("float")
-//   val long: Primitive[Long] = Primitive(Type.Long).format("int64")
-//   val string: Primitive[String] = Primitive(Type.String)
-//   val nonEmptyString: Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
-//   val password: Primitive[String] = string.format("password")
+object schemas:
+  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
+  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
+  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
+  val double: Primitive[Double] = Primitive(Type.Double).format("double")
+  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
+  val float: Primitive[Float] = Primitive(Type.Float).format("float")
+  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
+  val string: Primitive[String] = Primitive(Type.String)
+  val nonEmptyString: Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
+  val password: Primitive[String] = string.format("password")
 //   val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
 //   val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
 //   val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
-//   val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
+  val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
 //   object dynamic:
 //     val value: Dynamic[OpenApi.Value] = Dynamic.Value
 //     val any: Dynamic[OpenApi] = value.optional.imap(_.getOrElse(OpenApi.Null))(_.asValue)
 //     def singleton[A <: Singleton](a: A): Dynamic[A] = any.imap(_ => a)(_ => OpenApi.Null)
 
-//   def field[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Field[B] = Field(name, key, schema)
-//   def field[A](name: String, schema: => Schema[A]): Field[A] = field(name, string, schema)
-//   def field[A](name: Int, schema: => Schema[A]): Field[A] = field(name, int, schema)
+  def field[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[A, B] = Field(name, key, schema)
+  def field[A](name: String, schema: Schema[A]): Field[String, A] = field(name, string, schema)
+  def field[A](name: Int, schema: Schema[A]): Field[Int, A] = field(name, int, schema)
 
-//   def branch[A, B](name: A, key: => Schema.Value[A], schema: => Schema[B]): Branch[A, B] = Branch(name, key, schema)
-//   def branch[A](name: String, schema: => Schema[A]): Branch[String, A] = branch(name, string, schema)
-//   def branch[A](name: Int, schema: => Schema[A]): Branch[Int, A] = branch(name, int, schema)
+  def branch[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[A, B] = Branch(name, key, schema)
+  def branch[A](name: String, schema: Schema[A]): Branch[String, A] = branch(name, string, schema)
+  def branch[A](name: Int, schema: Schema[A]): Branch[Int, A] = branch(name, int, schema)
 
-//   object collection:
-//     def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Chain[A]] = Collection(schema)
-//     def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Vector[A]] =
-//       chain(schema).imap(_.toVector)(Chain.fromSeq)
-//     def list[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, List[A]] =
-//       chain(schema).imap(_.toList)(Chain.fromSeq)
-//     def sortedSet[F[a] <: Schema[a], A: Ordering](schema: => F[A]): Collection[F, SortedSet[A]] =
-//       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
+  object collection:
+    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Chain[A]] = Collection(schema)
+    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Vector[A]] =
+      chain(schema).imap(_.toVector)(Chain.fromSeq)
+    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, List[A]] =
+      chain(schema).imap(_.toList)(Chain.fromSeq)
+    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: => F[A]): Collection[F, SortedSet[A]] =
+      chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
 //     def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, NonEmptyChain[A]] =
 //       val validation: Validation[Chain[A], NonEmptyChain[A]] =
 //         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(OpenApi.Integer(0)))

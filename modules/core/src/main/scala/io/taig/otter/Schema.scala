@@ -77,6 +77,8 @@ object Collection:
     override def example(f: Option[B] => Option[B]): Collection[F, B] =
       copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
+  def apply[F[a] <: Schema[a], A](schema: F[A]): Collection[F, Chain[A]] = Root(None, None, schema)
+
 sealed abstract class Coproduct[A] extends Schema[A]:
   final override type Self[a] = Coproduct[a]
 
@@ -246,6 +248,8 @@ object Primitive:
     override def example(f: Option[B] => Option[B]): Primitive[B] =
       copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
+  def apply[A](tpe: Type[A]): Primitive[A] = Root(None, None, None, tpe)
+
 sealed abstract class Product[A] extends Schema[A]:
   final override type Self[a] = Product[a]
 
@@ -355,3 +359,5 @@ object Record: // extends ToRecordOps:
     override def description(f: Option[String] => Option[String]): Record[Option[A]] = ???
     override def example: Option[Option[A]] = self.example.map(_.some)
     override def example(f: Option[Option[A]] => Option[Option[A]]): Record[Option[A]] = ???
+
+  def apply[A, B](field: Field[A, B]): Record[B] = ???
