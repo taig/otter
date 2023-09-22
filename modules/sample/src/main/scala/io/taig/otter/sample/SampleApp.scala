@@ -1,10 +1,7 @@
 package io.taig.otter.sample
 
 import cats.effect.{IO, IOApp}
-import io.taig.otter.http.*
-import io.taig.otter.schema.schemas.*
-import io.taig.otter.http.syntax.*
-import io.taig.otter.http4s.Http4sHttpServer
+import io.taig.otter.schemas.*
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 

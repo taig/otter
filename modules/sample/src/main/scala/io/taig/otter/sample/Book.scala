@@ -14,7 +14,7 @@ object Book:
   object Title:
     extension (self: Book.Title) def toString: String = self
     def unsafeFromString(value: String): Book.Title = value
-    val validation: Validation[String, Book.Title] = (minLength(1) *> maxLength(200)).tap
+    val validation: Validation[Int, String, Book.Title] = (minLength(1) *> maxLength(200)).tap
 
   enum Genre:
     case Biography

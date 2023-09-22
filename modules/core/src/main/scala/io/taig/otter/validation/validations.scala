@@ -89,13 +89,13 @@ trait validations:
 //
 //  def multiple(reference: Int): Validation[Int, Unit] = Validation(Constraint.Multiple(reference)): value =>
 //    Validated.condNec(value % reference == 0, (), OpenApi.Integer(value))
-//
-//  def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
-//    Validated.condNec(value.length >= reference, (), OpenApi.Integer(value.length))
-//
-//  def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
-//    Validated.condNec(value.length <= reference, (), OpenApi.Integer(value.length))
-//
+
+  def minLength(reference: Int): Validation[Int, String, Unit] = Validation(Constraint.MinLength(reference)): value =>
+    Validated.condNec(value.length >= reference, (), value.length)
+
+  def maxLength(reference: Int): Validation[Int, String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
+    Validated.condNec(value.length <= reference, (), value.length)
+
 //  def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
 //    Validation(Constraint.MinItems(reference)): values =>
 //      val size = count(values)
@@ -121,5 +121,5 @@ trait validations:
 //  val dateTime: Validation[String, LocalDateTime] = Validation.parse("date-time"): value =>
 //    try LocalDateTime.parse(value).some
 //    catch case _: DateTimeParseException => none
-//
-//object validations extends validations
+
+object validations extends validations
