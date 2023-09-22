@@ -13,20 +13,20 @@ import java.util.regex.Pattern
 import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
 
 object schemas:
-  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-  val double: Primitive[Double] = Primitive(Type.Double).format("double")
-  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
-  val float: Primitive[Float] = Primitive(Type.Float).format("float")
-  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
-  val string: Primitive[String] = Primitive(Type.String)
-  val nonEmptyString: Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
-  val password: Primitive[String] = string.format("password")
-//   val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
-//   val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
-//   val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
-  val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
+  val bigDecimal: Schema.Primitive[BigDecimal] = Schema.Primitive(Type.BigDecimal)
+  val bigInt: Schema.Primitive[BigInt] = Schema.Primitive(Type.BigInt)
+  val boolean: Schema.Primitive[Boolean] = Schema.Primitive(Type.Boolean)
+  val double: Schema.Primitive[Double] = Schema.Primitive(Type.Double).format("double")
+  val int: Schema.Primitive[Int] = Schema.Primitive(Type.Int).format("int32")
+  val float: Schema.Primitive[Float] = Schema.Primitive(Type.Float).format("float")
+  val long: Schema.Primitive[Long] = Schema.Primitive(Type.Long).format("int64")
+  val string: Schema.Primitive[String] = Schema.Primitive(Type.String)
+  val nonEmptyString: Schema.Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
+  val password: Schema.Primitive[String] = string.format("password")
+//   val uuid: Schema.Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
+//   val date: Schema.Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
+//   val dateTime: Schema.Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
+  val cistring: Schema.Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
 //   object dynamic:
 //     val value: Dynamic[OpenApi.Value] = Dynamic.Value
@@ -42,21 +42,21 @@ object schemas:
   def branch[A](name: Int, schema: Schema[A]): Branch[Int, A] = branch(name, int, schema)
 
   object collection:
-    def chain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Chain[A]] = Collection(schema)
-    def vector[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, Vector[A]] =
+    def chain[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, Chain[A]] = Schema.Collection(schema)
+    def vector[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, Vector[A]] =
       chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, List[A]] =
+    def list[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, List[A]] =
       chain(schema).imap(_.toList)(Chain.fromSeq)
-    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: => F[A]): Collection[F, SortedSet[A]] =
+    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: => F[A]): Schema.Collection[F, SortedSet[A]] =
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Collection[F, NonEmptyChain[A]] =
+    def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1), int)(NonEmptyChain.fromChain(_).toValidNec(0))
       chain(schema).ivalidate(validation)(_.toChain)
     // TODO expose way to merge into record or product
     def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: => Schema[A], value: => Schema[B])(
         f: (Schema[A], Schema[B]) => F[(A, B)]
-    ): Collection[F, SortedMap[A, B]] =
+    ): Schema.Collection[F, SortedMap[A, B]] =
       chain(f(key, value)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
 //   def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
@@ -76,7 +76,7 @@ object schemas:
 //       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
 
 //   val violations: Dictionary[Violations] =
-//     val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+//     val pattern: Schema.Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
 //     val constraint: Schema[Constraint] = (
 //       branch("equals", field("reference", string).to[Constraint.Equals]) :+
@@ -98,7 +98,7 @@ object schemas:
 
 //     val violation: Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
 
-//     val history: Primitive[History] =
+//     val history: Schema.Primitive[History] =
 //       string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 
 //     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)

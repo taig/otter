@@ -20,7 +20,7 @@ object book:
 //    case Book.Genre.Romance   => "romance"
 //    case Book.Genre.Thriller  => "thriller"
 //
-  val main: Record[Book] = ???
+  val main: Schema.Record[Book] = ???
 //    (
 //      field("isbn", isbn) :*
 //        field("title", title) :*
