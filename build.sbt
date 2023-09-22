@@ -96,7 +96,7 @@ lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
       "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
   .dependsOn(circe % "compile->compile;test->test")
@@ -122,7 +122,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
         Nil
   )
-  .dependsOn(core)
+  .dependsOn(circe)
 
 lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
   .settings(noPublishSettings)
