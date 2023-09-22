@@ -255,7 +255,7 @@ sealed abstract class Record[A] extends Schema[A]:
   def nulls(f: Null => Null): Record[A]
   final def nulls(value: Null): Record[A] = nulls(_ => value)
 
-  final override def optional: Record[Option[A]] = ???
+  final override def optional: Record[Option[A]] = Record.Optional(this)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] = ???
 
@@ -296,3 +296,13 @@ object Record: // extends ToRecordOps:
     override def description(f: Option[String] => Option[String]): Record[(A, B)] = copy(description = f(description))
     override def example(f: Option[(A, B)] => Option[(A, B)]): Record[(A, B)] = copy(example = f(example))
     override def nulls(f: Null => Null): Record[(A, B)] = copy(nulls = f(nulls))
+
+  final case class Optional[A](self: Record[A]) extends Record[Option[A]]:
+    override def constraints: Chain[Constraint] = self.constraints
+    override def isOptional: Boolean = true
+    override def nulls: Null = self.nulls
+    override def nulls(f: Null => Null): Record[Option[A]] = ???
+    override def description: Option[String] = self.description
+    override def description(f: Option[String] => Option[String]): Record[Option[A]] = ???
+    override def example: Option[Option[A]] = self.example.map(_.some)
+    override def example(f: Option[Option[A]] => Option[Option[A]]): Record[Option[A]] = ???
