@@ -9,6 +9,7 @@ import org.typelevel.ci.CIString
 
 final case class Header[A](name: CIString, schema: Schema.Value[A] | Schema.Collection[Schema.Value, A]):
   def isOptional: Boolean = schema.isOptional
+
   def isCollection: Boolean = schema match
     case _: Schema.Collection[?, ?] => true
     case _                          => false
@@ -21,7 +22,7 @@ final case class Header[A](name: CIString, schema: Schema.Value[A] | Schema.Coll
     case schema: Schema.Value[A]                    => copy(schema = schema.optional)
     case schema: Schema.Collection[Schema.Value, A] => copy(schema = schema.optional)
 
-//  def toHeaders: Headers[A] = Headers(this)
+  def toHeaders: Headers[A] = Headers(this)
 
   def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] = schema match
     case schema: Schema.Value[A] =>

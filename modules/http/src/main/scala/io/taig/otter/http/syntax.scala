@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.Schema
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -10,9 +11,9 @@ import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets,
 object syntax:
 //  val __ : Url[Unit] = Url.Root
 
-//  def header[A](name: CIString, schema: => Schema.Value[A] | Collection[Schema.Value, A]): Header[A] =
-//    Header(name, schema)
-//
+  def header[A](name: CIString, schema: => Schema.Value[A] | Schema.Collection[Schema.Value, A]): Header[A] =
+    Header(name, schema)
+
 //  def parameter[A](name: String, schema: => Schema.Value[A]): Segment[A] = Segment(name, schema)
 //
 //  def query[A](name: String, schema: => Schema.Value[A] | Collection[Schema.Value, A]): Query[A] = Query(name, schema)
