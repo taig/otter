@@ -59,11 +59,11 @@ object schemas:
     ): Schema.Collection[F, SortedMap[A, B]] =
       chain(f(key, value)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
-//   def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
-//     Enumeration(schema, mapping)
-//   def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
-//       EnumerationValues.Aux[B, B]
-//   ): Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))
+  def enumeration[A, B](schema: => Schema.Value[A])(using mapping: Mapping[B, A]): Schema.Enumeration[B] =
+    Schema.Enumeration(schema, mapping)
+  def enumeration[A: Hash, B](schema: => Schema.Value[A])(f: B => A)(using
+      EnumerationValues.Aux[B, B]
+  ): Schema.Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))
 
 //   object dictionary:
 //     def vectorMap[A, B](key: => Schema.Value[A], schema: => Schema[B]): Dictionary[VectorMap[A, B]] =

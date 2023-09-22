@@ -172,10 +172,10 @@ object Schema: // extends ToSchemaOps:
 
   object Enumeration:
     final case class Root[A, B](
-        description: Option[String],
-        example: Option[B],
+        schema: Schema.Value[A],
         mapping: Mapping[B, A],
-        schema: Schema.Value[A]
+        description: Option[String],
+        example: Option[B]
     ) extends Enumeration[B]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
@@ -201,6 +201,8 @@ object Schema: // extends ToSchemaOps:
       override def example: Option[B] = self.example.flatMap(validation(_).toOption)
       override def example(f: Option[B] => Option[B]): Enumeration[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
+
+    def apply[A, B](schema: Schema.Value[A], mapping: Mapping[B, A]): Enumeration[B] = Root(schema, mapping, None, None)
 
   sealed abstract class Primitive[A] extends Schema.Value[A]:
     final override type Self[a] = Primitive[a]
@@ -311,13 +313,14 @@ object Schema: // extends ToSchemaOps:
 
     final override def optional: Record[Option[A]] = Record.Optional(this)
 
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] = ???
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] =
+      Record.Validate(this, validation, g)
 
     final def zip[B](record: Record[B]): Record[(A, B)] = Record.Zip(this, record, none, none, Null.Default)
 
     final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 
-  object Record: // extends ToRecordOps:
+  object Record extends ToRecordOps:
     final case class Empty(description: Option[String], example: Option[Unit], nulls: Null) extends Record[Unit]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
@@ -325,18 +328,13 @@ object Schema: // extends ToSchemaOps:
       override def nulls(f: Null => Null): Record[Unit] = copy(nulls = f(nulls))
       override def example(f: Option[Unit] => Option[Unit]): Record[Unit] = copy(example = f(example))
 
-    final case class Prepend[A, B, C](
-        field: Field[A, B],
-        self: Record[C],
-        description: Option[String],
-        example: Option[(B, C)],
-        nulls: Null
-    ) extends Record[(B, C)]:
+    final case class Root[A, B](field: Field[A, B], description: Option[String], example: Option[B], nulls: Null)
+        extends Record[B]:
       override def constraints: Chain[Constraint] = Chain.empty
-      override def isOptional: Boolean = field.isOptional && self.isOptional
-      override def description(f: Option[String] => Option[String]): Record[(B, C)] = copy(description = f(description))
-      override def example(f: Option[(B, C)] => Option[(B, C)]): Record[(B, C)] = copy(example = f(example))
-      override def nulls(f: Null => Null): Record[(B, C)] = copy(nulls = f(nulls))
+      override def isOptional: Boolean = false
+      override def nulls(f: Null => Null): Record[B] = ???
+      override def description(f: Option[String] => Option[String]): Record[B] = ???
+      override def example(f: Option[B] => Option[B]): Record[B] = ???
 
     final case class Zip[A, B](
         left: Record[A],
@@ -360,5 +358,15 @@ object Schema: // extends ToSchemaOps:
       override def description(f: Option[String] => Option[String]): Record[Option[A]] = ???
       override def example: Option[Option[A]] = self.example.map(_.some)
       override def example(f: Option[Option[A]] => Option[Option[A]]): Record[Option[A]] = ???
+
+    final case class Validate[A, B](self: Record[A], validation: Validation[A, B], g: B => A) extends Record[B]:
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def isOptional: Boolean = self.isOptional
+      override def nulls: Null = self.nulls
+      override def nulls(f: Null => Null): Record[B] = ???
+      override def description: Option[String] = self.description
+      override def description(f: Option[String] => Option[String]): Record[B] = ???
+      override def example: Option[B] = self.example.flatMap(validation(_).toOption)
+      override def example(f: Option[B] => Option[B]): Record[B] = ???
 
     def apply[A, B](field: Field[A, B]): Record[B] = ???
