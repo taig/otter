@@ -1,1 +1,1 @@
-# OpenAPI
+# Otter 🦦
