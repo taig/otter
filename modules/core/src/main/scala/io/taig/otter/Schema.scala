@@ -84,6 +84,7 @@ object Schema: // extends ToSchemaOps:
 
     def discriminator: Discriminator
     def discriminator(f: Discriminator => Discriminator): Coproduct[A]
+    final def discriminator(value: Discriminator): Coproduct[A] = discriminator(_ => value)
 
     final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
 
