@@ -2,12 +2,13 @@ package io.taig.otter.sample
 
 import cats.Order
 import cats.syntax.all.*
+import io.circe.Json
 import io.taig.otter.validation.Validation
 import io.taig.otter.validation.validations.{maxLength, minLength}
 
 import scala.collection.immutable.SortedSet
 
-final case class Book(isbn: Isbn, title: Book.Title, genres: SortedSet[Book.Genre])
+final case class Book(isbn: Isbn, title: Book.Title, genres: SortedSet[Book.Genre], metadata: Json)
 
 object Book:
   opaque type Title = String

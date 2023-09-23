@@ -35,7 +35,7 @@ object Segment:
         Validated.cond(
           matches(value),
           (),
-          Violations.rootNec(Violation(Constraint.Equals(name), actual = value, string))
+          Violations.rootNec(Violation(Constraint.Equals(name), actual = value))
         )
       case None => Violations.rootNec(Violation.required).invalid
     override def encode(a: Unit): Option[String] = static.some

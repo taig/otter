@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.data.Chain
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.validation.{Constraint, Validation}
+import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 import scala.collection.immutable.VectorMap
 
@@ -166,12 +166,36 @@ object Schema: // extends ToSchemaOps:
 
     def apply[A, B](key: Schema.Value[A], value: Schema[B]): Dictionary[VectorMap[A, B]] = Root(key, value, None, None)
 
+  sealed abstract class Dynamic[A] extends Schema[A]:
+    final override type Self[a] = Schema.Dynamic[a]
+
+    override def optional: Schema.Dynamic[Option[A]] = Dynamic.Optional(this)
+
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Dynamic[B] = ???
+
+  object Dynamic:
+    final case class Root(description: Option[String], example: Option[Data]) extends Schema.Dynamic[Data]:
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def isOptional: Boolean = false
+      override def description(f: Option[String] => Option[String]): Dynamic[Data] = ???
+      override def example(f: Option[Data] => Option[Data]): Dynamic[Data] = ???
+
+    final case class Optional[A](self: Schema.Dynamic[A]) extends Schema.Dynamic[Option[A]]:
+      override def constraints: Chain[Constraint] = self.constraints
+      override def isOptional: Boolean = true
+      override def description: Option[String] = self.description
+      override def description(f: Option[String] => Option[String]): Dynamic[Option[A]] = ???
+      override def example: Option[Option[A]] = self.example.map(_.some)
+      override def example(f: Option[Option[A]] => Option[Option[A]]): Dynamic[Option[A]] = ???
+
+    val Default: Dynamic[Data] = Root(None, None)
+
   sealed abstract class Enumeration[A] extends Schema.Value[A]:
-    final override type Self[a] = Enumeration[a]
+    final override type Self[a] = Schema.Enumeration[a]
 
-    final override def optional: Enumeration[Option[A]] = Enumeration.Optional(this)
+    final override def optional: Schema.Enumeration[Option[A]] = Enumeration.Optional(this)
 
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] =
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Enumeration[B] =
       Enumeration.Validate(this, validation, g)
 
   object Enumeration:
@@ -180,20 +204,21 @@ object Schema: // extends ToSchemaOps:
         mapping: Mapping[B, A],
         description: Option[String],
         example: Option[B]
-    ) extends Enumeration[B]:
+    ) extends Schema.Enumeration[B]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
-      override def description(f: Option[String] => Option[String]): Enumeration[B] = copy(description = f(description))
-      override def example(f: Option[B] => Option[B]): Enumeration[B] = copy(example = f(example))
+      override def description(f: Option[String] => Option[String]): Schema.Enumeration[B] =
+        copy(description = f(description))
+      override def example(f: Option[B] => Option[B]): Schema.Enumeration[B] = copy(example = f(example))
 
-    final case class Optional[A](self: Enumeration[A]) extends Enumeration[Option[A]]:
+    final case class Optional[A](self: Schema.Enumeration[A]) extends Schema.Enumeration[Option[A]]:
       override def constraints: Chain[Constraint] = self.constraints
       override def isOptional: Boolean = true
       override def description: Option[String] = self.description
-      override def description(f: Option[String] => Option[String]): Enumeration[Option[A]] =
+      override def description(f: Option[String] => Option[String]): Schema.Enumeration[Option[A]] =
         copy(self = self.description(f))
       override def example: Option[Option[A]] = self.example.map(_.some)
-      override def example(f: Option[Option[A]] => Option[Option[A]]): Enumeration[Option[A]] =
+      override def example(f: Option[Option[A]] => Option[Option[A]]): Schema.Enumeration[Option[A]] =
         copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
     final case class Validate[A, B](self: Enumeration[A], validation: Validation[A, B], g: B => A)

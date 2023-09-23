@@ -96,7 +96,7 @@ lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
       "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
   )
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(http % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
   .dependsOn(circe % "compile->compile;test->test")

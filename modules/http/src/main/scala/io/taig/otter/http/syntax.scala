@@ -75,10 +75,7 @@ object syntax:
 //        )
 //      }
     val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
-    def of[A](
-        openapi: Request.Body.Singlepart.Strict[A],
-        schema: => Schema[A]
-    ): Request.Body.Singlepart.Strict[A] = ???
+    def of[A](body: Request.Body.Singlepart.Strict[A], schema: Schema[A]): Request.Body.Singlepart.Strict[A] = ???
 //      openapi.andThen(schema.decode)(schema.encode(_).getOrElse(OpenApi.Null))
 
 //    object streaming:

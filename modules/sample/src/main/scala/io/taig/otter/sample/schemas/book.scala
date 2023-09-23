@@ -1,6 +1,7 @@
 package io.taig.otter.sample.schemas
 
 import cats.implicits.*
+import io.circe.Json
 import io.taig.otter.sample.Book
 import io.taig.otter.schemas.*
 import io.taig.otter.*
@@ -11,6 +12,7 @@ import scala.collection.immutable.SortedSet
 
 object book:
   val title: Schema.Primitive[Book.Title] = string.ivalidate(Book.Title.validation)(_.toString)
+
   val genre: Schema.Enumeration[Book.Genre] = enumeration(string):
     case Book.Genre.Biography => "biography"
     case Book.Genre.Children  => "children"
@@ -19,8 +21,11 @@ object book:
     case Book.Genre.Romance   => "romance"
     case Book.Genre.Thriller  => "thriller"
 
+  val metadata: Schema.Dynamic[Json] = ???
+
   val main: Schema.Record[Book] = (
     field("isbn", isbn) :*
       field("title", title) :*
-      field("genres", collection.sortedSet(genre))
+      field("genres", collection.sortedSet(genre)) :*
+      field("metadata", metadata)
   ).to[Book]
