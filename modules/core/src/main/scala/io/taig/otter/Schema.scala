@@ -88,12 +88,14 @@ object Schema: // extends ToSchemaOps:
 
     final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
 
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] = ???
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
+      Coproduct.Validate(this, validation, g)
 
-    final def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] = ???
+    final def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] =
+      Coproduct.OrElse(this, coproduct, None, Discriminator.Default, None)
 
-    final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = ???
-    final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = ???
+    final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
+    final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
 
     final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
@@ -123,6 +125,31 @@ object Schema: // extends ToSchemaOps:
       override def example: Option[Option[A]] = self.example.map(_.some)
       override def example(f: Option[Option[A]] => Option[Option[A]]): Coproduct[Option[A]] =
         copy(self = self.example(fa => f(fa.map(_.some)).flatten))
+
+    final case class Validate[A, B](self: Schema.Coproduct[A], validation: Validation[A, B], g: B => A) extends Schema.Coproduct[B]:
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def isOptional: Boolean = self.isOptional
+      override def discriminator: Discriminator = self.discriminator
+      override def discriminator(f: Discriminator => Discriminator): Coproduct[B] = ???
+      override def description: Option[String] = self.description
+      override def description(f: Option[String] => Option[String]): Coproduct[B] = ???
+      override def example: Option[B] = ???
+      override def example(f: Option[B] => Option[B]): Coproduct[B] = ???
+
+    final case class OrElse[A, B](
+        left: Schema.Coproduct[A],
+        right: Schema.Coproduct[B],
+        description: Option[String],
+        discriminator: Discriminator,
+        example: Option[A + B]
+    ) extends Schema.Coproduct[A + B]:
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def isOptional: Boolean = left.isOptional && right.isOptional
+      override def discriminator(f: Discriminator => Discriminator): Coproduct[A + B] = copy(discriminator = f(discriminator))
+      override def description(f: Option[String] => Option[String]): Coproduct[A + B] = copy(description = f(description))
+      override def example(f: Option[A + B] => Option[A + B]): Coproduct[A + B] = copy(example = f(example))
+
+    def apply[A, B](branch: Branch[A, B]): Schema.Coproduct[B] = Root(branch, None, Discriminator.Default, None)
 
   sealed abstract class Dictionary[A] extends Schema[A]:
     final override type Self[a] = Dictionary[a]
@@ -172,7 +199,8 @@ object Schema: // extends ToSchemaOps:
 
     override def optional: Schema.Dynamic[Option[A]] = Dynamic.Optional(this)
 
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Dynamic[B] = ???
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Dynamic[B] =
+      Dynamic.Validate(this, validation, g)
 
   object Dynamic:
     final case class Root(description: Option[String], example: Option[Data.Value]) extends Schema.Dynamic[Data.Value]:
@@ -188,6 +216,15 @@ object Schema: // extends ToSchemaOps:
       override def description(f: Option[String] => Option[String]): Dynamic[Option[A]] = ???
       override def example: Option[Option[A]] = self.example.map(_.some)
       override def example(f: Option[Option[A]] => Option[Option[A]]): Dynamic[Option[A]] = ???
+
+    final case class Validate[A, B](self: Schema.Dynamic[A], validation: Validation[A, B], g: B => A)
+        extends Schema.Dynamic[B]:
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def isOptional: Boolean = self.isOptional
+      override def description: Option[String] = self.description
+      override def description(f: Option[String] => Option[String]): Dynamic[B] = ???
+      override def example: Option[B] = ???
+      override def example(f: Option[B] => Option[B]): Dynamic[B] = ???
 
     val Value: Dynamic[Data.Value] = Root(None, None)
 
@@ -399,4 +436,4 @@ object Schema: // extends ToSchemaOps:
       override def example: Option[B] = self.example.flatMap(validation(_).toOption)
       override def example(f: Option[B] => Option[B]): Record[B] = ???
 
-    def apply[A, B](field: Field[A, B]): Record[B] = ???
+    def apply[A, B](field: Field[A, B]): Record[B] = Root(field, None, None, Null.Default)

@@ -4,6 +4,7 @@ import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Schema
+import io.taig.otter.http.headers.{ContentType, MediaType}
 import io.taig.otter.schemas
 import org.typelevel.ci.CIString
 
@@ -59,29 +60,23 @@ object syntax:
   object input:
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
-    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] = ???
-//      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
-//        val charset = contentType
-//          .flatMap(_.charset)
-//          .flatMap { value =>
-//            try Charset.forName(value).some
-//            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
-//          }
-//          .getOrElse(StandardCharsets.UTF_8)
-//        new String(bytes, charset)
-//      } { value =>
-//        (
-//          value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)),
-//          ContentType(MediaType.text.plain, charset.map(_.name)).some,
-//        )
-//      }
+    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
+      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
+        val charset = contentType
+          .flatMap(_.charset)
+          .flatMap { value =>
+            try Charset.forName(value).some
+            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
+          }
+          .getOrElse(StandardCharsets.UTF_8)
+        new String(bytes, charset)
+      } { value =>
+        (
+          value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)),
+          ContentType(MediaType.text.plain, charset.map(_.name)).some,
+        )
+      }
     val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
-    def of[A](body: Request.Body.Singlepart.Strict[A], schema: Schema[A]): Request.Body.Singlepart.Strict[A] = ???
-//      openapi.andThen(schema.decode)(schema.encode(_).getOrElse(OpenApi.Null))
-
-//    object streaming:
-//      val empty: Request.Body.Singlepart.Streaming[Unit] = Request.Body.Singlepart.Streaming.Empty
-//      val bytes: Request.Body.Singlepart.Streaming[Stream[Byte]] = Request.Body.Singlepart.Streaming.Bytes
 
   def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
   def result(code: Code): Result[Unit] = Result(code, output.empty)
