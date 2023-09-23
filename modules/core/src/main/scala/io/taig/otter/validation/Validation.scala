@@ -10,27 +10,27 @@ import io.taig.otter.schemas.*
 sealed abstract class Validation[-In, +Out]:
   self =>
   def constraints: Chain[Constraint]
-  def apply(in: In): ValidatedNec[Violation[?], Out]
+  def apply(in: In): ValidatedNec[Violation, Out]
 
   final def first[C]: Validation[(In, C), (Out, C)] =
     Validation(self.constraints) { case (a, c) => self(a).map((_, c)) }
 
 object Validation:
   def apply[In, Out](cs: Chain[Constraint])(
-      f: In => ValidatedNec[Violation[?], Out]
+      f: In => ValidatedNec[Violation, Out]
   ): Validation[In, Out] = new Validation[In, Out]:
     override def constraints: Chain[Constraint] = cs
-    override def apply(in: In): ValidatedNec[Violation[?], Out] = f(in)
+    override def apply(in: In): ValidatedNec[Violation, Out] = f(in)
 
-  def apply[Act, In, Out](constraint: Constraint, schema: Schema[Act])(
-      f: In => ValidatedNec[Act, Out]
-  ): Validation[In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _, schema))))
+  def apply[In, Out](constraint: Constraint)(
+      f: In => ValidatedNec[String, Out]
+  ): Validation[In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _))))
 
   def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
   def valid[A](a: A): Validation[Any, A] = lift(_ => a)
 
   def parse[A](tpe: String)(f: String => Option[A]): Validation[String, A] =
-    Validation(Constraint.Type(tpe), string): value =>
+    Validation(Constraint.Type(tpe)): value =>
       Validated.fromOption(f(value), NonEmptyChain.one(value))
 
   extension [In, Out](self: Validation[In, Out])

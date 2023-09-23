@@ -15,19 +15,19 @@ import java.util.UUID
 
 trait validations:
   def equal(reference: String): Validation[String, Unit] =
-    Validation(Constraint.Equals(reference), string): value =>
+    Validation(Constraint.Equals(reference)): value =>
       Validated.condNec(value == reference, (), value)
 
   def equal(reference: CIString): Validation[CIString, Unit] =
-    Validation(Constraint.Equals(reference.toString), cistring): value =>
-      Validated.condNec(value == reference, (), value)
+    Validation(Constraint.Equals(reference.toString)): value =>
+      Validated.condNec(value == reference, (), value.toString)
 
   def minimum[A: Numeric](
       reference: A,
       exclusive: Boolean,
       toBigDecimal: A => BigDecimal
-  ): Validation[A, Unit] = Validation(Constraint.Minimum(toBigDecimal(reference), exclusive), ???): value =>
-    Validated.condNec(if exclusive then value > reference else value >= reference, (), value)
+  ): Validation[A, Unit] = Validation(Constraint.Minimum(toBigDecimal(reference), exclusive)): value =>
+    Validated.condNec(if exclusive then value > reference else value >= reference, (), value.toString)
 
   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: Int): Validation[Int, Unit] = minimum(reference, exclusive = false)
@@ -56,8 +56,8 @@ trait validations:
       reference: A,
       exclusive: Boolean,
       toBigDecimal: A => BigDecimal
-  ): Validation[A, Unit] = Validation(Constraint.Maximum(toBigDecimal(reference), exclusive), ???): value =>
-    Validated.condNec(if exclusive then value < reference else value <= reference, (), value)
+  ): Validation[A, Unit] = Validation(Constraint.Maximum(toBigDecimal(reference), exclusive)): value =>
+    Validated.condNec(if exclusive then value < reference else value <= reference, (), value.toString)
 
   def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: Int): Validation[Int, Unit] = maximum(reference, exclusive = false)
@@ -83,28 +83,28 @@ trait validations:
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
   def multiple[A: Integral](reference: A, toBigDecimal: A => BigDecimal): Validation[A, Unit] =
-    Validation(Constraint.Multiple(toBigDecimal(reference)), ???): value =>
-      Validated.condNec(value % reference == 0, (), value)
+    Validation(Constraint.Multiple(toBigDecimal(reference))): value =>
+      Validated.condNec(value % reference == 0, (), value.toString)
 
   def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, BigDecimal(_))
 
-  def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference), int): value =>
-    Validated.condNec(value.length >= reference, (), value.length)
+  def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
+    Validated.condNec(value.length >= reference, (), value.length.toString)
 
-  def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference), int): value =>
-    Validated.condNec(value.length <= reference, (), value.length)
+  def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
+    Validated.condNec(value.length <= reference, (), value.length.toString)
 
   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
-    Validation(Constraint.MinItems(reference), long): values =>
+    Validation(Constraint.MinItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size >= reference, (), size)
+      Validated.condNec(size >= reference, (), size.toString)
 
   def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
 
   def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
-    Validation(Constraint.MaxItems(reference), long): values =>
+    Validation(Constraint.MaxItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size <= reference, (), size)
+      Validated.condNec(size <= reference, (), size.toString)
 
   def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
 

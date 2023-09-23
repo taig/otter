@@ -51,7 +51,7 @@ object schemas:
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
     def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
-        Validation(Constraint.MinItems(1), int)(NonEmptyChain.fromChain(_).toValidNec(0))
+        Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec("0"))
       chain(schema).ivalidate(validation)(_.toChain)
     // TODO expose way to merge into record or product
     def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: => Schema[A], value: => Schema[B])(
@@ -75,7 +75,7 @@ object schemas:
         schema: => Schema[B]
     ): Schema.Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
-        Validation(Constraint.MinProperties(1), int)(NonEmptyMap.fromMap(_).toValidNec(0))
+        Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec("0"))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
 
   val violations: Schema.Dictionary[Violations] =
@@ -99,10 +99,9 @@ object schemas:
         branch("required", ??? : Schema[Constraint.Required.type])
     ).to
 
-//     val violation: Schema.Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
-//
-//     val history: Schema.Primitive[History] =
-//       string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
-//
-//     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
-    ???
+    val violation: Schema.Record[Violation] = (field("constraint", constraint) :* field("actual", string)).to
+
+    val history: Schema.Primitive[History] =
+      string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
+
+    dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
