@@ -6,7 +6,7 @@ import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.http.Http.Request.Body
 import io.taig.otter.validation.Violations
 import io.taig.otter.schemas.*
-import io.taig.otter.History
+import io.taig.otter.{Data, History}
 import io.taig.otter.validation.{Constraint, Violation}
 
 sealed abstract class Request[A]:
@@ -117,7 +117,7 @@ object Request:
         (),
         Violations.oneNec(
           History.Root / "method",
-          Violation(Constraint.Equals(method.toString), request.method.toString)
+          Violation(Constraint.Equals(method.toString), Data.String(request.method.toString))
         )
       )
       .andThen(_ => url.decode(request.url).leftMap(_.modifyHistory("url" /: _)))

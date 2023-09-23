@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.{Schema, StringDecoder, StringEncoder}
+import io.taig.otter.{Data, Schema, StringDecoder, StringEncoder}
 import io.taig.otter.schemas.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.{Constraint, Violation}
@@ -35,7 +35,7 @@ object Segment:
         Validated.cond(
           matches(value),
           (),
-          Violations.rootNec(Violation(Constraint.Equals(name), actual = value))
+          Violations.rootNec(Violation(Constraint.Equals(name), actual = Data.String(value)))
         )
       case None => Violations.rootNec(Violation.required).invalid
     override def encode(a: Unit): Option[String] = static.some

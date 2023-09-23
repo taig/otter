@@ -174,11 +174,11 @@ object Schema: // extends ToSchemaOps:
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Dynamic[B] = ???
 
   object Dynamic:
-    final case class Root(description: Option[String], example: Option[Data]) extends Schema.Dynamic[Data]:
+    final case class Root(description: Option[String], example: Option[Data.Value]) extends Schema.Dynamic[Data.Value]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
-      override def description(f: Option[String] => Option[String]): Dynamic[Data] = ???
-      override def example(f: Option[Data] => Option[Data]): Dynamic[Data] = ???
+      override def description(f: Option[String] => Option[String]): Dynamic[Data.Value] = ???
+      override def example(f: Option[Data.Value] => Option[Data.Value]): Dynamic[Data.Value] = ???
 
     final case class Optional[A](self: Schema.Dynamic[A]) extends Schema.Dynamic[Option[A]]:
       override def constraints: Chain[Constraint] = self.constraints
@@ -188,7 +188,7 @@ object Schema: // extends ToSchemaOps:
       override def example: Option[Option[A]] = self.example.map(_.some)
       override def example(f: Option[Option[A]] => Option[Option[A]]): Dynamic[Option[A]] = ???
 
-    val Default: Dynamic[Data] = Root(None, None)
+    val Value: Dynamic[Data.Value] = Root(None, None)
 
   sealed abstract class Enumeration[A] extends Schema.Value[A]:
     final override type Self[a] = Schema.Enumeration[a]

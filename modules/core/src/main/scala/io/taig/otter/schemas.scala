@@ -28,10 +28,15 @@ object schemas:
   val dateTime: Schema.Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
   val cistring: Schema.Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
 
-//   object dynamic:
-//     val value: Dynamic[OpenApi.Value] = Dynamic.Value
-//     val any: Dynamic[OpenApi] = value.optional.imap(_.getOrElse(OpenApi.Null))(_.asValue)
-//     def singleton[A <: Singleton](a: A): Dynamic[A] = any.imap(_ => a)(_ => OpenApi.Null)
+  object dynamic:
+    val value: Schema.Dynamic[Data.Value] = Schema.Dynamic.Value
+    val any: Schema.Dynamic[Data] = value.optional.imap(_.getOrElse(Data.Null))(_.asValue)
+    val number: Schema.Dynamic[Data.Number] =
+      val validation: Validation[Data.Value, Data.Number] = Validation(Constraint.Type("number")):
+        case data: Data.Number => data.valid
+        case data              => Data.String(data.name).invalidNec
+      value.ivalidate(validation)(identity)
+    def singleton[A <: Singleton](a: A): Schema.Dynamic[A] = any.imap(_ => a)(_ => Data.Null)
 
   def field[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[A, B] = Field(name, key, schema)
   def field[A](name: String, schema: Schema[A]): Field[String, A] = field(name, string, schema)
@@ -51,7 +56,7 @@ object schemas:
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
     def nonEmptyChain[F[a] <: Schema[a], A](schema: => F[A]): Schema.Collection[F, NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
-        Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec("0"))
+        Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(schema).ivalidate(validation)(_.toChain)
     // TODO expose way to merge into record or product
     def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: => Schema[A], value: => Schema[B])(
@@ -75,7 +80,7 @@ object schemas:
         schema: => Schema[B]
     ): Schema.Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
-        Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec("0"))
+        Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
 
   val violations: Schema.Dictionary[Violations] =
@@ -86,22 +91,22 @@ object schemas:
         branch("minLength", field("reference", int).to[Constraint.MinLength]) :+
         branch("maxLength", field("reference", int).to[Constraint.MaxLength]) :+
         branch("matches", field("pattern", pattern).to[Constraint.Matches]) :+
-        branch("minimum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Minimum]) :+
-        branch("maximum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Maximum]) :+
-        branch("multiple", field("reference", bigDecimal).to[Constraint.Multiple]) :+
+        branch("minimum", (field("reference", dynamic.number) :* field("exclusive", boolean)).to[Constraint.Minimum]) :+
+        branch("maximum", (field("reference", dynamic.number) :* field("exclusive", boolean)).to[Constraint.Maximum]) :+
+        branch("multiple", field("reference", dynamic.number).to[Constraint.Multiple]) :+
         branch("minItems", field("reference", long).to[Constraint.MinItems]) :+
         branch("maxItems", field("reference", long).to[Constraint.MaxItems]) :+
-        branch("uniqueItems", ??? : Schema[Constraint.UniqueItems.type]) :+
+        branch("uniqueItems", dynamic.singleton(Constraint.UniqueItems)) :+
         branch("minProperties", field("reference", int).to[Constraint.MinProperties]) :+
         branch("maxProperties", field("reference", int).to[Constraint.MaxProperties]) :+
         branch("type", field("name", string).to[Constraint.Type]) :+
         branch("oneOf", field("values", collection.chain(string)).to[Constraint.OneOf]) :+
-        branch("required", ??? : Schema[Constraint.Required.type])
+        branch("required", dynamic.singleton(Constraint.Required))
     ).to
 
-    val violation: Schema.Record[Violation] = (field("constraint", constraint) :* field("actual", string)).to
+    val violation: Schema.Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
 
     val history: Schema.Primitive[History] =
-      string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
+      string.ivalidate(validations.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 
     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)

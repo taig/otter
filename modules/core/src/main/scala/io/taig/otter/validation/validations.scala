@@ -1,122 +1,127 @@
 package io.taig.otter.validation
 
 import cats.UnorderedFoldable
-import cats.data.Validated
+import cats.data.{NonEmptyChain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.Schema
-import io.taig.otter.schemas.*
+import io.taig.otter.Data
 import org.typelevel.ci.CIString
-import scala.math.Ordering.Implicits.*
-import scala.math.Integral.Implicits.*
 
 import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
+import scala.math.Integral.Implicits.*
+import scala.math.Ordering.Implicits.*
 
 trait validations:
   def equal(reference: String): Validation[String, Unit] =
     Validation(Constraint.Equals(reference)): value =>
-      Validated.condNec(value == reference, (), value)
+      Validated.condNec(value == reference, (), Data.String(value))
 
   def equal(reference: CIString): Validation[CIString, Unit] =
     Validation(Constraint.Equals(reference.toString)): value =>
-      Validated.condNec(value == reference, (), value.toString)
+      Validated.condNec(value == reference, (), Data.String(value.toString))
 
   def minimum[A: Numeric](
       reference: A,
       exclusive: Boolean,
-      toBigDecimal: A => BigDecimal
-  ): Validation[A, Unit] = Validation(Constraint.Minimum(toBigDecimal(reference), exclusive)): value =>
-    Validated.condNec(if exclusive then value > reference else value >= reference, (), value.toString)
+      toData: A => Data.Number
+  ): Validation[A, Unit] = Validation(Constraint.Minimum(toData(reference), exclusive)): value =>
+    Validated.condNec(if exclusive then value > reference else value >= reference, (), toData(value))
 
-  def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = minimum(reference, exclusive, BigDecimal(_))
+  def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: Int): Validation[Int, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: Long, exclusive: Boolean): Validation[Long, Unit] =
-    minimum(reference, exclusive, BigDecimal(_))
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: Long): Validation[Long, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: Float, exclusive: Boolean): Validation[Float, Unit] =
-    minimum(reference, exclusive, BigDecimal(_))
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: Float): Validation[Float, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: Double, exclusive: Boolean): Validation[Double, Unit] =
-    minimum(reference, exclusive, BigDecimal(_))
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: Double): Validation[Double, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: BigDecimal, exclusive: Boolean): Validation[BigDecimal, Unit] =
-    minimum(reference, exclusive, identity)
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: BigDecimal): Validation[BigDecimal, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] =
-    minimum(reference, exclusive, BigDecimal(_))
+    minimum(reference, exclusive, Data.Number.apply)
   def minimum(reference: BigInt): Validation[BigInt, Unit] = minimum(reference, exclusive = false)
 
   def maximum[A: Numeric](
       reference: A,
       exclusive: Boolean,
-      toBigDecimal: A => BigDecimal
-  ): Validation[A, Unit] = Validation(Constraint.Maximum(toBigDecimal(reference), exclusive)): value =>
-    Validated.condNec(if exclusive then value < reference else value <= reference, (), value.toString)
+      toData: A => Data.Number
+  ): Validation[A, Unit] = Validation(Constraint.Maximum(toData(reference), exclusive)): value =>
+    Validated.condNec(if exclusive then value < reference else value <= reference, (), toData(value))
 
-  def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = maximum(reference, exclusive, BigDecimal(_))
+  def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: Int): Validation[Int, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: Long, exclusive: Boolean): Validation[Long, Unit] =
-    maximum(reference, exclusive, BigDecimal(_))
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: Long): Validation[Long, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: Float, exclusive: Boolean): Validation[Float, Unit] =
-    maximum(reference, exclusive, BigDecimal(_))
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: Float): Validation[Float, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: Double, exclusive: Boolean): Validation[Double, Unit] =
-    maximum(reference, exclusive, BigDecimal(_))
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: Double): Validation[Double, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: BigDecimal, exclusive: Boolean): Validation[BigDecimal, Unit] =
-    maximum(reference, exclusive, identity)
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: BigDecimal): Validation[BigDecimal, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] =
-    maximum(reference, exclusive, BigDecimal(_))
+    maximum(reference, exclusive, Data.Number.apply)
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
-  def multiple[A: Integral](reference: A, toBigDecimal: A => BigDecimal): Validation[A, Unit] =
-    Validation(Constraint.Multiple(toBigDecimal(reference))): value =>
-      Validated.condNec(value % reference == 0, (), value.toString)
+  def multiple[A: Integral](reference: A, toData: A => Data.Number): Validation[A, Unit] =
+    Validation(Constraint.Multiple(toData(reference))): value =>
+      Validated.condNec(value % reference == 0, (), toData(value))
 
-  def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, BigDecimal(_))
+  def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, Data.Number.apply)
 
   def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
-    Validated.condNec(value.length >= reference, (), value.length.toString)
+    Validated.condNec(value.length >= reference, (), Data.Number(value.length))
 
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
-    Validated.condNec(value.length <= reference, (), value.length.toString)
+    Validated.condNec(value.length <= reference, (), Data.Number(value.length))
 
   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MinItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size >= reference, (), size.toString)
+      Validated.condNec(size >= reference, (), Data.Number(size))
 
   def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
 
   def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MaxItems(reference)): values =>
       val size = count(values)
-      Validated.condNec(size <= reference, (), size.toString)
+      Validated.condNec(size <= reference, (), Data.Number(size))
 
   def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
 
-  val uuid: Validation[String, UUID] = Validation.parse("uuid"): value =>
+  def parse[A](tpe: String)(f: String => Option[A]): Validation[String, A] =
+    Validation(Constraint.Type(tpe)): value =>
+      Validated.fromOption(f(value), NonEmptyChain.one(Data.String(value)))
+
+  val uuid: Validation[String, UUID] = parse("uuid"): value =>
     try UUID.fromString(value).some
     catch case _: IllegalArgumentException => none
 
-  val date: Validation[String, LocalDate] = Validation.parse("date"): value =>
+  val date: Validation[String, LocalDate] = parse("date"): value =>
     try LocalDate.parse(value).some
     catch case _: DateTimeParseException => none
 
-  val dateTime: Validation[String, LocalDateTime] = Validation.parse("date-time"): value =>
+  val dateTime: Validation[String, LocalDateTime] = parse("date-time"): value =>
     try LocalDateTime.parse(value).some
     catch case _: DateTimeParseException => none
 
