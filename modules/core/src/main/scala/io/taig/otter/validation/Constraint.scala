@@ -1,6 +1,7 @@
 package io.taig.otter.validation
 
 import cats.data.Chain
+import io.taig.otter.Schema
 
 import java.util.regex.Pattern
 
@@ -9,9 +10,9 @@ enum Constraint:
   case MinLength(reference: Int)
   case MaxLength(reference: Int)
   case Matches(pattern: Pattern)
-  case Minimum[A](reference: A, exclusive: Boolean)
-  case Maximum[A](reference: A, exclusive: Boolean)
-  case Multiple(reference: Int)
+  case Minimum[A](reference: A, exclusive: Boolean, schema: Schema[A])
+  case Maximum[A](reference: A, exclusive: Boolean, schema: Schema[A])
+  case Multiple[A](reference: A, schema: Schema[A])
   case MinItems(reference: Long)
   case MaxItems(reference: Long)
   case UniqueItems

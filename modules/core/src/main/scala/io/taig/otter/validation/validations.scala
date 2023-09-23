@@ -7,6 +7,7 @@ import io.taig.otter.Schema
 import io.taig.otter.schemas.*
 import org.typelevel.ci.CIString
 import scala.math.Ordering.Implicits.*
+import scala.math.Integral.Implicits.*
 
 import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
@@ -25,7 +26,7 @@ trait validations:
       reference: A,
       exclusive: Boolean,
       schema: Schema[A]
-  ): Validation[A, Unit] = Validation(Constraint.Minimum(reference, exclusive), schema): value =>
+  ): Validation[A, Unit] = Validation(Constraint.Minimum(reference, exclusive, schema), schema): value =>
     Validated.condNec(if exclusive then value > reference else value >= reference, (), value)
 
   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = minimum(reference, exclusive, int)
@@ -52,7 +53,7 @@ trait validations:
       reference: A,
       exclusive: Boolean,
       schema: Schema[A]
-  ): Validation[A, Unit] = Validation(Constraint.Maximum(reference, exclusive), schema): value =>
+  ): Validation[A, Unit] = Validation(Constraint.Maximum(reference, exclusive, schema), schema): value =>
     Validated.condNec(if exclusive then value < reference else value <= reference, (), value)
 
   def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = maximum(reference, exclusive, int)
@@ -74,8 +75,11 @@ trait validations:
   def maximum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] = maximum(reference, exclusive, bigInt)
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
-  def multiple(reference: Int): Validation[Int, Unit] = Validation(Constraint.Multiple(reference), int): value =>
-    Validated.condNec(value % reference == 0, (), value)
+  def multiple[A: Integral](reference: A, schema: Schema[A]): Validation[A, Unit] =
+    Validation(Constraint.Multiple(reference, schema), schema): value =>
+      Validated.condNec(value % reference == 0, (), value)
+
+  def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, int)
 
   def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference), int): value =>
     Validated.condNec(value.length >= reference, (), value.length)
