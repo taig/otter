@@ -67,9 +67,9 @@ object CirceDecoder:
         schema: Schema.Coproduct.OrElse[A, B],
         json: Json,
         discriminator: Discriminator
-    ): Ior[Violations, Option[A + B]] = decode(schema.left, json, discriminator) match
+    ): Ior[Violations, Option[A + B]] = decode(schema.left, json, discriminator).leftMap(_.modifyHistory("lol" /: _)) match
       case Ior.Left(violations) =>
-        decode(schema.right, json, discriminator).map(_.map(_.asRight)).leftMap(violations |+| _)
+        decode(schema.right, json, discriminator).leftMap(_.modifyHistory("rofl" /: _)).map(_.map(_.asRight)).leftMap(violations |+| _)
       case Ior.Right(Some(a))   => a.asLeft.some.rightIor
       case Ior.Both(_, Some(b)) => b.asLeft.some.rightIor
 
