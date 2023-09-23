@@ -25,61 +25,68 @@ trait validations:
   def minimum[A: Numeric](
       reference: A,
       exclusive: Boolean,
-      schema: Schema[A]
-  ): Validation[A, Unit] = Validation(Constraint.Minimum(reference, exclusive, schema), schema): value =>
+      toBigDecimal: A => BigDecimal
+  ): Validation[A, Unit] = Validation(Constraint.Minimum(toBigDecimal(reference), exclusive), ???): value =>
     Validated.condNec(if exclusive then value > reference else value >= reference, (), value)
 
-  def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = minimum(reference, exclusive, int)
+  def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: Int): Validation[Int, Unit] = minimum(reference, exclusive = false)
 
-  def minimum(reference: Long, exclusive: Boolean): Validation[Long, Unit] = minimum(reference, exclusive, long)
+  def minimum(reference: Long, exclusive: Boolean): Validation[Long, Unit] =
+    minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: Long): Validation[Long, Unit] = minimum(reference, exclusive = false)
 
-  def minimum(reference: Float, exclusive: Boolean): Validation[Float, Unit] = minimum(reference, exclusive, float)
+  def minimum(reference: Float, exclusive: Boolean): Validation[Float, Unit] =
+    minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: Float): Validation[Float, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: Double, exclusive: Boolean): Validation[Double, Unit] =
-    minimum(reference, exclusive, double)
+    minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: Double): Validation[Double, Unit] = minimum(reference, exclusive = false)
 
   def minimum(reference: BigDecimal, exclusive: Boolean): Validation[BigDecimal, Unit] =
-    minimum(reference, exclusive, bigDecimal)
+    minimum(reference, exclusive, identity)
   def minimum(reference: BigDecimal): Validation[BigDecimal, Unit] = minimum(reference, exclusive = false)
 
-  def minimum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] = minimum(reference, exclusive, bigInt)
+  def minimum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] =
+    minimum(reference, exclusive, BigDecimal(_))
   def minimum(reference: BigInt): Validation[BigInt, Unit] = minimum(reference, exclusive = false)
 
   def maximum[A: Numeric](
       reference: A,
       exclusive: Boolean,
-      schema: Schema[A]
-  ): Validation[A, Unit] = Validation(Constraint.Maximum(reference, exclusive, schema), schema): value =>
+      toBigDecimal: A => BigDecimal
+  ): Validation[A, Unit] = Validation(Constraint.Maximum(toBigDecimal(reference), exclusive), ???): value =>
     Validated.condNec(if exclusive then value < reference else value <= reference, (), value)
 
-  def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = maximum(reference, exclusive, int)
+  def maximum(reference: Int, exclusive: Boolean): Validation[Int, Unit] = maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: Int): Validation[Int, Unit] = maximum(reference, exclusive = false)
 
-  def maximum(reference: Long, exclusive: Boolean): Validation[Long, Unit] = maximum(reference, exclusive, long)
+  def maximum(reference: Long, exclusive: Boolean): Validation[Long, Unit] =
+    maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: Long): Validation[Long, Unit] = maximum(reference, exclusive = false)
 
-  def maximum(reference: Float, exclusive: Boolean): Validation[Float, Unit] = maximum(reference, exclusive, float)
+  def maximum(reference: Float, exclusive: Boolean): Validation[Float, Unit] =
+    maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: Float): Validation[Float, Unit] = maximum(reference, exclusive = false)
 
-  def maximum(reference: Double, exclusive: Boolean): Validation[Double, Unit] = maximum(reference, exclusive, double)
+  def maximum(reference: Double, exclusive: Boolean): Validation[Double, Unit] =
+    maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: Double): Validation[Double, Unit] = maximum(reference, exclusive = false)
 
   def maximum(reference: BigDecimal, exclusive: Boolean): Validation[BigDecimal, Unit] =
-    maximum(reference, exclusive, bigDecimal)
+    maximum(reference, exclusive, identity)
   def maximum(reference: BigDecimal): Validation[BigDecimal, Unit] = maximum(reference, exclusive = false)
 
-  def maximum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] = maximum(reference, exclusive, bigInt)
+  def maximum(reference: BigInt, exclusive: Boolean): Validation[BigInt, Unit] =
+    maximum(reference, exclusive, BigDecimal(_))
   def maximum(reference: BigInt): Validation[BigInt, Unit] = maximum(reference, exclusive = false)
 
-  def multiple[A: Integral](reference: A, schema: Schema[A]): Validation[A, Unit] =
-    Validation(Constraint.Multiple(reference, schema), schema): value =>
+  def multiple[A: Integral](reference: A, toBigDecimal: A => BigDecimal): Validation[A, Unit] =
+    Validation(Constraint.Multiple(toBigDecimal(reference)), ???): value =>
       Validated.condNec(value % reference == 0, (), value)
 
-  def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, int)
+  def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, BigDecimal(_))
 
   def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference), int): value =>
     Validated.condNec(value.length >= reference, (), value.length)

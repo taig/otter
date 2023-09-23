@@ -78,30 +78,31 @@ object schemas:
         Validation(Constraint.MinProperties(1), int)(NonEmptyMap.fromMap(_).toValidNec(0))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
 
-//   val violations: Schema.Dictionary[Violations] =
-//     val pattern: Schema.Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
-//
-//     val constraint: Schema[Constraint] = (
-//       branch("equals", field("reference", string).to[Constraint.Equals]) :+
-//         branch("minLength", field("reference", int).to[Constraint.MinLength]) :+
-//         branch("maxLength", field("reference", int).to[Constraint.MaxLength]) :+
-//         branch("matches", field("pattern", pattern).to[Constraint.Matches]) :+
-//         branch("minimum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Minimum]) :+
-//         branch("maximum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Maximum]) :+
-//         branch("multiple", field("reference", bigDecimal).to[Constraint.Multiple]) :+
-//         branch("minItems", field("reference", long).to[Constraint.MinItems]) :+
-//         branch("maxItems", field("reference", long).to[Constraint.MaxItems]) :+
-//         branch("uniqueItems", dynamic.singleton(Constraint.UniqueItems)) :+
-//         branch("minProperties", field("reference", int).to[Constraint.MinProperties]) :+
-//         branch("maxProperties", field("reference", int).to[Constraint.MaxProperties]) :+
-//         branch("type", field("name", string).to[Constraint.Type]) :+
-//         branch("oneOf", field("values", collection.chain(string)).to[Constraint.OneOf]) :+
-//         branch("required", dynamic.singleton(Constraint.Required))
-//     ).to
-//
+  val violations: Schema.Dictionary[Violations] =
+    val pattern: Schema.Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+
+    val constraint: Schema.Coproduct[Constraint] = (
+      branch("equals", field("reference", string).to[Constraint.Equals]) :+
+        branch("minLength", field("reference", int).to[Constraint.MinLength]) :+
+        branch("maxLength", field("reference", int).to[Constraint.MaxLength]) :+
+        branch("matches", field("pattern", pattern).to[Constraint.Matches]) :+
+        branch("minimum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Minimum]) :+
+        branch("maximum", (field("reference", bigDecimal) :* field("exclusive", boolean)).to[Constraint.Maximum]) :+
+        branch("multiple", field("reference", bigDecimal).to[Constraint.Multiple]) :+
+        branch("minItems", field("reference", long).to[Constraint.MinItems]) :+
+        branch("maxItems", field("reference", long).to[Constraint.MaxItems]) :+
+        branch("uniqueItems", ??? : Schema[Constraint.UniqueItems.type]) :+
+        branch("minProperties", field("reference", int).to[Constraint.MinProperties]) :+
+        branch("maxProperties", field("reference", int).to[Constraint.MaxProperties]) :+
+        branch("type", field("name", string).to[Constraint.Type]) :+
+        branch("oneOf", field("values", collection.chain(string)).to[Constraint.OneOf]) :+
+        branch("required", ??? : Schema[Constraint.Required.type])
+    ).to
+
 //     val violation: Schema.Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
 //
 //     val history: Schema.Primitive[History] =
 //       string.ivalidate(Validation.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 //
 //     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
+    ???

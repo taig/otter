@@ -94,6 +94,8 @@ object Schema: // extends ToSchemaOps:
     final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = ???
     final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = ???
 
+    final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
+
   object Coproduct:
     final case class Root[A, B](
         branch: Branch[A, B],
