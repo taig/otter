@@ -4,9 +4,7 @@ import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.{Discriminator, Schema}
 import io.taig.otter.http.{Endpoint, Request, Url}
-import io.taig.otter.schemas.*
-import io.taig.otter.http.syntax.*
-import io.taig.otter.circe.syntax.*
+import io.taig.otter.dsl.*
 import io.taig.otter.sample.Book
 import io.taig.otter.sample.schemas
 

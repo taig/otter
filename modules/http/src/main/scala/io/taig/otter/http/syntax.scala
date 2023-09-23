@@ -54,8 +54,9 @@ object syntax:
     inline def apply[A](method: Method, url: Url[Unit], body: Request.Body[A]): Request[A] =
       Request(method, url, body).imap { case (_, a) => a }(((), _))
     inline def apply(method: Method, url: Url[Unit]): Request[Unit] =
-      Request(method, url, empty).imap(_ => ())(_ => ((), ()))
+      Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
+  object input:
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] = ???
@@ -83,22 +84,14 @@ object syntax:
 //      val bytes: Request.Body.Singlepart.Streaming[Stream[Byte]] = Request.Body.Singlepart.Streaming.Bytes
 
   def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
-  def result(code: Code): Result[Unit] = Result(code, response.empty)
+  def result(code: Code): Result[Unit] = Result(code, output.empty)
 
-  object response:
-    def apply[A](results: Results[A]): Response[A] = Response(
-      results,
-      result(code.unprocessableEntity, response.of(???, schemas.violations))
-    )
-    def apply[A](result: Result[A]): Response[A] = response(result.toResults)
-
+  object output:
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     val text: Response.Body.Strict[String] =
       binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
-    def of[A](openapi: Response.Body.Strict[A], schema: => Schema[A]): Response.Body.Strict[A] = ???
-//      openapi.andThen(schema.decode)(schema.encode(_).getOrElse(OpenApi.Null))
 
   extension [A: Eq, B](self: Chain[(A, B)])
     def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
