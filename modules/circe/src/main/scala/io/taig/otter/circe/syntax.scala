@@ -1,20 +1,30 @@
 package io.taig.otter.circe
 
+import cats.data.Validated
+import cats.syntax.all.*
+import io.circe.jawn.JawnParser
 import io.circe.{Json, Printer}
 import io.taig.otter.{schemas, Schema}
 import io.taig.otter.http.syntax.{code, result}
 import io.taig.otter.http.syntax as http
 import io.taig.otter.http.{App, Request, Response, Result, Results, Routes}
 import io.taig.otter.schemas.*
+import io.taig.otter.validation.{Violation, Violations}
 
 import java.nio.charset.StandardCharsets
 
 object syntax:
   val json: Schema.Dynamic[Json] = dynamic.any.imap(fromData)(toData)
 
+  private val parser = new JawnParser()
+
   object input:
     def json(printer: Printer): Request.Body.Singlepart.Strict[Json] =
-      http.input.binary.imap(_ => ???)(printer.print(_).getBytes(StandardCharsets.UTF_8))
+      http.input.binary.andThen { bytes =>
+        Validated
+          .fromEither(parser.parseByteArray(bytes))
+          .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+      }(printer.print(_).getBytes(StandardCharsets.UTF_8))
     val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
     def json[A](schema: Schema[A]): Request.Body.Singlepart.Strict[A] =
       http.input(json, CirceDecoder.schema, CirceEncoder.schema, schema)

@@ -42,7 +42,7 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       body: Request.Body[?] => F[Http.Request.Body]
   ): F[Http.Response] = app.routes
     .find(method, url)
-    .fold(app.notFound.encode(().valid).pure): route =>
+    .fold(app.notFound.encode(().pure).pure): route =>
       body(route.endpoint.request.body)
         .map(Http.Request(method, url, headers, _))
         .map(route.endpoint.request.decode)

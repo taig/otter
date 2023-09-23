@@ -2,13 +2,13 @@ package io.taig.otter
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.Schema.Collection
+import io.taig.otter.Schema.{Collection, Primitive}
 
 object StringEncoder:
   val value: Encoder[Schema.Value, Option[String]] = new Encoder:
     override def encode[B](schema: Schema.Value[B], b: B): Option[String] = schema match
       case schema: Schema.Enumeration[B] => ???
-      case schema: Schema.Primitive[B]   => ???
+      case schema: Schema.Primitive[B]   => primitive.encode(schema, b)
 
   val collection: Encoder[Schema.Collection[Schema.Value, *], Option[Chain[String]]] = new Encoder:
     // Unsafe because mapFilter throws nulls away
@@ -16,3 +16,19 @@ object StringEncoder:
       case Collection.Root(schema, _, _)   => b.mapFilter(value.encode(schema, _)).some
       case Collection.Optional(self)       => b.flatMap(encode(self, _))
       case Collection.Validate(self, _, g) => encode(self, g(b))
+
+  val primitive: Encoder[Schema.Primitive, Option[String]] = new Encoder:
+    override def encode[B](schema: Schema.Primitive[B], b: B): Option[String] = schema match
+      case Primitive.Root(tpe, _, _, _)   => encode(tpe, b).some
+      case Primitive.Optional(self)       => b.flatMap(encode(self, _))
+      case Primitive.Validate(self, _, g) => encode(self, g(b))
+
+    def encode[A](tpe: Type[A], a: A): String = tpe match
+      case Type.BigDecimal => a.toString
+      case Type.BigInt     => a.toString
+      case Type.Boolean    => String.valueOf(a)
+      case Type.Double     => String.valueOf(a)
+      case Type.Float      => String.valueOf(a)
+      case Type.Int        => String.valueOf(a)
+      case Type.Long       => String.valueOf(a)
+      case Type.String     => String.valueOf(a)

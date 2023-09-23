@@ -288,7 +288,7 @@ object Schema: // extends ToSchemaOps:
       Primitive.Validate(this, validation, g)
 
   object Primitive:
-    final case class Root[A](description: Option[String], example: Option[A], format: Option[String], tpe: Type[A])
+    final case class Root[A](tpe: Type[A], description: Option[String], example: Option[A], format: Option[String])
         extends Primitive[A]:
       override def isOptional: Boolean = false
       override def constraints: Chain[Constraint] = Chain.empty
@@ -319,7 +319,7 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[B] => Option[B]): Primitive[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
-    def apply[A](tpe: Type[A]): Primitive[A] = Root(None, None, None, tpe)
+    def apply[A](tpe: Type[A]): Primitive[A] = Root(tpe, None, None, None)
 
   sealed abstract class Product[A] extends Schema[A]:
     final override type Self[a] = Product[a]
