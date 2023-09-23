@@ -3,9 +3,8 @@ package io.taig.otter.http
 import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.Schema
+import io.taig.otter.{schemas, Decoder, Encoder, Schema}
 import io.taig.otter.http.headers.{ContentType, MediaType}
-import io.taig.otter.schemas
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -58,6 +57,12 @@ object syntax:
       Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
   object input:
+    def apply[A, B](
+        body: Request.Body.Singlepart.Strict[A],
+        decoder: Decoder[Schema, A],
+        encoder: Encoder[Schema, A],
+        schema: Schema[B]
+    ): Request.Body.Singlepart.Strict[B] = body.andThen(decoder.decode(schema, _))(encoder.encode(schema, _))
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
@@ -82,6 +87,12 @@ object syntax:
   def result(code: Code): Result[Unit] = Result(code, output.empty)
 
   object output:
+    def apply[A, B](
+        body: Response.Body.Strict[A],
+        decoder: Decoder[Schema, A],
+        encoder: Encoder[Schema, A],
+        schema: Schema[B]
+    ): Response.Body.Strict[B] = body.andThen(decoder.decode(schema, _))(encoder.encode(schema, _))
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)

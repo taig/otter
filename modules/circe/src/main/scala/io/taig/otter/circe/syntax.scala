@@ -1,7 +1,7 @@
 package io.taig.otter.circe
 
 import io.circe.{Json, Printer}
-import io.taig.otter.{Schema, schemas}
+import io.taig.otter.{schemas, Schema}
 import io.taig.otter.http.syntax.{code, result}
 import io.taig.otter.http.syntax as http
 import io.taig.otter.http.{App, Request, Response, Result, Results, Routes}
@@ -16,13 +16,15 @@ object syntax:
     def json(printer: Printer): Request.Body.Singlepart.Strict[Json] =
       http.input.binary.imap(_ => ???)(printer.print(_).getBytes(StandardCharsets.UTF_8))
     val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: Schema[A]): Request.Body.Singlepart.Strict[A] = json.imap(_ => ???)(_ => ???)
+    def json[A](schema: Schema[A]): Request.Body.Singlepart.Strict[A] =
+      http.input(json, CirceDecoder.schema, CirceEncoder.schema, schema)
 
   object output:
     def json(printer: Printer): Response.Body.Strict[Json] =
       http.output.binary.imap(_ => ???)(printer.print(_).getBytes(StandardCharsets.UTF_8))
     val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: Schema[A]): Response.Body.Strict[A] = json.imap(_ => ???)(CirceEncoder.schema.encode(schema, _))
+    def json[A](schema: Schema[A]): Response.Body.Strict[A] =
+      http.output(json, CirceDecoder.schema, CirceEncoder.schema, schema)
 
   object response:
     def apply[A](results: Results[A]): Response[A] = Response(

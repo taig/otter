@@ -126,7 +126,8 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[Option[A]] => Option[Option[A]]): Coproduct[Option[A]] =
         copy(self = self.example(fa => f(fa.map(_.some)).flatten))
 
-    final case class Validate[A, B](self: Schema.Coproduct[A], validation: Validation[A, B], g: B => A) extends Schema.Coproduct[B]:
+    final case class Validate[A, B](self: Schema.Coproduct[A], validation: Validation[A, B], g: B => A)
+        extends Schema.Coproduct[B]:
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def isOptional: Boolean = self.isOptional
       override def discriminator: Discriminator = self.discriminator
@@ -145,8 +146,10 @@ object Schema: // extends ToSchemaOps:
     ) extends Schema.Coproduct[A + B]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = left.isOptional && right.isOptional
-      override def discriminator(f: Discriminator => Discriminator): Coproduct[A + B] = copy(discriminator = f(discriminator))
-      override def description(f: Option[String] => Option[String]): Coproduct[A + B] = copy(description = f(description))
+      override def discriminator(f: Discriminator => Discriminator): Coproduct[A + B] =
+        copy(discriminator = f(discriminator))
+      override def description(f: Option[String] => Option[String]): Coproduct[A + B] =
+        copy(description = f(description))
       override def example(f: Option[A + B] => Option[A + B]): Coproduct[A + B] = copy(example = f(example))
 
     def apply[A, B](branch: Branch[A, B]): Schema.Coproduct[B] = Root(branch, None, Discriminator.Default, None)
