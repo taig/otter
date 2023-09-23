@@ -83,30 +83,30 @@ trait validations:
   def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference), int): value =>
     Validated.condNec(value.length <= reference, (), value.length)
 
-//  def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
-//    Validation(Constraint.MinItems(reference)): values =>
-//      val size = count(values)
-//      Validated.condNec(size >= reference, (), OpenApi.Integer(size))
-//
-//  def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
-//
-//  def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
-//    Validation(Constraint.MaxItems(reference)): values =>
-//      val size = count(values)
-//      Validated.condNec(size <= reference, (), OpenApi.Integer(size))
-//
-//  def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
-//
-//  val uuid: Validation[String, UUID] = Validation.parse("uuid"): value =>
-//    try UUID.fromString(value).some
-//    catch case _: IllegalArgumentException => none
-//
-//  val date: Validation[String, LocalDate] = Validation.parse("date"): value =>
-//    try LocalDate.parse(value).some
-//    catch case _: DateTimeParseException => none
-//
-//  val dateTime: Validation[String, LocalDateTime] = Validation.parse("date-time"): value =>
-//    try LocalDateTime.parse(value).some
-//    catch case _: DateTimeParseException => none
+  def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
+    Validation(Constraint.MinItems(reference), long): values =>
+      val size = count(values)
+      Validated.condNec(size >= reference, (), size)
+
+  def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
+
+  def maxItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
+    Validation(Constraint.MaxItems(reference), long): values =>
+      val size = count(values)
+      Validated.condNec(size <= reference, (), size)
+
+  def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = maxItems(reference, _.size)
+
+  val uuid: Validation[String, UUID] = Validation.parse("uuid"): value =>
+    try UUID.fromString(value).some
+    catch case _: IllegalArgumentException => none
+
+  val date: Validation[String, LocalDate] = Validation.parse("date"): value =>
+    try LocalDate.parse(value).some
+    catch case _: DateTimeParseException => none
+
+  val dateTime: Validation[String, LocalDateTime] = Validation.parse("date-time"): value =>
+    try LocalDateTime.parse(value).some
+    catch case _: DateTimeParseException => none
 
 object validations extends validations

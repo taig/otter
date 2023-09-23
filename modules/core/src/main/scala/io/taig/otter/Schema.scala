@@ -134,7 +134,7 @@ object Schema: // extends ToSchemaOps:
         key: Schema.Value[A],
         value: Schema[B],
         description: Option[String],
-        example: Option[VectorMap[A, B]],
+        example: Option[VectorMap[A, B]]
     ) extends Dictionary[VectorMap[A, B]]:
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
