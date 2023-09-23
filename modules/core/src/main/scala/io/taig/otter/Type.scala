@@ -12,7 +12,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[String]
 
-  override def toString: String = this match
+  final def name: String = this match
     case BigDecimal => "bigDecimal"
     case BigInt     => "bigInt"
     case Boolean    => "boolean"
