@@ -40,3 +40,12 @@ def toData(json: Json): Data = json.fold(
   values => Data.Array(Chain.fromSeq(values.map(toData))),
   values => Data.Object(Chain.fromIterableOnce(values.toIterable).map { case (key, value) => (key, toData(value)) })
 )
+
+def name(json: Json): String = json.fold(
+  jsonNull = "null",
+  jsonBoolean = _ => "boolean",
+  jsonNumber = _ => "number",
+  jsonString = _ => "string",
+  jsonArray = _ => "array",
+  jsonObject = _ => "object"
+)
