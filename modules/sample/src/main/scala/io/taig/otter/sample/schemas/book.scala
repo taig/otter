@@ -5,7 +5,6 @@ import io.circe.Json
 import io.taig.otter.sample.Book
 import io.taig.otter.schemas.*
 import io.taig.otter.*
-import io.taig.otter.validation.validations.*
 import io.taig.otter.circe.syntax.*
 
 import scala.Tuple.Append
@@ -27,4 +26,4 @@ object book:
       field("title", title) :*
       field("genres", collection.sortedSet(genre)) :*
       field("metadata", json)
-  ).to[Book]
+  ).to
