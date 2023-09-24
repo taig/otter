@@ -110,3 +110,5 @@ object schemas:
       string.ivalidate(validations.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 
     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
+
+  def error[A](identifier: String, value: Schema[A]): Schema.Coproduct[A] = branch(identifier, value).toCoproduct

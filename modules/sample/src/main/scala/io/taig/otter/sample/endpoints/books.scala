@@ -14,10 +14,14 @@ object books:
 
   enum Post:
     case IsbnConflict(isbn: Isbn)
+    case Foobar
 
   object Post:
     val results: Results[Post] =
-      result(code.conflict, output.json(field("isbn", schemas.isbn).to[IsbnConflict])).toResults.to
+      val isbnConflict: Schema[Post.IsbnConflict] = error("isbnConflict", field("isbn", schemas.isbn).to[IsbnConflict])
+      val foobar: Schema[Foobar.type] = error("foobar", dynamic.singleton(Foobar))
+
+      (result(code.conflict, output.json(isbnConflict)) :+ result(code.badRequest, output.json(foobar))).to
 
   val post: Endpoint[NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
     val books: Schema.Coproduct[NonEmptyChain[Book]] = (

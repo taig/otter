@@ -15,8 +15,10 @@ sealed abstract class Result[A]:
 
   final def zip[B](headers: Headers[B]): Result[(A, B)] = ???
 
-  final def orElse[B](result: Result[B]): Results[A + B] = ???
+  final def orElse[B](result: Result[B]): Results[A + B] = toResults.orElse(result.toResults)
   def toResults: Results[A] = Results(this)
+
+  def :+[B](result: Result[B]): Results[A + B] = orElse(result)
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = toResults.to
 
