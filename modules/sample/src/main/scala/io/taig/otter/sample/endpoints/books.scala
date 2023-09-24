@@ -1,14 +1,19 @@
 package io.taig.otter.sample.endpoints
 
-import cats.data.NonEmptyChain
+import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Endpoint, Request, Results, Url}
-import io.taig.otter.sample.{schemas, Book, Isbn}
+import io.taig.otter.sample.{Book, Isbn, schemas}
 import io.taig.otter.{Discriminator, Schema}
 
 object books:
   val root: Url[Unit] = __ / "books"
+
+  val get: Endpoint[Unit, Chain[Book]] = Endpoint(
+    request(method.get, root),
+    response(result(code.ok, output.json(collection.chain(schemas.book.main))))
+  )
 
   enum Post:
     case IsbnConflict(isbn: Isbn)
