@@ -1,15 +1,13 @@
 package io.taig.otter.circe
 
 import cats.data.Validated
-import cats.syntax.all.*
 import io.circe.jawn.JawnParser
 import io.circe.{Json, Printer}
-import io.taig.otter.{schemas, Schema}
 import io.taig.otter.http.syntax.{code, result}
-import io.taig.otter.http.syntax as http
-import io.taig.otter.http.{App, Request, Response, Result, Results, Routes}
+import io.taig.otter.http.{syntax as http, App, Request, Response, Result, Results, Routes}
 import io.taig.otter.schemas.*
 import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.{schemas, Schema}
 
 import java.nio.charset.StandardCharsets
 

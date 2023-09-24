@@ -2,10 +2,9 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.Http.Payload
 import io.taig.otter.History
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Violations
+import io.taig.otter.http.Http.Payload
+import io.taig.otter.validation.{Violation, Violations}
 
 final case class Response[A](results: Results[A], violations: Result[Violations]):
   def encode(a: Validated[Violations, A]): Http.Response = a.fold(violations.encode, results.encode)

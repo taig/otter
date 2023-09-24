@@ -1,8 +1,7 @@
 package io.taig.otter.http.headers
 
 import cats.syntax.all.*
-import io.taig.otter.validation.Validation
-import io.taig.otter.validation.validations
+import io.taig.otter.validation.{validations, Validation}
 
 final case class ContentType(mediaType: MediaType, charset: Option[String]):
   def print: String = (mediaType.toString :: charset.map(charset => s"charset=$charset").toList).mkString("; ")

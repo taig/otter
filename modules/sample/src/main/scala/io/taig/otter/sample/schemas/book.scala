@@ -2,10 +2,10 @@ package io.taig.otter.sample.schemas
 
 import cats.implicits.*
 import io.circe.Json
-import io.taig.otter.sample.Book
-import io.taig.otter.schemas.*
 import io.taig.otter.*
 import io.taig.otter.circe.syntax.*
+import io.taig.otter.sample.Book
+import io.taig.otter.schemas.*
 
 import scala.Tuple.Append
 import scala.collection.immutable.SortedSet

@@ -1,8 +1,6 @@
 package io.taig.otter.http
 
 import cats.data.{Chain, NonEmptyChain}
-import cats.syntax.all.*
-import io.taig.otter.http.syntax.*
 
 opaque type Routes[F[_]] = Chain[Route[F, ?, ?]]
 

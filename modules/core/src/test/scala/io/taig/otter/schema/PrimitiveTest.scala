@@ -2,11 +2,11 @@ package io.taig.otter.schema
 
 import cats.syntax.all.*
 import io.taig.otter.OpenApi
+import io.taig.otter.schema.schemas.*
+import io.taig.otter.validation.{validations, Constraint, Violation}
 import munit.FunSuite
 
 import java.util.UUID
-import io.taig.otter.schema.schemas.*
-import io.taig.otter.validation.{validations, Constraint, Violation}
 
 final class PrimitiveTest extends FunSuite:
   test("decode"):

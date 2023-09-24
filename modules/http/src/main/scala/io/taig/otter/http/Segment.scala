@@ -2,10 +2,8 @@ package io.taig.otter.http
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.validation.{Constraint, Violation, Violations}
 import io.taig.otter.{Data, Schema, StringDecoder, StringEncoder}
-import io.taig.otter.schemas.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.{Constraint, Violation}
 
 sealed abstract class Segment[A]:
   self =>

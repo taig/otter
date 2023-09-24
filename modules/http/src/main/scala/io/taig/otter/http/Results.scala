@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import cats.data.{NonEmptyChain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.{+, Evidence}
 import io.taig.otter.validation.Violations
+import io.taig.otter.{+, Evidence}
 
 sealed abstract class Results[A]:
   self =>

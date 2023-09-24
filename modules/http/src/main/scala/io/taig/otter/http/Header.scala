@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.syntax.*
-import io.taig.otter.{Schema, StringDecoder, StringEncoder}
 import io.taig.otter.validation.Violations
+import io.taig.otter.{Schema, StringDecoder, StringEncoder}
 import org.typelevel.ci.CIString
 
 final case class Header[A](name: CIString, schema: Schema.Value[A] | Schema.Collection[Schema.Value, A]):

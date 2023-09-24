@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.{schemas, Decoder, Encoder, Schema}
 import io.taig.otter.http.headers.{ContentType, MediaType}
+import io.taig.otter.{Decoder, Encoder, Schema}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}

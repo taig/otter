@@ -2,12 +2,11 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.http.Http.Request.Body
-import io.taig.otter.validation.Violations
+import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.schemas.*
+import io.taig.otter.validation.{Constraint, Violation, Violations}
 import io.taig.otter.{Data, History}
-import io.taig.otter.validation.{Constraint, Violation}
 
 sealed abstract class Request[A]:
   self =>

@@ -2,9 +2,9 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.{Schema, StringDecoder, StringEncoder}
-import io.taig.otter.validation.Violations
 import io.taig.otter.http.syntax.*
+import io.taig.otter.validation.Violations
+import io.taig.otter.{Schema, StringDecoder, StringEncoder}
 
 final case class Query[A](name: String, schema: Schema.Value[A] | Schema.Collection[Schema.Value, A]):
   self =>

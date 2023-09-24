@@ -2,10 +2,9 @@ package io.taig.otter.validation
 
 import cats.Applicative
 import cats.arrow.Arrow
-import cats.data.{Chain, NonEmptyChain, Validated, ValidatedNec}
+import cats.data.{Chain, Validated, ValidatedNec}
 import cats.syntax.all.*
-import io.taig.otter.{Data, Schema}
-import io.taig.otter.schemas.*
+import io.taig.otter.Data
 
 sealed abstract class Validation[-In, +Out]:
   self =>

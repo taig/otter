@@ -1,7 +1,7 @@
 package io.taig.otter.validation
 
 import cats.data.Chain
-import io.taig.otter.{Data, Schema}
+import io.taig.otter.Data
 
 import java.util.regex.Pattern
 

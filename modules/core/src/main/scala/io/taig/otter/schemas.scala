@@ -4,7 +4,7 @@ import cats.Hash
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
-import io.taig.otter.validation.{validations, Constraint, Validation, Violation, Violations}
+import io.taig.otter.validation.*
 import org.typelevel.ci.CIString
 
 import java.time.{LocalDate, LocalDateTime}

@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import cats.effect.IO
 import cats.data.Chain
+import cats.effect.IO
 import munit.{CatsEffectSuite, FunSuite}
 
 final class InputTest extends FunSuite:

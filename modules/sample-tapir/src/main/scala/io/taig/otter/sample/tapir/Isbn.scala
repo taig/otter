@@ -1,7 +1,6 @@
 package io.taig.otter.sample.tapir
 
-import sttp.tapir.{Codec, Schema, SchemaType}
-import sttp.tapir.CodecFormat.TextPlain
+import sttp.tapir.{Schema, SchemaType}
 
 opaque type Isbn = Long
 

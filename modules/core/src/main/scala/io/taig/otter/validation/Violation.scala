@@ -1,6 +1,5 @@
 package io.taig.otter.validation
 
-import cats.syntax.all.*
 import io.taig.otter.Data
 
 final case class Violation(constraint: Constraint, actual: Data)

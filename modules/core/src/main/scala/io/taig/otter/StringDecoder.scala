@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.{Chain, Validated}
+import cats.syntax.all.*
 import io.taig.otter.Schema.Collection
 import io.taig.otter.validation.{Violation, Violations}
 

@@ -2,8 +2,8 @@ package io.taig.otter.schema
 
 import cats.syntax.all.*
 import io.taig.otter.OpenApi
-import io.taig.otter.syntax.*
 import io.taig.otter.schema.schemas.*
+import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violation
 import munit.FunSuite
 

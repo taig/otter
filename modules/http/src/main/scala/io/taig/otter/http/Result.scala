@@ -2,9 +2,8 @@ package io.taig.otter.http
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.{+, Evidence}
-import io.taig.otter.Schema.Coproduct
 import io.taig.otter.validation.Violations
+import io.taig.otter.{+, Evidence}
 
 sealed abstract class Result[A]:
   def code: Code

@@ -2,8 +2,6 @@ package io.taig.otter.sample.tapir
 
 import sttp.tapir.Schema
 
-import scala.collection.immutable.SortedSet
-
 final case class Book(isbn: Isbn /*, title: Book.Title, genres: SortedSet[Book.Genre], metadata: Json*/ )
 
 object Book:

@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import io.taig.otter.validation.validations
 import io.taig.otter.circe.syntax as circe
 import io.taig.otter.http.syntax as http
+import io.taig.otter.validation.validations
 
 object dsl:
   export validation.validations

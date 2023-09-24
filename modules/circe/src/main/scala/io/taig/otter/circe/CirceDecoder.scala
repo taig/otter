@@ -1,12 +1,12 @@
 package io.taig.otter.circe
 
-import cats.syntax.all.*
 import cats.data.{Chain, Ior, Validated}
-import io.circe.{Json, JsonObject}
+import cats.syntax.all.*
+import io.circe.Json
 import io.taig.otter.Schema.{Collection, Coproduct, Dynamic, Primitive, Record}
-import io.taig.otter.{+, Branch, Decoder, Discriminator, Field, History, Null, Schema, StringEncoder, Type}
 import io.taig.otter.http.syntax.*
 import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.*
 
 object CirceDecoder:
   val schema: Decoder[Schema, Json] = new Decoder:

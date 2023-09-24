@@ -1,11 +1,11 @@
 package io.taig.otter.sample.repository
 
 import cats.data.{Chain, NonEmptyChain}
-import cats.syntax.all.*
 import cats.effect.IO
 import cats.effect.std.AtomicCell
-import io.taig.otter.sample.{Book, Isbn}
+import cats.syntax.all.*
 import io.taig.otter.sample.repository.BookRepository.Error
+import io.taig.otter.sample.{Book, Isbn}
 
 import scala.util.control.NoStackTrace
 

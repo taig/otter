@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.data.{Chain, Validated}
+import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
+import io.taig.otter.validation.{Constraint, Validation}
 
 import scala.collection.immutable.VectorMap
 

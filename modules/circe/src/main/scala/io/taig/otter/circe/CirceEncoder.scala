@@ -2,10 +2,10 @@ package io.taig.otter.circe
 
 import cats.data.Chain
 import cats.syntax.all.*
+import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter
 import io.taig.otter.*
-import io.circe.syntax.*
 import io.taig.otter.Schema.{Coproduct, Dynamic, Enumeration, Record}
 
 import scala.collection.immutable.VectorMap
