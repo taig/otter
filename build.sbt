@@ -8,6 +8,7 @@ val Version = new {
   val Http4s = "1.0.0-M40"
   val Java = "17"
   val Log4Cats = "2.6.0"
+  val Mouse = "1.2.1"
   val Munit = "0.7.29"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.1"
@@ -120,6 +121,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+        "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
   .dependsOn(http4s, dsl)

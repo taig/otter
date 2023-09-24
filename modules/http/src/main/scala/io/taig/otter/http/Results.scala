@@ -16,6 +16,9 @@ sealed abstract class Results[A]:
       case Left(a)  => self.encode(a)
       case Right(b) => results.encode(b)
 
+  final def :+[B](result: Result[B]): Results[A + B] = orElse(result.toResults)
+  final def +:[B](result: Result[B]): Results[B + A] = result.toResults.orElse(this)
+
   def decode(response: Http.Response): Validated[Violations, A]
   def encode(a: A): Http.Response
 
