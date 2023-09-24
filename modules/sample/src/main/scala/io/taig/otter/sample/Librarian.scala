@@ -24,3 +24,5 @@ object Librarian:
     val validation: Validation[CIString, Librarian.Email] =
       val pattern = Pattern.compile(".+@.+")
       Validation.ask[CIString].map(_.toString).andThen(validations.matches(pattern)).tap
+
+  final case class Create(email: Librarian.Email)

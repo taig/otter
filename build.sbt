@@ -7,6 +7,7 @@ val Version = new {
   val EnumerationExt = "0.0.2"
   val Http4s = "1.0.0-M40"
   val Java = "17"
+  val JNanoId = "2.0.0"
   val Log4Cats = "2.6.0"
   val Mouse = "1.2.1"
   val Munit = "0.7.29"
@@ -117,7 +118,8 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(
     libraryDependencies ++=
-      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+      "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
+        "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::

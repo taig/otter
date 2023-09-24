@@ -7,7 +7,7 @@ import io.taig.otter.sample.endpoints.books.Post
 import io.taig.otter.sample.repository.BookRepository
 import io.taig.otter.sample.repository.BookRepository.Error
 import io.taig.otter.sample.util.EndpointImplementation
-import io.taig.otter.sample.{Book, endpoints}
+import io.taig.otter.sample.{endpoints, Book}
 import mouse.all.*
 
 final class BooksRoutes(implementation: EndpointImplementation, books: BookRepository):

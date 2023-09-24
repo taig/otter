@@ -4,7 +4,7 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Endpoint, Request, Results, Url}
-import io.taig.otter.sample.{Book, Isbn, schemas}
+import io.taig.otter.sample.{schemas, Book, Isbn}
 import io.taig.otter.{Discriminator, Schema}
 
 object books:
