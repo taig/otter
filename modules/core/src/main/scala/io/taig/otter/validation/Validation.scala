@@ -27,6 +27,7 @@ object Validation:
 
   def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
   def valid[A](a: A): Validation[Any, A] = lift(_ => a)
+  def ask[A]: Validation[A, A] = Validation(Chain.empty)(_.valid)
 
   extension [In, Out](self: Validation[In, Out])
     def tap: Validation[In, In] = Validation(self.constraints)(a => self(a).as(a))

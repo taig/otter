@@ -9,6 +9,7 @@ import org.typelevel.ci.CIString
 import java.time.format.DateTimeParseException
 import java.time.{LocalDate, LocalDateTime}
 import java.util.UUID
+import java.util.regex.Pattern
 import scala.math.Integral.Implicits.*
 import scala.math.Ordering.Implicits.*
 
@@ -89,11 +90,27 @@ trait validations:
 
   def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, Data.Number.apply)
 
-  def minLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MinLength(reference)): value =>
-    Validated.condNec(value.length >= reference, (), Data.Number(value.length))
+  def minLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
+    Validation(Constraint.MinLength(reference)): value =>
+      val length = toLength(value)
+      Validated.condNec(length >= reference, (), Data.Number(length))
 
-  def maxLength(reference: Int): Validation[String, Unit] = Validation(Constraint.MaxLength(reference)): value =>
-    Validated.condNec(value.length <= reference, (), Data.Number(value.length))
+  def minLength(reference: Int): Validation[String, Unit] = minLength(reference, _.length)
+
+  def maxLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
+    Validation(Constraint.MaxLength(reference)): value =>
+      val length = toLength(value)
+      Validated.condNec(length <= reference, (), Data.Number(length))
+
+  def maxLength(reference: Int): Validation[String, Unit] = maxLength(reference, _.length)
+
+  def length[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
+    minLength(reference, toLength) *> maxLength(reference, toLength)
+
+  def length(reference: Int): Validation[String, Unit] = length(reference, _.length)
+
+  def matches(pattern: Pattern): Validation[String, Unit] = Validation(Constraint.Matches(pattern)): value =>
+    Validated.condNec(pattern.matcher(value).matches(), (), Data.String(value))
 
   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
     Validation(Constraint.MinItems(reference)): values =>
