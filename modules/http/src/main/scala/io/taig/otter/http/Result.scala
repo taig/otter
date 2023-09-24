@@ -2,7 +2,8 @@ package io.taig.otter.http
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.+
+import io.taig.otter.{+, Evidence}
+import io.taig.otter.Schema.Coproduct
 import io.taig.otter.validation.Violations
 
 sealed abstract class Result[A]:
@@ -16,6 +17,8 @@ sealed abstract class Result[A]:
 
   final def orElse[B](result: Result[B]): Results[A + B] = ???
   def toResults: Results[A] = Results(this)
+
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = toResults.to
 
   def decode(response: Http.Response): Validated[Violations, Option[A]]
   def encode(a: A): Http.Response

@@ -16,7 +16,7 @@ final class BooksRoutes(implementation: EndpointImplementation, books: BookRepos
       this.books
         .create(books)
         .leftMapIn:
-          case Error.Create.IsbnConflict(isbn) => Post.IbanConflict(isbn)
+          case Error.Create.IsbnConflict(isbn) => Post.IsbnConflict(isbn)
 
 object BooksRoutes:
   def apply(implementation: EndpointImplementation, books: BookRepository): Routes[IO] =
