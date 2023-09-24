@@ -10,7 +10,6 @@ opaque type History = Chain[History.Step]
 object History:
   enum Step:
     case Field(name: String)
-    // TODO string index?
     case Index(value: Int)
 
   object Step:

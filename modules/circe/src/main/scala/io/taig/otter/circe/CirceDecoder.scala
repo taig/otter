@@ -3,7 +3,7 @@ package io.taig.otter.circe
 import cats.syntax.all.*
 import cats.data.{Chain, Ior, Validated}
 import io.circe.{Json, JsonObject}
-import io.taig.otter.Schema.{Coproduct, Dynamic, Primitive, Record}
+import io.taig.otter.Schema.{Collection, Coproduct, Dynamic, Primitive, Record}
 import io.taig.otter.{+, Branch, Decoder, Discriminator, Field, History, Null, Schema, StringEncoder, Type}
 import io.taig.otter.http.syntax.*
 import io.taig.otter.validation.{Violation, Violations}
@@ -11,17 +11,18 @@ import io.taig.otter.validation.{Violation, Violations}
 object CirceDecoder:
   val schema: Decoder[Schema, Json] = new Decoder:
     override def decode[B](schema: Schema[B], json: Json): Validated[Violations, B] = schema match
-      case schema: Schema.Value[?]         => value.decode(schema, json)
+      case schema: Schema.Value[?] => value.decode(schema, json)
       case schema: Schema.Collection[?, ?] =>
         if json.isNull
         then collection.decode(schema, none)
         else
-          json.asArray.toValid(Violations.rootNec(Violation.tpe("array", actual = name(json))))
+          json.asArray
+            .toValid(Violations.rootNec(Violation.tpe("array", actual = name(json))))
             .andThen(array => collection.decode(schema, Chain.fromSeq(array).some))
-      case schema: Schema.Coproduct[?]     => coproduct.decode(schema, json)
-      case schema: Schema.Dictionary[?]    => ???
-      case schema: Schema.Dynamic[?]       => dynamic.decode(schema, json)
-      case schema: Schema.Product[?]       => ???
+      case schema: Schema.Coproduct[?]  => coproduct.decode(schema, json)
+      case schema: Schema.Dictionary[?] => ???
+      case schema: Schema.Dynamic[?]    => dynamic.decode(schema, json)
+      case schema: Schema.Product[?]    => ???
       case schema: Schema.Record[?] =>
         if json.isNull
         then record.decode(schema, none)
@@ -39,11 +40,18 @@ object CirceDecoder:
     override def decode[A](schema: Schema.Collection[?, A], json: Option[Chain[Json]]): Validated[Violations, A] =
       (schema, json) match
         case (Schema.Collection.Optional(self), Some(json)) => decode(self, json).map(_.some)
-        case (Schema.Collection.Optional(_), None) => none.valid[Violations]
-        case (schema, Some(json)) => decode(schema, json)
-        case (_, None) => Violations.rootNec(Violation.required).invalid
+        case (Schema.Collection.Optional(_), None)          => none.valid[Violations]
+        case (schema, Some(json))                           => decode(schema, json)
+        case (_, None)                                      => Violations.rootNec(Violation.required).invalid
 
-    def decode[A](schema: Schema.Collection[?, A], json: Chain[Json]): Validated[Violations, A] = ???
+    def decode[A](schema: Schema.Collection[?, A], json: Chain[Json]): Validated[Violations, A] = schema match
+      case Collection.Root(schema, _, _) =>
+        json.zipWithIndex.traverse { case (json, index) =>
+          CirceDecoder.schema.decode(schema, json).leftMap(_.modifyHistory(index /: _))
+        }
+      case Collection.Optional(self) => decode(self, json).map(_.some)
+      case Collection.Validate(self, validation, _) =>
+        decode(self, json).andThen(validation(_).leftMap(Violations.root))
 
   val coproduct: Decoder[Schema.Coproduct, Json] = new Decoder:
     override def decode[B](schema: Schema.Coproduct[B], json: Json): Validated[Violations, B] =
@@ -67,9 +75,9 @@ object CirceDecoder:
         schema: Schema.Coproduct.OrElse[A, B],
         json: Json,
         discriminator: Discriminator
-    ): Ior[Violations, Option[A + B]] = decode(schema.left, json, discriminator).leftMap(_.modifyHistory("lol" /: _)) match
+    ): Ior[Violations, Option[A + B]] = decode(schema.left, json, discriminator) match
       case Ior.Left(violations) =>
-        decode(schema.right, json, discriminator).leftMap(_.modifyHistory("rofl" /: _)).map(_.map(_.asRight)).leftMap(violations |+| _)
+        decode(schema.right, json, discriminator).map(_.map(_.asRight)).leftMap(violations |+| _)
       case Ior.Right(Some(a))   => a.asLeft.some.rightIor
       case Ior.Both(_, Some(b)) => b.asLeft.some.rightIor
 
@@ -83,9 +91,9 @@ object CirceDecoder:
 
   val dynamic: Decoder[Schema.Dynamic, Json] = new Decoder:
     override def decode[B](schema: Schema.Dynamic[B], json: Json): Validated[Violations, B] = schema match
-      case Dynamic.Root(_, _) => toData(json).asValue.toValid(Violations.rootNec(Violation.required))
-      case Dynamic.Optional(_) if json.isNull => none.valid[Violations]
-      case Dynamic.Optional(self) => decode(self, json).map(_.some)
+      case Dynamic.Root(_, _)                    => toData(json).asValue.toValid(Violations.rootNec(Violation.required))
+      case Dynamic.Optional(_) if json.isNull    => none.valid[Violations]
+      case Dynamic.Optional(self)                => decode(self, json).map(_.some)
       case Dynamic.Validate(self, validation, _) => decode(self, json).andThen(validation(_).leftMap(Violations.root))
 
   val primitive: Decoder[Schema.Primitive, Json] = new Decoder:
@@ -118,7 +126,7 @@ object CirceDecoder:
       case (Schema.Record.Optional(self), Some(json)) => decodeWithRemainders(self, json).map(_.bimap(_.some, _.some))
       case (Schema.Record.Optional(_), None)          => (json, none).valid
       case (schema, Some(json))                       => decodeWithRemainders(schema, json).map(_.leftMap(_.some))
-      case (_, None)                             => Violations.rootNec(Violation.required).invalid
+      case (_, None)                                  => Violations.rootNec(Violation.required).invalid
 
     def decodeWithRemainders[B](
         schema: Schema.Record[B],
