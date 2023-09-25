@@ -4,8 +4,7 @@ import cats.data.Chain
 import io.taig.otter.Schema
 import io.taig.otter.http.{Results, Url}
 import io.taig.otter.dsl.*
-import io.taig.otter.sample.api.{Member, Role}
-import io.taig.otter.sample.api.schemas
+import io.taig.otter.sample.api.{parameters, schemas, Member, ReferenceOrSelf, Role}
 
 object members:
   val url: Url[Unit] = __ / "members"
@@ -30,3 +29,6 @@ object members:
     request(method.post, url, input.json(schemas.member.create)),
     response(Post.results :+ result(code.created, output.json(schemas.member.summary)))
   )
+
+  object reference:
+    val url: Url[ReferenceOrSelf[Member.Reference]] = members.url / parameters.member.referenceOrSelf
