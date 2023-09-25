@@ -36,5 +36,5 @@ object SampleRoute:
   type Self[R] = R match
     case Role.Guest     => Unit
     case Role.Member    => Member
-    case Role.Librarian => Librarian
+    case Role.Librarian => Librarian.Summary
     case Either[a, b]   => Self[a] | Self[b]
