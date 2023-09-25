@@ -1,5 +1,6 @@
 package io.taig.otter.sample.api.endpoints
 
+import cats.data.Chain
 import io.taig.otter.Schema
 import io.taig.otter.http.{Results, Url}
 import io.taig.otter.dsl.*
@@ -8,6 +9,12 @@ import io.taig.otter.sample.api.schemas
 
 object members:
   val url: Url[Unit] = __ / "members"
+
+  val get: Endpoint[Role.Librarian, Unit, Chain[Member.Summary]] = Endpoint(
+    Role.librarian,
+    request(method.get, url),
+    response(result(code.ok, output.json(collection.chain(schemas.member.summary))))
+  )
 
   enum Post:
     case EmailConflict

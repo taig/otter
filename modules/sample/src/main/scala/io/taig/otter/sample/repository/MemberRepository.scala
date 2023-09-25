@@ -27,6 +27,8 @@ final class MemberRepository(references: ReferenceGenerator, storage: AtomicCell
     }
     .attemptNarrow[Error.Create]
 
+  val list: IO[Chain[Member.Summary]] = storage.get.map(_.map(_.toSummary))
+
 object MemberRepository:
   object Error:
     enum Create extends NoStackTrace:
