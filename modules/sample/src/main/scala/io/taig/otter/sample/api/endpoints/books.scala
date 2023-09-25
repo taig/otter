@@ -10,11 +10,11 @@ import io.taig.otter.sample.api.{Book, Isbn}
 import io.taig.otter.{Discriminator, Schema}
 
 object books:
-  val root: Url[Unit] = __ / "books"
+  val url: Url[Unit] = __ / "books"
 
   val get: Endpoint[Role.Guest, Unit, Chain[Book]] = Endpoint(
     Role.guest,
-    request(method.get, root),
+    request(method.get, url),
     response(result(code.ok, output.json(collection.chain(schemas.book.main))))
   )
 
@@ -38,6 +38,6 @@ object books:
 
     Endpoint(
       Role.librarian,
-      request(method.post, root, input.json(books)),
+      request(method.post, url, input.json(books)),
       response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main))))
     )

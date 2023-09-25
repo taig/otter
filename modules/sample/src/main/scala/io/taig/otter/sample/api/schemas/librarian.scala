@@ -11,6 +11,8 @@ object librarian:
   val password: Schema.Primitive[Librarian.Password] = string.ivalidate(Librarian.Password.validation)(_.toString)
   val session: Schema.Primitive[Librarian.Session] = uuid.imap(Librarian.Session.fromUUID)(_.toUUID)
 
+  val login: Schema.Record[Librarian.Login] = (field("email", cistring) :* field("password", string)).to
+
   val summary: Schema.Record[Librarian.Summary] = (
     field("reference", reference) :*
       field("email", email)

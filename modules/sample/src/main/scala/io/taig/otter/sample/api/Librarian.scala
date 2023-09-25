@@ -37,7 +37,7 @@ object Librarian:
 
   opaque type Password = String
   object Password:
-    extension (self: Librarian.Password) def toString = self
+    extension (self: Librarian.Password) def toString: String = self
     def unsafeFromString(value: String): Librarian.Password = value
     val validation: Validation[String, Librarian.Password] = validations.minLength(6).tap
 
@@ -47,6 +47,8 @@ object Librarian:
     def fromUUID(uuid: UUID): Librarian.Session = uuid
 
     given (using eq: Eq[UUID]): Eq[Librarian.Session] = eq
+
+  final case class Login(email: CIString, password: String)
 
   final case class Create(email: Librarian.Email, password: Librarian.Password)
 
