@@ -50,6 +50,7 @@ object Librarian:
 
   final case class Login(email: CIString, password: String)
 
-  final case class Create(email: Librarian.Email, password: Librarian.Password)
+  final case class Create(email: Librarian.Email, password: Librarian.Password):
+    def toLogin: Librarian.Login = Login(email.toCIString, password.toString)
 
   final case class Summary(reference: Librarian.Reference, email: Librarian.Email)
