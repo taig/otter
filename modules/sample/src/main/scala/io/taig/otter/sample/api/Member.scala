@@ -1,4 +1,4 @@
-package io.taig.otter.sample
+package io.taig.otter.sample.api
 
 import cats.syntax.all.*
 import io.taig.otter.validation.{validations, Validation}

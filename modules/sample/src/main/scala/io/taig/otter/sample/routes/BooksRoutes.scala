@@ -3,12 +3,13 @@ package io.taig.otter.sample.routes
 import cats.data.{Chain, NonEmptyChain}
 import cats.effect.IO
 import io.taig.otter.http.Routes
+import io.taig.otter.sample.SampleRoute
 import io.taig.otter.sample.api.endpoints
 import io.taig.otter.sample.api.Route
 import io.taig.otter.sample.api.endpoints.books.Post
 import io.taig.otter.sample.repository.BookRepository
 import io.taig.otter.sample.repository.BookRepository.Error
-import io.taig.otter.sample.{Book, Librarian, Member, SampleRoute}
+import io.taig.otter.sample.api.{Book, Librarian, Member}
 import mouse.all.*
 
 final class BooksRoutes(route: SampleRoute, books: BookRepository):

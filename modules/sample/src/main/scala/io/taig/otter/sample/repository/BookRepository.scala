@@ -5,7 +5,7 @@ import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.syntax.all.*
 import io.taig.otter.sample.repository.BookRepository.Error
-import io.taig.otter.sample.{Book, Isbn}
+import io.taig.otter.sample.api.{Book, Isbn}
 
 import scala.util.control.NoStackTrace
 

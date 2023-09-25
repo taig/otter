@@ -1,7 +1,7 @@
 package io.taig.otter.sample.api.schemas
 
 import io.taig.otter.Schema
-import io.taig.otter.sample.Librarian
+import io.taig.otter.sample.api.Librarian
 import io.taig.otter.dsl.*
 
 object librarian:

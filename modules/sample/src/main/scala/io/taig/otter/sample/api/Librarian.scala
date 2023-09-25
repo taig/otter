@@ -1,4 +1,4 @@
-package io.taig.otter.sample
+package io.taig.otter.sample.api
 
 import cats.Eq
 import cats.syntax.all.*

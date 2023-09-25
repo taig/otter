@@ -6,7 +6,7 @@ import io.taig.otter.dsl.*
 import io.taig.otter.http.{Request, Results, Url}
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.schemas
-import io.taig.otter.sample.{Book, Isbn}
+import io.taig.otter.sample.api.{Book, Isbn}
 import io.taig.otter.{Discriminator, Schema}
 
 object books:
