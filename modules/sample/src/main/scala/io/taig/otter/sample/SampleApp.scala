@@ -18,16 +18,14 @@ object SampleApp extends IOApp.Simple:
     val references = ReferenceGenerator()
 
     for
-      books <- AtomicCell[IO].empty[Chain[Book]]
-      librarians <- AtomicCell[IO].empty[Chain[Librarian]]
-      repositories = SampleRepositories(references, books, librarians)
+      repositories <- SampleRepositories(references)
       administrator = Librarian.Create(
         Librarian.Email.unsafeFromCIString(ci"me@otter.org"),
         Librarian.Password.unsafeFromString("password")
       )
       administrator <- repositories.librarian.create(administrator).rethrow
       _ <- IO.println(s"Created administrator account: $administrator")
-      route = new SampleRoute(librarians)
+      route = new SampleRoute(repositories.librarian)
       routes = SampleRoutes(route, repositories)
       server = new Http4sHttpServer[IO]
       _ <- server.start(app(routes))

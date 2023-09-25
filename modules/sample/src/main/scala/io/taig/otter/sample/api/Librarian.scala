@@ -46,6 +46,8 @@ object Librarian:
     extension (self: Librarian.Session) def toUUID: UUID = self
     def fromUUID(uuid: UUID): Librarian.Session = uuid
 
+    given (using eq: Eq[UUID]): Eq[Librarian.Session] = eq
+
   final case class Create(email: Librarian.Email, password: Librarian.Password)
 
   final case class Summary(reference: Librarian.Reference, email: Librarian.Email)

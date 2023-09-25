@@ -28,6 +28,9 @@ final class LibrarianRepository(references: ReferenceGenerator, storage: AtomicC
       }
       .attemptNarrow[Error.Create]
 
+  def findBySession(session: Librarian.Session): IO[Option[Librarian.Summary]] =
+    storage.get.map(_.find(_.session.contains_(session)).map(_.toSummary))
+
 object LibrarianRepository:
   object Error:
     enum Create extends NoStackTrace:
