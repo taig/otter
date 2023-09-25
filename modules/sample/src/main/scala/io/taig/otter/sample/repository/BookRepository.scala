@@ -10,15 +10,15 @@ import io.taig.otter.sample.{Book, Isbn}
 import scala.util.control.NoStackTrace
 
 final class BookRepository(storage: AtomicCell[IO, Chain[Book]]):
-  def create(books: NonEmptyChain[Book]): IO[Either[Error.Create, NonEmptyChain[Book]]] =
-    def verifyIsbns(current: Chain[Book]): IO[Unit] = books.traverse_ { book =>
-      IO.raiseWhen(current.exists(_.isbn === book.isbn))(Error.Create.IsbnConflict(book.isbn))
-    }
+  def create(create: NonEmptyChain[Book]): IO[Either[Error.Create, NonEmptyChain[Book]]] = storage
+    .evalModify { books =>
+      val verifyIsbns: IO[Unit] = create.traverse_ { book =>
+        IO.raiseWhen(books.exists(_.isbn === book.isbn))(Error.Create.IsbnConflict(book.isbn))
+      }
 
-    storage
-      .evalUpdate(current => verifyIsbns(current) *> IO.pure(current ++ books.toChain))
-      .as(books)
-      .attemptNarrow[Error.Create]
+      verifyIsbns.as((books ++ create.toChain, create))
+    }
+    .attemptNarrow[Error.Create]
 
   val list: IO[Chain[Book]] = storage.get
 
