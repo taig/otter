@@ -2,13 +2,13 @@ package io.taig.otter
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.Schema.{Collection, Primitive}
-import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.Schema.{Collection, Enumeration, Primitive}
+import io.taig.otter.validation.{Constraint, Violation, Violations}
 
 object StringDecoder:
   val value: Decoder[Schema.Value, Option[String]] = new Decoder:
     override def decode[B](schema: Schema.Value[B], value: Option[String]): Validated[Violations, B] = schema match
-      case schema: Schema.Enumeration[?] => ???
+      case schema: Schema.Enumeration[?] => enumeration.decode(schema, value)
       case schema: Schema.Primitive[?]   => primitive.decode(schema, value)
 
   val collection: Decoder[Schema.Collection[Schema.Value, *], Option[Chain[String]]] = new Decoder:
@@ -26,17 +26,44 @@ object StringDecoder:
       case Collection.Validate(self, validation, _) =>
         decode(self, value).andThen(validation(_).leftMap(Violations.root))
 
-  val primitive: Decoder[Schema.Primitive, Option[String]] = new Decoder[Schema.Primitive, Option[String]]:
+  val enumeration: Decoder[Schema.Enumeration, Option[String]] = new Decoder:
+    override def decode[A](schema: Schema.Enumeration[A], value: Option[String]): Validated[Violations, A] =
+      (schema, value) match
+        case (Schema.Enumeration.Optional(_), None)           => none.valid[Violations]
+        case (_, None)                                        => Violations.rootNec(Violation.required).invalid
+        case (Schema.Enumeration.Optional(self), Some(value)) => decode(self, value).map(_.some)
+        case (schema, Some(value))                            => decode(schema, value)
+
+    def decode[A](schema: Schema.Enumeration[A], value: String): Validated[Violations, A] = schema match
+      case Enumeration.Root(schema, mapping, _, _) =>
+        StringDecoder.value
+          .decode(schema, value.some)
+          .andThen: b =>
+            Validated.fromOption(
+              mapping.prj(b), {
+                val values = Chain
+                  .fromSeq(mapping.values)
+                  .map(mapping.inj)
+                  .mapFilter(StringEncoder.value.encode(schema, _))
+                Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
+              }
+            )
+      case Enumeration.Optional(self) => decode(self, value).map(_.some)
+      case Enumeration.Validate(self, validation, _) =>
+        decode(self, value).andThen(validation(_).leftMap(Violations.root))
+
+  val primitive: Decoder[Schema.Primitive, Option[String]] = new Decoder:
     override def decode[A](schema: Schema.Primitive[A], value: Option[String]): Validated[Violations, A] =
       (schema, value) match
-        case (Primitive.Optional(_), None)           => none.valid[Violations]
-        case (_, None)                               => Violations.rootNec(Violation.required).invalid
-        case (Primitive.Optional(self), Some(value)) => decode(self, value).map(_.some)
-        case (schema, Some(value))                   => decode(schema, value)
+        case (Schema.Primitive.Optional(_), None)           => none.valid[Violations]
+        case (_, None)                                      => Violations.rootNec(Violation.required).invalid
+        case (Schema.Primitive.Optional(self), Some(value)) => decode(self, value).map(_.some)
+        case (schema, Some(value))                          => decode(schema, value)
 
     def decode[A](schema: Schema.Primitive[A], value: String): Validated[Violations, A] = schema match
-      case Primitive.Root(tpe, _, _, _) => ???
-      case Primitive.Optional(self)     => decode(self, value).map(_.some)
+      case Primitive.Root(tpe, _, _, _) =>
+        Validated.fromOption(decode(tpe, value), Violations.rootNec(Violation.tpe(tpe.name, value)))
+      case Primitive.Optional(self) => decode(self, value).map(_.some)
       case Primitive.Validate(self, validation, _) =>
         decode(self, value).andThen(validation(_).leftMap(Violations.root))
 
