@@ -5,7 +5,6 @@ import cats.effect.{IO, IOApp}
 import io.taig.otter.dsl.*
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.service.ReferenceGenerator
-import io.taig.otter.sample.util.EndpointImplementation
 import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
@@ -23,8 +22,8 @@ object SampleApp extends IOApp.Simple:
       )
       administrator <- repositories.librarian.create(administrator).rethrow
       _ <- IO.println(s"Created administrator account: $administrator")
-      implementation = new EndpointImplementation()
-      routes = SampleRoutes(implementation, repositories)
+      route = new SampleRoute()
+      routes = SampleRoutes(route, repositories)
       server = new Http4sHttpServer[IO]
       _ <- server.start(app(routes))
     yield ()

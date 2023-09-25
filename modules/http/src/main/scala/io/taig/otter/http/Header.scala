@@ -3,7 +3,7 @@ package io.taig.otter.http
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.syntax.*
-import io.taig.otter.validation.Violations
+import io.taig.otter.validation.{Validation, Violations}
 import io.taig.otter.{Schema, StringDecoder, StringEncoder}
 import org.typelevel.ci.CIString
 
@@ -17,6 +17,10 @@ final case class Header[A](name: CIString, schema: Schema.Value[A] | Schema.Coll
   def imap[B](f: A => B)(g: B => A): Header[B] = schema match
     case schema: Schema.Value[A]                    => copy(schema = schema.imap(f)(g))
     case schema: Schema.Collection[Schema.Value, A] => copy(schema = schema.imap(f)(g))
+
+  def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] = schema match
+    case schema: Schema.Value[A]                    => copy(schema = schema.ivalidate(validation)(g))
+    case schema: Schema.Collection[Schema.Value, A] => copy(schema = schema.ivalidate(validation)(g))
 
   def optional: Header[Option[A]] = schema match
     case schema: Schema.Value[A]                    => copy(schema = schema.optional)

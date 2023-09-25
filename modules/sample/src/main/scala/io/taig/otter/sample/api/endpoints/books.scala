@@ -1,16 +1,19 @@
-package io.taig.otter.sample.endpoints
+package io.taig.otter.sample.api.endpoints
 
 import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.dsl.*
-import io.taig.otter.http.{Endpoint, Request, Results, Url}
-import io.taig.otter.sample.{schemas, Book, Isbn}
+import io.taig.otter.http.{Request, Results, Url}
+import io.taig.otter.sample.api.Role
+import io.taig.otter.sample.api.schemas
+import io.taig.otter.sample.{Book, Isbn}
 import io.taig.otter.{Discriminator, Schema}
 
 object books:
   val root: Url[Unit] = __ / "books"
 
-  val get: Endpoint[Unit, Chain[Book]] = Endpoint(
+  val get: Endpoint[Role.Guest, Unit, Chain[Book]] = Endpoint(
+    Role.guest,
     request(method.get, root),
     response(result(code.ok, output.json(collection.chain(schemas.book.main))))
   )
@@ -23,7 +26,7 @@ object books:
       val isbnConflict: Schema[Post.IsbnConflict] = error("isbnConflict", field("isbn", schemas.isbn).to[IsbnConflict])
       result(code.conflict, output.json(isbnConflict)).to
 
-  val post: Endpoint[NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
+  val post: Endpoint[Role.Librarian, NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
     val books: Schema.Coproduct[NonEmptyChain[Book]] = (
       branch("book", schemas.book.main) :+
         branch("books", collection.nonEmptyChain(schemas.book.main))
@@ -34,6 +37,7 @@ object books:
       }(_.asRight)
 
     Endpoint(
+      Role.librarian,
       request(method.post, root, input.json(books)),
       response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main))))
     )

@@ -7,6 +7,8 @@ import io.taig.otter.http.Http.Payload
 import io.taig.otter.validation.{Violation, Violations}
 
 final case class Response[A](results: Results[A], violations: Result[Violations]):
+  def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
+
   def encode(a: Validated[Violations, A]): Http.Response = a.fold(violations.encode, results.encode)
 
 object Response:

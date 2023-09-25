@@ -1,4 +1,4 @@
-package io.taig.otter.sample.schemas
+package io.taig.otter.sample.api.schemas
 
 import cats.implicits.*
 import io.circe.Json
