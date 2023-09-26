@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.Hash
+import cats.Eq
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
@@ -70,7 +71,8 @@ object schemas:
     def apply[A: Hash, B](schema: Schema.Value[A])(f: B => A)(using
         EnumerationValues.Aux[B, B]
     ): Schema.Enumeration[B] = enumeration(schema)(using Mapping.enumeration(f))
-    def constant[A](value: A & Singleton): Schema.Enumeration[value.type] = ???
+    def constant[A: Eq](schema: Schema.Value[A], value: A & Singleton): Schema.Enumeration[value.type] =
+      enumeration(schema)(using Mapping.constant[A](value))
 
   object dictionary:
     def vectorMap[A, B](key: Schema.Value[A], schema: Schema[B]): Schema.Dictionary[VectorMap[A, B]] =

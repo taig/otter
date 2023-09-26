@@ -14,12 +14,12 @@ import io.taig.otter.sample.api.ReferenceOrSelf
 // The latter appears reasonable, however this is also how we currently encode Collection[Schema.Primitive[A], Chain[A]] which means something else
 
 def referenceOrSelf[A](schema: Schema[A]): Schema.Value[ReferenceOrSelf[A]] = enumeration
-    .constant[String]("self")
-    .orElse(schema)
-    .imap {
-      case Left(_)          => ReferenceOrSelf.Self
-      case Right(reference) => ReferenceOrSelf.Reference(reference)
-    } {
-      case ReferenceOrSelf.Self             => Left("self")
-      case ReferenceOrSelf.Reference(value) => Right(value)
-    }
+  .constant(string, "self")
+  .orElse(schema)
+  .imap {
+    case Left(_)          => ReferenceOrSelf.Self
+    case Right(reference) => ReferenceOrSelf.Reference(reference)
+  } {
+    case ReferenceOrSelf.Self             => Left("self")
+    case ReferenceOrSelf.Reference(value) => Right(value)
+  }
