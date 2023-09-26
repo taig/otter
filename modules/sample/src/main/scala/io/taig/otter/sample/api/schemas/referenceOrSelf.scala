@@ -13,13 +13,22 @@ import io.taig.otter.sample.api.ReferenceOrSelf
 // Schema[Schema.Enumeration[A] | Schema.Primitive[B], Either[A, B]]
 // The latter appears reasonable, however this is also how we currently encode Collection[Schema.Primitive[A], Chain[A]] which means something else
 
-def referenceOrSelf[A](schema: Schema[A]): Schema.Value[ReferenceOrSelf[A]] = enumeration
-  .constant(string, "self")
-  .orElse(schema)
-  .imap {
-    case Left(_)          => ReferenceOrSelf.Self
-    case Right(reference) => ReferenceOrSelf.Reference(reference)
-  } {
-    case ReferenceOrSelf.Self             => Left("self")
-    case ReferenceOrSelf.Reference(value) => Right(value)
-  }
+def referenceOrSelf[A](schema: Schema.Value[A]): Schema.Value[ReferenceOrSelf[A]] = ???
+
+val self: Schema.Value["self"] = enumeration.constant(string, "self")
+
+val x: Schema.Primitive[String] = ???
+val y: Schema.Primitive[Int] = ???
+
+//val z: Schema.Of[Schema.Primitive[String] | Schema.Primitive[Int], Either[String, Int]] = x.orElse(y)
+
+//def yolo[A](schema: Schema.Value[A]): Schema.Of[Schema.Value["self"] | Schema.Value[A], Either["self", A]] =
+//  self.orElse(schema)
+
+//  .imap {
+//    case Left(_)          => ReferenceOrSelf.Self
+//    case Right(reference) => ReferenceOrSelf.Reference(reference)
+//  } {
+//    case ReferenceOrSelf.Self             => Left("self")
+//    case ReferenceOrSelf.Reference(value) => Right(value)
+//  }

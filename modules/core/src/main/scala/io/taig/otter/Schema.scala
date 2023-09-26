@@ -9,7 +9,7 @@ import scala.collection.immutable.VectorMap
 
 sealed abstract class Schema[A]:
   self =>
-  type Self[a] <: Schema[a] { type Self[a] = self.Self[a] }
+  type Self[a] <: Schema[a]
 
   def description: Option[String]
   def description(f: Option[String] => Option[String]): Self[A]
@@ -35,8 +35,7 @@ sealed abstract class Schema[A]:
 
 object Schema: // extends ToSchemaOps:
   sealed abstract class Value[A] extends Schema[A]:
-    self =>
-    override type Self[a] <: Value[a] { type Self[a] = self.Self[a] }
+    override type Self[a] <: Schema.Value[a]
 
   sealed abstract class Collection[F[a] <: Schema[a], A] extends Schema[A]:
     final override type Self[a] = Collection[F, a]
@@ -80,24 +79,25 @@ object Schema: // extends ToSchemaOps:
     def apply[F[a] <: Schema[a], A](schema: F[A]): Collection[F, Chain[A]] = Root(schema, None, None)
 
   sealed abstract class Coproduct[A] extends Schema[A]:
-    final override type Self[a] = Coproduct[a]
+    final override type Self[a] = Schema.Coproduct[a]
 
     def discriminator: Discriminator
-    def discriminator(f: Discriminator => Discriminator): Coproduct[A]
-    final def discriminator(value: Discriminator): Coproduct[A] = discriminator(_ => value)
+    def discriminator(f: Discriminator => Discriminator): Schema.Coproduct[A]
+    final def discriminator(value: Discriminator): Schema.Coproduct[A] = discriminator(_ => value)
 
-    final override def optional: Coproduct[Option[A]] = Coproduct.Optional(this)
+    final override def optional: Schema.Coproduct[Option[A]] = Schema.Coproduct.Optional(this)
 
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Coproduct[B] =
       Coproduct.Validate(this, validation, g)
 
-    final def orElse[B](coproduct: Coproduct[B]): Coproduct[A + B] =
+    final def orElse[B](coproduct: Schema.Coproduct[B]): Schema.Coproduct[A + B] =
       Coproduct.OrElse(this, coproduct, None, Discriminator.Default, None)
 
-    final def :+[B, C](branch: Branch[B, C]): Coproduct[A + C] = orElse(branch.toCoproduct)
-    final def +:[B, C](branch: Branch[B, C]): Coproduct[C + A] = branch.toCoproduct.orElse(this)
+    final def :+[B, C](branch: Branch[B, C]): Schema.Coproduct[A + C] = orElse(branch.toCoproduct)
+    final def +:[B, C](branch: Branch[B, C]): Schema.Coproduct[C + A] = branch.toCoproduct.orElse(this)
 
-    final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
+    final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Schema.Coproduct[B] =
+      imap(evidence.from)(evidence.to)
 
   object Coproduct:
     final case class Root[A, B](
@@ -239,8 +239,6 @@ object Schema: // extends ToSchemaOps:
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Enumeration[B] =
       Enumeration.Validate(this, validation, g)
 
-    final def orElse[B](schema: Schema[B]): Schema.Value[Either[A, B]] = ???
-
   object Enumeration:
     final case class Root[A, B](
         schema: Schema.Value[A],
@@ -289,11 +287,6 @@ object Schema: // extends ToSchemaOps:
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Primitive[B] =
       Primitive.Validate(this, validation, g)
 
-    final def orElse[B](schema: Schema.Primitive[B]): Schema.Primitive[A + B] =
-      Primitive.OrElse(this, schema, None, None, None)
-    final def :+[B](schema: Schema.Primitive[B]): Schema.Primitive[A + B] = orElse(schema)
-    final def +:[B](schema: Schema.Primitive[B]): Schema.Primitive[B + A] = schema.orElse(this)
-
   object Primitive:
     final case class Root[A](tpe: Type[A], description: Option[String], example: Option[A], format: Option[String])
         extends Primitive[A]:
@@ -326,24 +319,10 @@ object Schema: // extends ToSchemaOps:
       override def example(f: Option[B] => Option[B]): Primitive[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
 
-    final case class OrElse[A, B](
-        left: Schema.Primitive[A],
-        right: Schema.Primitive[B],
-        description: Option[String],
-        example: Option[A + B],
-        format: Option[String]
-    ) extends Schema.Primitive[A + B]:
-      override def constraints: Chain[Constraint] = left.constraints ++ right.constraints // TODO does this make sense?
-      override def isOptional: Boolean = left.isOptional && right.isOptional
-      override def format(f: Option[String] => Option[String]): Primitive[A + B] = copy(format = f(format))
-      override def description(f: Option[String] => Option[String]): Primitive[A + B] =
-        copy(description = f(description))
-      override def example(f: Option[A + B] => Option[A + B]): Primitive[A + B] = copy(example = f(example))
-
     def apply[A](tpe: Type[A]): Primitive[A] = Root(tpe, None, None, None)
 
   sealed abstract class Product[A] extends Schema[A]:
-    final override type Self[a] = Product[a]
+    final override type Self[a] = Schema.Product[a]
 
     final override def optional: Product[Option[A]] = Product.Optional(this)
 
@@ -396,7 +375,7 @@ object Schema: // extends ToSchemaOps:
     def apply[A](schema: Schema[A]): Schema.Product[A] = Root(None, None, schema)
 
   sealed abstract class Record[A] extends Schema[A]:
-    final override type Self[a] = Record[a]
+    final override type Self[a] = Schema.Record[a]
 
     def nulls: Null
     def nulls(f: Null => Null): Record[A]
