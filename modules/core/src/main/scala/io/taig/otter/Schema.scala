@@ -239,6 +239,8 @@ object Schema: // extends ToSchemaOps:
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Enumeration[B] =
       Enumeration.Validate(this, validation, g)
 
+    final def orElse[B](schema: Schema[B]): Schema.Value[Either[A, B]] = ???
+
   object Enumeration:
     final case class Root[A, B](
         schema: Schema.Value[A],
@@ -275,17 +277,22 @@ object Schema: // extends ToSchemaOps:
     def apply[A, B](schema: Schema.Value[A], mapping: Mapping[B, A]): Enumeration[B] = Root(schema, mapping, None, None)
 
   sealed abstract class Primitive[A] extends Schema.Value[A]:
-    final override type Self[a] = Primitive[a]
+    final override type Self[a] = Schema.Primitive[a]
 
     def format: Option[String]
-    def format(f: Option[String] => Option[String]): Primitive[A]
-    final def format(value: Option[String]): Primitive[A] = format(_ => value)
-    final def format(value: String): Primitive[A] = format(Some(value))
+    def format(f: Option[String] => Option[String]): Schema.Primitive[A]
+    final def format(value: Option[String]): Schema.Primitive[A] = format(_ => value)
+    final def format(value: String): Schema.Primitive[A] = format(Some(value))
 
-    final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
+    final override def optional: Schema.Primitive[Option[A]] = Primitive.Optional(this)
 
-    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Primitive[B] =
       Primitive.Validate(this, validation, g)
+
+    final def orElse[B](schema: Schema.Primitive[B]): Schema.Primitive[A + B] =
+      Primitive.OrElse(this, schema, None, None, None)
+    final def :+[B](schema: Schema.Primitive[B]): Schema.Primitive[A + B] = orElse(schema)
+    final def +:[B](schema: Schema.Primitive[B]): Schema.Primitive[B + A] = schema.orElse(this)
 
   object Primitive:
     final case class Root[A](tpe: Type[A], description: Option[String], example: Option[A], format: Option[String])
@@ -318,6 +325,20 @@ object Schema: // extends ToSchemaOps:
       override def description(f: Option[String] => Option[String]): Primitive[B] = copy(self = self.description(f))
       override def example(f: Option[B] => Option[B]): Primitive[B] =
         copy(self = self.example(fa => f(fa.flatMap(validation(_).toOption)).map(g)))
+
+    final case class OrElse[A, B](
+        left: Schema.Primitive[A],
+        right: Schema.Primitive[B],
+        description: Option[String],
+        example: Option[A + B],
+        format: Option[String]
+    ) extends Schema.Primitive[A + B]:
+      override def constraints: Chain[Constraint] = left.constraints ++ right.constraints // TODO does this make sense?
+      override def isOptional: Boolean = left.isOptional && right.isOptional
+      override def format(f: Option[String] => Option[String]): Primitive[A + B] = copy(format = f(format))
+      override def description(f: Option[String] => Option[String]): Primitive[A + B] =
+        copy(description = f(description))
+      override def example(f: Option[A + B] => Option[A + B]): Primitive[A + B] = copy(example = f(example))
 
     def apply[A](tpe: Type[A]): Primitive[A] = Root(tpe, None, None, None)
 
