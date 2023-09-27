@@ -8,5 +8,5 @@ abstract class Value[A] extends Schema[A]:
 
   def orElse[B](schema: Value[B]): Value[Either[A, B]]
 
-  def print(a: A): String
-  def parse(value: String): Validated[Violations, A]
+  def print(a: A): Option[String]
+  def parse(value: Option[String]): Validated[Violations, A]
