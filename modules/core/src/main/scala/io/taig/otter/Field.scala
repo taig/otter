@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
+import io.taig.otter.syntax.*
 
 sealed abstract class Field[A](val name: String, val nulls: Option[Null]):
   final transparent inline def :*[B](field: Field[B]): Record[?] = toRecord :* field
@@ -26,8 +27,8 @@ object Field:
   def apply[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[B] =
     new Field[B](key.print(name).orEmpty, None):
       override def decodeWithRemainders(name: String, data: Data.Object): Validated[Violations, (Data.Object, B)] =
-        data.firstWithRemainders(name) match
-          case Some((head, tail)) => schema.decode(head).tupleLeft(tail)
+        data.values.firstWithRemainders(name) match
+          case Some((head, tail)) => schema.decode(head).tupleLeft(Data.Object(tail))
           case None               => schema.decode(Data.Null).tupleLeft(data)
 
       override def encode(name: String, b: B, nulls: Null): Data.Object = schema.encode(b) match

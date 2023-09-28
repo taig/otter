@@ -90,20 +90,3 @@ object syntax:
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     val text: Response.Body.Strict[String] =
       binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
-
-  extension [A: Eq, B](self: Chain[(A, B)])
-    def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
-    def first(key: A): Option[B] = self.collectFirst { case (reference, value) if key === reference => value }
-    def removeAll(key: A): Chain[(A, B)] = self.filter:
-      case (reference, _) if key === reference => false
-      case _                                   => true
-    def removeFirst(key: A): Chain[(A, B)] =
-      var removed = false
-      val result = List.newBuilder[(A, B)]
-      self.iterator.foreach {
-        case (reference, _) if key == reference && !removed => removed = true; ()
-        case entry                                          => result += entry
-      }
-      Chain.fromSeq(result.result())
-    def allWithRemainders(key: A): (Chain[B], Chain[(A, B)]) = (all(key), removeAll(key))
-    def firstWithRemainders(key: A): Option[(B, Chain[(A, B)])] = first(key).tupleRight(removeFirst(key))

@@ -2,9 +2,9 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.syntax.*
+import io.taig.otter.syntax.*
 import io.taig.otter.validation.{Validation, Violations}
-import io.taig.otter.{Collection, Data, Schema}
+import io.taig.otter.{Collection, Schema}
 import org.typelevel.ci.CIString
 
 final case class Header[A](name: CIString, schema: Schema.Value[A] | Collection.Value[A]):

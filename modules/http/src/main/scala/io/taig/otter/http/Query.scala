@@ -2,13 +2,14 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.http.syntax.*
+import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.{Collection, Schema}
 
 final case class Query[A](name: String, schema: Schema.Value[A] | Collection.Value[A]):
   self =>
   def isOptional: Boolean = schema.isOptional
+
   def isCollection: Boolean = schema match
     case _: Collection[?] => true
     case _                => false

@@ -29,16 +29,6 @@ object Data:
   sealed abstract class Value extends Data
 
   final case class Object(values: Chain[(JString, Data)]) extends Data.Value:
-    def first(key: JString): Option[Data] = values.collectFirst { case (k, v) if key === k => v }
-    def removeFirst(key: JString): Data.Object =
-      var removed = false
-      val result = List.newBuilder[(JString, Data)]
-      values.iterator.foreach {
-        case (reference, _) if key == reference && !removed => removed = true; ()
-        case entry                                          => result += entry
-      }
-      Object(Chain.fromSeq(result.result()))
-    def firstWithRemainders(key: JString): Option[(Data, Data.Object)] = first(key).tupleRight(removeFirst(key))
     def ++(obj: Data.Object): Data.Object = Object(values ++ obj.values)
   object Object:
     val Empty: Data.Object = Object(Chain.empty)
