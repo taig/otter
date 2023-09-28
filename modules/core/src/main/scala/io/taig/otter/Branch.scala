@@ -1,11 +1,29 @@
-//package io.taig.otter
-//
-//import cats.syntax.all.*
-//
-//final case class Branch[A, B](name: A, key: Schema.Value[A], value: Schema[B]):
-//  def isOptional: Boolean = value.isOptional
-//
-//  def :+[C, D](branch: Branch[C, D]): Schema.Coproduct[B + D] = toCoproduct :+ branch
-//  def +:[C, D](branch: Branch[C, D]): Schema.Coproduct[D + B] = branch +: toCoproduct
-//
-//  def toCoproduct: Schema.Coproduct[B] = Schema.Coproduct(this)
+package io.taig.otter
+
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.validation.Violations
+
+sealed abstract class Branch[A](val name: String):
+  final def decode(data: Data.Object, discriminator: Discriminator): Validated[Violations, Option[A]] =
+    decode(name, data, discriminator)
+  protected def decode(name: String, data: Data.Object, discriminator: Discriminator): Validated[Violations, Option[A]]
+  final def encode(a: A, discriminator: Discriminator): Data.Object = encode(name, a, discriminator)
+  protected def encode(name: String, a: A, discriminator: Discriminator): Data.Object
+
+object Branch:
+  def apply[A, B](name: A, key: Value[A], of: Schema[B]): Branch[B] = new Branch[B](key.print(name).orEmpty):
+    override def decode(
+        name: String,
+        data: Data.Object,
+        discriminator: Discriminator
+    ): Validated[Violations, Option[B]] = discriminator match
+      case Discriminator.Nested(identifier, value) => ???
+      case Discriminator.Merged(identifier)        => ???
+      case Discriminator.Keyed                     => ???
+    override def encode(name: String, b: B, discriminator: Discriminator): Data.Object = discriminator match
+      case Discriminator.Nested(identifier, value) =>
+        Data.Object.of(identifier -> Data.String(name), value -> of.encode(b))
+      case Discriminator.Merged(identifier) =>
+        Data.Object.one(identifier, Data.String(name)) ++ of.encode(b).asObject.getOrElse(Data.Object.Empty)
+      case Discriminator.Keyed => Data.Object.one(name, of.encode(b))

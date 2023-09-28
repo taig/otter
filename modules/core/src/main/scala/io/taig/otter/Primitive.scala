@@ -4,33 +4,21 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Primitive[A](description: Option[String]) extends Value[A](description):
+sealed abstract class Primitive[A](description: Option[String], val format: Option[String])
+    extends Schema[A](description)
+    with Value[A]:
   self =>
   final override type Self[a] = Primitive[a]
 
   final override def description(f: Option[String] => Option[String]): Primitive[A] =
-    new Primitive[A](f(description)) { export self.* }
+    Primitive(this, f(description), format)
+  final def format(f: Option[String] => Option[String]): Primitive[A] = Primitive(this, description, f(format))
+  final def format(value: Option[String]): Primitive[A] = format(_ => value)
+  final def format(value: String): Primitive[A] = format(Some(value))
 
-  final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description):
-    override def constraints: Chain[Constraint] = self.constraints
-    override def isOptional: Boolean = true
-    override def decode(data: Data): Validated[Violations, Option[A]] = data match
-      case Data.Null => none.valid
-      case data      => self.decode(data).map(_.some)
-    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
-    override def parse(value: Option[String]): Validated[Violations, Option[A]] =
-      value.fold(none.valid)(value => self.parse(value.some).map(_.some))
-    override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
+  final override def optional: Primitive[Option[A]] = ???
 
-  override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B](description):
-    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def isOptional: Boolean = self.isOptional
-    override def decode(data: Data): Validated[Violations, B] =
-      self.decode(data).andThen(validation(_).leftMap(Violations.root))
-    override def encode(b: B): Data = self.encode(g(b))
-    override def parse(value: Option[String]): Validated[Violations, B] =
-      self.parse(value).andThen(validation(_).leftMap(Violations.root))
-    override def print(b: B): Option[String] = self.print(g(b))
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = ???
 
   final def orElse[B](schema: Primitive[B]): Primitive[Either[A, B]] = ???
 
@@ -46,15 +34,32 @@ object Primitive:
         case b: B => Right(b)
       }
 
-  def apply[A](tpe: Type[A], description: Option[String]): Primitive[A] = new Primitive[A](description):
+  def apply[A](schema: Primitive[A], description: Option[String], format: Option[String]): Primitive[A] =
+    new Primitive[A](description, format) { export schema.* }
+
+  def apply[A](tpe: Type[A]): Primitive[A] = new Primitive[A](None, None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decode(data: Data): Validated[Violations, A] = (data, tpe) match
-      case (Data.Boolean(value), Type.Boolean) => value.valid
-      case (Data.String(value), Type.String)   => value.valid
-      case (Data.Null, _)                      => Violations.rootNec(Violation.required).invalid
+      case (Data.Boolean(value), Type.Boolean)               => value.valid
+      case (Data.String(value), Type.String)                 => value.valid
+      case (Data.Number(value: Int), Type.Int)               => value.valid
+      case (Data.Number(value: Long), Type.Long)             => value.valid
+      case (Data.Number(value: Double), Type.Double)         => value.valid
+      case (Data.Number(value: Float), Type.Float)           => value.valid
+      case (Data.Number(value: BigDecimal), Type.BigDecimal) => value.valid
+      case (Data.Number(value: BigInt), Type.BigInt)         => value.valid
+      case (Data.Null, _)                                    => Violations.rootNec(Violation.required).invalid
       case (data, _) => Violations.rootNec(Violation.tpe(tpe.name, actual = data.name)).invalid
-    override def encode(a: A): Data = ???
+    override def encode(a: A): Data = tpe match
+      case Type.BigDecimal => Data.Number(a)
+      case Type.BigInt     => Data.Number(a)
+      case Type.Boolean    => Data.Boolean(a)
+      case Type.Double     => Data.Number(a)
+      case Type.Float      => Data.Number(a)
+      case Type.Int        => Data.Number(a)
+      case Type.Long       => Data.Number(a)
+      case Type.String     => Data.String(a)
     override def parse(value: Option[String]): Validated[Violations, A] = Validated
       .fromOption(value, Violations.rootNec(Violation.required))
       .andThen: value =>

@@ -6,7 +6,6 @@ enum Discriminator:
   case Nested(identifier: String, value: String)
   case Merged(identifier: String)
   case Keyed
-  case None
 
 object Discriminator:
   object Nested:
