@@ -33,9 +33,10 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
 
   final def product[B](schema: Record[B]): Record[(A, B)] = ???
   final transparent inline def zip[B](schema: Record[B]): Record[?] = inline (self, schema) match
-    case (_: Record[Unit], _: Record[?]) => ??? : Record[B]
-    case (_: Record[?], _: Record[Unit]) => ??? : Record[A]
-    case (_: Record[?], _: Record[?])    => ??? : Record[(A, B)]
+    case (_: Record[a], _: Record[Unit]) => ??? : Record[a]
+    case (_: Record[Unit], _: Record[b]) => ??? : Record[b]
+    case (_: Record[a *: as], _: Record[b])    => ??? : Record[Tuple.Append[a *: as, b]]
+    case (_: Record[a], _: Record[b])    => ??? : Record[(a, b)]
   final transparent inline def :*[B](field: Field[B]): Record[?] = self.zip(field.toRecord)
   final transparent inline def *:[B](field: Field[B]): Record[?] = field.toRecord.zip(self)
 
