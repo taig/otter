@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Primitive[A](val description: Option[String]) extends Value[A]:
+sealed abstract class Primitive[A](description: Option[String]) extends Value[A](description):
   self =>
   final override type Self[a] = Primitive[a]
 
@@ -14,15 +14,23 @@ sealed abstract class Primitive[A](val description: Option[String]) extends Valu
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description):
     override def constraints: Chain[Constraint] = self.constraints
     override def isOptional: Boolean = true
-    override def decode(data: Data): Validated[Violations, Option[A]] = ???
-    override def encode(a: Option[A]): Data = ???
+    override def decode(data: Data): Validated[Violations, Option[A]] = data match
+      case Data.Null => none.valid
+      case data      => self.decode(data).map(_.some)
+    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] =
       value.fold(none.valid)(value => self.parse(value.some).map(_.some))
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
-  override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = ???
-
-  final override def orElse[B](schema: Value[B]): Value[Either[A, B]] = ???
+  override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = new Primitive[B](description):
+    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+    override def isOptional: Boolean = self.isOptional
+    override def decode(data: Data): Validated[Violations, B] =
+      self.decode(data).andThen(validation(_).leftMap(Violations.root))
+    override def encode(b: B): Data = self.encode(g(b))
+    override def parse(value: Option[String]): Validated[Violations, B] =
+      self.parse(value).andThen(validation(_).leftMap(Violations.root))
+    override def print(b: B): Option[String] = self.print(g(b))
 
   final def orElse[B](schema: Primitive[B]): Primitive[Either[A, B]] = ???
 
@@ -43,9 +51,9 @@ object Primitive:
     override def isOptional: Boolean = false
     override def decode(data: Data): Validated[Violations, A] = (data, tpe) match
       case (Data.Boolean(value), Type.Boolean) => value.valid
-      case (Data.String(value), Type.String) => value.valid
-      case (Data.Null, _)                    => Violations.rootNec(Violation.required).invalid
-      case (data, _)                         => Violations.rootNec(Violation.tpe(tpe.name, actual = data.name)).invalid
+      case (Data.String(value), Type.String)   => value.valid
+      case (Data.Null, _)                      => Violations.rootNec(Violation.required).invalid
+      case (data, _) => Violations.rootNec(Violation.tpe(tpe.name, actual = data.name)).invalid
     override def encode(a: A): Data = ???
     override def parse(value: Option[String]): Validated[Violations, A] = Validated
       .fromOption(value, Violations.rootNec(Violation.required))

@@ -7,14 +7,13 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 import scala.collection.immutable.VectorMap
 
-abstract class Schema[A]:
+abstract class Schema[A](val description: Option[String]):
   self =>
   type Self[a] <: Schema[a]
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
 
-  def description: Option[String]
   def description(f: Option[String] => Option[String]): Self[A]
   final def description(value: Option[String]): Self[A] = description(_ => value)
   final def description(value: String): Self[A] = description(Some(value))
@@ -25,7 +24,15 @@ abstract class Schema[A]:
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
 
-  final def orElse[B](schema: Schema[B]): Schema[Either[A, B]] = ???
+  final def orElse[B](schema: Schema[B]): Schema[Either[A, B]] = new Schema[Either[A, B]](None):
+    override type Self[a] = Schema[a]
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
+    override def description(f: Option[String] => Option[String]): Schema[Either[A, B]] = ???
+    override def optional: Schema[Option[Either[A, B]]] = ???
+    override def ivalidate[C](validation: Validation[Either[A, B], C])(g: C => Either[A, B]): Schema[C] = ???
+    override def encode(ab: Either[A, B]): Data = ???
+    override def decode(data: Data): Validated[Violations, Either[A, B]] = ???
   final def :+[B](schema: Schema[B]): Schema[Either[A, B]] = orElse(schema)
   final def +:[B](schema: Schema[B]): Schema[Either[B, A]] = schema.orElse(this)
 
