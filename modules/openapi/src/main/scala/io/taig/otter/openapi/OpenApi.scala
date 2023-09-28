@@ -40,14 +40,14 @@
 //  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
 //    JsonObject(
 //      "type" := "array",
-//      "items" := self.schema(schema.schema.value),
+//      "items" := self.schema(schema.Value),
 //      "nullable" := schema.isOptional
 //    )
 //  )
 //
 //  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
 //    "type" := typeOf(schema.schema),
-//    "enum" := schema.values.map(toJson),
+//    "enum" := Values.map(toJson),
 //    "nullable" := schema.isOptional
 //  )
 //
@@ -116,7 +116,7 @@
 //      case _                               => JsonObject.empty
 //
 //  @tailrec
-//  def typeOf(schema: Schema.Value[?]): String = schema match
+//  def typeOf(schema: Value[?]): String = schema match
 //    case enumeration: Enumeration[?] => typeOf(enumeration.schema)
 //    case primitive: Primitive[?]     => typeOf(primitive.tpe)
 //

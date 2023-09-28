@@ -37,14 +37,15 @@ object Dictionary:
   def apply[A](schema: Dictionary[A], description: Option[String]): Dictionary[A] =
     new Dictionary[A](description) { export schema.* }
 
-  def apply[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = new Dictionary[Chain[(A, B)]](None):
-    override def constraints: Chain[Constraint] = Chain.empty
-    override def isOptional: Boolean = false
-    override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
-      Data.Object(a.map { case (a, b) => (key.print(a).orEmpty, schema.encode(b)) }).some
-    override def decode(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
-      case Some(data) =>
-        data.values.traverse { case (a, b) =>
-          (key.parse(Some(a).filter(_.nonEmpty)), schema.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
-        }
-      case None => Violations.rootNec(Violation.required).invalid
+  def apply[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
+    new Dictionary[Chain[(A, B)]](None):
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def isOptional: Boolean = false
+      override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
+        Data.Object(a.map { case (a, b) => (key.print(a).orEmpty, schema.encode(b)) }).some
+      override def decode(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
+        case Some(data) =>
+          data.values.traverse { case (a, b) =>
+            (key.parse(Some(a).filter(_.nonEmpty)), schema.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
+          }
+        case None => Violations.rootNec(Violation.required).invalid

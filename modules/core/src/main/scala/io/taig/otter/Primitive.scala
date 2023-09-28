@@ -6,7 +6,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Primitive[A](description: Option[String], val format: Option[String])
     extends Schema[A](description)
-    with Value[A]:
+    with Schema.Value[A]:
   self =>
   final override type Self[a] = Primitive[a]
 

@@ -37,7 +37,7 @@ object Dynamic:
       case data: Data.Value => data.valid
       case Data.Null        => Violations.rootNec(Violation.required).invalid
 
-  sealed abstract class Primitive[A](description: Option[String]) extends Dynamic[A](description) with Value[A]:
+  sealed abstract class Primitive[A](description: Option[String]) extends Dynamic[A](description) with Schema.Value[A]:
     override type Self[a] = Dynamic.Primitive[a]
     override def description(f: Option[String] => Option[String]): Primitive[A] = Primitive(this, f(description))
     override def optional: Primitive[Option[A]] = ???

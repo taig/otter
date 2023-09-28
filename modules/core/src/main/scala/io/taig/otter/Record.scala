@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.{Chain, Validated}
-import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Record[A](description: Option[String], val nulls: Null) extends Schema[A](description):

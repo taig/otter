@@ -19,10 +19,10 @@ object CirceEncoder:
       case schema: Schema.Dynamic[?]       => dynamic.encode(schema, a).getOrElse(Json.Null)
       case schema: Schema.Product[?]       => ???
       case schema: Schema.Record[?]        => record.encode(schema, a).fold(Json.Null)(Json.fromJsonObject)
-      case schema: Schema.Value[?]         => value.encode(schema, a)
+      case schema: Value[?]                => value.encode(schema, a)
 
-  val value: Encoder[Schema.Value, Json] = new Encoder:
-    override def encode[B](schema: Schema.Value[B], b: B): Json = schema match
+  val value: Encoder[Value, Json] = new Encoder:
+    override def encode[B](schema: Value[B], b: B): Json = schema match
       case schema: Schema.Enumeration[?] => enumeration.encode(schema, b)
       case schema: Schema.Primitive[?]   => primitive.encode(schema, b)
 

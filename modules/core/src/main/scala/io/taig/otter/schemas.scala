@@ -45,49 +45,55 @@ object schemas:
         case data              => Data.String(data.name).invalidNec
       primitive.ivalidate(validation)(identity)
 
-  def field[A, B](name: A, key: Value[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
+  def field[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
   def field[A](name: String, schema: Schema[A]): Field[A] = field(name, string, schema)
   def field[A](name: Int, schema: Schema[A]): Field[A] = field(name, int, schema)
 
-  def branch[A, B](name: A, key: Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
+  def branch[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
   def branch[A](name: String, schema: Schema[A]): Branch[A] = branch(name, string, schema)
   def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
 
   object collection:
-    def chain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, Chain[A]] = Collection(schema)
-    def vector[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, Vector[A]] =
+    transparent inline def chain[A](schema: Schema[A]): Collection[Chain[A]] | Collection.Value[Chain[A]] =
+      inline schema match
+        case schema: Schema.Value[A] => Collection.Value(schema)
+        case schema                  => Collection(schema)
+    transparent inline def vector[A](schema: Schema[A]): Collection[Vector[A]] | Collection.Value[Vector[A]] =
       chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, List[A]] =
+    transparent inline def list[A](schema: Schema[A]): Collection[List[A]] | Collection.Value[List[A]] =
       chain(schema).imap(_.toList)(Chain.fromSeq)
-    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: F[A]): Collection.Of[F, SortedSet[A]] =
+    transparent inline def sortedSet[A: Ordering](
+        schema: Schema[A]
+    ): Collection[SortedSet[A]] | Collection.Value[SortedSet[A]] =
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyChain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, NonEmptyChain[A]] =
+    transparent inline def nonEmptyChain[A](
+        schema: Schema[A]
+    ): Collection[NonEmptyChain[A]] | Collection.Value[NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(schema).ivalidate(validation)(_.toChain)
-    // TODO expose way to merge into record or product
-    def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: Schema[A], schema: Schema[B])(
-        f: (Schema[A], Schema[B]) => F[(A, B)]
-    ): Collection.Of[F, SortedMap[A, B]] =
+    transparent inline def sortedMap[A: Ordering, B](key: Schema[A], schema: Schema[B])(
+        f: (Schema[A], Schema[B]) => Schema[(A, B)]
+    ): Collection[SortedMap[A, B]] | Collection.Value[SortedMap[A, B]] =
       chain(f(key, schema)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[A, B](schema: Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
+    def apply[A, B](schema: Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
       Enumeration(schema, mapping)
-    def apply[A: Hash, B](schema: Value[A])(f: B => A)(using EnumerationValues.Aux[B, B]): Enumeration[B] =
+    def apply[A: Hash, B](schema: Schema.Value[A])(f: B => A)(using EnumerationValues.Aux[B, B]): Enumeration[B] =
       enumeration(schema)(using Mapping.enumeration(f))
-    def constant[A: Eq](schema: Value[A], value: A & Singleton): Enumeration[value.type] =
+    def constant[A: Eq](schema: Schema.Value[A], value: A & Singleton): Enumeration[value.type] =
       enumeration(schema)(using Mapping.constant[A](value))
 
   object dictionary:
-    def chain[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
-    def map[A, B](key: Value[A], schema: Schema[B]): Dictionary[Map[A, B]] =
+    def chain[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
+    def map[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Map[A, B]] =
       chain(key, schema).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
-    def vectorMap[A, B](key: Value[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
+    def vectorMap[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
       chain(key, schema).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
-    def sortedMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
+    def sortedMap[A: Ordering, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
       chain(key, schema).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
+    def nonEmptyMap[A: Ordering, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
         Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)

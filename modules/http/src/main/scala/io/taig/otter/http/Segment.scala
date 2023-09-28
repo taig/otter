@@ -3,7 +3,7 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Violation, Violations}
-import io.taig.otter.{Data, Schema, StringDecoder, StringEncoder}
+import io.taig.otter.{Data, Schema}
 
 sealed abstract class Segment[A]:
   self =>
@@ -38,9 +38,9 @@ object Segment:
       case None => Violations.rootNec(Violation.required).invalid
     override def encode(a: Unit): Option[String] = static.some
 
-  def apply[A](parameter: String, of: => Schema.Value[A]): Segment[A] = new Segment[A]:
+  def apply[A](parameter: String, of: Schema.Value[A]): Segment[A] = new Segment[A]:
     override def schema: Option[Schema.Value[A]] = of.some
     override def name: String = parameter
     override def matches(value: String): Boolean = true
-    override def decode(a: Option[String]): Validated[Violations, A] = StringDecoder.value.decode(of, a)
-    override def encode(a: A): Option[String] = StringEncoder.value.encode(of, a)
+    override def decode(a: Option[String]): Validated[Violations, A] = of.parse(a)
+    override def encode(a: A): Option[String] = of.print(a)

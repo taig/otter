@@ -6,26 +6,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Collection[A](description: Option[String]) extends Schema[A](description):
   self =>
-  override type Self[a] = Collection.Of[Of, a]
-  type Of[a] <: Schema[a]
-
-  final override def description(f: Option[String] => Option[String]): Collection.Of[Of, A] =
-    Collection(this, f(description))
-
-  final override def optional: Collection.Of[Of, Option[A]] = new Collection[Option[A]](description):
-    export self.{constraints, Of}
-    override def isOptional: Boolean = true
-    override def decode(data: Option[Data.Array]): Validated[Violations, Option[A]] =
-      data.fold(none.valid)(_ => self.decode(data).map(_.some))
-    override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
-
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] =
-    new Collection[B](description):
-      export self.{isOptional, Of}
-      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-      override def decode(data: Option[Data.Array]): Validated[Violations, B] =
-        self.decode(data).andThen(validation(_).leftMap(Violations.root))
-      override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
+  override type Self[a] <: Collection[a]
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Array => decode(Some(data))
@@ -36,13 +17,32 @@ sealed abstract class Collection[A](description: Option[String]) extends Schema[
   def encodeArray(a: A): Option[Data.Array]
 
 object Collection:
-  type Of[F[a] <: Schema[a], A] = Collection[A] { type Of[a] = F[a] }
-
-  def apply[F[a] <: Schema[a], A](schema: Collection.Of[F, A], description: Option[String]): Collection.Of[F, A] =
+  def apply[A](schema: Collection[A], description: Option[String]): Collection[A] =
     new Collection[A](description) { export schema.* }
 
-  def apply[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, Chain[A]] = new Collection[Chain[A]](None):
-    override type Of[a] = F[a]
+  abstract private class Root[A](description: Option[String]) extends Collection[A](description):
+    self =>
+    final override type Self[a] = Collection[a]
+
+    final override def description(f: Option[String] => Option[String]): Collection[A] =
+      Collection(this, f(description))
+
+    final override def optional: Collection[Option[A]] = new Root[Option[A]](description):
+      export self.constraints
+      override def isOptional: Boolean = true
+      override def decode(data: Option[Data.Array]): Validated[Violations, Option[A]] =
+        data.fold(none.valid)(_ => self.decode(data).map(_.some))
+      override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
+
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[B] =
+      new Root[B](description):
+        export self.isOptional
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Option[Data.Array]): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
+
+  def apply[A](schema: Schema[A]): Collection[Chain[A]] = new Root[Chain[A]](None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decode(data: Option[Data.Array]): Validated[Violations, Chain[A]] = data match
@@ -52,3 +52,27 @@ object Collection:
         }
       case None => Violations.rootNec(Violation.required).invalid
     override def encodeArray(a: Chain[A]): Option[Data.Array] = Data.Array(a.map(schema.encode)).some
+
+  sealed abstract class Value[A](description: Option[String]) extends Collection[A](description) {
+    final override type Self[a] = Collection.Value[a]
+
+    override def description(f: Option[String] => Option[String]): Value[A] = ???
+
+    override def optional: Value[Option[A]] = ???
+
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Value[B] = ???
+
+    def print(a: A): Option[Chain[Option[String]]]
+    def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A]
+  }
+
+  object Value:
+    def apply[A](schema: Schema.Value[A]): Collection.Value[Chain[A]] = new Value[Chain[A]](None) {
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def isOptional: Boolean = false
+      override def decode(data: Option[Data.Array]): Validated[Violations, Chain[A]] = ???
+      override def encodeArray(a: Chain[A]): Option[Data.Array] = Data.Array(a.map(schema.encode)).some
+      override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Chain[A]] = ???
+      override def print(as: Chain[A]): Option[Chain[Option[String]]] =
+        as.map(schema.print).some
+    }

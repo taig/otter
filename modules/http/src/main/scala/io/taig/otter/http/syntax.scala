@@ -4,7 +4,7 @@ import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.http.headers.{ContentType, MediaType}
-import io.taig.otter.{Decoder, Encoder, Schema}
+import io.taig.otter.{Collection, Data, Schema}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -12,13 +12,9 @@ import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets,
 object syntax:
   val __ : Url[Unit] = Url.Root
 
-  def header[A](name: CIString, schema: => Schema.Value[A] | Schema.Collection[Schema.Value, A]): Header[A] =
-    Header(name, schema)
-
-  def parameter[A](name: String, schema: => Schema.Value[A]): Segment[A] = Segment(name, schema)
-
-  def query[A](name: String, schema: => Schema.Value[A] | Schema.Collection[Schema.Value, A]): Query[A] =
-    Query(name, schema)
+  def header[A](name: CIString, schema: Schema.Value[A] | Collection.Value[A]): Header[A] = Header(name, schema)
+  def parameter[A](name: String, schema: Schema.Value[A]): Segment[A] = Segment(name, schema)
+  def query[A](name: String, schema: Schema.Value[A] | Collection.Value[A]): Query[A] = Query(name, schema)
 
   object method:
     val delete: Method = Method("DELETE")
@@ -58,11 +54,9 @@ object syntax:
 
   object input:
     def apply[A, B](
-        body: Request.Body.Singlepart.Strict[A],
-        decoder: Decoder[Schema, A],
-        encoder: Encoder[Schema, A],
+        body: Request.Body.Singlepart.Strict[Data],
         schema: Schema[B]
-    ): Request.Body.Singlepart.Strict[B] = body.andThen(decoder.decode(schema, _))(encoder.encode(schema, _))
+    ): Request.Body.Singlepart.Strict[B] = ???
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
@@ -88,11 +82,9 @@ object syntax:
 
   object output:
     def apply[A, B](
-        body: Response.Body.Strict[A],
-        decoder: Decoder[Schema, A],
-        encoder: Encoder[Schema, A],
+        body: Response.Body.Strict[Data],
         schema: Schema[B]
-    ): Response.Body.Strict[B] = body.andThen(decoder.decode(schema, _))(encoder.encode(schema, _))
+    ): Response.Body.Strict[B] = ???
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)

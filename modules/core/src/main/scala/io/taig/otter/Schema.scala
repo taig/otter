@@ -65,3 +65,37 @@ object Schema:
       override def encode(b: B): Data = self.encode(g(b))
       override def decode(data: Data): Validated[Violations, B] =
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
+
+  trait Value[A] extends Schema[A]:
+    self =>
+    override type Self[a] <: Schema.Value[a]
+
+    final def orElse[B](schema: Schema.Value[B]): Schema.Value[Either[A, B]] = ???
+    final def :+[B](schema: Schema.Value[B]): Schema.Value[Either[A, B]] = orElse(schema)
+    final def +:[B](schema: Schema.Value[B]): Schema.Value[Either[B, A]] = schema.orElse(this)
+
+    def print(a: A): Option[String]
+
+    def parse(value: Option[String]): Validated[Violations, A]
+
+  object Value:
+    extension [A <: Matchable](self: Schema.Value[A])
+      inline def |[B <: Matchable](schema: Schema.Value[B]): Schema.Value[A | B] = self
+        .orElse(schema)
+        .imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }
+
+    def apply[A](schema: Schema.Value[A], description: Option[String]): Schema.Value[A] =
+      new Schema[A](description) with Schema.Value[A] { export schema.* }
+
+    sealed abstract class Root[A] extends Schema[A](None) with Schema.Value[A]:
+      self =>
+      final override type Self[a] = Schema.Value[a]
+      final override def description(f: Option[String] => Option[String]): Schema.Value[A] = Value(this, f(description))
+      final override def optional: Schema.Value[Option[A]] = ???
+      final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Value[B] = ???

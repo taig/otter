@@ -11,7 +11,7 @@ import io.taig.otter.*
 object CirceDecoder:
   val schema: Decoder[Schema, Json] = new Decoder:
     override def decode[B](schema: Schema[B], json: Json): Validated[Violations, B] = schema match
-      case schema: Schema.Value[?] => value.decode(schema, json)
+      case schema: Value[?] => value.decode(schema, json)
       case schema: Schema.Collection[?, ?] =>
         if json.isNull
         then collection.decode(schema, none)
@@ -31,8 +31,8 @@ object CirceDecoder:
             .toValid(Violations.rootNec(Violation.tpe("object", actual = name(json))))
             .andThen(obj => record.decode(schema, Chain.fromIterableOnce(obj.toIterable).some))
 
-  val value: Decoder[Schema.Value, Json] = new Decoder:
-    override def decode[A](schema: Schema.Value[A], json: Json): Validated[Violations, A] = schema match
+  val value: Decoder[Value, Json] = new Decoder:
+    override def decode[A](schema: Value[A], json: Json): Validated[Violations, A] = schema match
       case schema: Schema.Enumeration[?] => ???
       case schema: Schema.Primitive[?]   => primitive.decode(schema, json)
 
