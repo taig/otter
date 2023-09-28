@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.{Chain, Validated}
+import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Record[A](description: Option[String], val nulls: Null) extends Schema[A](description):
@@ -10,6 +11,8 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
 
   final override def description(f: Option[String] => Option[String]): Record[A] = Record(this, f(description), nulls)
   final def nulls(f: Null => Null): Record[A] = Record(this, description, f(nulls))
+
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 
   final override def optional: Record[Option[A]] = new Record[Option[A]](description, nulls):
     export self.constraints
@@ -28,6 +31,14 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
       override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], B)] =
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
       override def encode(b: B, nulls: Null): Option[Data.Object] = self.encode(g(b), nulls)
+
+  final def product[B](schema: Record[B]): Record[(A, B)] = ???
+  final transparent inline def zip[B](schema: Record[B]): Record[?] = inline (self, schema) match
+    case (_: Record[Unit], _: Record[?]) => ??? : Record[B]
+    case (_: Record[?], _: Record[Unit]) => ??? : Record[A]
+    case (_: Record[?], _: Record[?])    => ??? : Record[(A, B)]
+  final transparent inline def :*[B](field: Field[B]): Record[?] = self.zip(field.toRecord)
+  final transparent inline def *:[B](field: Field[B]): Record[?] = field.toRecord.zip(self)
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Object => decodeWithRemainders(Some(data)).map(_._2)

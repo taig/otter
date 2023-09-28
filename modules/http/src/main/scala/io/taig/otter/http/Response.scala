@@ -2,9 +2,8 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.History
 import io.taig.otter.http.Http.Payload
-import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.validation.{History, Violation, Violations}
 
 final case class Response[A](results: Results[A], violations: Result[Violations]):
   def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))

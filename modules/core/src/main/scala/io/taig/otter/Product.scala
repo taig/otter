@@ -12,6 +12,8 @@ sealed abstract class Product[A](description: Option[String]) extends Schema[A](
 
   final override def description(f: Option[String] => Option[String]): Product[A] = Product(this, f(description))
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[B] = imap(evidence.from)(evidence.to)
+
   final override def optional: Product[Option[A]] = new Product[Option[A]](description):
     override def toChain: Chain[Schema[?]] = self.toChain
     override def constraints: Chain[Constraint] = self.constraints

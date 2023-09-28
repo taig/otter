@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.validation
 
 import cats.Order
 import cats.data.Chain

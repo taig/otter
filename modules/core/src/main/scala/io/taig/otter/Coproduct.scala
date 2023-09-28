@@ -16,6 +16,8 @@ sealed abstract class Coproduct[A](description: Option[String], val discriminato
   final def discriminator(f: Discriminator => Discriminator): Coproduct[A] =
     Coproduct(this, description, f(discriminator))
 
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
+
   final override def optional: Coproduct[Option[A]] = new Coproduct[Option[A]](None, Discriminator.Default):
     export self.{constraints, toNonEmptyChain}
     override def isOptional: Boolean = true
@@ -52,6 +54,9 @@ sealed abstract class Coproduct[A](description: Option[String], val discriminato
           case a @ Some(_) => a.valid
           case None        => schema.decode(data, discriminator).map(_.map(_.asRight))
       override def encode(ab: Either[A, B], discriminator: Discriminator): Data = ab.fold(self.encode, schema.encode)
+
+  final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = self.orElse(branch.toCoproduct)
+  final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch.toCoproduct.orElse(self)
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Object =>
