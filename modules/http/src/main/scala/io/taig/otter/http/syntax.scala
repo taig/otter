@@ -53,10 +53,10 @@ object syntax:
       Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
   object input:
-    def apply[A, B](
+    def apply[A](
         body: Request.Body.Singlepart.Strict[Data],
-        schema: Schema[B]
-    ): Request.Body.Singlepart.Strict[B] = ???
+        schema: Schema[A]
+    ): Request.Body.Singlepart.Strict[A] = body.andThen(schema.decode)(schema.encode)
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
     val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
@@ -81,10 +81,8 @@ object syntax:
   def result(code: Code): Result[Unit] = Result(code, output.empty)
 
   object output:
-    def apply[A, B](
-        body: Response.Body.Strict[Data],
-        schema: Schema[B]
-    ): Response.Body.Strict[B] = ???
+    def apply[A](body: Response.Body.Strict[Data], schema: Schema[A]): Response.Body.Strict[A] =
+      body.andThen(schema.decode)(schema.encode)
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
