@@ -17,8 +17,13 @@ sealed abstract class Results[A]:
 
   final def orElse[B](results: Results[B]): Results[A + B] = new Results[A + B]:
     override def toNonEmptyChain: NonEmptyChain[Result[?]] = self.toNonEmptyChain.combine(results.toNonEmptyChain)
-    override def decodeOption(response: Http.Response): Validated[Violations, Option[A + B]] = ???
-    // self.decode(response).map(_.asLeft).findValid(results.decode(response).map(_.asRight))
+    override def decodeOption(response: Http.Response): Validated[Violations, Option[A + B]] =
+      self
+        .decodeOption(response)
+        .map(_.map(_.asLeft))
+        .andThen:
+          case a @ Some(_) => a.valid
+          case None        => results.decodeOption(response).map(_.map(_.asRight))
     override def encode(ab: A + B): Http.Response = ab match
       case Left(a)  => self.encode(a)
       case Right(b) => results.encode(b)

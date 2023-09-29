@@ -28,7 +28,11 @@ object syntax:
 
   object output:
     def json(printer: Printer): Response.Body.Strict[Json] =
-      http.output.binary.imap(_ => ???)(printer.print(_).getBytes(StandardCharsets.UTF_8))
+      http.output.binary.andThen { bytes =>
+        Validated
+          .fromEither(parser.parseByteArray(bytes))
+          .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+      }(printer.print(_).getBytes(StandardCharsets.UTF_8))
     val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
     def json[A](schema: Schema[A]): Response.Body.Strict[A] = http.output(json.imap(toData)(fromData), schema)
 
