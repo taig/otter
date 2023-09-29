@@ -31,7 +31,17 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
       override def encode(b: B, nulls: Null): Option[Data.Object] = self.encode(g(b), nulls)
 
-  final def product[B](schema: Record[B]): Record[(A, B)] = ???
+  final def product[B](schema: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
+    override def constraints: Chain[Constraint] = Chain.empty
+    override def isOptional: Boolean = false
+    override def encode(ab: (A, B), nulls: Null): Option[Data.Object] =
+      (self.encode(ab._1, nulls), schema.encode(ab._2, nulls)) match
+        case (Some(a), Some(b))  => Some(a ++ b)
+        case (a @ Some(_), None) => a
+        case (None, b @ Some(_)) => b
+        case (None, None)        => None
+    override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], (A, B))] =
+      self.decodeWithRemainders(data).andThen { case (data, a) => schema.decodeWithRemainders(data).map(_.tupleLeft(a)) }
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Object => decodeWithRemainders(Some(data)).map(_._2)

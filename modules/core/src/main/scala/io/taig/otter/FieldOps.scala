@@ -1,8 +1,8 @@
 package io.taig.otter
 
 final class FieldOps[A](self: Field[A]) extends AnyVal:
-  inline def :*[B](field: Field[B]): Record[(A, B)] = ???
-  inline def *:[B](field: Field[B]): Record[(B, A)] = ???
+  inline def :*[B](field: Field[B]): Record[(A, B)] = self.toRecord :* field
+  inline def *:[B](field: Field[B]): Record[(B, A)] = field *: self.toRecord
   inline def *:(field: Field[Unit]): Record[A] = ???
 
 final class FieldOpsUnit(self: Field[Unit]) extends AnyVal:

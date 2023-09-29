@@ -53,20 +53,35 @@ object Collection:
       case None => Violations.rootNec(Violation.required).invalid
     override def encodeArray(a: Chain[A]): Option[Data.Array] = Data.Array(a.map(schema.encode)).some
 
-  sealed abstract class Value[A](description: Option[String]) extends Collection[A](description) {
+  sealed abstract class Value[A](description: Option[String]) extends Collection[A](description):
+    self =>
     final override type Self[a] = Collection.Value[a]
 
-    override def description(f: Option[String] => Option[String]): Value[A] = ???
+    override def description(f: Option[String] => Option[String]): Collection.Value[A] = Value(this, f(description))
 
-    override def optional: Value[Option[A]] = ???
+    override def optional: Collection.Value[Option[A]] = new Value[Option[A]](description):
+      export self.constraints
+      override def isOptional: Boolean = true
+      override def print(a: Option[A]): Option[Chain[Option[String]]] = ???
+      override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Option[A]] = ???
+      override def decode(data: Option[Data.Array]): Validated[Violations, Option[A]] = ???
+      override def encodeArray(a: Option[A]): Option[Data.Array] = ???
 
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Value[B] = ???
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Value[B] = new Value[B](description):
+      export self.isOptional
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def decode(data: Option[Data.Array]): Validated[Violations, B] = ???
+      override def encodeArray(a: B): Option[Data.Array] = ???
+      override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, B] = ???
+      override def print(a: B): Option[Chain[Option[String]]] = ???
 
     def print(a: A): Option[Chain[Option[String]]]
     def parse(values: Option[Chain[Option[String]]]): Validated[Violations, A]
-  }
 
   object Value:
+    def apply[A](schema: Collection.Value[A], description: Option[String]): Collection.Value[A] =
+      new Value[A](description) { export schema.* }
+
     def apply[A](schema: Schema.Value[A]): Collection.Value[Chain[A]] = new Value[Chain[A]](None) {
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false

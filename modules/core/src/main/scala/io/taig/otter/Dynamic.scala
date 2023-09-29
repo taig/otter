@@ -38,10 +38,32 @@ object Dynamic:
       case Data.Null        => Violations.rootNec(Violation.required).invalid
 
   sealed abstract class Primitive[A](description: Option[String]) extends Dynamic[A](description) with Schema.Value[A]:
-    override type Self[a] = Dynamic.Primitive[a]
-    override def description(f: Option[String] => Option[String]): Primitive[A] = Primitive(this, f(description))
-    override def optional: Primitive[Option[A]] = ???
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] = ???
+    self =>
+    final override type Self[a] = Dynamic.Primitive[a]
+
+    final override def description(f: Option[String] => Option[String]): Primitive[A] = Primitive(this, f(description))
+
+    final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description):
+      export self.constraints
+      override def isOptional: Boolean = true
+      override def decode(data: Data): Validated[Violations, Option[A]] = data match
+        case Data.Null => none.valid
+        case _         => self.decode(data).map(_.some)
+      override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
+      override def parse(value: Option[String]): Validated[Violations, Option[A]] =
+        value.fold(none.valid)(_ => self.parse(value).map(_.some))
+      override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
+
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
+      new Primitive[B](description):
+        export self.isOptional
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Data): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encode(b: B): Data = self.encode(g(b))
+        override def parse(value: Option[String]): Validated[Violations, B] =
+          self.parse(value).andThen(validation(_).leftMap(Violations.root))
+        override def print(b: B): Option[String] = self.print(g(b))
 
   object Primitive:
     def apply[A](schema: Dynamic.Primitive[A], description: Option[String]): Dynamic.Primitive[A] =
