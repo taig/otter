@@ -32,13 +32,6 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
       override def encode(b: B, nulls: Null): Option[Data.Object] = self.encode(g(b), nulls)
 
   final def product[B](schema: Record[B]): Record[(A, B)] = ???
-  final transparent inline def zip[B](schema: Record[B]): Record[?] = inline (self, schema) match
-    case (_: Record[a], _: Record[Unit]) => ??? : Record[a]
-    case (_: Record[Unit], _: Record[b]) => ??? : Record[b]
-    case (_: Record[a *: as], _: Record[b])    => ??? : Record[Tuple.Append[a *: as, b]]
-    case (_: Record[a], _: Record[b])    => ??? : Record[(a, b)]
-  final transparent inline def :*[B](field: Field[B]): Record[?] = self.zip(field.toRecord)
-  final transparent inline def *:[B](field: Field[B]): Record[?] = field.toRecord.zip(self)
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Object => decodeWithRemainders(Some(data)).map(_._2)
@@ -48,7 +41,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
   final override def encode(a: A): Data = encode(a, nulls).getOrElse(Data.Null)
   def encode(a: A, nulls: Null): Option[Data.Object]
 
-object Record:
+object Record extends ToRecordOps:
   def apply[A](schema: Record[A], description: Option[String], nulls: Null): Record[A] =
     new Record[A](description, nulls) { export schema.* }
 

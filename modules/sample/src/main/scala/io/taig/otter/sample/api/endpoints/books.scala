@@ -4,7 +4,7 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Request, Results, Url}
-import io.taig.otter.sample.api.{Book, Isbn, Role, schemas}
+import io.taig.otter.sample.api.{schemas, Book, Isbn, Role}
 import io.taig.otter.{Coproduct, Discriminator, Schema}
 
 object books:
@@ -25,7 +25,8 @@ object books:
       result(code.conflict, output.json(isbnConflict)).to
 
   val post: Endpoint[Role.Librarian, NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
-    val books: Schema[NonEmptyChain[Book]] = schemas.book.main.orElse(collection.nonEmptyChain(schemas.book.main))
+    val books: Schema[NonEmptyChain[Book]] = schemas.book.main
+      .orElse(collection.nonEmptyChain(schemas.book.main))
       .imap {
         case Left(book)   => NonEmptyChain.one(book)
         case Right(books) => books

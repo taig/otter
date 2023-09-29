@@ -6,9 +6,6 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.syntax.*
 
 sealed abstract class Field[A](val name: String, val nulls: Option[Null]):
-  final transparent inline def :*[B](field: Field[B]): Record[?] = toRecord :* field
-  final transparent inline def *:[B](field: Field[B]): Record[?] = field *: toRecord
-
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
   final def toRecord: Record[A] = Record(this)
 
@@ -23,7 +20,7 @@ sealed abstract class Field[A](val name: String, val nulls: Option[Null]):
     encode(name, a, nulls)
   protected def encode(name: String, a: A, nulls: Null): Data.Object
 
-object Field:
+object Field extends ToFieldOps:
   def apply[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[B] =
     new Field[B](key.print(name).orEmpty, None):
       override def decodeWithRemainders(name: String, data: Data.Object): Validated[Violations, (Data.Object, B)] =
