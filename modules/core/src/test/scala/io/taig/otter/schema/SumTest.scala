@@ -1,5 +1,3 @@
-package io.taig.otter.schema
-
 //package io.taig.otter.schema
 //
 //import cats.syntax.all.*
