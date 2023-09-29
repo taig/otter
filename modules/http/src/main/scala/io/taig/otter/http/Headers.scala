@@ -39,5 +39,5 @@ object Headers:
   def apply[A](header: Header[A]): Headers[A] = new Headers[A]:
     override def toChain: Chain[Header[A]] = Chain.one(header)
     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      header.decodeWithRemainders(remainders)
+      header.decodeWithRemainders(remainders).leftMap(_.modifyHistory(header.name.toString /: _))
     override def encode(a: A): Http.Headers = header.encode(a)

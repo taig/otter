@@ -11,6 +11,7 @@ sealed abstract class Field[A](val name: String, val nulls: Option[Null]):
 
   final def decodeWithRemainders(data: Data.Object): Validated[Violations, (Data.Object, A)] =
     decodeWithRemainders(name, data)
+
   protected def decodeWithRemainders(name: String, data: Data.Object): Validated[Violations, (Data.Object, A)]
 
   final def encode(a: A, parent: Null): Data.Object =

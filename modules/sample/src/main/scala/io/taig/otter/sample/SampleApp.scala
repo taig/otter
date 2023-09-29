@@ -23,7 +23,7 @@ object SampleApp extends IOApp.Simple:
       _ <- repositories.librarian.create(administrator).rethrow
       login = administrator.toLogin
       session <- repositories.librarian.login(login).rethrow
-      _ <- IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)")
+      _ <- IO.println(s"Created librarian account: ${login.email}:${login.password} ($session)")
       route = new SampleRoute(repositories.librarian)
       routes = SampleRoutes(route, repositories)
       server = new Http4sHttpServer[IO]

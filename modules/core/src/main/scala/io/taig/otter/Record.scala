@@ -41,7 +41,9 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
         case (None, b @ Some(_)) => b
         case (None, None)        => None
     override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], (A, B))] =
-      self.decodeWithRemainders(data).andThen { case (data, a) => schema.decodeWithRemainders(data).map(_.tupleLeft(a)) }
+      self.decodeWithRemainders(data).andThen { case (data, a) =>
+        schema.decodeWithRemainders(data).map(_.tupleLeft(a))
+      }
 
   final override def decode(data: Data): Validated[Violations, A] = data match
     case data: Data.Object => decodeWithRemainders(Some(data)).map(_._2)

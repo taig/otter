@@ -19,9 +19,12 @@ sealed abstract class Primitive[A](description: Option[String], val format: Opti
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description, format):
     export self.constraints
     override def isOptional: Boolean = true
-    override def decode(data: Data): Validated[Violations, Option[A]] = self.decode(data).map(_.some)
+    override def decode(data: Data): Validated[Violations, Option[A]] = data match
+      case Data.Null => none.valid
+      case _         => self.decode(data).map(_.some)
     override def encode(a: Option[A]): Data.Primitive | Data.Null.type = a.map(self.encode).getOrElse(Data.Null)
-    override def parse(value: Option[String]): Validated[Violations, Option[A]] = self.parse(value).map(_.some)
+    override def parse(value: Option[String]): Validated[Violations, Option[A]] =
+      value.fold(none.valid)(_ => self.parse(value).map(_.some))
     override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =

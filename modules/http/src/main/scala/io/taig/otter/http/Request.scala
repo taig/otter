@@ -28,9 +28,11 @@ sealed abstract class Request[A]:
     export self.{body, method, url}
     override def headers: Headers[?] = self.headers.zip(other)
     override def decode(request: Http.Request): Validated[Violations, (A, B)] =
-      self.decode(request).andThen(a => other.decode(request.headers).map((a, _)))
-    override def encode(ab: (A, B)): Http.Request =
-      self.encode(ab._1).modifyHeaders(_ ++ other.encode(ab._2))
+      self
+        .decode(request)
+        .andThen(a => other.decode(request.headers).leftMap(_.modifyHistory("headers" /: _)).map((a, _)))
+
+    override def encode(ab: (A, B)): Http.Request = self.encode(ab._1).modifyHeaders(_ ++ other.encode(ab._2))
 
   def decode(request: Http.Request): Validated[Violations, A]
   def encode(a: A): Http.Request
