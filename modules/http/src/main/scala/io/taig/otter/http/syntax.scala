@@ -47,6 +47,8 @@ object syntax:
   object request:
     inline def apply[A, B](method: Method, url: Url[A], body: Request.Body[B]): Request[(A, B)] =
       Request(method, url, body)
+    inline def apply[A](method: Method, url: Url[A]): Request[A] =
+      Request(method, url, input.empty).imap { case (a, _) => a }(a => (a, ()))
     inline def apply[A](method: Method, url: Url[Unit], body: Request.Body[A]): Request[A] =
       Request(method, url, body).imap { case (_, a) => a }(((), _))
     inline def apply(method: Method, url: Url[Unit]): Request[Unit] =

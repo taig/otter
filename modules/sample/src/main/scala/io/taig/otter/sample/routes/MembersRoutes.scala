@@ -4,7 +4,8 @@ import cats.data.Chain
 import cats.effect.IO
 import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
-import io.taig.otter.sample.api.{Member, Route}
+import io.taig.otter.sample.api.Route
+import io.taig.otter.sample.data.Member
 import io.taig.otter.sample.api.endpoints
 import io.taig.otter.sample.repository.MemberRepository
 import io.taig.otter.sample.repository.MemberRepository.Error

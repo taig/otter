@@ -4,7 +4,7 @@ import cats.data.Chain
 import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.syntax.all.*
-import io.taig.otter.sample.api.{Book, Librarian, Member}
+import io.taig.otter.sample.data.{Book, Librarian, Member}
 import io.taig.otter.sample.repository.{BookRepository, LibrarianRepository, MemberRepository}
 import io.taig.otter.sample.service.ReferenceGenerator
 

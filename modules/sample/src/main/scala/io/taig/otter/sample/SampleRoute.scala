@@ -5,7 +5,8 @@ import cats.effect.IO
 import io.taig.otter.http.Route as OtterRoute
 import io.taig.otter.sample.api.endpoints.Endpoint
 import io.taig.otter.sample.api.endpoints.Authentication
-import io.taig.otter.sample.api.{Librarian, Member, Role, Route, User}
+import io.taig.otter.sample.api.{Role, Route, User}
+import io.taig.otter.sample.data.{Librarian, Member}
 import io.taig.otter.sample.repository.LibrarianRepository
 
 import java.util.UUID

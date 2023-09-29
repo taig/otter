@@ -3,7 +3,7 @@ package io.taig.otter.sample
 import cats.effect.{IO, IOApp}
 import io.taig.otter.dsl.*
 import io.taig.otter.http4s.Http4sHttpServer
-import io.taig.otter.sample.api.Librarian
+import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.service.ReferenceGenerator
 import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.LoggerFactory

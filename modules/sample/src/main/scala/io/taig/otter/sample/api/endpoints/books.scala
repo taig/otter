@@ -4,8 +4,9 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.syntax.all.*
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Request, Results, Url}
-import io.taig.otter.sample.api.{schemas, Book, Isbn, Role}
-import io.taig.otter.{Coproduct, Discriminator, Schema}
+import io.taig.otter.sample.api.{schemas, Role}
+import io.taig.otter.sample.data.{Book, Isbn}
+import io.taig.otter.Schema
 
 object books:
   val url: Url[Unit] = __ / "books"

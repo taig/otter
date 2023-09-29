@@ -1,10 +1,9 @@
 package io.taig.otter.sample.api.schemas
 
-import io.taig.otter.Schema
 import io.taig.otter.Primitive
 import io.taig.otter.Record
 import io.taig.otter.dsl.*
-import io.taig.otter.sample.api.Member
+import io.taig.otter.sample.data.Member
 
 object member:
   val reference: Primitive[Member.Reference] = cistring.ivalidate(Member.Reference.validation)(_.toCIString)

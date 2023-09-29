@@ -1,4 +1,4 @@
-package io.taig.otter.sample.api
+package io.taig.otter.sample.data
 
 enum ReferenceOrSelf[+A]:
   case Reference(value: A)

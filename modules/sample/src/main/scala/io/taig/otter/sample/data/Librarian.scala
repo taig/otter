@@ -1,9 +1,8 @@
-package io.taig.otter.sample.api
+package io.taig.otter.sample.data
 
 import cats.Eq
 import cats.syntax.all.*
-import io.taig.otter.validation.Validation
-import io.taig.otter.validation.validations
+import io.taig.otter.validation.{validations, Validation}
 import org.typelevel.ci.CIString
 
 import java.util.UUID

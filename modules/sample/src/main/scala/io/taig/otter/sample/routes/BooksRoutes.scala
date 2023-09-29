@@ -4,7 +4,8 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.effect.IO
 import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
-import io.taig.otter.sample.api.{endpoints, Book, Route}
+import io.taig.otter.sample.api.{endpoints, Route}
+import io.taig.otter.sample.data.Book
 import io.taig.otter.sample.api.endpoints.books.Post
 import io.taig.otter.sample.repository.BookRepository
 import io.taig.otter.sample.repository.BookRepository.Error

@@ -2,10 +2,9 @@ package io.taig.otter.sample.api.schemas
 
 import cats.implicits.*
 import io.circe.Json
-import io.taig.otter.*
 import io.taig.otter.circe.syntax.*
-import io.taig.otter.sample.api.Book
-import io.taig.otter.sample.api.Isbn
+import io.taig.otter.sample.data.Book
+import io.taig.otter.sample.data.Isbn
 import io.taig.otter.schemas.*
 import io.taig.otter.*
 

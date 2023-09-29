@@ -4,7 +4,7 @@ import cats.data.Chain
 import cats.effect.IO
 import cats.effect.std.{AtomicCell, UUIDGen}
 import cats.syntax.all.*
-import io.taig.otter.sample.api.Librarian
+import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.repository.LibrarianRepository.Error
 import io.taig.otter.sample.service.ReferenceGenerator
 
