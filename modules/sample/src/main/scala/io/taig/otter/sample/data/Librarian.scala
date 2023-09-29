@@ -3,7 +3,7 @@ package io.taig.otter.sample.data
 import cats.Eq
 import cats.syntax.all.*
 import io.taig.otter.validation.{validations, Validation}
-import org.typelevel.ci.CIString
+import org.typelevel.ci.*
 
 import java.util.UUID
 import java.util.regex.Pattern
@@ -51,5 +51,11 @@ object Librarian:
 
   final case class Create(email: Librarian.Email, password: Librarian.Password):
     def toLogin: Librarian.Login = Login(email.toCIString, password.toString)
+
+  object Create:
+    val Default: Librarian.Create = Librarian.Create(
+      Librarian.Email.unsafeFromCIString(ci"me@otter.org"),
+      Librarian.Password.unsafeFromString("password")
+    )
 
   final case class Summary(reference: Librarian.Reference, email: Librarian.Email)

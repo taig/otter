@@ -6,7 +6,6 @@ import io.taig.otter.http.App
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.service.ReferenceGenerator
-import org.typelevel.ci.CIStringSyntax
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
@@ -25,10 +24,7 @@ object SampleApp extends IOApp.Simple:
 
     for
       repositories <- SampleRepositories(references)
-      administrator = Librarian.Create(
-        Librarian.Email.unsafeFromCIString(ci"me@otter.org"),
-        Librarian.Password.unsafeFromString("password")
-      )
+      administrator = Librarian.Create.Default
       _ <- repositories.librarian.create(administrator).rethrow
       login = administrator.toLogin
       session <- repositories.librarian.login(login).rethrow
