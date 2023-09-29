@@ -15,12 +15,12 @@ object SampleApp extends IOApp.Simple:
     given LoggerFactory[IO] = Slf4jFactory.create[IO]
 
     for
-      app <- create
+      app <- create(IO.println)
       server = new Http4sHttpServer[IO]
       _ <- server.start(app)
     yield ()
 
-  def create: IO[App[IO]] =
+  def create(logger: String => IO[Unit]): IO[App[IO]] =
     val references = ReferenceGenerator()
 
     for
@@ -32,7 +32,7 @@ object SampleApp extends IOApp.Simple:
       _ <- repositories.librarian.create(administrator).rethrow
       login = administrator.toLogin
       session <- repositories.librarian.login(login).rethrow
-      _ <- IO.println(s"Created librarian account: ${login.email}:${login.password} ($session)")
+      _ <- logger(s"Created librarian account: ${login.email}:${login.password} ($session)")
       route = new SampleRoute(repositories.librarian)
       routes = SampleRoutes(route, repositories)
     yield app(routes)

@@ -1,9 +1,8 @@
-package io.taig.otter.sample.routes
+package io.taig.otter.sample
 
 import cats.effect.{IO, Resource, SyncIO}
-import io.taig.otter.http.App
+import io.taig.otter.http.AppClient
 import io.taig.otter.munit.OtterSuite
-import io.taig.otter.sample.SampleApp
 import io.taig.otter.sample.api.endpoints.Endpoint
 import munit.Location
 
@@ -21,4 +20,10 @@ abstract class SampleSuite extends OtterSuite:
     def test(endpoint: Endpoint[?, ?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)
 
-  val app: SyncIO[FunFixture[App[IO]]] = ResourceFixture(Resource.eval(SampleApp.create))
+  val app: SyncIO[FunFixture[Context]] =
+    val context = SampleApp
+      .create(logger = _ => IO.unit)
+      .map(app => new SampleClient(AppClient(app)))
+      .map(Context.apply)
+
+    ResourceFixture(Resource.eval(context))
