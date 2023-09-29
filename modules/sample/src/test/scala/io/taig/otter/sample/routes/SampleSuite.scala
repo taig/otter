@@ -2,10 +2,10 @@ package io.taig.otter.sample.routes
 
 import cats.effect.{IO, Resource, SyncIO}
 import io.taig.otter.http.App
-import io.taig.otter.munit.{Formatters, OtterSuite}
+import io.taig.otter.munit.OtterSuite
 import io.taig.otter.sample.SampleApp
 import io.taig.otter.sample.api.endpoints.Endpoint
-import munit.{CatsEffectSuite, Location}
+import munit.Location
 
 abstract class SampleSuite extends OtterSuite:
   def test(endpoint: Endpoint[?, ?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =

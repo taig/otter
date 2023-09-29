@@ -103,6 +103,18 @@ object Schema:
     sealed abstract class Root[A](description: Option[String]) extends Schema[A](description) with Schema.Value[A]:
       self =>
       final override type Self[a] = Schema.Value[a]
+
       final override def description(f: Option[String] => Option[String]): Schema.Value[A] = Value(this, f(description))
+
       final override def optional: Schema.Value[Option[A]] = ???
-      final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Value[B] = ???
+
+      final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema.Value[B] =
+        new Root[B](description):
+          export self.isOptional
+          override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+          override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+            self.decode(data).andThen(validation(_).leftMap(Violations.root))
+          override def encode(b: B): Data = self.encode(g(b))
+          override def parse(value: Option[String]): Validated[Violations, B] =
+            self.parse(value).andThen(validation(_).leftMap(Violations.root))
+          override def print(b: B): Option[String] = self.print(g(b))
