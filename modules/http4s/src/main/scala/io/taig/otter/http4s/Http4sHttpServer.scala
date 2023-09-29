@@ -33,7 +33,7 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
     val headers = toHttpHeaders(request.headers)
     handle(app, method, url, headers, toHttpRequestBody(_, request.body)).flatMap(toHttp4sResponse)
 
-  // TODO make this broadly available
+  // TODO make this broadly available, this should in fact also be happening in AppClient
   def handle(
       app: App[F],
       method: Method,
