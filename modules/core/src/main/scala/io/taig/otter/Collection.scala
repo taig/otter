@@ -8,11 +8,11 @@ sealed abstract class Collection[A](description: Option[String]) extends Schema[
   self =>
   override type Self[a] <: Collection[a]
 
-  final override def decode(data: Data): Validated[Violations, A] = data match
-    case data: Data.Array => decode(Some(data))
-    case Data.Null        => decode(None)
-    case _                => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
-  def decode(data: Option[Data.Array]): Validated[Violations, A]
+  final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
+    case Some(_: Data.Array) => decodeArray(data.asInstanceOf[Option[Data.Array]])
+    case Some(data)          => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
+    case None                => decodeArray(None)
+  def decodeArray(data: Option[Data.Array]): Validated[Violations, A]
   final override def encode(a: A): Data = encodeArray(a).getOrElse(Data.Null)
   def encodeArray(a: A): Option[Data.Array]
 
@@ -30,22 +30,22 @@ object Collection:
     final override def optional: Collection[Option[A]] = new Root[Option[A]](description):
       export self.constraints
       override def isOptional: Boolean = true
-      override def decode(data: Option[Data.Array]): Validated[Violations, Option[A]] =
-        data.fold(none.valid)(_ => self.decode(data).map(_.some))
+      override def decodeArray(data: Option[Data.Array]): Validated[Violations, Option[A]] =
+        data.fold(none.valid)(_ => self.decodeArray(data).map(_.some))
       override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
 
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection[B] =
       new Root[B](description):
         export self.isOptional
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-        override def decode(data: Option[Data.Array]): Validated[Violations, B] =
-          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def decodeArray(data: Option[Data.Array]): Validated[Violations, B] =
+          self.decodeArray(data).andThen(validation(_).leftMap(Violations.root))
         override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
 
   def apply[A](schema: Schema[A]): Collection[Chain[A]] = new Root[Chain[A]](None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(data: Option[Data.Array]): Validated[Violations, Chain[A]] = data match
+    override def decodeArray(data: Option[Data.Array]): Validated[Violations, Chain[A]] = data match
       case Some(data) =>
         data.values.zipWithIndex.traverse { case (data, index) =>
           schema.decode(data).leftMap(_.modifyHistory(index /: _))
@@ -64,13 +64,13 @@ object Collection:
       override def isOptional: Boolean = true
       override def print(a: Option[A]): Option[Chain[Option[String]]] = ???
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Option[A]] = ???
-      override def decode(data: Option[Data.Array]): Validated[Violations, Option[A]] = ???
+      override def decodeArray(data: Option[Data.Array]): Validated[Violations, Option[A]] = ???
       override def encodeArray(a: Option[A]): Option[Data.Array] = ???
 
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Value[B] = new Value[B](description):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-      override def decode(data: Option[Data.Array]): Validated[Violations, B] = ???
+      override def decodeArray(data: Option[Data.Array]): Validated[Violations, B] = ???
       override def encodeArray(a: B): Option[Data.Array] = ???
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, B] = ???
       override def print(a: B): Option[Chain[Option[String]]] = ???
@@ -82,12 +82,11 @@ object Collection:
     def apply[A](schema: Collection.Value[A], description: Option[String]): Collection.Value[A] =
       new Value[A](description) { export schema.* }
 
-    def apply[A](schema: Schema.Value[A]): Collection.Value[Chain[A]] = new Value[Chain[A]](None) {
+    def apply[A](schema: Schema.Value[A]): Collection.Value[Chain[A]] = new Value[Chain[A]](None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
-      override def decode(data: Option[Data.Array]): Validated[Violations, Chain[A]] = ???
+      override def decodeArray(data: Option[Data.Array]): Validated[Violations, Chain[A]] = ???
       override def encodeArray(a: Chain[A]): Option[Data.Array] = Data.Array(a.map(schema.encode)).some
       override def parse(values: Option[Chain[Option[String]]]): Validated[Violations, Chain[A]] = ???
       override def print(as: Chain[A]): Option[Chain[Option[String]]] =
         as.map(schema.print).some
-    }

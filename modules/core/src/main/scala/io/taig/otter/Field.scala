@@ -27,7 +27,7 @@ object Field extends ToFieldOps:
       override def decodeWithRemainders(name: String, data: Data.Object): Validated[Violations, (Data.Object, B)] =
         data.values.firstWithRemainders(name) match
           case Some((head, tail)) => schema.decode(head).tupleLeft(Data.Object(tail))
-          case None               => schema.decode(Data.Null).tupleLeft(data)
+          case None               => schema.decode(None).tupleLeft(data)
 
       override def encode(name: String, b: B, nulls: Null): Data.Object = schema.encode(b) match
         case Data.Null if nulls === Null.Hide => Data.Object.Empty

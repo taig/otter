@@ -47,16 +47,16 @@ sealed abstract class Product[A](description: Option[String]) extends Schema[A](
         case (None, Some(b))    => Some(Data.Array.fill(self.toChain.length)(Data.Null) ++ b)
         case (None, None)       => None
 
-  final override def decode(data: Data): Validated[Violations, A] = data match
-    case data: Data.Array =>
+  final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
+    case Some(data: Data.Array) =>
       val length = toChain.length
       if data.length < length
       then Violations.rootNec(Violation(Constraint.MinItems(length), actual = Data.Number(data.length))).invalid
       else if data.length > length
       then Violations.rootNec(Violation(Constraint.MaxItems(length), actual = Data.Number(data.length))).invalid
       else decodeArrayWithRemainders(data).map(_._2)
-    case Data.Null => decodeArrayWithRemainders(Data.Array.fill(toChain.length)(Data.Null)).map(_._2)
-    case _         => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
+    case Some(data) => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
+    case None       => decodeArrayWithRemainders(Data.Array.fill(toChain.length)(Data.Null)).map(_._2)
   def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, A)]
 
   final override def encode(a: A): Data = encodeArray(a).getOrElse(Data.Null)

@@ -25,13 +25,14 @@ abstract class Schema[A](val description: Option[String]):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def encode(ab: Either[A, B]): Data = ab.fold(self.encode, schema.encode)
-    override def decode(data: Data): Validated[Violations, Either[A, B]] =
+    override def decode(data: Option[Data.Value]): Validated[Violations, Either[A, B]] =
       self.decode(data).map(_.asLeft).findValid(schema.decode(data).map(_.asRight))
   final def :+[B](schema: Schema[B]): Schema[Either[A, B]] = orElse(schema)
   final def +:[B](schema: Schema[B]): Schema[Either[B, A]] = schema.orElse(this)
 
   def encode(a: A): Data
-  def decode(data: Data): Validated[Violations, A]
+  final def decode(data: Data): Validated[Violations, A] = decode(data.asValue)
+  def decode(data: Option[Data.Value]): Validated[Violations, A]
 
 object Schema:
   extension [A <: Matchable](self: Schema[A])
@@ -56,14 +57,14 @@ object Schema:
       export self.constraints
       override def isOptional: Boolean = true
       override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
-      override def decode(data: Data): Validated[Violations, Option[A]] = data match
-        case Data.Null => none.valid
-        case _         => self.decode(data).map(_.some)
+      override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] = data match
+        case None => none.valid
+        case _    => self.decode(data).map(_.some)
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Schema[B] = new Root[B]:
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def encode(b: B): Data = self.encode(g(b))
-      override def decode(data: Data): Validated[Violations, B] =
+      override def decode(data: Option[Data.Value]): Validated[Violations, B] =
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
 
   trait Value[A] extends Schema[A]:

@@ -17,7 +17,7 @@ object Enumeration:
   def apply[A, B](schema: Schema.Value[A], mapping: Mapping[B, A]): Enumeration[B] = new Enumeration[B](None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(data: Data): Validated[Violations, B] = ???
+    override def decode(data: Option[Data.Value]): Validated[Violations, B] = ???
     override def encode(b: B): Data = schema.encode(mapping.inj(b))
     override def parse(value: Option[String]): Validated[Violations, B] = ???
     override def print(b: B): Option[String] = schema.print(mapping.inj(b))

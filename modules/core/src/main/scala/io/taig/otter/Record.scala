@@ -45,10 +45,10 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
         schema.decodeWithRemainders(data).map(_.tupleLeft(a))
       }
 
-  final override def decode(data: Data): Validated[Violations, A] = data match
-    case data: Data.Object => decodeWithRemainders(Some(data)).map(_._2)
-    case Data.Null         => decodeWithRemainders(None).map(_._2)
-    case _                 => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
+  final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
+    case Some(_: Data.Object) => decodeWithRemainders(data.asInstanceOf[Option[Data.Object]]).map(_._2)
+    case Some(data)           => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
+    case None                 => decodeWithRemainders(None).map(_._2)
   def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], A)]
   final override def encode(a: A): Data = encode(a, nulls).getOrElse(Data.Null)
   def encode(a: A, nulls: Null): Option[Data.Object]

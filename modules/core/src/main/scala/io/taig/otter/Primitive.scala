@@ -19,9 +19,8 @@ sealed abstract class Primitive[A](description: Option[String], val format: Opti
   final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description, format):
     export self.constraints
     override def isOptional: Boolean = true
-    override def decode(data: Data): Validated[Violations, Option[A]] = data match
-      case Data.Null => none.valid
-      case _         => self.decode(data).map(_.some)
+    override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
+      data.fold(none.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data.Primitive | Data.Null.type = a.map(self.encode).getOrElse(Data.Null)
     override def parse(value: Option[String]): Validated[Violations, Option[A]] =
       value.fold(none.valid)(_ => self.parse(value).map(_.some))
@@ -31,7 +30,7 @@ sealed abstract class Primitive[A](description: Option[String], val format: Opti
     new Primitive[B](description, format):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-      override def decode(data: Data): Validated[Violations, B] =
+      override def decode(data: Option[Data.Value]): Validated[Violations, B] =
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
       override def encode(b: B): Data.Primitive | Data.Null.type = self.encode(g(b))
       override def parse(value: Option[String]): Validated[Violations, B] =
@@ -44,7 +43,7 @@ sealed abstract class Primitive[A](description: Option[String], val format: Opti
     override def parse(value: Option[String]): Validated[Violations, Either[A, B]] =
       self.parse(value).map(_.asLeft).findValid(schema.parse(value).map(_.asRight))
     override def print(ab: Either[A, B]): Option[String] = ab.fold(self.print, schema.print)
-    override def decode(data: Data): Validated[Violations, Either[A, B]] =
+    override def decode(data: Option[Data.Value]): Validated[Violations, Either[A, B]] =
       self.decode(data).map(_.asLeft).findValid(schema.decode(data).map(_.asRight))
     override def encode(ab: Either[A, B]): Data.Primitive | Data.Null.type =
       ab.fold(self.encode, schema.encode)
@@ -69,7 +68,10 @@ object Primitive:
   def apply[A](tpe: Type[A]): Primitive[A] = new Primitive[A](None, None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decode(data: Data): Validated[Violations, A] = tpe.decode(data)
+    override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
+      case Some(data: Data.Primitive) => tpe.decode(data)
+      case Some(data)                 => Violations.rootNec(Violation.tpe(tpe.name, actual = data.name)).invalid
+      case None                       => Violations.rootNec(Violation.required).invalid
     override def encode(a: A): Data.Primitive | Data.Null.type = tpe.encode(a)
     override def parse(value: Option[String]): Validated[Violations, A] = Validated
       .fromOption(value, Violations.rootNec(Violation.required))

@@ -18,7 +18,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[JString]
 
-  def decode(data: Data): Validated[Violations, A] = (data, this) match
+  def decode(data: Data.Primitive): Validated[Violations, A] = (data, this) match
     case (Data.Boolean(value), Type.Boolean)               => value.valid
     case (Data.Number(value: Int), Type.Int)               => value.valid
     case (Data.Number(value: Long), Type.Long)             => value.valid
@@ -29,8 +29,7 @@ enum Type[A]:
     case (Data.String(value), Type.String)                 => value.valid
     case (Data.String(value), _) =>
       Validated.fromOption(parse(value), Violations.rootNec(Violation.tpe(name, "string")))
-    case (Data.Null, _) => Violations.rootNec(Violation.required).invalid
-    case (data, _)      => Violations.rootNec(Violation.tpe(name, actual = data.name)).invalid
+    case (data, _) => Violations.rootNec(Violation.tpe(name, actual = data.name)).invalid
 
   def encode(a: A): Data.Primitive = this match
     case Type.BigDecimal => Data.Number(a)
