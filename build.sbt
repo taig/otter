@@ -114,6 +114,14 @@ lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   )
   .dependsOn(http % "compile->compile;test->test", circe)
 
+lazy val munit = module(identifier = Some("munit"))
+  .settings(
+    libraryDependencies ++=
+      "org.scalameta" %%% "munit" % Version.Munit ::
+        Nil
+  )
+  .dependsOn(http)
+
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(

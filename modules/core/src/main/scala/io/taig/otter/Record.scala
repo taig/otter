@@ -17,41 +17,47 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
     export self.constraints
     override def isOptional: Boolean = true
     override def decodeWithRemainders(
-        data: Option[Data.Object]
-    ): Validated[Violations, (Option[Data.Object], Option[A])] = data match
+        data: Option[Chain[(String, Data)]]
+    ): Validated[Violations, (Option[Chain[(String, Data)]], Option[A])] = data match
       case Some(_) => self.decodeWithRemainders(data).map(_.map(_.some))
       case None    => (data, none).valid
-    override def encode(a: Option[A], nulls: Null): Option[Data.Object] = a.flatMap(self.encode(_, nulls))
+    override def encode(a: Option[A], nulls: Null): Option[Chain[(String, Data)]] = a.flatMap(self.encode(_, nulls))
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] =
     new Record[B](description, nulls):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-      override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], B)] =
+      override def decodeWithRemainders(
+          data: Option[Chain[(String, Data)]]
+      ): Validated[Violations, (Option[Chain[(String, Data)]], B)] =
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
-      override def encode(b: B, nulls: Null): Option[Data.Object] = self.encode(g(b), nulls)
+      override def encode(b: B, nulls: Null): Option[Chain[(String, Data)]] = self.encode(g(b), nulls)
 
   final def product[B](schema: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def encode(ab: (A, B), nulls: Null): Option[Data.Object] =
+    override def decodeWithRemainders(
+        data: Option[Chain[(String, Data)]]
+    ): Validated[Violations, (Option[Chain[(String, Data)]], (A, B))] =
+      self.decodeWithRemainders(data).andThen { case (data, a) =>
+        schema.decodeWithRemainders(data).map(_.tupleLeft(a))
+      }
+    override def encode(ab: (A, B), nulls: Null): Option[Chain[(String, Data)]] =
       (self.encode(ab._1, nulls), schema.encode(ab._2, nulls)) match
         case (Some(a), Some(b))  => Some(a ++ b)
         case (a @ Some(_), None) => a
         case (None, b @ Some(_)) => b
         case (None, None)        => None
-    override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], (A, B))] =
-      self.decodeWithRemainders(data).andThen { case (data, a) =>
-        schema.decodeWithRemainders(data).map(_.tupleLeft(a))
-      }
 
   final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
-    case Some(_: Data.Object) => decodeWithRemainders(data.asInstanceOf[Option[Data.Object]]).map(_._2)
-    case Some(data)           => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
-    case None                 => decodeWithRemainders(None).map(_._2)
-  def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], A)]
-  final override def encode(a: A): Data = encode(a, nulls).getOrElse(Data.Null)
-  def encode(a: A, nulls: Null): Option[Data.Object]
+    case Some(Data.Object(values)) => decodeWithRemainders(Some(values)).map(_._2)
+    case Some(data)                => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
+    case None                      => decodeWithRemainders(None).map(_._2)
+  def decodeWithRemainders(
+      data: Option[Chain[(String, Data)]]
+  ): Validated[Violations, (Option[Chain[(String, Data)]], A)]
+  final override def encode(a: A): Data = encode(a, nulls).map(Data.Object.apply).getOrElse(Data.Null)
+  protected def encode(a: A, nulls: Null): Option[Chain[(String, Data)]]
 
 object Record extends ToRecordOps:
   def apply[A](schema: Record[A], description: Option[String], nulls: Null): Record[A] =
@@ -60,15 +66,17 @@ object Record extends ToRecordOps:
   val Empty: Record[Unit] = new Record[Unit](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], Unit)] =
-      (data, ()).valid
-    override def encode(a: Unit, nulls: Null): Option[Data.Object] = Data.Object.Empty.some
+    override def decodeWithRemainders(
+        data: Option[Chain[(String, Data)]]
+    ): Validated[Violations, (Option[Chain[(String, Data)]], Unit)] = (data, ()).valid
+    override def encode(a: Unit, nulls: Null): Option[Chain[(String, Data)]] = Chain.empty.some
 
   def apply[A](field: Field[A]): Record[A] = new Record[A](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def decodeWithRemainders(data: Option[Data.Object]): Validated[Violations, (Option[Data.Object], A)] =
-      data match
-        case Some(data) => field.decodeWithRemainders(data).map(_.leftMap(_.some))
-        case None       => Violations.rootNec(Violation.required).invalid
-    override def encode(a: A, nulls: Null): Option[Data.Object] = field.encode(a, nulls).some
+    override def decodeWithRemainders(
+        data: Option[Chain[(String, Data)]]
+    ): Validated[Violations, (Option[Chain[(String, Data)]], A)] = data match
+      case Some(data) => field.decodeWithRemainders(data).map(_.leftMap(_.some))
+      case None       => Violations.rootNec(Violation.required).invalid
+    override def encode(a: A, nulls: Null): Option[Chain[(String, Data)]] = field.encode(a, nulls).some

@@ -1,67 +1,65 @@
 package io.taig.otter.schema
 
+import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.OpenApi
-import io.taig.otter.schema.schemas.*
-import io.taig.otter.syntax.*
-import io.taig.otter.validation.Violation
+import io.taig.otter.{Data, Null}
+import io.taig.otter.schemas.*
+import io.taig.otter.validation.{Violation, Violations}
 import munit.FunSuite
-
-import scala.collection.immutable.VectorMap
 
 final class FieldTest extends FunSuite:
   test("decode"):
     assertEquals(
-      obtained = field("foo", int).decodeWithRemainders(VectorMap("foo" := 42)),
-      expected = (VectorMap.empty, 42).valid
+      obtained = field("foo", int).decodeWithRemainders(Chain("foo" -> Data.Number(42))),
+      expected = (Chain.empty, 42).valid
     )
 
   test("decode: remainder"):
     assertEquals(
       obtained = field("foo", int).decodeWithRemainders(
-        VectorMap("foo" := 42, "bar" := true)
+        Chain("foo" -> Data.Number(42), "bar" -> Data.Boolean(true))
       ),
-      expected = (VectorMap("bar" := true), 42).valid
+      expected = (Chain("bar" -> Data.Boolean(true)), 42).valid
     )
 
   test("decode: violations"):
     assertEquals(
-      obtained = field("foo", int).decodeWithRemainders(VectorMap.empty),
+      obtained = field("foo", int).decodeWithRemainders(Chain.empty),
       expected = Violations.rootNec(Violation.required).invalid
     )
 
   test("encode"):
     assertEquals(
       obtained = field("foo", int).encode(42, Null.Show),
-      expected = OpenApi.obj("foo" := 42)
+      expected = Chain("foo" -> Data.Number(42))
     )
 
   test("encode: show nulls"):
     assertEquals(
-      obtained = field("foo", int.optional).nulls.show.encode(42.some, Null.Show),
-      expected = OpenApi.obj("foo" := 42)
+      obtained = field("foo", int.optional).nulls(Null.Show).encode(42.some, Null.Show),
+      expected = Chain("foo" -> Data.Number(42))
     )
     assertEquals(
-      obtained = field("foo", int.optional).nulls.show.encode(none, Null.Show),
-      expected = OpenApi.obj("foo" -> OpenApi.Null)
+      obtained = field("foo", int.optional).nulls(Null.Show).encode(none, Null.Show),
+      expected = Chain("foo" -> Data.Null)
     )
 
   test("encode: hide nulls"):
     assertEquals(
-      obtained = field("foo", int.optional).nulls.hide.encode(42.some, Null.Show),
-      expected = OpenApi.obj("foo" := 42)
+      obtained = field("foo", int.optional).nulls(Null.Hide).encode(42.some, Null.Show),
+      expected = Chain("foo" -> Data.Number(42))
     )
     assertEquals(
-      obtained = field("foo", int.optional).nulls.hide.encode(none, Null.Show),
-      expected = OpenApi.Object.Empty
+      obtained = field("foo", int.optional).nulls(Null.Hide).encode(none, Null.Show),
+      expected = Chain.empty
     )
 
   test("encode: inherit nulls"):
     assertEquals(
-      obtained = field("foo", int.optional).nulls.inherit.encode(none, Null.Show),
-      expected = OpenApi.obj("foo" -> OpenApi.Null)
+      obtained = field("foo", int.optional).nulls(None).encode(none, Null.Show),
+      expected = Chain("foo" -> Data.Null)
     )
     assertEquals(
-      obtained = field("foo", int.optional).nulls.inherit.encode(none, Null.Hide),
-      expected = OpenApi.Object.Empty
+      obtained = field("foo", int.optional).nulls(None).encode(none, Null.Hide),
+      expected = Chain.empty
     )
