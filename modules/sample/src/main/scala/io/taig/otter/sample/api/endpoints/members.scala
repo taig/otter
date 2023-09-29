@@ -35,8 +35,18 @@ object members:
   object referenceOrSelf:
     val url: Url[ReferenceOrSelf[Member.Reference]] = members.url / parameters.member.referenceOrSelf
 
-    val get: Endpoint[Role.Librarian ^ Role.Member, ReferenceOrSelf[Member.Reference], Member.Summary] = Endpoint(
-      Role.librarian ^ Role.member,
-      request(method.get, url),
-      response(result(code.ok, output.json(schemas.member.summary)))
-    )
+    enum Get:
+      case MemberReferenceUnknown
+
+    object Get:
+      val results: Results[Get] =
+        val memberReferenceUnknown: Schema[MemberReferenceUnknown.type] =
+          error("memberReferenceUnknown", dynamic.singleton(MemberReferenceUnknown))
+        result(code.notFound, output.json(memberReferenceUnknown)).toResults.to
+
+    val get: Endpoint[Role.Librarian ^ Role.Member, ReferenceOrSelf[Member.Reference], Either[Get, Member.Summary]] =
+      Endpoint(
+        Role.librarian ^ Role.member,
+        request(method.get, url),
+        response(Get.results :+ result(code.ok, output.json(schemas.member.summary)))
+      )

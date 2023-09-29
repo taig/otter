@@ -23,6 +23,7 @@ object Member:
     extension (self: Member.Reference) def toCIString: CIString = self
     def unsafeFromCIString(value: CIString): Member.Reference = value
     val validation: Validation[CIString, Member.Reference] = validations.length[CIString](Length, _.length).tap
+    given (using eq: Eq[CIString]): Eq[Member.Reference] = eq
 
   opaque type Email = CIString
   object Email:

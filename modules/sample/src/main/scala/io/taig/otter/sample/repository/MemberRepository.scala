@@ -4,7 +4,7 @@ import cats.data.Chain
 import cats.effect.IO
 import cats.syntax.all.*
 import cats.effect.std.AtomicCell
-import io.taig.otter.sample.data.Member
+import io.taig.otter.sample.data.{Librarian, Member, ReferenceOrSelf}
 import io.taig.otter.sample.repository.MemberRepository.Error
 import io.taig.otter.sample.service.ReferenceGenerator
 
@@ -27,9 +27,32 @@ final class MemberRepository(references: ReferenceGenerator, storage: AtomicCell
     }
     .attemptNarrow[Error.Create]
 
+  def findByReference(
+      reference: ReferenceOrSelf[Member.Reference],
+      self: Member | Librarian.Summary
+  ): IO[Either[Error.FindByReference, Member.Summary]] = (reference, self)
+    .match {
+      case (ReferenceOrSelf.Self, self: Member)         => IO.pure(self.toSummary)
+      case (ReferenceOrSelf.Self, _: Librarian.Summary) => IO.raiseError(Error.FindByReference.MemberReferenceUnknown)
+      case (ReferenceOrSelf.Reference(reference), self: Member) =>
+        if reference === self.reference
+        then IO.pure(self.toSummary)
+        else IO.raiseError(Error.FindByReference.PermissionDenied)
+      case (ReferenceOrSelf.Reference(reference), self: Librarian.Summary) =>
+        storage.get
+          .map(_.find(_.reference === reference))
+          .flatMap(_.liftTo[IO](Error.FindByReference.MemberReferenceUnknown))
+          .map(_.toSummary)
+    }
+    .attemptNarrow[Error.FindByReference]
+
   val list: IO[Chain[Member.Summary]] = storage.get.map(_.map(_.toSummary))
 
 object MemberRepository:
   object Error:
     enum Create extends NoStackTrace:
       case EmailConflict
+
+    enum FindByReference extends NoStackTrace:
+      case PermissionDenied
+      case MemberReferenceUnknown
