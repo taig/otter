@@ -119,6 +119,7 @@ lazy val munit = module(identifier = Some("munit"))
   .settings(
     libraryDependencies ++=
       "org.scalameta" %%% "munit" % Version.Munit ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
         Nil
   )
   .dependsOn(http)
@@ -135,7 +136,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl)
+  .dependsOn(http4s, dsl, munit % "compile->test")
 
 lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
   .settings(noPublishSettings)

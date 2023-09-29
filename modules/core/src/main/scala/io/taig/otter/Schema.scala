@@ -71,7 +71,13 @@ object Schema:
     self =>
     override type Self[a] <: Schema.Value[a]
 
-    final def orElse[B](schema: Schema.Value[B]): Schema.Value[Either[A, B]] = ???
+    final def orElse[B](schema: Schema.Value[B]): Schema.Value[Either[A, B]] = new Value.Root[Either[A, B]](None):
+      override def print(a: Either[A, B]): Option[String] = ???
+      override def parse(value: Option[String]): Validated[Violations, Either[A, B]] = ???
+      override def constraints: Chain[Constraint] = ???
+      override def isOptional: Boolean = ???
+      override def encode(a: Either[A, B]): Data = ???
+      override def decode(data: Option[Data.Value]): Validated[Violations, Either[A, B]] = ???
     final def :+[B](schema: Schema.Value[B]): Schema.Value[Either[A, B]] = orElse(schema)
     final def +:[B](schema: Schema.Value[B]): Schema.Value[Either[B, A]] = schema.orElse(this)
 
@@ -94,7 +100,7 @@ object Schema:
     def apply[A](schema: Schema.Value[A], description: Option[String]): Schema.Value[A] =
       new Schema[A](description) with Schema.Value[A] { export schema.* }
 
-    sealed abstract class Root[A] extends Schema[A](None) with Schema.Value[A]:
+    sealed abstract class Root[A](description: Option[String]) extends Schema[A](description) with Schema.Value[A]:
       self =>
       final override type Self[a] = Schema.Value[a]
       final override def description(f: Option[String] => Option[String]): Schema.Value[A] = Value(this, f(description))

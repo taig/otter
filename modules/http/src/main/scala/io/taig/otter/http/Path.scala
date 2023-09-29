@@ -32,6 +32,10 @@ sealed abstract class Path[A]:
   def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, A)]
   def encode(a: A): Http.Path
 
+  final def print: String = toChain match
+    case Chain.nil => "/"
+    case segments  => segments.map(_.print).mkString_("/", "/", "")
+
   final def toUrl: Url[A] = Url(this)
 
 object Path extends ToPathOps:
