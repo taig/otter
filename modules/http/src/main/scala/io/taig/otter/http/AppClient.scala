@@ -4,7 +4,7 @@ import cats.Applicative
 import cats.syntax.all.*
 
 final class AppClient[F[_]: Applicative](app: App[F]) extends Client[F]:
-  override def submitRaw[I, O](request: Http.Request): F[Http.Response] = app.routes
+  override def submitRaw(request: Http.Request): F[Http.Response] = app.routes
     .find(request.method, request.url)
     .traverse { route =>
       route.endpoint.request

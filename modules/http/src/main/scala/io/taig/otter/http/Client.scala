@@ -6,7 +6,7 @@ import cats.{Monad, MonadThrow}
 import io.taig.otter.validation.Violations
 
 trait Client[F[_]]:
-  def submitRaw[I, O](request: Http.Request): F[Http.Response]
+  def submitRaw(request: Http.Request): F[Http.Response]
 
   final def submit[I, O](endpoint: Endpoint[I, O], input: I)(using Monad[F]): F[Validated[Violations, O]] =
     submitRaw(endpoint.request.encode(input)).map(endpoint.response.decode)

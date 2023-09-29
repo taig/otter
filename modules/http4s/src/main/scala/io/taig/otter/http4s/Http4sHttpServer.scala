@@ -1,27 +1,13 @@
 package io.taig.otter.http4s
 
-import cats.ApplicativeThrow
-import cats.data.Chain
 import cats.effect.Async
 import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.net.Network
 import io.taig.otter.http.*
-import org.http4s.Uri.Path as Http4sPath
 import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.{
-  Entity as Http4sEntity,
-  Header as Http4sHeader,
-  Headers as Http4sHeaders,
-  HttpApp as Http4sApp,
-  Method as Http4sMethod,
-  Query as Http4sQuery,
-  Response as Http4sResponse,
-  Status,
-  Uri
-}
+import org.http4s.HttpApp as Http4sApp
 import org.typelevel.log4cats.LoggerFactory
-import scodec.bits.ByteVector
 
 final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:
   override def start(app: App[F]): F[Unit] =
@@ -58,32 +44,3 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       data.compile.to(Array).map(data => Http.Request.Body.Singlepart(Http.Payload.Strict(data)))
 //    case _: Request.Body.Singlepart.Streaming[?] =>
 //      Http4sStream(data).map(stream => Http.Request.Body.Singlepart(Http.Payload.Streaming(stream)))
-
-  def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
-
-  def toHttpPath(path: Http4sPath): Http.Path = Chain.fromSeq(path.segments.map(_.decoded()))
-
-  def toHttpQueries(query: Http4sQuery): Http.Queries =
-    Chain.fromSeq(query.toVector).mapFilter { case (name, value) => value.tupleLeft(name) }
-
-  def toHttpUrl(uri: Uri): Http.Url = Http.Url(toHttpPath(uri.path), toHttpQueries(uri.query))
-
-  def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
-    Chain.fromSeq(headers.headers.map(header => header.name -> header.value))
-
-  def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
-    new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
-
-  def toHttp4sResponse(response: Http.Response): F[Http4sResponse[F]] = for
-    status <- Status.fromInt(response.code.toInt).liftTo[F]
-    headers = toHttp4sHeaders(response.headers)
-    entity <- toHttp4sEntity(response.body)
-  yield Http4sResponse(status, headers = headers, entity = entity)
-
-  def toHttp4sEntity(body: Http.Payload): F[Http4sEntity[F]] = body match
-    case Http.Payload.Strict(data) if data.isEmpty => Http4sEntity.empty.pure
-    case Http.Payload.Strict(data)                 => Http4sEntity.strict(ByteVector(data)).pure
-    case Http.Payload.Streaming(stream) =>
-      ApplicativeThrow[F]
-        .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F, Byte]].toFs2)
-        .map(Http4sEntity.stream(_))
