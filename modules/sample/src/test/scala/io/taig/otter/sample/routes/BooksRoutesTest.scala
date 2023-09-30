@@ -10,11 +10,7 @@ import io.taig.otter.sample.{fixtures, SampleSuite}
 final class BooksRoutesTest extends SampleSuite:
   app.test(endpoints.books.get): context =>
     for
-      librarian <- context.client.submitSuccess(
-        endpoints.librarians.self.sessions.post,
-        session = None,
-        Librarian.Create.Default.toLogin
-      )
+      librarian <- context.api.librarian
       expected <- context.client.submitSuccess(
         endpoints.books.post,
         session = librarian.toUUID.some,
@@ -33,11 +29,7 @@ final class BooksRoutesTest extends SampleSuite:
 
   app.test(endpoints.books.post, description = "single"): context =>
     for
-      librarian <- context.client.submitSuccess(
-        endpoints.librarians.self.sessions.post,
-        session = None,
-        Librarian.Create.Default.toLogin
-      )
+      librarian <- context.api.librarian
       obtained <- context.client.submitSuccess(
         endpoints.books.post,
         session = librarian.toUUID.some,
@@ -50,11 +42,7 @@ final class BooksRoutesTest extends SampleSuite:
 
   app.test(endpoints.books.post, description = "multiple"): context =>
     for
-      librarian <- context.client.submitSuccess(
-        endpoints.librarians.self.sessions.post,
-        session = None,
-        Librarian.Create.Default.toLogin
-      )
+      librarian <- context.api.librarian
       obtained <- context.client.submitSuccess(
         endpoints.books.post,
         session = librarian.toUUID.some,
@@ -71,11 +59,7 @@ final class BooksRoutesTest extends SampleSuite:
 
   app.test(endpoints.books.post, description = "isbn conflict"): context =>
     for
-      librarian <- context.client.submitSuccess(
-        endpoints.librarians.self.sessions.post,
-        session = None,
-        Librarian.Create.Default.toLogin
-      )
+      librarian <- context.api.librarian
       isbn = fixtures.isbn()
       book = fixtures.book.main(isbn = isbn)
       _ <- context.client.submitSuccess(

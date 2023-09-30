@@ -20,10 +20,10 @@ abstract class SampleSuite extends OtterSuite:
     def test(endpoint: Endpoint[?, ?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)
 
-  val app: SyncIO[FunFixture[Context]] =
+  val app: SyncIO[FunFixture[SampleContext]] =
     val context = SampleApp
       .create(logger = _ => IO.unit)
       .map(app => new SampleClient(AppClient(app)))
-      .map(Context.apply)
+      .map(client => SampleContext(client, SampleApi(client)))
 
     ResourceFixture(Resource.eval(context))
