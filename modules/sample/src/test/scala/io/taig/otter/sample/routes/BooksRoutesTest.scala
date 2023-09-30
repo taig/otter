@@ -2,12 +2,9 @@ package io.taig.otter.sample.routes
 
 import cats.data.{Chain, NonEmptyChain}
 import cats.implicits.*
-import io.circe.Json
-import io.taig.otter.sample.SampleSuite
 import io.taig.otter.sample.api.endpoints
-import io.taig.otter.sample.data.{Book, Isbn, Librarian}
-
-import scala.collection.immutable.SortedSet
+import io.taig.otter.sample.data.{Book, Librarian}
+import io.taig.otter.sample.{SampleSuite, fixtures}
 
 final class BooksRoutesTest extends SampleSuite:
   app.test(endpoints.books.get): context =>
@@ -17,13 +14,9 @@ final class BooksRoutesTest extends SampleSuite:
         session = None,
         Librarian.Create.Default.toLogin
       )
-      book = Book(
-        Isbn.unsafeFromLong(9780763630188L),
-        Book.Title.unsafeFromString("Moby-Dick"),
-        genres = SortedSet.empty[Book.Genre],
-        Json.obj()
-      )
-      _ <- context.client.submitSuccess(endpoints.books.post, session = librarian.toUUID.some, NonEmptyChain.one(book))
+      book = fixtures.book.main
+      _ <- context.client.submitSuccess(endpoints.books.post, session = librarian.toUUID.some, NonEmptyChain(book))
+      _ <- context.client.submitSuccess(endpoints.books.post, session = librarian.toUUID.some, NonEmptyChain(book, book))
     yield {}
 
   app.test(endpoints.books.get, description = "empty"): context =>
