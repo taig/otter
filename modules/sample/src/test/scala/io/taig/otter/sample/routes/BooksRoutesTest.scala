@@ -3,6 +3,7 @@ package io.taig.otter.sample.routes
 import cats.data.{Chain, NonEmptyChain}
 import cats.implicits.*
 import io.taig.otter.sample.api.endpoints
+import io.taig.otter.sample.api.endpoints.books.Post
 import io.taig.otter.sample.data.{Book, Librarian}
 import io.taig.otter.sample.{fixtures, SampleSuite}
 
@@ -67,3 +68,44 @@ final class BooksRoutesTest extends SampleSuite:
     yield {
       assertEquals(obtained.toChain, expected)
     }
+
+  app.test(endpoints.books.post, description = "isbn conflict"): context =>
+    for
+      librarian <- context.client.submitSuccess(
+        endpoints.librarians.self.sessions.post,
+        session = None,
+        Librarian.Create.Default.toLogin
+      )
+      isbn = fixtures.isbn()
+      book = fixtures.book.main(isbn = isbn)
+      _ <- context.client.submitSuccess(
+        endpoints.books.post,
+        session = librarian.toUUID.some,
+        NonEmptyChain(book)
+      )
+      obtained <- context.client.submitError(
+        endpoints.books.post,
+        session = librarian.toUUID.some,
+        NonEmptyChain(book)
+      )
+    yield {
+      assertEquals(obtained, Post.IsbnConflict(isbn))
+    }
+
+    app.test(endpoints.books.post, description = "isbn conflict (multiple)"): context =>
+      for
+        librarian <- context.client.submitSuccess(
+          endpoints.librarians.self.sessions.post,
+          session = None,
+          Librarian.Create.Default.toLogin
+        )
+        isbn = fixtures.isbn()
+        book = fixtures.book.main(isbn = isbn)
+        obtained <- context.client.submitError(
+          endpoints.books.post,
+          session = librarian.toUUID.some,
+          NonEmptyChain(book, book)
+        )
+      yield {
+        assertEquals(obtained, Post.IsbnConflict(isbn))
+      }

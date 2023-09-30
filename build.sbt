@@ -58,7 +58,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, http, csv, circe, dsl, openapi, http4s, sample)
+  .aggregate(core, http, csv, circe, dsl, openapi, http4s, munit, sample, sampleTapir)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -136,7 +136,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl, munit % "compile->test")
+  .dependsOn(http4s, dsl, openapi, munit % "compile->test")
 
 lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
   .settings(noPublishSettings)

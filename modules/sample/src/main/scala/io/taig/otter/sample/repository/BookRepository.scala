@@ -12,9 +12,15 @@ import scala.util.control.NoStackTrace
 final class BookRepository(storage: AtomicCell[IO, Chain[Book]]):
   def create(create: NonEmptyChain[Book]): IO[Either[Error.Create, NonEmptyChain[Book]]] = storage
     .evalModify { books =>
-      val verifyIsbns: IO[Unit] = create.traverse_ { book =>
-        IO.raiseWhen(books.exists(_.isbn === book.isbn))(Error.Create.IsbnConflict(book.isbn))
-      }
+      val verifyIsbns: IO[Unit] =
+        val isbns = create.toList.map(_.isbn)
+
+        (isbns diff isbns.distinct).match {
+          case head :: _ => IO.raiseError(Error.Create.IsbnConflict(head))
+          case Nil       => IO.unit
+        } *> create.traverse_ { book =>
+          IO.raiseWhen(books.exists(_.isbn === book.isbn))(Error.Create.IsbnConflict(book.isbn))
+        }
 
       verifyIsbns.as((books ++ create.toChain, create))
     }
