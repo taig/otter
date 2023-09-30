@@ -12,7 +12,16 @@ import scala.util.chaining.*
 object OpenApi:
   self =>
 
-  def apply[F[_]](routes: Routes[F]): JsonObject = JsonObject()
+  def apply[F[_]](title: String, description: Option[String], version: String, routes: Routes[F]): JsonObject =
+    JsonObject(
+      "openapi" := "3.1.0",
+      "info" := Json.obj(
+        "title" := title,
+        "description" := description,
+        "version" := version
+      ),
+      "paths" := Json.obj()
+    )
 
 //  val schema: Schema[?] => JsonObject =
 //    case schema: Primitive[?]     => primitive(schema)
