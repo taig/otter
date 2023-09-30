@@ -15,7 +15,7 @@ object books:
     Role.guest,
     request(method.get, url),
     response(result(code.ok, output.json(collection.chain(schemas.book.main))))
-  )
+  ).tags("books")
 
   enum Post:
     case IsbnConflict(isbn: Isbn)
@@ -37,4 +37,4 @@ object books:
       Role.librarian,
       request(method.post, url, input.json(books)),
       response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main))))
-    )
+    ).tags("books")

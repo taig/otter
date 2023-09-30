@@ -30,4 +30,4 @@ object librarians:
         Role.guest,
         request(method.post, url, input.json(schemas.librarian.login)),
         response(Post.results :+ result(code.created, output.json(schemas.librarian.session)))
-      )
+      ).tags("librarians")

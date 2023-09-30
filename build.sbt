@@ -57,7 +57,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, http, csv, circe, dsl, openapi, http4s, munit, sample, sampleTapir)
+  .aggregate(core, http, csv, circe, dsl, openapi, http4s, munit, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(

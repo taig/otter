@@ -1,5 +1,6 @@
 package io.taig.otter.openapi
 
+import cats.data.Chain
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter.http.Routes
@@ -9,23 +10,33 @@ import scala.util.chaining.*
 object OpenApi:
   self =>
 
-  def apply[F[_]](title: String, description: Option[String], version: String, routes: Routes[F]): JsonObject =
-    JsonObject(
+  def apply[F[_]](
+      routes: Routes[F],
+      title: String = "API Specification",
+      description: Option[String] = None,
+      version: String = "0",
+      tags: Chain[Json] = Chain.nil
+  ): Json = Json
+    .obj(
       "openapi" := "3.1.0",
       "info" := Json.obj(
         "title" := title,
         "description" := description,
         "version" := version
       ),
+      "tags" := Some(tags).filter(_.nonEmpty),
       "paths" := paths(routes)
     )
+    .dropNullValues
 
   def paths[F[_]](routes: Routes[F]): JsonObject =
     routes.toSeq
       .map(_.endpoint)
       .groupBy(_.request.url.print)
       .map { case (path, endpoints) =>
-        path -> Json.obj(endpoints.map(_.request.method.toString.toLowerCase -> Json.obj())*)
+        path -> Json.obj(
+          endpoints.map(endpoint => endpoint.request.method.toString.toLowerCase -> Json.obj("tags" := endpoint.tags))*
+        )
       }
       .pipe(JsonObject.fromIterable)
 
