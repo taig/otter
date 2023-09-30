@@ -20,8 +20,17 @@ object OpenApi:
         "description" := description,
         "version" := version
       ),
-      "paths" := Json.obj()
+      "paths" := paths(routes)
     )
+
+  def paths[F[_]](routes: Routes[F]): JsonObject =
+    routes.toSeq
+      .map(_.endpoint)
+      .groupBy(_.request.url.print)
+      .map { case (path, endpoints) =>
+        path -> Json.obj(endpoints.map(_.request.method.toString.toLowerCase -> Json.obj())*)
+      }
+      .pipe(JsonObject.fromIterable)
 
 //  val schema: Schema[?] => JsonObject =
 //    case schema: Primitive[?]     => primitive(schema)

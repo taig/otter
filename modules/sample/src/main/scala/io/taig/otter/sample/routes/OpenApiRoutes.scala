@@ -12,17 +12,14 @@ import io.taig.otter.sample.Build
 
 final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
   val get: Route[Unit, Json] = route(endpoints.openapi.get): (_, _) =>
-    IO.pure(
-      Json.fromJsonObject(
-        OpenApi(
-          title = "Otter Sample Library 🦦",
-          description =
-            "A simple library REST API that aims to showcase and test all features of the Otter library.".some,
-          version = Build.version,
-          routes
-        )
-      )
+    val openapi = OpenApi(
+      title = "Otter Sample Library 🦦",
+      description = "A simple library REST API that aims to showcase and test all features of the Otter library.".some,
+      version = Build.version,
+      routes
     )
+
+    IO.pure(Json.fromJsonObject(openapi))
 
 object OpenApiRoutes:
   def apply(route: SampleRoute, routes: Routes[IO]): Routes[IO] =

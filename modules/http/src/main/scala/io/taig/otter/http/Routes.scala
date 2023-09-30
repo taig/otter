@@ -7,7 +7,7 @@ opaque type Routes[F[_]] = Chain[Route[F, ?, ?]]
 object Routes:
   extension [F[_]](self: Routes[F])
     def toChain: Chain[Route[F, ?, ?]] = self
-    def toNec: Option[NonEmptyChain[Route[F, ?, ?]]] = NonEmptyChain.fromChain(self)
+    def toSeq: Seq[Route[F, ?, ?]] = self.toList
     def :+(endpoint: Route[F, ?, ?]): Routes[F] = self :+ endpoint
     def ++(routes: Routes[F]): Routes[F] = self ++ routes.toChain
 
