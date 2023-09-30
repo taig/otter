@@ -125,8 +125,12 @@ lazy val munit = module(identifier = Some("munit"))
   .dependsOn(http)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
+    buildInfoKeys := Seq(version),
+    buildInfoObject := "Build",
+    buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
       "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
         "org.http4s" %% "http4s-ember-server" % Version.Http4s ::

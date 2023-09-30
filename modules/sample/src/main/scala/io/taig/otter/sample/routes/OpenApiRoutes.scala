@@ -8,6 +8,7 @@ import io.taig.otter.openapi.OpenApi
 import io.taig.otter.sample.SampleRoute
 import io.taig.otter.sample.api.Route
 import io.taig.otter.sample.api.endpoints
+import io.taig.otter.sample.Build
 
 final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
   val get: Route[Unit, Json] = route(endpoints.openapi.get): (_, _) =>
@@ -17,7 +18,7 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
           title = "Otter Sample Library 🦦",
           description =
             "A simple library REST API that aims to showcase and test all features of the Otter library.".some,
-          version = "0.0.1",
+          version = Build.version,
           routes
         )
       )
