@@ -4,8 +4,10 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
+import io.taig.otter.*
 import io.taig.otter.http.{Endpoint, Method, Request, Routes}
 
+import scala.annotation.tailrec
 import scala.util.chaining.*
 
 object OpenApi:
@@ -70,34 +72,30 @@ object OpenApi:
       "content" := JsonObject()
     ).dropNullValues
 
-  extension (self: JsonObject)
-    def dropNullValues: JsonObject = self.filter { case (_, value) => !value.isNull }
-    def toJson: Json = Json.fromJsonObject(self)
-
-//  val schema: Schema[?] => JsonObject =
-//    case schema: Primitive[?]     => primitive(schema)
+  val schema: Schema[?] => JsonObject =
+    case schema: Primitive[?] => primitive(schema)
 //    case schema: Collection[?, ?] => collection(schema)
 //    case schema: Enumeration[?]   => enumeration(schema)
 //    case schema: Record[?]        => record(schema)
 //    case schema: Product[?]       => product(schema)
 //    case schema: Dictionary[?]    => dictionary(schema)
 //    case schema: Coproduct[?]     => coproduct(schema)
-//
-//  def primitive(schema: Primitive[?]): JsonObject =
-//    val format = schema.format.value.fold(JsonObject.empty)(format => JsonObject("format" := format))
-//    val description = schema.description.value
-//      .fold(JsonObject.empty)(description => JsonObject("description" := description))
-//    constraints(schema.tpe)(schema.constraints)
+
+  def primitive(schema: Primitive[?]): JsonObject =
+    val format = schema.format.fold(JsonObject.empty)(format => JsonObject("format" := format))
+    val description = schema.description.fold(JsonObject.empty)(description => JsonObject("description" := description))
+    // constraints(schema.tpe)(schema.constraints)
 //      .deepMerge(format)
-//      .deepMerge(description)
-//      .deepMerge(
-//        JsonObject(
-//          "type" := typeOf(schema.tpe),
-//          "nullable" := schema.isOptional,
+    format
+      .deepMerge(description)
+      .deepMerge(
+        JsonObject(
+          "type" := typeOf(schema.tpe),
+          "nullable" := schema.isOptional
 //          "example" := schema.example.value.flatMap(schema.encode).map(toJson).getOrElse(Json.Null)
-//        )
-//      )
-//
+        )
+      )
+
 //  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
 //    JsonObject(
 //      "type" := "array",
@@ -175,14 +173,18 @@ object OpenApi:
 //      case Constraint.MaxLength(reference) => JsonObject("maxLength" := reference)
 //      case Constraint.Matches(pattern)     => JsonObject("pattern" := pattern.pattern())
 //      case _                               => JsonObject.empty
-//
-//  @tailrec
-//  def typeOf(schema: Value[?]): String = schema match
-//    case enumeration: Enumeration[?] => typeOf(enumeration.schema)
-//    case primitive: Primitive[?]     => typeOf(primitive.tpe)
-//
-//  val typeOf: Type[?] => String =
-//    case Type.Double | Type.Float | Type.BigDecimal => "number"
-//    case Type.Int | Type.Long | Type.BigInt         => "integer"
-//    case Type.Boolean                               => "boolean"
-//    case Type.String                                => "string"
+
+  @tailrec
+  def typeOf(schema: Schema.Value[?]): String = schema match
+    case schema: Enumeration[?] => typeOf(schema.schema)
+    case schema: Primitive[?]   => typeOf(schema.tpe)
+
+  val typeOf: Type[?] => String =
+    case Type.Double | Type.Float | Type.BigDecimal => "number"
+    case Type.Int | Type.Long | Type.BigInt         => "integer"
+    case Type.Boolean                               => "boolean"
+    case Type.String                                => "string"
+
+  extension (self: JsonObject)
+    def dropNullValues: JsonObject = self.filter { case (_, value) => !value.isNull }
+    def toJson: Json = Json.fromJsonObject(self)
