@@ -1,34 +1,45 @@
 package io.taig.otter
 
-import cats.data.Validated
+import cats.Eq
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
+import io.taig.otter.validation.{History, Violation, Violations}
+import io.taig.otter.syntax.*
 
-sealed abstract class Branch[A](val name: String):
+sealed abstract class Branch[A]:
+  def name: String
+
   final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = toCoproduct :+ branch
   final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch +: toCoproduct
 
   def toCoproduct: Coproduct[A] = Coproduct(this)
 
-  final def decode(data: Data.Object, discriminator: Discriminator): Validated[Violations, Option[A]] =
-    decode(name, data, discriminator)
-  protected def decode(name: String, data: Data.Object, discriminator: Discriminator): Validated[Violations, Option[A]]
-  final def encode(a: A, discriminator: Discriminator): Data.Object = encode(name, a, discriminator)
-  protected def encode(name: String, a: A, discriminator: Discriminator): Data.Object
+  def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[A]]
+  def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
-  def apply[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = new Branch[B](key.print(name).orEmpty):
-    override def decode(
-        name: String,
-        data: Data.Object,
-        discriminator: Discriminator
-    ): Validated[Violations, Option[B]] = discriminator match
-      case Discriminator.Nested(identifier, value) => ???
-      case Discriminator.Merged(identifier)        => ???
-      case Discriminator.Keyed                     => ???
-    override def encode(name: String, b: B, discriminator: Discriminator): Data.Object = discriminator match
+  def apply[A: Eq, B](a: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = new Branch[B]:
+    override def name: String = key.print(a).orEmpty
+
+    override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =
+      discriminator match
+        case Discriminator.Nested(identifier, value) =>
+          data.firstWithRemainders(identifier) match
+            case Some((identifier, data)) =>
+              key.decode(identifier) match
+                case Validated.Valid(identifier) if identifier === a =>
+                  data.first(value) match
+                    case Some(data) => schema.decode(data).map(_.some)
+                    case None       => ???
+                case Validated.Valid(_)            => none.valid
+                case Validated.Invalid(violations) => ???
+            case None => Violations.oneNec(History.Root / identifier, Violation.required).invalid
+        case Discriminator.Merged(identifier) => ???
+        case Discriminator.Keyed              => ???
+
+    override def encode(b: B, discriminator: Discriminator): Chain[(String, Data)] = discriminator match
       case Discriminator.Nested(identifier, value) =>
-        Data.Object.of(identifier -> Data.String(name), value -> schema.encode(b))
+        Chain(identifier -> Data.String(name), value -> schema.encode(b))
       case Discriminator.Merged(identifier) =>
-        Data.Object.one(identifier, Data.String(name)) ++ schema.encode(b).asObject.getOrElse(Data.Object.Empty)
-      case Discriminator.Keyed => Data.Object.one(name, schema.encode(b))
+        Chain.one(identifier, Data.String(name)) ++ schema.encode(b).asObject.map(_.values).orEmpty
+      case Discriminator.Keyed => Chain.one(name -> schema.encode(b))

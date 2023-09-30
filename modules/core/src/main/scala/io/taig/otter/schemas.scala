@@ -49,7 +49,7 @@ object schemas:
   def field[A](name: String, schema: Schema[A]): Field[A] = field(name, string, schema)
   def field[A](name: Int, schema: Schema[A]): Field[A] = field(name, int, schema)
 
-  def branch[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
+  def branch[A: Eq, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
   def branch[A](name: String, schema: Schema[A]): Branch[A] = branch(name, string, schema)
   def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
 
