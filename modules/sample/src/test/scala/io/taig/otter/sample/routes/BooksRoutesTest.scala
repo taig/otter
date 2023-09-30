@@ -14,23 +14,56 @@ final class BooksRoutesTest extends SampleSuite:
         session = None,
         Librarian.Create.Default.toLogin
       )
-      _ <- context.client.submitSuccess(
+      expected <- context.client.submitSuccess(
         endpoints.books.post,
         session = librarian.toUUID.some,
-        NonEmptyChain(fixtures.book.main(index = 1))
-      )
-      _ <- context.client.submitSuccess(
-        endpoints.books.post,
-        session = librarian.toUUID.some,
-        NonEmptyChain(fixtures.book.main(index = 2), fixtures.book.main(index = 3))
+        NonEmptyChain(fixtures.book.main(index = 1), fixtures.book.main(index = 2), fixtures.book.main(index = 3))
       )
       obtained <- context.client.submitAuthenticated(endpoints.books.get, session = None, input = ())
     yield {
-      assertEquals(obtained.length, expected = 3L)
+      assertEquals(obtained, expected.toChain)
     }
 
   app.test(endpoints.books.get, description = "empty"): context =>
     for obtained <- context.client.submitAuthenticated(endpoints.books.get, session = None, input = ())
     yield {
       assertEquals(obtained, expected = Chain.empty)
+    }
+
+  app.test(endpoints.books.post, description = "single"): context =>
+    for
+      librarian <- context.client.submitSuccess(
+        endpoints.librarians.self.sessions.post,
+        session = None,
+        Librarian.Create.Default.toLogin
+      )
+      obtained <- context.client.submitSuccess(
+        endpoints.books.post,
+        session = librarian.toUUID.some,
+        NonEmptyChain(fixtures.book.main())
+      )
+      expected <- context.client.submitAuthenticated(endpoints.books.get, session = None, input = ())
+    yield {
+      assertEquals(obtained.toChain, expected)
+    }
+
+  app.test(endpoints.books.post, description = "multiple"): context =>
+    for
+      librarian <- context.client.submitSuccess(
+        endpoints.librarians.self.sessions.post,
+        session = None,
+        Librarian.Create.Default.toLogin
+      )
+      obtained <- context.client.submitSuccess(
+        endpoints.books.post,
+        session = librarian.toUUID.some,
+        NonEmptyChain(
+          fixtures.book.main(index = 1),
+          fixtures.book.main(index = 2),
+          fixtures.book.main(index = 3)
+        )
+      )
+      expected <- context.client.submitAuthenticated(endpoints.books.get, session = None, input = ())
+    yield {
+      assertEquals(obtained.toChain, expected)
     }
