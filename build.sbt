@@ -15,7 +15,6 @@ val Version = new {
   val Scala3 = "3.3.1"
   val ScalaJavaTime = "2.5.0"
   val Slf4j = "2.0.9"
-  val Tapir = "1.7.4"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -141,11 +140,3 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         Nil
   )
   .dependsOn(http4s, dsl, openapi, munit % "compile->test")
-
-lazy val sampleTapir = module(identifier = Some("sample-tapir"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .settings(
-    libraryDependencies ++=
-      "com.softwaremill.sttp.tapir" %% "tapir-core" % Version.Tapir ::
-        Nil
-  )
