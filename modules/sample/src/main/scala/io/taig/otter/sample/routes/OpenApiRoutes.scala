@@ -19,6 +19,11 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
       title = "Otter Sample Library 🦦",
       description = "A simple library REST API that aims to showcase and test all features of the Otter library.".some,
       version = Build.version,
+      servers = Chain(
+        Json.obj(
+          "url" := "http://localhost:8080"
+        )
+      ),
       tags = Chain(
         Json.obj(
           "name" := "books",
@@ -34,6 +39,16 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
         Json.obj(
           "name" := "members",
           "description" := "Accounts for library members used to borrow and return books"
+        )
+      ),
+      securitySchemes = Json.obj(
+        "Librarian" := Json.obj(
+          "type" := "http",
+          "scheme" := "bearer"
+        ),
+        "Member" := Json.obj(
+          "type" := "http",
+          "scheme" := "bearer"
         )
       )
     )

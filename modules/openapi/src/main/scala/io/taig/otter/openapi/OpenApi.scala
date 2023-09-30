@@ -1,9 +1,10 @@
 package io.taig.otter.openapi
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import io.taig.otter.http.Routes
+import io.taig.otter.http.{Endpoint, Method, Request, Routes}
 
 import scala.util.chaining.*
 
@@ -15,7 +16,9 @@ object OpenApi:
       title: String = "API Specification",
       description: Option[String] = None,
       version: String = "0",
-      tags: Chain[Json] = Chain.nil
+      servers: Chain[Json] = Chain.nil,
+      tags: Chain[Json] = Chain.nil,
+      securitySchemes: Json = Json.Null
   ): Json = Json
     .obj(
       "openapi" := "3.1.0",
@@ -24,21 +27,52 @@ object OpenApi:
         "description" := description,
         "version" := version
       ),
+      "servers" := Some(servers).filter(_.nonEmpty),
       "tags" := Some(tags).filter(_.nonEmpty),
-      "paths" := paths(routes)
+      "paths" := paths(routes),
+      "components" := Json
+        .obj(
+          "securitySchemes" := securitySchemes
+        )
+        .dropNullValues
     )
     .dropNullValues
 
-  def paths[F[_]](routes: Routes[F]): JsonObject =
-    routes.toSeq
-      .map(_.endpoint)
-      .groupBy(_.request.url.print)
-      .map { case (path, endpoints) =>
-        path -> Json.obj(
-          endpoints.map(endpoint => endpoint.request.method.toString.toLowerCase -> Json.obj("tags" := endpoint.tags))*
-        )
-      }
-      .pipe(JsonObject.fromIterable)
+  def paths[F[_]]: Routes[F] => JsonObject = _.toSeq
+    .map(_.endpoint)
+    .groupBy(_.request.url.print)
+    .map { case (path, endpoints) =>
+      path -> Json.obj(
+        endpoints.map(endpoint => endpoint.request.method.toString.toLowerCase -> self.endpoint(endpoint).toJson)*
+      )
+    }
+    .pipe(JsonObject.fromIterable)
+
+  val endpoint: Endpoint[?, ?] => JsonObject = endpoint =>
+    val isGetOrHeadOrDelete = (method: Method) =>
+      method === Method.Get || method === Method.Head || method === Method.Delete
+
+    JsonObject(
+      "summary" := endpoint.summary,
+      "description" := endpoint.description,
+      "operationId" := endpoint.operationId,
+      "requestBody" := {
+        if isGetOrHeadOrDelete(endpoint.request.method)
+        then Json.Null
+        else request(endpoint.request).toJson
+      },
+      "tags" := endpoint.tags
+    ).dropNullValues
+
+  val request: Request[?] => JsonObject = request =>
+    JsonObject(
+      "description" := request.description,
+      "content" := JsonObject()
+    ).dropNullValues
+
+  extension (self: JsonObject)
+    def dropNullValues: JsonObject = self.filter { case (_, value) => !value.isNull }
+    def toJson: Json = Json.fromJsonObject(self)
 
 //  val schema: Schema[?] => JsonObject =
 //    case schema: Primitive[?]     => primitive(schema)

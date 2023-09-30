@@ -7,23 +7,27 @@ import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.validation.{Constraint, History, Violation, Violations}
 import io.taig.otter.Data
 
-sealed abstract class Request[A]:
+sealed abstract class Request[A](val description: Option[String]):
   self =>
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
   def body: Request.Body[?]
 
+  def description(f: Option[String] => Option[String]): Request[A] = Request(this, f(description))
+  def description(value: Option[String]): Request[A] = description(_ => value)
+  def description(value: String): Request[A] = description(Some(value))
+
   final def matches(method: Method, url: Http.Url): Boolean = this.method === method && this.url.matches(url)
 
-  final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request[B] = new Request[B]:
+  final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request[B] = new Request[B](description):
     export self.{body, headers, method, url}
     override def decode(request: Http.Request): Validated[Violations, B] = self.decode(request).andThen(f)
     override def encode(b: B): Http.Request = self.encode(g(b))
 
   final def imap[B](f: A => B)(g: B => A): Request[B] = andThen(f(_).valid)(g)
 
-  final def zip[B](other: Headers[B]): Request[(A, B)] = new Request[(A, B)]:
+  final def zip[B](other: Headers[B]): Request[(A, B)] = new Request[(A, B)](description):
     export self.{body, method, url}
     override def headers: Headers[?] = self.headers.zip(other)
     override def decode(request: Http.Request): Validated[Violations, (A, B)] =
@@ -106,7 +110,10 @@ object Request:
               payload: Array[Byte]
           ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
 
-  def apply[A, B](m: Method, a: Url[A], b: Request.Body[B]): Request[(A, B)] = new Request[(A, B)]:
+  def apply[A](request: Request[A], description: Option[String]): Request[A] =
+    new Request[A](description) { export request.* }
+
+  def apply[A, B](m: Method, a: Url[A], b: Request.Body[B]): Request[(A, B)] = new Request[(A, B)](None):
     override def method: Method = m
     override def url: Url[A] = a
     override def headers: Headers[Unit] = Headers.Empty

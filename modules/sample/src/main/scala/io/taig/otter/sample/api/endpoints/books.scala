@@ -14,8 +14,9 @@ object books:
   val get: Endpoint[Role.Guest, Unit, Chain[Book]] = Endpoint(
     Role.guest,
     request(method.get, url),
-    response(result(code.ok, output.json(collection.chain(schemas.book.main))))
-  ).tags("books")
+    response(result(code.ok, output.json(collection.chain(schemas.book.main)))),
+    tag = "books"
+  )
 
   enum Post:
     case IsbnConflict(isbn: Isbn)
@@ -35,6 +36,7 @@ object books:
 
     Endpoint(
       Role.librarian,
-      request(method.post, url, input.json(books)),
-      response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main))))
-    ).tags("books")
+      request(method.post, url, input.json(books)).description("Lorem ipsum dolar sit amet"),
+      response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main)))),
+      tag = "books"
+    )
