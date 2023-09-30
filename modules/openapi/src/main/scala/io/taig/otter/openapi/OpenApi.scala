@@ -1,12 +1,9 @@
 package io.taig.otter.openapi
 
-import cats.data.Chain
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import io.taig.otter.http.{App, Routes}
-import io.taig.otter.validation.*
+import io.taig.otter.http.Routes
 
-import scala.annotation.tailrec
 import scala.util.chaining.*
 
 object OpenApi:

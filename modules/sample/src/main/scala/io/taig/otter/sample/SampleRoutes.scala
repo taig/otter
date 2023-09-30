@@ -1,15 +1,8 @@
 package io.taig.otter.sample
 
-import cats.Eval
 import cats.effect.IO
-import io.taig.otter.http.{App, Routes}
-import io.taig.otter.sample.routes.{
-  BooksRoutes,
-  LibrariansSelfSessionsRoutes,
-  MembersReferenceRoutes,
-  MembersRoutes,
-  OpenApiRoutes
-}
+import io.taig.otter.http.Routes
+import io.taig.otter.sample.routes.*
 
 object SampleRoutes:
   def apply(route: SampleRoute, repositories: SampleRepositories): Routes[IO] =
