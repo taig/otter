@@ -1,8 +1,9 @@
 package io.taig.otter.sample
 
+import cats.Eval
 import cats.effect.{IO, IOApp}
 import io.taig.otter.dsl.*
-import io.taig.otter.http.App
+import io.taig.otter.http.{App, Routes}
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.service.ReferenceGenerator

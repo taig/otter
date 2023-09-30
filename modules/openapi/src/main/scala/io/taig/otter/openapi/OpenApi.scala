@@ -1,18 +1,19 @@
-//package io.taig.otter.openapi
-//
-//import cats.data.Chain
-//import io.circe.syntax.*
-//import io.circe.{Json, JsonObject}
-//import io.taig.otter.circe.toJson
-//import io.taig.otter.schema.*
-//import io.taig.otter.validation.*
-//
-//import scala.annotation.tailrec
-//import scala.util.chaining.*
-//
-//object OpenApi:
-//  self =>
-//
+package io.taig.otter.openapi
+
+import cats.data.Chain
+import io.circe.syntax.*
+import io.circe.{Json, JsonObject}
+import io.taig.otter.http.{App, Routes}
+import io.taig.otter.validation.*
+
+import scala.annotation.tailrec
+import scala.util.chaining.*
+
+object OpenApi:
+  self =>
+
+  def apply[F[_]](routes: Routes[F]): JsonObject = JsonObject()
+
 //  val schema: Schema[?] => JsonObject =
 //    case schema: Primitive[?]     => primitive(schema)
 //    case schema: Collection[?, ?] => collection(schema)
