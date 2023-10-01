@@ -15,7 +15,7 @@ final class SampleClient(client: Client[IO]):
       session: Option[UUID],
       input: I
   ): IO[Validated[Violations, Either[Authentication.Error, O]]] =
-    client.submit(endpoint.toUnauthenticatedEndpoint, Authentication(session, input))
+    client.submit(endpoint.toAuthenticatedEndpoint, Authentication(session, input))
 
   def submitValid[R, I, O](
       endpoint: Endpoint[R, I, O],

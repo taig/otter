@@ -3,188 +3,29 @@ package io.taig.otter.openapi
 import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.syntax.*
-import io.circe.{Json, JsonObject}
+import io.circe.{Encoder, Json, JsonObject}
 import io.taig.otter.*
 import io.taig.otter.http.{Endpoint, Method, Request, Routes}
 
 import scala.annotation.tailrec
 import scala.util.chaining.*
 
+final case class OpenApi(
+    openapi: String,
+    info: Extended[Info],
+    servers: Chain[Extended[Server]] = Chain.empty,
+    tags: Chain[Extended[Tag]] = Chain.empty,
+    paths: JsonObject = JsonObject.empty,
+    components: JsonObject = JsonObject.empty
+)
+
 object OpenApi:
-  self =>
-
-  def apply[F[_]](
-      routes: Routes[F],
-      title: String = "API Specification",
-      description: Option[String] = None,
-      version: String = "0",
-      servers: Chain[Json] = Chain.nil,
-      tags: Chain[Json] = Chain.nil,
-      securitySchemes: Json = Json.Null
-  ): Json = Json
-    .obj(
-      "openapi" := "3.1.0",
-      "info" := Json.obj(
-        "title" := title,
-        "description" := description,
-        "version" := version
-      ),
-      "servers" := Some(servers).filter(_.nonEmpty),
-      "tags" := Some(tags).filter(_.nonEmpty),
-      "paths" := paths(routes),
-      "components" := Json
-        .obj(
-          "securitySchemes" := securitySchemes
-        )
-        .dropNullValues
-    )
-    .dropNullValues
-
-  def paths[F[_]]: Routes[F] => JsonObject = _.toSeq
-    .map(_.endpoint)
-    .groupBy(_.request.url.print)
-    .map { case (path, endpoints) =>
-      path -> Json.obj(
-        endpoints.map(endpoint => endpoint.request.method.toString.toLowerCase -> self.endpoint(endpoint).toJson)*
-      )
-    }
-    .pipe(JsonObject.fromIterable)
-
-  val endpoint: Endpoint[?, ?] => JsonObject = endpoint =>
-    val isGetOrHeadOrDelete = (method: Method) =>
-      method === Method.Get || method === Method.Head || method === Method.Delete
-
+  given Encoder.AsObject[OpenApi] = openapi =>
     JsonObject(
-      "summary" := endpoint.summary,
-      "description" := endpoint.description,
-      "operationId" := endpoint.operationId,
-      "requestBody" := {
-        if isGetOrHeadOrDelete(endpoint.request.method)
-        then Json.Null
-        else request(endpoint.request).toJson
-      },
-      "tags" := endpoint.tags
+      "openapi" := openapi.openapi,
+      "info" := openapi.info,
+      "servers" := Some(openapi.servers).filter(_.nonEmpty),
+      "tags" := Some(openapi.tags).filter(_.nonEmpty),
+      "paths" := openapi.paths,
+      "components" := openapi.components
     ).dropNullValues
-
-  val request: Request[?] => JsonObject = request =>
-    JsonObject(
-      "description" := request.description,
-      "content" := JsonObject()
-    ).dropNullValues
-
-  val schema: Schema[?] => JsonObject =
-    case schema: Primitive[?] => primitive(schema)
-//    case schema: Collection[?, ?] => collection(schema)
-//    case schema: Enumeration[?]   => enumeration(schema)
-//    case schema: Record[?]        => record(schema)
-//    case schema: Product[?]       => product(schema)
-//    case schema: Dictionary[?]    => dictionary(schema)
-//    case schema: Coproduct[?]     => coproduct(schema)
-
-  def primitive(schema: Primitive[?]): JsonObject =
-    val format = schema.format.fold(JsonObject.empty)(format => JsonObject("format" := format))
-    val description = schema.description.fold(JsonObject.empty)(description => JsonObject("description" := description))
-    // constraints(schema.tpe)(schema.constraints)
-//      .deepMerge(format)
-    format
-      .deepMerge(description)
-      .deepMerge(
-        JsonObject(
-          "type" := typeOf(schema.tpe),
-          "nullable" := schema.isOptional
-//          "example" := schema.example.value.flatMap(schema.encode).map(toJson).getOrElse(Json.Null)
-        )
-      )
-
-//  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
-//    JsonObject(
-//      "type" := "array",
-//      "items" := self.schema(schema.Value),
-//      "nullable" := schema.isOptional
-//    )
-//  )
-//
-//  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
-//    "type" := typeOf(schema.schema),
-//    "enum" := Values.map(toJson),
-//    "nullable" := schema.isOptional
-//  )
-//
-//  def record(schema: Record[?]): JsonObject =
-//    val properties = schema.toChain.toList.map(field => field.key := self.schema(field.schema))
-//
-//    val required = schema.toChain
-//      .filterNot(_.schema.isOptional)
-//      .map(_.key)
-//      .pipe(required => if required.isEmpty then JsonObject.empty else JsonObject("required" := required))
-//
-//    required.deepMerge(
-//      JsonObject(
-//        "type" := "object",
-//        "properties" := Json.fromFields(properties),
-//        "nullable" := schema.isOptional
-//      )
-//    )
-//
-//  def product(schema: Product[?]): JsonObject = JsonObject(
-//    "type" := "array",
-//    "prefixItems" := schema.toChain.map(schema => self.schema(schema)),
-//    "minItems" := schema.toChain.length,
-//    "maxItems" := schema.toChain.length,
-//    "additionalItems" := false
-//  )
-//
-//  def dictionary(schema: Dictionary[?]): JsonObject = JsonObject(
-//    "type" := "object",
-//    "additionalProperties" := self.schema(schema.schema)
-//  )
-//
-//  def coproduct(schema: Coproduct[?]): JsonObject = ???
-//
-//  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
-//    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
-//
-//  def constraints(schema: Collection[?, ?]): JsonObject =
-//    schema.constraints.foldLeft(JsonObject.empty)((result, current) => constraint.array(current).deepMerge(result))
-//
-//  object constraint:
-//    def apply(tpe: Type[?]): Constraint => JsonObject = constraint =>
-//      tpe match
-//        case Type.Int | Type.BigInt | Type.BigDecimal | Type.Double | Type.Float | Type.Long => numeric(constraint)
-//        case Type.String                                                                     => string(constraint)
-//        case Type.Boolean                                                                    => JsonObject.empty
-//
-//    val numeric: Constraint => JsonObject =
-//      case Constraint.Minimum(reference, exclusive) =>
-//        JsonObject("minimum" := reference, "exclusiveMinimum" := exclusive)
-//      case Constraint.Maximum(reference, exclusive) =>
-//        JsonObject("maximum" := reference, "exclusiveMaximum" := exclusive)
-//      case Constraint.Multiple(of) => JsonObject("multipleOf" := of)
-//      case _                       => JsonObject.empty
-//
-//    val array: Constraint => JsonObject =
-//      case Constraint.MinItems(reference) => JsonObject("minItems" := reference)
-//      case Constraint.MaxItems(reference) => JsonObject("maxItems" := reference)
-//      case Constraint.UniqueItems         => JsonObject("uniqueItems" := true)
-//      case _                              => JsonObject.empty
-//
-//    val string: Constraint => JsonObject =
-//      case Constraint.MinLength(reference) => JsonObject("minLength" := reference)
-//      case Constraint.MaxLength(reference) => JsonObject("maxLength" := reference)
-//      case Constraint.Matches(pattern)     => JsonObject("pattern" := pattern.pattern())
-//      case _                               => JsonObject.empty
-
-  @tailrec
-  def typeOf(schema: Schema.Value[?]): String = schema match
-    case schema: Enumeration[?] => typeOf(schema.schema)
-    case schema: Primitive[?]   => typeOf(schema.tpe)
-
-  val typeOf: Type[?] => String =
-    case Type.Double | Type.Float | Type.BigDecimal => "number"
-    case Type.Int | Type.Long | Type.BigInt         => "integer"
-    case Type.Boolean                               => "boolean"
-    case Type.String                                => "string"
-
-  extension (self: JsonObject)
-    def dropNullValues: JsonObject = self.filter { case (_, value) => !value.isNull }
-    def toJson: Json = Json.fromJsonObject(self)

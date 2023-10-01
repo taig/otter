@@ -103,7 +103,13 @@ lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
   .dependsOn(circe % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi"), jvmOnly = true).dependsOn(circe)
+lazy val openapi = module(identifier = Some("openapi"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
@@ -112,7 +118,7 @@ lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
         "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test", circe)
+  .dependsOn(circe % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(

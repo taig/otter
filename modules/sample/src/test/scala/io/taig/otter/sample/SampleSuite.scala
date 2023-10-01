@@ -8,14 +8,14 @@ import munit.Location
 
 abstract class SampleSuite extends OtterSuite:
   def test(endpoint: Endpoint[?, ?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
-    test(endpoint.toUnauthenticatedEndpoint, description)(body)(loc)
+    test(endpoint.toAuthenticatedEndpoint, description)(body)(loc)
 
   def test(endpoint: Endpoint[?, ?, ?])(body: => Any)(implicit loc: Location): Unit =
     test(endpoint, description = "")(body)(loc)
 
   extension [T](self: SyncIO[FunFixture[T]])
     def test(endpoint: Endpoint[?, ?, ?], description: String)(body: T => Any)(implicit loc: Location): Unit =
-      self.test(endpoint.toUnauthenticatedEndpoint, description)(body)(loc)
+      self.test(endpoint.toAuthenticatedEndpoint, description)(body)(loc)
 
     def test(endpoint: Endpoint[?, ?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)

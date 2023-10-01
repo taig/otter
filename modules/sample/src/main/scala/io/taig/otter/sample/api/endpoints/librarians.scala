@@ -29,13 +29,11 @@ object librarians:
       val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] = Endpoint(
         Role.guest,
         request(method.post, url, input.json(schemas.librarian.login)),
-        response(Post.results :+ result(code.created, output.json(schemas.librarian.session))),
-        tag = "librarians"
-      ).endpoint(
-        _.summary("Create librarian session")
-          .description(
-            "For security reasons, this endpoint does not give away whether the given email address is " +
-              "unknown or the given password is incorrect."
-          )
-          .operationId("createLibrarianSession")
-      )
+        response(Post.results :+ result(code.created, output.json(schemas.librarian.session)))
+      ).summary("Create librarian session")
+        .description(
+          "For security reasons, this endpoint does not give away whether the given email address is " +
+            "unknown or the given password is incorrect."
+        )
+        .operationId("createLibrarianSession")
+        .tags("librarians")

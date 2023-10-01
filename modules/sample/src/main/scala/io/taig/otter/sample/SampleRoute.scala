@@ -13,7 +13,7 @@ import java.util.UUID
 
 final class SampleRoute(library: LibrarianRepository):
   def apply[R, I, O](endpoint: Endpoint[R, I, O])(f: (SampleRoute.Self[R], I) => IO[O]): Route[I, O] = OtterRoute(
-    endpoint.toUnauthenticatedEndpoint,
+    endpoint.toAuthenticatedEndpoint,
     authentication =>
       authentication.self
         .match {
