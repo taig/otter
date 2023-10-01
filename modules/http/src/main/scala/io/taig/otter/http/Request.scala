@@ -108,7 +108,10 @@ object Request:
       object Strict:
         val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit]:
           override def isEmpty: Boolean = true
-          override def decodeWithRemainders(remainders: Http.Headers, payload: Array[Byte]): Validated[Violations, (Http.Headers, Unit)] =
+          override def decodeWithRemainders(
+              remainders: Http.Headers,
+              payload: Array[Byte]
+          ): Validated[Violations, (Http.Headers, Unit)] =
             (remainders, ()).valid
           override def encode(a: Unit): (Http.Headers, Http.Request.Body.Singlepart) =
             (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(Array.emptyByteArray)))

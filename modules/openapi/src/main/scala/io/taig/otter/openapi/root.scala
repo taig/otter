@@ -4,7 +4,7 @@ import cats.data.{Chain, NonEmptyMap}
 import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
-import io.taig.otter.*
+import io.taig.otter.{Schema as RootSchema, *}
 import io.taig.otter.http.{Endpoint, Method, Request}
 
 import scala.annotation.tailrec
@@ -55,33 +55,12 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
 )
 
 def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(
-  NonEmptyMap.of("application/json" -> MediaType(JsonObject()))
+  NonEmptyMap.of("application/json" -> MediaType(toSchema(???)))
 )
 
-val toEndpointSchema: Endpoint[?, ?] => JsonObject = endpoint =>
-  val isGetOrHeadOrDelete = (method: Method) =>
-    method === Method.Get || method === Method.Head || method === Method.Delete
-
-  JsonObject(
-    "summary" := endpoint.summary,
-    "description" := endpoint.description,
-    "operationId" := endpoint.operationId,
-    "requestBody" := {
-      if isGetOrHeadOrDelete(endpoint.request.method)
-      then Json.Null
-      else request(endpoint.request).toJson
-    },
-    "tags" := endpoint.tags
-  ).dropNullValues
-
-val request: Request[?] => JsonObject = request =>
-  JsonObject(
-    "description" := request.description,
-    "content" := JsonObject()
-  ).dropNullValues
-
-val schema: Schema[?] => JsonObject =
-  case schema: Primitive[?] => primitive(schema)
+val toSchema: RootSchema[?] => Schema =
+  case schema: Primitive[?] => toSchema(schema)
+  case _                    => Schema(tpe = "object")
 //    case schema: Collection[?, ?] => collection(schema)
 //    case schema: Enumeration[?]   => enumeration(schema)
 //    case schema: Record[?]        => record(schema)
@@ -89,20 +68,12 @@ val schema: Schema[?] => JsonObject =
 //    case schema: Dictionary[?]    => dictionary(schema)
 //    case schema: Coproduct[?]     => coproduct(schema)
 
-def primitive(schema: Primitive[?]): JsonObject =
-  val format = schema.format.fold(JsonObject.empty)(format => JsonObject("format" := format))
-  val description = schema.description.fold(JsonObject.empty)(description => JsonObject("description" := description))
-  // constraints(schema.tpe)(schema.constraints)
-  //      .deepMerge(format)
-  format
-    .deepMerge(description)
-    .deepMerge(
-      JsonObject(
-        "type" := typeOf(schema.tpe),
-        "nullable" := schema.isOptional
-        //          "example" := schema.example.value.flatMap(schema.encode).map(toJson).getOrElse(Json.Null)
-      )
-    )
+def toSchema(schema: Primitive[?]): Schema = Schema(
+  tpe = typeOf(schema.tpe),
+  format = schema.format,
+  description = schema.description,
+  nullable = schema.isOptional
+)
 
 //  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
 //    JsonObject(
