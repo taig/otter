@@ -1,10 +1,9 @@
 package io.taig.otter.sample.api.endpoints
 
-import io.taig.otter.sample.api.Roles
-
+import java.util.UUID
 import scala.util.control.NoStackTrace
 
-final case class Authentication[R, A, B](roles: Roles[R], self: Option[A], payload: B)
+final case class Authentication[A](session: Option[UUID], payload: A)
 
 object Authentication:
   enum Error extends NoStackTrace:
