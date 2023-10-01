@@ -8,12 +8,11 @@ import io.circe.syntax.*
 import io.taig.otter.http.Routes
 import io.taig.otter.openapi.*
 import io.taig.otter.sample.SampleRoute
-import io.taig.otter.sample.api.Route
-import io.taig.otter.sample.api.endpoints
+import io.taig.otter.sample.api.{endpoints, Role, Route}
 import io.taig.otter.sample.Build
 
 final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
-  val get: Route[Unit, Json] = route(endpoints.openapi.get): (_, _) =>
+  val get: Route[Role.Guest, Unit, Json] = route(endpoints.openapi.get): (_, _) =>
     val openapi = toOpenApi(
       routes,
       title = "Otter Sample Library 🦦",

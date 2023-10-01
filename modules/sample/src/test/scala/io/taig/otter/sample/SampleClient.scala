@@ -9,13 +9,13 @@ import io.taig.otter.validation.Violations
 
 import java.util.UUID
 
-final class SampleClient(client: Client[IO]):
+final class SampleClient(client: Client[IO]) extends Client[IO]:
   def submit[R, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
   ): IO[Validated[Violations, Either[Authentication.Error, O]]] =
-    client.submit(endpoint.toAuthenticatedEndpoint, Authentication(session, input))
+    client.submit(endpoint, Authentication(???, session, input))
 
   def submitValid[R, I, O](
       endpoint: Endpoint[R, I, O],
