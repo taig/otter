@@ -5,13 +5,12 @@ import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter.*
-import io.taig.otter.syntax.*
-import io.taig.otter.http.{Endpoint, Method, Request, Routes}
+import io.taig.otter.http.{Endpoint, Method, Request}
 
 import scala.annotation.tailrec
 
 def toOpenApi[F[_]](
-    routes: Routes[F],
+    endpoints: Chain[Endpoint[?, ?]],
     title: String = "API Specification",
     description: Option[String] = None,
     version: String = "0",
@@ -27,12 +26,12 @@ def toOpenApi[F[_]](
   ),
   servers = servers,
   tags = tags,
-  paths = toPaths(routes),
+  paths = toPaths(endpoints),
   components = JsonObject("securitySchemes" := securitySchemes).dropNullValues
 )
 
-def toPaths[F[_]](routes: Routes[F]): Paths = Paths.fromIterableOnce:
-  routes.toChain.map(_.endpoint).groupBy(_.request.url.print).map { case (path, endpoints) =>
+def toPaths(endpoints: Chain[Endpoint[?, ?]]): Paths = Paths.fromIterableOnce:
+  endpoints.groupBy(_.request.url.print).map { case (path, endpoints) =>
     (path, toPathItem(endpoints.filter(!_.hidden)))
   }
 

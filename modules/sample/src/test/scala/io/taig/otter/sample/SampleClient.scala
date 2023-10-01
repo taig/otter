@@ -3,22 +3,20 @@ package io.taig.otter.sample
 import cats.data.Validated
 import cats.syntax.all.*
 import cats.effect.IO
-import io.taig.otter.http.{Client, Http, ViolationsException}
+import io.taig.otter.http.{Client, ViolationsException}
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}
 import io.taig.otter.validation.Violations
 
 import java.util.UUID
 
-final class SampleClient(client: Client[IO]) extends Client[IO]:
-  override def submit(request: Http.Request): IO[Http.Response] = client.submit(request)
-
+final class SampleClient(client: Client[IO]):
   def submit[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
   ): IO[Validated[Violations, Either[Authentication.Error, O]]] =
-    client.submit(endpoint, Authentication(session, input))
+    client.submit(endpoint.toAuthenticatedEndpoint, Authentication(session, input))
 
   def submitValid[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
