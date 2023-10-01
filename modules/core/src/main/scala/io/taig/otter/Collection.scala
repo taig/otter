@@ -25,7 +25,16 @@ sealed abstract class Collection[A](description: Option[String], val schema: Sch
     override def print(a: Option[A])(using Of <:< Value[?]): Option[Chain[Option[String]]] =
       a.flatMap(self.print)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] = ???
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] =
+    new Collection[B](description, schema):
+      export self.{isOptional, Of}
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def decodeArray(data: Option[Data.Array]): Validated[Violations, B] =
+        self.decodeArray(data).andThen(validation(_).leftMap(Violations.root))
+      override def encodeArray(b: B): Option[Chain[Data]] = self.encodeArray(g(b))
+      override def parse(values: Option[Chain[Option[String]]])(using Of <:< Value[?]): Validated[Violations, B] =
+        self.parse(values).andThen(validation(_).leftMap(Violations.root))
+      override def print(b: B)(using Of <:< Value[?]): Option[Chain[Option[String]]] = self.print(g(b))
 
   final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
     case Some(_: Data.Array) => decodeArray(data.asInstanceOf[Option[Data.Array]])
