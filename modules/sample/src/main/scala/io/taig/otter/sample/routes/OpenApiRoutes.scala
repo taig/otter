@@ -23,7 +23,7 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
       tags = Chain(
         Tag(name = "books"),
         Tag(name = "librarians", description = "Administrative accounts for library employees".some),
-        Tag(name = "member", description = "Accounts for library members used to borrow and return books".some)
+        Tag(name = "members", description = "Accounts for library members used to borrow and return books".some)
       ),
       securitySchemes = Json.obj(
         "Librarian" := Json.obj(

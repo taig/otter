@@ -3,6 +3,10 @@ package io.taig.otter.http
 import cats.data.Chain
 
 trait EndpointLike[A]:
+  def deprecated: Boolean
+  def deprecated(f: Boolean => Boolean): A
+  final def deprecated(value: Boolean): A = deprecated(_ => value)
+
   def description: Option[String]
   def description(f: Option[String] => Option[String]): A
   final def description(value: Option[String]): A = description(_ => value)

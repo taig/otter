@@ -5,10 +5,10 @@ import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
 import io.taig.otter.*
+import io.taig.otter.syntax.*
 import io.taig.otter.http.{Endpoint, Method, Request, Routes}
 
 import scala.annotation.tailrec
-import scala.util.chaining.*
 
 def toOpenApi[F[_]](
     routes: Routes[F],
@@ -27,21 +27,35 @@ def toOpenApi[F[_]](
   ),
   servers = servers,
   tags = tags,
-  paths = paths(routes),
+  paths = toPaths(routes),
   components = JsonObject("securitySchemes" := securitySchemes).dropNullValues
 )
 
-def paths[F[_]]: Routes[F] => JsonObject = _.toSeq
-  .map(_.endpoint)
-  .groupBy(_.request.url.print)
-  .map { case (path, endpoints) =>
-    path -> Json.obj(
-      endpoints
-        .filter(!_.hidden)
-        .map(endpoint => endpoint.request.method.toString.toLowerCase -> toEndpointSchema(endpoint).toJson)*
-    )
+def toPaths[F[_]](routes: Routes[F]): Paths = Paths.fromIterableOnce:
+  routes.toChain.map(_.endpoint).groupBy(_.request.url.print).map { case (path, endpoints) =>
+    (path, toPathItem(endpoints.filter(!_.hidden)))
   }
-  .pipe(JsonObject.fromIterable)
+
+def toPathItem(endpoints: Chain[Endpoint[?, ?]]): PathItem = PathItem(
+  get = endpoints.find(_.request.method === Method.Get).map(toOperation),
+  put = endpoints.find(_.request.method === Method.Put).map(toOperation),
+  post = endpoints.find(_.request.method === Method.Post).map(toOperation),
+  delete = endpoints.find(_.request.method === Method.Delete).map(toOperation),
+  options = endpoints.find(_.request.method === Method.Options).map(toOperation),
+  head = endpoints.find(_.request.method === Method.Head).map(toOperation),
+  patch = endpoints.find(_.request.method === Method.Patch).map(toOperation),
+  trace = endpoints.find(_.request.method === Method.Trace).map(toOperation)
+)
+
+def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
+  tags = endpoint.tags,
+  summary = endpoint.summary,
+  description = endpoint.description,
+  deprecated = endpoint.deprecated,
+  requestBody = Option.when(!endpoint.request.body.isEmpty)(toRequestBody(endpoint.request.body))
+)
+
+def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(???)
 
 val toEndpointSchema: Endpoint[?, ?] => JsonObject = endpoint =>
   val isGetOrHeadOrDelete = (method: Method) =>

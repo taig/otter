@@ -15,6 +15,8 @@ final case class Endpoint[R, I, O](
   def endpoint[T, U](f: Endpoint.Authenticated[I, O] => Endpoint.Authenticated[T, U]): Endpoint[R, T, U] =
     copy(toAuthenticatedEndpoint = f(toAuthenticatedEndpoint))
   def endpoint[T, U](value: Endpoint.Authenticated[T, U]): Endpoint[R, T, U] = endpoint(_ => value)
+  override def deprecated: Boolean = toAuthenticatedEndpoint.deprecated
+  override def deprecated(f: Boolean => Boolean): Endpoint[R, I, O] = endpoint(toAuthenticatedEndpoint.deprecated(f))
   override def description: Option[String] = toAuthenticatedEndpoint.description
   override def description(f: Option[String] => Option[String]): Endpoint[R, I, O] =
     endpoint(toAuthenticatedEndpoint.description(f))

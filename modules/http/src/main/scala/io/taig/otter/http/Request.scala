@@ -45,6 +45,8 @@ object Request:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
 
+    def isEmpty: Boolean
+
     def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
     final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
     def zip[B](headers: Headers[B]): Self[(A, B)]
@@ -71,6 +73,7 @@ object Request:
 
         final override def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request.Body.Singlepart.Strict[B] =
           new Strict[B]:
+            export self.isEmpty
             override def decodeWithRemainders(
                 remainders: Http.Headers,
                 payload: Array[Byte]
@@ -79,6 +82,7 @@ object Request:
             override def encode(b: B): (Http.Headers, Http.Request.Body.Singlepart) = self.encode(g(b))
 
         final override def zip[B](headers: Headers[B]): Request.Body.Singlepart.Strict[(A, B)] = new Strict[(A, B)]:
+          export self.isEmpty
           override def decodeWithRemainders(
               remainders: Http.Headers,
               payload: Array[Byte]
@@ -103,6 +107,7 @@ object Request:
 
       object Strict:
         val Root: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]]:
+          override def isEmpty: Boolean = false
           override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
             (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
           override def decodeWithRemainders(
