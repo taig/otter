@@ -54,20 +54,20 @@ object schemas:
   def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
 
   object collection:
-    def chain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, Chain[A]] = Collection(schema)
-    def vector[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, Vector[A]] =
+    def chain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], Chain[A]] = Collection(schema)
+    def vector[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], Vector[A]] =
       chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, List[A]] =
+    def list[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], List[A]] =
       chain(schema).imap(_.toList)(Chain.fromSeq)
-    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: F[A]): Collection.Of[F, SortedSet[A]] =
+    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: F[A]): Collection.Of[F[A], SortedSet[A]] =
       chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyChain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F, NonEmptyChain[A]] =
+    def nonEmptyChain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(schema).ivalidate(validation)(_.toChain)
     def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: Schema[A], schema: Schema[B])(
         f: (Schema[A], Schema[B]) => F[(A, B)]
-    ): Collection.Of[F, SortedMap[A, B]] =
+    ): Collection.Of[F[(A, B)], SortedMap[A, B]] =
       chain(f(key, schema)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
