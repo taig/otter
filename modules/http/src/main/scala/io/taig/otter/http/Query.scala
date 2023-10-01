@@ -3,40 +3,58 @@ package io.taig.otter.http
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.syntax.*
-import io.taig.otter.validation.Violations
+import io.taig.otter.validation.{Validation, Violations}
 import io.taig.otter.{Collection, Schema}
 
-final case class Query[A](name: String, schema: Schema.Value[A] | Collection.Value[A]):
+sealed abstract class Query[A](val name: String, val schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]):
   self =>
-  def isOptional: Boolean = schema.isOptional
+  final def isOptional: Boolean = schema.isOptional
 
-  def isCollection: Boolean = schema match
+  final def isCollection: Boolean = schema match
     case _: Collection[?] => true
     case _                => false
 
-  def imap[B](f: A => B)(g: B => A): Query[B] = schema match
-    case schema: Schema.Value[A]     => copy(schema = schema.imap(f)(g))
-    case schema: Collection.Value[A] => copy(schema = schema.imap(f)(g))
+  def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B]
 
-  def optional: Query[Option[A]] = schema match
-    case schema: Schema.Value[A]     => copy(schema = schema.optional)
-    case schema: Collection.Value[A] => copy(schema = schema.optional)
+  final def imap[B](f: A => B)(g: B => A): Query[B] = ivalidate(Validation.lift(f))(g)
+
+  def optional: Query[Option[A]]
 
   def toQueries: Queries[A] = Queries(this)
 
-  def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] = schema match
-    case _: Schema.Value[?]     => remainders.firstWithRemainders(name).map(_._2)
-    case _: Collection.Value[?] => remainders.removeAll(name).some
+  def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries]
 
-  def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] = schema match
-    case schema: Schema.Value[A] =>
-      remainders.firstWithRemainders(name) match
+  def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)]
+
+  def encode(a: A): Http.Queries
+
+object Query:
+  final private class Single[A](name: String, schema: Schema.Value[A]) extends Query[A](name, schema):
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B] =
+      new Single(name, schema.ivalidate(validation)(g))
+    override def optional: Query[Option[A]] = new Single(name, schema.optional)
+    override def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
+      queries.firstWithRemainders(name).map(_._2)
+    override def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
+      queries.firstWithRemainders(name) match
         case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
-        case None               => schema.parse(None).tupleLeft(remainders)
-    case schema: Collection.Value[A] =>
-      val (head, tail) = remainders.allWithRemainders(name)
+        case None               => schema.parse(None).tupleLeft(queries)
+    override def encode(a: A): Http.Queries = Chain.fromOption(schema.print(a)).tupleLeft(name)
+
+  final private class Multiple[A](name: String, schema: Collection.Of[Schema.Value, A]) extends Query[A](name, schema):
+    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B] =
+      new Multiple(name, schema.ivalidate(validation)(g))
+
+    override def optional: Query[Option[A]] = new Multiple(name, schema.optional)
+
+    override def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
+      queries.firstWithRemainders(name).map(_._2)
+
+    override def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
+      val (head, tail) = queries.allWithRemainders(name)
       schema.parse(head.map(_.some).some).tupleLeft(tail)
 
-  def encode(a: A): Http.Queries = schema match
-    case schema: Schema.Value[A]     => Chain.fromOption(schema.print(a)).tupleLeft(name)
-    case schema: Collection.Value[A] => schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
+    override def encode(a: A): Http.Queries = schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
+
+  def apply[A](name: String, schema: Schema.Value[A]): Query[A] = new Single[A](name, schema)
+  def apply[A](name: String, schema: Collection.Of[Schema.Value, A]): Query[A] = new Multiple[A](name, schema)
