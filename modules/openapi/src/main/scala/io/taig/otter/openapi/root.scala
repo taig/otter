@@ -36,7 +36,7 @@ def toPaths[F[_]](routes: Routes[F]): Paths = Paths.fromIterableOnce:
     (path, toPathItem(endpoints.filter(!_.hidden)))
   }
 
-def toPathItem(endpoints: Chain[Endpoint[?, ?, ?]]): PathItem = PathItem(
+def toPathItem(endpoints: Chain[Endpoint[?, ?]]): PathItem = PathItem(
   get = endpoints.find(_.request.method === Method.Get).map(toOperation),
   put = endpoints.find(_.request.method === Method.Put).map(toOperation),
   post = endpoints.find(_.request.method === Method.Post).map(toOperation),
@@ -47,7 +47,7 @@ def toPathItem(endpoints: Chain[Endpoint[?, ?, ?]]): PathItem = PathItem(
   trace = endpoints.find(_.request.method === Method.Trace).map(toOperation)
 )
 
-def toOperation(endpoint: Endpoint[?, ?, ?]): Operation = Operation(
+def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   tags = endpoint.tags,
   summary = endpoint.summary,
   description = endpoint.description,
@@ -57,7 +57,7 @@ def toOperation(endpoint: Endpoint[?, ?, ?]): Operation = Operation(
 
 def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(???)
 
-val toEndpointSchema: Endpoint[?, ?, ?] => JsonObject = endpoint =>
+val toEndpointSchema: Endpoint[?, ?] => JsonObject = endpoint =>
   val isGetOrHeadOrDelete = (method: Method) =>
     method === Method.Get || method === Method.Head || method === Method.Delete
 
