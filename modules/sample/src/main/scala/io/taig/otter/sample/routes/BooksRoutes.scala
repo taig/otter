@@ -12,9 +12,9 @@ import io.taig.otter.sample.repository.BookRepository.Error
 import mouse.all.*
 
 final class BooksRoutes(route: SampleRoute, books: BookRepository):
-  val get: Route[Role.Guest, Unit, Chain[Book]] = route(endpoints.books.get)((_, _) => books.list)
+  val get: Route[Unit, Chain[Book]] = route(endpoints.books.get)((_, _) => books.list)
 
-  val post: Route[Role.Librarian, NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
+  val post: Route[NonEmptyChain[Book], Either[Post, NonEmptyChain[Book]]] =
     route(endpoints.books.post): (_, books) =>
       this.books
         .create(books)

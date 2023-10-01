@@ -11,7 +11,7 @@ import io.taig.otter.sample.repository.LibrarianRepository.Error
 import mouse.all.*
 
 final class LibrariansSelfSessionsRoutes(route: SampleRoute, librarian: LibrarianRepository):
-  val post: Route[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] =
+  val post: Route[Librarian.Login, Either[Post, Librarian.Session]] =
     route(endpoints.librarians.self.sessions.post): (_, login) =>
       librarian
         .login(login)

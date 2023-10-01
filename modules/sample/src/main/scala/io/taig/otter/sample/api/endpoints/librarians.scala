@@ -1,6 +1,6 @@
 package io.taig.otter.sample.api.endpoints
 
-import io.taig.otter.http.{Results, Url}
+import io.taig.otter.http.{Endpoint as OtterEndpoint, Results, Url}
 import io.taig.otter.Schema
 import io.taig.otter.dsl.*
 import io.taig.otter.sample.api.Role
@@ -26,8 +26,7 @@ object librarians:
 
           result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
 
-      val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] = Endpoint(
-        Role.Guest,
+      val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] = OtterEndpoint(
         request(method.post, url, input.json(schemas.librarian.login)),
         response(Post.results :+ result(code.created, output.json(schemas.librarian.session)))
       ).summary("Create librarian session")
@@ -37,3 +36,4 @@ object librarians:
         )
         .operationId("createLibrarianSession")
         .tags("librarians")
+        .role(Role.Guest)

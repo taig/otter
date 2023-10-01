@@ -12,18 +12,18 @@ import io.taig.otter.sample.repository.LibrarianRepository
 import java.util.UUID
 
 final class SampleRoute(library: LibrarianRepository):
-  def apply[R <: Role, I, O](endpoint: Endpoint[R, I, O])(f: (Self[R], I) => IO[O]): Route[R, I, O] = OtterRoute(
-    endpoint,
+  def apply[R <: Role, I, O](endpoint: Endpoint[R, I, O])(f: (Self[R], I) => IO[O]): Route[I, O] = OtterRoute(
+    endpoint.toAuthenticatedEndpoint,
     authentication =>
       authentication.session
         .match {
           case Some(session) =>
             for
               user <- findUser(session).flatMap(_.liftTo[IO](Authentication.Error.UserUnknown))
-              _ <- IO.raiseWhen(!endpoint.environment.toSet.contains(user.toRole))(Authentication.Error.Forbidden)
+              _ <- IO.raiseWhen(!endpoint.role.toSet.contains(user.toRole))(Authentication.Error.Forbidden)
               response <- f(user.asInstanceOf[Self[R]], authentication.payload)
             yield response
-          case None if endpoint.environment.toSet.contains(Role.Guest) =>
+          case None if endpoint.role.toSet.contains(Role.Guest) =>
             f(().asInstanceOf[Self[R]], authentication.payload)
           case None => IO.raiseError(Authentication.Error.Forbidden)
         }
