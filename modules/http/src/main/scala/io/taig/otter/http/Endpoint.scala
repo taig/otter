@@ -13,6 +13,9 @@ final case class Endpoint[R, I, O](
     summary: Option[String],
     tags: Chain[String]
 ):
+  def environment[T](f: R => T): Endpoint[T, I, O] = copy(environment = f(environment))
+  def environment[T](value: T): Endpoint[T, I, O] = environment(_ => value)
+
   def request[T](f: Request[I] => Request[T]): Endpoint[R, T, O] = copy(request = f(request))
   def request[T](value: Request[T]): Endpoint[R, T, O] = request(_ => value)
 
@@ -42,5 +45,8 @@ final case class Endpoint[R, I, O](
   def tags(values: String*): Endpoint[R, I, O] = tags(Chain.fromSeq(values))
 
 object Endpoint:
+  def apply[R, I, O](environment: R, request: Request[I], response: Response[O]): Endpoint[R, I, O] =
+    Endpoint(environment, request, response, false, None, false, None, None, Chain.empty)
+
   def apply[I, O](request: Request[I], response: Response[O]): Endpoint[Unit, I, O] =
     Endpoint((), request, response, false, None, false, None, None, Chain.empty)

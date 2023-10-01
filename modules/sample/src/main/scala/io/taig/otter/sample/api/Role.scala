@@ -7,15 +7,21 @@ import io.taig.otter.sample.data.{Librarian, Member}
 
 import scala.collection.immutable.SortedSet
 
-sealed abstract class Role extends Product with Serializable
+enum Role:
+  case Guest
+  case Librarian
+  case Member
+  case Or[A <: Role, B <: Role](a: A, b: B)
+
+  def ^(role: Role): this.type ^ role.type = Or(this, role)
+
+  def toSet: Set[Role.Guest | Role.Librarian | Role.Member] = this match
+    case Guest     => Set(Guest)
+    case Librarian => Set(Librarian)
+    case Member    => Set(Member)
+    case Or(a, b)  => a.toSet ++ b.toSet
 
 object Role:
-  case object Guest extends Role
-  case object Librarian extends Role
-  case object Member extends Role
-  final case class Or[A <: Role, B <: Role](a: A, b: B) extends Role
-
-// object Role:
   type Guest = Role.Guest.type
   type Librarian = Role.Librarian.type
   type Member = Role.Member.type
@@ -29,17 +35,3 @@ type Self[R] = R match
   case Role.Guest ^ a => Option[Self[a]]
   case a ^ Role.Guest => Option[Self[a]]
   case a ^ b          => Self[a] | Self[b]
-
-trait Roles[R <: Role]:
-  def toSet: Set[Role.Guest | Role.Librarian | Role.Member]
-
-object Roles:
-  inline def apply[R <: Role](using roles: Roles[R]): Roles[R] = roles
-
-  def apply[R <: Role](roles: => Set[Role.Guest | Role.Librarian | Role.Member]): Roles[R] =
-    new Roles[R] { override def toSet: Set[Guest | Role.Librarian | Role.Member] = roles }
-
-  given Roles[Role.Guest] = Roles(Set(Role.Guest))
-  given Roles[Role.Librarian] = Roles(Set(Role.Librarian))
-  given Roles[Role.Member] = Roles(Set(Role.Member))
-  given [A <: Role, B <: Role](using a: Roles[A], b: Roles[B]): Roles[A ^ B] = Roles(a.toSet ++ b.toSet)

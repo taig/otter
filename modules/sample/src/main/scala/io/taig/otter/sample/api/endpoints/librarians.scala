@@ -27,6 +27,7 @@ object librarians:
           result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
 
       val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] = Endpoint(
+        Role.Guest,
         request(method.post, url, input.json(schemas.librarian.login)),
         response(Post.results :+ result(code.created, output.json(schemas.librarian.session)))
       ).summary("Create librarian session")

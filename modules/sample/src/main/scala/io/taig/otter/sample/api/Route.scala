@@ -6,4 +6,4 @@ import io.taig.otter.sample.api.endpoints.Authentication
 
 import java.util.UUID
 
-type Route[R, I, O] = OtterRoute[IO, Authentication[I], Either[Authentication.Error, O]]
+type Route[R <: Role, I, O] = OtterRoute[IO, R, Authentication[I], Either[Authentication.Error, O]]

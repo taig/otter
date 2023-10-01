@@ -7,7 +7,7 @@ opaque type User = Librarian.Summary | Member
 
 object User:
   extension (self: User)
-    def toRole: Role = self match
+    def toRole: Role.Librarian | Role.Member = self match
       case _: Librarian.Summary => Role.Librarian
       case _: Member            => Role.Member
 

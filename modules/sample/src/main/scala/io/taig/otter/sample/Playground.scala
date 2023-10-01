@@ -6,7 +6,7 @@ import io.taig.otter.sample.data.{Librarian, Member}
 import java.util.UUID
 
 object Playground {
-  type Endpoint[R, I, O] = io.taig.otter.http.Endpoint[I, O]
+  type Endpoint[R, I, O] = io.taig.otter.http.Endpoint[R, I, O]
 
   enum Role:
     case Member

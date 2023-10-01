@@ -12,6 +12,7 @@ object books:
   val url: Url[Unit] = __ / "books"
 
   val get: Endpoint[Role.Guest, Unit, Chain[Book]] = Endpoint(
+    Role.Guest,
     request(method.get, url),
     response(result(code.ok, output.json(collection.chain(schemas.book.main))))
   ).tags("books")
@@ -33,6 +34,7 @@ object books:
       }(_.asRight)
 
     Endpoint(
+      Role.Librarian,
       request(method.post, url, input.json(books)).description("Lorem ipsum dolar sit amet"),
       response(Post.results :+ result(code.created, output.json(collection.nonEmptyChain(schemas.book.main))))
     ).tags("books")
