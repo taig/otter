@@ -3,21 +3,24 @@ package io.taig.otter.sample
 import cats.data.Validated
 import cats.syntax.all.*
 import cats.effect.IO
-import io.taig.otter.http.{Client, ViolationsException}
+import io.taig.otter.http.{Client, Http, ViolationsException}
+import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}
 import io.taig.otter.validation.Violations
 
 import java.util.UUID
 
 final class SampleClient(client: Client[IO]) extends Client[IO]:
-  def submit[R, I, O](
+  override def submit(request: Http.Request): IO[Http.Response] = client.submit(request)
+
+  def submit[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
   ): IO[Validated[Violations, Either[Authentication.Error, O]]] =
-    client.submit(endpoint, Authentication(???, session, input))
+    client.submit(endpoint, Authentication(session, input))
 
-  def submitValid[R, I, O](
+  def submitValid[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
@@ -26,14 +29,14 @@ final class SampleClient(client: Client[IO]) extends Client[IO]:
     new IllegalStateException("Expected valid, but got invalid", cause)
   }.liftTo[IO])
 
-  def submitInvalid[R, I, O](
+  def submitInvalid[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
   ): IO[Violations] = submit(endpoint, session, input)
     .flatMap(_.fold(IO.pure, _ => IO.raiseError(new IllegalStateException("Expected invalid, but got valid"))))
 
-  def submitAuthenticated[R, I, O](
+  def submitAuthenticated[R <: Role, I, O](
       endpoint: Endpoint[R, I, O],
       session: Option[UUID],
       input: I
@@ -41,7 +44,7 @@ final class SampleClient(client: Client[IO]) extends Client[IO]:
     .map(_.leftMap(error => new IllegalStateException("Expected authenticated, but got error", error)))
     .rethrow
 
-  def submitSuccess[R, I, E <: Matchable, A](
+  def submitSuccess[R <: Role, I, E <: Matchable, A](
       endpoint: Endpoint[R, I, Either[E, A]],
       session: Option[UUID],
       input: I
@@ -52,7 +55,7 @@ final class SampleClient(client: Client[IO]) extends Client[IO]:
     })
     .rethrow
 
-  def submitError[R, I, E, A](
+  def submitError[R <: Role, I, E, A](
       endpoint: Endpoint[R, I, Either[E, A]],
       session: Option[UUID],
       input: I

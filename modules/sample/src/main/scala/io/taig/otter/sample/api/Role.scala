@@ -1,11 +1,8 @@
 package io.taig.otter.sample.api
 
-import cats.Order
 import cats.implicits.*
 import io.taig.otter.sample.api.Role.Guest
 import io.taig.otter.sample.data.{Librarian, Member}
-
-import scala.collection.immutable.SortedSet
 
 enum Role:
   case Guest
