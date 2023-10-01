@@ -13,9 +13,12 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 
+  def toProduct: Product[A]
+
   final override def optional: Record[Option[A]] = new Record[Option[A]](description, nulls):
     export self.constraints
     override def isOptional: Boolean = true
+    override def toProduct: Product[Option[A]] = self.toProduct.optional
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], Option[A])] = data match
@@ -27,6 +30,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
     new Record[B](description, nulls):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def toProduct: Product[B] = self.toProduct.ivalidate(validation)(g)
       override def decodeWithRemainders(
           data: Option[Chain[(String, Data)]]
       ): Validated[Violations, (Option[Chain[(String, Data)]], B)] =
@@ -36,6 +40,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
   final def product[B](schema: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
+    override def toProduct: Product[(A, B)] = self.toProduct.product(schema.toProduct)
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], (A, B))] =
@@ -66,6 +71,7 @@ object Record extends ToRecordOps:
   val Empty: Record[Unit] = new Record[Unit](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
+    override def toProduct: Product[Unit] = Product.Empty
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], Unit)] = (data, ()).valid
@@ -74,6 +80,7 @@ object Record extends ToRecordOps:
   def apply[A](field: Field[A]): Record[A] = new Record[A](None, Null.Default):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
+    override def toProduct: Product[A] = Product(field.schema)
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], A)] = data match

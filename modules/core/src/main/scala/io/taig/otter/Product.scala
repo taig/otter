@@ -32,7 +32,7 @@ sealed abstract class Product[A](description: Option[String]) extends Schema[A](
       self.decodeArrayWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
     override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
 
-  final def zip[B](schema: Product[B]): Product[(A, B)] = new Product[(A, B)](description):
+  final def product[B](schema: Product[B]): Product[(A, B)] = new Product[(A, B)](description):
     override def toChain: Chain[Schema[?]] = self.toChain ++ schema.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
