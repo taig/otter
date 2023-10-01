@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.syntax.all.*
 import cats.data.Chain
+import cats.syntax.all.*
 
 object syntax:
   extension [A: Eq, B](self: Chain[(A, B)])

@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.{Chain, Validated}
+import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Dictionary[A](description: Option[String]) extends Schema[A](description):
@@ -38,7 +38,7 @@ object Dictionary:
   def apply[A](schema: Dictionary[A], description: Option[String]): Dictionary[A] =
     new Dictionary[A](description) { export schema.* }
 
-  def apply[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
+  def apply[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
     new Dictionary[Chain[(A, B)]](None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false

@@ -19,10 +19,10 @@ sealed abstract class Collection[A](description: Option[String], val schema: Sch
       data.fold(none.valid)(_ => self.decodeArray(data).map(_.some))
     override def encodeArray(a: Option[A]): Option[Chain[Data]] = a.flatMap(self.encodeArray)
     override def parse(values: Option[Chain[Option[String]]])(using
-        Of <:< Schema.Value[?]
+        Of <:< Value[?]
     ): Validated[Violations, Option[A]] =
       values.fold(none.valid)(_ => self.parse(values).map(_.some))
-    override def print(a: Option[A])(using Of <:< Schema.Value[?]): Option[Chain[Option[String]]] =
+    override def print(a: Option[A])(using Of <:< Value[?]): Option[Chain[Option[String]]] =
       a.flatMap(self.print)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] = ???
@@ -35,8 +35,8 @@ sealed abstract class Collection[A](description: Option[String], val schema: Sch
   final override def encode(a: A): Data = encodeArray(a).map(Data.Array.apply).getOrElse(Data.Null)
   def encodeArray(a: A): Option[Chain[Data]]
 
-  def parse(values: Option[Chain[Option[String]]])(using Of <:< Schema.Value[?]): Validated[Violations, A]
-  def print(a: A)(using Of <:< Schema.Value[?]): Option[Chain[Option[String]]]
+  def parse(values: Option[Chain[Option[String]]])(using Of <:< Value[?]): Validated[Violations, A]
+  def print(a: A)(using Of <:< Value[?]): Option[Chain[Option[String]]]
 
 object Collection:
   type Of[A <: Schema[?], B] = Collection[B] { type Of <: A }
@@ -57,11 +57,11 @@ object Collection:
 
     override def parse(
         values: Option[Chain[Option[String]]]
-    )(using F[A] <:< Schema.Value[?]): Validated[Violations, Chain[A]] =
+    )(using F[A] <:< Value[?]): Validated[Violations, Chain[A]] =
       Validated
         .fromOption(values, Violations.rootNec(Violation.required))
         .andThen(_.zipWithIndex.traverse { case (value, index) =>
-          of.asInstanceOf[Schema.Value[A]].parse(value).leftMap(_.modifyHistory(index /: _))
+          of.asInstanceOf[Value[A]].parse(value).leftMap(_.modifyHistory(index /: _))
         })
-    override def print(a: Chain[A])(using F[A] <:< Schema.Value[?]): Option[Chain[Option[String]]] =
-      Some(a.map(of.asInstanceOf[Schema.Value[A]].print))
+    override def print(a: Chain[A])(using F[A] <:< Value[?]): Option[Chain[Option[String]]] =
+      Some(a.map(of.asInstanceOf[Value[A]].print))

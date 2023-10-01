@@ -1,7 +1,6 @@
 package io.taig.otter.sample.api.endpoints
 
-import cats.data.Chain
-import io.taig.otter.http.{Endpoint as OtterEndpoint, Request, Response}
+import io.taig.otter.http.Endpoint as OtterEndpoint
 import io.taig.otter.sample.api.{headers, schemas, Role}
 
 final case class Endpoint[R <: Role, I, O](

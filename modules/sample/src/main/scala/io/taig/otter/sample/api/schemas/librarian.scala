@@ -1,9 +1,8 @@
 package io.taig.otter.sample.api.schemas
 
-import io.taig.otter.Primitive
-import io.taig.otter.Record
-import io.taig.otter.sample.data.Librarian
+import io.taig.otter.{Primitive, Record}
 import io.taig.otter.dsl.*
+import io.taig.otter.sample.data.Librarian
 
 object librarian:
   val reference: Primitive[Librarian.Reference] =

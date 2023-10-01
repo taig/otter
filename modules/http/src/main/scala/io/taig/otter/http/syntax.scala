@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.http.headers.{ContentType, MediaType}
-import io.taig.otter.{Collection, Data, Schema}
+import io.taig.otter.{Collection, Data, Schema, Value}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -10,11 +10,11 @@ import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets,
 object syntax:
   val __ : Url[Unit] = Url.Root
 
-  def header[A](name: CIString, schema: Schema.Value[A]): Header[A] = Header(name, schema)
-  def header[A](name: CIString, schema: Collection.Of[Schema.Value, A]): Header[A] = Header(name, schema)
-  def parameter[A](name: String, schema: Schema.Value[A]): Segment[A] = Segment(name, schema)
-  def query[A](name: String, schema: Schema.Value[A]): Query[A] = Query(name, schema)
-  def query[A](name: String, schema: Collection.Of[Schema.Value, A]): Query[A] = Query(name, schema)
+  def header[A](name: CIString, schema: Value[A]): Header[A] = Header(name, schema)
+  def header[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = Header(name, schema)
+  def parameter[A](name: String, schema: Value[A]): Segment[A] = Segment(name, schema)
+  def query[A](name: String, schema: Value[A]): Query[A] = Query(name, schema)
+  def query[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = Query(name, schema)
 
   object method:
     val delete: Method = Method("DELETE")

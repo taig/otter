@@ -1,7 +1,6 @@
 package io.taig.otter
 
-import cats.Hash
-import cats.Eq
+import cats.{Eq, Hash}
 import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
@@ -38,18 +37,17 @@ object schemas:
         case data      => Data.String(data.name).invalidNec
       any.ivalidate(validation)(identity)
     def singleton[A <: Singleton](a: A): Dynamic[A] = empty.imap(_ => a)(_ => Data.Null)
-    val primitive: Dynamic.Primitive[Data.Primitive] = Dynamic.Primitive.Default
-    val number: Dynamic.Primitive[Data.Number] =
-      val validation: Validation[Data.Primitive, Data.Number] = Validation(Constraint.Type("number")):
+    val number: Dynamic[Data.Number] =
+      val validation: Validation[Data.Value, Data.Number] = Validation(Constraint.Type("number")):
         case data: Data.Number => data.valid
         case data              => Data.String(data.name).invalidNec
-      primitive.ivalidate(validation)(identity)
+      value.ivalidate(validation)(identity)
 
-  def field[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
+  def field[A, B](name: A, key: Value[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
   def field[A](name: String, schema: Schema[A]): Field[A] = field(name, string, schema)
   def field[A](name: Int, schema: Schema[A]): Field[A] = field(name, int, schema)
 
-  def branch[A: Eq, B](name: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
+  def branch[A: Eq, B](name: A, key: Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
   def branch[A](name: String, schema: Schema[A]): Branch[A] = branch(name, string, schema)
   def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
 
@@ -71,22 +69,22 @@ object schemas:
       chain(f(key, schema)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[A, B](schema: Schema.Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
+    def apply[A, B](schema: Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
       Enumeration(schema, mapping)
-    def apply[A: Hash, B](schema: Schema.Value[A])(f: B => A)(using EnumerationValues.Aux[B, B]): Enumeration[B] =
+    def apply[A: Hash, B](schema: Value[A])(f: B => A)(using EnumerationValues.Aux[B, B]): Enumeration[B] =
       enumeration(schema)(using Mapping.enumeration(f))
-    def constant[A: Eq](schema: Schema.Value[A], value: A & Singleton): Enumeration[value.type] =
+    def constant[A: Eq](schema: Value[A], value: A & Singleton): Enumeration[value.type] =
       enumeration(schema)(using Mapping.constant[A](value))
 
   object dictionary:
-    def chain[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
-    def map[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[Map[A, B]] =
+    def chain[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
+    def map[A, B](key: Value[A], schema: Schema[B]): Dictionary[Map[A, B]] =
       chain(key, schema).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
-    def vectorMap[A, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
+    def vectorMap[A, B](key: Value[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
       chain(key, schema).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
-    def sortedMap[A: Ordering, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
+    def sortedMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
       chain(key, schema).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyMap[A: Ordering, B](key: Schema.Value[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
+    def nonEmptyMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
         Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)

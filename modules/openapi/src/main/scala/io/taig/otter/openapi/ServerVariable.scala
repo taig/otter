@@ -1,8 +1,8 @@
 package io.taig.otter.openapi
 
 import cats.data.Chain
-import io.circe.{Encoder, Json, JsonObject}
 import io.circe.syntax.*
+import io.circe.{Encoder, Json, JsonObject}
 import io.taig.otter.openapi.syntax.*
 
 final case class ServerVariable(

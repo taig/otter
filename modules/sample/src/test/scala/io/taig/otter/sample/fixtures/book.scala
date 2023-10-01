@@ -1,10 +1,10 @@
 package io.taig.otter.sample.fixtures
 
-import io.circe.Json
 import cats.implicits.*
+import io.circe.Json
 import io.taig.otter.sample.data.Book.Genre
-import io.taig.otter.sample.fixtures
 import io.taig.otter.sample.data.{Book, Isbn}
+import io.taig.otter.sample.fixtures
 
 import scala.collection.immutable.SortedSet
 

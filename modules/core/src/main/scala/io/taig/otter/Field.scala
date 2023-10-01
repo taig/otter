@@ -2,8 +2,8 @@ package io.taig.otter
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
 import io.taig.otter.syntax.*
+import io.taig.otter.validation.Violations
 
 final case class Field[A](name: String, schema: Schema[A], nulls: Option[Null]):
   def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
@@ -28,5 +28,5 @@ final case class Field[A](name: String, schema: Schema[A], nulls: Option[Null]):
       case data                             => Chain.one(this.name, data)
 
 object Field extends ToFieldOps:
-  def apply[A, B](name: A, key: Schema.Value[A], schema: Schema[B]): Field[B] =
+  def apply[A, B](name: A, key: Value[A], schema: Schema[B]): Field[B] =
     Field(key.print(name).orEmpty, schema, None)

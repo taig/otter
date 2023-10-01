@@ -3,12 +3,12 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Violation, Violations}
-import io.taig.otter.{Data, Schema}
+import io.taig.otter.{Data, Value}
 
 sealed abstract class Segment[A]:
   self =>
   def name: String
-  def schema: Option[Schema.Value[?]]
+  def schema: Option[Value[?]]
   final def isOptional: Boolean = schema.exists(_.isOptional)
 
   final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
@@ -27,7 +27,7 @@ sealed abstract class Segment[A]:
 
 object Segment:
   def apply(static: String): Segment[Unit] = new Segment[Unit]:
-    override def schema: Option[Schema.Value[?]] = none
+    override def schema: Option[Value[?]] = none
     override def name: String = static
     override def matches(value: String): Boolean = value === static
     override def decode(a: Option[String]): Validated[Violations, Unit] = a match
@@ -41,8 +41,8 @@ object Segment:
     override def encode(a: Unit): Option[String] = static.some
     override def print: String = static
 
-  def apply[A](parameter: String, of: Schema.Value[A]): Segment[A] = new Segment[A]:
-    override def schema: Option[Schema.Value[A]] = of.some
+  def apply[A](parameter: String, of: Value[A]): Segment[A] = new Segment[A]:
+    override def schema: Option[Value[A]] = of.some
     override def name: String = parameter
     override def matches(value: String): Boolean = true
     override def decode(a: Option[String]): Validated[Violations, A] = of.parse(a)

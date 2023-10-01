@@ -7,9 +7,8 @@ import io.circe.Json
 import io.circe.syntax.*
 import io.taig.otter.http.Routes
 import io.taig.otter.openapi.*
-import io.taig.otter.sample.SampleRoute
+import io.taig.otter.sample.{Build, SampleRoute}
 import io.taig.otter.sample.api.{endpoints, Route}
-import io.taig.otter.sample.Build
 
 final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
   val get: Route[Unit, Json] = route(endpoints.openapi.get): (_, _) =>

@@ -5,11 +5,11 @@ import cats.syntax.all.*
 import io.taig.otter.Collection.Of
 import io.taig.otter.syntax.*
 import io.taig.otter.validation.{Validation, Violations}
-import io.taig.otter.{Collection, Schema}
+import io.taig.otter.{Collection, Value}
 import org.typelevel.ci.CIString
 
 sealed abstract class Header[A](val name: CIString):
-  def schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]
+  def schema: Value[?] | Collection.Of[Value[?], ?]
 
   final def isOptional: Boolean = schema.isOptional
 
@@ -27,7 +27,7 @@ sealed abstract class Header[A](val name: CIString):
   def encode(a: A): Http.Headers
 
 object Header:
-  final private class Single[A](name: CIString, val schema: Schema.Value[A]) extends Header[A](name):
+  final private class Single[A](name: CIString, val schema: Value[A]) extends Header[A](name):
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] =
       new Single[B](name, schema.ivalidate(validation)(g))
     override def optional: Header[Option[A]] = new Single[Option[A]](name, schema.optional)
@@ -37,7 +37,7 @@ object Header:
         case None               => schema.parse(None).tupleLeft(headers)
     override def encode(a: A): Http.Headers = Chain.fromOption(schema.print(a)).tupleLeft(name)
 
-  final private class Multiple[A](name: CIString, val schema: Collection.Of[Schema.Value, A]) extends Header[A](name) {
+  final private class Multiple[A](name: CIString, val schema: Collection.Of[Value[?], A]) extends Header[A](name) {
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] =
       new Multiple[B](name, schema.ivalidate(validation)(g))
     override def optional: Header[Option[A]] = new Multiple[Option[A]](name, schema.optional)
@@ -48,5 +48,5 @@ object Header:
       schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
   }
 
-  def apply[A](name: CIString, schema: Schema.Value[A]): Header[A] = new Single[A](name, schema)
-  def apply[A](name: CIString, schema: Collection.Of[Schema.Value, A]): Header[A] = new Multiple[A](name, schema)
+  def apply[A](name: CIString, schema: Value[A]): Header[A] = new Single[A](name, schema)
+  def apply[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = new Multiple[A](name, schema)

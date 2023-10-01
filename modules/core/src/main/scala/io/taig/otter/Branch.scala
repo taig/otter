@@ -3,8 +3,8 @@ package io.taig.otter
 import cats.Eq
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.{History, Violation, Violations}
 import io.taig.otter.syntax.*
+import io.taig.otter.validation.{History, Violation, Violations}
 
 sealed abstract class Branch[A]:
   def name: String
@@ -18,7 +18,7 @@ sealed abstract class Branch[A]:
   def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
-  def apply[A: Eq, B](a: A, key: Schema.Value[A], schema: Schema[B]): Branch[B] = new Branch[B]:
+  def apply[A: Eq, B](a: A, key: Value[A], schema: Schema[B]): Branch[B] = new Branch[B]:
     override def name: String = key.print(a).orEmpty
 
     override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =

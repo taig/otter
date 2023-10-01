@@ -1,12 +1,11 @@
 package io.taig.otter
 
+import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
-import cats.Eq
 
 import java.lang.String as JString
-import scala.Boolean as SBoolean
-import scala.Product as SProduct
+import scala.{Boolean as SBoolean, Product as SProduct}
 
 sealed abstract class Data extends SProduct with Serializable:
   final def asValue: Option[Data.Value] = this match

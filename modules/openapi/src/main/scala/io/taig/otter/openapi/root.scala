@@ -105,7 +105,7 @@ def primitive(schema: Primitive[?]): JsonObject =
 //  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
 //    JsonObject(
 //      "type" := "array",
-//      "items" := self.schema(schema.Value),
+//      "items" := self.schema(Value),
 //      "nullable" := schema.isOptional
 //    )
 //  )
@@ -181,7 +181,7 @@ def primitive(schema: Primitive[?]): JsonObject =
 //      case _                               => JsonObject.empty
 
 @tailrec
-def typeOf(schema: Schema.Value[?]): String = schema match
+def typeOf(schema: Value[?]): String = schema match
   case schema: Enumeration[?] => typeOf(schema.schema)
   case schema: Primitive[?]   => typeOf(schema.tpe)
 

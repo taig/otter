@@ -1,10 +1,9 @@
 package io.taig.otter.sample
 
-import cats.syntax.all.*
 import cats.effect.IO
+import cats.syntax.all.*
 import io.taig.otter.http.Route as OtterRoute
-import io.taig.otter.sample.api.endpoints.Endpoint
-import io.taig.otter.sample.api.endpoints.Authentication
+import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}
 import io.taig.otter.sample.api.{Role, Route, Self, User}
 import io.taig.otter.sample.data.{Librarian, Member}
 import io.taig.otter.sample.repository.LibrarianRepository

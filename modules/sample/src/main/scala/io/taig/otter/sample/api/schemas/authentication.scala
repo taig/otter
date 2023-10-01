@@ -1,9 +1,9 @@
 package io.taig.otter.sample.api.schemas
 
-import io.taig.otter.http.Results
 import io.taig.otter.dsl.*
-import io.taig.otter.{schemas, Schema}
+import io.taig.otter.http.Results
 import io.taig.otter.sample.api.endpoints.Authentication
+import io.taig.otter.{schemas, Schema}
 
 object authentication:
   val error: Results[Authentication.Error] =

@@ -1,8 +1,8 @@
 package io.taig.otter.openapi
 
 import cats.data.Chain
-import io.circe.{Encoder, JsonObject}
 import io.circe.syntax.*
+import io.circe.{Encoder, JsonObject}
 import io.taig.otter.openapi.syntax.*
 
 final case class PathItem(

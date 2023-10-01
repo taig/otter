@@ -3,8 +3,8 @@ package io.taig.otter.sample.routes
 import cats.effect.IO
 import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
-import io.taig.otter.sample.api.{endpoints, Role, Route}
 import io.taig.otter.sample.api.endpoints.librarians.self.sessions.Post
+import io.taig.otter.sample.api.{endpoints, Route}
 import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.repository.LibrarianRepository
 import io.taig.otter.sample.repository.LibrarianRepository.Error

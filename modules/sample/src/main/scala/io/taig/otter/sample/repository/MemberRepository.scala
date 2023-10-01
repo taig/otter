@@ -2,8 +2,8 @@ package io.taig.otter.sample.repository
 
 import cats.data.Chain
 import cats.effect.IO
-import cats.syntax.all.*
 import cats.effect.std.AtomicCell
+import cats.syntax.all.*
 import io.taig.otter.sample.data.{Librarian, Member, ReferenceOrSelf}
 import io.taig.otter.sample.repository.MemberRepository.Error
 import io.taig.otter.sample.service.ReferenceGenerator

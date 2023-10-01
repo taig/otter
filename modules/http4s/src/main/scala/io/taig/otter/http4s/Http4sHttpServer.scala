@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import fs2.Stream
 import fs2.io.net.Network
 import io.taig.otter.http.*
-import org.http4s.ember.server.EmberServerBuilder
 import org.http4s.HttpApp as Http4sApp
+import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.LoggerFactory
 
 final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:

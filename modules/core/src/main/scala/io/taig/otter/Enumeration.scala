@@ -1,14 +1,14 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.{Chain, Validated}
+import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Enumeration[A](description: Option[String]) extends Schema[A](description) with Schema.Value[A]:
+sealed abstract class Enumeration[A](description: Option[String]) extends Value[A](description):
   final override type Self[a] = Enumeration[a]
 
-  def schema: Schema.Value[?]
+  def schema: Value[?]
 
   final override def description(f: Option[String] => Option[String]): Enumeration[A] =
     Enumeration(this, f(description))
@@ -21,11 +21,11 @@ object Enumeration:
   def apply[A](self: Enumeration[A], description: Option[String]): Enumeration[A] =
     new Enumeration[A](description) { export self.* }
 
-  def apply[A, B](of: Schema.Value[A], mapping: Mapping[B, A]): Enumeration[B] = new Enumeration[B](None):
+  def apply[A, B](of: Value[A], mapping: Mapping[B, A]): Enumeration[B] = new Enumeration[B](None):
     def values: Chain[String] = Chain.fromSeq(mapping.values.mapFilter(print))
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def schema: Schema.Value[?] = of
+    override def schema: Value[?] = of
     override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
       .decode(data)
       .andThen: a =>

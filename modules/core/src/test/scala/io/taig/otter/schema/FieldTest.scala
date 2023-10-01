@@ -2,9 +2,9 @@ package io.taig.otter.schema
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.{Data, Null}
 import io.taig.otter.schemas.*
 import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.{Data, Null}
 import munit.FunSuite
 
 final class FieldTest extends FunSuite:

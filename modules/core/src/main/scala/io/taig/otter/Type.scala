@@ -4,9 +4,8 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.{Violation, Violations}
 
-import scala.BigInt as SBigInt
-import scala.BigDecimal as SBigDecimal
 import java.lang.String as JString
+import scala.{BigDecimal as SBigDecimal, BigInt as SBigInt}
 
 enum Type[A]:
   case BigDecimal extends Type[SBigDecimal]

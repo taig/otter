@@ -4,11 +4,11 @@ import cats.data.Chain
 import cats.effect.IO
 import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
-import io.taig.otter.sample.api.{endpoints, Role, Route}
+import io.taig.otter.sample.api.endpoints.members.Post
+import io.taig.otter.sample.api.{endpoints, Route}
 import io.taig.otter.sample.data.Member
 import io.taig.otter.sample.repository.MemberRepository
 import io.taig.otter.sample.repository.MemberRepository.Error
-import io.taig.otter.sample.api.endpoints.members.Post
 import mouse.all.*
 
 final class MembersRoutes(route: SampleRoute, member: MemberRepository):

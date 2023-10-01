@@ -1,7 +1,6 @@
 package io.taig.otter.sample.api
 
-import io.taig.otter.sample.data.Librarian
-import io.taig.otter.sample.data.Member
+import io.taig.otter.sample.data.{Librarian, Member}
 
 opaque type User = Librarian.Summary | Member
 

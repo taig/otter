@@ -4,9 +4,9 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.syntax.*
 import io.taig.otter.validation.{Validation, Violations}
-import io.taig.otter.{Collection, Schema}
+import io.taig.otter.{Collection, Value}
 
-sealed abstract class Query[A](val name: String, val schema: Schema.Value[?] | Collection.Of[Schema.Value, ?]):
+sealed abstract class Query[A](val name: String, val schema: Value[?] | Collection.Of[Value[?], ?]):
   self =>
   final def isOptional: Boolean = schema.isOptional
 
@@ -29,7 +29,7 @@ sealed abstract class Query[A](val name: String, val schema: Schema.Value[?] | C
   def encode(a: A): Http.Queries
 
 object Query:
-  final private class Single[A](name: String, schema: Schema.Value[A]) extends Query[A](name, schema):
+  final private class Single[A](name: String, schema: Value[A]) extends Query[A](name, schema):
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B] =
       new Single(name, schema.ivalidate(validation)(g))
     override def optional: Query[Option[A]] = new Single(name, schema.optional)
@@ -41,7 +41,7 @@ object Query:
         case None               => schema.parse(None).tupleLeft(queries)
     override def encode(a: A): Http.Queries = Chain.fromOption(schema.print(a)).tupleLeft(name)
 
-  final private class Multiple[A](name: String, schema: Collection.Of[Schema.Value, A]) extends Query[A](name, schema):
+  final private class Multiple[A](name: String, schema: Collection.Of[Value[?], A]) extends Query[A](name, schema):
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B] =
       new Multiple(name, schema.ivalidate(validation)(g))
 
@@ -56,5 +56,5 @@ object Query:
 
     override def encode(a: A): Http.Queries = schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
 
-  def apply[A](name: String, schema: Schema.Value[A]): Query[A] = new Single[A](name, schema)
-  def apply[A](name: String, schema: Collection.Of[Schema.Value, A]): Query[A] = new Multiple[A](name, schema)
+  def apply[A](name: String, schema: Value[A]): Query[A] = new Single[A](name, schema)
+  def apply[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = new Multiple[A](name, schema)

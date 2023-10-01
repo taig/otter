@@ -1,8 +1,8 @@
 package io.taig.otter.sample
 
 import cats.data.Validated
-import cats.syntax.all.*
 import cats.effect.IO
+import cats.syntax.all.*
 import io.taig.otter.http.{Client, ViolationsException}
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}

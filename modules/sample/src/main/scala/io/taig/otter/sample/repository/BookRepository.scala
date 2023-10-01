@@ -4,8 +4,8 @@ import cats.data.{Chain, NonEmptyChain}
 import cats.effect.IO
 import cats.effect.std.AtomicCell
 import cats.syntax.all.*
-import io.taig.otter.sample.repository.BookRepository.Error
 import io.taig.otter.sample.data.{Book, Isbn}
+import io.taig.otter.sample.repository.BookRepository.Error
 
 import scala.util.control.NoStackTrace
 
