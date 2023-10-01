@@ -106,14 +106,21 @@ object Request:
         ): Validated[Violations, (Http.Headers, A)]
 
       object Strict:
-        val Root: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]]:
+        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit]:
+          override def isEmpty: Boolean = true
+          override def decodeWithRemainders(remainders: Http.Headers, payload: Array[Byte]): Validated[Violations, (Http.Headers, Unit)] =
+            (remainders, ()).valid
+          override def encode(a: Unit): (Http.Headers, Http.Request.Body.Singlepart) =
+            (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(Array.emptyByteArray)))
+
+        val Bytes: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]]:
           override def isEmpty: Boolean = false
-          override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
-            (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
           override def decodeWithRemainders(
               remainders: Http.Headers,
               payload: Array[Byte]
           ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
+          override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
+            (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
 
   def apply[A](request: Request[A], description: Option[String]): Request[A] =
     new Request[A](description) { export request.* }

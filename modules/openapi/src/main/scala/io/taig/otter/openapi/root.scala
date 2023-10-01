@@ -1,6 +1,6 @@
 package io.taig.otter.openapi
 
-import cats.data.Chain
+import cats.data.{Chain, NonEmptyMap}
 import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.{Json, JsonObject}
@@ -54,7 +54,9 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   requestBody = Option.when(!endpoint.request.body.isEmpty)(toRequestBody(endpoint.request.body))
 )
 
-def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(???)
+def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(
+  NonEmptyMap.of("application/json" -> MediaType(JsonObject()))
+)
 
 val toEndpointSchema: Endpoint[?, ?] => JsonObject = endpoint =>
   val isGetOrHeadOrDelete = (method: Method) =>

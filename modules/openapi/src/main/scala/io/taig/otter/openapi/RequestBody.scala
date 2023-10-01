@@ -17,4 +17,4 @@ object RequestBody:
       "content" := body.content,
       "description" := body.description,
       "required" := body.required
-    )
+    ).dropNullValues

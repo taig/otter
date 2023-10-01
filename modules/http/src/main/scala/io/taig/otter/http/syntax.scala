@@ -59,8 +59,8 @@ object syntax:
         body: Request.Body.Singlepart.Strict[Data],
         schema: Schema[A]
     ): Request.Body.Singlepart.Strict[A] = body.andThen(schema.decode)(schema.encode)
-    val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Root
-    val empty: Request.Body.Singlepart.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
+    val empty: Request.Body.Singlepart.Strict[Unit] =Request.Body.Singlepart.Strict.Empty
+    val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Bytes
     def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
       (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
         val charset = contentType
