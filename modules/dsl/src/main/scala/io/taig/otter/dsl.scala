@@ -7,7 +7,7 @@ import io.taig.otter.validation.validations
 object dsl:
   export validation.validations
 
-  export schemas.*
+  export codecs.*
 
   export http.{input as _, output as _, *}
 

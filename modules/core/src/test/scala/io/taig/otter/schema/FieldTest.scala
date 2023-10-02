@@ -1,8 +1,8 @@
-package io.taig.otter.schema
+package io.taig.otter.codec
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.schemas.*
+import io.taig.otter.codecs.*
 import io.taig.otter.validation.{Violation, Violations}
 import io.taig.otter.{Data, Null}
 import munit.FunSuite

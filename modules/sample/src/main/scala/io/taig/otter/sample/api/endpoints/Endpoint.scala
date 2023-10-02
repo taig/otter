@@ -1,7 +1,7 @@
 package io.taig.otter.sample.api.endpoints
 
 import io.taig.otter.http.Endpoint as OtterEndpoint
-import io.taig.otter.sample.api.{headers, schemas, Role}
+import io.taig.otter.sample.api.{codecs, headers, Role}
 
 final case class Endpoint[R <: Role, I, O](
     role: R,
@@ -20,5 +20,5 @@ extension [I, O](self: OtterEndpoint[I, O])
             Authentication(session, payload)
           }(authentication => (authentication.payload, authentication.session))
       }
-      .response(_.results(schemas.authentication.error.orElse))
+      .response(_.results(codecs.authentication.error.orElse))
   )

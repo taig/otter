@@ -13,7 +13,7 @@ enum Schema:
       tpe: String,
       enums: Chain[Data.Primitive]
   )
-  case OneOf(schemas: Chain[Schema])
+  case OneOf(codecs: Chain[Schema])
   case Object(
       format: Option[String] = None,
       description: Option[String] = None,

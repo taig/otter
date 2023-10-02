@@ -47,7 +47,7 @@ object instance:
       "url" := license.url
     ).dropNullValues
 
-  given Encoder.AsObject[MediaType] = mediaType => JsonObject("schema" := mediaType.schema).dropNullValues
+  given Encoder.AsObject[MediaType] = mediaType => JsonObject("codec" := mediaType.codec).dropNullValues
 
   given Encoder.AsObject[OpenApi] = openapi =>
     given webhook: Encoder.AsObject[PathItem | Reference] =
@@ -132,29 +132,29 @@ object instance:
   given Encoder.AsObject[Responses] = responses => JsonObject("default" := responses.default).dropNullValues
 
   given Encoder.AsObject[Schema] =
-    case schema: Schema.Array =>
+    case codec: Schema.Array =>
       JsonObject(
         "type" := "array",
-        "format" := schema.format,
-        "description" := schema.description,
-        "items" := schema.items
+        "format" := codec.format,
+        "description" := codec.description,
+        "items" := codec.items
       ).dropNullValues
-    case schema: Schema.Enumeration => JsonObject("type" := schema.tpe, "enum" := schema.enums.map(_.asJson))
-    case schema: Schema.OneOf       => JsonObject("oneOf" := schema.schemas)
-    case schema: Schema.Object =>
+    case codec: Schema.Enumeration => JsonObject("type" := codec.tpe, "enum" := codec.enums.map(_.asJson))
+    case codec: Schema.OneOf       => JsonObject("oneOf" := codec.codecs)
+    case codec: Schema.Object =>
       JsonObject(
         "type" := "object",
-        "format" := schema.format,
-        "description" := schema.description,
-        "properties" := Some(schema.properties.map { case (name, value) => (name, value.asJson) })
+        "format" := codec.format,
+        "description" := codec.description,
+        "properties" := Some(codec.properties.map { case (name, value) => (name, value.asJson) })
           .filter(_.nonEmpty)
           .map(JsonObject.fromFoldable)
       ).dropNullValues
-    case schema: Schema.Value =>
+    case codec: Schema.Value =>
       JsonObject(
-        "type" := schema.tpe,
-        "format" := schema.format,
-        "description" := schema.description
+        "type" := codec.tpe,
+        "format" := codec.format,
+        "description" := codec.description
       ).dropNullValues
 
   given Encoder.AsObject[SecurityRequirement] = security =>

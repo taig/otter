@@ -4,19 +4,19 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Product[A](val description: Option[String]) extends Schema[A]:
+sealed abstract class Product[A](val description: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Product[a]
   final override type Optional[a] = Product[a]
 
-  def toChain: Chain[Schema[?]]
+  def toChain: Chain[Codec[?]]
 
   final override def description(f: Option[String] => Option[String]): Product[A] = Product(this, f(description))
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[B] = imap(evidence.from)(evidence.to)
 
   final override def optional: Product[Option[A]] = new Product[Option[A]](description):
-    override def toChain: Chain[Schema[?]] = self.toChain
+    override def toChain: Chain[Codec[?]] = self.toChain
     override def constraints: Chain[Constraint] = self.constraints
     override def isOptional: Boolean = true
     override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, Option[A])] =
@@ -26,25 +26,25 @@ sealed abstract class Product[A](val description: Option[String]) extends Schema
     override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] = new Product[B](description):
-    override def toChain: Chain[Schema[?]] = self.toChain
+    override def toChain: Chain[Codec[?]] = self.toChain
     override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
     override def isOptional: Boolean = self.isOptional
     override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, B)] =
       self.decodeArrayWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
     override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
 
-  final def product[B](schema: Product[B]): Product[(A, B)] = new Product[(A, B)](description):
-    override def toChain: Chain[Schema[?]] = self.toChain ++ schema.toChain
+  final def product[B](codec: Product[B]): Product[(A, B)] = new Product[(A, B)](description):
+    override def toChain: Chain[Codec[?]] = self.toChain ++ codec.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, (A, B))] =
       self.decodeArrayWithRemainders(data).andThen { case (data, a) =>
-        schema.decodeArrayWithRemainders(data).map(_.tupleLeft(a))
+        codec.decodeArrayWithRemainders(data).map(_.tupleLeft(a))
       }
     override def encodeArray(ab: (A, B)): Option[Data.Array] =
-      (self.encodeArray(ab._1), schema.encodeArray(ab._2)) match
+      (self.encodeArray(ab._1), codec.encodeArray(ab._2)) match
         case (Some(a), Some(b)) => Some(a ++ b)
-        case (Some(a), None)    => Some(a ++ Data.Array.fill(schema.toChain.length)(Data.Null))
+        case (Some(a), None)    => Some(a ++ Data.Array.fill(codec.toChain.length)(Data.Null))
         case (None, Some(b))    => Some(Data.Array.fill(self.toChain.length)(Data.Null) ++ b)
         case (None, None)       => None
 
@@ -64,23 +64,23 @@ sealed abstract class Product[A](val description: Option[String]) extends Schema
   def encodeArray(a: A): Option[Data.Array]
 
 object Product:
-  def apply[A](schema: Product[A], description: Option[String]): Product[A] =
-    new Product[A](description) { export schema.* }
+  def apply[A](codec: Product[A], description: Option[String]): Product[A] =
+    new Product[A](description) { export codec.* }
 
   val Empty: Product[Unit] = new Product[Unit](None):
-    override def toChain: Chain[Schema[?]] = Chain.empty
+    override def toChain: Chain[Codec[?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, Unit)] =
       (data, ()).valid
     override def encodeArray(a: Unit): Option[Data.Array] = Data.Array.Empty.some
 
-  def apply[A](schema: Schema[A]): Product[A] = new Product[A](None):
-    override def toChain: Chain[Schema[?]] = Chain.one(schema)
+  def apply[A](codec: Codec[A]): Product[A] = new Product[A](None):
+    override def toChain: Chain[Codec[?]] = Chain.one(codec)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, A)] =
       data.values.uncons match
-        case Some(head, tail) => schema.decode(head).tupleLeft(Data.Array(tail))
+        case Some(head, tail) => codec.decode(head).tupleLeft(Data.Array(tail))
         case None             => Violations.rootNec(Violation.required).invalid
-    override def encodeArray(a: A): Option[Data.Array] = Data.Array(Chain.one(schema.encode(a))).some
+    override def encodeArray(a: A): Option[Data.Array] = Data.Array(Chain.one(codec.encode(a))).some

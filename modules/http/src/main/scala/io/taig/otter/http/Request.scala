@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.{Data, Schema}
-import io.taig.otter.schemas.*
+import io.taig.otter.{Codec, Data}
+import io.taig.otter.codecs.*
 import io.taig.otter.http.Http.Request.Body
 import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.validation.{Constraint, History, Violation, Violations}
@@ -46,7 +46,7 @@ object Request:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
 
-    def schema: Option[Schema[?]]
+    def codec: Option[Codec[?]]
 
 //    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
 //    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
@@ -68,7 +68,7 @@ object Request:
       override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 
     object Singlepart:
-      sealed abstract class Strict[A](val schema: Option[Schema[?]]) extends Request.Body.Singlepart[A]:
+      sealed abstract class Strict[A](val codec: Option[Codec[?]]) extends Request.Body.Singlepart[A]:
         self =>
         final override type Self[a] = Request.Body.Singlepart.Strict[a]
 
@@ -95,7 +95,7 @@ object Request:
         def apply[A](
             f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
             g: Data => (Http.Headers, Array[Byte]),
-            of: Schema[A]
+            of: Codec[A]
         ): Request.Body.Singlepart.Strict[A] = new Strict[A](Some(of)):
           override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
             f(headers, payload).andThen(of.decode)

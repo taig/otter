@@ -4,10 +4,10 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-abstract class Schema[A]:
+abstract class Codec[A]:
   self =>
-  type Self[a] <: Schema[a]
-  type Optional[a] <: Schema[a]
+  type Self[a] <: Codec[a]
+  type Optional[a] <: Codec[a]
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
@@ -23,8 +23,8 @@ abstract class Schema[A]:
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
 
-  final def :+[B](schema: Schema[B]): Union.Of[this.type | schema.type, Either[A, B]] = toUnion.orElse(schema.toUnion)
-  final def +:[B](schema: Schema[B]): Union.Of[this.type | schema.type, Either[B, A]] = schema.toUnion.orElse(toUnion)
+  final def :+[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[A, B]] = toUnion.orElse(codec.toUnion)
+  final def +:[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[B, A]] = codec.toUnion.orElse(toUnion)
 
   def encode(a: A): Data
   final def decode(data: Data): Validated[Violations, A] = decode(data.asValue)
@@ -32,9 +32,9 @@ abstract class Schema[A]:
 
   def toUnion: Union.Of[this.type, A] = Union(this)
 
-object Schema:
-  extension [A <: Matchable](self: Schema[A])
-    inline def |[B <: Matchable](schema: Schema[B]): Union.Of[self.type | schema.type, A | B] = (self :+ schema).imap {
+object Codec:
+  extension [A <: Matchable](self: Codec[A])
+    inline def |[B <: Matchable](codec: Codec[B]): Union.Of[self.type | codec.type, A | B] = (self :+ codec).imap {
       case Left(a)  => a
       case Right(b) => b
     } {

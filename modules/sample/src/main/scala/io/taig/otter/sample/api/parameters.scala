@@ -7,4 +7,4 @@ import io.taig.otter.sample.data.{Member, ReferenceOrSelf}
 object parameters:
   object member:
     val referenceOrSelf: Segment[ReferenceOrSelf[Member.Reference]] =
-      parameter("referenceOrSelf", schemas.referenceOrSelf(schemas.member.reference))
+      parameter("referenceOrSelf", codecs.referenceOrSelf(codecs.member.reference))

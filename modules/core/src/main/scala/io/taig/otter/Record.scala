@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Record[A](val description: Option[String], val nulls: Null) extends Schema[A]:
+sealed abstract class Record[A](val description: Option[String], val nulls: Null) extends Codec[A]:
   self =>
   final override type Self[a] = Record[a]
   final override type Optional[a] = Record[a]
@@ -40,19 +40,19 @@ sealed abstract class Record[A](val description: Option[String], val nulls: Null
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
       override def encode(b: B, nulls: Null): Option[Chain[(String, Data)]] = self.encode(g(b), nulls)
 
-  final def product[B](schema: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
-    override def toChain: Chain[Field[?]] = self.toChain ++ schema.toChain
+  final def product[B](codec: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
+    override def toChain: Chain[Field[?]] = self.toChain ++ codec.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def toProduct: Product[(A, B)] = self.toProduct.product(schema.toProduct)
+    override def toProduct: Product[(A, B)] = self.toProduct.product(codec.toProduct)
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], (A, B))] =
       self.decodeWithRemainders(data).andThen { case (data, a) =>
-        schema.decodeWithRemainders(data).map(_.tupleLeft(a))
+        codec.decodeWithRemainders(data).map(_.tupleLeft(a))
       }
     override def encode(ab: (A, B), nulls: Null): Option[Chain[(String, Data)]] =
-      (self.encode(ab._1, nulls), schema.encode(ab._2, nulls)) match
+      (self.encode(ab._1, nulls), codec.encode(ab._2, nulls)) match
         case (Some(a), Some(b))  => Some(a ++ b)
         case (a @ Some(_), None) => a
         case (None, b @ Some(_)) => b
@@ -69,8 +69,8 @@ sealed abstract class Record[A](val description: Option[String], val nulls: Null
   protected def encode(a: A, nulls: Null): Option[Chain[(String, Data)]]
 
 object Record extends ToRecordOps:
-  def apply[A](schema: Record[A], description: Option[String], nulls: Null): Record[A] =
-    new Record[A](description, nulls) { export schema.* }
+  def apply[A](codec: Record[A], description: Option[String], nulls: Null): Record[A] =
+    new Record[A](description, nulls) { export codec.* }
 
   val Empty: Record[Unit] = new Record[Unit](None, Null.Default):
     override def toChain: Chain[Field[?]] = Chain.empty
@@ -86,7 +86,7 @@ object Record extends ToRecordOps:
     override def toChain: Chain[Field[?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def toProduct: Product[A] = Product(field.schema)
+    override def toProduct: Product[A] = Product(field.codec)
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], A)] = data match

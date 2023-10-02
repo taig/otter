@@ -1,9 +1,9 @@
 package io.taig.otter.sample.api.endpoints
 
-import io.taig.otter.Schema
+import io.taig.otter.Codec
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Endpoint as OtterEndpoint, Results, Url}
-import io.taig.otter.sample.api.{schemas, Role}
+import io.taig.otter.sample.api.{codecs, Role}
 import io.taig.otter.sample.data.Librarian
 
 object librarians:
@@ -20,14 +20,14 @@ object librarians:
 
       object Post:
         val results: Results[Post] =
-          val emailOrPasswordIncorrect: Schema[EmailOrPasswordIncorrect.type] =
+          val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
             error("emailOrPasswordIncorrect", dynamic.singleton(EmailOrPasswordIncorrect))
 
           result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
 
       val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Librarian.Session]] = OtterEndpoint(
-        request(method.post, url, input.json(schemas.librarian.login)),
-        response(Post.results :+ result(code.created, output.json(schemas.librarian.session)))
+        request(method.post, url, input.json(codecs.librarian.login)),
+        response(Post.results :+ result(code.created, output.json(codecs.librarian.session)))
       ).summary("Create librarian session")
         .description(
           "For security reasons, this endpoint does not give away whether the given email address is " +

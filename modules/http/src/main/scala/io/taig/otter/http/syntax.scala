@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.headers.{ContentType, MediaType}
 import io.taig.otter.validation.Violations
-import io.taig.otter.{schemas, Collection, Data, Schema, Union, Value}
+import io.taig.otter.{codecs, Codec, Collection, Data, Union, Value}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -12,12 +12,12 @@ import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets,
 object syntax:
   val __ : Url[Unit] = Url.Root
 
-  def header[A](name: CIString, schema: Value[A]): Header[A] = Header(name, schema)
-  def header[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = Header(name, schema)
-  def parameter[A](name: String, schema: Value.Required[A]): Segment[A] = Segment(name, schema)
-  def parameter[A](name: String, schema: Union.Required[A]): Segment[A] = Segment(name, schema)
-  def query[A](name: String, schema: Value[A]): Query[A] = Query(name, schema)
-  def query[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = Query(name, schema)
+  def header[A](name: CIString, codec: Value[A]): Header[A] = Header(name, codec)
+  def header[A](name: CIString, codec: Collection.Of[Value[?], A]): Header[A] = Header(name, codec)
+  def parameter[A](name: String, codec: Value.Required[A]): Segment[A] = Segment(name, codec)
+  def parameter[A](name: String, codec: Union.Required[A]): Segment[A] = Segment(name, codec)
+  def query[A](name: String, codec: Value[A]): Query[A] = Query(name, codec)
+  def query[A](name: String, codec: Collection.Of[Value[?], A]): Query[A] = Query(name, codec)
 
   object method:
     val delete: Method = Method("DELETE")
@@ -63,8 +63,8 @@ object syntax:
     def apply[A](
         f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
         g: Data => (Http.Headers, Array[Byte]),
-        schema: Schema[A]
-    ): Request.Body.Singlepart.Strict[A] = Request.Body.Singlepart.Strict(f, g, schema)
+        codec: Codec[A]
+    ): Request.Body.Singlepart.Strict[A] = Request.Body.Singlepart.Strict(f, g, codec)
 //    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
 //      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
 //        val charset = contentType
@@ -87,8 +87,8 @@ object syntax:
   def result(code: Code): Result[Unit] = Result(code, output.empty)
 
   object output:
-    def apply[A](body: Response.Body.Strict[Data], schema: Schema[A]): Response.Body.Strict[A] =
-      body.andThen(schema.decode)(schema.encode)
+    def apply[A](body: Response.Body.Strict[Data], codec: Codec[A]): Response.Body.Strict[A] =
+      body.andThen(codec.decode)(codec.encode)
     val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
       .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
     val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)

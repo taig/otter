@@ -4,7 +4,7 @@ import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Coproduct[A](val description: Option[String], val discriminator: Discriminator) extends Schema[A]:
+sealed abstract class Coproduct[A](val description: Option[String], val discriminator: Discriminator) extends Codec[A]:
   self =>
   final override type Self[a] = Coproduct[a]
   final override type Optional[a] = Coproduct[a]
@@ -42,9 +42,9 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
       override def encode(b: B, discriminator: Discriminator): Option[Chain[(String, Data)]] =
         self.encode(g(b), discriminator)
 
-  final def orElse[B](schema: Coproduct[B]): Coproduct[Either[A, B]] =
+  final def orElse[B](codec: Coproduct[B]): Coproduct[Either[A, B]] =
     new Coproduct[Either[A, B]](None, Discriminator.Default):
-      override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain ++ schema.toNonEmptyChain
+      override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain ++ codec.toNonEmptyChain
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decode(
@@ -55,9 +55,9 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
         .map(_.map(_.asLeft))
         .andThen:
           case a @ Some(_) => a.valid
-          case None        => schema.decode(data, discriminator).map(_.map(_.asRight))
+          case None        => codec.decode(data, discriminator).map(_.map(_.asRight))
       override def encode(ab: Either[A, B], discriminator: Discriminator): Option[Chain[(String, Data)]] =
-        ab.fold(self.encode(_, discriminator), schema.encode(_, discriminator))
+        ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
   final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = self.orElse(branch.toCoproduct)
   final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch.toCoproduct.orElse(self)
@@ -82,8 +82,8 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
   protected def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]]
 
 object Coproduct:
-  def apply[A](schema: Coproduct[A], description: Option[String], discriminator: Discriminator): Coproduct[A] =
-    new Coproduct[A](description, discriminator) { export schema.* }
+  def apply[A](codec: Coproduct[A], description: Option[String], discriminator: Discriminator): Coproduct[A] =
+    new Coproduct[A](description, discriminator) { export codec.* }
 
   def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default):
     override def toNonEmptyChain: NonEmptyChain[Branch[?]] = NonEmptyChain.one(branch)

@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Dynamic[A](val description: Option[String]) extends Schema[A]:
+sealed abstract class Dynamic[A](val description: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Dynamic[a]
   final override type Optional[a] = Dynamic[a]
@@ -26,8 +26,8 @@ sealed abstract class Dynamic[A](val description: Option[String]) extends Schema
       self.decode(data).andThen(validation(_).leftMap(Violations.root))
 
 object Dynamic:
-  def apply[A](schema: Dynamic[A], description: Option[String]): Dynamic[A] =
-    new Dynamic[A](description) { export schema.* }
+  def apply[A](codec: Dynamic[A], description: Option[String]): Dynamic[A] =
+    new Dynamic[A](description) { export codec.* }
 
   val Default: Dynamic[Data.Value] = new Dynamic[Data.Value](None):
     override def constraints: Chain[Constraint] = Chain.empty

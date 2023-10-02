@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Dictionary[A](val description: Option[String]) extends Schema[A]:
+sealed abstract class Dictionary[A](val description: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Dictionary[a]
   final override type Optional[a] = Dictionary[a]
@@ -36,18 +36,18 @@ sealed abstract class Dictionary[A](val description: Option[String]) extends Sch
   def encodeObject(a: A): Option[Data.Object]
 
 object Dictionary:
-  def apply[A](schema: Dictionary[A], description: Option[String]): Dictionary[A] =
-    new Dictionary[A](description) { export schema.* }
+  def apply[A](codec: Dictionary[A], description: Option[String]): Dictionary[A] =
+    new Dictionary[A](description) { export codec.* }
 
-  def apply[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
+  def apply[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Chain[(A, B)]] =
     new Dictionary[Chain[(A, B)]](None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
         case Some(data) =>
           data.values.traverse { case (a, b) =>
-            (key.parse(a), schema.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
+            (key.parse(a), codec.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
           }
         case None => Violations.rootNec(Violation.required).invalid
       override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
-        Data.Object(a.map { case (a, b) => (key.print(a), schema.encode(b)) }).some
+        Data.Object(a.map { case (a, b) => (key.print(a), codec.encode(b)) }).some

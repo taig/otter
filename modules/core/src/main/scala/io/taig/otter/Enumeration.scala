@@ -10,12 +10,12 @@ sealed abstract class Enumeration[A] extends Value[A]:
   override type Self[a] <: Enumeration[a]
   final override type Optional[a] = Enumeration[a]
 
-  def schema: Value[?]
+  def codec: Value[?]
 
   def values: Chain[Data.Primitive]
 
   final override def optional: Enumeration[Option[A]] =
-    new Enumeration.Optional[Option[A]](self.description, self.schema):
+    new Enumeration.Optional[Option[A]](self.description, self.codec):
       export self.values
       override def constraints: Chain[Constraint] = Chain.empty
       override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
@@ -30,16 +30,16 @@ sealed abstract class Enumeration[A] extends Value[A]:
           case value: Option[String] => value
 
 object Enumeration:
-  abstract class Required[A](val description: Option[String], val schema: Value.Required[?])
+  abstract class Required[A](val description: Option[String], val codec: Value.Required[?])
       extends Enumeration[A]
       with Value.Required[A]:
     self =>
     final override type Self[a] = Enumeration.Required[a]
     final override def isOptional: Boolean = false
     final override def description(f: Option[String] => Option[String]): Enumeration.Required[A] =
-      new Required[A](f(description), schema) { export self.* }
+      new Required[A](f(description), codec) { export self.* }
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Required[B] =
-      new Required[B](description, schema):
+      new Required[B](description, codec):
         export self.values
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
@@ -70,14 +70,14 @@ object Enumeration:
           )
       override def print(b: B): String = of.print(mapping.inj(b))
 
-  abstract private class Optional[A](val description: Option[String], val schema: Value[?]) extends Enumeration[A]:
+  abstract private class Optional[A](val description: Option[String], val codec: Value[?]) extends Enumeration[A]:
     self =>
     final override type Self[a] = Enumeration.Optional[a]
     final override def isOptional: Boolean = false
     final override def description(f: Option[String] => Option[String]): Enumeration.Optional[A] =
-      new Enumeration.Optional[A](f(description), schema) { export self.* }
+      new Enumeration.Optional[A](f(description), codec) { export self.* }
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Optional[B] =
-      new Enumeration.Optional[B](description, schema):
+      new Enumeration.Optional[B](description, codec):
         export self.values
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =

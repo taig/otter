@@ -51,74 +51,74 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   summary = endpoint.summary,
   description = endpoint.description,
   deprecated = endpoint.deprecated,
-  requestBody = endpoint.request.body.schema.map(toRequestBody(endpoint.request.body, _))
+  requestBody = endpoint.request.body.codec.map(toRequestBody(endpoint.request.body, _))
 )
 
-def toRequestBody(request: Request.Body[?], schema: RootSchema[?]): RequestBody = RequestBody(
-  NonEmptyMap.of("application/json" -> MediaType(toSchema(schema))),
-  required = !schema.isOptional
+def toRequestBody(request: Request.Body[?], codec: RootSchema[?]): RequestBody = RequestBody(
+  NonEmptyMap.of("application/json" -> MediaType(toSchema(codec))),
+  required = !codec.isOptional
 )
 
 val toSchema: RootSchema[?] => Schema =
-  case schema: Collection[?]  => toSchema(schema)
-  case schema: Coproduct[?]   => toSchema(schema)
-  case schema: Enumeration[?] => toSchema(schema)
-  case schema: Primitive[?]   => toSchema(schema)
-  case schema: Record[?]      => toSchema(schema)
-  case schema: Union[?]       => toSchema(schema)
+  case codec: Collection[?]  => toSchema(codec)
+  case codec: Coproduct[?]   => toSchema(codec)
+  case codec: Enumeration[?] => toSchema(codec)
+  case codec: Primitive[?]   => toSchema(codec)
+  case codec: Record[?]      => toSchema(codec)
+  case codec: Union[?]       => toSchema(codec)
 //  case _                      => ???
 
-def toSchema(schema: Coproduct[?]): Schema = Schema.OneOf(
-  schema.toNonEmptyChain.map(branch => toSchema(branch.schema)).toChain
+def toSchema(codec: Coproduct[?]): Schema = Schema.OneOf(
+  codec.toNonEmptyChain.map(branch => toSchema(branch.codec)).toChain
 )
 
-def toSchema(schema: Primitive[?]): Schema = Schema.Value(
-  tpe = typeOf(schema.tpe),
-  format = schema.format,
-  description = schema.description
+def toSchema(codec: Primitive[?]): Schema = Schema.Value(
+  tpe = typeOf(codec.tpe),
+  format = codec.format,
+  description = codec.description
 )
 
-def toSchema(schema: Collection[?]): Schema =
-  Schema.Array(items = toSchema(schema.schema))
+def toSchema(codec: Collection[?]): Schema =
+  Schema.Array(items = toSchema(codec.codec))
 
-def toSchema(schema: Enumeration[?]): Schema = Schema.Enumeration(
-  tpe = typeOf(schema.schema),
-  enums = schema.values
+def toSchema(codec: Enumeration[?]): Schema = Schema.Enumeration(
+  tpe = typeOf(codec.codec),
+  enums = codec.values
 )
 
-//  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
-//    "type" := typeOf(schema.schema),
+//  def enumeration(codec: Enumeration[?]): JsonObject = JsonObject(
+//    "type" := typeOf(codec.codec),
 //    "enum" := Values.map(toJson),
-//    "nullable" := schema.isOptional
+//    "nullable" := codec.isOptional
 //  )
 
-def toSchema(schema: Record[?]): Schema = Schema.Object(
-  description = schema.description,
-  properties = schema.toChain.map(field => field.name -> toSchema(field.schema))
+def toSchema(codec: Record[?]): Schema = Schema.Object(
+  description = codec.description,
+  properties = codec.toChain.map(field => field.name -> toSchema(field.codec))
 )
 
-def toSchema(schema: Union[?]): Schema = Schema.OneOf(
-  schemas = schema.toNonEmptyChain.map(toSchema).toChain
+def toSchema(codec: Union[?]): Schema = Schema.OneOf(
+  codecs = codec.toNonEmptyChain.map(toSchema).toChain
 )
 
-//  def product(schema: Product[?]): JsonObject = JsonObject(
+//  def product(codec: Product[?]): JsonObject = JsonObject(
 //    "type" := "array",
-//    "prefixItems" := schema.toChain.map(schema => self.schema(schema)),
-//    "minItems" := schema.toChain.length,
-//    "maxItems" := schema.toChain.length,
+//    "prefixItems" := codec.toChain.map(codec => self.codec(codec)),
+//    "minItems" := codec.toChain.length,
+//    "maxItems" := codec.toChain.length,
 //    "additionalItems" := false
 //  )
 //
-//  def dictionary(schema: Dictionary[?]): JsonObject = JsonObject(
+//  def dictionary(codec: Dictionary[?]): JsonObject = JsonObject(
 //    "type" := "object",
-//    "additionalProperties" := self.schema(schema.schema)
+//    "additionalProperties" := self.codec(codec.codec)
 //  )
 //
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
 //
-//  def constraints(schema: Collection[?, ?]): JsonObject =
-//    schema.constraints.foldLeft(JsonObject.empty)((result, current) => constraint.array(current).deepMerge(result))
+//  def constraints(codec: Collection[?, ?]): JsonObject =
+//    codec.constraints.foldLeft(JsonObject.empty)((result, current) => constraint.array(current).deepMerge(result))
 //
 //  object constraint:
 //    def apply(tpe: Type[?]): Constraint => JsonObject = constraint =>
@@ -148,9 +148,9 @@ def toSchema(schema: Union[?]): Schema = Schema.OneOf(
 //      case _                               => JsonObject.empty
 
 @tailrec
-def typeOf(schema: Value[?]): String = schema match
-  case schema: Enumeration[?] => typeOf(schema.schema)
-  case schema: Primitive[?]   => typeOf(schema.tpe)
+def typeOf(codec: Value[?]): String = codec match
+  case codec: Enumeration[?] => typeOf(codec.codec)
+  case codec: Primitive[?]   => typeOf(codec.tpe)
 
 val typeOf: Type[?] => String =
   case Type.Double | Type.Float | Type.BigDecimal => "number"

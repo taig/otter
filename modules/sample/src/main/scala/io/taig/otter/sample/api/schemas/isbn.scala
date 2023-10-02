@@ -1,4 +1,4 @@
-package io.taig.otter.sample.api.schemas
+package io.taig.otter.sample.api.codecs
 
 import io.taig.otter.Primitive
 import io.taig.otter.dsl.*

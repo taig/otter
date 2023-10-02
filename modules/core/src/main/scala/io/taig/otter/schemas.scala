@@ -12,7 +12,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
 
-object schemas:
+object codecs:
   val bigDecimal: Primitive.Required[BigDecimal] = Primitive.Required(Type.BigDecimal)
   val bigInt: Primitive.Required[BigInt] = Primitive.Required(Type.BigInt)
   val boolean: Primitive.Required[Boolean] = Primitive.Required(Type.Boolean)
@@ -50,53 +50,53 @@ object schemas:
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
 
-  def field[A, B](name: A, key: Value.Required[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
-  def field[A](name: String, schema: Schema[A]): Field[A] = field(name, string, schema)
-  def field[A](name: Int, schema: Schema[A]): Field[A] = field(name, int, schema)
+  def field[A, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] = Field(name, key, codec)
+  def field[A](name: String, codec: Codec[A]): Field[A] = field(name, string, codec)
+  def field[A](name: Int, codec: Codec[A]): Field[A] = field(name, int, codec)
 
-  def branch[A: Eq, B](name: A, key: Value.Required[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
-  def branch[A](name: String, schema: Schema[A]): Branch[A] = branch(name, string, schema)
-  def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
+  def branch[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Branch[B] = Branch(name, key, codec)
+  def branch[A](name: String, codec: Codec[A]): Branch[A] = branch(name, string, codec)
+  def branch[A](name: Int, codec: Codec[A]): Branch[A] = branch(name, int, codec)
 
   object collection:
-    def chain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], Chain[A]] = Collection(schema)
-    def vector[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], Vector[A]] =
-      chain(schema).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], List[A]] =
-      chain(schema).imap(_.toList)(Chain.fromSeq)
-    def sortedSet[F[a] <: Schema[a], A: Ordering](schema: F[A]): Collection.Of[F[A], SortedSet[A]] =
-      chain(schema).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyChain[F[a] <: Schema[a], A](schema: F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
+    def chain[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], Chain[A]] = Collection(codec)
+    def vector[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], Vector[A]] =
+      chain(codec).imap(_.toVector)(Chain.fromSeq)
+    def list[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], List[A]] =
+      chain(codec).imap(_.toList)(Chain.fromSeq)
+    def sortedSet[F[a] <: Codec[a], A: Ordering](codec: F[A]): Collection.Of[F[A], SortedSet[A]] =
+      chain(codec).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
+    def nonEmptyChain[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
-      chain(schema).ivalidate(validation)(_.toChain)
-    def sortedMap[F[a] <: Schema[a], A: Ordering, B](key: Schema[A], schema: Schema[B])(
-        f: (Schema[A], Schema[B]) => F[(A, B)]
+      chain(codec).ivalidate(validation)(_.toChain)
+    def sortedMap[F[a] <: Codec[a], A: Ordering, B](key: Codec[A], codec: Codec[B])(
+        f: (Codec[A], Codec[B]) => F[(A, B)]
     ): Collection.Of[F[(A, B)], SortedMap[A, B]] =
-      chain(f(key, schema)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
+      chain(f(key, codec)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[A, B](schema: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
-      Enumeration.Required(schema, mapping)
-    def apply[A: Hash, B](schema: Value.Required[A])(f: B => A)(using
+    def apply[A, B](codec: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
+      Enumeration.Required(codec, mapping)
+    def apply[A: Hash, B](codec: Value.Required[A])(f: B => A)(using
         EnumerationValues.Aux[B, B]
     ): Enumeration.Required[B] =
-      enumeration(schema)(using Mapping.enumeration(f))
-    def constant[A: Eq](schema: Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
-      enumeration(schema)(using Mapping.constant[A](value))
+      enumeration(codec)(using Mapping.enumeration(f))
+    def constant[A: Eq](codec: Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
+      enumeration(codec)(using Mapping.constant[A](value))
 
   object dictionary:
-    def chain[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
-    def map[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Map[A, B]] =
-      chain(key, schema).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
-    def vectorMap[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
-      chain(key, schema).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
-    def sortedMap[A: Ordering, B](key: Value.Required[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
-      chain(key, schema).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyMap[A: Ordering, B](key: Value.Required[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
+    def chain[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, codec)
+    def map[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Map[A, B]] =
+      chain(key, codec).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
+    def vectorMap[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[VectorMap[A, B]] =
+      chain(key, codec).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
+    def sortedMap[A: Ordering, B](key: Value.Required[A], codec: Codec[B]): Dictionary[SortedMap[A, B]] =
+      chain(key, codec).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
+    def nonEmptyMap[A: Ordering, B](key: Value.Required[A], codec: Codec[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
         Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
-      sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
+      sortedMap(key, codec).ivalidate(validation)(_.toSortedMap)
 
   val violations: Dictionary[Violations] =
     val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
@@ -126,4 +126,4 @@ object schemas:
 
     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
 
-  def error[A](identifier: String, value: Schema[A]): Coproduct[A] = branch(identifier, value).toCoproduct
+  def error[A](identifier: String, value: Codec[A]): Coproduct[A] = branch(identifier, value).toCoproduct

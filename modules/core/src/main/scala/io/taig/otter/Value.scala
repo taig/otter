@@ -3,7 +3,7 @@ package io.taig.otter
 import cats.data.Validated
 import io.taig.otter.validation.{Violation, Violations}
 
-trait Value[A] extends Schema[A]:
+trait Value[A] extends Codec[A]:
   override type Self[a] <: Value[a]
   override type Optional[a] <: Value[a]
 
@@ -14,10 +14,10 @@ object Value:
   trait Required[A] extends Value[A]:
     override type Self[a] <: Value.Required[a]
 
-    final def :+[B](schema: Value.Required[B]): Union.Required.Of[this.type | schema.type, Either[A, B]] =
-      toUnion.orElse(schema.toUnion)
-    final def +:[B](schema: Value.Required[B]): Union.Required.Of[this.type | schema.type, Either[B, A]] =
-      schema.toUnion.orElse(toUnion)
+    final def :+[B](codec: Value.Required[B]): Union.Required.Of[this.type | codec.type, Either[A, B]] =
+      toUnion.orElse(codec.toUnion)
+    final def +:[B](codec: Value.Required[B]): Union.Required.Of[this.type | codec.type, Either[B, A]] =
+      codec.toUnion.orElse(toUnion)
 
     final override def toUnion: Union.Required.Of[this.type, A] = Union.Required(this)
 
@@ -29,8 +29,8 @@ object Value:
 
   object Required:
     extension [A <: Matchable](self: Value.Required[A])
-      inline def |[B <: Matchable](schema: Value.Required[B]): Union.Required.Of[self.type | schema.type, A | B] =
-        (self :+ schema).imap {
+      inline def |[B <: Matchable](codec: Value.Required[B]): Union.Required.Of[self.type | codec.type, A | B] =
+        (self :+ codec).imap {
           case Left(a)  => a
           case Right(b) => b
         } {

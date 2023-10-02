@@ -8,7 +8,7 @@ import io.taig.otter.validation.{History, Violation, Violations}
 
 sealed abstract class Branch[A]:
   def name: String
-  def schema: Schema[?]
+  def codec: Codec[?]
 
   final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = toCoproduct :+ branch
   final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch +: toCoproduct
@@ -19,9 +19,9 @@ sealed abstract class Branch[A]:
   def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
-  def apply[A: Eq, B](a: A, key: Value.Required[A], of: Schema[B]): Branch[B] = new Branch[B]:
+  def apply[A: Eq, B](a: A, key: Value.Required[A], of: Codec[B]): Branch[B] = new Branch[B]:
     override def name: String = key.print(a)
-    override def schema: Schema[?] = of
+    override def codec: Codec[?] = of
 
     override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =
       discriminator match

@@ -1,4 +1,4 @@
-//package io.taig.otter.schema
+//package io.taig.otter.codec
 //
 //import cats.syntax.all.*
 //import munit.FunSuite

@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Primitive[A] extends Schema[A] with Value[A]:
+sealed abstract class Primitive[A] extends Codec[A] with Value[A]:
   self =>
   override type Self[a] <: Primitive[a]
   final override type Optional[a] = Primitive[a]

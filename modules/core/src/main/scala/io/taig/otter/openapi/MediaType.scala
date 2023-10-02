@@ -1,3 +1,3 @@
 package io.taig.otter.openapi
 
-final case class MediaType(schema: Extended[Schema])
+final case class MediaType(codec: Extended[Schema])
