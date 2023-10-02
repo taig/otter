@@ -17,11 +17,11 @@ sealed abstract class Data extends SProduct with Serializable:
     case _                 => None
 
   final def name: String = this match
-    case _: Data.String  => "string"
+    case _: Data.Array   => "array"
     case _: Data.Boolean => "boolean"
     case _: Data.Number  => "number"
     case _: Data.Object  => "object"
-    case _: Data.Array   => "array"
+    case _: Data.String  => "string"
     case Data.Null       => "null"
 
 object Data:

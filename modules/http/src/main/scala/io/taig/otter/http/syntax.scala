@@ -1,7 +1,10 @@
 package io.taig.otter.http
 
+import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.headers.{ContentType, MediaType}
+import io.taig.otter.validation.Violations
+import io.taig.otter.schemas
 import io.taig.otter.{Collection, Data, Schema, Value}
 import org.typelevel.ci.CIString
 
@@ -55,29 +58,30 @@ object syntax:
       Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
   object input:
-    def apply[A](
-        body: Request.Body.Singlepart.Strict[Data],
-        schema: Schema[A]
-    ): Request.Body.Singlepart.Strict[A] = body.andThen(schema.decode)(schema.encode)
     val empty: Request.Body.Singlepart.Strict[Unit] = Request.Body.Singlepart.Strict.Empty
-    val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Bytes
-    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
-      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
-        val charset = contentType
-          .flatMap(_.charset)
-          .flatMap { value =>
-            try Charset.forName(value).some
-            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
-          }
-          .getOrElse(StandardCharsets.UTF_8)
-        new String(bytes, charset)
-      } { value =>
-        (
-          value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)),
-          ContentType(MediaType.text.plain, charset.map(_.name)).some,
-        )
-      }
-    val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
+    val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Binary
+    def apply[A](
+        f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
+        g: Data => (Http.Headers, Array[Byte]),
+        schema: Schema[A]
+    ): Request.Body.Singlepart.Strict[A] = Request.Body.Singlepart.Strict(f, g, schema)
+//    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
+//      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
+//        val charset = contentType
+//          .flatMap(_.charset)
+//          .flatMap { value =>
+//            try Charset.forName(value).some
+//            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
+//          }
+//          .getOrElse(StandardCharsets.UTF_8)
+//        new String(bytes, charset)
+//      } { value =>
+//        (
+//          value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)),
+//          ContentType(MediaType.text.plain, charset.map(_.name)).some,
+//        )
+//      }
+//    val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
 
   def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
   def result(code: Code): Result[Unit] = Result(code, output.empty)

@@ -2,7 +2,8 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.Data
+import io.taig.otter.{Data, Schema}
+import io.taig.otter.schemas.*
 import io.taig.otter.http.Http.Request.Body
 import io.taig.otter.http.Http.{Payload, Request}
 import io.taig.otter.validation.{Constraint, History, Violation, Violations}
@@ -47,9 +48,9 @@ object Request:
 
     def isEmpty: Boolean
 
-    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
-    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
-    def zip[B](headers: Headers[B]): Self[(A, B)]
+//    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
+//    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
+//    def zip[B](headers: Headers[B]): Self[(A, B)]
 
     def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A]
     def encode(a: A): (Http.Headers, Http.Request.Body)
@@ -63,67 +64,45 @@ object Request:
       override def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A] = body match
         case Http.Request.Body.Singlepart(payload) => decode(headers, payload)
         case Http.Request.Body.Multipart()         => ???
-      def decode(headers: Http.Headers, body: Http.Payload): Validated[Violations, A]
+      def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A]
       override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 
     object Singlepart:
-      sealed abstract class Strict[A] extends Request.Body.Singlepart[A]:
+      sealed abstract class Strict[A](val schema: Schema[?]) extends Request.Body.Singlepart[A]:
         self =>
         final override type Self[a] = Request.Body.Singlepart.Strict[a]
-
-        final override def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request.Body.Singlepart.Strict[B] =
-          new Strict[B]:
-            export self.isEmpty
-            override def decodeWithRemainders(
-                remainders: Http.Headers,
-                payload: Array[Byte]
-            ): Validated[Violations, (Http.Headers, B)] =
-              self.decodeWithRemainders(remainders, payload).andThen(_.traverse(f))
-            override def encode(b: B): (Http.Headers, Http.Request.Body.Singlepart) = self.encode(g(b))
-
-        final override def zip[B](headers: Headers[B]): Request.Body.Singlepart.Strict[(A, B)] = new Strict[(A, B)]:
-          export self.isEmpty
-          override def decodeWithRemainders(
-              remainders: Http.Headers,
-              payload: Array[Byte]
-          ): Validated[Violations, (Http.Headers, (A, B))] =
-            self.decodeWithRemainders(remainders, payload).andThen { case (remainders, a) =>
-              headers.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-            }
-
-          override def encode(ab: (A, B)): (Http.Headers, Http.Request.Body.Singlepart) =
-            self.encode(ab._1).leftMap(_ ++ headers.encode(ab._2))
 
         final override def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A] =
           payload match
             case Payload.Strict(data) => decode(headers, data)
             case Payload.Streaming(_) => Violations.rootNec(Violation.tpe("strict", "streaming")).invalid
-        def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
-          decodeWithRemainders(headers, payload).map(_._2)
-        def decodeWithRemainders(
-            remainders: Http.Headers,
-            payload: Array[Byte]
-        ): Validated[Violations, (Http.Headers, A)]
+        def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A]
+        override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 
       object Strict:
-        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit]:
+        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit](dynamic.empty):
           override def isEmpty: Boolean = true
-          override def decodeWithRemainders(
-              remainders: Http.Headers,
-              payload: Array[Byte]
-          ): Validated[Violations, (Http.Headers, Unit)] =
-            (remainders, ()).valid
+          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Unit] = ().valid
           override def encode(a: Unit): (Http.Headers, Http.Request.Body.Singlepart) =
             (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(Array.emptyByteArray)))
 
-        val Bytes: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]]:
+        val Binary: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]](dynamic.empty):
           override def isEmpty: Boolean = false
-          override def decodeWithRemainders(
-              remainders: Http.Headers,
-              payload: Array[Byte]
-          ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
+          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
+            payload.valid
           override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
             (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
+
+        def apply[A](
+            f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
+            g: Data => (Http.Headers, Array[Byte]),
+            of: Schema[A]
+        ): Request.Body.Singlepart.Strict[A] = new Strict[A](of):
+          override def isEmpty: Boolean = false
+          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
+            f(headers, payload).andThen(of.decode)
+          override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart) =
+            g(of.encode(a)).map(bytes => Http.Request.Body.Singlepart(Http.Payload.Strict(bytes)))
 
   def apply[A](request: Request[A], description: Option[String]): Request[A] =
     new Request[A](description) { export request.* }

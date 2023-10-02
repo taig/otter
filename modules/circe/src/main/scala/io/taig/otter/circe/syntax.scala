@@ -1,6 +1,6 @@
 package io.taig.otter.circe
 
-import cats.data.Validated
+import cats.data.{Chain, Validated}
 import io.circe.jawn.JawnParser
 import io.circe.{Json, Printer}
 import io.taig.otter.http.syntax.{code, result}
@@ -17,13 +17,17 @@ object syntax:
   private val parser = new JawnParser()
 
   object input:
-    def json(printer: Printer): Request.Body.Singlepart.Strict[Json] = http.input.binary.andThen { bytes =>
-      Validated
-        .fromEither(parser.parseByteArray(bytes))
-        .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
-    }(printer.print(_).getBytes(StandardCharsets.UTF_8))
-    val json: Request.Body.Singlepart.Strict[Json] = json(Printer.noSpaces)
-    def json[A](schema: Schema[A]): Request.Body.Singlepart.Strict[A] = http.input(json.imap(toData)(fromData), schema)
+    def json[A](schema: Schema[A], printer: Printer): Request.Body.Singlepart.Strict[A] =
+      http.input(
+        (_, bytes) =>
+          Validated
+            .fromEither(parser.parseByteArray(bytes))
+            .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+            .map(toData),
+        data => (Chain.empty, printer.print(fromData(data)).getBytes(StandardCharsets.UTF_8)),
+        schema
+      )
+    def json[A](schema: Schema[A]): Request.Body.Singlepart.Strict[A] = json(schema, Printer.noSpaces)
 
   object output:
     def json(printer: Printer): Response.Body.Strict[Json] = http.output.binary.andThen { bytes =>
