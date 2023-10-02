@@ -8,6 +8,7 @@ import io.taig.otter.validation.{History, Violation, Violations}
 
 sealed abstract class Branch[A]:
   def name: String
+  def schema: Schema[?]
 
   final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = toCoproduct :+ branch
   final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch +: toCoproduct
@@ -18,8 +19,9 @@ sealed abstract class Branch[A]:
   def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
-  def apply[A: Eq, B](a: A, key: Value[A], schema: Schema[B]): Branch[B] = new Branch[B]:
+  def apply[A: Eq, B](a: A, key: Value[A], of: Schema[B]): Branch[B] = new Branch[B]:
     override def name: String = key.print(a).orEmpty
+    override def schema: Schema[?] = of
 
     override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =
       discriminator match
@@ -29,7 +31,7 @@ object Branch:
               key.decode(identifier) match
                 case Validated.Valid(identifier) if identifier === a =>
                   data.first(value) match
-                    case Some(data) => schema.decode(data).map(_.some)
+                    case Some(data) => of.decode(data).map(_.some)
                     case None       => ???
                 case Validated.Valid(_)            => none.valid
                 case Validated.Invalid(violations) => ???
@@ -39,7 +41,7 @@ object Branch:
 
     override def encode(b: B, discriminator: Discriminator): Chain[(String, Data)] = discriminator match
       case Discriminator.Nested(identifier, value) =>
-        Chain(identifier -> Data.String(name), value -> schema.encode(b))
+        Chain(identifier -> Data.String(name), value -> of.encode(b))
       case Discriminator.Merged(identifier) =>
-        Chain.one(identifier, Data.String(name)) ++ schema.encode(b).asObject.map(_.values).orEmpty
-      case Discriminator.Keyed => Chain.one(name -> schema.encode(b))
+        Chain.one(identifier, Data.String(name)) ++ of.encode(b).asObject.map(_.values).orEmpty
+      case Discriminator.Keyed => Chain.one(name -> of.encode(b))

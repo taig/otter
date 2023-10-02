@@ -60,16 +60,20 @@ def toRequestBody(request: Request.Body[?], schema: RootSchema[?]): RequestBody 
 )
 
 val toSchema: RootSchema[?] => Schema =
+  case schema: Coproduct[?] => toSchema(schema)
   case schema: Primitive[?] => toSchema(schema)
   case schema: Record[?]    => toSchema(schema)
-  case _                    => Schema(tpe = "object")
+  case _                    => Schema.Value(tpe = "object")
 //    case schema: Collection[?, ?] => collection(schema)
 //    case schema: Enumeration[?]   => enumeration(schema)
 //    case schema: Product[?]       => product(schema)
 //    case schema: Dictionary[?]    => dictionary(schema)
-//    case schema: Coproduct[?]     => coproduct(schema)
 
-def toSchema(schema: Primitive[?]): Schema = Schema(
+def toSchema(schema: Coproduct[?]): Schema = Schema.OneOf(
+  schema.toNonEmptyChain.map(branch => toSchema(branch.schema)).toChain
+)
+
+def toSchema(schema: Primitive[?]): Schema = Schema.Value(
   tpe = typeOf(schema.tpe),
   format = schema.format,
   description = schema.description,
@@ -90,7 +94,7 @@ def toSchema(schema: Primitive[?]): Schema = Schema(
 //    "nullable" := schema.isOptional
 //  )
 
-def toSchema(schema: Record[?]): Schema = Schema(
+def toSchema(schema: Record[?]): Schema = Schema.Value(
   tpe = "object",
   nullable = schema.isOptional,
   properties = schema.toChain.map(field => field.name -> toSchema(field.schema))
@@ -108,8 +112,6 @@ def toSchema(schema: Record[?]): Schema = Schema(
 //    "type" := "object",
 //    "additionalProperties" := self.schema(schema.schema)
 //  )
-//
-//  def coproduct(schema: Coproduct[?]): JsonObject = ???
 //
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
