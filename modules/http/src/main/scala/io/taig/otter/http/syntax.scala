@@ -15,7 +15,7 @@ object syntax:
   def header[A](name: CIString, schema: Value[A]): Header[A] = Header(name, schema)
   def header[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = Header(name, schema)
   def parameter[A](name: String, schema: Value.Required[A]): Segment[A] = Segment(name, schema)
-  def parameter[A](name: String, schema: Union.Of[Value.Required[?], A]): Segment[A] = ???
+  def parameter[A](name: String, schema: Union.Required[A]): Segment[A] = Segment(name, schema)
   def query[A](name: String, schema: Value[A]): Query[A] = Query(name, schema)
   def query[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = Query(name, schema)
 

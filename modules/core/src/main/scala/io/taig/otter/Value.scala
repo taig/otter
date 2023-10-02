@@ -14,6 +14,13 @@ object Value:
   trait Required[A] extends Value[A]:
     override type Self[a] <: Value.Required[a]
 
+    final def :+[B](schema: Value.Required[B]): Union.Required.Of[this.type | schema.type, Either[A, B]] =
+      toUnion.orElse(schema.toUnion)
+    final def +:[B](schema: Value.Required[B]): Union.Required.Of[this.type | schema.type, Either[B, A]] =
+      schema.toUnion.orElse(toUnion)
+
+    final override def toUnion: Union.Required.Of[this.type, A] = Union.Required(this)
+
     override def print(a: A): String
     final override def parse(value: Option[String]): Validated[Violations, A] =
       Validated.fromOption(value, Violations.rootNec(Violation.required)).andThen(parse)

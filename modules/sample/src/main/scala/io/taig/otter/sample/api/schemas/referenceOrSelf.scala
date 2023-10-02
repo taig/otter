@@ -6,7 +6,7 @@ import io.taig.otter.{Enumeration, Union, Value}
 
 val self: Enumeration.Required["self"] = enumeration.constant(string, "self")
 
-def referenceOrSelf[A](schema: Value.Required[A]): Union.Of[Value.Required[?], ReferenceOrSelf[A]] = (self :+ schema)
+def referenceOrSelf[A](schema: Value.Required[A]): Union.Required[ReferenceOrSelf[A]] = (self :+ schema)
   .imap {
     case Left(_)      => ReferenceOrSelf.Self
     case Right(value) => ReferenceOrSelf.Reference(value)

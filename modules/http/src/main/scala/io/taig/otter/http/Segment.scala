@@ -3,12 +3,12 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Violation, Violations}
-import io.taig.otter.{Data, Value}
+import io.taig.otter.{Data, Union, Value}
 
 sealed abstract class Segment[A]:
   self =>
   def name: String
-  def schema: Option[Value.Required[?]]
+  def schema: Option[Value.Required[?] | Union.Of[Value.Required[?], ?]]
 
   final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
     export self.{matches, name, print, schema}
@@ -17,7 +17,7 @@ sealed abstract class Segment[A]:
 
   def matches(value: String): Boolean
 
-  def decode(a: String): Validated[Violations, A]
+  def decode(value: String): Validated[Violations, A]
   def encode(a: A): String
 
   def print: String
@@ -29,10 +29,10 @@ object Segment:
     override def schema: Option[Value.Required[?]] = none
     override def name: String = static
     override def matches(value: String): Boolean = value === static
-    override def decode(a: String): Validated[Violations, Unit] = Validated.cond(
-      matches(a),
+    override def decode(value: String): Validated[Violations, Unit] = Validated.cond(
+      matches(value),
       (),
-      Violations.rootNec(Violation(Constraint.Equals(name), actual = Data.String(a)))
+      Violations.rootNec(Violation(Constraint.Equals(name), actual = Data.String(value)))
     )
     override def encode(a: Unit): String = static
     override def print: String = static
@@ -41,6 +41,14 @@ object Segment:
     override def schema: Option[Value.Required[A]] = of.some
     override def name: String = parameter
     override def matches(value: String): Boolean = true
-    override def decode(a: String): Validated[Violations, A] = of.parse(a)
+    override def decode(value: String): Validated[Violations, A] = of.parse(value)
+    override def encode(a: A): String = of.print(a)
+    override def print: String = s"{$parameter}"
+
+  def apply[A](parameter: String, of: Union.Required.Of[Value.Required[?], A]): Segment[A] = new Segment[A]:
+    override def schema: Option[Union.Of[Value.Required[?], ?]] = of.some
+    override def name: String = parameter
+    override def matches(value: String): Boolean = true
+    override def decode(value: String): Validated[Violations, A] = of.parse(value)
     override def encode(a: A): String = of.print(a)
     override def print: String = s"{$parameter}"

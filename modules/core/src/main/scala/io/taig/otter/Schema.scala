@@ -30,7 +30,7 @@ abstract class Schema[A]:
   final def decode(data: Data): Validated[Violations, A] = decode(data.asValue)
   def decode(data: Option[Data.Value]): Validated[Violations, A]
 
-  final def toUnion: Union.Of[this.type, A] = Union(this)
+  def toUnion: Union.Of[this.type, A] = Union(this)
 
 object Schema:
   extension [A <: Matchable](self: Schema[A])
