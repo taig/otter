@@ -3,7 +3,7 @@ package io.taig.otter.schema
 import cats.syntax.all.*
 import io.taig.otter.Data
 import io.taig.otter.schemas.*
-import io.taig.otter.validation.{Constraint, Violation, Violations, validations}
+import io.taig.otter.validation.{validations, Constraint, Violation, Violations}
 import munit.FunSuite
 
 import java.util.UUID

@@ -5,7 +5,7 @@ import cats.implicits.*
 import io.taig.otter.sample.api.endpoints
 import io.taig.otter.sample.api.endpoints.books.Post
 import io.taig.otter.sample.data.{Book, Librarian}
-import io.taig.otter.sample.{SampleSuite, fixtures}
+import io.taig.otter.sample.{fixtures, SampleSuite}
 
 final class BooksRoutesTest extends SampleSuite:
   app.test(endpoints.books.get): context =>
