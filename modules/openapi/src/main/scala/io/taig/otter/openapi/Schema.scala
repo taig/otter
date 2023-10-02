@@ -3,6 +3,8 @@ package io.taig.otter.openapi
 import cats.data.Chain
 import io.circe.{Encoder, JsonObject}
 import io.circe.syntax.*
+import io.taig.otter.Data
+import io.taig.otter.circe.fromData
 import io.taig.otter.openapi.syntax.*
 
 enum Schema:
@@ -10,6 +12,10 @@ enum Schema:
       items: Schema,
       format: Option[String] = None,
       description: Option[String] = None
+  )
+  case Enumeration(
+      tpe: String,
+      enums: Chain[Data.Primitive]
   )
   case OneOf(schemas: Chain[Schema])
   case Object(
@@ -32,7 +38,8 @@ object Schema:
         "description" := schema.description,
         "items" := schema.items
       ).dropNullValues
-    case schema: OneOf => JsonObject("oneOf" := schema.schemas)
+    case schema: Enumeration => JsonObject("type" := schema.tpe, "enum" := schema.enums.map(fromData))
+    case schema: OneOf       => JsonObject("oneOf" := schema.schemas)
     case schema: Object =>
       JsonObject(
         "type" := "object",

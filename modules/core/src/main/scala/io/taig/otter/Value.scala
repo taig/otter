@@ -21,6 +21,7 @@ object Value:
 
     final override def toUnion: Union.Required.Of[this.type, A] = Union.Required(this)
 
+    override def encode(a: A): Data.Primitive
     override def print(a: A): String
     final override def parse(value: Option[String]): Validated[Violations, A] =
       Validated.fromOption(value, Violations.rootNec(Violation.required)).andThen(parse)

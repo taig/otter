@@ -67,14 +67,14 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
       decode(Some(values), discriminator).andThen:
         case Some(a) => a.valid
         case None =>
-          val values = toNonEmptyChain.toChain.map(_.name)
+          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.name))
           Violations.rootNec(Violation(Constraint.OneOf(values), actual = data)).invalid
     case Some(data) => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
     case None =>
       decode(None, discriminator).andThen:
         case Some(a) => a.valid
         case None =>
-          val values = toNonEmptyChain.toChain.map(_.name)
+          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.name))
           Violations.rootNec(Violation(Constraint.OneOf(values), actual = data.getOrElse(Data.Null))).invalid
   def decode(data: Option[Chain[(String, Data)]], discriminator: Discriminator): Validated[Violations, Option[A]]
 

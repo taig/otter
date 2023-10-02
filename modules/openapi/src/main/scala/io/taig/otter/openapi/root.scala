@@ -60,16 +60,13 @@ def toRequestBody(request: Request.Body[?], schema: RootSchema[?]): RequestBody 
 )
 
 val toSchema: RootSchema[?] => Schema =
-  case schema: Collection[?] => toSchema(schema)
-  case schema: Coproduct[?]  => toSchema(schema)
-  case schema: Primitive[?]  => toSchema(schema)
-  case schema: Record[?]     => toSchema(schema)
-  case schema: Union[?]      => toSchema(schema)
-  case _                     => Schema.Value(tpe = "object")
-//    case schema: Collection[?, ?] => collection(schema)
-//    case schema: Enumeration[?]   => enumeration(schema)
-//    case schema: Product[?]       => product(schema)
-//    case schema: Dictionary[?]    => dictionary(schema)
+  case schema: Collection[?]  => toSchema(schema)
+  case schema: Coproduct[?]   => toSchema(schema)
+  case schema: Enumeration[?] => toSchema(schema)
+  case schema: Primitive[?]   => toSchema(schema)
+  case schema: Record[?]      => toSchema(schema)
+  case schema: Union[?]       => toSchema(schema)
+  case _                      => Schema.Value(tpe = "object")
 
 def toSchema(schema: Coproduct[?]): Schema = Schema.OneOf(
   schema.toNonEmptyChain.map(branch => toSchema(branch.schema)).toChain
@@ -83,6 +80,11 @@ def toSchema(schema: Primitive[?]): Schema = Schema.Value(
 
 def toSchema(schema: Collection[?]): Schema =
   Schema.Array(items = toSchema(schema.schema))
+
+def toSchema(schema: Enumeration[?]): Schema = Schema.Enumeration(
+  tpe = typeOf(schema.schema),
+  enums = schema.values
+)
 
 //  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
 //    "type" := typeOf(schema.schema),

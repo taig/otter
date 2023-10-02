@@ -19,5 +19,5 @@ enum Constraint:
   case MinProperties(reference: Int)
   case MaxProperties(reference: Int)
   case Type(name: String)
-  case OneOf(values: Chain[String])
+  case OneOf(values: Chain[Data.Primitive])
   case Required

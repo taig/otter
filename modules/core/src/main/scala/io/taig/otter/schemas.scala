@@ -39,6 +39,11 @@ object schemas:
         case data      => Data.String(data.name).invalidNec
       any.ivalidate(validation)(identity)
     def singleton[A <: Singleton](a: A): Dynamic[A] = empty.imap(_ => a)(_ => Data.Null)
+    val primitive: Dynamic[Data.Primitive] =
+      val validation: Validation[Data.Value, Data.Primitive] = Validation(Constraint.Type("number")):
+        case data: Data.Primitive => data.valid
+        case data                 => Data.String(data.name).invalidNec
+      value.ivalidate(validation)(identity)
     val number: Dynamic[Data.Number] =
       val validation: Validation[Data.Value, Data.Number] = Validation(Constraint.Type("number")):
         case data: Data.Number => data.valid
@@ -110,7 +115,7 @@ object schemas:
         branch("minProperties", field("reference", int).to[Constraint.MinProperties]) :+
         branch("maxProperties", field("reference", int).to[Constraint.MaxProperties]) :+
         branch("type", field("name", string).to[Constraint.Type]) :+
-        branch("oneOf", field("values", collection.chain(string)).to[Constraint.OneOf]) :+
+        branch("oneOf", field("values", collection.chain(dynamic.primitive)).to[Constraint.OneOf]) :+
         branch("required", dynamic.singleton(Constraint.Required))
     ).to
 

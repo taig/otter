@@ -103,13 +103,14 @@ lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
   .dependsOn(circe % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi"))
+// TODO waiting for circe 0.15 with scala.js jawn support
+lazy val openapi = module(identifier = Some("openapi"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test")
+  .dependsOn(circe % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
