@@ -78,12 +78,11 @@ def toSchema(schema: Coproduct[?]): Schema = Schema.OneOf(
 def toSchema(schema: Primitive[?]): Schema = Schema.Value(
   tpe = typeOf(schema.tpe),
   format = schema.format,
-  description = schema.description,
-  nullable = schema.isOptional
+  description = schema.description
 )
 
 def toSchema(schema: Collection[?]): Schema =
-  Schema.Array(items = toSchema(schema.schema), nullable = schema.isOptional)
+  Schema.Array(items = toSchema(schema.schema))
 
 //  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
 //    "type" := typeOf(schema.schema),
@@ -92,7 +91,7 @@ def toSchema(schema: Collection[?]): Schema =
 //  )
 
 def toSchema(schema: Record[?]): Schema = Schema.Object(
-  nullable = schema.isOptional,
+  description = schema.description,
   properties = schema.toChain.map(field => field.name -> toSchema(field.schema))
 )
 

@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Product[A](description: Option[String]) extends Schema[A](description):
+sealed abstract class Product[A](val description: Option[String]) extends Schema[A]:
   self =>
   override type Self[a] = Product[a]
 

@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Dynamic[A](description: Option[String]) extends Schema[A](description):
+sealed abstract class Dynamic[A](val description: Option[String]) extends Schema[A]:
   self =>
   final override type Self[a] = Dynamic[a]
 

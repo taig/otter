@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Record[A](description: Option[String], val nulls: Null) extends Schema[A](description):
+sealed abstract class Record[A](val description: Option[String], val nulls: Null) extends Schema[A]:
   self =>
   final override type Self[a] = Record[a]
 

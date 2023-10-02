@@ -4,8 +4,7 @@ import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Coproduct[A](description: Option[String], val discriminator: Discriminator)
-    extends Schema[A](description):
+sealed abstract class Coproduct[A](val description: Option[String], val discriminator: Discriminator) extends Schema[A]:
   self =>
   final override type Self[a] = Coproduct[a]
 

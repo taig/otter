@@ -4,13 +4,14 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-abstract class Schema[A](val description: Option[String]):
+abstract class Schema[A]:
   self =>
   type Self[a] <: Schema[a]
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
 
+  def description: Option[String]
   def description(f: Option[String] => Option[String]): Self[A]
   final def description(value: Option[String]): Self[A] = description(_ => value)
   final def description(value: String): Self[A] = description(Some(value))
@@ -39,6 +40,3 @@ object Schema:
       case a: A => Left(a)
       case b: B => Right(b)
     }
-
-  def apply[A](schema: Schema[A], description: Option[String]): Schema[A] =
-    new Schema[A](description) { export schema.* }

@@ -9,21 +9,18 @@ enum Schema:
   case Array(
       items: Schema,
       format: Option[String] = None,
-      description: Option[String] = None,
-      nullable: Boolean = false
+      description: Option[String] = None
   )
   case OneOf(schemas: Chain[Schema])
   case Object(
       format: Option[String] = None,
       description: Option[String] = None,
-      nullable: Boolean = false,
       properties: Chain[(String, Schema)] = Chain.empty
   )
   case Value(
       tpe: String,
       format: Option[String] = None,
-      description: Option[String] = None,
-      nullable: Boolean = false
+      description: Option[String] = None
   )
 
 object Schema:
@@ -33,7 +30,6 @@ object Schema:
         "type" := "array",
         "format" := schema.format,
         "description" := schema.description,
-        "nullable" := schema.nullable,
         "items" := schema.items
       ).dropNullValues
     case schema: OneOf => JsonObject("oneOf" := schema.schemas)
@@ -42,7 +38,6 @@ object Schema:
         "type" := "object",
         "format" := schema.format,
         "description" := schema.description,
-        "nullable" := schema.nullable,
         "properties" := Some(schema.properties.map { case (name, value) => (name, value.asJson) })
           .filter(_.nonEmpty)
           .map(JsonObject.fromFoldable)
@@ -51,6 +46,5 @@ object Schema:
       JsonObject(
         "type" := schema.tpe,
         "format" := schema.format,
-        "description" := schema.description,
-        "nullable" := schema.nullable
+        "description" := schema.description
       ).dropNullValues

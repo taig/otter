@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import cats.data.{Chain, NonEmptyChain, Validated}
 import io.taig.otter.validation.{Constraint, Validation, Violations}
 
-sealed abstract class Union[A](description: Option[String]) extends Schema[A](description):
+sealed abstract class Union[A](val description: Option[String]) extends Schema[A]:
   self =>
   override type Self[a] = Union.Of[Of, a]
   type Of <: Schema[?]

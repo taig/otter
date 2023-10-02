@@ -4,7 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Collection[A](description: Option[String], val schema: Schema[?]) extends Schema[A](description):
+sealed abstract class Collection[A](val description: Option[String], val schema: Schema[?]) extends Schema[A]:
   self =>
   override type Self[a] = Collection.Of[Of, a]
   type Of <: Schema[?]

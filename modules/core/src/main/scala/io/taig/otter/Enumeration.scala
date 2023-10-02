@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Enumeration[A](description: Option[String]) extends Value[A](description):
+sealed abstract class Enumeration[A](val description: Option[String]) extends Value[A]:
   final override type Self[a] = Enumeration[a]
 
   def schema: Value[?]

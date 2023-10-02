@@ -4,8 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.http.headers.{ContentType, MediaType}
 import io.taig.otter.validation.Violations
-import io.taig.otter.schemas
-import io.taig.otter.{Collection, Data, Schema, Value}
+import io.taig.otter.{schemas, Collection, Data, Schema, Union, Value}
 import org.typelevel.ci.CIString
 
 import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
@@ -16,6 +15,7 @@ object syntax:
   def header[A](name: CIString, schema: Value[A]): Header[A] = Header(name, schema)
   def header[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = Header(name, schema)
   def parameter[A](name: String, schema: Value[A]): Segment[A] = Segment(name, schema)
+  def parameter[A](name: String, schema: Union.Of[Value[?], A]): Segment[A] = ???
   def query[A](name: String, schema: Value[A]): Query[A] = Query(name, schema)
   def query[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = Query(name, schema)
 

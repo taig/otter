@@ -4,8 +4,7 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Primitive[A](override val description: Option[String], val format: Option[String])
-    extends Value[A](description):
+sealed abstract class Primitive[A](val description: Option[String], val format: Option[String]) extends Value[A]:
   self =>
   final override type Self[a] = Primitive[a]
 
