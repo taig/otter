@@ -60,10 +60,12 @@ def toRequestBody(request: Request.Body[?], schema: RootSchema[?]): RequestBody 
 )
 
 val toSchema: RootSchema[?] => Schema =
-  case schema: Coproduct[?] => toSchema(schema)
-  case schema: Primitive[?] => toSchema(schema)
-  case schema: Record[?]    => toSchema(schema)
-  case _                    => Schema.Value(tpe = "object")
+  case schema: Collection[?] => toSchema(schema)
+  case schema: Coproduct[?]  => toSchema(schema)
+  case schema: Primitive[?]  => toSchema(schema)
+  case schema: Record[?]     => toSchema(schema)
+  case schema: Union[?]      => toSchema(schema)
+  case _                     => Schema.Value(tpe = "object")
 //    case schema: Collection[?, ?] => collection(schema)
 //    case schema: Enumeration[?]   => enumeration(schema)
 //    case schema: Product[?]       => product(schema)
@@ -80,24 +82,22 @@ def toSchema(schema: Primitive[?]): Schema = Schema.Value(
   nullable = schema.isOptional
 )
 
-//  def collection(schema: Collection[?, ?]): JsonObject = constraints(schema).deepMerge(
-//    JsonObject(
-//      "type" := "array",
-//      "items" := self.schema(Value),
-//      "nullable" := schema.isOptional
-//    )
-//  )
-//
+def toSchema(schema: Collection[?]): Schema =
+  Schema.Array(items = toSchema(schema.schema), nullable = schema.isOptional)
+
 //  def enumeration(schema: Enumeration[?]): JsonObject = JsonObject(
 //    "type" := typeOf(schema.schema),
 //    "enum" := Values.map(toJson),
 //    "nullable" := schema.isOptional
 //  )
 
-def toSchema(schema: Record[?]): Schema = Schema.Value(
-  tpe = "object",
+def toSchema(schema: Record[?]): Schema = Schema.Object(
   nullable = schema.isOptional,
   properties = schema.toChain.map(field => field.name -> toSchema(field.schema))
+)
+
+def toSchema(schema: Union[?]): Schema = Schema.OneOf(
+  schemas = schema.toNonEmptyChain.map(toSchema).toChain
 )
 
 //  def product(schema: Product[?]): JsonObject = JsonObject(
