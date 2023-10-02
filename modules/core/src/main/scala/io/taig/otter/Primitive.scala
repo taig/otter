@@ -4,82 +4,96 @@ import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Primitive[A](val description: Option[String], val format: Option[String]) extends Value[A]:
+sealed abstract class Primitive[A] extends Schema[A] with Value[A]:
   self =>
-  final override type Self[a] = Primitive[a]
+  override type Self[a] <: Primitive[a]
+  final override type Optional[a] = Primitive[a]
 
   def tpe: Type[?]
 
-  final override def description(f: Option[String] => Option[String]): Primitive[A] =
-    Primitive(this, f(description), format)
-  final def format(f: Option[String] => Option[String]): Primitive[A] = Primitive(this, description, f(format))
-  final def format(value: Option[String]): Primitive[A] = format(_ => value)
-  final def format(value: String): Primitive[A] = format(Some(value))
+  def format: Option[String]
+  def format(f: Option[String] => Option[String]): Self[A]
+  final def format(value: Option[String]): Self[A] = format(_ => value)
+  final def format(value: String): Self[A] = format(Some(value))
 
-  final override def optional: Primitive[Option[A]] = new Primitive[Option[A]](description, format):
-    export self.{constraints, tpe}
-    override def isOptional: Boolean = true
-    override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
-      data.fold(none.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Primitive | Data.Null.type = a.map(self.encode).getOrElse(Data.Null)
-    override def parse(value: Option[String]): Validated[Violations, Option[A]] =
-      value.fold(none.valid)(_ => self.parse(value).map(_.some))
-    override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
-
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive[B] =
-    new Primitive[B](description, format):
-      export self.{isOptional, tpe}
-      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-      override def decode(data: Option[Data.Value]): Validated[Violations, B] =
-        self.decode(data).andThen(validation(_).leftMap(Violations.root))
-      override def encode(b: B): Data.Primitive | Data.Null.type = self.encode(g(b))
-      override def parse(value: Option[String]): Validated[Violations, B] =
-        self.parse(value).andThen(validation(_).leftMap(Violations.root))
-      override def print(b: B): Option[String] = self.print(g(b))
-
-  final def orElse[B](schema: Primitive[B]): Primitive[Either[A, B]] = new Primitive[Either[A, B]](description, format):
-    export self.tpe
-    override def constraints: Chain[Constraint] = Chain.empty
-    override def isOptional: Boolean = false
-    override def parse(value: Option[String]): Validated[Violations, Either[A, B]] =
-      self.parse(value).map(_.asLeft).findValid(schema.parse(value).map(_.asRight))
-    override def print(ab: Either[A, B]): Option[String] = ab.fold(self.print, schema.print)
-    override def decode(data: Option[Data.Value]): Validated[Violations, Either[A, B]] =
-      self.decode(data).map(_.asLeft).findValid(schema.decode(data).map(_.asRight))
-    override def encode(ab: Either[A, B]): Data.Primitive | Data.Null.type =
-      ab.fold(self.encode, schema.encode)
+  final override def optional: Primitive[Option[A]] =
+    new Primitive.Optional[Option[A]](self.description, self.format, self.tpe):
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
+        data.fold(none.valid)(_ => self.decode(data).map(_.some))
+      override def encode(a: Option[A]): Data.Primitive | Data.Null.type = a.map(self.encode).getOrElse(Data.Null)
+      override def parse(value: Option[String]): Validated[Violations, Option[A]] =
+        value.fold(none.valid)(_ => self.parse(value).map(_.some))
+      override def print(a: Option[A]): Option[String] = a
+        .map(self.print)
+        .flatMap:
+          case value: String         => value.some
+          case value: Option[String] => value
 
   override def encode(a: A): Data.Primitive | Data.Null.type
 
 object Primitive:
-  extension [A <: Matchable](self: Primitive[A])
-    inline def |[B <: Matchable](schema: Primitive[B]): Primitive[A | B] = self
-      .orElse(schema)
-      .imap {
-        case Left(a)  => a
-        case Right(b) => b
-      } {
-        case a: A => Left(a)
-        case b: B => Right(b)
-      }
+  abstract class Required[A](val description: Option[String], val format: Option[String], val tpe: Type[?])
+      extends Primitive[A]
+      with Value.Required[A]:
+    self =>
+    final override type Self[a] = Primitive.Required[a]
 
-  def apply[A](schema: Primitive[A], description: Option[String], format: Option[String]): Primitive[A] =
-    new Primitive[A](description, format) { export schema.* }
+    final override def isOptional: Boolean = false
 
-  def apply[A](of: Type[A]): Primitive[A] = new Primitive[A](None, None):
-    override def constraints: Chain[Constraint] = Chain.empty
-    override def isOptional: Boolean = false
-    override def tpe: Type[?] = of
-    override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
-      case Some(data: Data.Primitive) => of.decode(data)
-      case Some(data)                 => Violations.rootNec(Violation.tpe(of.name, actual = data.name)).invalid
-      case None                       => Violations.rootNec(Violation.required).invalid
-    override def encode(a: A): Data.Primitive | Data.Null.type = of.encode(a)
-    override def parse(value: Option[String]): Validated[Violations, A] = Validated
-      .fromOption(value, Violations.rootNec(Violation.required))
-      .andThen: value =>
-        Validated.fromOption(
-          of.parse(value),
-          Violations.rootNec(Violation.tpe(of.name, actual = value))
-        )
-    override def print(a: A): Option[String] = Some(of.print(a))
+    final override def description(f: Option[String] => Option[String]): Primitive.Required[A] =
+      new Required[A](f(description), format, tpe) { export self.* }
+
+    final override def format(f: Option[String] => Option[String]): Primitive.Required[A] =
+      new Required[A](description, f(format), tpe) { export self.* }
+
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive.Required[B] =
+      new Required[B](description, format, tpe):
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encode(b: B): Data.Primitive = self.encode(g(b))
+        override def parse(value: String): Validated[Violations, B] =
+          self.parse(value).andThen(validation(_).leftMap(Violations.root))
+        override def print(b: B): String = self.print(g(b))
+
+    override def encode(a: A): Data.Primitive
+
+  object Required:
+    def apply[A](of: Type[A]): Primitive.Required[A] = new Required[A](None, None, of):
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
+        case Some(data: Data.Primitive) => of.decode(data)
+        case Some(data)                 => Violations.rootNec(Violation.tpe(of.name, actual = data.name)).invalid
+        case None                       => Violations.rootNec(Violation.required).invalid
+      override def encode(a: A): Data.Primitive = of.encode(a)
+      override def parse(value: String): Validated[Violations, A] = Validated.fromOption(
+        of.parse(value),
+        Violations.rootNec(Violation.tpe(of.name, actual = value))
+      )
+      override def print(a: A): String = of.print(a)
+
+  abstract private class Optional[A](val description: Option[String], val format: Option[String], val tpe: Type[?])
+      extends Primitive[A]:
+    self =>
+    final override type Self[a] = Primitive.Optional[a]
+
+    final override def isOptional: Boolean = true
+
+    final override def description(f: Option[String] => Option[String]): Primitive.Optional[A] =
+      new Primitive.Optional[A](f(description), format, tpe) { export self.* }
+
+    final override def format(f: Option[String] => Option[String]): Primitive.Optional[A] =
+      new Primitive.Optional[A](description, f(format), tpe) { export self.* }
+
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive.Optional[B] =
+      new Primitive.Optional[B](description, format, tpe):
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encode(b: B): Data.Primitive | Data.Null.type = self.encode(g(b))
+        override def parse(value: Option[String]): Validated[Violations, B] =
+          self.parse(value).andThen(validation(_).leftMap(Violations.root))
+        override def print(b: B): String | Option[String] = self.print(g(b))
+
+    override def encode(a: A): Data.Primitive | Data.Null.type

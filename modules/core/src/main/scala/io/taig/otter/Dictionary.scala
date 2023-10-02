@@ -7,6 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 sealed abstract class Dictionary[A](val description: Option[String]) extends Schema[A]:
   self =>
   final override type Self[a] = Dictionary[a]
+  final override type Optional[a] = Dictionary[a]
 
   final override def description(f: Option[String] => Option[String]): Dictionary[A] = Dictionary(this, f(description))
 
@@ -38,15 +39,15 @@ object Dictionary:
   def apply[A](schema: Dictionary[A], description: Option[String]): Dictionary[A] =
     new Dictionary[A](description) { export schema.* }
 
-  def apply[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
+  def apply[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] =
     new Dictionary[Chain[(A, B)]](None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
         case Some(data) =>
           data.values.traverse { case (a, b) =>
-            (key.parse(Some(a).filter(_.nonEmpty)), schema.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
+            (key.parse(a), schema.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
           }
         case None => Violations.rootNec(Violation.required).invalid
       override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
-        Data.Object(a.map { case (a, b) => (key.print(a).orEmpty, schema.encode(b)) }).some
+        Data.Object(a.map { case (a, b) => (key.print(a), schema.encode(b)) }).some

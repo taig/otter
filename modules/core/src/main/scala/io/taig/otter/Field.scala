@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violations
 
+// TODO use Eq and key schema to do stuff
 final case class Field[A](name: String, schema: Schema[A], nulls: Option[Null]):
   def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
   def toRecord: Record[A] = Record(this)
@@ -28,5 +29,5 @@ final case class Field[A](name: String, schema: Schema[A], nulls: Option[Null]):
       case data                             => Chain.one(this.name, data)
 
 object Field extends ToFieldOps:
-  def apply[A, B](name: A, key: Value[A], schema: Schema[B]): Field[B] =
-    Field(key.print(name).orEmpty, schema, None)
+  def apply[A, B](name: A, key: Value.Required[A], schema: Schema[B]): Field[B] =
+    Field(key.print(name), schema, None)

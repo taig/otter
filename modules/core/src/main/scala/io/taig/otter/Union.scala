@@ -6,7 +6,8 @@ import io.taig.otter.validation.{Constraint, Validation, Violations}
 
 sealed abstract class Union[A](val description: Option[String]) extends Schema[A]:
   self =>
-  override type Self[a] = Union.Of[Of, a]
+  final override type Self[a] = Union.Of[Of, a]
+  final override type Optional[a] = Union.Of[Of, a]
   type Of <: Schema[?]
 
   def toNonEmptyChain: NonEmptyChain[Schema[?]]

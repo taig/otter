@@ -7,6 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 abstract class Schema[A]:
   self =>
   type Self[a] <: Schema[a]
+  type Optional[a] <: Schema[a]
 
   def constraints: Chain[Constraint]
   def isOptional: Boolean
@@ -16,7 +17,7 @@ abstract class Schema[A]:
   final def description(value: Option[String]): Self[A] = description(_ => value)
   final def description(value: String): Self[A] = description(Some(value))
 
-  def optional: Self[Option[A]]
+  def optional: Optional[Option[A]]
 
   def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)

@@ -5,40 +5,80 @@ import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
-sealed abstract class Enumeration[A](val description: Option[String]) extends Value[A]:
-  final override type Self[a] = Enumeration[a]
+sealed abstract class Enumeration[A] extends Value[A]:
+  self =>
+  override type Self[a] <: Enumeration[a]
+  final override type Optional[a] = Enumeration[a]
 
   def schema: Value[?]
 
-  final override def description(f: Option[String] => Option[String]): Enumeration[A] =
-    Enumeration(this, f(description))
-
-  final override def optional: Enumeration[Option[A]] = ???
-
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration[B] = ???
+  final override def optional: Enumeration[Option[A]] =
+    new Enumeration.Optional[Option[A]](self.description, self.schema):
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
+        data.fold(none.valid)(_ => self.decode(data).map(_.some))
+      override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
+      override def parse(value: Option[String]): Validated[Violations, Option[A]] =
+        value.fold(none.valid)(_ => self.parse(value).map(_.some))
+      override def print(a: Option[A]): Option[String] = a
+        .map(self.print)
+        .flatMap:
+          case value: String         => value.some
+          case value: Option[String] => value
 
 object Enumeration:
-  def apply[A](self: Enumeration[A], description: Option[String]): Enumeration[A] =
-    new Enumeration[A](description) { export self.* }
+  abstract class Required[A](val description: Option[String], val schema: Value.Required[?])
+      extends Enumeration[A]
+      with Value.Required[A]:
+    self =>
+    final override type Self[a] = Enumeration.Required[a]
+    final override def isOptional: Boolean = false
+    final override def description(f: Option[String] => Option[String]): Enumeration.Required[A] =
+      new Required[A](f(description), schema) { export self.* }
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Required[B] =
+      new Required[B](description, schema):
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encode(b: B): Data = self.encode(g(b))
+        override def parse(value: String): Validated[Violations, B] =
+          self.parse(value).andThen(validation(_).leftMap(Violations.root))
+        override def print(b: B): String = self.print(g(b))
 
-  def apply[A, B](of: Value[A], mapping: Mapping[B, A]): Enumeration[B] = new Enumeration[B](None):
-    def values: Chain[String] = Chain.fromSeq(mapping.values.mapFilter(print))
-    override def constraints: Chain[Constraint] = Chain.empty
-    override def isOptional: Boolean = false
-    override def schema: Value[?] = of
-    override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
-      .decode(data)
-      .andThen: a =>
-        Validated.fromOption(
-          mapping.prj(a),
-          Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
-        )
-    override def encode(b: B): Data = of.encode(mapping.inj(b))
-    override def parse(value: Option[String]): Validated[Violations, B] = of
-      .parse(value)
-      .andThen: a =>
-        Validated.fromOption(
-          mapping.prj(a),
-          Violations.rootNec(Violation(Constraint.OneOf(values), value.map(Data.String.apply).getOrElse(Data.Null)))
-        )
-    override def print(b: B): Option[String] = of.print(mapping.inj(b))
+  object Required:
+    def apply[A, B](of: Value.Required[A], mapping: Mapping[B, A]): Enumeration.Required[B] = new Required[B](None, of):
+      def values: Chain[String] = Chain.fromSeq(mapping.values.map(print))
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
+        .decode(data)
+        .andThen: a =>
+          Validated.fromOption(
+            mapping.prj(a),
+            Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
+          )
+      override def encode(b: B): Data = of.encode(mapping.inj(b))
+      override def parse(value: String): Validated[Violations, B] = of
+        .parse(value)
+        .andThen: a =>
+          Validated.fromOption(
+            mapping.prj(a),
+            Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
+          )
+      override def print(b: B): String = of.print(mapping.inj(b))
+
+  abstract private class Optional[A](val description: Option[String], val schema: Value[?]) extends Enumeration[A]:
+    self =>
+    final override type Self[a] = Enumeration.Optional[a]
+    final override def isOptional: Boolean = false
+    final override def description(f: Option[String] => Option[String]): Enumeration.Optional[A] =
+      new Enumeration.Optional[A](f(description), schema) { export self.* }
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Optional[B] =
+      new Enumeration.Optional[B](description, schema) {
+        override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+        override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+          self.decode(data).andThen(validation(_).leftMap(Violations.root))
+        override def encode(b: B): Data = self.encode(g(b))
+        override def parse(value: Option[String]): Validated[Violations, B] =
+          self.parse(value).andThen(validation(_).leftMap(Violations.root))
+        override def print(b: B): String | Option[String] = self.print(g(b))
+      }

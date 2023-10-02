@@ -7,6 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 sealed abstract class Coproduct[A](val description: Option[String], val discriminator: Discriminator) extends Schema[A]:
   self =>
   final override type Self[a] = Coproduct[a]
+  final override type Optional[a] = Coproduct[a]
 
   def toNonEmptyChain: NonEmptyChain[Branch[?]]
 

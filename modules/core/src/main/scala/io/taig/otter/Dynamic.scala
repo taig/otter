@@ -7,6 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 sealed abstract class Dynamic[A](val description: Option[String]) extends Schema[A]:
   self =>
   final override type Self[a] = Dynamic[a]
+  final override type Optional[a] = Dynamic[a]
 
   final override def description(f: Option[String] => Option[String]): Dynamic[A] = Dynamic(this, f(description))
 

@@ -19,8 +19,8 @@ sealed abstract class Branch[A]:
   def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
-  def apply[A: Eq, B](a: A, key: Value[A], of: Schema[B]): Branch[B] = new Branch[B]:
-    override def name: String = key.print(a).orEmpty
+  def apply[A: Eq, B](a: A, key: Value.Required[A], of: Schema[B]): Branch[B] = new Branch[B]:
+    override def name: String = key.print(a)
     override def schema: Schema[?] = of
 
     override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =

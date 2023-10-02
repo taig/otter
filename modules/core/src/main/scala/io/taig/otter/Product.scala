@@ -6,7 +6,8 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 
 sealed abstract class Product[A](val description: Option[String]) extends Schema[A]:
   self =>
-  override type Self[a] = Product[a]
+  final override type Self[a] = Product[a]
+  final override type Optional[a] = Product[a]
 
   def toChain: Chain[Schema[?]]
 

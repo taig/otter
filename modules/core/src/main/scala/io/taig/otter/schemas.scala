@@ -13,20 +13,22 @@ import java.util.regex.Pattern
 import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
 
 object schemas:
-  val bigDecimal: Primitive[BigDecimal] = Primitive(Type.BigDecimal)
-  val bigInt: Primitive[BigInt] = Primitive(Type.BigInt)
-  val boolean: Primitive[Boolean] = Primitive(Type.Boolean)
-  val double: Primitive[Double] = Primitive(Type.Double).format("double")
-  val int: Primitive[Int] = Primitive(Type.Int).format("int32")
-  val float: Primitive[Float] = Primitive(Type.Float).format("float")
-  val long: Primitive[Long] = Primitive(Type.Long).format("int64")
-  val string: Primitive[String] = Primitive(Type.String)
-  val nonEmptyString: Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
-  val password: Primitive[String] = string.format("password")
-  val uuid: Primitive[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
-  val date: Primitive[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
-  val dateTime: Primitive[LocalDateTime] = string.ivalidate(validations.dateTime)(_.toString).format("date-time")
-  val cistring: Primitive[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
+  val bigDecimal: Primitive.Required[BigDecimal] = Primitive.Required(Type.BigDecimal)
+  val bigInt: Primitive.Required[BigInt] = Primitive.Required(Type.BigInt)
+  val boolean: Primitive.Required[Boolean] = Primitive.Required(Type.Boolean)
+  val double: Primitive.Required[Double] = Primitive.Required(Type.Double).format("double")
+  val int: Primitive.Required[Int] = Primitive.Required(Type.Int).format("int32")
+  val float: Primitive.Required[Float] = Primitive.Required(Type.Float).format("float")
+  val long: Primitive.Required[Long] = Primitive.Required(Type.Long).format("int64")
+  val string: Primitive.Required[String] = Primitive.Required(Type.String)
+  val nonEmptyString: Primitive.Required[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
+  val password: Primitive.Required[String] = string.format("password")
+  val uuid: Primitive.Required[UUID] = string.ivalidate(validations.uuid)(_.toString).format("uuid")
+  val date: Primitive.Required[LocalDate] = string.ivalidate(validations.date)(_.toString).format("date")
+  val dateTime: Primitive.Required[LocalDateTime] =
+    string.ivalidate(validations.dateTime)(_.toString).format("date-time")
+  val cistring: Primitive.Required[CIString] = string.imap(CIString.apply)(_.toString).format("case-insensitive")
+  val nonEmptyCIString: Primitive.Required[Option[CIString]] = cistring.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
   object dynamic:
     val value: Dynamic[Data.Value] = Dynamic.Default
@@ -43,11 +45,11 @@ object schemas:
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
 
-  def field[A, B](name: A, key: Value[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
+  def field[A, B](name: A, key: Value.Required[A], schema: Schema[B]): Field[B] = Field(name, key, schema)
   def field[A](name: String, schema: Schema[A]): Field[A] = field(name, string, schema)
   def field[A](name: Int, schema: Schema[A]): Field[A] = field(name, int, schema)
 
-  def branch[A: Eq, B](name: A, key: Value[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
+  def branch[A: Eq, B](name: A, key: Value.Required[A], schema: Schema[B]): Branch[B] = Branch(name, key, schema)
   def branch[A](name: String, schema: Schema[A]): Branch[A] = branch(name, string, schema)
   def branch[A](name: Int, schema: Schema[A]): Branch[A] = branch(name, int, schema)
 
@@ -69,22 +71,24 @@ object schemas:
       chain(f(key, schema)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[A, B](schema: Value[A])(using mapping: Mapping[B, A]): Enumeration[B] =
-      Enumeration(schema, mapping)
-    def apply[A: Hash, B](schema: Value[A])(f: B => A)(using EnumerationValues.Aux[B, B]): Enumeration[B] =
+    def apply[A, B](schema: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
+      Enumeration.Required(schema, mapping)
+    def apply[A: Hash, B](schema: Value.Required[A])(f: B => A)(using
+        EnumerationValues.Aux[B, B]
+    ): Enumeration.Required[B] =
       enumeration(schema)(using Mapping.enumeration(f))
-    def constant[A: Eq](schema: Value[A], value: A & Singleton): Enumeration[value.type] =
+    def constant[A: Eq](schema: Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
       enumeration(schema)(using Mapping.constant[A](value))
 
   object dictionary:
-    def chain[A, B](key: Value[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
-    def map[A, B](key: Value[A], schema: Schema[B]): Dictionary[Map[A, B]] =
+    def chain[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, schema)
+    def map[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[Map[A, B]] =
       chain(key, schema).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
-    def vectorMap[A, B](key: Value[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
+    def vectorMap[A, B](key: Value.Required[A], schema: Schema[B]): Dictionary[VectorMap[A, B]] =
       chain(key, schema).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
-    def sortedMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
+    def sortedMap[A: Ordering, B](key: Value.Required[A], schema: Schema[B]): Dictionary[SortedMap[A, B]] =
       chain(key, schema).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyMap[A: Ordering, B](key: Value[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
+    def nonEmptyMap[A: Ordering, B](key: Value.Required[A], schema: Schema[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
         Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, schema).ivalidate(validation)(_.toSortedMap)
@@ -112,7 +116,7 @@ object schemas:
 
     val violation: Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
 
-    val history: Primitive[History] =
+    val history: Primitive.Required[History] =
       string.ivalidate(validations.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 
     dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)

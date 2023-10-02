@@ -7,6 +7,7 @@ import io.taig.otter.validation.{Constraint, Validation, Violation, Violations}
 sealed abstract class Record[A](val description: Option[String], val nulls: Null) extends Schema[A]:
   self =>
   final override type Self[a] = Record[a]
+  final override type Optional[a] = Record[a]
 
   def toChain: Chain[Field[?]]
 
