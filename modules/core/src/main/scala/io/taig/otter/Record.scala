@@ -8,6 +8,8 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
   self =>
   final override type Self[a] = Record[a]
 
+  def toChain: Chain[Field[?]]
+
   final override def description(f: Option[String] => Option[String]): Record[A] = Record(this, f(description), nulls)
   final def nulls(f: Null => Null): Record[A] = Record(this, description, f(nulls))
 
@@ -16,7 +18,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
   def toProduct: Product[A]
 
   final override def optional: Record[Option[A]] = new Record[Option[A]](description, nulls):
-    export self.constraints
+    export self.{constraints, toChain}
     override def isOptional: Boolean = true
     override def toProduct: Product[Option[A]] = self.toProduct.optional
     override def decodeWithRemainders(
@@ -28,7 +30,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] =
     new Record[B](description, nulls):
-      export self.isOptional
+      export self.{isOptional, toChain}
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def toProduct: Product[B] = self.toProduct.ivalidate(validation)(g)
       override def decodeWithRemainders(
@@ -38,6 +40,7 @@ sealed abstract class Record[A](description: Option[String], val nulls: Null) ex
       override def encode(b: B, nulls: Null): Option[Chain[(String, Data)]] = self.encode(g(b), nulls)
 
   final def product[B](schema: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
+    override def toChain: Chain[Field[?]] = self.toChain ++ schema.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toProduct: Product[(A, B)] = self.toProduct.product(schema.toProduct)
@@ -69,6 +72,7 @@ object Record extends ToRecordOps:
     new Record[A](description, nulls) { export schema.* }
 
   val Empty: Record[Unit] = new Record[Unit](None, Null.Default):
+    override def toChain: Chain[Field[?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toProduct: Product[Unit] = Product.Empty
@@ -78,6 +82,7 @@ object Record extends ToRecordOps:
     override def encode(a: Unit, nulls: Null): Option[Chain[(String, Data)]] = Chain.empty.some
 
   def apply[A](field: Field[A]): Record[A] = new Record[A](None, Null.Default):
+    override def toChain: Chain[Field[?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def toProduct: Product[A] = Product(field.schema)

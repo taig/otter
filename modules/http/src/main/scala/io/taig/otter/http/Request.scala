@@ -46,7 +46,7 @@ object Request:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
 
-    def isEmpty: Boolean
+    def schema: Option[Schema[?]]
 
 //    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
 //    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
@@ -68,7 +68,7 @@ object Request:
       override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 
     object Singlepart:
-      sealed abstract class Strict[A](val schema: Schema[?]) extends Request.Body.Singlepart[A]:
+      sealed abstract class Strict[A](val schema: Option[Schema[?]]) extends Request.Body.Singlepart[A]:
         self =>
         final override type Self[a] = Request.Body.Singlepart.Strict[a]
 
@@ -80,25 +80,23 @@ object Request:
         override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
 
       object Strict:
-        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit](dynamic.empty):
-          override def isEmpty: Boolean = true
+        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit](None):
           override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Unit] = ().valid
           override def encode(a: Unit): (Http.Headers, Http.Request.Body.Singlepart) =
             (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(Array.emptyByteArray)))
 
-        val Binary: Request.Body.Singlepart.Strict[Array[Byte]] = new Strict[Array[Byte]](dynamic.empty):
-          override def isEmpty: Boolean = false
-          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
-            payload.valid
-          override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
-            (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
+        val Binary: Request.Body.Singlepart.Strict[Array[Byte]] =
+          new Strict[Array[Byte]](Some(string.format("binary"))):
+            override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
+              payload.valid
+            override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
+              (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
 
         def apply[A](
             f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
             g: Data => (Http.Headers, Array[Byte]),
             of: Schema[A]
-        ): Request.Body.Singlepart.Strict[A] = new Strict[A](of):
-          override def isEmpty: Boolean = false
+        ): Request.Body.Singlepart.Strict[A] = new Strict[A](Some(of)):
           override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
             f(headers, payload).andThen(of.decode)
           override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart) =

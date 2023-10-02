@@ -51,19 +51,20 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   summary = endpoint.summary,
   description = endpoint.description,
   deprecated = endpoint.deprecated,
-  requestBody = Option.when(!endpoint.request.body.isEmpty)(toRequestBody(endpoint.request.body))
+  requestBody = endpoint.request.body.schema.map(toRequestBody(endpoint.request.body, _))
 )
 
-def toRequestBody(request: Request.Body[?]): RequestBody = RequestBody(
-  NonEmptyMap.of("application/json" -> MediaType(toSchema(???)))
+def toRequestBody(request: Request.Body[?], schema: RootSchema[?]): RequestBody = RequestBody(
+  NonEmptyMap.of("application/json" -> MediaType(toSchema(schema))),
+  required = !schema.isOptional
 )
 
 val toSchema: RootSchema[?] => Schema =
   case schema: Primitive[?] => toSchema(schema)
+  case schema: Record[?]    => toSchema(schema)
   case _                    => Schema(tpe = "object")
 //    case schema: Collection[?, ?] => collection(schema)
 //    case schema: Enumeration[?]   => enumeration(schema)
-//    case schema: Record[?]        => record(schema)
 //    case schema: Product[?]       => product(schema)
 //    case schema: Dictionary[?]    => dictionary(schema)
 //    case schema: Coproduct[?]     => coproduct(schema)
@@ -88,23 +89,13 @@ def toSchema(schema: Primitive[?]): Schema = Schema(
 //    "enum" := Values.map(toJson),
 //    "nullable" := schema.isOptional
 //  )
-//
-//  def record(schema: Record[?]): JsonObject =
-//    val properties = schema.toChain.toList.map(field => field.key := self.schema(field.schema))
-//
-//    val required = schema.toChain
-//      .filterNot(_.schema.isOptional)
-//      .map(_.key)
-//      .pipe(required => if required.isEmpty then JsonObject.empty else JsonObject("required" := required))
-//
-//    required.deepMerge(
-//      JsonObject(
-//        "type" := "object",
-//        "properties" := Json.fromFields(properties),
-//        "nullable" := schema.isOptional
-//      )
-//    )
-//
+
+def toSchema(schema: Record[?]): Schema = Schema(
+  tpe = "object",
+  nullable = schema.isOptional,
+  properties = schema.toChain.map(field => field.name -> toSchema(field.schema))
+)
+
 //  def product(schema: Product[?]): JsonObject = JsonObject(
 //    "type" := "array",
 //    "prefixItems" := schema.toChain.map(schema => self.schema(schema)),
