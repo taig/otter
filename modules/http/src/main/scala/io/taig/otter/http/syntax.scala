@@ -1,13 +1,12 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
+import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.http.headers.{ContentType, MediaType}
 import io.taig.otter.validation.Violations
-import io.taig.otter.{codecs, Codec, Collection, Data, Union, Value}
+import io.taig.otter.*
 import org.typelevel.ci.CIString
 
-import java.nio.charset.{Charset, IllegalCharsetNameException, StandardCharsets, UnsupportedCharsetException}
+import java.nio.charset.StandardCharsets
 
 object syntax:
   val __ : Url[Unit] = Url.Root

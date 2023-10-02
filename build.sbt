@@ -57,7 +57,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, circe, http, csv, httpCirce, dsl, http4s, munit, sample)
+  .aggregate(core, circe, openapi, openapiCirce, http, httpOpenapi, httpCirce, csv, dsl, http4s, munit, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -88,6 +88,12 @@ lazy val circe = module(identifier = Some("circe"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
+lazy val openapi = module(identifier = Some("openapi"))
+  .dependsOn(core % "compile->compile;test->test")
+
+lazy val openapiCirce = module(identifier = Some("openapi-circe"))
+  .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
+
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
@@ -96,8 +102,8 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val csv = module(identifier = Some("csv"))
-  .dependsOn(core % "compile->compile;test->test")
+lazy val httpOpenapi = module(identifier = Some("http-openapi"))
+  .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
 
 // TODO waiting for circe 0.15 with scala.js jawn support
 lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
@@ -105,19 +111,22 @@ lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
-  ).dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+  )
+  .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+
+lazy val csv = module(identifier = Some("csv"))
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-  .dependsOn(circe % "compile->compile;test->test")
+  .dependsOn(httpCirce % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
-      "org.http4s" %%% "http4s-circe" % Version.Http4s ::
-        "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
+      "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
         Nil
   )
-  .dependsOn(circe % "compile->compile;test->test")
+  .dependsOn(http % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(
@@ -144,4 +153,4 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl, munit % "compile->test")
+  .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, munit % "compile->test")

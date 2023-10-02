@@ -5,8 +5,11 @@ import cats.effect.IO
 import cats.syntax.all.*
 import io.circe.Json
 import io.circe.syntax.*
+import io.taig.otter.Data
 import io.taig.otter.http.Routes
 import io.taig.otter.openapi.*
+import io.taig.otter.openapi.circe.instance.given
+import io.taig.otter.http.openapi.toOpenApi
 import io.taig.otter.sample.{Build, SampleRoute}
 import io.taig.otter.sample.api.{endpoints, Route}
 
@@ -23,14 +26,14 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
         Tag(name = "librarians", description = "Administrative accounts for library employees".some),
         Tag(name = "members", description = "Accounts for library members used to borrow and return books".some)
       ),
-      securitySchemes = Json.obj(
-        "Librarian" := Json.obj(
-          "type" := "http",
-          "scheme" := "bearer"
+      securitySchemes = Data.Object.of(
+        "Librarian" -> Data.Object.of(
+          "type" -> Data.String("http"),
+          "scheme" -> Data.String("bearer")
         ),
-        "Member" := Json.obj(
-          "type" := "http",
-          "scheme" := "bearer"
+        "Member" -> Data.Object.of(
+          "type" -> Data.String("http"),
+          "scheme" -> Data.String("bearer")
         )
       )
     )

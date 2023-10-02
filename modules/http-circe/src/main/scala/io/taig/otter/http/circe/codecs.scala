@@ -12,7 +12,7 @@ import io.taig.otter.{codecs, Codec, Dynamic}
 
 import java.nio.charset.StandardCharsets
 
-object syntax:
+object codecs:
   val json: Dynamic[Json] = dynamic.any.imap(fromData)(toData)
 
   private val parser = new JawnParser()
@@ -41,7 +41,7 @@ object syntax:
 
   object response:
     def apply[A](results: Results[A]): Response[A] =
-      Response(results, result(code.unprocessableEntity, output.json(codecs.violations)))
+      Response(results, result(code.unprocessableEntity, output.json(violations)))
 
     def apply[A](result: Result[A]): Response[A] = response(result.toResults)
 

@@ -3,9 +3,8 @@ package io.taig.otter.sample.api.codecs
 import cats.implicits.*
 import io.circe.Json
 import io.taig.otter.*
-import io.taig.otter.circe.syntax.*
 import io.taig.otter.sample.data.{Book, Isbn}
-import io.taig.otter.codecs.*
+import io.taig.otter.dsl.*
 
 import scala.Tuple.Append
 import scala.collection.immutable.SortedSet
