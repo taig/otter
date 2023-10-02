@@ -35,18 +35,18 @@ object Header:
       headers.firstWithRemainders(name) match
         case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
         case None               => schema.parse(None).tupleLeft(headers)
-    override def encode(a: A): Http.Headers = Chain.fromOption(schema.print(a)).tupleLeft(name)
+    override def encode(a: A): Http.Headers = schema.print(a) match
+      case value: String         => Chain.one(name -> value)
+      case value: Option[String] => Chain.fromOption(value).tupleLeft(name)
 
-  final private class Multiple[A](name: CIString, val schema: Collection.Of[Value[?], A]) extends Header[A](name) {
+  final private class Multiple[A](name: CIString, val schema: Collection.Of[Value[?], A]) extends Header[A](name):
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] =
       new Multiple[B](name, schema.ivalidate(validation)(g))
     override def optional: Header[Option[A]] = new Multiple[Option[A]](name, schema.optional)
     override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)] =
       val (head, tail) = headers.allWithRemainders(name)
-      schema.parse(head.map(_.some).some).tupleLeft(tail)
-    override def encode(a: A): Http.Headers =
-      schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
-  }
+      schema.parse(head.some).tupleLeft(tail)
+    override def encode(a: A): Http.Headers = schema.print(a).getOrElse(Chain.empty).tupleLeft(name)
 
   def apply[A](name: CIString, schema: Value[A]): Header[A] = new Single[A](name, schema)
   def apply[A](name: CIString, schema: Collection.Of[Value[?], A]): Header[A] = new Multiple[A](name, schema)

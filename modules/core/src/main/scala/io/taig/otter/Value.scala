@@ -5,6 +5,7 @@ import io.taig.otter.validation.{Violation, Violations}
 
 trait Value[A] extends Schema[A]:
   override type Self[a] <: Value[a]
+  override type Optional[a] <: Value[a]
 
   def print(a: A): String | Option[String]
   def parse(value: Option[String]): Validated[Violations, A]

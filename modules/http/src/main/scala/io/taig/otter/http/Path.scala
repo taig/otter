@@ -51,15 +51,15 @@ object Path extends ToPathOps:
     // TODO test this, I don't think this will work
     override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.uncons match
       case Some((head, tail)) => Option.when(segment.matches(head))(tail)
-      case None               => Option.when(segment.isOptional)(Chain.empty)
+      case None               => ??? // Option.when(segment.isOptional)(Chain.empty)
     override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, A)] = remainders.uncons
       .match
-        case Some((head, tail)) if segment.isOptional =>
-          segment.decode(head.some).tupleLeft(tail).findValid(segment.decode(none).tupleLeft(remainders))
-        case Some((head, tail)) => segment.decode(head.some).tupleLeft(tail)
-        case None               => segment.decode(none).tupleLeft(remainders)
+//        case Some((head, tail)) if segment.isOptional =>
+//          segment.decode(head).tupleLeft(tail).findValid(segment.decode(none).tupleLeft(remainders))
+        case Some((head, tail)) => segment.decode(head).tupleLeft(tail)
+        case None               => ??? // segment.decode(none).tupleLeft(remainders)
       .leftMap(_.modifyHistory(segment.name /: _))
-    override def encode(a: A): Http.Path = Chain.fromOption(segment.encode(a))
+    override def encode(a: A): Http.Path = Chain.one(segment.encode(a))
 
   given InvariantSemigroupal[Path] with
     override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)

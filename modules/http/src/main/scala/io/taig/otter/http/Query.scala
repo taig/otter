@@ -39,7 +39,9 @@ object Query:
       queries.firstWithRemainders(name) match
         case Some((head, tail)) => schema.parse(head.some).tupleLeft(tail)
         case None               => schema.parse(None).tupleLeft(queries)
-    override def encode(a: A): Http.Queries = Chain.fromOption(schema.print(a)).tupleLeft(name)
+    override def encode(a: A): Http.Queries = schema.print(a) match
+      case value: String         => Chain.one(name -> value)
+      case value: Option[String] => Chain.fromOption(value).tupleLeft(name)
 
   final private class Multiple[A](name: String, schema: Collection.Of[Value[?], A]) extends Query[A](name, schema):
     override def ivalidate[B](validation: Validation[A, B])(g: B => A): Query[B] =
@@ -52,9 +54,9 @@ object Query:
 
     override def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
       val (head, tail) = queries.allWithRemainders(name)
-      schema.parse(head.map(_.some).some).tupleLeft(tail)
+      schema.parse(head.some).tupleLeft(tail)
 
-    override def encode(a: A): Http.Queries = schema.print(a).getOrElse(Chain.empty).mapFilter(identity).tupleLeft(name)
+    override def encode(a: A): Http.Queries = schema.print(a).getOrElse(Chain.empty).tupleLeft(name)
 
   def apply[A](name: String, schema: Value[A]): Query[A] = new Single[A](name, schema)
   def apply[A](name: String, schema: Collection.Of[Value[?], A]): Query[A] = new Multiple[A](name, schema)
