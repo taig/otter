@@ -26,3 +26,14 @@ object Value:
     final override def parse(value: Option[String]): Validated[Violations, A] =
       Validated.fromOption(value, Violations.rootNec(Violation.required)).andThen(parse)
     def parse(value: String): Validated[Violations, A]
+
+  object Required:
+    extension [A <: Matchable](self: Value.Required[A])
+      inline def |[B <: Matchable](schema: Value.Required[B]): Union.Required.Of[self.type | schema.type, A | B] =
+        (self :+ schema).imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }

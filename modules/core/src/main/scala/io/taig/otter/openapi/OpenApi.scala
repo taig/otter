@@ -1,0 +1,17 @@
+package io.taig.otter.openapi
+
+import cats.data.Chain
+import io.taig.otter.Data
+
+final case class OpenApi(
+    openapi: String,
+    info: Extended[Info],
+    jsonSchemaDialect: Option[String] = None,
+    servers: Chain[Extended[Server]] = Chain.empty,
+    paths: Paths = Paths.Empty,
+    webhooks: Map[String, PathItem | Reference] = Map.empty,
+    components: Data.Object = Data.Object.Empty,
+    security: Option[SecurityRequirement] = None,
+    tags: Chain[Extended[Tag]] = Chain.empty,
+    externalDocs: Option[Extended[ExternalDocumentation]] = None
+)

@@ -1,7 +1,7 @@
 package io.taig.otter.circe
 
 import cats.data.Chain
-import io.circe.{Json, JsonNumber}
+import io.circe.{Json, JsonNumber, JsonObject}
 import io.taig.otter.Data
 
 def fromData(data: Data.Number): Json = data.value match
@@ -12,11 +12,14 @@ def fromData(data: Data.Number): Json = data.value match
   case value: Int        => Json.fromInt(value)
   case value: Long       => Json.fromLong(value)
 
+def fromData(data: Data.Object): JsonObject =
+  JsonObject.fromFoldable(data.values.map { case (key, value) => (key, fromData(value)) })
+
 def fromData(data: Data): Json = data match
   case Data.String(value)  => Json.fromString(value)
   case Data.Boolean(value) => Json.fromBoolean(value)
   case data: Data.Number   => fromData(data)
-  case Data.Object(values) => Json.fromFields(values.map { case (key, value) => (key, fromData(value)) }.toList)
+  case data: Data.Object   => Json.fromJsonObject(fromData(data))
   case Data.Array(values)  => Json.fromValues(values.map(fromData).toVector)
   case Data.Null           => Json.Null
 

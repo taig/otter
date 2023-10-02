@@ -57,7 +57,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, http, csv, circe, dsl, openapi, http4s, munit, sample)
+  .aggregate(core, circe, http, csv, httpCirce, dsl, http4s, munit, sample)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -80,6 +80,14 @@ lazy val core = module(identifier = Some("core"))
       .cross(CrossVersion.for3Use2_13)
   )
 
+lazy val circe = module(identifier = Some("circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
+
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
@@ -92,24 +100,14 @@ lazy val csv = module(identifier = Some("csv"))
   .dependsOn(core % "compile->compile;test->test")
 
 // TODO waiting for circe 0.15 with scala.js jawn support
-lazy val circe = module(identifier = Some("circe"), jvmOnly = true)
+lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
+  ).dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-  .dependsOn(circe % "compile->compile;test->test")
-
-// TODO waiting for circe 0.15 with scala.js jawn support
-lazy val openapi = module(identifier = Some("openapi"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        Nil
-  )
   .dependsOn(circe % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
@@ -146,4 +144,4 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl, openapi, munit % "compile->test")
+  .dependsOn(http4s, dsl, munit % "compile->test")

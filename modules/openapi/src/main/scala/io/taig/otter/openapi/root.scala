@@ -9,7 +9,7 @@ import io.taig.otter.http.{Endpoint, Method, Request}
 
 import scala.annotation.tailrec
 
-def toOpenApi[F[_]](
+def toOpenApi(
     endpoints: Chain[Endpoint[?, ?]],
     title: String = "API Specification",
     description: Option[String] = None,
@@ -66,7 +66,7 @@ val toSchema: RootSchema[?] => Schema =
   case schema: Primitive[?]   => toSchema(schema)
   case schema: Record[?]      => toSchema(schema)
   case schema: Union[?]       => toSchema(schema)
-  case _                      => Schema.Value(tpe = "object")
+//  case _                      => ???
 
 def toSchema(schema: Coproduct[?]): Schema = Schema.OneOf(
   schema.toNonEmptyChain.map(branch => toSchema(branch.schema)).toChain
