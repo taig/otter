@@ -53,7 +53,17 @@ object members:
     object sessions:
       val url: Url[Unit] = self.url / "sessions"
 
-      val post: Endpoint[Role.Guest, Member.Login, Member.Session] = OtterEndpoint(
+      enum Post:
+        case EmailOrPasswordIncorrect
+
+      object Post:
+        val results: Results[Post] =
+          val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
+            error("emailOrPasswordIncorrect", dynamic.singleton(EmailOrPasswordIncorrect))
+
+          result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
+
+      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Member.Session]] = OtterEndpoint(
         request(method.post, url, input.json(codecs.member.login)),
-        response(result(code.created, output.json(codecs.member.session)))
+        response(Post.results :+ result(code.created, output.json(codecs.member.session)))
       ).tags("members").role(Role.Guest)

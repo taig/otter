@@ -11,7 +11,7 @@ object member:
   val session: Primitive.Required[Member.Session] = uuid.imap(Member.Session.fromUUID)(_.toUUID)
 
   val login: Record[Member.Login] = (field("email", cistring) :* field("password", string)).to
-  
+
   val create: Record[Member.Create] = (field("email", email) :* field("password", password)).to
 
   val summary: Record[Member.Summary] = (field("reference", reference) :* field("email", email)).to

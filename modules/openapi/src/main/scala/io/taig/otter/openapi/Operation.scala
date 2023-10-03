@@ -11,7 +11,7 @@ final case class Operation(
     operationId: Option[String] = None,
     parameters: Chain[Extended[Data.Object] | Reference] = Chain.empty,
     requestBody: Option[Extended[RequestBody] | Reference] = None,
-    responses: Option[Responses] = None,
+    responses: Extended[Responses] = Responses(),
     callbacks: Map[String, Extended[Data.Object] | Reference] = Map.empty,
     deprecated: Boolean = false,
     security: Option[SecurityRequirement] = None,

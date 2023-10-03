@@ -27,6 +27,13 @@ object instance:
       "url" := documentation.url
     ).dropNullValues
 
+  given Encoder.AsObject[Header] = header =>
+    JsonObject(
+      "name" := header.name,
+      "description" := header.description,
+      "externalDocs" := header.externalDocs
+    )
+
   given Encoder.AsObject[Info] = info =>
     JsonObject(
       "title" := info.title,
@@ -82,7 +89,7 @@ object instance:
       "operationId" := operation.operationId,
       "parameters" := Some(operation.parameters).filter(_.nonEmpty),
       "requestBody" := operation.requestBody,
-      "responses" := operation.responses,
+      "responses" := Some(operation.responses.asJsonObject).filter(_.nonEmpty),
       "callbacks" := Some(operation.callbacks).filter(_.nonEmpty),
       "deprecated" := operation.deprecated,
       "security" := operation.security,
@@ -127,7 +134,23 @@ object instance:
       "required" := body.required
     ).dropNullValues
 
-  given Encoder.AsObject[Responses] = responses => JsonObject("default" := responses.default).dropNullValues
+  given Encoder.AsObject[Response] = response =>
+    JsonObject(
+      "description" := response.description,
+      "headers" := Some(response.headers.map { case (name, header) => (name.toString, header.asJson) })
+        .filter(_.nonEmpty)
+        .map(JsonObject.fromFoldable),
+      "content" := Some(response.content.map { case (mediaType, content) => (mediaType, content.asJson) })
+        .filter(_.nonEmpty)
+        .map(JsonObject.fromFoldable),
+      "links" := Some(response.links.map { case (name, link) => (name, link.asJson) })
+        .filter(_.nonEmpty)
+        .map(JsonObject.fromFoldable)
+    ).dropNullValues
+
+  given Encoder.AsObject[Responses] = responses =>
+    JsonObject.fromFoldable(responses.values.map { case (code, response) => (code.toString, response.asJson) }) ++
+      JsonObject("default" := responses.default).dropNullValues
 
   given Encoder.AsObject[Schema] =
     case codec: Schema.Array =>

@@ -7,11 +7,15 @@ import fs2.io.net.Network
 import io.taig.otter.http.*
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.ember.server.EmberServerBuilder
+import org.http4s.server.middleware.CORS
 import org.typelevel.log4cats.LoggerFactory
 
 final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:
   override def start(app: App[F]): F[Unit] =
-    EmberServerBuilder.default[F].withHttpApp(toHttp4sApp(app)).build.useForever
+    CORS.policy
+      .withAllowOriginAll(toHttp4sApp(app))
+      .flatMap: app =>
+        EmberServerBuilder.default[F].withHttpApp(app).build.useForever
 
   def toHttp4sApp(app: App[F]): Http4sApp[F] = Http4sApp: request =>
     val method = toHttpMethod(request.method)
@@ -35,8 +39,6 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
         .flatMap(_.traverse(route.implementation))
         .map(route.endpoint.response.encode)
     .handleErrorWith: throwable =>
-      // TODO remove
-      throwable.printStackTrace()
       app.failure.encode(().valid).pure
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match

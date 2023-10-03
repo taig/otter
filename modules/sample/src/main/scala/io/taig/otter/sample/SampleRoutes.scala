@@ -9,7 +9,8 @@ object SampleRoutes:
     val routes = BooksRoutes(route, repositories.books) ++
       LibrariansSelfSessionsRoutes(route, repositories.librarian) ++
       MembersRoutes(route, repositories.member) ++
-      MembersReferenceRoutes(route, repositories.member)
+      MembersReferenceRoutes(route, repositories.member) ++
+      MembersSelfSessionsRoutes(route, repositories.member)
     val openapi = OpenApiRoutes(route, routes)
 
     routes ++ openapi

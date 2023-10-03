@@ -48,7 +48,8 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   summary = endpoint.summary,
   description = endpoint.description,
   deprecated = endpoint.deprecated,
-  requestBody = endpoint.request.body.codec.map(toRequestBody(endpoint.request.body, _))
+  requestBody = endpoint.request.body.codec.map(toRequestBody(endpoint.request.body, _)),
+  responses = Responses()
 )
 
 def toRequestBody(request: Request.Body[?], codec: Codec[?]): RequestBody = RequestBody(
