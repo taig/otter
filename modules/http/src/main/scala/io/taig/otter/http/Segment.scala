@@ -8,12 +8,12 @@ import io.taig.otter.{Data, Union, Value}
 sealed abstract class Segment[A]:
   self =>
   def name: String
-  def codec: Option[Value.Required[?] | Union.Of[Value.Required[?], ?]]
+//  def codec: Option[Value.Required[?] | Union.Of[Value.Required[?], ?]]
 
-  final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
-    export self.{codec, matches, name, print}
-    override def decode(a: String): Validated[Violations, B] = self.decode(a).map(f)
-    override def encode(b: B): String = self.encode(g(b))
+//  final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
+//    export self.{codec, matches, name, print}
+//    override def decode(a: String): Validated[Violations, B] = self.decode(a).map(f)
+//    override def encode(b: B): String = self.encode(g(b))
 
   def matches(value: String): Boolean
 
@@ -25,30 +25,39 @@ sealed abstract class Segment[A]:
   final def toPath: Path[A] = Path(this)
 
 object Segment:
-  def apply(static: String): Segment[Unit] = new Segment[Unit]:
-    override def codec: Option[Value.Required[?]] = none
-    override def name: String = static
-    override def matches(value: String): Boolean = value === static
-    override def decode(value: String): Validated[Violations, Unit] = Validated.cond(
-      matches(value),
-      (),
-      Violations.rootNec(Violation(Constraint.Equals(name), actual = Data.String(value)))
-    )
-    override def encode(a: Unit): String = static
-    override def print: String = static
+  sealed abstract class Static[A](val name: String) extends Segment[A]:
+    final override def matches(value: String): Boolean = name === value
+    final override def print: String = name
 
-  def apply[A](parameter: String, of: Value.Required[A]): Segment[A] = new Segment[A]:
-    override def codec: Option[Value.Required[A]] = of.some
-    override def name: String = parameter
-    override def matches(value: String): Boolean = true
-    override def decode(value: String): Validated[Violations, A] = of.parse(value)
-    override def encode(a: A): String = of.print(a)
-    override def print: String = s"{$parameter}"
+  object Static:
+    def apply(of: String): Segment.Static[Unit] = new Static[Unit](of):
+      override def decode(value: String): Validated[Violations, Unit] = Validated.cond(
+        matches(value),
+        (),
+        Violations.rootNec(Violation(Constraint.Equals(of), actual = Data.String(value)))
+      )
+      override def encode(a: Unit): String = of
 
-  def apply[A](parameter: String, of: Union.Required.Of[Value.Required[?], A]): Segment[A] = new Segment[A]:
-    override def codec: Option[Union.Of[Value.Required[?], ?]] = of.some
-    override def name: String = parameter
-    override def matches(value: String): Boolean = true
-    override def decode(value: String): Validated[Violations, A] = of.parse(value)
-    override def encode(a: A): String = of.print(a)
-    override def print: String = s"{$parameter}"
+  sealed abstract class Parameter[A](
+      val name: String,
+      val codec: Value.Required[?] | Union.Required[?],
+      val description: Option[String]
+  ) extends Segment[A]:
+    self =>
+    final def description(f: Option[String] => Option[String]): Segment.Parameter[A] =
+      new Parameter[A](name, codec, f(description)) { export self.* }
+    final def description(value: Option[String]): Segment.Parameter[A] = description(_ => value)
+    final def description(value: String): Segment.Parameter[A] = description(Some(value))
+    final override def matches(value: String): Boolean = true
+    final override def print: String = s"{$name}"
+
+  object Parameter:
+    def apply[A](parameter: String, of: Value.Required[A]): Segment.Parameter[A] =
+      new Parameter[A](parameter, of, None):
+        override def decode(value: String): Validated[Violations, A] = of.parse(value)
+        override def encode(a: A): String = of.print(a)
+
+    def apply[A](parameter: String, of: Union.Required.Of[Value.Required[?], A]): Segment.Parameter[A] =
+      new Parameter[A](parameter, of, None):
+        override def decode(value: String): Validated[Violations, A] = of.parse(value)
+        override def encode(a: A): String = of.print(a)

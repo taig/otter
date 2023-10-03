@@ -4,7 +4,7 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.http.Response.Body
 import io.taig.otter.{Codec, Data}
-import io.taig.otter.http.{Endpoint, Method, Request, Response as OtterResponse, Result}
+import io.taig.otter.http.{Endpoint, Method, Request, Response as OtterResponse, Result, Segment}
 import io.taig.otter.openapi.*
 
 def toOpenApi(
@@ -54,7 +54,16 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   responses = toResponses(endpoint.response)
 )
 
-def toParameters(request: Request[?]): Chain[Extended[Parameter]] = Chain.empty
+def toParameters(request: Request[?]): Chain[Extended[Parameter]] = request.url.path.toChain
+  .collect { case segment: Segment.Parameter[?] => segment }
+  .map: parameter =>
+    Parameter(
+      in = "path",
+      name = parameter.name,
+      description = parameter.description,
+      required = true,
+      schema = Some(toSchema(parameter.codec))
+    )
 
 def toRequestBody(request: Request.Body[?], codec: Codec[?]): RequestBody = RequestBody(
   content = Chain("application/json" -> MediaType(toSchema(codec))),

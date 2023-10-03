@@ -10,8 +10,8 @@ object syntax:
 
   def header[A](name: CIString, codec: Value[A]): Header[A] = Header(name, codec)
   def header[A](name: CIString, codec: Collection.Of[Value[?], A]): Header[A] = Header(name, codec)
-  def parameter[A](name: String, codec: Value.Required[A]): Segment[A] = Segment(name, codec)
-  def parameter[A](name: String, codec: Union.Required[A]): Segment[A] = Segment(name, codec)
+  def parameter[A](name: String, codec: Value.Required[A]): Segment.Parameter[A] = Segment.Parameter(name, codec)
+  def parameter[A](name: String, codec: Union.Required[A]): Segment.Parameter[A] = Segment.Parameter(name, codec)
   def query[A](name: String, codec: Value[A]): Query[A] = Query(name, codec)
   def query[A](name: String, codec: Collection.Of[Value[?], A]): Query[A] = Query(name, codec)
 
