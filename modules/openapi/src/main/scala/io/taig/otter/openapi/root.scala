@@ -1,6 +1,5 @@
 package io.taig.otter.openapi
 
-import io.taig.otter.codecs.*
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.*
@@ -33,7 +32,7 @@ def toSchema(codec: Coproduct[?], to: Codec[?] => Schema | Reference): Schema =
       case Discriminator.Nested(identifier, value) =>
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(identifier -> to(string), value -> to(branch.codec.description(none)))
+          properties = Chain(identifier -> to(branch.key), value -> to(branch.codec.description(none)))
         )
       case Discriminator.Merged(identifier) =>
         val properties = to(branch.codec.description(none)) match
@@ -41,12 +40,12 @@ def toSchema(codec: Coproduct[?], to: Codec[?] => Schema | Reference): Schema =
           case _                     => Chain.empty
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(identifier -> to(string)) ++ properties
+          properties = Chain(identifier -> to(branch.key)) ++ properties
         )
       case Discriminator.Keyed =>
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(branch.name -> to(branch.codec.description(none)))
+          properties = Chain(branch.print -> to(branch.codec.description(none)))
         )
 
   Schema.OneOf(codecs)
