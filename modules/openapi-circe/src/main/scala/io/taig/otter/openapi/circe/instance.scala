@@ -191,7 +191,8 @@ object instance:
       JsonObject(
         "type" := codec.tpe,
         "format" := codec.format,
-        "description" := codec.description
+        "description" := codec.description,
+        "additionalProperties" := codec.additionalProperties
       ).dropNullValues
 
   given Encoder.AsObject[SecurityRequirement] = security =>

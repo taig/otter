@@ -9,7 +9,6 @@ import io.taig.otter.http.{syntax as http, App, MediaType, Request, Response, Re
 import io.taig.otter.codecs.*
 import io.taig.otter.validation.{Violation, Violations}
 import io.taig.otter.{codecs, Codec, Dynamic}
-import org.typelevel.ci.*
 
 import java.nio.charset.StandardCharsets
 

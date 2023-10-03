@@ -22,5 +22,6 @@ enum Schema:
   case Value(
       tpe: String,
       format: Option[String] = None,
-      description: Option[String] = None
+      description: Option[String] = None,
+      additionalProperties: Option[Schema] = None
   )

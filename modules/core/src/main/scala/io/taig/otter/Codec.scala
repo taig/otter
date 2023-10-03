@@ -240,14 +240,15 @@ object Coproduct:
     override def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]] =
       branch.encode(a, discriminator).some
 
-sealed abstract class Dictionary[A](val description: Option[String]) extends Codec[A]:
+sealed abstract class Dictionary[A](val codec: Codec[?], val description: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Dictionary[a]
   final override type Optional[a] = Dictionary[a]
 
-  final override def description(f: Option[String] => Option[String]): Dictionary[A] = Dictionary(this, f(description))
+  final override def description(f: Option[String] => Option[String]): Dictionary[A] =
+    new Dictionary[A](codec, f(description)) { export self.* }
 
-  final override def optional: Dictionary[Option[A]] = new Dictionary[Option[A]](description):
+  final override def optional: Dictionary[Option[A]] = new Dictionary[Option[A]](codec, description):
     export self.constraints
     override def isOptional: Boolean = true
     override def decodeObject(data: Option[Data.Object]): Validated[Violations, Option[A]] =
@@ -255,7 +256,7 @@ sealed abstract class Dictionary[A](val description: Option[String]) extends Cod
     override def encodeObject(a: Option[A]): Option[Data.Object] = a.flatMap(self.encodeObject)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dictionary[B] =
-    new Dictionary[B](description):
+    new Dictionary[B](codec, description):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, B] =
@@ -272,21 +273,18 @@ sealed abstract class Dictionary[A](val description: Option[String]) extends Cod
   def encodeObject(a: A): Option[Data.Object]
 
 object Dictionary:
-  def apply[A](codec: Dictionary[A], description: Option[String]): Dictionary[A] =
-    new Dictionary[A](description) { export codec.* }
-
-  def apply[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Chain[(A, B)]] =
-    new Dictionary[Chain[(A, B)]](None):
+  def apply[A, B](key: Value.Required[A], of: Codec[B]): Dictionary[Chain[(A, B)]] =
+    new Dictionary[Chain[(A, B)]](of, None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
         case Some(data) =>
           data.values.traverse { case (a, b) =>
-            (key.parse(a), codec.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
+            (key.parse(a), of.decode(b)).tupled.leftMap(_.modifyHistory(a /: _))
           }
         case None => Violations.rootNec(Violation.required).invalid
       override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
-        Data.Object(a.map { case (a, b) => (key.print(a), codec.encode(b)) }).some
+        Data.Object(a.map { case (a, b) => (key.print(a), of.encode(b)) }).some
 
 sealed abstract class Dynamic[A](val description: Option[String]) extends Codec[A]:
   self =>

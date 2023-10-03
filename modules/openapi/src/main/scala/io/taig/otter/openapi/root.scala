@@ -24,7 +24,8 @@ def toSchema(codec: Coproduct[?]): Schema = Schema.OneOf(
 )
 
 def toSchema(codec: Dictionary[?]): Schema = Schema.Value(
-  tpe = "object"
+  tpe = "object",
+  additionalProperties = Some(toSchema(codec.codec))
 )
 
 def toSchema(codec: Dynamic[?]): Schema = Schema.Value(tpe = "object", description = codec.description)
