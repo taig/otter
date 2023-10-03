@@ -38,7 +38,7 @@ object Result:
     override def decode(response: Http.Response): Validated[Violations, Option[A]] =
       if code =!= response.code
       then none.valid
-      else body.decodeWithRemainders(response.headers, response.body).map(_._2.some)
+      else body.decode(response.headers, response.body).map(_.some)
     override def encode(a: A): Http.Response =
       val (headers, payload) = body.encode(a)
       Http.Response(code, headers, payload)

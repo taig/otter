@@ -1,4 +1,4 @@
-package io.taig.otter.http.headers
+package io.taig.otter.http
 
 import cats.Eq
 
@@ -12,6 +12,7 @@ object MediaType:
 
   object application:
     val json: MediaType = "application/json"
+    val octetStream: MediaType = "application/octet-stream"
 
   object text:
     val plain: MediaType = "text/plain"

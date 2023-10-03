@@ -1,6 +1,7 @@
 package io.taig.otter.http.headers
 
 import cats.syntax.all.*
+import io.taig.otter.http.MediaType
 import io.taig.otter.validation.{validations, Validation}
 
 final case class ContentType(mediaType: MediaType, charset: Option[String]):

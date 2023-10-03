@@ -69,7 +69,8 @@ object syntax:
     val empty: Response.Body.Strict[Unit] = Response.Body.Strict.Empty
     val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Binary
     def apply[A](
-        f: (Http.Headers, Array[Byte]) => Validated[Violations, (Http.Headers, Data)],
+        f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
         g: Data => (Http.Headers, Array[Byte]),
-        codec: Codec[A]
-    ): Response.Body.Strict[A] = Response.Body.Strict(f, g, codec)
+        codec: Codec[A],
+        mediaType: MediaType
+    ): Response.Body.Strict[A] = Response.Body.Strict(f, g, codec, mediaType)
