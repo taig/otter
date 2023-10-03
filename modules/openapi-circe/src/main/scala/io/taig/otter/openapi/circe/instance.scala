@@ -73,9 +73,13 @@ object instance:
     ).dropNullValues
 
   given Encoder.AsObject[Operation] = operation =>
-    given parameterOrCallback: Encoder.AsObject[Extended[Data.Object] | Reference] =
-      case parameter: Extended[Data.Object] => parameter.asJsonObject
-      case reference: Reference             => reference.asJsonObject
+    given parameterOrReference: Encoder.AsObject[Extended[Parameter] | Reference] =
+      case parameter: Extended[Parameter] => parameter.asJsonObject
+      case reference: Reference           => reference.asJsonObject
+
+    given callbackOrReference: Encoder.AsObject[Extended[Data.Object] | Reference] =
+      case callback: Extended[Data.Object] => callback.asJsonObject
+      case reference: Reference            => reference.asJsonObject
 
     given requestBody: Encoder.AsObject[Extended[RequestBody] | Reference] =
       case request: Extended[RequestBody] => request.asJsonObject
@@ -119,6 +123,16 @@ object instance:
 
   given Encoder.AsObject[Paths] = paths =>
     JsonObject.fromFoldable(paths.toChain.map { case (path, pathItem) => (path, pathItem.asJson) })
+
+  given Encoder.AsObject[Parameter] = parameter =>
+    JsonObject(
+      "in" := parameter.in,
+      "name" := parameter.name,
+      "description" := parameter.description,
+      "required" := parameter.required,
+      "deprecated" := parameter.deprecated,
+      "schema" := parameter.schema
+    ).dropNullValues
 
   given Encoder.AsObject[Reference] = reference =>
     JsonObject(

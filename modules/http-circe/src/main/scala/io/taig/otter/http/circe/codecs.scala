@@ -38,11 +38,7 @@ object codecs:
           .fromEither(parser.parseByteArray(bytes))
           .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
           .map(toData),
-      data =>
-        (
-          Chain(ci"Content-Type" -> MediaType.application.json.toString),
-          printer.print(fromData(data)).getBytes(StandardCharsets.UTF_8)
-        ),
+      data => (Chain.empty, printer.print(fromData(data)).getBytes(StandardCharsets.UTF_8)),
       codec,
       MediaType.application.json
     )

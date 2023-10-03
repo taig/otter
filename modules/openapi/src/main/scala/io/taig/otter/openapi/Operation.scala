@@ -9,7 +9,7 @@ final case class Operation(
     description: Option[String] = None,
     externalDocs: Option[ExternalDocumentation] = None,
     operationId: Option[String] = None,
-    parameters: Chain[Extended[Data.Object] | Reference] = Chain.empty,
+    parameters: Chain[Extended[Parameter] | Reference] = Chain.empty,
     requestBody: Option[Extended[RequestBody] | Reference] = None,
     responses: Extended[Responses] = Responses(),
     callbacks: Map[String, Extended[Data.Object] | Reference] = Map.empty,

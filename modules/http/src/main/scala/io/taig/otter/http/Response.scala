@@ -6,6 +6,7 @@ import io.taig.otter.{Codec, Data}
 import io.taig.otter.codecs.string
 import io.taig.otter.http.Http.Payload
 import io.taig.otter.validation.{History, Violation, Violations}
+import org.typelevel.ci.*
 
 final case class Response[A](results: Results[A], violations: Result[Violations]):
   def results[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
@@ -35,7 +36,14 @@ object Response:
 
     object Strict:
       sealed abstract class Empty[A] extends Response.Body.Strict[A]
-      sealed abstract class Payload[A](val codec: Codec[?], val mediaType: MediaType) extends Response.Body.Strict[A]
+      sealed abstract class Payload[A](val codec: Codec[?], val mediaType: MediaType) extends Response.Body.Strict[A]:
+        // TODO decode depending on media type!
+        override def encode(a: A): (Http.Headers, Http.Payload.Strict) =
+          encodeWithOptionalContentType(a).leftMap: headers =>
+            if headers.exists { case (key, _) => key === ci"Content-Type" }
+            then headers
+            else (ci"Content-Type" -> mediaType.print) +: headers
+        protected def encodeWithOptionalContentType(a: A): (Http.Headers, Http.Payload.Strict)
 
       val Empty: Response.Body.Strict.Empty[Unit] = new Empty[Unit]:
         override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Unit] = ().valid
@@ -46,7 +54,7 @@ object Response:
         new Payload[Array[Byte]](string.format("binary"), MediaType.application.octetStream):
           override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
             payload.valid
-          override def encode(a: Array[Byte]): (Http.Headers, Http.Payload.Strict) =
+          override def encodeWithOptionalContentType(a: Array[Byte]): (Http.Headers, Payload.Strict) =
             (Chain.empty, Http.Payload.Strict(a))
 
       def apply[A](
@@ -57,4 +65,5 @@ object Response:
       ): Response.Body.Strict.Payload[A] = new Payload[A](of, mediaType):
         override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
           f(headers, payload).andThen(of.decode)
-        override def encode(a: A): (Http.Headers, Http.Payload.Strict) = g(of.encode(a)).map(Http.Payload.Strict.apply)
+        override def encodeWithOptionalContentType(a: A): (Http.Headers, Payload.Strict) =
+          g(of.encode(a)).map(Http.Payload.Strict.apply)
