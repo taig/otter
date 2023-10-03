@@ -46,3 +46,14 @@ object members:
         request(method.get, url),
         response(Get.results :+ result(code.ok, output.json(codecs.member.summary)))
       ).tags("members").role(Role.Librarian ^ Role.Member)
+
+  object self:
+    val url: Url[Unit] = members.url / "self"
+
+    object sessions:
+      val url: Url[Unit] = self.url / "sessions"
+
+      val post: Endpoint[Role.Guest, Member.Login, Member.Session] = OtterEndpoint(
+        request(method.post, url, input.json(codecs.member.login)),
+        response(result(code.created, output.json(codecs.member.session)))
+      ).tags("members").role(Role.Guest)

@@ -21,3 +21,10 @@ final class LibrariansSelfSessionsRoutesTest extends SampleSuite:
     yield {
       assertEquals(obtained, Post.EmailOrPasswordIncorrect)
     }
+
+  app.test(endpoints.librarians.self.sessions.post, description = "password incorrect"): context =>
+    val login = Librarian.Login(email = Librarian.Create.Default.email.toCIString, password = "")
+    for obtained <- context.client.submitError(endpoints.librarians.self.sessions.post, session = None, login)
+      yield {
+        assertEquals(obtained, Post.EmailOrPasswordIncorrect)
+      }

@@ -48,6 +48,8 @@ object Member:
 
     given (using eq: Eq[UUID]): Eq[Member.Session] = eq
 
+  final case class Login(email: CIString, password: String)
+
   final case class Create(email: Member.Email, password: Member.Password)
 
   final case class Summary(reference: Member.Reference, email: Member.Email)
