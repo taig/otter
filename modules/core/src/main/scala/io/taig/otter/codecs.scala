@@ -124,6 +124,9 @@ object codecs:
     val history: Primitive.Required[History] =
       string.ivalidate(validations.parse("history")(History.parse(_).toOption))(_.toJsonPath)
 
-    dictionary.nonEmptyMap(history, collection.nonEmptyChain(violation)).imap(Violations.apply)(_.toNem)
+    dictionary
+      .nonEmptyMap(history, collection.nonEmptyChain(violation))
+      .imap(Violations.apply)(_.toNem)
+      .name("Violations")
 
   def error[A](identifier: String, value: Codec[A]): Coproduct[A] = branch(identifier, value).toCoproduct
