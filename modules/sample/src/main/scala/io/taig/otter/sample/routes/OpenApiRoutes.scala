@@ -26,7 +26,7 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
         Tag(name = "librarians", description = "Administrative accounts for library employees".some),
         Tag(name = "members", description = "Accounts for library members used to borrow and return books".some)
       ),
-      securitySchemes = Data.Object.of(
+      securitySchemes = Chain(
         "Librarian" -> Data.Object.of(
           "type" -> Data.String("http"),
           "scheme" -> Data.String("bearer")

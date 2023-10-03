@@ -14,7 +14,7 @@ def toOpenApi(
     version: String = "0",
     servers: Chain[Extended[Server]] = Chain.nil,
     tags: Chain[Extended[Tag]] = Chain.nil,
-    securitySchemes: Data = Data.Null
+    securitySchemes: Chain[(String, Extended[Data.Object] | Reference)] = Chain.empty
 ): OpenApi = OpenApi(
   openapi = "3.1.0",
   Info(
@@ -25,7 +25,7 @@ def toOpenApi(
   servers = servers,
   tags = tags,
   paths = toPaths(endpoints),
-  components = Data.Object.of("securitySchemes" -> securitySchemes)
+  components = Components(securitySchemes = securitySchemes)
 )
 
 def toPaths(endpoints: Chain[Endpoint[?, ?]]): Paths = Paths.fromIterableOnce:

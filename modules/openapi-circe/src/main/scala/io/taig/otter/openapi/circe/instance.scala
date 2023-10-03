@@ -2,12 +2,29 @@ package io.taig.otter.openapi.circe
 
 import io.circe.{Encoder, JsonObject}
 import io.circe.syntax.*
-import io.taig.otter.Data
 import io.taig.otter.openapi.*
 import io.taig.otter.circe.syntax.*
 import io.taig.otter.circe.instance.given
 
 object instance:
+  inline given [A <: Matchable: Encoder.AsObject]: Encoder.AsObject[A | Reference] =
+    case reference: Reference => reference.asJsonObject
+    case a: A => a.asJsonObject
+
+  given Encoder.AsObject[Components] = components =>
+    JsonObject(
+      "schemas" := components.schemas.asJsonObject.toNonEmpty,
+      "responses" := components.responses.asJsonObject.toNonEmpty,
+      "parameters" := components.parameters.asJsonObject.toNonEmpty,
+      "examples" := components.examples.asJsonObject.toNonEmpty,
+      "requestBodies" := components.requestBodies.asJsonObject.toNonEmpty,
+      "headers" := components.headers.asJsonObject.toNonEmpty,
+      "securitySchemes" := components.securitySchemes.asJsonObject.toNonEmpty,
+      "links" := components.links.asJsonObject.toNonEmpty,
+      "callbacks" := components.callbacks.asJsonObject.toNonEmpty,
+      "pathItems" := components.pathItems.asJsonObject.toNonEmpty
+    ).dropNullValues
+
   given Encoder.AsObject[Contact] = contact =>
     JsonObject(
       "name" := contact.name,
@@ -18,8 +35,7 @@ object instance:
   given [A: Encoder.AsObject]: Encoder.AsObject[Extended[A]] = extended =>
     extended.value.asJsonObject ++ extended.extensions.asJsonObject
 
-  given Encoder.AsObject[Extensions] = extensions =>
-    JsonObject.fromFoldable(extensions.toChain.map { case (key, value) => (s"x-$key", value.asJson) })
+  given Encoder.AsObject[Extensions] = _.toChain.asJsonObject
 
   given Encoder.AsObject[ExternalDocumentation] = documentation =>
     JsonObject(
@@ -55,10 +71,6 @@ object instance:
   given Encoder.AsObject[MediaType] = mediaType => JsonObject("schema" := mediaType.schema).dropNullValues
 
   given Encoder.AsObject[OpenApi] = openapi =>
-    given webhook: Encoder.AsObject[PathItem | Reference] =
-      case pathItem: PathItem   => pathItem.asJsonObject
-      case reference: Reference => reference.asJsonObject
-
     JsonObject(
       "openapi" := openapi.openapi,
       "info" := openapi.info,
@@ -73,18 +85,6 @@ object instance:
     ).dropNullValues
 
   given Encoder.AsObject[Operation] = operation =>
-    given parameterOrReference: Encoder.AsObject[Extended[Parameter] | Reference] =
-      case parameter: Extended[Parameter] => parameter.asJsonObject
-      case reference: Reference           => reference.asJsonObject
-
-    given callbackOrReference: Encoder.AsObject[Extended[Data.Object] | Reference] =
-      case callback: Extended[Data.Object] => callback.asJsonObject
-      case reference: Reference            => reference.asJsonObject
-
-    given requestBody: Encoder.AsObject[Extended[RequestBody] | Reference] =
-      case request: Extended[RequestBody] => request.asJsonObject
-      case reference: Reference           => reference.asJsonObject
-
     JsonObject(
       "tags" := operation.tags,
       "summary" := operation.summary,
@@ -101,10 +101,6 @@ object instance:
     ).dropNullValues
 
   given Encoder.AsObject[PathItem] = item =>
-    given Encoder.AsObject[Extended[Data.Object] | Reference] =
-      case parameter: Extended[Data.Object] => parameter.asJsonObject
-      case reference: Reference             => reference.asJsonObject
-
     JsonObject(
       "$ref" := item.ref,
       "summary" := item.summary,
@@ -121,8 +117,7 @@ object instance:
       "parameters" := Some(item.parameters).filter(_.nonEmpty)
     ).dropNullValues
 
-  given Encoder.AsObject[Paths] = paths =>
-    JsonObject.fromFoldable(paths.toChain.map { case (path, pathItem) => (path, pathItem.asJson) })
+  given Encoder.AsObject[Paths] = _.toChain.asJsonObject
 
   given Encoder.AsObject[Parameter] = parameter =>
     JsonObject(
@@ -143,9 +138,7 @@ object instance:
 
   given Encoder.AsObject[RequestBody] = body =>
     JsonObject(
-      "content" := Some(body.content.map { case (mediaType, content) => (mediaType, content.asJson) })
-        .filter(_.nonEmpty)
-        .map(JsonObject.fromFoldable),
+      "content" := body.content.asJsonObject.toNonEmpty,
       "description" := body.description,
       "required" := body.required
     ).dropNullValues
@@ -153,20 +146,13 @@ object instance:
   given Encoder.AsObject[Response] = response =>
     JsonObject(
       "description" := response.description,
-      "headers" := Some(response.headers.map { case (name, header) => (name.toString, header.asJson) })
-        .filter(_.nonEmpty)
-        .map(JsonObject.fromFoldable),
-      "content" := Some(response.content.map { case (mediaType, content) => (mediaType, content.asJson) })
-        .filter(_.nonEmpty)
-        .map(JsonObject.fromFoldable),
-      "links" := Some(response.links.map { case (name, link) => (name, link.asJson) })
-        .filter(_.nonEmpty)
-        .map(JsonObject.fromFoldable)
+      "headers" := response.headers.asJsonObject.toNonEmpty,
+      "content" := response.content.asJsonObject.toNonEmpty,
+      "links" := response.links.asJsonObject.toNonEmpty
     ).dropNullValues
 
   given Encoder.AsObject[Responses] = responses =>
-    JsonObject.fromFoldable(responses.values.map { case (code, response) => (code.toString, response.asJson) }) ++
-      JsonObject("default" := responses.default).dropNullValues
+    responses.values.asJsonObject ++ JsonObject("default" := responses.default).dropNullValues
 
   given Encoder.AsObject[Schema] =
     case codec: Schema.Array =>
@@ -183,9 +169,7 @@ object instance:
         "type" := "object",
         "format" := codec.format,
         "description" := codec.description,
-        "properties" := Some(codec.properties.map { case (name, value) => (name, value.asJson) })
-          .filter(_.nonEmpty)
-          .map(JsonObject.fromFoldable),
+        "properties" := codec.properties.asJsonObject.toNonEmpty,
         "required" := Some(codec.required).filter(_.nonEmpty)
       ).dropNullValues
     case codec: Schema.Value =>
@@ -196,8 +180,7 @@ object instance:
         "additionalProperties" := codec.additionalProperties
       ).dropNullValues
 
-  given Encoder.AsObject[SecurityRequirement] = security =>
-    JsonObject.fromFoldable(security.toChain.map { case (name, scopes) => (name, scopes.asJson) })
+  given Encoder.AsObject[SecurityRequirement] = _.toChain.asJsonObject
 
   given Encoder.AsObject[Server] = server =>
     JsonObject(
