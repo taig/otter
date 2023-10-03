@@ -39,6 +39,8 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
         .flatMap(_.traverse(route.implementation))
         .map(route.endpoint.response.encode)
     .handleErrorWith: throwable =>
+      // TODO remove
+      throwable.printStackTrace()
       app.failure.encode(().valid).pure
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match

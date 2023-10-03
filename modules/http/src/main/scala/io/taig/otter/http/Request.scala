@@ -48,10 +48,6 @@ object Request:
 
     def codec: Option[Codec[?]]
 
-//    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
-//    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
-//    def zip[B](headers: Headers[B]): Self[(A, B)]
-
     def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A]
     def encode(a: A): (Http.Headers, Http.Request.Body)
 

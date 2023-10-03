@@ -13,10 +13,8 @@ object Http:
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
 
     def print: String =
-      if path.isEmpty && queries.isEmpty then "/"
-      else if queries.isEmpty then path.mkString_("/", "/", "")
-      else if path.isEmpty then queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
-      else path.mkString_("/", "/", "") + queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
+      path.mkString_("/", "/", "") +
+        queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
 
   object Url:
     val Empty: Http.Url = Url(Chain.empty, Chain.empty)

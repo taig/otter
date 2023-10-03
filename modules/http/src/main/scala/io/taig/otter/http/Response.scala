@@ -2,6 +2,8 @@ package io.taig.otter.http
 
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
+import io.taig.otter.{Codec, Data}
+import io.taig.otter.codecs.string
 import io.taig.otter.http.Http.Payload
 import io.taig.otter.validation.{History, Violation, Violations}
 
@@ -16,9 +18,11 @@ object Response:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
 
-    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
-    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
-    def zip[B](headers: Headers[B]): Self[(A, B)]
+    def codec: Option[Codec[?]]
+
+//    def andThen[B](f: A => Validated[Violations, B])(g: B => A): Self[B]
+//    final def imap[B](f: A => B)(g: B => A): Self[B] = andThen(f(_).valid)(g)
+//    def zip[B](headers: Headers[B]): Self[(A, B)]
 
     final def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A] =
       decodeWithRemainders(headers, payload).map(_._2)
@@ -26,29 +30,29 @@ object Response:
     def encode(a: A): (Http.Headers, Http.Payload)
 
   object Body extends ToResponseBodyOps:
-    sealed abstract class Strict[A] extends Response.Body[A]:
+    sealed abstract class Strict[A](val codec: Option[Codec[?]]) extends Response.Body[A]:
       self =>
       final override type Self[a] = Response.Body.Strict[a]
 
-      final override def andThen[B](f: A => Validated[Violations, B])(g: B => A): Response.Body.Strict[B] =
-        new Strict[B]:
-          override def decodeWithRemainders(
-              remainders: Http.Headers,
-              payload: Array[Byte]
-          ): Validated[Violations, (Http.Headers, B)] =
-            self.decodeWithRemainders(remainders, payload).andThen(_.traverse(f))
-          override def encode(b: B): (Http.Headers, Payload.Strict) = self.encode(g(b))
-
-      final override def zip[B](headers: Headers[B]): Response.Body.Strict[(A, B)] = new Strict[(A, B)]:
-        override def decodeWithRemainders(
-            remainders: Http.Headers,
-            payload: Array[Byte]
-        ): Validated[Violations, (Http.Headers, (A, B))] =
-          self.decodeWithRemainders(remainders, payload).andThen { case (remainders, a) =>
-            headers.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-          }
-        override def encode(ab: (A, B)): (Http.Headers, Payload.Strict) =
-          self.encode(ab._1).leftMap(_ ++ headers.encode(ab._2))
+//      final override def andThen[B](f: A => Validated[Violations, B])(g: B => A): Response.Body.Strict[B] =
+//        new Strict[B]:
+//          override def decodeWithRemainders(
+//              remainders: Http.Headers,
+//              payload: Array[Byte]
+//          ): Validated[Violations, (Http.Headers, B)] =
+//            self.decodeWithRemainders(remainders, payload).andThen(_.traverse(f))
+//          override def encode(b: B): (Http.Headers, Payload.Strict) = self.encode(g(b))
+//
+//      final override def zip[B](headers: Headers[B]): Response.Body.Strict[(A, B)] = new Strict[(A, B)]:
+//        override def decodeWithRemainders(
+//            remainders: Http.Headers,
+//            payload: Array[Byte]
+//        ): Validated[Violations, (Http.Headers, (A, B))] =
+//          self.decodeWithRemainders(remainders, payload).andThen { case (remainders, a) =>
+//            headers.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+//          }
+//        override def encode(ab: (A, B)): (Http.Headers, Payload.Strict) =
+//          self.encode(ab._1).leftMap(_ ++ headers.encode(ab._2))
 
       final override def decodeWithRemainders(
           remainders: Http.Headers,
@@ -61,10 +65,31 @@ object Response:
       override def encode(a: A): (Http.Headers, Http.Payload.Strict)
 
     object Strict:
-      val Bytes: Response.Body.Strict[Array[Byte]] = new Strict[Array[Byte]]:
+      val Empty: Response.Body.Strict[Unit] = new Strict[Unit](None):
+        override def decodeWithRemainders(
+            remainders: Http.Headers,
+            payload: Array[Byte]
+        ): Validated[Violations, (Http.Headers, Unit)] = (remainders, ()).valid
+        override def encode(a: Unit): (Http.Headers, Http.Payload.Strict) =
+          (Chain.empty, Http.Payload.Strict(Array.emptyByteArray))
+
+      val Binary: Response.Body.Strict[Array[Byte]] = new Strict[Array[Byte]](Some(string.format("binary"))):
         override def decodeWithRemainders(
             remainders: Http.Headers,
             payload: Array[Byte]
         ): Validated[Violations, (Http.Headers, Array[Byte])] = (remainders, payload).valid
-        override def encode(data: Array[Byte]): (Http.Headers, Http.Payload.Strict) =
-          (Chain.empty, Http.Payload.Strict(data))
+        override def encode(a: Array[Byte]): (Http.Headers, Http.Payload.Strict) =
+          (Chain.empty, Http.Payload.Strict(a))
+
+      def apply[A](
+          f: (Http.Headers, Array[Byte]) => Validated[Violations, (Http.Headers, Data)],
+          g: Data => (Http.Headers, Array[Byte]),
+          of: Codec[A]
+      ): Response.Body.Strict[A] = new Strict[A](Some(of)):
+        override def decodeWithRemainders(
+            headers: Http.Headers,
+            payload: Array[Byte]
+        ): Validated[Violations, (Http.Headers, A)] =
+          f(headers, payload).andThen(_.traverse(of.decode))
+
+        override def encode(a: A): (Http.Headers, Http.Payload.Strict) = g(of.encode(a)).map(Http.Payload.Strict.apply)

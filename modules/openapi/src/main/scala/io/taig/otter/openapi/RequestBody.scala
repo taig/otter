@@ -1,9 +1,9 @@
 package io.taig.otter.openapi
 
-import cats.data.NonEmptyMap
+import cats.data.Chain
 
 final case class RequestBody(
-    content: NonEmptyMap[String, MediaType],
+    content: Chain[(String, MediaType)] = Chain.empty,
     description: Option[String] = None,
     required: Boolean = false
 )

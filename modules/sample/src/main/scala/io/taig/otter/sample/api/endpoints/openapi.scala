@@ -10,5 +10,5 @@ object openapi:
 
   val get: Endpoint[Role.Guest, Unit, Json] = OtterEndpoint(
     request(method.get, url),
-    response(result(code.ok, output.json(Printer.spaces2)))
+    response(result(code.ok, output.json(json, Printer.spaces2)))
   ).role(Role.Guest)

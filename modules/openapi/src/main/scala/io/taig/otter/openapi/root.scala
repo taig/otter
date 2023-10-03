@@ -9,7 +9,7 @@ import scala.annotation.tailrec
 val toSchema: Codec[?] => Schema =
   case codec: Collection[?]  => toSchema(codec)
   case codec: Coproduct[?]   => toSchema(codec)
-  case codec: Dictionary[?]  => ???
+  case codec: Dictionary[?]  => toSchema(codec)
   case codec: Dynamic[?]     => toSchema(codec)
   case codec: Enumeration[?] => toSchema(codec)
   case codec: Primitive[?]   => toSchema(codec)
@@ -17,24 +17,27 @@ val toSchema: Codec[?] => Schema =
   case codec: Record[?]      => toSchema(codec)
   case codec: Union[?]       => toSchema(codec)
 
+def toSchema(codec: Collection[?]): Schema = Schema.Array(items = toSchema(codec.codec))
+
 def toSchema(codec: Coproduct[?]): Schema = Schema.OneOf(
   codec.toNonEmptyChain.map(branch => toSchema(branch.codec)).toChain
 )
 
-def toSchema(codec: Primitive[?]): Schema = Schema.Value(
-  tpe = typeOf(codec.tpe),
-  format = codec.format,
-  description = codec.description
+def toSchema(codec: Dictionary[?]): Schema = Schema.Value(
+  tpe = "object"
 )
-
-def toSchema(codec: Collection[?]): Schema =
-  Schema.Array(items = toSchema(codec.codec))
 
 def toSchema(codec: Dynamic[?]): Schema = Schema.Value(tpe = "object", description = codec.description)
 
 def toSchema(codec: Enumeration[?]): Schema = Schema.Enumeration(
   tpe = typeOf(codec.codec),
   enums = codec.values
+)
+
+def toSchema(codec: Primitive[?]): Schema = Schema.Value(
+  tpe = typeOf(codec.tpe),
+  format = codec.format,
+  description = codec.description
 )
 
 def toSchema(codec: Record[?]): Schema = Schema.Object(

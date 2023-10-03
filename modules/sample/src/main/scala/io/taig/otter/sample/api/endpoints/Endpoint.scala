@@ -20,5 +20,5 @@ extension [I, O](self: OtterEndpoint[I, O])
             Authentication(session, payload)
           }(authentication => (authentication.payload, authentication.session))
       }
-      .response(_.results(codecs.authentication.error.orElse))
+      .response(_.results(codecs.authentication.error orElse _))
   )

@@ -1,12 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.*
 import org.typelevel.ci.CIString
-
-import java.nio.charset.StandardCharsets
 
 object syntax:
   val __ : Url[Unit] = Url.Root
@@ -64,32 +61,15 @@ object syntax:
         g: Data => (Http.Headers, Array[Byte]),
         codec: Codec[A]
     ): Request.Body.Singlepart.Strict[A] = Request.Body.Singlepart.Strict(f, g, codec)
-//    def text(charset: Option[Charset]): Request.Body.Singlepart.Strict[String] =
-//      (binary :* headers.contentType.optional).imap { case (bytes, contentType) =>
-//        val charset = contentType
-//          .flatMap(_.charset)
-//          .flatMap { value =>
-//            try Charset.forName(value).some
-//            catch case _: IllegalCharsetNameException | _: UnsupportedCharsetException => none
-//          }
-//          .getOrElse(StandardCharsets.UTF_8)
-//        new String(bytes, charset)
-//      } { value =>
-//        (
-//          value.getBytes(charset.getOrElse(StandardCharsets.UTF_8)),
-//          ContentType(MediaType.text.plain, charset.map(_.name)).some,
-//        )
-//      }
-//    val text: Request.Body.Singlepart.Strict[String] = text(StandardCharsets.UTF_8.some)
 
   def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
   def result(code: Code): Result[Unit] = Result(code, output.empty)
 
   object output:
-    def apply[A](body: Response.Body.Strict[Data], codec: Codec[A]): Response.Body.Strict[A] =
-      body.andThen(codec.decode)(codec.encode)
-    val binary: Response.Body.Strict[Array[Byte]] = (Response.Body.Strict.Bytes :* headers.contentLength.optional)
-      .imap { case (bytes, _) => bytes }(bytes => (bytes, bytes.length.toLong.some))
-    val empty: Response.Body.Strict[Unit] = binary.imap(_ => ())(_ => Array.emptyByteArray)
-    val text: Response.Body.Strict[String] =
-      binary.imap(new String(_, StandardCharsets.UTF_8))(_.getBytes(StandardCharsets.UTF_8))
+    val empty: Response.Body.Strict[Unit] = Response.Body.Strict.Empty
+    val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Binary
+    def apply[A](
+        f: (Http.Headers, Array[Byte]) => Validated[Violations, (Http.Headers, Data)],
+        g: Data => (Http.Headers, Array[Byte]),
+        codec: Codec[A]
+    ): Response.Body.Strict[A] = Response.Body.Strict(f, g, codec)

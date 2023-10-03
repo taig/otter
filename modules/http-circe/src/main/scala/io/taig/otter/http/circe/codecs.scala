@@ -31,17 +31,24 @@ object codecs:
     def json[A](codec: Codec[A]): Request.Body.Singlepart.Strict[A] = json(codec, Printer.noSpaces)
 
   object output:
-    def json(printer: Printer): Response.Body.Strict[Json] = http.output.binary.andThen { bytes =>
-      Validated
-        .fromEither(parser.parseByteArray(bytes))
-        .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
-    }(printer.print(_).getBytes(StandardCharsets.UTF_8))
-    val json: Response.Body.Strict[Json] = json(Printer.noSpaces)
-    def json[A](codec: Codec[A]): Response.Body.Strict[A] = http.output(json.imap(toData)(fromData), codec)
+    def json[A](codec: Codec[A], printer: Printer): Response.Body.Strict[A] =
+      http.output(
+        (headers, bytes) =>
+          Validated
+            .fromEither(parser.parseByteArray(bytes))
+            .leftMap(_ => Violations.rootNec(Violation.tpe("json")))
+            .map(json => (headers, toData(json))),
+        data => (Chain.empty, printer.print(fromData(data)).getBytes(StandardCharsets.UTF_8)),
+        codec
+      )
+    def json[A](codec: Codec[A]): Response.Body.Strict[A] = json(codec, Printer.noSpaces)
 
   object response:
-    def apply[A](results: Results[A]): Response[A] =
-      Response(results, result(code.unprocessableEntity, output.json(violations)))
+    def apply[A](results: Results[A]): Response[A] = Response(
+      results,
+      result(code.unprocessableEntity, output.json(violations))
+        .description("The request body did not pass validation checks")
+    )
 
     def apply[A](result: Result[A]): Response[A] = response(result.toResults)
 

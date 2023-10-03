@@ -129,7 +129,9 @@ object instance:
 
   given Encoder.AsObject[RequestBody] = body =>
     JsonObject(
-      "content" := body.content,
+      "content" := Some(body.content.map { case (mediaType, content) => (mediaType, content.asJson) })
+        .filter(_.nonEmpty)
+        .map(JsonObject.fromFoldable),
       "description" := body.description,
       "required" := body.required
     ).dropNullValues

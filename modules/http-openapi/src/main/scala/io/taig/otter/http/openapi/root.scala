@@ -1,9 +1,9 @@
 package io.taig.otter.http.openapi
 
-import cats.data.{Chain, NonEmptyMap}
+import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.{Codec, Data}
-import io.taig.otter.http.{Endpoint, Method, Request}
+import io.taig.otter.http.{Endpoint, Method, Request, Response as OtterResponse, Result, Results}
 import io.taig.otter.openapi.*
 
 def toOpenApi(
@@ -49,13 +49,23 @@ def toOperation(endpoint: Endpoint[?, ?]): Operation = Operation(
   description = endpoint.description,
   deprecated = endpoint.deprecated,
   requestBody = endpoint.request.body.codec.map(toRequestBody(endpoint.request.body, _)),
-  responses = Responses()
+  responses = toResponses(endpoint.response)
 )
 
 def toRequestBody(request: Request.Body[?], codec: Codec[?]): RequestBody = RequestBody(
-  NonEmptyMap.of("application/json" -> MediaType(toSchema(codec))),
+  content = Chain("application/json" -> MediaType(toSchema(codec))),
   required = !codec.isOptional
 )
+
+def toResponses(response: OtterResponse[?]): Responses = Responses(
+  values = toCodeAndResponses(response.results.toNonEmptyChain.toChain :+ response.violations)
+)
+
+def toCodeAndResponses(result: Chain[Result[?]]): Chain[(Int, Extended[Response])] = result.map: result =>
+  result.code.toInt -> Response(
+    description = result.description.orElse(result.code.toMessage).getOrElse(result.code.toString),
+    content = Chain.fromOption(result.body.codec.map(codec => ("application/json", MediaType(toSchema(codec)))))
+  )
 
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))

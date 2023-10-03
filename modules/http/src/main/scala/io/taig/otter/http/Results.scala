@@ -15,7 +15,7 @@ sealed abstract class Results[A]:
       self.decodeOption(response).map(_.map(f))
     override def encode(b: B): Http.Response = self.encode(g(b))
 
-  final def orElse[B](results: Results[B]): Results[A + B] = new Results[A + B]:
+  final infix def orElse[B](results: Results[B]): Results[A + B] = new Results[A + B]:
     override def toNonEmptyChain: NonEmptyChain[Result[?]] = self.toNonEmptyChain.combine(results.toNonEmptyChain)
     // TODO Ior (?)
     override def decodeOption(response: Http.Response): Validated[Violations, Option[A + B]] =

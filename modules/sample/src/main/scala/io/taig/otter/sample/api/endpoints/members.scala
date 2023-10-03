@@ -3,7 +3,7 @@ package io.taig.otter.sample.api.endpoints
 import cats.data.Chain
 import io.taig.otter.Codec
 import io.taig.otter.dsl.*
-import io.taig.otter.http.{Endpoint as OtterEndpoint, Results, Url}
+import io.taig.otter.http.{Endpoint as OtterEndpoint, Result, Results, Url}
 import io.taig.otter.sample.api.{^, codecs, parameters, Role}
 import io.taig.otter.sample.data.{Member, ReferenceOrSelf}
 
@@ -58,12 +58,18 @@ object members:
 
       object Post:
         val results: Results[Post] =
-          val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
-            error("emailOrPasswordIncorrect", dynamic.singleton(EmailOrPasswordIncorrect))
+          val emailOrPasswordIncorrect: Result[EmailOrPasswordIncorrect.type] = result(
+            code.unauthorized,
+            output.json(error("emailOrPasswordIncorrect", dynamic.singleton(EmailOrPasswordIncorrect)))
+          ).description("Email or password incorrect")
 
-          result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
+          emailOrPasswordIncorrect.toResults.to
 
-      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Member.Session]] = OtterEndpoint(
-        request(method.post, url, input.json(codecs.member.login)),
-        response(Post.results :+ result(code.created, output.json(codecs.member.session)))
-      ).tags("members").role(Role.Guest)
+      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Member.Session]] =
+        val created = result(code.created, output.json(codecs.member.session))
+          .description("Session successfully created")
+
+        OtterEndpoint(
+          request(method.post, url, input.json(codecs.member.login)),
+          response(Post.results :+ created)
+        ).tags("members").role(Role.Guest)
