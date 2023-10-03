@@ -94,7 +94,8 @@ def toCodeAndResponse(result: Result[?]): (Int, Extended[Response]) = result.cod
 )
 
 def toMediaType(body: OtterResponse.Body[?]): Option[(String, Extended[MediaType])] = body match
-  case body: OtterResponse.Body.Strict.Payload[?] => Some(body.mediaType.print -> MediaType(toSchema(body.codec)))
+  case body: OtterResponse.Body.Strict.Payload[?] =>
+    Some(body.mediaType.print -> MediaType(toSchemaOrReference(body.codec)))
   case _: OtterResponse.Body.Strict.Empty[?]      => None
 
 def toComponents(

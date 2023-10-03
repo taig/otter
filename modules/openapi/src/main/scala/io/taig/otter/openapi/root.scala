@@ -27,18 +27,27 @@ def toSchemaOrReference(codec: Codec[?]): Schema | Reference = codec.name match
 def toSchema(codec: Collection[?], to: Codec[?] => Schema | Reference): Schema =
   Schema.Array(items = to(codec.codec))
 
-// TODO move metadata to new root
 def toSchema(codec: Coproduct[?], to: Codec[?] => Schema | Reference): Schema =
   val codecs = codec.toNonEmptyChain.toChain.map: branch =>
     codec.discriminator match
       case Discriminator.Nested(identifier, value) =>
-        Schema.Object(properties = Chain(identifier -> to(string), value -> to(branch.codec)))
+        Schema.Object(
+          description = branch.codec.description,
+          properties = Chain(identifier -> to(string), value -> to(branch.codec.description(none)))
+        )
       case Discriminator.Merged(identifier) =>
-        val properties = to(branch.codec) match
+        val properties = to(branch.codec.description(none)) match
           case schema: Schema.Object => schema.properties
           case _                     => Chain.empty
-        Schema.Object(properties = Chain(identifier -> to(string)) ++ properties)
-      case Discriminator.Keyed => Schema.Object(properties = Chain(branch.name -> to(branch.codec)))
+        Schema.Object(
+          description = branch.codec.description,
+          properties = Chain(identifier -> to(string)) ++ properties
+        )
+      case Discriminator.Keyed =>
+        Schema.Object(
+          description = branch.codec.description,
+          properties = Chain(branch.name -> to(branch.codec.description(none)))
+        )
 
   Schema.OneOf(codecs)
 
