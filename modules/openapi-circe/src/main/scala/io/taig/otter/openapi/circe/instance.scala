@@ -185,7 +185,8 @@ object instance:
         "description" := codec.description,
         "properties" := Some(codec.properties.map { case (name, value) => (name, value.asJson) })
           .filter(_.nonEmpty)
-          .map(JsonObject.fromFoldable)
+          .map(JsonObject.fromFoldable),
+        "required" := Some(codec.required).filter(_.nonEmpty)
       ).dropNullValues
     case codec: Schema.Value =>
       JsonObject(

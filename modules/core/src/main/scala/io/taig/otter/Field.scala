@@ -7,6 +7,8 @@ import io.taig.otter.validation.Violations
 
 // TODO use Eq and key codec to do stuff
 final case class Field[A](name: String, codec: Codec[A], nulls: Option[Null]):
+  def isOptional: Boolean = codec.isOptional
+
   def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
   def toRecord: Record[A] = Record(this)
 

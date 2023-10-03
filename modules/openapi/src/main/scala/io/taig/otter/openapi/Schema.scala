@@ -17,7 +17,8 @@ enum Schema:
   case Object(
       format: Option[String] = None,
       description: Option[String] = None,
-      properties: Chain[(String, Schema)] = Chain.empty
+      properties: Chain[(String, Schema)] = Chain.empty,
+      required: Chain[String] = Chain.empty
   )
   case Value(
       tpe: String,

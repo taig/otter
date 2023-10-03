@@ -43,7 +43,8 @@ def toSchema(codec: Primitive[?]): Schema = Schema.Value(
 
 def toSchema(codec: Record[?]): Schema = Schema.Object(
   description = codec.description,
-  properties = codec.toChain.map(field => field.name -> toSchema(field.codec))
+  properties = codec.toChain.map(field => field.name -> toSchema(field.codec)),
+  required = codec.toChain.collect { case field if !field.isOptional => field.name }
 )
 
 def toSchema(codec: Union[?]): Schema = Schema.OneOf(
