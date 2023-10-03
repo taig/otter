@@ -95,7 +95,7 @@ object instance:
       "requestBody" := operation.requestBody,
       "responses" := Some(operation.responses.asJsonObject).filter(_.nonEmpty),
       "callbacks" := Some(operation.callbacks).filter(_.nonEmpty),
-      "deprecated" := operation.deprecated,
+      "deprecated" := Option.when(operation.deprecated)(true),
       "security" := operation.security,
       "servers" := Some(operation.servers).filter(_.nonEmpty)
     ).dropNullValues
@@ -125,7 +125,7 @@ object instance:
       "name" := parameter.name,
       "description" := parameter.description,
       "required" := parameter.required,
-      "deprecated" := parameter.deprecated,
+      "deprecated" := Option.when(parameter.deprecated)(true),
       "schema" := parameter.schema
     ).dropNullValues
 
