@@ -36,7 +36,6 @@ object Librarian:
 
   opaque type Password = String
   object Password:
-    extension (self: Librarian.Password) def toString: String = self
     def unsafeFromString(value: String): Librarian.Password = value
     val validation: Validation[String, Librarian.Password] = validations.minLength(6).tap
 

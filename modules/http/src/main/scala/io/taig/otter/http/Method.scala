@@ -5,8 +5,6 @@ import cats.Eq
 opaque type Method = String
 
 object Method:
-  extension (method: Method) def toString: String = method
-
   val Delete: Method = "DELETE"
   val Get: Method = "GET"
   val Head: Method = "HEAD"

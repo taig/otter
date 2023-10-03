@@ -37,7 +37,6 @@ object Member:
 
   opaque type Password = String
   object Password:
-    extension (self: Member.Password) def toString: String = self
     def unsafeFromString(value: String): Member.Password = value
     val validation: Validation[String, Member.Password] = validations.minLength(6).tap
 

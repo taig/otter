@@ -4,6 +4,8 @@ import cats.Eq
 import cats.syntax.all.*
 import cats.data.Chain
 
+import java.nio.charset.Charset
+
 final case class MediaType(tpe: MediaType.Type, parameters: MediaType.Parameters):
   def print: String = if parameters.isEmpty then tpe.print else s"${tpe.print}; ${parameters.print}"
   override def toString: String = print
@@ -20,7 +22,6 @@ object MediaType:
       extension (self: MediaType.Type.Primary)
         def /(subtype: MediaType.Type.Secondary): MediaType =
           MediaType(MediaType.Type(self, subtype), Parameters.Empty)
-        def toString: String = self
 
       def apply(value: String): MediaType.Type.Primary = value
 
@@ -33,8 +34,6 @@ object MediaType:
     opaque type Secondary = String
 
     object Secondary:
-      extension (self: MediaType.Type.Secondary) def toString: String = self
-
       def apply(value: String): MediaType.Type.Secondary = value
 
       val * : MediaType.Type.Secondary = "*"
@@ -56,6 +55,11 @@ object MediaType:
     extension (self: MediaType.Parameters)
       def toChain: Chain[(String, String)] = self
       def isEmpty: Boolean = toChain.isEmpty
+      def charset: Option[Charset] = toChain
+        .collectFirstSome { case (key, value) => Option.when(key.equalsIgnoreCase("charset"))(value) }
+        .flatMap: value =>
+          try Some(Charset.forName(value))
+          catch case _: IllegalArgumentException => None
       def print: String = toChain.map { case (key, value) => s"$key=$value" }.mkString_("; ")
 
     val Empty: MediaType.Parameters = Chain.empty
@@ -66,8 +70,8 @@ object MediaType:
     def parse(value: String): Option[MediaType.Parameters] = Chain
       .fromIterableOnce(value.split(';'))
       .traverse: value =>
-        value.split("\\s*=\\s*", 2) match
-          case Array(key, value) => Some(key -> value)
+        value.split("=", 2) match
+          case Array(key, value) => Some(key.trim -> value.trim)
           case _                 => None
 
   def parse(value: String): Option[MediaType] = value.split(";", 2) match

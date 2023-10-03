@@ -45,8 +45,6 @@ object History:
         case (result, Step.Field(name))  => s"$result.$name"
         case (result, Step.Index(index)) => s"$result[$index]"
 
-    def toString: String = toJsonPath
-
   extension (self: History.Step) def /:(history: History): History = history.prepend(self)
   extension (self: String) def /:(history: History): History = Step.Field(self) /: history
   extension (self: Int) def /:(history: History): History = Step.Index(self) /: history
