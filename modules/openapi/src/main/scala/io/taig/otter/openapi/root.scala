@@ -1,5 +1,6 @@
 package io.taig.otter.openapi
 
+import io.taig.otter.codecs.*
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.*
@@ -19,9 +20,19 @@ val toSchema: Codec[?] => Schema =
 
 def toSchema(codec: Collection[?]): Schema = Schema.Array(items = toSchema(codec.codec))
 
-def toSchema(codec: Coproduct[?]): Schema = Schema.OneOf(
-  codec.toNonEmptyChain.map(branch => toSchema(branch.codec)).toChain
-)
+def toSchema(codec: Coproduct[?]): Schema =
+  val codecs = codec.toNonEmptyChain.toChain.map: branch =>
+    codec.discriminator match
+      case Discriminator.Nested(identifier, value) =>
+        Schema.Object(properties = Chain(identifier -> toSchema(string), value -> toSchema(branch.codec)))
+      case Discriminator.Merged(identifier)        =>
+        val properties = toSchema(branch.codec) match
+          case schema: Schema.Object => schema.properties
+          case _ => Chain.empty
+        Schema.Object(properties = Chain(identifier -> toSchema(string)) ++ properties)
+      case Discriminator.Keyed => Schema.Object(properties = Chain(branch.name -> toSchema(branch.codec)))
+
+  Schema.OneOf(codecs)
 
 def toSchema(codec: Dictionary[?]): Schema = Schema.Value(
   tpe = "object",
