@@ -1,50 +1,85 @@
 package io.taig.otter.http
 
 import cats.Eq
+import cats.syntax.all.*
+import cats.data.Chain
 
-final case class MediaType(tpe: MediaType.Type, subtype: MediaType.Subtype):
-  def print: String = s"$tpe/$subtype"
+final case class MediaType(tpe: MediaType.Type, parameters: MediaType.Parameters):
+  def print: String = if parameters.isEmpty then tpe.print else s"${tpe.print}; ${parameters.print}"
   override def toString: String = print
 
 object MediaType:
-  opaque type Type = String
+  final case class Type(primary: MediaType.Type.Primary, secondary: MediaType.Type.Secondary):
+    def print: String = s"$primary/$secondary"
+    override def toString: String = print
 
   object Type:
-    extension (self: MediaType.Type)
-      def /(subtype: MediaType.Subtype): MediaType = MediaType(self, subtype)
-      def toString: String = self
+    opaque type Primary = String
 
-    def apply(value: String): MediaType.Type = value
+    object Primary:
+      extension (self: MediaType.Type.Primary)
+        def /(subtype: MediaType.Type.Secondary): MediaType =
+          MediaType(MediaType.Type(self, subtype), Parameters.Empty)
+        def toString: String = self
 
-    val * : MediaType.Type = "*"
-    val application: MediaType.Type = "application"
-    val text: MediaType.Type = "text"
+      def apply(value: String): MediaType.Type.Primary = value
 
-    given (using eq: Eq[String]): Eq[MediaType.Type] = eq
+      val * : MediaType.Type.Primary = "*"
+      val application: MediaType.Type.Primary = "application"
+      val text: MediaType.Type.Primary = "text"
 
-  opaque type Subtype = String
+      given (using eq: Eq[String]): Eq[MediaType.Type.Primary] = eq
 
-  object Subtype:
-    extension (self: MediaType.Subtype) def toString: String = self
+    opaque type Secondary = String
 
-    def apply(value: String): MediaType.Subtype = value
+    object Secondary:
+      extension (self: MediaType.Type.Secondary) def toString: String = self
 
-    val * : MediaType.Subtype = "*"
-    val json: MediaType.Subtype = "json"
-    val plain: MediaType.Subtype = "plain"
-    val octetStream: MediaType.Subtype = "octet-stream"
+      def apply(value: String): MediaType.Type.Secondary = value
 
-    given (using eq: Eq[String]): Eq[MediaType.Subtype] = eq
+      val * : MediaType.Type.Secondary = "*"
+      val json: MediaType.Type.Secondary = "json"
+      val plain: MediaType.Type.Secondary = "plain"
+      val octetStream: MediaType.Type.Secondary = "octet-stream"
 
-  def parse(value: String): Option[MediaType] = value.split('/') match
-    case Array(tpe, subtype) if tpe.nonEmpty && subtype.nonEmpty => Some(Type(tpe) / Subtype(subtype))
-    case _                                                       => None
+      given (using eq: Eq[String]): Eq[MediaType.Type.Secondary] = eq
+
+    def parse(value: String): Option[MediaType.Type] = value.split('/') match
+      case Array(primary, secondary) if primary.nonEmpty && secondary.nonEmpty => Some(Type(primary, secondary))
+      case _                                                                   => None
+
+    given Eq[MediaType.Type] = (x, y) => x.primary === y.primary && x.secondary === y.secondary
+
+  opaque type Parameters = Chain[(String, String)]
+
+  object Parameters:
+    extension (self: MediaType.Parameters)
+      def toChain: Chain[(String, String)] = self
+      def isEmpty: Boolean = toChain.isEmpty
+      def print: String = toChain.map { case (key, value) => s"$key=$value" }.mkString_("; ")
+
+    val Empty: MediaType.Parameters = Chain.empty
+
+    def fromChain(value: Chain[(String, String)]): MediaType.Parameters = value
+    def apply(values: (String, String)*): MediaType.Parameters = fromChain(Chain.fromSeq(values))
+
+    def parse(value: String): Option[MediaType.Parameters] = Chain
+      .fromIterableOnce(value.split(';'))
+      .traverse: value =>
+        value.split("\\s*=\\s*", 2) match
+          case Array(key, value) => Some(key -> value)
+          case _                 => None
+
+  def parse(value: String): Option[MediaType] = value.split(";", 2) match
+    case Array(mediaType)             => Type.parse(mediaType).map(MediaType(_, Parameters.Empty))
+    case Array(mediaType, parameters) => (Type.parse(mediaType), Parameters.parse(parameters)).mapN(MediaType.apply)
+    case _                            => None
 
   object application:
-    def apply(subtype: MediaType.Subtype): MediaType = Type.application / subtype
-    val json: MediaType = application(Subtype.json)
-    val octetStream: MediaType = application(Subtype.octetStream)
+    def apply(subtype: MediaType.Type.Secondary): MediaType = Type.Primary.application / subtype
+    val json: MediaType = application(Type.Secondary.json)
+    val octetStream: MediaType = application(Type.Secondary.octetStream)
 
   object text:
-    def apply(subtype: MediaType.Subtype): MediaType = Type.text / subtype
-    val plain: MediaType = text(Subtype.plain)
+    def apply(subtype: MediaType.Type.Secondary): MediaType = Type.Primary.text / subtype
+    val plain: MediaType = text(Type.Secondary.plain)
