@@ -633,8 +633,7 @@ sealed abstract class Record[A](val description: Option[String], val name: Optio
   final override def name(f: Option[String] => Option[String]): Record[A] =
     new Record[A](description, f(name), nulls) { export self.* }
 
-  final def nulls(f: Null => Null): Record[A] =
-    new Record[A](description, None, f(nulls)) { export self.* }
+  final def nulls(f: Null => Null): Record[A] = new Record[A](description, None, f(nulls)) { export self.* }
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 

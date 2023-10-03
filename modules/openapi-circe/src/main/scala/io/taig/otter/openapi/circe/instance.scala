@@ -9,7 +9,7 @@ import io.taig.otter.circe.instance.given
 object instance:
   inline given [A <: Matchable: Encoder.AsObject]: Encoder.AsObject[A | Reference] =
     case reference: Reference => reference.asJsonObject
-    case a: A => a.asJsonObject
+    case a: A                 => a.asJsonObject
 
   given Encoder.AsObject[Components] = components =>
     JsonObject(

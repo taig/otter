@@ -25,7 +25,7 @@ def toOpenApi(
   servers = servers,
   tags = tags,
   paths = toPaths(endpoints),
-  components = Components(securitySchemes = securitySchemes)
+  components = toComponents(endpoints, securitySchemes)
 )
 
 def toPaths(endpoints: Chain[Endpoint[?, ?]]): Paths = Paths.fromIterableOnce:
@@ -84,6 +84,34 @@ def toCodeAndResponse(result: Result[?]): (Int, Extended[Response]) = result.cod
 def toMediaType(body: OtterResponse.Body[?]): Option[(String, Extended[MediaType])] = body match
   case body: OtterResponse.Body.Strict.Payload[?] => Some(body.mediaType.print -> MediaType(toSchema(body.codec)))
   case _: OtterResponse.Body.Strict.Empty[?]      => None
+
+def toComponents(
+    endpoints: Chain[Endpoint[?, ?]],
+    securitySchemes: Chain[(String, Extended[Data.Object] | Reference)]
+): Components =
+  val codecs = endpoints.flatMap: endpoint =>
+    endpoint.request.url.path.toChain.collect { case segment: Segment.Parameter[?] => segment.codec } ++
+      endpoint.request.url.queries.toChain.map(_.codec) ++
+      endpoint.request.headers.toChain.map(_.codec) ++
+      Chain.fromOption(endpoint.request.body.codec) ++
+      (endpoint.response.results.toNonEmptyChain :+ endpoint.response.violations).toChain.flatMap: result =>
+        Chain.one(result.body).collect { case body: OtterResponse.Body.Strict.Payload[?] => body.codec } ++
+          result.headers.toChain.map(_.codec)
+
+  val schemas = codecs.foldLeft(Map.empty[String, Schema]) { (result, codec) =>
+    codec.name match
+      case Some(name) =>
+        result.updatedWith(name) {
+          case None    => Some(toSchema(codec))
+          case current => current
+        }
+      case None => result
+  }
+
+  Components(
+    schemas = Chain.fromIterableOnce(schemas),
+    securitySchemes = securitySchemes
+  )
 
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
