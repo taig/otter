@@ -18,6 +18,11 @@ sealed abstract class Codec[A]:
   final def description(value: Option[String]): Self[A] = description(_ => value)
   final def description(value: String): Self[A] = description(Some(value))
 
+  def name: Option[String]
+  def name(f: Option[String] => Option[String]): Self[A]
+  final def name(value: Option[String]): Self[A] = name(_ => value)
+  final def name(value: String): Self[A] = name(Some(value))
+
   def optional: Optional[Option[A]]
 
   def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
@@ -78,16 +83,20 @@ object Value:
           case b: B => Right(b)
         }
 
-sealed abstract class Collection[A](val description: Option[String], val codec: Codec[?]) extends Codec[A]:
+sealed abstract class Collection[A](val codec: Codec[?], val description: Option[String], val name: Option[String])
+    extends Codec[A]:
   self =>
   override type Self[a] = Collection.Of[Of, a]
   override type Optional[a] = Collection.Of[Of, a]
   type Of <: Codec[?]
 
   final override def description(f: Option[String] => Option[String]): Collection.Of[Of, A] =
-    Collection(this, description)
+    new Collection[A](self.codec, description, name) { export self.* }
 
-  final override def optional: Collection.Of[Of, Option[A]] = new Collection[Option[A]](description, codec):
+  final override def name(f: Option[String] => Option[String]): Collection.Of[Of, A] =
+    new Collection[A](self.codec, description, name) { export self.* }
+
+  final override def optional: Collection.Of[Of, Option[A]] = new Collection[Option[A]](codec, description, None):
     export self.{constraints, Of}
     override def isOptional: Boolean = true
     override def decodeArray(data: Option[Data.Array]): Validated[Violations, Option[A]] =
@@ -98,7 +107,7 @@ sealed abstract class Collection[A](val description: Option[String], val codec: 
     override def print(a: Option[A])(using Of <:< Value[?]): Option[Chain[String]] = a.flatMap(self.print)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Collection.Of[Of, B] =
-    new Collection[B](description, codec):
+    new Collection[B](codec, description, None):
       export self.{isOptional, Of}
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def decodeArray(data: Option[Data.Array]): Validated[Violations, B] =
@@ -122,10 +131,7 @@ sealed abstract class Collection[A](val description: Option[String], val codec: 
 object Collection:
   type Of[A <: Codec[?], B] = Collection[B] { type Of <: A }
 
-  def apply[A <: Codec[?], B](of: Collection.Of[A, B], description: Option[String]): Collection.Of[A, B] =
-    new Collection[B](description, of.codec) { export of.* }
-
-  def apply[F[a] <: Codec[a], A](of: F[A]): Collection.Of[F[A], Chain[A]] = new Collection[Chain[A]](None, of):
+  def apply[F[a] <: Codec[a], A](of: F[A]): Collection.Of[F[A], Chain[A]] = new Collection[Chain[A]](of, None, None):
     override type Of = F[A]
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -147,7 +153,11 @@ object Collection:
         case value: Option[String] => value
     }.some
 
-sealed abstract class Coproduct[A](val description: Option[String], val discriminator: Discriminator) extends Codec[A]:
+sealed abstract class Coproduct[A](
+    val description: Option[String],
+    val discriminator: Discriminator,
+    val name: Option[String]
+) extends Codec[A]:
   self =>
   final override type Self[a] = Coproduct[a]
   final override type Optional[a] = Coproduct[a]
@@ -155,25 +165,30 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
   def toNonEmptyChain: NonEmptyChain[Branch[?]]
 
   final override def description(f: Option[String] => Option[String]): Coproduct[A] =
-    Coproduct(this, f(description), discriminator)
+    new Coproduct[A](f(description), discriminator, None) { export self.* }
+
   final def discriminator(f: Discriminator => Discriminator): Coproduct[A] =
-    Coproduct(this, description, f(discriminator))
+    new Coproduct[A](description, f(discriminator), None) { export self.* }
+
+  final override def name(f: Option[String] => Option[String]): Coproduct[A] =
+    new Coproduct[A](description, discriminator, f(name)) { export self.* }
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = imap(evidence.from)(evidence.to)
 
-  final override def optional: Coproduct[Option[A]] = new Coproduct[Option[A]](None, Discriminator.Default):
-    export self.{constraints, toNonEmptyChain}
-    override def isOptional: Boolean = true
-    override def decode(
-        data: Option[Chain[(String, Data)]],
-        discriminator: Discriminator
-    ): Validated[Violations, Option[Option[A]]] =
-      data.fold(none.valid)(_ => self.decode(data, discriminator).map(_.some))
-    override def encode(a: Option[A], discriminator: Discriminator): Option[Chain[(String, Data)]] =
-      a.flatMap(self.encode(_, discriminator))
+  final override def optional: Coproduct[Option[A]] =
+    new Coproduct[Option[A]](description, Discriminator.Default, None):
+      export self.{constraints, toNonEmptyChain}
+      override def isOptional: Boolean = true
+      override def decode(
+          data: Option[Chain[(String, Data)]],
+          discriminator: Discriminator
+      ): Validated[Violations, Option[Option[A]]] =
+        data.fold(none.valid)(_ => self.decode(data, discriminator).map(_.some))
+      override def encode(a: Option[A], discriminator: Discriminator): Option[Chain[(String, Data)]] =
+        a.flatMap(self.encode(_, discriminator))
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Coproduct[B] =
-    new Coproduct[B](description, discriminator):
+    new Coproduct[B](description, discriminator, None):
       export self.{isOptional, toNonEmptyChain}
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def decode(
@@ -186,7 +201,7 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
         self.encode(g(b), discriminator)
 
   final def orElse[B](codec: Coproduct[B]): Coproduct[Either[A, B]] =
-    new Coproduct[Either[A, B]](None, Discriminator.Default):
+    new Coproduct[Either[A, B]](None, Discriminator.Default, None):
       override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain ++ codec.toNonEmptyChain
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
@@ -225,10 +240,7 @@ sealed abstract class Coproduct[A](val description: Option[String], val discrimi
   protected def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]]
 
 object Coproduct:
-  def apply[A](codec: Coproduct[A], description: Option[String], discriminator: Discriminator): Coproduct[A] =
-    new Coproduct[A](description, discriminator) { export codec.* }
-
-  def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default):
+  def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default, None):
     override def toNonEmptyChain: NonEmptyChain[Branch[?]] = NonEmptyChain.one(branch)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -240,15 +252,19 @@ object Coproduct:
     override def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]] =
       branch.encode(a, discriminator).some
 
-sealed abstract class Dictionary[A](val codec: Codec[?], val description: Option[String]) extends Codec[A]:
+sealed abstract class Dictionary[A](val codec: Codec[?], val description: Option[String], val name: Option[String])
+    extends Codec[A]:
   self =>
   final override type Self[a] = Dictionary[a]
   final override type Optional[a] = Dictionary[a]
 
   final override def description(f: Option[String] => Option[String]): Dictionary[A] =
-    new Dictionary[A](codec, f(description)) { export self.* }
+    new Dictionary[A](codec, f(description), None) { export self.* }
 
-  final override def optional: Dictionary[Option[A]] = new Dictionary[Option[A]](codec, description):
+  final override def name(f: Option[String] => Option[String]): Dictionary[A] =
+    new Dictionary[A](codec, description, f(name)) { export self.* }
+
+  final override def optional: Dictionary[Option[A]] = new Dictionary[Option[A]](codec, description, None):
     export self.constraints
     override def isOptional: Boolean = true
     override def decodeObject(data: Option[Data.Object]): Validated[Violations, Option[A]] =
@@ -256,7 +272,7 @@ sealed abstract class Dictionary[A](val codec: Codec[?], val description: Option
     override def encodeObject(a: Option[A]): Option[Data.Object] = a.flatMap(self.encodeObject)
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dictionary[B] =
-    new Dictionary[B](codec, description):
+    new Dictionary[B](codec, description, None):
       export self.isOptional
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, B] =
@@ -274,7 +290,7 @@ sealed abstract class Dictionary[A](val codec: Codec[?], val description: Option
 
 object Dictionary:
   def apply[A, B](key: Value.Required[A], of: Codec[B]): Dictionary[Chain[(A, B)]] =
-    new Dictionary[Chain[(A, B)]](of, None):
+    new Dictionary[Chain[(A, B)]](of, None, None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decodeObject(data: Option[Data.Object]): Validated[Violations, Chain[(A, B)]] = data match
@@ -286,32 +302,34 @@ object Dictionary:
       override def encodeObject(a: Chain[(A, B)]): Option[Data.Object] =
         Data.Object(a.map { case (a, b) => (key.print(a), of.encode(b)) }).some
 
-sealed abstract class Dynamic[A](val description: Option[String]) extends Codec[A]:
+sealed abstract class Dynamic[A](val description: Option[String], val name: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Dynamic[a]
   final override type Optional[a] = Dynamic[a]
 
-  final override def description(f: Option[String] => Option[String]): Dynamic[A] = Dynamic(this, f(description))
+  final override def description(f: Option[String] => Option[String]): Dynamic[A] =
+    new Dynamic[A](f(description), None) { export self.* }
 
-  final override def optional: Dynamic[Option[A]] = new Dynamic[Option[A]](description):
+  override def name(f: Option[String] => Option[String]): Dynamic[A] =
+    new Dynamic[A](description, f(name)) { export self.* }
+
+  final override def optional: Dynamic[Option[A]] = new Dynamic[Option[A]](description, None):
     export self.constraints
     override def isOptional: Boolean = true
     override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
     override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
       data.fold(none.valid)(_ => self.decode(data).map(_.some))
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] = new Dynamic[B](description):
-    export self.isOptional
-    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def encode(b: B): Data = self.encode(g(b))
-    override def decode(data: Option[Data.Value]): Validated[Violations, B] =
-      self.decode(data).andThen(validation(_).leftMap(Violations.root))
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Dynamic[B] =
+    new Dynamic[B](description, None):
+      export self.isOptional
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def encode(b: B): Data = self.encode(g(b))
+      override def decode(data: Option[Data.Value]): Validated[Violations, B] =
+        self.decode(data).andThen(validation(_).leftMap(Violations.root))
 
 object Dynamic:
-  def apply[A](codec: Dynamic[A], description: Option[String]): Dynamic[A] =
-    new Dynamic[A](description) { export codec.* }
-
-  val Default: Dynamic[Data.Value] = new Dynamic[Data.Value](None):
+  val Default: Dynamic[Data.Value] = new Dynamic[Data.Value](None, None):
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def encode(a: Data.Value): Data = a
@@ -328,7 +346,7 @@ sealed abstract class Enumeration[A] extends Value[A]:
   def values: Chain[Data.Primitive]
 
   final override def optional: Enumeration[Option[A]] =
-    new Enumeration.Optional[Option[A]](self.description, self.codec):
+    new Enumeration.Optional[Option[A]](self.codec, self.description, None):
       export self.values
       override def constraints: Chain[Constraint] = Chain.empty
       override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
@@ -343,16 +361,22 @@ sealed abstract class Enumeration[A] extends Value[A]:
           case value: Option[String] => value
 
 object Enumeration:
-  sealed abstract class Required[A](val description: Option[String], val codec: Value.Required[?])
-      extends Enumeration[A]
+  sealed abstract class Required[A](
+      val codec: Value.Required[?],
+      val description: Option[String],
+      val name: Option[String]
+  ) extends Enumeration[A]
       with Value.Required[A]:
     self =>
     final override type Self[a] = Enumeration.Required[a]
     final override def isOptional: Boolean = false
     final override def description(f: Option[String] => Option[String]): Enumeration.Required[A] =
-      new Required[A](f(description), codec) { export self.* }
+      new Required[A](codec, f(description), None) { export self.* }
+    final override def name(f: Option[String] => Option[String]): Enumeration.Required[A] =
+      new Required[A](codec, description, f(name)) { export self.* }
+
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Required[B] =
-      new Required[B](description, codec):
+      new Required[B](codec, description, None):
         export self.values
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
@@ -363,34 +387,38 @@ object Enumeration:
         override def print(b: B): String = self.print(g(b))
 
   object Required:
-    def apply[A, B](of: Value.Required[A], mapping: Mapping[B, A]): Enumeration.Required[B] = new Required[B](None, of):
-      override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(encode))
-      override def constraints: Chain[Constraint] = Chain.empty
-      override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
-        .decode(data)
-        .andThen: a =>
-          Validated.fromOption(
-            mapping.prj(a),
-            Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
-          )
-      override def encode(b: B): Data.Primitive = of.encode(mapping.inj(b))
-      override def parse(value: String): Validated[Violations, B] = of
-        .parse(value)
-        .andThen: a =>
-          Validated.fromOption(
-            mapping.prj(a),
-            Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
-          )
-      override def print(b: B): String = of.print(mapping.inj(b))
+    def apply[A, B](of: Value.Required[A], mapping: Mapping[B, A]): Enumeration.Required[B] =
+      new Required[B](of, None, None):
+        override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(encode))
+        override def constraints: Chain[Constraint] = Chain.empty
+        override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
+          .decode(data)
+          .andThen: a =>
+            Validated.fromOption(
+              mapping.prj(a),
+              Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
+            )
+        override def encode(b: B): Data.Primitive = of.encode(mapping.inj(b))
+        override def parse(value: String): Validated[Violations, B] = of
+          .parse(value)
+          .andThen: a =>
+            Validated.fromOption(
+              mapping.prj(a),
+              Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
+            )
+        override def print(b: B): String = of.print(mapping.inj(b))
 
-  abstract private class Optional[A](val description: Option[String], val codec: Value[?]) extends Enumeration[A]:
+  abstract private class Optional[A](val codec: Value[?], val description: Option[String], val name: Option[String])
+      extends Enumeration[A]:
     self =>
     final override type Self[a] = Enumeration.Optional[a]
     final override def isOptional: Boolean = false
     final override def description(f: Option[String] => Option[String]): Enumeration.Optional[A] =
-      new Enumeration.Optional[A](f(description), codec) { export self.* }
+      new Enumeration.Optional[A](codec, f(description), None) { export self.* }
+    final override def name(f: Option[String] => Option[String]): Enumeration.Optional[A] =
+      new Enumeration.Optional[A](codec, description, f(name)) { export self.* }
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Enumeration.Optional[B] =
-      new Enumeration.Optional[B](description, codec):
+      new Enumeration.Optional[B](codec, description, None):
         export self.values
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
@@ -413,7 +441,7 @@ sealed abstract class Primitive[A] extends Codec[A] with Value[A]:
   final def format(value: String): Self[A] = format(Some(value))
 
   final override def optional: Primitive[Option[A]] =
-    new Primitive.Optional[Option[A]](self.description, self.format, self.tpe):
+    new Primitive.Optional[Option[A]](self.description, self.format, self.tpe, None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def decode(data: Option[Data.Value]): Validated[Violations, Option[A]] =
         data.fold(none.valid)(_ => self.decode(data).map(_.some))
@@ -429,8 +457,12 @@ sealed abstract class Primitive[A] extends Codec[A] with Value[A]:
   override def encode(a: A): Data.Primitive | Data.Null.type
 
 object Primitive:
-  sealed abstract class Required[A](val description: Option[String], val format: Option[String], val tpe: Type[?])
-      extends Primitive[A]
+  sealed abstract class Required[A](
+      val description: Option[String],
+      val format: Option[String],
+      val tpe: Type[?],
+      val name: Option[String]
+  ) extends Primitive[A]
       with Value.Required[A]:
     self =>
     final override type Self[a] = Primitive.Required[a]
@@ -438,13 +470,16 @@ object Primitive:
     final override def isOptional: Boolean = false
 
     final override def description(f: Option[String] => Option[String]): Primitive.Required[A] =
-      new Required[A](f(description), format, tpe) { export self.* }
+      new Required[A](f(description), format, tpe, None) { export self.* }
 
     final override def format(f: Option[String] => Option[String]): Primitive.Required[A] =
-      new Required[A](description, f(format), tpe) { export self.* }
+      new Required[A](description, f(format), tpe, None) { export self.* }
+
+    final override def name(f: Option[String] => Option[String]): Primitive.Required[A] =
+      new Required[A](description, format, tpe, f(name)) { export self.* }
 
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive.Required[B] =
-      new Required[B](description, format, tpe):
+      new Required[B](description, format, tpe, None):
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
           self.decode(data).andThen(validation(_).leftMap(Violations.root))
@@ -456,7 +491,7 @@ object Primitive:
     override def encode(a: A): Data.Primitive
 
   object Required:
-    def apply[A](of: Type[A]): Primitive.Required[A] = new Required[A](None, None, of):
+    def apply[A](of: Type[A]): Primitive.Required[A] = new Required[A](None, None, of, None):
       override def constraints: Chain[Constraint] = Chain.empty
       override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
         case Some(data: Data.Primitive) => of.decode(data)
@@ -469,21 +504,28 @@ object Primitive:
       )
       override def print(a: A): String = of.print(a)
 
-  abstract private class Optional[A](val description: Option[String], val format: Option[String], val tpe: Type[?])
-      extends Primitive[A]:
+  abstract private class Optional[A](
+      val description: Option[String],
+      val format: Option[String],
+      val tpe: Type[?],
+      val name: Option[String]
+  ) extends Primitive[A]:
     self =>
     final override type Self[a] = Primitive.Optional[a]
 
     final override def isOptional: Boolean = true
 
     final override def description(f: Option[String] => Option[String]): Primitive.Optional[A] =
-      new Primitive.Optional[A](f(description), format, tpe) { export self.* }
+      new Primitive.Optional[A](f(description), format, tpe, None) { export self.* }
 
     final override def format(f: Option[String] => Option[String]): Primitive.Optional[A] =
-      new Primitive.Optional[A](description, f(format), tpe) { export self.* }
+      new Primitive.Optional[A](description, f(format), tpe, None) { export self.* }
+
+    final override def name(f: Option[String] => Option[String]): Primitive.Optional[A] =
+      new Primitive.Optional[A](description, format, tpe, f(name)) { export self.* }
 
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Primitive.Optional[B] =
-      new Primitive.Optional[B](description, format, tpe):
+      new Primitive.Optional[B](description, format, tpe, None):
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
           self.decode(data).andThen(validation(_).leftMap(Violations.root))
@@ -494,18 +536,22 @@ object Primitive:
 
     override def encode(a: A): Data.Primitive | Data.Null.type
 
-sealed abstract class Product[A](val description: Option[String]) extends Codec[A]:
+sealed abstract class Product[A](val description: Option[String], val name: Option[String]) extends Codec[A]:
   self =>
   final override type Self[a] = Product[a]
   final override type Optional[a] = Product[a]
 
   def toChain: Chain[Codec[?]]
 
-  final override def description(f: Option[String] => Option[String]): Product[A] = Product(this, f(description))
+  final override def description(f: Option[String] => Option[String]): Product[A] =
+    new Product[A](f(description), None) { export self.* }
+
+  final override def name(f: Option[String] => Option[String]): Product[A] =
+    new Product[A](description, f(name)) { export self.* }
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[B] = imap(evidence.from)(evidence.to)
 
-  final override def optional: Product[Option[A]] = new Product[Option[A]](description):
+  final override def optional: Product[Option[A]] = new Product[Option[A]](description, None):
     override def toChain: Chain[Codec[?]] = self.toChain
     override def constraints: Chain[Constraint] = self.constraints
     override def isOptional: Boolean = true
@@ -515,15 +561,16 @@ sealed abstract class Product[A](val description: Option[String]) extends Codec[
       else self.decodeArrayWithRemainders(data).map(_.map(_.some))
     override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
 
-  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] = new Product[B](description):
-    override def toChain: Chain[Codec[?]] = self.toChain
-    override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
-    override def isOptional: Boolean = self.isOptional
-    override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, B)] =
-      self.decodeArrayWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
-    override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
+  final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Product[B] =
+    new Product[B](description, None):
+      override def toChain: Chain[Codec[?]] = self.toChain
+      override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
+      override def isOptional: Boolean = self.isOptional
+      override def decodeArrayWithRemainders(data: Data.Array): Validated[Violations, (Data.Array, B)] =
+        self.decodeArrayWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
+      override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
 
-  final def product[B](codec: Product[B]): Product[(A, B)] = new Product[(A, B)](description):
+  final def product[B](codec: Product[B]): Product[(A, B)] = new Product[(A, B)](None, None):
     override def toChain: Chain[Codec[?]] = self.toChain ++ codec.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -554,10 +601,7 @@ sealed abstract class Product[A](val description: Option[String]) extends Codec[
   def encodeArray(a: A): Option[Data.Array]
 
 object Product:
-  def apply[A](codec: Product[A], description: Option[String]): Product[A] =
-    new Product[A](description) { export codec.* }
-
-  val Empty: Product[Unit] = new Product[Unit](None):
+  val Empty: Product[Unit] = new Product[Unit](None, None):
     override def toChain: Chain[Codec[?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -565,7 +609,7 @@ object Product:
       (data, ()).valid
     override def encodeArray(a: Unit): Option[Data.Array] = Data.Array.Empty.some
 
-  def apply[A](codec: Codec[A]): Product[A] = new Product[A](None):
+  def apply[A](codec: Codec[A]): Product[A] = new Product[A](None, None):
     override def toChain: Chain[Codec[?]] = Chain.one(codec)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -575,21 +619,28 @@ object Product:
         case None             => Violations.rootNec(Violation.required).invalid
     override def encodeArray(a: A): Option[Data.Array] = Data.Array(Chain.one(codec.encode(a))).some
 
-sealed abstract class Record[A](val description: Option[String], val nulls: Null) extends Codec[A]:
+sealed abstract class Record[A](val description: Option[String], val name: Option[String], val nulls: Null)
+    extends Codec[A]:
   self =>
   final override type Self[a] = Record[a]
   final override type Optional[a] = Record[a]
 
   def toChain: Chain[Field[?]]
 
-  final override def description(f: Option[String] => Option[String]): Record[A] = Record(this, f(description), nulls)
-  final def nulls(f: Null => Null): Record[A] = Record(this, description, f(nulls))
+  final override def description(f: Option[String] => Option[String]): Record[A] =
+    new Record[A](f(description), None, nulls) { export self.* }
+
+  final override def name(f: Option[String] => Option[String]): Record[A] =
+    new Record[A](description, f(name), nulls) { export self.* }
+
+  final def nulls(f: Null => Null): Record[A] =
+    new Record[A](description, None, f(nulls)) { export self.* }
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = imap(evidence.from)(evidence.to)
 
   def toProduct: Product[A]
 
-  final override def optional: Record[Option[A]] = new Record[Option[A]](description, nulls):
+  final override def optional: Record[Option[A]] = new Record[Option[A]](description, None, nulls):
     export self.{constraints, toChain}
     override def isOptional: Boolean = true
     override def toProduct: Product[Option[A]] = self.toProduct.optional
@@ -601,7 +652,7 @@ sealed abstract class Record[A](val description: Option[String], val nulls: Null
     override def encode(a: Option[A], nulls: Null): Option[Chain[(String, Data)]] = a.flatMap(self.encode(_, nulls))
 
   final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Record[B] =
-    new Record[B](description, nulls):
+    new Record[B](description, None, nulls):
       export self.{isOptional, toChain}
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def toProduct: Product[B] = self.toProduct.ivalidate(validation)(g)
@@ -611,7 +662,7 @@ sealed abstract class Record[A](val description: Option[String], val nulls: Null
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
       override def encode(b: B, nulls: Null): Option[Chain[(String, Data)]] = self.encode(g(b), nulls)
 
-  final def product[B](codec: Record[B]): Record[(A, B)] = new Record[(A, B)](None, Null.Default):
+  final def product[B](codec: Record[B]): Record[(A, B)] = new Record[(A, B)](None, None, Null.Default):
     override def toChain: Chain[Field[?]] = self.toChain ++ codec.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -640,10 +691,7 @@ sealed abstract class Record[A](val description: Option[String], val nulls: Null
   protected def encode(a: A, nulls: Null): Option[Chain[(String, Data)]]
 
 object Record extends ToRecordOps:
-  def apply[A](codec: Record[A], description: Option[String], nulls: Null): Record[A] =
-    new Record[A](description, nulls) { export codec.* }
-
-  val Empty: Record[Unit] = new Record[Unit](None, Null.Default):
+  val Empty: Record[Unit] = new Record[Unit](None, None, Null.Default):
     override def toChain: Chain[Field[?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -653,7 +701,7 @@ object Record extends ToRecordOps:
     ): Validated[Violations, (Option[Chain[(String, Data)]], Unit)] = (data, ()).valid
     override def encode(a: Unit, nulls: Null): Option[Chain[(String, Data)]] = Chain.empty.some
 
-  def apply[A](field: Field[A]): Record[A] = new Record[A](None, Null.Default):
+  def apply[A](field: Field[A]): Record[A] = new Record[A](None, None, Null.Default):
     override def toChain: Chain[Field[?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -676,7 +724,7 @@ sealed abstract class Union[A] extends Codec[A]:
   final override def optional: Union.Of[Of, Option[A]] = ???
 
   final def orElse[B](codec: Union[B]): Union.Of[self.Of | codec.Of, Either[A, B]] =
-    new Union.Root[Either[A, B]](None):
+    new Union.Root[Either[A, B]](None, None):
       override type Of = self.Of | codec.Of
       override def toNonEmptyChain: NonEmptyChain[Codec[?]] = self.toNonEmptyChain.concat(codec.toNonEmptyChain)
       override def constraints: Chain[Constraint] = Chain.empty
@@ -694,15 +742,20 @@ sealed abstract class Union[A] extends Codec[A]:
 object Union:
   type Of[A <: Codec[?], B] = Union[B] { type Of <: A }
 
-  sealed abstract class Required[A](val description: Option[String]) extends Union[A]:
+  sealed abstract class Required[A](val description: Option[String], val name: Option[String]) extends Union[A]:
     self =>
     final override type Self[a] = Union.Required.Of[Of, a]
     override type Of <: Value.Required[?]
     final override def isOptional: Boolean = false
+
     final override def description(f: Option[String] => Option[String]): Required.Of[Of, A] =
-      new Required[A](f(description)) { export self.* }
+      new Required[A](f(description), None) { export self.* }
+
+    final override def name(f: Option[String] => Option[String]): Required.Of[Of, A] =
+      new Required[A](description, f(name)) { export self.* }
+
     final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Required.Of[Of, B] =
-      new Required[B](description):
+      new Required[B](description, None):
         export self.{toNonEmptyChain, Of}
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
@@ -712,7 +765,7 @@ object Union:
           self.parse(value).andThen(validation(_).leftMap(Violations.root))
         override def print(b: B): String = self.print(g(b))
     final def orElse[B](codec: Union.Required[B]): Union.Required.Of[self.Of | codec.Of, Either[A, B]] =
-      new Required[Either[A, B]](None):
+      new Required[Either[A, B]](None, None):
         export self.Of
         override def toNonEmptyChain: NonEmptyChain[Codec[?]] = self.toNonEmptyChain.concat(codec.toNonEmptyChain)
         override def constraints: Chain[Constraint] = Chain.empty
@@ -730,7 +783,7 @@ object Union:
   object Required:
     type Of[A <: Value.Required[?], B] = Union.Required[B] { type Of <: A }
 
-    def apply[A](codec: Value.Required[A]): Union.Required.Of[codec.type, A] = new Required[A](None):
+    def apply[A](codec: Value.Required[A]): Union.Required.Of[codec.type, A] = new Required[A](None, None):
       override type Of = codec.type
       override def toNonEmptyChain: NonEmptyChain[Codec[?]] = NonEmptyChain.one(codec)
       override def constraints: Chain[Constraint] = Chain.empty
@@ -740,13 +793,15 @@ object Union:
         codec.parse(value)
       override def print(a: A): String = codec.print(a)
 
-  abstract private class Root[A](val description: Option[String]) extends Union[A]:
+  abstract private class Root[A](val description: Option[String], val name: Option[String]) extends Union[A]:
     self =>
     override type Self[a] = Union.Of[self.Of, a]
-    override def description(f: Option[String] => Option[String]): Union.Of[self.Of, A] =
-      new Root[A](f(description)) { export self.* }
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Union.Of[self.Of, B] =
-      new Root[B](description) {
+    final override def description(f: Option[String] => Option[String]): Union.Of[self.Of, A] =
+      new Root[A](f(description), None) { export self.* }
+    final override def name(f: Option[String] => Option[String]): Union.Of[self.Of, A] =
+      new Root[A](description, f(name)) { export self.* }
+    final override def ivalidate[B](validation: Validation[A, B])(g: B => A): Union.Of[self.Of, B] =
+      new Root[B](description, None):
         export self.{isOptional, toNonEmptyChain, Of}
         override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
         override def decode(data: Option[Data.Value]): Validated[Violations, B] =
@@ -755,9 +810,8 @@ object Union:
         override def parse(value: Option[String])(using Of <:< Value[?]): Validated[Violations, B] =
           self.parse(value).andThen(validation(_).leftMap(Violations.root))
         override def print(b: B)(using Of <:< Value[?]): Option[String] = self.print(g(b))
-      }
 
-  def apply[A](codec: Codec[A]): Union.Of[codec.type, A] = new Root[A](None):
+  def apply[A](codec: Codec[A]): Union.Of[codec.type, A] = new Root[A](None, None):
     override type Of = codec.type
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
