@@ -18,16 +18,11 @@ object Response:
     self =>
     type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
 
-    def codec: Option[Codec[?]]
-
-    def mediaType: Option[MediaType]
-
     def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A]
     def encode(a: A): (Http.Headers, Http.Payload)
 
   object Body extends ToResponseBodyOps:
-    sealed abstract class Strict[A](val codec: Option[Codec[?]], val mediaType: Option[MediaType])
-        extends Response.Body[A]:
+    sealed abstract class Strict[A] extends Response.Body[A]:
       self =>
       final override type Self[a] = Response.Body.Strict[a]
 
@@ -39,13 +34,16 @@ object Response:
       override def encode(a: A): (Http.Headers, Http.Payload.Strict)
 
     object Strict:
-      val Empty: Response.Body.Strict[Unit] = new Strict[Unit](None, None):
+      sealed abstract class Empty[A] extends Response.Body.Strict[A]
+      sealed abstract class Payload[A](val codec: Codec[?], val mediaType: MediaType) extends Response.Body.Strict[A]
+
+      val Empty: Response.Body.Strict.Empty[Unit] = new Empty[Unit]:
         override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Unit] = ().valid
         override def encode(a: Unit): (Http.Headers, Http.Payload.Strict) =
           (Chain.empty, Http.Payload.Strict(Array.emptyByteArray))
 
-      val Binary: Response.Body.Strict[Array[Byte]] =
-        new Strict[Array[Byte]](Some(string.format("binary")), Some(MediaType.application.octetStream)):
+      val Binary: Response.Body.Strict.Payload[Array[Byte]] =
+        new Payload[Array[Byte]](string.format("binary"), MediaType.application.octetStream):
           override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
             payload.valid
           override def encode(a: Array[Byte]): (Http.Headers, Http.Payload.Strict) =
@@ -56,7 +54,7 @@ object Response:
           g: Data => (Http.Headers, Array[Byte]),
           of: Codec[A],
           mediaType: MediaType
-      ): Response.Body.Strict[A] = new Strict[A](Some(of), Some(mediaType)):
+      ): Response.Body.Strict.Payload[A] = new Payload[A](of, mediaType):
         override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
           f(headers, payload).andThen(of.decode)
         override def encode(a: A): (Http.Headers, Http.Payload.Strict) = g(of.encode(a)).map(Http.Payload.Strict.apply)

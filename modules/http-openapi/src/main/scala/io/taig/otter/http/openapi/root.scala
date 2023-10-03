@@ -2,6 +2,7 @@ package io.taig.otter.http.openapi
 
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.http.Response.Body
 import io.taig.otter.{Codec, Data}
 import io.taig.otter.http.{Endpoint, Method, Request, Response as OtterResponse, Result, Results}
 import io.taig.otter.openapi.*
@@ -61,11 +62,16 @@ def toResponses(response: OtterResponse[?]): Responses = Responses(
   values = toCodeAndResponses(response.results.toNonEmptyChain.toChain :+ response.violations)
 )
 
-def toCodeAndResponses(result: Chain[Result[?]]): Chain[(Int, Extended[Response])] = result.map: result =>
-  result.code.toInt -> Response(
-    description = result.description.orElse(result.code.toMessage).getOrElse(result.code.toString),
-    content = Chain.fromOption(result.body.codec.map(codec => ("application/json", MediaType(toSchema(codec)))))
-  )
+def toCodeAndResponses(result: Chain[Result[?]]): Chain[(Int, Extended[Response])] = result.map(toCodeAndResponse)
+
+def toCodeAndResponse(result: Result[?]): (Int, Extended[Response]) = result.code.toInt -> Response(
+  description = result.description.orElse(result.code.toMessage).getOrElse(result.code.toString),
+  content = Chain.fromOption(toMediaType(result.body))
+)
+
+def toMediaType(body: OtterResponse.Body[?]): Option[(String, Extended[MediaType])] = body match
+  case body: OtterResponse.Body.Strict.Payload[?] => Some(body.mediaType.print -> MediaType(toSchema(body.codec)))
+  case _: OtterResponse.Body.Strict.Empty[?]      => None
 
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
