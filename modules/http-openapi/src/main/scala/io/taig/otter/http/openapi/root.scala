@@ -3,8 +3,8 @@ package io.taig.otter.http.openapi
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.http.Response.Body
-import io.taig.otter.{Codec, Data}
-import io.taig.otter.http.{Endpoint, Method, Request, Response as OtterResponse, Result, Segment}
+import io.taig.otter.{Codec, Collection, Coproduct, Data, Dictionary, Dynamic, Enumeration, Primitive, Product, Record, Union}
+import io.taig.otter.http.{Endpoint, Method, Request, Result, Segment, Response as OtterResponse}
 import io.taig.otter.openapi.*
 
 def toOpenApi(
@@ -89,7 +89,7 @@ def toComponents(
     endpoints: Chain[Endpoint[?, ?]],
     securitySchemes: Chain[(String, Extended[Data.Object] | Reference)]
 ): Components =
-  val codecs = endpoints.flatMap: endpoint =>
+  val codecs = endpoints.flatMap { endpoint =>
     endpoint.request.url.path.toChain.collect { case segment: Segment.Parameter[?] => segment.codec } ++
       endpoint.request.url.queries.toChain.map(_.codec) ++
       endpoint.request.headers.toChain.map(_.codec) ++
@@ -97,6 +97,7 @@ def toComponents(
       (endpoint.response.results.toNonEmptyChain :+ endpoint.response.violations).toChain.flatMap: result =>
         Chain.one(result.body).collect { case body: OtterResponse.Body.Strict.Payload[?] => body.codec } ++
           result.headers.toChain.map(_.codec)
+  }.flatMap(toCodecs)
 
   val schemas = codecs.foldLeft(Map.empty[String, Schema]) { (result, codec) =>
     codec.name match
@@ -112,6 +113,17 @@ def toComponents(
     schemas = Chain.fromIterableOnce(schemas),
     securitySchemes = securitySchemes
   )
+
+def toCodecs(codec: Codec[?]): Chain[Codec[?]] = codec match
+  case codec: Collection[?] => codec +: toCodecs(codec.codec)
+  case codec: Coproduct[?] => codec +: codec.toNonEmptyChain.toChain.map(_.codec).flatMap(toCodecs)
+  case codec: Dictionary[?] => codec +: toCodecs(codec.codec)
+  case codec: Dynamic[?] => Chain.one(codec)
+  case codec: Enumeration[?] => codec +: toCodecs(codec.codec)
+  case codec: Primitive[?] => Chain.one(codec)
+  case codec: Product[?] => codec +: codec.toChain.flatMap(toCodecs)
+  case codec: Record[?] => codec +: codec.toChain.map(_.codec).flatMap(toCodecs)
+  case codec: Union[?] => codec +: codec.toNonEmptyChain.toChain.flatMap(toCodecs)
 
 //  def constraints(tpe: Type[?]): Chain[Constraint] => JsonObject =
 //    _.foldLeft(JsonObject.empty)((result, current) => constraint(tpe)(current).deepMerge(result))
