@@ -131,7 +131,7 @@ object instance:
 
   given Encoder.AsObject[Reference] = reference =>
     JsonObject(
-      "$ref" := reference.ref,
+      "$ref" := s"#/${reference.ref}",
       "summary" := reference.summary,
       "description" := reference.description
     ).dropNullValues

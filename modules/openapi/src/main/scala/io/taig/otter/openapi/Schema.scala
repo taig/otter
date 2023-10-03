@@ -5,7 +5,7 @@ import io.taig.otter.Data
 
 enum Schema:
   case Array(
-      items: Schema,
+      items: Schema | Reference,
       format: Option[String] = None,
       description: Option[String] = None
   )
@@ -13,16 +13,16 @@ enum Schema:
       tpe: String,
       enums: Chain[Data.Primitive]
   )
-  case OneOf(codecs: Chain[Schema])
+  case OneOf(codecs: Chain[Schema | Reference])
   case Object(
       format: Option[String] = None,
       description: Option[String] = None,
-      properties: Chain[(String, Schema)] = Chain.empty,
+      properties: Chain[(String, Schema | Reference)] = Chain.empty,
       required: Chain[String] = Chain.empty
   )
   case Value(
       tpe: String,
       format: Option[String] = None,
       description: Option[String] = None,
-      additionalProperties: Option[Schema] = None
+      additionalProperties: Option[Schema | Reference] = None
   )

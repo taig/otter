@@ -78,7 +78,7 @@ def toParameters(request: Request[?]): Chain[Extended[Parameter]] = request.url.
     )
 
 def toRequestBody(request: Request.Body[?], codec: Codec[?]): RequestBody = RequestBody(
-  content = Chain("application/json" -> MediaType(toSchema(codec))),
+  content = Chain("application/json" -> MediaType(toSchemaOrReference(codec))),
   required = !codec.isOptional
 )
 
@@ -101,19 +101,7 @@ def toComponents(
     endpoints: Chain[Endpoint[?, ?]],
     securitySchemes: Chain[(String, Extended[Data.Object] | Reference)]
 ): Components =
-  val codecs = endpoints
-    .flatMap { endpoint =>
-      endpoint.request.url.path.toChain.collect { case segment: Segment.Parameter[?] => segment.codec } ++
-        endpoint.request.url.queries.toChain.map(_.codec) ++
-        endpoint.request.headers.toChain.map(_.codec) ++
-        Chain.fromOption(endpoint.request.body.codec) ++
-        (endpoint.response.results.toNonEmptyChain :+ endpoint.response.violations).toChain.flatMap: result =>
-          Chain.one(result.body).collect { case body: OtterResponse.Body.Strict.Payload[?] => body.codec } ++
-            result.headers.toChain.map(_.codec)
-    }
-    .flatMap(toCodecs)
-
-  val schemas = codecs.foldLeft(Map.empty[String, Schema]) { (result, codec) =>
+  val schemas = endpoints.flatMap(toCodecs).foldLeft(Map.empty[String, Schema]) { (result, codec) =>
     codec.name match
       case Some(name) =>
         result.updatedWith(name) {
@@ -127,6 +115,16 @@ def toComponents(
     schemas = Chain.fromIterableOnce(schemas),
     securitySchemes = securitySchemes
   )
+
+def toCodecs(endpoint: Endpoint[?, ?]): Chain[Codec[?]] = (
+  endpoint.request.url.path.toChain.collect { case segment: Segment.Parameter[?] => segment.codec } ++
+    endpoint.request.url.queries.toChain.map(_.codec) ++
+    endpoint.request.headers.toChain.map(_.codec) ++
+    Chain.fromOption(endpoint.request.body.codec) ++
+    (endpoint.response.results.toNonEmptyChain :+ endpoint.response.violations).toChain.flatMap: result =>
+      Chain.one(result.body).collect { case body: OtterResponse.Body.Strict.Payload[?] => body.codec } ++
+        result.headers.toChain.map(_.codec)
+).flatMap(toCodecs)
 
 def toCodecs(codec: Codec[?]): Chain[Codec[?]] = codec match
   case codec: Collection[?]  => codec +: toCodecs(codec.codec)
