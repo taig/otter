@@ -50,7 +50,7 @@ object codecs:
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
 
-  def field[A, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] = Field(name, key, codec)
+  def field[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] = Field(name, key, codec)
   def field[A](name: String, codec: Codec[A]): Field[A] = field(name, string, codec)
   def field[A](name: Int, codec: Codec[A]): Field[A] = field(name, int, codec)
 

@@ -1,35 +1,49 @@
 package io.taig.otter
 
+import cats.Eq
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violations
 
-// TODO use Eq and key codec to do stuff
-final case class Field[A](name: String, codec: Codec[A], nulls: Option[Null]):
-  def isOptional: Boolean = codec.isOptional
+sealed abstract class Field[A](val nulls: Option[Null]):
+  self =>
+  def key: Value.Required[?]
+  def codec: Codec[?]
+  def name: String
 
-  def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
-  def toRecord: Record[A] = Record(this)
+  final def isOptional: Boolean = codec.isOptional
 
-  def nulls(f: Option[Null] => Option[Null]): Field[A] = copy(nulls = f(nulls))
-  def nulls(value: Option[Null]): Field[A] = nulls(_ => value)
-  def nulls(value: Null): Field[A] = nulls(Some(value))
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
+  final def toRecord: Record[A] = Record(this)
+  def toProduct: Product[A]
 
-  def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], A)] =
-    data.firstWithRemainders(name) match
-      case Some((head, tail)) => codec.decode(head).tupleLeft(tail)
-      case None               => codec.decode(None).tupleLeft(data)
+  final def nulls(f: Option[Null] => Option[Null]): Field[A] = new Field[A](f(nulls)) { export self.* }
+  final def nulls(value: Option[Null]): Field[A] = nulls(_ => value)
+  final def nulls(value: Null): Field[A] = nulls(Some(value))
 
-  def encode(a: A, parent: Null): Chain[(String, Data)] =
-    val nulls = (parent, this.nulls) match
-      case (_, Some(nulls)) => nulls
-      case (nulls, None)    => nulls
-
-    codec.encode(a) match
-      case Data.Null if nulls === Null.Hide => Chain.empty
-      case data                             => Chain.one(this.name, data)
+  def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], A)]
+  def encode(a: A, parent: Null): Chain[(String, Data)]
 
 object Field extends ToFieldOps:
-  def apply[A, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] =
-    Field(key.print(name), codec, None)
+  def apply[A: Eq, B](a: A, ofKey: Value.Required[A], ofCodec: Codec[B]): Field[B] = new Field[B](None):
+    override def key: Value.Required[?] = ofKey
+    override def codec: Codec[?] = ofCodec
+    override def name: String = ofKey.print(a)
+
+    override def toProduct: Product[B] = Product(ofCodec)
+
+    // TODO we gotta do some parsing here!
+    override def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], B)] =
+      data.firstWithRemainders(name) match
+        case Some((head, tail)) => ofCodec.decode(head).tupleLeft(tail)
+        case None               => ofCodec.decode(None).tupleLeft(data)
+
+    override def encode(b: B, parent: Null): Chain[(String, Data)] =
+      val nulls = (parent, this.nulls) match
+        case (_, Some(nulls)) => nulls
+        case (nulls, None)    => nulls
+
+      ofCodec.encode(b) match
+        case Data.Null if nulls === Null.Hide => Chain.empty
+        case data                             => Chain.one(this.name, data)

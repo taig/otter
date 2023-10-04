@@ -704,7 +704,7 @@ object Record extends ToRecordOps:
     override def toChain: Chain[Field[?]] = Chain.one(field)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
-    override def toProduct: Product[A] = Product(field.codec)
+    override def toProduct: Product[A] = field.toProduct
     override def decodeWithRemainders(
         data: Option[Chain[(String, Data)]]
     ): Validated[Violations, (Option[Chain[(String, Data)]], A)] = data match
