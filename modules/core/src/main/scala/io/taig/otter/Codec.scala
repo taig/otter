@@ -162,7 +162,7 @@ sealed abstract class Coproduct[A](
   final override type Self[a] = Coproduct[a]
   final override type Optional[a] = Coproduct[a]
 
-  def toNonEmptyChain: NonEmptyChain[Branch[?, ?]]
+  def toNonEmptyChain: NonEmptyChain[Branch[?]]
 
   final override def description(f: Option[String] => Option[String]): Coproduct[A] =
     new Coproduct[A](f(description), discriminator, None) { export self.* }
@@ -202,7 +202,7 @@ sealed abstract class Coproduct[A](
 
   final def orElse[B](codec: Coproduct[B]): Coproduct[Either[A, B]] =
     new Coproduct[Either[A, B]](None, Discriminator.Default, None):
-      override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = self.toNonEmptyChain ++ codec.toNonEmptyChain
+      override def toNonEmptyChain: NonEmptyChain[Branch[?]] = self.toNonEmptyChain ++ codec.toNonEmptyChain
       override def constraints: Chain[Constraint] = Chain.empty
       override def isOptional: Boolean = false
       override def decode(
@@ -217,22 +217,22 @@ sealed abstract class Coproduct[A](
       override def encode(ab: Either[A, B], discriminator: Discriminator): Option[Chain[(String, Data)]] =
         ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
-  final def :+[B](branch: Branch[?, B]): Coproduct[Either[A, B]] = self.orElse(branch.toCoproduct)
-  final def +:[B](branch: Branch[?, B]): Coproduct[Either[B, A]] = branch.toCoproduct.orElse(self)
+  final def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = self.orElse(branch.toCoproduct)
+  final def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch.toCoproduct.orElse(self)
 
   final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
     case Some(data @ Data.Object(values)) =>
       decode(Some(values), discriminator).andThen:
         case Some(a) => a.valid
         case None =>
-          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.print))
+          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.name))
           Violations.rootNec(Violation(Constraint.OneOf(values), actual = data)).invalid
     case Some(data) => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
     case None =>
       decode(None, discriminator).andThen:
         case Some(a) => a.valid
         case None =>
-          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.print))
+          val values = toNonEmptyChain.toChain.map(branch => Data.String(branch.name))
           Violations.rootNec(Violation(Constraint.OneOf(values), actual = data.getOrElse(Data.Null))).invalid
   def decode(data: Option[Chain[(String, Data)]], discriminator: Discriminator): Validated[Violations, Option[A]]
 
@@ -240,8 +240,8 @@ sealed abstract class Coproduct[A](
   protected def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]]
 
 object Coproduct:
-  def apply[A](branch: Branch[?, A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default, None):
-    override def toNonEmptyChain: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
+  def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default, None):
+    override def toNonEmptyChain: NonEmptyChain[Branch[?]] = NonEmptyChain.one(branch)
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
     override def decode(

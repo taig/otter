@@ -45,7 +45,7 @@ def toSchema(codec: Coproduct[?], to: Codec[?] => Schema | Reference): Schema =
       case Discriminator.Keyed =>
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(branch.print -> to(branch.codec.description(none)))
+          properties = Chain(branch.name -> to(branch.codec.description(none)))
         )
 
   Schema.OneOf(codecs)

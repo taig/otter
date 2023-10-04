@@ -54,9 +54,9 @@ object codecs:
   def field[A](name: String, codec: Codec[A]): Field[A] = field(name, string, codec)
   def field[A](name: Int, codec: Codec[A]): Field[A] = field(name, int, codec)
 
-  def branch[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Branch[A, B] = Branch(name, key, codec)
-  def branch[A](name: String, codec: Codec[A]): Branch[String, A] = branch(name, string, codec)
-  def branch[A](name: Int, codec: Codec[A]): Branch[Int, A] = branch(name, int, codec)
+  def branch[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Branch[B] = Branch(name, key, codec)
+  def branch[A](name: String, codec: Codec[A]): Branch[A] = branch(name, string, codec)
+  def branch[A](name: Int, codec: Codec[A]): Branch[A] = branch(name, int, codec)
 
   object collection:
     def chain[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], Chain[A]] = Collection(codec)
