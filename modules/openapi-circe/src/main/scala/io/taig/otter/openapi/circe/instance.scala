@@ -32,6 +32,12 @@ object instance:
       "email" := contact.email
     ).dropNullValues
 
+  given Encoder.AsObject[Discriminator] = discriminator =>
+    JsonObject(
+      "propertyName" := discriminator.propertyName,
+      "mapping" := discriminator.mapping.asJsonObject.toNonEmpty
+    ).dropNullValues
+
   given [A: Encoder.AsObject]: Encoder.AsObject[Extended[A]] = extended =>
     extended.value.asJsonObject ++ extended.extensions.asJsonObject
 
@@ -163,7 +169,8 @@ object instance:
         "items" := codec.items
       ).dropNullValues
     case codec: Schema.Enumeration => JsonObject("type" := codec.tpe, "enum" := codec.enums.map(_.asJson))
-    case codec: Schema.OneOf       => JsonObject("oneOf" := codec.codecs)
+    case codec: Schema.OneOf =>
+      JsonObject("oneOf" := codec.codecs, "discriminator" := codec.discriminator).dropNullValues
     case codec: Schema.Object =>
       JsonObject(
         "type" := "object",

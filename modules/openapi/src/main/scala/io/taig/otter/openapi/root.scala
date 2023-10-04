@@ -2,7 +2,7 @@ package io.taig.otter.openapi
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.*
+import io.taig.otter.{Discriminator as OtterDiscriminator, *}
 
 import scala.annotation.tailrec
 
@@ -29,26 +29,41 @@ def toSchema(codec: Collection[?], to: Codec[?] => Schema | Reference): Schema =
 def toSchema(codec: Coproduct[?], to: Codec[?] => Schema | Reference): Schema =
   val codecs = codec.toNonEmptyChain.toChain.map: branch =>
     codec.discriminator match
-      case Discriminator.Nested(identifier, value) =>
+      case OtterDiscriminator.Nested(identifier, value) =>
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(identifier -> to(branch.key), value -> to(branch.codec.description(none)))
+          properties = Chain(identifier -> to(branch.key), value -> to(branch.codec.description(none))),
+          required = Chain.one(identifier) ++ (if codec.isOptional then Chain.empty else Chain.one(value))
         )
-      case Discriminator.Merged(identifier) =>
-        val properties = to(branch.codec.description(none)) match
-          case schema: Schema.Object => schema.properties
-          case _                     => Chain.empty
+      case OtterDiscriminator.Merged(identifier) =>
+        to(branch.codec.description(none)) match
+          case schema: Schema.Object =>
+            Schema.Object(
+              description = branch.codec.description,
+              properties = Chain(identifier -> to(branch.key)) ++ schema.properties,
+              required = Chain(identifier) ++ schema.required
+            )
+          case _ =>
+            Schema.Object(
+              description = branch.codec.description,
+              properties = Chain(identifier -> to(branch.key)),
+              required = Chain(identifier)
+            )
+      case OtterDiscriminator.Keyed =>
         Schema.Object(
           description = branch.codec.description,
-          properties = Chain(identifier -> to(branch.key)) ++ properties
-        )
-      case Discriminator.Keyed =>
-        Schema.Object(
-          description = branch.codec.description,
-          properties = Chain(branch.name -> to(branch.codec.description(none)))
+          properties = Chain(branch.name -> to(branch.codec.description(none))),
+          required = Chain(branch.name)
         )
 
-  Schema.OneOf(codecs)
+  val discriminator = codec.discriminator match
+    case OtterDiscriminator.Nested(identifier, _) =>
+      Some(Discriminator(propertyName = identifier))
+    case OtterDiscriminator.Merged(identifier) =>
+      Some(Discriminator(propertyName = identifier))
+    case OtterDiscriminator.Keyed => None
+
+  Schema.OneOf(codecs, discriminator = discriminator)
 
 def toSchema(codec: Dictionary[?], to: Codec[?] => Schema | Reference): Schema = Schema.Value(
   tpe = "object",
