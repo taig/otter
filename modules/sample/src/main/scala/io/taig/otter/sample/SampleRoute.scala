@@ -4,9 +4,10 @@ import cats.effect.IO
 import cats.syntax.all.*
 import io.taig.otter.http.Route as OtterRoute
 import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}
-import io.taig.otter.sample.api.{Role, Route, Self, User}
-import io.taig.otter.sample.data.{Librarian, Member}
+import io.taig.otter.sample.api.{Role, Route, Self}
+import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.repository.LibrarianRepository
+import io.taig.otter.sample.syntax.*
 
 import java.util.UUID
 
@@ -19,7 +20,7 @@ final class SampleRoute(library: LibrarianRepository):
           case Some(session) =>
             for
               user <- findUser(session).flatMap(_.liftTo[IO](Authentication.Error.UserUnknown))
-              _ <- IO.raiseWhen(!endpoint.role.toSet.contains(user.toRole))(Authentication.Error.Forbidden)
+              _ <- IO.raiseWhen(!endpoint.role.toSet.contains(user.role))(Authentication.Error.Forbidden)
               response <- f(user.asInstanceOf[Self[R]], authentication.payload)
             yield response
           case None if endpoint.role.toSet.contains(Role.Guest) =>
@@ -30,4 +31,4 @@ final class SampleRoute(library: LibrarianRepository):
   )
 
   def findUser(session: UUID): IO[Option[User]] =
-    library.findBySession(Librarian.Session.fromUUID(session)).map(_.map(User.apply))
+    library.findBySession(Librarian.Session.fromUUID(session))
