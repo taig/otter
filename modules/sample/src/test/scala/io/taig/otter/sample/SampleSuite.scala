@@ -6,7 +6,7 @@ import io.taig.otter.munit.OtterSuite
 import io.taig.otter.sample.api.endpoints.Endpoint
 import munit.Location
 
-abstract class SampleSuite extends OtterSuite:
+abstract class SampleSuite extends OtterSuite with SampleExtensions with SampleAssertions:
   def test(endpoint: Endpoint[?, ?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(endpoint.toAuthenticatedEndpoint, description)(body)(loc)
 

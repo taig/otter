@@ -8,23 +8,24 @@ import org.typelevel.ci.*
 
 final class LibrariansSelfSessionsRoutesTest extends SampleSuite:
   app.test(endpoints.librarians.self.sessions.post): context =>
-    for _ <- context.client.submitSuccess(
-        endpoints.librarians.self.sessions.post,
-        session = None,
-        Librarian.Create.Default.toLogin
-      )
+    for _ <- context.client
+        .submit(
+          endpoints.librarians.self.sessions.post,
+          Librarian.Create.Default.toLogin
+        )
+        .assertSuccess
     yield {}
 
   app.test(endpoints.librarians.self.sessions.post, description = "email unknown"): context =>
     val login = Librarian.Login(email = ci"foo@bar", password = "")
-    for obtained <- context.client.submitError(endpoints.librarians.self.sessions.post, session = None, login)
+    for obtained <- context.client.submit(endpoints.librarians.self.sessions.post, login).assertError
     yield {
       assertEquals(obtained, Post.EmailOrPasswordIncorrect)
     }
 
   app.test(endpoints.librarians.self.sessions.post, description = "password incorrect"): context =>
     val login = Librarian.Login(email = Librarian.Create.Default.email.toCIString, password = "")
-    for obtained <- context.client.submitError(endpoints.librarians.self.sessions.post, session = None, login)
+    for obtained <- context.client.submit(endpoints.librarians.self.sessions.post, login).assertError
     yield {
       assertEquals(obtained, Post.EmailOrPasswordIncorrect)
     }

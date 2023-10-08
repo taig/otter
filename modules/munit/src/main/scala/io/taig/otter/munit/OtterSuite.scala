@@ -4,7 +4,7 @@ import cats.effect.SyncIO
 import io.taig.otter.http.Endpoint
 import munit.{CatsEffectSuite, Location}
 
-abstract class OtterSuite extends CatsEffectSuite:
+abstract class OtterSuite extends CatsEffectSuite with OtterExtensions:
   def test(endpoint: Endpoint[?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
 
