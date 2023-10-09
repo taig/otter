@@ -130,6 +130,8 @@ trait validations:
     Validation(Constraint.Type(tpe)): value =>
       Validated.fromOption(f(value), NonEmptyChain.one(Data.String(value)))
 
+  val required: Validation[String, String] = Validation.lift[String, String](_.trim).andThen(minLength(1).tap)
+
   val uuid: Validation[String, UUID] = parse("uuid"): value =>
     try UUID.fromString(value).some
     catch case _: IllegalArgumentException => none
