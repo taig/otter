@@ -240,6 +240,28 @@ sealed abstract class Coproduct[A](
   protected def encode(a: A, discriminator: Discriminator): Option[Chain[(String, Data)]]
 
 object Coproduct:
+  /*
+  extension [A <: Matchable](self: Codec[A])
+    inline def |[B <: Matchable](codec: Codec[B]): Union.Of[self.type | codec.type, A | B] = (self :+ codec).imap {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
+   */
+  extension [A <: Matchable](self: Coproduct[A])
+    inline def |[B <: Matchable](coproduct: Coproduct[B]): Coproduct[A | B] = self
+      .orElse(coproduct)
+      .imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
+    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = |(branch.toCoproduct)
+
   def apply[A](branch: Branch[A]): Coproduct[A] = new Coproduct[A](None, Discriminator.Default, None):
     override def toNonEmptyChain: NonEmptyChain[Branch[?]] = NonEmptyChain.one(branch)
     override def constraints: Chain[Constraint] = Chain.empty

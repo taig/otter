@@ -27,7 +27,8 @@ trait validations:
 
   def exactLength(reference: Int): Validation[String, Unit] = exactLength(reference, _.length)
 
-  val email: Validation[CIString, Unit] = Validation.lift[CIString, String](_.toString)
+  val email: Validation[CIString, Unit] = Validation
+    .lift[CIString, String](_.toString)
     .andThen(matches(Pattern.compile(".+@.+")))
 
   def minimum[A: Numeric](

@@ -20,6 +20,9 @@ sealed abstract class Branch[A]:
   def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
 
 object Branch:
+  extension [A <: Matchable](self: Branch[A])
+    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = self.toCoproduct | branch
+
   def apply[A: Eq, B](a: A, ofKey: Value.Required[A], ofCodec: Codec[B]): Branch[B] = new Branch[B]:
     override def key: Value.Required[?] = ofKey
     override def codec: Codec[?] = ofCodec

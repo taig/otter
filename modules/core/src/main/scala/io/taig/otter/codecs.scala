@@ -39,6 +39,11 @@ object codecs:
         case data      => Data.String(data.name).invalidNec
       any.ivalidate(validation)(identity)
     def singleton[A <: Singleton](a: A): Dynamic[A] = empty.imap(_ => a)(_ => Data.Null)
+    val obj: Dynamic[Data.Object] =
+      val validation: Validation[Data.Value, Data.Object] = Validation(Constraint.Type("object")):
+        case data: Data.Object => data.valid
+        case data              => Data.String(data.name).invalidNec
+      value.ivalidate(validation)(identity)
     val primitive: Dynamic[Data.Primitive] =
       val validation: Validation[Data.Value, Data.Primitive] = Validation(Constraint.Type("number")):
         case data: Data.Primitive => data.valid
