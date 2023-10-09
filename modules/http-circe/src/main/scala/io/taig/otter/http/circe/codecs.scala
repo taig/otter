@@ -44,13 +44,9 @@ object codecs:
     def json[A](codec: Codec[A]): Response.Body.Strict[A] = json(codec, Printer.noSpaces)
 
   object response:
-    def apply[A](results: Results[A]): Response[A] = Response(
-      results,
-      result(code.unprocessableEntity, output.json(violations))
-        .description("The request body did not pass validation checks")
-    )
-
+    def apply[A](results: Results[A]): Response[A] = http.response(results, output.json(violations))
     def apply[A](result: Result[A]): Response[A] = response(result.toResults)
+    def apply[A, B](errors: Results[A], success: Result[B]): Response[Either[A, B]] = response(errors :+ success)
 
   def app[F[_]](routes: Routes[F]): App[F] = App(
     routes,

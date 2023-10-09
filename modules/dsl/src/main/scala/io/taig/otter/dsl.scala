@@ -9,9 +9,13 @@ object dsl:
 
   export codecs.*
 
-  export http.{input as _, output as _, *}
+  export http.{input as _, output as _, response as _, *}
 
-  export circe.{input as _, output as _, *}
+  export circe.{input as _, output as _, response as _, *}
+
+  object response:
+    export http.response.*
+    export circe.response.*
 
   object input:
     export http.input.*

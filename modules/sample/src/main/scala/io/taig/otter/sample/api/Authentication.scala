@@ -16,8 +16,8 @@ object Authentication:
 
   val codec: Results[Authentication.Error] =
     val userUnknown: Codec[Authentication.Error.UserUnknown.type] =
-      codecs.error("userUnknown", dynamic.singleton(Authentication.Error.UserUnknown))
+      codecs.error("userUnknown", singleton(Authentication.Error.UserUnknown))
     val permissionDenied: Codec[Authentication.Error.Forbidden.type] =
-      codecs.error("permissionDenied", dynamic.singleton(Authentication.Error.Forbidden))
+      codecs.error("permissionDenied", singleton(Authentication.Error.Forbidden))
 
     (result(code.unauthorized, output.json(userUnknown)) :+ result(code.forbidden, output.json(permissionDenied))).to

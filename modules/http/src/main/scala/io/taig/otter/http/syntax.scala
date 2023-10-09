@@ -53,6 +53,13 @@ object syntax:
     inline def apply(method: Method, url: Url[Unit]): Request[Unit] =
       Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
+  object response:
+    def apply[A](results: Results[A], violations: Response.Body.Strict[Violations]): Response[A] = Response(
+      results,
+      result(code.unprocessableEntity, violations)
+        .description("The request body did not pass validation checks")
+    )
+
   def endpoint[A, B](request: Request[A], response: Response[B]): Endpoint[A, B] = Endpoint(request, response)
 
   object input:

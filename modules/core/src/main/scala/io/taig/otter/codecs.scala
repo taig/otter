@@ -38,7 +38,6 @@ object codecs:
         case Data.Null => Data.Null.valid
         case data      => Data.String(data.name).invalidNec
       any.ivalidate(validation)(identity)
-    def singleton[A <: Singleton](a: A): Dynamic[A] = empty.imap(_ => a)(_ => Data.Null)
     val obj: Dynamic[Data.Object] =
       val validation: Validation[Data.Value, Data.Object] = Validation(Constraint.Type("object")):
         case data: Data.Object => data.valid
@@ -54,6 +53,8 @@ object codecs:
         case data: Data.Number => data.valid
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
+
+  def singleton[A <: Singleton](a: A): Dynamic[A] = dynamic.empty.imap(_ => a)(_ => Data.Null)
 
   def field[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] = Field(name, key, codec)
   def field[A](name: String, codec: Codec[A]): Field[A] = field(name, string, codec)
@@ -116,12 +117,12 @@ object codecs:
         branch("multiple", field("reference", dynamic.number).to[Constraint.Multiple]) :+
         branch("minItems", field("reference", long).to[Constraint.MinItems]) :+
         branch("maxItems", field("reference", long).to[Constraint.MaxItems]) :+
-        branch("uniqueItems", dynamic.singleton(Constraint.UniqueItems)) :+
+        branch("uniqueItems", singleton(Constraint.UniqueItems)) :+
         branch("minProperties", field("reference", int).to[Constraint.MinProperties]) :+
         branch("maxProperties", field("reference", int).to[Constraint.MaxProperties]) :+
         branch("type", field("name", string).to[Constraint.Type]) :+
         branch("oneOf", field("values", collection.chain(dynamic.primitive)).to[Constraint.OneOf]) :+
-        branch("required", dynamic.singleton(Constraint.Required))
+        branch("required", singleton(Constraint.Required))
     ).to
 
     val violation: Record[Violation] = (field("constraint", constraint) :* field("actual", dynamic.any)).to
