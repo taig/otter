@@ -22,6 +22,8 @@ trait validations:
     Validation(Constraint.Equals(reference.toString)): value =>
       Validated.condNec(value == reference, (), Data.String(value.toString))
 
+  def exactLength(reference: Int): Validation[String, Unit] = minLength(reference) *> maxLength(reference)
+
   def minimum[A: Numeric](
       reference: A,
       exclusive: Boolean,
