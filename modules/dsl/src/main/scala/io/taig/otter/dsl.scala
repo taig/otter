@@ -4,23 +4,65 @@ import io.taig.otter.http.syntax as http
 import io.taig.otter.http.circe.codecs as circe
 import io.taig.otter.validation.validations
 
-object dsl:
-  export validation.validations
+class dsl[A, B, C, D, E, F](val validations: B, val request: C, val response: D, val input: E, val output: F):
+  this: A =>
 
-  export codecs.*
+  export io.taig.otter.{
+    Branch,
+    Codec,
+    Collection,
+    Coproduct,
+    Data,
+    Dictionary,
+    Discriminator,
+    Dynamic,
+    Enumeration,
+    Field,
+    Null,
+    Primitive,
+    Product,
+    Record,
+    Union,
+    Value
+  }
 
-  export http.{input as _, output as _, response as _, *}
+  export io.taig.otter.http.{
+    App,
+    Client,
+    Code,
+    Endpoint,
+    Header,
+    Headers,
+    HttpServer,
+    MediaType,
+    Method,
+    Queries,
+    Query,
+    Request,
+    Response,
+    Result,
+    Results,
+    Route,
+    Routes,
+    Segment,
+    Url
+  }
 
-  export circe.{input as _, output as _, response as _, *}
-
-  object response:
-    export http.response.*
-    export circe.response.*
-
-  object input:
-    export http.input.*
-    export circe.input.*
-
-  object output:
-    export http.output.*
-    export circe.output.*
+object dsl
+    extends dsl[
+      codecs & http & circe,
+      validations,
+      http.request,
+      http.response & circe.response,
+      http.input & circe.input,
+      http.output & circe.output
+    ](
+      validations,
+      http.request,
+      new http.response with circe.response,
+      new http.input with circe.input,
+      new http.output with circe.output
+    )
+    with codecs
+    with http
+    with circe

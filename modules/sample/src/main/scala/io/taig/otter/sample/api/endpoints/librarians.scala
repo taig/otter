@@ -2,7 +2,6 @@ package io.taig.otter.sample.api.endpoints
 
 import io.taig.otter.Codec
 import io.taig.otter.dsl.*
-import io.taig.otter.http.{Endpoint as OtterEndpoint, Results, Url}
 import io.taig.otter.sample.api.{codecs, Role}
 import io.taig.otter.sample.data.{Librarian, Session}
 
@@ -23,9 +22,9 @@ object librarians:
           val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
             error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
 
-          result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
+          result(code.unauthorized, output.json(emailOrPasswordIncorrect)).to
 
-      val post: AuthenticatedEndpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = OtterEndpoint(
+      val post: AuthenticatedEndpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = endpoint(
         request(method.post, url, input.json(codecs.librarian.login)),
         response(Post.results :+ result(code.created, output.json(codecs.session)))
       ).summary("Create librarian session")

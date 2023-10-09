@@ -1,9 +1,7 @@
 package io.taig.otter.sample.api.endpoints
 
 import cats.data.Chain
-import io.taig.otter.Codec
 import io.taig.otter.dsl.*
-import io.taig.otter.http.{Result, Results, Url}
 import io.taig.otter.sample.api.{^, codecs, parameters, Role}
 import io.taig.otter.sample.data.{Member, ReferenceOrSelf, Session}
 
@@ -20,9 +18,8 @@ object members:
 
   object Post:
     val results: Results[Post] =
-      val emailConflict: Codec[EmailConflict.type] = error("emailConflict", singleton(EmailConflict))
-
-      result(code.badRequest, output.json(emailConflict)).toResults.to
+      val emailConflict: Codec[EmailConflict.type] = error("emailConflict", EmailConflict)
+      result(code.badRequest, output.json(emailConflict)).to
 
   val post: AuthenticatedEndpoint[Role.Librarian, Member.Create, Either[Post, Member.Summary]] = endpoint(
     request(method.post, url, input.json(codecs.member.create)),
@@ -38,7 +35,7 @@ object members:
     object Get:
       val results: Results[Get] =
         val memberReferenceUnknown: Codec[MemberReferenceUnknown.type] =
-          error("memberReferenceUnknown", singleton(MemberReferenceUnknown))
+          error("memberReferenceUnknown", MemberReferenceUnknown)
         result(code.notFound, output.json(memberReferenceUnknown)).to
 
     val get: AuthenticatedEndpoint[
@@ -61,10 +58,9 @@ object members:
 
       object Post:
         val results: Results[Post] =
-          val emailOrPasswordIncorrect: Result[EmailOrPasswordIncorrect.type] = result(
-            code.unauthorized,
-            output.json(error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect)))
-          ).description("Email or password incorrect")
+          val emailOrPasswordIncorrect: Result[EmailOrPasswordIncorrect.type] =
+            result(code.unauthorized, output.json(error("emailOrPasswordIncorrect", EmailOrPasswordIncorrect)))
+              .description("Email or password incorrect")
 
           emailOrPasswordIncorrect.to
 

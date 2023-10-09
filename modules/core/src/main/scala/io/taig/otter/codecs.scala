@@ -12,7 +12,7 @@ import java.util.UUID
 import java.util.regex.Pattern
 import scala.collection.immutable.{SortedMap, SortedSet, VectorMap}
 
-object codecs:
+trait codecs:
   val bigDecimal: Primitive.Required[BigDecimal] = Primitive.Required(Type.BigDecimal)
   val bigInt: Primitive.Required[BigInt] = Primitive.Required(Type.BigInt)
   val boolean: Primitive.Required[Boolean] = Primitive.Required(Type.Boolean)
@@ -135,4 +135,7 @@ object codecs:
       .imap(Violations.apply)(_.toNem)
       .name("Violations")
 
-  def error[A](identifier: String, value: Codec[A]): Coproduct[A] = branch(identifier, value).toCoproduct
+  def error[A](identifier: String, codec: Codec[A]): Coproduct[A] = branch(identifier, codec).toCoproduct
+  def error[A <: Singleton](identifier: String, a: A): Coproduct[A] = error(identifier, singleton(a))
+
+object codecs extends codecs

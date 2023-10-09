@@ -5,7 +5,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.*
 import org.typelevel.ci.CIString
 
-object syntax:
+trait syntax:
   val __ : Url[Unit] = Url.Root
 
   def header[A](name: CIString, codec: Value[A]): Header[A] = Header(name, codec)
@@ -43,26 +43,32 @@ object syntax:
     val internalServerError: Code = Code(500)
     val serviceUnavailable: Code = Code(503)
 
-  object request:
+  def endpoint[A, B](request: Request[A], response: Response[B]): Endpoint[A, B] = Endpoint(request, response)
+
+  def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
+  def result(code: Code): Result[Unit] = Result(code, syntax.output.empty)
+
+object syntax extends syntax:
+  trait request:
     inline def apply[A, B](method: Method, url: Url[A], body: Request.Body[B]): Request[(A, B)] =
       Request(method, url, body)
-    inline def apply[A](method: Method, url: Url[A]): Request[A] =
+    def apply[A](method: Method, url: Url[A]): Request[A] =
       Request(method, url, input.empty).imap { case (a, _) => a }(a => (a, ()))
-    inline def apply[A](method: Method, url: Url[Unit], body: Request.Body[A]): Request[A] =
+    def apply[A](method: Method, url: Url[Unit], body: Request.Body[A]): Request[A] =
       Request(method, url, body).imap { case (_, a) => a }(((), _))
-    inline def apply(method: Method, url: Url[Unit]): Request[Unit] =
-      Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
-  object response:
+  object request extends request
+
+  trait response:
     def apply[A](results: Results[A], violations: Response.Body.Strict[Violations]): Response[A] = Response(
       results,
       result(code.unprocessableEntity, violations)
         .description("The request body did not pass validation checks")
     )
 
-  def endpoint[A, B](request: Request[A], response: Response[B]): Endpoint[A, B] = Endpoint(request, response)
+  object response extends response
 
-  object input:
+  trait input:
     val empty: Request.Body.Singlepart.Strict[Unit] = Request.Body.Singlepart.Strict.Empty
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Binary
     def apply[A](
@@ -71,10 +77,9 @@ object syntax:
         codec: Codec[A]
     ): Request.Body.Singlepart.Strict[A] = Request.Body.Singlepart.Strict(f, g, codec)
 
-  def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
-  def result(code: Code): Result[Unit] = Result(code, output.empty)
+  object input extends input
 
-  object output:
+  trait output:
     val empty: Response.Body.Strict[Unit] = Response.Body.Strict.Empty
     val binary: Response.Body.Strict[Array[Byte]] = Response.Body.Strict.Binary
     def apply[A](
@@ -83,3 +88,5 @@ object syntax:
         codec: Codec[A],
         mediaType: MediaType
     ): Response.Body.Strict[A] = Response.Body.Strict(f, g, codec, mediaType)
+
+  object output extends output

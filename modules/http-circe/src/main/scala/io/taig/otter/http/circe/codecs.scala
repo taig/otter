@@ -12,12 +12,19 @@ import io.taig.otter.{codecs, Codec, Dynamic}
 
 import java.nio.charset.StandardCharsets
 
-object codecs:
+trait codecs:
   val json: Dynamic[Json] = dynamic.any.imap(fromData)(toData)
 
+  def app[F[_]](routes: Routes[F]): App[F] = App(
+    routes,
+    codecs.response(result(code.notFound)),
+    codecs.response(result(code.internalServerError))
+  )
+
+object codecs extends codecs:
   private val parser = new JawnParser()
 
-  object input:
+  trait input:
     def json[A](codec: Codec[A], printer: Printer): Request.Body.Singlepart.Strict[A] =
       http.input(
         (_, bytes) =>
@@ -28,9 +35,12 @@ object codecs:
         data => (Chain.empty, printer.print(fromData(data)).getBytes(StandardCharsets.UTF_8)),
         codec
       )
+
     def json[A](codec: Codec[A]): Request.Body.Singlepart.Strict[A] = json(codec, Printer.noSpaces)
 
-  object output:
+  object input extends input
+
+  trait output:
     def json[A](codec: Codec[A], printer: Printer): Response.Body.Strict[A] = http.output(
       (_, bytes) =>
         Validated
@@ -41,15 +51,14 @@ object codecs:
       codec,
       MediaType.application.json
     )
+
     def json[A](codec: Codec[A]): Response.Body.Strict[A] = json(codec, Printer.noSpaces)
 
-  object response:
+  object output extends output
+
+  trait response:
     def apply[A](results: Results[A]): Response[A] = http.response(results, output.json(violations))
     def apply[A](result: Result[A]): Response[A] = response(result.toResults)
     def apply[A, B](errors: Results[A], success: Result[B]): Response[Either[A, B]] = response(errors :+ success)
 
-  def app[F[_]](routes: Routes[F]): App[F] = App(
-    routes,
-    response(result(code.notFound)),
-    response(result(code.internalServerError))
-  )
+  object response extends response
