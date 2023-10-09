@@ -22,7 +22,13 @@ trait validations:
     Validation(Constraint.Equals(reference.toString)): value =>
       Validated.condNec(value == reference, (), Data.String(value.toString))
 
-  def exactLength(reference: Int): Validation[String, Unit] = minLength(reference) *> maxLength(reference)
+  def exactLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
+    minLength(reference, toLength) *> maxLength(reference, toLength)
+
+  def exactLength(reference: Int): Validation[String, Unit] = exactLength(reference, _.length)
+
+  val email: Validation[CIString, Unit] = Validation.lift[CIString, String](_.toString)
+    .andThen(matches(Pattern.compile(".+@.+")))
 
   def minimum[A: Numeric](
       reference: A,
