@@ -53,6 +53,8 @@ object syntax:
     inline def apply(method: Method, url: Url[Unit]): Request[Unit] =
       Request(method, url, input.empty).imap(_ => ())(_ => ((), ()))
 
+  def endpoint[A, B](request: Request[A], response: Response[B]): Endpoint[A, B] = Endpoint(request, response)
+
   object input:
     val empty: Request.Body.Singlepart.Strict[Unit] = Request.Body.Singlepart.Strict.Empty
     val binary: Request.Body.Singlepart.Strict[Array[Byte]] = Request.Body.Singlepart.Strict.Binary

@@ -2,7 +2,7 @@ package io.taig.otter.sample
 
 import cats.data.Validated
 import cats.effect.IO
-import io.taig.otter.sample.api.endpoints.Authentication
+import io.taig.otter.sample.api.Authentication
 import io.taig.otter.validation.Violations
 import munit.{Assertions, Location}
 

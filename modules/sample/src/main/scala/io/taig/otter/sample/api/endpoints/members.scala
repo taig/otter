@@ -10,7 +10,7 @@ import io.taig.otter.sample.data.{Member, ReferenceOrSelf, Session}
 object members:
   val url: Url[Unit] = __ / "members"
 
-  val get: Endpoint[Role.Librarian, Unit, Chain[Member.Summary]] = OtterEndpoint(
+  val get: AuthenticatedEndpoint[Role.Librarian, Unit, Chain[Member.Summary]] = OtterEndpoint(
     request(method.get, url),
     response(result(code.ok, output.json(collection.chain(codecs.member.summary))))
   ).tags("members").role(Role.Librarian)
@@ -24,7 +24,7 @@ object members:
 
       result(code.badRequest, output.json(emailConflict)).toResults.to
 
-  val post: Endpoint[Role.Librarian, Member.Create, Either[Post, Member.Summary]] = OtterEndpoint(
+  val post: AuthenticatedEndpoint[Role.Librarian, Member.Create, Either[Post, Member.Summary]] = OtterEndpoint(
     request(method.post, url, input.json(codecs.member.create)),
     response(Post.results :+ result(code.created, output.json(codecs.member.summary)))
   ).tags("members").role(Role.Librarian)
@@ -41,7 +41,10 @@ object members:
           error("memberReferenceUnknown", dynamic.singleton(MemberReferenceUnknown))
         result(code.notFound, output.json(memberReferenceUnknown)).toResults.to
 
-    val get: Endpoint[Role.Librarian ^ Role.Member, ReferenceOrSelf[Member.Reference], Either[Get, Member.Summary]] =
+    val get: AuthenticatedEndpoint[Role.Librarian ^ Role.Member, ReferenceOrSelf[Member.Reference], Either[
+      Get,
+      Member.Summary
+    ]] =
       OtterEndpoint(
         request(method.get, url),
         response(Get.results :+ result(code.ok, output.json(codecs.member.summary)))
@@ -65,7 +68,7 @@ object members:
 
           emailOrPasswordIncorrect.toResults.to
 
-      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Session]] =
+      val post: AuthenticatedEndpoint[Role.Guest, Member.Login, Either[Post, Session]] =
         val created = result(code.created, output.json(codecs.session))
           .description("Session successfully created")
 

@@ -14,6 +14,7 @@ sealed abstract class Branch[A]:
   def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = toCoproduct :+ branch
   def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch +: toCoproduct
 
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = toCoproduct.to
   def toCoproduct: Coproduct[A] = Coproduct(this)
 
   def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[A]]

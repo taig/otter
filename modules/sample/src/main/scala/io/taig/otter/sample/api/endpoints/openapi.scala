@@ -8,7 +8,7 @@ import io.taig.otter.sample.api.Role
 object openapi:
   val url: Url[Unit] = __ / "openapi.json"
 
-  val get: Endpoint[Role.Guest, Unit, Json] = OtterEndpoint(
+  val get: AuthenticatedEndpoint[Role.Guest, Unit, Json] = OtterEndpoint(
     request(method.get, url),
     response(result(code.ok, output.json(json, Printer.spaces2)))
   ).role(Role.Guest)

@@ -25,7 +25,7 @@ object librarians:
 
           result(code.unauthorized, output.json(emailOrPasswordIncorrect)).toResults.to
 
-      val post: Endpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = OtterEndpoint(
+      val post: AuthenticatedEndpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = OtterEndpoint(
         request(method.post, url, input.json(codecs.librarian.login)),
         response(Post.results :+ result(code.created, output.json(codecs.session)))
       ).summary("Create librarian session")
