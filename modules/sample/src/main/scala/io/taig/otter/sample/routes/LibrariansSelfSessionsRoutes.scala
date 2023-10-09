@@ -5,13 +5,13 @@ import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
 import io.taig.otter.sample.api.endpoints.librarians.self.sessions.Post
 import io.taig.otter.sample.api.{endpoints, Route}
-import io.taig.otter.sample.data.Librarian
+import io.taig.otter.sample.data.{Librarian, Session}
 import io.taig.otter.sample.repository.LibrarianRepository
 import io.taig.otter.sample.repository.LibrarianRepository.Error
 import mouse.all.*
 
 final class LibrariansSelfSessionsRoutes(route: SampleRoute, librarian: LibrarianRepository):
-  val post: Route[Librarian.Login, Either[Post, Librarian.Session]] =
+  val post: Route[Librarian.Login, Either[Post, Session]] =
     route(endpoints.librarians.self.sessions.post): (_, login) =>
       librarian
         .login(login)

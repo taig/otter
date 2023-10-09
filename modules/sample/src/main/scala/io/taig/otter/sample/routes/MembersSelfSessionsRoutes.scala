@@ -5,11 +5,11 @@ import io.taig.otter.http.Routes
 import io.taig.otter.sample.SampleRoute
 import io.taig.otter.sample.api.{endpoints, Route}
 import io.taig.otter.sample.api.endpoints.members.self.sessions.Post
-import io.taig.otter.sample.data.Member
-import io.taig.otter.sample.repository.{LibrarianRepository, MemberRepository}
+import io.taig.otter.sample.data.{Member, Session}
+import io.taig.otter.sample.repository.MemberRepository
 
 final class MembersSelfSessionsRoutes(route: SampleRoute, members: MemberRepository):
-  val post: Route[Member.Login, Either[Post, Member.Session]] =
+  val post: Route[Member.Login, Either[Post, Session]] =
     route(endpoints.members.self.sessions.post): (_, login) =>
       IO(???)
 

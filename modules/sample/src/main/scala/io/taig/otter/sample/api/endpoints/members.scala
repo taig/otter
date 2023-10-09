@@ -5,7 +5,7 @@ import io.taig.otter.Codec
 import io.taig.otter.dsl.*
 import io.taig.otter.http.{Endpoint as OtterEndpoint, Result, Results, Url}
 import io.taig.otter.sample.api.{^, codecs, parameters, Role}
-import io.taig.otter.sample.data.{Member, ReferenceOrSelf}
+import io.taig.otter.sample.data.{Member, ReferenceOrSelf, Session}
 
 object members:
   val url: Url[Unit] = __ / "members"
@@ -65,8 +65,8 @@ object members:
 
           emailOrPasswordIncorrect.toResults.to
 
-      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Member.Session]] =
-        val created = result(code.created, output.json(codecs.member.session))
+      val post: Endpoint[Role.Guest, Member.Login, Either[Post, Session]] =
+        val created = result(code.created, output.json(codecs.session))
           .description("Session successfully created")
 
         OtterEndpoint(

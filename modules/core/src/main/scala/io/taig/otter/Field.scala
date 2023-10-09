@@ -23,7 +23,10 @@ sealed abstract class Field[A](val nulls: Option[Null]):
   final def nulls(value: Null): Field[A] = nulls(Some(value))
 
   def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], A)]
-  def encode(a: A, parent: Null): Chain[(String, Data)]
+  final def encode(a: A, parent: Null): Chain[(String, Data)] = (parent, nulls) match
+    case (_, Some(nulls)) => encodeWithNull(a, nulls)
+    case (parent, _)      => encodeWithNull(a, parent)
+  protected def encodeWithNull(a: A, nulls: Null): Chain[(String, Data)]
 
 object Field extends ToFieldOps:
   def apply[A: Eq, B](a: A, ofKey: Value.Required[A], ofCodec: Codec[B]): Field[B] = new Field[B](None):
@@ -39,11 +42,6 @@ object Field extends ToFieldOps:
         case Some((head, tail)) => ofCodec.decode(head).tupleLeft(tail)
         case None               => ofCodec.decode(None).tupleLeft(data)
 
-    override def encode(b: B, parent: Null): Chain[(String, Data)] =
-      val nulls = (parent, this.nulls) match
-        case (_, Some(nulls)) => nulls
-        case (nulls, None)    => nulls
-
-      ofCodec.encode(b) match
-        case Data.Null if nulls === Null.Hide => Chain.empty
-        case data                             => Chain.one(this.name, data)
+    override def encodeWithNull(b: B, nulls: Null): Chain[(String, Data)] = ofCodec.encode(b) match
+      case Data.Null if nulls === Null.Hide => Chain.empty
+      case data                             => Chain.one(this.name, data)

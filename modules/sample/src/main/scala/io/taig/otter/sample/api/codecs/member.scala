@@ -8,7 +8,6 @@ object member:
   val reference: Primitive.Required[Member.Reference] = cistring.ivalidate(Member.Reference.validation)(_.toCIString)
   val email: Primitive.Required[Member.Email] = cistring.ivalidate(Member.Email.validation)(_.toCIString)
   val password: Primitive.Required[Member.Password] = string.ivalidate(Member.Password.validation)(_.toString)
-  val session: Primitive.Required[Member.Session] = uuid.imap(Member.Session.fromUUID)(_.toUUID)
 
   val login: Record[Member.Login] = (field("email", cistring) :* field("password", string)).to
 

@@ -14,7 +14,7 @@ final class BooksRoutesTest extends SampleSuite:
       expected <- context.client
         .submit(
           endpoints.books.post,
-          session = librarian.toUUID,
+          session = librarian,
           NonEmptyChain(fixtures.book.main(index = 1), fixtures.book.main(index = 2), fixtures.book.main(index = 3))
         )
         .assertSuccess
@@ -33,11 +33,7 @@ final class BooksRoutesTest extends SampleSuite:
     for
       librarian <- context.api.librarian
       obtained <- context.client
-        .submit(
-          endpoints.books.post,
-          session = librarian.toUUID,
-          NonEmptyChain(fixtures.book.main())
-        )
+        .submit(endpoints.books.post, session = librarian, NonEmptyChain(fixtures.book.main()))
         .assertSuccess
       expected <- context.client.submit(endpoints.books.get, input = ()).assertAuthenticated
     yield {
@@ -50,7 +46,7 @@ final class BooksRoutesTest extends SampleSuite:
       obtained <- context.client
         .submit(
           endpoints.books.post,
-          session = librarian.toUUID,
+          session = librarian,
           NonEmptyChain(
             fixtures.book.main(index = 1),
             fixtures.book.main(index = 2),
@@ -68,19 +64,9 @@ final class BooksRoutesTest extends SampleSuite:
       librarian <- context.api.librarian
       isbn = fixtures.isbn()
       book = fixtures.book.main(isbn = isbn)
-      _ <- context.client
-        .submit(
-          endpoints.books.post,
-          session = librarian.toUUID.some,
-          NonEmptyChain(book)
-        )
-        .assertSuccess
+      _ <- context.client.submit(endpoints.books.post, session = librarian.some, NonEmptyChain(book)).assertSuccess
       obtained <- context.client
-        .submit(
-          endpoints.books.post,
-          session = librarian.toUUID.some,
-          NonEmptyChain(book)
-        )
+        .submit(endpoints.books.post, session = librarian.some, NonEmptyChain(book))
         .assertError
     yield {
       assertEquals(obtained, Post.IsbnConflict(isbn))
@@ -89,19 +75,12 @@ final class BooksRoutesTest extends SampleSuite:
     app.test(endpoints.books.post, description = "isbn conflict (multiple)"): context =>
       for
         librarian <- context.client
-          .submit(
-            endpoints.librarians.self.sessions.post,
-            Librarian.Create.Default.toLogin
-          )
+          .submit(endpoints.librarians.self.sessions.post, Librarian.Create.Default.toLogin)
           .assertSuccess
         isbn = fixtures.isbn()
         book = fixtures.book.main(isbn = isbn)
         obtained <- context.client
-          .submit(
-            endpoints.books.post,
-            session = librarian.toUUID,
-            NonEmptyChain(book, book)
-          )
+          .submit(endpoints.books.post, session = librarian, NonEmptyChain(book, book))
           .assertError
       yield {
         assertEquals(obtained, Post.IsbnConflict(isbn))

@@ -5,11 +5,9 @@ import cats.syntax.all.*
 import io.taig.otter.http.Route as OtterRoute
 import io.taig.otter.sample.api.endpoints.{Authentication, Endpoint}
 import io.taig.otter.sample.api.{Role, Route, Self}
-import io.taig.otter.sample.data.Librarian
+import io.taig.otter.sample.data.Session
 import io.taig.otter.sample.repository.LibrarianRepository
 import io.taig.otter.sample.syntax.*
-
-import java.util.UUID
 
 final class SampleRoute(library: LibrarianRepository):
   def apply[R <: Role, I, O](endpoint: Endpoint[R, I, O])(f: (Self[R], I) => IO[O]): Route[I, O] = OtterRoute(
@@ -30,5 +28,4 @@ final class SampleRoute(library: LibrarianRepository):
         .attemptNarrow[Authentication.Error]
   )
 
-  def findUser(session: UUID): IO[Option[User]] =
-    library.findBySession(Librarian.Session.fromUUID(session))
+  def findUser(session: Session): IO[Option[User]] = library.findBySession(session)

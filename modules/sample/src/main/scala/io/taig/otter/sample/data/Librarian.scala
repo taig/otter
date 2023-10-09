@@ -5,14 +5,13 @@ import cats.syntax.all.*
 import io.taig.otter.validation.{validations, Validation}
 import org.typelevel.ci.*
 
-import java.util.UUID
 import java.util.regex.Pattern
 
 final case class Librarian(
     reference: Librarian.Reference,
     email: Librarian.Email,
     password: Librarian.Password,
-    session: Option[Librarian.Session]
+    session: Option[Session]
 ):
   def toSummary: Librarian.Summary = Librarian.Summary(reference, email)
 
@@ -38,13 +37,6 @@ object Librarian:
   object Password:
     def unsafeFromString(value: String): Librarian.Password = value
     val validation: Validation[String, Librarian.Password] = validations.minLength(6).tap
-
-  opaque type Session = UUID
-  object Session:
-    extension (self: Librarian.Session) def toUUID: UUID = self
-    def fromUUID(uuid: UUID): Librarian.Session = uuid
-
-    given (using eq: Eq[UUID]): Eq[Librarian.Session] = eq
 
   final case class Login(email: CIString, password: String)
 

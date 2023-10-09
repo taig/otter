@@ -15,7 +15,7 @@ extension [I, O](self: OtterEndpoint[I, O])
       .request { request =>
         // TODO provide better syntax
         request
-          .zip(headers.authorizationBearerUuid.optional.toHeaders)
+          .zip(headers.session.optional.toHeaders)
           .imap { case (payload, session) =>
             Authentication(session, payload)
           }(authentication => (authentication.payload, authentication.session))
