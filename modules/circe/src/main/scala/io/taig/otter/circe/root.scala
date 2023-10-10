@@ -35,13 +35,18 @@ def toData(json: JsonNumber): Data = json.toInt.map(Data.Number.apply) orElse
   json.toBigDecimal.map(Data.Number.apply) getOrElse
   Data.Number(json.toDouble)
 
+def toDataArray(json: Vector[Json]): Data.Array = Data.Array(Chain.fromSeq(json.map(toData)))
+
+def toDataObject(json: JsonObject): Data.Object =
+  Data.Object(Chain.fromIterableOnce(json.toIterable).map { case (key, value) => (key, toData(value)) })
+
 def toData(json: Json): Data = json.fold(
   jsonNull = Data.Null,
   Data.Boolean.apply,
   toData,
   Data.String.apply,
-  values => Data.Array(Chain.fromSeq(values.map(toData))),
-  values => Data.Object(Chain.fromIterableOnce(values.toIterable).map { case (key, value) => (key, toData(value)) })
+  toDataArray,
+  toDataObject
 )
 
 def name(json: Json): String = json.fold(
