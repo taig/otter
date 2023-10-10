@@ -5,7 +5,7 @@ import io.taig.otter.dsl.*
 import io.taig.otter.http.App
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.data.Librarian
-import io.taig.otter.sample.service.ReferenceGenerator
+import io.taig.otter.sample.service.{EndpointImplementation, ReferenceGenerator}
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
 
@@ -29,6 +29,6 @@ object SampleApp extends IOApp.Simple:
       login = administrator.toLogin
       session <- repositories.librarian.login(login).rethrow
       _ <- logger(s"Created librarian account: ${login.email}:${login.password} ($session)")
-      route = new SampleRoute(repositories.librarian)
-      routes = SampleRoutes(route, repositories)
+      implementation = new EndpointImplementation(repositories.librarian)
+      routes = SampleRoutes(implementation, repositories)
     yield app(routes)

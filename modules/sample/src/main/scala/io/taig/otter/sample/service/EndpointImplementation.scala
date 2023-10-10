@@ -1,17 +1,20 @@
-package io.taig.otter.sample
+package io.taig.otter.sample.service
 
 import cats.effect.IO
 import cats.syntax.all.*
-import io.taig.otter.http.Route as OtterRoute
+import io.taig.otter.http.Route
+import io.taig.otter.sample.User
 import io.taig.otter.sample.api.endpoints.AuthenticatedEndpoint
-import io.taig.otter.sample.api.{Authentication, Role, Route, Self}
+import io.taig.otter.sample.api.{AuthenticatedRoute, Authentication, Role, Self}
 import io.taig.otter.sample.data.Session
 import io.taig.otter.sample.repository.LibrarianRepository
 import io.taig.otter.sample.syntax.*
 
-final class SampleRoute(library: LibrarianRepository):
-  def apply[R <: Role, I, O](endpoint: AuthenticatedEndpoint[R, I, O])(f: (Self[R], I) => IO[O]): Route[I, O] =
-    OtterRoute(
+final class EndpointImplementation(librarians: LibrarianRepository):
+  def apply[R <: Role, I, O](endpoint: AuthenticatedEndpoint[R, I, O])(
+      f: (Self[R], I) => IO[O]
+  ): AuthenticatedRoute[I, O] =
+    Route(
       endpoint.toAuthenticatedEndpoint,
       authentication =>
         authentication.session
@@ -29,4 +32,4 @@ final class SampleRoute(library: LibrarianRepository):
           .attemptNarrow[Authentication.Error]
     )
 
-  def findUser(session: Session): IO[Option[User]] = library.findBySession(session)
+  def findUser(session: Session): IO[Option[User]] = librarians.findBySession(session)

@@ -10,11 +10,12 @@ import io.taig.otter.http.Routes
 import io.taig.otter.openapi.*
 import io.taig.otter.openapi.circe.instance.given
 import io.taig.otter.http.openapi.toOpenApi
-import io.taig.otter.sample.{Build, SampleRoute}
-import io.taig.otter.sample.api.{endpoints, Route}
+import io.taig.otter.sample.Build
+import io.taig.otter.sample.api.{endpoints, AuthenticatedRoute}
+import io.taig.otter.sample.service.EndpointImplementation
 
-final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
-  val get: Route[Unit, Json] = route(endpoints.openapi.get): (_, _) =>
+final class OpenApiRoutes(implementation: EndpointImplementation, routes: Routes[IO]):
+  val get: AuthenticatedRoute[Unit, Json] = implementation(endpoints.openapi.get): (_, _) =>
     val openapi = toOpenApi(
       routes.toChain.map(_.endpoint),
       title = "Otter Sample Library 🦦",
@@ -41,5 +42,5 @@ final class OpenApiRoutes(route: SampleRoute, routes: Routes[IO]):
     IO.pure(openapi.asJson)
 
 object OpenApiRoutes:
-  def apply(route: SampleRoute, routes: Routes[IO]): Routes[IO] =
-    Routes(new OpenApiRoutes(route, routes).get)
+  def apply(implementation: EndpointImplementation, routes: Routes[IO]): Routes[IO] =
+    Routes(new OpenApiRoutes(implementation, routes).get)
