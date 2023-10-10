@@ -16,7 +16,7 @@ sealed abstract class Url[A]:
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Url = self.encode(g(b))
 
-  final def zip[B](url: Url[B]): Url[(A, B)] = new Url[(A, B)]:
+  final def product[B](url: Url[B]): Url[(A, B)] = new Url[(A, B)]:
     override def path: Path[?] = self.path.zip(url.path)
     override def queries: Queries[?] = self.queries.zip(url.queries)
     override def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, (A, B))] = self
@@ -56,4 +56,4 @@ object Url extends ToUrlOps:
 
   given InvariantSemigroupal[Url] with
     override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.imap(f)(g)
-    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.zip(fb)
+    override def product[A, B](fa: Url[A], fb: Url[B]): Url[(A, B)] = fa.product(fb)

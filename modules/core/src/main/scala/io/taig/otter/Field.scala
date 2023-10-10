@@ -29,7 +29,7 @@ sealed abstract class Field[A](val nulls: Option[Null]):
   protected def encodeWithNull(a: A, nulls: Null): Chain[(String, Data)]
 
 object Field extends ToFieldOps:
-  def apply[A: Eq, B](a: A, ofKey: Value.Required[A], ofCodec: Codec[B]): Field[B] = new Field[B](None):
+  def apply[A: Eq, B](a: A, ofKey: => Value.Required[A], ofCodec: => Codec[B]): Field[B] = new Field[B](None):
     override def key: Value.Required[?] = ofKey
     override def codec: Codec[?] = ofCodec
     override def name: String = ofKey.print(a)

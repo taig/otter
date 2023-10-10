@@ -56,58 +56,58 @@ trait codecs:
 
   def singleton[A <: Singleton](a: A): Dynamic[A] = dynamic.empty.imap(_ => a)(_ => Data.Null)
 
-  def field[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Field[B] = Field(name, key, codec)
-  def field[A](name: String, codec: Codec[A]): Field[A] = field(name, string, codec)
-  def field[A](name: Int, codec: Codec[A]): Field[A] = field(name, int, codec)
+  def field[A: Eq, B](name: A, key: => Value.Required[A], codec: => Codec[B]): Field[B] = Field(name, key, codec)
+  def field[A](name: String, codec: => Codec[A]): Field[A] = field(name, string, codec)
+  def field[A](name: Int, codec: => Codec[A]): Field[A] = field(name, int, codec)
 
-  def branch[A: Eq, B](name: A, key: Value.Required[A], codec: Codec[B]): Branch[B] = Branch(name, key, codec)
-  def branch[A](name: String, codec: Codec[A]): Branch[A] = branch(name, string, codec)
-  def branch[A](name: Int, codec: Codec[A]): Branch[A] = branch(name, int, codec)
+  def branch[A: Eq, B](name: A, key: => Value.Required[A], codec: => Codec[B]): Branch[B] = Branch(name, key, codec)
+  def branch[A](name: String, codec: => Codec[A]): Branch[A] = branch(name, string, codec)
+  def branch[A](name: Int, codec: => Codec[A]): Branch[A] = branch(name, int, codec)
 
   object collection:
-    def chain[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], Chain[A]] = Collection(codec)
-    def vector[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], Vector[A]] =
+    def chain[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], Chain[A]] = Collection(codec)
+    def vector[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], Vector[A]] =
       chain(codec).imap(_.toVector)(Chain.fromSeq)
-    def list[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], List[A]] =
+    def list[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], List[A]] =
       chain(codec).imap(_.toList)(Chain.fromSeq)
-    def sortedSet[F[a] <: Codec[a], A: Ordering](codec: F[A]): Collection.Of[F[A], SortedSet[A]] =
+    def sortedSet[F[a] <: Codec[a], A: Ordering](codec: => F[A]): Collection.Of[F[A], SortedSet[A]] =
       chain(codec).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyChain[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
+    def nonEmptyChain[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(codec).ivalidate(validation)(_.toChain)
-    def nonEmptyList[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], NonEmptyList[A]] =
+    def nonEmptyList[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], NonEmptyList[A]] =
       val validation: Validation[List[A], NonEmptyList[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyList.fromList(_).toValidNec(Data.Number(0)))
       list(codec).ivalidate(validation)(_.toList)
-    def nonEmptySet[F[a] <: Codec[a], A: Order](codec: F[A]): Collection.Of[F[A], NonEmptySet[A]] =
+    def nonEmptySet[F[a] <: Codec[a], A: Order](codec: => F[A]): Collection.Of[F[A], NonEmptySet[A]] =
       val validation: Validation[SortedSet[A], NonEmptySet[A]] =
         Validation(Constraint.MinItems(1))(NonEmptySet.fromSet(_).toValidNec(Data.Number(0)))
       sortedSet(codec).ivalidate(validation)(_.toSortedSet)
-    def sortedMap[F[a] <: Codec[a], A: Ordering, B](key: Codec[A], codec: Codec[B])(
+    def sortedMap[F[a] <: Codec[a], A: Ordering, B](key: => Codec[A], codec: => Codec[B])(
         f: (Codec[A], Codec[B]) => F[(A, B)]
     ): Collection.Of[F[(A, B)], SortedMap[A, B]] =
       chain(f(key, codec)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[A, B](codec: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
+    def apply[A, B](codec: => Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
       Enumeration.Required(codec, mapping)
-    def apply[A: Hash, B](codec: Value.Required[A])(f: B => A)(using
+    def apply[A: Hash, B](codec: => Value.Required[A])(f: B => A)(using
         EnumerationValues.Aux[B, B]
     ): Enumeration.Required[B] =
       enumeration(codec)(using Mapping.enumeration(f))
-    def constant[A: Eq](codec: Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
+    def constant[A: Eq](codec: => Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
       enumeration(codec)(using Mapping.constant[A](value))
 
   object dictionary:
-    def chain[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, codec)
-    def map[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[Map[A, B]] =
+    def chain[A, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, codec)
+    def map[A, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[Map[A, B]] =
       chain(key, codec).imap(values => Map.from(values.iterator))(Chain.fromIterableOnce)
-    def vectorMap[A, B](key: Value.Required[A], codec: Codec[B]): Dictionary[VectorMap[A, B]] =
+    def vectorMap[A, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[VectorMap[A, B]] =
       chain(key, codec).imap(values => VectorMap.from(values.iterator))(Chain.fromIterableOnce)
-    def sortedMap[A: Ordering, B](key: Value.Required[A], codec: Codec[B]): Dictionary[SortedMap[A, B]] =
+    def sortedMap[A: Ordering, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[SortedMap[A, B]] =
       chain(key, codec).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
-    def nonEmptyMap[A: Ordering, B](key: Value.Required[A], codec: Codec[B]): Dictionary[NonEmptyMap[A, B]] =
+    def nonEmptyMap[A: Ordering, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
         Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, codec).ivalidate(validation)(_.toSortedMap)
@@ -143,6 +143,6 @@ trait codecs:
       .imap(Violations.apply)(_.toNem)
       .name("Violations")
 
-  def error[A](identifier: String, codec: Codec[A]): Coproduct[A] = branch(identifier, codec).toCoproduct
+  def error[A](identifier: String, codec: => Codec[A]): Coproduct[A] = branch(identifier, codec).toCoproduct
 
 object codecs extends codecs

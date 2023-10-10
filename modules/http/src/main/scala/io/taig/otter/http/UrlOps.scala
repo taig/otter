@@ -1,14 +1,17 @@
 package io.taig.otter.http
 
 final class UrlOps[A](self: Url[A]):
-  def /(segment: Segment[Unit]): Url[A] = self.zip(segment.toPath.toUrl).imap { case (a, _) => a }((_, ()))
+  inline def zip[B](url: Url[B]): Url[(A, B)] = self.product(url)
+  def zip(url: Url[Unit]): Url[A] = self.product(url).imap { case (a, _) => a }((_, ()))
+  def /(segment: Segment[Unit]): Url[A] = self.zip(segment.toPath.toUrl)
   def /(static: String): Url[A] = /(Segment.Static(static))
-  def :?[B](query: Query[B]): Url[(A, B)] = ???
+  def :?[B](query: Query[B]): Url[(A, B)] = zip(query.toQueries.toUrl)
 
 final class UrlOpsUnit(self: Url[Unit]):
-  def /[A](segment: Segment[A]): Url[A] = self.zip(segment.toPath.toUrl).imap { case (_, b) => b }(((), _))
+  def zip[B](url: Url[B]): Url[B] = self.product(url).imap { case (_, b) => b }(((), _))
+  def /[A](segment: Segment[A]): Url[A] = self.zip(segment.toPath.toUrl)
   def /(static: String): Url[Unit] = /(Segment.Static(static))
-  def :?[A](query: Query[A]): Url[A] = ???
+  def :?[A](query: Query[A]): Url[A] = zip(query.toQueries.toUrl)
 
 trait ToUrlOps extends ToUrlOps1:
   implicit final def toUrlOpsUnit(self: Url[Unit]): UrlOpsUnit = UrlOpsUnit(self)

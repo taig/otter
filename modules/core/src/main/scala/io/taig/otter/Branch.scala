@@ -24,7 +24,7 @@ object Branch:
   extension [A <: Matchable](self: Branch[A])
     inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = self.toCoproduct | branch
 
-  def apply[A: Eq, B](a: A, ofKey: Value.Required[A], ofCodec: Codec[B]): Branch[B] = new Branch[B]:
+  def apply[A: Eq, B](a: A, ofKey: => Value.Required[A], ofCodec: => Codec[B]): Branch[B] = new Branch[B]:
     override def key: Value.Required[?] = ofKey
     override def codec: Codec[?] = ofCodec
     override def name: String = ofKey.print(a)

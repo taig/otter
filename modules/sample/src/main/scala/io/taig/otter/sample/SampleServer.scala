@@ -14,5 +14,4 @@ object SampleServer:
 
     Resource
       .eval(CORS.policy.withAllowOriginAll(app))
-      .flatMap: app =>
-        EmberServerBuilder.default[IO].withHttpApp(app).build
+      .flatMap(app => EmberServerBuilder.default[IO].withHttpApp(app).build)
