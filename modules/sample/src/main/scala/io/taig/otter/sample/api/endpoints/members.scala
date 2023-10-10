@@ -18,7 +18,7 @@ object members:
 
   object Post:
     val results: Results[Post] =
-      val emailConflict: Codec[EmailConflict.type] = error("emailConflict", EmailConflict)
+      val emailConflict: Codec[EmailConflict.type] = error("emailConflict", singleton(EmailConflict))
       result(code.badRequest, output.json(emailConflict)).to
 
   val post: AuthenticatedEndpoint[Role.Librarian, Member.Create, Either[Post, Member.Summary]] = endpoint(
@@ -35,7 +35,7 @@ object members:
     object Get:
       val results: Results[Get] =
         val memberReferenceUnknown: Codec[MemberReferenceUnknown.type] =
-          error("memberReferenceUnknown", MemberReferenceUnknown)
+          error("memberReferenceUnknown", singleton(MemberReferenceUnknown))
         result(code.notFound, output.json(memberReferenceUnknown)).to
 
     val get: AuthenticatedEndpoint[
@@ -59,7 +59,10 @@ object members:
       object Post:
         val results: Results[Post] =
           val emailOrPasswordIncorrect: Result[EmailOrPasswordIncorrect.type] =
-            result(code.unauthorized, output.json(error("emailOrPasswordIncorrect", EmailOrPasswordIncorrect)))
+            result(
+              code.unauthorized,
+              output.json(error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect)))
+            )
               .description("Email or password incorrect")
 
           emailOrPasswordIncorrect.to

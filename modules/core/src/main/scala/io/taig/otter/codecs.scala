@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.{Eq, Hash}
-import cats.data.{Chain, NonEmptyChain, NonEmptyMap}
+import cats.{Eq, Hash, Order}
+import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
 import io.taig.otter.validation.*
@@ -76,6 +76,14 @@ trait codecs:
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
         Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(codec).ivalidate(validation)(_.toChain)
+    def nonEmptyList[F[a] <: Codec[a], A](codec: F[A]): Collection.Of[F[A], NonEmptyList[A]] =
+      val validation: Validation[List[A], NonEmptyList[A]] =
+        Validation(Constraint.MinItems(1))(NonEmptyList.fromList(_).toValidNec(Data.Number(0)))
+      list(codec).ivalidate(validation)(_.toList)
+    def nonEmptySet[F[a] <: Codec[a], A: Order](codec: F[A]): Collection.Of[F[A], NonEmptySet[A]] =
+      val validation: Validation[SortedSet[A], NonEmptySet[A]] =
+        Validation(Constraint.MinItems(1))(NonEmptySet.fromSet(_).toValidNec(Data.Number(0)))
+      sortedSet(codec).ivalidate(validation)(_.toSortedSet)
     def sortedMap[F[a] <: Codec[a], A: Ordering, B](key: Codec[A], codec: Codec[B])(
         f: (Codec[A], Codec[B]) => F[(A, B)]
     ): Collection.Of[F[(A, B)], SortedMap[A, B]] =
@@ -136,6 +144,5 @@ trait codecs:
       .name("Violations")
 
   def error[A](identifier: String, codec: Codec[A]): Coproduct[A] = branch(identifier, codec).toCoproduct
-  def error[A <: Singleton](identifier: String, a: A): Coproduct[A] = error(identifier, singleton(a))
 
 object codecs extends codecs
