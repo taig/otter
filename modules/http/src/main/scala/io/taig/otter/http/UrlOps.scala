@@ -3,10 +3,12 @@ package io.taig.otter.http
 final class UrlOps[A](self: Url[A]):
   def /(segment: Segment[Unit]): Url[A] = self.zip(segment.toPath.toUrl).imap { case (a, _) => a }((_, ()))
   def /(static: String): Url[A] = /(Segment.Static(static))
+  def :?[B](query: Query[B]): Url[(A, B)] = ???
 
 final class UrlOpsUnit(self: Url[Unit]):
   def /[A](segment: Segment[A]): Url[A] = self.zip(segment.toPath.toUrl).imap { case (_, b) => b }(((), _))
   def /(static: String): Url[Unit] = /(Segment.Static(static))
+  def :?[A](query: Query[A]): Url[A] = ???
 
 trait ToUrlOps extends ToUrlOps1:
   implicit final def toUrlOpsUnit(self: Url[Unit]): UrlOpsUnit = UrlOpsUnit(self)

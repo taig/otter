@@ -30,6 +30,8 @@ abstract class DslBuilder[A, B, C, D, E, F](
     Value
   }
 
+  export core.validation.{Constraint, History, Validation, Violation, Violations}
+
   export http.{
     App,
     Client,
