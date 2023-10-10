@@ -6,29 +6,21 @@ import io.taig.otter.http.App
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.service.{EndpointImplementation, ReferenceGenerator}
-import org.typelevel.log4cats.LoggerFactory
-import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 object SampleApp extends IOApp.Simple:
-  override def run: IO[Unit] =
-    given LoggerFactory[IO] = Slf4jFactory.create[IO]
+  override def run: IO[Unit] = for
+    app <- create(IO.println)
+    server = Http4sHttpServer[IO](SampleServer.apply)
+    _ <- server.start(app)
+  yield ()
 
-    for
-      app <- create(IO.println)
-      server = new Http4sHttpServer[IO]
-      _ <- server.start(app)
-    yield ()
-
-  def create(logger: String => IO[Unit]): IO[App[IO]] =
-    val references = ReferenceGenerator()
-
-    for
-      repositories <- SampleRepositories(references)
-      administrator = Librarian.Create.Default
-      _ <- repositories.librarian.create(administrator).rethrow
-      login = administrator.toLogin
-      session <- repositories.librarian.login(login).rethrow
-      _ <- logger(s"Created librarian account: ${login.email}:${login.password} ($session)")
-      implementation = new EndpointImplementation(repositories.librarian)
-      routes = SampleRoutes(implementation, repositories)
-    yield app(routes)
+  def create(logger: String => IO[Unit]): IO[App[IO]] = for
+    repositories <- SampleRepositories(ReferenceGenerator())
+    administrator = Librarian.Create.Default
+    _ <- repositories.librarian.create(administrator).rethrow
+    login = administrator.toLogin
+    session <- repositories.librarian.login(login).rethrow
+    _ <- logger(s"Created librarian account: ${login.email}:${login.password} ($session)")
+    implementation = new EndpointImplementation(repositories.librarian)
+    routes = SampleRoutes(implementation, repositories)
+  yield app(routes)

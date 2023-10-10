@@ -1,21 +1,14 @@
 package io.taig.otter.http4s
 
-import cats.effect.Async
+import cats.effect.{Concurrent, Resource}
 import cats.syntax.all.*
 import fs2.Stream
-import fs2.io.net.Network
 import io.taig.otter.http.*
 import org.http4s.HttpApp as Http4sApp
-import org.http4s.ember.server.EmberServerBuilder
-import org.http4s.server.middleware.CORS
-import org.typelevel.log4cats.LoggerFactory
+import org.http4s.server.Server
 
-final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpServer[F]:
-  override def start(app: App[F]): F[Unit] =
-    CORS.policy
-      .withAllowOriginAll(toHttp4sApp(app))
-      .flatMap: app =>
-        EmberServerBuilder.default[F].withHttpApp(app).build.useForever
+final class Http4sHttpServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, Server]) extends HttpServer[F]:
+  override def start(app: App[F]): F[Unit] = f(toHttp4sApp(app)).useForever
 
   def toHttp4sApp(app: App[F]): Http4sApp[F] = Http4sApp: request =>
     val method = toHttpMethod(request.method)
@@ -48,3 +41,6 @@ final class Http4sHttpServer[F[+_]: Async: Network: LoggerFactory] extends HttpS
       data.compile.to(Array).map(data => Http.Request.Body.Singlepart(Http.Payload.Strict(data)))
 //    case _: Request.Body.Singlepart.Streaming[?] =>
 //      Http4sStream(data).map(stream => Http.Request.Body.Singlepart(Http.Payload.Streaming(stream)))
+
+object Http4sHttpServer:
+  def apply[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, Server]): HttpServer[F] = new Http4sHttpServer[F](f)

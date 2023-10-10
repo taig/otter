@@ -123,7 +123,7 @@ lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
-      "org.http4s" %%% "http4s-ember-server" % Version.Http4s ::
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
         Nil
   )
   .dependsOn(http % "compile->compile;test->test")
