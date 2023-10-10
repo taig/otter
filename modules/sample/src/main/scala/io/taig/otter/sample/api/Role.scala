@@ -25,7 +25,7 @@ object Role:
 
 type ^[A <: Role, B <: Role] = Role.Or[A, B]
 
-type Self[R] = R match
+type Self[R <: Role] = R match
   case Role.Guest     => Unit
   case Role.Member    => Member
   case Role.Librarian => Librarian.Summary
