@@ -185,7 +185,7 @@ sealed abstract class Coproduct[A](
           data: Option[Chain[(String, Data)]],
           discriminator: Discriminator
       ): Validated[Violations, Option[Option[A]]] =
-        data.fold(none.valid)(_ => self.decode(data, discriminator).map(_.some))
+        data.fold(Some(None).valid)(_ => self.decode(data, discriminator).map(_.some))
       override def encode(a: Option[A], discriminator: Discriminator): Option[Chain[(String, Data)]] =
         a.flatMap(self.encode(_, discriminator))
 
