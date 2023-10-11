@@ -23,6 +23,9 @@ final class BooksRoutesTest extends SampleSuite:
       assertEquals(obtained, expected.toChain)
     }
 
+  app.test("foobar"): context =>
+    println("lol")
+
   app.test(endpoints.books.get, description = "empty"): context =>
     for obtained <- context.client.submit(endpoints.books.get, input = ()).assertAuthenticated
     yield {

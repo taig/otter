@@ -4,6 +4,8 @@ import cats.effect.SyncIO
 import io.taig.otter.http.Endpoint
 import munit.{CatsEffectSuite, Location}
 
+import scala.annotation.nowarn
+
 abstract class OtterSuite extends CatsEffectSuite with OtterExtensions:
   def test(endpoint: Endpoint[?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
@@ -11,11 +13,12 @@ abstract class OtterSuite extends CatsEffectSuite with OtterExtensions:
   def test(endpoint: Endpoint[?, ?])(body: => Any)(implicit loc: Location): Unit =
     test(endpoint, description = "")(body)(loc)
 
-  extension [T](self: SyncIO[FunFixture[T]])
+  @nowarn
+  implicit open class SyncIOFunFixtureOtterOps[T](private val self: SyncIO[FunFixture[T]])
+      extends SyncIOFunFixtureOps(self):
     def test(endpoint: Endpoint[?, ?], description: String)(
         body: T => Any
-    )(implicit loc: Location): Unit =
-      new SyncIOFunFixtureOps(self).test(toMessage(endpoint, description))(body)(loc)
+    )(implicit loc: Location): Unit = test(toMessage(endpoint, description))(body)(loc)
 
     def test(endpoint: Endpoint[?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)

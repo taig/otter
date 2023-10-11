@@ -13,11 +13,11 @@ abstract class SampleSuite extends OtterSuite with SampleExtensions with SampleA
   def test(endpoint: AuthenticatedEndpoint[?, ?, ?])(body: => Any)(implicit loc: Location): Unit =
     test(endpoint, description = "")(body)(loc)
 
-  extension [T](self: SyncIO[FunFixture[T]])
+  implicit open class SyncIOFunFixtureSampleOps[T](private val self: SyncIO[FunFixture[T]])
+      extends SyncIOFunFixtureOtterOps(self):
     def test(endpoint: AuthenticatedEndpoint[?, ?, ?], description: String)(body: T => Any)(implicit
         loc: Location
-    ): Unit =
-      self.test(endpoint.toAuthenticatedEndpoint, description)(body)(loc)
+    ): Unit = test(endpoint.toAuthenticatedEndpoint, description)(body)(loc)
 
     def test(endpoint: AuthenticatedEndpoint[?, ?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)
