@@ -6,7 +6,7 @@ import munit.{CatsEffectSuite, Location}
 
 import scala.annotation.nowarn
 
-abstract class OtterSuite extends CatsEffectSuite with OtterExtensions:
+abstract class OtterSuite extends CatsEffectSuite with OtterExtensions with OtterAssertions:
   def test(endpoint: Endpoint[?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
 
