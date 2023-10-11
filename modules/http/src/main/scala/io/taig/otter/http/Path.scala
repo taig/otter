@@ -51,7 +51,7 @@ object Path extends ToPathOps:
     // TODO test this, I don't think this will work
     override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.uncons match
       case Some((head, tail)) => Option.when(segment.matches(head))(tail)
-      case None               => ??? // Option.when(segment.isOptional)(Chain.empty)
+      case None               => None
     override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, A)] = remainders.uncons
       .match
 //        case Some((head, tail)) if segment.isOptional =>
