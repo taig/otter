@@ -13,4 +13,4 @@ object instance:
   given KeyEncoder[CIString] = _.toString
 
   given [A, B: Encoder](using a: KeyEncoder[A]): Encoder.AsObject[Chain[(A, B)]] = values =>
-    JsonObject.fromFoldable(values.map { case (key, value) => (a(key), value.asJson) })
+    JsonObject.fromIterable(values.map { case (key, value) => (a(key), value.asJson) }.toList)

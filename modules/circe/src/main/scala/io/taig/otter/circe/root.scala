@@ -13,7 +13,7 @@ def fromData(data: Data.Number): Json = data.value match
   case value: Long       => Json.fromLong(value)
 
 def fromData(data: Data.Object): JsonObject =
-  JsonObject.fromFoldable(data.values.map { case (key, value) => (key, fromData(value)) })
+  JsonObject.fromIterable(data.values.map { case (key, value) => (key, fromData(value)) }.toList)
 
 def fromData(data: Data): Json = data match
   case Data.String(value)  => Json.fromString(value)
