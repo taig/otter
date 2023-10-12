@@ -8,6 +8,9 @@ import io.taig.otter.sample.data.{Member, Session}
 import io.taig.otter.sample.repository.MemberRepository
 import io.taig.otter.sample.service.EndpointImplementation
 
+import scala.annotation.nowarn
+
+@nowarn
 final class MembersSelfSessionsRoutes(implementation: EndpointImplementation, members: MemberRepository):
   val post: AuthenticatedRoute[Member.Login, Either[Post, Session]] =
     implementation(endpoints.members.self.sessions.post): (_, login) =>
