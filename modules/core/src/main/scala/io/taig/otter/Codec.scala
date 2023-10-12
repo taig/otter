@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.{Applicative, Traverse}
 import cats.data.{Chain, NonEmptyChain, Validated}
 import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
@@ -399,27 +400,31 @@ object Enumeration:
         override def print(b: B): String = self.print(g(b))
 
   object Required:
-    def apply[A, B](of: => Value.Required[A], mapping: Mapping[B, A]): Enumeration.Required[B] =
-      new Required[B](None, None):
+    def apply[F[_], A, B](of: => Value.Required[F[A]], mapping: Mapping[B, A])(using
+        Applicative[F] & Traverse[F]
+    ): Enumeration.Required[F[B]] =
+      new Required[F[B]](None, None):
         override def codec: Value[?] = of
-        override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(encode))
+        override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(b => encode(b.pure)))
         override def constraints: Chain[Constraint] = Chain.empty
-        override def decode(data: Option[Data.Value]): Validated[Violations, B] = of
+        override def decode(data: Option[Data.Value]): Validated[Violations, F[B]] = of
           .decode(data)
           .andThen: a =>
-            Validated.fromOption(
-              mapping.prj(a),
-              Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
-            )
-        override def encode(b: B): Data.Primitive = of.encode(mapping.inj(b))
-        override def parse(value: String): Validated[Violations, B] = of
+            a.traverse: a =>
+              Validated.fromOption(
+                mapping.prj(a),
+                Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
+              )
+        override def encode(fb: F[B]): Data.Primitive = of.encode(fb.map(mapping.inj))
+        override def parse(value: String): Validated[Violations, F[B]] = of
           .parse(value)
           .andThen: a =>
-            Validated.fromOption(
-              mapping.prj(a),
-              Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
-            )
-        override def print(b: B): String = of.print(mapping.inj(b))
+            a.traverse: a =>
+              Validated.fromOption(
+                mapping.prj(a),
+                Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
+              )
+        override def print(fb: F[B]): String = of.print(fb.map(mapping.inj))
 
   abstract private class Optional[A](val description: Option[String], val name: Option[String]) extends Enumeration[A]:
     self =>

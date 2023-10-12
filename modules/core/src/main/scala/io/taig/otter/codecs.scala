@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import cats.{Eq, Hash, Order}
+import cats.{Eq, Hash, Id, Order}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
@@ -91,11 +91,16 @@ trait codecs:
 
   object enumeration:
     def apply[A, B](codec: => Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
-      Enumeration.Required(codec, mapping)
+      Enumeration.Required[Id, A, B](codec, mapping)
     def apply[A: Hash, B](codec: => Value.Required[A])(f: B => A)(using
         EnumerationValues.Aux[B, B]
-    ): Enumeration.Required[B] =
-      enumeration(codec)(using Mapping.enumeration(f))
+    ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
+    def optional[A, B](codec: => Value.Required[Option[A]])(using
+        mapping: Mapping[B, A]
+    ): Enumeration.Required[Option[B]] = Enumeration.Required[Option, A, B](codec, mapping)
+    def optional[A: Hash, B](codec: => Value.Required[Option[A]])(f: B => A)(using
+        EnumerationValues.Aux[B, B]
+    ): Enumeration.Required[Option[B]] = enumeration.optional(codec)(using Mapping.enumeration(f))
     def constant[A: Eq](codec: => Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
       enumeration(codec)(using Mapping.constant[A](value))
 
