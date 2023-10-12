@@ -12,7 +12,7 @@ import scala.collection.immutable.SortedSet
 object book:
   val title: Primitive[Book.Title] = string.ivalidate(Book.Title.validation)(_.toString).name("Book.Title")
 
-  val genre: Enumeration[Book.Genre] = enumeration[String, Book.Genre](string) {
+  val genre: Enumeration[Book.Genre] = enumeration[Book.Genre](string) {
     case Book.Genre.Biography => "biography"
     case Book.Genre.Children  => "children"
     case Book.Genre.Fantasy   => "fantasy"

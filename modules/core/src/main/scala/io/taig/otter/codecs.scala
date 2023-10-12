@@ -90,20 +90,9 @@ trait codecs:
       chain(f(key, codec)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
-    def apply[F[_], A, B](codec: => Value.Required[F[A]])(using mapping: Mapping[B, A])(using
-        Applicative[F] & Traverse[F]
-    ): Enumeration.Required[F[B]] =
-      Enumeration.Required[F, A, B](codec, mapping)
-    def apply[F[_], A: Hash, B](codec: => Value.Required[F[A]])(f: B => A)(using
-        EnumerationValues.Aux[B, B]
-    )(using Applicative[F] & Traverse[F]): Enumeration.Required[F[B]] = enumeration(codec)(using Mapping.enumeration(f))
-    def apply[A, B](codec: => Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
-      Enumeration.Required[Id, A, B](codec, mapping)
-    def apply[A: Hash, B](codec: => Value.Required[A])(f: B => A)(using
-        EnumerationValues.Aux[B, B]
-    ): Enumeration.Required[B] = enumeration[Id, A, B](codec)(using Mapping.enumeration(f))
+    def apply[A]: EnumerationApplyPartiallyApplied[A] = new EnumerationApplyPartiallyApplied[A]()
     def constant[A: Eq](codec: => Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
-      enumeration[Id, A, value.type](codec)(using Mapping.constant[A](value))
+      Enumeration.Required[Id, A, value.type](codec, Mapping.constant[A](value))
 
   object dictionary:
     def chain[A, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, codec)
@@ -152,3 +141,17 @@ trait codecs:
   def error[A](identifier: String, codec: => Codec[A]): Coproduct[A] = branch(identifier, codec).toCoproduct
 
 object codecs extends codecs
+
+final private[otter] class EnumerationApplyPartiallyApplied[A](val dummy: Boolean = true) extends AnyVal:
+  inline def apply[F[_], B](codec: => Value.Required[F[B]])(using mapping: Mapping[A, B])(using
+      Applicative[F] & Traverse[F]
+  ): Enumeration.Required[F[A]] = Enumeration.Required(codec, mapping)
+  def apply[B](codec: => Value.Required[B])(using mapping: Mapping[A, B]): Enumeration.Required[A] =
+    apply[Id, B](codec)
+  inline def apply[F[_], B: Hash](codec: => Value.Required[F[B]])(f: A => B)(using
+      EnumerationValues.Aux[A, A]
+  )(using Applicative[F] & Traverse[F]): Enumeration.Required[F[A]] =
+    Enumeration.Required(codec, Mapping.enumeration(f))
+  def apply[B: Hash](codec: => Value.Required[B])(f: A => B)(using
+      EnumerationValues.Aux[A, A]
+  ): Enumeration.Required[A] = apply[Id, B](codec)(f)
