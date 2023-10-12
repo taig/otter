@@ -402,29 +402,28 @@ object Enumeration:
   object Required:
     def apply[F[_], A, B](of: => Value.Required[F[A]], mapping: Mapping[B, A])(using
         Applicative[F] & Traverse[F]
-    ): Enumeration.Required[F[B]] =
-      new Required[F[B]](None, None):
-        override def codec: Value[?] = of
-        override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(b => encode(b.pure)))
-        override def constraints: Chain[Constraint] = Chain.empty
-        override def decode(data: Option[Data.Value]): Validated[Violations, F[B]] = of
-          .decode(data)
-          .andThen: a =>
-            a.traverse: a =>
-              Validated.fromOption(
-                mapping.prj(a),
-                Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
-              )
-        override def encode(fb: F[B]): Data.Primitive = of.encode(fb.map(mapping.inj))
-        override def parse(value: String): Validated[Violations, F[B]] = of
-          .parse(value)
-          .andThen: a =>
-            a.traverse: a =>
-              Validated.fromOption(
-                mapping.prj(a),
-                Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
-              )
-        override def print(fb: F[B]): String = of.print(fb.map(mapping.inj))
+    ): Enumeration.Required[F[B]] = new Required[F[B]](None, None):
+      override def codec: Value[?] = of
+      override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(b => encode(b.pure)))
+      override def constraints: Chain[Constraint] = Chain.empty
+      override def decode(data: Option[Data.Value]): Validated[Violations, F[B]] = of
+        .decode(data)
+        .andThen: a =>
+          a.traverse: a =>
+            Validated.fromOption(
+              mapping.prj(a),
+              Violations.rootNec(Violation(Constraint.OneOf(values), data.getOrElse(Data.Null)))
+            )
+      override def encode(fb: F[B]): Data.Primitive = of.encode(fb.map(mapping.inj))
+      override def parse(value: String): Validated[Violations, F[B]] = of
+        .parse(value)
+        .andThen: a =>
+          a.traverse: a =>
+            Validated.fromOption(
+              mapping.prj(a),
+              Violations.rootNec(Violation(Constraint.OneOf(values), Data.String(value)))
+            )
+      override def print(fb: F[B]): String = of.print(fb.map(mapping.inj))
 
   abstract private class Optional[A](val description: Option[String], val name: Option[String]) extends Enumeration[A]:
     self =>

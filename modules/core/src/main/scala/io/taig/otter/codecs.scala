@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import cats.{Eq, Hash, Id, Order}
+import cats.{Applicative, Eq, Hash, Id, Order, Traverse}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
@@ -90,19 +90,20 @@ trait codecs:
       chain(f(key, codec)).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
 
   object enumeration:
+    def apply[F[_], A, B](codec: => Value.Required[F[A]])(using mapping: Mapping[B, A])(using
+        Applicative[F] & Traverse[F]
+    ): Enumeration.Required[F[B]] =
+      Enumeration.Required[F, A, B](codec, mapping)
+    def apply[F[_], A: Hash, B](codec: => Value.Required[F[A]])(f: B => A)(using
+        EnumerationValues.Aux[B, B]
+    )(using Applicative[F] & Traverse[F]): Enumeration.Required[F[B]] = enumeration(codec)(using Mapping.enumeration(f))
     def apply[A, B](codec: => Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
       Enumeration.Required[Id, A, B](codec, mapping)
     def apply[A: Hash, B](codec: => Value.Required[A])(f: B => A)(using
         EnumerationValues.Aux[B, B]
-    ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
-    def optional[A, B](codec: => Value.Required[Option[A]])(using
-        mapping: Mapping[B, A]
-    ): Enumeration.Required[Option[B]] = Enumeration.Required[Option, A, B](codec, mapping)
-    def optional[A: Hash, B](codec: => Value.Required[Option[A]])(f: B => A)(using
-        EnumerationValues.Aux[B, B]
-    ): Enumeration.Required[Option[B]] = enumeration.optional(codec)(using Mapping.enumeration(f))
+    ): Enumeration.Required[B] = enumeration[Id, A, B](codec)(using Mapping.enumeration(f))
     def constant[A: Eq](codec: => Value.Required[A], value: A & Singleton): Enumeration.Required[value.type] =
-      enumeration(codec)(using Mapping.constant[A](value))
+      enumeration[Id, A, value.type](codec)(using Mapping.constant[A](value))
 
   object dictionary:
     def chain[A, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[Chain[(A, B)]] = Dictionary(key, codec)
