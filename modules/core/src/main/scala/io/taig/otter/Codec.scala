@@ -503,10 +503,11 @@ object Primitive:
     def apply[A](of: Type[A]): Primitive.Required[A] = new Required[A](None, None, None):
       override def tpe: Type[?] = of
       override def constraints: Chain[Constraint] = Chain.empty
-      override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
-        case Some(data: Data.Primitive) => of.decode(data)
-        case Some(data)                 => Violations.rootNec(Violation.tpe(of.name, actual = data.name)).invalid
-        case None                       => Violations.rootNec(Violation.required).invalid
+      override def decode(data: Option[Data.Value]): Validated[Violations, A] =
+        data match
+          case Some(data: Data.Primitive) => of.decode(data)
+          case Some(data)                 => Violations.rootNec(Violation.tpe(of.name, actual = data.name)).invalid
+          case None                       => Violations.rootNec(Violation.required).invalid
       override def encode(a: A): Data.Primitive = of.encode(a)
       override def parse(value: String): Validated[Violations, A] = Validated.fromOption(
         of.parse(value),

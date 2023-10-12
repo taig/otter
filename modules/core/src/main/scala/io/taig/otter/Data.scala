@@ -43,9 +43,64 @@ object Data:
   sealed abstract class Primitive extends Value
 
   final case class String(value: JString) extends Data.Primitive
+
   final case class Boolean(value: SBoolean) extends Data.Primitive
-  final case class Number(value: Int | Long | Float | Double | BigDecimal | BigInt) extends Data.Primitive
+
+  final case class Number(value: Int | Long | Float | Double | BigDecimal | BigInt) extends Data.Primitive:
+    def asInt: Option[Int] = asLong.flatMap: value =>
+      val asInt = value.toInt
+      Option.when(value == asInt)(asInt)
+
+    def asLong: Option[Long] = value match
+      case value: Long => Some(value)
+      case value: Int  => Some(value.toLong)
+      case value: BigDecimal =>
+        Option.when(bigDecimalIsValidLong(value))(value.longValue)
+      case value: Float =>
+        val asBigDecimal = BigDecimal(value.toDouble)
+        Option.when(bigDecimalIsValidLong(asBigDecimal))(asBigDecimal.longValue)
+      case value: Double =>
+        val asBigDecimal = BigDecimal(value)
+        Option.when(bigDecimalIsValidLong(asBigDecimal))(asBigDecimal.longValue)
+      case value: BigInt =>
+        val asBigDecimal = BigDecimal(value)
+        Option.when(bigDecimalIsValidLong(asBigDecimal))(asBigDecimal.longValue)
+
+    def asBigInt: Option[BigInt] = toBigDecimal.toBigIntExact
+
+    def toFloat: Float = value match
+      case value: Float      => value
+      case value: Int        => value.toFloat
+      case value: Long       => value.toFloat
+      case value: Double     => value.toFloat
+      case value: BigDecimal => value.toFloat
+      case value: BigInt     => value.toFloat
+
+    def toDouble: Double = value match
+      case value: Double     => value
+      case value: Float      => value.toDouble
+      case value: Int        => value.toDouble
+      case value: Long       => value.toDouble
+      case value: BigDecimal => value.toDouble
+      case value: BigInt     => value.toDouble
+
+    def toBigDecimal: BigDecimal = value match
+      case value: BigDecimal => value
+      case value: Int        => BigDecimal(value)
+      case value: Long       => BigDecimal(value)
+      case value: Float      => BigDecimal(value.toDouble)
+      case value: Double     => BigDecimal(value)
+      case value: BigInt     => BigDecimal(value)
 
   case object Null extends Data
 
   given Eq[Data] = Eq.fromUniversalEquals
+
+private val bigDecimalMinLong: BigDecimal = BigDecimal(Long.MinValue)
+private val bigDecimalMaxLong: BigDecimal = BigDecimal(Long.MaxValue)
+
+private def bigDecimalIsWhole(value: BigDecimal): Boolean =
+  value.signum == 0 || value.scale <= 0 || value.bigDecimal.stripTrailingZeros.scale <= 0
+
+private def bigDecimalIsValidLong(value: BigDecimal): Boolean =
+  bigDecimalIsWhole(value) && value.compareTo(bigDecimalMinLong) >= 0 && value.compareTo(bigDecimalMaxLong) <= 0

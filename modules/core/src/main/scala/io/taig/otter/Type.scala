@@ -18,17 +18,21 @@ enum Type[A]:
   case String extends Type[JString]
 
   def decode(data: Data.Primitive): Validated[Violations, A] = (data, this) match
-    case (Data.Boolean(value), Type.Boolean)               => value.valid
-    case (Data.Number(value: Int), Type.Int)               => value.valid
-    case (Data.Number(value: Long), Type.Long)             => value.valid
-    case (Data.Number(value: Double), Type.Double)         => value.valid
-    case (Data.Number(value: Float), Type.Float)           => value.valid
-    case (Data.Number(value: BigDecimal), Type.BigDecimal) => value.valid
-    case (Data.Number(value: BigInt), Type.BigInt)         => value.valid
-    case (Data.String(value), Type.String)                 => value.valid
+    case (Data.Boolean(value), Type.Boolean) => value.valid
+    case (data: Data.Number, Type.Long) =>
+      data.asLong.toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
+    case (data: Data.Number, Type.Int) =>
+      data.asInt.toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
+    case (data: Data.Number, Type.Float)  => data.toFloat.valid
+    case (data: Data.Number, Type.Double) => data.toDouble.valid
+    case (data: Data.Number, Type.BigInt) =>
+      data.asBigInt.toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
+    case (data: Data.Number, Type.BigDecimal) => data.toBigDecimal.valid
+    case (Data.String(value), Type.String)    => value.valid
     case (Data.String(value), _) =>
       Validated.fromOption(parse(value), Violations.rootNec(Violation.tpe(name, "string")))
-    case (data, _) => Violations.rootNec(Violation.tpe(name, actual = data.name)).invalid
+    case (data, _) =>
+      Violations.rootNec(Violation.tpe(name, actual = data.name)).invalid
 
   def encode(a: A): Data.Primitive = this match
     case Type.BigDecimal => Data.Number(a)
