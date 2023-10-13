@@ -44,6 +44,7 @@ object Queries:
     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, Unit)] =
       (remainders, ()).valid
     override def encode(a: Unit): Http.Queries = Chain.empty
+
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toChain: Chain[Query[?]] = Chain.one(query)
     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =

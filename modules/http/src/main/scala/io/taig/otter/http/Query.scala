@@ -25,7 +25,9 @@ sealed abstract class Query[A](val explode: Boolean, val name: String, val style
 
   def toQueries: Queries[A] = Queries(this)
 
-  def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries]
+  final def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
+    matchesWithRemainders(queries, isOptional)
+  protected def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries]
 
   final def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
     decodeWithRemainders(queries, explode, style)
@@ -50,8 +52,10 @@ object Query:
 
   def apply[A](name: String, of: Value[A]): Query[A] = new Query[A](true, name, Style.Default):
     override def codec: Value[A] = of
-    override def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
-      queries.firstWithRemainders(this.name).map(_._2)
+    override def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries] =
+      queries.firstWithRemainders(this.name) match
+        case Some((_, tail)) => Some(tail)
+        case None            => Option.when(optional)(queries)
     override def decodeWithRemainders(
         queries: Http.Queries,
         explode: Boolean,
@@ -65,8 +69,11 @@ object Query:
 
   def apply[A](name: String, of: Collection.Of[Value[?], A]): Query[A] = new Query[A](true, name, Style.Default):
     override def codec: Collection.Of[Value[?], A] = of
-    override def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
-      queries.firstWithRemainders(this.name).map(_._2)
+    override def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries] =
+      val (head, tail) = queries.allWithRemainders(this.name)
+      if optional then Some(tail)
+      else if head.isEmpty then None
+      else Some(tail)
     override def decodeWithRemainders(
         queries: Http.Queries,
         explode: Boolean,
