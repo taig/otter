@@ -29,6 +29,7 @@ sealed abstract class Codec[A]:
   def ivalidate[B](validation: Validation[A, B])(g: B => A): Self[B]
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
+  final def singleton[B <: Singleton](a: A, b: B): Self[B] = imap(_ => b)(_ => a)
 
   final def :+[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[A, B]] = toUnion.orElse(codec.toUnion)
   final def +:[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[B, A]] = codec.toUnion.orElse(toUnion)
@@ -727,6 +728,8 @@ sealed abstract class Union[A] extends Codec[A]:
   type Of <: Codec[?]
 
   def toNonEmptyChain: NonEmptyChain[Codec[?]]
+
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Self[B] = imap(evidence.from)(evidence.to)
 
   final override def optional: Union.Of[Of, Option[A]] = ???
 
