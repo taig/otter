@@ -3,6 +3,7 @@ package io.taig.otter.http
 final class UrlOps[A](self: Url[A]):
   inline def zip[B](url: Url[B]): Url[(A, B)] = self.product(url)
   def zip(url: Url[Unit]): Url[A] = self.product(url).imap { case (a, _) => a }((_, ()))
+  inline def /[B](segment: Segment[B]): Url[(A, B)] = self.zip(segment.toPath.toUrl)
   def /(segment: Segment[Unit]): Url[A] = self.zip(segment.toPath.toUrl)
   def /(static: String): Url[A] = /(Segment.Static(static))
   def :?[B](query: Query[B]): Url[(A, B)] = zip(query.toQueries.toUrl)
