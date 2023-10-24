@@ -4,6 +4,7 @@ import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
+import io.taig.otter.Evidence
 
 sealed abstract class Path[A]:
   self =>
@@ -15,7 +16,7 @@ sealed abstract class Path[A]:
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Path = self.encode(g(b))
 
-  final infix def zip[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
+  final infix def product[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
     override def toChain: Chain[Segment[?]] = self.toChain ++ path.toChain
     override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = self
       .matchesWithRemainders(remainders)
@@ -25,6 +26,12 @@ sealed abstract class Path[A]:
         path.decodeWithRemainders(remainders).map(_.tupleLeft(a))
       }
     override def encode(ab: (A, B)): Http.Path = self.encode(ab._1) ++ path.encode(ab._2)
+
+  final infix def zip[B](path: Path[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] =
+    product(path).imap(evidence.apply)(evidence.unapply)
+  final def /[B](path: Path[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = zip(path)
+  final def /[B](segment: Segment[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = /(segment.toPath)
+  final def /(static: String): Path[A] = /(Segment.Static(static))
 
   final def matches(path: Http.Path): Boolean = matchesWithRemainders(path).exists(_.isEmpty)
   def matchesWithRemainders(remainders: Http.Path): Option[Http.Path]
@@ -38,7 +45,7 @@ sealed abstract class Path[A]:
 
   final def toUrl: Url[A] = Url(this)
 
-object Path extends ToPathOps:
+object Path:
   val Root: Path[Unit] = new Path[Unit]:
     override def toChain: Chain[Segment[?]] = Chain.empty
     override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.some

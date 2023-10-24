@@ -6,7 +6,6 @@ import io.taig.otter.*
 import io.taig.otter.sample.data.{Book, Isbn}
 import io.taig.otter.dsl.*
 
-import scala.Tuple.Append
 import scala.collection.immutable.SortedSet
 
 object book:

@@ -3,17 +3,18 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.{Constraint, Violation, Violations}
-import io.taig.otter.{Data, Union, Value}
+import io.taig.otter.{Data, Evidence, Union, Value}
 
 sealed abstract class Segment[A]:
   self =>
-  def name: String
-//  def codec: Option[Value.Required[?] | Union.Of[Value.Required[?], ?]]
+  type Self[a] <: Segment[a]
 
-//  final def imap[B](f: A => B)(g: B => A): Segment[B] = new Segment[B]:
-//    export self.{codec, matches, name, print}
-//    override def decode(a: String): Validated[Violations, B] = self.decode(a).map(f)
-//    override def encode(b: B): String = self.encode(g(b))
+  def name: String
+
+  def imap[B](f: A => B)(g: B => A): Self[B]
+
+  final def /[B](segment: Segment[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = toPath / segment
+  final def /(static: String): Path[A] = /(Segment.Static(static))
 
   def matches(value: String): Boolean
 
@@ -26,6 +27,11 @@ sealed abstract class Segment[A]:
 
 object Segment:
   sealed abstract class Static[A](val name: String) extends Segment[A]:
+    self =>
+    final override type Self[a] = Segment.Static[a]
+    final override def imap[B](f: A => B)(g: B => A): Segment.Static[B] = new Static[B](name):
+      override def decode(value: String): Validated[Violations, B] = self.decode(value).map(f)
+      override def encode(b: B): String = self.encode(g(b))
     final override def matches(value: String): Boolean = name === value
     final override def print: String = name
 
@@ -44,10 +50,14 @@ object Segment:
       val description: Option[String]
   ) extends Segment[A]:
     self =>
+    final override type Self[a] = Segment.Parameter[a]
     final def description(f: Option[String] => Option[String]): Segment.Parameter[A] =
       new Parameter[A](name, codec, f(description)) { export self.* }
     final def description(value: Option[String]): Segment.Parameter[A] = description(_ => value)
     final def description(value: String): Segment.Parameter[A] = description(Some(value))
+    final override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = new Parameter[B](name, codec, description):
+      override def decode(value: String): Validated[Violations, B] = self.decode(value).map(f)
+      override def encode(b: B): String = self.encode(g(b))
     final override def matches(value: String): Boolean = true
     final override def print: String = s"{$name}"
 

@@ -14,6 +14,9 @@ sealed abstract class Field[A](val nulls: Option[Null]):
 
   final def isOptional: Boolean = codec.isOptional
 
+  final def :*[B](field: Field[B])(using evidence: Evidence.Merge[A, B]): Record[evidence.Out] = toRecord :* field
+  final def *:[B](field: Field[B])(using evidence: Evidence.Merge[B, A]): Record[evidence.Out] = field.toRecord :* this
+
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
   final def toRecord: Record[A] = Record(this)
   def toProduct: Product[A]
@@ -28,7 +31,7 @@ sealed abstract class Field[A](val nulls: Option[Null]):
     case (parent, _)      => encodeWithNull(a, parent)
   protected def encodeWithNull(a: A, nulls: Null): Chain[(String, Data)]
 
-object Field extends ToFieldOps:
+object Field:
   def apply[A: Eq, B](a: A, ofKey: => Value.Required[A], ofCodec: => Codec[B]): Field[B] = new Field[B](None):
     override def key: Value.Required[?] = ofKey
     override def codec: Codec[?] = ofCodec

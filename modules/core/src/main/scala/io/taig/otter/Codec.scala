@@ -670,7 +670,7 @@ sealed abstract class Record[A](val description: Option[String], val name: Optio
         self.decodeWithRemainders(data).andThen(_.traverse(validation(_).leftMap(Violations.root)))
       override def encode(b: B, nulls: Null): Option[Chain[(String, Data)]] = self.encode(g(b), nulls)
 
-  final def product[B](codec: Record[B]): Record[(A, B)] = new Record[(A, B)](None, None, Null.Default):
+  final infix def product[B](codec: Record[B]): Record[(A, B)] = new Record[(A, B)](None, None, Null.Default):
     override def toChain: Chain[Field[?]] = self.toChain ++ codec.toChain
     override def constraints: Chain[Constraint] = Chain.empty
     override def isOptional: Boolean = false
@@ -688,6 +688,12 @@ sealed abstract class Record[A](val description: Option[String], val name: Optio
         case (None, b @ Some(_)) => b
         case (None, None)        => None
 
+  final infix def zip[B](record: Record[B])(using evidence: Evidence.Merge[A, B]): Record[evidence.Out] =
+    product(record).imap(evidence.apply)(evidence.unapply)
+  final def :*[B](field: Field[B])(using evidence: Evidence.Merge[A, B]): Record[evidence.Out] = zip(field.toRecord)
+  final def *:[B](field: Field[B])(using evidence: Evidence.Merge[B, A]): Record[evidence.Out] =
+    field.toRecord.zip(this)
+
   final override def decode(data: Option[Data.Value]): Validated[Violations, A] = data match
     case Some(Data.Object(values)) => decodeWithRemainders(Some(values)).map(_._2)
     case Some(data)                => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
@@ -698,7 +704,7 @@ sealed abstract class Record[A](val description: Option[String], val name: Optio
   final override def encode(a: A): Data = encode(a, nulls).map(Data.Object.apply).getOrElse(Data.Null)
   protected def encode(a: A, nulls: Null): Option[Chain[(String, Data)]]
 
-object Record extends ToRecordOps:
+object Record:
   val Empty: Record[Unit] = new Record[Unit](None, None, Null.Default):
     override def toChain: Chain[Field[?]] = Chain.empty
     override def constraints: Chain[Constraint] = Chain.empty
