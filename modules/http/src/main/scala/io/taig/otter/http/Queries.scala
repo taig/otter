@@ -4,6 +4,7 @@ import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
+import io.taig.otter.Evidence
 
 sealed abstract class Queries[A]:
   self =>
@@ -15,7 +16,7 @@ sealed abstract class Queries[A]:
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Queries = self.encode(g(b))
 
-  final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
+  final infix def product[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
     override def toChain: Chain[Query[?]] = self.toChain ++ queries.toChain
     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
       self.matchesWithRemainders(remainders).flatMap(queries.matchesWithRemainders)
@@ -27,6 +28,13 @@ sealed abstract class Queries[A]:
             case Validated.Valid(_)       => left.invalid
             case Validated.Invalid(right) => (left |+| right).invalid
     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
+
+  final infix def zip[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] =
+    product(queries).imap(evidence.apply)(evidence.unapply)
+  final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = zip(queries)
+  final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = +?(query.toQueries)
+
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Queries[B] = imap(evidence.from)(evidence.to)
 
   final def matches(queries: Http.Queries): Boolean = matchesWithRemainders(queries).isDefined
   def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries]

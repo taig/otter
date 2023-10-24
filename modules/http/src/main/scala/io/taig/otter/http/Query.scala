@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.Collection.Of
 import io.taig.otter.syntax.*
 import io.taig.otter.validation.Violations
-import io.taig.otter.{Collection, Value}
+import io.taig.otter.{Collection, Evidence, Value}
 
 sealed abstract class Query[A](val explode: Boolean, val name: String, val style: Query.Style):
   self =>
@@ -22,6 +22,11 @@ sealed abstract class Query[A](val explode: Boolean, val name: String, val style
 
   final def style(f: Query.Style => Query.Style): Query[A] = new Query[A](explode, name, f(style)) { export self.* }
   final def style(value: Query.Style): Query[A] = style(_ => value)
+
+  final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] =
+    toQueries +? queries
+
+  final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = toQueries +? query
 
   def toQueries: Queries[A] = Queries(this)
 

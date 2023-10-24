@@ -16,7 +16,7 @@ object Evidence:
   object Product:
     type Aux[A, B] = Evidence.Product[A] { type Out = B }
     inline def apply[A](using evidence: Evidence.Product[A]): evidence.type = evidence
-    inline def instance[A, B](f: A => B)(g: B => A): Evidence.Product.Aux[A, B] = new Product[A]:
+    def instance[A, B](f: A => B)(g: B => A): Evidence.Product.Aux[A, B] = new Product[A]:
       override type Out = B
       override def to(a: A): B = f(a)
       override def from(b: B): A = g(b)
@@ -41,7 +41,7 @@ object Evidence:
   object Coproduct extends CoproductInstances:
     type Aux[A, B] = Evidence.Coproduct[A] { type Out = B }
     inline def apply[A](using evidence: Evidence.Coproduct[A]): evidence.type = evidence
-    inline def instance[A, B](f: A => B)(g: B => A): Evidence.Coproduct.Aux[A, B] = new Coproduct[A]:
+    def instance[A, B](f: A => B)(g: B => A): Evidence.Coproduct.Aux[A, B] = new Coproduct[A]:
       override type Out = B
       override def to(a: A): B = f(a)
       override def from(b: B): A = g(b)
@@ -49,3 +49,29 @@ object Evidence:
     given coproduct1[A, B <: A](using
         mirror: Mirror.SumOf[A] { type MirroredElemTypes = B *: EmptyTuple }
     ): Evidence.Coproduct.Aux[A, B] = instance[A, B](_.asInstanceOf[B])(identity)
+
+  trait Merge[A, B]:
+    type Out
+    def apply(ab: (A, B)): Out
+    def unapply(out: Out): (A, B)
+
+  object Merge extends Merge1:
+    type Aux[A, B, C] = Evidence.Merge[A, B] { type Out = C }
+    inline def apply[A, B](using evidence: Evidence.Merge[A, B]): evidence.type = evidence
+
+    given [A]: Merge.Aux[A, Unit, A] = instance[A, Unit, A] { case (a, _) => a }(a => (a, ()))
+
+    given [A]: Merge.Aux[Unit, A, A] = instance[Unit, A, A] { case (_, a) => a }(a => ((), a))
+
+    given [A <: Tuple, B]: Merge.Aux[A, B, Tuple.Append[A, B]] =
+      instance[A, B, Tuple.Append[A, B]] { case (a, b) => a :* b } { ab =>
+        (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
+      }
+
+  trait Merge1:
+    def instance[A, B, C](f: ((A, B)) => C)(g: C => (A, B)): Evidence.Merge.Aux[A, B, C] = new Merge[A, B]:
+      override type Out = C
+      override def apply(ab: (A, B)): C = f(ab)
+      override def unapply(out: C): (A, B) = g(out)
+
+    given [A, B]: Merge.Aux[A, B, (A, B)] = instance[A, B, (A, B)](identity)(identity)

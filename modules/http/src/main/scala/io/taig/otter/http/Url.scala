@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.InvariantSemigroupal
 import cats.data.{Chain, Validated}
 import cats.syntax.all.*
+import io.taig.otter.Evidence
 import io.taig.otter.validation.Violations
 
 sealed abstract class Url[A]:
@@ -16,13 +17,21 @@ sealed abstract class Url[A]:
       self.decodeWithRemainders(remainders).map(_.map(f))
     override def encode(b: B): Http.Url = self.encode(g(b))
 
-  final def product[B](url: Url[B]): Url[(A, B)] = new Url[(A, B)]:
+  final infix def product[B](url: Url[B]): Url[(A, B)] = new Url[(A, B)]:
     override def path: Path[?] = self.path.zip(url.path)
     override def queries: Queries[?] = self.queries.zip(url.queries)
     override def decodeWithRemainders(remainders: Http.Url): Validated[Violations, (Http.Url, (A, B))] = self
       .decodeWithRemainders(remainders)
       .andThen { case (remainders, a) => url.decodeWithRemainders(remainders).map(_.tupleLeft(a)) }
     override def encode(ab: (A, B)): Http.Url = self.encode(ab._1) ++ url.encode(ab._2)
+
+  final infix def zip[B](url: Url[B])(using evidence: Evidence.Merge[A, B]): Url[evidence.Out] =
+    product(url).imap(evidence.apply)(evidence.unapply)
+  final def /[B](path: Path[B])(using evidence: Evidence.Merge[A, B]): Url[evidence.Out] = zip(path.toUrl)
+  final def /[B](segment: Segment[B])(using evidence: Evidence.Merge[A, B]): Url[evidence.Out] = /(segment.toPath)
+  final def /(static: String): Url[A] = /(Segment.Static(static))
+  final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Url[evidence.Out] = zip(queries.toUrl)
+  final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Url[evidence.Out] = +?(query.toQueries)
 
   final def matches(url: Http.Url): Boolean = path.matches(url.path) && queries.matches(url.queries)
 
@@ -32,7 +41,7 @@ sealed abstract class Url[A]:
 
   final def print: String = path.print
 
-object Url extends ToUrlOps:
+object Url:
   val Root: Url[Unit] = new Url[Unit]:
     override def path: Path[?] = Path.Root
     override def queries: Queries[?] = Queries.Empty
