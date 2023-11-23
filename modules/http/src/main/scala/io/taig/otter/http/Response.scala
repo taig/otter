@@ -22,7 +22,7 @@ object Response:
     def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A]
     def encode(a: A): (Http.Headers, Http.Payload)
 
-  object Body extends ToResponseBodyOps:
+  object Body:
     sealed abstract class Strict[A] extends Response.Body[A]:
       self =>
       final override type Self[a] = Response.Body.Strict[a]

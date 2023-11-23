@@ -16,9 +16,25 @@ sealed abstract class Result[A](val description: Option[String]):
   def description(value: Option[String]): Result[A] = description(_ => value)
   def description(value: String): Result[A] = description(Some(value))
 
-  final def imap[B](f: A => B)(g: B => A): Result[B] = ???
+  final def imap[B](f: A => B)(g: B => A): Result[B] = new Result[B](description):
+    export self.{body, code, headers}
+    override def decode(response: Http.Response): Validated[Violations, Option[B]] =
+      self.decode(response).map(_.map(f))
+    override def encode(b: B): Http.Response = self.encode(g(b))
 
-  final def product[B](headers: Headers[B]): Result[(A, B)] = ???
+  final def product[B](others: Headers[B]): Result[(A, B)] = new Result[(A, B)](description):
+    export self.{body, code}
+    override def headers: Headers[?] = self.headers.zip(others)
+    override def decode(response: Http.Response): Validated[Violations, Option[(A, B)]] =
+      self.decode(response).andThen(_.traverse(others.decode(response.headers).tupleLeft))
+    override def encode(ab: (A, B)): Http.Response =
+      self.encode(ab._1).modifyHeaders(_ ++ others.encode(ab._2))
+
+  final def zip[B](headers: Headers[B])(using evidence: Evidence.Merge[A, B]): Result[evidence.Out] =
+    product(headers).imap(evidence.apply)(evidence.unapply)
+
+  final def :*[B](header: Header[B])(using evidence: Evidence.Merge[A, B]): Result[evidence.Out] =
+    zip(header.toHeaders)
 
   final def orElse[B](result: Result[B]): Results[A + B] = toResults.orElse(result.toResults)
   def toResults: Results[A] = Results(this)

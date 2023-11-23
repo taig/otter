@@ -51,7 +51,7 @@ object Request:
     def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A]
     def encode(a: A): (Http.Headers, Http.Request.Body)
 
-  object Body extends ToRequestBodyOps:
+  object Body:
     sealed abstract class Singlepart[A] extends Request.Body[A]:
       self =>
 
