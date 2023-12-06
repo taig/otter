@@ -38,6 +38,15 @@ sealed abstract class Results[A]:
   def encode(a: A): Http.Response
 
 object Results:
+  extension [A <: Matchable](self: Results[A])
+    inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
+
   def apply[A](result: Result[A]): Results[A] = new Results[A]:
     override def toNonEmptyChain: NonEmptyChain[Result[?]] = NonEmptyChain.one(result)
     override def decodeOption(response: Http.Response): Validated[Violations, Option[A]] = result.decode(response)

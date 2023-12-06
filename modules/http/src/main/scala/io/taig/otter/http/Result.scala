@@ -47,6 +47,15 @@ sealed abstract class Result[A](val description: Option[String]):
   def encode(a: A): Http.Response
 
 object Result:
+  extension [A <: Matchable](self: Result[A])
+    inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
+
   def apply[A](c: Code, b: Response.Body[A]): Result[A] = new Result[A](None):
     override def code: Code = c
     override def headers: Headers[Unit] = Headers.Empty
