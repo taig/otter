@@ -15,4 +15,4 @@ object librarian:
   val summary: Record[Librarian.Summary] = (
     field("reference", reference) :*
       field("email", email)
-  ).to
+  ).to[Librarian.Summary].name("Librarian.Summary")
