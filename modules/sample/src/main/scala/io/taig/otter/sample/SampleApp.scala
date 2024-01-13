@@ -6,12 +6,14 @@ import io.taig.otter.http.App
 import io.taig.otter.http4s.Http4sHttpServer
 import io.taig.otter.sample.data.Librarian
 import io.taig.otter.sample.service.{EndpointImplementation, ReferenceGenerator}
+import io.taig.otter.typescript.TypeScript
 
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] = for
-    app <- create(IO.println)
-    server = Http4sHttpServer[IO](SampleServer.apply)
-    _ <- server.start(app)
+    // app <- create(IO.println)
+    // server = Http4sHttpServer[IO](SampleServer.apply)
+    // _ <- server.start(app)
+    _ <- IO.println(TypeScript.Default.apply(api.codecs.book.main))
   yield ()
 
   def create(logger: String => IO[Unit]): IO[App[IO]] = for

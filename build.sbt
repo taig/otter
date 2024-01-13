@@ -57,7 +57,21 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, circe, openapi, openapiCirce, http, httpOpenapi, httpCirce, csv, dsl, http4s, munit, sample)
+  .aggregate(
+    core,
+    circe,
+    openapi,
+    typescript,
+    openapiCirce,
+    http,
+    httpOpenapi,
+    httpCirce,
+    csv,
+    dsl,
+    http4s,
+    munit,
+    sample
+  )
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -93,6 +107,9 @@ lazy val openapi = module(identifier = Some("openapi"))
 
 lazy val openapiCirce = module(identifier = Some("openapi-circe"))
   .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
+
+lazy val typescript = module(identifier = Some("typescript"))
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(
@@ -153,4 +170,4 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, munit % "compile->test")
+  .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
