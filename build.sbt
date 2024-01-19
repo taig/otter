@@ -3,6 +3,7 @@ import sbtcrossproject.CrossProject
 val Version = new {
   val CaseInsensitive = "1.4.0"
   val Cats = "2.10.0"
+  val CatsEffect = "3.5.3"
   val Circe = "0.14.6"
   val EnumerationExt = "0.0.3"
   val Http4s = "1.0.0-M40"
@@ -66,6 +67,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     http,
     httpOpenapi,
     httpCirce,
+    server,
     csv,
     dsl,
     http4s,
@@ -131,11 +133,19 @@ lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
   )
   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
+lazy val server = module(identifier = Some("server"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
 lazy val csv = module(identifier = Some("csv"))
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-  .dependsOn(httpCirce % "compile->compile;test->test")
+  .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
 
 lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
   .settings(
@@ -143,7 +153,7 @@ lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
       "org.http4s" %%% "http4s-server" % Version.Http4s ::
         Nil
   )
-  .dependsOn(http % "compile->compile;test->test")
+  .dependsOn(server % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(

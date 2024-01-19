@@ -39,7 +39,6 @@ abstract class DslBuilder[A, B, C, D, E, F](
     Endpoint,
     Header,
     Headers,
-    HttpServer,
     MediaType,
     Method,
     Queries,
@@ -53,3 +52,5 @@ abstract class DslBuilder[A, B, C, D, E, F](
     Segment,
     Url
   }
+
+  export server.Server

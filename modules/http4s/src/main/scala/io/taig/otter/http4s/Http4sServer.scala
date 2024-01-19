@@ -4,11 +4,11 @@ import cats.effect.{Concurrent, Resource}
 import cats.syntax.all.*
 import fs2.Stream
 import io.taig.otter.http.*
+import io.taig.otter.server.Server
 import org.http4s.HttpApp as Http4sApp
-import org.http4s.server.Server
 
-final class Http4sHttpServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, Server]) extends HttpServer[F]:
-  override def start(app: App[F]): F[Unit] = f(toHttp4sApp(app)).useForever
+final class Http4sServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.http4s.server.Server]) extends Server[F]:
+  override def start(app: App[F]): Resource[F, String] = f(toHttp4sApp(app)).map(_.baseUri.show)
 
   def toHttp4sApp(app: App[F]): Http4sApp[F] = Http4sApp: request =>
     val method = toHttpMethod(request.method)
@@ -42,5 +42,6 @@ final class Http4sHttpServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, S
 //    case _: Request.Body.Singlepart.Streaming[?] =>
 //      Http4sStream(data).map(stream => Http.Request.Body.Singlepart(Http.Payload.Streaming(stream)))
 
-object Http4sHttpServer:
-  def apply[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, Server]): HttpServer[F] = new Http4sHttpServer[F](f)
+object Http4sServer:
+  def apply[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.http4s.server.Server]): Http4sServer[F] =
+    new Http4sServer[F](f)
