@@ -114,7 +114,6 @@ sealed abstract class Collection[A](val description: Option[String], val name: O
       export self.{codec, isOptional, Of}
       override def constraints: Chain[Constraint] = self.constraints ++ validation.constraints
       override def decodeArray(data: Option[Data.Array]): Validated[Violations, B] =
-        println("decode collection validate")
         self.decodeArray(data).andThen(validation(_).leftMap(Violations.root))
       override def encodeArray(b: B): Option[Chain[Data]] = self.encodeArray(g(b))
       override def parse(values: Option[Chain[String]])(using Of <:< Value[?]): Validated[Violations, B] =
