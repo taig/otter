@@ -30,6 +30,7 @@ sealed abstract class Codec[A]:
   final def validate(validation: Validation[A, Unit]): Self[A] = ivalidate(validation.tap)(identity)
   final def imap[B](f: A => B)(g: B => A): Self[B] = ivalidate(Validation.lift(f))(g)
   final def singleton[B <: Singleton](a: A, b: B): Self[B] = imap(_ => b)(_ => a)
+  final def const(a: A): Self[Unit] = imap(_ => ())(_ => a)
 
   final def :+[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[A, B]] = toUnion.orElse(codec.toUnion)
   final def +:[B](codec: Codec[B]): Union.Of[this.type | codec.type, Either[B, A]] = codec.toUnion.orElse(toUnion)
