@@ -430,7 +430,7 @@ object Enumeration:
   abstract private class Optional[A](val description: Option[String], val name: Option[String]) extends Enumeration[A]:
     self =>
     final override type Self[a] = Enumeration.Optional[a]
-    final override def isOptional: Boolean = false
+    final override def isOptional: Boolean = true
     final override def description(f: Option[String] => Option[String]): Enumeration.Optional[A] =
       new Enumeration.Optional[A](f(description), None) { export self.* }
     final override def name(f: Option[String] => Option[String]): Enumeration.Optional[A] =
