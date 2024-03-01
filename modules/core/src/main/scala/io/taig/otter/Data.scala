@@ -3,6 +3,8 @@ package io.taig.otter
 import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
+import java.lang.Float as JFloat
+import java.lang.Double as JDouble
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
@@ -88,8 +90,8 @@ object Data:
       case value: BigDecimal => value
       case value: Int        => BigDecimal(value)
       case value: Long       => BigDecimal(value)
-      case value: Float      => BigDecimal(value.toDouble)
-      case value: Double     => BigDecimal(value)
+      case value: Float      => BigDecimal(JFloat.toString(value))
+      case value: Double     => BigDecimal(JDouble.toString(value))
       case value: BigInt     => BigDecimal(value)
 
   case object Null extends Data
