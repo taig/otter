@@ -5,6 +5,7 @@ import io.circe.syntax.*
 import io.taig.otter.openapi.*
 import io.taig.otter.circe.syntax.*
 import io.taig.otter.circe.instance.given
+import scala.language.`3.3`
 
 object instance:
   inline given [A <: Matchable: Encoder.AsObject]: Encoder.AsObject[A | Reference] =
