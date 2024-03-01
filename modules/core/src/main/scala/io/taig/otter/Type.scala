@@ -27,10 +27,8 @@ enum Type[A]:
     case (data: Data.Number, Type.Double) => data.toDouble.valid
     case (data: Data.Number, Type.BigInt) =>
       data.asBigInt.toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
-    case (data: Data.Number, Type.BigDecimal) =>
-      println(s"Convert $data to bigDecimal")
-      data.toBigDecimal.valid
-    case (Data.String(value), Type.String) => value.valid
+    case (data: Data.Number, Type.BigDecimal) => data.toBigDecimal.valid
+    case (Data.String(value), Type.String)    => value.valid
     case (Data.String(value), _) =>
       Validated.fromOption(parse(value), Violations.rootNec(Violation.tpe(name, "string")))
     case (data, _) =>
