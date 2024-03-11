@@ -34,22 +34,22 @@ trait codecs:
     val value: Dynamic[Data.Value] = Dynamic.Default
     val any: Dynamic[Data] = value.optional.imap(_.getOrElse(Data.Null))(_.asValue)
     val empty: Dynamic[Data.Null.type] =
-      val validation: Validation[Data, Data.Null.type] = Validation(Constraint.Type("null")):
+      val validation: Validation[Data, Data.Null.type] = Validation.of(Constraint.Type("null")):
         case Data.Null => Data.Null.valid
         case data      => Data.String(data.name).invalidNec
       any.ivalidate(validation)(identity)
     val obj: Dynamic[Data.Object] =
-      val validation: Validation[Data.Value, Data.Object] = Validation(Constraint.Type("object")):
+      val validation: Validation[Data.Value, Data.Object] = Validation.of(Constraint.Type("object")):
         case data: Data.Object => data.valid
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
     val primitive: Dynamic[Data.Primitive] =
-      val validation: Validation[Data.Value, Data.Primitive] = Validation(Constraint.Type("number")):
+      val validation: Validation[Data.Value, Data.Primitive] = Validation.of(Constraint.Type("number")):
         case data: Data.Primitive => data.valid
         case data                 => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
     val number: Dynamic[Data.Number] =
-      val validation: Validation[Data.Value, Data.Number] = Validation(Constraint.Type("number")):
+      val validation: Validation[Data.Value, Data.Number] = Validation.of(Constraint.Type("number")):
         case data: Data.Number => data.valid
         case data              => Data.String(data.name).invalidNec
       value.ivalidate(validation)(identity)
@@ -74,15 +74,15 @@ trait codecs:
       chain(codec).imap(values => SortedSet.from(values.iterator))(Chain.fromIterableOnce)
     def nonEmptyChain[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], NonEmptyChain[A]] =
       val validation: Validation[Chain[A], NonEmptyChain[A]] =
-        Validation(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
+        Validation.of(Constraint.MinItems(1))(NonEmptyChain.fromChain(_).toValidNec(Data.Number(0)))
       chain(codec).ivalidate(validation)(_.toChain)
     def nonEmptyList[F[a] <: Codec[a], A](codec: => F[A]): Collection.Of[F[A], NonEmptyList[A]] =
       val validation: Validation[List[A], NonEmptyList[A]] =
-        Validation(Constraint.MinItems(1))(NonEmptyList.fromList(_).toValidNec(Data.Number(0)))
+        Validation.of(Constraint.MinItems(1))(NonEmptyList.fromList(_).toValidNec(Data.Number(0)))
       list(codec).ivalidate(validation)(_.toList)
     def nonEmptySet[F[a] <: Codec[a], A: Order](codec: => F[A]): Collection.Of[F[A], NonEmptySet[A]] =
       val validation: Validation[SortedSet[A], NonEmptySet[A]] =
-        Validation(Constraint.MinItems(1))(NonEmptySet.fromSet(_).toValidNec(Data.Number(0)))
+        Validation.of(Constraint.MinItems(1))(NonEmptySet.fromSet(_).toValidNec(Data.Number(0)))
       sortedSet(codec).ivalidate(validation)(_.toSortedSet)
     def sortedMap[F[a] <: Codec[a], A: Ordering, B](key: => Codec[A], codec: => Codec[B])(
         f: (Codec[A], Codec[B]) => F[(A, B)]
@@ -104,7 +104,7 @@ trait codecs:
       chain(key, codec).imap(values => SortedMap.from(values.iterator))(Chain.fromIterableOnce)
     def nonEmptyMap[A: Ordering, B](key: => Value.Required[A], codec: => Codec[B]): Dictionary[NonEmptyMap[A, B]] =
       val validation: Validation[SortedMap[A, B], NonEmptyMap[A, B]] =
-        Validation(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
+        Validation.of(Constraint.MinProperties(1))(NonEmptyMap.fromMap(_).toValidNec(Data.Number(0)))
       sortedMap(key, codec).ivalidate(validation)(_.toSortedMap)
 
   val violations: Dictionary[Violations] =

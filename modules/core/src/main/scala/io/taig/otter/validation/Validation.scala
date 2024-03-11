@@ -21,7 +21,7 @@ object Validation:
     override def constraints: Chain[Constraint] = cs
     override def apply(in: In): ValidatedNec[Violation, Out] = f(in)
 
-  def apply[In, Out](constraint: Constraint)(
+  def of[In, Out](constraint: Constraint)(
       f: In => ValidatedNec[Data, Out]
   ): Validation[In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _))))
 
