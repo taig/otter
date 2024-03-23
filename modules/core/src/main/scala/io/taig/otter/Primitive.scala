@@ -12,7 +12,6 @@ object Primitive:
     self =>
     final override type Self[+m, a] = Primitive.Required[m, a]
 
-    final override def asSelf: Primitive.Required[M, A] = this
     final override def imap[B](f: A => B)(g: B => A): Primitive.Required[M, B] = Primitive.Required.Modify(this, f, g)
     final override def update[N](f: M => N): Primitive.Required[N, A] = Primitive.Required.Update(this, f)
 
@@ -30,7 +29,6 @@ object Primitive:
     self =>
     final override type Self[+m, a] = Primitive.Optional[m, a]
 
-    final override def asSelf: Primitive.Optional[M, A] = this
     final override def imap[B](f: A => B)(g: B => A): Primitive.Optional[M, B] = ???
     final override def update[N](f: M => N): Primitive.Optional[N, A] = Primitive.Optional.Update(this, f)
 

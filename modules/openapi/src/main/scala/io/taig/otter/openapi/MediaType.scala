@@ -1,3 +1,3 @@
-package io.taig.otter.openapi
+// package io.taig.otter.openapi
 
-final case class MediaType(schema: Schema | Reference)
+// final case class MediaType(schema: Schema | Reference)

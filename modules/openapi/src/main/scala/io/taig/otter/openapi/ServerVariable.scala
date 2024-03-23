@@ -1,9 +1,9 @@
-package io.taig.otter.openapi
+// package io.taig.otter.openapi
 
-import cats.data.Chain
+// import cats.data.Chain
 
-final case class ServerVariable(
-    default: String,
-    enums: Chain[String] = Chain.empty,
-    description: Option[String] = None
-)
+// final case class ServerVariable(
+//     default: String,
+//     enums: Chain[String] = Chain.empty,
+//     description: Option[String] = None
+// )

@@ -59,9 +59,9 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
-    core
+    core,
     // circe,
-    // openapi,
+    openapi
     // typescript,
     // openapiCirce,
     // http,
@@ -104,8 +104,8 @@ lazy val core = module(identifier = Some("core"))
 //   )
 //   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val openapi = module(identifier = Some("openapi"))
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val openapi = module(identifier = Some("openapi"))
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val openapiCirce = module(identifier = Some("openapi-circe"))
 //   .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
