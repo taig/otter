@@ -1,7 +1,10 @@
 package io.taig.otter
 
 trait Metadata:
-  type Schema
+  type Codec <: Codec.Metadata
 
-  type Primitive <: Schema
+  type Primitive <: Codec & Primitive.Metadata
   def primitive: Primitive
+
+  // type Product <: Schema & Product.Metadata
+  // def product: Product

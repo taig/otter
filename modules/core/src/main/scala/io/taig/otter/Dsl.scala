@@ -1,15 +1,32 @@
 package io.taig.otter
 
-import io.taig.otter.Primitive as OPrimitive
+import io.taig.otter
 
-trait Types[A <: Metadata]:
-  protected val metadata: A
+trait Types[M <: Metadata]:
+  self =>
 
-  final type Primitive[B] = OPrimitive[metadata.Primitive, B]
+  protected val metadata: M
+
+  final type Codec[A] = otter.Codec[metadata.Codec, A]
+
+  final type Primitive[A] = otter.Primitive[metadata.Primitive, A]
 
   object Primitive:
-    final type Required[B] = OPrimitive.Required[metadata.Primitive, B]
+    final type Optional[A] = otter.Primitive.Optional[metadata.Primitive, A]
+    final type Required[A] = otter.Primitive.Required[metadata.Primitive, A]
 
-trait Schemas[A <: Metadata] extends Types[A]:
-  final val string: Primitive.Required[String] =
-    io.taig.otter.Primitive.Required.Root(metadata.primitive, Type.String)
+  // final type Product[A] = OProduct[metadata.Product, A]
+
+  // object Product:
+  //   final type Of[S <: Schema[?], A] = OProduct.Of[S, metadata.Product, A]
+
+// trait Schemas[M <: Metadata] extends Types[M]:
+//   final val string: Primitive.Required[String] =
+//     OPrimitive.Required.Root(metadata.primitive, Type.String)
+
+// trait Syntax[M <: Metadata] extends Types[M]:
+//   extension [SL <: OSchema[?, ?], A](self: OProduct.Of[SL, ?, A])
+//     def zip[SR <: OSchema[?, ?], B](
+//         product: OProduct.Of[SR, ?, B]
+//     ): OProduct.Of[self.Of | product.Of, metadata.Product, (A, B)] =
+//       self.zip(metadata.product, product)

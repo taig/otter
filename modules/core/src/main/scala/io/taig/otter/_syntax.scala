@@ -4,7 +4,7 @@ import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
 
-object syntax:
+object _syntax:
   extension [A: Eq, B](self: Chain[(A, B)])
     private[otter] def all(key: A): Chain[B] = self.collect { case (reference, value) if key === reference => value }
     private[otter] def first(key: A): Option[B] = self.collectFirst {

@@ -42,8 +42,8 @@ inThisBuild(
   )
 )
 
-addCommandAlias("start", s"${sample.jvm.id}/reStart")
-addCommandAlias("stop", s"${sample.jvm.id}/reStop")
+// addCommandAlias("start", s"${sample.jvm.id}/reStart")
+// addCommandAlias("stop", s"${sample.jvm.id}/reStop")
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
@@ -59,20 +59,20 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
-    core,
-    circe,
-    openapi,
-    typescript,
-    openapiCirce,
-    http,
-    httpOpenapi,
-    httpCirce,
-    server,
-    csv,
-    dsl,
-    http4s,
-    munit,
-    sample
+    core
+    // circe,
+    // openapi,
+    // typescript,
+    // openapiCirce,
+    // http,
+    // httpOpenapi,
+    // httpCirce,
+    // server,
+    // csv,
+    // dsl,
+    // http4s,
+    // munit,
+    // sample
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -96,88 +96,88 @@ lazy val core = module(identifier = Some("core"))
       .cross(CrossVersion.for3Use2_13)
   )
 
-lazy val circe = module(identifier = Some("circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val circe = module(identifier = Some("circe"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %%% "circe-core" % Version.Circe ::
+//         Nil
+//   )
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val openapi = module(identifier = Some("openapi"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val openapiCirce = module(identifier = Some("openapi-circe"))
-  .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
+// lazy val openapiCirce = module(identifier = Some("openapi-circe"))
+//   .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
 
-lazy val typescript = module(identifier = Some("typescript"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val typescript = module(identifier = Some("typescript"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val http = module(identifier = Some("http"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-        Nil
-  )
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val http = module(identifier = Some("http"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+//         Nil
+//   )
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val httpOpenapi = module(identifier = Some("http-openapi"))
-  .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
+// lazy val httpOpenapi = module(identifier = Some("http-openapi"))
+//   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
 
-// TODO waiting for circe 0.15 with scala.js jawn support
-lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %% "circe-parser" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+// // TODO waiting for circe 0.15 with scala.js jawn support
+// lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %% "circe-parser" % Version.Circe ::
+//         Nil
+//   )
+//   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
-lazy val server = module(identifier = Some("server"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-        Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
+// lazy val server = module(identifier = Some("server"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+//         Nil
+//   )
+//   .dependsOn(http % "compile->compile;test->test")
 
-lazy val csv = module(identifier = Some("csv"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val csv = module(identifier = Some("csv"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-  .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
+// lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
+//   .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
 
-lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %%% "http4s-server" % Version.Http4s ::
-        Nil
-  )
-  .dependsOn(server % "compile->compile;test->test")
+// lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
+//   .settings(
+//     libraryDependencies ++=
+//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
+//         Nil
+//   )
+//   .dependsOn(server % "compile->compile;test->test")
 
-lazy val munit = module(identifier = Some("munit"))
-  .settings(
-    libraryDependencies ++=
-      "org.scalameta" %%% "munit" % Version.Munit ::
-        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
-        Nil
-  )
-  .dependsOn(http)
+// lazy val munit = module(identifier = Some("munit"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.scalameta" %%% "munit" % Version.Munit ::
+//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
+//         Nil
+//   )
+//   .dependsOn(http)
 
-lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  .enablePlugins(BuildInfoPlugin)
-  .settings(noPublishSettings)
-  .settings(
-    buildInfoKeys := Seq(version),
-    buildInfoObject := "Build",
-    buildInfoPackage := organization.value + ".otter.sample",
-    libraryDependencies ++=
-      "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-        "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-        "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-        "org.typelevel" %% "mouse" % Version.Mouse ::
-        Nil
-  )
-  .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
+// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+//   .enablePlugins(BuildInfoPlugin)
+//   .settings(noPublishSettings)
+//   .settings(
+//     buildInfoKeys := Seq(version),
+//     buildInfoObject := "Build",
+//     buildInfoPackage := organization.value + ".otter.sample",
+//     libraryDependencies ++=
+//       "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
+//         "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+//         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
+//         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+//         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+//         "org.typelevel" %% "mouse" % Version.Mouse ::
+//         Nil
+//   )
+//   .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
