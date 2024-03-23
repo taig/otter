@@ -1,8 +1,8 @@
 package io.taig.otter
 
-abstract class Codec[+M, A]:
-  type Self[+m, a] <: Codec[m, a]
-  type Optional[+m, a] <: Codec[m, a]
+abstract class Schema[+M, A]:
+  type Self[+m, a] <: Schema[m, a]
+  type Optional[+m, a] <: Schema[m, a]
 
   def metadata: M
 

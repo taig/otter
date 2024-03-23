@@ -1,6 +1,6 @@
 package io.taig.otter.openapi
 
 object Playground:
-  import dsl.*
+  import dsl.{*, given}
 
-  string.metadata.name.set(None)
+  string.format

@@ -1,6 +1,6 @@
 package io.taig.otter
 
-sealed abstract class Primitive[+M, A] extends Codec[M, A]:
+sealed abstract class Primitive[+M, A] extends Schema[M, A]:
   self =>
   override type Self[+m, a] <: Primitive[m, a]
   final override type Optional[+m, a] = Primitive.Optional[m, a]

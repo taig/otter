@@ -13,7 +13,7 @@ object OpenApi extends Context:
       format = None,
       name = new Metadata.Field[Metadata.Primitive, Option[String]]:
         override def value: Option[String] = None
-        override def set(value: Option[String]): Metadata.Primitive = ???
+        override def apply(value: Option[String]): Metadata.Primitive = ???
     )
 
   override type Product = Metadata.Product
@@ -21,14 +21,14 @@ object OpenApi extends Context:
     override val empty: Metadata.Product =
       Metadata.Product(name = new Metadata.Field[Metadata.Product, Option[String]]:
         override def value: Option[String] = None
-        override def set(value: Option[String]): Metadata.Product = ???
+        override def apply(value: Option[String]): Metadata.Product = ???
       )
     override def zip(left: Metadata.Product, right: Metadata.Product): Metadata.Product = empty
 
 object Metadata:
   abstract class Field[A, B]:
     def value: B
-    def set(value: B): A
+    def apply(value: B): A
 
   sealed abstract class Codec:
     self =>

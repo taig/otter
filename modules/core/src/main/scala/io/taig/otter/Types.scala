@@ -7,7 +7,7 @@ trait Types[C <: Context]:
 
   val context: C
 
-  final type Codec[A] = otter.Codec[context.Codec, A]
+  final type Schema[A] = otter.Schema[context.Codec, A]
 
   final type Primitive[A] = otter.Primitive[context.Primitive, A]
 
@@ -15,7 +15,7 @@ trait Types[C <: Context]:
     final type Optional[A] = otter.Primitive.Optional[context.Primitive, A]
     final type Required[A] = otter.Primitive.Required[context.Primitive, A]
 
-  final type Product[A] = otter.Product.Of[Codec[?], context.Product, A]
+  final type Product[A] = otter.Product.Of[Schema[?], context.Product, A]
 
   object Product:
-    final type Of[C <: Codec[?], A] = otter.Product.Of[C, context.Product, A]
+    final type Of[C <: Schema[?], A] = otter.Product.Of[C, context.Product, A]

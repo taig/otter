@@ -4,13 +4,17 @@ trait Context:
   type Codec
   def codec: Context.Codec[Codec, Product]
 
-  type Primitive
+  type Primitive <: Codec
   def primitive: Context.Primitive[Primitive]
 
-  type Product
+  type Product <: Codec
   def product: Context.Product[Product]
 
 object Context:
+  abstract class Field[A, B]:
+    def value: B
+    def set(value: B): A
+
   trait Codec[A, Product]:
     def toProduct(a: A): Product
 
