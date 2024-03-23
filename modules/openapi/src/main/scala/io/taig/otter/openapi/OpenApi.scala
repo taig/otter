@@ -10,7 +10,7 @@ object OpenApi extends Context:
   override type Primitive = Metadata.Primitive
   override val primitive: Context.Primitive[Primitive] = new Context.Primitive:
     override val empty: Metadata.Primitive = Metadata.Primitive(
-      format = None,
+      format = ???,
       name = new Metadata.Field[Metadata.Primitive, Option[String]]:
         override def value: Option[String] = None
         override def apply(value: Option[String]): Metadata.Primitive = ???
@@ -36,8 +36,10 @@ object Metadata:
 
     def name: Field[Self, Option[String]]
 
-  final case class Primitive(format: Option[String], name: Field[Metadata.Primitive, Option[String]])
-      extends Metadata.Codec:
+  final case class Primitive(
+      format: Field[Metadata.Primitive, Option[String]],
+      name: Field[Metadata.Primitive, Option[String]]
+  ) extends Metadata.Codec:
     override type Self = Metadata.Primitive
 
   final case class Product(name: Field[Metadata.Product, Option[String]]) extends Metadata.Codec:
