@@ -1,19 +1,17 @@
 package io.taig.otter
 
-sealed abstract class Product[A] extends Schema[A]:
+sealed abstract class Product[+A] extends Schema[A]:
   self =>
   type Of <: Schema[?]
-  final override type Self[a] = Product.Of[self.Of, a]
-  final override type Optional[a] = Product.Of[self.Of, a]
 
-  final override def imap[B](f: A => B)(g: B => A): Product.Of[self.Of, B] = ??? // Product.Modify(this, f, g)
+  final override def imap[A1 >: A, B](f: A => B)(g: B => A1): Product.Of[self.Of, B] = ??? // Product.Modify(this, f, g)
   final override def optional: Product.Of[self.Of, Option[A]] = ??? // Product.Optional(this)
 
   final def zip[B](product: Product[B]): Product.Of[self.Of | product.Of, (A, B)] =
     Product.Zip(this, product)
 
 object Product:
-  type Of[+C <: Schema[?], A] = Product[A] { type Of <: C }
+  type Of[+C <: Schema[?], +A] = Product[A] { type Of <: C }
 
   case object Empty extends Product[Unit]:
     override type Of = Nothing
