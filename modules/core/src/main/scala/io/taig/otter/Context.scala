@@ -15,7 +15,8 @@ object Context:
     def toProduct(a: A): Product
 
   trait Product[A]:
-    def empty(update: A => A): A
+    def empty: A
     def zip(left: A, right: A): A
 
-  trait Primitive[A]
+  trait Primitive[A]:
+    def empty: A
