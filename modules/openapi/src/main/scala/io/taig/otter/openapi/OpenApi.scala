@@ -1,46 +1,32 @@
 package io.taig.otter.openapi
 
-import io.taig.otter.Context
+import io.taig.otter.Schema
+import io.taig.otter.Primitive
+import io.taig.otter.Dsl
+import io.taig.otter.Type
+import io.taig.otter
+import io.taig.otter.Types
 
-object OpenApi extends Context:
-  override type Codec = Metadata.Codec
-  override val codec: Context.Codec[Metadata.Codec, Product] = new Context.Codec:
-    override def toProduct(codec: Metadata.Codec): Metadata.Product = product.empty
+object dsl extends Dsl {
+  override type Primitive[A] = otter.Schema.With[otter.Primitive[A], String]
 
-  override type Primitive = Metadata.Primitive
-  override val primitive: Context.Primitive[Primitive] = new Context.Primitive:
-    override val empty: Metadata.Primitive = Metadata.Primitive(
-      format = ???,
-      name = new Metadata.Field[Metadata.Primitive, Option[String]]:
-        override def value: Option[String] = None
-        override def apply(value: Option[String]): Metadata.Primitive = ???
-    )
+  override val Primitive = new Types.Primitive {
+    override type Required[A] = otter.Schema.With[otter.Primitive.Required[A], String]
+  }
 
-  override type Product = Metadata.Product
-  override val product: Context.Product[Product] = new Context.Product:
-    override val empty: Metadata.Product =
-      Metadata.Product(name = new Metadata.Field[Metadata.Product, Option[String]]:
-        override def value: Option[String] = None
-        override def apply(value: Option[String]): Metadata.Product = ???
-      )
-    override def zip(left: Metadata.Product, right: Metadata.Product): Metadata.Product = empty
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    otter.Schema.With(otter.Primitive.Required.Root(tpe), "")
+}
+
+type Metadata[S <: Schema[?]] = S match
+  case Primitive[?] => Metadata.Primitive
 
 object Metadata:
-  abstract class Field[A, B]:
-    def value: B
-    def apply(value: B): A
+  final case class Primitive(format: Option[String])
 
-  sealed abstract class Codec:
-    self =>
-    type Self <: Codec
+object OpenApi:
+  val x: Primitive[Int] = ???
 
-    def name: Field[Self, Option[String]]
+  val y: Schema.With[x.type, Metadata[x.type]] = ???
 
-  final case class Primitive(
-      format: Field[Metadata.Primitive, Option[String]],
-      name: Field[Metadata.Primitive, Option[String]]
-  ) extends Metadata.Codec:
-    override type Self = Metadata.Primitive
-
-  final case class Product(name: Field[Metadata.Product, Option[String]]) extends Metadata.Codec:
-    override type Self = Metadata.Product
+  val z: Metadata.Primitive = y.value
