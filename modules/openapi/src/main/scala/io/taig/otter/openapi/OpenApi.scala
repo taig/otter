@@ -1,52 +1,43 @@
 package io.taig.otter.openapi
 
 import io.taig.otter
-import io.taig.otter.Types
 import io.taig.otter.Schema
 import io.taig.otter.Primitive
 import io.taig.otter.Product
-import io.taig.otter.Schemas
-import io.taig.otter.Syntax
+import io.taig.otter.HMap
 
-// object OpenApi extends Context {
-//   override type Codec = Metadata.Schema
-//   override type Primitive = Metadata.Primitive
-//   override type Product = Metadata.Product
+object MyMetadata:
+  val description: HMap.Key[Option[String]] = HMap.Key("description")
+  val name: HMap.Key[Option[String]] = HMap.Key("name")
+  val format: HMap.Key[Option[String]] = HMap.Key("format")
 
-//   override def codec: Context.Codec[Schema, Product] = ???
+  type Schema = description.type | name.type
 
-//   override def primitive: Context.Primitive[Primitive] = ???
+  object Schema:
+    val Empty: HMap[Schema] = HMap.Empty.put(name, None).put(description, None)
 
-//   override def product: Context.Product[Product] = ???
-// }
-
-object Metadata {
-  abstract class Schema {
-    def name: Option[String]
-  }
-  final case class Primitive(format: Option[String], name: Option[String]) extends Schema
+  type Primitive = Schema | format.type
 
   object Primitive:
-    val Empty: Metadata.Primitive = Primitive(format = None, name = None)
+    val Empty: HMap[Primitive] = Schema.Empty.put(format, None)
 
-  final case class Product()
+  type Product = Schema
 
   object Product:
-    val Empty: Metadata.Product = Product()
-}
+    val Empty: HMap[Product] = Schema.Empty
+
+  type Of[S[a] <: otter.Schema[a]] = S[Any] match
+    case otter.Product[?]   => HMap[Product]
+    case otter.Primitive[?] => HMap[Primitive]
 
 object Playground {
-  type Metadata[S[a] <: Schema[a]] = S[Any] match
-    case Product[?]   => Metadata.Product
-    case Primitive[?] => Metadata.Primitive
-
-  val empty: [S[+a] <: Schema[a], A] => S[A] => Metadata[S] = [S[+a] <: Schema[a], A] =>
+  val empty: [S[+a] <: Schema[a], A] => S[A] => MyMetadata.Of[S] = [S[+a] <: Schema[a], A] =>
     (schema: S[A]) =>
       schema match
-        case _: Product[?]   => Metadata.Product.Empty
-        case _: Primitive[?] => Metadata.Primitive.Empty
+        case _: Product[?]   => MyMetadata.Product.Empty
+        case _: Primitive[?] => MyMetadata.Primitive.Empty
 
-  val toProduct: Metadata[Schema] => Metadata[Product] = _ => Metadata.Product.Empty
+  val toProduct: HMap[MyMetadata.Schema] => MyMetadata.Of[Product] = _ => MyMetadata.Product.Empty
 
-  new Types[Metadata] with Schemas[Metadata](empty) with Syntax[Metadata](toProduct) {}
+//   new Types[Metadata.Of] with Schemas[Metadata.Of](empty) with Syntax[Metadata.Schema, Metadata.Of](toProduct) {}
 }
