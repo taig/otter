@@ -1,12 +1,13 @@
 package io.taig.otter
 
-abstract class Metadata[S[+a] <: Schema[a], A, M <: Singleton]:
+import io.taig.hmap.HMap
+import io.taig.hmap.Key
+
+abstract class Metadata[S[+a] <: Schema[a], A, M]:
   def values: HMap[M]
 
   def set(values: HMap[M]): Cofree[S, A, M]
 
-  // def apply[A <: M & HMap.Key[B] & Singleton, B](key: A) = values.apply(key)
-
-  // def apply[A <: M & HMap.Key[B] & Singleton, B](key: A, value: B): S = set(values.put(key, value))
-
-  // def update[A <: M & HMap.Key[B] & Singleton, B](key: A, f: B => B): S = set(values.update(key, f))
+  final def apply[B](key: Key[B] & Singleton & M): B = values.apply(key)
+  final def apply[B](key: Key[B] & Singleton & M, value: B): Cofree[S, A, M] = set(values.put(key, value))
+  final def update[B](key: Key[B] & Singleton & M)(f: B => B): Cofree[S, A, M] = set(values.update(key)(f))

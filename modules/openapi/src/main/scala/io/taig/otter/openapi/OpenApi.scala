@@ -4,12 +4,14 @@ import io.taig.otter
 import io.taig.otter.Schema
 import io.taig.otter.Primitive
 import io.taig.otter.Product
-import io.taig.otter.HMap
+import io.taig.hmap.HMap
+import io.taig.hmap.Key
+import io.taig.otter.Types
 
 object MyMetadata:
-  val description: HMap.Key[Option[String]] = HMap.Key("description")
-  val name: HMap.Key[Option[String]] = HMap.Key("name")
-  val format: HMap.Key[Option[String]] = HMap.Key("format")
+  val description: Key[Option[String]] = Key("description")
+  val name: Key[Option[String]] = Key("name")
+  val format: Key[Option[String]] = Key("format")
 
   type Schema = description.type | name.type
 
@@ -26,18 +28,19 @@ object MyMetadata:
   object Product:
     val Empty: HMap[Product] = Schema.Empty
 
-  type Of[S[a] <: otter.Schema[a]] = S[Any] match
-    case otter.Product[?]   => HMap[Product]
-    case otter.Primitive[?] => HMap[Primitive]
+  type Of[S[+a] <: otter.Schema[a]] = S[Nothing] match
+    case otter.Product[?]   => Product
+    case otter.Primitive[?] => Primitive
 
 object Playground {
-  val empty: [S[+a] <: Schema[a], A] => S[A] => MyMetadata.Of[S] = [S[+a] <: Schema[a], A] =>
-    (schema: S[A]) =>
-      schema match
-        case _: Product[?]   => MyMetadata.Product.Empty
-        case _: Primitive[?] => MyMetadata.Primitive.Empty
+  // val empty: [S <: Schema[?]] => S => HMap[_ >: MyMetadata.Of[S]] = [S <: Schema[?]] =>
+  //   (schema: S) =>
+  //     schema match
+  //       // case _: Product[A] => MyMetadata.Product.Empty
+  //       case _: Primitive[?] => MyMetadata.Primitive.Empty
 
-  val toProduct: HMap[MyMetadata.Schema] => MyMetadata.Of[Product] = _ => MyMetadata.Product.Empty
+  val toProduct: HMap[MyMetadata.Schema] => HMap[MyMetadata.Of[Product]] = _ => MyMetadata.Product.Empty
 
-//   new Types[Metadata.Of] with Schemas[Metadata.Of](empty) with Syntax[Metadata.Schema, Metadata.Of](toProduct) {}
+  new Types[MyMetadata.Of] {}
+  // with Schemas[Metadata.Of](empty) with Syntax[Metadata.Schema, Metadata.Of](toProduct) {}
 }

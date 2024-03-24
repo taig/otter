@@ -1,8 +1,9 @@
 package io.taig.otter
 
 import io.taig.otter
+import io.taig.hmap.HMap
 
-trait Types[Of[S[+a] <: Schema[a]] <: Singleton]:
+trait Types[Of[S[+a] <: Schema[a]]]:
   self =>
   type Apply[S[+a] <: otter.Schema[a], A] = Cofree[S, A, Of[S]]
 
@@ -10,11 +11,9 @@ trait Types[Of[S[+a] <: Schema[a]] <: Singleton]:
     Cofree(
       sa,
       new Metadata[S, A, Of[S]] {
-
         override def values: HMap[Of[S]] = initial
 
         override def set(values: HMap[Of[S]]): Cofree[S, A, Of[S]] = self.apply(sa, values)
-
       }
     )
 
