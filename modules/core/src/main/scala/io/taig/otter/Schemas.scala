@@ -2,7 +2,7 @@ package io.taig.otter
 
 import io.taig.otter
 
-trait Schemas[Metadata[S[a] <: otter.Schema[a]]](empty: [S[a] <: otter.Schema[a]] => S[Any] => Metadata[S])
+trait Schemas[Metadata[S[+a] <: otter.Schema[a]]](empty: [S[+a] <: otter.Schema[a], A] => S[A] => Metadata[S])
     extends Types[Metadata]:
   final def apply[S[+a] <: otter.Schema[a], A](self: S[A]): Apply[S, A] = apply(self, empty(self))
 

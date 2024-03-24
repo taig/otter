@@ -2,9 +2,10 @@ package io.taig.otter
 
 import io.taig.otter
 
-trait Types[Metadata[S[a] <: otter.Schema[a]]]:
-  type Apply[S[a] <: otter.Schema[a], A] = otter.Schema.With[S, A, Metadata[S]]
-  def apply[S[a] <: otter.Schema[a], A](self: S[A], value: Metadata[S]): Apply[S, A] = otter.Schema.With(self, value)
+trait Types[Metadata[S[+a] <: otter.Schema[a]]]:
+  type Apply[S[+a] <: otter.Schema[a], A] = otter.Schema.With[S, A, Metadata[S]]
+  def apply[S[+a] <: otter.Schema[a], A](self: S[A], value: Metadata[S]): Apply[S, A] =
+    otter.Schema.With(self, value)
 
   type Schema[A] = Apply[otter.Schema, A]
 

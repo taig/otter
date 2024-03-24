@@ -7,4 +7,4 @@ abstract class Schema[+A]:
   def toProduct: Product.Of[this.type, A] = Product.One(this)
 
 object Schema:
-  final case class With[S[a] <: Schema[a], A, B](self: S[A], value: B)
+  final case class With[S[+a] <: Schema[a], +A, B](self: S[A], value: B)

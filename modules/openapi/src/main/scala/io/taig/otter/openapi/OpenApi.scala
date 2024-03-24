@@ -1,16 +1,12 @@
 package io.taig.otter.openapi
 
 import io.taig.otter
-import io.taig.otter.Context
 import io.taig.otter.Types
 import io.taig.otter.Schema
 import io.taig.otter.Primitive
 import io.taig.otter.Product
 import io.taig.otter.Schemas
-import io.taig.otter.Schema
-import scala.compiletime.erasedValue
-import scala.reflect.classTag
-import scala.reflect.ClassTag
+import io.taig.otter.Syntax
 
 // object OpenApi extends Context {
 //   override type Codec = Metadata.Schema
@@ -28,10 +24,10 @@ object Metadata {
   abstract class Schema {
     def name: Option[String]
   }
-  final case class Primitive(format: Option[String])
+  final case class Primitive(format: Option[String], name: Option[String]) extends Schema
 
   object Primitive:
-    val Empty: Metadata.Primitive = Primitive(format = None)
+    val Empty: Metadata.Primitive = Primitive(format = None, name = None)
 
   final case class Product()
 
@@ -44,11 +40,13 @@ object Playground {
     case Product[?]   => Metadata.Product
     case Primitive[?] => Metadata.Primitive
 
-  val empty: [S[a] <: Schema[a]] => S[Any] => Metadata[S] = [S[a] <: Schema[a]] =>
-    (schema: S[Any]) =>
+  val empty: [S[+a] <: Schema[a], A] => S[A] => Metadata[S] = [S[+a] <: Schema[a], A] =>
+    (schema: S[A]) =>
       schema match
         case _: Product[?]   => Metadata.Product.Empty
         case _: Primitive[?] => Metadata.Primitive.Empty
 
-  new Types[Metadata] with Schemas[Metadata](empty) {}
+  val toProduct: Metadata[Schema] => Metadata[Product] = _ => Metadata.Product.Empty
+
+  new Types[Metadata] with Schemas[Metadata](empty) with Syntax[Metadata](toProduct) {}
 }
