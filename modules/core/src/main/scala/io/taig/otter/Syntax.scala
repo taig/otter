@@ -2,11 +2,13 @@ package io.taig.otter
 
 import io.taig.otter as Plain
 
-trait Syntax[Of[S <: Plain.Schema[?]]](toProduct: [S[a] <: Plain.Schema[a], A] => Of[S[A]] => Of[Plain.Product[A]])
-    extends Types[Of]:
+trait Syntax[Attributes[S <: Plain.Schema[?]]](
+    toProduct: [S <: Plain.Schema[?]] => Attributes[S] => Attributes[Plain.Product[?]]
+) extends Types[Attributes]:
   self =>
-  extension [S[a] <: Plain.Schema[a], A](schema: Apply[S, A])
-    def toProductWith(f: Of[S[A]] => Of[Plain.Product[A]]): Product[A] =
-      apply(schema.self.toProduct, f(schema.metadata.values))
+  extension [S <: Plain.Schema[A], A](schema: Apply[S])
+    def toProductWith(f: Attributes[S] => Attributes[Plain.Product[?]]): Product[A] =
+      // apply(schema.self.toProduct, f(schema.metadata.values))
+      apply(schema.self.toProduct, ???)
 
-    def toProduct: Product[A] = toProductWith(self.toProduct.apply)
+    def toProduct: Product[A] = ??? // toProductWith(self.toProduct.apply)

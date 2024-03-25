@@ -7,56 +7,64 @@ import io.taig.otter.Types
 import io.taig.otter.Schemas
 import io.taig.otter.Syntax
 
-object MyMetadata:
-  val description: Key[Option[String]] = Key("description")
-  val name: Key[Option[String]] = Key("name")
-  val format: Key[Option[String]] = Key("format")
+abstract class OpenApi
+    extends Types[OpenApi.Metadata.Attributes]
+    with Schemas[OpenApi.Metadata.Attributes](OpenApi.Metadata.default)
+    with Syntax[OpenApi.Metadata.Attributes](OpenApi.Metadata.toProduct) {
+  export OpenApi.Attribute.*
+}
 
-  type Schema = description.type | name.type
+object OpenApi:
+  object Attribute:
+    val description: Key[Option[String]] = Key("description")
+    val name: Key[Option[String]] = Key("name")
+    val format: Key[Option[String]] = Key("format")
 
-  object Schema:
-    val Default: HMap[Schema] = HMap.Empty.put(description, None).put(name, None)
+  object Metadata:
+    import Attribute.*
 
-  type Primitive = Schema | format.type
+    type Schema = description.type | name.type
 
-  object Primitive:
-    val Default: HMap[Primitive] = Schema.Default.put(format, None)
+    object Schema:
+      val Default: HMap[Schema] = HMap.Empty.put(description, None).put(name, None)
 
-  type Product = Schema
+    type Primitive = Schema | format.type
 
-  object Product:
-    val Default: HMap[Product] = Schema.Default
+    object Primitive:
+      val Default: HMap[Primitive] = Schema.Default.put(format, None)
 
-  type Of[S <: Plain.Schema[?]] <: HMap[Schema] = S match
-    case Plain.Primitive[?] => HMap[Primitive]
-    case Plain.Product[?]   => HMap[Product]
+    type Product = Schema
 
-  val default: [S <: Plain.Schema[?]] => S => Of[S] = [S <: Plain.Schema[?]] =>
-    (schema: S) =>
-      schema match
-        case _: Plain.Primitive[?] => Primitive.Default
-        case _: Plain.Product[?]   => Product.Default
+    object Product:
+      val Default: HMap[Product] = Schema.Default
 
-  val toProduct: [S[a] <: Plain.Schema[a], A] => Of[S[A]] => Of[Plain.Product[A]] =
-    [S[a] <: Plain.Schema[a], A] => (_: Of[S[A]]) => Product.Default
+    type Attributes[S <: Plain.Schema[?]] <: HMap[Schema] = S match
+      case Plain.Primitive[?] => HMap[Primitive]
+      case Plain.Product[?]   => HMap[Product]
+
+    val default: [S <: Plain.Schema[?]] => S => Attributes[S] = [S <: Plain.Schema[?]] =>
+      (schema: S) =>
+        schema match
+          case _: Plain.Primitive[?] => Primitive.Default
+          case _: Plain.Product[?]   => Product.Default
+
+    val toProduct: [S <: Plain.Schema[?]] => Attributes[S] => Attributes[Plain.Product[?]] =
+      ???
+      // [S <: Plain.Schema[?]] => (_: Attributes[S]) => Product.Default
 
 object Playground {
-  val x = new Types[MyMetadata.Of]
-    with Schemas[MyMetadata.Of](MyMetadata.default)
-    with Syntax[MyMetadata.Of](MyMetadata.toProduct) {}
+  val dsl = new OpenApi {}
 
-  import x.*
+  import dsl.*
 
-  type MyOpenApi[A] = Primitive[A] | Product[A]
+  val x: Primitive.Required[String] = string
+  val y: Primitive[String] = x
+  // val z: Schema[String] = y
 
-  val y: Primitive[String] = ???
-  val z: Product[String] = ???
+  y.metadata.apply(name)
+  // z.metadata.apply(description)
+  // z.metadata.apply(description, "lol")
+  // z.metadata.clear(description)
 
-  y.metadata.apply(MyMetadata.name)
-  z.metadata.apply(MyMetadata.description)
-  z.metadata.apply(MyMetadata.description, "lol")
-  z.metadata.clear(MyMetadata.description)
-
-  toProductWith(z)(_ => MyMetadata.Product.Default)
-  z.toProduct
+  // z.toProduct
 }
