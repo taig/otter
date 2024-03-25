@@ -61,10 +61,11 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(
     core,
+    jsonCirce,
     // circe,
-    openapi
+    openapi,
     // typescript,
-    // openapiCirce,
+    openapiCirce
     // http,
     // httpOpenapi,
     // httpCirce,
@@ -98,19 +99,24 @@ lazy val core = module(identifier = Some("core"))
       .cross(CrossVersion.for3Use2_13)
   )
 
-// lazy val circe = module(identifier = Some("circe"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %%% "circe-core" % Version.Circe ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val jsonCirce = module(identifier = Some("json-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val openapi = module(identifier = Some("openapi"))
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val openapiCirce = module(identifier = Some("openapi-circe"))
-//   .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
+lazy val openapiCirce = module(identifier = Some("openapi-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(openapi % "compile->compile;test->test")
 
 // lazy val typescript = module(identifier = Some("typescript"))
 //   .dependsOn(core % "compile->compile;test->test")
