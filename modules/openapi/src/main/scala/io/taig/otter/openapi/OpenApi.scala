@@ -14,27 +14,40 @@ object MyMetadata:
 
   type Schema = description.type | name.type
 
+  object Schema:
+    val Default: HMap[Schema] = HMap.Empty.put(description, None).put(name, None)
+
   type Primitive = Schema | format.type
+
+  object Primitive:
+    val Default: HMap[Primitive] = Schema.Default.put(format, None)
 
   type Product = Schema
 
-  type Of[S <: Plain.Schema[?]] = S match
+  object Product:
+    val Default: HMap[Product] = Schema.Default
+
+  type Of[S <: Plain.Schema[?]] <: HMap[Schema] = S match
     case Plain.Primitive[?] => HMap[Primitive]
     case Plain.Product[?]   => HMap[Product]
 
   val default: [S <: Plain.Schema[?]] => S => Of[S] = [S <: Plain.Schema[?]] =>
     (schema: S) =>
       schema match
-        case _: Plain.Primitive[?] => ??? : HMap[Primitive]
-        case _: Plain.Product[?]   => ??? : HMap[Product]
+        case _: Plain.Primitive[?] => Primitive.Default
+        case _: Plain.Product[?]   => Product.Default
+
+  val toProduct: [S[a] <: Plain.Schema[a], A] => Of[S[A]] => Of[Plain.Product[A]] =
+    [S[a] <: Plain.Schema[a], A] => (_: Of[S[A]]) => Product.Default
 
 object Playground {
-
-  // val toProduct: HMap[MyMetadata.Schema] => HMap[MyMetadata.Of[Product]] = _ => MyMetadata.Product.Empty
-
-  val x = new Types[MyMetadata.Of] with Schemas[MyMetadata.Of](MyMetadata.default) with Syntax[MyMetadata.Of] {}
+  val x = new Types[MyMetadata.Of]
+    with Schemas[MyMetadata.Of](MyMetadata.default)
+    with Syntax[MyMetadata.Of](MyMetadata.toProduct) {}
 
   import x.*
+
+  type MyOpenApi[A] = Primitive[A] | Product[A]
 
   val y: Primitive[String] = ???
   val z: Product[String] = ???
@@ -44,18 +57,6 @@ object Playground {
   z.metadata.apply(MyMetadata.description, "lol")
   z.metadata.clear(MyMetadata.description)
 
-  toProductWith(z)
-  z
-  // y.metadata.apply(MyMetadata.description)
-  // y.metadata.apply(MyMetadata.format)
-
-  // import x.*
-
-  // val a: Primitive[String] = ???
-  // val b: Product[String] = ???
-
-  // a.metadata.apply(MyMetadata.format)
-  // b.metadata.apply(MyMetadata.format)
-
-  // with Schemas[Metadata.Of](empty) with Syntax[Metadata.Schema, Metadata.Of](toProduct) {}
+  toProductWith(z)(_ => MyMetadata.Product.Default)
+  z.toProduct
 }
