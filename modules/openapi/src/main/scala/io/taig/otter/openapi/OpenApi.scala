@@ -34,3 +34,11 @@ object OpenApi:
       override val default: HMap[Product] = HMap.Empty.put(name, None).put(description, None)
       override def toProduct(metadata: HMap[Product]): HMap[Product] = default
       override def zip(left: HMap[Product], right: HMap[Product]): HMap[Product] = default
+
+object Playground {
+  val dsl = new OpenApi {}
+
+  import dsl.*
+
+  val x: Product[(String, String)] = string.toProduct.zip(string.toProduct)
+}

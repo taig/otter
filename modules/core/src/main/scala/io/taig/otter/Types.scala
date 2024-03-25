@@ -8,21 +8,21 @@ trait Types[C <: Context]:
 
   final case class Metadata[C <: context.Schema.Metadata[M], M](context: C, values: HMap[M])
 
-  type Apply[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M] = Annotation[S, Metadata[C, M]]
-  def apply[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M](
+  type Lift[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M] = Annotation[S, Metadata[C, M]]
+  def lift[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M](
       schema: S,
       metadata: Metadata[C, M]
-  ): Apply[S, C, M] = Annotation(schema, metadata)
+  ): Lift[S, C, M] = Annotation(schema, metadata)
 
   type Schema[A] = Primitive[A] | Product[A]
 
-  type Primitive[A] = Apply[Plain.Primitive[A], context.primitive.type, context.Primitive]
+  type Primitive[A] = Lift[Plain.Primitive[A], context.primitive.type, context.Primitive]
 
   object Primitive:
-    type Required[A] = Apply[Plain.Primitive.Required[A], context.primitive.type, context.Primitive]
-    type Optional[A] = Apply[Plain.Primitive.Optional[A], context.primitive.type, context.Primitive]
+    type Required[A] = Lift[Plain.Primitive.Required[A], context.primitive.type, context.Primitive]
+    type Optional[A] = Lift[Plain.Primitive.Optional[A], context.primitive.type, context.Primitive]
 
-  type Product[A] = Apply[Plain.Product[A], context.product.type, context.Product]
+  type Product[A] = Lift[Plain.Product[A], context.product.type, context.Product]
 
   object Product:
-    type Of[S <: Plain.Schema[?], A] = Apply[Plain.Product.Of[S, A], context.product.type, context.Product]
+    type Of[S <: Plain.Schema[?], A] = Lift[Plain.Product.Of[S, A], context.product.type, context.Product]
