@@ -1,12 +1,11 @@
 package io.taig.otter.openapi
 
-import io.taig.otter
-import io.taig.otter.Schema
-import io.taig.otter.Primitive
-import io.taig.otter.Product
+import io.taig.otter as Plain
 import io.taig.hmap.HMap
 import io.taig.hmap.Key
 import io.taig.otter.Types
+import io.taig.otter.Schemas
+import io.taig.otter.Syntax
 
 object MyMetadata:
   val description: Key[Option[String]] = Key("description")
@@ -15,32 +14,48 @@ object MyMetadata:
 
   type Schema = description.type | name.type
 
-  object Schema:
-    val Empty: HMap[Schema] = HMap.Empty.put(name, None).put(description, None)
-
   type Primitive = Schema | format.type
-
-  object Primitive:
-    val Empty: HMap[Primitive] = Schema.Empty.put(format, None)
 
   type Product = Schema
 
-  object Product:
-    val Empty: HMap[Product] = Schema.Empty
+  type Of[S <: Plain.Schema[?]] = S match
+    case Plain.Primitive[?] => HMap[Primitive]
+    case Plain.Product[?]   => HMap[Product]
 
-  type Of[S[+a] <: otter.Schema[a]] = S[Nothing] match
-    case otter.Product[?]   => Product
-    case otter.Primitive[?] => Primitive
+  val default: [S <: Plain.Schema[?]] => S => Of[S] = [S <: Plain.Schema[?]] =>
+    (schema: S) =>
+      schema match
+        case _: Plain.Primitive[?] => ??? : HMap[Primitive]
+        case _: Plain.Product[?]   => ??? : HMap[Product]
 
 object Playground {
-  // val empty: [S <: Schema[?]] => S => HMap[_ >: MyMetadata.Of[S]] = [S <: Schema[?]] =>
-  //   (schema: S) =>
-  //     schema match
-  //       // case _: Product[A] => MyMetadata.Product.Empty
-  //       case _: Primitive[?] => MyMetadata.Primitive.Empty
 
-  val toProduct: HMap[MyMetadata.Schema] => HMap[MyMetadata.Of[Product]] = _ => MyMetadata.Product.Empty
+  // val toProduct: HMap[MyMetadata.Schema] => HMap[MyMetadata.Of[Product]] = _ => MyMetadata.Product.Empty
 
-  new Types[MyMetadata.Of] {}
+  val x = new Types[MyMetadata.Of] with Schemas[MyMetadata.Of](MyMetadata.default) with Syntax[MyMetadata.Of] {}
+
+  import x.*
+
+  val y: Primitive[String] = ???
+  val z: Product[String] = ???
+
+  y.metadata.apply(MyMetadata.name)
+  z.metadata.apply(MyMetadata.description)
+  z.metadata.apply(MyMetadata.description, "lol")
+  z.metadata.clear(MyMetadata.description)
+
+  toProductWith(z)
+  z
+  // y.metadata.apply(MyMetadata.description)
+  // y.metadata.apply(MyMetadata.format)
+
+  // import x.*
+
+  // val a: Primitive[String] = ???
+  // val b: Product[String] = ???
+
+  // a.metadata.apply(MyMetadata.format)
+  // b.metadata.apply(MyMetadata.format)
+
   // with Schemas[Metadata.Of](empty) with Syntax[Metadata.Schema, Metadata.Of](toProduct) {}
 }
