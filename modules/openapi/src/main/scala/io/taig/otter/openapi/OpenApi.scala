@@ -22,27 +22,15 @@ object OpenApi:
     import Attribute.*
 
     override type Schema = description.type | name.type
-    override val schema = new Plain.Context.Metadata[Schema]:
-      override val default: HMap[Schema] = HMap.Empty.put(name, None).put(description, None)
 
     override type Primitive = Schema | format.type
-    override val primitive = new Plain.Context.Metadata[Primitive]:
-      override val default: HMap[Primitive] = schema.default.put(format, None)
+    override val primitive = new Primitive.Metadata:
+      override val default: HMap[Primitive] =
+        HMap.Empty.put(name, None).put(description, None).put(format, None)
+      override def toProduct(metadata: HMap[Primitive]): HMap[Product] = product.default
 
     override type Product = Schema
-    override val product = new Plain.Context.Metadata[Product]:
-      override val default: HMap[Product] = schema.default
-
-object Playground {
-  val dsl = new OpenApi {}
-
-  import dsl.*
-
-  val x: Primitive.Required[String] = string
-  val y: Primitive[String] = x
-  val z: Schema[String] = y
-
-  z(name)
-  z(name, Some("lol"))
-  z.toProduct
-}
+    override val product = new Product.Metadata:
+      override val default: HMap[Product] = HMap.Empty.put(name, None).put(description, None)
+      override def toProduct(metadata: HMap[Product]): HMap[Product] = default
+      override def zip(left: HMap[Product], right: HMap[Product]): HMap[Product] = default

@@ -1,18 +1,22 @@
 package io.taig.otter
 
+import io.taig.otter as Plain
 import io.taig.hmap.HMap
 
 trait Context:
   type Schema
-  val schema: Context.Metadata[Schema]
+  object Schema:
+    abstract class Metadata[A]:
+      def default: HMap[A]
+      def toProduct(metadata: HMap[A]): HMap[Product]
 
+  val primitive: Primitive.Metadata
   type Primitive >: Schema
-  val primitive: Context.Metadata[Primitive]
+  object Primitive:
+    abstract class Metadata extends Schema.Metadata[Primitive]
 
+  val product: Product.Metadata
   type Product >: Schema
-  val product: Context.Metadata[Product]
-
-object Context:
-  trait Metadata[A]:
-    final type Attributes = A
-    def default: HMap[A]
+  object Product:
+    abstract class Metadata extends Schema.Metadata[Product]:
+      def zip(left: HMap[Product], right: HMap[Product]): HMap[Product]

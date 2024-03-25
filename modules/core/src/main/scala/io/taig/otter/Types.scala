@@ -6,18 +6,23 @@ import io.taig.hmap.HMap
 trait Types[C <: Context]:
   val context: C
 
-  type Apply[S <: Plain.Schema[?], M] = Annotation[S, HMap[M]]
-  def apply[S <: Plain.Schema[?], M](schema: S, metadata: HMap[M]): Apply[S, M] = Annotation(schema, metadata)
+  final case class Metadata[C <: context.Schema.Metadata[M], M](context: C, values: HMap[M])
 
-  type Schema[A] = Apply[Plain.Schema[A], context.schema.Attributes]
+  type Apply[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M] = Annotation[S, Metadata[C, M]]
+  def apply[S <: Plain.Schema[?], C <: context.Schema.Metadata[M], M](
+      schema: S,
+      metadata: Metadata[C, M]
+  ): Apply[S, C, M] = Annotation(schema, metadata)
 
-  type Primitive[A] = Apply[Plain.Primitive[A], context.primitive.Attributes]
+  type Schema[A] = Primitive[A] | Product[A]
+
+  type Primitive[A] = Apply[Plain.Primitive[A], context.primitive.type, context.Primitive]
 
   object Primitive:
-    type Required[A] = Apply[Plain.Primitive.Required[A], context.primitive.Attributes]
-    type Optional[A] = Apply[Plain.Primitive.Optional[A], context.primitive.Attributes]
+    type Required[A] = Apply[Plain.Primitive.Required[A], context.primitive.type, context.Primitive]
+    type Optional[A] = Apply[Plain.Primitive.Optional[A], context.primitive.type, context.Primitive]
 
-  type Product[A] = Apply[Plain.Product[A], context.product.Attributes]
+  type Product[A] = Apply[Plain.Product[A], context.product.type, context.Product]
 
   object Product:
-    type Of[S <: Plain.Schema[?], A] = Apply[Plain.Product.Of[S, A], context.product.Attributes]
+    type Of[S <: Plain.Schema[?], A] = Apply[Plain.Product.Of[S, A], context.product.type, context.Product]
