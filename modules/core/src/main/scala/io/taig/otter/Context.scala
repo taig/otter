@@ -4,6 +4,7 @@ import io.taig.otter as Plain
 import io.taig.hmap.HMap
 
 trait Context:
+  val schema: Schema.Metadata[Schema]
   type Schema
   object Schema:
     abstract class Metadata[A]:
