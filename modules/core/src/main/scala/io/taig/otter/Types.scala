@@ -1,18 +1,23 @@
 package io.taig.otter
 
 import io.taig.otter as Plain
+import io.taig.hmap.HMap
 
-trait Types[Attributes[S <: Plain.Schema[?]]]:
-  type Apply[S <: Plain.Schema[?]] = Metadata.Annotation[S, Attributes[S]]
+trait Types[C <: Context]:
+  val context: C
 
-  def apply[S <: Plain.Schema[?]](sa: S, metadata: Attributes[S]): Apply[S] =
-    Metadata.Annotation(sa, Metadata(metadata)(apply(sa, _)))
+  type Apply[S <: Plain.Schema[?], M] = Annotation[S, HMap[M]]
+  def apply[S <: Plain.Schema[?], M](schema: S, metadata: HMap[M]): Apply[S, M] = Annotation(schema, metadata)
 
-  type Schema[A] = Apply[Plain.Schema[A]]
+  type Schema[A] = Apply[Plain.Schema[A], context.schema.Attributes]
 
-  type Primitive[A] = Apply[Plain.Primitive[A]]
+  type Primitive[A] = Apply[Plain.Primitive[A], context.primitive.Attributes]
+
   object Primitive:
-    type Required[A] = Apply[Plain.Primitive.Required[A]]
-    type Optional[A] = Apply[Plain.Primitive.Optional[A]]
+    type Required[A] = Apply[Plain.Primitive.Required[A], context.primitive.Attributes]
+    type Optional[A] = Apply[Plain.Primitive.Optional[A], context.primitive.Attributes]
 
-  type Product[A] = Apply[Plain.Product[A]]
+  type Product[A] = Apply[Plain.Product[A], context.product.Attributes]
+
+  object Product:
+    type Of[S <: Plain.Schema[?], A] = Apply[Plain.Product.Of[S, A], context.product.Attributes]
