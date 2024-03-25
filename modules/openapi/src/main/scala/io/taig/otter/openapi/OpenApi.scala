@@ -43,5 +43,9 @@ object Playground {
   import dsl.*
 
   val a = string.toProduct
-  val b = string.toProductWith(???)
+  val b = string
+
+  a.apply(name)
+  a.apply(name, "")
+  b.apply(format)
 }
