@@ -22,17 +22,15 @@ object OpenApi:
     import Attribute.*
 
     override type Schema = description.type | name.type
-    override val schema: Schema.Metadata[Schema] = new Schema.Metadata[Schema]:
-      override val default: HMap[Schema] = HMap.Empty.put(name, None).put(description, None)
-      override def toProduct(metadata: HMap[Schema]): HMap[Product] = product.default
+    val schema: HMap[Schema] = HMap.Empty.put(name, None).put(description, None)
 
     override type Primitive = Schema | format.type
     override val primitive = new Primitive.Metadata:
-      override val default: HMap[Primitive] = schema.default.put(format, None)
+      override val default: HMap[Primitive] = schema.put(format, None)
       override def toProduct(metadata: HMap[Primitive]): HMap[Product] = product.default
 
     override type Product = Schema
     override val product = new Product.Metadata:
-      override val default: HMap[Product] = schema.default
+      override val default: HMap[Product] = schema
       override def toProduct(metadata: HMap[Product]): HMap[Product] = default
       override def zip(left: HMap[Product], right: HMap[Product]): HMap[Product] = default
