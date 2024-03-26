@@ -34,19 +34,12 @@ object OpenApi extends Dsl:
 
   final class Asdf extends Context.Metadata {
     override type Schema = X.Schema
-
     override type Primitive = X.Primitive
-    override val primitive = new Context.Primitive {
-      override val default: X.Primitive = X.Primitive(None, None)
-      override def toProduct(metadata: X.Primitive): X.Product = product.default
-    }
-
     override type Product = X.Product
-    override val product = new Context.Product {
-      override def default: X.Product = ???
-      override def toProduct(metadata: X.Product): X.Product = ???
-      override def zip(left: X.Product, right: X.Product): X.Product = ???
-    }
+
+    override def primitive: Primitive = ???
+    override def product: Product = ???
+    override def toProduct(schema: Schema): Product = ???
   }
   override val metadata: Asdf = new Asdf
 
@@ -55,14 +48,7 @@ object Playground {
 
   // type Required[A] = Plain.Primitive[Metadata[metadata.primitive.type, metadata.Primitive], A]
 
-  type A = Plain.Primitive[X.Primitive, String]
-  type B = Plain.Schema[X.Schema, String]
-
-  val a: A = ???
-  val b: B = a
-
-  // val x: Primitive.Required[String] = string
-  // val y: Primitive[String] = string
-  // val z: Schema[String] = string
+  val x: Primitive[String] = string
+  val y: Schema[String] = x
 
 }

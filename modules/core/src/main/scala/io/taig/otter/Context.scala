@@ -11,19 +11,9 @@ object Context:
     self =>
 
     type Schema
-
-    val primitive: Context.Primitive
     type Primitive <: Schema
-
-    val product: Context.Product
     type Product <: Schema
 
-    object Context:
-      abstract class Schema[A]:
-        def default: A
-        def toProduct(metadata: A): self.Product
-
-      abstract class Primitive extends Context.Schema[self.Primitive]
-
-      abstract class Product extends Context.Schema[self.Product]:
-        def zip(left: self.Product, right: self.Product): self.Product
+    def primitive: Primitive
+    def product: Product
+    def toProduct(schema: Schema): Product
