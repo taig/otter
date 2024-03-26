@@ -57,13 +57,15 @@ object OpenApi extends Dsl:
 
   override val metadata: Metadata = new Metadata
 
-  extension [S <: Plain.Schema[M, ?], M <: metadata.Schema, A](self: Field[M, A]) def modify(f: A => A): S = ???
+  // extension [S <: Plain.Schema[?], M <: metadata.Schema, A](self: Field[M, A]) def modify(f: A => A): S = ???
 
 object Playground {
   import OpenApi.*
 
   val x: Primitive[String] = string
   val y: Schema[String] = x
+
+  // x.metadata.name
 
   // val z: Schema[String] = x.name.update(_.map(_.reverse))
 

@@ -8,8 +8,6 @@ trait Context:
 
 object Context:
   trait Metadata:
-    self =>
-
     type Schema
     type Primitive <: Schema
     type Product <: Schema

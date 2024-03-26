@@ -5,8 +5,9 @@ import io.taig.otter as Plain
 trait Syntax extends Types:
   self =>
 
-  given [M]: Conversion[Plain.Schema[M, ?], M] = _.metadata
+  given [M]: Conversion[Annotation[?, M], M] = _.metadata
 
-  extension [M <: metadata.Schema, A](self: Plain.Schema[M, A])
-    def toProductWith(f: M => metadata.Product): Product.Of[self.type, A] = self.toProductN(f)
-    def toProduct: Product.Of[self.type, A] = toProductWith(metadata.toProduct)
+  // extension [S[a] <: Plain.Schema[a], M <: metadata.Schema, A](self: Apply[S, M, A])
+  //   def toProductWith(f: M => metadata.Product): Product.Of[S[A], A] =
+  //     Annotation(self.self.toProduct, f(self.metadata))
+  //   def toProduct: Product.Of[S[A], A] = toProductWith(metadata.toProduct)
