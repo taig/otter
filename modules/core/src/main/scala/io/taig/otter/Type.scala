@@ -3,11 +3,12 @@ package io.taig.otter
 import cats.syntax.all.*
 
 import java.lang.String as JString
-import scala.{BigDecimal as SBigDecimal, BigInt as SBigInt}
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
 
 enum Type[A]:
-  case BigDecimal extends Type[SBigDecimal]
-  case BigInt extends Type[SBigInt]
+  case BigDecimal extends Type[JBigDecimal]
+  case BigInteger extends Type[JBigInteger]
   case Boolean extends Type[Boolean]
   case Double extends Type[Double]
   case Float extends Type[Float]
