@@ -5,8 +5,6 @@ import io.taig.otter.Dsl
 import io.taig.otter.Type
 
 object OpenApi extends Dsl:
-  final case class Annotation[+S[a] <: Plain.Schema[a], +M[+_], A](self: S[A], metadata: M[Annotation[S, M, A]])
-
   override type Schema[A] = Annotation[Plain.Schema, Metadata.Schema, A]
 
   override val Schema = new Schemas:
@@ -23,6 +21,9 @@ object OpenApi extends Dsl:
   override val Product = new Products:
     override type Of[S <: Plain.Schema[?], A] = Annotation[Plain.Product.Of[S, *], Metadata.Schema, A]
 
+  given toMetadata[S[a] <: Plain.Schema[a], M[+s] <: Metadata.Schema[s], A]
+      : Conversion[Annotation[S, M, A], M[Annotation[S, M, A]]] = _.metadata
+
   def primitive[A](tpe: Type[A], attributes: Metadata.Primitive.Attributes): Primitive.Required[A] = Annotation(
     Plain.Primitive.Required.Root(tpe),
     Metadata.Primitive[Primitive.Required[A]](attributes)(primitive(tpe, _))
@@ -31,14 +32,14 @@ object OpenApi extends Dsl:
 
 object Playground {
   import OpenApi.*
+  import OpenApi.given
 
   val x: Primitive.Required[String] = string
   val y: Schema[String] = x
 
-  val z: Primitive.Required[String] = x.metadata.name(???)
+  val z: Primitive.Required[String] = x.metadata.name.modify(identity)
 
-  // x.metadata.name
-
-  // val z: Schema[String] = x.name.update(_.map(_.reverse))
-
+  z.name.apply("")
+  z.name.apply(None)
+  val a: Schema[String] = z.name.apply(Some("lol"))
 }
