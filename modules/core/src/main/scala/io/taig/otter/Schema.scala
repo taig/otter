@@ -8,7 +8,6 @@ sealed abstract class Schema[+M, A]:
   type Optional[+m, a] <: Schema.Of[Of, m, a]
 
   def metadata: M
-
   def update[N](f: M => N): Self[N, A]
   def imap[B](f: A => B)(g: B => A): Self[M, B]
   def optional: Optional[M, Option[A]]

@@ -6,18 +6,21 @@ import io.taig.otter.Dsl
 
 object OpenApi extends Dsl:
   self =>
+
+  abstract class Field[S, A]:
+    def value: A
+    protected def update(f: A => A): S
+
+  object Field:
+    def apply[S, A](a: A)(f: A => S): Field[S, A] = new Field[S, A]:
+      override def value: A = a
+      override def update(g: A => A): S = f(g(a))
+
   final class Metadata extends Context.Metadata:
     sealed abstract class Schema(attributes: Schema.Attributes):
       type Self <: Schema
 
-      abstract class Field[A]:
-        def value: A
-        protected def update(f: A => A): Self
-
-      object Field:
-        def apply[A](a: A)(f: A => Self): Field[A] = new Field[A]:
-          override def value: A = a
-          override def update(g: A => A): Self = f(g(a))
+      type Field[A] = self.Field[Self, A]
 
       final def description: Field[Option[String]] = Field(attributes.description): description =>
         copy(attributes.copy(description = description))
@@ -33,8 +36,9 @@ object OpenApi extends Dsl:
       val Default: Schema.Attributes = Attributes(description = None, name = None)
 
     final case class Primitive(attributes: Primitive.Attributes) extends Schema(attributes.schema):
+      self =>
       override type Self = Primitive
-      def format: Field[Option[String]] = Field(attributes.format): format =>
+      def format: self.Field[Option[String]] = Field(attributes.format): format =>
         copy(attributes.copy(format = format))
 
       override def copy(schema: Schema.Attributes): Primitive = copy(attributes = attributes.copy(schema = schema))
@@ -53,14 +57,14 @@ object OpenApi extends Dsl:
 
   override val metadata: Metadata = new Metadata
 
+  extension [S <: Plain.Schema[M, ?], M <: metadata.Schema, A](self: Field[M, A]) def modify(f: A => A): S = ???
+
 object Playground {
   import OpenApi.*
-
-  // type Required[A] = Plain.Primitive[Metadata[metadata.primitive.type, metadata.Primitive], A]
 
   val x: Primitive[String] = string
   val y: Schema[String] = x
 
-  // val z: Schema[String] = y.name.update(identity)
+  // val z: Schema[String] = x.name.update(_.map(_.reverse))
 
 }
