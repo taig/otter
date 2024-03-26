@@ -1,3 +1,3 @@
-// package io.taig.otter
+package io.taig.otter
 
-// abstract class Dsl[C <: Context](context: C) extends Schemas[C](context) with Syntax[C]
+trait Dsl extends Types with Syntax with Schemas

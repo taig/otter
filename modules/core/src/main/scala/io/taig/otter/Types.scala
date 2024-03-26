@@ -1,22 +1,19 @@
 package io.taig.otter
 
 import io.taig.otter as Plain
-import io.taig.hmap.HMap
 
-trait Types[C <: Context]:
-  val context: C
-
-  final case class Metadata[C <: context.Schema.Metadata[M], M](context: C, values: HMap[M])
+trait Types extends Context:
+  final case class Annotation[C <: metadata.Context.Schema[M], M](context: C, metadata: M)
 
   type Schema[A] = Plain.Schema[Nothing, A]
 
-  type Primitive[A] = Plain.Primitive[Metadata[context.primitive.type, context.Primitive], A]
+  type Primitive[A] = Plain.Primitive[Annotation[metadata.primitive.type, metadata.Primitive], A]
 
   object Primitive:
-    type Required[A] = Plain.Primitive[Metadata[context.primitive.type, context.Primitive], A]
-    type Optional[A] = Plain.Primitive[Metadata[context.primitive.type, context.Primitive], A]
+    type Required[A] = Plain.Primitive[Annotation[metadata.primitive.type, metadata.Primitive], A]
+    type Optional[A] = Plain.Primitive[Annotation[metadata.primitive.type, metadata.Primitive], A]
 
-  type Product[A] = Plain.Product[Metadata[context.product.type, context.Product], A]
+  type Product[A] = Plain.Product[Annotation[metadata.product.type, metadata.Product], A]
 
   object Product:
-    type Of[S <: Plain.Schema[?, ?], A] = Plain.Product[Metadata[context.product.type, context.Product], A]
+    type Of[S <: Plain.Schema[?, ?], A] = Plain.Product[Annotation[metadata.product.type, metadata.Product], A]

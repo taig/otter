@@ -1,25 +1,25 @@
 package io.taig.otter
 
 import io.taig.otter as Plain
-import io.taig.hmap.Key
-import io.taig.hmap.HMap
-import scala.annotation.targetName
 
-trait Syntax[C <: Context] extends Types[C]:
+trait Syntax extends Types:
   self =>
 
-  extension [C <: context.Schema.Metadata[M], M, A](self: Plain.Schema[Metadata[C, M], A])
-    def toProductWith(f: HMap[M] => HMap[context.Product]): Product.Of[self.type, A] =
-      self.toProductN(metadata => Metadata(context.product, f(metadata.values)))
+  given [M]: Conversion[Plain.Schema[Annotation[?, M], ?], M] = _.metadata.metadata
 
-    def toProduct: Product.Of[self.type, A] = toProductWith(self.metadata.context.toProduct)
+  // extension [C <: metadata.Context.Schema[M], M, A](self: Plain.Schema[Annotation[C, M], A])
+  //   def toProductWith(f: HMap[M] => HMap[metadata.Product]): Product.Of[self.type, A] =
+  //     ???
+  // self.toProductN(metadata => Metadata(context.product, f(metadata.values)))
 
-    def apply[B](key: Key[B] & Singleton & M): B = self.metadata.values.apply(key)
-    def apply[B](key: Key[B] & Singleton & M, value: B): self.Self[Metadata[C, M], A] =
-      self.update(metadata => metadata.copy(values = metadata.values.put(key, value)))
-    @targetName("set")
-    def apply[B](key: Key[Option[B]] & Singleton & M, value: B): self.Self[Metadata[C, M], A] = apply(key, Some(value))
-    def clear[B](key: Key[Option[B]] & Singleton & M): self.Self[Metadata[C, M], A] = apply(key, None)
+  // def toProduct: Product.Of[self.type, A] = toProductWith(self.metadata.context.toProduct)
+
+  // def apply[B](key: Key[B] & Singleton & M): B = self.metadata.values.apply(key)
+  // def apply[B](key: Key[B] & Singleton & M, value: B): self.Self[Metadata[C, M], A] =
+  //   self.update(metadata => metadata.copy(values = metadata.values.put(key, value)))
+  // @targetName("set")
+  // def apply[B](key: Key[Option[B]] & Singleton & M, value: B): self.Self[Metadata[C, M], A] = apply(key, Some(value))
+  // def clear[B](key: Key[Option[B]] & Singleton & M): self.Self[Metadata[C, M], A] = apply(key, None)
 
 //   extension [A](self: Product[A])
 //     def zipWith[B](f: (HMap[context.Product], HMap[context.Product]) => HMap[context.Product])(

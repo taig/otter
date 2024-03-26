@@ -5,8 +5,7 @@ val Version = new {
   val Cats = "2.10.0"
   val CatsEffect = "3.5.3"
   val Circe = "0.14.6"
-  val EnumerationExt = "0.0.3"
-  val HMap = "0.0.1"
+  val EnumerationExt = "0.0.4"
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
@@ -86,7 +85,6 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
-        "io.taig" %%% "hmap" % Version.HMap ::
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::

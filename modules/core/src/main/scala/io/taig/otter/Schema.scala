@@ -2,10 +2,10 @@ package io.taig.otter
 
 import io.taig.otter.Primitive.Required.Update
 
-sealed abstract class Schema[M, A]:
+sealed abstract class Schema[+M, A]:
   type Of <: Schema[?, ?]
-  type Self[m, a] <: Schema.Of[Of, m, a]
-  type Optional[m, a] <: Schema.Of[Of, m, a]
+  type Self[+m, a] <: Schema.Of[Of, m, a]
+  type Optional[+m, a] <: Schema.Of[Of, m, a]
 
   def metadata: M
 
@@ -16,19 +16,19 @@ sealed abstract class Schema[M, A]:
   def toProductN[N](f: M => N): Product.Of[this.type, N, A] = Product.One(f(metadata), this)
 
 object Schema:
-  type Of[S <: Schema[?, ?], M, A] = Schema[M, A] { type Of <: S }
+  type Of[S <: Schema[?, ?], +M, A] = Schema[M, A] { type Of <: S }
 
-sealed abstract class Primitive[M, A] extends Schema[M, A]:
+sealed abstract class Primitive[+M, A] extends Schema[M, A]:
   self =>
   final override type Of = Primitive[?, ?]
-  override type Self[m, a] <: Primitive[m, a]
+  override type Self[+m, a] <: Primitive[m, a]
   final override type Optional[m, a] = Primitive[m, a]
   def tpe: Type[?]
   final override def optional: Primitive[M, Option[A]] = Primitive.Optional.Root(this)
 
 object Primitive:
-  sealed abstract class Required[M, A] extends Primitive[M, A]:
-    final override type Self[m, a] = Primitive.Required[m, a]
+  sealed abstract class Required[+M, A] extends Primitive[M, A]:
+    final override type Self[+m, a] = Primitive.Required[m, a]
     final override def update[N](f: M => N): Primitive.Required[N, A] = Primitive.Required.Update(this, f)
     final override def imap[B](f: A => B)(g: B => A): Primitive.Required[M, B] = Primitive.Required.Modify(this, f, g)
 
@@ -42,8 +42,8 @@ object Primitive:
       export primitive.tpe
       override def metadata: N = f(primitive.metadata)
 
-  sealed abstract class Optional[M, A] extends Primitive[M, A]:
-    final override type Self[m, a] = Primitive[m, a]
+  sealed abstract class Optional[+M, A] extends Primitive[M, A]:
+    final override type Self[+m, a] = Primitive[m, a]
     final override def update[N](f: M => N): Primitive.Optional[N, A] = Primitive.Optional.Update(this, f)
     final override def imap[B](f: A => B)(g: B => A): Primitive.Optional[M, B] =
       Primitive.Optional.Modify(this, f, g)
@@ -58,14 +58,14 @@ object Primitive:
       export primitive.tpe
       override def metadata: N = f(primitive.metadata)
 
-sealed abstract class Product[M, A] extends Schema[M, A]:
-  final override type Self[m, a] = Product.Of[Of, m, a]
-  final override type Optional[m, a] = Product.Of[Of, m, a]
+sealed abstract class Product[+M, A] extends Schema[M, A]:
+  final override type Self[+m, a] = Product.Of[Of, m, a]
+  final override type Optional[+m, a] = Product.Of[Of, m, a]
   final override def update[N](f: M => N): Product.Of[Of, N, A] = Product.Update(this, f)
   final override def imap[B](f: A => B)(g: B => A): Product.Of[Of, M, B] = Product.Modify(this, f, g)
   final override def optional: Product.Of[Of, M, Option[A]] = Product.Optional(this)
 
-  final def zipWithN[N, B](f: (M, M) => N)(product: Product[M, B]): Product.Of[Of | product.Of, N, (A, B)] =
+  final def zipWithN[M1 >: M, N, B](f: (M, M1) => N)(product: Product[M1, B]): Product.Of[Of | product.Of, N, (A, B)] =
     Product.Zip(f(metadata, product.metadata), this, product)
 
 object Product:

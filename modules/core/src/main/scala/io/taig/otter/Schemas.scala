@@ -2,7 +2,7 @@ package io.taig.otter
 
 import io.taig.otter as Plain
 
-trait Schemas[C <: Context] extends Types[C]:
+trait Schemas extends Types:
   final def primitive[A](tpe: Type[A]): Primitive.Required[A] =
     // Plain.Primitive.Required.Root(context.primitive.default, tpe)
     ???
