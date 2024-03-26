@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter as Plain
 
 trait Context:
-  type Asdf <: Context.Metadata
+  type Metadata <: Context.Metadata
   val metadata: Context.Metadata
 
 object Context:
