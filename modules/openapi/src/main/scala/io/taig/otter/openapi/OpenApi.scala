@@ -1,69 +1,41 @@
 package io.taig.otter.openapi
 
 import io.taig.otter as Plain
-import io.taig.otter.Context
 import io.taig.otter.Dsl
+import io.taig.otter.Type
 
 object OpenApi extends Dsl:
-  self =>
+  final case class Annotation[+S[a] <: Plain.Schema[a], +M[+_], A](self: S[A], metadata: M[Annotation[S, M, A]])
 
-  abstract class Field[S, A]:
-    def value: A
-    protected def update(f: A => A): S
+  override type Schema[A] = Annotation[Plain.Schema, Metadata.Schema, A]
 
-  object Field:
-    def apply[S, A](a: A)(f: A => S): Field[S, A] = new Field[S, A]:
-      override def value: A = a
-      override def update(g: A => A): S = f(g(a))
+  override val Schema = new Schemas:
+    override type Of[S <: Plain.Schema[?], A] = Annotation[Plain.Schema.Of[S, *], Metadata.Schema, A]
 
-  final class Metadata extends Context.Metadata:
-    sealed abstract class Schema(attributes: Schema.Attributes):
-      type Self <: Schema
+  override type Primitive[A] = Annotation[Plain.Primitive, Metadata.Primitive, A]
 
-      type Field[A] = self.Field[Self, A]
+  override object Primitive extends Primitives:
+    override type Required[A] = Annotation[Plain.Primitive.Required, Metadata.Primitive, A]
+    override type Optional[A] = Annotation[Plain.Primitive.Optional, Metadata.Primitive, A]
 
-      final def description: Field[Option[String]] = Field(attributes.description): description =>
-        copy(attributes.copy(description = description))
+  override type Product[A] = Annotation[Plain.Product, Metadata.Schema, A]
 
-      final def name: Field[Option[String]] = Field(attributes.name): name =>
-        copy(attributes.copy(name = name))
+  override val Product = new Products:
+    override type Of[S <: Plain.Schema[?], A] = Annotation[Plain.Product.Of[S, *], Metadata.Schema, A]
 
-      def copy(attributes: Schema.Attributes): Self
-
-    object Schema:
-      final case class Attributes(description: Option[String], name: Option[String])
-
-      val Default: Schema.Attributes = Attributes(description = None, name = None)
-
-    final case class Primitive(attributes: Primitive.Attributes) extends Schema(attributes.schema):
-      self =>
-      override type Self = Primitive
-      def format: self.Field[Option[String]] = Field(attributes.format): format =>
-        copy(attributes.copy(format = format))
-
-      override def copy(schema: Schema.Attributes): Primitive = copy(attributes = attributes.copy(schema = schema))
-
-    object Primitive:
-      final case class Attributes(schema: Schema.Attributes, format: Option[String])
-
-      val Default: Primitive.Attributes = Attributes(schema = Schema.Default, format = None)
-
-    final case class Product(attributes: Schema.Attributes) extends Schema(attributes):
-      final override type Self = Product
-
-    override val primitive: Primitive = Primitive(Primitive.Default)
-    override val product: Product = Product(Schema.Default)
-    override def toProduct(schema: Schema): Product = product
-
-  override val metadata: Metadata = new Metadata
-
-  // extension [S <: Plain.Schema[?], M <: metadata.Schema, A](self: Field[M, A]) def modify(f: A => A): S = ???
+  def primitive[A](tpe: Type[A], attributes: Metadata.Primitive.Attributes): Primitive.Required[A] = Annotation(
+    Plain.Primitive.Required.Root(tpe),
+    Metadata.Primitive[Primitive.Required[A]](attributes)(primitive(tpe, _))
+  )
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = primitive(tpe, Metadata.Primitive.Default)
 
 object Playground {
   import OpenApi.*
 
-  val x: Primitive[String] = string
+  val x: Primitive.Required[String] = string
   val y: Schema[String] = x
+
+  val z: Primitive.Required[String] = x.metadata.name(???)
 
   // x.metadata.name
 
