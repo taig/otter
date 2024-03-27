@@ -25,6 +25,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .withoutSuffixFor(JVMPlatform)
     .build()
     .settings(
+      Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
       name := "otter" + identifier.fold("")("-" + _)
     )
@@ -64,8 +65,8 @@ lazy val root = module(identifier = None, jvmOnly = true)
     // circe,
     openapi,
     // typescript,
-    openapiCirce
-    // http,
+    openapiCirce,
+    http
     // httpOpenapi,
     // httpCirce,
     // server,
@@ -119,13 +120,13 @@ lazy val openapiCirce = module(identifier = Some("openapi-circe"))
 // lazy val typescript = module(identifier = Some("typescript"))
 //   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val http = module(identifier = Some("http"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val http = module(identifier = Some("http"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val httpOpenapi = module(identifier = Some("http-openapi"))
 //   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")

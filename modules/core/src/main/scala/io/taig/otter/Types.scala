@@ -3,24 +3,13 @@ package io.taig.otter
 import io.taig.otter as Plain
 
 trait Types:
-  type Schema[A]
+  trait Metadata:
+    type Schema[+A]
+    type Primitive[+A] <: Schema[A]
 
-  trait Schemas:
-    type Of[S <: Plain.Schema[?], A] <: Schema[A]
+  val Metadata: Metadata
 
-  val Schema: Schemas
-
-  type Primitive[A] <: Schema[A]
-
-  trait Primitives:
-    type Required[A] <: Primitive[A]
-    type Optional[A] <: Primitive[A]
-
-  val Primitive: Primitives
-
-  type Product[A] <: Schema[A]
-
-  trait Products:
-    type Of[S <: Plain.Schema[?], A] <: Product[A]
-
-  val Product: Products
+  final type Schema[A] = Annotation[Plain.Schema[A], Metadata.Schema]
+  final type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive]
+  object Primitive:
+    type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive]

@@ -18,7 +18,7 @@ import io.taig.otter.Product.One
 import io.taig.otter.Product.Optional
 import io.taig.otter.Product.Zip
 
-object JsonCirceEncoder extends Encoder[Json]:
+object JsonEncoder extends Encoder[Json]:
   override def apply[A](schema: Primitive[A], value: A): Json = schema match
     case Primitive.Required.Root(tpe)               => apply(tpe, value)
     case Primitive.Required.Modify(primitive, _, g) => apply(primitive, g(value))

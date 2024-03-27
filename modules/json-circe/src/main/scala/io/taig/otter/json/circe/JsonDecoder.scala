@@ -9,7 +9,7 @@ import io.taig.otter.validation.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-object JsonCirceDecoder extends Decoder[Json]:
+object JsonDecoder extends Decoder[Json]:
   def apply[A](schema: Primitive[A], json: Json): Validated[Violations, A] = schema match
     case Primitive.Required.Root(tpe)               => apply(tpe, json).toValidated.leftMap(_ => ???)
     case Primitive.Required.Modify(primitive, f, _) => apply(primitive, json).map(f)
