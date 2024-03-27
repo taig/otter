@@ -12,13 +12,15 @@ object Field:
 
   def apply[S, A](a: A)(f: A => S): Field[S, A] = new Field[S, A]:
     override def value: A = a
-    override def modify(g: A => A): S = ???
+    override def modify(g: A => A): S = f(g(a))
 
 object Metadata:
   sealed abstract class Schema[+S](attributes: Schema.Attributes)(copy: Schema.Attributes => S):
-    final def description: Field[S, Option[String]] = ???
+    final def description: Field[S, Option[String]] =
+      Field(attributes.description)(description => copy(attributes.copy(description = description)))
 
-    final def name: Field[S, Option[String]] = ???
+    final def name: Field[S, Option[String]] =
+      Field(attributes.name)(name => copy(attributes.copy(name = name)))
 
   object Schema:
     final case class Attributes(description: Option[String], name: Option[String])
@@ -26,8 +28,8 @@ object Metadata:
     val Default: Metadata.Schema.Attributes = Attributes(description = None, name = None)
 
   final case class Primitive[+S](attributes: Primitive.Attributes)(copy: Primitive.Attributes => S)
-      extends Schema[S](attributes.schema)(a => ???):
-    def format: Field[S, Option[String]] = ???
+      extends Schema[S](attributes.schema)(schema => copy(attributes.copy(schema = schema))):
+    def format: Field[S, Option[String]] = Field(attributes.format)(format => copy(attributes.copy(format = format)))
 
   object Primitive:
     final case class Attributes(schema: Schema.Attributes, format: Option[String])
