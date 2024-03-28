@@ -6,6 +6,7 @@ trait Types:
   trait Metadata:
     type Schema[+A]
     type Primitive[+A] <: Schema[A]
+    type Product[+A] <: Schema[A]
 
   val Metadata: Metadata
 
