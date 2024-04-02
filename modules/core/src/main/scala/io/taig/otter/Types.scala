@@ -8,9 +8,9 @@ trait Types:
     type Primitive <: Schema
     type Product <: Schema
 
-  val Metadata: Metadata
+  val metadata: Metadata
 
-  final type Schema[A] = Annotation[Plain.Schema[A], Metadata.Schema]
-  final type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive]
+  final type Schema[A] = Annotation[Plain.Schema[A], metadata.Schema]
+  final type Primitive[A] = Annotation[Plain.Primitive[A], metadata.Primitive]
   object Primitive:
-    type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive]
+    type Required[A] = Annotation[Plain.Primitive.Required[A], metadata.Primitive]
