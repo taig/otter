@@ -4,9 +4,9 @@ import io.taig.otter as Plain
 
 trait Types:
   trait Metadata:
-    type Schema[+A]
-    type Primitive[+A] <: Schema[A]
-    type Product[+A] <: Schema[A]
+    type Schema
+    type Primitive <: Schema
+    type Product <: Schema
 
   val Metadata: Metadata
 
