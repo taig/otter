@@ -1,9 +1,9 @@
 package io.taig.otter
 
-sealed abstract class Schema[A, B]:
+sealed abstract class Schema[+A, B]:
   self =>
-  type Self[a, b] <: Schema[a, b]
-  type Optional[a, b] <: Schema[a, b]
+  type Self[+a, b] <: Schema[a, b]
+  type Optional[+a, b] <: Schema[a, b]
   type Of <: Schema[?, ?]
 
   def metadata: A
@@ -16,17 +16,17 @@ sealed abstract class Schema[A, B]:
 object Schema:
   type Of[S <: Schema[?, ?], A, B] = Schema[A, B] { type Of <: S }
 
-sealed abstract class Primitive[A, B] extends Schema[A, B]:
+sealed abstract class Primitive[+A, B] extends Schema[A, B]:
   self =>
-  override type Self[a, b] <: Primitive[a, b]
-  final override type Optional[a, b] = Primitive[a, b]
+  override type Self[+a, b] <: Primitive[a, b]
+  final override type Optional[+a, b] = Primitive[a, b]
   final override type Of = Primitive[?, ?]
   def tpe: Type[?]
   final override def optional: Primitive[A, Option[B]] = Primitive.Optional.Root(this)
 
 object Primitive:
-  sealed abstract class Required[A, B] extends Primitive[A, B]:
-    final override type Self[a, b] = Primitive.Required[a, b]
+  sealed abstract class Required[+A, B] extends Primitive[A, B]:
+    final override type Self[+a, b] = Primitive.Required[a, b]
     final override def imap[C](f: B => C)(g: C => B): Primitive.Required[A, C] = Primitive.Required.Modify(this, f, g)
 
   object Required:
@@ -51,9 +51,9 @@ object Primitive:
       export primitive.{metadata, tpe}
       override def update[D](f: A => D): Primitive[D, C] = copy(primitive = primitive.update(f))
 
-abstract class Product[A, B] extends Schema[A, B]:
-  final override type Self[a, b] = Product[a, b]
-  final override type Optional[a, b] = Product[a, b]
+abstract class Product[+A, B] extends Schema[A, B]:
+  final override type Self[+a, b] = Product[a, b]
+  final override type Optional[+a, b] = Product[a, b]
   final override def imap[C](f: B => C)(g: C => B): Product[A, C] = Product.Modify(this, f, g)
   final override def optional: Product[A, Option[B]] = Product.Optional(this)
   final def zipWith[C, D](metadata: C)(product: Product[?, D]): Product[C, (B, D)] =
