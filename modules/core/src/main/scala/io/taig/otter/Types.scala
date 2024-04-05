@@ -5,11 +5,9 @@ import io.taig.otter as Plain
 trait Types:
   type Schema[A]
 
-  type Value[A] <: Schema[A]
-
-  type Primitive[A] <: Value[A]
+  type Primitive[A] <: Schema[A]
   trait Primitives:
-    type Required[A] <: Primitive[A]
+    type Required[A]
   val Primitive: Primitives
 
   type Product[A] <: Schema[A]

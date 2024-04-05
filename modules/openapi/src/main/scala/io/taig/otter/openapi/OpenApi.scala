@@ -8,13 +8,13 @@ import cats.Id as Identity
 object OpenApi extends Dsl:
   self =>
 
-  override type Schema[A] = Annotation[Plain.Schema[A], Metadata[Identity]]
-
-  override type Value[A] = Annotation[Plain.Value[A], Metadata[Identity]]
-
-  override type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive[Identity]]
-
+  override type Schema[A] = Plain.Schema[Metadata[Identity], A]
+  override type Primitive[A] = Plain.Primitive[Metadata.Primitive[Identity], A]
   override object Primitive extends Primitives:
-    override type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive[Identity]]
-  override type Product[A] = Annotation[Plain.Product[A], Metadata.Product[Identity]]
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = ???
+    override type Required[A] = Plain.Primitive.Required[Metadata.Primitive[Identity], A]
+  override type Product[A] = Plain.Product[Metadata.Product[Identity], A]
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    Plain.Primitive.Required.Root(Metadata.Primitive.Default, tpe)
+
+  given [A]: Conversion[Primitive[A], Metadata.Primitive[Metadata.Field[Primitive[A], *]]] =
+    self => self.metadata.toFields(f => self.update(_ => f))

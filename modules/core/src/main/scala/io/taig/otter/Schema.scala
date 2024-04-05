@@ -14,14 +14,7 @@ sealed abstract class Schema[A]:
 object Schema:
   type Of[S <: Schema[?], A] = Schema[A] { type Of <: S }
 
-sealed abstract class Value[A] extends Schema[A]:
-  override type Self[a] <: Value[a]
-  override type Optional[a] <: Value[a]
-
-object Value:
-  type Of[S <: Schema[?], A] = Value[A] { type Of <: S }
-
-sealed abstract class Primitive[A] extends Value[A]:
+sealed abstract class Primitive[A] extends Schema[A]:
   self =>
   override type Self[a] <: Primitive[a]
   final override type Optional[a] = Primitive[a]
