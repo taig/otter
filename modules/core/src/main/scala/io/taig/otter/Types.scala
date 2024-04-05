@@ -3,13 +3,9 @@ package io.taig.otter
 import io.taig.otter as Plain
 
 trait Types:
-  trait Metadatas:
-    type Schema
-    type Value <: Schema
-  val metadata: Metadatas
+  type Schema[A]
 
-  final type Schema[A] = Annotation[Plain.Schema[A], metadata.Schema]
-  final type Value[A] = Annotation[Plain.Value[A], metadata.Value]
+  type Value[A] <: Schema[A]
 
   type Primitive[A] <: Value[A]
   trait Primitives:
