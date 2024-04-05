@@ -17,4 +17,9 @@ object OpenApi extends Dsl:
   override object Primitive extends Primitives:
     override type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive[Identity]]
   override type Product[A] = Annotation[Plain.Product[A], Metadata.Product[Identity]]
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = ???
+
+  extension [S[a] <: Schema[a], A](self: S[A])
+    override def imap[B](f: A => B)(g: B => A): self.Self[B] = self.copy(self = self.self.imap(f)(g))
+
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    Annotation(Plain.Primitive.Required.Root(tpe), Metadata.Primitive.Default)
