@@ -98,6 +98,9 @@ lazy val core = module(identifier = Some("core"))
       .cross(CrossVersion.for3Use2_13)
   )
 
+lazy val dsl = module(identifier = Some("dsl"))
+  .dependsOn(core % "compile->compile;test->test")
+
 lazy val jsonCirce = module(identifier = Some("json-circe"))
   .settings(
     libraryDependencies ++=
@@ -107,7 +110,7 @@ lazy val jsonCirce = module(identifier = Some("json-circe"))
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val openapi = module(identifier = Some("openapi"))
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(dsl % "compile->compile;test->test")
 
 lazy val openapiCirce = module(identifier = Some("openapi-circe"))
   .settings(

@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.dsl
 
 import io.taig.otter as Plain
 

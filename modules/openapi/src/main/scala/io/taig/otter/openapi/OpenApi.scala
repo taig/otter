@@ -18,3 +18,9 @@ object OpenApi extends Dsl:
 
   given [A]: Conversion[Primitive[A], Metadata.Primitive[Metadata.Field[Primitive[A], *]]] =
     self => self.metadata.toFields(f => self.update(_ => f))
+
+object Playground:
+  import OpenApi.*
+  import OpenApi.given
+
+  string.name

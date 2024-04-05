@@ -1,6 +1,4 @@
-package io.taig.otter
-
-import io.taig.otter as Plain
+package io.taig.otter.dsl
 
 trait Types:
   type Schema[A]
