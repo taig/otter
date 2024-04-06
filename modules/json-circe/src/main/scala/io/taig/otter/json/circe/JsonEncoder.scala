@@ -3,7 +3,7 @@ package io.taig.otter.json.circe
 import io.taig.otter.Encoder
 import io.circe.Json
 import io.taig.otter.Primitive
-import io.taig.otter.Product
+import io.taig.otter.Tuple
 import io.taig.otter.Type
 import io.circe.syntax.*
 import java.math.BigDecimal as JBigDecimal
@@ -12,11 +12,11 @@ import io.taig.otter.Primitive.Required.Root
 import io.taig.otter.Primitive.Required.Modify
 import io.taig.otter.Primitive.Optional.Modify
 import io.taig.otter.Primitive.Optional.Root
-import io.taig.otter.Product.Empty
-import io.taig.otter.Product.Modify
-import io.taig.otter.Product.One
-import io.taig.otter.Product.Optional
-import io.taig.otter.Product.Zip
+import io.taig.otter.Tuple.Empty
+import io.taig.otter.Tuple.Modify
+import io.taig.otter.Tuple.One
+import io.taig.otter.Tuple.Optional
+import io.taig.otter.Tuple.Product
 
 object JsonEncoder extends Encoder[Json]:
   override def apply[A](schema: Primitive[A], value: A): Json = schema match
@@ -35,9 +35,9 @@ object JsonEncoder extends Encoder[Json]:
     case Type.Long       => (value: Long).asJson
     case Type.String     => (value: String).asJson
 
-  override def apply[A](schema: Product[A], value: A): Json = schema match
-    case Product.Empty                 => Json.fromValues(Iterable.empty)
-    case Product.Modify(product, _, g) => apply(product, g(value))
-    case Product.One(schema)           => Json.arr(apply(schema, value))
-    case Product.Optional(product)     => ???
-    case Product.Zip(left, right)      => ???
+  override def apply[A](schema: Tuple[A], value: A): Json = schema match
+    case Tuple.Empty                 => Json.fromValues(Iterable.empty)
+    case Tuple.Modify(product, _, g) => apply(product, g(value))
+    case Tuple.One(schema)           => Json.arr(apply(schema, value))
+    case Tuple.Optional(product)     => ???
+    case Tuple.Product(left, right)  => ???

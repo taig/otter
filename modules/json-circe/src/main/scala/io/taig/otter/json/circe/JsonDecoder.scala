@@ -26,4 +26,4 @@ object JsonDecoder extends Decoder[Json]:
     case Type.Long       => json.as[Long]
     case Type.String     => json.as[String]
 
-  def apply[A](schema: Product[A], json: Json): Validated[Violations, A] = ???
+  def apply[A](schema: Tuple[A], json: Json): Validated[Violations, A] = ???

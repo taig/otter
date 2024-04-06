@@ -1,8 +1,7 @@
-package io.taig.otter.dsl
+package io.taig.otter
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Type
 
 trait Schemas extends Syntax:
   def primitive[A](tpe: Type[A]): Primitive.Required[A]
