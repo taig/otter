@@ -19,22 +19,19 @@ object dsl extends Dsl:
   override object Primitive extends Primitives:
     override type Required[A] = OpenApi.Primitive.Required[A]
 
-  override def primitive[A](tpe: Plain.Type[A]): Primitive.Required[A] = ???
+  override def primitive[A](tpe: Plain.Type[A]): Primitive.Required[A] =
+    OpenApi.Primitive.Required(Metadata.Primitive.Default, Plain.Primitive.Required.Root(tpe))
 
-  // override type Schema[A] = Annotation[Plain.Schema[A], Metadata[Identity]]
-  // override type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive[Identity]]
-  // override object Primitive extends Primitives:
-  //   override type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive[Identity]]
-  // override type Product[A] = Annotation[Plain.Tuple[A], Metadata.Product[Identity]]
-  // override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
-  //   Annotation(Plain.Primitive.Required.Root(tpe), Metadata.Primitive.Default)
-
-  // extension [A, M](self: Annotation[Plain.Schema[A], M])
-  //   def imap[B](f: A => B)(g: B => A): Annotation[Plain.Schema[B], M] = self.copy(self = self.self.imap(f)(g))
-
-  // given [A]: Conversion[Primitive[A], Metadata.Primitive[Attribute[Primitive[A], *]]] =
-  //   self => ???
+  given [
+      S <: Schema[A] { type M[f[_]] = Mx[f] },
+      Mx[f[_]] <: Metadata[f] { type Self[f[_]] = Fx[f] },
+      Fx[f[_]] <: Metadata[f],
+      A
+  ]: Conversion[S, Fx[Attribute[S, *]]] =
+    _.metadata.toAttributes(???)
 
 object Playground:
   import dsl.*
   import dsl.given
+
+  val x: Primitive.Required[String] = string.name.clear

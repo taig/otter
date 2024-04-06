@@ -7,7 +7,8 @@ sealed abstract class Metadata[F[_]]:
   type Self[f[_]] <: Metadata[f]
   def name: F[Option[String]]
   def description: F[Option[String]]
-  def toAttributes[S](f: Self[Identity] => S): Self[Attribute[S, *]]
+
+  extension (self: Self[Identity]) def toAttributes[S](f: Self[Identity] => S): Self[Attribute[S, *]]
 
 object Metadata:
   final case class Primitive[F[_]](
@@ -17,12 +18,13 @@ object Metadata:
   ) extends Metadata[F]:
     override type Self[f[_]] = Metadata.Primitive[f]
 
-    override def toAttributes[S](f: Metadata.Primitive[Identity] => S): Metadata.Primitive[Attribute[S, *]] =
-      Primitive[Attribute[S, *]](
-        description = ???,
-        format = ???,
-        name = ???
-      )
+    extension (self: Metadata.Primitive[Identity])
+      override def toAttributes[S](f: Metadata.Primitive[Identity] => S): Metadata.Primitive[Attribute[S, *]] =
+        Primitive(
+          description = Attribute(self.description)(???),
+          format = Attribute(self.format)(???),
+          name = ???
+        )
 
   object Primitive:
     extension (self: Metadata.Primitive[Identity])
@@ -39,4 +41,9 @@ object Metadata:
       name: F[Option[String]]
   ) extends Metadata[F]:
     override type Self[f[_]] = Metadata.Tuple[f]
-    override def toAttributes[S](f: Self[Identity] => S): Self[Attribute[S, *]] = ???
+
+    extension (self: Metadata.Tuple[Identity])
+      override def toAttributes[S](f: Metadata.Tuple[Identity] => S): Metadata.Tuple[Attribute[S, *]] = Tuple(
+        description = Attribute(self.description)(???),
+        name = ???
+      )
