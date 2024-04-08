@@ -19,8 +19,8 @@ import io.taig.otter.Tuple.Optional
 import io.taig.otter.Tuple.Product
 
 object JsonEncoder extends Encoder[Json]:
-  override def apply[A](schema: Primitive[A], value: A): Json = schema match
-    case Primitive.Required.Root(tpe)               => apply(tpe, value)
+  override def apply[A](schema: Primitive[?, A], value: A): Json = schema match
+    case Primitive.Required.Root(_, tpe)            => apply(tpe, value)
     case Primitive.Required.Modify(primitive, _, g) => apply(primitive, g(value))
     case Primitive.Optional.Root(primitive)         => value.map(apply(primitive, _)).getOrElse(Json.Null)
     case Primitive.Optional.Modify(primitive, _, g) => apply(primitive, g(value))
@@ -35,9 +35,9 @@ object JsonEncoder extends Encoder[Json]:
     case Type.Long       => (value: Long).asJson
     case Type.String     => (value: String).asJson
 
-  override def apply[A](schema: Tuple[A], value: A): Json = schema match
-    case Tuple.Empty                 => Json.fromValues(Iterable.empty)
-    case Tuple.Modify(product, _, g) => apply(product, g(value))
-    case Tuple.One(schema)           => Json.arr(apply(schema, value))
-    case Tuple.Optional(product)     => ???
-    case Tuple.Product(left, right)  => ???
+  override def apply[A](schema: Tuple[?, A], value: A): Json = schema match
+    case Tuple.Empty(_)                => Json.fromValues(Iterable.empty)
+    case Tuple.Modify(product, _, g)   => apply(product, g(value))
+    case Tuple.One(_, schema)          => Json.arr(apply(schema, value))
+    case Tuple.Optional(product)       => ???
+    case Tuple.Product(_, left, right) => ???

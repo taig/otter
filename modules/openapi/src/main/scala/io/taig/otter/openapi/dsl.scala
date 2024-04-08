@@ -2,7 +2,6 @@ package io.taig.otter.openapi
 
 import io.taig.otter as Plain
 import io.taig.otter.Dsl
-import io.taig.otter.Type
 import cats.Id as Identity
 import io.taig.otter.Attribute
 import io.taig.otter.openapi as OpenApi
@@ -17,6 +16,7 @@ object dsl extends Dsl:
     override type Primitive = OpenApi.Metadata.Primitive[Identity]
     override val primitive: Metadata.Primitive = OpenApi.Metadata.Primitive.Default
     override type Tuple = OpenApi.Metadata.Tuple[Identity]
+    override val tuple: Metadata.Tuple = OpenApi.Metadata.Tuple.Default
 
   given [
       S <: Plain.Schema[M[Identity], A] { type Self[+m, a] = T[m, a] },

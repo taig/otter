@@ -10,8 +10,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 object JsonDecoder extends Decoder[Json]:
-  def apply[A](schema: Primitive[A], json: Json): Validated[Violations, A] = schema match
-    case Primitive.Required.Root(tpe)               => apply(tpe, json).toValidated.leftMap(_ => ???)
+  def apply[A](schema: Primitive[?, A], json: Json): Validated[Violations, A] = schema match
+    case Primitive.Required.Root(_, tpe)            => apply(tpe, json).toValidated.leftMap(_ => ???)
     case Primitive.Required.Modify(primitive, f, _) => apply(primitive, json).map(f)
     case Primitive.Optional.Modify(primitive, f, _) => apply(primitive, json).map(f)
     case Primitive.Optional.Root(primitive)         => apply(primitive, json).map(_.some)
@@ -26,4 +26,4 @@ object JsonDecoder extends Decoder[Json]:
     case Type.Long       => json.as[Long]
     case Type.String     => json.as[String]
 
-  def apply[A](schema: Tuple[A], json: Json): Validated[Violations, A] = ???
+  def apply[A](schema: Tuple[?, A], json: Json): Validated[Violations, A] = ???

@@ -9,3 +9,4 @@ trait Metadatas:
   val primitive: Primitive
 
   type Tuple <: Schema
+  val tuple: Tuple
