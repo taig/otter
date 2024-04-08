@@ -8,15 +8,6 @@ import io.taig.otter.Type
 import io.circe.syntax.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Primitive.Required.Root
-import io.taig.otter.Primitive.Required.Modify
-import io.taig.otter.Primitive.Optional.Modify
-import io.taig.otter.Primitive.Optional.Root
-import io.taig.otter.Tuple.Empty
-import io.taig.otter.Tuple.Modify
-import io.taig.otter.Tuple.One
-import io.taig.otter.Tuple.Optional
-import io.taig.otter.Tuple.Product
 
 object JsonEncoder extends Encoder[Json]:
   override def apply[A](schema: Primitive[?, A], value: A): Json = schema match
@@ -35,9 +26,5 @@ object JsonEncoder extends Encoder[Json]:
     case Type.Long       => (value: Long).asJson
     case Type.String     => (value: String).asJson
 
-  override def apply[A](schema: Tuple[?, A], value: A): Json = schema match
-    case Tuple.Empty(_)                => Json.fromValues(Iterable.empty)
-    case Tuple.Modify(product, _, g)   => apply(product, g(value))
-    case Tuple.One(_, schema)          => Json.arr(apply(schema, value))
-    case Tuple.Optional(product)       => ???
-    case Tuple.Product(_, left, right) => ???
+  override def apply[A](schema: Tuple[?, A], value: A): Json =
+    JsonTupleEncoder(schema, value).map(values => Json.fromValues(values.toVector)).getOrElse(Json.Null)

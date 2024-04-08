@@ -8,6 +8,7 @@ import cats.data.Validated
 import io.taig.otter.validation.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import cats.data.Chain
 
 object JsonDecoder extends Decoder[Json]:
   def apply[A](schema: Primitive[?, A], json: Json): Validated[Violations, A] = schema match
@@ -26,4 +27,9 @@ object JsonDecoder extends Decoder[Json]:
     case Type.Long       => json.as[Long]
     case Type.String     => json.as[String]
 
-  def apply[A](schema: Tuple[?, A], json: Json): Validated[Violations, A] = ???
+  def apply[A](schema: Tuple[?, A], json: Json): Validated[Violations, A] =
+    if json.isNull then JsonTupleDecoder(schema, none)
+    else
+      json.asArray match
+        case Some(values) => JsonTupleDecoder(schema, Chain.fromSeq(values).some)
+        case None         => ??? // error

@@ -59,6 +59,7 @@ object Primitive:
 abstract class Tuple[+M, A] extends Schema[M, A]:
   final override type Self[+m, a] = Tuple[m, a]
   final override type Optional[+m, a] = Tuple[m, a]
+  def size: Int
   final override def imap[B](f: A => B)(g: B => A): Tuple[M, B] = Tuple.Modify(this, f, g)
   final override def optional: Tuple[M, Option[A]] = Tuple.Optional(this)
   final def productWith[N, O, B](f: (M, N) => O)(tuple: Tuple[N, B]): Tuple[O, (A, B)] =
@@ -69,20 +70,23 @@ object Tuple:
 
   final case class Empty[M](metadata: M) extends Tuple[M, Unit]:
     override type Of = Nothing
+    override def size: Int = 0
     override def update[N](f: M => N): Tuple[N, Unit] = copy(metadata = f(metadata))
 
   final case class Modify[M, A, B](schema: Tuple[M, A], f: A => B, g: B => A) extends Tuple[M, B]:
-    export schema.{metadata, Of}
+    export schema.{metadata, size, Of}
     override def update[N](f: M => N): Tuple[N, B] = copy(schema = schema.update(f))
 
   final case class One[S <: Schema[?, A], M, A](metadata: M, schema: S) extends Tuple[M, A]:
     override type Of = S
+    override def size: Int = 1
     override def update[N](f: M => N): Tuple[N, A] = copy(metadata = f(metadata))
 
   final case class Optional[M, A](schema: Tuple[M, A]) extends Tuple[M, Option[A]]:
-    export schema.{metadata, Of}
+    export schema.{metadata, size, Of}
     override def update[N](f: M => N): Tuple[N, Option[A]] = copy(schema = schema.update(f))
 
   final case class Product[M, A, B](metadata: M, left: Tuple[?, A], right: Tuple[?, B]) extends Tuple[M, (A, B)]:
     override type Of = left.Of | right.Of
+    override def size: Int = left.size + right.size
     override def update[N](f: M => N): Tuple[N, (A, B)] = copy(metadata = f(metadata))
