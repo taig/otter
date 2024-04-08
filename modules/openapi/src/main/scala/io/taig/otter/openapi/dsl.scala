@@ -22,11 +22,11 @@ object dsl extends Dsl:
       S <: Plain.Schema[M[Identity], A] { type Self[+m, a] = T[m, a] },
       T[+m, a] <: Plain.Schema[m, a],
       M[f[_]] <: OpenApi.Metadata[f] { type Self[f[_]] = N[f] },
-      N[f[_]] <: OpenApi.Metadata[f],
+      N[f[_]] <: OpenApi.Metadata[f] { type Self[f[_]] = O[f] },
+      O[f[_]] <: OpenApi.Metadata[f],
       A
-  ]: Conversion[S, Any] = s =>
-    // val x = s.metadata.toAttributes(s.metadata)[T[M[Identity], A]](???)
-    ???
+  ]: Conversion[S, O[Attribute[T[O[Identity], A], *]]] = self =>
+    self.metadata.asSelf.toAttributes(m => self.update(_ => m))
 
 object Playground:
   import dsl.*
@@ -36,4 +36,4 @@ object Playground:
   val y: Primitive[Int] = x.imap(_.length)(_.toString)
   val z: Schema[String] = y.imap(_.toString)(_.length)
 
-  val a: Primitive.Required[String] = ??? // x.name.apply(None)
+  val a: Primitive.Required[String] = x.name.clear

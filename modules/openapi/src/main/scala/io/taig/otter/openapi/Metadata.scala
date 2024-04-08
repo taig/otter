@@ -8,7 +8,8 @@ sealed abstract class Metadata[F[_]]:
   def name: F[Option[String]]
   def description: F[Option[String]]
 
-  def toAttributes[S](f: Self[Identity] => S)(using this.type =:= Self[Identity]): Self[Attribute[S, *]]
+  def asSelf: Self[F]
+  def toAttributes[S](f: Self[Identity] => S)(using Self[F] =:= Self[Identity]): Self[Attribute[S, *]]
   // extension (self: Self[Identity]) def toAttributes[S](f: Self[Identity] => S): Self[Attribute[S, *]]
 
 object Metadata:
@@ -22,9 +23,11 @@ object Metadata:
   ) extends Metadata.Value[F]:
     override type Self[f[_]] = Metadata.Primitive[f]
 
+    override def asSelf: Metadata.Primitive[F] = this
+
     override def toAttributes[S](
         f: Primitive[Identity] => S
-    )(using ev: this.type =:= Metadata.Primitive[Identity]): Metadata.Primitive[Attribute[S, *]] = Primitive(
+    )(using ev: Self[F] =:= Metadata.Primitive[Identity]): Metadata.Primitive[Attribute[S, *]] = Primitive(
       description =
         Attribute(ev.apply(this).description)(g => f(ev.apply(this).copy(description = g(ev.apply(this).description)))),
       format = ???,
@@ -48,8 +51,10 @@ object Metadata:
   ) extends Metadata[F]:
     override type Self[f[_]] = Metadata.Tuple[f]
 
+    override def asSelf: Metadata.Tuple[F] = this
+
     override def toAttributes[S](f: Metadata.Tuple[Identity] => S)(using
-        this.type =:= Metadata.Tuple[Identity]
+        Self[F] =:= Metadata.Tuple[Identity]
     ): Metadata.Tuple[Attribute[S, *]] = ???
 
     // extension (self: Metadata.Tuple[Identity])
