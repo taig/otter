@@ -1,14 +1,16 @@
 package io.taig.otter
 
+import io.taig.otter as Plain
+
 trait Types:
-  type Schema[A]
-  type Value[A] <: Schema[A]
+  val Metadata: Metadatas
 
-  type Primitive[A] <: Value[A]
+  final type Schema[A] = Plain.Schema[Metadata.Schema, A]
+  final type Value[A] = Plain.Value[Metadata.Value, A]
 
-  trait Primitives:
-    type Required[A] <: Primitive[A]
+  final type Primitive[A] = Plain.Primitive[Metadata.Primitive, A]
 
-  val Primitive: Primitives
+  object Primitive:
+    final type Required[A] = Plain.Primitive.Required[Metadata.Primitive, A]
 
-  type Tuple[A] <: Schema[A]
+  type Tuple[A] = Plain.Tuple[Metadata.Tuple, A]

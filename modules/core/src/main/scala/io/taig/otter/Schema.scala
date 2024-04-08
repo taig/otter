@@ -1,81 +1,88 @@
 package io.taig.otter
 
-sealed abstract class Schema[A] extends Schema.Ops[Schema, Schema, A]:
-  type Of <: Schema[?]
+sealed abstract class Schema[+M, A]:
+  type Self[+m, a] <: Schema[m, a]
+  type Optional[+m, a] <: Schema[m, a]
+  type Of <: Schema[?, ?]
+
+  def metadata: M
+  def update[N](f: M => N): Self[N, A]
+  def imap[B](f: A => B)(g: B => A): Self[M, B]
+  final def const(value: A): Self[M, Unit] = imap(_ => ())(_ => value)
+  def optional: Optional[M, Option[A]]
 
 object Schema:
-  type Of[S <: Schema[?], A] = Schema[A] { type Of <: S }
+  type Of[S <: Schema[?, ?], M, A] = Schema[M, A] { type Of <: S }
 
-  trait Ops[+S[a], +O[a], A]:
-    def imap[B](f: A => B)(g: B => A): S[B]
-    final def const(value: A): S[Unit] = imap(_ => ())(_ => value)
-    def optional: O[Option[A]]
-
-sealed abstract class Value[A] extends Schema[A] with Value.Ops[Value, Value, A]
+sealed abstract class Value[+M, A] extends Schema[M, A]:
+  override type Self[+m, a] <: Value[m, a]
+  override type Optional[+m, a] <: Value[m, a]
 
 object Value:
-  type Of[S <: Schema[?], A] = Value[A] { type Of <: S }
+  type Of[S <: Schema[?, ?], M, A] = Value[M, A] { type Of <: S }
 
-  trait Ops[+S[a], +O[a], A] extends Schema.Ops[S, O, A]
-
-sealed abstract class Primitive[A] extends Value[A] with Primitive.Ops[Primitive, Primitive, A]:
+sealed abstract class Primitive[+M, A] extends Value[M, A]:
   self =>
-  final override type Of = Primitive[?]
+  override type Self[+m, a] <: Primitive[m, a]
+  final override type Optional[+m, a] = Primitive[m, a]
+  final override type Of = Primitive[?, ?]
   def tpe: Type[?]
-  final override def optional: Primitive[Option[A]] = Primitive.Optional.Root(this)
+  final override def optional: Primitive[M, Option[A]] = Primitive.Optional.Root(this)
 
 object Primitive:
-  trait Ops[+S[a], +O[a], A] extends Value.Ops[S, O, A]
-
-  sealed abstract class Required[A] extends Primitive[A] with Primitive.Ops[Primitive.Required, Primitive, A]:
-    final override def imap[B](f: A => B)(g: B => A): Primitive.Required[B] = Primitive.Required.Modify(this, f, g)
+  sealed abstract class Required[+M, A] extends Primitive[M, A]:
+    override type Self[+m, a] = Primitive.Required[m, a]
+    final override def imap[B](f: A => B)(g: B => A): Primitive.Required[M, B] = Primitive.Required.Modify(this, f, g)
 
   object Required:
-    final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
+    final case class Root[M, A](metadata: M, tpe: Type[A]) extends Primitive.Required[M, A]:
+      override def update[N](f: M => N): Required[N, A] = copy(metadata = f(metadata))
 
-    final case class Modify[A, B](primitive: Primitive.Required[A], f: A => B, g: B => A) extends Primitive.Required[B]:
-      export primitive.tpe
+    final case class Modify[M, A, B](primitive: Primitive.Required[M, A], f: A => B, g: B => A)
+        extends Primitive.Required[M, B]:
+      export primitive.{metadata, tpe}
+      override def update[N](f: M => N): Primitive.Required[N, B] = copy(primitive = primitive.update(f))
 
-  sealed abstract class Optional[A] extends Primitive[A]:
-    final override def imap[B](f: A => B)(g: B => A): Primitive[B] = Primitive.Optional.Modify(this, f, g)
+  sealed abstract class Optional[M, A] extends Primitive[M, A]:
+    final override type Self[+m, a] = Primitive[m, a]
+    final override def imap[B](f: A => B)(g: B => A): Primitive[M, B] = Primitive.Optional.Modify(this, f, g)
 
   object Optional:
-    final case class Root[A](primitive: Primitive[A]) extends Primitive.Optional[Option[A]]:
-      export primitive.tpe
+    final case class Root[M, A](schema: Primitive[M, A]) extends Primitive.Optional[M, Option[A]]:
+      export schema.{metadata, tpe}
+      override def update[N](f: M => N): Primitive[N, Option[A]] = copy(schema = schema.update(f))
 
-    final case class Modify[A, B](primitive: Primitive[A], f: A => B, g: B => A) extends Primitive.Optional[B]:
-      export primitive.tpe
+    final case class Modify[M, A, B](schema: Primitive[M, A], f: A => B, g: B => A) extends Primitive.Optional[M, B]:
+      export schema.{metadata, tpe}
+      override def update[N](f: M => N): Primitive[N, B] = copy(schema = schema.update(f))
 
-abstract class Tuple[A] extends Schema[A] with Tuple.Ops[Tuple, Tuple, A]:
-  final override def imap[B](f: A => B)(g: B => A): Tuple[B] = ???
-  final override def optional: Tuple[Option[A]] = ???
-  final override def product[B](tuple: Tuple[B]): Tuple[(A, B)] = ???
+abstract class Tuple[+M, A] extends Schema[M, A]:
+  final override type Self[+m, a] = Tuple[m, a]
+  final override type Optional[+m, a] = Tuple[m, a]
+  final override def imap[B](f: A => B)(g: B => A): Tuple[M, B] = Tuple.Modify(this, f, g)
+  final override def optional: Tuple[M, Option[A]] = Tuple.Optional(this)
+  final def productWith[N, O, B](f: (M, N) => O)(tuple: Tuple[N, B]): Tuple[O, (A, B)] =
+    Tuple.Product(f(metadata, tuple.metadata), this, tuple)
 
 object Tuple:
-  type Of[S <: Schema[?], A] = Tuple[A] { type Of <: S }
+  type Of[S <: Schema[?, ?], +M, A] = Tuple[M, A] { type Of <: S }
 
-  trait Ops[S[a], +O[a], A] extends Schema.Ops[S, O, A]:
-    def product[B](tuple: S[B]): S[(A, B)]
-
-  case object Empty extends Tuple[Unit]:
+  final case class Empty[M](metadata: M) extends Tuple[M, Unit]:
     override type Of = Nothing
+    override def update[N](f: M => N): Tuple[N, Unit] = copy(metadata = f(metadata))
 
-//   case class Empty[M](metadata: M) extends Tuple[M, Unit]:
-//     override type Of = Nothing
-//     override def update[N](f: M => N): Tuple[N, Unit] = copy(metadata = f(metadata))
+  final case class Modify[M, A, B](schema: Tuple[M, A], f: A => B, g: B => A) extends Tuple[M, B]:
+    export schema.{metadata, Of}
+    override def update[N](f: M => N): Tuple[N, B] = copy(schema = schema.update(f))
 
-//   final case class Modify[M, A, B](product: Tuple[M, A], f: A => B, g: B => A) extends Tuple[M, B]:
-//     export product.{metadata, Of}
-//     override def update[N](f: M => N): Tuple[N, B] = copy(product = product.update(f))
+  final case class One[S <: Schema[?, A], M, A](metadata: M, schema: S) extends Tuple[M, A]:
+    override type Of = S
+    override def update[N](f: M => N): Tuple[N, A] = copy(metadata = f(metadata))
 
-//   final case class One[S <: Schema[?, A], M, A](metadata: M, schema: S) extends Tuple[M, A]:
-//     override type Of = S
-//     override def update[N](f: M => N): Tuple[N, A] = copy(metadata = f(metadata))
+  final case class Optional[M, A](schema: Tuple[M, A]) extends Tuple[M, Option[A]]:
+    export schema.{metadata, Of}
+    override def update[N](f: M => N): Tuple[N, Option[A]] = copy(schema = schema.update(f))
 
-//   final case class Optional[M, A](product: Tuple[M, A]) extends Tuple[M, Option[A]]:
-//     export product.{metadata, Of}
-//     override def update[N](f: M => N): Tuple[N, Option[A]] = copy(product = product.update(f))
-
-//   final case class Product[M, A, B](metadata: M, left: Tuple[?, A], right: Tuple[?, B]) extends Tuple[M, (A, B)]:
-//     override type Of = left.Of | right.Of
-//     override def update[N](f: M => N): Tuple[N, (A, B)] = copy(metadata = f(metadata))
+  final case class Product[M, A, B](metadata: M, left: Tuple[?, A], right: Tuple[?, B]) extends Tuple[M, (A, B)]:
+    override type Of = left.Of | right.Of
+    override def update[N](f: M => N): Tuple[N, (A, B)] = copy(metadata = f(metadata))

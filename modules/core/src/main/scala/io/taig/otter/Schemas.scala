@@ -1,10 +1,11 @@
 package io.taig.otter
 
+import io.taig.otter as Plain
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 trait Schemas extends Syntax:
-  def primitive[A](tpe: Type[A]): Primitive.Required[A]
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Plain.Primitive.Required.Root(Metadata.primitive, tpe)
   final val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
   final val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
   final val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)

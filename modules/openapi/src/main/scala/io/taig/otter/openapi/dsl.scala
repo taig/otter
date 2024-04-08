@@ -6,32 +6,34 @@ import io.taig.otter.Type
 import cats.Id as Identity
 import io.taig.otter.Attribute
 import io.taig.otter.openapi as OpenApi
+import io.taig.otter.Metadatas
 
 object dsl extends Dsl:
   self =>
 
-  override type Schema[A] = OpenApi.Schema[A]
-
-  override type Value[A] = OpenApi.Value[A]
-
-  override type Primitive[A] = OpenApi.Primitive[A]
-
-  override object Primitive extends Primitives:
-    override type Required[A] = OpenApi.Primitive.Required[A]
-
-  override def primitive[A](tpe: Plain.Type[A]): Primitive.Required[A] =
-    OpenApi.Primitive.Required(Metadata.Primitive.Default, Plain.Primitive.Required.Root(tpe))
+  override object Metadata extends Metadatas:
+    override type Schema = OpenApi.Metadata[Identity]
+    override type Value = OpenApi.Metadata.Value[Identity]
+    override type Primitive = OpenApi.Metadata.Primitive[Identity]
+    override val primitive: Metadata.Primitive = OpenApi.Metadata.Primitive.Default
+    override type Tuple = OpenApi.Metadata.Tuple[Identity]
 
   given [
-      S <: Schema[A] { type M[f[_]] = Mx[f] },
-      Mx[f[_]] <: Metadata[f] { type Self[f[_]] = Fx[f] },
-      Fx[f[_]] <: Metadata[f],
+      S <: Plain.Schema[M[Identity], A] { type Self[+m, a] = T[m, a] },
+      T[+m, a] <: Plain.Schema[m, a],
+      M[f[_]] <: OpenApi.Metadata[f] { type Self[f[_]] = N[f] },
+      N[f[_]] <: OpenApi.Metadata[f],
       A
-  ]: Conversion[S, Fx[Attribute[S, *]]] =
-    _.metadata.toAttributes(???)
+  ]: Conversion[S, Any] = s =>
+    // val x = s.metadata.toAttributes(s.metadata)[T[M[Identity], A]](???)
+    ???
 
 object Playground:
   import dsl.*
   import dsl.given
 
-  val x: Primitive.Required[String] = string.name.clear
+  val x: Primitive.Required[String] = string
+  val y: Primitive[Int] = x.imap(_.length)(_.toString)
+  val z: Schema[String] = y.imap(_.toString)(_.length)
+
+  val a: Primitive.Required[String] = ??? // x.name.apply(None)
