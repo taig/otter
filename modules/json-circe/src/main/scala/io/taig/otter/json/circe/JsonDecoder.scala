@@ -17,11 +17,10 @@ object JsonDecoder extends Decoder[Json]:
     case Primitive.Optional.Modify(schema, f, _) => decode(schema, json).map(f)
     case Primitive.Optional.Root(schema)         => decode(schema, json).map(_.some)
     case Primitive.Optional.Validate(schema, constraint, validation, g) =>
-      decode(schema, json).andThen(a =>
-        validation
-          .apply(a)
-          .leftMap(violations => Violations.root(violations.map(_.map(c => JsonEncoder.apply(constraint, c)))))
-      )
+      decode(schema, json).andThen: a =>
+        validation(a)
+          .leftMap(_.map(_.map(JsonEncoder.encode(constraint, _))))
+          .leftMap(Violations.root)
 
   def decode[A](tpe: Type[A], json: Json): CirceDecoder.Result[A] = tpe match
     case Type.BigDecimal => json.as[JBigDecimal]

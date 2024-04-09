@@ -10,11 +10,11 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 object JsonEncoder extends Encoder[Json]:
-  override def apply[A](schema: Primitive[?, A], value: A): Json = schema match
+  override def encode[A](schema: Primitive[?, A], value: A): Json = schema match
     case Primitive.Required.Root(_, tpe)            => apply(tpe, value)
-    case Primitive.Required.Modify(primitive, _, g) => apply(primitive, g(value))
-    case Primitive.Optional.Root(primitive)         => value.map(apply(primitive, _)).getOrElse(Json.Null)
-    case Primitive.Optional.Modify(primitive, _, g) => apply(primitive, g(value))
+    case Primitive.Required.Modify(primitive, _, g) => encode(primitive, g(value))
+    case Primitive.Optional.Root(primitive)         => value.map(encode(primitive, _)).getOrElse(Json.Null)
+    case Primitive.Optional.Modify(primitive, _, g) => encode(primitive, g(value))
 
   def apply[A](tpe: Type[A], value: A): Json = tpe match
     case Type.BigDecimal => (value: JBigDecimal).asJson

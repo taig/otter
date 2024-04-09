@@ -8,14 +8,14 @@ import cats.data.Validated
 import io.taig.otter.validation.Violations
 
 object JsonTupleDecoder:
-  def decode[A](schema: Tuple[?, A], values: Option[Chain[Json]]): Validated[Violations, A] = values match
+  def decode[A](schema: Tuple[?, A], values: Option[Chain[Json]]): Validated[Violations[Json], A] = values match
     case Some(values) => decodeWithRemainders(schema, values).map { case (_, a) => a } // TODO error if not empty
     case None =>
       schema match
-        case Tuple.Optional(_) => none.valid[Violations]
+        case Tuple.Optional(_) => none.valid[Violations[Json]]
         case _                 => ??? // TODO ERROR: required
 
-  def decodeWithRemainders[A](schema: Tuple[?, A], values: Chain[Json]): Validated[Violations, (Chain[Json], A)] =
+  def decodeWithRemainders[A](schema: Tuple[?, A], values: Chain[Json]): Validated[Violations[Json], (Chain[Json], A)] =
     schema match
       case Tuple.Empty(_)             => (Chain.empty, ()).valid
       case Tuple.Modify(schema, f, _) => decodeWithRemainders(schema, values).map(_.map(f))

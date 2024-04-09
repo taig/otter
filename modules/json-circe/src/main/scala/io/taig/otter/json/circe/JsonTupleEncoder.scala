@@ -9,7 +9,7 @@ object JsonTupleEncoder:
   def apply[A](schema: Tuple[?, A], value: A): Option[Chain[Json]] = schema match
     case Tuple.Empty(_)             => Chain.empty.some
     case Tuple.Modify(schema, _, g) => apply(schema, g(value))
-    case Tuple.One(_, schema)       => Chain.one(JsonEncoder(schema, value)).some
+    case Tuple.One(_, schema)       => Chain.one(JsonEncoder.encode(schema, value)).some
     case Tuple.Optional(schema)     => value.flatMap(apply(schema, _))
     case Tuple.Product(_, left, right) =>
       (apply(left, value._1), apply(right, value._2)) match
