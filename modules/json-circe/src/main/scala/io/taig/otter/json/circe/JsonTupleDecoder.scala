@@ -6,6 +6,9 @@ import io.circe.Json
 import cats.data.Chain
 import cats.data.Validated
 import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
+import io.taig.otter.validation.Constraint
+import io.circe.syntax.*
 
 object JsonTupleDecoder:
   def decode[A](schema: Tuple[?, A], values: Option[Chain[Json]]): Validated[Violations[Json], A] = values match
@@ -13,7 +16,7 @@ object JsonTupleDecoder:
     case None =>
       schema match
         case Tuple.Optional(_) => none.valid[Violations[Json]]
-        case _                 => ??? // TODO ERROR: required
+        case _                 => Violations.rootNec(Violation(Constraint.Required, Json.Null)).invalid
 
   def decodeWithRemainders[A](schema: Tuple[?, A], values: Chain[Json]): Validated[Violations[Json], (Chain[Json], A)] =
     schema match
@@ -22,7 +25,7 @@ object JsonTupleDecoder:
       case Tuple.One(_, schema) =>
         values.uncons match
           case Some((head, tail)) => JsonDecoder.decode(schema, head).tupleLeft(tail)
-          case None               => ???
+          case None               => Violations.rootNec(Violation(Constraint.MinItems(1), actual = 0.asJson)).invalid
       case Tuple.Optional(schema) => decodeWithRemainders(schema, values).map(_.map(_.some))
       case Tuple.Product(_, left, right) =>
         decodeWithRemainders(left, values).andThen { case (remainders, a) =>

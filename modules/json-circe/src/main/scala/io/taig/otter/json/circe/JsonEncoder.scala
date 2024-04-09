@@ -11,12 +11,12 @@ import java.math.BigInteger as JBigInteger
 
 object JsonEncoder extends Encoder[Json]:
   override def encode[A](schema: Primitive[?, A], value: A): Json = schema match
-    case Primitive.Required.Root(_, tpe)            => apply(tpe, value)
+    case Primitive.Required.Root(_, tpe)            => encode(tpe, value)
     case Primitive.Required.Modify(primitive, _, g) => encode(primitive, g(value))
     case Primitive.Optional.Root(primitive)         => value.map(encode(primitive, _)).getOrElse(Json.Null)
     case Primitive.Optional.Modify(primitive, _, g) => encode(primitive, g(value))
 
-  def apply[A](tpe: Type[A], value: A): Json = tpe match
+  def encode[A](tpe: Type[A], value: A): Json = tpe match
     case Type.BigDecimal => (value: JBigDecimal).asJson
     case Type.BigInteger => (value: JBigInteger).asJson
     case Type.Boolean    => (value: Boolean).asJson
@@ -26,5 +26,5 @@ object JsonEncoder extends Encoder[Json]:
     case Type.Long       => (value: Long).asJson
     case Type.String     => (value: String).asJson
 
-  override def apply[A](schema: Tuple[?, A], value: A): Json =
+  override def encode[A](schema: Tuple[?, A], value: A): Json =
     JsonTupleEncoder(schema, value).map(values => Json.fromValues(values.toVector)).getOrElse(Json.Null)

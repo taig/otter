@@ -31,11 +31,12 @@ object Violations:
   def one[C](history: History, violations: NonEmptyChain[Violation[C]]): Violations[C] =
     NonEmptyMap.one(history, violations)
 
-//   def oneNec(history: History, violation: Violation): Violations = one(history, NonEmptyChain.one(violation))
+  def oneNec[C](history: History, violation: Violation[C]): Violations[C] =
+    one[C](history, NonEmptyChain.one(violation))
 
   def root[C](violations: NonEmptyChain[Violation[C]]): Violations[C] = one(History.Root, violations)
 
-//   def rootNec(violation: Violation): Violations = oneNec(History.Root, violation)
+  def rootNec[C](violation: Violation[C]): Violations[C] = oneNec(History.Root, violation)
 
 //   def fromMap(values: SortedMap[History, NonEmptyChain[Violation]]): Option[Violations] = NonEmptyMap.fromMap(values)
 
