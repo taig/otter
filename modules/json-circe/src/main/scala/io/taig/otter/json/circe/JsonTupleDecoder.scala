@@ -11,7 +11,7 @@ import io.taig.otter.validation.Constraint
 import io.circe.syntax.*
 
 object JsonTupleDecoder:
-  def decode[A](schema: Tuple[?, A], values: Option[Chain[Json]]): Validated[Violations[Json], A] = values match
+  def decode[A](schema: Tuple[A], values: Option[Chain[Json]]): Validated[Violations[Json], A] = values match
     case Some(values) =>
       val expected = schema.size.toLong
       val actual = values.length
@@ -23,16 +23,16 @@ object JsonTupleDecoder:
         case Tuple.Optional(_) => none.valid[Violations[Json]]
         case _                 => Violations.rootNec(Violation(Constraint.Required, Json.Null)).invalid
 
-  def decodeWithRemainders[A](schema: Tuple[?, A], values: Chain[Json]): Validated[Violations[Json], (Chain[Json], A)] =
+  def decodeWithRemainders[A](schema: Tuple[A], values: Chain[Json]): Validated[Violations[Json], (Chain[Json], A)] =
     schema match
-      case Tuple.Empty(_)             => (Chain.empty, ()).valid
+      case Tuple.Empty                => (Chain.empty, ()).valid
       case Tuple.Modify(schema, f, _) => decodeWithRemainders(schema, values).map(_.map(f))
-      case Tuple.One(_, schema) =>
+      case Tuple.One(schema) =>
         values.uncons match
           case Some((head, tail)) => JsonDecoder.decode(schema, head).tupleLeft(tail)
           case None               => Violations.rootNec(Violation(Constraint.MinItems(1), actual = 0.asJson)).invalid
       case Tuple.Optional(schema) => decodeWithRemainders(schema, values).map(_.map(_.some))
-      case Tuple.Product(_, left, right) =>
+      case Tuple.Product(left, right) =>
         decodeWithRemainders(left, values).andThen { case (remainders, a) =>
           decodeWithRemainders(right, remainders).map(_.tupleLeft(a))
         }

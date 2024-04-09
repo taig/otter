@@ -6,12 +6,12 @@ import cats.syntax.all.*
 import io.circe.Json
 
 object JsonTupleEncoder:
-  def apply[A](schema: Tuple[?, A], value: A): Option[Chain[Json]] = schema match
-    case Tuple.Empty(_)             => Chain.empty.some
+  def apply[A](schema: Tuple[A], value: A): Option[Chain[Json]] = schema match
+    case Tuple.Empty                => Chain.empty.some
     case Tuple.Modify(schema, _, g) => apply(schema, g(value))
-    case Tuple.One(_, schema)       => Chain.one(JsonEncoder.encode(schema, value)).some
+    case Tuple.One(schema)          => Chain.one(JsonEncoder.encode(schema, value)).some
     case Tuple.Optional(schema)     => value.flatMap(apply(schema, _))
-    case Tuple.Product(_, left, right) =>
+    case Tuple.Product(left, right) =>
       (apply(left, value._1), apply(right, value._2)) match
         case (Some(left), Some(right)) => (left ++ right).some
         case (Some(left), None)        => (left ++ Chain.fromSeq(Seq.fill(right.size)(Json.Null))).some

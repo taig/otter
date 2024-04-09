@@ -13,8 +13,8 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 
 object JsonPrimitiveDecoder:
-  def decode[A](schema: Primitive[?, A], json: Json): Validated[Violations[Json], A] = schema match
-    case Primitive.Required.Root(_, tpe) =>
+  def decode[A](schema: Primitive[A], json: Json): Validated[Violations[Json], A] = schema match
+    case Primitive.Required.Root(tpe) =>
       decode(tpe, json).toValidated
         .leftMap(_ => Violations.rootNec(Violation(Constraint.Type(typeOf(tpe)), typeOf(json).asJson)))
     case Primitive.Required.Modify(schema, f, _) => decode(schema, json).map(f)

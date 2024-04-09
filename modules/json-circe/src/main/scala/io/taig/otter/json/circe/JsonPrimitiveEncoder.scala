@@ -8,8 +8,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 object JsonPrimitiveEncoder:
-  def encode[A](schema: Primitive[?, A], value: A): Json = schema match
-    case Primitive.Required.Root(_, tpe)              => encode(tpe, value)
+  def encode[A](schema: Primitive[A], value: A): Json = schema match
+    case Primitive.Required.Root(tpe)                 => encode(tpe, value)
     case Primitive.Required.Modify(primitive, _, g)   => encode(primitive, g(value))
     case Primitive.Required.Validate(schema, _, _, g) => encode(schema, g(value))
     case Primitive.Optional.Root(primitive)           => value.map(encode(primitive, _)).getOrElse(Json.Null)
