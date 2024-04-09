@@ -1,5 +1,7 @@
 package io.taig.otter
 
+import io.taig.otter.validation.Validation
+
 sealed abstract class Schema[+M, A]:
   type Self[+m, a] <: Schema[m, a]
   type Optional[+m, a] <: Schema[m, a]
@@ -27,12 +29,17 @@ sealed abstract class Primitive[+M, A] extends Value[M, A]:
   final override type Optional[+m, a] = Primitive[m, a]
   final override type Of = Primitive[?, ?]
   def tpe: Type[?]
+  final def ivalidate[C, B](validation: Validation[A, A, B])(g: B => A): Self[M, B] = ivalidate(this)(validation)(g)
+  def ivalidate[C, B](constraint: Schema[?, C])(validation: Validation[A, C, B])(g: B => A): Self[M, B]
   final override def optional: Primitive[M, Option[A]] = Primitive.Optional.Root(this)
 
 object Primitive:
   sealed abstract class Required[+M, A] extends Primitive[M, A]:
-    override type Self[+m, a] = Primitive.Required[m, a]
+    final override type Self[+m, a] = Primitive.Required[m, a]
     final override def imap[B](f: A => B)(g: B => A): Primitive.Required[M, B] = Primitive.Required.Modify(this, f, g)
+    final override def ivalidate[C, B](constraint: Schema[?, C])(validation: Validation[A, C, B])(
+        g: B => A
+    ): Primitive.Required[M, B] = Primitive.Required.Validate(this, constraint, validation, g)
 
   object Required:
     final case class Root[M, A](metadata: M, tpe: Type[A]) extends Primitive.Required[M, A]:
@@ -43,9 +50,21 @@ object Primitive:
       export primitive.{metadata, tpe}
       override def update[N](f: M => N): Primitive.Required[N, B] = copy(primitive = primitive.update(f))
 
+    final case class Validate[M, A, C, B](
+        primitive: Primitive.Required[M, A],
+        constraint: Schema[?, C],
+        validation: Validation[A, C, B],
+        g: B => A
+    ) extends Primitive.Required[M, B]:
+      export primitive.{metadata, tpe}
+      override def update[N](f: M => N): Primitive.Required[N, B] = copy(primitive = primitive.update(f))
+
   sealed abstract class Optional[M, A] extends Primitive[M, A]:
     final override type Self[+m, a] = Primitive[m, a]
     final override def imap[B](f: A => B)(g: B => A): Primitive[M, B] = Primitive.Optional.Modify(this, f, g)
+    final override def ivalidate[C, B](constraint: Schema[?, C])(validation: Validation[A, C, B])(
+        g: B => A
+    ): Primitive[M, B] = Primitive.Optional.Validate(this, constraint, validation, g)
 
   object Optional:
     final case class Root[M, A](schema: Primitive[M, A]) extends Primitive.Optional[M, Option[A]]:
@@ -53,6 +72,15 @@ object Primitive:
       override def update[N](f: M => N): Primitive[N, Option[A]] = copy(schema = schema.update(f))
 
     final case class Modify[M, A, B](schema: Primitive[M, A], f: A => B, g: B => A) extends Primitive.Optional[M, B]:
+      export schema.{metadata, tpe}
+      override def update[N](f: M => N): Primitive[N, B] = copy(schema = schema.update(f))
+
+    final case class Validate[M, C, A, B](
+        schema: Primitive[M, A],
+        constraint: Schema[?, C],
+        validation: Validation[A, C, B],
+        g: B => A
+    ) extends Primitive.Optional[M, B]:
       export schema.{metadata, tpe}
       override def update[N](f: M => N): Primitive[N, B] = copy(schema = schema.update(f))
 
