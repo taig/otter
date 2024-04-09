@@ -11,13 +11,13 @@ import java.math.BigInteger as JBigInteger
 import cats.data.Chain
 
 object JsonDecoder extends Decoder[Json]:
-  def apply[A](schema: Primitive[?, A], json: Json): Validated[Violations, A] = schema match
-    case Primitive.Required.Root(_, tpe)            => apply(tpe, json).toValidated.leftMap(_ => ???)
-    case Primitive.Required.Modify(primitive, f, _) => apply(primitive, json).map(f)
-    case Primitive.Optional.Modify(primitive, f, _) => apply(primitive, json).map(f)
-    case Primitive.Optional.Root(primitive)         => apply(primitive, json).map(_.some)
+  def decode[A](schema: Primitive[?, A], json: Json): Validated[Violations, A] = schema match
+    case Primitive.Required.Root(_, tpe) => decode(tpe, json).toValidated.leftMap(_ => ???) // TODO adjust error
+    case Primitive.Required.Modify(primitive, f, _) => decode(primitive, json).map(f)
+    case Primitive.Optional.Modify(primitive, f, _) => decode(primitive, json).map(f)
+    case Primitive.Optional.Root(primitive)         => decode(primitive, json).map(_.some)
 
-  def apply[A](tpe: Type[A], json: Json): CirceDecoder.Result[A] = tpe match
+  def decode[A](tpe: Type[A], json: Json): CirceDecoder.Result[A] = tpe match
     case Type.BigDecimal => json.as[JBigDecimal]
     case Type.BigInteger => json.as[JBigInteger]
     case Type.Boolean    => json.as[Boolean]
@@ -27,9 +27,9 @@ object JsonDecoder extends Decoder[Json]:
     case Type.Long       => json.as[Long]
     case Type.String     => json.as[String]
 
-  def apply[A](schema: Tuple[?, A], json: Json): Validated[Violations, A] =
-    if json.isNull then JsonTupleDecoder(schema, none)
+  def decode[A](schema: Tuple[?, A], json: Json): Validated[Violations, A] =
+    if json.isNull then JsonTupleDecoder.decode(schema, none)
     else
       json.asArray match
-        case Some(values) => JsonTupleDecoder(schema, Chain.fromSeq(values).some)
+        case Some(values) => JsonTupleDecoder.decode(schema, Chain.fromSeq(values).some)
         case None         => ??? // error
