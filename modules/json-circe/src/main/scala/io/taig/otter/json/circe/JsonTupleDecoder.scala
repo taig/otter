@@ -12,7 +12,12 @@ import io.circe.syntax.*
 
 object JsonTupleDecoder:
   def decode[A](schema: Tuple[?, A], values: Option[Chain[Json]]): Validated[Violations[Json], A] = values match
-    case Some(values) => decodeWithRemainders(schema, values).map { case (_, a) => a } // TODO error if not empty
+    case Some(values) =>
+      val expected = schema.size.toLong
+      val actual = values.length
+      if expected > actual then Violations.rootNec(Violation(Constraint.MinItems(expected), actual.asJson)).invalid
+      else if expected < actual then Violations.rootNec(Violation(Constraint.MaxItems(expected), actual.asJson)).invalid
+      else decodeWithRemainders(schema, values).map { case (_, a) => a }
     case None =>
       schema match
         case Tuple.Optional(_) => none.valid[Violations[Json]]
