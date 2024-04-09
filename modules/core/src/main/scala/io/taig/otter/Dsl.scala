@@ -1,3 +1,3 @@
-package io.taig.otter
+// package io.taig.otter
 
-trait Dsl extends Schemas with Syntax with Types
+// trait Dsl extends Schemas with Syntax with Types

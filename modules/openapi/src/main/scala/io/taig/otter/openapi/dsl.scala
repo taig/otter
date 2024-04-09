@@ -1,39 +1,46 @@
 package io.taig.otter.openapi
 
 import io.taig.otter as Plain
-import io.taig.otter.Dsl
 import cats.Id as Identity
 import io.taig.otter.Attribute
 import io.taig.otter.openapi as OpenApi
 import io.taig.otter.Metadatas
+import io.taig.otter.Type
 
-object dsl extends Dsl:
+final case class Annotation[+S, +M](self: S, metadata: M)
+
+object dsl:
   self =>
 
-  override object Metadata extends Metadatas:
-    override type Schema = OpenApi.Metadata[Identity]
-    override type Value = OpenApi.Metadata.Value[Identity]
-    override type Primitive = OpenApi.Metadata.Primitive[Identity]
-    override val primitive: Metadata.Primitive = OpenApi.Metadata.Primitive.Default
-    override type Tuple = OpenApi.Metadata.Tuple[Identity]
-    override val tuple: Metadata.Tuple = OpenApi.Metadata.Tuple.Default
+  type Schema[A] = Annotation[Plain.Schema[A], Metadata[Identity]]
 
-  given [
-      S <: Plain.Schema[M[Identity], A] { type Self[+m, a] = T[m, a] },
-      T[+m, a] <: Plain.Schema[m, a],
-      M[f[_]] <: OpenApi.Metadata[f] { type Self[f[_]] = N[f] },
-      N[f[_]] <: OpenApi.Metadata[f] { type Self[f[_]] = O[f] },
-      O[f[_]] <: OpenApi.Metadata[f],
-      A
-  ]: Conversion[S, O[Attribute[T[O[Identity], A], *]]] = self =>
-    self.metadata.asSelf.toAttributes(m => self.update(_ => m))
+  type Value[A] = Annotation[Plain.Value[A], Metadata.Value[Identity]]
+
+  type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive[Identity]]
+
+  object Primitive:
+    type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive[Identity]]
+
+  type Tuple[A] = Annotation[Plain.Tuple[A], Metadata.Tuple[Identity]]
+
+  def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    Annotation(Plain.Primitive.Required.Root(tpe), Metadata.Primitive.Default)
+
+  val string: Primitive.Required[String] = primitive(Type.String)
+
+  given [A]: Conversion[Schema[A], Plain.Schema.Ops[Schema, Schema, Tuple, A]] = ???
+
+  given [A]: Conversion[Primitive[A], Plain.Primitive.Ops[Primitive, Primitive, Tuple, A]] = ???
+
+  given [A]: Conversion[Primitive.Required[A], Plain.Primitive.Ops[Primitive.Required, Primitive, Tuple, A]] = self =>
+    new Plain.Primitive.Ops[Primitive.Required, Primitive, Tuple, A]:
+      export self.self.tpe
+      override def imap[B](f: A => B)(g: B => A): Primitive.Required[B] = self.copy(self = self.self.imap(f)(g))
+      override def optional: Primitive[Option[A]] = self.copy(self = self.self.optional)
+      override def toTuple: Tuple[A] = Annotation(self = self.self.toTuple, ???)
 
 object Playground:
   import dsl.*
   import dsl.given
 
-  val x: Primitive.Required[String] = string
-  val y: Primitive[Int] = x.imap(_.length)(_.toString)
-  val z: Schema[String] = y.imap(_.toString)(_.length)
-
-  val a: Primitive.Required[String] = x.name.clear
+  val x: Primitive[String] = string.imap(_.reverse)(_.reverse)
