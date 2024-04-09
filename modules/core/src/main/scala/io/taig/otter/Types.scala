@@ -14,3 +14,6 @@ trait Types:
     final type Required[A] = Plain.Primitive.Required[Metadata.Primitive, A]
 
   type Tuple[A] = Plain.Tuple[Metadata.Tuple, A]
+
+  object Tuple:
+    type Of[S <: Schema[?], A] = Plain.Tuple.Of[S, Metadata.Tuple, A]

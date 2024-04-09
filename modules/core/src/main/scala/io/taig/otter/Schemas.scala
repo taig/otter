@@ -25,4 +25,5 @@ trait Schemas extends Syntax:
   // final val nonEmptyCIString: Primitive.Required[Option[CIString]] = cistring.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
   object tuple:
-    val empty: Tuple[Unit] = Plain.Tuple.Empty(Metadata.tuple)
+    val empty: Tuple.Of[Nothing, Unit] = Plain.Tuple.Empty(Metadata.tuple)
+    def one[A](schema: Schema[A]): Tuple.Of[schema.type, A] = Plain.Tuple.One(Metadata.tuple, schema)

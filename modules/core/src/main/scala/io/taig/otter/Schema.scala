@@ -13,6 +13,8 @@ sealed abstract class Schema[+M, A]:
   final def const(value: A): Self[M, Unit] = imap(_ => ())(_ => value)
   def optional: Optional[M, Option[A]]
 
+  final def toTupleWith[N](f: M => N): Tuple.Of[this.type, N, A] = Tuple.One(f(metadata), this)
+
 object Schema:
   type Of[S <: Schema[?, ?], M, A] = Schema[M, A] { type Of <: S }
 
