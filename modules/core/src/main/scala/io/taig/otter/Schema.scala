@@ -65,9 +65,6 @@ object Tuple:
   case object Empty extends Tuple[Nothing, Unit]:
     override val size: Int = 0
 
-  final case class Modify[S, A, B](schema: Tuple[S, A], f: A => B, g: B => A) extends Tuple[S, B]:
-    export schema.size
-
   final case class One[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
     override def size: Int = 1
 

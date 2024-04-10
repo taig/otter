@@ -8,10 +8,10 @@ import io.taig.otter.Schema
 
 object JsonTupleEncoder:
   def encode[A](schema: Tuple[Schema[?], A], value: A): Option[Chain[Json]] = schema match
-    case Tuple.Empty                => Chain.empty.some
-    case Tuple.Modify(schema, _, g) => encode(schema, g(value))
-    case Tuple.One(schema)          => Chain.one(JsonEncoder.encode(schema, value)).some
-    case Tuple.Optional(schema)     => value.flatMap(encode(schema, _))
+    case Tuple.Empty => Chain.empty.some
+    // case Tuple.Modify(schema, _, g) => encode(schema, g(value))
+    case Tuple.One(schema)      => Chain.one(JsonEncoder.encode(schema, value)).some
+    case Tuple.Optional(schema) => value.flatMap(encode(schema, _))
     case Tuple.Product(left, right) =>
       (encode(left, value._1), encode(right, value._2)) match
         case (Some(left), Some(right)) => (left ++ right).some

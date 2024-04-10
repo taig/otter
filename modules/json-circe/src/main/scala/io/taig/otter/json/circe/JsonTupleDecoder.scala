@@ -28,8 +28,8 @@ object JsonTupleDecoder:
       schema: Tuple[Schema[?], A],
       values: Chain[Json]
   ): Validated[Violations[Json], (Chain[Json], A)] = schema match
-    case Tuple.Empty                => (Chain.empty, ()).valid
-    case Tuple.Modify(schema, f, _) => decodeWithRemainders(schema, values).map(_.map(f))
+    case Tuple.Empty => (Chain.empty, ()).valid
+    // case Tuple.Modify(schema, f, _) => decodeWithRemainders(schema, values).map(_.map(f))
     case Tuple.One(schema) =>
       values.uncons match
         case Some((head, tail)) => JsonDecoder.decode(schema, head).tupleLeft(tail)
