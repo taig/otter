@@ -13,7 +13,7 @@ object JsonUnionEncoder:
   def encode[A](schema: Union[Schema[?], A], value: A): Json = schema match
     case Union.One(schema)                                 => JsonEncoder.encode(schema, value)
     case Union.OrElse(left, right)                         => encode(left, right, value)
-    case Union.Optional(schema)                            => ???
+    case Union.Optional(schema)                            => value.map(encode(schema, _)).getOrElse(Json.Null)
     case Union.Validate(schema, constraint, validation, g) => ???
 
   def encode[A, B](left: Union[Schema[?], A], right: Union[Schema[?], B], value: A + B): Json = value match
