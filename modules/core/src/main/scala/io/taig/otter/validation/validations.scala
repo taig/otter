@@ -14,16 +14,11 @@ import scala.math.Ordering.Implicits.*
 import cats.data.Chain
 import cats.data.ValidatedNec
 import cats.Eq
+import io.taig.otter.validation.Validation
 
 trait validations:
-  def equal[A: Eq](reference: A): Validation[A, A, Unit] =
-    new Validation[A, A, Unit]:
-      override def constraints: Chain[Constraint[A]] = Chain.one(Constraint.Equals(reference))
-      override def apply(in: A): ValidatedNec[Violation[A], Unit] =
-        Validated.condNec(reference === in, (), Violation(Constraint.Equals(reference), in))
-
-    // Validation.of(Constraint.Equals(reference)): value =>
-    //   Validated.condNec(value == reference, (), value)
+  def equal[A: Eq](reference: A): Validation[A, A, Unit] = Validation.of(Constraint.Equals(reference)): value =>
+    Validated.condNec(value === reference, (), value)
 
 //   def equal(reference: CIString): Validation[CIString, Unit] =
 //     Validation.of(Constraint.Equals(reference.toString)): value =>

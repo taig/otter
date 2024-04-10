@@ -4,7 +4,6 @@ import io.taig.otter.Encoder
 import io.circe.Json
 import io.taig.otter.Primitive
 import io.taig.otter.Tuple
-import io.circe.syntax.*
 
 object JsonEncoder extends Encoder[Json]:
   override def encode[A](schema: Primitive[A], value: A): Json = JsonPrimitiveEncoder.encode(schema, value)

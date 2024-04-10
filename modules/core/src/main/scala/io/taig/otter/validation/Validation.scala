@@ -5,7 +5,7 @@ import cats.arrow.Arrow
 import cats.data.{Chain, Validated, ValidatedNec}
 import cats.syntax.all.*
 
-abstract class Validation[-In, +C, +Out]:
+sealed abstract class Validation[-In, +C, +Out]:
   self =>
   def constraints: Chain[Constraint[C]]
   def apply(in: In): ValidatedNec[Violation[C], Out]
@@ -13,20 +13,20 @@ abstract class Validation[-In, +C, +Out]:
 //   final def first[C]: Validation[(In, C), (Out, C)] =
 //     Validation(self.constraints) { case (a, c) => self(a).map((_, c)) }
 
-// object Validation:
-//   def apply[In, Out](cs: Chain[Constraint])(
-//       f: [A] => In => ValidatedNec[Violation[A], Out]
-//   ): Validation[In, Out] = new Validation[In, Out]:
-//     override def constraints: Chain[Constraint] = cs
-//     override def apply[A](in: In): ValidatedNec[Violation[A], Out] = f(in)
+object Validation:
+  def apply[In, C, Out](cs: Chain[Constraint[C]])(
+      f: In => ValidatedNec[Violation[C], Out]
+  ): Validation[In, C, Out] = new Validation[In, C, Out]:
+    override def constraints: Chain[Constraint[C]] = cs
+    override def apply(in: In): ValidatedNec[Violation[C], Out] = f(in)
 
-//   def of[In, Out](constraint: Constraint)(
-//       f: [A] => In => ValidatedNec[A, Out]
-//   ): Validation[In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _))))
+  def of[In, C, Out](constraint: Constraint[In])(
+      f: In => ValidatedNec[In, Out]
+  ): Validation[In, In, Out] = Validation(Chain.one(constraint))(f(_).leftMap(_.map(Violation(constraint, _))))
 
-//   def lift[A, B](f: A => B): Validation[A, B] = Validation(Chain.empty)(f(_).valid)
-//   def valid[A](a: A): Validation[Any, A] = lift(_ => a)
-//   def ask[A]: Validation[A, A] = Validation(Chain.empty)(_.valid)
+  def lift[A, B](f: A => B): Validation[A, Nothing, B] = Validation(Chain.empty)(f(_).valid)
+  def valid[A](a: A): Validation[Any, Nothing, A] = lift(_ => a)
+  def ask[A]: Validation[A, Nothing, A] = Validation(Chain.empty)(_.valid)
 
 //   extension [In, Out](self: Validation[In, Out])
 //     def tap: Validation[In, In] = Validation(self.constraints)(a => self(a).as(a))

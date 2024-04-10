@@ -2,37 +2,31 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 
-sealed abstract class Schema[A] extends Schema.Ops[Schema, Schema, Tuple, A]:
+sealed abstract class Schema[A] extends Operation[Schema, Schema, Schema, Tuple, A]:
   type Of <: Schema[?]
-  override def toTuple: Tuple[A] = ???
+  override def toTuple: Tuple[A] = Tuple.One(this)
 
 object Schema:
   type Of[S <: Schema[?], M, A] = Schema[A] { type Of <: S }
 
-  trait Ops[+Self[a], +Optional[a], +Tuple[a], A]:
-    def imap[B](f: A => B)(g: B => A): Self[B]
-    final def const(value: A): Self[Unit] = imap(_ => ())(_ => value)
-    def optional: Optional[Option[A]]
-    def toTuple: Tuple[A]
-
-sealed abstract class Value[A] extends Schema[A] with Value.Ops[Value, Value, Tuple, A]
+sealed abstract class Value[A] extends Schema[A] with Operation.Value[Value, Value, Schema, Tuple, A]
 
 object Value:
   type Of[S <: Schema[?], A] = Value[A] { type Of <: S }
 
-  trait Ops[+Self[_], +Optional[_], +Tuple[_], A] extends Schema.Ops[Self, Optional, Tuple, A]
-
-sealed abstract class Primitive[A] extends Value[A] with Primitive.Ops[Primitive, Primitive, Tuple, A]:
+sealed abstract class Primitive[A] extends Value[A] with Operation.Primitive[Primitive, Primitive, Schema, Tuple, A]:
   self =>
   final override type Of = Primitive[?]
 
 object Primitive:
-  trait Ops[+Self[_], +Optional[_], +Tuple[_], A] extends Value.Ops[Self, Optional, Tuple, A]:
-    def tpe: Type[?]
-
-  sealed abstract class Required[A] extends Primitive[A] with Primitive.Ops[Primitive.Required, Primitive, Tuple, A]:
-    override def imap[B](f: A => B)(g: B => A): Primitive.Required[B] = Primitive.Required.Modify(this, f, g)
-    override def optional: Primitive.Required[Option[A]] = ???
+  sealed abstract class Required[A]
+      extends Primitive[A]
+      with Operation.Primitive[Primitive.Required, Primitive, Schema, Tuple, A]:
+    override def asSelf: Primitive.Required[A] = this
+    override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
+        g: C => A
+    ): Primitive.Required[C] = Required.Validate(this, constraint, validation, g)
+    override def optional: Primitive[Option[A]] = Primitive.Optional.Root(this)
 
   object Required:
     final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
@@ -41,15 +35,20 @@ object Primitive:
       export primitive.tpe
 
     final case class Validate[A, C, B](
-        primitive: Primitive.Required[A],
+        schema: Primitive.Required[A],
         constraint: Schema[C],
         validation: Validation[A, C, B],
         g: B => A
     ) extends Primitive.Required[B]:
-      export primitive.tpe
+      export schema.tpe
 
-  sealed abstract class Optional[A] extends Primitive[A] with Primitive.Ops[Primitive, Primitive, Tuple, A]:
-    final override def imap[B](f: A => B)(g: B => A): Primitive[B] = Primitive.Optional.Modify(this, f, g)
+  sealed abstract class Optional[A]
+      extends Primitive[A]
+      with Operation.Primitive[Primitive, Primitive, Schema, Tuple, A]:
+    final override def asSelf: Primitive[A] = this
+    final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
+        g: C => A
+    ): Primitive[C] = Optional.Validate(this, constraint, validation, g)
     final override def optional: Primitive[Option[A]] = Optional.Root(this)
 
   object Optional:
@@ -67,17 +66,14 @@ object Primitive:
     ) extends Primitive.Optional[B]:
       export schema.tpe
 
-abstract class Tuple[A] extends Schema[A] with Tuple.Ops[Tuple, A]:
-  override def product[B](tuple: Tuple[B]): Tuple[(A, B)] = ???
-  override def imap[B](f: A => B)(g: B => A): Tuple[B] = ???
-  override def optional: Tuple[Option[A]] = ???
+abstract class Tuple[A] extends Schema[A] with Operation.Tuple[Tuple, Schema, A]:
+  final override def asSelf: Tuple[A] = this
+  final override def product[B](tuple: Tuple[B]): Tuple[(A, B)] = Tuple.Product(this, tuple)
+  final override def optional: Tuple[Option[A]] = Tuple.Optional(this)
+  final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(g: C => A): Tuple[C] = ???
 
 object Tuple:
   type Of[S <: Schema[?], A] = Tuple[A] { type Of <: S }
-
-  trait Ops[Self[_], A] extends Schema.Ops[Self, Self, Self, A]:
-    def size: Int
-    def product[B](tuple: Self[B]): Self[(A, B)]
 
   case object Empty extends Tuple[Unit]:
     override type Of = Nothing
