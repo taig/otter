@@ -2,37 +2,25 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 
-sealed abstract class Schema[A] extends Operation[Schema, Schema, Schema, Tuple, A]:
-  type Of <: Schema[?]
-  override def toTuple: Tuple[A] = Tuple.One(this)
-
-object Schema:
-  type Of[S <: Schema[?], M, A] = Schema[A] { type Of <: S }
+sealed abstract class Schema[A] extends Operation[Schema, Schema, Schema, Tuple, A]
 
 sealed abstract class Value[A] extends Schema[A] with Operation.Value[Value, Value, Schema, Tuple, A]
 
-object Value:
-  type Of[S <: Schema[?], A] = Value[A] { type Of <: S }
-
-sealed abstract class Primitive[A] extends Value[A] with Operation.Primitive[Primitive, Primitive, Schema, Tuple, A]:
-  self =>
-  final override type Of = Primitive[?]
+sealed abstract class Primitive[A] extends Value[A] with Operation.Primitive[Primitive, Primitive, Schema, Tuple, A]
 
 object Primitive:
   sealed abstract class Required[A]
       extends Primitive[A]
       with Operation.Primitive[Primitive.Required, Primitive, Schema, Tuple, A]:
-    override def asSelf: Primitive.Required[A] = this
-    override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
+    final override def asSelf: Primitive.Required[A] = this
+    final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
         g: C => A
     ): Primitive.Required[C] = Required.Validate(this, constraint, validation, g)
-    override def optional: Primitive[Option[A]] = Primitive.Optional.Root(this)
+    final override def optional: Primitive[Option[A]] = Primitive.Optional.Root(this)
+    final override def toTuple: Tuple[Primitive.Required[A], A] = Tuple.One(this)
 
   object Required:
     final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
-
-    final case class Modify[A, B](primitive: Primitive.Required[A], f: A => B, g: B => A) extends Primitive.Required[B]:
-      export primitive.tpe
 
     final case class Validate[A, C, B](
         schema: Primitive.Required[A],
@@ -50,12 +38,10 @@ object Primitive:
         g: C => A
     ): Primitive[C] = Optional.Validate(this, constraint, validation, g)
     final override def optional: Primitive[Option[A]] = Optional.Root(this)
+    final override def toTuple: Tuple[Primitive[A], A] = Tuple.One(this)
 
   object Optional:
-    final case class Root[A](schema: Primitive[A]) extends Primitive.Optional[Option[A]]:
-      export schema.tpe
-
-    final case class Modify[A, B](schema: Primitive[A], f: A => B, g: B => A) extends Primitive.Optional[B]:
+    final case class Root[Of, A](schema: Primitive[A]) extends Primitive.Optional[Option[A]]:
       export schema.tpe
 
     final case class Validate[C, A, B](
@@ -66,29 +52,35 @@ object Primitive:
     ) extends Primitive.Optional[B]:
       export schema.tpe
 
-abstract class Tuple[A] extends Schema[A] with Operation.Tuple[Tuple, Schema, A]:
-  final override def asSelf: Tuple[A] = this
-  final override def product[B](tuple: Tuple[B]): Tuple[(A, B)] = Tuple.Product(this, tuple)
-  final override def optional: Tuple[Option[A]] = Tuple.Optional(this)
-  final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(g: C => A): Tuple[C] = ???
+sealed abstract class Tuple[+S, A] extends Schema[A] with Operation.Tuple[Tuple, Schema, S, A]:
+  final override def asSelf: Tuple[S, A] = this
+  final override def product[T, B](tuple: Tuple[T, B]): Tuple[S | T, (A, B)] = Tuple.Product(this, tuple)
+  final override def optional: Tuple[S, Option[A]] = Tuple.Optional(this)
+  final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
+      g: C => A
+  ): Tuple[S, C] = Tuple.Validate(this, constraint, validation, g)
+  override def toTuple: Tuple[Tuple[S, A], A] = Tuple.One(this)
 
 object Tuple:
-  type Of[S <: Schema[?], A] = Tuple[A] { type Of <: S }
+  case object Empty extends Tuple[Nothing, Unit]:
+    override val size: Int = 0
 
-  case object Empty extends Tuple[Unit]:
-    override type Of = Nothing
-    override def size: Int = 0
+  final case class Modify[Of, A, B](schema: Tuple[Of, A], f: A => B, g: B => A) extends Tuple[Of, B]:
+    export schema.size
 
-  final case class Modify[A, B](schema: Tuple[A], f: A => B, g: B => A) extends Tuple[B]:
-    export schema.{size, Of}
-
-  final case class One[S <: Schema[A], A](schema: S) extends Tuple[A]:
-    override type Of = S
+  final case class One[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
     override def size: Int = 1
 
-  final case class Optional[A](schema: Tuple[A]) extends Tuple[Option[A]]:
-    export schema.{size, Of}
+  final case class Optional[Of, A](schema: Tuple[Of, A]) extends Tuple[Of, Option[A]]:
+    export schema.size
 
-  final case class Product[A, B](left: Tuple[A], right: Tuple[B]) extends Tuple[(A, B)]:
-    override type Of = left.Of | right.Of
+  final case class Product[O1, O2, A, B](left: Tuple[O1, A], right: Tuple[O2, B]) extends Tuple[O1 | O2, (A, B)]:
     override def size: Int = left.size + right.size
+
+  final case class Validate[Of, A, B, C](
+      schema: Tuple[Of, A],
+      constraint: Schema[B],
+      validation: Validation[A, B, C],
+      g: C => A
+  ) extends Tuple[Of, C]:
+    export schema.size

@@ -10,10 +10,8 @@ import java.math.BigInteger as JBigInteger
 object JsonPrimitiveEncoder:
   def encode[A](schema: Primitive[A], value: A): Json = schema match
     case Primitive.Required.Root(tpe)                 => encode(tpe, value)
-    case Primitive.Required.Modify(primitive, _, g)   => encode(primitive, g(value))
     case Primitive.Required.Validate(schema, _, _, g) => encode(schema, g(value))
     case Primitive.Optional.Root(primitive)           => value.map(encode(primitive, _)).getOrElse(Json.Null)
-    case Primitive.Optional.Modify(primitive, _, g)   => encode(primitive, g(value))
     case Primitive.Optional.Validate(schema, _, _, g) => encode(schema, g(value))
 
   def encode[A](tpe: Type[A], value: A): Json = tpe match

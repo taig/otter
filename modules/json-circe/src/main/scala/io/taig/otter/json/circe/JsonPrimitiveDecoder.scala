@@ -17,13 +17,11 @@ object JsonPrimitiveDecoder:
     case Primitive.Required.Root(tpe) =>
       decode(tpe, json).toValidated
         .leftMap(_ => Violations.rootNec(Violation(Constraint.Type(typeOf(tpe)), typeOf(json).asJson)))
-    case Primitive.Required.Modify(schema, f, _) => decode(schema, json).map(f)
     case Primitive.Required.Validate(schema, constraint, validation, _) =>
       decode(schema, json).andThen: a =>
         validation(a)
           .leftMap(_.map(_.map(JsonEncoder.encode(constraint, _))))
           .leftMap(Violations.root)
-    case Primitive.Optional.Modify(schema, f, _) => decode(schema, json).map(f)
     case Primitive.Optional.Root(schema) =>
       if json.isNull then none.valid[Violations[Json]] else decode(schema, json).map(_.some)
     case Primitive.Optional.Validate(schema, constraint, validation, _) =>
