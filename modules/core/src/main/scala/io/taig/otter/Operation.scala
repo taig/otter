@@ -2,6 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 import io.taig.otter as Plain
+import io.taig.otter.Evidence.Merge
 
 trait Operation[+Self[a] <: Schema[a], +Optional[_], Schema[_], Tuple[+_, _], A]:
   def asSelf: Self[A]
@@ -24,3 +25,8 @@ object Operation:
   trait Tuple[Self[+_, a] <: Schema[a], Schema[_], +S, A] extends Operation[Self[S, *], Self[S, *], Schema, Self, A]:
     def size: Int
     def product[T, B](tuple: Self[T, B]): Self[S | T, (A, B)]
+    final def zip[T, B](tuple: Self[T, B])(using ev: Merge[A, B]): Self[S | T, ev.Out] = ???
+
+  trait Union[Self[+_, a] <: Schema[a], Schema[_], Tuple[+_, _], +S, A]
+      extends Operation[Self[S, *], Self[S, *], Schema, Tuple, A]:
+    def orElse[T, B](union: Self[T, B]): Self[S | T, A + B]

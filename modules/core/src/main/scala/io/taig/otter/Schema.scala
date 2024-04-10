@@ -84,3 +84,24 @@ object Tuple:
       g: C => A
   ) extends Tuple[S, C]:
     export schema.size
+
+sealed abstract class Union[+S, A] extends Schema[A] with Operation.Union[Union, Schema, Tuple, S, A]:
+  final override def asSelf: Union[S, A] = this
+  override def orElse[T, B](union: Union[T, B]): Union[S | T, Either[A, B]] = Union.OrElse(this, union)
+  override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(g: C => A): Union[S, C] = ???
+  override def optional: Union[S, Option[A]] = Union.Optional(this)
+  override def toTuple: Tuple[Union[S, A], A] = Tuple.One(this)
+
+object Union:
+  final case class One[S[_], A](schema: S[A]) extends Union[S[A], A]
+
+  final case class OrElse[S, A, T, B](left: Union[S, A], right: Union[T, B]) extends Union[S | T, A + B]
+
+  final case class Optional[S, A](schema: Union[S, A]) extends Union[S, Option[A]]
+
+  final case class Validate[S, A, B, C](
+      schema: Union[S, A],
+      constraint: Schema[B],
+      validation: Validation[A, B, C],
+      g: C => A
+  ) extends Union[S, C]
