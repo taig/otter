@@ -22,7 +22,7 @@ object dsl extends Dsl:
   override object Primitive extends Primitives:
     type Required[A] = Annotation[Plain.Primitive.Required[A], Metadata.Primitive[Identity]]
 
-  override type Tuple[A] = Tuple.Of[Any, A]
+  override type Tuple[A] = Annotation[Plain.Tuple[?, A], Metadata[Identity]]
 
   override object Tuple extends Tuples:
     override type Of[+S, A] = Annotation[Plain.Tuple[S, A], Metadata.Tuple[Identity]]
@@ -50,4 +50,4 @@ object Playground:
   import dsl.*
   import dsl.given
 
-  val x: Tuple.Of[Schema, String] = string.toTuple
+  val x: Tuple[String] = string.toTuple

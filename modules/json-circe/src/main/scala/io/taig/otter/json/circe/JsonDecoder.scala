@@ -14,7 +14,7 @@ object JsonDecoder extends Decoder[Json]:
   def decode[A](schema: Primitive[A], json: Json): Validated[Violations[Json], A] =
     JsonPrimitiveDecoder.decode(schema, json)
 
-  def decode[A](schema: Tuple[A], json: Json): Validated[Violations[Json], A] =
+  def decode[A](schema: Tuple[Schema[?], A], json: Json): Validated[Violations[Json], A] =
     if json.isNull then JsonTupleDecoder.decode(schema, none)
     else
       json.asArray match

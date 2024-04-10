@@ -4,9 +4,10 @@ import io.taig.otter.Tuple
 import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.Json
+import io.taig.otter.Schema
 
 object JsonTupleEncoder:
-  def apply[A](schema: Tuple[A], value: A): Option[Chain[Json]] = schema match
+  def apply[A](schema: Tuple[Schema[?], A], value: A): Option[Chain[Json]] = schema match
     case Tuple.Empty                => Chain.empty.some
     case Tuple.Modify(schema, _, g) => apply(schema, g(value))
     case Tuple.One(schema)          => Chain.one(JsonEncoder.encode(schema, value)).some

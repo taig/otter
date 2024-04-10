@@ -7,4 +7,4 @@ abstract class Encoder[T]:
 
   def encode[A](schema: Primitive[A], value: A): T
 
-  def encode[A](schema: Tuple[?, A], value: A): T
+  def encode[A](schema: Tuple[Schema[?], A], value: A): T

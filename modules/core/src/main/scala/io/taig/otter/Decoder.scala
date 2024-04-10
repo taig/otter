@@ -10,4 +10,4 @@ abstract class Decoder[T]:
 
   def decode[A](schema: Primitive[A], value: T): Validated[Violations[T], A]
 
-  def decode[A](schema: Tuple[?, A], value: T): Validated[Violations[T], A]
+  def decode[A](schema: Tuple[Schema[?], A], value: T): Validated[Violations[T], A]

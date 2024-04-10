@@ -13,9 +13,9 @@ trait Types:
 
   val Primitive: Primitives
 
-  type Tuple[A] <: Tuple.Of[Schema[A], A]
+  type Tuple[A] <: Schema[A]
 
   trait Tuples:
-    type Of[+S, A] <: Schema[A]
+    type Of[+S, A] <: Tuple[A]
 
   val Tuple: Tuples

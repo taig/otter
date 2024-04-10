@@ -22,12 +22,12 @@ object Primitive:
   object Required:
     final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
 
-    final case class Validate[A, C, B](
+    final case class Validate[A, B, C](
         schema: Primitive.Required[A],
-        constraint: Schema[C],
-        validation: Validation[A, C, B],
-        g: B => A
-    ) extends Primitive.Required[B]:
+        constraint: Schema[B],
+        validation: Validation[A, B, C],
+        g: C => A
+    ) extends Primitive.Required[C]:
       export schema.tpe
 
   sealed abstract class Optional[A]
@@ -41,15 +41,15 @@ object Primitive:
     final override def toTuple: Tuple[Primitive[A], A] = Tuple.One(this)
 
   object Optional:
-    final case class Root[Of, A](schema: Primitive[A]) extends Primitive.Optional[Option[A]]:
+    final case class Root[S, A](schema: Primitive[A]) extends Primitive.Optional[Option[A]]:
       export schema.tpe
 
-    final case class Validate[C, A, B](
+    final case class Validate[A, B, C](
         schema: Primitive[A],
-        constraint: Schema[C],
-        validation: Validation[A, C, B],
-        g: B => A
-    ) extends Primitive.Optional[B]:
+        constraint: Schema[B],
+        validation: Validation[A, B, C],
+        g: C => A
+    ) extends Primitive.Optional[C]:
       export schema.tpe
 
 sealed abstract class Tuple[+S, A] extends Schema[A] with Operation.Tuple[Tuple, Schema, S, A]:
@@ -65,22 +65,22 @@ object Tuple:
   case object Empty extends Tuple[Nothing, Unit]:
     override val size: Int = 0
 
-  final case class Modify[Of, A, B](schema: Tuple[Of, A], f: A => B, g: B => A) extends Tuple[Of, B]:
+  final case class Modify[S, A, B](schema: Tuple[S, A], f: A => B, g: B => A) extends Tuple[S, B]:
     export schema.size
 
   final case class One[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
     override def size: Int = 1
 
-  final case class Optional[Of, A](schema: Tuple[Of, A]) extends Tuple[Of, Option[A]]:
+  final case class Optional[S, A](schema: Tuple[S, A]) extends Tuple[S, Option[A]]:
     export schema.size
 
-  final case class Product[O1, O2, A, B](left: Tuple[O1, A], right: Tuple[O2, B]) extends Tuple[O1 | O2, (A, B)]:
+  final case class Product[S, A, T, B](left: Tuple[S, A], right: Tuple[T, B]) extends Tuple[S | T, (A, B)]:
     override def size: Int = left.size + right.size
 
-  final case class Validate[Of, A, B, C](
-      schema: Tuple[Of, A],
+  final case class Validate[S, A, B, C](
+      schema: Tuple[S, A],
       constraint: Schema[B],
       validation: Validation[A, B, C],
       g: C => A
-  ) extends Tuple[Of, C]:
+  ) extends Tuple[S, C]:
     export schema.size
