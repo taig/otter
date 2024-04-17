@@ -18,6 +18,9 @@ object Operation:
   trait Value[+Self[a] <: Schema[a], +Optional[_], Schema[_], Tuple[+_, _], A]
       extends Operation[Self, Optional, Schema, Tuple, A]
 
+  trait Collection[+Self[+_, a] <: Schema[a], Schema[_], Tuple[+_, _], +S, A]
+      extends Operation[Self[S, *], Self[S, *], Schema, Tuple, A]
+
   trait Primitive[+Self[a] <: Schema[a], +Optional[_], Schema[_], Tuple[+_, _], A]
       extends Value[Self, Optional, Schema, Tuple, A]:
     def tpe: Type[?]

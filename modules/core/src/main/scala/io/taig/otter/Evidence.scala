@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import scala.Product as SProduct
+import scala.Tuple as STuple
 import scala.annotation.implicitNotFound
 import scala.deriving.*
 
@@ -24,11 +25,11 @@ object Evidence:
     given product1[A <: SProduct, B](using
         mirror: Mirror.ProductOf[A] { type MirroredElemTypes = B *: EmptyTuple }
     ): Evidence.Product.Aux[A, B] =
-      instance[A, B](Tuple.fromProductTyped(_).head)(b => mirror.fromProduct(b *: EmptyTuple))
+      instance[A, B](STuple.fromProductTyped(_).head)(b => mirror.fromProduct(b *: EmptyTuple))
 
-    given productN[A <: SProduct, B <: Tuple](using
+    given productN[A <: SProduct, B <: STuple](using
         mirror: Mirror.ProductOf[A] { type MirroredElemTypes = B }
-    ): Evidence.Product.Aux[A, B] = instance[A, B](Tuple.fromProductTyped)(mirror.fromProduct)
+    ): Evidence.Product.Aux[A, B] = instance[A, B](STuple.fromProductTyped)(mirror.fromProduct)
 
   @implicitNotFound(
     "Can not construct an Evidence.Coproduct[${A}]: Make sure that all branches of the enum are covered in the correct order"
@@ -63,8 +64,8 @@ object Evidence:
 
     given [A]: Merge.Aux[Unit, A, A] = instance[Unit, A, A] { case (_, a) => a }(a => ((), a))
 
-    given [A <: Tuple, B]: Merge.Aux[A, B, Tuple.Append[A, B]] =
-      instance[A, B, Tuple.Append[A, B]] { case (a, b) => a :* b } { ab =>
+    given [A <: STuple, B]: Merge.Aux[A, B, STuple.Append[A, B]] =
+      instance[A, B, STuple.Append[A, B]] { case (a, b) => a :* b } { ab =>
         (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
       }
 

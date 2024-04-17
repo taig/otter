@@ -1,10 +1,28 @@
 package io.taig.otter
 
 import io.taig.otter.validation.Validation
+import cats.data.Chain
 
 sealed abstract class Schema[A] extends Operation[Schema, Schema, Schema, Tuple, A]
 
 sealed abstract class Value[A] extends Schema[A] with Operation.Value[Value, Value, Schema, Tuple, A]
+
+sealed abstract class Collection[+S, A] extends Schema[A] with Operation.Collection[Collection, Schema, Tuple, S, A]:
+  override def asSelf: Collection[S, A] = this
+  override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(g: C => A): Collection[S, C] =
+    Collection.Validate(this, constraint, validation, g)
+  override def optional: Collection[S, Option[A]] = Collection.Optional(this)
+  override def toTuple: Tuple[Collection[S, A], A] = Tuple.One(this)
+
+object Collection:
+  final case class Optional[S, A](schema: Collection[S, A]) extends Collection[S, Option[A]]
+  final case class Root[S[_], A](schema: S[A]) extends Collection[S[A], Chain[A]]
+  final case class Validate[S, A, B, C](
+      schema: Collection[S, A],
+      constraint: Schema[B],
+      validation: Validation[A, B, C],
+      g: C => A
+  ) extends Collection[S, C]
 
 sealed abstract class Primitive[A] extends Value[A] with Operation.Primitive[Primitive, Primitive, Schema, Tuple, A]
 
@@ -59,7 +77,7 @@ sealed abstract class Tuple[+S, A] extends Schema[A] with Operation.Tuple[Tuple,
   final override def ivalidate[B, C](constraint: Schema[B])(validation: Validation[A, B, C])(
       g: C => A
   ): Tuple[S, C] = Tuple.Validate(this, constraint, validation, g)
-  override def toTuple: Tuple[Tuple[S, A], A] = Tuple.One(this)
+  final override def toTuple: Tuple[Tuple[S, A], A] = Tuple.One(this)
 
 object Tuple:
   case object Empty extends Tuple[Nothing, Unit]:
