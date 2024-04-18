@@ -6,6 +6,13 @@ trait Types:
   type Schema[A]
   type Value[A] <: Schema[A]
 
+  type Collection[A] <: Schema[A]
+
+  trait Collections:
+    type Of[+S, A] <: Collection[A]
+
+  val Collection: Collections
+
   type Primitive[A] <: Value[A]
 
   trait Primitives:

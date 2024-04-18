@@ -15,6 +15,26 @@ object Metadata:
   sealed abstract class Value[F[_]] extends Metadata[F]:
     override type Self[f[_]] <: Value[f]
 
+  final case class Collection[F[_]](
+      description: F[Option[String]],
+      name: F[Option[String]]
+  ) extends Metadata[F]:
+    override type Self[f[_]] = Metadata.Collection[f]
+
+    override def asSelf: Metadata.Collection[F] = this
+
+    override def toAttributes[S](f: Metadata.Collection[Identity] => S)(using
+        ev: Self[F] =:= Metadata.Collection[Identity]
+    ): Metadata.Collection[Attribute[S, *]] =
+      val self = ev.apply(this)
+      Collection(
+        description = Attribute(self.description)(g => f(self.copy(description = g(self.description)))),
+        name = Attribute(self.name)(g => f(self.copy(description = g(self.name))))
+      )
+
+  object Collection:
+    val Default: Metadata.Tuple[Identity] = Metadata.Tuple(description = None, name = None)
+
   final case class Primitive[F[_]](
       description: F[Option[String]],
       format: F[Option[String]],
