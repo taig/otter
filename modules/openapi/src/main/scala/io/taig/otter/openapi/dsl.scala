@@ -19,6 +19,8 @@ object dsl extends Dsl:
 
   override type Collection[A] = Annotation[Plain.Collection[?, A], Metadata.Collection[Identity]]
 
+  override object Collection extends Collections {}
+
   override type Primitive[A] = Annotation[Plain.Primitive[A], Metadata.Primitive[Identity]]
 
   override object Primitive extends Primitives:
