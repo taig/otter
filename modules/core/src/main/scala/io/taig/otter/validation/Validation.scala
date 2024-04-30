@@ -28,8 +28,8 @@ object Validation:
   def valid[A](a: A): Validation[Any, Nothing, A] = lift(_ => a)
   def ask[A]: Validation[A, Nothing, A] = Validation(Chain.empty)(_.valid)
 
-//   extension [In, Out](self: Validation[In, Out])
-//     def tap: Validation[In, In] = Validation(self.constraints)(a => self(a).as(a))
+  extension [In, C, Out](self: Validation[In, C, Out])
+    def tap: Validation[In, C, In] = Validation(self.constraints)(a => self(a).as(a))
 
 //   given [In]: Applicative[Validation[In, *]] with
 //     override def pure[B](b: B): Validation[In, B] = valid(b)
