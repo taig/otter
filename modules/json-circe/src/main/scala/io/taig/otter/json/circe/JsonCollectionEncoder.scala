@@ -7,7 +7,8 @@ import cats.syntax.all.*
 import io.circe.Json
 
 object JsonCollectionEncoder:
-  def encode[A](schema: Collection[Schema[?], A], a: A): Option[Chain[Json]] = schema match
-    case Collection.Optional(schema)          => a.flatMap(encode(schema, _))
-    case Collection.Root(schema)              => a.map(JsonEncoder.encode(schema, _)).some
-    case Collection.Validate(schema, _, _, g) => encode(schema, g(a))
+  def encode[A](schema: Collection.Write[Schema[?], A], a: A): Option[Chain[Json]] = schema match
+    case Collection.Write.Root(schema)     => a.map(JsonEncoder(schema, _)).some
+    case Collection.Write.Modify(self, f)  => encode(self, f(a))
+    case Collection.Write.Optional(schema) => a.flatMap(encode(schema, _))
+    case Collection(_, asWrite)            => encode(asWrite, a)
