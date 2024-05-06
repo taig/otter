@@ -1,13 +1,14 @@
 package io.taig.otter
 
 import cats.data.Chain
+import io.taig.otter.validation.Validation
 
 final case class Collection[+Of, A] private (asRead: Collection.Read[Of, A], asWrite: Collection.Write[Of, A])
     extends Schema[Of, A],
       Collection.Read[Of, A],
       Collection.Write[Of, A]:
   export asRead.schema
-  override def imap[B](f: A => B)(g: B => A): Collection[Of, B] = Collection(asRead.map(f), asWrite.contramap(g))
+  override def ivalidate[B, C](validation: Validation[A, B, C])(f: C => A): Collection[Of, C] = ???
   override def optional: Collection[Of, Option[A]] = Collection(asRead.optional, asWrite.optional)
 
 object Collection:
@@ -15,7 +16,8 @@ object Collection:
     def schema: Of
 
   sealed trait Read[+Of, +A] extends Schema.Read[Of, A], Collection.Operation[Of]:
-    final override def map[B](f: A => B): Collection.Read[Of, B] = Read.Modify(this, f)
+    // final override def map[B](f: A => B): Collection.Read[Of, B] = Read.Modify(this, f)
+    override def validate[B, C](validation: Validation[A, B, C]): Collection.Read[Of, C] = ???
     override def optional: Collection.Read[Of, Option[A]] = Read.Optional(this)
 
   object Read:

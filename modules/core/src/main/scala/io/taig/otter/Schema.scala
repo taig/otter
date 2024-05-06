@@ -1,18 +1,19 @@
 package io.taig.otter
 
 import io.taig.otter.Schema.Write
+import io.taig.otter.validation.Validation
 
 trait Schema[+Of, A] extends Schema.Read[Of, A], Schema.Write[Of, A]:
   def asRead: Schema.Read[Of, A]
   def asWrite: Schema.Write[Of, A]
-  def imap[B](f: A => B)(g: B => A): Schema[Of, B]
+  def ivalidate[B, C](validation: Validation[A, B, C])(f: C => A): Schema[Of, C]
   def optional: Schema[Of, Option[A]]
 
 object Schema:
-  type Any[+Of, A] = Collection[Of, A]
+  type Any[+Of, A] = Collection[Of, A] | Primitive[A]
 
   trait Read[+Of, +A]:
-    def map[B](f: A => B): Schema.Read[Of, B]
+    def validate[B, C](validation: Validation[A, B, C]): Schema.Read[Of, C]
     def optional: Schema.Read[Of, Option[A]]
 
   object Read:
