@@ -2,10 +2,11 @@ package io.taig.otter.json.circe
 
 import io.circe.Json
 import io.taig.otter.Schema
-import io.taig.otter.SchemaEncoder
+import io.taig.otter.Collection
+import io.taig.otter.Encoder
 
-object JsonEncoder extends SchemaEncoder[Json]:
-  override def apply[A](schema: Schema[A], a: A): Json = ???
+object JsonEncoder extends Encoder[Schema.Write.Any[?, *], Json]:
+  override def apply[A](schema: Schema.Write.Any[?, A], a: A): Json = ???
   //   JsonCollectionEncoder.encode(schema, a).map(values => Json.fromValues(values.toVector)).getOrElse(Json.Null)
 
   // override def encode[A](schema: Primitive[A], a: A): Json = JsonPrimitiveEncoder.encode(schema, a)

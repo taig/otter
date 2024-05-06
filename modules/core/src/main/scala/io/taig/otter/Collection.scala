@@ -1,51 +1,43 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.data.Chain
-// import io.taig.otter.Collection.Write
+import cats.data.Chain
 
-// sealed trait Collection[+Of, A]
-//     extends Collection.Read[Of, A]
-//     with Collection.Write[Of, A]
-//     with Collection.Operation[Collection, Collection.Read, Collection.Write, Of, A]:
-//   override def imap[B](f: A => B)(g: B => A): Collection[Of, B] = ???
-//   override def optional: Collection[Of, Option[A]] = ???
+final case class Collection[+Of, A] private (asRead: Collection.Read[Of, A], asWrite: Collection.Write[Of, A])
+    extends Schema[Of, A],
+      Collection.Read[Of, A],
+      Collection.Write[Of, A]:
+  export asRead.schema
+  override def imap[B](f: A => B)(g: B => A): Collection[Of, B] = Collection(asRead.map(f), asWrite.contramap(g))
+  override def optional: Collection[Of, Option[A]] = Collection(asRead.optional, asWrite.optional)
 
-// object Collection:
-//   trait Operation[+S[+_, _], +RS[+of, a] >: S[of, a], +WS[+of, a] >: S[of, a], +Of, A]
-//       extends Schema.Operation[S[Of, *], S[Of, *], RS[Of, *], RS[Of, *], WS[Of, *], WS[Of, *], A]
-//       with Collection.Common[Of]
+object Collection:
+  trait Operation[+Of]:
+    def schema: Of
 
-//   trait Common[+Of]:
-//     def schema: Of
+  sealed trait Read[+Of, +A] extends Schema.Read[Of, A], Collection.Operation[Of]:
+    final override def map[B](f: A => B): Collection.Read[Of, B] = Read.Modify(this, f)
+    override def optional: Collection.Read[Of, Option[A]] = Read.Optional(this)
 
-//   sealed trait Read[+Of, A] extends Collection.Read.Operation[Collection.Read, Of, A]:
-//     override def map[B](f: A => B): Collection.Read[Of, B] = ???
-//     override def optional: Collection.Read[Of, Option[A]] = ???
+  object Read:
+    final case class Modify[Of, A, B](self: Collection.Read[Of, A], f: A => B) extends Collection.Read[Of, B]:
+      export self.schema
+    final case class Optional[Of, A](self: Collection.Read[Of, A]) extends Collection.Read[Of, Option[A]]:
+      export self.schema
+    final case class Root[S[_], A](schema: S[A]) extends Collection.Read[S[A], Chain[A]]
 
-//   object Read:
-//     trait Operation[+S[+_, _], +Of, A] extends Schema.Operation.Read[S[Of, *], S[Of, *], A] with Collection.Common[Of]
+    def apply[S[_], A](schema: S[A]): Collection.Read[S[A], Chain[A]] = Root(schema)
 
-//     final case class Root[S[_], A](schema: S[A]) extends Collection.Read[S[A], Chain[A]]
+  sealed trait Write[+Of, -A] extends Schema.Write[Of, A], Collection.Operation[Of]:
+    final override def contramap[B](f: B => A): Collection.Write[Of, B] = Write.Modify(this, f)
+    override def optional: Collection.Write[Of, Option[A]] = Write.Optional(this)
 
-//     def apply[S[_], A](schema: S[A]): Collection.Read[S[A], Chain[A]] = Root(schema)
+  object Write:
+    final case class Modify[Of, A, B](self: Collection.Write[Of, A], f: B => A) extends Collection.Write[Of, B]:
+      export self.schema
+    final case class Optional[Of, A](self: Collection.Write[Of, A]) extends Collection.Write[Of, Option[A]]:
+      export self.schema
+    final case class Root[S[_], A](schema: S[A]) extends Collection.Write[S[A], Chain[A]]
 
-//   sealed trait Write[+Of, A] extends Collection.Write.Operation[Collection.Write, Of, A]:
-//     override def contramap[B](f: B => A): Collection.Write[Of, B] = ???
-//     override def optional: Collection.Write[Of, Option[A]] = ???
+    def apply[S[_], A](schema: S[A]): Collection.Write[S[A], Chain[A]] = Root(schema)
 
-//   object Write:
-//     trait Operation[+S[+_, _], +Of, A] extends Schema.Operation.Write[S[Of, *], S[Of, *], A] with Collection.Common[Of]
-
-//     final case class Root[S[_], A](schema: S[A]) extends Collection.Write[S[A], Chain[A]]
-
-//     def apply[S[_], A](schema: S[A]): Collection.Write[S[A], Chain[A]] = Root(schema)
-
-//   def apply[S[_], A](schema: S[A]): Collection[S[A], Chain[A]] =
-//     val read = Read(schema)
-//     val write = Write(schema)
-
-//     new Collection[S[A], Chain[A]] {
-//       override def asRead = read
-//       override def asWrite = write
-//       override def schema: S[A] = read.schema
-//     }
+  def apply[S[_], A](schema: S[A]): Collection[S[A], Chain[A]] = Collection(Read(schema), Write(schema))
