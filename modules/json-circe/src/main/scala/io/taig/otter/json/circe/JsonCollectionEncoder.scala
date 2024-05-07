@@ -5,10 +5,9 @@ import cats.data.Chain
 import io.taig.otter.Schema
 import cats.syntax.all.*
 import io.circe.Json
-import io.taig.otter.Encoder
 
-object JsonCollectionEncoder extends Encoder[Collection.Write[Schema.Write.Any[?, ?], *], Option[Chain[Json]]]:
-  override def apply[A](schema: Collection.Write[Schema.Write.Any[?, ?], A], a: A): Option[Chain[Json]] = schema match
+object JsonCollectionEncoder:
+  def apply[A](schema: Collection.Write[Schema.Write.Any[?, ?], A], a: A): Option[Chain[Json]] = schema match
     case Collection.Write.Root(schema)     => a.map(JsonEncoder(schema, _)).some
     case Collection.Write.Modify(self, f)  => apply(self, f(a))
     case Collection.Write.Optional(schema) => a.flatMap(apply(schema, _))

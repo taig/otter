@@ -4,8 +4,8 @@ import cats.syntax.all.*
 import io.taig.otter.*
 import io.circe.Json
 import cats.data.Validated
+import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Violations
-import io.circe.syntax.*
 
 object JsonDecoder extends Decoder[Schema.Read.Any[?, *], Json]:
   override def apply[B](schema: Schema.Read.Any[?, B], json: Json): Validated[Violations[Json], B] = ???

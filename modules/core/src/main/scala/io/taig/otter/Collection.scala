@@ -8,7 +8,9 @@ final case class Collection[+Of, A] private (asRead: Collection.Read[Of, A], asW
       Collection.Read[Of, A],
       Collection.Write[Of, A]:
   export asRead.schema
-  override def ivalidate[B, C](validation: Validation[A, B, C])(f: C => A): Collection[Of, C] = ???
+  override def ivalidate[B, C](constraint: Schema.Write.Any[?, B])(validation: Validation[A, B, C])(
+      f: C => A
+  ): Collection[Of, C] = Collection(asRead.validate(constraint)(validation), asWrite.contramap(f))
   override def optional: Collection[Of, Option[A]] = Collection(asRead.optional, asWrite.optional)
 
 object Collection:
@@ -16,16 +18,22 @@ object Collection:
     def schema: Of
 
   sealed trait Read[+Of, +A] extends Schema.Read[Of, A], Collection.Operation[Of]:
-    // final override def map[B](f: A => B): Collection.Read[Of, B] = Read.Modify(this, f)
-    override def validate[B, C](validation: Validation[A, B, C]): Collection.Read[Of, C] = ???
+    override def validate[B, C](constraint: Schema.Write.Any[?, B])(
+        validation: Validation[A, B, C]
+    ): Collection.Read[Of, C] =
+      Collection.Read.Validate(this, constraint, validation)
     override def optional: Collection.Read[Of, Option[A]] = Read.Optional(this)
 
   object Read:
-    final case class Modify[Of, A, B](self: Collection.Read[Of, A], f: A => B) extends Collection.Read[Of, B]:
-      export self.schema
     final case class Optional[Of, A](self: Collection.Read[Of, A]) extends Collection.Read[Of, Option[A]]:
       export self.schema
     final case class Root[S[_], A](schema: S[A]) extends Collection.Read[S[A], Chain[A]]
+    final case class Validate[Of, A, B, C](
+        self: Collection.Read[Of, A],
+        constraint: Schema.Write.Any[?, B],
+        validation: Validation[A, B, C]
+    ) extends Collection.Read[Of, C]:
+      export self.schema
 
     def apply[S[_], A](schema: S[A]): Collection.Read[S[A], Chain[A]] = Root(schema)
 
