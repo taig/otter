@@ -18,6 +18,7 @@ object Schema:
 
   object Read:
     type Any[+Of, +A] = Collection.Read[Of, A]
+    type Identity[A] = Fix[Schema.Read[*, A]]
 
   trait Write[+Of, -A]:
     def contramap[B](f: B => A): Schema.Write[Of, B]
@@ -25,3 +26,4 @@ object Schema:
 
   object Write:
     type Any[+Of, -A] = Collection.Write[Of, A]
+    type Identity[A] = Fix[Schema.Write[*, A]]
