@@ -13,7 +13,7 @@ object Schema:
 
   object Reader:
     type Any[+Of, +A] = Collection.Reader[Of, A]
-    type Identity[A] = Fix[Schema.Reader[*, A]]
+    type Identity[A] = Fix[Schema.Reader.Any[*, A]]
 
     given [Of]: SchemaFunctor[Schema.Reader[Of, *]] with
       override def validate[A, B, C, D](fa: Schema.Reader[Of, A])(
@@ -27,7 +27,7 @@ object Schema:
 
   object Writer:
     type Any[+Of, -A] = Collection.Writer[Of, A]
-    type Identity[A] = Fix[Schema.Writer[*, A]]
+    type Identity[A] = Fix[Schema.Writer.Any[*, A]]
 
     given [Of]: SchemaContravariant[Schema.Writer[Of, *]] with
       override def contramap[A, B](fa: Schema.Writer[Of, A])(f: B => A): Schema.Writer[Of, B] = fa.contramap(f)

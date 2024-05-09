@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import io.taig.otter.*
 import io.circe.Json
 import cats.data.Validated
-import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Violations
 
 object JsonDecoder extends Decoder[[a] =>> Schema.Reader.Any[Schema.Reader.Identity[a], a], Json]:

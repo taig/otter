@@ -25,7 +25,7 @@ enum Violations[+A, +B]:
 
 object Violations:
   def root[A, B](violations: NonEmptyChain[Violation[A, B]]): Violations[A, B] = Group(violations.map(Root.apply))
-  def root[A, B](violation: Violation[A, B]): Violations[A, B] = Root(violation)
+  def rootNec[A, B](violation: Violation[A, B]): Violations[A, B] = Root(violation)
 
   given [A, B]: Semigroup[Violations[A, B]] with
     override def combine(x: Violations[A, B], y: Violations[A, B]): Violations[A, B] = x.combine(y)
