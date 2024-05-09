@@ -3,6 +3,7 @@ package io.taig.otter.validation
 import cats.Eq
 import cats.Foldable
 import cats.Order
+import cats.UnorderedFoldable
 import cats.data.Chain
 import cats.data.Validated
 import cats.implicits.*
@@ -12,28 +13,19 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeParseException
 import java.util.UUID
 import java.util.regex.Pattern
+import scala.Numeric.Implicits.*
+import scala.Ordering.Implicits.*
 import scala.collection.immutable.SortedSet
-import cats.UnorderedFoldable
 
 trait validations:
-  def equal[A: Eq](reference: A): Validation[A, A, Unit] = Validation(Constraint.Equals(reference)): value =>
-    Validated.cond(value === reference, (), value)
+  def equal(reference: String): Validation[String, Nothing, String, Unit] =
+    matches(Pattern.compile(Pattern.quote(reference)))
 
-//   def exactLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
-//     minLength(reference, toLength) *> maxLength(reference, toLength)
+  val email: Validation[String, String, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
-//   def exactLength(reference: Int): Validation[String, Unit] = exactLength(reference, _.length)
-
-//   val email: Validation[CIString, Unit] = Validation
-//     .lift[CIString, String](_.toString)
-//     .andThen(matches(Pattern.compile(".+@.+")))
-
-//   def minimum[A: Numeric](
-//       reference: A,
-//       exclusive: Boolean,
-//       toData: A => Data.Number
-//   ): Validation[A, Unit] = Validation.of(Constraint.Minimum(toData(reference), exclusive)): value =>
-//     Validated.condNec(if exclusive then value > reference else value >= reference, (), toData(value))
+  def minimum[A: Numeric](reference: A, exclusive: Boolean): Validation[A, A, A, Unit] =
+    Validation.validated(Constraint.Minimum(reference, exclusive)): a =>
+      Validated.condNec(if exclusive then a > reference else a >= reference, (), a)
 
 //   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
 //     minimum(reference, exclusive, Data.Number.apply)
@@ -96,27 +88,27 @@ trait validations:
 
 //   def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, Data.Number.apply)
 
-//   def minLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
-//     Validation.of(Constraint.MinLength(reference)): value =>
-//       val length = toLength(value)
-//       Validated.condNec(length >= reference, (), Data.Number(length))
+  def minLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+    Validation.validated(Constraint.MinLength(reference)): a =>
+      val length = toLength(a)
+      Validated.condNec(length >= reference, (), length)
 
-//   def minLength(reference: Int): Validation[String, Unit] = minLength(reference, _.length)
+  def minLength(reference: Int): Validation[CharSequence, Nothing, Int, Unit] = minLength(reference, _.length)
 
-//   def maxLength[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
-//     Validation.of(Constraint.MaxLength(reference)): value =>
-//       val length = toLength(value)
-//       Validated.condNec(length <= reference, (), Data.Number(length))
+  def maxLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+    Validation.validated(Constraint.MaxLength(reference)): a =>
+      val length = toLength(a)
+      Validated.condNec(length <= reference, (), length)
 
-//   def maxLength(reference: Int): Validation[String, Unit] = maxLength(reference, _.length)
+  def maxLength(reference: Int): Validation[String, Nothing, Int, Unit] = maxLength(reference, _.length)
 
-//   def length[A](reference: Int, toLength: A => Int): Validation[A, Unit] =
-//     minLength(reference, toLength) *> maxLength(reference, toLength)
+  def length[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+    minLength(reference, toLength) *> maxLength(reference, toLength)
 
-//   def length(reference: Int): Validation[String, Unit] = length(reference, _.length)
+  def length(reference: Int): Validation[String, Nothing, Int, Unit] = length(reference, _.length)
 
-  def matches(pattern: Pattern): Validation[String, String, Unit] = Validation(Constraint.Matches(pattern)): value =>
-    Validated.cond(pattern.matcher(value).matches(), (), value)
+  def matches(pattern: Pattern): Validation[String, Nothing, String, Unit] =
+    Validation.when(Constraint.Matches(pattern))(pattern.matcher(_).matches())
 
 //   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
 //     Validation.of(Constraint.MinItems(reference)): values =>
@@ -125,43 +117,40 @@ trait validations:
 
 //   def minItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Unit] = minItems(reference, _.size)
 
-  def maxItems[A](reference: Long, count: A => Long): Validation[A, Long, Unit] =
-    Validation(Constraint.MaxItems(reference)): a =>
-      val size = count(a)
-      Validated.cond(size <= reference, (), size)
+// def maxItems[A](reference: Long, count: A => Long): Validation[A, Long, Unit] =
+//   Validation.cond(Constraint.MaxItems(reference))(a => count(a) <= reference)
 
-  def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Long, Unit] = maxItems(reference, _.size)
+// def maxItems[F[_]: UnorderedFoldable, A](reference: Long): Validation[F[A], Long, Unit] = maxItems(reference, _.size)
 
-  def maxItems[F[a] <: IterableOnce[a], A](reference: Long): Validation[F[A], Long, Unit] =
-    maxItems(reference, _.iterator.size)
+// def maxItems[F[a] <: IterableOnce[a], A](reference: Long): Validation[F[A], Long, Unit] =
+//   maxItems(reference, _.iterator.size)
 
-  def parse[A](tpe: String)(f: String => Option[A]): Validation[String, String, A] =
-    Validation(Constraint.Type(tpe))(value => f(value).toValid(value))
+// def parse[A](tpe: String)(f: String => Option[A]): Validation[String, String, A] = Validation(Constraint.Type(tpe))(f)
 
-//   val required: Validation[String, String] = Validation.lift[String, String](_.trim).andThen(minLength(1).tap)
+// val required: Validation[String, String] = Validation.lift[String, String](_.trim).andThen(minLength(1).tap)
 
-  val uuid: Validation[String, String, UUID] = parse("uuid"): value =>
-    try UUID.fromString(value).some
-    catch case _: IllegalArgumentException => none
+// val uuid: Validation[String, String, UUID] = parse("uuid"): value =>
+//   try UUID.fromString(value).some
+//   catch case _: IllegalArgumentException => none
 
-  val date: Validation[String, String, LocalDate] = parse("date"): value =>
-    try LocalDate.parse(value).some
-    catch case _: DateTimeParseException => none
+// val date: Validation[String, String, LocalDate] = parse("date"): value =>
+//   try LocalDate.parse(value).some
+//   catch case _: DateTimeParseException => none
 
-  val dateTime: Validation[String, String, LocalDateTime] = parse("dateTime"): value =>
-    try LocalDateTime.parse(value).some
-    catch case _: DateTimeParseException => none
+// val dateTime: Validation[String, String, LocalDateTime] = parse("dateTime"): value =>
+//   try LocalDateTime.parse(value).some
+//   catch case _: DateTimeParseException => none
 
-  def oneOf[F[_]: UnorderedFoldable, A: Eq](references: Chain[A]): Validation[A, A, Unit] =
-    Validation(Constraint.OneOf(references)): a =>
-      Validated.cond(references.contains_(a), (), a)
+// def oneOf[F[_]: UnorderedFoldable, A: Eq](references: Chain[A]): Validation[A, A, Unit] =
+//   Validation(Constraint.OneOf(references)): a =>
+//     Validated.cond(references.contains_(a), (), a)
 
-  def uniqueItems[F[_]: Foldable, A: Order]: Validation[F[A], A, Unit] =
-    Validation(Constraint.UniqueItems): fa =>
-      val (_, duplicate) = fa.foldl((SortedSet.empty[A], none[A])):
-        case ((set, None), a)                => (set, Option.when(set(a))(a))
-        case ((set, duplicate @ Some(_)), a) => (set, duplicate)
+// def uniqueItems[F[_]: Foldable, A: Order]: Validation[F[A], Unit] =
+//   Validation.cond(Constraint.UniqueItems): fa =>
+//     val (_, duplicate) = fa.foldl((SortedSet.empty[A], none[A])):
+//       case ((set, None), a)                => (set, Option.when(set(a))(a))
+//       case ((set, duplicate @ Some(_)), a) => (set, duplicate)
 
-      duplicate.toInvalid(())
+//     duplicate.isEmpty
 
 object validations extends validations
