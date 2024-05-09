@@ -2,6 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 import cats.data.NonEmptyChain
+import cats.data.NonEmptyChainImpl
 
 sealed trait Tuple[+Of, A] extends Schema[Of, A], Tuple.Reader[Of, A], Tuple.Writer[Of, A]:
   self =>
@@ -81,6 +82,11 @@ object Tuple:
     final case class Root[S[_], A](schema: S[A]) extends Tuple.Writer[S[A], A]:
       override def schemas: NonEmptyChain[S[A]] = NonEmptyChain.one(schema)
 
+    given [Of]: TupleContravariant[Tuple.Writer, Of] with
+      override def optional[A](fa: Tuple.Writer[Of, A]): Tuple.Writer[Of, Option[A]] = fa.optional
+      override def schemas[A](fa: Tuple.Writer[Of, A]): NonEmptyChain[Of] = fa.schemas
+      override def contramap[A, B](fa: Tuple.Writer[Of, A])(f: B => A): Tuple.Writer[Of, B] = fa.contramap(f)
+
   final case class Optional[Of, A](self: Tuple[Of, A]) extends Tuple[Of, Option[A]]:
     export self.schemas
 
@@ -93,3 +99,11 @@ object Tuple:
 
   final case class Root[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
     override def schemas: NonEmptyChain[S[A]] = NonEmptyChain.one(schema)
+
+  given [Of]: TupleInvariant[Tuple, Of] with
+    override def optional[A](fa: Tuple[Of, A]): Tuple[Of, Option[A]] = fa.optional
+
+    override def ivalidate[A, B, C, D](fa: Tuple[Of, A])(validation: SchemaValidation[A, B, C, D])(
+        f: D => A
+    ): Tuple[Of, D] = fa.ivalidate(validation)(f)
+    override def schemas[A](fa: Tuple[Of, A]): NonEmptyChain[Of] = fa.schemas
