@@ -7,8 +7,11 @@ import cats.data.Validated
 import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Violations
 
-object JsonDecoder extends Decoder[Schema.Read.Any[?, *], Json]:
-  override def apply[B](schema: Schema.Read.Any[?, B], json: Json): Validated[Violations[Json], B] = ???
+object JsonDecoder extends Decoder[[a] =>> Schema.Reader.Any[Schema.Reader.Identity[a], a], Json]:
+  override def apply[B](
+      schema: Schema.Reader.Any[Schema.Reader.Identity[B], B],
+      json: Json
+  ): Validated[Violations[Json, Json], B] = ???
 
 // override def decode[A](schema: Collection[Schema[?], A], json: Json): Validated[Violations[Json], A] =
 //   if json.isNull then JsonCollectionDecoder.decode(schema, none)

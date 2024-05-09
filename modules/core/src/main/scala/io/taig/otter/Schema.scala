@@ -1,21 +1,18 @@
 package io.taig.otter
 
-import io.taig.otter.validation.Validation
-import cats.Functor
-
 trait Schema[+Of, A] extends Schema.Reader[Of, A], Schema.Writer[Of, A]:
   def ivalidate[B, C, D](validation: SchemaValidation[A, B, C, D])(f: D => A): Schema[Of, D]
   def optional: Schema[Of, Option[A]]
 
 object Schema:
-  // type Any[+Of, A] = Collection[Of, A] // | Primitive[A]
+  type Any[+Of, A] = Collection[Of, A] // | Primitive[A]
 
   trait Reader[+Of, +A]:
     def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Schema.Reader[Of, D]
     def optional: Schema.Reader[Of, Option[A]]
 
   object Reader:
-    // type Any[+Of, +A] = Collection.Reader[Of, A]
+    type Any[+Of, +A] = Collection.Reader[Of, A]
     type Identity[A] = Fix[Schema.Reader[*, A]]
 
     given [Of]: SchemaFunctor[Schema.Reader[Of, *]] with
@@ -29,7 +26,7 @@ object Schema:
     def optional: Schema.Writer[Of, Option[A]]
 
   object Writer:
-    // type Any[+Of, -A] = Collection.Writer[Of, A]
+    type Any[+Of, -A] = Collection.Writer[Of, A]
     type Identity[A] = Fix[Schema.Writer[*, A]]
 
     given [Of]: SchemaContravariant[Schema.Writer[Of, *]] with
