@@ -1,21 +1,24 @@
 package io.taig.otter
 
 trait Schema[+Of, A] extends Schema.Reader[Of, A], Schema.Writer[Of, A]:
+  def reader: Schema.Reader[Of, A]
+  def writer: Schema.Writer[Of, A]
+
   def ivalidate[B, C, D](validation: SchemaValidation[A, B, C, D])(f: D => A): Schema[Of, D]
   def optional: Schema[Of, Option[A]]
 
 object Schema:
-  type Any[+Of, A] = Collection[Of, A] // | Primitive[A]
+  type Any[+Of, A] = Collection[Of, A] | Primitive[A]
 
   trait Reader[+Of, +A]:
     def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Schema.Reader[Of, D]
     def optional: Schema.Reader[Of, Option[A]]
 
   object Reader:
-    type Any[+Of, +A] = Collection.Reader[Of, A]
+    type Any[+Of, +A] = Collection.Reader[Of, A] | Primitive.Reader[A]
     type Identity[A] = Fix[Schema.Reader.Any[*, A]]
 
-    given [Of]: SchemaFunctor[Schema.Reader[Of, *]] with
+    given [Of]: SchemaFunctor[Schema.Reader[Of, *], Schema.Reader[Of, *]] with
       override def validate[A, B, C, D](fa: Schema.Reader[Of, A])(
           validation: SchemaValidation[A, B, C, D]
       ): Schema.Reader[Of, D] = fa.validate(validation)
@@ -26,14 +29,14 @@ object Schema:
     def optional: Schema.Writer[Of, Option[A]]
 
   object Writer:
-    type Any[+Of, -A] = Collection.Writer[Of, A]
+    type Any[+Of, -A] = Collection.Writer[Of, A] | Primitive.Writer[A]
     type Identity[A] = Fix[Schema.Writer.Any[*, A]]
 
-    given [Of]: SchemaContravariant[Schema.Writer[Of, *]] with
+    given [Of]: SchemaContravariant[Schema.Writer[Of, *], Schema.Writer[Of, *]] with
       override def contramap[A, B](fa: Schema.Writer[Of, A])(f: B => A): Schema.Writer[Of, B] = fa.contramap(f)
       override def optional[A](fa: Schema.Writer[Of, A]): Schema.Writer[Of, Option[A]] = fa.optional
 
-  given [Of]: SchemaInvariant[Schema[Of, *]] with
+  given [Of]: SchemaInvariant[Schema[Of, *], Schema[Of, *]] with
     override def ivalidate[A, B, C, D](fa: Schema[Of, A])(validation: SchemaValidation[A, B, C, D])(
         f: D => A
     ): Schema[Of, D] = fa.ivalidate(validation)(f)

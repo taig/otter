@@ -1,63 +1,82 @@
 package io.taig.otter
 
-import io.taig.otter.Schema.Read
-import io.taig.otter.validation.Validation
+sealed abstract class Primitive[A] extends Schema[Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
+  override def reader: Primitive.Reader[A]
+  override def writer: Primitive.Writer[A]
 
-// sealed abstract class Primitive[A] extends Schema[Nothing, A], Primitive.Read[A], Primitive.Write[A]:
-//   override def asRead: Primitive.Read[A]
-//   override def asWrite: Primitive.Write[A]
+  override def ivalidate[B, C, D](validation: SchemaValidation[A, B, C, D])(
+      f: D => A
+  ): Primitive[D] = Primitive.Optional(reader.validate(validation), writer.contramap(f))
 
-//   override def ivalidate[B, C](constraint: Schema[?, B])(validation: Validation[A, B, C])(f: C => A): Primitive[C] =
-//     Primitive.Optional(asRead.validate(constraint)(validation), asWrite.contramap(f))
+  override def optional: Primitive[Option[A]] = Primitive.Optional(reader.optional, writer.optional)
 
-//   override def optional: Primitive[Option[A]] = Primitive.Optional(asRead.optional, asWrite.optional)
+object Primitive:
+  trait Operation:
+    def tpe: Type[?]
 
-// object Primitive:
-//   trait Operation:
-//     def tpe: Type[?]
+  final case class Required[A] private (reader: Primitive.Required.Reader[A], writer: Primitive.Required.Writer[A])
+      extends Primitive[A],
+        Primitive.Required.Reader[A],
+        Primitive.Required.Writer[A]:
+    export reader.tpe
+    override def ivalidate[B, C, D](validation: SchemaValidation[A, B, C, D])(
+        f: D => A
+    ): Primitive.Required[D] = Required(reader.validate(validation), writer.contramap(f))
+    override def optional: Primitive[Option[A]] = Primitive.Optional(reader.optional, writer.optional)
 
-//   final case class Required[A] private (asRead: Primitive.Required.Read[A], asWrite: Primitive.Required.Write[A])
-//       extends Primitive[A],
-//         Primitive.Required.Read[A],
-//         Primitive.Required.Write[A]:
-//     override def ivalidate[B, C](constraint: Schema[?, B])(validation: Validation[A, B, C])(
-//         f: C => A
-//     ): Primitive.Required[C] = Required(asRead.validate(constraint)(validation), asWrite.contramap(f))
-//     override def optional: Primitive[Option[A]] = Primitive.Optional(asRead.optional, asWrite.optional)
+  object Required:
+    sealed trait Reader[+A] extends Primitive.Reader[A]:
+      final override def validate[B, C, D](
+          validation: SchemaValidation[A, B, C, D]
+      ): Primitive.Required.Reader[D] = Reader.Validate(this, validation)
+      override def optional: Primitive.Reader[Option[A]] = ???
 
-//   object Required:
-//     sealed trait Read[+A] extends Primitive.Read[A]:
-//       final override def validate[B, C](constraint: Schema[?, B])(
-//           validation: Validation[A, B, C]
-//       ): Primitive.Required.Read[C] = Read.Validate(this, constraint, validation)
-//       override def optional: Primitive.Read[Option[A]] = Read.Optional(this)
+    object Reader:
+      final case class Validate[A, B, C, D](
+          self: Primitive.Required.Reader[A],
+          validation: SchemaValidation[A, B, C, D]
+      ) extends Primitive.Required.Reader[D]:
+        export self.tpe
 
-//     object Read:
-//       final case class Validate[A, B, C](
-//           self: Primitive.Required.Read[A],
-//           constraint: Schema[?, B],
-//           validation: Validation[A, B, C]
-//       ) extends Primitive.Required.Read[C]
+      final case class Root[A](tpe: Type[A]) extends Primitive.Required.Reader[A]
 
-//       final case class Optional[A](self: Primitive.Required.Read[A]) extends Primitive.Required.Read[Option[A]]
+      given PrimitiveFunctor[Primitive.Required.Reader, Primitive.Reader] with
+        override def optional[A](fa: Primitive.Required.Reader[A]): Primitive.Reader[Option[A]] =
+          fa.optional
 
-//     sealed trait Write[-A] extends Primitive.Write[A]:
-//       final override def contramap[B](f: B => A): Primitive.Required.Write[B] = Write.Modify(this, f)
-//       override def optional: Primitive.Write[Option[A]] = Write.Optional(this)
+        override def validate[A, B, C, D](fa: Primitive.Required.Reader[A])(
+            validation: SchemaValidation[A, B, C, D]
+        ): Reader[D] = fa.validate(validation)
 
-//     object Write:
-//       final case class Modify[A, B](self: Primitive.Required.Write[A], f: B => A) extends Primitive.Required.Write[B]
+        override def tpe[A](fa: Primitive.Required.Reader[A]): Type[?] = fa.tpe
 
-//       final case class Optional[A](self: Primitive.Required.Write[A]) extends Primitive.Required.Write[Option[A]]
+    sealed trait Writer[-A] extends Primitive.Writer[A]:
+      final override def contramap[B](f: B => A): Primitive.Required.Writer[B] = Writer.Modify(this, f)
+      override def optional: Primitive.Writer[Option[A]] = Primitive.Writer.Optional(this)
 
-//   final case class Optional[A] private[otter] (asRead: Primitive.Read[A], asWrite: Primitive.Write[A])
-//       extends Primitive[A]
+    object Writer:
+      final case class Modify[A, B](self: Primitive.Required.Writer[A], f: B => A) extends Primitive.Required.Writer[B]:
+        export self.tpe
 
-//   sealed trait Read[+A] extends Schema.Read[Nothing, A]:
-//     override def validate[B, C](constraint: Schema[?, B])(validation: Validation[A, B, C]): Primitive.Read[C] = ???
+      final case class Root[A](tpe: Type[A]) extends Primitive.Required.Writer[A]
 
-//     override def optional: Primitive.Read[Option[A]] = ???
+    def apply[A](tpe: Type[A]): Primitive.Required[A] = Required(Reader.Root(tpe), Writer.Root(tpe))
 
-//   sealed trait Write[-A] extends Schema.Write[Nothing, A]:
-//     override def contramap[B](f: B => A): Primitive.Write[B] = ???
-//     override def optional: Primitive.Write[Option[A]] = ???
+  final case class Optional[A] private[otter] (reader: Primitive.Reader[A], writer: Primitive.Writer[A])
+      extends Primitive[A]:
+    export reader.tpe
+
+  sealed trait Reader[+A] extends Schema.Reader[Nothing, A], Primitive.Operation:
+    override def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Primitive.Reader[D] = ???
+    override def optional: Primitive.Reader[Option[A]] = ???
+
+  sealed trait Writer[-A] extends Schema.Writer[Nothing, A], Primitive.Operation:
+    override def contramap[B](f: B => A): Primitive.Writer[B] = Writer.Modify(this, f)
+    override def optional: Primitive.Writer[Option[A]] = Writer.Optional(this)
+
+  object Writer:
+    final case class Modify[A, B](self: Primitive.Writer[A], f: B => A) extends Primitive.Writer[B]:
+      export self.tpe
+
+    final case class Optional[A](self: Primitive.Writer[A]) extends Primitive.Writer[Option[A]]:
+      export self.tpe

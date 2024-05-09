@@ -17,7 +17,6 @@ object JsonCollectionDecoder:
       values: Option[Chain[Json]]
   ): Validated[Violations[Json, Json], C] = schema match
     case Collection.Reader.Optional(self) =>
-      // values.traverse(values => apply(self, values.some)) (?)
       values.fold(none.valid)(values => apply(self, values.some).map(_.some))
     case Collection.Reader.Root(schema) =>
       values
@@ -31,10 +30,3 @@ object JsonCollectionDecoder:
           .leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply)))
           .leftMap(Violations.root)
     case Collection(reader, _) => apply(reader, values)
-
-  // case Collection.Read.Root(schema) =>
-  //   values
-  //     .toValid(Violations.root(Violation(Constraint.Required, Json.Null)))
-  //     .andThen(_.zipWithIndex.traverse { case (json, index) =>
-  //       JsonDecoder(schema, json).leftMap(index /: _)
-  //     })
