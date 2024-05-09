@@ -21,10 +21,7 @@ object JsonDecoder extends Decoder[[a] =>> Schema.Reader.Any[Schema.Reader.Ident
         json.asArray match
           case Some(values) => JsonCollectionDecoder(schema, Chain.fromSeq(values).some)
           case None         => Violations.rootNec(Violation(Constraint.Type("array"), typeOf(json).asJson)).invalid
-    case schema: Primitive.Reader[A] => ???
-
-// override def decode[A](schema: Primitive[A], json: Json): Validated[Violations[Json], A] =
-//   JsonPrimitiveDecoder.decode(schema, json)
+    case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
 
 // override def decode[A](schema: Tuple[Schema[?], A], json: Json): Validated[Violations[Json], A] =
 //   if json.isNull then JsonTupleDecoder.decode(schema, none)

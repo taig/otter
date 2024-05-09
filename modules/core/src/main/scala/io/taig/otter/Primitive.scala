@@ -29,7 +29,7 @@ object Primitive:
       final override def validate[B, C, D](
           validation: SchemaValidation[A, B, C, D]
       ): Primitive.Required.Reader[D] = Reader.Validate(this, validation)
-      override def optional: Primitive.Reader[Option[A]] = ???
+      override def optional: Primitive.Reader[Option[A]] = Primitive.Reader.Optional(this)
 
     object Reader:
       final case class Validate[A, B, C, D](
@@ -67,8 +67,17 @@ object Primitive:
     export reader.tpe
 
   sealed trait Reader[+A] extends Schema.Reader[Nothing, A], Primitive.Operation:
-    override def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Primitive.Reader[D] = ???
-    override def optional: Primitive.Reader[Option[A]] = ???
+    override def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Primitive.Reader[D] =
+      Reader.Validate(this, validation)
+    override def optional: Primitive.Reader[Option[A]] = Reader.Optional(this)
+
+  object Reader:
+    final case class Validate[A, B, C, D](self: Primitive.Reader[A], validation: SchemaValidation[A, B, C, D])
+        extends Primitive.Reader[D]:
+      export self.tpe
+
+    final case class Optional[A](self: Primitive.Reader[A]) extends Primitive.Reader[Option[A]]:
+      export self.tpe
 
   sealed trait Writer[-A] extends Schema.Writer[Nothing, A], Primitive.Operation:
     override def contramap[B](f: B => A): Primitive.Writer[B] = Writer.Modify(this, f)
