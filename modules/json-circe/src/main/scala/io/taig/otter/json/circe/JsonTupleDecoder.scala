@@ -10,10 +10,11 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import io.taig.otter.Schema
 import io.taig.otter.SchemaValidation
+import io.taig.otter.Fix
 
 object JsonTupleDecoder:
   def apply[A, B](
-      schema: Tuple.Reader[Schema.Reader.Identity[A], B],
+      schema: Tuple.Reader[JsonSchema.Reader[A], B],
       values: Option[Chain[Json]]
   ): Validated[Violations[Json, Json], B] = values match
     case Some(values) =>
@@ -30,7 +31,7 @@ object JsonTupleDecoder:
         case _                 => Violations.rootNec(Violation.tpe("array", "null").map(_.asJson)).invalid
 
   def applyWithRemainders[A, B](
-      schema: Tuple.Reader[Schema.Reader.Identity[A], B],
+      schema: Tuple.Reader[JsonSchema.Reader[A], B],
       values: Chain[Json]
   ): (Chain[Json], Validated[Violations[Json, Json], B]) = schema match
     case Tuple.Empty                               => (Chain.empty, ().valid)
@@ -45,14 +46,14 @@ object JsonTupleDecoder:
     case Tuple.Reader.Product(left, right)         => productWithRemainders(left, right, values)
 
   def oneWithRemainders[A](
-      schema: Schema.Reader.Any[Schema.Reader.Identity[A], A],
+      schema: Schema.Reader[JsonSchema.Reader[A], A],
       values: Chain[Json]
   ): (Chain[Json], Validated[Violations[Json, Json], A]) = values.uncons match
-    case Some((head, tail)) => (tail, JsonDecoder(schema, head))
+    case Some((head, tail)) => (tail, JsonDecoder(Fix(schema), head))
     case None => (Chain.empty, Violations.rootNec(Violation.minItems(reference = 1, actual = 0).map(_.asJson)).invalid)
 
   def validateWithRemainders[A, B, C, D, E](
-      schema: Tuple.Reader[Schema.Reader.Identity[A], B],
+      schema: Tuple.Reader[JsonSchema.Reader[A], B],
       validation: SchemaValidation[B, C, D, E],
       values: Chain[Json]
   ): (Chain[Json], Validated[Violations[Json, Json], E]) = applyWithRemainders(schema, values).map:
@@ -62,8 +63,8 @@ object JsonTupleDecoder:
         .leftMap(Violations.root)
 
   def productWithRemainders[A, B, C](
-      left: Tuple.Reader[Schema.Reader.Identity[A], B],
-      right: Tuple.Reader[Schema.Reader.Identity[A], C],
+      left: Tuple.Reader[JsonSchema.Reader[A], B],
+      right: Tuple.Reader[JsonSchema.Reader[A], C],
       values: Chain[Json]
   ): (Chain[Json], Validated[Violations[Json, Json], (B, C)]) =
     val (bs, b) = applyWithRemainders(left, values)
