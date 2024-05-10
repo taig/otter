@@ -1,3 +1,3 @@
 package io.taig.otter
 
-final case class Fix[S[_]](unfix: S[Fix[S]]) extends AnyVal
+final case class Fix[+S[+_]](unfix: S[Fix[S]]) extends AnyVal

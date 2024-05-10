@@ -1,28 +1,27 @@
-package io.taig.otter.json.circe
+// package io.taig.otter.json.circe
 
-import cats.syntax.all.*
-import io.taig.otter.*
-import io.circe.Json
-import cats.data.Validated
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Constraint
-import io.circe.syntax.*
-import cats.data.Chain
+// import cats.syntax.all.*
+// import io.taig.otter.*
+// import io.circe.Json
+// import cats.data.Validated
+// import io.taig.otter.validation.Violations
+// import io.taig.otter.validation.Violation
+// import io.circe.syntax.*
+// import cats.data.Chain
 
-object JsonDecoder extends Decoder[JsonSchema.Reader, Json]:
-  override def apply[A](schema: JsonSchema.Reader[A], json: Json): Validated[Violations[Json, Json], A] =
-    schema.unfix match
-      case schema: Collection.Reader[JsonSchema.Reader[?], A] =>
-        if json.isNull then JsonCollectionDecoder(schema, none)
-        else
-          json.asArray match
-            case Some(values) => JsonCollectionDecoder(schema, Chain.fromSeq(values).some)
-            case None         => Violations.rootNec(Violation(Constraint.Type("array"), typeOf(json).asJson)).invalid
-      case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
-      case schema: Tuple.Reader[JsonSchema.Reader[?], A] =>
-        if json.isNull then JsonTupleDecoder(schema, none)
-        else
-          json.asArray match
-            case Some(values) => JsonTupleDecoder(schema, Chain.fromSeq(values).some)
-            case None         => Violations.rootNec(Violation.tpe("array", typeOf(json)).map(_.asJson)).invalid
+// object JsonDecoder extends Decoder[JsonSchema.Reader, Json]:
+//   override def apply[A](schema: JsonSchema.Reader[A], json: Json): Validated[Violations[Json, Json], A] =
+//     schema.unfix match
+//       case schema: Collection.Reader[JsonSchema.Reader[?], A] =>
+//         if json.isNull then JsonCollectionDecoder(schema, none)
+//         else
+//           json.asArray match
+//             case Some(values) => JsonCollectionDecoder(schema, Chain.fromSeq(values).some)
+//             case None         => Violations.rootNec(Violation.tpe("array", typeOf(json)).map(_.asJson)).invalid
+//       case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
+//       case schema: Tuple.Reader[JsonSchema.Reader[?], A] =>
+//         if json.isNull then JsonTupleDecoder(schema, none)
+//         else
+//           json.asArray match
+//             case Some(values) => JsonTupleDecoder(schema, Chain.fromSeq(values).some)
+//             case None         => Violations.rootNec(Violation.tpe("array", typeOf(json)).map(_.asJson)).invalid

@@ -7,18 +7,26 @@ import io.taig.otter.Types
 import cats.syntax.all.*
 
 trait Dsl extends Types:
-  final override type Schema[A] = Annotation[
-    [_] =>> Plain.Schema[Annotation[Plain.Schema[*, ?], Metadata[Identity]], A],
+  // final override type Schema[A] = Annotation[
+  //   [_] =>> Plain.Schema[Annotation[Plain.Schema[*, ?], Metadata[Identity]], A],
+  //   Metadata[Identity]
+  // ]
+
+  final type Schema[A] = Annotation[
+    Plain.Schema[*, Identity, A],
     Metadata[Identity]
   ]
 
-  override object Schema extends Schemas:
-    override type Of[+Of, A] = Annotation[
-      [_] =>> Plain.Schema[Of, Metadata[Identity]],
-      Metadata[Identity]
-    ]
+  val x: Schema[String] = ???
+  x.self.schema
 
-  final override type Primitive[A] = Annotation[[_] =>> Plain.Primitive[A], Metadata.Primitive[Identity]]
+  override object Schema extends Schemas
+  // override type Of[+Of, A] = Annotation[
+  //   [_] =>> Plain.Schema[Of, Metadata[Identity]],
+  //   Metadata[Identity]
+  // ]
+
+  // final override type Primitive[A] = Annotation[[_] =>> Plain.Primitive[A], Metadata.Primitive[Identity]]
 
   override object Collection extends Collections:
     final override type Reader[A] = Any
@@ -28,9 +36,9 @@ trait Dsl extends Types:
 
     override object Writer extends Writers
 
-  final override type Tuple[A] = Annotation[
-    [_] =>> Plain.Tuple[Annotation[Plain.Schema[*, ?], Metadata[Identity]], A],
-    Metadata.Tuple[Identity]
-  ]
+  // final override type Tuple[A] = Annotation[
+  //   [_] =>> Plain.Tuple[Annotation[Plain.Schema[*, ?], Metadata[Identity]], A],
+  //   Metadata.Tuple[Identity]
+  // ]
 
   override object Tuple extends Tuples
