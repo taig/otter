@@ -33,6 +33,18 @@ abstract class Dsl[F[+_[+_]]]:
     object Writer:
       type Of[+Of, -A] = F[[_] =>> Base.Collection.Writer[Of, A]]
 
+  final type Primitive[A] = F[[_] =>> Base.Primitive[A]]
+
+  object Primitive:
+    type Required[A] = F[[_] =>> Base.Primitive.Required[A]]
+
+    type Reader[A] = F[[_] =>> Base.Primitive.Reader[A]]
+
+    type Writer[A] = F[[_] =>> Base.Primitive.Writer[A]]
+
+  def primitive[A](tpe: Type[A]): Primitive.Required[A]
+  final val string: Primitive.Required[String] = primitive(Type.String)
+
 //   // trait Schemas:
 //   //   type Of[+Of, A] <: Schema.Reader.Of[Of, A] & Schema.Writer.Of[Of, A]
 
