@@ -8,14 +8,14 @@ trait Schema[+Of, A] extends Schema.Reader[Of, A], Schema.Writer[Of, A]:
   def optional: Schema[Of, Option[A]]
 
 object Schema:
-  type Any[+Of, A] = Collection[Of, A] | Primitive[A]
+  type Any[+Of, A] = Collection[Of, A] | Primitive[A] | Tuple[Of, A]
 
   trait Reader[+Of, +A]:
     def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Schema.Reader[Of, D]
     def optional: Schema.Reader[Of, Option[A]]
 
   object Reader:
-    type Any[+Of, +A] = Collection.Reader[Of, A] | Primitive.Reader[A]
+    type Any[+Of, +A] = Collection.Reader[Of, A] | Primitive.Reader[A] | Tuple.Reader[Of, A]
     type Identity[A] = Fix[Schema.Reader.Any[*, A]]
 
     given [Of]: SchemaFunctor[Schema.Reader[Of, *], Schema.Reader[Of, *]] with
@@ -29,7 +29,7 @@ object Schema:
     def optional: Schema.Writer[Of, Option[A]]
 
   object Writer:
-    type Any[+Of, -A] = Collection.Writer[Of, A] | Primitive.Writer[A]
+    type Any[+Of, -A] = Collection.Writer[Of, A] | Primitive.Writer[A] | Tuple.Writer[Of, A]
     type Identity[A] = Fix[Schema.Writer.Any[*, A]]
 
     given [Of]: SchemaContravariant[Schema.Writer[Of, *], Schema.Writer[Of, *]] with

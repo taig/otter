@@ -1,8 +1,6 @@
 package io.taig.otter
 
-import io.taig.otter.validation.Validation
-import cats.data.NonEmptyChain
-import cats.data.NonEmptyChainImpl
+import cats.data.Chain
 
 sealed trait Tuple[+Of, A] extends Schema[Of, A], Tuple.Reader[Of, A], Tuple.Writer[Of, A]:
   self =>
@@ -12,7 +10,7 @@ sealed trait Tuple[+Of, A] extends Schema[Of, A], Tuple.Reader[Of, A], Tuple.Wri
   final override def writer: Tuple.Writer[Of, A] = this
 
   final override def ivalidate[B, C, D](validation: SchemaValidation[A, B, C, D])(f: D => A): Tuple[Of, D] =
-    Tuple.Validate(this, validation)
+    Tuple.Validate(this, validation, f)
 
   final override def optional: Tuple[Of, Option[A]] = Tuple.Optional(this)
 
@@ -20,7 +18,7 @@ sealed trait Tuple[+Of, A] extends Schema[Of, A], Tuple.Reader[Of, A], Tuple.Wri
 
 object Tuple:
   trait Operation[+Of]:
-    def schemas: NonEmptyChain[Of]
+    def schemas: Chain[Of]
 
   sealed trait Reader[+Of, +A] extends Schema.Reader[Of, A], Tuple.Operation[Of]:
     self =>
@@ -34,17 +32,20 @@ object Tuple:
       Reader.Validate(this, validation)
 
   object Reader:
+    case object Empty extends Tuple.Reader[Nothing, Unit]:
+      override def schemas: Chain[Nothing] = Chain.empty
+
     final case class Optional[Of, A](self: Tuple.Reader[Of, A]) extends Tuple.Reader[Of, Option[A]]:
       export self.schemas
 
     final case class Product[OfA, A, OfB, B](left: Tuple.Reader[OfA, A], right: Tuple.Reader[OfB, B])
         extends Tuple.Reader[OfA | OfB, (A, B)]:
-      override def schemas: NonEmptyChain[OfA | OfB] = left.schemas ++ right.schemas
+      override def schemas: Chain[OfA | OfB] = left.schemas ++ right.schemas
 
-    final case class Root[S[_], A](schema: S[A]) extends Tuple.Reader[S[A], A]:
-      override def schemas: NonEmptyChain[S[A]] = NonEmptyChain.one(schema)
+    final case class One[S[_], A](schema: S[A]) extends Tuple.Reader[S[A], A]:
+      override def schemas: Chain[S[A]] = Chain.one(schema)
 
-    final case class Validate[Of, A, B, C, D](self: Tuple.Reader[Of, A], validation: Validation[A, B, C, D])
+    final case class Validate[Of, A, B, C, D](self: Tuple.Reader[Of, A], validation: SchemaValidation[A, B, C, D])
         extends Tuple.Reader[Of, D]:
       export self.schemas
 
@@ -52,7 +53,7 @@ object Tuple:
 
       override def optional[A](fa: Tuple.Reader[Of, A]): Tuple.Reader[Of, Option[A]] = fa.optional
 
-      override def schemas[A](fa: Tuple.Reader[Of, A]): NonEmptyChain[Of] = ???
+      override def schemas[A](fa: Tuple.Reader[Of, A]): Chain[Of] = fa.schemas
 
       override def validate[A, B, C, D](fa: Tuple.Reader[Of, A])(
           validation: SchemaValidation[A, B, C, D]
@@ -69,6 +70,9 @@ object Tuple:
       Writer.Product(this, tuple)
 
   object Writer:
+    case object Empty extends Tuple.Writer[Nothing, Unit]:
+      override def schemas: Chain[Nothing] = Chain.empty
+
     final case class Optional[Of, A](self: Tuple.Writer[Of, A]) extends Tuple.Writer[Of, Option[A]]:
       export self.schemas
 
@@ -77,28 +81,31 @@ object Tuple:
 
     final case class Product[OfA, A, OfB, B](left: Tuple.Writer[OfA, A], right: Tuple.Writer[OfB, B])
         extends Tuple.Writer[OfA | OfB, (A, B)]:
-      override def schemas: NonEmptyChain[OfA | OfB] = left.schemas ++ right.schemas
+      override def schemas: Chain[OfA | OfB] = left.schemas ++ right.schemas
 
-    final case class Root[S[_], A](schema: S[A]) extends Tuple.Writer[S[A], A]:
-      override def schemas: NonEmptyChain[S[A]] = NonEmptyChain.one(schema)
+    final case class One[S[_], A](schema: S[A]) extends Tuple.Writer[S[A], A]:
+      override def schemas: Chain[S[A]] = Chain.one(schema)
 
     given [Of]: TupleContravariant[Tuple.Writer, Of] with
       override def optional[A](fa: Tuple.Writer[Of, A]): Tuple.Writer[Of, Option[A]] = fa.optional
-      override def schemas[A](fa: Tuple.Writer[Of, A]): NonEmptyChain[Of] = fa.schemas
+      override def schemas[A](fa: Tuple.Writer[Of, A]): Chain[Of] = fa.schemas
       override def contramap[A, B](fa: Tuple.Writer[Of, A])(f: B => A): Tuple.Writer[Of, B] = fa.contramap(f)
+
+  case object Empty extends Tuple[Nothing, Unit]:
+    override def schemas: Chain[Nothing] = Chain.empty
 
   final case class Optional[Of, A](self: Tuple[Of, A]) extends Tuple[Of, Option[A]]:
     export self.schemas
 
-  final case class Validate[Of, A, B, C, D](self: Tuple[Of, A], validation: Validation[A, B, C, D])
+  final case class Validate[Of, A, B, C, D](self: Tuple[Of, A], validation: SchemaValidation[A, B, C, D], f: D => A)
       extends Tuple[Of, D]:
     export self.schemas
 
   final case class Product[OfA, A, OfB, B](left: Tuple[OfA, A], right: Tuple[OfB, B]) extends Tuple[OfA | OfB, (A, B)]:
-    override def schemas: NonEmptyChain[OfA | OfB] = left.schemas ++ right.schemas
+    override def schemas: Chain[OfA | OfB] = left.schemas ++ right.schemas
 
-  final case class Root[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
-    override def schemas: NonEmptyChain[S[A]] = NonEmptyChain.one(schema)
+  final case class One[S[_], A](schema: S[A]) extends Tuple[S[A], A]:
+    override def schemas: Chain[S[A]] = Chain.one(schema)
 
   given [Of]: TupleInvariant[Tuple, Of] with
     override def optional[A](fa: Tuple[Of, A]): Tuple[Of, Option[A]] = fa.optional
@@ -106,4 +113,4 @@ object Tuple:
     override def ivalidate[A, B, C, D](fa: Tuple[Of, A])(validation: SchemaValidation[A, B, C, D])(
         f: D => A
     ): Tuple[Of, D] = fa.ivalidate(validation)(f)
-    override def schemas[A](fa: Tuple[Of, A]): NonEmptyChain[Of] = fa.schemas
+    override def schemas[A](fa: Tuple[Of, A]): Chain[Of] = fa.schemas

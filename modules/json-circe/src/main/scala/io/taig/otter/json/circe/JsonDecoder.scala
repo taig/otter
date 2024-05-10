@@ -22,13 +22,9 @@ object JsonDecoder extends Decoder[[a] =>> Schema.Reader.Any[Schema.Reader.Ident
           case Some(values) => JsonCollectionDecoder(schema, Chain.fromSeq(values).some)
           case None         => Violations.rootNec(Violation(Constraint.Type("array"), typeOf(json).asJson)).invalid
     case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
-
-// override def decode[A](schema: Tuple[Schema[?], A], json: Json): Validated[Violations[Json], A] =
-//   if json.isNull then JsonTupleDecoder.decode(schema, none)
-//   else
-//     json.asArray match
-//       case Some(values) => JsonTupleDecoder.decode(schema, Chain.fromSeq(values).some)
-//       case None         => Violations.rootNec(Violation(Constraint.Type("array"), typeOf(json).asJson)).invalid
-
-// override def decode[A](schema: Union[Schema[?], A], json: Json): Validated[Violations[Json], A] =
-//   JsonUnionDecoder.decode(schema, json)
+    case schema: Tuple.Reader[Schema.Reader.Identity[A], A] =>
+      if json.isNull then JsonTupleDecoder(schema, none)
+      else
+        json.asArray match
+          case Some(values) => JsonTupleDecoder(schema, Chain.fromSeq(values).some)
+          case None         => Violations.rootNec(Violation.tpe("array", typeOf(json)).map(_.asJson)).invalid
