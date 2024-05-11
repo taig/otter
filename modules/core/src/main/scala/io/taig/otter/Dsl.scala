@@ -49,6 +49,7 @@ abstract class Dsl[F[+_[+_]]]:
   def primitive[A](tpe: Type[A]): Primitive.Required[A]
   final val string: Primitive.Required[String] = primitive(Type.String)
 
-// def chain[A](schema: Schema[A]): Collection[Chain[A]]
+  def chain[A](schema: Schema[A]): Collection.Of[schema.type, Chain[A]]
+
 // def chain[A](schema: Schema.Reader[A]): Collection.Reader[Chain[A]]
 // def chain[A](schema: Schema.Writer[A]): Collection.Writer[Chain[A]]

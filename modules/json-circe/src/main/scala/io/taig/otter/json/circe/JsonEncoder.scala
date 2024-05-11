@@ -8,9 +8,16 @@ import io.taig.otter.Tuple
 import io.taig.otter.Plain
 import io.taig.otter as Base
 import io.taig.otter.Fix
+import scala.annotation.targetName
 
 object JsonEncoder extends Encoder[Plain.Schema.Writer, Json]:
-  override def apply[A](schema: Plain.Schema.Writer[A], a: A): Json = ???
+  override def apply[A](schema: Plain.Schema.Writer[A], a: A): Json = apply(schema.unfix, a)
+
+  @targetName("applyBase")
+  def apply[Of, A](schema: Base.Schema.Writer[Of, A], a: A): Json = schema match
+    case schema: Base.Collection.Writer[Of, A] =>
+      JsonCollectionEncoder(schema, a).fold(Json.Null)(values => Json.fromValues(values.toVector))
+
 //   // schema match
 //   //   case schema: Collection.Writer[Fix[Base.Schema[*, ?]], A] =>
 //   //     JsonCollectionEncoder(schema, a).map(values => Json.fromValues(values.toVector)).getOrElse(Json.Null)
