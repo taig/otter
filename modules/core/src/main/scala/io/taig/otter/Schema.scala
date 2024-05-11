@@ -73,8 +73,7 @@ object Collection:
       export self.schema
     final case class Optional[Of, A](self: Collection.Writer[Of, A]) extends Collection.Writer[Of, Option[A]]:
       export self.schema
-    final case class Root[S[_], A](schema: S[Schema.Writer[S[Any], A]])
-        extends Collection.Writer[S[Schema.Writer[S[Any], A]], Chain[A]]
+    final case class Root[Of, A](schema: Of, writer: Of => Schema.Writer[Of, A]) extends Collection.Writer[Of, Chain[A]]
 
     // def apply[S[_], A](schema: S[A]): Collection.Writer[S[A], Chain[A]] = Root(schema)
 
