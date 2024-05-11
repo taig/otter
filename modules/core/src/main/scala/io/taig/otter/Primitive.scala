@@ -25,9 +25,8 @@ object Primitive:
 
   final case class Root[A](tpe: Type[A]) extends Primitive[A]
 
-  given SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]] =
-    new SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]]:
-
-      extension [A, B](self: Primitive[B])
-        override def toTuple: Tuple[Primitive[B], B] =
-          Tuple.One[[_, a] =>> Primitive[a], Nothing, B](self, identity)
+  given SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]] with
+    extension [A, B](self: Primitive[B])
+      override def unwrap: Primitive[B] = self
+      override def toTuple: Tuple[Primitive[B], B] =
+        Tuple.One[[_, a] =>> Primitive[a], Nothing, B](self, identity)

@@ -1,9 +1,6 @@
 package io.taig.otter
 
 import cats.Invariant
-import io.taig.otter.validation.Validation
-import cats.Contravariant
-import cats.Functor
 
 type Schema[+A, B] = Primitive[B] | Tuple[A, B]
 
@@ -21,7 +18,9 @@ trait SchemaInvariant[F[_, _], G[a, b] >: F[a, b]]:
 
   // def optional[A](fa: F[A]): G[Option[A]]
 
-  extension [A, B](self: F[A, B]) def toTuple: Tuple[F[A, B], B]
+  extension [A, B](self: F[A, B])
+    def unwrap: Schema[A, B]
+    def toTuple: Tuple[F[A, B], B]
 
 // trait SchemaContravariant[F[_], G[a] >: F[a]] extends Contravariant[F], SchemaInvariant[F, G]:
 //   override def ivalidate[A, B, C, D](fa: F[A])(validation: SchemaValidation[A, B, C, D])(f: D => A): F[D] =

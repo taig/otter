@@ -11,5 +11,5 @@ object Playground:
     println(JsonEncoder(int, 42))
     println(JsonEncoder(long, 42))
     println(JsonEncoder(bigDecimal, JBigDecimal.valueOf(42)))
-    println(JsonEncoder(string.toTuple, "hello"))
+    println(JsonEncoder(string.toTuple.product(int.toTuple), ("hello", 123)))
   }
