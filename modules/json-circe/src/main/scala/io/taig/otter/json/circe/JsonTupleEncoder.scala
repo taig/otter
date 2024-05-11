@@ -3,23 +3,15 @@ package io.taig.otter.json.circe
 import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.Json
-import io.taig.otter.Fix
-import io.taig.otter.Schema
 import io.taig.otter.Tuple
-import io.taig.otter.Cofree
-import io.taig.otter.TupleArrow
+import io.taig.otter.Plain
 
-// object JsonTupleEncoder:
-//   def apply[A, B](schema: Tuple[A, B], b: B): Option[Chain[Json]] = schema match
-//     case Tuple.Product(left, right) =>
-//       apply(left, b._1)
-//       apply(right, b._2)
-//       ???
-//     case Tuple.Empty => Some(Chain.empty)
-//     case Tuple.One(schema, unwrap) =>
-//       Some(Chain.one(JsonEncoder(unwrap(schema), b)))
+object JsonTupleEncoder:
+  def apply[A, B](schema: Plain.Tuple.Writer[A, B], b: B): Option[Chain[Json]] = schema match
+    case Tuple.Empty               => Chain.empty.some
+    case Tuple.One(schema, unwrap) => Chain(JsonEncoder(unwrap(schema), b)).some
 
-final case class Annotation[+S, +M](self: S, metadata: M)
+// final case class Annotation[+S, +M](self: S, metadata: M)
 
 // object Playground:
 //   type AnnotatedSchema[+A, B] = Annotation[Schema[A, B], Unit]

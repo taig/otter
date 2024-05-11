@@ -24,3 +24,10 @@ object Primitive:
     export self.tpe
 
   final case class Root[A](tpe: Type[A]) extends Primitive[A]
+
+  given SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]] =
+    new SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]]:
+
+      extension [A, B](self: Primitive[B])
+        override def toTuple: Tuple[Primitive[B], B] =
+          Tuple.One[[_, a] =>> Primitive[a], Nothing, B](self, identity)

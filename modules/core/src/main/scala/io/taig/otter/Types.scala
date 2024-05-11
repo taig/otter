@@ -3,35 +3,11 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types[F[+_]]:
-  // final type Schema[A] = Schema.Of[F[Base.Schema[*, ?]], A]
+  final type Schema[+A, B] = F[Base.Schema[A, B]]
 
-  // object Schema:
-  //   type Of[+Of, A] = F[[_] =>> Base.Schema[Of, A]]
-
-  //   type Reader[+A] = Reader.Of[F[Base.Schema.Reader[*, ?]], A]
-
-  //   object Reader:
-  //     type Of[+Of, +A] = F[[_] =>> Base.Schema.Reader[Of, A]]
-
-  //   type Writer[-A] = Writer.Of[F[Base.Schema.Writer[*, ?]], A]
-
-  //   object Writer:
-  //     type Of[+Of, -A] = F[[_] =>> Base.Schema.Writer[Of, A]]
-
-  // final type Collection[A] = Collection.Of[F[Base.Schema[*, ?]], A]
-
-  // object Collection:
-  //   type Of[+Of, A] = F[[_] =>> Base.Collection[Of, A]]
-
-  //   type Reader[+A] = Reader.Of[F[Base.Schema.Reader[*, ?]], A]
-
-  //   object Reader:
-  //     type Of[+Of, +A] = F[[_] =>> Base.Collection.Reader[Of, A]]
-
-  //   type Writer[-A] = Writer.Of[F[Base.Schema.Writer[*, ?]], A]
-
-  //   object Writer:
-  //     type Of[+Of, -A] = F[[_] =>> Base.Collection.Writer[Of, A]]
+  object Schema:
+    type Reader[+A, +B] = F[Base.Schema.Reader[A, B]]
+    type Writer[+A, -B] = F[Base.Schema.Writer[A, B]]
 
   final type Primitive[A] = F[Base.Primitive[A]]
 
@@ -44,3 +20,9 @@ trait Types[F[+_]]:
 
     type Reader[+A] = F[Base.Primitive.Reader[A]]
     type Writer[-A] = F[Base.Primitive.Writer[A]]
+
+  final type Tuple[+A, B] = F[Base.Tuple[A, B]]
+
+  object Tuple:
+    type Reader[+A, +B] = F[Base.Tuple.Reader[A, B]]
+    type Writer[+A, -B] = F[Base.Tuple.Writer[A, B]]
