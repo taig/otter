@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter as Base
+import cats.data.Chain
 
 abstract class Dsl[F[+_[+_]]]:
   final type Schema[A] = Schema.Of[F[Base.Schema[*, ?]], A]
@@ -21,7 +22,7 @@ abstract class Dsl[F[+_[+_]]]:
   final type Collection[A] = Collection.Of[F[Base.Schema[*, ?]], A]
 
   object Collection:
-    type Of[+Of, A] = F[[_] =>> Base.Schema[Of, A]]
+    type Of[+Of, A] = F[[_] =>> Base.Collection[Of, A]]
 
     type Reader[+A] = Reader.Of[F[Base.Schema.Reader[*, ?]], A]
 
@@ -38,88 +39,16 @@ abstract class Dsl[F[+_[+_]]]:
   object Primitive:
     type Required[A] = F[[_] =>> Base.Primitive.Required[A]]
 
-    type Reader[A] = F[[_] =>> Base.Primitive.Reader[A]]
+    object Required:
+      type Reader[+A] = F[[_] =>> Base.Primitive.Required.Reader[A]]
+      type Writer[-A] = F[[_] =>> Base.Primitive.Required.Writer[A]]
 
-    type Writer[A] = F[[_] =>> Base.Primitive.Writer[A]]
+    type Reader[+A] = F[[_] =>> Base.Primitive.Reader[A]]
+    type Writer[-A] = F[[_] =>> Base.Primitive.Writer[A]]
 
   def primitive[A](tpe: Type[A]): Primitive.Required[A]
   final val string: Primitive.Required[String] = primitive(Type.String)
 
-//   // trait Schemas:
-//   //   type Of[+Of, A] <: Schema.Reader.Of[Of, A] & Schema.Writer.Of[Of, A]
-
-//   //   final type Reader[A] = Reader.Of[ReaderLub, A]
-
-//   //   trait Readers:
-//   //     type Of[+Of, A]
-
-//   //   val Reader: Readers
-
-//   //   final type Writer[A] = Writer.Of[WriterLub, A]
-
-//   //   trait Writers:
-//   //     type Of[+Of, A]
-
-//   //   val Writer: Writers
-
-//   // val Schema: Schemas
-
-//   final type Collection[A] = Collection.Of[Lub, A]
-
-//   trait Collections:
-//     type Of[+Of, A] <: Schema.Of[Of, A] & Collection.Reader.Of[Of, A] & Collection.Writer.Of[Of, A]
-
-//     final type Reader[A] = Collection.Reader.Of[ReaderLub, A]
-
-//     trait Readers:
-//       type Of[+Of, A] <: Schema.Reader.Of[Of, A]
-
-//     val Reader: Readers
-
-//     final type Writer[A] = Collection.Writer.Of[WriterLub, A]
-
-//     trait Writers:
-//       type Of[+Of, A] <: Schema.Writer.Of[Of, A]
-
-//     val Writer: Writers
-
-//   val Collection: Collections
-
-//   type Primitive[A] <: Schema[A] & Primitive.Reader[A] & Primitive.Writer[A]
-
-//   trait Primitives:
-//     type Reader[A] <: Schema.Reader[A]
-
-//     type Writer[A] <: Schema.Writer[A]
-
-//     type Required[A] <: Primitive[A] & Primitive.Required.Reader[A] & Primitive.Required.Writer[A]
-
-//     trait Requireds:
-//       type Reader[A] <: Primitive.Reader[A]
-
-//       type Writer[A] <: Primitive.Writer[A]
-
-//     val Required: Requireds
-
-//   val Primitive: Primitives
-
-//   final type Tuple[A] = Tuple.Of[Lub, A]
-
-//   trait Tuples:
-//     type Of[+Of, A] <: Schema.Of[Of, A] & Tuple.Reader.Of[Of, A] & Tuple.Writer.Of[Of, A]
-
-//     final type Reader[A] = Reader.Of[ReaderLub, A]
-
-//     trait Readers:
-//       type Of[+Of, A] <: Schema.Reader.Of[Of, A]
-
-//     val Reader: Readers
-
-//     final type Writer[A] = Writer.Of[WriterLub, A]
-
-//     trait Writers:
-//       type Of[+Of, A] <: Schema.Writer.Of[Of, A]
-
-//     val Writer: Writers
-
-//   val Tuple: Tuples
+// def chain[A](schema: Schema[A]): Collection[Chain[A]]
+// def chain[A](schema: Schema.Reader[A]): Collection.Reader[Chain[A]]
+// def chain[A](schema: Schema.Writer[A]): Collection.Writer[Chain[A]]
