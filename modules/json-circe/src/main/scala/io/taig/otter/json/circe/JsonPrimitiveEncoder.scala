@@ -14,7 +14,7 @@ object JsonPrimitiveEncoder:
     case Primitive.Writer.Contravariant(self, f) => apply(self, f(a))
     case Primitive.Writer.Optional(self)         => a.map(apply(self, _)).getOrElse(Json.Null)
     case Primitive.Optional(self)                => a.map(apply(self, _)).getOrElse(Json.Null)
-    case Primitive.Root(tpe)                     => apply(tpe, a)
+    case Primitive.Required.Root(tpe)            => apply(tpe, a)
 
   def apply[A](tpe: Type[A], a: A): Json = tpe match
     case Type.BigDecimal => (a: JBigDecimal).asJson

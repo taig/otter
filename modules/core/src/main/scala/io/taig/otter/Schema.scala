@@ -1,35 +1,36 @@
 package io.taig.otter
 
+import cats.data.Chain
 import cats.Invariant
+import cats.Id
 
-type Schema[+A, B] = Primitive[B] | Tuple[A, B]
+type Schema[+S[_], +A, B] = Primitive[B] | Tuple[S, A, B]
 
 object Schema:
-  type Reader[+A, +B] = Primitive.Reader[B] | Tuple.Reader[A, B]
+  type Reader[+S[_], +A, +B] = Primitive.Reader[B] | Tuple.Reader[S, A, B]
 
-  type Writer[+A, -B] = Primitive.Writer[B] | Tuple.Writer[A, B]
+  type Writer[+S[_], +A, -B] = Primitive.Writer[B] | Tuple.Writer[S, A, B]
 
-trait SchemaInvariant[F[_, _], G[a, b] >: F[a, b]]:
-  def invariant[A]: Invariant[F[A, *]] = new Invariant[F[A, *]]:
-    override def imap[B, C](fa: F[A, B])(f: B => C)(g: C => B): F[A, C] =
-      ??? // self.ivalidate(fa)(Validation.lift(f))(g)
+// trait SchemaInvariant[F[_[_], _, _]]:
+//   def invariant[S[_], A]: Invariant[F[S, A, *]] = new Invariant[F[S, A, *]]:
+//     override def imap[B, C](fa: F[S, A, B])(f: B => C)(g: C => B): F[S, A, C] =
+//       ??? // ivalidate(fa)(Validation.lift(f))(g)
 
-  // def ivalidate[A, B, C, D](fa: F[A])(validation: SchemaValidation[A, B, C, D])(f: D => A): F[D]
+// //   def ivalidate[A, B, C, D, E](fab: F[A, B])(validation: SchemaValidation[B, C, D, E])(f: E => B): F[A, E]
 
-  // def optional[A](fa: F[A]): G[Option[A]]
+//   extension [S[_], A, B](self: F[S, A, B]) def toTuple: S[Tuple[S, F[S, A, B], B]]
 
-  extension [A, B](self: F[A, B])
-    def unwrap: Schema[A, B]
-    def toTuple: Tuple[F[A, B], B]
+// trait SchemaContravariant[F[_, _]] extends SchemaInvariant[F]:
+//   def contravariant[A]: Contravariant[F[A, *]]
 
-// trait SchemaContravariant[F[_], G[a] >: F[a]] extends Contravariant[F], SchemaInvariant[F, G]:
-//   override def ivalidate[A, B, C, D](fa: F[A])(validation: SchemaValidation[A, B, C, D])(f: D => A): F[D] =
-//     contramap(fa)(f)
+//   override def ivalidate[A, B, C, D, E](fab: F[A, B])(validation: Validation[B, C, D, E])(f: E => B): F[A, E] =
+//     contravariant[A].contramap(fab)(f)
 
-// trait SchemaFunctor[F[_], G[a] >: F[a]] extends Functor[F], SchemaInvariant[F, G]:
-//   def validate[A, B, C, D](fa: F[A])(validation: SchemaValidation[A, B, C, D]): F[D]
+// trait SchemaFunctor[F[_, _]] extends SchemaInvariant[F]:
+//   def functor[A]: Functor[F[A, *]] = new Functor[F[A, *]]:
+//     override def map[B, C](fa: F[A, B])(f: B => C): F[A, C] = validate(fa)(Validation.lift(f))
 
-//   override def ivalidate[A, B, C, D](fa: F[A])(validation: SchemaValidation[A, B, C, D])(f: D => A): F[D] =
-//     validate(fa)(validation)
+//   def validate[A, B, C, D, E](fab: F[A, B])(validation: SchemaValidation[B, C, D, E]): F[A, E]
 
-//   override def map[A, B](fa: F[A])(f: A => B): F[B] = validate(fa)(Validation.lift(f))
+//   override def ivalidate[A, B, C, D, E](fab: F[A, B])(validation: Validation[B, C, D, E])(f: E => B): F[A, E] =
+//     validate(fab)(validation)

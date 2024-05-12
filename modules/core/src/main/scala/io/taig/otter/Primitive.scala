@@ -3,6 +3,15 @@ package io.taig.otter
 sealed trait Primitive[A] extends Primitive.Reader[A], Primitive.Writer[A]
 
 object Primitive:
+  sealed trait Required[A] extends Primitive[A]
+
+  object Required:
+    sealed trait Reader[+A] extends Primitive.Reader[A]
+
+    sealed trait Writer[-A] extends Primitive.Writer[A]
+
+    final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
+
   sealed trait Reader[+A]:
     def tpe: Type[?]
 
@@ -22,11 +31,3 @@ object Primitive:
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.tpe
-
-  final case class Root[A](tpe: Type[A]) extends Primitive[A]
-
-  given SchemaInvariant[[_, a] =>> Primitive[a], [_, a] =>> Primitive[a]] with
-    extension [A, B](self: Primitive[B])
-      override def unwrap: Primitive[B] = self
-      override def toTuple: Tuple[Primitive[B], B] =
-        Tuple.One[[_, a] =>> Primitive[a], Nothing, B](self, identity)

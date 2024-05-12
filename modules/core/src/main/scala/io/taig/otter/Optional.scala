@@ -1,4 +1,4 @@
 package io.taig.otter
 
 trait Optional[F[_], G[a] >: F[a]]:
-  def optional[A](fa: F[A]): G[Option[A]]
+  extension [A](fa: F[A]) def optional: G[Option[A]]
