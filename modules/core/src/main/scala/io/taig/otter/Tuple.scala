@@ -4,6 +4,7 @@ import cats.data.Chain
 
 sealed trait Tuple[+S[_], +A, B] extends Tuple.Reader[S, A, B], Tuple.Writer[S, A, B]:
   def schemas: Chain[A]
+  final def product[T[a] >: S[a], C, D](tuple: Tuple[T, C, D]): Tuple[T, A | C, (B, D)] = Tuple.Product(this, tuple)
 
 object Tuple:
   sealed trait Reader[+S[_], +A, +B]

@@ -13,4 +13,8 @@ object Playground:
     println(JsonEncoder(long, 42))
     println(JsonEncoder(bigDecimal, JBigDecimal.valueOf(42)))
     println(JsonEncoder(string.toTuple, ("hello")))
+
+    val x: Primitive.Required[String] = ???
+    val y: Primitive[String] = x
+    val z: Schema[String] = x
   }
