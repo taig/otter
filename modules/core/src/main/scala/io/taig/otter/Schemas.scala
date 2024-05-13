@@ -5,7 +5,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 trait Schemas[F[+_]] extends Types[F]:
-  def primitive[A](tpe: Type[A]): Primitive.Required[A]
+  def primitive[A](tpe: Type[A]): Primitive[A]
   final val bigDecimal: Primitive[JBigDecimal] = primitive(Type.BigDecimal)
   final val bigInteger: Primitive[JBigInteger] = primitive(Type.BigInteger)
   final val int: Primitive[Int] = primitive(Type.Int)

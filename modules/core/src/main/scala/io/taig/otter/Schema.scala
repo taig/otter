@@ -4,12 +4,12 @@ import cats.data.Chain
 import cats.Invariant
 import cats.Id
 
-type Schema[+S[_], +A, B] = Primitive[B] | Tuple[S, A, B]
+type Schema[+S[+_], +A, B] = Primitive[B] | Tuple[S, A, B]
 
 object Schema:
-  type Reader[+S[_], +A, +B] = Primitive.Reader[B] | Tuple.Reader[S, A, B]
+  type Reader[+S[+_], +A, +B] = Primitive.Reader[B] | Tuple.Reader[S, A, B]
 
-  type Writer[+S[_], +A, -B] = Primitive.Writer[B] | Tuple.Writer[S, A, B]
+  type Writer[+S[+_], +A, -B] = Primitive.Writer[B] | Tuple.Writer[S, A, B]
 
 // trait SchemaInvariant[F[_[_], _, _]]:
 //   def invariant[S[_], A]: Invariant[F[S, A, *]] = new Invariant[F[S, A, *]]:
