@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.validation.Validation
 import io.taig.otter.validation.Constraint
 
 sealed trait Tuple[+S[+_], +A, B] extends Tuple.Reader[S, A, B], Tuple.Writer[S, A, B]:
