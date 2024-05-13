@@ -10,4 +10,5 @@ object JsonTupleEncoder:
   def apply[A](schema: Tuple.Writer[A], a: A): Option[Chain[Json]] = schema match
     case Base.Tuple.Empty                => Chain.empty.some
     case Base.Tuple.One(schema)          => Chain.one(JsonEncoder(schema, a)).some
+    case Base.Tuple.Optional(self)       => a.flatMap(apply(self, _))
     case Base.Tuple.Product(left, right) => apply(left, a._1) |+| apply(right, a._2)
