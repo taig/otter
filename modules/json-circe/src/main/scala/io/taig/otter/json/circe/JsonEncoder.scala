@@ -8,7 +8,8 @@ import io.taig.otter.Encoder
 
 object JsonEncoder extends Encoder[Schema, Json]:
   def apply[A](schema: Schema[A], a: A): Json = schema match
-    case Base.Schema.Root(data) => apply(data, a)
+    case Base.Schema.Optional(self) => a.map(apply(self, _)).getOrElse(Json.Null)
+    case Base.Schema.Root(data)     => apply(data, a)
 
   def apply[A](data: Base.Data[Identity, ?, A], a: A): Json = data match
     case data: Base.Primitive[A] => JsonPrimitiveEncoder(data, a)

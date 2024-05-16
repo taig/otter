@@ -6,6 +6,11 @@ trait Types[S[+_]]:
   type Schema[A] = Schema.Of[S[Base.Schema.Any[S, ?]], A]
 
   object Schema:
+    // type Reader[+A] = Reader.Of[S[Base.Schema.Reader.Any[S, ?]], A]
+
+    // object Reader:
+    //   type Of[+A <: S[Base.Schema.Reader.Any[S, ?]], +B] = S[Base.Schema.Reader[Base.Data[S, A, *], B]]
+
     type Of[+A <: S[Base.Schema.Any[S, ?]], B] = S[Base.Schema[Base.Data[S, A, *], B]]
 
   type Primitive[A] = S[Base.Schema[Base.Primitive, A]]
