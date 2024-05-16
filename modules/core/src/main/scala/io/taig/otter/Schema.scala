@@ -92,7 +92,7 @@ object Tuple:
       Reader.Product(this, schema)
 
   object Reader:
-    case object Empty extends Tuple[Nothing, Nothing, Unit]:
+    case object Empty extends Tuple.Reader[Nothing, Nothing, Unit]:
       override def size: Int = 0
 
     final case class Modify[S[_], A, B, C, D, E](self: Tuple.Reader[S, A, B], validation: SchemaValidation[B, C, D, E])
@@ -117,7 +117,7 @@ object Tuple:
       Writer.Product(this, schema)
 
   object Writer:
-    case object Empty extends Tuple[Nothing, Nothing, Unit]:
+    case object Empty extends Tuple.Writer[Nothing, Nothing, Unit]:
       override def size: Int = 0
 
     final case class Modify[S[_], A, B, C](self: Tuple.Writer[S, A, B], f: C => B) extends Tuple.Writer[S, A, C]:
