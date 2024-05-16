@@ -19,7 +19,7 @@ object JsonPrimitiveDecoder:
     case Primitive.Reader.Optional(self)                    => optional(self, json)
     case Primitive.Required.Modify(self, validation, _)     => modify(self, validation, json)
     case Primitive.Required.Reader.Modify(self, validation) => modify(self, validation, json)
-    case Primitive.Root(tpe) =>
+    case Primitive.Required.Root(tpe) =>
       apply(tpe, json).toValidated.leftMap: _ =>
         Violations.rootNec(Violation.tpe(typeOf(tpe), typeOf(json)).map(_.asJson))
 

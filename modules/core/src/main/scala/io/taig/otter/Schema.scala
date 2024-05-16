@@ -47,6 +47,8 @@ object Primitive:
         f: D => A
     ) extends Primitive.Required[D]
 
+    final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]
+
   sealed trait Reader[+A] extends Schema.Reader[Nothing, Nothing, A]:
     override def validate[B, C, D](validation: SchemaValidation[A, B, C, D]): Primitive.Reader[D] =
       Reader.Modify(this, validation)
@@ -73,8 +75,6 @@ object Primitive:
     final case class Optional[A](self: Primitive.Writer[A]) extends Primitive.Writer[Option[A]]
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]
-
-  final case class Root[A](tpe: Type[A]) extends Primitive[A]
 
 sealed trait Tuple[+S[_], +A, B] extends Schema[S, A, B], Tuple.Reader[S, A, B], Tuple.Writer[S, A, B]:
   final override def ivalidate[C, D, E](validation: SchemaValidation[B, C, D, E])(f: E => B): Tuple[S, A, E] =
