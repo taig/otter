@@ -135,6 +135,7 @@ object Tuple:
 
   case object Empty extends Tuple[Nothing, Nothing, Unit]:
     override def size: Int = 0
+
   final case class Modify[S[_], A, B, C, D, E](
       self: Tuple[S, A, B],
       validation: SchemaValidation[B, C, D, E],
@@ -142,7 +143,7 @@ object Tuple:
   ) extends Tuple[S, A, E]:
     export self.size
 
-  final case class One[S[_], A <: Schema[S, ?, B], B](schema: S[A]) extends Tuple[S, S[A], B]:
+  final case class One[S[_], T[_], A <: Schema[?, ?, B], B](schema: T[A]) extends Tuple[S, T[A], B]:
     override def size: Int = 1
 
   final case class Optional[S[_], A, B](self: Tuple[S, A, B]) extends Tuple[S, A, Option[B]]:

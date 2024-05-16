@@ -31,16 +31,20 @@ object JsonTupleDecoder:
       schema: Tuple.Reader[A],
       values: Vector[Json]
   ): Validated[Violations[Json, Json], (Vector[Json], A)] = schema match
-    case Base.Tuple.Empty                           => (values, ()).valid
-    case Base.Tuple.Modify(self, validation, _)     => modify(self, validation, values)
-    case Base.Tuple.One(schema)                     => one(schema, values)
+    case Base.Tuple.Empty                       => (values, ()).valid
+    case Base.Tuple.Modify(self, validation, _) => modify(self, validation, values)
+    case Base.Tuple.One(schema)                 =>
+      // one(schema, values)
+      ???
     case Base.Tuple.Optional(self)                  => optional(schema, values)
     case Base.Tuple.Product(left, right)            => product(left, right, values)
     case Base.Tuple.Reader.Empty                    => (values, ()).valid
     case Base.Tuple.Reader.Modify(self, validation) => modify(self, validation, values)
-    case Base.Tuple.Reader.One(schema)              => one(schema, values)
-    case Base.Tuple.Reader.Optional(self)           => optional(schema, values)
-    case Base.Tuple.Reader.Product(left, right)     => product(left, right, values)
+    case Base.Tuple.Reader.One(schema)              =>
+      // one(schema, values)
+      ???
+    case Base.Tuple.Reader.Optional(self)       => optional(schema, values)
+    case Base.Tuple.Reader.Product(left, right) => product(left, right, values)
 
   def modify[A, B, C, D](
       schema: Tuple.Reader[A],

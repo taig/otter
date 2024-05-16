@@ -13,6 +13,11 @@ trait Types[S[+_]]:
     object Reader:
       type Of[+A, +B] = S[Base.Schema.Reader[S, A, B]]
 
+    type Writer[-A] = Schema.Writer.Of[Base.Schema.Writer[S, ?, ?], A]
+
+    object Writer:
+      type Of[+A, -B] = S[Base.Schema.Writer[S, A, B]]
+
   type Primitive[A] = S[Base.Primitive[A]]
 
   object Primitive:
@@ -31,3 +36,8 @@ trait Types[S[+_]]:
 
     object Reader:
       type Of[+A, +B] = S[Base.Tuple.Reader[S, A, B]]
+
+    type Writer[-A] = Tuple.Writer.Of[Base.Schema.Reader[S, ?, ?], A]
+
+    object Writer:
+      type Of[+A, -B] = S[Base.Tuple.Writer[S, A, B]]
