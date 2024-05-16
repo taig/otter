@@ -12,24 +12,28 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 
 object JsonPrimitiveDecoder:
-  // def apply[A](schema: Plain.Primitive[A], json: Json): Validated[Violations[Json, Json], A] = schema match
-  //   case Primitive.Reader.Optional(self) =>
-  //     if json.isNull then none.valid[Violations[Json, Json]] else apply(self, json).map(_.some)
-  //   case Primitive.Required.Reader.Root(tpe) =>
-  //     apply(tpe, json).toValidated.leftMap: _ =>
-  //       Violations.rootNec(Violation.tpe(typeOf(tpe), typeOf(json)).map(_.asJson))
-  //   case Primitive.Required.Reader.Validate(schema, validation) =>
-  //     apply(schema, json).andThen: a =>
-  //       validation(a)
-  //         .leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply)))
-  //         .leftMap(Violations.root)
-  //   case Primitive.Reader.Validate(schema, validation) =>
-  //     apply(schema, json).andThen: a =>
-  //       validation(a)
-  //         .leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply)))
-  //         .leftMap(Violations.root)
-  //   case Primitive.Required(reader, _) => apply(reader, json)
-  //   case Primitive.Optional(reader, _) => apply(reader, json)
+  def apply[A](schema: Primitive.Reader[A], json: Json): Validated[Violations[Json, Json], A] = schema match
+    case Primitive.Modify(self, validation, _)              => modify(self, validation, json)
+    case Primitive.Optional(self)                           => optional(self, json)
+    case Primitive.Reader.Modify(self, validation)          => modify(self, validation, json)
+    case Primitive.Reader.Optional(self)                    => optional(self, json)
+    case Primitive.Required.Modify(self, validation, _)     => modify(self, validation, json)
+    case Primitive.Required.Reader.Modify(self, validation) => modify(self, validation, json)
+    case Primitive.Root(tpe) =>
+      apply(tpe, json).toValidated.leftMap: _ =>
+        Violations.rootNec(Violation.tpe(typeOf(tpe), typeOf(json)).map(_.asJson))
+
+  def modify[A, B, C, D, E](
+      self: Primitive.Reader[A],
+      validation: SchemaValidation[A, B, C, D],
+      json: Json
+  ): Validated[Violations[Json, Json], D] = apply(self, json).andThen: a =>
+    validation(a)
+      .leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply)))
+      .leftMap(Violations.root)
+
+  def optional[A](self: Primitive.Reader[A], json: Json): Validated[Violations[Json, Json], Option[A]] =
+    if json.isNull then none.valid[Violations[Json, Json]] else apply(self, json).map(_.some)
 
   def apply[A](tpe: Type[A], json: Json): CirceDecoder.Result[A] = tpe match
     case Type.BigDecimal => json.as[JBigDecimal]
