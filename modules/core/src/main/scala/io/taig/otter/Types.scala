@@ -2,42 +2,18 @@ package io.taig.otter
 
 import io.taig.otter as Base
 
-trait Types[S[+_]]:
-  type Schema[A] = Schema.Of[Base.Schema[S, ?, ?], A]
+trait Types:
+  type AsSchema[+A]
+  type AsCollection[+A] <: AsSchema[A]
+  type AsPrimitive[+A] <: AsSchema[A]
+  type AsTuple[+A] <: AsSchema[A]
+
+  type Schema[A] = AsSchema[Base.Schema[AsSchema, A]]
 
   object Schema:
-    type Of[+A, B] = S[Base.Schema[S, A, B]]
+    type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, A]]
 
-    type Reader[+A] = Schema.Reader.Of[Base.Schema.Reader[S, ?, ?], A]
-
-    object Reader:
-      type Of[+A, +B] = S[Base.Schema.Reader[S, A, B]]
-
-    type Writer[-A] = Schema.Writer.Of[Base.Schema.Writer[S, ?, ?], A]
-
-    object Writer:
-      type Of[+A, -B] = S[Base.Schema.Writer[S, A, B]]
-
-  type Primitive[A] = S[Base.Primitive[A]]
+  type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, A]]
 
   object Primitive:
-    type Required[A] = S[Base.Primitive.Required[A]]
-
-    type Reader[+A] = S[Base.Primitive.Reader[A]]
-
-    type Writer[-A] = S[Base.Primitive.Writer[A]]
-
-  type Tuple[A] = Tuple.Of[Base.Schema[S, ?, ?], A]
-
-  object Tuple:
-    type Of[+A, B] = S[Base.Tuple[S, A, B]]
-
-    type Reader[+A] = Tuple.Reader.Of[Base.Schema.Reader[S, ?, ?], A]
-
-    object Reader:
-      type Of[+A, +B] = S[Base.Tuple.Reader[S, A, B]]
-
-    type Writer[-A] = Tuple.Writer.Of[Base.Schema.Reader[S, ?, ?], A]
-
-    object Writer:
-      type Of[+A, -B] = S[Base.Tuple.Writer[S, A, B]]
+    type Required[A] = AsPrimitive[Base.Schema.Required[AsSchema, A]]

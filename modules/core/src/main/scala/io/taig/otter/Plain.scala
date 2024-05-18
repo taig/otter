@@ -1,9 +1,11 @@
 package io.taig.otter
 
-import cats.Id as Identity
 import io.taig.otter as Base
 
-object Plain extends Dsl[Identity]:
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive.Required.Root(tpe)
-  override def tuple[A, B](schema: Schema.Of[A, B]): Tuple.Of[schema.type, B] =
-    Base.Tuple.One[Identity, Identity, schema.type, B](schema)
+object Plain extends Dsl:
+  final override type AsSchema[A] = A
+  final override type AsCollection[A] = A
+  final override type AsPrimitive[A] = A
+  final override type AsTuple[A] = A
+
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Schema.Required.Root(Base.Primitive.Root(tpe))
