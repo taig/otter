@@ -18,3 +18,4 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
   def apply[A](data: Data[Identity, A], a: A): Json = data match
     case schema: Base.Primitive[A]            => JsonPrimitiveEncoder(schema, a)
     case schema: Base.Collection[Identity, A] => JsonCollectionEncoder(schema, a).fold(Json.Null)(Json.fromValues)
+    case schema: Base.Tuple[Identity, A]      => Json.fromValues(JsonTupleEncoder(schema, a))
