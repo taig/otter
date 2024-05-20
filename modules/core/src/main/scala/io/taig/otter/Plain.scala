@@ -8,4 +8,5 @@ object Plain extends Dsl:
   final override type AsPrimitive[A] = A
   final override type AsTuple[A] = A
 
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Schema.Required.Root(Base.Primitive.Root(tpe))
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    ??? // Base.Schema.Required.Root(Base.Primitive.Root(tpe))

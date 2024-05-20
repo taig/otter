@@ -1,27 +1,26 @@
 package io.taig.otter
 
-sealed trait Schema[+F[_], +D[f[+_], a] <: Data[f, a], A] extends Schema.Reader[F, D, A], Schema.Writer[F, D, A]:
-  final def optional: Schema[F, D, Option[A]] = Schema.Optional(this)
+sealed trait Schema[+F[_], B] extends Schema.Reader[F, B], Schema.Writer[F, B]:
+  final def optional: Schema[F, Option[B]] = Schema.Optional(this)
 
 object Schema:
-  sealed trait Required[+F[_], +D[f[+_], a] <: Data[f, a], A] extends Schema[F, D, A]
+  sealed trait Required[+F[_], B] extends Schema[F, B]
 
   object Required:
-    sealed trait Reader[+F[_], +D[f[+_], a] <: Data[f, a], +A] extends Schema.Reader[F, D, A]
+    sealed trait Reader[+F[_], +B] extends Schema.Reader[F, B]
 
-    sealed trait Writer[+F[_], +D[f[+_], a] <: Data[f, a], -A] extends Schema.Writer[F, D, A]
+    sealed trait Writer[+F[_], -B] extends Schema.Writer[F, B]
 
     object Writer:
-      final case class Root[F[+_], D[f[+_], a] <: Data[f, a], A](data: D[F, A]) extends Schema.Required.Writer[F, D, A]
+      final case class Root[F[+_], B](data: Data[F, B]) extends Schema.Required.Writer[F, B]
 
-    final case class Root[F[+_], D[f[+_], a] <: Data[f, a], A](data: D[F, A]) extends Schema.Required[F, D, A]
+    final case class Root[F[+_], B](data: Data[F, B]) extends Schema.Required[F, B]
 
-  sealed trait Reader[+F[_], +D[f[+_], a] <: Data[f, a], +A] extends Product, Serializable
+  sealed trait Reader[+F[_], +B] extends Product, Serializable
 
-  sealed trait Writer[+F[_], +D[f[+_], a] <: Data[f, a], -A] extends Product, Serializable
+  sealed trait Writer[+F[_], -B] extends Product, Serializable
 
   object Writer:
-    final case class Optional[F[_], D[f[+_], a] <: Data[f, a], A](self: Schema.Writer[F, D, A])
-        extends Schema.Writer[F, D, Option[A]]
+    final case class Optional[F[_], B](self: Schema.Writer[F, B]) extends Schema.Writer[F, Option[B]]
 
-  final case class Optional[F[_], D[f[+_], a] <: Data[f, a], A](self: Schema[F, D, A]) extends Schema[F, D, Option[A]]
+  final case class Optional[F[_], B](self: Schema[F, B]) extends Schema[F, Option[B]]
