@@ -1,22 +1,20 @@
 package io.taig.otter
 
-import cats.data.Chain
+sealed trait Data[+F[_], A] extends Product, Serializable
 
-sealed trait Data[+F[+_], B] extends Product, Serializable
-
-sealed trait Collection[+F[+_], B] extends Data[F, B]
+sealed trait Collection[+F[_], A] extends Data[F, A]
 
 object Collection:
-  final case class Root[F[+_], B](schema: F[Schema[F, B]]) extends Collection[F, Vector[B]]
+  final case class Root[F[_], A](schema: Schema[F, A]) extends Collection[F, Vector[A]]
 
 sealed trait Primitive[A] extends Data[Nothing, A]
 
 object Primitive:
   final case class Root[A](tpe: Type[A]) extends Primitive[A]
 
-sealed trait Tuple[+F[+_], B] extends Data[F, B]
+sealed trait Tuple[+F[_], A] extends Data[F, A]
 
 object Tuple:
-  final case class Product[+F[+_], B, D](left: Tuple[F, B], right: Tuple[F, D]) extends Tuple[F, (B, D)]
+  final case class Product[F[_], A, B](left: Tuple[F, A], right: Tuple[F, B]) extends Tuple[F, (A, B)]
 
-  final case class Root[F[+_], B](schema: F[Schema[F, B]]) extends Tuple[F, B]
+  final case class Root[F[_], A](schema: Schema[F, A]) extends Tuple[F, A]

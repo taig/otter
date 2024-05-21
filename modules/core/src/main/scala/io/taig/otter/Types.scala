@@ -15,7 +15,8 @@ trait Types:
 
     type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, A]]
 
-  type Collection[A] = AsCollection[Base.Schema[AsSchema, A]]
+  type Collection[A] =
+    AsCollection[Base.Schema[AsSchema, A]]
 
   type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, A]]
 
@@ -27,9 +28,9 @@ trait Types:
 
       type Writer[-A] = AsPrimitive[Base.Schema.Required.Writer[AsSchema, A]]
 
-  // type Tuple[A] = AsSchema[Base.Schema[AsSchema, Base.Data, A]]
+  type Tuple[A] = AsSchema[Base.Schema[AsSchema, A]]
 
-  // object Tuple:
-  //   type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, Base.Data, A]]
+  object Tuple:
+    type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, A]]
 
-  //   type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, Base.Data, A]]
+    type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, A]]
