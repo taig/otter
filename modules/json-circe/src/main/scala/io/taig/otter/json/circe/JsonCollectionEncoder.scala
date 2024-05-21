@@ -1,7 +1,6 @@
 package io.taig.otter.json.circe
 
 import io.taig.otter as Base
-import io.taig.otter.Plain
 import io.circe.Json
 import cats.syntax.all.*
 import cats.Id as Identity
