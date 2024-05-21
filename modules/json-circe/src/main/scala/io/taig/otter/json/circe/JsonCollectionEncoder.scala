@@ -7,6 +7,6 @@ import cats.syntax.all.*
 import cats.Id as Identity
 
 object JsonCollectionEncoder:
-  def apply[A](data: Base.Collection[Base.Schema.Writer[Identity, *], A], a: A): Option[Vector[Json]] =
+  def apply[A](data: Base.Collection[Base.Schema.Writer[Identity, ?, *], A], a: A): Option[Vector[Json]] =
     data match
       case Base.Collection.Root(schema) => a.map(JsonEncoder(schema, _)).some
