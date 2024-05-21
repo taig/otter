@@ -12,9 +12,9 @@ object Schema:
     sealed trait Writer[+F[_], -A] extends Schema.Writer[F, A]
 
     object Writer:
-      final case class Root[F[_], A](data: F[Data[F, A]]) extends Schema.Required.Writer[F, A]
+      final case class Root[F[_], A](data: Data[[a] =>> F[Schema.Writer[F, a]], A]) extends Schema.Required.Writer[F, A]
 
-    final case class Root[F[_], A](data: F[Data[F, A]]) extends Schema.Required[F, A]
+    final case class Root[F[_], A](data: Data[[a] =>> F[Schema[F, a]], A]) extends Schema.Required[F, A]
 
   sealed trait Reader[+F[_], +A] extends Product, Serializable
 
