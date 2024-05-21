@@ -1,38 +1,36 @@
 package io.taig.otter
 
-import io.taig.otter.validation.Validation
-
-sealed trait Schema[+F[_], +D[f[_], a, b] <: Data[f, a, b], A] extends Schema.Reader[F, D, A], Schema.Writer[F, D, A]:
-  final def optional: Schema[F, D, Option[A]] = Schema.Optional(this)
+sealed trait Schema[+F[+_], +A <: F[Schema[F, ?, ?]], B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
+  final def optional: Schema[F, A, Option[B]] = Schema.Optional(this)
 
 object Schema:
-  sealed trait Required[+F[_], +D[f[_], a, b] <: Data[f, a, b], A] extends Schema[F, D, A]
+  sealed trait Required[+F[+_], +A <: F[Schema[F, ?, ?]], B] extends Schema[F, A, B]
 
   object Required:
-    sealed trait Reader[+F[_], +D[f[_], a, b] <: Data[f, a, b], +A] extends Schema.Reader[F, D, A]
+    sealed trait Reader[+F[+_], +A <: F[Schema.Reader[F, ?, ?]], +B] extends Schema.Reader[F, A, B]
 
-    sealed trait Writer[+F[_], +D[f[_], a, b] <: Data[f, a, b], -A] extends Schema.Writer[F, D, A]
+    sealed trait Writer[+F[+_], +A <: F[Schema.Writer[F, ?, ?]], -B] extends Schema.Writer[F, A, B]
 
     object Writer:
-      final case class Root[F[_], D[f[_], a, b] <: Data[f, a, b], A](data: D[[a] =>> F[Schema.Writer[F, ?, a]], Any, A])
-          extends Schema.Required.Writer[F, D, A]
+      final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, ?]], B](
+          data: Data[[a] =>> F[Schema.Writer[F, ?, a]], A, B]
+      ) extends Schema.Required.Writer[F, A, B]
 
-    final case class Root[F[_], D[f[_], a, b] <: Data[f, a, b], A](data: D[[a] =>> F[Schema[F, ?, a]], Any, A])
-        extends Schema.Required[F, D, A]
+    final case class Root[F[+_], +A <: F[Schema[F, ?, ?]], B](data: Data[[a] =>> F[Schema.Writer[F, ?, a]], A, B])
+        extends Schema.Required[F, A, B]
 
-  sealed trait Reader[+F[_], +D[f[_], a, b] <: Data[f, a, b], +A] extends Product, Serializable
+  sealed trait Reader[+F[+_], +A <: F[Schema.Reader[F, ?, ?]], +B] extends Product, Serializable
 
-  sealed trait Writer[+F[_], +D[f[_], a, b] <: Data[f, a, b], -A] extends Product, Serializable
+  sealed trait Writer[+F[+_], +A <: F[Schema.Writer[F, ?, ?]], -B] extends Product, Serializable
 
   object Writer:
-    final case class Optional[F[_], D[f[_], a, b] <: Data[f, a, b], A](self: Schema.Writer[F, D, A])
-        extends Schema.Writer[F, D, Option[A]]
+    final case class Optional[F[+_], +A <: F[Schema.Writer[F, ?, ?]], B](self: Schema.Writer[F, A, B])
+        extends Schema.Writer[F, A, Option[B]]
 
-  final case class Optional[F[_], D[f[_], a, b] <: Data[f, a, b], A](self: Schema[F, D, A])
-      extends Schema[F, D, Option[A]]
+  final case class Optional[F[+_], A <: F[Schema[F, ?, ?]], B](self: Schema[F, A, B]) extends Schema[F, A, Option[B]]
 
-  final case class Validate[F[_], D[f[_], a, b] <: Data[f, a, b], A, B, C, E](
-      self: Schema[F, D, A],
-      validation: Validation[A, B, C, E],
-      f: E => A
-  ) extends Schema[F, D, E]
+  // final case class Validate[F[_], D[f[_], a, b] <: Data[f, a, b], A, B, C, E](
+  //     self: Schema[F, D, A],
+  //     validation: Validation[A, B, C, E],
+  //     f: E => A
+  // ) extends Schema[F, D, E]
