@@ -17,15 +17,15 @@ trait Types:
 
   type Collection[A] = AsCollection[Base.Schema[AsSchema, Base.Collection, A]]
 
-  type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, [_[_], a] =>> Base.Primitive[a], A]]
+  type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, [_[_], _, a] =>> Base.Primitive[a], A]]
 
   object Primitive:
-    type Required[A] = AsPrimitive[Base.Schema.Required[AsSchema, [_[_], a] =>> Base.Primitive[a], A]]
+    type Required[A] = AsPrimitive[Base.Schema.Required[AsSchema, [_[_], _, a] =>> Base.Primitive[a], A]]
 
     object Required:
-      type Reader[+A] = AsPrimitive[Base.Schema.Required.Reader[AsSchema, [_[_], a] =>> Base.Primitive[a], A]]
+      type Reader[+A] = AsPrimitive[Base.Schema.Required.Reader[AsSchema, [_[_], _, a] =>> Base.Primitive[a], A]]
 
-      type Writer[-A] = AsPrimitive[Base.Schema.Required.Writer[AsSchema, [_[_], a] =>> Base.Primitive[a], A]]
+      type Writer[-A] = AsPrimitive[Base.Schema.Required.Writer[AsSchema, [_[_], _, a] =>> Base.Primitive[a], A]]
 
   type Tuple[A] = AsSchema[Base.Schema[AsSchema, Base.Tuple, A]]
 
