@@ -6,6 +6,9 @@ import io.taig.otter.Schema.Required.Root
 import io.taig.otter.Schema.Optional
 import io.taig.otter.Primitive.Root
 import io.taig.otter.Enumeration.Root
+import cats.arrow.FunctionK
+import cats.data.Kleisli
+import cats.Id
 
 object Plain extends Dsl:
   final override type AsSchema[A] = A
@@ -18,7 +21,7 @@ object Plain extends Dsl:
 
   val x: Schema[String] = ???
 
-  val z: Schema[Option[String]] = x.map(_.optional)
+  val z: Schema[Option[String]] = x.mapF(_.optional)
 
   z match
     case Isomorphic.Root(fa) =>
