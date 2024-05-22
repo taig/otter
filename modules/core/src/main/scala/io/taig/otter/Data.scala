@@ -1,21 +1,25 @@
 package io.taig.otter
 
-sealed trait Data[+F[_], +A, B] extends Product, Serializable
+sealed trait Data[+F[_], A] extends Product, Serializable
 
-sealed trait Collection[+F[_], +A, B] extends Data[F, A, B]
+// sealed trait Collection[+F[_], A] extends Data[F, A]
 
-object Collection:
-  final case class Root[F[_], A](schema: F[A]) extends Collection[F, F[A], Vector[A]]
+// object Collection:
+//   final case class Root[F[_], A](schema: F[Data[F, A]]) extends Collection[F, Vector[A]]
 
-sealed trait Primitive[A] extends Data[Nothing, Nothing, A]
+sealed trait Primitive[A] extends Data[Nothing, A]
 
 object Primitive:
   final case class Root[A](tpe: Type[A]) extends Primitive[A]
 
-sealed trait Tuple[+F[_], +A, B] extends Data[F, A, B]
+// sealed trait Tuple[+F[_], A] extends Data[F, A]
 
-object Tuple:
-  final case class Product[F[_], A, B, C, D](left: Tuple[F, A, B], right: Tuple[F, C, D])
-      extends Tuple[F, A | C, (B, D)]
+// object Tuple:
+//   final case class Product[F[_], A, B](left: Tuple[F, A], right: Tuple[F, B]) extends Tuple[F, (A, B)]
 
-  final case class Root[F[_], A](schema: F[A]) extends Tuple[F, F[A], A]
+//   final case class Root[F[_], A](schema: F[Data[F, A]]) extends Tuple[F, A]
+
+sealed trait Enumeration[+F[_], A] extends Data[F, A]
+
+object Enumeration:
+  final case class Root[F[_], A](schema: F[Primitive[A]]) extends Enumeration[F, A]

@@ -8,33 +8,38 @@ trait Types:
   type AsPrimitive[+A] <: AsSchema[A]
   type AsTuple[+A] <: AsSchema[A]
 
-  type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
+  type Parent[A] = AsSchema[Base.Isomorphic[Base.Schema[[_] =>> A, *], ?]]
 
-  object Schema:
-    type Of[+A <: AsSchema[Base.Schema[AsSchema, ?, ?]], B] = AsSchema[Base.Schema[AsSchema, A, B]]
+  type Schema[A] = AsSchema[Base.Isomorphic[Base.Schema[Base.Data[Parent, *], *], A]]
 
-    type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]
+  type Enumeration[A] = AsSchema[Base.Isomorphic[Base.Schema[Base.Enumeration[Parent, *], *], A]]
 
-    type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, ?, A]]
+  // object Schema:
+  //   //   type Of[+A <: AsSchema[Base.Schema[AsSchema, ?, ?, ?]], B] = AsSchema[Base.Schema[AsSchema, Base.Data, A, B]]
 
-    object Writer:
-      type Of[+A <: AsSchema[Base.Schema.Writer[AsSchema, ?, ?]], B] = AsSchema[Base.Schema.Writer[AsSchema, A, B]]
+  //   type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, A]]
 
-  type Collection[A] = AsCollection[Base.Schema[AsSchema, ?, A]]
+  //   type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, A]]
 
-  type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, ?, A]]
+  // //   object Writer:
+  // //     type Of[+A <: AsSchema[Base.Schema.Writer[AsSchema, ?, ?, ?]], B] =
+  // //       AsSchema[Base.Schema.Writer[AsSchema, Base.Data, A, B]]
 
-  object Primitive:
-    type Required[A] = AsPrimitive[Base.Schema.Required[AsSchema, ?, A]]
+  // // type Collection[A] = AsCollection[Base.Schema[AsSchema, Base.Collection, ?, A]]
 
-    object Required:
-      type Reader[+A] = AsPrimitive[Base.Schema.Required.Reader[AsSchema, ?, A]]
+  // type Primitive[A] = AsPrimitive[Base.Schema[AsSchema, A]]
 
-      type Writer[-A] = AsPrimitive[Base.Schema.Required.Writer[AsSchema, ?, A]]
+  // object Primitive:
+  //   type Required[A] = AsPrimitive[Base.Schema.Required[AsSchema, A]]
 
-  type Tuple[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
+  //   object Required:
+  //     type Reader[+A] = AsPrimitive[Base.Schema.Required.Reader[AsSchema, A]]
 
-  object Tuple:
-    type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]
+  //     type Writer[-A] = AsPrimitive[Base.Schema.Required.Writer[AsSchema, A]]
 
-    type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, ?, A]]
+  // // type Tuple[A] = AsSchema[Base.Schema[AsSchema, Base.Tuple, ?, A]]
+
+  // // object Tuple:
+  // //   type Reader[+A] = AsSchema[Base.Schema.Reader[AsSchema, Base.Tuple, ?, A]]
+
+  // //   type Writer[-A] = AsSchema[Base.Schema.Writer[AsSchema, Base.Tuple, ?, A]]
