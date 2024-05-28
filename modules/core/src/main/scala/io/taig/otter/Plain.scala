@@ -11,7 +11,10 @@ object Plain extends Dsl:
   override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
     Base.Isomorphic.Root(Base.Schema.Required.Root(Base.Primitive.Root(tpe)))
 
-  val a: Primitive.Required[String] = ???
+  val a: Collection[Vector[String]] =
+    ???
+  val b: Primitive[String] = ???
+  val c: Schema[?] = a
 
   val x: Schema[Vector[Vector[String]]] = ???
 
