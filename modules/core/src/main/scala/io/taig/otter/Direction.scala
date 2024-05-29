@@ -10,3 +10,8 @@ object Isomorphic:
 sealed trait Reader[+F[_], +A] extends Product, Serializable
 
 sealed trait Writer[+F[_], -A] extends Product, Serializable
+
+object Writer:
+  final case class Root[+F[_], A](fa: F[A]) extends Writer[F, A]
+
+  final case class Modify[+F[_], A, B](fa: Writer[F, A], f: B => A) extends Isomorphic[F, B]
