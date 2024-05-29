@@ -17,12 +17,6 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
     case Writer.Modify(self, f)        => apply(self, f(a))
     case Isomorphic.Modify(self, _, f) => apply(self, f(a))
 
-  def apply0[A](schema: Schema.Writer[A], a: A): Json = schema match
-    case Writer.Root(schema)           => apply(schema, a)
-    case Isomorphic.Root(schema)       => apply(schema, a)
-    case Writer.Modify(self, f)        => apply(self, f(a))
-    case Isomorphic.Modify(self, _, f) => apply(self, f(a))
-
   def apply[A](
       schema: Base.Schema[Base.Data[AsSchema, Base.Writer, Parent.Writer, *], A],
       a: A

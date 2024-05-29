@@ -18,18 +18,18 @@ object Plain extends Dsl:
 
   val x: Schema[Vector[Vector[String]]] = ???
 
-  x match
-    case Base.Isomorphic.Root(schema) =>
-      schema match
-        case Base.Schema.Required.Root(schema) =>
-          schema match
-            case Base.Collection.Root(schema) =>
-              schema match
-                case Base.Isomorphic.Root(schema) =>
-                  schema match
-                    case Base.Schema.Required.Root(schema) =>
-                      schema match
-                        case Base.Collection.Root(schema) =>
-                          schema match
-                            case Base.Isomorphic.Root(schema) =>
-                              schema
+  // x match
+  //   case Base.Isomorphic.Root(schema) =>
+  //     schema match
+  //       case Base.Schema.Required.Root(schema) =>
+  //         schema match
+  //           case Base.Collection.Root(schema) =>
+  //             schema match
+  //               case Base.Isomorphic.Root(schema) =>
+  //                 schema match
+  //                   case Base.Schema.Required.Root(schema) =>
+  //                     schema match
+  //                       case Base.Collection.Root(schema) =>
+  //                         schema match
+  //                           case Base.Isomorphic.Root(schema) =>
+  //                             schema

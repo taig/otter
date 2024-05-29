@@ -8,21 +8,19 @@ trait Types:
   type AsPrimitive[+A] <: AsSchema[A]
   type AsTuple[+A] <: AsSchema[A]
 
-  type Parent[D[_[_], _]] = AsSchema[D[Base.Schema[Base.Data[AsSchema, D, ?, *], *], Any]]
-
   object Parent:
-    type Isomorphic = Parent[Base.Isomorphic]
-    type Reader = Parent[Base.Reader]
-    type Writer = Parent[Base.Writer]
+    type Isomorphic = Base.Self[AsSchema, Base.Isomorphic, ?]
+    type Reader = Base.Self[AsSchema, Base.Reader, ?]
+    type Writer = Base.Self[AsSchema, Base.Writer, ?]
 
   object Container:
-    type Isomorphic[F[_[_], _[_[_], _], _, _], A] =
+    type Isomorphic[F[+f[+_], +d[+_[_], _], +_ <: Base.Self[f, d, ?], _], A] =
       Base.Isomorphic[Base.Schema[F[AsSchema, Base.Isomorphic, Parent.Isomorphic, *], *], A]
 
-    type Reader[F[_[_], _[_[_], _], _, _], A] =
+    type Reader[F[+f[+_], +d[+_[_], _], +_ <: Base.Self[f, d, ?], _], A] =
       Base.Reader[Base.Schema[F[AsSchema, Base.Reader, Parent.Reader, *], *], A]
 
-    type Writer[F[_[_], _[_[_], _], _, _], A] =
+    type Writer[F[+f[+_], +d[+_[_], _], +_ <: Base.Self[f, d, ?], _], A] =
       Base.Writer[Base.Schema[F[AsSchema, Base.Writer, Parent.Writer, *], *], A]
 
   type Schema[A] = AsSchema[Container.Isomorphic[Base.Data, A]]
