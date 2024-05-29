@@ -1,14 +1,14 @@
 package io.taig.otter
 
-sealed trait Schema[+F[_], A]:
-  final def optional: Schema[F, Option[A]] = Schema.Optional(this)
+sealed trait Schema[+F[_], +D[_[_], _], +A <: Wrapper[F, D, ?, ?, ?], B] extends Product, Serializable
 
-object Schema:
-  sealed trait Required[+F[_], A] extends Schema[F, A]
+sealed trait Primitive[A] extends Schema[Nothing, Nothing, Nothing, A]
 
-  object Required:
-    final case class Root[+F[_], A](fa: F[A]) extends Schema.Required[F, A]
+object Primitive:
+  final case class Root[A](tpe: Type[A]) extends Primitive[A]
 
-  final case class Optional[F[_], A](self: Schema[F, A]) extends Schema[F, Option[A]]
+sealed trait Collection[+F[_], +D[_[_], _], +A <: Wrapper[F, D, ?, ?, ?], B] extends Schema[F, D, A, B]
 
-  final case class Root[F[_], A](fa: F[A]) extends Schema[F, A]
+object Collection:
+  final case class Root[+F[_], +D[_[_], _], A <: Wrapper[F, D, ?, ?, B], B](schema: A)
+      extends Collection[F, D, A, Vector[B]]
