@@ -6,6 +6,6 @@ import io.circe.Json
 import cats.syntax.all.*
 
 object JsonCollectionEncoder:
-  def apply[A](data: Base.Collection[Base.WriterAny[AsSchema], A], a: A): Vector[Json] =
+  def apply[A](data: Base.Collection[Base.Writer.Any[AsSchema], A], a: A): Vector[Json] =
     data match
       case Base.Collection.Root(schema) => a.map(JsonEncoder(schema, _))
