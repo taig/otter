@@ -8,28 +8,25 @@ trait Types:
   type AsPrimitive[+A] <: AsSchema[A]
   type AsTuple[+A] <: AsSchema[A]
 
-  type Schema[A] = Wrapper[
+  type Schema[A] = Base.Isomorphic[
     AsSchema,
-    Base.Isomorphic,
     Base.Optional,
-    [f[_], d[_[_], _], a] =>> Base.Schema[f, d, ?, a],
+    Base.Schema,
     A
   ]
 
   object Schema:
-    type Reader[+A] = Wrapper[
+    type Reader[+A] = Base.Reader[
       AsSchema,
-      Base.Reader,
       Base.Optional,
-      [f[_], d[_[_], _], a] =>> Base.Schema[f, d, ?, a],
+      Base.Schema,
       A
     ]
 
-    type Writer[-A] = Wrapper[
+    type Writer[-A] = Base.Writer[
       AsSchema,
-      Base.Writer,
       Base.Optional,
-      [f[_], d[_[_], _], a] =>> Base.Schema[f, d, ?, a],
+      Base.Schema,
       A
     ]
 
@@ -43,4 +40,4 @@ trait Types:
   // type Primitive[A] = AsPrimitive[Container.Isomorphic[[_[_], _[_[_], _], _, a] =>> Base.Primitive[a], A]]
 
   object Primitive:
-    type Required[A] = AsPrimitive[Base.Isomorphic[Base.Required[Base.Primitive, *], A]]
+    type Required[A] = Base.Isomorphic[AsPrimitive, Base.Required, [_, a] =>> Base.Primitive[a], A]

@@ -1,17 +1,19 @@
 package io.taig.otter
 
-// final case class Wrapper[
-//     F[_],
-//     D[_[_], _],
-//     O[f[_], a] <: Optional[f, a],
-//     S[f[_], d[_[_], _], a] <: Schema[f, d, ?, a],
-//     A
-// ](schema: F[D[O[S[F, D, *], *], A]])
+sealed trait Isomorphic[F[_], O[f[_], a] <: Optional[f, a], S[a, b] <: Schema[a, b], A]
+    extends Writer[F, O, S, A],
+      Reader[F, O, S, A]
 
-sealed abstract class Wrapper[
-  //     F[_],
-//     D[_[_], _],
-//     O[f[_], a] <: Optional[f, a],
-//     S[f[_], d[_[_], _], a] <: Schema[f, d, ?, a],
-//     A
-]
+object Isomorphic:
+  final case class Root[F[_], O[f[_], a] <: Optional[f, a], S[a, b] <: Schema[a, b], A](
+      fa: F[O[S[Isomorphic[F, Optional, Schema, ?], *], A]]
+  ) extends Isomorphic[F, O, S, A]
+
+sealed trait Writer[F[_], O[f[_], a] <: Optional[f, a], S[a, b] <: Schema[a, b], -A]
+
+object Writer:
+  final case class Root[F[_], O[f[_], a] <: Optional[f, a], S[a, b] <: Schema[a, b], A](
+      fa: F[O[S[Writer[F, Optional, Schema, ?], *], A]]
+  ) extends Writer[F, O, S, A]
+
+sealed trait Reader[F[_], O[f[_], a] <: Optional[f, a], S[a, b] <: Schema[a, b], +A]
