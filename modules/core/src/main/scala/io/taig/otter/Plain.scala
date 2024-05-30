@@ -8,8 +8,8 @@ object Plain extends Dsl:
   final override type AsPrimitive[A] = A
   final override type AsTuple[A] = A
 
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] =
-    Base.Isomorphic.Root(Base.Required(Base.Primitive.Root(tpe)))
+  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = ???
+  // Base.Isomorphic.Root(Base.Required(Base.Primitive.Root(tpe)))
 
   // val a: Collection[Vector[String]] =
   //   ???

@@ -17,16 +17,16 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
     // case Isomorphic.Modify(self, _, f) => apply(self, f(a))
 
   def apply[A](
-      schema: Base.Optional[Base.Schema[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?], *], A],
+      schema: Base.Optional[Base.Schema[Base.WriterAny[AsSchema], *], A],
       a: A
   ): Json = schema match
     case Base.Optional.Root(self) => a.map(apply(self, _)).getOrElse(Json.Null)
     case Base.Required(data)      => apply(data, a)
 
   def apply[A](
-      data: Base.Schema[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?], A],
+      data: Base.Schema[Base.WriterAny[AsSchema], A],
       a: A
   ): Json = data match
     case schema: Base.Primitive[A] => JsonPrimitiveEncoder(schema, a)
-    case schema: Base.Collection[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?], A] =>
+    case schema: Base.Collection[Base.WriterAny[AsSchema], A] =>
       Json.fromValues(JsonCollectionEncoder(schema, a))
