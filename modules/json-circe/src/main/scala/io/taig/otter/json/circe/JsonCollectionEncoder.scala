@@ -5,7 +5,10 @@ import io.taig.otter.Plain.*
 import io.circe.Json
 import cats.syntax.all.*
 
-// object JsonCollectionEncoder:
-//   def apply[A](data: Base.Collection[Base.Writer.Any[AsSchema], A], a: A): Vector[Json] =
-//     data match
-//       case Base.Collection.Root(schema) => a.map(JsonEncoder(schema, _))
+object JsonCollectionEncoder:
+  def apply[A](data: Base.Collection[Parent.Writer.Any, A], a: A): Vector[Json] =
+    data match
+      case data: Base.Collection.Root[Parent.Writer, ?] => apply1(data, a)
+      // case Base.Collection.Root(schema)  => a.map(JsonEncoder.apply0(schema, _))
+
+  def apply1[A](data: Base.Collection.Root[Parent.Writer, A], a: Vector[A]): Vector[Json] = ???
