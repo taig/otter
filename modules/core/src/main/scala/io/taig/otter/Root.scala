@@ -1,29 +1,16 @@
 package io.taig.otter
 
-sealed trait Isomorphic[F[a], G[a] >: F[a], O[_[_], _], S[_, _], A <: Isomorphic.Any[G], B]
-    extends Writer[F, G, O, S, A, B],
-      Reader[F, G, O, S, A, B]
+sealed trait Isomorphic[+O[_[_], _], +S[_, _], A, B] extends Writer[O, S, A, B], Reader[O, S, A, B]
 
 object Isomorphic:
-  type Of[F[_], A] = Isomorphic[F, F, Optional, Schema, ?, A]
+  final case class Root[O[_[_], _], S[_, _], A, B](fa: O[S[A, *], B]) extends Isomorphic[O, S, A, B]
 
-  type Any[F[_]] = Isomorphic[F, F, Optional, Schema, ?, ?]
-
-  final case class Root[F[_], G[a] >: F[a], O[_[_], _], S[_, _], A <: Isomorphic.Any[G], B](fa: F[O[S[A, *], B]])
-      extends Isomorphic[F, G, O, S, A, B]
-
-sealed trait Writer[F[_], G[a] >: F[a], O[_[_], _], S[_, _], A <: Writer.Any[G], -B]
+sealed trait Writer[+O[_[_], _], +S[_, _], A, -B]
 
 object Writer:
-  type Any[F[_]] = Writer[F, F, Optional, Schema, ?, ?]
+  final case class Root[O[_[_], _], S[_, _], A, B](fa: O[S[A, *], B]) extends Writer[O, S, A, B]
 
-  final case class Root[F[_], G[a] >: F[a], O[_[_], _], S[_, _], A <: Writer.Any[G], B](fa: F[O[S[A, *], B]])
-      extends Writer[F, G, O, S, A, B]
-
-sealed trait Reader[F[_], G[a] >: F[a], O[_[_], _], S[_, _], A <: Reader.Any[G], +B]
+sealed trait Reader[+O[_[_], _], +S[_, _], A, +B]
 
 object Reader:
-  type Any[F[_]] = Reader[F, F, Optional, Schema, ?, ?]
-
-  final case class Root[F[_], G[a] >: F[a], O[_[_], _], S[_, _], A <: Reader.Any[G], B](fa: F[O[S[A, *], B]])
-      extends Reader[F, G, O, S, A, B]
+  final case class Root[O[_[_], _], S[_, _], A, B](fa: O[S[A, *], B]) extends Reader[O, S, A, B]

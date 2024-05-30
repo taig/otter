@@ -9,4 +9,4 @@ trait Schemas extends Types:
   final val int: Primitive.Required[Int] = primitive(Type.Int)
   final val long: Primitive.Required[Long] = primitive(Type.Long)
 
-  def collection[A <: Base.Isomorphic.Of[AsSchema, B], B](schema: Schema.Of[A, B]): Collection[Vector[B]]
+  def collection[F[a] <: Parent.Isomorphic[a], A](schema: F[A]): Collection.Of[F[A], Vector[A]]
