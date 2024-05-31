@@ -9,8 +9,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 object JsonPrimitiveEncoder:
-  def apply[A](schema: Base.Primitive[A], a: A): Json = schema match
-    case Base.Primitive.Root(tpe) => apply(tpe, a)
+  def apply[A](schema: Base.Primitive[A], a: A): Json = apply(schema.tpe, a)
 
   def apply[A](tpe: Type[A], a: A): Json = tpe match
     case Type.BigDecimal => (a: JBigDecimal).asJson

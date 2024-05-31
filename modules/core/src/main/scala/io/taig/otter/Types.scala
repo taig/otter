@@ -53,3 +53,12 @@ trait Types:
 
   object Primitive:
     type Required[A] = AsPrimitive[Base.Isomorphic[AsSchema, Base.Required, [_, a] =>> Base.Primitive[a], Nothing, A]]
+
+  type Tuple[A] = AsTuple[Base.Isomorphic[AsSchema, Base.Optional, Base.Tuple, Parent.Isomorphic.Any, A]]
+
+  object Tuple:
+    type Of[A <: Parent.Isomorphic.Any, B] = AsTuple[Base.Isomorphic[AsSchema, Base.Optional, Base.Tuple, A, B]]
+
+    type Reader[+A] = AsTuple[Base.Reader[AsSchema, Base.Optional, Base.Tuple, Parent.Reader.Any, A]]
+
+    type Writer[-A] = AsTuple[Base.Writer[AsSchema, Base.Optional, Base.Tuple, Parent.Writer.Any, A]]
