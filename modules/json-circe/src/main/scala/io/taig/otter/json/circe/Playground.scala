@@ -6,5 +6,6 @@ import io.taig.otter as Base
 object Playground:
   @main
   def run = {
-    println(JsonEncoder(collection(string), Vector("foo", "bar", "baz")))
+    val t = string.toTuple
+    println(JsonEncoder(collection(t), Vector("foo", "bar", "baz")))
   }
