@@ -15,3 +15,9 @@ object Plain extends Dsl:
 
   override def collection[F[a] <: Parent.Isomorphic[a], A](schema: F[A]): Collection.Of[F[A], Vector[A]] =
     Base.Isomorphic.Root(Base.Required(Base.Collection.Root(schema)))
+
+  override def collectionReader[F[a] <: Parent.Reader[a], A](schema: F[A]): Collection.Reader.Of[F[A], Vector[A]] =
+    Base.Reader.Root(Base.Required(Base.Collection.Root(???)))
+
+  override def collectionWriter[F[a] <: Parent.Writer[a], A](schema: F[A]): Collection.Writer.Of[F[A], Vector[A]] =
+    Base.Writer.Root(Base.Required(Base.Collection.Root(schema)))

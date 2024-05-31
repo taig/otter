@@ -45,9 +45,15 @@ trait Types:
     type Of[A <: Parent.Isomorphic.Any, B] =
       AsCollection[Base.Isomorphic[AsSchema, Base.Optional, Base.Collection, A, B]]
 
-  //   type Reader[+A] = Base.Reader[AsCollection, Base.Optional, Base.Collection, ?, A]
+    type Reader[+A] = AsCollection[Base.Reader[AsSchema, Base.Optional, Base.Collection, Parent.Reader.Any, A]]
 
-  //   type Writer[-A] = Base.Writer[AsCollection, Base.Optional, Base.Collection, ?, A]
+    object Reader:
+      type Of[A <: Parent.Reader.Any, B] = AsCollection[Base.Reader[AsSchema, Base.Optional, Base.Collection, A, B]]
+
+    type Writer[-A] = AsCollection[Base.Writer[AsSchema, Base.Optional, Base.Collection, Parent.Writer.Any, A]]
+
+    object Writer:
+      type Of[A <: Parent.Writer.Any, B] = AsCollection[Base.Writer[AsSchema, Base.Optional, Base.Collection, A, B]]
 
   type Primitive[A] = AsPrimitive[Base.Isomorphic[AsSchema, Base.Optional, [_, a] =>> Base.Primitive[a], Nothing, A]]
 

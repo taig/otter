@@ -9,9 +9,15 @@ object Collection:
 
 final case class Primitive[A](tpe: Type[A]) extends Schema[Nothing, A]
 
-sealed trait Tuple[+A, B] extends Schema[A, B]
+sealed trait Tuple[+A, B] extends Schema[A, B]:
+  def size: Int
 
 object Tuple:
-  case object Empty extends Tuple[Nothing, Unit]
-  final case class One[F[_], A](schema: F[A]) extends Tuple[F[A], A]
-  final case class Product[A, B, C, D](left: Tuple[A, B], right: Tuple[C, D]) extends Tuple[A | C, (B, D)]
+  case object Empty extends Tuple[Nothing, Unit]:
+    override def size: Int = 0
+
+  final case class One[F[_], A](schema: F[A]) extends Tuple[F[A], A]:
+    override def size: Int = 1
+
+  final case class Product[A, B, C, D](left: Tuple[A, B], right: Tuple[C, D]) extends Tuple[A | C, (B, D)]:
+    override def size: Int = left.size + right.size
