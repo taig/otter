@@ -13,6 +13,10 @@ trait Schemas extends Types:
       schema: F[A]
   ): Collection.Of[F[A], Vector[A]]
 
+  // def collection2[X[F[_], O[_[_], _], S[_, _], A], A](
+  //     schema: AsSchema[X[AsSchema, Base.Optional, Base.Schema, A]]
+  // ): AsSchema[X[AsCollection, Base.Required, Base.Schema, A]]
+
   def collectionReader[F[a] <: AsSchema[Base.Reader[AsSchema, Base.Optional, Base.Schema, ?, a]], A](
       schema: F[A]
   ): Collection.Reader.Of[F[A], Vector[A]]
