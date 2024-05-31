@@ -1,12 +1,8 @@
 package io.taig.otter
 
-import cats.Functor
-import cats.Contravariant
 import cats.Invariant
+import io.taig.otter.validation.Validation
 
-trait SchemaInvariant[F[_], G[a] >: F[a]] extends Invariant[F]:
-  extension [A](fa: F[A]) def optional: G[Option[A]]
-
-trait SchemaFunctor[F[_], G[a] >: F[a]] extends Functor[F]
-
-trait SchemaContravariant[F[_], G[a] >: F[a]] extends Contravariant[F]
+trait SchemaInvariant[F[_]] extends Invariant[F]:
+  extension [A](self: F[A]) def validate[B](validation: Validation[A, ?, ?, B])(f: B => A): F[B]
+  override def imap[A, B](fa: F[A])(f: A => B)(g: B => A): F[B] = validate(fa)(Validation.lift(f))(g)

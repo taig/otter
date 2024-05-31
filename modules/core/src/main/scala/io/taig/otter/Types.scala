@@ -68,4 +68,10 @@ trait Types:
 
     type Reader[+A] = AsTuple[Base.Reader[AsSchema, Base.Optional, Base.Tuple, self.Reader.Any, A]]
 
+    object Reader:
+      type Of[A <: self.Reader.Any, B] = AsTuple[Base.Reader[AsSchema, Base.Optional, Base.Tuple, A, B]]
+
     type Writer[-A] = AsTuple[Base.Writer[AsSchema, Base.Optional, Base.Tuple, self.Writer.Any, A]]
+
+    object Writer:
+      type Of[A <: self.Writer.Any, B] = AsTuple[Base.Writer[AsSchema, Base.Optional, Base.Tuple, A, B]]

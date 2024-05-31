@@ -2,11 +2,13 @@ package io.taig.otter
 
 import io.taig.otter as Base
 import scala.annotation.targetName
+import io.taig.otter.Isomorphic
 
 trait Schemas extends Types:
   protected def asPrimitive[A](a: A): AsPrimitive[A]
   protected def asCollection[A](a: A): AsCollection[A]
   protected def asTuple[A](a: A): AsTuple[A]
+  protected def extract[A](a: AsSchema[A]): A = ???
 
   final def primitive[A](tpe: Type[A]): Primitive.Required[A] =
     asPrimitive(Base.Isomorphic.Root(Base.Required(Base.Primitive(tpe))))
@@ -29,5 +31,15 @@ trait Schemas extends Types:
       asCollection(Base.Writer.Root(Base.Required(Base.Collection.Root(schema))))
 
   extension [F[a] <: Isomorphic[a], A](schema: F[A])
-    def toTuple: Tuple.Of[F[A], A] =
-      asTuple(Base.Isomorphic.Root(Base.Required(Base.Tuple.One(schema))))
+    @targetName("isomorphic")
+    def toTuple: Tuple.Of[F[A], A] = asTuple(Base.Isomorphic.Root(Base.Required(Base.Tuple.One(schema))))
+    def product[G[a] <: Isomorphic[a], B](tuple: G[B]): Tuple.Of[F[A] | G[B], (A, B)] =
+      asTuple(Base.Isomorphic.Root(Base.Required(Base.Tuple.Product(schema, tuple))))
+
+  extension [F[a] <: Reader[a], A](schema: F[A])
+    @targetName("reader")
+    def toTuple: Tuple.Reader.Of[F[A], A] = asTuple(Base.Reader.Root(Base.Required(Base.Tuple.One(schema))))
+
+  extension [F[a] <: Writer[a], A](schema: F[A])
+    @targetName("writer")
+    def toTuple: Tuple.Writer.Of[F[A], A] = asTuple(Base.Writer.Root(Base.Required(Base.Tuple.One(schema))))

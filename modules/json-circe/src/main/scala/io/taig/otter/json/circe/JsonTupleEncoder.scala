@@ -9,4 +9,4 @@ object JsonTupleEncoder:
     data match
       case Base.Tuple.Empty                => Vector.empty
       case Base.Tuple.One(schema)          => Vector(JsonEncoder(schema, a))
-      case Base.Tuple.Product(left, right) => apply(left, a._1) ++ apply(right, a._2)
+      case Base.Tuple.Product(left, right) => ??? // apply(left, a._1) ++ apply(right, a._2)
