@@ -9,6 +9,7 @@ trait Types:
   type AsCollection[+A] <: AsSchema[A]
   type AsPrimitive[+A] <: AsSchema[A]
   type AsTuple[+A] <: AsSchema[A]
+  type AsUnion[+A] <: AsSchema[A]
 
   type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
@@ -68,3 +69,18 @@ trait Types:
 
     object Writer:
       type Of[A, B] = AsTuple[Base.Tuple.Writer[AsSchema, A, B]]
+
+  type Union[A] = AsUnion[Base.Union[AsSchema, ?, A]]
+
+  object Union:
+    type Of[A, B] = AsUnion[Base.Union[AsSchema, A, B]]
+
+    type Reader[A] = AsUnion[Base.Union.Reader[AsSchema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = AsUnion[Base.Union.Reader[AsSchema, A, B]]
+
+    type Writer[A] = AsUnion[Base.Union.Writer[AsSchema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = AsUnion[Base.Union.Writer[AsSchema, A, B]]

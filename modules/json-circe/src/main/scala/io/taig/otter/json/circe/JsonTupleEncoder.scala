@@ -26,9 +26,8 @@ object JsonTupleEncoder:
 
   def optional[A](self: Tuple.Writer[A], a: Option[A]): Option[Vector[Json]] = a.flatMap(apply(self, _))
 
-  def product[A, B](left: Tuple.Writer[A], right: Tuple.Writer[B], ab: (A, B)): Option[Vector[Json]] =
-    (apply(left, ab._1), apply(right, ab._2)) match
-      case (Some(left), Some(right)) => Some(left ++ right)
-      case (Some(left), None)        => Some(left ++ Vector.fill(right.size)(Json.Null))
-      case (None, Some(right))       => Some(Vector.fill(left.size)(Json.Null) ++ right)
-      case (None, None)              => None
+  def product[A, B](left: Tuple.Writer[A], right: Schema.Writer[B], ab: (A, B)): Option[Vector[Json]] =
+    (apply(left, ab._1), JsonEncoder(right, ab._2)) match
+      case (Some(left), right) => Some(left :+ right)
+      case (None, Json.Null)   => None
+      case (None, right)       => Some(Vector.fill(left.schemas.size.toInt)(Json.Null) :+ right)

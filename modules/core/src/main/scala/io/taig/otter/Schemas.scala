@@ -7,27 +7,34 @@ trait Schemas extends Types:
   protected def asPrimitive[A](a: A): AsPrimitive[A]
   protected def asCollection[A](a: A): AsCollection[A]
   protected def asTuple[A](a: A): AsTuple[A]
-  protected def extract[A](a: AsSchema[A]): A = ???
 
-  // final def primitive[A](tpe: Type[A]): Primitive.Required[A] =
-  //   asPrimitive(Base.Isomorphic.Root(Base.Required(Base.Primitive(tpe))))
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    asPrimitive(Base.Primitive.Required.Root(tpe))
 
-  // final val string: Primitive.Required[String] = primitive(Type.String)
-  // final val int: Primitive.Required[Int] = primitive(Type.Int)
-  // final val long: Primitive.Required[Long] = primitive(Type.Long)
+  final val string: Primitive.Required[String] = primitive(Type.String)
+  final val int: Primitive.Required[Int] = primitive(Type.Int)
+  final val long: Primitive.Required[Long] = primitive(Type.Long)
 
-  // object collection:
-  //   @targetName("isomorphic")
-  //   def apply[F[a] <: Isomorphic[a], A](schema: F[A]): Collection.Of[F[A], Vector[A]] =
-  //     asCollection(Base.Isomorphic.Root(Base.Required(Base.Collection.Root(schema))))
+  object collection:
+    @targetName("isomorphic")
+    def apply[A <: Schema[B], B](schema: A): Collection.Of[A, Vector[B]] =
+      asCollection(Base.Collection.Root(schema))
 
-  //   @targetName("reader")
-  //   def apply[F[a] <: Reader[a], A](schema: F[A]): Collection.Reader.Of[F[A], Vector[A]] =
-  //     asCollection(Base.Reader.Root(Base.Required(Base.Collection.Root(schema))))
+    @targetName("reader")
+    def apply[A <: Schema.Reader[B], B](schema: A): Collection.Reader.Of[A, Vector[B]] =
+      asCollection(Base.Collection.Reader.Root(schema))
 
-  //   @targetName("writer")
-  //   def apply[F[a] <: Writer[a], A](schema: F[A]): Collection.Writer.Of[F[A], Vector[A]] =
-  //     asCollection(Base.Writer.Root(Base.Required(Base.Collection.Root(schema))))
+    @targetName("writer")
+    def apply[A <: Schema.Writer[B], B](schema: A): Collection.Writer.Of[A, Vector[B]] =
+      asCollection(Base.Collection.Writer.Root(schema))
+
+    // @targetName("reader")
+    // def apply[F[a] <: Reader[a], A](schema: F[A]): Collection.Reader.Of[F[A], Vector[A]] =
+    //   asCollection(Base.Reader.Root(Base.Required(Base.Collection.Root(schema))))
+
+    // @targetName("writer")
+    // def apply[F[a] <: Writer[a], A](schema: F[A]): Collection.Writer.Of[F[A], Vector[A]] =
+    //   asCollection(Base.Writer.Root(Base.Required(Base.Collection.Root(schema))))
 
   // extension [F[a] <: Isomorphic[a], A](schema: F[A])
   //   @targetName("isomorphic")

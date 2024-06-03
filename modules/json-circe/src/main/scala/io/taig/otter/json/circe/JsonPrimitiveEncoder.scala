@@ -14,7 +14,7 @@ object JsonPrimitiveEncoder:
     case Base.Primitive.Modify(self, _, f)              => modify(self, f, a)
     case Base.Primitive.Required.Modify(self, _, f)     => modify(self, f, a)
     case Base.Primitive.Required.Writer.Modify(self, f) => modify(self, f, a)
-    case Base.Primitive.Root(tpe)                       => root(tpe, a)
+    case Base.Primitive.Required.Root(tpe)              => root(tpe, a)
     case Base.Primitive.Writer.Modify(self, f)          => modify(self, f, a)
     case Base.Primitive.Writer.Optional(self)           => optional(self, a)
 

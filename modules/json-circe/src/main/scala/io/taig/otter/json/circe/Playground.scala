@@ -3,11 +3,12 @@ package io.taig.otter.json.circe
 import io.taig.otter.Plain.*
 import io.taig.otter.Plain.given
 import io.taig.otter as Base
+import cats.syntax.all.*
 
 object Playground:
   @main
   def run = {
-    // val myStr: Primitive[Option[String]] = string.optional
-    // val t = myStr.toTuple
-    // println(JsonEncoder(collection(t), Vector(Some("foo"), None, Some("bar"), Some("baz"))))
+    println(
+      JsonEncoder(collection(string.optional), (None +: Vector("yolo", "foo", "bar").map(_.some)) ++ Vector(None))
+    )
   }

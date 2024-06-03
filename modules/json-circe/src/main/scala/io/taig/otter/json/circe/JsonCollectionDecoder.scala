@@ -30,8 +30,7 @@ object JsonCollectionDecoder:
   def optional[A](
       self: Collection.Reader[A],
       values: Option[Vector[Json]]
-  ): Validated[Violations[Json, Json], Option[A]] =
-    values.fold(none.valid)(_ => apply(self, values).map(_.some))
+  ): Validated[Violations[Json, Json], Option[A]] = values.fold(none.valid)(_ => apply(self, values).map(_.some))
 
   def root[A](schema: Schema.Reader[A], values: Option[Vector[Json]]): Validated[Violations[Json, Json], Vector[A]] =
     values

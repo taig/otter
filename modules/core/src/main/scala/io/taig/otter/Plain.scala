@@ -8,6 +8,7 @@ object Plain extends Dsl:
   final override type AsCollection[+A] = A
   final override type AsPrimitive[+A] = A
   final override type AsTuple[+A] = A
+  final override type AsUnion[+A] = A
 
   override protected inline def asPrimitive[A](a: A): AsPrimitive[A] = a
   override protected inline def asCollection[A](a: A): AsCollection[A] = a
@@ -25,7 +26,7 @@ object Plain extends Dsl:
 
   // override given schemaContravariant: SchemaContravariant[Schema.Writer] = new SchemaContravariant[Schema.Writer]:
   //   override def contramap[A, B](fa: Schema.Writer[A])(f: B => A): Schema.Writer[B] =
-  ??? // fa.transform(_.contramap(f))
+  // fa.transform(_.contramap(f))
 
   // given PrimitiveOps[Primitive, Primitive] = new PrimitiveOps[Primitive, Primitive]:
   //   extension [A](self: Primitive[A])

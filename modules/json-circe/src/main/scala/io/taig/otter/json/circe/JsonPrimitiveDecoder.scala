@@ -11,7 +11,6 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
-import io.taig.otter.Primitive.Root
 
 object JsonPrimitiveDecoder:
   def apply[A](schema: Primitive.Reader[A], json: Json): Validated[Violations[Json, Json], A] = schema match
@@ -19,7 +18,7 @@ object JsonPrimitiveDecoder:
     case Base.Primitive.Modify(self, validation, _)              => modify(self, validation, json)
     case Base.Primitive.Required.Modify(self, validation, _)     => modify(self, validation, json)
     case Base.Primitive.Required.Reader.Modify(self, validation) => modify(self, validation, json)
-    case Base.Primitive.Root(tpe) =>
+    case Base.Primitive.Required.Root(tpe) =>
       root(tpe, json).toValidated.leftMap: _ =>
         Violations.rootNec(Violation.tpe(typeOf(tpe), typeOf(json)).map(_.asJson))
     case Base.Primitive.Reader.Modify(self, validation) => modify(self, validation, json)

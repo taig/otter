@@ -1,21 +1,26 @@
-// package io.taig.otter.json.circe
+package io.taig.otter.json.circe
 
-// import io.taig.otter.+
-// import io.taig.otter.Union
-// import io.taig.otter.Schema
-// import io.circe.Json
-// import io.taig.otter.Union.One
-// import io.taig.otter.Union.OrElse
-// import io.taig.otter.Union.Optional
-// import io.taig.otter.Union.Validate
+import io.taig.otter.+
+import io.taig.otter.Plain.*
+import io.taig.otter as Base
+import io.circe.Json
 
-// object JsonUnionEncoder:
-//   def encode[A](schema: Union[Schema[?], A], a: A): Json = schema match
-//     case Union.One(schema)               => JsonEncoder.encode(schema, a)
-//     case Union.OrElse(left, right)       => encode(left, right, a)
-//     case Union.Optional(schema)          => a.map(encode(schema, _)).getOrElse(Json.Null)
-//     case Union.Validate(schema, _, _, g) => encode(schema, g(a))
+object JsonUnionEncoder:
+  def apply[A](schema: Union.Writer[A], a: A): Json = schema match
+    case Base.Union.Modify(self, _, f)         => modify(self, f, a)
+    case Base.Union.One(schema)                => one(schema, a)
+    case Base.Union.Optional(self)             => optional(self, a)
+    case Base.Union.OrElse(left, right)        => orElse(left, right, a)
+    case Base.Union.Writer.Modify(self, f)     => modify(self, f, a)
+    case Base.Union.Writer.One(schema)         => one(schema, a)
+    case Base.Union.Writer.Optional(self)      => optional(self, a)
+    case Base.Union.Writer.OrElse(left, right) => orElse(left, right, a)
 
-//   def encode[A, B](left: Union[Schema[?], A], right: Union[Schema[?], B], ab: A + B): Json = ab match
-//     case Left(a)  => encode(left, a)
-//     case Right(b) => encode(right, b)
+  def modify[A, B](self: Union.Writer[A], f: B => A, b: B): Json = apply(self, f(b))
+
+  def one[A](schema: Schema.Writer[A], a: A): Json = JsonEncoder(schema, a)
+
+  def optional[A](self: Union.Writer[A], a: Option[A]): Json = a.map(apply(self, _)).getOrElse(Json.Null)
+
+  def orElse[A, B](left: Union.Writer[A], right: Schema.Writer[B], ab: A + B): Json =
+    ab.fold(apply(left, _), JsonEncoder(right, _))
