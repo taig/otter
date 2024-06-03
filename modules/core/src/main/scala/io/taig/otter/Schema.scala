@@ -38,7 +38,7 @@ object Collection:
     final case class Optional[F[_], A, B](self: Collection.Reader[F, A, B]) extends Collection.Reader[F, A, Option[B]]:
       export self.constraints
 
-    final case class Root[F[_], A <: F[Schema.Reader[F, ?, B]], B](schema: A)
+    final case class Root[F[_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A)
         extends Collection.Reader[F, A, Vector[B]]:
       override def constraints: Chain[Constraint[?]] = Chain.empty
 

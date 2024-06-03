@@ -53,3 +53,18 @@ trait Types:
     type Reader[A] = AsPrimitive[Base.Primitive.Reader[A]]
 
     type Writer[A] = AsPrimitive[Base.Primitive.Writer[A]]
+
+  type Tuple[A] = AsTuple[Base.Tuple[AsSchema, ?, A]]
+
+  object Tuple:
+    type Of[A, B] = AsTuple[Base.Tuple[AsSchema, A, B]]
+
+    type Reader[A] = AsTuple[Base.Tuple.Reader[AsSchema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = AsTuple[Base.Tuple.Reader[AsSchema, A, B]]
+
+    type Writer[A] = AsTuple[Base.Tuple.Writer[AsSchema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = AsTuple[Base.Tuple.Writer[AsSchema, A, B]]
