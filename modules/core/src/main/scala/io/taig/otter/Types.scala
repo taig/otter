@@ -3,8 +3,6 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  self =>
-
   type AsSchema[+A]
   type AsCollection[+A] <: AsSchema[A]
   type AsPrimitive[+A] <: AsSchema[A]

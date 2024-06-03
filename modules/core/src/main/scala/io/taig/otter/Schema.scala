@@ -252,7 +252,7 @@ object Union:
       export self.schemas
       override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
-    final case class One[F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]:
+    final case class One[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]:
       override def constraints: Chain[Constraint[?]] = Chain.empty
       override def schemas: NonEmptyChain[A] = NonEmptyChain.one(schema)
 
