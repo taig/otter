@@ -150,35 +150,77 @@ sealed trait Tuple[+F[_], +A, B] extends Schema[F, A, B], Tuple.Reader[F, A, B],
 
 object Tuple:
   sealed trait Reader[+F[_], +A, +B] extends Schema.Reader[F, A, B]:
+    def size: Int
     override def optional: Tuple.Reader[F, A, Option[B]] = Reader.Optional(this)
     final override def validate[C, D, E](validation: SchemaValidation[B, C, D, E]): Tuple.Reader[F, A, E] =
       Reader.Modify(this, validation)
 
   object Reader:
-    final case class Optional[F[_], A, B](self: Tuple.Reader[F, A, B]) extends Tuple.Reader[F, A, Option[B]]:
-      export self.constraints
+    case object Empty extends Tuple.Reader[Nothing, Nothing, Unit]:
+      override def constraints: Chain[Constraint[?]] = Chain.empty
+      override def size: Int = 0
 
     final case class Modify[F[_], A, B, V1, V2, C](
         self: Tuple.Reader[F, A, B],
         validation: SchemaValidation[B, V1, V2, C]
     ) extends Tuple.Reader[F, A, C]:
+      export self.size
       override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
+    final case class One[F[_], A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Tuple.Reader[F, A, B]:
+      override def constraints: Chain[Constraint[?]] = Chain.empty
+      override def size: Int = 1
+
+    final case class Optional[F[_], A, B](self: Tuple.Reader[F, A, B]) extends Tuple.Reader[F, A, Option[B]]:
+      export self.{constraints, size}
+
+    final case class Product[F[_], A, B, C, D](left: Tuple.Reader[F, A, B], right: Tuple.Reader[F, C, D])
+        extends Tuple.Reader[F, A | C, (B, D)]:
+      override def constraints: Chain[Constraint[?]] = Chain.empty
+      override def size: Int = left.size + right.size
+
   sealed trait Writer[+F[_], +A, -B] extends Schema.Writer[F, A, B]:
+    def size: Int
     final override def contramap[C](f: C => B): Tuple.Writer[F, A, C] = Writer.Modify(this, f)
     override def optional: Tuple.Writer[F, A, Option[B]] = Writer.Optional(this)
 
   object Writer:
-    final case class Optional[F[_], A, B](self: Tuple.Writer[F, A, B]) extends Tuple.Writer[F, A, Option[B]]
+    case object Empty extends Tuple.Writer[Nothing, Nothing, Unit]:
+      override def size: Int = 0
 
-    final case class Modify[F[_], A, B, C](self: Tuple.Writer[F, A, B], f: C => B) extends Tuple.Writer[F, A, C]
+    final case class Modify[F[_], A, B, C](self: Tuple.Writer[F, A, B], f: C => B) extends Tuple.Writer[F, A, C]:
+      export self.size
 
-  final case class Optional[F[_], A, B](self: Tuple[F, A, B]) extends Tuple[F, A, Option[B]]:
-    export self.constraints
+    final case class One[F[_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Tuple.Writer[F, A, B]:
+      override def size: Int = 1
+
+    final case class Optional[F[_], A, B](self: Tuple.Writer[F, A, B]) extends Tuple.Writer[F, A, Option[B]]:
+      export self.size
+
+    final case class Product[F[_], A, B, C, D](left: Tuple.Writer[F, A, B], right: Tuple.Writer[F, C, D])
+        extends Tuple.Writer[F, A | C, (B, D)]:
+      override def size: Int = left.size + right.size
+
+  case object Empty extends Tuple[Nothing, Nothing, Unit]:
+    override def constraints: Chain[Constraint[?]] = Chain.empty
+    override def size: Int = 0
 
   final case class Modify[F[_], A, B, V1, V2, C](
       self: Tuple[F, A, B],
       validation: SchemaValidation[B, V1, V2, C],
       f: C => B
   ) extends Tuple[F, A, C]:
+    export self.size
     override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
+
+  final case class One[F[_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Tuple[F, A, B]:
+    override def constraints: Chain[Constraint[?]] = Chain.empty
+    override def size: Int = 1
+
+  final case class Optional[F[_], A, B](self: Tuple[F, A, B]) extends Tuple[F, A, Option[B]]:
+    export self.{constraints, size}
+
+  final case class Product[F[_], A, B, C, D](left: Tuple[F, A, B], right: Tuple[F, C, D])
+      extends Tuple[F, A | C, (B, D)]:
+    override def constraints: Chain[Constraint[?]] = Chain.empty
+    override def size: Int = left.size + right.size
