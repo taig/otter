@@ -10,76 +10,46 @@ trait Types:
   type AsPrimitive[+A] <: AsSchema[A]
   type AsTuple[+A] <: AsSchema[A]
 
-  // type Schema[A] = AsSchema[Base.Optional[AsSchema, Base.Isomorphic, Base.Schema, ?, A]]
+  type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
-  // object Schema:
-  //   type Of[A <: AsSchema[Optional[AsSchema, Base.Isomorphic, Base.Schema, ?, ?]], B] =
-  //     AsSchema[Base.Optional[AsSchema, Base.Isomorphic, Base.Schema, A, B]]
+  object Schema:
+    type Of[A, B] = AsSchema[Base.Schema[AsSchema, A, B]]
 
-  //   type Writer[A] = AsSchema[Base.Optional[AsSchema, Base.Writer, Base.Schema, ?, A]]
+    type Reader[A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]
 
-  // type Isomorphic[A] = AsSchema[Base.Isomorphic[AsSchema, Base.Optional, Base.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = AsSchema[Base.Schema.Reader[AsSchema, A, B]]
 
-  // object Isomorphic:
-  //   type Any = AsSchema[Base.Isomorphic[AsSchema, Base.Optional, Base.Schema, ?, ?]]
+    type Writer[A] = AsSchema[Base.Schema.Writer[AsSchema, ?, A]]
 
-  // type Reader[A] = AsSchema[Base.Reader[AsSchema, Base.Optional, Base.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = AsSchema[Base.Schema.Writer[AsSchema, A, B]]
 
-  // object Reader:
-  //   type Any = AsSchema[Base.Reader[AsSchema, Base.Optional, Base.Schema, ?, ?]]
+  type Collection[A] = AsCollection[Base.Collection[AsSchema, ?, A]]
 
-  // type Writer[A] = AsSchema[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?, A]]
+  object Collection:
+    type Of[A, B] = AsCollection[Base.Collection[AsSchema, A, B]]
 
-  // object Writer:
-  //   type Any = AsSchema[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?, ?]]
+    type Reader[A] = AsCollection[Base.Collection.Reader[AsSchema, ?, A]]
 
-  // type Schema[A] = Schema.Of[self.Isomorphic.Any, A]
+    object Reader:
+      type Of[A, B] = AsCollection[Base.Collection.Reader[AsSchema, A, B]]
 
-  // object Schema:
-  //   type Of[A <: self.Isomorphic.Any, B] = AsSchema[Base.Isomorphic[AsSchema, Base.Optional, Base.Schema, A, B]]
+    type Writer[A] = AsCollection[Base.Collection.Writer[AsSchema, ?, A]]
 
-  //   type Reader[+A] = Reader.Of[self.Reader.Any, A]
+    object Writer:
+      type Of[A, B] = AsCollection[Base.Collection.Writer[AsSchema, A, B]]
 
-  //   object Reader:
-  //     type Of[A <: self.Reader.Any, B] = AsSchema[Base.Reader[AsSchema, Base.Optional, Base.Schema, A, B]]
+  type Primitive[A] = AsPrimitive[Base.Primitive[A]]
 
-  //   type Writer[-A] = Writer.Of[self.Writer.Any, A]
+  object Primitive:
+    type Required[A] = AsPrimitive[Base.Primitive.Required[A]]
 
-  //   object Writer:
-  //     type Of[A <: self.Writer.Any, B] = AsSchema[Base.Writer[AsSchema, Base.Optional, Base.Schema, A, B]]
+    object Required:
+      type Reader[A] = AsPrimitive[Base.Primitive.Required.Reader[A]]
 
-  // type Collection[A] = AsCollection[Base.Isomorphic[AsSchema, Base.Optional, Base.Collection, self.Isomorphic.Any, A]]
+      type Writer[A] = AsPrimitive[Base.Primitive.Required.Writer[A]]
 
-  // object Collection:
-  //   type Of[A <: self.Isomorphic.Any, B] =
-  //     AsCollection[Base.Isomorphic[AsSchema, Base.Optional, Base.Collection, A, B]]
+    type Reader[A] = AsPrimitive[Base.Primitive.Reader[A]]
 
-  //   type Reader[+A] = AsCollection[Base.Reader[AsSchema, Base.Optional, Base.Collection, self.Reader.Any, A]]
-
-  //   object Reader:
-  //     type Of[A <: self.Reader.Any, B] = AsCollection[Base.Reader[AsSchema, Base.Optional, Base.Collection, A, B]]
-
-  //   type Writer[-A] = AsCollection[Base.Writer[AsSchema, Base.Optional, Base.Collection, self.Writer.Any, A]]
-
-  //   object Writer:
-  //     type Of[A <: self.Writer.Any, B] = AsCollection[Base.Writer[AsSchema, Base.Optional, Base.Collection, A, B]]
-
-  // type Primitive[A] = AsPrimitive[Base.Isomorphic[AsSchema, Base.Optional, [_, a] =>> Base.Primitive[a], Nothing, A]]
-
-  // object Primitive:
-  //   type Required[A] = AsPrimitive[Base.Isomorphic[AsSchema, Base.Required, [_, a] =>> Base.Primitive[a], Nothing, A]]
-
-  // type Tuple[A] = AsTuple[Base.Isomorphic[AsSchema, Base.Optional, Base.Tuple, self.Isomorphic.Any, A]]
-
-  // object Tuple:
-  //   type Of[A <: self.Isomorphic.Any, B] = AsTuple[Base.Isomorphic[AsSchema, Base.Optional, Base.Tuple, A, B]]
-
-  //   type Reader[+A] = AsTuple[Base.Reader[AsSchema, Base.Optional, Base.Tuple, self.Reader.Any, A]]
-
-  //   object Reader:
-  //     type Of[A <: self.Reader.Any, B] = AsTuple[Base.Reader[AsSchema, Base.Optional, Base.Tuple, A, B]]
-
-  //   type Writer[-A] = AsTuple[Base.Writer[AsSchema, Base.Optional, Base.Tuple, self.Writer.Any, A]]
-
-  //   object Writer:
-  //     type Of[A <: self.Writer.Any, B] = AsTuple[Base.Writer[AsSchema, Base.Optional, Base.Tuple, A, B]]
+    type Writer[A] = AsPrimitive[Base.Primitive.Writer[A]]

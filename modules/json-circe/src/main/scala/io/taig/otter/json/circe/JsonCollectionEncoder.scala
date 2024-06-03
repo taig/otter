@@ -5,7 +5,8 @@ import io.taig.otter.Plain.*
 import io.circe.Json
 import cats.syntax.all.*
 
-// object JsonCollectionEncoder:
-//   def apply[A](data: Base.Collection[Base.Writer[AsSchema, Base.Optional, Base.Schema, ?, ?], A], a: A): Vector[Json] =
-//     data match
-//       case Base.Collection.Root(schema) => a.map(JsonEncoder(schema, _))
+object JsonCollectionEncoder:
+  def apply[A](schema: Collection.Writer[A], a: A): Option[Vector[Json]] = schema match
+    case Base.Collection.Modify(self, _, f) => apply(self, f(a))
+    case Base.Collection.Optional(self)     => a.flatMap(apply(self, _))
+    case Base.Collection.Root(schema)       => a.map(JsonEncoder(schema, _)).some

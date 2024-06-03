@@ -7,14 +7,5 @@ import io.taig.otter.Plain.*
 
 object JsonEncoder extends Encoder[Schema.Writer, Json]:
   override def apply[A](schema: Schema.Writer[A], a: A): Json = schema match
-    case Base.Optional.Root(self) => a.map(apply(self, _)).getOrElse(Json.Null)
-    case Base.Required(isab)      => ??? // apply(schema, a)
-
-  // def apply[A](schema: Base.Optional[Base.Schema[Writer.Any, *], A], a: A): Json = schema match
-  //   case Base.Optional.Root(self) => a.map(apply(self, _)).getOrElse(Json.Null)
-  //   case Base.Required(data)      => apply(data, a)
-
-  // def apply[A](data: Base.Schema[Writer.Any, A], a: A): Json = data match
-  //   case schema: Base.Collection[Writer.Any, A] => Json.fromValues(JsonCollectionEncoder(schema, a))
-  //   case schema: Base.Primitive[A]              => JsonPrimitiveEncoder(schema, a)
-  //   case schema: Base.Tuple[Writer.Any, A]      => Json.fromValues(JsonTupleEncoder(schema, a))
+    case schema: Collection.Writer[A] => JsonCollectionEncoder(schema, a).fold(Json.Null)(Json.fromValues)
+    case schema: Primitive.Writer[A]  => JsonPrimitiveEncoder(schema, a)
