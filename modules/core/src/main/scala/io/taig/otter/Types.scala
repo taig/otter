@@ -12,6 +12,8 @@ trait Types:
   type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
   object Schema:
+    type Any = AsSchema[Base.Schema[AsSchema, ?, ?]]
+
     type Of[A, B] = AsSchema[Base.Schema[AsSchema, A, B]]
 
     type Reader[A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]

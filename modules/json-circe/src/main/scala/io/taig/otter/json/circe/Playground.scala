@@ -8,7 +8,8 @@ import cats.syntax.all.*
 object Playground:
   @main
   def run = {
-    println(
-      JsonEncoder(string.optional.collection.vector, (None +: Vector("yolo", "foo", "bar").map(_.some)) ++ Vector(None))
-    )
+    // println(
+    //   JsonEncoder(string.optional.collection.vector, (None +: Vector("yolo", "foo", "bar").map(_.some)) ++ Vector(None))
+    // )
+
   }

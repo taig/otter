@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import io.taig.otter.validation.Constraint
-import cats.data.NonEmptyChainImpl
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   override def optional: Schema[F, A, Option[B]]
@@ -79,8 +78,7 @@ object Primitive:
   sealed trait Required[A] extends Primitive[A], Primitive.Required.Reader[A], Primitive.Required.Writer[A]:
     final override def ivalidate[V1, V2, B](validation: SchemaValidation[A, V1, V2, B])(
         f: B => A
-    ): Primitive.Required[B] =
-      Required.Modify(this, validation, f)
+    ): Primitive.Required[B] = Required.Modify(this, validation, f)
 
   object Required:
     sealed trait Reader[+A] extends Primitive.Reader[A]:
