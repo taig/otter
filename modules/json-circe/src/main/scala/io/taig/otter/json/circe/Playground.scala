@@ -9,6 +9,6 @@ object Playground:
   @main
   def run = {
     println(
-      JsonEncoder(collection(string.optional), (None +: Vector("yolo", "foo", "bar").map(_.some)) ++ Vector(None))
+      JsonEncoder(string.optional.collection.vector, (None +: Vector("yolo", "foo", "bar").map(_.some)) ++ Vector(None))
     )
   }

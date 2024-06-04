@@ -180,8 +180,10 @@ object Tuple:
     final case class Optional[F[+_], A, B](self: Tuple.Reader[F, A, B]) extends Tuple.Reader[F, A, Option[B]]:
       export self.{constraints, schemas}
 
-    final case class Product[F[+_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](left: Tuple.Reader[F, A, B], right: C)
-        extends Tuple.Reader[F, A | C, (B, D)]:
+    final case class Product[F[+_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](
+        left: Tuple.Reader[F, A, B],
+        right: C
+    ) extends Tuple.Reader[F, A | C, (B, D)]:
       override def constraints: Chain[Constraint[?]] = left.constraints
       override def schemas: Chain[F[Schema.Reader[F, ?, ?]]] = left.schemas :+ right
 
@@ -203,8 +205,10 @@ object Tuple:
     final case class Optional[F[+_], A, B](self: Tuple.Writer[F, A, B]) extends Tuple.Writer[F, A, Option[B]]:
       export self.schemas
 
-    final case class Product[F[+_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](left: Tuple.Writer[F, A, B], right: C)
-        extends Tuple.Writer[F, A | C, (B, D)]:
+    final case class Product[F[+_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](
+        left: Tuple.Writer[F, A, B],
+        right: C
+    ) extends Tuple.Writer[F, A | C, (B, D)]:
       override def schemas: Chain[F[Schema.Writer[F, ?, ?]]] = left.schemas :+ right
 
   case object Empty extends Tuple[Nothing, Nothing, Unit]:
@@ -259,8 +263,10 @@ object Union:
     final case class Optional[F[+_], A, B](self: Union.Reader[F, A, B]) extends Union.Reader[F, A, Option[B]]:
       export self.{constraints, schemas}
 
-    final case class OrElse[F[+_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](left: Union.Reader[F, A, B], right: C)
-        extends Union.Reader[F, A | C, B + D]:
+    final case class OrElse[F[+_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](
+        left: Union.Reader[F, A, B],
+        right: C
+    ) extends Union.Reader[F, A | C, B + D]:
       override def constraints: Chain[Constraint[?]] = left.constraints
       override def schemas: NonEmptyChain[F[Schema.Reader[F, ?, ?]]] = left.schemas :+ right
 
@@ -279,8 +285,10 @@ object Union:
     final case class Optional[F[+_], A, B](self: Union.Writer[F, A, B]) extends Union.Writer[F, A, Option[B]]:
       export self.schemas
 
-    final case class OrElse[F[+_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](left: Union.Writer[F, A, B], right: C)
-        extends Union.Writer[F, A | C, B + D]:
+    final case class OrElse[F[+_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](
+        left: Union.Writer[F, A, B],
+        right: C
+    ) extends Union.Writer[F, A | C, B + D]:
       override def schemas: NonEmptyChain[F[Schema.Writer[F, ?, ?]]] = left.schemas :+ right
 
   final case class Modify[F[+_], A, B, V1, V2, C](
