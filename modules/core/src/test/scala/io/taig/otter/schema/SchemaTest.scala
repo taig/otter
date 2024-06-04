@@ -1,16 +1,17 @@
 package io.taig.otter.schema
 
+import cats.syntax.all.*
 import munit.FunSuite
 import io.taig.otter.Decoder
 import io.taig.otter.Encoder
-import io.taig.otter.Schemas
 import munit.Location
 import munit.Compare
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import io.taig.otter.Dsl
 
 abstract class SchemaTest[A] extends FunSuite:
-  schemas: Schemas =>
+  schemas: Dsl =>
 
   def decoder: Decoder[Schema.Reader, A]
 
@@ -58,3 +59,9 @@ abstract class SchemaTest[A] extends FunSuite:
     test(string, "")
     test(string, "foobar")
     test(string, "öäüß@§&%")
+
+  test("primitive: optional"):
+    test(string.optional, "foobar".some)
+    test(int.optional, 0.some)
+    test(string.optional, "".some)
+    test(string.optional, none)
