@@ -1,14 +1,17 @@
 package io.taig.otter
 
-// trait SchemaReaderOps[R1[_], R2[_]]:
-//   extension [A](self: R1[A])
-//     def collection: R1[Vector[A]]
-//     def optional: R2[Option[A]]
+import cats.syntax.all.*
 
-// trait SchemaWriterOps[W1[_], W2[_]]:
-//   extension [A](self: W1[A])
-//     def collection: W1[Vector[A]]
-//     def optional: W2[Option[A]]
-//     def contramap[B](f: B => A): W1[B]
+trait SchemaOps[F[_, _, _], G[_, _, _], C[_, _, _], T[_, _, _]]:
+  extension [M, A, B](self: F[M, A, B])
+    def collection: C[M, self.type, Vector[B]]
+    final def collection[T[_]](builder: CollectionBuilder[T])(using
+        SchemaInvariant[C[M, self.type, *]]
+    ): C[M, self.type, T[B]] = collection.imap(builder.to)(builder.from)
+    def modify[N](f: M => N): F[N, A, B]
+    def optional: G[M, A, Option[B]]
+    def toTuple: T[M, self.type, B]
 
-// trait SchemaOps[I1[_], I2[_], R1[_], R2[_]] extends SchemaReaderOps[F, G], SchemaWriterOps[F, G]
+trait PrimitiveOps[F[_, _], G[_, _], C[_, _, _], T[_, _, _]]
+    extends SchemaOps[[m, _, a] =>> F[m, a], [m, _, a] =>> G[m, a], C, T]:
+  extension [M, A](self: F[M, A]) def tpe: Type[?]

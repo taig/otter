@@ -5,11 +5,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 trait Schemas extends Types:
-  protected def asPrimitive[A](a: A): AsPrimitive[A]
-  protected def asCollection[A](a: A): AsCollection[A]
-  protected def asTuple[A](a: A): AsTuple[A]
-
-  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = asPrimitive(Base.Primitive.Required.Root(tpe))
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive.Required.Root(tpe)
 
   final val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
   final val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)

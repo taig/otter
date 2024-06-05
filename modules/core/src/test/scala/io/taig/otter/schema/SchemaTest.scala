@@ -9,6 +9,7 @@ import munit.Compare
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.Dsl
+import io.taig.otter.CollectionBuilder
 
 abstract class SchemaTest[A] extends FunSuite:
   schemas: Dsl =>
@@ -25,10 +26,6 @@ abstract class SchemaTest[A] extends FunSuite:
   // test("collection"):
   //   test(collection.vector(string), Vector("foo", "bar", "baz"))
   //   test(collection.vector(int), Vector(1, 2, 3))
-
-  string.optional
-  (string: Primitive.Required.Reader[String]).collection
-  val x: Collection.Of[Schema.Reader[String], Vector[String]] = string.collection
 
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))
