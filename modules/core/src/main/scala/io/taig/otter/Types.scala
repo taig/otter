@@ -3,76 +3,78 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  type Schema[A] = Base.Schema[?, ?, A]
+  val metadata: Metadata
+
+  final type Schema[A] = Base.Schema[metadata.Primitive, ?, A]
 
   object Schema:
-    type Of[A, B] = Base.Schema[?, A, B]
+    final type Of[A, B] = Base.Schema[metadata.Schema, A, B]
 
-    type Reader[A] = Base.Schema.Reader[?, ?, A]
+    final type Reader[A] = Base.Schema.Reader[metadata.Schema, ?, A]
 
     object Reader:
-      type Of[A, B] = Base.Schema.Reader[?, A, B]
+      final type Of[A, B] = Base.Schema.Reader[metadata.Schema, A, B]
 
-    type Writer[A] = Base.Schema.Writer[?, ?, A]
+    final type Writer[A] = Base.Schema.Writer[metadata.Schema, ?, A]
 
     object Writer:
-      type Of[A, B] = Base.Schema.Writer[?, A, B]
+      final type Of[A, B] = Base.Schema.Writer[metadata.Schema, A, B]
 
-  type Collection[A] = Base.Collection[?, ?, A]
+  final type Collection[A] = Base.Collection[metadata.Collection, ?, A]
 
   object Collection:
-    type Of[A, B] = Base.Collection[?, A, B]
+    final type Of[A, B] = Base.Collection[metadata.Collection, A, B]
 
-    type Reader[A] = Base.Collection.Reader[?, ?, A]
+    final type Reader[A] = Base.Collection.Reader[metadata.Collection, ?, A]
 
     object Reader:
-      type Of[A, B] = Base.Collection.Reader[?, A, B]
+      final type Of[A, B] = Base.Collection.Reader[metadata.Collection, A, B]
 
-    type Writer[A] = Base.Collection.Writer[?, ?, A]
+    final type Writer[A] = Base.Collection.Writer[metadata.Collection, ?, A]
 
     object Writer:
-      type Of[A, B] = Base.Collection.Writer[?, A, B]
+      final type Of[A, B] = Base.Collection.Writer[metadata.Collection, A, B]
 
-  type Primitive[A] = Base.Primitive[?, A]
+  final type Primitive[A] = Base.Primitive[metadata.Primitive, A]
 
   object Primitive:
-    type Required[A] = Base.Primitive.Required[?, A]
+    final type Required[A] = Base.Primitive.Required[metadata.Primitive, A]
 
     object Required:
-      type Reader[A] = Base.Primitive.Required.Reader[?, A]
+      final type Reader[A] = Base.Primitive.Required.Reader[metadata.Primitive, A]
 
-      type Writer[A] = Base.Primitive.Required.Writer[?, A]
+      final type Writer[A] = Base.Primitive.Required.Writer[metadata.Primitive, A]
 
-    type Reader[A] = Base.Primitive.Reader[?, A]
+    final type Reader[A] = Base.Primitive.Reader[metadata.Primitive, A]
 
-    type Writer[A] = Base.Primitive.Writer[?, A]
+    final type Writer[A] = Base.Primitive.Writer[metadata.Primitive, A]
 
-  type Tuple[A] = Base.Tuple[?, ?, A]
+  final type Tuple[A] = Base.Tuple[metadata.Tuple, ?, A]
 
   object Tuple:
-    type Of[A, B] = Base.Tuple[?, A, B]
+    final type Of[A, B] = Base.Tuple[metadata.Tuple, A, B]
 
-    type Reader[A] = Base.Tuple.Reader[?, ?, A]
+    final type Reader[A] = Base.Tuple.Reader[metadata.Tuple, ?, A]
 
     object Reader:
-      type Of[A, B] = Base.Tuple.Reader[?, A, B]
+      final type Of[A, B] = Base.Tuple.Reader[metadata.Tuple, A, B]
 
-    type Writer[A] = Base.Tuple.Writer[?, ?, A]
+    final type Writer[A] = Base.Tuple.Writer[metadata.Tuple, ?, A]
 
     object Writer:
-      type Of[A, B] = Base.Tuple.Writer[?, A, B]
+      final type Of[A, B] = Base.Tuple.Writer[metadata.Tuple, A, B]
 
-  // type Union[A] = AsUnion[Base.Union[?, ?, A]]
+  // final type Union[A] = AsUnion[Base.Union[?, ?, A]]
 
   // object Union:
-  //   type Of[A, B] = AsUnion[Base.Union[?, A, B]]
+  //   final type Of[A, B] = AsUnion[Base.Union[?, A, B]]
 
-  //   type Reader[A] = AsUnion[Base.Union.Reader[?, ?, A]]
+  //   final type Reader[A] = AsUnion[Base.Union.Reader[?, ?, A]]
 
   //   object Reader:
-  //     type Of[A, B] = AsUnion[Base.Union.Reader[?, A, B]]
+  //     final type Of[A, B] = AsUnion[Base.Union.Reader[?, A, B]]
 
-  //   type Writer[A] = AsUnion[Base.Union.Writer[?, ?, A]]
+  //   final type Writer[A] = AsUnion[Base.Union.Writer[?, ?, A]]
 
   //   object Writer:
-  //     type Of[A, B] = AsUnion[Base.Union.Writer[?, A, B]]
+  //     final type Of[A, B] = AsUnion[Base.Union.Writer[?, A, B]]
