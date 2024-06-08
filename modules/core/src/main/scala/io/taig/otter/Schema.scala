@@ -3,71 +3,79 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.otter.validation.Constraint
+import io.taig.otter.Schema.Reader
 
-sealed trait Schema[+F[_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
+sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   def ivalidate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C])(f: C => B): Schema[F, A, C]
   override def optional: Schema[F, A, Option[B]]
 
 object Schema:
-  sealed trait Reader[+F[_], +A, +B] extends Product, Serializable:
+  sealed trait Reader[+F[+_], +A, +B] extends Product, Serializable:
     def constraints: Chain[Constraint[?]]
     def optional: Schema.Reader[F, A, Option[B]]
     def validate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C]): Schema.Reader[F, A, C]
 
-  sealed trait Writer[+F[_], +A, -B] extends Product, Serializable:
+  sealed trait Writer[+F[+_], +A, -B] extends Product, Serializable:
     def contramap[C](f: C => B): Schema.Writer[F, A, C]
     def optional: Schema.Writer[F, A, Option[B]]
 
-sealed trait Collection[+F[_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
-  final override def optional: Collection[F, A, Option[B]] = Collection.Optional(this)
+sealed trait Collection[+F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
   final def ivalidate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C])(f: C => B): Collection[F, A, C] =
     Collection.Modify(this, validation, f)
+  final override def optional: Collection[F, A, Option[B]] = Collection.Optional(this)
+  override def schema: F[Schema[F, ?, ?]]
 
 object Collection:
-  sealed trait Reader[+F[_], +A, +B] extends Schema.Reader[F, A, B]:
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     def constraints: Chain[Constraint[?]]
     def optional: Collection.Reader[F, A, Option[B]] = Reader.Optional(this)
+    def schema: F[Schema.Reader[F, ?, ?]]
     final def validate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C]): Collection.Reader[F, A, C] =
       Reader.Modify(this, validation)
 
   object Reader:
-    final case class Modify[F[_], A, B, V1, V2, C](
+    final case class Modify[F[+_], A, B, V1, V2, C](
         self: Collection.Reader[F, A, B],
         validation: SchemaValidation[B, V1, V2, C]
     ) extends Collection.Reader[F, A, C]:
+      export self.schema
       override def constraints: Chain[Constraint[?]] = validation.constraints
 
-    final case class Optional[F[_], A, B](self: Collection.Reader[F, A, B]) extends Collection.Reader[F, A, Option[B]]:
-      export self.constraints
+    final case class Optional[F[+_], A, B](self: Collection.Reader[F, A, B]) extends Collection.Reader[F, A, Option[B]]:
+      export self.{constraints, schema}
 
-    final case class Root[F[_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A)
+    final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A)
         extends Collection.Reader[F, A, Vector[B]]:
       override def constraints: Chain[Constraint[?]] = Chain.empty
 
-  sealed trait Writer[+F[_], +A, -B] extends Schema.Writer[F, A, B]:
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
     final def contramap[C](f: C => B): Collection.Writer[F, A, C] = Writer.Modify(this, f)
     def optional: Collection.Writer[F, A, Option[B]] = Writer.Optional(this)
+    def schema: F[Schema.Writer[F, ?, ?]]
 
   object Writer:
-    final case class Modify[F[_], A, B, C](self: Collection.Writer[F, A, B], f: C => B)
-        extends Collection.Writer[F, A, C]
+    final case class Modify[F[+_], A, B, C](self: Collection.Writer[F, A, B], f: C => B)
+        extends Collection.Writer[F, A, C]:
+      export self.schema
 
-    final case class Optional[F[_], A, B](self: Collection.Writer[F, A, B]) extends Collection.Writer[F, A, Option[B]]
+    final case class Optional[F[+_], A, B](self: Collection.Writer[F, A, B]) extends Collection.Writer[F, A, Option[B]]:
+      export self.schema
 
-    final case class Root[F[_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A)
+    final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A)
         extends Collection.Writer[F, A, Vector[B]]
 
-  final case class Modify[F[_], A, B, V1, V2, C](
+  final case class Modify[F[+_], A, B, V1, V2, C](
       self: Collection[F, A, B],
       validation: SchemaValidation[B, V1, V2, C],
       f: C => B
   ) extends Collection[F, A, C]:
+    export self.schema
     override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
-  final case class Optional[F[_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
-    export self.constraints
+  final case class Optional[F[+_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
+    export self.{constraints, schema}
 
-  final case class Root[F[_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
+  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
     override def constraints: Chain[Constraint[?]] = Chain.empty
 
 sealed trait Primitive[A] extends Schema[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
@@ -149,14 +157,14 @@ object Primitive:
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.{constraints, tpe}
 
-sealed trait Tuple[+F[_], +A, B] extends Schema[F, A, B], Tuple.Reader[F, A, B], Tuple.Writer[F, A, B]:
+sealed trait Tuple[+F[+_], +A, B] extends Schema[F, A, B], Tuple.Reader[F, A, B], Tuple.Writer[F, A, B]:
   final def ivalidate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C])(f: C => B): Tuple[F, A, C] =
     Tuple.Modify(this, validation, f)
   final override def optional: Tuple[F, A, Option[B]] = Tuple.Optional(this)
-  override def schemas: Chain[Schema[F, ?, ?]]
+  override def schemas: Chain[F[Schema[F, ?, ?]]]
 
 object Tuple:
-  sealed trait Reader[+F[_], +A, +B] extends Schema.Reader[F, A, B]:
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     def schemas: Chain[F[Schema.Reader[F, ?, ?]]]
     def constraints: Chain[Constraint[?]]
     def optional: Tuple.Reader[F, A, Option[B]] = Reader.Optional(this)
@@ -168,28 +176,28 @@ object Tuple:
       override def constraints: Chain[Constraint[?]] = Chain.empty
       override def schemas: Chain[Nothing] = Chain.empty
 
-    final case class Modify[F[_], A, B, V1, V2, C](
+    final case class Modify[F[+_], A, B, V1, V2, C](
         self: Tuple.Reader[F, A, B],
         validation: SchemaValidation[B, V1, V2, C]
     ) extends Tuple.Reader[F, A, C]:
       export self.schemas
       override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
-    final case class One[F[_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Tuple.Reader[F, A, B]:
+    final case class One[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Tuple.Reader[F, A, B]:
       override def constraints: Chain[Constraint[?]] = Chain.empty
       override def schemas: Chain[A] = Chain.one(schema)
 
-    final case class Optional[F[_], A, B](self: Tuple.Reader[F, A, B]) extends Tuple.Reader[F, A, Option[B]]:
+    final case class Optional[F[+_], A, B](self: Tuple.Reader[F, A, B]) extends Tuple.Reader[F, A, Option[B]]:
       export self.{constraints, schemas}
 
-    final case class Zip[F[_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](
+    final case class Zip[F[+_], A, B, +C <: F[Schema.Reader[F, ?, D]], D](
         left: Tuple.Reader[F, A, B],
         right: C
     ) extends Tuple.Reader[F, A | C, (B, D)]:
       override def constraints: Chain[Constraint[?]] = left.constraints
       override def schemas: Chain[F[Schema.Reader[F, ?, ?]]] = left.schemas :+ right
 
-  sealed trait Writer[+F[_], +A, -B] extends Schema.Writer[F, A, B]:
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
     final def contramap[C](f: C => B): Tuple.Writer[F, A, C] = Writer.Modify(this, f)
     def optional: Tuple.Writer[F, A, Option[B]] = Writer.Optional(this)
     def schemas: Chain[F[Schema.Writer[F, ?, ?]]]
@@ -198,16 +206,16 @@ object Tuple:
     case object Empty extends Tuple.Writer[Nothing, Nothing, Unit]:
       override def schemas: Chain[Nothing] = Chain.empty
 
-    final case class Modify[F[_], A, B, C](self: Tuple.Writer[F, A, B], f: C => B) extends Tuple.Writer[F, A, C]:
+    final case class Modify[F[+_], A, B, C](self: Tuple.Writer[F, A, B], f: C => B) extends Tuple.Writer[F, A, C]:
       export self.schemas
 
-    final case class One[F[_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Tuple.Writer[F, A, B]:
+    final case class One[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Tuple.Writer[F, A, B]:
       override def schemas: Chain[A] = Chain.one(schema)
 
-    final case class Optional[F[_], A, B](self: Tuple.Writer[F, A, B]) extends Tuple.Writer[F, A, Option[B]]:
+    final case class Optional[F[+_], A, B](self: Tuple.Writer[F, A, B]) extends Tuple.Writer[F, A, Option[B]]:
       export self.schemas
 
-    final case class Zip[F[_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](
+    final case class Zip[F[+_], A, B, +C <: F[Schema.Writer[F, ?, D]], D](
         left: Tuple.Writer[F, A, B],
         right: C
     ) extends Tuple.Writer[F, A | C, (B, D)]:
@@ -217,7 +225,7 @@ object Tuple:
     override def constraints: Chain[Constraint[?]] = Chain.empty
     override def schemas: Chain[Nothing] = Chain.empty
 
-  final case class Modify[F[_], A, B, V1, V2, C](
+  final case class Modify[F[+_], A, B, V1, V2, C](
       self: Tuple[F, A, B],
       validation: SchemaValidation[B, V1, V2, C],
       f: C => B
@@ -225,14 +233,14 @@ object Tuple:
     export self.schemas
     override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
-  final case class One[F[_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Tuple[F, A, B]:
+  final case class One[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Tuple[F, A, B]:
     override def constraints: Chain[Constraint[?]] = Chain.empty
     override def schemas: Chain[A] = Chain.one(schema)
 
-  final case class Optional[F[_], A, B](self: Tuple[F, A, B]) extends Tuple[F, A, Option[B]]:
+  final case class Optional[F[+_], A, B](self: Tuple[F, A, B]) extends Tuple[F, A, Option[B]]:
     export self.{constraints, schemas}
 
-  final case class Zip[F[_], A, B, +C <: F[Schema[F, ?, D]], D](left: Tuple[F, A, B], right: C)
+  final case class Zip[F[+_], A, B, +C <: F[Schema[F, ?, D]], D](left: Tuple[F, A, B], right: C)
       extends Tuple[F, A | C, (B, D)]:
     override def constraints: Chain[Constraint[?]] = left.constraints
     override def schemas: Chain[F[Schema[F, ?, ?]]] = left.schemas :+ right

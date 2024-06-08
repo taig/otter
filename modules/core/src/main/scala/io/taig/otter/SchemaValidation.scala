@@ -5,7 +5,7 @@ import cats.Id as Identity
 
 type SchemaValidation[-A, B, C, +D] = Validation[
   A,
-  (Schema.Writer[Any, B], B),
-  (Schema.Writer[Any, C], C),
+  (Schema.Writer[Identity, ?, B], B),
+  (Schema.Writer[Identity, ?, C], C),
   D
 ]

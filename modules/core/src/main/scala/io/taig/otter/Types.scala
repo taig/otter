@@ -3,66 +3,74 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  val metadata: Metadata
+  type AsSchema[+A]
+  type AsCollection[+A] <: AsSchema[A]
+  type AsPrimitive[+A] <: AsSchema[A]
+  type AsTuple[+A] <: AsSchema[A]
+  type AsUnion[+A] <: AsSchema[A]
 
-  final type Schema[A] = Base.Schema[metadata.Primitive, ?, A]
+  final type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
   object Schema:
-    final type Of[A, B] = Base.Schema[metadata.Schema, A, B]
+    final type Any = AsSchema[Base.Schema[AsSchema, ?, ?]]
 
-    final type Reader[A] = Base.Schema.Reader[metadata.Schema, ?, A]
+    final type Of[A, B] = AsSchema[Base.Schema[AsSchema, A, B]]
+
+    final type Reader[A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]
 
     object Reader:
-      final type Of[A, B] = Base.Schema.Reader[metadata.Schema, A, B]
+      final type Of[A, B] = AsSchema[Base.Schema.Reader[AsSchema, A, B]]
 
-    final type Writer[A] = Base.Schema.Writer[metadata.Schema, ?, A]
+    final type Writer[A] = AsSchema[Base.Schema.Writer[AsSchema, ?, A]]
 
     object Writer:
-      final type Of[A, B] = Base.Schema.Writer[metadata.Schema, A, B]
+      final type Of[A, B] = AsSchema[Base.Schema.Writer[AsSchema, A, B]]
 
-  final type Collection[A] = Base.Collection[metadata.Collection, ?, A]
+  final type Collection[A] = AsCollection[Base.Collection[AsSchema, ?, A]]
 
   object Collection:
-    final type Of[A, B] = Base.Collection[metadata.Collection, A, B]
+    final type Any = AsCollection[Base.Collection[AsSchema, ?, ?]]
 
-    final type Reader[A] = Base.Collection.Reader[metadata.Collection, ?, A]
+    final type Of[A, B] = AsCollection[Base.Collection[AsSchema, A, B]]
+
+    final type Reader[A] = AsCollection[Base.Collection.Reader[AsSchema, ?, A]]
 
     object Reader:
-      final type Of[A, B] = Base.Collection.Reader[metadata.Collection, A, B]
+      final type Of[A, B] = AsCollection[Base.Collection.Reader[AsSchema, A, B]]
 
-    final type Writer[A] = Base.Collection.Writer[metadata.Collection, ?, A]
+    final type Writer[A] = AsCollection[Base.Collection.Writer[AsSchema, ?, A]]
 
     object Writer:
-      final type Of[A, B] = Base.Collection.Writer[metadata.Collection, A, B]
+      final type Of[A, B] = AsCollection[Base.Collection.Writer[AsSchema, A, B]]
 
-  final type Primitive[A] = Base.Primitive[metadata.Primitive, A]
+  final type Primitive[A] = AsPrimitive[Base.Primitive[A]]
 
   object Primitive:
-    final type Required[A] = Base.Primitive.Required[metadata.Primitive, A]
+    final type Required[A] = AsPrimitive[Base.Primitive.Required[A]]
 
     object Required:
-      final type Reader[A] = Base.Primitive.Required.Reader[metadata.Primitive, A]
+      final type Reader[A] = AsPrimitive[Base.Primitive.Required.Reader[A]]
 
-      final type Writer[A] = Base.Primitive.Required.Writer[metadata.Primitive, A]
+      final type Writer[A] = AsPrimitive[Base.Primitive.Required.Writer[A]]
 
-    final type Reader[A] = Base.Primitive.Reader[metadata.Primitive, A]
+    final type Reader[A] = AsPrimitive[Base.Primitive.Reader[A]]
 
-    final type Writer[A] = Base.Primitive.Writer[metadata.Primitive, A]
+    final type Writer[A] = AsPrimitive[Base.Primitive.Writer[A]]
 
-  final type Tuple[A] = Base.Tuple[metadata.Tuple, ?, A]
+  final type Tuple[A] = AsTuple[Base.Tuple[AsSchema, ?, A]]
 
   object Tuple:
-    final type Of[A, B] = Base.Tuple[metadata.Tuple, A, B]
+    final type Of[A, B] = AsTuple[Base.Tuple[AsSchema, A, B]]
 
-    final type Reader[A] = Base.Tuple.Reader[metadata.Tuple, ?, A]
+    final type Reader[A] = AsTuple[Base.Tuple.Reader[AsSchema, ?, A]]
 
     object Reader:
-      final type Of[A, B] = Base.Tuple.Reader[metadata.Tuple, A, B]
+      final type Of[A, B] = AsTuple[Base.Tuple.Reader[AsSchema, A, B]]
 
-    final type Writer[A] = Base.Tuple.Writer[metadata.Tuple, ?, A]
+    final type Writer[A] = AsTuple[Base.Tuple.Writer[AsSchema, ?, A]]
 
     object Writer:
-      final type Of[A, B] = Base.Tuple.Writer[metadata.Tuple, A, B]
+      final type Of[A, B] = AsTuple[Base.Tuple.Writer[AsSchema, A, B]]
 
   // final type Union[A] = AsUnion[Base.Union[?, ?, A]]
 
