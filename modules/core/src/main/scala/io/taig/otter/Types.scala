@@ -19,11 +19,15 @@ trait Types:
     final type Reader[A] = AsSchema[Base.Schema.Reader[AsSchema, ?, A]]
 
     object Reader:
+      final type Any = AsSchema[Base.Schema.Reader[AsSchema, ?, ?]]
+
       final type Of[A, B] = AsSchema[Base.Schema.Reader[AsSchema, A, B]]
 
     final type Writer[A] = AsSchema[Base.Schema.Writer[AsSchema, ?, A]]
 
     object Writer:
+      final type Any = AsSchema[Base.Schema.Writer[AsSchema, ?, ?]]
+
       final type Of[A, B] = AsSchema[Base.Schema.Writer[AsSchema, A, B]]
 
   final type Collection[A] = AsCollection[Base.Collection[AsSchema, ?, A]]
