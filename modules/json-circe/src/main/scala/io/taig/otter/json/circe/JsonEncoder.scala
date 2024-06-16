@@ -10,4 +10,4 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
     case schema: Collection.Writer[A] => JsonCollectionEncoder(schema, a).fold(Json.Null)(Json.fromValues)
     case schema: Primitive.Writer[A]  => JsonPrimitiveEncoder(schema, a)
     case schema: Tuple.Writer[A]      => JsonTupleEncoder(schema, a).fold(Json.Null)(Json.fromValues)
-    case schema: Union.Writer[A]      => JsonUnionEncoder(schema, a)
+    // case schema: Union.Writer[A]      => JsonUnionEncoder(schema, a)
