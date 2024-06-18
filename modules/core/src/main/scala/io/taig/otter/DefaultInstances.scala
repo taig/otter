@@ -18,7 +18,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Root(self))
       override def optional: Schema.Of[A, Option[B]] = asSchema.map(self)(_.optional)
-      override def toTuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
+      override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
 
   override given schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]] = new SchemaInvariant[Schema.Of[A, *]]:
     extension [B](self: Schema.Of[A, B])
@@ -32,7 +32,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Reader.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Reader.Root(self))
       override def optional: Schema.Reader.Of[A, Option[B]] = asSchema.map(self)(_.optional)
-      override def toTuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
+      override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
 
   override given schemaReaderFunctor[A]: SchemaFunctor[Schema.Reader.Of[A, *]] = new SchemaFunctor:
     extension [B](self: Schema.Reader.Of[A, B])
@@ -46,7 +46,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Writer.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Writer.Root(self))
       override def optional: Schema.Writer.Of[A, Option[B]] = asSchema.map(self)(_.optional)
-      override def toTuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
+      override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
 
   override given schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]] = new SchemaContravariant:
     override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
@@ -56,7 +56,7 @@ trait DefaultInstances extends Instances, Schemas:
     extension [A, B](self: Collection.Of[A, B])
       override def collection: Collection.Of[self.type, Vector[B]] = asCollection.pure(Base.Collection.Root(self))
       override def optional: Collection.Of[A, Option[B]] = asCollection.map(self)(_.optional)
-      override def toTuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
+      override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
       override def schema: Schema.Any = asCollection.extract(self).schema
 
   override given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = new SchemaInvariant:
@@ -70,7 +70,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Reader.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Reader.Root(self))
       override def optional: Collection.Reader.Of[A, Option[B]] = asCollection.map(self)(_.optional)
-      override def toTuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
+      override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
       override def schema: Schema.Reader.Any = asCollection.extract(self).schema
 
   override given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = new SchemaFunctor:
@@ -84,7 +84,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Writer.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Writer.Root(self))
       override def optional: Collection.Writer.Of[A, Option[B]] = asCollection.map(self)(_.optional)
-      override def toTuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
+      override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
       override def schema: Schema.Writer.Any = asCollection.extract(self).schema
 
   override given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]] =
@@ -96,7 +96,7 @@ trait DefaultInstances extends Instances, Schemas:
     extension [A, B](self: Primitive[B])
       override def collection: Collection.Of[self.type, Vector[B]] = asCollection.pure(Base.Collection.Root(self))
       override def optional: Primitive[Option[B]] = asPrimitive.map(self)(_.optional)
-      override def toTuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
+      override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
 
     extension [A](self: Primitive[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
 
@@ -112,7 +112,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Reader.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Reader.Root(self))
       override def optional: Primitive.Reader[Option[B]] = asPrimitive.map(self)(_.optional)
-      override def toTuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
+      override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
 
     extension [A](self: Primitive.Reader[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
 
@@ -128,7 +128,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def collection: Collection.Writer.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Writer.Root(self))
       override def optional: Primitive.Writer[Option[B]] = asPrimitive.map(self)(_.optional)
-      override def toTuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
+      override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
 
     extension [A](self: Primitive.Writer[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
 
@@ -148,7 +148,7 @@ trait DefaultInstances extends Instances, Schemas:
 
       override def optional: Primitive[Option[B]] = asPrimitive.map(self)(_.optional)
 
-      override def toTuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
+      override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
 
     extension [A](self: Primitive.Required[A]) override def tpe: Type[?] = ???
 
@@ -166,11 +166,12 @@ trait DefaultInstances extends Instances, Schemas:
     Tuple.Reader.Of
   ] with
     extension [A, B](self: Primitive.Required.Reader[B])
-      override def collection: Collection.Reader.Of[self.type, Vector[B]] = asCollection.pure(Base.Collection.Reader.Root(self))
+      override def collection: Collection.Reader.Of[self.type, Vector[B]] =
+        asCollection.pure(Base.Collection.Reader.Root(self))
 
       override def optional: Primitive.Reader[Option[B]] = asPrimitive.map(self)(_.optional)
 
-      override def toTuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
+      override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
 
     extension [A](self: Primitive.Required.Reader[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
 
@@ -186,6 +187,6 @@ trait DefaultInstances extends Instances, Schemas:
 
       override def optional: Primitive.Writer[Option[B]] = ???
 
-      override def toTuple: Tuple.Writer.Of[self.type, B] = ???
+      override def tuple: Tuple.Writer.Of[self.type, B] = ???
 
     extension [A](self: Primitive.Required.Writer[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe

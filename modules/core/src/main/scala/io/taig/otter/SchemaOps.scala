@@ -9,8 +9,14 @@ trait SchemaOps[F[_, _], G[_, _], C[_, _], T[_, _]]:
     final def collection[T[_]](builder: CollectionBuilder[T])(using
         SchemaInvariant[C[self.type, *]]
     ): C[self.type, T[B]] = collection.imap(builder.to)(builder.from)
+    final def collection[T[_]](builder: CollectionBuilder.Reader[T])(using
+        SchemaFunctor[C[self.type, *]]
+    ): C[self.type, T[B]] = collection.map(builder.to)
+    final def collection[T[_]](builder: CollectionBuilder.Writer[T])(using
+        SchemaContravariant[C[self.type, *]]
+    ): C[self.type, T[B]] = collection.contramap(builder.from)
     def optional: G[A, Option[B]]
-    def toTuple: T[self.type, B]
+    def tuple: T[self.type, B]
 
 trait CollectionOps[F[_, _], T[_, _], S] extends SchemaOps[F, F, F, T]:
   extension [A, B](self: F[A, B]) def schema: S
