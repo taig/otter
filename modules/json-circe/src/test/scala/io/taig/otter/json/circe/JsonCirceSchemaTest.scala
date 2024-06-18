@@ -1,7 +1,6 @@
 package io.taig.otter.json.circe
 
 import io.taig.otter.schema.SchemaTest
-import io.taig.otter.Plain.*
 import io.taig.otter.Decoder
 import io.taig.otter.Encoder
 import io.circe.Json

@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter as Base
 import cats.data.Chain
 
-object Plain extends Dsl:
+trait Plain extends Dsl:
   override type AsSchema[+A] = A
   override type AsCollection[+A] = A
   override type AsPrimitive[+A] = A
@@ -137,3 +137,5 @@ object Plain extends Dsl:
   override given primitiveWriterContravariant[A]: SchemaContravariant[Primitive.Writer] =
     new SchemaContravariant[Primitive.Writer]:
       override def contramap[A, B](fa: Primitive.Writer[A])(f: B => A): Primitive.Writer[B] = fa.contramap(f)
+
+object Plain extends Plain
