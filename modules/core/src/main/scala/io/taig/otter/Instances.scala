@@ -19,13 +19,22 @@ trait Instances extends Types:
   given collectionWriterOps: CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any]
   given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]]
 
-  given primitiveOps[F[a] <: Primitive[a]]: PrimitiveOps[F, Primitive, Collection.Of, Tuple.Of]
-  given primitiveInvariant[A]: SchemaInvariant[Primitive]
+  given primitiveOps: PrimitiveOps[Primitive, Primitive, Collection.Of, Tuple.Of]
+  given primitiveInvariant: SchemaInvariant[Primitive]
 
-  given primitiveReaderOps[F[a] <: Primitive.Reader[a]]
-      : PrimitiveOps[F, Primitive.Reader, Collection.Reader.Of, Tuple.Reader.Of]
-  given primitiveReaderFunctor[A]: SchemaFunctor[Primitive.Reader]
+  given primitiveReaderOps: PrimitiveOps[Primitive.Reader, Primitive.Reader, Collection.Reader.Of, Tuple.Reader.Of]
+  given primitiveReaderFunctor: SchemaFunctor[Primitive.Reader]
 
-  given primitiveWriterOps[F[a] <: Primitive.Writer[a]]
-      : PrimitiveOps[F, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
-  given primitiveWriterContravariant[A]: SchemaContravariant[Primitive.Writer]
+  given primitiveWriterOps: PrimitiveOps[Primitive.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
+  given primitiveWriterContravariant: SchemaContravariant[Primitive.Writer]
+
+  given primitiveRequiredOps: PrimitiveOps[Primitive.Required, Primitive, Collection.Of, Tuple.Of]
+  given primitiveRequiredInvariant: SchemaInvariant[Primitive.Required]
+
+  given primitiveRequiredReaderOps
+      : PrimitiveOps[Primitive.Required.Reader, Primitive.Reader, Collection.Reader.Of, Tuple.Reader.Of]
+  given primitiveRequiredReaderFunctor: SchemaFunctor[Primitive.Required.Reader]
+
+  given primitiveRequiredWriterOps
+      : PrimitiveOps[Primitive.Required.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
+  given primitiveRequiredWriterContravariant: SchemaContravariant[Primitive.Required.Writer]
