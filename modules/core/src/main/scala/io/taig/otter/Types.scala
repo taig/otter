@@ -9,12 +9,12 @@ trait Types:
   type AsTuple[+A] <: AsSchema[A]
   type AsUnion[+A] <: AsSchema[A]
 
+  type Validation[A, B, C, D] = Base.SchemaValidation[AsSchema, A, B, C, D]
+
   final type CollectionBuilder[F[_]] = Base.CollectionBuilder[AsSchema, F]
   object CollectionBuilder:
     final type Reader[F[_]] = Base.CollectionBuilder.Reader[AsSchema, F]
     final type Writer[F[_]] = Base.CollectionBuilder.Writer[F]
-
-  type Validation[A, B, C, D] = Base.SchemaValidation[AsSchema, A, B, C, D]
 
   type SchemaInvariant[F[_]] = Base.SchemaInvariant[AsSchema, F]
   type SchemaContravariant[F[_]] = Base.SchemaContravariant[AsSchema, F]

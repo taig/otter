@@ -4,10 +4,27 @@ import io.taig.otter as Base
 import io.taig.otter.validation.Validation
 
 trait CollectionBuilders extends Types:
-  val vector: CollectionBuilder[Vector] = new Base.CollectionBuilder:
-    override def validation[A]: Validation[Vector[A], Nothing, Int, Vector[A]] = Validation.ask
-    override def from[A](fa: Vector[A]): Vector[A] = fa
+  object collection:
+    def apply[F[_]](
+        f: [A] => () => Validation[Vector[A], Nothing, Int, F[A]],
+        g: [A] => F[A] => Vector[A]
+    ): CollectionBuilder[F] =
+      new Base.CollectionBuilder[AsSchema, F]:
+        override def validation[A]: Validation[Vector[A], Nothing, Int, F[A]] = f()
+        override def from[A](fa: F[A]): Vector[A] = g(fa)
 
-  val list: CollectionBuilder[List] = new Base.CollectionBuilder[AsSchema, List]:
-    override def validation[A]: Validation[Vector[A], Nothing, Int, List[A]] = Validation.lift(_.toList)
-    override def from[A](fa: List[A]): Vector[A] = fa.toVector
+    def reader[F[_]](f: [A] => () => Validation[Vector[A], Nothing, Int, F[A]]): CollectionBuilder.Reader[F] =
+      new Base.CollectionBuilder.Reader[AsSchema, F]:
+        override def validation[A]: Validation[Vector[A], Nothing, Int, F[A]] = f()
+
+    def writer[F[_]](f: [A] => F[A] => Vector[A]): CollectionBuilder.Writer[F] = new Base.CollectionBuilder.Writer[F]:
+      override def from[A](fa: F[A]): Vector[A] = f(fa)
+
+  val vector: CollectionBuilder[Vector] =
+    collection([A] => () => Validation.ask[Vector[A]], [A] => (fa: Vector[A]) => fa)
+
+  val seq: CollectionBuilder[Seq] =
+    collection([A] => () => Validation.lift[Vector[A], Seq[A]](_.toList), [A] => (fa: Seq[A]) => fa.toVector)
+
+  val list: CollectionBuilder[List] =
+    collection([A] => () => Validation.lift[Vector[A], List[A]](_.toList), [A] => (fa: List[A]) => fa.toVector)

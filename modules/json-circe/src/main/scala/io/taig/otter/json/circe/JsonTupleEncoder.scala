@@ -11,12 +11,12 @@ object JsonTupleEncoder:
     case Base.Tuple.Modify(self, _, f)      => modify(self, f, a)
     case Base.Tuple.One(schema)             => one(schema, a)
     case Base.Tuple.Optional(self)          => optional(self, a)
-    case Base.Tuple.Zip(left, right)        => product(left, right, a)
+    case Base.Tuple.Zip(left, right)        => zip(left, right, a)
     case Base.Tuple.Writer.Empty()          => empty
     case Base.Tuple.Writer.Modify(self, f)  => modify(self, f, a)
     case Base.Tuple.Writer.One(schema)      => one(schema, a)
     case Base.Tuple.Writer.Optional(self)   => optional(self, a)
-    case Base.Tuple.Writer.Zip(left, right) => product(left, right, a)
+    case Base.Tuple.Writer.Zip(left, right) => zip(left, right, a)
 
   val empty: Option[Vector[Json]] = Vector.empty.some
 
@@ -26,7 +26,7 @@ object JsonTupleEncoder:
 
   def optional[A](self: Tuple.Writer[A], a: Option[A]): Option[Vector[Json]] = a.flatMap(apply(self, _))
 
-  def product[A, B](left: Tuple.Writer[A], right: Schema.Writer[B], ab: (A, B)): Option[Vector[Json]] =
+  def zip[A, B](left: Tuple.Writer[A], right: Schema.Writer[B], ab: (A, B)): Option[Vector[Json]] =
     (apply(left, ab._1), JsonEncoder(right, ab._2)) match
       case (Some(left), right) => Some(left :+ right)
       case (None, Json.Null)   => None
