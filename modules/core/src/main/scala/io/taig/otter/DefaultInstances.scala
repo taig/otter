@@ -61,7 +61,8 @@ trait DefaultInstances extends Instances, Schemas:
       override def schema: Schema.Any = asCollection.extract(self).schema
 
     extension [A, B](self: Collection.Of[A, Vector[B]])
-      override def apply[F[_]](builder: CollectionBuilder[F]): Collection.Of[A, F[B]] = ???
+      override def apply[F[_]](builder: CollectionBuilder[F]): Collection.Of[A, F[B]] =
+        asCollection.map(self)(_.ivalidate(builder.validation)(builder.from))
 
   override given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = new Base.SchemaInvariant:
     extension [B](self: Collection.Of[A, B])
@@ -80,7 +81,7 @@ trait DefaultInstances extends Instances, Schemas:
 
     extension [A, B](self: Collection.Reader.Of[A, Vector[B]])
       override def apply[F[_]](builder: CollectionBuilder.Reader[F]): Collection.Reader.Of[A, F[B]] =
-        asCollection.map(self)(_.validate(???))
+        asCollection.map(self)(_.validate(builder.validation))
 
   override given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = new Base.SchemaFunctor:
     extension [B](self: Collection.Reader.Of[A, B])
@@ -154,24 +155,24 @@ trait DefaultInstances extends Instances, Schemas:
     extension [A](self: Primitive.Required[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
       override def ivalidate[V1, V2, B](validation: Validation[A, V1, V2, B])(f: B => A): Primitive.Required[B] =
-        ???
+        asPrimitive.map(self)(_.ivalidate(validation)(f))
 
   override given primitiveRequiredOps: PrimitiveOps[Primitive.Required, Primitive, Collection.Of, Tuple.Of] with
     extension [A, B](self: Primitive.Required[B])
       override def collection: Collection.Of[self.type, Vector[B]] = asCollection.pure(Base.Collection.Root(self))
-
       override def optional: Primitive[Option[B]] = asPrimitive.map(self)(_.optional)
-
       override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
 
-    extension [A](self: Primitive.Required[A]) override def tpe: Type[?] = ???
+    extension [A](self: Primitive.Required[A])
+      override def tpe: Type[?] =
+        asPrimitive.extract(self).tpe
 
   override given primitiveRequiredReaderFunctor: SchemaFunctor[Primitive.Required.Reader] with
 
     extension [A](self: Primitive.Required.Reader[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
-
-      override def validate[V1, V2, B](validation: Validation[A, V1, V2, B]): Primitive.Required.Reader[B] = ???
+      override def validate[V1, V2, B](validation: Validation[A, V1, V2, B]): Primitive.Required.Reader[B] =
+        asPrimitive.map(self)(_.validate(validation))
 
   override given primitiveRequiredReaderOps: PrimitiveOps[
     Primitive.Required.Reader,
@@ -182,25 +183,22 @@ trait DefaultInstances extends Instances, Schemas:
     extension [A, B](self: Primitive.Required.Reader[B])
       override def collection: Collection.Reader.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Reader.Root(self))
-
       override def optional: Primitive.Reader[Option[B]] = asPrimitive.map(self)(_.optional)
-
       override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
 
     extension [A](self: Primitive.Required.Reader[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
 
   override given primitiveRequiredWriterContravariant: SchemaContravariant[Primitive.Required.Writer] with
 
-    override def contramap[A, B](fa: Primitive.Required.Writer[A])(f: B => A): Primitive.Required.Writer[B] = ???
+    override def contramap[A, B](fa: Primitive.Required.Writer[A])(f: B => A): Primitive.Required.Writer[B] =
+      asPrimitive.map(fa)(_.contramap(f))
 
   override given primitiveRequiredWriterOps
       : PrimitiveOps[Primitive.Required.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of] with
     extension [A, B](self: Primitive.Required.Writer[B])
       override def collection: Collection.Writer.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Writer.Root(self))
-
-      override def optional: Primitive.Writer[Option[B]] = ???
-
-      override def tuple: Tuple.Writer.Of[self.type, B] = ???
+      override def optional: Primitive.Writer[Option[B]] = asPrimitive.map(self)(_.optional)
+      override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
 
     extension [A](self: Primitive.Required.Writer[A]) override def tpe: Type[?] = asPrimitive.extract(self).tpe
