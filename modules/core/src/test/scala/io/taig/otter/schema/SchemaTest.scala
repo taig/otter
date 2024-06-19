@@ -32,7 +32,7 @@ abstract class SchemaTest[A] extends FunSuite:
     test(int.collection.optional, none)
 
   test("collection: list"):
-    test(string.collection.apply(list), List("foo", "bar", "baz"))
+    test(string.collection(list), List("foo", "bar", "baz"))
 
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))

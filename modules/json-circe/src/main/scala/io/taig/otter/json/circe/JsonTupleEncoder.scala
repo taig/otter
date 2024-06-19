@@ -7,16 +7,16 @@ import cats.syntax.all.*
 
 object JsonTupleEncoder:
   def apply[A](schema: Tuple.Writer[A], a: A): Option[Vector[Json]] = schema match
-    case Base.Tuple.Empty()            => empty
-    case Base.Tuple.Modify(self, _, f) => modify(self, f, a)
-    case Base.Tuple.One(schema)        => one(schema, a)
-    case Base.Tuple.Optional(self)     => optional(self, a)
-    // case Base.Tuple.Product(left, right)        => product(left, right, a)
-    case Base.Tuple.Writer.Empty()         => empty
-    case Base.Tuple.Writer.Modify(self, f) => modify(self, f, a)
-    case Base.Tuple.Writer.One(schema)     => one(schema, a)
-    case Base.Tuple.Writer.Optional(self)  => optional(self, a)
-    // case Base.Tuple.Writer.Product(left, right) => product(left, right, a)
+    case Base.Tuple.Empty()                 => empty
+    case Base.Tuple.Modify(self, _, f)      => modify(self, f, a)
+    case Base.Tuple.One(schema)             => one(schema, a)
+    case Base.Tuple.Optional(self)          => optional(self, a)
+    case Base.Tuple.Zip(left, right)        => product(left, right, a)
+    case Base.Tuple.Writer.Empty()          => empty
+    case Base.Tuple.Writer.Modify(self, f)  => modify(self, f, a)
+    case Base.Tuple.Writer.One(schema)      => one(schema, a)
+    case Base.Tuple.Writer.Optional(self)   => optional(self, a)
+    case Base.Tuple.Writer.Zip(left, right) => product(left, right, a)
 
   val empty: Option[Vector[Json]] = Vector.empty.some
 
