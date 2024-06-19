@@ -22,7 +22,7 @@ object JsonCollectionDecoder:
 
   def modify[A, V1, V2, B](
       self: Collection.Reader[A],
-      validation: SchemaValidation[A, V1, V2, B],
+      validation: Validation[A, V1, V2, B],
       values: Option[Vector[Json]]
   ): Validated[Violations[Json, Json], B] = apply(self, values).andThen:
     validation(_).leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply))).leftMap(Violations.root)

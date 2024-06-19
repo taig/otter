@@ -1,6 +1,6 @@
 package io.taig.otter
 
-trait Instances extends Types:
+trait Instances extends Instances1:
   given schemaOps: SchemaOps[Schema.Of, Schema.Of, Collection.Of, Tuple.Of]
   given schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]]
 
@@ -10,14 +10,8 @@ trait Instances extends Types:
   given schemaWriterOps: SchemaOps[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Tuple.Writer.Of]
   given schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]]
 
-  given collectionOps: CollectionOps[Collection.Of, Tuple.Of, Schema.Any]
+  given collectionOps: CollectionOps[Collection.Of, Tuple.Of, Schema.Any, CollectionBuilder]
   given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]]
-
-  given collectionReaderOps: CollectionOps[Collection.Reader.Of, Tuple.Reader.Of, Schema.Reader.Any]
-  given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]]
-
-  given collectionWriterOps: CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any]
-  given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]]
 
   given primitiveOps: PrimitiveOps[Primitive, Primitive, Collection.Of, Tuple.Of]
   given primitiveInvariant: SchemaInvariant[Primitive]
@@ -38,3 +32,12 @@ trait Instances extends Types:
   given primitiveRequiredWriterOps
       : PrimitiveOps[Primitive.Required.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
   given primitiveRequiredWriterContravariant: SchemaContravariant[Primitive.Required.Writer]
+
+trait Instances1 extends Types:
+  given collectionReaderOps
+      : CollectionOps[Collection.Reader.Of, Tuple.Reader.Of, Schema.Reader.Any, CollectionBuilder.Reader]
+  given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]]
+
+  given collectionWriterOps
+      : CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any, CollectionBuilder.Writer]
+  given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]]

@@ -1,12 +1,13 @@
 package io.taig.otter.json.circe
 
 import cats.syntax.all.*
-import io.taig.otter.*
+import io.taig.otter.Type
 import io.circe.Json
 import io.circe.Decoder as CirceDecoder
 import cats.data.Validated
 import io.taig.otter.validation.Violations
 import io.taig.otter as Base
+import io.taig.otter.Plain.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.validation.Violation
@@ -26,7 +27,7 @@ object JsonPrimitiveDecoder:
 
   def modify[A, V1, V2, B](
       self: Primitive.Reader[A],
-      validation: SchemaValidation[A, V1, V2, B],
+      validation: Validation[A, V1, V2, B],
       json: Json
   ): Validated[Violations[Json, Json], B] = apply(self, json).andThen:
     validation

@@ -23,7 +23,7 @@ trait DefaultInstances extends Instances, Schemas:
   override given schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]] = new SchemaInvariant[Schema.Of[A, *]]:
     extension [B](self: Schema.Of[A, B])
       override def constraints: Chain[Constraint[?]] = asSchema.extract(self).constraints
-      override def ivalidate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C])(f: C => B): Schema.Of[A, C] =
+      override def ivalidate[V1, V2, C](validation: Validation[B, V1, V2, C])(f: C => B): Schema.Of[A, C] =
         asSchema.map(self)(_.ivalidate(validation)(f))
 
   override given schemaReaderOps: SchemaOps[Schema.Reader.Of, Schema.Reader.Of, Collection.Reader.Of, Tuple.Reader.Of]
@@ -34,10 +34,10 @@ trait DefaultInstances extends Instances, Schemas:
       override def optional: Schema.Reader.Of[A, Option[B]] = asSchema.map(self)(_.optional)
       override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
 
-  override given schemaReaderFunctor[A]: SchemaFunctor[Schema.Reader.Of[A, *]] = new SchemaFunctor:
+  override given schemaReaderFunctor[A]: SchemaFunctor[Schema.Reader.Of[A, *]] = new Base.SchemaFunctor:
     extension [B](self: Schema.Reader.Of[A, B])
       override def constraints: Chain[Constraint[?]] = asSchema.extract(self).constraints
-      override def validate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C]): Schema.Reader.Of[A, C] =
+      override def validate[V1, V2, C](validation: Validation[B, V1, V2, C]): Schema.Reader.Of[A, C] =
         asSchema.map(self)(_.validate(validation))
 
   override given schemaWriterOps: SchemaOps[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Tuple.Writer.Of]
@@ -48,24 +48,29 @@ trait DefaultInstances extends Instances, Schemas:
       override def optional: Schema.Writer.Of[A, Option[B]] = asSchema.map(self)(_.optional)
       override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
 
-  override given schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]] = new SchemaContravariant:
-    override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
-      asSchema.map(fa)(_.contramap(f))
+  override given schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]] =
+    new Base.SchemaContravariant:
+      override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
+        asSchema.map(fa)(_.contramap(f))
 
-  override given collectionOps: CollectionOps[Collection.Of, Tuple.Of, Schema.Any] with
+  override given collectionOps: CollectionOps[Collection.Of, Tuple.Of, Schema.Any, CollectionBuilder] with
     extension [A, B](self: Collection.Of[A, B])
       override def collection: Collection.Of[self.type, Vector[B]] = asCollection.pure(Base.Collection.Root(self))
       override def optional: Collection.Of[A, Option[B]] = asCollection.map(self)(_.optional)
       override def tuple: Tuple.Of[self.type, B] = asTuple.pure(Base.Tuple.One(self))
       override def schema: Schema.Any = asCollection.extract(self).schema
 
-  override given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = new SchemaInvariant:
+    extension [A, B](self: Collection.Of[A, Vector[B]])
+      override def apply[F[_]](builder: CollectionBuilder[F]): Collection.Of[A, F[B]] = ???
+
+  override given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = new Base.SchemaInvariant:
     extension [B](self: Collection.Of[A, B])
       override def constraints: Chain[Constraint[?]] = asCollection.extract(self).constraints
-      override def ivalidate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C])(f: C => B): Collection.Of[A, C] =
+      override def ivalidate[V1, V2, C](validation: Validation[B, V1, V2, C])(f: C => B): Collection.Of[A, C] =
         asCollection.map(self)(_.ivalidate(validation)(f))
 
-  override given collectionReaderOps: CollectionOps[Collection.Reader.Of, Tuple.Reader.Of, Schema.Reader.Any] with
+  override given collectionReaderOps
+      : CollectionOps[Collection.Reader.Of, Tuple.Reader.Of, Schema.Reader.Any, CollectionBuilder.Reader] with
     extension [A, B](self: Collection.Reader.Of[A, B])
       override def collection: Collection.Reader.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Reader.Root(self))
@@ -73,13 +78,18 @@ trait DefaultInstances extends Instances, Schemas:
       override def tuple: Tuple.Reader.Of[self.type, B] = asTuple.pure(Base.Tuple.Reader.One(self))
       override def schema: Schema.Reader.Any = asCollection.extract(self).schema
 
-  override given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = new SchemaFunctor:
+    extension [A, B](self: Collection.Reader.Of[A, Vector[B]])
+      override def apply[F[_]](builder: CollectionBuilder.Reader[F]): Collection.Reader.Of[A, F[B]] =
+        asCollection.map(self)(_.validate(???))
+
+  override given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = new Base.SchemaFunctor:
     extension [B](self: Collection.Reader.Of[A, B])
       override def constraints: Chain[Constraint[?]] = asCollection.extract(self).constraints
-      override def validate[V1, V2, C](validation: SchemaValidation[B, V1, V2, C]): Collection.Reader.Of[A, C] =
+      override def validate[V1, V2, C](validation: Validation[B, V1, V2, C]): Collection.Reader.Of[A, C] =
         asCollection.map(self)(_.validate(validation))
 
-  override given collectionWriterOps: CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any] with
+  override given collectionWriterOps
+      : CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any, CollectionBuilder.Writer] with
     extension [A, B](self: Collection.Writer.Of[A, B])
       override def collection: Collection.Writer.Of[self.type, Vector[B]] =
         asCollection.pure(Base.Collection.Writer.Root(self))
@@ -87,8 +97,12 @@ trait DefaultInstances extends Instances, Schemas:
       override def tuple: Tuple.Writer.Of[self.type, B] = asTuple.pure(Base.Tuple.Writer.One(self))
       override def schema: Schema.Writer.Any = asCollection.extract(self).schema
 
+    extension [A, B](self: Collection.Writer.Of[A, Vector[B]])
+      override def apply[F[_]](builder: CollectionBuilder.Writer[F]): Collection.Writer.Of[A, F[B]] =
+        asCollection.map(self)(_.contramap(builder.from))
+
   override given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]] =
-    new SchemaContravariant:
+    new Base.SchemaContravariant:
       override def contramap[B, C](fa: Collection.Writer.Of[A, B])(f: C => B): Collection.Writer.Of[A, C] =
         asCollection.map(fa)(_.contramap(f))
 
@@ -103,7 +117,7 @@ trait DefaultInstances extends Instances, Schemas:
   override given primitiveInvariant: SchemaInvariant[Primitive] with
     extension [A](self: Primitive[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
-      override def ivalidate[V1, V2, B](validation: SchemaValidation[A, V1, V2, B])(f: B => A): Primitive[B] =
+      override def ivalidate[V1, V2, B](validation: Validation[A, V1, V2, B])(f: B => A): Primitive[B] =
         asPrimitive.map(self)(_.ivalidate(validation)(f))
 
   override given primitiveReaderOps
@@ -119,7 +133,7 @@ trait DefaultInstances extends Instances, Schemas:
   override given primitiveReaderFunctor: SchemaFunctor[Primitive.Reader] with
     extension [A](self: Primitive.Reader[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
-      override def validate[V1, V2, B](validation: SchemaValidation[A, V1, V2, B]): Primitive.Reader[B] =
+      override def validate[V1, V2, B](validation: Validation[A, V1, V2, B]): Primitive.Reader[B] =
         asPrimitive.map(self)(_.validate(validation))
 
   override given primitiveWriterOps
@@ -139,7 +153,7 @@ trait DefaultInstances extends Instances, Schemas:
   override given primitiveRequiredInvariant: SchemaInvariant[Primitive.Required] with
     extension [A](self: Primitive.Required[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
-      override def ivalidate[V1, V2, B](validation: SchemaValidation[A, V1, V2, B])(f: B => A): Primitive.Required[B] =
+      override def ivalidate[V1, V2, B](validation: Validation[A, V1, V2, B])(f: B => A): Primitive.Required[B] =
         ???
 
   override given primitiveRequiredOps: PrimitiveOps[Primitive.Required, Primitive, Collection.Of, Tuple.Of] with
@@ -157,7 +171,7 @@ trait DefaultInstances extends Instances, Schemas:
     extension [A](self: Primitive.Required.Reader[A])
       override def constraints: Chain[Constraint[?]] = asPrimitive.extract(self).constraints
 
-      override def validate[V1, V2, B](validation: SchemaValidation[A, V1, V2, B]): Primitive.Required.Reader[B] = ???
+      override def validate[V1, V2, B](validation: Validation[A, V1, V2, B]): Primitive.Required.Reader[B] = ???
 
   override given primitiveRequiredReaderOps: PrimitiveOps[
     Primitive.Required.Reader,

@@ -9,6 +9,17 @@ trait Types:
   type AsTuple[+A] <: AsSchema[A]
   type AsUnion[+A] <: AsSchema[A]
 
+  final type CollectionBuilder[F[_]] = Base.CollectionBuilder[AsSchema, F]
+  object CollectionBuilder:
+    final type Reader[F[_]] = Base.CollectionBuilder.Reader[AsSchema, F]
+    final type Writer[F[_]] = Base.CollectionBuilder.Writer[F]
+
+  type Validation[A, B, C, D] = Base.SchemaValidation[AsSchema, A, B, C, D]
+
+  type SchemaInvariant[F[_]] = Base.SchemaInvariant[AsSchema, F]
+  type SchemaContravariant[F[_]] = Base.SchemaContravariant[AsSchema, F]
+  type SchemaFunctor[F[_]] = Base.SchemaFunctor[AsSchema, F]
+
   final type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
   object Schema:
@@ -47,19 +58,19 @@ trait Types:
     object Writer:
       final type Of[A, B] = AsCollection[Base.Collection.Writer[AsSchema, A, B]]
 
-  final type Primitive[A] = AsPrimitive[Base.Primitive[A]]
+  final type Primitive[A] = AsPrimitive[Base.Primitive[AsSchema, A]]
 
   object Primitive:
-    final type Required[A] = AsPrimitive[Base.Primitive.Required[A]]
+    final type Required[A] = AsPrimitive[Base.Primitive.Required[AsSchema, A]]
 
     object Required:
-      final type Reader[A] = AsPrimitive[Base.Primitive.Required.Reader[A]]
+      final type Reader[A] = AsPrimitive[Base.Primitive.Required.Reader[AsSchema, A]]
 
-      final type Writer[A] = AsPrimitive[Base.Primitive.Required.Writer[A]]
+      final type Writer[A] = AsPrimitive[Base.Primitive.Required.Writer[AsSchema, A]]
 
-    final type Reader[A] = AsPrimitive[Base.Primitive.Reader[A]]
+    final type Reader[A] = AsPrimitive[Base.Primitive.Reader[AsSchema, A]]
 
-    final type Writer[A] = AsPrimitive[Base.Primitive.Writer[A]]
+    final type Writer[A] = AsPrimitive[Base.Primitive.Writer[AsSchema, A]]
 
   final type Tuple[A] = AsTuple[Base.Tuple[AsSchema, ?, A]]
 
