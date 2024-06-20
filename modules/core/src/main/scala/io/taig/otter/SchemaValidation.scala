@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import io.taig.otter.validation.Validation
-import cats.Id as Identity
 
 type SchemaValidation[F[+_], -A, B, C, +D] = Validation[
   A,

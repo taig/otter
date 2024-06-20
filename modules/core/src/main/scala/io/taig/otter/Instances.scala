@@ -1,5 +1,8 @@
 package io.taig.otter
 
+import io.taig.otter.CollectionBuilder
+import io.taig.otter as Base
+
 trait Instances extends Instances1:
   given schemaOps: SchemaOps[Schema.Of, Schema.Of, Collection.Of, Tuple.Of]
   given schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]]

@@ -9,6 +9,8 @@ sealed abstract class Validation[-In, +A, +B, +Out]:
   def constraints: Chain[Constraint[A]]
   def apply(in: In): ValidatedNec[Violation[A, B], Out]
 
+  def andThen[C, D, E](validation: Validation[Out, C, D, E]): Validation[In, A | C, B | D, E] = ???
+
 //   final def first[C]: Validation[(In, C), (Out, C)] =
 //     Validation(self.constraints) { case (a, c) => self(a).map((_, c)) }
 

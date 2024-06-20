@@ -11,14 +11,16 @@ trait Types:
 
   type Validation[A, B, C, D] = Base.SchemaValidation[AsSchema, A, B, C, D]
 
-  final type CollectionBuilder[F[_]] = Base.CollectionBuilder[AsSchema, F]
+  final type CollectionBuilder[A, B] = Base.CollectionBuilder[AsSchema, A, B]
   object CollectionBuilder:
-    final type Reader[F[_]] = Base.CollectionBuilder.Reader[AsSchema, F]
-    final type Writer[F[_]] = Base.CollectionBuilder.Writer[F]
+    final type Reader[A, B] = Base.CollectionBuilder.Reader[AsSchema, A, B]
+    final type Writer[A, B] = Base.CollectionBuilder.Writer[A, B]
 
   type SchemaInvariant[F[_]] = Base.SchemaInvariant[AsSchema, F]
   type SchemaContravariant[F[_]] = Base.SchemaContravariant[AsSchema, F]
   type SchemaFunctor[F[_]] = Base.SchemaFunctor[AsSchema, F]
+  
+  type ValidationInvariant[F[_]] = Base.ValidationInvariant[AsSchema, F]
 
   final type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 

@@ -61,7 +61,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def schema: Schema.Any = asCollection.extract(self).schema
 
     extension [A, B](self: Collection.Of[A, Vector[B]])
-      override def apply[F[_]](builder: CollectionBuilder[F]): Collection.Of[A, F[B]] =
+      override def apply[C](builder: CollectionBuilder[Vector[B], C]): Collection.Of[A,C] =
         asCollection.map(self)(_.ivalidate(builder.validation)(builder.from))
 
   override given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = new Base.SchemaInvariant:
@@ -80,7 +80,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def schema: Schema.Reader.Any = asCollection.extract(self).schema
 
     extension [A, B](self: Collection.Reader.Of[A, Vector[B]])
-      override def apply[F[_]](builder: CollectionBuilder.Reader[F]): Collection.Reader.Of[A, F[B]] =
+      override def apply[C](builder: CollectionBuilder.Reader[Vector[B], C]): Collection.Reader.Of[A, C] =
         asCollection.map(self)(_.validate(builder.validation))
 
   override given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = new Base.SchemaFunctor:
@@ -99,7 +99,7 @@ trait DefaultInstances extends Instances, Schemas:
       override def schema: Schema.Writer.Any = asCollection.extract(self).schema
 
     extension [A, B](self: Collection.Writer.Of[A, Vector[B]])
-      override def apply[F[_]](builder: CollectionBuilder.Writer[F]): Collection.Writer.Of[A, F[B]] =
+      override def apply[C](builder: CollectionBuilder.Writer[Vector[B], C]): Collection.Writer.Of[A, C] =
         asCollection.map(self)(_.contramap(builder.from))
 
   override given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]] =
