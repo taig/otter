@@ -2,12 +2,12 @@ package io.taig.otter
 
 import io.taig.otter as Base
 
-trait Plain extends Dsl, DefaultInstances:
-  override type AsSchema[+A] = A
-  override type AsCollection[+A] = A
-  override type AsPrimitive[+A] = A
-  override type AsTuple[+A] = A
-  override type AsUnion[+A] = A
+trait Plain extends Dsl:
+  final override type AsSchema[+A] = A
+  final override type AsCollection[+A] = A
+  final override type AsPrimitive[+A] = A
+  final override type AsTuple[+A] = A
+  final override type AsUnion[+A] = A
 
   override given asSchema: ApplicativeComonad[AsSchema] with
     override def ap[A, B](ff: AsSchema[A => B])(fa: AsSchema[A]): AsSchema[B] = ff(fa)

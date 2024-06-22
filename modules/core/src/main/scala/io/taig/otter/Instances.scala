@@ -1,46 +1,38 @@
 package io.taig.otter
 
-import io.taig.otter.CollectionBuilder
 import io.taig.otter as Base
+import cats.Comonad
+import cats.Applicative
+import cats.Functor
+import cats.Contravariant
 
-trait Instances extends Instances1:
-  given schemaOps: SchemaOps[Schema.Of, Schema.Of, Collection.Of, Tuple.Of]
-  given schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]]
+trait Instances extends Types:
+  implicit def asSchema: Applicative[AsSchema] & Comonad[AsSchema]
+  implicit def asCollection: Applicative[AsCollection] & Comonad[AsCollection]
+  implicit def asTuple: Applicative[AsTuple] & Comonad[AsTuple]
+  implicit def asPrimitive: Applicative[AsPrimitive] & Comonad[AsPrimitive]
 
-  given schemaReaderOps: SchemaOps[Schema.Reader.Of, Schema.Reader.Of, Collection.Reader.Of, Tuple.Reader.Of]
-  given schemaReaderFunctor[A]: SchemaFunctor[Schema.Reader.Of[A, *]]
+  implicit def schemaInvariant[A]: SchemaInvariant[Schema.Of[A, *]] = ???
 
-  given schemaWriterOps: SchemaOps[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Tuple.Writer.Of]
-  given schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]]
+  implicit def schemaFunctorOps[A, B](schema: Schema.Of[A, B]): Functor.Ops[Schema.Of[A, *], B] = ???
+  implicit def schemaContravariantOps[A, B](schema: Schema.Of[A, B]): Contravariant.Ops[Schema.Of[A, *], B] = ???
 
-  given collectionOps: CollectionOps[Collection.Of, Tuple.Of, Schema.Any, CollectionBuilder]
-  given collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]]
+  implicit def schemaReaderFunctor[A]: SchemaFunctor[Schema.Reader.Of[A, *]] = ???
 
-  given primitiveOps: PrimitiveOps[Primitive, Primitive, Collection.Of, Tuple.Of]
-  given primitiveInvariant: SchemaInvariant[Primitive]
+  implicit def schemaWriterContravariant[A]: SchemaContravariant[Schema.Writer.Of[A, *]] = ???
 
-  given primitiveRequiredOps: PrimitiveOps[Primitive.Required, Primitive, Collection.Of, Tuple.Of]
-  given primitiveRequiredInvariant: SchemaInvariant[Primitive.Required]
+  // implicit val primitiveInvariant: SchemaInvariant[Primitive] = ???
+  // implicit val primitiveFunctor: SchemaInvariant[Primitive.Reader] = ???
+  // implicit val primitiveContravariant: SchemaContravariant[Primitive.Writer] = ???
 
-trait Instances1 extends Types:
-  given collectionReaderOps
-      : CollectionOps[Collection.Reader.Of, Tuple.Reader.Of, Schema.Reader.Any, CollectionBuilder.Reader]
-  given collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]]
+  // implicit val primitiveRequiredInvariant: SchemaInvariant[Primitive.Required] = ???
+  // implicit val primitiveRequiredFunctor: SchemaFunctor[Primitive.Required.Reader] = ???
+  // implicit val primitiveRequiredContravariant: SchemaContravariant[Primitive.Required.Writer] = ???
 
-  given collectionWriterOps
-      : CollectionOps[Collection.Writer.Of, Tuple.Writer.Of, Schema.Writer.Any, CollectionBuilder.Writer]
-  given collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]]
+  // implicit def collectionInvariant[A]: SchemaInvariant[Collection.Of[A, *]] = ???
+  // implicit def collectionReaderFunctor[A]: SchemaFunctor[Collection.Reader.Of[A, *]] = ???
+  // implicit def collectionWriterContravariant[A]: SchemaContravariant[Collection.Writer.Of[A, *]] = ???
 
-  given primitiveReaderOps: PrimitiveOps[Primitive.Reader, Primitive.Reader, Collection.Reader.Of, Tuple.Reader.Of]
-  given primitiveReaderFunctor: SchemaFunctor[Primitive.Reader]
-
-  given primitiveWriterOps: PrimitiveOps[Primitive.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
-  given primitiveWriterContravariant: SchemaContravariant[Primitive.Writer]
-
-  given primitiveRequiredReaderOps
-      : PrimitiveOps[Primitive.Required.Reader, Primitive.Reader, Collection.Reader.Of, Tuple.Reader.Of]
-  given primitiveRequiredReaderFunctor: SchemaFunctor[Primitive.Required.Reader]
-
-  given primitiveRequiredWriterOps
-      : PrimitiveOps[Primitive.Required.Writer, Primitive.Writer, Collection.Writer.Of, Tuple.Writer.Of]
-  given primitiveRequiredWriterContravariant: SchemaContravariant[Primitive.Required.Writer]
+  // implicit def tupleInvariant[A]: SchemaInvariant[Tuple.Of[A, *]] = ???
+  // implicit def tupleReaderFunctor[A]: SchemaFunctor[Tuple.Reader.Of[A, *]] = ???
+  // implicit def tupleWriterContravariant[A]: SchemaContravariant[Tuple.Writer.Of[A, *]] = ???

@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import cats.Apply
 import cats.Applicative
 import cats.Comonad
 

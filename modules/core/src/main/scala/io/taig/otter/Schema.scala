@@ -78,6 +78,8 @@ object Collection:
   final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
     override def constraints: Chain[Constraint[?]] = Chain.empty
 
+sealed trait Enumeration[F[+_], +A <: F[Schema[F, ?, ?]], B] extends Schema[F, A, B]
+
 sealed trait Primitive[F[+_], A] extends Schema[F, Nothing, A], Primitive.Reader[F, A], Primitive.Writer[F, A]:
   final override def optional: Primitive[F, Option[A]] = Primitive.Optional(this)
   def ivalidate[V1, V2, B](validation: SchemaValidation[F, A, V1, V2, B])(f: B => A): Primitive[F, B] =

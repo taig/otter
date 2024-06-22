@@ -16,11 +16,9 @@ trait Types:
     final type Reader[A, B] = Base.CollectionBuilder.Reader[AsSchema, A, B]
     final type Writer[A, B] = Base.CollectionBuilder.Writer[A, B]
 
-  type SchemaInvariant[F[_]] = Base.SchemaInvariant[AsSchema, F]
-  type SchemaContravariant[F[_]] = Base.SchemaContravariant[AsSchema, F]
-  type SchemaFunctor[F[_]] = Base.SchemaFunctor[AsSchema, F]
-  
-  type ValidationInvariant[F[_]] = Base.ValidationInvariant[AsSchema, F]
+  type SchemaInvariant[F[_]] = Base.SchemaInvariant[Schema, F]
+  type SchemaContravariant[F[_]] = Base.SchemaContravariant[Schema, F]
+  type SchemaFunctor[F[_]] = Base.SchemaFunctor[Schema, F]
 
   final type Schema[A] = AsSchema[Base.Schema[AsSchema, ?, A]]
 
