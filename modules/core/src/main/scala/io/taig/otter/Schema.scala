@@ -68,7 +68,7 @@ object Collection:
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, Option[B]] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Collection.Reader[O, O, ?, Option[B]] = copy(self = self.translate(f))
 
-    final case class Root[M, N <: M, +A <: Schema.Reader[M, ?, ?, B], B](metadata: N, schema: A)
+    final case class Root[M, N <: M, A <: Schema.Reader[M, ?, ?, B], B](metadata: N, schema: A)
         extends Collection.Reader[M, N, A, Vector[B]]:
       override def constraints: Chain[Constraint[?]] = Chain.empty
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, Vector[B]] = copy(metadata = f(metadata))
@@ -97,7 +97,7 @@ object Collection:
       override def modify[O <: M](f: N => O): Collection.Writer[M, O, A, Option[B]] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Collection.Writer[O, O, ?, Option[B]] = copy(self = self.translate(f))
 
-    final case class Root[M, N <: M, +A <: Schema.Writer[M, ?, ?, B], B](metadata: N, schema: A)
+    final case class Root[M, N <: M, A <: Schema.Writer[M, ?, ?, B], B](metadata: N, schema: A)
         extends Collection.Writer[M, N, A, Vector[B]]:
       override def modify[O <: M](f: N => O): Collection.Writer[M, O, A, Vector[B]] =
         copy(metadata = f(metadata))
@@ -123,7 +123,7 @@ object Collection:
     override def modify[O <: M](f: N => O): Collection[M, O, A, Option[B]] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Collection[O, O, ?, Option[B]] = copy(self = self.translate(f))
 
-  final case class Root[M, N <: M, +A <: Schema[M, ?, ?, B], B](metadata: N, schema: A)
+  final case class Root[M, N <: M, A <: Schema[M, ?, ?, B], B](metadata: N, schema: A)
       extends Collection[M, N, A, Vector[B]]:
     override def constraints: Chain[Constraint[?]] = Chain.empty
     override def modify[O <: M](f: N => O): Collection[M, O, A, Vector[B]] = copy(metadata = f(metadata))

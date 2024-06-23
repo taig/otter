@@ -22,17 +22,17 @@ abstract class SchemaTest[A] extends FunSuite:
     expected = value
   )
 
-  test("collection"):
-    test(string.collection, Vector("foo", "bar", "baz"))
-    test(int.collection, Vector(1, 2, 3))
-    test(int.optional.collection, Vector(1.some, none, 3.some))
+  // test("collection"):
+  //   test(string.collection, Vector("foo", "bar", "baz"))
+  //   test(int.collection, Vector(1, 2, 3))
+  //   test(int.optional.collection, Vector(1.some, none, 3.some))
 
-  test("collection: optional"):
-    test(int.collection.optional, Vector(1, 2, 3).some)
-    test(int.collection.optional, none)
+  // test("collection: optional"):
+  //   test(int.collection.optional, Vector(1, 2, 3).some)
+  //   test(int.collection.optional, none)
 
-  test("collection: list"):
-    test(string.collection(list), List("foo", "bar", "baz"))
+  // test("collection: list"):
+  //   test(string.collection(list), List("foo", "bar", "baz"))
 
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))

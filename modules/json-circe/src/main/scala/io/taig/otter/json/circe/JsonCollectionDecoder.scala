@@ -8,19 +8,18 @@ import io.taig.otter as Base
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
-import io.taig.otter.SchemaValidation
 
 object JsonCollectionDecoder:
   def apply[A](schema: Collection.Reader[A], values: Option[Vector[Json]]): Validated[Violations[Json, Json], A] =
     schema match
-      case Base.Collection.Modify(self, validation, _)     => modify(self, validation, values)
-      case Base.Collection.Optional(self)                  => optional(self, values)
-      case Base.Collection.Reader.Modify(self, validation) => modify(self, validation, values)
-      case Base.Collection.Reader.Optional(self)           => optional(self, values)
-      case Base.Collection.Reader.Root(schema)             => root(schema, values)
-      case Base.Collection.Root(schema)                    => root(schema, values)
+      case Base.Collection.Invariant(self, validation, _)   => functor(self, validation, values)
+      case Base.Collection.Optional(self)                   => optional(self, values)
+      case Base.Collection.Reader.Functor(self, validation) => functor(self, validation, values)
+      case Base.Collection.Reader.Optional(self)            => optional(self, values)
+      case Base.Collection.Reader.Root(_, schema)           => root(schema, values)
+      case Base.Collection.Root(_, schema)                  => root(schema, values)
 
-  def modify[A, V1, V2, B](
+  def functor[A, V1, V2, B](
       self: Collection.Reader[A],
       validation: Validation[A, V1, V2, B],
       values: Option[Vector[Json]]

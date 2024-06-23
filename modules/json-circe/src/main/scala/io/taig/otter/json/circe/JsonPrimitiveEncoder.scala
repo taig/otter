@@ -10,15 +10,15 @@ import java.math.BigInteger as JBigInteger
 
 object JsonPrimitiveEncoder:
   def apply[A](schema: Primitive.Writer[A], a: A): Json = schema match
-    case Base.Primitive.Optional(self)                  => optional(self, a)
-    case Base.Primitive.Modify(self, _, f)              => modify(self, f, a)
-    case Base.Primitive.Required.Modify(self, _, f)     => modify(self, f, a)
-    case Base.Primitive.Required.Writer.Modify(self, f) => modify(self, f, a)
-    case Base.Primitive.Required.Root(tpe)              => root(tpe, a)
-    case Base.Primitive.Writer.Modify(self, f)          => modify(self, f, a)
-    case Base.Primitive.Writer.Optional(self)           => optional(self, a)
+    case Base.Primitive.Optional(self)                         => optional(self, a)
+    case Base.Primitive.Invariant(self, _, f)                  => contravariant(self, f, a)
+    case Base.Primitive.Required.Invariant(self, _, f)         => contravariant(self, f, a)
+    case Base.Primitive.Required.Writer.Contravariant(self, f) => contravariant(self, f, a)
+    case Base.Primitive.Required.Root(_, tpe)                  => root(tpe, a)
+    case Base.Primitive.Writer.Contravariant(self, f)          => contravariant(self, f, a)
+    case Base.Primitive.Writer.Optional(self)                  => optional(self, a)
 
-  def modify[A, B](self: Primitive.Writer[A], f: B => A, b: B): Json = apply(self, f(b))
+  def contravariant[A, B](self: Primitive.Writer[A], f: B => A, b: B): Json = apply(self, f(b))
 
   def optional[A](self: Primitive.Writer[A], a: Option[A]): Json = a.map(apply(self, _)).getOrElse(Json.Null)
 

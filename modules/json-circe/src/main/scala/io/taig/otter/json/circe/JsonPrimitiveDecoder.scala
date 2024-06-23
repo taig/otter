@@ -15,17 +15,17 @@ import io.circe.syntax.*
 
 object JsonPrimitiveDecoder:
   def apply[A](schema: Primitive.Reader[A], json: Json): Validated[Violations[Json, Json], A] = schema match
-    case Base.Primitive.Optional(self)                           => optional(self, json)
-    case Base.Primitive.Modify(self, validation, _)              => modify(self, validation, json)
-    case Base.Primitive.Required.Modify(self, validation, _)     => modify(self, validation, json)
-    case Base.Primitive.Required.Reader.Modify(self, validation) => modify(self, validation, json)
-    case Base.Primitive.Required.Root(tpe) =>
+    case Base.Primitive.Optional(self)                            => optional(self, json)
+    case Base.Primitive.Invariant(self, validation, _)            => functor(self, validation, json)
+    case Base.Primitive.Required.Invariant(self, validation, _)   => functor(self, validation, json)
+    case Base.Primitive.Required.Reader.Functor(self, validation) => functor(self, validation, json)
+    case Base.Primitive.Required.Root(_, tpe) =>
       root(tpe, json).toValidated.leftMap: _ =>
         Violations.rootNec(Violation.tpe(typeOf(tpe), typeOf(json)).map(_.asJson))
-    case Base.Primitive.Reader.Modify(self, validation) => modify(self, validation, json)
-    case Base.Primitive.Reader.Optional(self)           => optional(self, json)
+    case Base.Primitive.Reader.Functor(self, validation) => functor(self, validation, json)
+    case Base.Primitive.Reader.Optional(self)            => optional(self, json)
 
-  def modify[A, V1, V2, B](
+  def functor[A, V1, V2, B](
       self: Primitive.Reader[A],
       validation: Validation[A, V1, V2, B],
       json: Json
