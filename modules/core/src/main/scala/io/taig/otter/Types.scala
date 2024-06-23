@@ -45,3 +45,17 @@ trait Types:
 
     object Writer:
       type Of[A <: Schema.Writer[?], B] = Base.Collection.Writer[metadata.Schema, metadata.Collection, A, B]
+
+  final type Primitive[A] = Base.Primitive[metadata.Schema, metadata.Primitive, A]
+
+  object Primitive:
+    type Required[A] = Base.Primitive.Required[metadata.Schema, metadata.Primitive, A]
+
+    object Required:
+      type Reader[A] = Base.Primitive.Required.Reader[metadata.Schema, metadata.Primitive, A]
+
+      type Writer[A] = Base.Primitive.Required.Writer[metadata.Schema, metadata.Primitive, A]
+
+    type Reader[A] = Base.Primitive.Reader[metadata.Schema, metadata.Primitive, A]
+
+    type Writer[A] = Base.Primitive.Writer[metadata.Schema, metadata.Primitive, A]

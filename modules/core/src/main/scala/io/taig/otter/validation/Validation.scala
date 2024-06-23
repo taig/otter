@@ -11,6 +11,15 @@ sealed abstract class Validation[-In, +A, +B, +Out]:
 
   def andThen[C, D, E](validation: Validation[Out, C, D, E]): Validation[In, A | C, B | D, E] = ???
 
+  def mapConstraint[C](f: A => C): Validation[In, C, B, Out] =
+    new Validation[In, C, B, Out] {
+      override def constraints: Chain[Constraint[C]] = self.constraints.map(_.map(f))
+      override def apply(in: In): ValidatedNec[Violation[C, B], Out] =
+        self.apply(in).leftMap(_.map(_.leftMap(f)))
+    }
+
+  def mapActual[C](f: B => C): Validation[In, A, C, Out] = ???
+
 //   final def first[C]: Validation[(In, C), (Out, C)] =
 //     Validation(self.constraints) { case (a, c) => self(a).map((_, c)) }
 
