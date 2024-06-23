@@ -9,6 +9,6 @@ object Playground:
   val y: Collection[String] = ???
   val x: Schema[String] = y
 
-  x.imap(???)(???)
+  val b: Schema[String] = x.imap(???)(???)
   val z: Schema.Reader.Of[?, String] = x.map(???)
-  // x.imap()
+  val a: Schema.Writer[?] = x.contramap(???)

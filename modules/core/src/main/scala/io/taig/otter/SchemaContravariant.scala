@@ -8,3 +8,14 @@ trait SchemaContravariant[M, F[_]] extends Contravariant[F], SchemaInvariant[M, 
   override def constraints[A](fa: F[A]): Chain[Constraint[?]] = Chain.empty
   override def ivalidate[A, V1, V2, B](fa: F[A])(validation: SchemaValidation[M, A, V1, V2, B])(f: B => A): F[B] =
     contramap(fa)(f)
+
+object SchemaContravariant:
+  trait Ops[M, F[_], A]:
+    type TypeClassType <: SchemaContravariant[M, F]
+    val typeClassInstance: TypeClassType
+    def self: F[A]
+
+  trait AllOps[M, F[_], A]
+      extends SchemaContravariant.Ops[M, F, A],
+        SchemaInvariant.AllOps[M, F, A],
+        Contravariant.Ops[F, A]

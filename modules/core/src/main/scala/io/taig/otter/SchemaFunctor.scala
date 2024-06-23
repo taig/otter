@@ -10,9 +10,11 @@ trait SchemaFunctor[M, F[_]] extends Functor[F], SchemaInvariant[M, F]:
   override def map[A, B](fa: F[A])(f: A => B): F[B] = validate(fa)(Validation.lift(f))
 
 object SchemaFunctor:
-  trait Ops[M, F[_], A] extends Functor.Ops[F, A], SchemaInvariant.Ops[M, F, A]:
-    override type TypeClassType <: SchemaFunctor[M, F]
-    def self: F[A]
+  trait Ops[M, F[_], A]:
+    type TypeClassType <: SchemaFunctor[M, F]
     val typeClassInstance: TypeClassType
+    def self: F[A]
     def validate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B]): F[B] =
       typeClassInstance.validate(self)(validation)
+
+  trait AllOps[M, F[_], A] extends SchemaFunctor.Ops[M, F, A], SchemaInvariant.AllOps[M, F, A], Functor.Ops[F, A]

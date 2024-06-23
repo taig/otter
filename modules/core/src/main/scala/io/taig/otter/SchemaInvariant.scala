@@ -20,4 +20,4 @@ object SchemaInvariant:
       typeClassInstance.ivalidate(self)(validation)(f)
     def ivalidate[V1, V2](validation: SchemaValidation[M, A, V1, V2, Unit]): F[A] = ivalidate(validation.tap)(identity)
 
-  trait AllOps[M, F[_], A] extends Ops[M, F, A], Invariant.Ops[F, A]
+  trait AllOps[M, F[_], A] extends SchemaInvariant.Ops[M, F, A], Invariant.Ops[F, A]
