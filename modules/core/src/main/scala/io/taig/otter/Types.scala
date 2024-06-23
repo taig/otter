@@ -8,11 +8,11 @@ trait Types:
   //   final type Reader[A, B] = Base.CollectionBuilder.Reader[AsSchema, A, B]
   //   final type Writer[A, B] = Base.CollectionBuilder.Writer[A, B]
 
-  // type SchemaInvariant[F[_]] = Base.SchemaInvariant[Schema, F]
+  val metadata: Metadata
+
+  type SchemaInvariant[F[_]] = Base.SchemaInvariant[metadata.Schema, F]
   // type SchemaContravariant[F[_]] = Base.SchemaContravariant[Schema, F]
   // type SchemaFunctor[F[_]] = Base.SchemaFunctor[Schema, F]
-
-  val metadata: Metadata
 
   type Validation[A, B, C, D] = Base.SchemaValidation[metadata.Schema, A, B, C, D]
 
