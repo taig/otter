@@ -11,8 +11,8 @@ trait Types:
   val metadata: Metadata
 
   type SchemaInvariant[F[_]] = Base.SchemaInvariant[metadata.Schema, F]
-  // type SchemaContravariant[F[_]] = Base.SchemaContravariant[Schema, F]
-  // type SchemaFunctor[F[_]] = Base.SchemaFunctor[Schema, F]
+  type SchemaContravariant[F[_]] = Base.SchemaContravariant[metadata.Schema, F]
+  type SchemaFunctor[F[_]] = Base.SchemaFunctor[metadata.Schema, F]
 
   type Validation[A, B, C, D] = Base.SchemaValidation[metadata.Schema, A, B, C, D]
 
