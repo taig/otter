@@ -8,39 +8,40 @@ import io.taig.otter.Schema.Reader
 sealed trait Schema[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
     extends Schema.Reader[M, N, A, B],
       Schema.Writer[M, N, A, B]:
-  // def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, A, C]
-  def update[O <: M](f: N => O): Schema[M, O, A, B]
-  def translate[O](f: M => O): Schema[O, O, ?, B]
+  def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, N, A, C]
+  override def modify[O <: M](f: N => O): Schema[M, O, A, B]
   override def optional: Schema[M, N, A, Option[B]]
+  def translate[O](f: M => O): Schema[O, O, ?, B]
 
 object Schema:
   sealed trait Reader[M, +N <: M, +A, +B] extends Product, Serializable:
     def constraints: Chain[Constraint[?]]
+    def modify[O <: M](f: N => O): Schema.Reader[M, O, A, B]
     def optional: Schema.Reader[M, N, A, Option[B]]
-    // def validate[N >: M, V1, V2, C](validation: SchemaValidation[N, B, V1, V2, C]): Schema.Reader[N, A, C]
+    def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, N, A, C]
 
   sealed trait Writer[M, +N <: M, +A, -B] extends Product, Serializable:
     def contramap[C](f: C => B): Schema.Writer[M, N, A, C]
+    def modify[O <: M](f: N => O): Schema.Writer[M, O, A, B]
     def optional: Schema.Writer[M, N, A, Option[B]]
 
 sealed trait Collection[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
     extends Schema[M, N, A, B],
       Collection.Reader[M, N, A, B],
       Collection.Writer[M, N, A, B]:
-  override def update[O <: M](f: N => O): Collection[M, O, A, B]
-//   // override def ivalidate[N >: M, V1, V2, C](validation: SchemaValidation[N, B, V1, V2, C])(f: C => B): Collection[N, A, C] =
-//   //   Collection.Modify(this, validation, f)
+  override def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Collection[M, N, A, C] =
+    ???
+  override def modify[O <: M](f: N => O): Collection[M, O, A, B]
   final override def optional: Collection[M, N, A, Option[B]] = ??? // Collection.Optional(this)
-//   // override def update[N](f: M => N): Collection[N, A, B]
   override def schema: Schema[M, ?, ?, ?]
 
 object Collection:
   sealed trait Reader[M, +N <: M, +A, +B] extends Schema.Reader[M, N, A, B]:
     def constraints: Chain[Constraint[?]]
-//     def optional: Collection.Reader[M, A, Option[B]] = Reader.Optional(this)
-//     def schema: Schema.Reader[M, ?, ?]
-//     final def validate[N >: M, V1, V2, C](validation: SchemaValidation[N, B, V1, V2, C]): Collection.Reader[N, A, C] =
-//       Reader.Modify(this, validation)
+    override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, B]
+    override def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Collection.Reader[M, N, A, C] = ???
+    override def optional: Collection.Reader[M, N, A, Option[B]] = ???
+    def schema: Schema.Reader[M, ?, ?, ?]
 
 //   object Reader:
 //     final case class Modify[M, A, B, V1, V2, C](
@@ -58,7 +59,7 @@ object Collection:
 
   sealed trait Writer[M, +N <: M, +A, -B] extends Schema.Writer[M, N, A, B]:
     final def contramap[C](f: C => B): Collection.Writer[M, N, A, C] = ??? // Writer.Modify(this, f)
-//     def optional: Collection.Writer[M, A, Option[B]] = Writer.Optional(this)
+    def optional: Collection.Writer[M, N, A, Option[B]] = ??? // Writer.Optional(this)
     def schema: Schema.Writer[M, ?, ?, ?]
 
 //   object Writer:
@@ -85,12 +86,10 @@ object Collection:
 
   final case class Root[M, N <: M, +A <: Schema[M, ?, ?, B], B](metadata: N, schema: A)
       extends Collection[M, N, A, Vector[B]]:
-    override def update[O <: M](f: N => O): Collection[M, O, A, Vector[B]] =
-      copy(metadata = f(metadata), schema)
+    override def constraints: Chain[Constraint[?]] = Chain.empty
+    override def modify[O <: M](f: N => O): Collection[M, O, A, Vector[B]] = copy(metadata = f(metadata))
     override def translate[O](f: M => O): Collection[O, O, ?, Vector[B]] =
       copy(metadata = f(metadata), schema = schema.translate(f))
-    override def constraints: Chain[Constraint[?]] = Chain.empty
-    // override def update[N](f: M => N): Collection[N, A, Vector[B]] = ???
 
 // sealed trait Enumeration[+M, +A <: Schema[?, ?, ?], B] extends Schema[M, A, B]
 
