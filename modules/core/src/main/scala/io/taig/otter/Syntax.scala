@@ -14,18 +14,26 @@ trait Syntax extends Syntax1:
       override def self: F[B] = fa
 
 trait Syntax1 extends Instances:
-  given schemaToSchemaFunctorOps[A <: Schema[?], F[a] <: Schema.Of[A, a], B](using
+  given schemaToSchemaFunctorOps[A <: Schema[?], B](using
       F: SchemaFunctor[Schema.Reader.Of[A, *]]
-  ): Conversion[F[B], SchemaFunctor.AllOps[metadata.Schema, Schema.Reader.Of[A, *], B]] = fa =>
+  ): Conversion[Schema.Of[A, B], SchemaFunctor.AllOps[metadata.Schema, Schema.Reader.Of[A, *], B]] = fa =>
     new SchemaFunctor.AllOps:
       override type TypeClassType = SchemaFunctor[Schema.Reader.Of[A, *]]
       override val typeClassInstance: TypeClassType = F
       override def self: Schema.Reader.Of[A, B] = fa
 
-  given schemaToSchemaContravariantOps[A <: Schema[?], F[a] <: Schema.Of[A, a], B](using
+  given schemaToSchemaContravariantOps[A <: Schema[?], B](using
       F: SchemaContravariant[Schema.Writer.Of[A, *]]
-  ): Conversion[F[B], SchemaContravariant.AllOps[metadata.Schema, Schema.Writer.Of[A, *], B]] = fa =>
+  ): Conversion[Schema.Of[A, B], SchemaContravariant.AllOps[metadata.Schema, Schema.Writer.Of[A, *], B]] = fa =>
     new SchemaContravariant.AllOps:
       override type TypeClassType = SchemaContravariant[Schema.Writer.Of[A, *]]
       override val typeClassInstance: TypeClassType = F
       override def self: Schema.Writer.Of[A, B] = fa
+
+  given primitiveRequiredToSchemaFunctorOps[A](using
+      F: SchemaFunctor[Primitive.Required.Reader]
+  ): Conversion[Primitive.Required[A], SchemaFunctor.AllOps[metadata.Schema, Primitive.Required.Reader, A]] = fa =>
+    new SchemaFunctor.AllOps:
+      override type TypeClassType = SchemaFunctor[Primitive.Required.Reader]
+      override val typeClassInstance: TypeClassType = F
+      override def self: Primitive.Required[A] = fa

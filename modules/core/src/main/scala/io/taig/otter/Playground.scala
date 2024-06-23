@@ -12,3 +12,5 @@ object Playground:
   val b: Schema[String] = x.imap(???)(???)
   val z: Schema.Reader.Of[?, String] = x.map(???)
   val a: Schema.Writer[?] = x.contramap(???)
+
+  val v: Primitive.Required.Reader[String] = string.map(???)
