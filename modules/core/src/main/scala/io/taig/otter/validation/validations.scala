@@ -17,15 +17,15 @@ import scala.Numeric.Implicits.*
 import scala.Ordering.Implicits.*
 import scala.collection.immutable.SortedSet
 
-trait validations:
-  def equal(reference: String): Validation[String, Nothing, String, Unit] =
-    matches(Pattern.compile(Pattern.quote(reference)))
+trait validations
+// def equal(reference: String): Validation[String, Nothing, String, Unit] =
+//   matches(Pattern.compile(Pattern.quote(reference)))
 
-  val email: Validation[String, String, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
+// val email: Validation[String, String, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
-  def minimum[A: Numeric](reference: A, exclusive: Boolean): Validation[A, A, A, Unit] =
-    Validation.validated(Constraint.Minimum(reference, exclusive)): a =>
-      Validated.condNec(if exclusive then a > reference else a >= reference, (), a)
+// def minimum[A: Numeric](reference: A, exclusive: Boolean): Validation[A, A, A, Unit] =
+//   Validation.validated(Constraint.Minimum(reference, exclusive)): a =>
+//     Validated.condNec(if exclusive then a > reference else a >= reference, (), a)
 
 //   def minimum(reference: Int, exclusive: Boolean): Validation[Int, Unit] =
 //     minimum(reference, exclusive, Data.Number.apply)
@@ -88,27 +88,27 @@ trait validations:
 
 //   def multiple(reference: Int): Validation[Int, Unit] = multiple(reference, Data.Number.apply)
 
-  def minLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
-    Validation.validated(Constraint.MinLength(reference)): a =>
-      val length = toLength(a)
-      Validated.condNec(length >= reference, (), length)
+// def minLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+//   Validation.validated(Constraint.MinLength(reference)): a =>
+//     val length = toLength(a)
+//     Validated.condNec(length >= reference, (), length)
 
-  def minLength(reference: Int): Validation[CharSequence, Nothing, Int, Unit] = minLength(reference, _.length)
+// def minLength(reference: Int): Validation[CharSequence, Nothing, Int, Unit] = minLength(reference, _.length)
 
-  def maxLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
-    Validation.validated(Constraint.MaxLength(reference)): a =>
-      val length = toLength(a)
-      Validated.condNec(length <= reference, (), length)
+// def maxLength[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+//   Validation.validated(Constraint.MaxLength(reference)): a =>
+//     val length = toLength(a)
+//     Validated.condNec(length <= reference, (), length)
 
-  def maxLength(reference: Int): Validation[String, Nothing, Int, Unit] = maxLength(reference, _.length)
+// def maxLength(reference: Int): Validation[String, Nothing, Int, Unit] = maxLength(reference, _.length)
 
-  def length[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
-    minLength(reference, toLength) *> maxLength(reference, toLength)
+// def length[A](reference: Int, toLength: A => Int): Validation[A, Nothing, Int, Unit] =
+//   minLength(reference, toLength) *> maxLength(reference, toLength)
 
-  def length(reference: Int): Validation[String, Nothing, Int, Unit] = length(reference, _.length)
+// def length(reference: Int): Validation[String, Nothing, Int, Unit] = length(reference, _.length)
 
-  def matches(pattern: Pattern): Validation[String, Nothing, String, Unit] =
-    Validation.when(Constraint.Matches(pattern))(pattern.matcher(_).matches())
+// def matches(pattern: Pattern): Validation[String, Nothing, String, Unit] =
+//   Validation.when(Constraint.Matches(pattern))(pattern.matcher(_).matches())
 
 //   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
 //     Validation.of(Constraint.MinItems(reference)): values =>

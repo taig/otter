@@ -8,7 +8,7 @@ import io.taig.otter.Schema.Reader
 sealed trait Schema[M, +N <: M, +A, B] extends Schema.Reader[M, N, A, B], Schema.Writer[M, N, A, B]:
   override def collectionWith[O <: M](metadata: O): Collection[M, O, this.type, Vector[B]] =
     Collection.Root(metadata, this)
-  def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, N, A, C]
+  // def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, N, A, C]
   override def modify[O <: M](f: N => O): Schema[M, O, A, B]
   override def optional: Schema[M, N, A, Option[B]]
   override def translate[O](f: M => O): Schema[O, O, ?, B]
@@ -17,11 +17,11 @@ object Schema:
   sealed trait Reader[M, +N <: M, +A, +B] extends Product, Serializable:
     def collectionWith[O <: M](metadata: O): Collection.Reader[M, O, this.type, Vector[B]] =
       Collection.Reader.Root(metadata, this)
-    def constraints: Chain[Constraint[?]]
+    // def constraints: Chain[Constraint[?]]
     def modify[O <: M](f: N => O): Schema.Reader[M, O, A, B]
     def optional: Schema.Reader[M, N, A, Option[B]]
     def translate[O](f: M => O): Schema.Reader[O, O, ?, B]
-    def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, N, A, C]
+    // def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, N, A, C]
 
   sealed trait Writer[M, +N <: M, +A, -B] extends Product, Serializable:
     def collectionWith[O <: M](metadata: O): Collection.Writer[M, O, this.type, Vector[B]] =
@@ -35,8 +35,8 @@ sealed trait Collection[M, +N <: M, +A, B]
     extends Schema[M, N, A, B],
       Collection.Reader[M, N, A, B],
       Collection.Writer[M, N, A, B]:
-  override def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Collection[M, N, A, C] =
-    Collection.Invariant(this, validation, f)
+  // override def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Collection[M, N, A, C] =
+  //   Collection.Invariant(this, validation, f)
   override def modify[O <: M](f: N => O): Collection[M, O, A, B]
   final override def optional: Collection[M, N, A, Option[B]] = Collection.Optional(this)
   override def schema: Schema[M, ?, ?, ?]
@@ -44,14 +44,14 @@ sealed trait Collection[M, +N <: M, +A, B]
 
 object Collection:
   sealed trait Reader[M, +N <: M, +A, +B] extends Schema.Reader[M, N, A, B]:
-    def constraints: Chain[Constraint[?]]
+    // def constraints: Chain[Constraint[?]]
     override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, B]
     override def optional: Collection.Reader[M, N, A, Option[B]] = Collection.Reader.Optional(this)
     def schema: Schema.Reader[M, ?, ?, ?]
     override def translate[O](f: M => O): Collection.Reader[O, O, ?, B]
-    final override def validate[V1, V2, C](
-        validation: SchemaValidation[M, B, V1, V2, C]
-    ): Collection.Reader[M, N, A, C] = Reader.Functor(this, validation)
+    // final override def validate[V1, V2, C](
+    //     validation: SchemaValidation[M, B, V1, V2, C]
+    // ): Collection.Reader[M, N, A, C] = Reader.Functor(this, validation)
 
   object Reader:
     final case class Functor[M, N <: M, A, B, V1, V2, C](
@@ -59,7 +59,7 @@ object Collection:
         validation: SchemaValidation[M, B, V1, V2, C]
     ) extends Collection.Reader[M, N, A, C]:
       export self.schema
-      override def constraints: Chain[Constraint[?]] = validation.constraints
+      // override def constraints: Chain[Constraint[?]] = validation.constraints
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, C] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Collection.Reader[O, O, ?, C] = copy(
         self = self.translate(f),
@@ -68,13 +68,13 @@ object Collection:
 
     final case class Optional[M, N <: M, A, B](self: Collection.Reader[M, N, A, B])
         extends Collection.Reader[M, N, A, Option[B]]:
-      export self.{constraints, schema}
+      export self.schema
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, Option[B]] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Collection.Reader[O, O, ?, Option[B]] = copy(self = self.translate(f))
 
     final case class Root[M, N <: M, A <: Schema.Reader[M, ?, ?, B], B](metadata: N, schema: A)
         extends Collection.Reader[M, N, A, Vector[B]]:
-      override def constraints: Chain[Constraint[?]] = Chain.empty
+      // override def constraints: Chain[Constraint[?]] = Chain.empty
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, Vector[B]] = copy(metadata = f(metadata))
       override def translate[O](f: M => O): Collection.Reader[O, O, ?, Vector[B]] =
         copy(metadata = f(metadata), schema = schema.translate(f))
@@ -114,7 +114,7 @@ object Collection:
       f: C => B
   ) extends Collection[M, N, A, C]:
     export self.schema
-    override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
+    // override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
     override def modify[O <: M](f: N => O): Collection[M, O, A, C] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Collection[O, O, ?, C] = copy(
       self = self.translate(f),
@@ -122,13 +122,13 @@ object Collection:
     )
 
   final case class Optional[M, N <: M, A, B](self: Collection[M, N, A, B]) extends Collection[M, N, A, Option[B]]:
-    export self.{constraints, schema}
+    export self.schema
     override def modify[O <: M](f: N => O): Collection[M, O, A, Option[B]] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Collection[O, O, ?, Option[B]] = copy(self = self.translate(f))
 
   final case class Root[M, N <: M, A <: Schema[M, ?, ?, B], B](metadata: N, schema: A)
       extends Collection[M, N, A, Vector[B]]:
-    override def constraints: Chain[Constraint[?]] = Chain.empty
+    // override def constraints: Chain[Constraint[?]] = Chain.empty
     override def modify[O <: M](f: N => O): Collection[M, O, A, Vector[B]] = copy(metadata = f(metadata))
     override def translate[O](f: M => O): Collection[O, O, ?, Vector[B]] =
       copy(metadata = f(metadata), schema = schema.translate(f))
@@ -139,8 +139,8 @@ sealed trait Primitive[M, +N <: M, A]
     extends Schema[M, N, Nothing, A],
       Primitive.Reader[M, N, A],
       Primitive.Writer[M, N, A]:
-  override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(f: B => A): Primitive[M, N, B] =
-    Primitive.Invariant(this, validation, f)
+  // override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(f: B => A): Primitive[M, N, B] =
+  //   Primitive.Invariant(this, validation, f)
   override def modify[O <: M](f: N => O): Primitive[M, O, A]
   final override def optional: Primitive[M, N, Option[A]] = Primitive.Optional(this)
   override def translate[O](f: M => O): Primitive[O, O, A]
@@ -150,9 +150,9 @@ object Primitive:
       extends Primitive[M, N, A],
         Primitive.Required.Reader[M, N, A],
         Primitive.Required.Writer[M, N, A]:
-    final override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(
-        f: B => A
-    ): Primitive.Required[M, N, B] = Required.Invariant(this, validation, f)
+    // final override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(
+    //     f: B => A
+    // ): Primitive.Required[M, N, B] = Required.Invariant(this, validation, f)
     override def modify[O <: M](f: N => O): Primitive.Required[M, O, A]
     override def translate[O](f: M => O): Primitive.Required[O, O, A]
 
@@ -160,9 +160,9 @@ object Primitive:
     sealed trait Reader[M, +N <: M, +A] extends Primitive.Reader[M, N, A]:
       override def modify[O <: M](f: N => O): Primitive.Required.Reader[M, O, A]
       override def translate[O](f: M => O): Primitive.Required.Reader[O, O, A]
-      final override def validate[V1, V2, B](
-          validation: SchemaValidation[M, A, V1, V2, B]
-      ): Primitive.Required.Reader[M, N, B] = Reader.Functor(this, validation)
+      // final override def validate[V1, V2, B](
+      //     validation: SchemaValidation[M, A, V1, V2, B]
+      // ): Primitive.Required.Reader[M, N, B] = Reader.Functor(this, validation)
 
     object Reader:
       final case class Functor[M, N <: M, A, V1, V2, B](
@@ -170,7 +170,7 @@ object Primitive:
           validation: SchemaValidation[M, A, V1, V2, B]
       ) extends Primitive.Required.Reader[M, N, B]:
         export self.tpe
-        override def constraints: Chain[Constraint[?]] = validation.constraints
+        // override def constraints: Chain[Constraint[?]] = validation.constraints
         override def modify[O <: M](f: N => O): Primitive.Required.Reader[M, O, B] = copy(self = self.modify(f))
         override def translate[O](f: M => O): Primitive.Required.Reader[O, O, B] = copy(
           self = self.translate(f),
@@ -195,7 +195,7 @@ object Primitive:
         f: B => A
     ) extends Primitive.Required[M, N, B]:
       export self.tpe
-      override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
+      // override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
       override def modify[O <: M](f: N => O): Primitive.Required[M, O, B] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Primitive.Required[O, O, B] = copy(
         self = self.translate(f),
@@ -203,7 +203,7 @@ object Primitive:
       )
 
     final case class Root[M, N <: M, A](metadata: N, tpe: Type[A]) extends Primitive.Required[M, N, A]:
-      override def constraints: Chain[Constraint[?]] = Chain.empty
+      // override def constraints: Chain[Constraint[?]] = Chain.empty
       override def modify[O <: M](f: N => O): Primitive.Required[M, O, A] = copy(metadata = f(metadata))
       override def translate[O](f: M => O): Primitive.Required[O, O, A] = copy(metadata = f(metadata))
 
@@ -212,8 +212,8 @@ object Primitive:
     override def optional: Primitive.Reader[M, N, Option[A]] = Reader.Optional(this)
     def tpe: Type[?]
     override def translate[O](f: M => O): Primitive.Reader[O, O, A]
-    override def validate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B]): Primitive.Reader[M, N, B] =
-      Reader.Functor(this, validation)
+    // override def validate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B]): Primitive.Reader[M, N, B] =
+    //   Reader.Functor(this, validation)
 
   object Reader:
     final case class Functor[M, N <: M, A, V1, V2, B](
@@ -221,12 +221,12 @@ object Primitive:
         validation: SchemaValidation[M, A, V1, V2, B]
     ) extends Primitive.Reader[M, N, B]:
       export self.tpe
-      override def constraints: Chain[Constraint[?]] = validation.constraints
+      // override def constraints: Chain[Constraint[?]] = validation.constraints
       override def modify[O <: M](f: N => O): Primitive.Reader[M, O, B] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Primitive.Reader[O, O, B] = ???
 
     final case class Optional[M, N <: M, A](self: Primitive.Reader[M, N, A]) extends Primitive.Reader[M, N, Option[A]]:
-      export self.{constraints, tpe}
+      export self.tpe
       override def modify[O <: M](f: N => O): Primitive.Reader[M, O, Option[A]] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Primitive.Reader[O, O, Option[A]] = copy(self = self.translate(f))
 
@@ -257,10 +257,10 @@ object Primitive:
     export self.tpe
     override def modify[O <: M](f: N => O): Primitive[M, O, B] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Primitive[O, O, B] = copy(self = self.translate(f), validation = ???)
-    override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
+    // override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
 
   final case class Optional[M, N <: M, A](self: Primitive[M, N, A]) extends Primitive[M, N, Option[A]]:
-    export self.{constraints, tpe}
+    export self.tpe
     override def modify[O <: M](f: N => O): Primitive[M, O, Option[A]] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Primitive[O, O, Option[A]] = copy(self = self.translate(f))
 
