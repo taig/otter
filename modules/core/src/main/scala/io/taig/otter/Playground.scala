@@ -1,13 +1,18 @@
 package io.taig.otter
 
-// import cats.syntax.all.*
+import cats.syntax.all.*
+import io.taig.otter.validation.Validation
 
 object Playground:
   import Plain.*
   import Plain.given
 
-  val y: Collection[String] = ???
-  val x: Schema[String] = y
+  opaque type Email = String
+
+  // val myEmail: Validation[String, Constraint.Primitive, String, Email] = email.tap
+
+  // val a: Primitive.Required.Reader[String] = ???
+  // val b: Primitive.Required.Reader[Email] = a.validate(myEmail)
 
   // summon[SchemaInvariant[Schema.Of[?, *]]]
   // val b: Schema[String] = x.imap(???)(???)
