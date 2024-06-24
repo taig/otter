@@ -32,44 +32,41 @@ object Schema:
     def optional: Schema.Writer[M, A, Option[B]]
 
 sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M, A, B], Collection.Writer[M, A, B]:
-  // override def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Collection[M, A, C] =
-  //   Collection.Invariant(this, validation, f)
-  override def imap[C](f: B => C)(g: C => B): Collection[M, A, C] = ???
+  final override def imap[C](f: B => C)(g: C => B): Collection[M, A, C] = ivalidate(Validation.lift(f))(g)
+  final def ivalidate[N >: M, C, D](
+      validation: Validation[B, Constraint.Collection, (Schema.Writer[N, ?, C], C), D]
+  )(f: D => B): Collection[M, A, D] = Collection.Validate(this, validation, f)
   override def mapMetadata[N](f: M => N): Collection[N, A, B]
   final override def optional: Collection[M, A, Option[B]] = Collection.Optional(this)
   override def schema: Schema[?, ?, ?]
 
 object Collection:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
-    // def constraints: Chain[Constraint[?]]
-    override def map[C](f: B => C): Collection.Reader[M, A, C] = ???
+    def constraints: Chain[Constraint.Collection]
+    final override def map[C](f: B => C): Collection.Reader[M, A, C] = validate(Validation.lift(f))
     override def mapMetadata[N](f: M => N): Collection.Reader[N, A, B]
     override def optional: Collection.Reader[M, A, Option[B]] = Collection.Reader.Optional(this)
     def schema: Schema.Reader[?, ?, ?]
-    // final override def validate[V1, V2, C](
-    //     validation: SchemaValidation[M, B, V1, V2, C]
-    // ): Collection.Reader[M, A, C] = Reader.Functor(this, validation)
+    final def validate[N >: M, C, D](
+        validation: Validation[B, Constraint.Collection, (Schema.Writer[N, ?, C], C), D]
+    ): Collection.Reader[M, A, D] = Reader.Validate(this, validation)
 
   object Reader:
-    // final case class Functor[M, N <: M, A, B, V1, V2, C](
-    //     self: Collection.Reader[M, A, B],
-    //     validation: SchemaValidation[M, B, V1, V2, C]
-    // ) extends Collection.Reader[M, A, C]:
-    //   export self.schema
-    //   // override def constraints: Chain[Constraint[?]] = validation.constraints
-    //   override def mapMetadata[N](f: M => N): Collection.Reader[M, O, A, C] = copy(self = self.mapMetadata(f))
-    //   override def translate[O](f: M => O): Collection.Reader[O, O, ?, C] = copy(
-    //     self = self.translate(f),
-    //     validation = validation.mapConstraint(_.leftMap(_.translate(f))).mapActual(_.leftMap(_.translate(f)))
-    //   )
+    final case class Validate[M, N >: M, A, B, C, D](
+        self: Collection.Reader[M, A, B],
+        validation: Validation[B, Constraint.Collection, (Schema.Writer[N, ?, C], C), D]
+    ) extends Collection.Reader[M, A, D]:
+      export self.{metadata, schema}
+      override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
+      override def mapMetadata[N](f: M => N): Collection.Reader[N, A, D] = copy(self = self.mapMetadata(f))
 
     final case class Optional[M, A, B](self: Collection.Reader[M, A, B]) extends Collection.Reader[M, A, Option[B]]:
-      export self.{metadata, schema}
+      export self.{constraints, metadata, schema}
       override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Option[B]] = copy(self = self.mapMetadata(f))
 
     final case class Root[M, A <: Schema.Reader[?, ?, B], B](metadata: M, schema: A)
         extends Collection.Reader[M, A, Vector[B]]:
-      // override def constraints: Chain[Constraint[?]] = Chain.empty
+      override def constraints: Chain[Constraint.Collection] = Chain.empty
       override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Vector[B]] = copy(metadata = f(metadata))
 
   sealed trait Writer[+M, +A, -B] extends Schema.Writer[M, A, B]:
@@ -92,31 +89,24 @@ object Collection:
 
     final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A)
         extends Collection.Writer[M, A, Vector[B]]:
-      override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Vector[B]] =
-        copy(metadata = f(metadata))
-
-  // final case class Invariant[M, N <: M, A, B, V1, V2, C](
-  //     self: Collection[M, A, B],
-  //     validation: SchemaValidation[M, B, V1, V2, C],
-  //     f: C => B
-  // ) extends Collection[M, A, C]:
-  //   export self.schema
-  //   // override def constraints: Chain[Constraint[?]] = self.constraints ++ validation.constraints
-  //   override def mapMetadata[N](f: M => N): Collection[M, O, A, C] = copy(self = self.mapMetadata(f))
-  //   override def translate[O](f: M => O): Collection[O, O, ?, C] = copy(
-  //     self = self.translate(f),
-  //     validation = validation.mapConstraint(_.leftMap(_.translate(f))).mapActual(_.leftMap(_.translate(f)))
-  //   )
+      override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Vector[B]] = copy(metadata = f(metadata))
 
   final case class Optional[M, A, B](self: Collection[M, A, B]) extends Collection[M, A, Option[B]]:
-    export self.{metadata, schema}
+    export self.{constraints, metadata, schema}
     override def mapMetadata[N](f: M => N): Collection[N, A, Option[B]] = copy(self = self.mapMetadata(f))
 
   final case class Root[M, A <: Schema[?, ?, B], B](metadata: M, schema: A) extends Collection[M, A, Vector[B]]:
-    // override def constraints: Chain[Constraint[?]] = Chain.empty
+    override def constraints: Chain[Constraint.Collection] = Chain.empty
     override def mapMetadata[N](f: M => N): Collection[N, A, Vector[B]] = copy(metadata = f(metadata))
 
-// sealed trait Enumeration[+M, +A <: Schema[?, ?, ?], B] extends Schema[M, A, B]
+  final case class Validate[M, N >: M, A, B, C, D](
+      self: Collection[M, A, B],
+      validation: Validation[B, Constraint.Collection, (Schema.Writer[N, ?, C], C), D],
+      f: D => B
+  ) extends Collection[M, A, D]:
+    export self.{metadata, schema}
+    override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
+    override def mapMetadata[N](f: M => N): Collection[N, A, D] = copy(self = self.mapMetadata(f))
 
 sealed trait Primitive[+M, A] extends Schema[M, Nothing, A], Primitive.Reader[M, A], Primitive.Writer[M, A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[M, C] = ivalidate(Validation.lift(f))(g)
