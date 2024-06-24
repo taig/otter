@@ -4,7 +4,7 @@ val Version = new {
   val CaseInsensitive = "1.4.0"
   val Cats = "2.12.0"
   val CatsEffect = "3.5.3"
-  val Circe = "0.14.7"
+  val Circe = "0.14.8"
   val EnumerationExt = "0.0.4"
   val Http4s = "1.0.0-M41"
   val Java = "17"
@@ -14,7 +14,7 @@ val Version = new {
   val Munit = "1.0.0"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.3"
-  val ScalaJavaTime = "2.5.0"
+  val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.12"
 }
 

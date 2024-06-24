@@ -21,6 +21,12 @@ trait Syntax extends Syntax1:
         self.collectionWith(metadata.collection)
       override def optional: Schema.Of[A, Option[B]] = self.optional
 
+  // given schemaReaderOps: SchemaOps[metadata.Schema, Schema.Reader.Of, Schema.Reader.Of, Collection.Reader.Of] with
+  //   extension [A <: Schema.Reader[?], B](self: Schema.Of[A, B])
+  //     override def collection: Collection.Of[self.type, Vector[B]] =
+  //       self.collectionWith(metadata.collection)
+  //     override def optional: Schema.Of[A, Option[B]] = self.optional
+
   given primitiveToSchemaInvariantOps[A]: Conversion[
     Primitive[A],
     SchemaInvariant.AllOps[metadata.Schema, Primitive, A]
