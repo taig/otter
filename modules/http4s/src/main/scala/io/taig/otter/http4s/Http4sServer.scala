@@ -8,13 +8,14 @@ import io.taig.otter.server.Server
 import org.http4s.HttpApp as Http4sApp
 
 final class Http4sServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.http4s.server.Server]) extends Server[F]:
-  override def start(app: App[F]): Resource[F, String] = f(toHttp4sApp(app)).map(_.baseUri.show)
+  override def start(app: App[F], onError: Throwable => F[Unit]): Resource[F, String] =
+    f(toHttp4sApp(app, onError)).map(_.baseUri.show)
 
-  def toHttp4sApp(app: App[F]): Http4sApp[F] = Http4sApp: request =>
+  def toHttp4sApp(app: App[F], onError: Throwable => F[Unit]): Http4sApp[F] = Http4sApp: request =>
     val method = toHttpMethod(request.method)
     val url = toHttpUrl(request.uri)
     val headers = toHttpHeaders(request.headers)
-    handle(app, method, url, headers, toHttpRequestBody(_, request.body)).flatMap(toHttp4sResponse)
+    handle(app, method, url, headers, toHttpRequestBody(_, request.body), onError).flatMap(toHttp4sResponse)
 
   // TODO make this broadly available, this should in fact also be happening in AppClient
   def handle(
@@ -22,7 +23,8 @@ final class Http4sServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.h
       method: Method,
       url: Http.Url,
       headers: Http.Headers,
-      body: Request.Body[?] => F[Http.Request.Body]
+      body: Request.Body[?] => F[Http.Request.Body],
+      onError: Throwable => F[Unit]
   ): F[Http.Response] = app.routes
     .find(method, url)
     .fold(app.notFound.encode(().pure).pure): route =>
@@ -32,9 +34,7 @@ final class Http4sServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.h
         .flatMap(_.traverse(route.implementation))
         .map(route.endpoint.response.encode)
     .handleErrorWith: throwable =>
-      // TODO remove
-      throwable.printStackTrace()
-      app.failure.encode(().valid).pure
+      onError(throwable).as(app.failure.encode(().valid))
 
   def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Request.Body] = body match
     case _: Request.Body.Singlepart.Strict[?] =>
