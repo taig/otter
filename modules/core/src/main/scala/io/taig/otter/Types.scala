@@ -10,10 +10,6 @@ trait Types:
 
   val metadata: Metadata
 
-  type SchemaInvariant[F[_]] = Base.SchemaInvariant[F]
-  type SchemaContravariant[F[_]] = Base.SchemaContravariant[F]
-  type SchemaFunctor[F[_]] = Base.SchemaFunctor[F]
-
   final type Schema[A] = Base.Schema[metadata.Schema, ?, A]
 
   object Schema:

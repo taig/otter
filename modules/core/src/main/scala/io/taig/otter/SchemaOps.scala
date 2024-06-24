@@ -12,8 +12,8 @@ trait SchemaOps[F[_, _], G[_, _], C[_, _]]:
 //   extension [A, B](self: F[A, B]) def schema: S
 //   extension [A, B](self: F[A, Vector[B]]) def apply[C](builder: CB[Vector[B], C]): F[A, C]
 
-// trait PrimitiveOps[F[_], G[_], C[_, _], T[_, _]] extends SchemaOps[[_, a] =>> F[a], [_, a] =>> G[a], C, T]:
-//   extension [A](self: F[A]) def tpe: Type[?]
+trait PrimitiveOps[F[_], G[_], C[_, _]] extends SchemaOps[[_, a] =>> F[a], [_, a] =>> G[a], C]:
+  extension [A](self: F[A]) def tpe: Type[?]
 
 // trait TupleOps[F[_, _], C[_, _], S] extends SchemaOps[F, F, C, F]:
 //   extension [A, B](self: F[A, B]) def schemas: Chain[S]
