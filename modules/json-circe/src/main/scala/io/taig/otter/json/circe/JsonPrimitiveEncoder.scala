@@ -10,9 +10,9 @@ import java.math.BigInteger as JBigInteger
 
 object JsonPrimitiveEncoder:
   def apply[A](schema: Primitive.Writer[A], a: A): Json = schema match
-    case Base.Primitive.Optional(self)                         => optional(self, a)
-    case Base.Primitive.Invariant(self, _, f)                  => contravariant(self, f, a)
-    case Base.Primitive.Required.Invariant(self, _, f)         => contravariant(self, f, a)
+    case Base.Primitive.Optional(self) => optional(self, a)
+    // case Base.Primitive.Invariant(self, _, f)                  => contravariant(self, f, a)
+    // case Base.Primitive.Required.Invariant(self, _, f)         => contravariant(self, f, a)
     case Base.Primitive.Required.Writer.Contravariant(self, f) => contravariant(self, f, a)
     case Base.Primitive.Required.Root(_, tpe)                  => root(tpe, a)
     case Base.Primitive.Writer.Contravariant(self, f)          => contravariant(self, f, a)

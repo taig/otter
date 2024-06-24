@@ -2,28 +2,28 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.Chain
-import io.taig.otter.validation.Constraint
 import io.taig.otter.Schema.Reader
 
 sealed trait Schema[+M, +A, B] extends Schema.Reader[M, A, B], Schema.Writer[M, A, B]:
-  // override def collectionWith[N >: M](metadata: N): Collection[N, this.type, Vector[B]] =
-  //   Collection.Root(metadata, this)
-  // def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, A, C]
+  final override def collectionWith[N](metadata: N): Collection[N, this.type, Vector[B]] =
+    Collection.Root(metadata, this)
+  def imap[C](f: B => C)(g: C => B): Schema[M, A, C]
   override def modify[N](f: M => N): Schema[N, A, B]
   override def optional: Schema[M, A, Option[B]]
 
 object Schema:
   sealed trait Reader[+M, +A, +B] extends Product, Serializable:
-    // def collectionWith[O <: M](metadata: O): Collection.Reader[M, O, this.type, Vector[B]] =
-    //   Collection.Reader.Root(metadata, this)
+    def collectionWith[N](metadata: N): Collection.Reader[N, this.type, Vector[B]] =
+      Collection.Reader.Root(metadata, this)
     // def constraints: Chain[Constraint[?]]
+    def map[C](f: B => C): Schema.Reader[M, A, C]
     def modify[N](f: M => N): Schema.Reader[N, A, B]
     def optional: Schema.Reader[M, A, Option[B]]
     // def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, A, C]
 
   sealed trait Writer[+M, +A, -B] extends Product, Serializable:
-    // def collectionWith[O <: M](metadata: O): Collection.Writer[M, O, this.type, Vector[B]] =
-    //   Collection.Writer.Root(metadata, this)
+    def collectionWith[N](metadata: N): Collection.Writer[N, this.type, Vector[B]] =
+      Collection.Writer.Root(metadata, this)
     def contramap[C](f: C => B): Schema.Writer[M, A, C]
     def modify[N](f: M => N): Schema.Writer[N, A, B]
     def optional: Schema.Writer[M, A, Option[B]]
@@ -31,6 +31,7 @@ object Schema:
 sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M, A, B], Collection.Writer[M, A, B]:
   // override def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Collection[M, A, C] =
   //   Collection.Invariant(this, validation, f)
+  override def imap[C](f: B => C)(g: C => B): Collection[M, A, C] = ???
   override def modify[N](f: M => N): Collection[N, A, B]
   final override def optional: Collection[M, A, Option[B]] = Collection.Optional(this)
   override def schema: Schema[?, ?, ?]
@@ -38,6 +39,7 @@ sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M,
 object Collection:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
     // def constraints: Chain[Constraint[?]]
+    override def map[C](f: B => C): Collection.Reader[M, A, C] = ???
     override def modify[N](f: M => N): Collection.Reader[N, A, B]
     override def optional: Collection.Reader[M, A, Option[B]] = Collection.Reader.Optional(this)
     def schema: Schema.Reader[?, ?, ?]
@@ -116,6 +118,7 @@ object Collection:
 sealed trait Primitive[+M, A] extends Schema[M, Nothing, A], Primitive.Reader[M, A], Primitive.Writer[M, A]:
   // override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(f: B => A): Primitive[M, B] =
   //   Primitive.Invariant(this, validation, f)
+  override def imap[C](f: A => C)(g: C => A): Primitive[M, C] = ???
   override def modify[N](f: M => N): Primitive[N, A]
   final override def optional: Primitive[M, Option[A]] = Primitive.Optional(this)
 
@@ -124,6 +127,7 @@ object Primitive:
       extends Primitive[M, A],
         Primitive.Required.Reader[M, A],
         Primitive.Required.Writer[M, A]:
+    override def imap[C](f: A => C)(g: C => A): Primitive.Required[M, C] = ???
     // final override def ivalidate[V1, V2, B](validation: SchemaValidation[M, A, V1, V2, B])(
     //     f: B => A
     // ): Primitive.Required[M, B] = Required.Invariant(this, validation, f)
@@ -131,6 +135,7 @@ object Primitive:
 
   object Required:
     sealed trait Reader[+M, +A] extends Primitive.Reader[M, A]:
+      override def map[C](f: A => C): Primitive.Reader[M, C] = ???
       override def modify[N](f: M => N): Primitive.Required.Reader[N, A]
       // final override def validate[V1, V2, B](
       //     validation: SchemaValidation[M, A, V1, V2, B]
@@ -173,6 +178,7 @@ object Primitive:
       override def modify[N](f: M => N): Primitive.Required[N, A] = copy(metadata = f(metadata))
 
   sealed trait Reader[+M, +A] extends Schema.Reader[M, Nothing, A]:
+    override def map[C](f: A => C): Primitive.Reader[M, C] = ???
     override def modify[N](f: M => N): Primitive.Reader[N, A]
     override def optional: Primitive.Reader[M, Option[A]] = Reader.Optional(this)
     def tpe: Type[?]

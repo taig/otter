@@ -6,14 +6,14 @@ import io.taig.otter.SchemaFunctor
 import io.taig.otter as Base
 
 trait Syntax extends Syntax1:
-  given schemaToSchemaInvariantOps[A, B]: Conversion[
-    Schema.Of[A, B],
-    SchemaInvariant.AllOps[Schema.Of[A, *], B]
-  ] = fa =>
-    new SchemaInvariant.AllOps:
-      override type TypeClassType = SchemaInvariant[Schema.Of[A, *]]
-      override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Schema.Of[A, *]]]
-      override def self: Schema.Of[A, B] = fa
+  // given schemaToSchemaInvariantOps[A, B]: Conversion[
+  //   Schema.Of[A, B],
+  //   SchemaInvariant.AllOps[Schema.Of[A, *], B]
+  // ] = fa =>
+  //   new SchemaInvariant.AllOps:
+  //     override type TypeClassType = SchemaInvariant[Schema.Of[A, *]]
+  //     override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Schema.Of[A, *]]]
+  //     override def self: Schema.Of[A, B] = fa
 
   given schemaOps: SchemaOps[Schema.Of, Schema.Of, Collection.Of] with
     extension [A, B](self: Schema.Of[A, B])
@@ -27,23 +27,23 @@ trait Syntax extends Syntax1:
         ??? // self.collectionWith(metadata.collection)
       override def optional: Schema.Reader.Of[A, Option[B]] = self.optional
 
-  given primitiveToSchemaInvariantOps[A]: Conversion[
-    Primitive[A],
-    SchemaInvariant.AllOps[Primitive, A]
-  ] = fa =>
-    new SchemaInvariant.AllOps:
-      override type TypeClassType = SchemaInvariant[Primitive]
-      override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Primitive]]
-      override def self: Primitive[A] = fa
+  // given primitiveToSchemaInvariantOps[A]: Conversion[
+  //   Primitive[A],
+  //   SchemaInvariant.AllOps[Primitive, A]
+  // ] = fa =>
+  //   new SchemaInvariant.AllOps:
+  //     override type TypeClassType = SchemaInvariant[Primitive]
+  //     override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Primitive]]
+  //     override def self: Primitive[A] = fa
 
-  given primitiveRequiredToSchemaInvariantOps[A]: Conversion[
-    Primitive.Required[A],
-    SchemaInvariant.AllOps[Primitive.Required, A]
-  ] = fa =>
-    new SchemaInvariant.AllOps:
-      override type TypeClassType = SchemaInvariant[Primitive.Required]
-      override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Primitive.Required]]
-      override def self: Primitive.Required[A] = fa
+  // given primitiveRequiredToSchemaInvariantOps[A]: Conversion[
+  //   Primitive.Required[A],
+  //   SchemaInvariant.AllOps[Primitive.Required, A]
+  // ] = fa =>
+  //   new SchemaInvariant.AllOps:
+  //     override type TypeClassType = SchemaInvariant[Primitive.Required]
+  //     override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Primitive.Required]]
+  //     override def self: Primitive.Required[A] = fa
 
 trait Syntax1 extends Instances:
   given schemaToSchemaFunctorOps[A, B](using
