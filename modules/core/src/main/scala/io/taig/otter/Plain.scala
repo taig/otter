@@ -6,6 +6,7 @@ trait Plain extends Dsl:
   override object metadata extends Metadata:
     override type Schema = Any
     override type Collection = Any
+    override val collection: Collection = ()
     override type Enumeration = Any
     override type Primitive = Any
 

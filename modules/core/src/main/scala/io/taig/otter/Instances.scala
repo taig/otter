@@ -25,25 +25,29 @@ trait Instances extends Types:
     override def constraints[A](fa: Primitive[A]): Chain[Constraint[?]] = fa.constraints
     override def ivalidate[A, V1, V2, B](fa: Primitive[A])(validation: Validation[A, V1, V2, B])(
         f: B => A
-    ): Primitive[B] =
-      fa.ivalidate(validation)(f)
+    ): Primitive[B] = fa.ivalidate(validation)(f)
 
   given primitiveRequiredInvariant: SchemaInvariant[Primitive.Required] with
     override def constraints[A](fa: Primitive.Required[A]): Chain[Constraint[?]] = fa.constraints
     override def ivalidate[A, V1, V2, B](fa: Primitive.Required[A])(validation: Validation[A, V1, V2, B])(
         f: B => A
-    ): Primitive.Required[B] =
-      fa.ivalidate(validation)(f)
+    ): Primitive.Required[B] = fa.ivalidate(validation)(f)
 
   given primitiveReaderFunctor: SchemaFunctor[Primitive.Reader] with
     override def constraints[A](fa: Primitive.Reader[A]): Chain[Constraint[?]] = fa.constraints
     override def validate[A, V1, V2, B](fa: Primitive.Reader[A])(
         validation: Validation[A, V1, V2, B]
-    ): Primitive.Reader[B] =
-      fa.validate(validation)
+    ): Primitive.Reader[B] = fa.validate(validation)
 
   given primitiveRequiredReaderFunctor: SchemaFunctor[Primitive.Required.Reader] with
     override def constraints[A](fa: Primitive.Required.Reader[A]): Chain[Constraint[?]] = fa.constraints
     override def validate[A, V1, V2, B](fa: Primitive.Required.Reader[A])(
         validation: Validation[A, V1, V2, B]
     ): Primitive.Required.Reader[B] = fa.validate(validation)
+
+  given primitiveWriterContravariant: SchemaContravariant[Primitive.Writer] with
+    override def contramap[A, B](fa: Primitive.Writer[A])(f: B => A): Primitive.Writer[B] = fa.contramap(f)
+
+  given primitiveRequiredWriterContravariant: SchemaContravariant[Primitive.Required.Writer] with
+    override def contramap[A, B](fa: Primitive.Required.Writer[A])(f: B => A): Primitive.Required.Writer[B] =
+      fa.contramap(f)

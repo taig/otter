@@ -8,6 +8,8 @@ import io.taig.otter.Schema.Reader
 sealed trait Schema[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
     extends Schema.Reader[M, N, A, B],
       Schema.Writer[M, N, A, B]:
+  override def collectionWith[O <: M](metadata: O): Collection[M, O, this.type, Vector[B]] =
+    Collection.Root(metadata, this)
   def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, N, A, C]
   override def modify[O <: M](f: N => O): Schema[M, O, A, B]
   override def optional: Schema[M, N, A, Option[B]]
@@ -15,6 +17,8 @@ sealed trait Schema[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
 
 object Schema:
   sealed trait Reader[M, +N <: M, +A <: Schema.Reader[M, ?, ?, ?], +B] extends Product, Serializable:
+    def collectionWith[O <: M](metadata: O): Collection.Reader[M, O, this.type, Vector[B]] =
+      Collection.Reader.Root(metadata, this)
     def constraints: Chain[Constraint[?]]
     def modify[O <: M](f: N => O): Schema.Reader[M, O, A, B]
     def optional: Schema.Reader[M, N, A, Option[B]]
@@ -22,6 +26,8 @@ object Schema:
     def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, N, A, C]
 
   sealed trait Writer[M, +N <: M, +A <: Schema.Writer[M, ?, ?, ?], -B] extends Product, Serializable:
+    def collectionWith[O <: M](metadata: O): Collection.Writer[M, O, this.type, Vector[B]] =
+      Collection.Writer.Root(metadata, this)
     def contramap[C](f: C => B): Schema.Writer[M, N, A, C]
     def modify[O <: M](f: N => O): Schema.Writer[M, O, A, B]
     def optional: Schema.Writer[M, N, A, Option[B]]
