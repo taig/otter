@@ -5,9 +5,7 @@ import cats.data.Chain
 import io.taig.otter.validation.Constraint
 import io.taig.otter.Schema.Reader
 
-sealed trait Schema[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
-    extends Schema.Reader[M, N, A, B],
-      Schema.Writer[M, N, A, B]:
+sealed trait Schema[M, +N <: M, +A, B] extends Schema.Reader[M, N, A, B], Schema.Writer[M, N, A, B]:
   override def collectionWith[O <: M](metadata: O): Collection[M, O, this.type, Vector[B]] =
     Collection.Root(metadata, this)
   def ivalidate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C])(f: C => B): Schema[M, N, A, C]
@@ -16,7 +14,7 @@ sealed trait Schema[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
   override def translate[O](f: M => O): Schema[O, O, ?, B]
 
 object Schema:
-  sealed trait Reader[M, +N <: M, +A <: Schema.Reader[M, ?, ?, ?], +B] extends Product, Serializable:
+  sealed trait Reader[M, +N <: M, +A, +B] extends Product, Serializable:
     def collectionWith[O <: M](metadata: O): Collection.Reader[M, O, this.type, Vector[B]] =
       Collection.Reader.Root(metadata, this)
     def constraints: Chain[Constraint[?]]
@@ -25,7 +23,7 @@ object Schema:
     def translate[O](f: M => O): Schema.Reader[O, O, ?, B]
     def validate[V1, V2, C](validation: SchemaValidation[M, B, V1, V2, C]): Schema.Reader[M, N, A, C]
 
-  sealed trait Writer[M, +N <: M, +A <: Schema.Writer[M, ?, ?, ?], -B] extends Product, Serializable:
+  sealed trait Writer[M, +N <: M, +A, -B] extends Product, Serializable:
     def collectionWith[O <: M](metadata: O): Collection.Writer[M, O, this.type, Vector[B]] =
       Collection.Writer.Root(metadata, this)
     def contramap[C](f: C => B): Schema.Writer[M, N, A, C]
@@ -33,7 +31,7 @@ object Schema:
     def optional: Schema.Writer[M, N, A, Option[B]]
     def translate[O](f: M => O): Schema.Writer[O, O, ?, B]
 
-sealed trait Collection[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
+sealed trait Collection[M, +N <: M, +A, B]
     extends Schema[M, N, A, B],
       Collection.Reader[M, N, A, B],
       Collection.Writer[M, N, A, B]:
@@ -45,7 +43,7 @@ sealed trait Collection[M, +N <: M, +A <: Schema[M, ?, ?, ?], B]
   override def translate[O](f: M => O): Collection[O, O, ?, B]
 
 object Collection:
-  sealed trait Reader[M, +N <: M, +A <: Schema.Reader[M, ?, ?, ?], +B] extends Schema.Reader[M, N, A, B]:
+  sealed trait Reader[M, +N <: M, +A, +B] extends Schema.Reader[M, N, A, B]:
     def constraints: Chain[Constraint[?]]
     override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, B]
     override def optional: Collection.Reader[M, N, A, Option[B]] = Collection.Reader.Optional(this)
@@ -56,7 +54,7 @@ object Collection:
     ): Collection.Reader[M, N, A, C] = Reader.Functor(this, validation)
 
   object Reader:
-    final case class Functor[M, N <: M, A <: Schema.Reader[M, ?, ?, ?], B, V1, V2, C](
+    final case class Functor[M, N <: M, A, B, V1, V2, C](
         self: Collection.Reader[M, N, A, B],
         validation: SchemaValidation[M, B, V1, V2, C]
     ) extends Collection.Reader[M, N, A, C]:
@@ -68,7 +66,7 @@ object Collection:
         validation = validation.mapConstraint(_.leftMap(_.translate(f))).mapActual(_.leftMap(_.translate(f)))
       )
 
-    final case class Optional[M, N <: M, A <: Schema.Reader[M, ?, ?, ?], B](self: Collection.Reader[M, N, A, B])
+    final case class Optional[M, N <: M, A, B](self: Collection.Reader[M, N, A, B])
         extends Collection.Reader[M, N, A, Option[B]]:
       export self.{constraints, schema}
       override def modify[O <: M](f: N => O): Collection.Reader[M, O, A, Option[B]] = copy(self = self.modify(f))
@@ -81,7 +79,7 @@ object Collection:
       override def translate[O](f: M => O): Collection.Reader[O, O, ?, Vector[B]] =
         copy(metadata = f(metadata), schema = schema.translate(f))
 
-  sealed trait Writer[M, +N <: M, +A <: Schema.Writer[M, ?, ?, ?], -B] extends Schema.Writer[M, N, A, B]:
+  sealed trait Writer[M, +N <: M, +A, -B] extends Schema.Writer[M, N, A, B]:
     final def contramap[C](f: C => B): Collection.Writer[M, N, A, C] = Writer.Contravariant(this, f)
     override def modify[O <: M](f: N => O): Collection.Writer[M, O, A, B]
     def optional: Collection.Writer[M, N, A, Option[B]] = Writer.Optional(this)
@@ -89,7 +87,7 @@ object Collection:
     override def translate[O](f: M => O): Collection.Writer[O, O, ?, B]
 
   object Writer:
-    final case class Contravariant[M, N <: M, A <: Schema.Writer[M, ?, ?, ?], B, C](
+    final case class Contravariant[M, N <: M, A, B, C](
         self: Collection.Writer[M, N, A, B],
         f: C => B
     ) extends Collection.Writer[M, N, A, C]:
@@ -97,7 +95,7 @@ object Collection:
       override def modify[O <: M](f: N => O): Collection.Writer[M, O, A, C] = copy(self = self.modify(f))
       override def translate[O](f: M => O): Collection.Writer[O, O, ?, C] = copy(self = self.translate(f))
 
-    final case class Optional[M, N <: M, A <: Schema.Writer[M, ?, ?, ?], B](self: Collection.Writer[M, N, A, B])
+    final case class Optional[M, N <: M, A, B](self: Collection.Writer[M, N, A, B])
         extends Collection.Writer[M, N, A, Option[B]]:
       export self.schema
       override def modify[O <: M](f: N => O): Collection.Writer[M, O, A, Option[B]] = copy(self = self.modify(f))
@@ -110,7 +108,7 @@ object Collection:
       override def translate[O](f: M => O): Collection.Writer[O, O, ?, Vector[B]] =
         copy(metadata = f(metadata), schema = schema.translate(f))
 
-  final case class Invariant[M, N <: M, A <: Schema[M, ?, ?, ?], B, V1, V2, C](
+  final case class Invariant[M, N <: M, A, B, V1, V2, C](
       self: Collection[M, N, A, B],
       validation: SchemaValidation[M, B, V1, V2, C],
       f: C => B
@@ -123,8 +121,7 @@ object Collection:
       validation = validation.mapConstraint(_.leftMap(_.translate(f))).mapActual(_.leftMap(_.translate(f)))
     )
 
-  final case class Optional[M, N <: M, A <: Schema[M, ?, ?, ?], B](self: Collection[M, N, A, B])
-      extends Collection[M, N, A, Option[B]]:
+  final case class Optional[M, N <: M, A, B](self: Collection[M, N, A, B]) extends Collection[M, N, A, Option[B]]:
     export self.{constraints, schema}
     override def modify[O <: M](f: N => O): Collection[M, O, A, Option[B]] = copy(self = self.modify(f))
     override def translate[O](f: M => O): Collection[O, O, ?, Option[B]] = copy(self = self.translate(f))

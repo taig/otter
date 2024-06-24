@@ -6,7 +6,7 @@ import io.taig.otter.SchemaFunctor
 import io.taig.otter as Base
 
 trait Syntax extends Syntax1:
-  given schemaToSchemaInvariantOps[A <: Schema[?], B]: Conversion[
+  given schemaToSchemaInvariantOps[A, B]: Conversion[
     Schema.Of[A, B],
     SchemaInvariant.AllOps[metadata.Schema, Schema.Of[A, *], B]
   ] = fa =>
@@ -15,8 +15,8 @@ trait Syntax extends Syntax1:
       override val typeClassInstance: TypeClassType = summon[SchemaInvariant[Schema.Of[A, *]]]
       override def self: Schema.Of[A, B] = fa
 
-  given schemaOps: SchemaOps[metadata.Schema, Schema.Of, Schema.Of, Collection.Of] with
-    extension [A <: Schema[?], B](self: Schema.Of[A, B])
+  given schemaOps: SchemaOps[Schema.Of, Schema.Of, Collection.Of] with
+    extension [A, B](self: Schema.Of[A, B])
       override def collection: Collection.Of[self.type, Vector[B]] =
         self.collectionWith(metadata.collection)
       override def optional: Schema.Of[A, Option[B]] = self.optional
@@ -46,7 +46,7 @@ trait Syntax extends Syntax1:
       override def self: Primitive.Required[A] = fa
 
 trait Syntax1 extends Instances:
-  given schemaToSchemaFunctorOps[A <: Schema[?], B](using
+  given schemaToSchemaFunctorOps[A, B](using
       F: SchemaFunctor[Schema.Reader.Of[A, *]]
   ): Conversion[Schema.Of[A, B], SchemaFunctor.AllOps[metadata.Schema, Schema.Reader.Of[A, *], B]] = fa =>
     new SchemaFunctor.AllOps:
@@ -54,7 +54,7 @@ trait Syntax1 extends Instances:
       override val typeClassInstance: TypeClassType = F
       override def self: Schema.Reader.Of[A, B] = fa
 
-  given schemaToSchemaContravariantOps[A <: Schema[?], B](using
+  given schemaToSchemaContravariantOps[A, B](using
       F: SchemaContravariant[Schema.Writer.Of[A, *]]
   ): Conversion[Schema.Of[A, B], SchemaContravariant.AllOps[metadata.Schema, Schema.Writer.Of[A, *], B]] = fa =>
     new SchemaContravariant.AllOps:

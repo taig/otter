@@ -2,13 +2,8 @@ package io.taig.otter
 
 import cats.data.Chain
 
-trait SchemaOps[
-    M,
-    F[_, _],
-    G[_, _],
-    C[_, _]
-]:
-  extension [A <: Schema[M, ?, ?, ?], B](self: F[A, B])
+trait SchemaOps[F[_, _], G[_, _], C[_, _]]:
+  extension [A, B](self: F[A, B])
     def collection: C[self.type, Vector[B]]
     def optional: G[A, Option[B]]
     // def tuple: T[self.type, B]
