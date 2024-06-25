@@ -30,12 +30,16 @@ trait ValidationIsomorphicOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
         f: D => B
     ): Self[A, D] = ivalidate(validation, writer, writer)(f)
 
-    final def apply[C, D, E](transformation: Transformation[B, Constraint[(Writer[C], C)], (Writer[D], D), E]): Self[A, E] =
-      ivalidate(transformation.validation)(transformation.from)
+    final def apply[C, D, E](
+        transformation: Transformation[B, Constraint[(Writer[C], C)], (Writer[D], D), E]
+    ): Self[A, E] = ivalidate(transformation.validation)(transformation.apply)
 
-    final def apply[C, D, E](transformation: Transformation[B, Constraint[C], D, E], constraint: Writer[C], actual: Writer[D]): Self[A, E] =
-        apply(???)
-        
+    final def apply[C, D, E](
+        transformation: Transformation[B, Constraint[C], D, E],
+        constraint: Writer[C],
+        actual: Writer[D]
+    ): Self[A, E] = apply(transformation.mapValidation(_.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _))))
+
     final def apply[C, D](transformation: Transformation[B, Constraint[C], C, D], writer: Writer[C]): Self[A, D] =
       apply(transformation, writer, writer)
 
