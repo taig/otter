@@ -6,7 +6,11 @@ object Playground:
   import Plain.*
   import Plain.given
 
-  val x: Primitive[String] = string
+  val x: Primitive.Required[String] = string
 
-  string.as(3)
-  val z: Primitive.Reader[Int] = x.as(3)
+  val _: Primitive.Writer[String] = x.writer
+  val _: Primitive.Required.Reader[String] = x.reader
+
+  x.validate_(???)
+
+  val y: Schema[Option[String]] = x.optional
