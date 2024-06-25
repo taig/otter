@@ -4,7 +4,7 @@ import io.taig.otter as Base
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-trait Schemas extends Instances:
+trait Schemas extends Types:
   def primitive[A](tpe: Type[A]): Primitive.Required[A]
   final val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
   final val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)

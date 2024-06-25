@@ -1,69 +1,104 @@
 package io.taig.otter
 
-import cats.data.Chain
 import cats.Functor
 import cats.Invariant
 import cats.Contravariant
+import cats.syntax.all.*
 import io.taig.otter.validation.Validation
 
-trait SchemaOps[F[_, _], G[_, _], C[_, _]]:
-  extension [A, B](self: F[A, B])
-    def collection: C[self.type, Vector[B]]
-    def optional: G[self.type, Option[B]]
+trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _]]:
+  extension [A, B](self: Self[A, B])
+    def collection: Collection[self.type, Vector[B]]
+    def optional: Optional[self.type, Option[B]]
 
-trait ValidationIsomorphicOps[F[_, _]]:
-  extension [A, B](self: F[A, B])
-    def ivalidate[C](validation: Validation[B, ?, ?, C])(f: C => B): F[A, C]
-    def ivalidate_(validation: Validation[B, ?, ?, Unit]): F[A, B] = ivalidate(validation.tap)(identity)
+trait ValidationIsomorphicOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
+  extension [A, B](self: Self[A, B])
+    def ivalidate[C, D, E](validation: Validation[B, Constraint[(Writer[C], C)], (Writer[D], D), E])(
+        f: E => B
+    ): Self[A, E]
 
-trait ValidationReaderOps[F[_, _]]:
-  extension [A, B](self: F[A, B])
-    def validate[C](validation: Validation[B, ?, ?, C]): F[A, C]
-    def validate_(validation: Validation[B, ?, ?, Unit]): F[A, B] = validate(validation.tap)
+    final def ivalidate[C, D, E](
+        validation: Validation[B, Constraint[C], D, E],
+        constraint: Writer[C],
+        actual: Writer[D]
+    )(
+        f: E => B
+    ): Self[A, E] = ivalidate(validation.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _)))(f)
 
-trait SchemaIsomorphicOps[F[_, _], G[_, _], C[_, _]] extends SchemaOps[F, G, C]:
-  def invariant[A]: Invariant[F[A, *]]
+    final def ivalidate[C, D](validation: Validation[B, Constraint[C], C, D], writer: Writer[C])(
+        f: D => B
+    ): Self[A, D] = ivalidate(validation, writer, writer)(f)
 
-  extension [A, B](self: F[A, B]) def iso: F[A, B]
+trait ValidationReaderOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
+  extension [A, B](self: Self[A, B])
+    def validate[C, D, E](validation: Validation[B, Constraint[(Writer[C], C)], (Writer[D], D), E]): Self[A, E]
 
-trait SchemaReaderOps[F[_, _], G[_, _], C[_, _]] extends SchemaOps[F, G, C]:
-  def functor[A]: Functor[F[A, *]]
+    final def validate[C, D, E](
+        validation: Validation[B, Constraint[C], D, E],
+        constraint: Writer[C],
+        actual: Writer[D]
+    ): Self[A, E] = validate(validation.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _)))
 
-  extension [A, B](self: F[A, B]) def reader: F[A, B]
+    final def validate[C, D](validation: Validation[B, Constraint[C], C, D], writer: Writer[C]): Self[A, D] =
+      validate(validation, writer, writer)
 
-trait SchemaWriterOps[F[_, _], G[_, _], C[_, _]] extends SchemaOps[F, G, C]:
-  def contravariant[A]: Contravariant[F[A, *]]
+    final def validate_[C, D](validation: Validation[B, Constraint[(Writer[C], C)], (Writer[D], D), Unit]): Self[A, B] =
+      validate(validation.tap)
 
-  extension [A, B](self: F[A, B]) def writer: F[A, B]
+    final def validate_[C, D](
+        validation: Validation[B, Constraint[C], D, Unit],
+        constraint: Writer[C],
+        actual: Writer[D]
+    ): Self[A, B] = validate_(validation.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _)))
 
-trait PrimitiveOps[F[_], G[_], C[_, _]] extends SchemaOps[[_, a] =>> F[a], [_, a] =>> G[a], C]
+    final def validate_[C](validation: Validation[B, Constraint[C], C, Unit], writer: Writer[C]): Self[A, B] =
+      validate_(validation, writer, writer)
 
-trait PrimitiveIsomorphicOps[F[_], G[_], C[_, _]]
-    extends SchemaIsomorphicOps[[_, a] =>> F[a], [_, a] =>> G[a], C],
-      PrimitiveOps[F, G, C],
-      ValidationIsomorphicOps[[_, a] =>> F[a]]
+trait SchemaIsomorphicOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+  def invariant[A]: Invariant[Self[A, *]]
 
-trait PrimitiveReaderOps[F[_], G[_], C[_, _]]
-    extends SchemaReaderOps[[_, a] =>> F[a], [_, a] =>> G[a], C],
-      PrimitiveOps[F, G, C],
-      ValidationReaderOps[[_, a] =>> F[a]]
+trait SchemaReaderOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+  def functor[A]: Functor[Self[A, *]]
 
-trait PrimitiveWriterOps[F[_], G[_], C[_, _]]
-    extends SchemaWriterOps[[_, a] =>> F[a], [_, a] =>> G[a], C],
-      PrimitiveOps[F, G, C]
+trait SchemaWriterOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+  def contravariant[A]: Contravariant[Self[A, *]]
 
-// trait SchemaOps[F[_, _], G[_, _], C[_, _]]:
-//   extension [A, B](self: F[A, B])
-//     def collection: C[self.type, Vector[B]]
-//     def optional: G[A, Option[B]]
-// def tuple: T[self.type, B]
+trait PrimitiveOps[Self[_], Optional[_], Collection[_, _]]
+    extends SchemaOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection]
 
-// trait CollectionOps[F[_, _], T[_, _], S, CB[_, _]] extends SchemaOps[F, F, F, T]:
-//   extension [A, B](self: F[A, B]) def schema: S
-//   extension [A, B](self: F[A, Vector[B]]) def apply[C](builder: CB[Vector[B], C]): F[A, C]
+trait PrimitiveIsomorphicOps[Self[_], Optional[_], Collection[_, _], Writer[_]]
+    extends SchemaIsomorphicOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
+      PrimitiveOps[Self, Optional, Collection],
+      ValidationIsomorphicOps[[_, a] =>> Self[a], Constraint.Primitive, Writer]
 
-// trait PrimitiveOps[F[_], G[_], C[_, _]] extends SchemaOps[[_, a] =>> F[a], [_, a] =>> G[a], C]:
-//   extension [A](self: F[A]) def tpe: Type[?]
+trait PrimitiveReaderOps[Self[_], Optional[_], Collection[_, _], Writer[_]]
+    extends SchemaReaderOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
+      PrimitiveOps[Self, Optional, Collection],
+      ValidationReaderOps[[_, a] =>> Self[a], Constraint.Primitive, Writer]
 
-// trait TupleOps[F[_, _], C[_, _], S] extends SchemaOps[F, F, C, F]:
-//   extension [A, B](self: F[A, B]) def schemas: Chain[S]
+trait PrimitiveWriterOps[Self[_], Optional[_], Collection[_, _]]
+    extends SchemaWriterOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
+      PrimitiveOps[Self, Optional, Collection]
+
+trait CollectionOps[Self[_, _]] extends SchemaOps[Self, Self, Self]
+
+trait CollectionIsomporphicOps[Self[_, _], Writer[_]]
+    extends SchemaIsomorphicOps[Self, Self, Self],
+      CollectionOps[Self],
+      ValidationIsomorphicOps[Self, [_] =>> Constraint.Collection, Writer]:
+  extension [A, B](self: Self[A, Vector[B]])
+    final def apply[C, D](builder: CollectionBuilder[Vector[B], C, D], writer: Writer[C]): Self[A, D] =
+      self.ivalidate(builder.validation, writer)(builder.from)
+
+trait CollectionReaderOps[Self[_, _], Writer[_]]
+    extends SchemaReaderOps[Self, Self, Self],
+      CollectionOps[Self],
+      ValidationReaderOps[Self, [_] =>> Constraint.Collection, Writer]:
+  extension [A, B](self: Self[A, Vector[B]])
+    final def apply[C, D](builder: CollectionBuilder.Reader[Vector[B], C, D], writer: Writer[C]): Self[A, D] =
+      self.validate(builder.validation, writer)
+
+trait CollectionWriterOps[Self[_, _]] extends SchemaWriterOps[Self, Self, Self], CollectionOps[Self]:
+  extension [A, B](self: Self[A, Vector[B]])
+    final def apply[C](builder: CollectionBuilder.Writer[Vector[B], C]): Self[A, C] =
+      contravariant[A].contramap(self)(builder.from)

@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import java.util.regex.Pattern
+import cats.Functor
 
 enum Constraint:
   case Type(name: String)
@@ -23,6 +24,10 @@ object Constraint:
       case Minimum(reference, exclusive) => Minimum(f(reference), exclusive)
       case Maximum(reference, exclusive) => Maximum(f(reference), exclusive)
       case Multiple(reference)           => Multiple(f(reference))
+
+  object Primitive:
+    given Functor[Constraint.Primitive] with
+      override def map[A, B](fa: Constraint.Primitive[A])(f: A => B): Constraint.Primitive[B] = fa.map(f)
 
   enum Collection:
     case MaxItems(reference: Long)
