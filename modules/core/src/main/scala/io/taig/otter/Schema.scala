@@ -6,11 +6,14 @@ import io.taig.otter.validation.Validation
 import cats.data.Chain
 
 sealed trait Schema[+M, +A, B] extends Schema.Reader[M, A, B], Schema.Writer[M, A, B]:
+  def asReader: Schema.Reader[M, A, B] = this
+  def asWriter: Schema.Writer[M, A, B] = this
   final override def collectionWith[N](metadata: N): Collection[N, this.type, Vector[B]] =
     Collection.Root(metadata, this)
   def imap[C](f: B => C)(g: C => B): Schema[M, A, C]
   override def mapMetadata[N](f: M => N): Schema[N, A, B]
   override def optional: Schema[M, A, Option[B]]
+  final override def unionWith[N](metadata: N): Union[N, this.type, B] = Union.Root(metadata, this)
 
 object Schema:
   sealed trait Reader[+M, +A, +B] extends Product, Serializable:
@@ -20,6 +23,7 @@ object Schema:
     def mapMetadata[N](f: M => N): Schema.Reader[N, A, B]
     def metadata: M
     def optional: Schema.Reader[M, A, Option[B]]
+    def unionWith[N](metadata: N): Union.Reader[N, this.type, B] = Union.Reader.Root(metadata, this)
 
   sealed trait Writer[+M, +A, -B] extends Product, Serializable:
     def collectionWith[N](metadata: N): Collection.Writer[N, this.type, Vector[B]] =
@@ -28,6 +32,7 @@ object Schema:
     def mapMetadata[N](f: M => N): Schema.Writer[N, A, B]
     def metadata: M
     def optional: Schema.Writer[M, A, Option[B]]
+    def unionWith[N](metadata: N): Union.Writer[N, this.type, B] = Union.Writer.Root(metadata, this)
 
 sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M, A, B], Collection.Writer[M, A, B]:
   final override def imap[C](f: B => C)(g: C => B): Collection[M, A, C] = ivalidate(Validation.lift(f))(g)
@@ -215,3 +220,30 @@ object Primitive:
     export self.{metadata, tpe}
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
     override def mapMetadata[N](f: M => N): Primitive[N, D] = copy(self = self.mapMetadata(f))
+
+sealed trait Union[+M, +A, B] extends Schema[M, A, B], Union.Reader[M, A, B], Union.Writer[M, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Union[M, A, C] = ???
+  override def mapMetadata[N](f: M => N): Union[N, A, B]
+  override def optional: Union[M, A, Option[B]] = ???
+
+object Union:
+  sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
+    final override def map[C](f: B => C): Union.Reader[M, A, C] = ???
+    override def optional: Union.Reader[M, A, Option[B]] = ???
+    override def mapMetadata[N](f: M => N): Union.Reader[N, A, B]
+
+  object Reader:
+    final case class Root[M, A <: Schema.Reader[?, ?, B], B](metadata: M, schema: A) extends Union.Reader[M, A, B]:
+      override def mapMetadata[N](f: M => N): Union.Reader[N, A, B] = copy(metadata = f(metadata))
+
+  sealed trait Writer[+M, +A, -B] extends Schema.Writer[M, A, B]:
+    final override def contramap[C](f: C => B): Union.Writer[M, A, C] = ???
+    override def mapMetadata[N](f: M => N): Union.Writer[N, A, B]
+    override def optional: Union.Writer[M, A, Option[B]] = ???
+
+  object Writer:
+    final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A) extends Union.Writer[M, A, B]:
+      override def mapMetadata[N](f: M => N): Union.Writer[N, A, B] = copy(metadata = f(metadata))
+
+  final case class Root[M, A <: Schema[?, ?, B], B](metadata: M, schema: A) extends Union[M, A, B]:
+    override def mapMetadata[N](f: M => N): Union[N, A, B] = copy(metadata = f(metadata))

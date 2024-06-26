@@ -5,7 +5,6 @@ import cats.Invariant
 import cats.Contravariant
 import cats.syntax.all.*
 import io.taig.otter.validation.Validation
-import cats.data.NonEmptyList
 
 trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _]]:
   extension [A, B](self: Self[A, B])
@@ -30,18 +29,24 @@ trait ValidationIsomorphicOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
         f: D => B
     ): Self[A, D] = ivalidate(validation, writer, writer)(f)
 
-    final def apply[C, D, E](
+    final def transform[C, D, E](
         transformation: Transformation[B, Constraint[(Writer[C], C)], (Writer[D], D), E]
     ): Self[A, E] = ivalidate(transformation.validation)(transformation.apply)
 
-    final def apply[C, D, E](
+    final def transform[C, D, E](
         transformation: Transformation[B, Constraint[C], D, E],
         constraint: Writer[C],
         actual: Writer[D]
-    ): Self[A, E] = apply(transformation.mapValidation(_.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _))))
+    ): Self[A, E] = transform(
+      transformation.mapValidation(_.mapConstraint(_.tupleLeft(constraint)).mapActual((actual, _)))
+    )
 
-    final def apply[C, D](transformation: Transformation[B, Constraint[C], C, D], writer: Writer[C]): Self[A, D] =
-      apply(transformation, writer, writer)
+    final def transform[C, D](transformation: Transformation[B, Constraint[C], C, D], writer: Writer[C]): Self[A, D] =
+      transform(transformation, writer, writer)
+
+    final def apply[C, D](transformation: Transformation[B, Constraint[C], C, D])(using
+        resolver: SchemaResolver[Writer, C]
+    ): Self[A, D] = transform(transformation, resolver.resolve)
 
 trait ValidationReaderOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
   extension [A, B](self: Self[A, B])
@@ -100,9 +105,6 @@ trait CollectionIsomporphicOps[Self[_, _], Writer[_]]
     extends SchemaIsomorphicOps[Self, Self, Self],
       CollectionOps[Self],
       ValidationIsomorphicOps[Self, [_] =>> Constraint.Collection, Writer]
-// extension [A, B](self: Self[A, Vector[B]])
-// final def apply[C, D](builder: CollectionBuilder[Vector[B], C, D], writer: Writer[C]): Self[A, D] =
-//   self.ivalidate(builder.validation, writer)(builder.from)
 
 trait CollectionReaderOps[Self[_, _], Writer[_]]
     extends SchemaReaderOps[Self, Self, Self],

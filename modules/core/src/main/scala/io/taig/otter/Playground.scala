@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import cats.syntax.all.*
+import cats.data.NonEmptyList
 
 object Playground:
   import Plain.*
@@ -9,3 +9,11 @@ object Playground:
   val x: Primitive.Required[String] = string
 
   val y: Schema[Option[String]] = x.optional
+
+  val _: Collection.Of[Primitive.Required[String], NonEmptyList[String]] = string.collection(nonEmptyList)
+
+  val todo: Schema.Writer[NonEmptyList[String] | Long] =
+    string.asWriter.collection.contramap[NonEmptyList[String]](_.toList.toVector)
+    ???
+
+  string.collection.transform(nonEmptySet, todo)

@@ -12,6 +12,8 @@ trait Instances extends Instances1:
   given schemaWriterContravariant[F[_, _], A](using F: SchemaWriterOps[F, ?, ?]): Contravariant[F[A, *]] =
     F.contravariant[A]
 
+  given collectionIsomporphicOps: CollectionIsomporphicOps[Collection.Of, Schema.Writer] = ???
+
   given primitiveRequiredIsomorphicOps: PrimitiveIsomorphicOps[
     Primitive.Required,
     Primitive,
@@ -28,6 +30,11 @@ trait Instances extends Instances1:
           validation: Validation[B, Constraint.Primitive[(Schema.Writer[C], C)], (Schema.Writer[D], D), E]
       )(f: E => B): Primitive.Required[E] = self.ivalidate(validation)(f)
 
+trait Instances1 extends Instances2:
+  given collectionReaderOps: CollectionReaderOps[Collection.Of, Schema.Writer] = ???
+
+  given collectionWriterOps: CollectionWriterOps[Collection.Of] = ???
+
   given primitiveRequiredReaderOps: PrimitiveReaderOps[
     Primitive.Required.Reader,
     Primitive.Reader,
@@ -41,13 +48,7 @@ trait Instances extends Instances1:
     Collection.Writer.Of
   ] = ???
 
-  given collectionIsomporphicOps: CollectionIsomporphicOps[Collection.Of, Schema.Writer] = ???
-
-  given collectionReaderOps: CollectionReaderOps[Collection.Of, Schema.Writer] = ???
-
-  given collectionWriterOps: CollectionWriterOps[Collection.Of] = ???
-
-trait Instances1 extends Instances2:
+trait Instances2 extends Instances3:
   given primitiveIsomorphicOps: PrimitiveIsomorphicOps[
     Primitive,
     Primitive,
@@ -55,6 +56,7 @@ trait Instances1 extends Instances2:
     Schema.Writer
   ] = ???
 
+trait Instances3 extends Instances4:
   given primitiveReaderOps: PrimitiveReaderOps[
     Primitive.Reader,
     Primitive.Reader,
@@ -64,9 +66,10 @@ trait Instances1 extends Instances2:
 
   given primitiveWriterOps: PrimitiveWriterOps[Primitive.Writer, Primitive.Writer, Collection.Writer.Of] = ???
 
-trait Instances2 extends Types:
+trait Instances4 extends Instances5:
   given schemaIsomorphicOps: SchemaIsomorphicOps[Schema.Of, Schema.Of, Collection.Of] = ???
 
+trait Instances5 extends Types:
   given schemaReaderOps: SchemaReaderOps[Schema.Reader.Of, Schema.Reader.Of, Collection.Reader.Of] = ???
 
   given schemaWriterOps: SchemaWriterOps[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of] = ???
