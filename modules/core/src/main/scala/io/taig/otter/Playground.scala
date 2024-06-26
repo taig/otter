@@ -17,3 +17,6 @@ object Playground:
     ???
 
   string.collection.transform(nonEmptySet, todo)
+
+  val unionA: Union[Either[String, Int]] = string.orElse(int)
+  val unionB: Union[String | Int] = string | int

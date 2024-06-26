@@ -53,3 +53,18 @@ trait Types:
     type Reader[A] = Base.Primitive.Reader[metadata.Primitive, A]
 
     type Writer[A] = Base.Primitive.Writer[metadata.Primitive, A]
+
+  final type Union[A] = Union.Of[?, A]
+
+  object Union:
+    type Of[A, B] = Base.Union[metadata.Union, A, B]
+
+    type Reader[A] = Reader.Of[?, A]
+
+    object Reader:
+      type Of[A, B] = Base.Union[metadata.Union, A, B]
+
+    type Writer[A] = Writer.Of[?, A]
+
+    object Writer:
+      type Of[A, B] = Base.Union[metadata.Union, A, B]

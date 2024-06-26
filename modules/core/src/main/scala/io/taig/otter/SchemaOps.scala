@@ -6,11 +6,6 @@ import cats.Contravariant
 import cats.syntax.all.*
 import io.taig.otter.validation.Validation
 
-trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _]]:
-  extension [A, B](self: Self[A, B])
-    def collection: Collection[self.type, Vector[B]]
-    def optional: Optional[self.type, Option[B]]
-
 trait ValidationIsomorphicOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
   extension [A, B](self: Self[A, B])
     def ivalidate[C, D, E](validation: Validation[B, Constraint[(Writer[C], C)], (Writer[D], D), E])(
@@ -73,42 +68,59 @@ trait ValidationReaderOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
     final def validate_[C](validation: Validation[B, Constraint[C], C, Unit], writer: Writer[C]): Self[A, B] =
       validate_(validation, writer, writer)
 
-trait SchemaIsomorphicOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+trait SchemaOps[Self[_, _], Optional[_, _], Parent[_], Collection[_, _], Union[_, _]]:
+  extension [A, B](self: Self[A, B])
+    def collection: Collection[self.type, Vector[B]]
+    def imap[C](f: B => C)(g: C => B): Self[A, C]
+    def optional: Optional[self.type, Option[B]]
+    def orElse[C](schema: Parent[C]): Union[self.type | schema.type, Either[B, C]]
+
+  extension [A, B <: Matchable](self: Self[A, B])
+    final def |[C <: Matchable](schema: Parent[C]): Union[self.type | schema.type, B | C] =
+      self.orElse(schema)
+      ???
+
+trait SchemaIsomorphicOps[Self[_, _], Optional[_, _], Parent[_], Collection[_, _], Union[_, _]]
+    extends SchemaOps[Self, Optional, Parent, Collection, Union]:
   given invariant[A]: Invariant[Self[A, *]]
 
-trait SchemaReaderOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+trait SchemaReaderOps[Self[_, _], Optional[_, _], Parent[_], Collection[_, _], Union[_, _]]
+    extends SchemaOps[Self, Optional, Parent, Collection, Union]:
   given functor[A]: Functor[Self[A, *]]
 
-trait SchemaWriterOps[Self[_, _], Optional[_, _], Collection[_, _]] extends SchemaOps[Self, Optional, Collection]:
+trait SchemaWriterOps[Self[_, _], Optional[_, _], Parent[_], Collection[_, _], Union[_, _]]
+    extends SchemaOps[Self, Optional, Parent, Collection, Union]:
   given contravariant[A]: Contravariant[Self[A, *]]
 
-trait PrimitiveOps[Self[_], Optional[_], Collection[_, _]]
-    extends SchemaOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection]
+trait PrimitiveOps[Self[_], Optional[_], Parent[_], Collection[_, _], Union[_, _]]
+    extends SchemaOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Parent, Collection, Union]
 
-trait PrimitiveIsomorphicOps[Self[_], Optional[_], Collection[_, _], Writer[_]]
-    extends SchemaIsomorphicOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
-      PrimitiveOps[Self, Optional, Collection],
+trait PrimitiveIsomorphicOps[Self[_], Optional[_], Parent[_], Collection[_, _], Union[_, _], Writer[_]]
+    extends SchemaIsomorphicOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Parent, Collection, Union],
+      PrimitiveOps[Self, Optional, Parent, Collection, Union],
       ValidationIsomorphicOps[[_, a] =>> Self[a], Constraint.Primitive, Writer]
 
-trait PrimitiveReaderOps[Self[_], Optional[_], Collection[_, _], Writer[_]]
-    extends SchemaReaderOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
-      PrimitiveOps[Self, Optional, Collection],
+trait PrimitiveReaderOps[Self[_], Optional[_], Parent[_], Collection[_, _], Union[_, _], Writer[_]]
+    extends SchemaReaderOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Parent, Collection, Union],
+      PrimitiveOps[Self, Optional, Parent, Collection, Union],
       ValidationReaderOps[[_, a] =>> Self[a], Constraint.Primitive, Writer]
 
-trait PrimitiveWriterOps[Self[_], Optional[_], Collection[_, _]]
-    extends SchemaWriterOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Collection],
-      PrimitiveOps[Self, Optional, Collection]
+trait PrimitiveWriterOps[Self[_], Optional[_], Parent[_], Collection[_, _], Union[_, _]]
+    extends SchemaWriterOps[[_, a] =>> Self[a], [_, a] =>> Optional[a], Parent, Collection, Union],
+      PrimitiveOps[Self, Optional, Parent, Collection, Union]
 
-trait CollectionOps[Self[_, _]] extends SchemaOps[Self, Self, Self]
+trait CollectionOps[Self[_, _], Parent[_], Union[_, _]] extends SchemaOps[Self, Self, Parent, Self, Union]
 
-trait CollectionIsomporphicOps[Self[_, _], Writer[_]]
-    extends SchemaIsomorphicOps[Self, Self, Self],
-      CollectionOps[Self],
+trait CollectionIsomporphicOps[Self[_, _], Parent[_], Union[_, _], Writer[_]]
+    extends SchemaIsomorphicOps[Self, Self, Parent, Self, Union],
+      CollectionOps[Self, Parent, Union],
       ValidationIsomorphicOps[Self, [_] =>> Constraint.Collection, Writer]
 
-trait CollectionReaderOps[Self[_, _], Writer[_]]
-    extends SchemaReaderOps[Self, Self, Self],
-      CollectionOps[Self],
+trait CollectionReaderOps[Self[_, _], Parent[_], Union[_, _], Writer[_]]
+    extends SchemaReaderOps[Self, Self, Parent, Self, Union],
+      CollectionOps[Self, Parent, Union],
       ValidationReaderOps[Self, [_] =>> Constraint.Collection, Writer]
 
-trait CollectionWriterOps[Self[_, _]] extends SchemaWriterOps[Self, Self, Self], CollectionOps[Self]
+trait CollectionWriterOps[Self[_, _], Parent[_], Union[_, _]]
+    extends SchemaWriterOps[Self, Self, Parent, Self, Union],
+      CollectionOps[Self, Parent, Union]
