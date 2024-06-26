@@ -6,93 +6,95 @@ import cats.Functor
 import cats.Contravariant
 import io.taig.otter.validation.Validation
 
-trait Instances extends Instances1:
-  given schemaInvariant[F[_, _], A](using F: SchemaIsomorphicOps[F, ?, ?, ?, ?]): Invariant[F[A, *]] = F.invariant[A]
-  given schemaReaderFunctor[F[_, _], A](using F: SchemaReaderOps[F, ?, ?, ?, ?]): Functor[F[A, *]] = F.functor[A]
-  given schemaWriterContravariant[F[_, _], A](using F: SchemaWriterOps[F, ?, ?, ?, ?]): Contravariant[F[A, *]] =
-    F.contravariant[A]
+trait Instances extends Types
 
-  given collectionIsomporphicOps: CollectionIsomporphicOps[Collection.Of, Schema, Union.Of, Schema.Writer] = ???
+// trait Instances extends Instances1:
+//   given schemaInvariant[F[_, _], A](using F: SchemaIsomorphicOps[F, ?, ?, ?, ?]): Invariant[F[A, *]] = F.invariant[A]
+//   given schemaReaderFunctor[F[_, _], A](using F: SchemaReaderOps[F, ?, ?, ?, ?]): Functor[F[A, *]] = F.functor[A]
+//   given schemaWriterContravariant[F[_, _], A](using F: SchemaWriterOps[F, ?, ?, ?, ?]): Contravariant[F[A, *]] =
+//     F.contravariant[A]
 
-  given primitiveRequiredIsomorphicOps: PrimitiveIsomorphicOps[
-    Primitive.Required,
-    Primitive,
-    Schema,
-    Collection.Of,
-    Union.Of,
-    Schema.Writer
-  ] with
-    override def invariant[A]: Invariant[Primitive.Required] = new Invariant:
-      override def imap[A, B](fa: Primitive.Required[A])(f: A => B)(g: B => A): Primitive.Required[B] = fa.imap(f)(g)
+//   given collectionIsomporphicOps: CollectionIsomporphicOps[Collection.Of, Schema, Union.Of, Schema.Writer] = ???
 
-    extension [A, B](self: Primitive.Required[B])
-      override def collection: Collection.Of[self.type, Vector[B]] = self.collectionWith(metadata.collection)
-      override def imap[C](f: B => C)(g: C => B): Primitive.Required[C] = invariant[B].imap(self)(f)(g)
-      override def ivalidate[C, D, E](
-          validation: Validation[B, Constraint.Primitive[(Schema.Writer[C], C)], (Schema.Writer[D], D), E]
-      )(f: E => B): Primitive.Required[E] = self.ivalidate(validation)(f)
-      override def optional: Primitive[Option[B]] = self.optional
-      override def orElse[C](schema: Schema[C]): Union.Of[self.type | schema.type, Either[B, C]] =
-        self.orElseWith(metadata.union, schema)
+//   given primitiveRequiredIsomorphicOps: PrimitiveIsomorphicOps[
+//     Primitive.Required,
+//     Primitive,
+//     Schema,
+//     Collection.Of,
+//     Union.Of,
+//     Schema.Writer
+//   ] with
+//     override def invariant[A]: Invariant[Primitive.Required] = new Invariant:
+//       override def imap[A, B](fa: Primitive.Required[A])(f: A => B)(g: B => A): Primitive.Required[B] = fa.imap(f)(g)
 
-trait Instances1 extends Instances2:
-  given collectionReaderOps: CollectionReaderOps[Collection.Of, Schema.Reader, Union.Reader.Of, Schema.Writer] = ???
+//     extension [A, B](self: Primitive.Required[B])
+//       override def collection: Collection.Of[self.type, Vector[B]] = self.collectionWith(metadata.collection)
+//       override def imap[C](f: B => C)(g: C => B): Primitive.Required[C] = invariant[B].imap(self)(f)(g)
+//       override def ivalidate[C, D, E](
+//           validation: Validation[B, Constraint.Primitive[(Schema.Writer[C], C)], (Schema.Writer[D], D), E]
+//       )(f: E => B): Primitive.Required[E] = self.ivalidate(validation)(f)
+//       override def optional: Primitive[Option[B]] = self.optional
+//       override def orElse[C](schema: Schema[C]): Union.Of[self.type | schema.type, Either[B, C]] =
+//         self.orElseWith(metadata.union, schema)
 
-  given collectionWriterOps: CollectionWriterOps[Collection.Of, Schema.Writer, Union.Writer.Of] = ???
+// trait Instances1 extends Instances2:
+//   given collectionReaderOps: CollectionReaderOps[Collection.Of, Schema.Reader, Union.Reader.Of, Schema.Writer] = ???
 
-  given primitiveRequiredReaderOps: PrimitiveReaderOps[
-    Primitive.Required.Reader,
-    Primitive.Reader,
-    Schema.Reader,
-    Collection.Reader.Of,
-    Union.Reader.Of,
-    Schema.Writer
-  ] = ???
+//   given collectionWriterOps: CollectionWriterOps[Collection.Of, Schema.Writer, Union.Writer.Of] = ???
 
-  given primitiveRequiredWriterOps: PrimitiveWriterOps[
-    Primitive.Required.Writer,
-    Primitive.Writer,
-    Schema.Writer,
-    Collection.Writer.Of,
-    Union.Writer.Of
-  ] = ???
+//   given primitiveRequiredReaderOps: PrimitiveReaderOps[
+//     Primitive.Required.Reader,
+//     Primitive.Reader,
+//     Schema.Reader,
+//     Collection.Reader.Of,
+//     Union.Reader.Of,
+//     Schema.Writer
+//   ] = ???
 
-trait Instances2 extends Instances3:
-  given primitiveIsomorphicOps: PrimitiveIsomorphicOps[
-    Primitive,
-    Primitive,
-    Schema,
-    Collection.Of,
-    Union.Writer.Of,
-    Schema.Writer
-  ] = ???
+//   given primitiveRequiredWriterOps: PrimitiveWriterOps[
+//     Primitive.Required.Writer,
+//     Primitive.Writer,
+//     Schema.Writer,
+//     Collection.Writer.Of,
+//     Union.Writer.Of
+//   ] = ???
 
-trait Instances3 extends Instances4:
-  given primitiveReaderOps: PrimitiveReaderOps[
-    Primitive.Reader,
-    Primitive.Reader,
-    Schema.Reader,
-    Collection.Reader.Of,
-    Union.Reader.Of,
-    Schema.Writer
-  ] = ???
+// trait Instances2 extends Instances3:
+//   given primitiveIsomorphicOps: PrimitiveIsomorphicOps[
+//     Primitive,
+//     Primitive,
+//     Schema,
+//     Collection.Of,
+//     Union.Writer.Of,
+//     Schema.Writer
+//   ] = ???
 
-  given primitiveWriterOps: PrimitiveWriterOps[
-    Primitive.Writer,
-    Primitive.Writer,
-    Schema.Writer,
-    Collection.Writer.Of,
-    Union.Writer.Of
-  ] = ???
+// trait Instances3 extends Instances4:
+//   given primitiveReaderOps: PrimitiveReaderOps[
+//     Primitive.Reader,
+//     Primitive.Reader,
+//     Schema.Reader,
+//     Collection.Reader.Of,
+//     Union.Reader.Of,
+//     Schema.Writer
+//   ] = ???
 
-trait Instances4 extends Instances5:
-  given schemaIsomorphicOps: SchemaIsomorphicOps[Schema.Of, Schema.Of, Schema, Collection.Of, Union.Of] = ???
+//   given primitiveWriterOps: PrimitiveWriterOps[
+//     Primitive.Writer,
+//     Primitive.Writer,
+//     Schema.Writer,
+//     Collection.Writer.Of,
+//     Union.Writer.Of
+//   ] = ???
 
-trait Instances5 extends Types:
-  given schemaReaderOps
-      : SchemaReaderOps[Schema.Reader.Of, Schema.Reader.Of, Schema.Reader, Collection.Reader.Of, Union.Reader.Of] =
-    ???
+// trait Instances4 extends Instances5:
+//   given schemaIsomorphicOps: SchemaIsomorphicOps[Schema.Of, Schema.Of, Schema, Collection.Of, Union.Of] = ???
 
-  given schemaWriterOps
-      : SchemaWriterOps[Schema.Writer.Of, Schema.Writer.Of, Schema.Writer, Collection.Writer.Of, Union.Writer.Of] =
-    ???
+// trait Instances5 extends Types:
+//   given schemaReaderOps
+//       : SchemaReaderOps[Schema.Reader.Of, Schema.Reader.Of, Schema.Reader, Collection.Reader.Of, Union.Reader.Of] =
+//     ???
+
+//   given schemaWriterOps
+//       : SchemaWriterOps[Schema.Writer.Of, Schema.Writer.Of, Schema.Writer, Collection.Writer.Of, Union.Writer.Of] =
+//     ???

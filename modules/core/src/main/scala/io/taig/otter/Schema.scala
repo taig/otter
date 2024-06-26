@@ -4,6 +4,8 @@ import cats.syntax.all.*
 import io.taig.otter.Schema.Reader
 import io.taig.otter.validation.Validation
 import cats.data.Chain
+import cats.Invariant
+import cats.Functor
 
 sealed trait Schema[+M, +A, B] extends Schema.Reader[M, A, B], Schema.Writer[M, A, B]:
   def asReader: Schema.Reader[M, A, B] = this
@@ -31,6 +33,10 @@ object Schema:
     ): Union.Reader[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Reader[N, this.type, B] = Union.Reader.Root(metadata, this)
 
+  object Reader:
+    given [M, A]: Functor[Schema.Reader[M, A, *]] with
+      override def map[B, C](fa: Schema.Reader[M, A, B])(f: B => C): Schema.Reader[M, A, C] = fa.map(f)
+
   sealed trait Writer[+M, +A, -B] extends Product, Serializable:
     def collectionWith[N](metadata: N): Collection.Writer[N, this.type, Vector[B]] =
       Collection.Writer.Root(metadata, this)
@@ -43,6 +49,9 @@ object Schema:
         schema: C
     ): Union.Writer[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Writer[N, this.type, B] = Union.Writer.Root(metadata, this)
+
+  given [M, A]: Invariant[Schema[M, A, *]] with
+    override def imap[B, C](fa: Schema[M, A, B])(f: B => C)(g: C => B): Schema[M, A, C] = fa.imap(f)(g)
 
 sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M, A, B], Collection.Writer[M, A, B]:
   final override def imap[C](f: B => C)(g: C => B): Collection[M, A, C] = ivalidate(Validation.lift(f))(g)
