@@ -6,17 +6,7 @@ import cats.Invariant
 import cats.Functor
 import cats.Contravariant
 
-trait Syntax extends Types:
-  val schemaOps: SchemaIsomorphicOps[Schema.Of, Schema, Union.Of] = 
-    new SchemaIsomorphicOps[Schema.Of, Schema, Union.Of] {
-      override given invariant[A]: Invariant[Union.Of[A, *]] = ???
-
-      extension [A, B](self: Schema.Of[A, B])
-        override def orElse[C](schema: Schema[C]): Union.Of[self.type | schema.type, Either[B, C]] = self.orElseWith(metadata.union, schema)
-
-    }
-  
-  export schemaOps.*
+trait Syntax extends Types
 
 // trait Syntax extends Syntax1:
 //   given schemaToInvariantOps[F[a, b] <: G[a, b], G[a, b], A, B](using

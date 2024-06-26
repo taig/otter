@@ -6,8 +6,6 @@ import cats.Contravariant
 import cats.syntax.all.*
 import io.taig.otter.validation.Validation
 
-trait SchemaIsomorphicOps[Self[_, _], Parent[_], Union[_, _]] extends CoproductOps[Self, Parent, Union]
-
 // trait ValidationIsomorphicOps[Self[_, _], Constraint[_]: Functor, Writer[_]]:
 //   extension [A, B](self: Self[A, B])
 //     def ivalidate[C, D, E](validation: Validation[B, Constraint[(Writer[C], C)], (Writer[D], D), E])(

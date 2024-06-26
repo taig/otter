@@ -1,12 +1,20 @@
 package io.taig.otter
 
 import io.taig.otter as Base
-import cats.Invariant
-import cats.Functor
-import cats.Contravariant
-import io.taig.otter.validation.Validation
+
+// What we need:
+// - Invariant, Functor and Contravariant instances for each schema type
+// - Functor and Contravaraint syntax should be available to Invariant instances
+// - Additional ops depending on Schema type
 
 trait Instances extends Types
+// given schemaInvariant: SchemaInvariant[Schema.Of, Schema.Of, Union.Of] with
+//   extension [A, B](self: Union.Of[A, B]) override def imap[C](f: B => C)(g: C => B): Union.Of[A, C] = self.imap(f)(g)
+
+//   extension [A, B](self: Schema.Of[A, B])
+//     override def union: Union.Of[self.type, B] = self.unionWith(metadata.union)
+//     override def orElse[C](schema: Schema[C]): Union.Of[self.type | schema.type, Either[B, C]] = ???
+//       // union.orElseWith((_, _) => metadata.union, schema.union)
 
 // trait Instances extends Instances1:
 //   given schemaInvariant[F[_, _], A](using F: SchemaIsomorphicOps[F, ?, ?, ?, ?]): Invariant[F[A, *]] = F.invariant[A]

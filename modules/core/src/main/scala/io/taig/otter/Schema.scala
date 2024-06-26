@@ -13,10 +13,8 @@ sealed trait Schema[+M, +A, B] extends Schema.Reader[M, A, B], Schema.Writer[M, 
   final override def collectionWith[N](metadata: N): Collection[N, this.type, Vector[B]] =
     Collection.Root(metadata, this)
   def imap[C](f: B => C)(g: C => B): Schema[M, A, C]
-  override def mapMetadata[N](f: M => N): Schema[N, A, B]
+  override def modifyMetadata[N >: M](f: M => N): Schema[N, A, B] = ???
   override def optional: Schema[M, A, Option[B]]
-  final def orElseWith[N, O, C](metadata: O, schema: Schema[N, ?, C]): Union[O, this.type | schema.type, Either[B, C]] =
-    unionWith(metadata).orElseWith((_, _) => metadata, schema)
   final override def unionWith[N](metadata: N): Union[N, this.type, B] = Union.Root(metadata, this)
 
 object Schema:
@@ -24,13 +22,10 @@ object Schema:
     def collectionWith[N](metadata: N): Collection.Reader[N, this.type, Vector[B]] =
       Collection.Reader.Root(metadata, this)
     def map[C](f: B => C): Schema.Reader[M, A, C]
-    def mapMetadata[N](f: M => N): Schema.Reader[N, A, B]
+    // def mapMetadata[N](f: M => N): Schema.Reader[N, A, B]
+    def modifyMetadata[N >: M](f: M => N): Schema.Reader[N, A, B] = ???
     def metadata: M
     def optional: Schema.Reader[M, A, Option[B]]
-    def orElseWith[N, C <: Schema.Reader[N, ?, D], D](
-        metadata: N,
-        schema: C
-    ): Union.Reader[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Reader[N, this.type, B] = Union.Reader.Root(metadata, this)
 
   object Reader:
@@ -41,13 +36,10 @@ object Schema:
     def collectionWith[N](metadata: N): Collection.Writer[N, this.type, Vector[B]] =
       Collection.Writer.Root(metadata, this)
     def contramap[C](f: C => B): Schema.Writer[M, A, C]
-    def mapMetadata[N](f: M => N): Schema.Writer[N, A, B]
+    // def mapMetadata[N](f: M => N): Schema.Writer[N, A, B]
+    def modifyMetadata[N >: M](f: M => N): Schema.Writer[N, A, B] = ???
     def metadata: M
     def optional: Schema.Writer[M, A, Option[B]]
-    def orElseWith[N, C <: Schema.Writer[N, ?, D], D](
-        metadata: N,
-        schema: C
-    ): Union.Writer[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Writer[N, this.type, B] = Union.Writer.Root(metadata, this)
 
   given [M, A]: Invariant[Schema[M, A, *]] with
@@ -58,7 +50,7 @@ sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M,
   final def ivalidate[N >: M, C, D](
       validation: Validation[B, Constraint.Collection, (Schema.Writer[N, ?, C], C), D]
   )(f: D => B): Collection[M, A, D] = Collection.Validate(this, validation, f)
-  override def mapMetadata[N](f: M => N): Collection[N, A, B]
+  // override def mapMetadata[N](f: M => N): Collection[N, A, B]
   final override def optional: Collection[M, A, Option[B]] = Collection.Optional(this)
   override def schema: Schema[?, ?, ?]
 
@@ -66,7 +58,7 @@ object Collection:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
     def constraints: Chain[Constraint.Collection]
     final override def map[C](f: B => C): Collection.Reader[M, A, C] = validate(Validation.lift(f))
-    override def mapMetadata[N](f: M => N): Collection.Reader[N, A, B]
+    // override def mapMetadata[N](f: M => N): Collection.Reader[N, A, B]
     override def optional: Collection.Reader[M, A, Option[B]] = Collection.Reader.Optional(this)
     def schema: Schema.Reader[?, ?, ?]
     final def validate[N >: M, C, D](
@@ -80,20 +72,20 @@ object Collection:
     ) extends Collection.Reader[M, A, D]:
       export self.{metadata, schema}
       override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-      override def mapMetadata[N](f: M => N): Collection.Reader[N, A, D] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Collection.Reader[N, A, D] = copy(self = self.mapMetadata(f))
 
     final case class Optional[M, A, B](self: Collection.Reader[M, A, B]) extends Collection.Reader[M, A, Option[B]]:
       export self.{constraints, metadata, schema}
-      override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Option[B]] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Option[B]] = copy(self = self.mapMetadata(f))
 
     final case class Root[M, A <: Schema.Reader[?, ?, B], B](metadata: M, schema: A)
         extends Collection.Reader[M, A, Vector[B]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
-      override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Vector[B]] = copy(metadata = f(metadata))
+      // override def mapMetadata[N](f: M => N): Collection.Reader[N, A, Vector[B]] = copy(metadata = f(metadata))
 
   sealed trait Writer[+M, +A, -B] extends Schema.Writer[M, A, B]:
     final def contramap[C](f: C => B): Collection.Writer[M, A, C] = Writer.Modify(this, f)
-    override def mapMetadata[N](f: M => N): Collection.Writer[N, A, B]
+    // override def mapMetadata[N](f: M => N): Collection.Writer[N, A, B]
     def optional: Collection.Writer[M, A, Option[B]] = Writer.Optional(this)
     def schema: Schema.Writer[?, ?, ?]
 
@@ -103,23 +95,23 @@ object Collection:
         f: C => B
     ) extends Collection.Writer[M, A, C]:
       export self.{metadata, schema}
-      override def mapMetadata[N](f: M => N): Collection.Writer[N, A, C] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Collection.Writer[N, A, C] = copy(self = self.mapMetadata(f))
 
     final case class Optional[M, A, B](self: Collection.Writer[M, A, B]) extends Collection.Writer[M, A, Option[B]]:
       export self.{metadata, schema}
-      override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Option[B]] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Option[B]] = copy(self = self.mapMetadata(f))
 
     final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A)
-        extends Collection.Writer[M, A, Vector[B]]:
-      override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Vector[B]] = copy(metadata = f(metadata))
+        extends Collection.Writer[M, A, Vector[B]]
+    // override def mapMetadata[N](f: M => N): Collection.Writer[N, A, Vector[B]] = copy(metadata = f(metadata))
 
   final case class Optional[M, A, B](self: Collection[M, A, B]) extends Collection[M, A, Option[B]]:
     export self.{constraints, metadata, schema}
-    override def mapMetadata[N](f: M => N): Collection[N, A, Option[B]] = copy(self = self.mapMetadata(f))
+    // override def mapMetadata[N](f: M => N): Collection[N, A, Option[B]] = copy(self = self.mapMetadata(f))
 
   final case class Root[M, A <: Schema[?, ?, B], B](metadata: M, schema: A) extends Collection[M, A, Vector[B]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
-    override def mapMetadata[N](f: M => N): Collection[N, A, Vector[B]] = copy(metadata = f(metadata))
+    // override def mapMetadata[N](f: M => N): Collection[N, A, Vector[B]] = copy(metadata = f(metadata))
 
   final case class Validate[M, N >: M, A, B, C, D](
       self: Collection[M, A, B],
@@ -128,14 +120,14 @@ object Collection:
   ) extends Collection[M, A, D]:
     export self.{metadata, schema}
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-    override def mapMetadata[N](f: M => N): Collection[N, A, D] = copy(self = self.mapMetadata(f))
+    // override def mapMetadata[N](f: M => N): Collection[N, A, D] = copy(self = self.mapMetadata(f))
 
 sealed trait Primitive[+M, A] extends Schema[M, Nothing, A], Primitive.Reader[M, A], Primitive.Writer[M, A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[M, C] = ivalidate(Validation.lift(f))(g)
   def ivalidate[N >: M, B, C, D](
       validation: Validation[A, Constraint.Primitive[(Schema.Writer[N, ?, B], B)], (Schema.Writer[N, ?, C], C), D]
   )(f: D => A): Primitive[M, D] = Primitive.Validate(this, validation, f)
-  override def mapMetadata[N](f: M => N): Primitive[N, A]
+  // override def mapMetadata[N](f: M => N): Primitive[N, A]
   final override def optional: Primitive[M, Option[A]] = Primitive.Optional(this)
 
 object Primitive:
@@ -147,12 +139,12 @@ object Primitive:
     final override def ivalidate[N >: M, B, C, D](
         validation: Validation[A, Constraint.Primitive[(Schema.Writer[N, ?, B], B)], (Schema.Writer[N, ?, C], C), D]
     )(f: D => A): Primitive.Required[M, D] = Primitive.Required.Validate(this, validation, f)
-    override def mapMetadata[N](f: M => N): Primitive.Required[N, A]
+    // override def mapMetadata[N](f: M => N): Primitive.Required[N, A]
 
   object Required:
     sealed trait Reader[+M, +A] extends Primitive.Reader[M, A]:
       override def map[C](f: A => C): Primitive.Required.Reader[M, C] = validate(Validation.lift(f))
-      override def mapMetadata[N](f: M => N): Primitive.Required.Reader[N, A]
+      // override def mapMetadata[N](f: M => N): Primitive.Required.Reader[N, A]
       final override def validate[N >: M, B, C, D](
           validation: Validation[A, Constraint.Primitive[(Schema.Writer[N, ?, B], B)], (Schema.Writer[N, ?, C], C), D]
       ): Primitive.Required.Reader[M, D] = Reader.Validate(this, validation)
@@ -164,21 +156,21 @@ object Primitive:
       ) extends Primitive.Required.Reader[M, D]:
         export self.{metadata, tpe}
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-        override def mapMetadata[N](f: M => N): Primitive.Required.Reader[N, D] = copy(self = self.mapMetadata(f))
+        // override def mapMetadata[N](f: M => N): Primitive.Required.Reader[N, D] = copy(self = self.mapMetadata(f))
 
     sealed trait Writer[+M, -A] extends Primitive.Writer[M, A]:
       final override def contramap[B](f: B => A): Primitive.Required.Writer[M, B] = Writer.Modify(this, f)
-      override def mapMetadata[N](f: M => N): Primitive.Required.Writer[N, A]
+      // override def mapMetadata[N](f: M => N): Primitive.Required.Writer[N, A]
 
     object Writer:
       final case class Modify[M, A, B](self: Primitive.Required.Writer[M, A], f: B => A)
           extends Primitive.Required.Writer[M, B]:
         export self.{metadata, tpe}
-        override def mapMetadata[N](f: M => N): Primitive.Required.Writer[N, B] = copy(self = self.mapMetadata(f))
+        // override def mapMetadata[N](f: M => N): Primitive.Required.Writer[N, B] = copy(self = self.mapMetadata(f))
 
     final case class Root[M, A](metadata: M, tpe: Type[A]) extends Primitive.Required[M, A]:
       override def constraints: Chain[Constraint.Primitive[?]] = Chain.empty
-      override def mapMetadata[N](f: M => N): Primitive.Required[N, A] = copy(metadata = f(metadata))
+      // override def mapMetadata[N](f: M => N): Primitive.Required[N, A] = copy(metadata = f(metadata))
 
     final case class Validate[M, N >: M, A, B, C, D](
         self: Primitive.Required[M, A],
@@ -187,12 +179,12 @@ object Primitive:
     ) extends Primitive.Required[M, D]:
       export self.{metadata, tpe}
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-      override def mapMetadata[N](f: M => N): Primitive.Required[N, D] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Primitive.Required[N, D] = copy(self = self.mapMetadata(f))
 
   sealed trait Reader[+M, +A] extends Schema.Reader[M, Nothing, A]:
     def constraints: Chain[Constraint.Primitive[?]]
     override def map[C](f: A => C): Primitive.Reader[M, C] = validate(Validation.lift(f))
-    override def mapMetadata[N](f: M => N): Primitive.Reader[N, A]
+    // override def mapMetadata[N](f: M => N): Primitive.Reader[N, A]
     override def optional: Primitive.Reader[M, Option[A]] = Reader.Optional(this)
     def tpe: Type[?]
     def validate[N >: M, B, C, D](
@@ -206,30 +198,30 @@ object Primitive:
     ) extends Primitive.Reader[M, D]:
       export self.{metadata, tpe}
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-      override def mapMetadata[N](f: M => N): Primitive.Reader[N, D] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Primitive.Reader[N, D] = copy(self = self.mapMetadata(f))
 
     final case class Optional[M, A](self: Primitive.Reader[M, A]) extends Primitive.Reader[M, Option[A]]:
       export self.{constraints, metadata, tpe}
-      override def mapMetadata[N](f: M => N): Primitive.Reader[N, Option[A]] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Primitive.Reader[N, Option[A]] = copy(self = self.mapMetadata(f))
 
   sealed trait Writer[+M, -A] extends Schema.Writer[M, Nothing, A]:
     def contramap[C](f: C => A): Primitive.Writer[M, C] = Writer.Modify(this, f)
-    override def mapMetadata[N](f: M => N): Primitive.Writer[N, A]
+    // override def mapMetadata[N](f: M => N): Primitive.Writer[N, A]
     def optional: Primitive.Writer[M, Option[A]] = Writer.Optional(this)
     def tpe: Type[?]
 
   object Writer:
     final case class Modify[M, A, B](self: Primitive.Writer[M, A], f: B => A) extends Primitive.Writer[M, B]:
       export self.{metadata, tpe}
-      override def mapMetadata[N](f: M => N): Primitive.Writer[N, B] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Primitive.Writer[N, B] = copy(self = self.mapMetadata(f))
 
     final case class Optional[M, A](self: Primitive.Writer[M, A]) extends Primitive.Writer[M, Option[A]]:
       export self.{metadata, tpe}
-      override def mapMetadata[N](f: M => N): Primitive.Writer[N, Option[A]] = copy(self = self.mapMetadata(f))
+      // override def mapMetadata[N](f: M => N): Primitive.Writer[N, Option[A]] = copy(self = self.mapMetadata(f))
 
   final case class Optional[M, A](self: Primitive[M, A]) extends Primitive[M, Option[A]]:
     export self.{constraints, metadata, tpe}
-    override def mapMetadata[N](f: M => N): Primitive[N, Option[A]] = copy(self = self.mapMetadata(f))
+    // override def mapMetadata[N](f: M => N): Primitive[N, Option[A]] = copy(self = self.mapMetadata(f))
 
   final case class Validate[M, N >: M, A, B, C, D](
       self: Primitive[M, A],
@@ -238,16 +230,17 @@ object Primitive:
   ) extends Primitive[M, D]:
     export self.{metadata, tpe}
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-    override def mapMetadata[N](f: M => N): Primitive[N, D] = copy(self = self.mapMetadata(f))
+    // override def mapMetadata[N](f: M => N): Primitive[N, D] = copy(self = self.mapMetadata(f))
 
 sealed trait Union[+M, +A, B] extends Schema[M, A, B], Union.Reader[M, A, B], Union.Writer[M, A, B]:
   override def imap[C](f: B => C)(g: C => B): Union[M, A, C] = ???
-  override def mapMetadata[N](f: M => N): Union[N, A, B]
+  // override def mapMetadata[N](f: M => N): Union[N, A, B]
   override def optional: Union[M, A, Option[B]] = ???
-  final def orElseWith[N, O, C](
-      metadata: (M, N) => O,
-      schema: Schema[N, ?, C]
-  ): Union[O, A | schema.type, Either[B, C]] = Union.OrElse(this, schema, metadata)
+  final def orElseWith[M1 >: M, C, D](
+      metadata: (M1, M1) => M1,
+      schema: Union[M1, C, D]
+  ): Union[M1, A | C, Either[B, D]] =
+    Union.OrElse(metadata(this.metadata, schema.metadata), this, schema)
 
 object Union:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
@@ -257,15 +250,15 @@ object Union:
         metadata: (M, N) => O,
         schema: C
     ): Union.Reader[O, A | C, Either[B, D]] = ???
-    override def mapMetadata[N](f: M => N): Union.Reader[N, A, B]
+    // override def mapMetadata[N](f: M => N): Union.Reader[N, A, B]
 
   object Reader:
-    final case class Root[M, A <: Schema.Reader[?, ?, B], B](metadata: M, schema: A) extends Union.Reader[M, A, B]:
-      override def mapMetadata[N](f: M => N): Union.Reader[N, A, B] = copy(metadata = f(metadata))
+    final case class Root[M, A <: Schema.Reader[?, ?, B], B](metadata: M, schema: A) extends Union.Reader[M, A, B]
+    // override def mapMetadata[N](f: M => N): Union.Reader[N, A, B] = copy(metadata = f(metadata))
 
   sealed trait Writer[+M, +A, -B] extends Schema.Writer[M, A, B]:
     final override def contramap[C](f: C => B): Union.Writer[M, A, C] = ???
-    override def mapMetadata[N](f: M => N): Union.Writer[N, A, B]
+    // override def mapMetadata[N](f: M => N): Union.Writer[N, A, B]
     override def optional: Union.Writer[M, A, Option[B]] = ???
     final def orElseWith[N, O, C](
         metadata: (M, N) => O,
@@ -273,12 +266,17 @@ object Union:
     ): Union.Writer[O, A | schema.type, Either[B, C]] = ???
 
   object Writer:
-    final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A) extends Union.Writer[M, A, B]:
-      override def mapMetadata[N](f: M => N): Union.Writer[N, A, B] = copy(metadata = f(metadata))
+    final case class OrElse[M, A, B, C, D](metadata: M, left: Union.Writer[?, A, B], right: Union.Writer[?, A, B])
+        extends Union.Writer[M, A | C, Either[B, D]]
+    // override def mapMetadata[N](f: M => N): Union.Writer[N, A | C, Either[B, D]] = copy(metadata = f(metadata))
 
-  final case class OrElse[M, N, O, A, B, C <: Schema[N, ?, D], D](self: Union[M, A, B], schema: C, f: (M, N) => O)
-      extends Union[O, A | C, Either[B, D]]:
-    override def metadata: O = f(self.metadata, schema.metadata)
-    override def mapMetadata[N](g: O => N): Union[N, A | C, Either[B, D]] = copy(f = (m, n) => g(f(m, n)))
+    final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A) extends Union.Writer[M, A, B]
+    // override def mapMetadata[N](f: M => N): Union.Writer[N, A, B] = copy(metadata = f(metadata))
+
+  final case class OrElse[M, A, B, C, D](metadata: M, left: Union[M, A, B], right: Union[M, C, D])
+      extends Union[M, A | C, Either[B, D]]
+  // override def mapMetadata[N](g: M => N): Union[N, A | C, Either[B, D]] = ??? // copy(metadata = g(metadata))
+
   final case class Root[M, A <: Schema[?, ?, B], B](metadata: M, schema: A) extends Union[M, A, B]:
-    override def mapMetadata[N](f: M => N): Union[N, A, B] = copy(metadata = f(metadata))
+    override def modifyMetadata[N >: M](f: M => N): Union[N, A, B] = copy(metadata = f(metadata))
+  // override def mapMetadata[N](f: M => N): Union[N, A, B] = copy(metadata = f(metadata))
