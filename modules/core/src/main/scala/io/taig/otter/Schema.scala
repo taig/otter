@@ -13,6 +13,8 @@ sealed trait Schema[+M, +A, B] extends Schema.Reader[M, A, B], Schema.Writer[M, 
   def imap[C](f: B => C)(g: C => B): Schema[M, A, C]
   override def mapMetadata[N](f: M => N): Schema[N, A, B]
   override def optional: Schema[M, A, Option[B]]
+  final def orElseWith[N, C <: Schema[N, ?, D], D](metadata: N, schema: C): Union[N, this.type | C, Either[B, D]] =
+    unionWith(metadata).orElseWith((_, _) => metadata, schema)
   final override def unionWith[N](metadata: N): Union[N, this.type, B] = Union.Root(metadata, this)
 
 object Schema:
@@ -23,6 +25,10 @@ object Schema:
     def mapMetadata[N](f: M => N): Schema.Reader[N, A, B]
     def metadata: M
     def optional: Schema.Reader[M, A, Option[B]]
+    def orElseWith[N, C <: Schema.Reader[N, ?, D], D](
+        metadata: N,
+        schema: C
+    ): Union.Reader[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Reader[N, this.type, B] = Union.Reader.Root(metadata, this)
 
   sealed trait Writer[+M, +A, -B] extends Product, Serializable:
@@ -32,6 +38,10 @@ object Schema:
     def mapMetadata[N](f: M => N): Schema.Writer[N, A, B]
     def metadata: M
     def optional: Schema.Writer[M, A, Option[B]]
+    def orElseWith[N, C <: Schema.Writer[N, ?, D], D](
+        metadata: N,
+        schema: C
+    ): Union.Writer[N, this.type | C, Either[B, D]] = unionWith(metadata).orElseWith((_, _) => metadata, schema)
     def unionWith[N](metadata: N): Union.Writer[N, this.type, B] = Union.Writer.Root(metadata, this)
 
 sealed trait Collection[+M, +A, B] extends Schema[M, A, B], Collection.Reader[M, A, B], Collection.Writer[M, A, B]:
@@ -225,11 +235,17 @@ sealed trait Union[+M, +A, B] extends Schema[M, A, B], Union.Reader[M, A, B], Un
   override def imap[C](f: B => C)(g: C => B): Union[M, A, C] = ???
   override def mapMetadata[N](f: M => N): Union[N, A, B]
   override def optional: Union[M, A, Option[B]] = ???
+  final def orElseWith[N, O, C <: Schema[N, ?, D], D](metadata: (M, N) => O, schema: C): Union[O, A | C, Either[B, D]] =
+    ???
 
 object Union:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
     final override def map[C](f: B => C): Union.Reader[M, A, C] = ???
     override def optional: Union.Reader[M, A, Option[B]] = ???
+    final def orElseWith[N, O, C <: Schema.Reader[N, ?, D], D](
+        metadata: (M, N) => O,
+        schema: C
+    ): Union.Reader[O, A | C, Either[B, D]] = ???
     override def mapMetadata[N](f: M => N): Union.Reader[N, A, B]
 
   object Reader:
@@ -240,6 +256,10 @@ object Union:
     final override def contramap[C](f: C => B): Union.Writer[M, A, C] = ???
     override def mapMetadata[N](f: M => N): Union.Writer[N, A, B]
     override def optional: Union.Writer[M, A, Option[B]] = ???
+    final def orElseWith[N, O, C <: Schema.Writer[N, ?, D], D](
+        metadata: (M, N) => O,
+        schema: C
+    ): Union.Writer[O, A | C, Either[B, D]] = ???
 
   object Writer:
     final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A) extends Union.Writer[M, A, B]:
