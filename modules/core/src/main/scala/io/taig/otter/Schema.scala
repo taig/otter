@@ -238,8 +238,7 @@ sealed trait Union[+M, +A, B] extends Schema[M, A, B], Union.Reader[M, A, B], Un
   final def orElseWith[N, O, C](
       metadata: (M, N) => O,
       schema: Schema[N, ?, C]
-  ): Union[O, A | schema.type, Either[B, C]] =
-    ???
+  ): Union[O, A | schema.type, Either[B, C]] = Union.OrElse(this, schema, metadata)
 
 object Union:
   sealed trait Reader[+M, +A, +B] extends Schema.Reader[M, A, B]:
@@ -259,14 +258,18 @@ object Union:
     final override def contramap[C](f: C => B): Union.Writer[M, A, C] = ???
     override def mapMetadata[N](f: M => N): Union.Writer[N, A, B]
     override def optional: Union.Writer[M, A, Option[B]] = ???
-    final def orElseWith[N, O, C <: Schema.Writer[N, ?, D], D](
+    final def orElseWith[N, O, C](
         metadata: (M, N) => O,
-        schema: C
-    ): Union.Writer[O, A | C, Either[B, D]] = ???
+        schema: Schema.Writer[N, ?, C]
+    ): Union.Writer[O, A | schema.type, Either[B, C]] = ???
 
   object Writer:
     final case class Root[M, A <: Schema.Writer[?, ?, B], B](metadata: M, schema: A) extends Union.Writer[M, A, B]:
       override def mapMetadata[N](f: M => N): Union.Writer[N, A, B] = copy(metadata = f(metadata))
 
+  final case class OrElse[M, N, O, A, B, C <: Schema[N, ?, D], D](self: Union[M, A, B], schema: C, f: (M, N) => O)
+      extends Union[O, A | C, Either[B, D]]:
+    override def metadata: O = f(self.metadata, schema.metadata)
+    override def mapMetadata[N](g: O => N): Union[N, A | C, Either[B, D]] = copy(f = (m, n) => g(f(m, n)))
   final case class Root[M, A <: Schema[?, ?, B], B](metadata: M, schema: A) extends Union[M, A, B]:
     override def mapMetadata[N](f: M => N): Union[N, A, B] = copy(metadata = f(metadata))
