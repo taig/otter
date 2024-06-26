@@ -18,9 +18,3 @@ object Playground:
 
   // val unionA: Union[Either[String, Int]] = string.orElse(int)
   // val unionB: Union[String | Int] = string | int
-
-  type MySchema[A] = Base.Schema[Int, ?, A]
-
-  def render[A](schema: MySchema[A]): String = schema match
-    case Base.Primitive.Required.Root(m, tpe) => ???
-    case Base.Union.OrElse(m, left, right)    => render(left)

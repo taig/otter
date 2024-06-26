@@ -10,61 +10,61 @@ trait Types:
 
   val metadata: Metadata
 
-  final type Schema[A] = Base.Schema[metadata.Schema, ?, A]
+  final type Schema[A] = Base.Schema[metadata.Schema, metadata.Schema, ?, A]
 
   object Schema:
-    type Of[A, B] = Base.Schema[metadata.Schema, A, B]
+    type Of[A, B] = Base.Schema[metadata.Schema, metadata.Schema, A, B]
 
-    type Reader[A] = Base.Schema.Reader[metadata.Schema, ?, A]
+    type Reader[A] = Base.Schema.Reader[metadata.Schema, metadata.Schema, ?, A]
 
     object Reader:
-      type Of[A, B] = Base.Schema.Reader[metadata.Schema, A, B]
+      type Of[A, B] = Base.Schema.Reader[metadata.Schema, metadata.Schema, A, B]
 
-    type Writer[A] = Base.Schema.Writer[metadata.Schema, ?, A]
+    type Writer[A] = Base.Schema.Writer[metadata.Schema, metadata.Schema, ?, A]
 
     object Writer:
-      type Of[A, B] = Base.Schema.Writer[metadata.Schema, A, B]
+      type Of[A, B] = Base.Schema.Writer[metadata.Schema, metadata.Schema, A, B]
 
   final type Collection[A] = Collection.Of[?, A]
 
   object Collection:
-    type Of[A, B] = Base.Collection[metadata.Collection, A, B]
+    type Of[A, B] = Base.Collection[metadata.Schema, metadata.Collection, A, B]
 
     type Reader[A] = Collection.Reader.Of[?, A]
 
     object Reader:
-      type Of[A, B] = Base.Collection.Reader[metadata.Collection, A, B]
+      type Of[A, B] = Base.Collection.Reader[metadata.Schema, metadata.Collection, A, B]
 
     type Writer[A] = Collection.Writer.Of[?, A]
 
     object Writer:
-      type Of[A, B] = Base.Collection.Writer[metadata.Collection, A, B]
+      type Of[A, B] = Base.Collection.Writer[metadata.Schema, metadata.Collection, A, B]
 
-  final type Primitive[A] = Base.Primitive[metadata.Primitive, A]
+  final type Primitive[A] = Base.Primitive[metadata.Schema, metadata.Primitive, A]
 
   object Primitive:
-    type Required[A] = Base.Primitive.Required[metadata.Primitive, A]
+    type Required[A] = Base.Primitive.Required[metadata.Schema, metadata.Primitive, A]
 
     object Required:
-      type Reader[A] = Base.Primitive.Required.Reader[metadata.Primitive, A]
+      type Reader[A] = Base.Primitive.Required.Reader[metadata.Schema, metadata.Primitive, A]
 
-      type Writer[A] = Base.Primitive.Required.Writer[metadata.Primitive, A]
+      type Writer[A] = Base.Primitive.Required.Writer[metadata.Schema, metadata.Primitive, A]
 
-    type Reader[A] = Base.Primitive.Reader[metadata.Primitive, A]
+    type Reader[A] = Base.Primitive.Reader[metadata.Schema, metadata.Primitive, A]
 
-    type Writer[A] = Base.Primitive.Writer[metadata.Primitive, A]
+    type Writer[A] = Base.Primitive.Writer[metadata.Schema, metadata.Primitive, A]
 
   final type Union[A] = Union.Of[?, A]
 
   object Union:
-    type Of[A, B] = Base.Union[metadata.Union, A, B]
+    type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
 
     type Reader[A] = Reader.Of[?, A]
 
     object Reader:
-      type Of[A, B] = Base.Union[metadata.Union, A, B]
+      type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
 
     type Writer[A] = Writer.Of[?, A]
 
     object Writer:
-      type Of[A, B] = Base.Union[metadata.Union, A, B]
+      type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
