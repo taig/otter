@@ -4,253 +4,213 @@ import cats.syntax.all.*
 import io.taig.otter.Schema.Reader
 import io.taig.otter.validation.Validation
 import cats.data.Chain
-import cats.Invariant
-import cats.Functor
 
-sealed trait Schema[M, +N <: M, +A, B] extends Schema.Reader[M, N, A, B], Schema.Writer[M, N, A, B]:
-  def asReader: Schema.Reader[M, N, A, B] = this
-  def asWriter: Schema.Writer[M, N, A, B] = this
-  final override def collectionWith[N1 <: M](metadata: N1): Collection[M, N1, this.type, Vector[B]] =
-    Collection.Root(metadata, this)
-  def imap[C](f: B => C)(g: C => B): Schema[M, N, A, C]
-  override def optional: Schema[M, N, A, Option[B]]
-  final override def unionWith[N1 <: M](metadata: N1): Union[M, N1, this.type, B] = Union.Root(metadata, this)
+sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
+  def imap[C](f: B => C)(g: C => B): Schema[F, A, C]
+  override def optional: Schema[F, A, Option[B]]
 
 object Schema:
-  sealed trait Reader[M, +N <: M, +A, +B] extends Product, Serializable:
-    def collectionWith[N1 <: M](metadata: N1): Collection.Reader[M, N1, this.type, Vector[B]] =
-      Collection.Reader.Root(metadata, this)
-    def map[C](f: B => C): Schema.Reader[M, N, A, C]
-    def metadata: N
-    def optional: Schema.Reader[M, N, A, Option[B]]
-    def unionWith[N1 <: M](metadata: N1): Union.Reader[M, N1, this.type, B] = Union.Reader.Root(metadata, this)
+  sealed trait Reader[+F[+_], +A, +B] extends Product, Serializable:
+    def map[C](f: B => C): Schema.Reader[F, A, C]
+    def optional: Schema.Reader[F, A, Option[B]]
 
-  object Reader:
-    given [M, N <: M, A]: Functor[Schema.Reader[M, N, A, *]] with
-      override def map[B, C](fa: Schema.Reader[M, N, A, B])(f: B => C): Schema.Reader[M, N, A, C] = fa.map(f)
+  sealed trait Writer[+F[+_], +A, -B] extends Product, Serializable:
+    def contramap[C](f: C => B): Schema.Writer[F, A, C]
+    def optional: Schema.Writer[F, A, Option[B]]
 
-  sealed trait Writer[M, +N <: M, +A, -B] extends Product, Serializable:
-    def collectionWith[N1 <: M](metadata: N1): Collection.Writer[M, N1, this.type, Vector[B]] =
-      Collection.Writer.Root(metadata, this)
-    def contramap[C](f: C => B): Schema.Writer[M, N, A, C]
-    def metadata: N
-    def optional: Schema.Writer[M, N, A, Option[B]]
-    def unionWith[N1 <: M](metadata: N1): Union.Writer[M, N1, this.type, B] = Union.Writer.Root(metadata, this)
-
-  given [M, N <: M, A]: Invariant[Schema[M, N, A, *]] with
-    override def imap[B, C](fa: Schema[M, N, A, B])(f: B => C)(g: C => B): Schema[M, N, A, C] = fa.imap(f)(g)
-
-sealed trait Collection[M, +N <: M, +A, B]
-    extends Schema[M, N, A, B],
-      Collection.Reader[M, N, A, B],
-      Collection.Writer[M, N, A, B]:
-  final override def imap[C](f: B => C)(g: C => B): Collection[M, N, A, C] = ivalidate(Validation.lift(f))(g)
-  final def ivalidate[C, D](
-      validation: Validation[B, Constraint.Collection, (Schema.Writer[M, ?, ?, C], C), D]
-  )(f: D => B): Collection[M, N, A, D] = Collection.Validate(this, validation, f)
-  final override def optional: Collection[M, N, A, Option[B]] = Collection.Optional(this)
-  override def schema: Schema[M, ?, ?, ?]
+sealed trait Collection[+F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
+  final override def imap[C](f: B => C)(g: C => B): Collection[F, A, C] = ??? // ivalidate(Validation.lift(f))(g)
+  // final def ivalidate[C, D](
+  //     validation: Validation[B, Constraint.Collection, (Schema.Writer[F, ?, C], Schema.Writer[F, ?, C]), D]
+  // )(f: D => B): Collection[F, A, D] = Collection.Validate(this, ???, f)
+  final override def optional: Collection[F, A, Option[B]] = Collection.Optional(this)
+  override def schema: F[Schema[F, ?, ?]]
 
 object Collection:
-  sealed trait Reader[M, +N <: M, +A, +B] extends Schema.Reader[M, N, A, B]:
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     def constraints: Chain[Constraint.Collection]
-    final override def map[C](f: B => C): Collection.Reader[M, N, A, C] = validate(Validation.lift(f))
-    override def optional: Collection.Reader[M, N, A, Option[B]] = Collection.Reader.Optional(this)
-    def schema: Schema.Reader[M, ?, ?, ?]
-    final def validate[C, D](
-        validation: Validation[B, Constraint.Collection, (Schema.Writer[M, ?, ?, C], C), D]
-    ): Collection.Reader[M, N, A, D] = Reader.Validate(this, validation)
+    final override def map[C](f: B => C): Collection.Reader[F, A, C] = ??? // validate(Validation.lift(f))
+    override def optional: Collection.Reader[F, A, Option[B]] = Collection.Reader.Optional(this)
+    def schema: F[Schema.Reader[F, ?, ?]]
+    // final def validate[C, D](
+    //     validation: Validation[B, Constraint.Collection, (Schema.Writer[F, ?, C], C), D]
+    // ): Collection.Reader[F, A, D] = Reader.Validate(this, validation)
 
   object Reader:
-    final case class Validate[M, N <: M, A, B, C, D](
-        self: Collection.Reader[M, N, A, B],
-        validation: Validation[B, Constraint.Collection, (Schema.Writer[M, ?, ?, C], C), D]
-    ) extends Collection.Reader[M, N, A, D]:
-      export self.{metadata, schema}
+    final case class Validate[F[+_], A, B, C, D](
+        self: Collection.Reader[F, A, B],
+        validation: Validation[B, Constraint.Collection, (Schema.Writer[F, ?, C], C), D]
+    ) extends Collection.Reader[F, A, D]:
+      export self.schema
       override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
 
-    final case class Optional[M, N <: M, A, B](self: Collection.Reader[M, N, A, B])
-        extends Collection.Reader[M, N, A, Option[B]]:
-      export self.{constraints, metadata, schema}
+    final case class Optional[F[+_], A, B](self: Collection.Reader[F, A, B]) extends Collection.Reader[F, A, Option[B]]:
+      export self.{constraints, schema}
 
-    final case class Root[M, N <: M, A <: Schema.Reader[M, ?, ?, B], B](metadata: N, schema: A)
-        extends Collection.Reader[M, N, A, Vector[B]]:
+    final case class Root[F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A)
+        extends Collection.Reader[F, A, Vector[B]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
 
-  sealed trait Writer[M, +N <: M, +A, -B] extends Schema.Writer[M, N, A, B]:
-    final def contramap[C](f: C => B): Collection.Writer[M, N, A, C] = Writer.Modify(this, f)
-    def optional: Collection.Writer[M, N, A, Option[B]] = Writer.Optional(this)
-    def schema: Schema.Writer[M, ?, ?, ?]
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
+    final def contramap[C](f: C => B): Collection.Writer[F, A, C] = Writer.Modify(this, f)
+    def optional: Collection.Writer[F, A, Option[B]] = Writer.Optional(this)
+    def schema: F[Schema.Writer[F, ?, ?]]
 
   object Writer:
-    final case class Modify[M, N <: M, A, B, C](
-        self: Collection.Writer[M, N, A, B],
+    final case class Modify[F[+_], A, B, C](
+        self: Collection.Writer[F, A, B],
         f: C => B
-    ) extends Collection.Writer[M, N, A, C]:
-      export self.{metadata, schema}
+    ) extends Collection.Writer[F, A, C]:
+      export self.schema
 
-    final case class Optional[M, N <: M, A, B](self: Collection.Writer[M, N, A, B])
-        extends Collection.Writer[M, N, A, Option[B]]:
-      export self.{metadata, schema}
+    final case class Optional[F[+_], A, B](self: Collection.Writer[F, A, B]) extends Collection.Writer[F, A, Option[B]]:
+      export self.schema
 
-    final case class Root[M, N <: M, A <: Schema.Writer[M, ?, ?, B], B](metadata: N, schema: A)
-        extends Collection.Writer[M, N, A, Vector[B]]
+    final case class Root[F[+_], A <: F[Schema.Writer[F, ?, B]], B](schema: A)
+        extends Collection.Writer[F, A, Vector[B]]
 
-  final case class Optional[M, N <: M, A, B](self: Collection[M, N, A, B]) extends Collection[M, N, A, Option[B]]:
-    export self.{constraints, metadata, schema}
+  final case class Optional[F[+_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
+    export self.{constraints, schema}
 
-  final case class Root[M, N <: M, A <: Schema[M, ?, ?, B], B](metadata: N, schema: A)
-      extends Collection[M, N, A, Vector[B]]:
+  final case class Root[F[+_], A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
 
-  final case class Validate[M, N <: M, A, B, C, D](
-      self: Collection[M, N, A, B],
-      validation: Validation[B, Constraint.Collection, (Schema.Writer[M, ?, ?, C], C), D],
+  final case class Validate[F[+_], A, B, C, D](
+      self: Collection[F, A, B],
+      validation: Validation[B, Constraint.Collection, (Schema.Writer[F, ?, C], C), D],
       f: D => B
-  ) extends Collection[M, N, A, D]:
-    export self.{metadata, schema}
+  ) extends Collection[F, A, D]:
+    export self.schema
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
 
-sealed trait Primitive[M, +N <: M, A]
-    extends Schema[M, N, Nothing, A],
-      Primitive.Reader[M, N, A],
-      Primitive.Writer[M, N, A]:
-  override def imap[C](f: A => C)(g: C => A): Primitive[M, N, C] = ivalidate(Validation.lift(f))(g)
-  def ivalidate[B, C, D](
-      validation: Validation[A, Constraint.Primitive[(Schema.Writer[M, ?, ?, B], B)], (Schema.Writer[M, ?, ?, C], C), D]
-  )(f: D => A): Primitive[M, N, D] = Primitive.Validate(this, validation, f)
-  final override def optional: Primitive[M, N, Option[A]] = Primitive.Optional(this)
+sealed trait Primitive[+F[+_], A] extends Schema[F, Nothing, A], Primitive.Reader[F, A], Primitive.Writer[F, A]:
+  override def imap[C](f: A => C)(g: C => A): Primitive[F, C] = ??? // ivalidate(Validation.lift(f))(g)
+  // def ivalidate[B, C, D](
+  //     validation: Validation[A, Constraint.Primitive[(Schema.Writer[F, ?, B], B)], (Schema.Writer[F, ?, C], C), D]
+  // )(f: D => A): Primitive[F, D] = Primitive.Validate(this, validation, f)
+  final override def optional: Primitive[F, Option[A]] = Primitive.Optional(this)
 
 object Primitive:
-  sealed trait Required[M, +N <: M, A]
-      extends Primitive[M, N, A],
-        Primitive.Required.Reader[M, N, A],
-        Primitive.Required.Writer[M, N, A]:
-    final override def imap[C](f: A => C)(g: C => A): Primitive.Required[M, N, C] = ivalidate(Validation.lift(f))(g)
-    final override def ivalidate[B, C, D](
-        validation: Validation[A, Constraint.Primitive[
-          (Schema.Writer[M, ?, ?, B], B)
-        ], (Schema.Writer[M, ?, ?, C], C), D]
-    )(f: D => A): Primitive.Required[M, N, D] = Primitive.Required.Validate(this, validation, f)
+  sealed trait Required[+F[+_], A]
+      extends Primitive[F, A],
+        Primitive.Required.Reader[F, A],
+        Primitive.Required.Writer[F, A]:
+    final override def imap[C](f: A => C)(g: C => A): Primitive.Required[F, C] = ??? // ivalidate(Validation.lift(f))(g)
+    // final override def ivalidate[B, C, D](
+    //     validation: Validation[A, Constraint.Primitive[(Schema.Writer[F, ?, B], B)], (Schema.Writer[F, ?, C], C), D]
+    // )(f: D => A): Primitive.Required[F, D] = Primitive.Required.Validate(this, validation, f)
 
   object Required:
-    sealed trait Reader[M, +N <: M, +A] extends Primitive.Reader[M, N, A]:
-      override def map[C](f: A => C): Primitive.Required.Reader[M, N, C] = validate(Validation.lift(f))
-      final override def validate[B, C, D](
-          validation: Validation[A, Constraint.Primitive[
-            (Schema.Writer[M, ?, ?, B], B)
-          ], (Schema.Writer[M, ?, ?, C], C), D]
-      ): Primitive.Required.Reader[M, N, D] = Reader.Validate(this, validation)
+    sealed trait Reader[+F[+_], +A] extends Primitive.Reader[F, A]:
+      override def map[C](f: A => C): Primitive.Required.Reader[F, C] = ??? // validate(Validation.lift(f))
+      // final override def validate[B, C, D](
+      //     validation: Validation[A, Constraint.Primitive[
+      //       (Schema.Writer[F, ?, B], B)
+      //     ], (Schema.Writer[F, ?, C], C), D]
+      // ): Primitive.Required.Reader[F, D] = Reader.Validate(this, validation)
 
     object Reader:
-      final case class Validate[M, N <: M, A, B, C, D](
-          self: Primitive.Required.Reader[M, N, A],
-          validation: Validation[A, Constraint.Primitive[
-            (Schema.Writer[M, ?, ?, B], B)
-          ], (Schema.Writer[M, ?, ?, C], C), D]
-      ) extends Primitive.Required.Reader[M, N, D]:
-        export self.{metadata, tpe}
+      final case class Validate[F[+_], A, B, C, D](
+          self: Primitive.Required.Reader[F, A],
+          validation: Validation[A, Constraint.Primitive[(Schema.Writer[F, ?, B], B)], (Schema.Writer[F, ?, C], C), D]
+      ) extends Primitive.Required.Reader[F, D]:
+        export self.tpe
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-    sealed trait Writer[M, +N <: M, -A] extends Primitive.Writer[M, N, A]:
-      final override def contramap[B](f: B => A): Primitive.Required.Writer[M, N, B] = Writer.Modify(this, f)
+    sealed trait Writer[+F[+_], -A] extends Primitive.Writer[F, A]:
+      final override def contramap[B](f: B => A): Primitive.Required.Writer[F, B] = Writer.Modify(this, f)
 
     object Writer:
-      final case class Modify[M, N <: M, A, B](self: Primitive.Required.Writer[M, N, A], f: B => A)
-          extends Primitive.Required.Writer[M, N, B]:
-        export self.{metadata, tpe}
+      final case class Modify[F[+_], A, B](self: Primitive.Required.Writer[F, A], f: B => A)
+          extends Primitive.Required.Writer[F, B]:
+        export self.tpe
 
-    final case class Root[M, N <: M, A](metadata: N, tpe: Type[A]) extends Primitive.Required[M, N, A]:
+    final case class Root[F[+_], A](tpe: Type[A]) extends Primitive.Required[F, A]:
       override def constraints: Chain[Constraint.Primitive[?]] = Chain.empty
 
-    final case class Validate[M, N <: M, A, B, C, D](
-        self: Primitive.Required[M, N, A],
+    final case class Validate[F[+_], A, B, C, D](
+        self: Primitive.Required[F, A],
         validation: Validation[A, Constraint.Primitive[
-          (Schema.Writer[M, ?, ?, B], B)
-        ], (Schema.Writer[M, ?, ?, C], C), D],
+          (Schema.Writer[F, ?, B], B)
+        ], (Schema.Writer[F, ?, C], C), D],
         f: D => A
-    ) extends Primitive.Required[M, N, D]:
-      export self.{metadata, tpe}
+    ) extends Primitive.Required[F, D]:
+      export self.tpe
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-  sealed trait Reader[M, +N <: M, +A] extends Schema.Reader[M, N, Nothing, A]:
+  sealed trait Reader[+F[+_], +A] extends Schema.Reader[F, Nothing, A]:
     def constraints: Chain[Constraint.Primitive[?]]
-    override def map[C](f: A => C): Primitive.Reader[M, N, C] = validate(Validation.lift(f))
-    override def optional: Primitive.Reader[M, N, Option[A]] = Reader.Optional(this)
+    override def map[C](f: A => C): Primitive.Reader[F, C] = ??? // validate(Validation.lift(f))
+    override def optional: Primitive.Reader[F, Option[A]] = Reader.Optional(this)
     def tpe: Type[?]
-    def validate[B, C, D](
-        validation: Validation[A, Constraint.Primitive[
-          (Schema.Writer[M, ?, ?, B], B)
-        ], (Schema.Writer[M, ?, ?, C], C), D]
-    ): Primitive.Reader[M, N, D] = Reader.Validate(this, validation)
+    // def validate[B, C, D](
+    //     validation: Validation[A, Constraint.Primitive[(Schema.Writer[F, ?, B], B)], (Schema.Writer[F, ?, C], C), D]
+    // ): Primitive.Reader[F, D] = Reader.Validate(this, validation)
 
   object Reader:
-    final case class Validate[M, N <: M, A, B, C, D](
-        self: Primitive.Reader[M, N, A],
+    final case class Validate[F[+_], A, B, C, D](
+        self: Primitive.Reader[F, A],
         validation: Validation[A, Constraint.Primitive[
-          (Schema.Writer[M, ?, ?, B], B)
-        ], (Schema.Writer[M, ?, ?, C], C), D]
-    ) extends Primitive.Reader[M, N, D]:
-      export self.{metadata, tpe}
+          (Schema.Writer[F, ?, B], B)
+        ], (Schema.Writer[F, ?, C], C), D]
+    ) extends Primitive.Reader[F, D]:
+      export self.tpe
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-    final case class Optional[M, N <: M, A](self: Primitive.Reader[M, N, A]) extends Primitive.Reader[M, N, Option[A]]:
-      export self.{constraints, metadata, tpe}
+    final case class Optional[F[+_], A](self: Primitive.Reader[F, A]) extends Primitive.Reader[F, Option[A]]:
+      export self.{constraints, tpe}
 
-  sealed trait Writer[M, +N <: M, -A] extends Schema.Writer[M, N, Nothing, A]:
-    def contramap[C](f: C => A): Primitive.Writer[M, N, C] = Writer.Modify(this, f)
-    def optional: Primitive.Writer[M, N, Option[A]] = Writer.Optional(this)
+  sealed trait Writer[+F[+_], -A] extends Schema.Writer[F, Nothing, A]:
+    def contramap[C](f: C => A): Primitive.Writer[F, C] = Writer.Modify(this, f)
+    def optional: Primitive.Writer[F, Option[A]] = Writer.Optional(this)
     def tpe: Type[?]
 
   object Writer:
-    final case class Modify[M, N <: M, A, B](self: Primitive.Writer[M, N, A], f: B => A)
-        extends Primitive.Writer[M, N, B]:
-      export self.{metadata, tpe}
+    final case class Modify[F[+_], A, B](self: Primitive.Writer[F, A], f: B => A) extends Primitive.Writer[F, B]:
+      export self.tpe
 
-    final case class Optional[M, N <: M, A](self: Primitive.Writer[M, N, A]) extends Primitive.Writer[M, N, Option[A]]:
-      export self.{metadata, tpe}
+    final case class Optional[F[+_], A](self: Primitive.Writer[F, A]) extends Primitive.Writer[F, Option[A]]:
+      export self.tpe
 
-  final case class Optional[M, N <: M, A](self: Primitive[M, N, A]) extends Primitive[M, N, Option[A]]:
-    export self.{constraints, metadata, tpe}
+  final case class Optional[F[+_], A](self: Primitive[F, A]) extends Primitive[F, Option[A]]:
+    export self.{constraints, tpe}
 
-  final case class Validate[M, N <: M, A, B, C, D](
-      self: Primitive[M, N, A],
+  final case class Validate[F[+_], A, B, C, D](
+      self: Primitive[F, A],
       validation: Validation[A, Constraint.Primitive[
-        (Schema.Writer[M, ?, ?, B], B)
-      ], (Schema.Writer[M, ?, ?, C], C), D],
+        (Schema.Writer[F, ?, B], B)
+      ], (Schema.Writer[F, ?, C], C), D],
       f: D => A
-  ) extends Primitive[M, N, D]:
-    export self.{metadata, tpe}
+  ) extends Primitive[F, D]:
+    export self.tpe
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-sealed trait Union[M, +N <: M, +A, B] extends Schema[M, N, A, B], Union.Reader[M, N, A, B], Union.Writer[M, N, A, B]:
-  override def imap[C](f: B => C)(g: C => B): Union[M, N, A, C] = ???
-  override def optional: Union[M, N, A, Option[B]] = ???
+sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = ???
+  override def optional: Union[F, A, Option[B]] = ???
 
 object Union:
-  sealed trait Reader[M, +N <: M, +A, +B] extends Schema.Reader[M, N, A, B]:
-    final override def map[C](f: B => C): Union.Reader[M, N, A, C] = ???
-    override def optional: Union.Reader[M, N, A, Option[B]] = ???
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
+    final override def map[C](f: B => C): Union.Reader[F, A, C] = ???
+    override def optional: Union.Reader[F, A, Option[B]] = ???
 
   object Reader:
-    final case class Root[M, N <: M, A <: Schema.Reader[M, ?, ?, B], B](metadata: N, schema: A)
-        extends Union.Reader[M, N, A, B]
+    final case class OrElse[F[+_], A, B, C, D](left: Union.Reader[F, A, B], right: Union.Reader[F, A, B])
+        extends Union.Reader[F, A | C, Either[B, D]]
 
-  sealed trait Writer[M, +N <: M, +A, -B] extends Schema.Writer[M, N, A, B]:
-    final override def contramap[C](f: C => B): Union.Writer[M, N, A, C] = ???
-    override def optional: Union.Writer[M, N, A, Option[B]] = ???
+    final case class Root[F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]
+
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
+    final override def contramap[C](f: C => B): Union.Writer[F, A, C] = ???
+    override def optional: Union.Writer[F, A, Option[B]] = ???
 
   object Writer:
-    final case class OrElse[M, N <: M, A, B, C, D](
-        metadata: N,
-        left: Union.Writer[M, N, A, B],
-        right: Union.Writer[M, N, A, B]
-    ) extends Union.Writer[M, N, A | C, Either[B, D]]
+    final case class OrElse[F[+_], A, B, C, D](left: Union.Writer[F, A, B], right: Union.Writer[F, A, B])
+        extends Union.Writer[F, A | C, Either[B, D]]
 
-    final case class Root[M, N <: M, A <: Schema.Writer[M, ?, ?, B], B](metadata: N, schema: A)
-        extends Union.Writer[M, N, A, B]
+    final case class Root[F[+_], A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Union.Writer[F, A, B]
 
-  final case class OrElse[M, N <: M, A, B, C, D](metadata: N, left: Union[M, N, A, B], right: Union[M, N, C, D])
-      extends Union[M, N, A | C, Either[B, D]]
+  final case class OrElse[F[+_], A, B, C, D](left: Union[F, A, B], right: Union[F, C, D])
+      extends Union[F, A | C, Either[B, D]]
 
-  final case class Root[M, N <: M, A <: Schema[M, ?, ?, B], B](metadata: N, schema: A) extends Union[M, N, A, B]
+  final case class Root[F[+_], A <: F[Schema[F, ?, B]], B](schema: A) extends Union[F, A, B]

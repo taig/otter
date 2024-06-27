@@ -8,63 +8,65 @@ trait Types:
   //   final type Reader[A, B] = Base.CollectionBuilder.Reader[AsSchema, A, B]
   //   final type Writer[A, B] = Base.CollectionBuilder.Writer[A, B]
 
+  val container: Container
+
   val metadata: Metadata
 
-  final type Schema[A] = Base.Schema[metadata.Schema, metadata.Schema, ?, A]
+  final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 
   object Schema:
-    type Of[A, B] = Base.Schema[metadata.Schema, metadata.Schema, A, B]
+    type Of[A, B] = container.Schema[Base.Schema[container.Schema, A, B]]
 
-    type Reader[A] = Base.Schema.Reader[metadata.Schema, metadata.Schema, ?, A]
+    type Reader[A] = container.Schema[Base.Schema.Reader[container.Schema, ?, A]]
 
     object Reader:
-      type Of[A, B] = Base.Schema.Reader[metadata.Schema, metadata.Schema, A, B]
+      type Of[A, B] = container.Schema[Base.Schema.Reader[container.Schema, A, B]]
 
-    type Writer[A] = Base.Schema.Writer[metadata.Schema, metadata.Schema, ?, A]
+    type Writer[A] = container.Schema[Base.Schema.Writer[container.Schema, ?, A]]
 
     object Writer:
-      type Of[A, B] = Base.Schema.Writer[metadata.Schema, metadata.Schema, A, B]
+      type Of[A, B] = container.Schema[Base.Schema.Writer[container.Schema, A, B]]
 
-  final type Collection[A] = Collection.Of[?, A]
+  final type Collection[A] = container.Collection[Base.Collection[container.Schema, ?, A]]
 
   object Collection:
-    type Of[A, B] = Base.Collection[metadata.Schema, metadata.Collection, A, B]
+    type Of[A, B] = container.Collection[Base.Collection[container.Schema, A, B]]
 
-    type Reader[A] = Collection.Reader.Of[?, A]
+    type Reader[A] = container.Collection[Base.Collection.Reader[container.Schema, ?, A]]
 
     object Reader:
-      type Of[A, B] = Base.Collection.Reader[metadata.Schema, metadata.Collection, A, B]
+      type Of[A, B] = container.Collection[Base.Collection.Reader[container.Schema, A, B]]
 
-    type Writer[A] = Collection.Writer.Of[?, A]
+    type Writer[A] = container.Collection[Base.Collection.Writer[container.Schema, ?, A]]
 
     object Writer:
-      type Of[A, B] = Base.Collection.Writer[metadata.Schema, metadata.Collection, A, B]
+      type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, B]]
 
-  final type Primitive[A] = Base.Primitive[metadata.Schema, metadata.Primitive, A]
+  final type Primitive[A] = container.Primitive[Base.Primitive[container.Schema, A]]
 
   object Primitive:
-    type Required[A] = Base.Primitive.Required[metadata.Schema, metadata.Primitive, A]
+    type Required[A] = container.Primitive[Base.Primitive.Required[container.Schema, A]]
 
     object Required:
-      type Reader[A] = Base.Primitive.Required.Reader[metadata.Schema, metadata.Primitive, A]
+      type Reader[A] = container.Primitive[Base.Primitive.Required.Reader[container.Schema, A]]
 
-      type Writer[A] = Base.Primitive.Required.Writer[metadata.Schema, metadata.Primitive, A]
+      type Writer[A] = container.Primitive[Base.Primitive.Required.Writer[container.Schema, A]]
 
-    type Reader[A] = Base.Primitive.Reader[metadata.Schema, metadata.Primitive, A]
+    type Reader[A] = container.Primitive[Base.Primitive.Reader[container.Schema, A]]
 
-    type Writer[A] = Base.Primitive.Writer[metadata.Schema, metadata.Primitive, A]
+    type Writer[A] = container.Primitive[Base.Primitive.Writer[container.Schema, A]]
 
-  final type Union[A] = Union.Of[?, A]
+  final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 
   object Union:
-    type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
+    type Of[A, B] = container.Union[Base.Union[container.Schema, A, B]]
 
-    type Reader[A] = Reader.Of[?, A]
+    type Reader[A] = container.Union[Base.Union.Reader[container.Schema, ?, A]]
 
     object Reader:
-      type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
+      type Of[A, B] = container.Union[Base.Union.Reader[container.Schema, A, B]]
 
-    type Writer[A] = Writer.Of[?, A]
+    type Writer[A] = container.Union[Base.Union.Writer[container.Schema, ?, A]]
 
     object Writer:
-      type Of[A, B] = Base.Union[metadata.Schema, metadata.Union, A, B]
+      type Of[A, B] = container.Union[Base.Union.Writer[container.Schema, A, B]]
