@@ -1,35 +1,24 @@
 package io.taig.otter
 
 import io.taig.otter as Base
-import cats.syntax.all.*
-import cats.Invariant
 import cats.Functor
 import cats.Contravariant
 
 trait Syntax extends Types
+// given schemaToFunctorOps[Self[a, b] <: Reader[a, b], Reader[_, _], A, B](using
+//     F: SchemaInvariant[Self, Reader, ?, ?]
+// ): Conversion[Self[A, B], Functor.Ops[Reader[A, *], B]] = schema =>
+//   new Functor.Ops:
+//     override type TypeClassType = Functor[Reader[A, *]]
+//     override def self: Reader[A, B] = schema
+//     override val typeClassInstance: TypeClassType = F.functor[A]
 
-// trait Syntax extends Syntax1:
-//   given schemaToInvariantOps[F[a, b] <: G[a, b], G[a, b], A, B](using
-//       F: Functor[G[A, *]]
-//   ): Conversion[F[A, B], Invariant.AllOps[G[A, *], B]] = fa =>
-//     new Invariant.AllOps:
-//       override type TypeClassType = Functor[G[A, *]]
-//       override val typeClassInstance: TypeClassType = F
-//       override def self: F[A, B] = fa
+// given schemaToContravariantOps[Self[a, b] <: Writer[a, b], Writer[_, _], A, B](using
+//     F: SchemaInvariant[Self, ?, Writer, ?]
+// ): Conversion[Self[A, B], Contravariant.Ops[Writer[A, *], B]] = schema =>
+//   new Contravariant.Ops:
+//     override type TypeClassType = Contravariant[Writer[A, *]]
+//     override def self: Writer[A, B] = schema
+//     override val typeClassInstance: TypeClassType = F.contravariant[A]
 
-// trait Syntax1 extends Instances:
-//   given schemaToFunctorOps[F[a, b] <: G[a, b], G[a, b], A, B](using
-//       F: Functor[G[A, *]]
-//   ): Conversion[F[A, B], Functor.AllOps[G[A, *], B]] = fa =>
-//     new Functor.AllOps:
-//       override type TypeClassType = Functor[G[A, *]]
-//       override val typeClassInstance: TypeClassType = F
-//       override def self: F[A, B] = fa
-
-//   given schemaToContravariantOps[F[a, b] <: G[a, b], G[a, b], A, B](using
-//       F: Contravariant[G[A, *]]
-//   ): Conversion[F[A, B], Contravariant.AllOps[G[A, *], B]] = fa =>
-//     new Contravariant.AllOps:
-//       override type TypeClassType = Contravariant[G[A, *]]
-//       override val typeClassInstance: TypeClassType = F
-//       override def self: F[A, B] = fa
+// given primtiveToFunctorOps[Self[a] <: Reader[a], Reader[_], A](using F: SchemaInvariant[[_, a] =>> Self[a], [_, a] =>> Reader[a], ?, ?]): Conversion[Self[A], Functor.Ops[Reader, A]] = ???

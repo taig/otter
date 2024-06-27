@@ -1,4 +1,11 @@
 package io.taig.otter
 
-trait SchemaInvariant[Self[_, _], Parent[_, _], Union[_, _]] extends CoproductOps[Self, Parent, Union]:
-  extension [A, B](self: Self[A, B]) def union: Union[self.type, B]
+import cats.Invariant
+
+trait SchemaInvariant[Self[_, _], Reader[_, _], Writer[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
+    extends SchemaOps[Self, Optional, Collection, Union]:
+  given invariant[A]: Invariant[Self[A, *]]
+
+  extension [A, B](self: Self[A, B])
+    def asReader: Reader[A, B]
+    def asWriter: Writer[A, B]

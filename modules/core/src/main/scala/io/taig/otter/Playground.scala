@@ -8,13 +8,6 @@ object Playground:
   import Plain.*
   import Plain.given
 
-  // val _: Collection.Of[Primitive.Required[String], NonEmptyList[String]] = string.collection(nonEmptyList)
+  val a: Union[String] = ???
 
-  // val todo: Schema.Writer[NonEmptyList[String] | Long] =
-  //   string.asWriter.collection.contramap[NonEmptyList[String]](_.toList.toVector)
-  //   ???
-
-  // string.collection.transform(nonEmptySet, todo)
-
-  // val unionA: Union[Either[String, Int]] = string.orElse(int)
-  // val unionB: Union[String | Int] = string | int
+  val _: Primitive.Required.Reader[Int] = ??? // string.as(5)

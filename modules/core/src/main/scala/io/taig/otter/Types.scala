@@ -3,14 +3,22 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  // final type CollectionBuilder[A, B] = Base.CollectionBuilder[AsSchema, A, B]
-  // object CollectionBuilder:
-  //   final type Reader[A, B] = Base.CollectionBuilder.Reader[AsSchema, A, B]
-  //   final type Writer[A, B] = Base.CollectionBuilder.Writer[A, B]
-
   val container: Container
 
-  val metadata: Metadata
+  type SchemaValidation[Constraint[a] <: Constraint.Any[a], A, B, C, D] =
+    Base.SchemaValidation[container.Schema, Constraint, A, B, C, D]
+
+  type PrimitiveValidation[A, B, C, D] =
+    Base.PrimitiveValidation[container.Schema, A, B, C, D]
+
+  type ValidationInvariant[Self[_], Constraint[a] <: Constraint.Any[a]] =
+    Base.ValidationInvariant[container.Schema, Self, Constraint]
+
+  type SchemaInvariant =
+    Base.SchemaInvariant[Schema.Of, Schema.Reader.Of, Schema.Writer.Of, Schema.Of, Collection.Of, Union.Of]
+
+  type PrimitiveInvariant[Self[_], Reader[_], Writer[_], Optional[_]] =
+    Base.PrimitiveInvariant[container.Schema, Self, Reader, Writer, Optional, Collection.Of, Union.Of]
 
   final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 

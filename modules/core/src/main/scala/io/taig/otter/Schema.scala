@@ -176,6 +176,7 @@ object Primitive:
 sealed trait Union[F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = ???
   override def optional: Union[F, A, Option[B]] = ???
+  def orElse[C, D](union: Union[F, C, D]): Union[F, A | C, Either[B, D]] = ???
 
 object Union:
   sealed trait Reader[F[+_], +A, +B] extends Schema.Reader[F, A, B]:

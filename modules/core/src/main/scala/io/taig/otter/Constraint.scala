@@ -7,22 +7,22 @@ enum Constraint:
   case Type(name: String)
 
 object Constraint:
-  type Any[A] = Constraint | Primitive[A] | Collection | Object
+  type Any[A] = Constraint | Collection | Object | Primitive[A]
 
   enum Primitive[+A]:
     case Matches(pattern: Pattern)
-    case MinLength(reference: Int)
+    case Maximum(reference: A, exclusive: Boolean)
     case MaxLength(reference: Int)
     case Minimum(reference: A, exclusive: Boolean)
-    case Maximum(reference: A, exclusive: Boolean)
+    case MinLength(reference: Int)
     case Multiple(reference: A)
 
     final def map[B](f: A => B): Constraint.Primitive[B] = this match
       case Matches(pattern)              => Matches(pattern)
-      case MinLength(reference)          => MinLength(reference)
+      case Maximum(reference, exclusive) => Maximum(f(reference), exclusive)
       case MaxLength(reference)          => MaxLength(reference)
       case Minimum(reference, exclusive) => Minimum(f(reference), exclusive)
-      case Maximum(reference, exclusive) => Maximum(f(reference), exclusive)
+      case MinLength(reference)          => MinLength(reference)
       case Multiple(reference)           => Multiple(f(reference))
 
   object Primitive:
@@ -35,5 +35,5 @@ object Constraint:
     case UniqueItems
 
   enum Object:
-    case MinProperties(reference: Int)
     case MaxProperties(reference: Int)
+    case MinProperties(reference: Int)
