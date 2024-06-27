@@ -39,12 +39,18 @@ object Transformation:
       new Reader:
         override def validation: Validation[A, B, C, D] = _validation
 
+    def lift[A, B](f: A => B): Transformation.Reader[A, Nothing, Nothing, B] = Reader(Validation.lift(f))
+
   trait Writer[A, B]:
     self =>
 
     def apply(b: B): A
 
     final def contramap[C](f: C => B): Transformation.Writer[A, C] = c => self.apply(f(c))
+
+  object Writer:
+    def apply[A, B](f: B => A): Transformation.Writer[A, B] = new Writer:
+      override def apply(b: B): A = f(b)
 
   def apply[A, B, C, D](validation: Validation[A, B, C, D])(f: D => A): Transformation[A, B, C, D] =
     val _validation = validation
@@ -53,3 +59,6 @@ object Transformation:
       override def apply(d: D): A = f(d)
 
   def ask[A]: Transformation[A, Nothing, Nothing, A] = Transformation(Validation.ask[A])(identity)
+
+  def lift[A, B](f: A => B)(g: B => A): Transformation[A, Nothing, Nothing, B] =
+    Transformation(Validation.lift(f))(g)
