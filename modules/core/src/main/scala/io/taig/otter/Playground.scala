@@ -1,13 +1,12 @@
 package io.taig.otter
 
-import cats.data.NonEmptyList
-import cats.syntax.all.*
 import io.taig.otter as Base
 
 object Playground:
   import Plain.*
   import Plain.given
 
-  val a: Union[String] = ???
-
-  val _: Primitive.Required.Reader[Int] = ??? // string.as(5)
+  string.as(3)
+  string.imap(???)(???)
+  string.ivalidate(???)(???)
+  val y: Primitive.Required.Reader.Any = string.validate(???)

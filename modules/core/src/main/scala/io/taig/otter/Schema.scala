@@ -18,10 +18,14 @@ object Schema:
     def contramap[C](f: C => B): Schema.Writer[F, A, C]
     def optional: Schema.Writer[F, A, Option[B]]
 
+  object Writer:
+    type Any[F[+_]] = [a] =>> F[Schema.Writer[F, ?, a]]
+
 sealed trait Collection[F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
   final override def imap[C](f: B => C)(g: C => B): Collection[F, A, C] = ivalidate(Validation.lift(f))(g)
-  final def ivalidate[C, D](validation: CollectionValidation[F, B, C, D])(f: D => B): Collection[F, A, D] =
-    Collection.Transform(this, validation, f)
+  final def ivalidate[C, D](validation: SchemaValidation.Collection[Schema.Writer.Any[F], B, C, D])(
+      f: D => B
+  ): Collection[F, A, D] = Collection.Transform(this, validation, f)
   final override def optional: Collection[F, A, Option[B]] = Collection.Optional(this)
   override def schema: F[Schema[F, ?, ?]]
 
@@ -31,13 +35,14 @@ object Collection:
     final override def map[C](f: B => C): Collection.Reader[F, A, C] = validate(Validation.lift(f))
     override def optional: Collection.Reader[F, A, Option[B]] = Reader.Optional(this)
     def schema: F[Schema.Reader[F, ?, ?]]
-    final def validate[B1 >: B, C, D](validation: CollectionValidation[F, B1, C, D]): Collection.Reader[F, A, D] =
-      Reader.Transform(this, validation)
+    final def validate[B1 >: B, C, D](
+        validation: SchemaValidation.Collection[Schema.Writer.Any[F], B1, C, D]
+    ): Collection.Reader[F, A, D] = Reader.Transform(this, validation)
 
   object Reader:
     final case class Transform[F[+_], A, B, C, D](
         self: Collection.Reader[F, A, B],
-        validation: CollectionValidation[F, B, C, D]
+        validation: SchemaValidation.Collection[Schema.Writer.Any[F], B, C, D]
     ) extends Collection.Reader[F, A, D]:
       export self.schema
       override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
@@ -75,7 +80,7 @@ object Collection:
 
   final case class Transform[F[+_], A, B, C, D](
       self: Collection[F, A, B],
-      validation: CollectionValidation[F, B, C, D],
+      validation: SchemaValidation.Collection[Schema.Writer.Any[F], B, C, D],
       f: D => B
   ) extends Collection[F, A, D]:
     export self.schema
@@ -84,8 +89,9 @@ object Collection:
 sealed trait Primitive[F[+_], A] extends Schema[F, Nothing, A], Primitive.Reader[F, A], Primitive.Writer[F, A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[F, C] = ivalidate(Validation.lift(f))(g)
   final override def optional: Primitive[F, Option[A]] = Primitive.Optional(this)
-  def ivalidate[B, C, D](validation: PrimitiveValidation[F, A, B, C, D])(f: D => A): Primitive[F, D] =
-    Primitive.Transform(this, validation, f)
+  def ivalidate[B, C, D](validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D])(
+      f: D => A
+  ): Primitive[F, D] = Primitive.Transform(this, validation, f)
 
 object Primitive:
   sealed trait Required[F[+_], A]
@@ -93,7 +99,7 @@ object Primitive:
         Primitive.Required.Reader[F, A],
         Primitive.Required.Writer[F, A]:
     final override def imap[C](f: A => C)(g: C => A): Primitive.Required[F, C] = ivalidate(Validation.lift(f))(g)
-    override def ivalidate[B, C, D](validation: PrimitiveValidation[F, A, B, C, D])(
+    override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D])(
         f: D => A
     ): Primitive.Required[F, D] = Required.Transform(this, validation, f)
 
@@ -101,13 +107,13 @@ object Primitive:
     sealed trait Reader[F[+_], +A] extends Primitive.Reader[F, A]:
       final override def map[C](f: A => C): Primitive.Required.Reader[F, C] = validate(Validation.lift(f))
       final override def validate[A1 >: A, B, C, D](
-          transformation: PrimitiveValidation[F, A1, B, C, D]
+          transformation: SchemaValidation.Primitive[Schema.Writer.Any[F], A1, B, C, D]
       ): Primitive.Required.Reader[F, D] = Reader.Transform(this, transformation)
 
     object Reader:
       final case class Transform[F[+_], A, B, C, D](
           self: Primitive.Required.Reader[F, A],
-          validation: PrimitiveValidation[F, A, B, C, D]
+          validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D]
       ) extends Primitive.Required.Reader[F, D]:
         export self.tpe
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
@@ -125,7 +131,7 @@ object Primitive:
 
     final case class Transform[F[+_], A, B, C, D](
         self: Primitive.Required[F, A],
-        validation: PrimitiveValidation[F, A, B, C, D],
+        validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D],
         f: D => A
     ) extends Primitive.Required[F, D]:
       export self.tpe
@@ -136,13 +142,14 @@ object Primitive:
     override def map[C](f: A => C): Primitive.Reader[F, C] = validate(Validation.lift(f))
     override def optional: Primitive.Reader[F, Option[A]] = Reader.Optional(this)
     def tpe: Type[?]
-    def validate[A1 >: A, B, C, D](validation: PrimitiveValidation[F, A1, B, C, D]): Primitive.Reader[F, D] =
-      Reader.Transform(this, validation)
+    def validate[A1 >: A, B, C, D](
+        validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A1, B, C, D]
+    ): Primitive.Reader[F, D] = Reader.Transform(this, validation)
 
   object Reader:
     final case class Transform[F[+_], A, B, C, D](
         self: Primitive.Reader[F, A],
-        validation: PrimitiveValidation[F, A, B, C, D]
+        validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D]
     ) extends Primitive.Reader[F, D]:
       export self.tpe
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
@@ -167,7 +174,7 @@ object Primitive:
 
   final case class Transform[F[+_], A, B, C, D](
       self: Primitive[F, A],
-      validation: PrimitiveValidation[F, A, B, C, D],
+      validation: SchemaValidation.Primitive[Schema.Writer.Any[F], A, B, C, D],
       f: D => A
   ) extends Primitive[F, D]:
     export self.tpe

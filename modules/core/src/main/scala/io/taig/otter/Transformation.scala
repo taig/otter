@@ -19,6 +19,8 @@ trait Transformation[A, +B, +C, D] extends Transformation.Reader[A, B, C, D], Tr
   ): Transformation[A, E, F, D] = Transformation(f(validation))(apply)
 
 object Transformation:
+  type Plain[A, D] = Transformation[A, Nothing, Nothing, D]
+
   trait Reader[A, +B, +C, D]:
     def validation: Validation[A, B, C, D]
 

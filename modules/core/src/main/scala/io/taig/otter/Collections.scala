@@ -8,14 +8,14 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 
 trait Collections extends Validations:
-  def vector[A]: Transformation[Vector[A], Nothing, Nothing, Vector[A]] = Transformation.ask
+  def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 
-  def seq[A]: Transformation[Vector[A], Nothing, Nothing, Seq[A]] = vector[A].imap(_.toSeq)(_.toVector)
+  def seq[A]: Transformation.Plain[Vector[A], Seq[A]] = vector[A].imap(_.toSeq)(_.toVector)
 
   def nonEmptySeq[A]: Transformation[Vector[A], Constraint.Collection, Long, NonEmptySeq[A]] =
     seq[A].ivalidate(nonEmpty)(_ +: _).imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail))
 
-  def list[A]: Transformation[Vector[A], Nothing, Nothing, List[A]] = vector[A].imap(_.toList)(_.toVector)
+  def list[A]: Transformation.Plain[Vector[A], List[A]] = vector[A].imap(_.toList)(_.toVector)
 
   def nonEmptyList[A]: Transformation[Vector[A], Constraint.Collection, Long, NonEmptyList[A]] =
     list[A].ivalidate(nonEmpty)(_ :: _).imap(NonEmptyList.apply)(fa => (fa.head, fa.tail))
