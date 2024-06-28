@@ -4,6 +4,7 @@ import io.taig.otter as Base
 import io.taig.otter.Type
 import cats.syntax.all.*
 import cats.Comonad
+import io.taig.otter.ApplicativeComonad
 
 trait Dsl extends Base.Dsl:
   override object container extends Base.Container:
@@ -12,6 +13,14 @@ trait Dsl extends Base.Dsl:
     override type Primitive[+A] = Annotation[Metadata.Primitive, A]
     override type Tuple[+A] = Annotation[Metadata, A]
     override type Union[+A] = Annotation[Metadata, A]
+
+  given schemaApplicativeComonad: ApplicativeComonad[container.Schema] = ???
+
+  given collectionApplicativeComonad: ApplicativeComonad[container.Collection] = ???
+
+  given primitiveApplicativeComonad: ApplicativeComonad[container.Primitive] = ???
+
+  given unionApplicativeComonad: ApplicativeComonad[container.Union] = ???
 
   given Comonad[container.Schema] with
     override def coflatMap[A, B](fa: container.Schema[A])(f: container.Schema[A] => B): container.Schema[B] =

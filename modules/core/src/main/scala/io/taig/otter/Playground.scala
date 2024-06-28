@@ -6,7 +6,7 @@ object Playground:
   import Plain.*
   import Plain.given
 
-  string.as(3)
-  string.imap(???)(???)
-  string.ivalidate(???)(???)
-  val y: Primitive.Required.Reader.Any = string.validate(???)
+  // string.as(3)
+  // string.imap(???)(???)
+  // string.ivalidate(???)(???)
+  // val y: Primitive.Required.Reader.Any = string.validate(???)

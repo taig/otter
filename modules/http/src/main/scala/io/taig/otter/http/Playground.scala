@@ -1,8 +1,6 @@
 package io.taig.otter.http
 
-import cats.data.NonEmptyList
 import io.taig.otter as Base
-import io.taig.otter.Constraint
 import cats.syntax.all.*
 
 object Playground:
@@ -20,4 +18,6 @@ object Playground:
   val a: Primitive.Required.Writer[String] = string.asWriter
   string.asReader
   val _: Primitive.Required.Reader.Any = string.as(???)
-  a.collection
+  val col: Collection.Writer[Vector[String]] = a.collection
+  col.transform(list)
+  col.transform(nonEmptyList)
