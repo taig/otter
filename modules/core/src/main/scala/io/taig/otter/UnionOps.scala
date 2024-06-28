@@ -1,21 +1,25 @@
 package io.taig.otter
 
 trait UnionOps[Self[_, _], Parent[_, _], Collection[_, _]]
-    extends SchemaOps[Self, Self, Collection, Self],
-      CoproductOps[Self, Parent]
+    extends SchemaOps[Self, Self, Parent, Collection, Self],
+      OrElseOps[Self],
+      OrOps[Self, Parent, Self]
 
 object UnionOps:
   trait Isomorphic[Self[_, _], Parent[_, _], Collection[_, _]]
       extends UnionOps[Self, Parent, Collection],
-        SchemaOps.Isomorphic[Self, Self, Collection, Self],
-        CoproductOps.Isomorphic[Self, Parent]
+        SchemaOps.Isomorphic[Self, Self, Parent, Collection, Self],
+        OrElseOps.Isomorphic[Self],
+        OrOps.Isomorphic[Self, Parent, Self]
 
   trait Reader[Self[_, _], Parent[_, _], Collection[_, _]]
       extends UnionOps[Self, Parent, Collection],
-        SchemaOps.Reader[Self, Self, Collection, Self],
-        CoproductOps.Reader[Self, Parent]
+        SchemaOps.Reader[Self, Self, Parent, Collection, Self],
+        OrElseOps.Reader[Self],
+        OrOps.Reader[Self, Parent, Self]
 
   trait Writer[Self[_, _], Parent[_, _], Collection[_, _]]
       extends UnionOps[Self, Parent, Collection],
-        SchemaOps.Writer[Self, Self, Collection, Self],
-        CoproductOps.Writer[Self, Parent]
+        SchemaOps.Writer[Self, Self, Parent, Collection, Self],
+        OrElseOps.Writer[Self],
+        OrOps.Writer[Self, Parent, Self]

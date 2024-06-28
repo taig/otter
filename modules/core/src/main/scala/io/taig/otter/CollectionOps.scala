@@ -1,22 +1,22 @@
 package io.taig.otter
 
-trait CollectionOps[Self[_, _], Union[_, _], Parent]
+trait CollectionOps[Self[_, _], Parent[_, _], Union[_, _], Any]
     extends TransformationOps[Self],
-      SchemaOps[Self, Self, Self, Union]:
-  extension [A, B](self: Self[A, B]) def schema: Parent
+      SchemaOps[Self, Self, Parent, Self, Union]:
+  extension [A, B](self: Self[A, B]) def schema: Any
 
 object CollectionOps:
-  trait Isomorphic[Self[_, _], Union[_, _], Parent, Writer[_]]
-      extends CollectionOps[Self, Union, Parent],
+  trait Isomorphic[Self[_, _], Parent[_, _], Union[_, _], Writer[_], Any]
+      extends CollectionOps[Self, Union, Parent, Any],
         TransformationOps.Isomorphic[Self, Writer, [_] =>> Constraint.Collection],
-        SchemaOps.Isomorphic[Self, Self, Self, Union]
+        SchemaOps.Isomorphic[Self, Self, Parent, Self, Union]
 
-  trait Reader[Self[_, _], Union[_, _], Parent, Writer[_]]
-      extends CollectionOps[Self, Union, Parent],
+  trait Reader[Self[_, _], Parent[_, _], Union[_, _], Writer[_], Any]
+      extends CollectionOps[Self, Union, Parent, Any],
         TransformationOps.Reader[Self, Writer, [_] =>> Constraint.Collection],
-        SchemaOps.Reader[Self, Self, Self, Union]
+        SchemaOps.Reader[Self, Self, Parent, Self, Union]
 
-  trait Writer[Self[_, _], Union[_, _], Parent, Writer[_]]
-      extends CollectionOps[Self, Union, Parent],
+  trait Writer[Self[_, _], Parent[_, _], Union[_, _], Writer[_], Any]
+      extends CollectionOps[Self, Union, Parent, Any],
         TransformationOps.Writer[Self],
-        SchemaOps.Writer[Self, Self, Self, Union]
+        SchemaOps.Writer[Self, Self, Parent, Self, Union]
