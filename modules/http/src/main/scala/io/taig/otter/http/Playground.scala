@@ -10,7 +10,7 @@ object Playground:
   val x: Schema[String] = string
   string.as(3)
   string.imap(???)(???)
-  primitiveRequiredIsomoprhicOps.optional(string)
+  string.optional
   string.ivalidate(???)(???)
   val y: Primitive.Required.Reader.Any = string.validate(???)
   string.optional
@@ -21,3 +21,5 @@ object Playground:
   val col: Collection.Writer[Vector[String]] = a.collection
   col.transform(list)
   col.transform(nonEmptyList)
+  val _: Union[Either[String, Int]] = string.union.or(int)
+  val _: Union[String | Int] = string.union | int

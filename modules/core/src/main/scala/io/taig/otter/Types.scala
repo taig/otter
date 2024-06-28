@@ -32,6 +32,11 @@ trait Types:
     type Writer[Self[_], Optional[_]] =
       Base.PrimitiveOps.Writer[Self, Optional, Schema.Writer, Collection.Writer.Of, Union.Writer.Of]
 
+  object UnionOps:
+    type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]
+    type Reader = Base.UnionOps.Reader[Union.Reader.Of, Schema.Reader.Of, Collection.Reader.Of]
+    type Writer = Base.UnionOps.Writer[Union.Writer.Of, Schema.Writer.Of, Collection.Writer.Of]
+
   final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 
   object Schema:

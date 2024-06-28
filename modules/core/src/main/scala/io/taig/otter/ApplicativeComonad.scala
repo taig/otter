@@ -3,7 +3,7 @@ package io.taig.otter
 import cats.Applicative
 import cats.Comonad
 
-trait ApplicativeComonad[F[_]] extends Applicative[F], Comonad[F]
+type ApplicativeComonad[F[_]] = Applicative[F] & Comonad[F]
 
 object ApplicativeComonad:
-  inline def apply[F[_]](using F: ApplicativeComonad[F]): ApplicativeComonad[F] = F
+  inline def apply[F[_]](using F: Applicative[F] & Comonad[F]): ApplicativeComonad[F] = F

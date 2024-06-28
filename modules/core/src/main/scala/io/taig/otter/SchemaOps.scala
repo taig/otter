@@ -8,17 +8,15 @@ trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]:
 
 object SchemaOps:
   trait Isomorphic[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
-      extends SchemaOps[Self, Optional, Collection, Union]:
-    extension [A, B](self: Self[A, B]) def imap[C](f: B => C)(g: C => B): Self[A, C]
+      extends SchemaOps[Self, Optional, Collection, Union],
+        IsomorphicOps[Self]
 
   trait Reader[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
-      extends SchemaOps[Self, Optional, Collection, Union]:
-    extension [A, B](self: Self[A, B])
-      def asReader: Self[A, B] = self
-      def map[C](f: B => C): Self[A, C]
+      extends SchemaOps[Self, Optional, Collection, Union],
+        ReaderOps[Self]:
+    extension [A, B](self: Self[A, B]) def asReader: Self[A, B] = self
 
   trait Writer[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
-      extends SchemaOps[Self, Optional, Collection, Union]:
-    extension [A, B](self: Self[A, B])
-      def asWriter: Self[A, B] = self
-      def contramap[C](f: C => B): Self[A, C]
+      extends SchemaOps[Self, Optional, Collection, Union],
+        WriterOps[Self]:
+    extension [A, B](self: Self[A, B]) def asWriter: Self[A, B] = self

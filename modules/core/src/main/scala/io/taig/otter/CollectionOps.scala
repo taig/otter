@@ -1,6 +1,8 @@
 package io.taig.otter
 
-trait CollectionOps[Self[_, _], Union[_, _], Parent] extends SchemaOps[Self, Self, Self, Union]:
+trait CollectionOps[Self[_, _], Union[_, _], Parent]
+    extends TransformationOps[Self],
+      SchemaOps[Self, Self, Self, Union]:
   extension [A, B](self: Self[A, B]) def schema: Parent
 
 object CollectionOps:
