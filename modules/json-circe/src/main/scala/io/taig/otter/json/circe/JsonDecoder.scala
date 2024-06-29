@@ -19,3 +19,4 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
     case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
+    case schema: Union.Reader[A]     => ???
