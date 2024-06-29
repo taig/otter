@@ -16,30 +16,23 @@ trait Instances extends Types:
     override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
       F.map(fa)(_.contramap(f))
 
-  given collectionIsomporhicInvariant[A](using F: Functor[container.Collection]): Invariant[Collection.Of[A, *]] with
-    override def imap[B, C](fa: Collection.Of[A, B])(f: B => C)(g: C => B): Collection.Of[A, C] =
-      F.map(fa)(_.imap(f)(g))
+  given collectionIsomporhicInvariant[A](using F: Functor[container.Collection]): ValidationInvariant.Collection[Collection.Of[A, *]] = ???
 
-  given collectionReaderFunctor[A](using F: Functor[container.Collection]): Functor[Collection.Reader.Of[A, *]] with
-    override def map[B, C](fa: Collection.Reader.Of[A, B])(f: B => C): Collection.Reader.Of[A, C] = F.map(fa)(_.map(f))
+  given collectionReaderFunctor[A](using F: Functor[container.Collection]): ValidationFunctor.Collection[Collection.Reader.Of[A, *]] = ???
 
-  given collectionWriterContravariant[A](using
-      F: Functor[container.Collection]
-  ): Contravariant[Collection.Writer.Of[A, *]] with
-    override def contramap[B, C](fa: Collection.Writer.Of[A, B])(f: C => B): Collection.Writer.Of[A, C] =
-      F.map(fa)(_.contramap(f))
+  given collectionWriterContravariant[A](using F: Functor[container.Collection]): ValidationContravariant.Collection[Collection.Writer.Of[A, *]] = ???
 
-  given primitiveIsomorphicInvariant: Invariant[Primitive] = ???
+  given primitiveIsomorphicInvariant: ValidationInvariant.Primitive[Primitive] = ???
 
-  given primitiveReaderFunctor: Functor[Primitive.Reader] = ???
+  given primitiveReaderFunctor: ValidationFunctor.Primitive[Primitive.Reader] = ???
 
-  given primitiveWriterContravariant: Contravariant[Primitive.Writer] = ???
+  given primitiveWriterContravariant: ValidationContravariant.Primitive[Primitive.Writer] = ???
 
-  given primitiveRequiredIsomorphicInvariant: Invariant[Primitive.Required] = ???
+  given primitiveRequiredIsomorphicInvariant: ValidationInvariant.Primitive[Primitive.Required] = ???
 
-  given primitiveRequiredReaderFunctor: Functor[Primitive.Required.Reader] = ???
+  given primitiveRequiredReaderFunctor: ValidationFunctor.Primitive[Primitive.Required.Reader] = ???
 
-  given primitiveRequiredWriterContravariant: Contravariant[Primitive.Required.Writer] = ???
+  given primitiveRequiredWriterContravariant: ValidationContravariant.Primitive[Primitive.Required.Writer] = ???
 
   given unionIsomorphicInvariant[A]: Invariant[Union.Of[A, *]] = ???
 

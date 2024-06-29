@@ -14,6 +14,30 @@ trait Types:
   object SchemaValidation:
     type Primitive[A, B, C, D] = Base.SchemaValidation.Primitive[Schema.Writer, A, B, C, D]
 
+  object ValidationInvariant:
+    type Collection[F[_]] = Base.ValidationInvariant[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
+    type Primitive[F[_]] = Base.ValidationInvariant[
+      [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
+      [a] =>> (Schema.Writer[a], a),
+      F
+      ]
+      
+  object ValidationFunctor:
+    type Collection[F[_]] = Base.ValidationFunctor[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
+    type Primitive[F[_]] = Base.ValidationFunctor[
+      [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
+      [a] =>> (Schema.Writer[a], a),
+      F
+      ]
+
+  object ValidationContravariant:
+    type Collection[F[_]] = Base.ValidationContravariant[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
+    type Primitive[F[_]] = Base.ValidationContravariant[
+      [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
+      [a] =>> (Schema.Writer[a], a),
+      F
+      ]
+
   object SchemaOps:
     type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Schema.Of, Collection.Of, Union.Of]
     type Reader =
@@ -40,11 +64,11 @@ trait Types:
 
   object PrimitiveOps:
     type Isomorphic[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Isomorphic[Self, Optional, Schema.Of, Collection.Of, Union.Of, Schema.Writer]
+      Base.PrimitiveOps.Isomorphic[Self, Optional, Schema.Of, Collection.Of, Union.Of]
     type Reader[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Reader[Self, Optional, Schema.Reader.Of, Collection.Reader.Of, Union.Reader.Of, Schema.Writer]
+      Base.PrimitiveOps.Reader[Self, Optional, Schema.Reader.Of, Collection.Reader.Of, Union.Reader.Of]
     type Writer[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Writer[Self, Optional, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of, Schema.Writer]
+      Base.PrimitiveOps.Writer[Self, Optional, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
 
   object UnionOps:
     type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]
