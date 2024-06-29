@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.syntax.all.*
 import io.taig.otter.Schema.Reader
 import cats.data.Chain
-import cats.~>
 import io.taig.otter.validation.Validation
 import cats.Functor
 
@@ -79,13 +78,13 @@ object Collection:
         extends Collection.Writer[F, A, Option[B]]:
       export self.schema
 
-    final case class Root[F[+_], +A <: Schema.Writer[F, ?, B], B](schema: F[A])
-        extends Collection.Writer[F, F[A], Vector[B]]
+    final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A)
+        extends Collection.Writer[F, A, Vector[B]]
 
   final case class Optional[+F[+_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
     export self.{constraints, schema}
 
-  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, F[A], Vector[B]]:
+  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
 
   final case class Transform[+F[+_], A, B, C, D](
