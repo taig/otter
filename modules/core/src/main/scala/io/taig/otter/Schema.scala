@@ -56,8 +56,8 @@ object Collection:
       override def translate[G[+_]: Functor](fK: F ~> G): Collection.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A)
-        extends Collection.Reader[F, A, Vector[B]]:
+    final case class Root[F[+_], A <: Schema.Reader[F, ?, B], B](schema: F[A])
+        extends Collection.Reader[F, F[A], Vector[B]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
       override def translate[G[+_]: Functor](fK: F ~> G): Collection.Reader[G, ?, Vector[B]] =
         copy(schema = fK(schema).map(_.translate(fK)))
@@ -77,13 +77,13 @@ object Collection:
     final case class Optional[F[+_], A, B](self: Collection.Writer[F, A, B]) extends Collection.Writer[F, A, Option[B]]:
       export self.schema
 
-    final case class Root[F[+_], A <: Schema.Writer[F, ?, B], B](schema: F[A])
+    final case class Root[F[+_], +A <: Schema.Writer[F, ?, B], B](schema: F[A])
         extends Collection.Writer[F, F[A], Vector[B]]
 
   final case class Optional[F[+_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
     export self.{constraints, schema}
 
-  final case class Root[F[+_], A <: Schema[F, ?, B], B](schema: F[A]) extends Collection[F, F[A], Vector[B]]:
+  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, F[A], Vector[B]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
 
   final case class Transform[F[+_], A, B, C, D](

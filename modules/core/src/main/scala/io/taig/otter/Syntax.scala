@@ -3,9 +3,22 @@ package io.taig.otter
 import io.taig.otter as Base
 import cats.Functor
 import cats.Contravariant
+import cats.Id
+import cats.Applicative
 
 trait Syntax extends Syntax1:
-  given primitiveRequiredIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive.Required, Primitive] = ???
+  given primitiveRequiredIsomoprhicOps(using
+      C: Applicative[container.Collection]
+  ): PrimitiveOps.Isomorphic[Primitive.Required, Primitive] with
+    extension [A](self: Primitive.Required[A]) override def tpe: Base.Type[?] = ???
+
+    extension [A, B](self: Primitive.Required[B])
+      override def collection: Collection.Of[self.type, Vector[B]] =
+        val x: Base.Collection.Root[container.Schema, self.type, B] = Base.Collection.Root(self)
+        ???
+      override def optional: Primitive[Option[B]] = ???
+      override def toPlain: Base.Schema[Id, A, B] = ???
+      override def union: Union.Of[self.type, B] = ???
 
   given primitiveRequiredToFunctorOps[A](using Functor[container.Primitive]): Conversion[
     Primitive.Required[A],
