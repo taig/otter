@@ -9,3 +9,5 @@ trait ValidationContravariant[Constraint[_], Actual[_], F[_]]
   extension [A](fa: F[A])
     override def ivalidate[B, C, D](validation: Validation[A, Constraint[B], Actual[C], D])(g: D => A): F[D] =
       contramap(fa)(g)
+    final def transform[B, C, D](transformation: Transformation.Writer[A, D]): F[D] =
+      contramap(fa)(transformation.apply)
