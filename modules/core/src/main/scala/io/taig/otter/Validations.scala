@@ -1,12 +1,9 @@
 package io.taig.otter
 
 import java.util.regex.Pattern
-import io.taig.otter.validation.Validation
 import cats.data.NonEmptyList
 import cats.data.NonEmptySet
 import cats.data.NonEmptySeq
-import cats.data.Validated
-import scala.util.chaining.*
 import scala.collection.immutable.SortedSet
 import cats.Order
 import cats.implicits.*
@@ -29,14 +26,9 @@ trait Validations extends Schemas, Syntax:
 
   def uniqueItems[F[a] <: Iterable[a], A](
       writer: Schema.Writer[A]
-  ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] =
-    Validation.validated(Constraint.Collection.UniqueItems):
-      _.groupBy(identity)
-        .collect { case (a, as) if as.sizeCompare(1) > 0 => a }
-        .toList
-        .pipe(NonEmptyList.fromList)
-        .toInvalidNec(())
-        .leftMap(_.tupleLeft(writer.collection.transform(nonEmptyList)))
+  ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
+    .mapConstraint(_ => Constraint.Collection.UniqueItems)
+    .mapActual((writer.collection.transform(nonEmptyList), _))
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 

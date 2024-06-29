@@ -2,7 +2,9 @@ package io.taig.otter.validation
 
 import java.util.regex.Pattern
 import cats.data.Validated
+import cats.data.NonEmptyList
 import cats.syntax.all.*
+import scala.util.chaining.*
 
 trait Validations:
   def matches(pattern: Pattern): Validation[String, Pattern, String, Unit] =
@@ -20,6 +22,14 @@ trait Validations:
 
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: Validation[F[A], 1L, 0L, (A, F[A])] =
     Validation.validated(1L)(fa => fa.headOption.toValidNec[0L](0L).tupleRight(fa.tail))
+
+  def uniqueItems[F[a] <: Iterable[a], A]: Validation[F[A], "uniqueItems", NonEmptyList[A], Unit] =
+    Validation.validated("uniqueItems"):
+      _.groupBy(identity)
+        .collect { case (a, as) if as.sizeCompare(1) > 0 => a }
+        .toList
+        .pipe(NonEmptyList.fromList)
+        .toInvalidNec(())
 
 // def equal(reference: String): Validation[String, Nothing, String, Unit] =
 //   matches(Pattern.compile(Pattern.quote(reference)))
