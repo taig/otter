@@ -13,22 +13,22 @@ trait Validations extends Schemas, Syntax:
   val email: SchemaValidation.Primitive[String, Nothing, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
   def matches(pattern: Pattern): SchemaValidation.Primitive[String, Nothing, String, Unit] =
-    Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual(ValidationWriter(string))
+    Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual(string.toValidationWriter)
 
   def maxItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Base.maxItems(reference).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual(ValidationWriter(long))
+    Base.maxItems(reference).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual(long.toValidationWriter)
 
   def minItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Base.minItems(reference).mapConstraint(Constraint.Collection.MinItems.apply).mapActual(ValidationWriter(long))
+    Base.minItems(reference).mapConstraint(Constraint.Collection.MinItems.apply).mapActual(long.toValidationWriter)
 
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: SchemaValidation.Collection[F[A], 0L, (A, F[A])] =
-    Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual(ValidationWriter(long))
+    Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual(long.toValidationWriter(_))
 
   def uniqueItems[F[a] <: Iterable[a], A](using
       writer: Schema.Writer[A]
   ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
     .mapConstraint(_ => Constraint.Collection.UniqueItems)
-    .mapActual(ValidationWriter(writer.collection(nonEmptyList)))
+    .mapActual(writer.collection(nonEmptyList).toValidationWriter)
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 

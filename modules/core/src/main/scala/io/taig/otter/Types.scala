@@ -8,53 +8,26 @@ trait Types:
   final type Constraint = Base.Constraint
   val Constraint: Base.Constraint.type = Base.Constraint
 
-  sealed abstract class ValidationWriter[+A]:
-    def value: A
+  type ValidationWriter[A] = Base.ValidationWriter[A]
 
-  object ValidationWriter:
-    final case class Root[A](writer: Schema.Writer[A], value: A) extends ValidationWriter[A]
-    def apply[A](writer: Schema.Writer[A])(value: A): ValidationWriter[A] = Root(writer, value)
-
-  final type SchemaTransformation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
-    Base.SchemaTransformation[ValidationWriter, Constraint, A, B, C, D]
-
-  object SchemaTransformation:
-    type Collection[A, B, C] = Base.SchemaTransformation.Collection[ValidationWriter, A, B, C]
-    type Object[A, B, C] = Base.SchemaTransformation.Object[ValidationWriter, A, B, C]
-    type Primitive[A, B, C, D] = Base.SchemaTransformation.Primitive[ValidationWriter, A, B, C, D]
-
-  final type SchemaValidation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
-    Base.SchemaValidation[ValidationWriter, Constraint, A, B, C, D]
-
-  object SchemaValidation:
-    type Collection[A, B, C] = Base.SchemaValidation.Collection[ValidationWriter, A, B, C]
-    type Object[A, B, C] = Base.SchemaValidation.Object[ValidationWriter, A, B, C]
-    type Primitive[A, B, C, D] = Base.SchemaValidation.Primitive[ValidationWriter, A, B, C, D]
+  type SchemaValidation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] = Base.SchemaValidation[Constraint, A, B, C, D]
+  val SchemaValidation: Base.SchemaValidation.type = Base.SchemaValidation
 
   object ValidationInvariant:
     type Collection[F[_]] = Base.ValidationInvariant[[_] =>> Constraint.Collection, ValidationWriter, F]
-    type Primitive[F[_]] = Base.ValidationInvariant[
-      [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
-      [a] =>> (Schema.Writer[a], a),
-      F
-    ]
+    type Primitive[F[_]] =
+      Base.ValidationInvariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
 
   object ValidationFunctor:
     type Collection[F[_]] = Base.ValidationFunctor[[_] =>> Constraint.Collection, ValidationWriter, F]
-    type Primitive[F[_]] = Base.ValidationFunctor[
-      [a] =>> Constraint.Primitive[ValidationWriter[a]],
-      ValidationWriter,
-      F
-    ]
+    type Primitive[F[_]] =
+      Base.ValidationFunctor[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
 
   object ValidationContravariant:
     type Collection[F[_]] =
       Base.ValidationContravariant[[_] =>> Constraint.Collection, ValidationWriter, F]
-    type Primitive[F[_]] = Base.ValidationContravariant[
-      [a] =>> Constraint.Primitive[ValidationWriter[a]],
-      ValidationWriter,
-      F
-    ]
+    type Primitive[F[_]] =
+      Base.ValidationContravariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
 
   object SchemaOps:
     type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Collection.Of, Union.Of]

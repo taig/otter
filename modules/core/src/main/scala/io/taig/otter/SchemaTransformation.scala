@@ -1,12 +1,11 @@
 package io.taig.otter
 
-type SchemaTransformation[Writer[_], Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
-  Transformation[A, Constraint[Writer[B]], Writer[C], D]
+type SchemaTransformation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
+  Transformation[A, Constraint[ValidationWriter[B]], ValidationWriter[C], D]
 
 object SchemaTransformation:
-  type Collection[Writer[_], A, B, C] =
-    SchemaTransformation[Writer, [_] =>> Constraint.Collection, A, Nothing, B, C]
+  type Collection[A, B, C] = SchemaTransformation[[_] =>> Constraint.Collection, A, Nothing, B, C]
 
-  type Object[Writer[_], A, B, C] = SchemaTransformation[Writer, [_] =>> Constraint.Object, A, Nothing, B, C]
+  type Object[A, B, C] = SchemaTransformation[[_] =>> Constraint.Object, A, Nothing, B, C]
 
-  type Primitive[Writer[_], A, B, C, D] = SchemaTransformation[Writer, Constraint.Primitive, A, B, C, D]
+  type Primitive[A, B, C, D] = SchemaTransformation[Constraint.Primitive, A, B, C, D]

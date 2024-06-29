@@ -10,7 +10,6 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import io.taig.otter.Constraint
 import io.taig.otter.Decoder
-import io.taig.otter.validation.Validation
 
 object JsonPrimitiveDecoder:
   def apply[A](schema: Primitive.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
@@ -31,14 +30,10 @@ object JsonPrimitiveDecoder:
 
   def transform[A, B, C, D](
       self: Primitive.Reader[A],
-      validation: Base.SchemaValidation.Primitive[Schema.Writer, A, B, C, D],
+      validation: SchemaValidation.Primitive[A, B, C, D],
       json: Json
   ): Decoder.Result[Json, D] = apply(self, json).andThen: a =>
     validation
       .apply(a)
-      .leftMap(_.map(a => {
-        // a.map(writer => JsonEncoder(writer, a))
-        ???
-      }))
-      // .leftMap(_.map(_.bimap(_.map(JsonEncoder.apply), JsonEncoder.apply)))
+      .leftMap(_.map(_.bimap(_.map(JsonValidationWriterEncoder.apply), JsonValidationWriterEncoder.apply)))
       .leftMap(Violations.root)
