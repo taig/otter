@@ -93,17 +93,17 @@ lazy val core = module(identifier = Some("core"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
-      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+      // "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        // "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        // "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-  .jsSettings(
-    libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
-      .cross(CrossVersion.for3Use2_13)
-  )
+  // .jsSettings(
+  //   libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
+  //     .cross(CrossVersion.for3Use2_13)
+  // )
   .dependsOn(validation)
 
 lazy val jsonCirce = module(identifier = Some("json-circe"))
