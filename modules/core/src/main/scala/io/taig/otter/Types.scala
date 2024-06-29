@@ -8,10 +8,20 @@ trait Types:
   final type Constraint = Base.Constraint
   val Constraint: Base.Constraint.type = Base.Constraint
 
-  final type SchemaValidation[Constraint[a] <: Constraint.Any[a], A, B, C, D] =
+  final type SchemaTransformation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
+    Base.SchemaTransformation[Schema.Writer, Constraint, A, B, C, D]
+
+  object SchemaTransformation:
+    type Collection[A, B, C] = Base.SchemaTransformation.Collection[Schema.Writer, A, B, C]
+    type Object[A, B, C] = Base.SchemaTransformation.Object[Schema.Writer, A, B, C]
+    type Primitive[A, B, C, D] = Base.SchemaTransformation.Primitive[Schema.Writer, A, B, C, D]
+
+  final type SchemaValidation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
     Base.SchemaValidation[Schema.Writer, Constraint, A, B, C, D]
 
   object SchemaValidation:
+    type Collection[A, B, C] = Base.SchemaValidation.Collection[Schema.Writer, A, B, C]
+    type Object[A, B, C] = Base.SchemaValidation.Object[Schema.Writer, A, B, C]
     type Primitive[A, B, C, D] = Base.SchemaValidation.Primitive[Schema.Writer, A, B, C, D]
 
   object ValidationInvariant:
@@ -20,55 +30,41 @@ trait Types:
       [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
       [a] =>> (Schema.Writer[a], a),
       F
-      ]
-      
+    ]
+
   object ValidationFunctor:
     type Collection[F[_]] = Base.ValidationFunctor[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
     type Primitive[F[_]] = Base.ValidationFunctor[
       [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
       [a] =>> (Schema.Writer[a], a),
       F
-      ]
+    ]
 
   object ValidationContravariant:
-    type Collection[F[_]] = Base.ValidationContravariant[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
+    type Collection[F[_]] =
+      Base.ValidationContravariant[[_] =>> Constraint.Collection, [a] =>> (Schema.Writer[a], a), F]
     type Primitive[F[_]] = Base.ValidationContravariant[
       [a] =>> Constraint.Primitive[(Schema.Writer[a], a)],
       [a] =>> (Schema.Writer[a], a),
       F
-      ]
+    ]
 
   object SchemaOps:
-    type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Schema.Of, Collection.Of, Union.Of]
+    type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Collection.Of, Union.Of]
     type Reader =
-      Base.SchemaOps.Reader[Schema.Reader.Of, Schema.Writer.Of, Schema.Writer.Of, Collection.Reader.Of, Union.Reader.Of]
+      Base.SchemaOps.Reader[Schema.Reader.Of, Schema.Writer.Of, Collection.Reader.Of, Union.Reader.Of]
     type Writer =
-      Base.SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
+      Base.SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
 
   object CollectionOps:
-    type Isomorphic = Base.CollectionOps.Isomorphic[Collection.Of, Union.Of, Schema.Of, Schema.Writer, Schema.Any]
-    type Reader = Base.CollectionOps.Reader[
-      Collection.Reader.Of,
-      Union.Reader.Of,
-      Schema.Reader.Of,
-      Schema.Writer,
-      Schema.Reader.Any
-    ]
-    type Writer = Base.CollectionOps.Writer[
-      Collection.Writer.Of,
-      Union.Writer.Of,
-      Schema.Writer.Of,
-      Schema.Writer,
-      Schema.Writer.Any
-    ]
+    type Isomorphic = Base.CollectionOps.Isomorphic[Collection.Of, Union.Of, Schema.Writer, Schema.Any]
+    type Reader = Base.CollectionOps.Reader[Collection.Reader.Of, Union.Reader.Of, Schema.Writer, Schema.Reader.Any]
+    type Writer = Base.CollectionOps.Writer[Collection.Writer.Of, Union.Writer.Of, Schema.Writer, Schema.Writer.Any]
 
   object PrimitiveOps:
-    type Isomorphic[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Isomorphic[Self, Optional, Schema.Of, Collection.Of, Union.Of]
-    type Reader[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Reader[Self, Optional, Schema.Reader.Of, Collection.Reader.Of, Union.Reader.Of]
-    type Writer[Self[_], Optional[_]] =
-      Base.PrimitiveOps.Writer[Self, Optional, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
+    type Isomorphic[Self[_], Optional[_]] = Base.PrimitiveOps.Isomorphic[Self, Optional, Collection.Of, Union.Of]
+    type Reader[Self[_], Optional[_]] = Base.PrimitiveOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of]
+    type Writer[Self[_], Optional[_]] = Base.PrimitiveOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of]
 
   object UnionOps:
     type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]

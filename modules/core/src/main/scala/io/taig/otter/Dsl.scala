@@ -1,3 +1,3 @@
 package io.taig.otter
 
-trait Dsl extends Schemas, Instances, Syntax, Validations, Collections
+trait Dsl extends Schemas, Instances, Syntax, Validations

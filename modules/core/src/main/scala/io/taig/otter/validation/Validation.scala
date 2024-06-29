@@ -36,7 +36,7 @@ object Validation:
   def option[In, A, Out](constraint: A)(f: In => Option[Out]): Validation[In, A, In, Out] =
     Validation(Chain.one(constraint))(in => f(in).toValidNec(Violation(constraint, in)))
 
-  def when[In, A, Out](constraint: A)(f: In => Boolean): Validation[In, A, In, Unit] =
+  def when[In, A](constraint: A)(f: In => Boolean): Validation[In, A, In, Unit] =
     Validation(Chain.one(constraint))(in => Validated.condNec(f(in), (), Violation(constraint, in)))
 
   def lift[A, B](f: A => B): Validation[A, Nothing, Nothing, B] = Validation(Chain.empty)(f(_).valid)

@@ -7,9 +7,8 @@ trait Transformation[A, +B, +C, D] extends Transformation.Reader[A, B, C, D], Tr
   final def imap[E](f: D => E)(g: E => D): Transformation[A, B, C, E] =
     Transformation(validation.map(f))(apply.compose(g))
 
-  final def ivalidate[E, F, G](validation: Validation[D, E, F, G])(
-      f: G => D
-  ): Transformation[A, B | E, C | F, G] = Transformation(this.validation.andThen(validation))(apply.compose(f))
+  final def ivalidate[E, F, G](validation: Validation[D, E, F, G])(f: G => D): Transformation[A, B | E, C | F, G] =
+    Transformation(this.validation.andThen(validation))(apply.compose(f))
 
   override def validate_[E, F](validation: Validation[D, E, F, Unit]): Transformation[A, B | E, C | F, D] =
     ivalidate(validation.tap)(identity)
@@ -43,7 +42,7 @@ object Transformation:
 
     def lift[A, B](f: A => B): Transformation.Reader[A, Nothing, Nothing, B] = Reader(Validation.lift(f))
 
-  trait Writer[A, B]:
+  trait Writer[+A, -B]:
     self =>
 
     def apply(b: B): A

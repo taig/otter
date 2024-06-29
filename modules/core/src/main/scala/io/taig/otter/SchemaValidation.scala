@@ -2,7 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 
-type SchemaValidation[Writer[_], Contraint[a] <: Constraint.Any[a], A, B, C, D] =
+type SchemaValidation[Writer[_], Contraint[+a] <: Constraint.Any[a], A, B, C, D] =
   Validation[A, Contraint[(Writer[B], B)], (Writer[C], C), D]
 
 object SchemaValidation:

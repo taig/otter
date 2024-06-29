@@ -8,5 +8,9 @@ trait ValidationInvariant[Constraint[_], Actual[_], F[_]] extends Invariant[F]:
 
   extension [A](fa: F[A])
     def ivalidate[B, C, D](validation: Validation[A, Constraint[B], Actual[C], D])(g: D => A): F[D]
+
+    final def ivalidate_[B, C](validation: Validation[A, Constraint[B], Actual[C], Unit]): F[A] =
+      ivalidate(validation.tap)(identity)
+
     final def transform[B, C, D](transformation: Transformation[A, Constraint[B], Actual[C], D]): F[D] =
       fa.ivalidate(transformation.validation)(transformation.apply)

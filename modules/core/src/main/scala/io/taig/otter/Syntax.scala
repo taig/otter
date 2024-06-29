@@ -68,6 +68,12 @@ trait Syntax2 extends Syntax3:
   ] = toContravariantOps[Union.Of, Union.Writer.Of, A, B]
 
 trait Syntax3 extends Instances:
+  given schemaIsomorphicCoproductLiftOps: CoproductLiftOps[Schema.Of, Schema.Of, Union.Of] = ???
+
+  given schemaReaderCoproductLiftOps: CoproductLiftOps[Schema.Reader.Of, Schema.Reader.Of, Union.Reader.Of] = ???
+
+  given schemaWriterCoproductLiftOps: CoproductLiftOps[Schema.Writer.Of, Schema.Writer.Of, Union.Writer.Of] = ???
+
   given schemaIsomoprhicOps: SchemaOps.Isomorphic = ???
 
   given schemaReaderOps: SchemaOps.Reader = ???
