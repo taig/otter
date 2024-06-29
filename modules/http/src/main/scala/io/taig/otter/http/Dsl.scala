@@ -5,6 +5,8 @@ import io.taig.otter.Type
 import cats.syntax.all.*
 import cats.Comonad
 import io.taig.otter.ApplicativeComonad
+import io.taig.otter.Plain
+import cats.arrow.FunctionK
 
 trait Dsl extends Base.Dsl:
   override object container extends Base.Container:
@@ -21,6 +23,9 @@ trait Dsl extends Base.Dsl:
   given primitiveApplicativeComonad: ApplicativeComonad[container.Primitive] = ???
 
   given unionApplicativeComonad: ApplicativeComonad[container.Union] = ???
+
+  extension [A](self: Schema[A])
+    def toPlain: Plain.Schema[A] = self.self.translate(FunctionK.liftFunction(_.self))
 
   given Comonad[container.Schema] with
     override def coflatMap[A, B](fa: container.Schema[A])(f: container.Schema[A] => B): container.Schema[B] =

@@ -20,6 +20,7 @@ object Playground:
   val _: Primitive.Required.Reader.Any = string.as(???)
   val col: Collection.Writer[Vector[String]] = a.collection
   string.collection.ivalidate_(minItems(3))
+  string.collection(list)
 
   val _: Union[Either[String, Int]] = string.union :+ int
   val _: Union.Of[Primitive.Any, Either[String, Int]] = string :+ int

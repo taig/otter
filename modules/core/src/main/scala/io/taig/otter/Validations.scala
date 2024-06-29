@@ -24,11 +24,11 @@ trait Validations extends Schemas, Syntax:
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: SchemaValidation.Collection[F[A], 0L, (A, F[A])] =
     Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual(ValidationWriter(long))
 
-  def uniqueItems[F[a] <: Iterable[a], A](
-      using writer: Schema.Writer[A]
+  def uniqueItems[F[a] <: Iterable[a], A](using
+      writer: Schema.Writer[A]
   ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
     .mapConstraint(_ => Constraint.Collection.UniqueItems)
-    .mapActual(ValidationWriter(writer.collection.transform(nonEmptyList)))
+    .mapActual(ValidationWriter(writer.collection(nonEmptyList)))
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 
@@ -48,6 +48,7 @@ trait Validations extends Schemas, Syntax:
   def sortedSet[A: Schema.Writer: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], SortedSet[A]] =
     set[A].imap(SortedSet.from)(_.toSet)
 
-  def nonEmptySet[A: Schema.Writer: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A] | Long, NonEmptySet[A]] = sortedSet[A]
+  def nonEmptySet[A: Schema.Writer: Order]
+      : SchemaTransformation.Collection[Vector[A], NonEmptyList[A] | Long, NonEmptySet[A]] = sortedSet[A]
     .ivalidate(nonEmpty)({ case (a, as) => as + a })
     .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))
