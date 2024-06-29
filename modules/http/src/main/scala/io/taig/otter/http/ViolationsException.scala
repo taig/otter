@@ -1,6 +1,5 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 
 final class ViolationsException(val violations: Violations[?, ?]) extends RuntimeException:

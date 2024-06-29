@@ -5,6 +5,7 @@ import cats.Functor
 import cats.Contravariant
 import cats.Id
 import cats.Applicative
+import cats.Comonad
 
 trait Syntax extends Syntax1:
   given primitiveRequiredIsomoprhicOps(using
@@ -50,11 +51,40 @@ trait Syntax2 extends Syntax3:
     Contravariant.Ops[Collection.Writer.Of[A, *], B]
   ] = toContravariantOps[Collection.Of, Collection.Writer.Of, A, B]
 
-  given primitiveIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive, Primitive] = ???
+  given primitiveIsomoprhicOps(using
+      F: Applicative[container.Collection]
+  ): PrimitiveOps.Isomorphic[Primitive, Primitive] = new PrimitiveOps.Isomorphic[Primitive, Primitive] {
 
-  given primitiveReaderOps: PrimitiveOps.Reader[Primitive.Reader, Primitive.Reader] = ???
+    extension [A](self: Primitive[A]) override def tpe: Base.Type[?] = ???
 
-  given primitiveWriterOps: PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] = ???
+    extension [A, B](self: Primitive[B])
+      override def toPlain: Base.Schema[Id, A, B] = ???
+      override def collection: Collection.Of[self.type, Vector[B]] =
+        F.pure(Base.Collection.Root(self))
+      override def optional: Primitive[Option[B]] = ???
+      override def union: Union.Of[self.type, B] = ???
+
+  }
+
+  given primitiveReaderOps(using
+      F: Applicative[container.Collection]
+  ): PrimitiveOps.Reader[Primitive.Reader, Primitive.Reader] = ???
+
+  given primitiveWriterOps(using
+      F: Applicative[container.Collection]
+  ): PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] =
+    new PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] {
+
+      extension [A](self: Primitive.Writer[A]) override def tpe: Base.Type[?] = ???
+
+      extension [A, B](self: Primitive.Writer[B])
+        override def collection: Collection.Writer.Of[self.type, Vector[B]] =
+          F.pure(Base.Collection.Writer.Root(self))
+        override def optional: Primitive.Writer[Option[B]] = ???
+        override def union: Union.Writer.Of[self.type, B] = ???
+        override def toPlain: Base.Schema.Writer[Id, A, B] = ???
+
+    }
 
   given primitiveToFunctorOps[A]: Conversion[Primitive[A], Functor.Ops[Primitive.Reader, A]] =
     toFunctorOps[[_, a] =>> Primitive[a], [_, a] =>> Primitive.Reader[a], Nothing, A]

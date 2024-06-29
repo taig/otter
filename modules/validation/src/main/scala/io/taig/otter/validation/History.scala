@@ -12,6 +12,10 @@ object History:
     case Field(name: String)
     case Index(value: Int)
 
+    final override def toString: String = this match
+      case Index(value) => s"[$value]"
+      case Field(name) => name
+
   object Step:
     given Order[Step] =
       case (Field(x), Field(y)) => x compare y
