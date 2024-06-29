@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter.validation.Validation
 
 type SchemaValidation[Writer[_], Contraint[+a] <: Constraint.Any[a], A, B, C, D] =
-  Validation[A, Contraint[(Writer[B], B)], (Writer[C], C), D]
+  Validation[A, Contraint[Writer[B]], Writer[C], D]
 
 object SchemaValidation:
   type Collection[Writer[_], A, B, C] =

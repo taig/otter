@@ -13,22 +13,22 @@ trait Validations extends Schemas, Syntax:
   val email: SchemaValidation.Primitive[String, Nothing, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
   def matches(pattern: Pattern): SchemaValidation.Primitive[String, Nothing, String, Unit] =
-    Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual((string, _))
+    Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual(ValidationWriter(string))
 
   def maxItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Base.maxItems(reference).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual((long, _))
+    Base.maxItems(reference).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual(ValidationWriter(long))
 
   def minItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Base.minItems(reference).mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
+    Base.minItems(reference).mapConstraint(Constraint.Collection.MinItems.apply).mapActual(ValidationWriter(long))
 
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: SchemaValidation.Collection[F[A], 0L, (A, F[A])] =
-    Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
+    Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual(ValidationWriter(long))
 
   def uniqueItems[F[a] <: Iterable[a], A](
       writer: Schema.Writer[A]
   ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
     .mapConstraint(_ => Constraint.Collection.UniqueItems)
-    .mapActual((writer.collection.transform(nonEmptyList), _))
+    .mapActual(ValidationWriter(writer.collection.transform(nonEmptyList)))
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 
@@ -52,5 +52,6 @@ trait Validations extends Schemas, Syntax:
 
   def nonEmptySet[A: Order](
       writer: Schema.Writer[A]
-  ): SchemaTransformation.Collection[Vector[A], NonEmptyList[A] | Long, NonEmptySet[A]] = ???
-  // sortedSet[A](writer).ivalidate(nonEmpty)({ case (a, as) => as + a }).imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))
+  ): SchemaTransformation.Collection[Vector[A], NonEmptyList[A] | Long, NonEmptySet[A]] = sortedSet[A](writer)
+    .ivalidate(nonEmpty)({ case (a, as) => as + a })
+    .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))

@@ -1,7 +1,7 @@
 package io.taig.otter
 
 type SchemaTransformation[Writer[_], Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
-  Transformation[A, Constraint[(Writer[B], B)], (Writer[C], C), D]
+  Transformation[A, Constraint[Writer[B]], Writer[C], D]
 
 object SchemaTransformation:
   type Collection[Writer[_], A, B, C] =
