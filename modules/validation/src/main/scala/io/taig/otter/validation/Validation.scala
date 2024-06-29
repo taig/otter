@@ -3,6 +3,7 @@ package io.taig.otter.validation
 import cats.data.{Chain, Validated, ValidatedNec}
 import cats.syntax.all.*
 import cats.Applicative
+import cats.arrow.Arrow
 
 sealed abstract class Validation[-In, +A, +B, +Out]:
   def constraints: Chain[A]
@@ -51,8 +52,8 @@ object Validation:
     override def ap[C, D](ff: Validation[In, A, B, C => D])(fa: Validation[In, A, B, C]): Validation[In, A, B, D] =
       Validation(fa.constraints ++ ff.constraints)(a => (ff(a), fa(a)).mapN(_ apply _))
 
-//   given Arrow[Validation] with
-//     override def lift[A, B](f: A => B): Validation[A, B] = Validation.lift(f)
-//     override def first[A, B, C](fa: Validation[A, B]): Validation[(A, C), (B, C)] = fa.first
-//     override def compose[A, B, C](f: Validation[B, C], g: Validation[A, B]): Validation[A, C] =
-//       Validation(g.constraints ++ f.constraints)(g(_).andThen(f.apply))
+  given [A, B]: Arrow[Validation[*, A, B, *]] with
+    override def lift[C, D](f: C => D): Validation[C, A, B, D] = Validation.lift(f)
+    override def first[C, D, E](fa: Validation[C, A, B, D]): Validation[(C, E), A, B, (D, E)] = fa.first
+    override def compose[C, D, E](f: Validation[D, A, B, E], g: Validation[C, A, B, D]): Validation[C, A, B, E] =
+      Validation(g.constraints ++ f.constraints)(g(_).andThen(f.apply))

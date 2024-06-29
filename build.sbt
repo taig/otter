@@ -60,6 +60,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
+    validation,
     core,
     jsonCirce,
     // circe,
@@ -75,6 +76,13 @@ lazy val root = module(identifier = None, jvmOnly = true)
     // http4s,
     // munit,
     // sample
+  )
+
+lazy val validation = module(identifier = Some("validation"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %% "cats-core" % Version.Cats ::
+        Nil
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -96,6 +104,7 @@ lazy val core = module(identifier = Some("core"))
     libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
       .cross(CrossVersion.for3Use2_13)
   )
+  .dependsOn(validation)
 
 lazy val jsonCirce = module(identifier = Some("json-circe"))
   .settings(
