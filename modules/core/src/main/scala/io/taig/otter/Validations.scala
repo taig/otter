@@ -6,32 +6,26 @@ import cats.data.NonEmptyList
 import cats.data.NonEmptySet
 import cats.data.NonEmptySeq
 import cats.data.Validated
-import cats.syntax.all.*
 import scala.util.chaining.*
 import scala.collection.immutable.SortedSet
 import cats.Order
 import cats.implicits.*
+import io.taig.otter.validation.Validations as Base
 
 trait Validations extends Schemas, Syntax:
   val email: SchemaValidation.Primitive[String, Nothing, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
-  def matches(pattern: Pattern): SchemaValidation.Primitive[String, Nothing, String, Unit] = Validation
-    .when(Constraint.Primitive.Matches(pattern))((value: String) => pattern.matcher(value).matches())
-    .mapActual((string, _))
+  def matches(pattern: Pattern): SchemaValidation.Primitive[String, Nothing, String, Unit] =
+    Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual((string, _))
 
   def maxItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Validation.validated(Constraint.Collection.MinItems(reference)): fa =>
-      val length = fa.size
-      Validated.condNec(length <= reference, (), (long, length.toLong))
+    Base.maxItems(reference).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual((long, _))
 
   def minItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
-    Validation.validated(Constraint.Collection.MinItems(reference)): fa =>
-      val length = fa.size
-      Validated.condNec(length >= reference, (), (long, length.toLong))
+    Base.minItems(reference).mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
 
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: SchemaValidation.Collection[F[A], 0L, (A, F[A])] =
-    Validation.validated(Constraint.Collection.MinItems(reference = 1)): fa =>
-      fa.headOption.toValidNec[0L](0L).tupleRight(fa.tail).leftMap(_.tupleLeft(long))
+    Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
 
   def uniqueItems[F[a] <: Iterable[a], A](
       writer: Schema.Writer[A]

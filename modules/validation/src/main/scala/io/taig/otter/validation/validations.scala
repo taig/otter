@@ -1,27 +1,28 @@
 package io.taig.otter.validation
 
-import cats.Eq
-import cats.Foldable
-import cats.Order
-import cats.UnorderedFoldable
-import cats.data.Chain
-import cats.data.Validated
-import cats.implicits.*
-
-import java.time.LocalDate
-import java.time.LocalDateTime
-import java.time.format.DateTimeParseException
-import java.util.UUID
 import java.util.regex.Pattern
-import scala.Numeric.Implicits.*
-import scala.Ordering.Implicits.*
-import scala.collection.immutable.SortedSet
+import cats.data.Validated
+import cats.syntax.all.*
 
-trait validations
+trait Validations:
+  def matches(pattern: Pattern): Validation[String, Pattern, String, Unit] =
+    Validation.when(pattern)(pattern.matcher(_).matches())
+
+  def minItems[F[a] <: Iterable[a], A](reference: Long): Validation[F[A], reference.type, Long, Unit] =
+    Validation.validated(reference): fa =>
+      val length = fa.size
+      Validated.condNec(length >= reference, (), length.toLong)
+
+  def maxItems[F[a] <: Iterable[a], A](reference: Long): Validation[F[A], reference.type, Long, Unit] =
+    Validation.validated(reference): fa =>
+      val length = fa.size
+      Validated.condNec(length >= reference, (), length.toLong)
+
+  def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: Validation[F[A], 1L, 0L, (A, F[A])] =
+    Validation.validated(1L)(fa => fa.headOption.toValidNec[0L](0L).tupleRight(fa.tail))
+
 // def equal(reference: String): Validation[String, Nothing, String, Unit] =
 //   matches(Pattern.compile(Pattern.quote(reference)))
-
-// val email: Validation[String, String, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
 // def minimum[A: Numeric](reference: A, exclusive: Boolean): Validation[A, A, A, Unit] =
 //   Validation.validated(Constraint.Minimum(reference, exclusive)): a =>
@@ -107,9 +108,6 @@ trait validations
 
 // def length(reference: Int): Validation[String, Nothing, Int, Unit] = length(reference, _.length)
 
-// def matches(pattern: Pattern): Validation[String, Nothing, String, Unit] =
-//   Validation.when(Constraint.Matches(pattern))(pattern.matcher(_).matches())
-
 //   def minItems[A](reference: Long, count: A => Long): Validation[A, Unit] =
 //     Validation.of(Constraint.MinItems(reference)): values =>
 //       val size = count(values)
@@ -153,4 +151,4 @@ trait validations
 
 //     duplicate.isEmpty
 
-object validations extends validations
+object Validations extends Validations
