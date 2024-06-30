@@ -193,6 +193,8 @@ sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B]
   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)
   override def optional: Union[F, A, Option[B]] = ???
 
+  def orElse[G[+a] >: F[a], C, D](union: Union[G, C, D]): Union[G, A | C, Either[B, D]] = Union.OrElse(this, union)
+
 object Union:
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     final override def map[C](f: B => C): Union.Reader[F, A, C] = ???

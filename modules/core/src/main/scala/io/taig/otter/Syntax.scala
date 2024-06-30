@@ -119,6 +119,7 @@ trait Syntax3 extends Syntax4:
           // why does this have to suck so badly?
           val r: Base.Union[container.Schema, self.type | other.type, Either[B, D]] =
             Base.Union.OrElse[container.Schema, self.type, B, other.type, D](x, y)
+
           Applicative[container.Union].pure(r)
 
   implicit def schemaIsomoprhicOps: SchemaOps.Isomorphic = new SchemaOps.Isomorphic:
