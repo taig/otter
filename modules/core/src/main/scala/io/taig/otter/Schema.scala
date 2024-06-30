@@ -190,7 +190,7 @@ object Primitive:
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
 sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
-  override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = ???
+  override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)
   override def optional: Union[F, A, Option[B]] = ???
 
 object Union:
@@ -214,7 +214,9 @@ object Union:
 
     final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Union.Writer[F, A, B]
 
-  final case class OrElse[+F[+_], A, B, C, D](left: Union[F, A, B], right: Union[F, C, D])
+  final case class OrElse[+F[+_], +A, B, +C, D](left: Union[F, A, B], right: Union[F, C, D])
       extends Union[F, A | C, Either[B, D]]
 
   final case class Root[+F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Union[F, A, B]
+
+  final case class Transform[+F[+_], A, B, C](self: Union[F, A, B], f: B => C, g: C => B) extends Union[F, A, C]

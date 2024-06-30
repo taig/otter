@@ -20,7 +20,9 @@ trait Instances extends Instances1:
             g: D => A
         ): Primitive.Required[D] = Functor[container.Primitive].map(fa)(_.ivalidate(validation)(g))
 
-  implicit def unionInvariant[A]: Invariant[Union.Of[A, *]] = ???
+  implicit def unionInvariant[A]: Invariant[Union.Of[A, *]] = new Invariant[Union.Of[A, *]]:
+    override def imap[B, C](fa: Union.Of[A, B])(f: B => C)(g: C => B): Union.Of[A, C] =
+      Functor[container.Union].map(fa)(_.imap(f)(g))
 
   implicit def unionFunctor[A]: Functor[Union.Reader.Of[A, *]] = ???
 

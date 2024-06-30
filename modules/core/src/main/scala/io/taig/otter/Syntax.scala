@@ -110,13 +110,16 @@ trait Syntax2 extends Syntax3:
 trait Syntax3 extends Syntax4:
   implicit def schemaIsomorphicCoproductLiftOps: CoproductLiftOps[Schema.Of, Schema.Of, Union.Of] =
     new CoproductLiftOps[Schema.Of, Schema.Of, Union.Of]:
-      override given resultInvariant[A]: Invariant[Union.Of[A, *]] = ???
+      override given resultInvariant[A]: Invariant[Union.Of[A, *]] = unionInvariant
 
       extension [A, B](self: Schema.Of[A, B])
         override def or[C, D](other: Schema.Of[C, D]): Union.Of[self.type | other.type, Either[B, D]] =
-          val left = Comonad[container.Union].extract(self.union)
-          val right = Comonad[container.Union].extract(other.union)
-          Applicative[container.Union].pure(Base.Union.OrElse(???, ???))
+          val x: Base.Union[container.Schema, self.type, B] = Comonad[container.Union].extract(self.union)
+          val y: Base.Union[container.Schema, other.type, D] = Comonad[container.Union].extract(other.union)
+          // why does this have to suck so badly?
+          val r: Base.Union[container.Schema, self.type | other.type, Either[B, D]] =
+            Base.Union.OrElse[container.Schema, self.type, B, other.type, D](x, y)
+          Applicative[container.Union].pure(r)
 
   implicit def schemaIsomoprhicOps: SchemaOps.Isomorphic = new SchemaOps.Isomorphic:
     extension [A, B](self: Schema.Of[A, B])
