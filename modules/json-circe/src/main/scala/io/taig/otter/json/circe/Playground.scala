@@ -1,7 +1,6 @@
 package io.taig.otter.json.circe
 
 import io.taig.otter.Plain.*
-import io.taig.otter.Plain.given
 import io.circe.Json
 
 object Playground:

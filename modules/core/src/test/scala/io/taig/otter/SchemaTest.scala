@@ -1,17 +1,14 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.syntax.all.*
 import munit.FunSuite
-import io.taig.otter.Decoder
-import io.taig.otter.Encoder
 import munit.Location
 import munit.Compare
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Dsl
 
 abstract class SchemaTest[A] extends FunSuite:
-  schemas: Dsl =>
+  this: Dsl =>
 
   def decoder: Decoder[Schema.Reader, A]
 
@@ -22,17 +19,17 @@ abstract class SchemaTest[A] extends FunSuite:
     expected = value
   )
 
-  // test("collection"):
-  //   test(string.collection, Vector("foo", "bar", "baz"))
-  //   test(int.collection, Vector(1, 2, 3))
-  //   test(int.optional.collection, Vector(1.some, none, 3.some))
+  test("collection"):
+    test(string.collection, Vector("foo", "bar", "baz"))
+    test(int.collection, Vector(1, 2, 3))
+    test(int.optional.collection, Vector(1.some, none, 3.some))
 
-  // test("collection: optional"):
-  //   test(int.collection.optional, Vector(1, 2, 3).some)
-  //   test(int.collection.optional, none)
+  test("collection: optional"):
+    test(int.collection.optional, Vector(1, 2, 3).some)
+    test(int.collection.optional, none)
 
-  // test("collection: list"):
-  //   test(string.collection(list), List("foo", "bar", "baz"))
+  test("collection: list"):
+    test(string.collection(list), List("foo", "bar", "baz"))
 
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))

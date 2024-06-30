@@ -13,11 +13,9 @@ trait Plain extends Dsl:
     override type Tuple[+A] = A
     override type Union[+A] = A
 
-  override def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive.Required.Root(tpe)
-
-  override given schemaApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  override given collectionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  override given primitiveApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  override given unionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  implicit override def schemaApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  implicit override def collectionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  implicit override def primitiveApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  implicit override def unionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
 
 object Plain extends Plain

@@ -3,9 +3,12 @@ package io.taig.otter
 import io.taig.otter as Base
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import cats.Applicative
 
-trait Schemas extends Types:
-  def primitive[A](tpe: Type[A]): Primitive.Required[A]
+trait Schemas extends Instances:
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] =
+    Applicative[container.Primitive].pure(Base.Primitive.Required.Root(tpe))
+
   final val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
   final val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
   final val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
