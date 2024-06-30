@@ -14,7 +14,7 @@ object History:
 
     final override def toString: String = this match
       case Index(value) => s"[$value]"
-      case Field(name) => name
+      case Field(name)  => name
 
   object Step:
     given Order[Step] =

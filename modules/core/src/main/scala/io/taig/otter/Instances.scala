@@ -6,7 +6,12 @@ import cats.Functor
 import cats.Contravariant
 
 trait Instances extends Instances1:
-  given collectionInvariant[A]: ValidationInvariant.Collection[Collection.Of[A, *]] = ???
+  given collectionInvariant[A]: ValidationInvariant.Collection[Collection.Of[A, *]] with
+    extension [B](fa: Collection.Of[A, B])
+      override def ivalidate[C, D, E](validation: SchemaValidation.Collection[B, D, E])(
+          g: E => B
+      ): Collection.Of[A, E] =
+        ???
 
   given primitiveRequiredInvariant: ValidationInvariant.Primitive[Primitive.Required] = ???
 
@@ -32,12 +37,15 @@ trait Instances2 extends Types:
 
   given primitiveContravariant: ValidationContravariant.Primitive[Primitive.Writer] = ???
 
-  given schemaIsomporhicInvariant[A](using F: Functor[container.Schema]): Invariant[Schema.Of[A, *]] with
-    override def imap[B, C](fa: Schema.Of[A, B])(f: B => C)(g: C => B): Schema.Of[A, C] = F.map(fa)(_.imap(f)(g))
+  given schemaIsomporhicInvariant[A]: Invariant[Schema.Of[A, *]] = ???
+  // with
+  //   override def imap[B, C](fa: Schema.Of[A, B])(f: B => C)(g: C => B): Schema.Of[A, C] = F.map(fa)(_.imap(f)(g))
 
-  given schemaFunctor[A](using F: Functor[container.Schema]): Functor[Schema.Reader.Of[A, *]] with
-    override def map[B, C](fa: Schema.Reader.Of[A, B])(f: B => C): Schema.Reader.Of[A, C] = F.map(fa)(_.map(f))
+  given schemaFunctor[A]: Functor[Schema.Reader.Of[A, *]] = ???
+  // with
+  //   override def map[B, C](fa: Schema.Reader.Of[A, B])(f: B => C): Schema.Reader.Of[A, C] = F.map(fa)(_.map(f))
 
-  given schemaContravariant[A](using F: Functor[container.Schema]): Contravariant[Schema.Writer.Of[A, *]] with
-    override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
-      F.map(fa)(_.contramap(f))
+  given schemaContravariant[A]: Contravariant[Schema.Writer.Of[A, *]] = ???
+  // with
+  //   override def contramap[B, C](fa: Schema.Writer.Of[A, B])(f: C => B): Schema.Writer.Of[A, C] =
+  //     F.map(fa)(_.contramap(f))

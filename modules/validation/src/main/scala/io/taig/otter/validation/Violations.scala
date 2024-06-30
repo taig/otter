@@ -23,14 +23,6 @@ enum Violations[+A, +B]:
     case (left @ Namespace(x, xs), right) => Group(NonEmptyChain(left, right))
     case (left, right @ Namespace(y, ys)) => Group(NonEmptyChain(left, right))
 
-  override def toString(): String = this match
-    case Root(violation) => s"$violation"
-    case Group(violations) => 
-      s"""{
-      |  $violations
-      |}""".stripMargin
-    case Namespace(step, violations) => s".$step: $violations"
-
 object Violations:
   def root[A, B](violations: NonEmptyChain[Violation[A, B]]): Violations[A, B] = Group(violations.map(Root.apply))
   def rootNec[A, B](violation: Violation[A, B]): Violations[A, B] = Root(violation)

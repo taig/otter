@@ -24,8 +24,6 @@ trait Dsl extends Base.Dsl:
 
   given unionApplicativeComonad: ApplicativeComonad[container.Union] = ???
 
-  extension [A](self: Schema[A]) def toPlain: Plain.Schema[A] = self.self.translate(FunctionK.liftFunction(_.self))
-
   given Comonad[container.Schema] with
     override def coflatMap[A, B](fa: container.Schema[A])(f: container.Schema[A] => B): container.Schema[B] =
       fa.copy(self = f(fa))

@@ -3,28 +3,16 @@ package io.taig.otter
 import io.taig.otter as Base
 import cats.Functor
 import cats.Contravariant
-import cats.Id
-import cats.Applicative
-import cats.Comonad
 
 trait Syntax extends Syntax1:
-  given primitiveRequiredIsomoprhicOps(using
-      C: Applicative[container.Collection]
-  ): PrimitiveOps.Isomorphic[Primitive.Required, Primitive] with
-    extension [A](self: Primitive.Required[A]) override def tpe: Base.Type[?] = ???
+  given primitiveRequiredIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive.Required, Primitive] = ???
 
-    extension [A, B](self: Primitive.Required[B])
-      override def collection: Collection.Of[self.type, Vector[B]] = C.pure(Base.Collection.Root(self))
-      override def optional: Primitive[Option[B]] = ???
-      override def toPlain: Base.Schema[Id, A, B] = ???
-      override def union: Union.Of[self.type, B] = ???
-
-  given primitiveRequiredToFunctorOps[A](using Functor[container.Primitive]): Conversion[
+  given primitiveRequiredToFunctorOps[A]: Conversion[
     Primitive.Required[A],
     Functor.Ops[Primitive.Required.Reader, A]
   ] = toFunctorOps[[_, a] =>> Primitive.Required[a], [_, a] =>> Primitive.Required.Reader[a], Nothing, A]
 
-  given primitiveRequiredToContravariantOps[A](using Functor[container.Primitive]): Conversion[
+  given primitiveRequiredToContravariantOps[A]: Conversion[
     Primitive.Required[A],
     Contravariant.Ops[Primitive.Required.Writer, A]
   ] = toContravariantOps[[_, a] =>> Primitive.Required[a], [_, a] =>> Primitive.Required.Writer[a], Nothing, A]
@@ -41,50 +29,21 @@ trait Syntax2 extends Syntax3:
 
   given collectionWriterOps: CollectionOps.Writer = ???
 
-  given collectionToFunctorOps[A, B](using Functor[container.Collection]): Conversion[
+  given collectionToFunctorOps[A, B]: Conversion[
     Collection.Of[A, B],
     Functor.Ops[Collection.Reader.Of[A, *], B]
   ] = toFunctorOps[Collection.Of, Collection.Reader.Of, A, B]
 
-  given collectionToContravariantOps[A, B](using Functor[container.Collection]): Conversion[
+  given collectionToContravariantOps[A, B]: Conversion[
     Collection.Of[A, B],
     Contravariant.Ops[Collection.Writer.Of[A, *], B]
   ] = toContravariantOps[Collection.Of, Collection.Writer.Of, A, B]
 
-  given primitiveIsomoprhicOps(using
-      F: Applicative[container.Collection]
-  ): PrimitiveOps.Isomorphic[Primitive, Primitive] = new PrimitiveOps.Isomorphic[Primitive, Primitive] {
+  given primitiveIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive, Primitive] = ???
 
-    extension [A](self: Primitive[A]) override def tpe: Base.Type[?] = ???
+  given primitiveReaderOps: PrimitiveOps.Reader[Primitive.Reader, Primitive.Reader] = ???
 
-    extension [A, B](self: Primitive[B])
-      override def toPlain: Base.Schema[Id, A, B] = ???
-      override def collection: Collection.Of[self.type, Vector[B]] =
-        F.pure(Base.Collection.Root(self))
-      override def optional: Primitive[Option[B]] = ???
-      override def union: Union.Of[self.type, B] = ???
-
-  }
-
-  given primitiveReaderOps(using
-      F: Applicative[container.Collection]
-  ): PrimitiveOps.Reader[Primitive.Reader, Primitive.Reader] = ???
-
-  given primitiveWriterOps(using
-      F: Applicative[container.Collection]
-  ): PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] =
-    new PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] {
-
-      extension [A](self: Primitive.Writer[A]) override def tpe: Base.Type[?] = ???
-
-      extension [A, B](self: Primitive.Writer[B])
-        override def collection: Collection.Writer.Of[self.type, Vector[B]] =
-          F.pure(Base.Collection.Writer.Root(self))
-        override def optional: Primitive.Writer[Option[B]] = ???
-        override def union: Union.Writer.Of[self.type, B] = ???
-        override def toPlain: Base.Schema.Writer[Id, A, B] = ???
-
-    }
+  given primitiveWriterOps: PrimitiveOps.Writer[Primitive.Writer, Primitive.Writer] = ???
 
   given primitiveToFunctorOps[A]: Conversion[Primitive[A], Functor.Ops[Primitive.Reader, A]] =
     toFunctorOps[[_, a] =>> Primitive[a], [_, a] =>> Primitive.Reader[a], Nothing, A]
@@ -98,22 +57,18 @@ trait Syntax2 extends Syntax3:
 
   given unionWriterOps: UnionOps.Writer = ???
 
-  given unionToFunctorOps[A, B](using Functor[container.Union]): Conversion[
+  given unionToFunctorOps[A, B]: Conversion[
     Union.Of[A, B],
     Functor.Ops[Union.Reader.Of[A, *], B]
   ] = toFunctorOps[Union.Of, Union.Reader.Of, A, B]
 
-  given unionToContravariantOps[A, B](using Functor[container.Union]): Conversion[
+  given unionToContravariantOps[A, B]: Conversion[
     Union.Of[A, B],
     Contravariant.Ops[Union.Writer.Of[A, *], B]
   ] = toContravariantOps[Union.Of, Union.Writer.Of, A, B]
 
-trait Syntax3 extends Instances:
+trait Syntax3 extends Syntax4:
   given schemaIsomorphicCoproductLiftOps: CoproductLiftOps[Schema.Of, Schema.Of, Union.Of] = ???
-
-  given schemaReaderCoproductLiftOps: CoproductLiftOps[Schema.Reader.Of, Schema.Reader.Of, Union.Reader.Of] = ???
-
-  given schemaWriterCoproductLiftOps: CoproductLiftOps[Schema.Writer.Of, Schema.Writer.Of, Union.Writer.Of] = ???
 
   given schemaIsomoprhicOps: SchemaOps.Isomorphic = ???
 
@@ -121,15 +76,16 @@ trait Syntax3 extends Instances:
 
   given schemaWriterOps: SchemaOps.Writer = ???
 
-  given schemaToFunctorOps[A, B](using
-      Functor[container.Schema]
-  ): Conversion[Schema.Of[A, B], Functor.Ops[Schema.Reader.Of[A, *], B]] =
+  given schemaToFunctorOps[A, B]: Conversion[Schema.Of[A, B], Functor.Ops[Schema.Reader.Of[A, *], B]] =
     toFunctorOps[Schema.Of, Schema.Reader.Of, A, B]
 
-  given schemaToContravariantOps[A, B](using
-      Functor[container.Schema]
-  ): Conversion[Schema.Of[A, B], Contravariant.Ops[Schema.Writer.Of[A, *], B]] =
+  given schemaToContravariantOps[A, B]: Conversion[Schema.Of[A, B], Contravariant.Ops[Schema.Writer.Of[A, *], B]] =
     toContravariantOps[Schema.Of, Schema.Writer.Of, A, B]
+
+trait Syntax4 extends Instances:
+  given schemaReaderCoproductLiftOps: CoproductLiftOps[Schema.Reader.Of, Schema.Reader.Of, Union.Reader.Of] = ???
+
+  given schemaWriterCoproductLiftOps: CoproductLiftOps[Schema.Writer.Of, Schema.Writer.Of, Union.Writer.Of] = ???
 
 def toFunctorOps[Self[a, b] <: Reader[a, b], Reader[_, _], A, B](using
     F: Functor[Reader[A, *]]
