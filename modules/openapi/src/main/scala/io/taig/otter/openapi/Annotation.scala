@@ -1,6 +1,3 @@
-package io.taig.otter.openapi
+package io.taig.otter.http
 
-import cats.Functor
-import cats.syntax.all.*
-
-final case class Annotation[+S[+_], +M](self: S[Annotation[S, M]], metadata: M)
+final case class Annotation[+M, +A](metadata: M, self: A)

@@ -5,8 +5,6 @@ import io.taig.otter.Type
 import cats.syntax.all.*
 import cats.Comonad
 import io.taig.otter.ApplicativeComonad
-import io.taig.otter.Plain
-import cats.arrow.FunctionK
 
 trait Dsl extends Base.Dsl:
   override object container extends Base.Container:

@@ -4,16 +4,25 @@ import io.taig.otter as Base
 import cats.Invariant
 import cats.Functor
 import cats.Contravariant
+import cats.syntax.all.*
 
 trait Instances extends Instances1:
+  given schemaApplicativeComonad: ApplicativeComonad[container.Schema]
+  given collectionApplicativeComonad: ApplicativeComonad[container.Collection]
+  given primitiveApplicativeComonad: ApplicativeComonad[container.Primitive]
+  given unionApplicativeComonad: ApplicativeComonad[container.Union]
+
   given collectionInvariant[A]: ValidationInvariant.Collection[Collection.Of[A, *]] with
     extension [B](fa: Collection.Of[A, B])
       override def ivalidate[C, D, E](validation: SchemaValidation.Collection[B, D, E])(
           g: E => B
-      ): Collection.Of[A, E] =
-        ???
+      ): Collection.Of[A, E] = Functor[container.Collection].map(fa)(_.ivalidate(validation)(g))
 
-  given primitiveRequiredInvariant: ValidationInvariant.Primitive[Primitive.Required] = ???
+  given primitiveRequiredInvariant: ValidationInvariant.Primitive[Primitive.Required] with
+    extension [A](fa: Primitive.Required[A])
+      override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
+          g: D => A
+      ): Primitive.Required[D] = Functor[container.Primitive].map(fa)(_.ivalidate(validation)(g))
 
   given unionInvariant[A]: Invariant[Union.Of[A, *]] = ???
 
