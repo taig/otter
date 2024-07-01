@@ -29,27 +29,27 @@ trait Types:
     type Primitive[F[_]] =
       Base.ValidationContravariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
 
-  object SchemaOps:
-    type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Collection.Of, Union.Of]
-    type Reader =
-      Base.SchemaOps.Reader[Schema.Reader.Of, Schema.Writer.Of, Collection.Reader.Of, Union.Reader.Of]
-    type Writer =
-      Base.SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
+  // object SchemaOps:
+  //   type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Collection.Of, Union.Of]
+  //   type Reader =
+  //     Base.SchemaOps.Reader[Schema.Reader.Of, Schema.Writer.Of, Collection.Reader.Of, Union.Reader.Of]
+  //   type Writer =
+  //     Base.SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
 
-  object CollectionOps:
-    type Isomorphic = Base.CollectionOps.Isomorphic[Collection.Of, Union.Of, Schema.Writer, Schema.Any]
-    type Reader = Base.CollectionOps.Reader[Collection.Reader.Of, Union.Reader.Of, Schema.Writer, Schema.Reader.Any]
-    type Writer = Base.CollectionOps.Writer[Collection.Writer.Of, Union.Writer.Of, Schema.Writer, Schema.Writer.Any]
+  // object CollectionOps:
+  //   type Isomorphic = Base.CollectionOps.Isomorphic[Collection.Of, Union.Of, Schema.Writer, Schema.Any]
+  //   type Reader = Base.CollectionOps.Reader[Collection.Reader.Of, Union.Reader.Of, Schema.Writer, Schema.Reader.Any]
+  //   type Writer = Base.CollectionOps.Writer[Collection.Writer.Of, Union.Writer.Of, Schema.Writer, Schema.Writer.Any]
 
-  object PrimitiveOps:
-    type Isomorphic[Self[_], Optional[_]] = Base.PrimitiveOps.Isomorphic[Self, Optional, Collection.Of, Union.Of]
-    type Reader[Self[_], Optional[_]] = Base.PrimitiveOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of]
-    type Writer[Self[_], Optional[_]] = Base.PrimitiveOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of]
+  // object PrimitiveOps:
+  //   type Isomorphic[Self[_], Optional[_]] = Base.PrimitiveOps.Isomorphic[Self, Optional, Collection.Of, Union.Of]
+  //   type Reader[Self[_], Optional[_]] = Base.PrimitiveOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of]
+  //   type Writer[Self[_], Optional[_]] = Base.PrimitiveOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of]
 
-  object UnionOps:
-    type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]
-    type Reader = Base.UnionOps.Reader[Union.Reader.Of, Schema.Reader.Of, Collection.Reader.Of]
-    type Writer = Base.UnionOps.Writer[Union.Writer.Of, Schema.Writer.Of, Collection.Writer.Of]
+  // object UnionOps:
+  //   type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]
+  //   type Reader = Base.UnionOps.Reader[Union.Reader.Of, Schema.Reader.Of, Collection.Reader.Of]
+  //   type Writer = Base.UnionOps.Writer[Union.Writer.Of, Schema.Writer.Of, Collection.Writer.Of]
 
   final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 
