@@ -10,21 +10,18 @@ import cats.Applicative
 import cats.Comonad
 
 trait Syntax extends Syntax1:
-  implicit def primitiveRequiredIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive.Required, Primitive] =
+  implicit val primitiveRequiredIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive.Required, Primitive] =
     new PrimitiveOps.Isomorphic[Primitive.Required, Primitive]:
-      extension [A, B](self: Primitive.Required[B]) override def toPlain: Base.Schema[Id, A, B] = ???
-
-      extension [A](self: Primitive.Required[A]) override def tpe: Base.Type[?] = ???
+      extension [A](self: Primitive.Required[A])
+        override def tpe: Base.Type[?] =
+          Comonad[container.Primitive].extract(self).tpe
 
       extension [A, B](self: Primitive.Required[B])
         override def collection: Collection.Of[self.type, Vector[B]] =
           Applicative[container.Collection].pure(Base.Collection.Root(self))
-
-      extension [A, B](self: Primitive.Required[B]) override def optional: Primitive[Option[B]] = ???
-
-      extension [A, B](self: Primitive.Required[B])
-        override def union: Union.Of[self.type, B] =
-          Applicative[container.Union].pure(Base.Union.Root(self))
+        override def optional: Primitive[Option[B]] = Functor[container.Primitive].map(self)(_.optional)
+        override def toPlain: Base.Schema[Id, ?, B] = Comonad[container.Primitive].extract(self)
+        override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
 
   implicit def primitiveRequiredToFunctorOps[A]: Conversion[
     Primitive.Required[A],
@@ -37,7 +34,21 @@ trait Syntax extends Syntax1:
   ] = toContravariantOps[[_, a] =>> Primitive.Required[a], [_, a] =>> Primitive.Required.Writer[a], Nothing, A]
 
 trait Syntax1 extends Syntax2:
-  implicit def primitiveRequiredReaderOps: PrimitiveOps.Reader[Primitive.Required.Reader, Primitive.Reader] = ???
+  implicit val primitiveRequiredReaderOps: PrimitiveOps.Reader[Primitive.Required.Reader, Primitive.Reader] =
+    new PrimitiveOps.Reader[Primitive.Required.Reader, Primitive.Reader]:
+      extension [A](self: Primitive.Required.Reader[A])
+        override def tpe: Base.Type[?] =
+          Comonad[container.Primitive].extract(self).tpe
+
+      extension [A, B](self: Primitive.Required.Reader[B])
+        override def toPlain: Base.Schema.Reader[Id, A, B] =
+          Comonad[container.Primitive].extract(self)
+        override def collection: Collection.Reader.Of[self.type, Vector[B]] =
+          Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
+        override def optional: Primitive.Reader[Option[B]] =
+          Functor[container.Primitive].map(self)(_.optional)
+        override def union: Union.Reader.Of[self.type, B] =
+          Applicative[container.Union].pure(Base.Union.Reader.Root(self))
 
   implicit def primitiveRequiredWriterOps: PrimitiveOps.Writer[Primitive.Required.Writer, Primitive.Writer] =
     new PrimitiveOps.Writer[Primitive.Required.Writer, Primitive.Writer]:
@@ -108,20 +119,18 @@ trait Syntax2 extends Syntax3:
   ] = toContravariantOps[Union.Of, Union.Writer.Of, A, B]
 
 trait Syntax3 extends Syntax4:
-  implicit def schemaIsomorphicCoproductLiftOps: CoproductLiftOps[Schema.Of, Schema.Of, Union.Of] =
+  implicit val schemaIsomorphicCoproductLiftOps: CoproductLiftOps[Schema.Of, Schema.Of, Union.Of] =
     new CoproductLiftOps[Schema.Of, Schema.Of, Union.Of]:
       override given resultInvariant[A]: Invariant[Union.Of[A, *]] = unionInvariant
 
       extension [A, B](self: Schema.Of[A, B])
         override def or[C, D](other: Schema.Of[C, D]): Union.Of[self.type | other.type, Either[B, D]] =
-          ???
-          // val x: Base.Union[container.Schema, self.type, B] = Comonad[container.Union].extract(self.union)
-          // val y: Base.Union[container.Schema, other.type, D] = Comonad[container.Union].extract(other.union)
-          // // why does this have to suck so badly?
-          // val r: Base.Union[container.Schema, self.type | other.type, Either[B, D]] =
-          //   Base.Union.OrElse[container.Schema, self.type, B, other.type, D](x, y)
-
-          // Applicative[container.Union].pure(r)
+          Applicative[container.Union].pure(
+            Base.Union.OrElse[container.Schema, self.type, B, other.type, D](
+              left = Base.Union.Root(self),
+              right = Base.Union.Root(other)
+            )
+          )
 
   implicit def schemaIsomoprhicOps: SchemaOps.Isomorphic = new SchemaOps.Isomorphic:
     extension [A, B](self: Schema.Of[A, B])

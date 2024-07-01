@@ -57,8 +57,8 @@ object Collection:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], +A <: Schema.Reader[F, ?, B], B](schema: F[A])
-        extends Collection.Reader[F, F[A], Vector[B]]:
+    final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A)
+        extends Collection.Reader[F, A, Vector[B]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, Vector[B]] =
         copy(schema = fK(schema).map(_.translate(fK)))
@@ -243,7 +243,7 @@ object Union:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, B] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
-  final case class OrElse[+F[+_], +A, B, +C, D](left: Union[F, A, B], right: Union[F, C, D])
+  final case class OrElse[+F[+_], A, B, C, D](left: Union[F, A, B], right: Union[F, C, D])
       extends Union[F, A | C, Either[B, D]]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, Either[B, D]] =
       copy(left = left.translate(fK), right = right.translate(fK))
