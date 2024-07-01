@@ -11,7 +11,7 @@ trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]:
 object SchemaOps:
   trait Isomorphic[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
       extends SchemaOps[Self, Optional, Collection, Union]:
-    extension [A, B](self: Self[A, B]) def toPlain: Schema[Identity, A, B]
+    extension [A, B](self: Self[A, B]) def toPlain: Schema[Identity, ?, B]
 
   trait Reader[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _]]
       extends SchemaOps[Self, Optional, Collection, Union]:

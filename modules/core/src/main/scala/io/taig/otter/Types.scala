@@ -87,35 +87,35 @@ trait Types:
       type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, B]]
       type Any = container.Collection[Base.Collection.Writer[container.Schema, ?, ?]]
 
-  final type Primitive[A] = container.Primitive[Base.Primitive[container.Schema, A]]
+  final type Primitive[A] = container.Primitive[Base.Primitive[A]]
 
   object Primitive:
-    type Any = container.Primitive[Base.Primitive.Required[container.Schema, ?]]
+    type Any = container.Primitive[Base.Primitive.Required[?]]
 
-    type Required[A] = container.Primitive[Base.Primitive.Required[container.Schema, A]]
+    type Required[A] = container.Primitive[Base.Primitive.Required[A]]
 
     object Required:
-      type Any = container.Primitive[Base.Primitive.Required[container.Schema, ?]]
+      type Any = container.Primitive[Base.Primitive.Required[?]]
 
-      type Reader[A] = container.Primitive[Base.Primitive.Required.Reader[container.Schema, A]]
+      type Reader[A] = container.Primitive[Base.Primitive.Required.Reader[A]]
 
       object Reader:
-        type Any = container.Primitive[Base.Primitive.Required.Reader[container.Schema, ?]]
+        type Any = container.Primitive[Base.Primitive.Required.Reader[?]]
 
-      type Writer[A] = container.Primitive[Base.Primitive.Required.Writer[container.Schema, A]]
+      type Writer[A] = container.Primitive[Base.Primitive.Required.Writer[A]]
 
       object Writer:
-        type Any = container.Primitive[Base.Primitive.Required.Writer[container.Schema, ?]]
+        type Any = container.Primitive[Base.Primitive.Required.Writer[?]]
 
-    type Reader[A] = container.Primitive[Base.Primitive.Reader[container.Schema, A]]
+    type Reader[A] = container.Primitive[Base.Primitive.Reader[A]]
 
     object Reader:
-      type Any = container.Primitive[Base.Primitive.Reader[container.Schema, ?]]
+      type Any = container.Primitive[Base.Primitive.Reader[?]]
 
-    type Writer[A] = container.Primitive[Base.Primitive.Writer[container.Schema, A]]
+    type Writer[A] = container.Primitive[Base.Primitive.Writer[A]]
 
     object Writer:
-      type Any = container.Primitive[Base.Primitive.Writer[container.Schema, ?]]
+      type Any = container.Primitive[Base.Primitive.Writer[?]]
 
   final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 

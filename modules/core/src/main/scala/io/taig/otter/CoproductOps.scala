@@ -4,11 +4,13 @@ import cats.Invariant
 import cats.syntax.all.*
 
 trait CoproductOps[Self[_, _], Value[_, _]]:
-  given selfInvariant[A]: Invariant[Self[A, *]]
+  protected given selfInvariant[A]: Invariant[Self[A, *]]
+
+  protected def lift[A, B](value: Value[A, B]): Self[value.type, B]
 
   extension [A, B](self: Self[A, B])
     infix def orElse[C, D](other: Self[C, D]): Self[A | C, Either[B, D]]
-    infix def or[C, D](other: Value[C, D]): Self[A | other.type, Either[B, D]]
+    final infix def or[C, D](other: Value[C, D]): Self[A | other.type, Either[B, D]] = orElse(lift(other))
     final def :+[C, D](other: Value[C, D]): Self[A | other.type, Either[B, D]] = or(other)
 
   extension [A, B <: Matchable](self: Self[A, B])
