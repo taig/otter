@@ -96,15 +96,28 @@ trait Syntax2 extends Syntax3:
 
     extension [A, B](self: Union.Of[A, B])
       override def orElse[C, D](other: Union.Of[C, D]): Union.Of[A | C, Either[B, D]] =
-        Base.Union.OrElse(self.extract, other.extract).pure
-      override def toPlain: Base.Schema[Id, ?, B] =
-        ???
+        Functor[container.Union].map(self)(_.orElse(Comonad[container.Union].extract(other)))
+      override def toPlain: Base.Schema[Id, ?, B] = Comonad[container.Union]
+        .extract(self)
+        .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
       override def collection: Collection.Of[self.type, Vector[B]] =
         Applicative[container.Collection].pure(Base.Collection.Root(self))
       override def optional: Union.Of[A, Option[B]] = Functor[container.Union].map(self)(_.optional)
       override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
 
-  implicit def unionReaderOps: UnionOps.Reader = ???
+  implicit def unionReaderOps: UnionOps.Reader = new UnionOps.Reader {
+    override given selfInvariant[A]: Invariant[Union.Reader.Of[A, *]] = unionFunctor
+
+    override def lift[A, B](value: Schema.Reader.Of[A, B]): Union.Reader.Of[value.type, B] = ???
+
+    extension [A, B](self: Union.Reader.Of[A, B])
+      override def orElse[C, D](other: Union.Reader.Of[C, D]): Union.Reader.Of[A | C, Either[B, D]] = ???
+      override def toPlain: Base.Schema.Reader[Id, A, B] = ???
+      override def collection: Collection.Reader.Of[self.type, Vector[B]] = ???
+      override def optional: Union.Reader.Of[A, Option[B]] = ???
+      override def union: Union.Reader.Of[self.type, B] = ???
+
+  }
 
   implicit def unionWriterOps: UnionOps.Writer = ???
 
@@ -132,16 +145,12 @@ trait Syntax3 extends Syntax4:
             )
           )
 
-  implicit def schemaIsomoprhicOps: SchemaOps.Isomorphic = new SchemaOps.Isomorphic:
+  implicit val schemaIsomoprhicOps: SchemaOps.Isomorphic = new SchemaOps.Isomorphic:
     extension [A, B](self: Schema.Of[A, B])
       override def toPlain: Base.Schema[Id, A, B] = ???
       override def collection: Collection.Of[self.type, Vector[B]] = ???
       override def optional: Schema.Of[A, Option[B]] = ???
       override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
-
-  implicit def schemaReaderOps: SchemaOps.Reader = ???
-
-  implicit def schemaWriterOps: SchemaOps.Writer = ???
 
   implicit def schemaToFunctorOps[A, B]: Conversion[Schema.Of[A, B], Functor.Ops[Schema.Reader.Of[A, *], B]] =
     toFunctorOps[Schema.Of, Schema.Reader.Of, A, B]
@@ -151,7 +160,9 @@ trait Syntax3 extends Syntax4:
     toContravariantOps[Schema.Of, Schema.Writer.Of, A, B]
 
 trait Syntax4 extends Instances:
-  extension [F[a] <: container.Schema[a], A](self: F[A])(using F: Comonad[F]) inline def extract: A = F.extract(self)
+  implicit def schemaReaderOps: SchemaOps.Reader = ???
+
+  implicit def schemaWriterOps: SchemaOps.Writer = ???
 
   implicit def schemaReaderCoproductLiftOps: CoproductLiftOps[Schema.Reader.Of, Schema.Reader.Of, Union.Reader.Of] = ???
 
