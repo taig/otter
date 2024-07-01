@@ -77,7 +77,20 @@ trait Syntax2 extends Syntax3:
     Contravariant.Ops[Collection.Writer.Of[A, *], B]
   ] = toContravariantOps[Collection.Of, Collection.Writer.Of, A, B]
 
-  implicit def primitiveIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive, Primitive] = ???
+  implicit val primitiveIsomoprhicOps: PrimitiveOps.Isomorphic[Primitive, Primitive] =
+    new PrimitiveOps.Isomorphic[Primitive, Primitive]:
+      extension [A](self: Primitive[A])
+        override def tpe: Base.Type[?] =
+          Comonad[container.Primitive].extract(self).tpe
+
+      extension [A, B](self: Primitive[B])
+        override def toPlain: Base.Schema[Id, ?, B] = Comonad[container.Primitive].extract(self)
+        override def collection: Collection.Of[self.type, Vector[B]] =
+          Applicative[container.Collection].pure(Base.Collection.Root(self))
+        override def optional: Primitive[Option[B]] =
+          Functor[container.Primitive].map(self)(_.optional)
+        override def union: Union.Of[self.type, B] =
+          Applicative[container.Union].pure(Base.Union.Root(self))
 
   implicit def primitiveReaderOps: PrimitiveOps.Reader[Primitive.Reader, Primitive.Reader] = ???
 
@@ -89,7 +102,7 @@ trait Syntax2 extends Syntax3:
   implicit def primitiveToContravariantOps[A]: Conversion[Primitive[A], Contravariant.Ops[Primitive.Writer, A]] =
     toContravariantOps[[_, a] =>> Primitive[a], [_, a] =>> Primitive.Writer[a], Nothing, A]
 
-  implicit def unionIsomoprhicOps: UnionOps.Isomorphic = new UnionOps.Isomorphic:
+  implicit val unionIsomoprhicOps: UnionOps.Isomorphic = new UnionOps.Isomorphic:
     override given selfInvariant[A]: Invariant[Union.Of[A, *]] = unionInvariant
     override def lift[A, B](value: Schema.Of[A, B]): Union.Of[value.type, B] =
       Applicative[container.Union].pure(Base.Union.Root(value))
