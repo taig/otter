@@ -145,7 +145,7 @@ trait Syntax3 extends Syntax4:
       extension [A, B](self: Schema.Of[A, B])
         override def or[C, D](other: Schema.Of[C, D]): Union.Of[self.type | other.type, Either[B, D]] =
           Applicative[container.Union].pure(
-            Base.Union.OrElse[container.Schema, self.type, B, other.type, D](
+            Base.Union.Combine[container.Schema, self.type, B, other.type, D](
               left = Base.Union.Root(self),
               right = Base.Union.Root(other)
             )
