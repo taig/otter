@@ -151,10 +151,13 @@ trait Syntax3 extends Syntax4:
             )
           )
 
-  // implicit val schemaIsomoprhicOps: SchemaOps.Isomorphic[Schema.Of, Schema.Of, Base.Schema[Identity, ?, *]] =
-  //   new SchemaOps.Isomorphic[Schema.Of, Schema.Of, Base.Schema[Identity, ?, *]]:
-  //     extension [A, B](self: Schema.Of[A, B])
-  //       override def optional: Schema.Of[A, Option[B]] = Functor[container.Schema].map(self)(_.optional)
+  implicit val schemaIsomoprhicOps: SchemaOps.Isomorphic[Schema.Of, Schema.Of, Base.Schema[Identity, ?, *]] =
+    new SchemaOps.Isomorphic[Schema.Of, Schema.Of, Base.Schema[Identity, ?, *]]:
+      extension [A, B](self: Schema.Of[A, B])
+        override def optional: Schema.Of[A, Option[B]] = Functor[container.Schema].map(self)(_.optional)
+        override def toPlain: Base.Schema[Identity, ?, B] = Comonad[container.Schema]
+          .extract(self)
+          .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
 
   implicit def schemaToFunctorOps[A, B]: Conversion[Schema.Of[A, B], Functor.Ops[Schema.Reader.Of[A, *], B]] =
     toFunctorOps[Schema.Of, Schema.Reader.Of, A, B]
@@ -164,83 +167,87 @@ trait Syntax3 extends Syntax4:
     toContravariantOps[Schema.Of, Schema.Writer.Of, A, B]
 
 trait Syntax4 extends Syntax5:
-  // implicit val schemaReaderOps: SchemaOps.Reader[Schema.Reader.Of, Schema.Reader.Of, Base.Schema.Reader[Identity, ?, *]] =
-  //   new SchemaOps.Reader[Schema.Reader.Of, Schema.Reader.Of, Base.Schema.Reader[Identity, ?, *]]:
-  //     extension [A, B](self: Schema.Reader.Of[A, B])
-  //       override def optional: Schema.Reader.Of[A, Option[B]] =
-  //         Functor[container.Schema].map(self)(_.optional)
+  implicit val schemaReaderOps
+      : SchemaOps.Reader[Schema.Reader.Of, Schema.Reader.Of, Base.Schema.Reader[Identity, ?, *]] =
+    new SchemaOps.Reader[Schema.Reader.Of, Schema.Reader.Of, Base.Schema.Reader[Identity, ?, *]]:
+      extension [A, B](self: Schema.Reader.Of[A, B])
+        override def optional: Schema.Reader.Of[A, Option[B]] = Functor[container.Schema].map(self)(_.optional)
+        override def toPlain: Base.Schema.Reader[Identity, ?, B] = Comonad[container.Schema]
+          .extract(self)
+          .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
 
-  // implicit val schemaWriterOps: SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Base.Schema.Writer[Identity, ?, *]] =
-  //   new SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Base.Schema.Writer[Identity, ?, *]]:
-  //     extension [A, B](self: Schema.Writer.Of[A, B])
-  //       override def optional: Schema.Writer.Of[A, Option[B]] =
-  //         Functor[container.Schema].map(self)(_.optional)
+  implicit val schemaWriterOps
+      : SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Base.Schema.Writer[Identity, ?, *]] =
+    new SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Base.Schema.Writer[Identity, ?, *]]:
+      extension [A, B](self: Schema.Writer.Of[A, B])
+        override def optional: Schema.Writer.Of[A, Option[B]] = Functor[container.Schema].map(self)(_.optional)
+        override def toPlain: Base.Schema.Writer[Identity, ?, B] = Comonad[container.Schema]
+          .extract(self)
+          .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
 
   implicit def schemaReaderCoproductLiftOps: CoproductLiftOps[Schema.Reader.Of, Schema.Reader.Of, Union.Reader.Of] = ???
 
   implicit def schemaWriterCoproductLiftOps: CoproductLiftOps[Schema.Writer.Of, Schema.Writer.Of, Union.Writer.Of] = ???
 
 trait Syntax5 extends Instances:
+  trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _], Plain[_]]:
+    extension [A, B](self: Self[A, B])
+      def collection: Collection[self.type, Vector[B]]
+      def optional: Optional[A, Option[B]]
+      def union: Union[self.type, B]
+      def toPlain: Plain[B]
+
   object SchemaOps:
     trait Isomorphic[Self[a, b] <: Schema.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema[Identity, ?, a]]
-        extends Base.SchemaOps.Isomorphic[Self, Optional, Collection.Of, Union.Of, Plain]:
+        extends SchemaOps[Self, Optional, Collection.Of, Union.Of, Plain]:
       extension [A, B](self: Self[A, B])
         final override def collection: Collection.Of[self.type, Vector[B]] =
           Applicative[container.Collection].pure(Base.Collection.Root(self))
-        final override def union: Union.Of[self.type, B] =
-          Applicative[container.Union].pure(Base.Union.Root(self))
+        final override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
 
     trait Reader[Self[a, b] <: Schema.Reader.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Reader[Identity, ?, a]]
-        extends Base.SchemaOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
+        extends SchemaOps[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
       extension [A, B](self: Self[A, B])
         final override def collection: Collection.Reader.Of[self.type, Vector[B]] =
           Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
         final override def union: Union.Reader.Of[self.type, B] =
           Applicative[container.Union].pure(Base.Union.Reader.Root(self))
-        // override def toPlain: Base.Schema.Reader[Identity, ?, B] = Comonad[container.Schema]
-        //   .extract(self)
-        //   .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
 
     trait Writer[Self[a, b] <: Schema.Writer.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Writer[Identity, ?, a]]
-        extends Base.SchemaOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
+        extends SchemaOps[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
       extension [A, B](self: Self[A, B])
         final override def collection: Collection.Writer.Of[self.type, Vector[B]] =
           Applicative[container.Collection].pure(Base.Collection.Writer.Root(self))
         final override def union: Union.Writer.Of[self.type, B] =
           Applicative[container.Union].pure(Base.Union.Writer.Root(self))
-        // override def toPlain: Base.Schema.Writer[Identity, ?, B] = Comonad[container.Schema]
-        //   .extract(self)
-        //   .translate([A] => (schema: container.Schema[A]) => Comonad[container.Schema].extract(schema))
 
-  trait PrimitiveOps[Self[a] <: Primitive.Reader[a] | Primitive.Writer[a]]
-      extends Base.PrimitiveOps[Self, ?, ?, ?, ?],
-        Base.SchemaOps[[_, a] =>> Self[a], ?, ?, ?, ?]:
-    extension [A](self: Self[A]) final override def tpe: Base.Type[?] = Comonad[container.Primitive].extract(self).tpe
+    trait CollectionOps[Self[_, _], Union[_, _], Plain[_], Any] extends SchemaOps[Self, Self, Self, Union, Plain]:
+      extension [A, B](self: Self[A, B]) def schema: Any
 
-  object PrimitiveOps:
-    trait Isomorphic[Self[a] <: Primitive[a], Optional[_], Plain[a] <: Base.Primitive[a]]
-        extends Base.PrimitiveOps.Isomorphic[Self, Optional, Collection.Of, Union.Of, Plain],
-          PrimitiveOps[Self],
-          SchemaOps.Isomorphic[[_, a] =>> Self[a], [_, a] =>> Optional[a], Plain]
-    trait Reader[Self[a] <: Primitive.Reader[a], Optional[_], Plain[a] <: Base.Primitive.Reader[a]]
-        extends Base.PrimitiveOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain],
-          PrimitiveOps[Self],
-          SchemaOps.Reader[[_, a] =>> Self[a], [_, a] =>> Optional[a], Plain]
-    trait Writer[Self[a] <: Primitive.Writer[a], Optional[a], Plain[a] <: Base.Primitive.Writer[a]]
-        extends Base.PrimitiveOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain],
-          PrimitiveOps[Self],
-          SchemaOps.Writer[[_, a] =>> Self[a], [_, a] =>> Optional[a], Plain]
+    object CollectionOps:
+      trait Isomorphic extends CollectionOps[Collection.Of, Union.Of, Base.Collection[Identity, ?, *], Schema.Any]:
+        extension [A, B](self: Collection.Of[A, B])
+          override def schema: Schema.Any = Comonad[container.Collection].extract(self).schema
 
-  object UnionOps:
-    trait Isomorphic
-        extends Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of],
-          SchemaOps.Isomorphic[Union.Of, Union.Of, Base.Union[Identity, ?, *]]
-    trait Reader
-        extends Base.UnionOps.Reader[Union.Reader.Of, Schema.Reader.Of, Collection.Reader.Of],
-          SchemaOps.Reader[Union.Reader.Of, Union.Reader.Of, Base.Union.Reader[Identity, ?, *]]
-    trait Writer
-        extends Base.UnionOps.Writer[Union.Writer.Of, Schema.Writer.Of, Collection.Writer.Of],
-          SchemaOps.Writer[Union.Writer.Of, Union.Writer.Of, Base.Union.Writer[Identity, ?, *]]
+      trait Reader
+          extends CollectionOps[
+            Collection.Reader.Of,
+            Union.Reader.Of,
+            Base.Collection.Reader[Identity, ?, *],
+            Schema.Reader.Any
+          ]:
+        extension [A, B](self: Collection.Reader.Of[A, B])
+          override def schema: Schema.Reader.Any = Comonad[container.Collection].extract(self).schema
+
+      trait Writer
+          extends CollectionOps[
+            Collection.Writer.Of,
+            Union.Writer.Of,
+            Base.Collection.Writer[Identity, ?, *],
+            Schema.Writer.Any
+          ]:
+        extension [A, B](self: Collection.Writer.Of[A, B])
+          override def schema: Schema.Writer.Any = Comonad[container.Collection].extract(self).schema
 
 private def toFunctorOps[Self[a, b] <: Reader[a, b], Reader[_, _], A, B](using
     F: Functor[Reader[A, *]]
