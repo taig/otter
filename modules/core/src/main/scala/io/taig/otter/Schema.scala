@@ -28,6 +28,7 @@ object Schema:
 sealed trait Value[+F[+_], +A, B] extends Schema[F, A, B], Value.Reader[F, A, B], Value.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Value[F, A, C]
   override def optional: Value[F, A, Option[B]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value[G, ?, B]
 
 object Value:
   sealed trait Required[+F[+_], +A, B]
@@ -35,13 +36,16 @@ object Value:
         Value.Required.Reader[F, A, B],
         Value.Required.Writer[F, A, B]:
     override def imap[C](f: B => C)(g: C => B): Value.Required[F, A, C]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required[G, ?, B]
 
   object Required:
     sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
       override def map[C](f: B => C): Value.Required.Reader[F, A, C]
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Reader[G, ?, B]
 
     sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
       override def contramap[C](f: C => B): Value.Required.Writer[F, A, C]
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Writer[G, ?, B]
 
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     override def map[C](f: B => C): Value.Reader[F, A, C]
@@ -440,6 +444,7 @@ object Union:
         Union.Value.Writer[F, A, B]:
     override def imap[C](f: B => C)(g: C => B): Union.Value[F, A, C] = ???
     override def optional: Union.Value[F, A, Option[B]] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, B]
 
   object Value:
     sealed trait Required[+F[+_], +A, B]
@@ -449,26 +454,32 @@ object Union:
           Union.Value.Required.Writer[F, A, B]:
       override def imap[C](f: B => C)(g: C => B): Union.Value.Required[F, A, C] = ???
       override def optional: Union.Value.Required[F, A, Option[B]] = ???
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, ?, B]
 
     object Required:
       sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Required.Reader[F, A, B], Union.Value.Reader[F, A, B]:
         override def map[C](f: B => C): Union.Value.Required.Reader[F, A, C] = ???
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, ?, B]
 
       sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Required.Writer[F, A, B], Union.Value.Writer[F, A, B]:
         override def contramap[C](f: C => B): Union.Value.Required.Writer[F, A, C] = ???
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B]
 
       object Writer:
-        final case class Root[+F[+_], A <: F[Base.Value.Required.Writer[F, ?, B]], B](schema: A)
+        final case class Root[F[+_], +A <: F[Base.Value.Required.Writer[F, ?, B]], B](schema: A)
             extends Union.Value.Required.Writer[F, A, B]:
-          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B] = ???
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B] =
+            copy(schema = fK(schema).map(_.translate(fK)))
 
     sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Reader[F, A, B], Union.Reader[F, A, B]:
       override def map[C](f: B => C): Union.Value.Reader[F, A, C] = ???
       override def optional: Union.Value.Reader[F, A, Option[B]] = ???
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, ?, B]
 
     sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Writer[F, A, B], Union.Writer[F, A, B]:
       override def contramap[C](f: C => B): Union.Value.Writer[F, A, C] = ???
       override def optional: Union.Value.Writer[F, A, Option[B]] = ???
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, B]
 
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     override def map[C](f: B => C): Union.Reader[F, A, C] = Reader.Transform(this, f)
