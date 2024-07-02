@@ -5,7 +5,7 @@ import io.taig.otter.Schema.Reader
 import cats.data.Chain
 import io.taig.otter.validation.Validation
 import cats.Functor
-import io.taig.otter.Union.Writer
+import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
 
@@ -420,8 +420,40 @@ sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B]
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, B]
 
 object Union:
+  sealed trait Value[+F[+_], +A, B]
+      extends Base.Value[F, A, B],
+        Union[F, A, B],
+        Union.Value.Reader[F, A, B],
+        Union.Value.Writer[F, A, B]:
+    override def imap[C](f: B => C)(g: C => B): Union.Value[F, A, C] = ???
+    override def optional: Union.Value[F, A, Option[B]] = ???
+
+  object Value:
+    sealed trait Required[+F[+_], +A, B]
+        extends Base.Value.Required[F, A, B],
+          Union.Value[F, A, B],
+          Union.Value.Required.Reader[F, A, B],
+          Union.Value.Required.Writer[F, A, B]:
+      override def imap[C](f: B => C)(g: C => B): Union.Value.Required[F, A, C] = ???
+      override def optional: Union.Value.Required[F, A, Option[B]] = ???
+
+    object Required:
+      sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Required.Reader[F, A, B], Union.Value.Reader[F, A, B]:
+        override def map[C](f: B => C): Union.Value.Required.Reader[F, A, C] = ???
+
+      sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Required.Writer[F, A, B], Union.Value.Writer[F, A, B]:
+        override def contramap[C](f: C => B): Union.Value.Required.Writer[F, A, C] = ???
+
+    sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Reader[F, A, B], Union.Reader[F, A, B]:
+      override def map[C](f: B => C): Union.Value.Reader[F, A, C] = ???
+      override def optional: Union.Value.Reader[F, A, Option[B]] = ???
+
+    sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Writer[F, A, B], Union.Writer[F, A, B]:
+      override def contramap[C](f: C => B): Union.Value.Writer[F, A, C] = ???
+      override def optional: Union.Value.Writer[F, A, Option[B]] = ???
+
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-    final override def map[C](f: B => C): Union.Reader[F, A, C] = Reader.Transform(this, f)
+    override def map[C](f: B => C): Union.Reader[F, A, C] = Reader.Transform(this, f)
     override def optional: Union.Reader[F, A, Option[B]] = Reader.Optional(this)
     def orElse[G[+a] >: F[a], C, D](union: Union.Reader[G, C, D]): Union.Reader[G, A | C, Either[B, D]] =
       Reader.Combine(this, union)
@@ -446,7 +478,7 @@ object Union:
         copy(self = self.translate(fK))
 
   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-    final override def contramap[C](f: C => B): Union.Writer[F, A, C] = Writer.Transform(this, f)
+    override def contramap[C](f: C => B): Union.Writer[F, A, C] = Writer.Transform(this, f)
     override def optional: Union.Writer[F, A, Option[B]] = Writer.Optional(this)
     def orElse[G[+a] >: F[a], C, D](union: Union.Writer[G, C, D]): Union.Writer[G, A | C, Either[B, D]] =
       Writer.Combine(this, union)
