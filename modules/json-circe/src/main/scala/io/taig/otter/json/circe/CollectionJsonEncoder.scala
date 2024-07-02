@@ -5,7 +5,7 @@ import io.taig.otter.Plain.*
 import io.circe.Json
 import cats.syntax.all.*
 
-object JsonCollectionEncoder:
+object CollectionJsonEncoder:
   def apply[A](schema: Collection.Writer[A], a: A): Option[Vector[Json]] = schema match
     case Base.Collection.Optional(self)            => optional(self, a)
     case Base.Collection.Root(schema)              => root(schema, a)

@@ -11,7 +11,7 @@ import io.circe.syntax.*
 import io.taig.otter.Constraint
 import io.taig.otter.Decoder
 
-object JsonPrimitiveDecoder:
+object PrimitiveJsonDecoder:
   def apply[A](schema: Primitive.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
     case Base.Primitive.Optional(self)                              => optional(self, json)
     case Base.Primitive.Reader.Optional(self)                       => optional(self, json)
@@ -25,7 +25,7 @@ object JsonPrimitiveDecoder:
     if json.isNull then none.valid else apply(self, json).map(_.some)
 
   def root[A](tpe: Type[A], json: Json): Decoder.Result[Json, A] =
-    JsonTypeDecoder(tpe, json).toValidated.leftMap: _ =>
+    TypeJsonDecoder(tpe, json).toValidated.leftMap: _ =>
       Violations.rootNec(Violation(Constraint.Type(typeOf(tpe)), typeOf(json).asJson))
 
   def transform[A, B, C, D](

@@ -12,11 +12,11 @@ import io.circe.syntax.*
 object JsonDecoder extends Decoder[Schema.Reader, Json]:
   override def apply[A](schema: Schema.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
     case schema: Collection.Reader[A] =>
-      if json.isNull then JsonCollectionDecoder(schema, none)
+      if json.isNull then CollectionJsonDecoder(schema, none)
       else
         json.asArray match
-          case Some(array) => JsonCollectionDecoder(schema, array.some)
+          case Some(array) => CollectionJsonDecoder(schema, array.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
-    case schema: Primitive.Reader[A] => JsonPrimitiveDecoder(schema, json)
+    case schema: Primitive.Reader[A] => PrimitiveJsonDecoder(schema, json)
     case schema: Union.Reader[A]     => ???

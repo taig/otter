@@ -1,18 +1,19 @@
-// package io.taig.otter.json.circe
+package io.taig.otter.json.circe
 
-// import cats.syntax.all.*
-// import io.taig.otter as Base
-// import io.taig.otter.Plain.*
-// import io.circe.Json
-// import cats.data.Validated
-// import io.taig.otter.validation.Violations
-// import io.taig.otter.validation.Violation
-// import io.circe.syntax.*
-// import io.taig.otter.SchemaValidation
+import cats.syntax.all.*
+import io.taig.otter as Base
+import io.taig.otter.Plain.*
+import io.circe.Json
+import cats.data.Validated
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
+import io.circe.syntax.*
+import io.taig.otter.SchemaValidation
 
-// object JsonTupleDecoder:
-//   def apply[A](schema: Tuple.Reader[A], values: Option[Vector[Json]]): Validated[Violations[Json, Json], A] =
-//     applyWithRemainders(schema, values).map(_._2)
+object ProductJsonDecoder:
+  def apply[A](schema: Product.Reader[A], values: Option[Vector[Json]]): Validated[Violations[Json, Json], A] =
+    ???
+    // applyWithRemainders(schema, values).map(_._2)
 
 //   // TODO add index to errors
 //   def applyWithRemainders[A](

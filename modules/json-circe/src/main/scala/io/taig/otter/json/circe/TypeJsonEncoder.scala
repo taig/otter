@@ -8,7 +8,7 @@ import io.circe.syntax.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-object JsonTypeEncoder:
+object TypeJsonEncoder:
   def apply[A](tpe: Type[A], a: A): Json = tpe match
     case Type.BigDecimal => (a: JBigDecimal).asJson
     case Type.BigInteger => (a: JBigInteger).asJson

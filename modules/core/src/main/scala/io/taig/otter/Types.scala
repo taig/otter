@@ -29,28 +29,6 @@ trait Types:
     type Primitive[F[_]] =
       Base.ValidationContravariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
 
-  // object SchemaOps:
-  //   type Isomorphic = Base.SchemaOps.Isomorphic[Schema.Of, Schema.Of, Collection.Of, Union.Of]
-  //   type Reader =
-  //     Base.SchemaOps.Reader[Schema.Reader.Of, Schema.Writer.Of, Collection.Reader.Of, Union.Reader.Of]
-  //   type Writer =
-  //     Base.SchemaOps.Writer[Schema.Writer.Of, Schema.Writer.Of, Collection.Writer.Of, Union.Writer.Of]
-
-  // object CollectionOps:
-  //   type Isomorphic = Base.CollectionOps.Isomorphic[Collection.Of, Union.Of, Schema.Writer, Schema.Any]
-  //   type Reader = Base.CollectionOps.Reader[Collection.Reader.Of, Union.Reader.Of, Schema.Writer, Schema.Reader.Any]
-  //   type Writer = Base.CollectionOps.Writer[Collection.Writer.Of, Union.Writer.Of, Schema.Writer, Schema.Writer.Any]
-
-  // object PrimitiveOps:
-  //   type Isomorphic[Self[_], Optional[_]] = Base.PrimitiveOps.Isomorphic[Self, Optional, Collection.Of, Union.Of]
-  //   type Reader[Self[_], Optional[_]] = Base.PrimitiveOps.Reader[Self, Optional, Collection.Reader.Of, Union.Reader.Of]
-  //   type Writer[Self[_], Optional[_]] = Base.PrimitiveOps.Writer[Self, Optional, Collection.Writer.Of, Union.Writer.Of]
-
-  // object UnionOps:
-  //   type Isomorphic = Base.UnionOps.Isomorphic[Union.Of, Schema.Of, Collection.Of]
-  //   type Reader = Base.UnionOps.Reader[Union.Reader.Of, Schema.Reader.Of, Collection.Reader.Of]
-  //   type Writer = Base.UnionOps.Writer[Union.Writer.Of, Schema.Writer.Of, Collection.Writer.Of]
-
   final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 
   object Schema:
@@ -69,6 +47,42 @@ trait Types:
       type Of[A, B] = container.Schema[Base.Schema.Writer[container.Schema, A, B]]
       type Any = container.Schema[Base.Schema.Writer[container.Schema, ?, ?]]
 
+  final type Value[A] = container.Schema[Base.Value[container.Schema, ?, A]]
+
+  object Value:
+    type Of[A, B] = container.Schema[Base.Value[container.Schema, A, B]]
+    type Any = container.Schema[Base.Value[container.Schema, ?, ?]]
+
+    type Required[A] = container.Schema[Base.Value.Required[container.Schema, ?, A]]
+
+    object Required:
+      type Of[A, B] = container.Schema[Base.Value.Required[container.Schema, A, B]]
+      type Any = container.Schema[Base.Value.Required[container.Schema, ?, ?]]
+
+      type Reader[A] = container.Schema[Base.Value.Required.Reader[container.Schema, ?, A]]
+
+      object Reader:
+        type Of[A, B] = container.Schema[Base.Value.Required.Reader[container.Schema, A, B]]
+        type Any = container.Schema[Base.Value.Required.Reader[container.Schema, ?, ?]]
+
+      type Writer[A] = container.Schema[Base.Value.Required.Writer[container.Schema, ?, A]]
+
+      object Writer:
+        type Of[A, B] = container.Schema[Base.Value.Required.Writer[container.Schema, A, B]]
+        type Any = container.Schema[Base.Value.Required.Writer[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Schema[Base.Value.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Schema[Base.Value.Reader[container.Schema, A, B]]
+      type Any = container.Schema[Base.Value.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Schema[Base.Value.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Schema[Base.Value.Writer[container.Schema, A, B]]
+      type Any = container.Schema[Base.Value.Writer[container.Schema, ?, ?]]
+
   final type Collection[A] = container.Collection[Base.Collection[container.Schema, ?, A]]
 
   object Collection:
@@ -86,6 +100,42 @@ trait Types:
     object Writer:
       type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, B]]
       type Any = container.Collection[Base.Collection.Writer[container.Schema, ?, ?]]
+
+  final type Enumeration[A] = container.Enumeration[Base.Enumeration[container.Schema, ?, A]]
+
+  object Enumeration:
+    type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B]]
+    type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?]]
+
+    type Required[A] = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, A]]
+
+    object Required:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B]]
+      type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?]]
+
+      type Reader[A] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, A]]
+
+      object Reader:
+        type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, A, B]]
+        type Any = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, ?]]
+
+      type Writer[A] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, A]]
+
+      object Writer:
+        type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, A, B]]
+        type Any = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Reader[container.Schema, A, B]]
+      type Any = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Writer[container.Schema, A, B]]
+      type Any = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, ?]]
 
   final type Primitive[A] = container.Primitive[Base.Primitive[A]]
 
@@ -116,6 +166,24 @@ trait Types:
 
     object Writer:
       type Any = container.Primitive[Base.Primitive.Writer[?]]
+
+  final type Product[A] = container.Product[Base.Product[container.Schema, ?, A]]
+
+  object Product:
+    type Of[A, B] = container.Product[Base.Product[container.Schema, A, B]]
+    type Any = container.Product[Base.Product[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Product[Base.Product.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Product[Base.Product.Reader[container.Schema, A, B]]
+      type Any = container.Product[Base.Product.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Product[Base.Product.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Product[Base.Product.Writer[container.Schema, A, B]]
+      type Any = container.Product[Base.Product.Writer[container.Schema, ?, ?]]
 
   final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 

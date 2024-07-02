@@ -25,6 +25,32 @@ object Schema:
     def optional: Schema.Writer[F, A, Option[B]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Writer[G, ?, B]
 
+sealed trait Value[+F[+_], +A, B] extends Schema[F, A, B], Value.Reader[F, A, B], Value.Writer[F, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Value[F, A, C]
+  override def optional: Value[F, A, Option[B]]
+
+object Value:
+  sealed trait Required[+F[+_], +A, B]
+      extends Value[F, A, B],
+        Value.Required.Reader[F, A, B],
+        Value.Required.Writer[F, A, B]:
+    override def imap[C](f: B => C)(g: C => B): Value.Required[F, A, C]
+
+  object Required:
+    sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
+      override def map[C](f: B => C): Value.Required.Reader[F, A, C]
+
+    sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
+      override def contramap[C](f: C => B): Value.Required.Writer[F, A, C]
+
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
+    override def map[C](f: B => C): Value.Reader[F, A, C]
+    override def optional: Value.Reader[F, A, Option[B]]
+
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
+    override def contramap[C](f: C => B): Value.Writer[F, A, C]
+    override def optional: Value.Writer[F, A, Option[B]]
+
 sealed trait Collection[+F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
   final override def imap[C](f: B => C)(g: C => B): Collection[F, A, C] = ivalidate(Validation.lift(f))(g)
   final def ivalidate[C, D](validation: SchemaValidation.Collection[B, C, D])(f: D => B): Collection[F, A, D] =
@@ -174,9 +200,34 @@ object Dictionary:
 
 sealed trait Dynamic[+F[+_], +A, B] extends Schema[F, A, B]
 
-sealed trait Enumeration[+F[+_], +A, B] extends Schema[F, A, B]
+sealed trait Enumeration[+F[+_], +A, B]
+    extends Value[F, A, B],
+      Enumeration.Reader[F, A, B],
+      Enumeration.Writer[F, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Enumeration[F, A, C] = ???
 
-sealed trait Primitive[A] extends Schema[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
+object Enumeration:
+  sealed trait Required[+F[+_], +A, B]
+      extends Value.Required[F, A, B],
+        Enumeration[F, A, B],
+        Enumeration.Required.Reader[F, A, B],
+        Enumeration.Required.Writer[F, A, B]:
+    override def imap[C](f: B => C)(g: C => B): Enumeration.Required[F, A, C] = ???
+
+  object Required:
+    sealed trait Reader[+F[+_], +A, +B] extends Value.Required.Reader[F, A, B], Enumeration.Reader[F, A, B]:
+      override def map[C](f: B => C): Enumeration.Required.Reader[F, A, C] = ???
+
+    sealed trait Writer[+F[+_], +A, -B] extends Value.Required.Writer[F, A, B], Enumeration.Writer[F, A, B]:
+      override def contramap[C](f: C => B): Enumeration.Required.Writer[F, A, C] = ???
+
+  sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
+    override def map[C](f: B => C): Enumeration.Reader[F, A, C] = ???
+
+  sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
+    override def contramap[C](f: C => B): Enumeration.Writer[F, A, C] = ???
+
+sealed trait Primitive[A] extends Value[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[C] = ivalidate(Validation.lift(f))(g)
   final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
   def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
@@ -185,10 +236,11 @@ sealed trait Primitive[A] extends Schema[Nothing, Nothing, A], Primitive.Reader[
   override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive[A] = this
 
 object Primitive:
-  trait Ops:
-    def tpe: Type[?]
-
-  sealed trait Required[A] extends Primitive[A], Primitive.Required.Reader[A], Primitive.Required.Writer[A]:
+  sealed trait Required[A]
+      extends Value.Required[Nothing, Nothing, A],
+        Primitive[A],
+        Primitive.Required.Reader[A],
+        Primitive.Required.Writer[A]:
     final override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = ivalidate(Validation.lift(f))(g)
     override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
         f: D => A
@@ -196,7 +248,7 @@ object Primitive:
     final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Required[A] = this
 
   object Required:
-    sealed trait Reader[+A] extends Primitive.Reader[A]:
+    sealed trait Reader[+A] extends Value.Required.Reader[Nothing, Nothing, A], Primitive.Reader[A]:
       final override def map[C](f: A => C): Primitive.Required.Reader[C] = validate(Validation.lift(f))
       final override def validate[A1 >: A, B, C, D](
           transformation: SchemaValidation.Primitive[A1, B, C, D]
@@ -211,7 +263,7 @@ object Primitive:
         export self.tpe
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-    sealed trait Writer[-A] extends Primitive.Writer[A]:
+    sealed trait Writer[-A] extends Value.Required.Writer[Nothing, Nothing, A], Primitive.Writer[A]:
       final override def contramap[B](f: B => A): Primitive.Required.Writer[B] = Writer.Transform(this, f)
       override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Required.Writer[A] = this
 
@@ -231,13 +283,14 @@ object Primitive:
       export self.tpe
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-  sealed trait Reader[+A] extends Schema.Reader[Nothing, Nothing, A], Primitive.Ops:
+  sealed trait Reader[+A] extends Value.Reader[Nothing, Nothing, A]:
     def constraints: Chain[Constraint.Primitive[?]]
     override def map[C](f: A => C): Primitive.Reader[C] = validate(Validation.lift(f))
     override def optional: Primitive.Reader[Option[A]] = Reader.Optional(this)
     def validate[A1 >: A, B, C, D](
         validation: SchemaValidation.Primitive[A1, B, C, D]
     ): Primitive.Reader[D] = Reader.Transform(this, validation)
+    def tpe: Type[?]
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Reader[A] = this
 
   object Reader:
@@ -251,9 +304,10 @@ object Primitive:
     final case class Optional[+F[+_], A](self: Primitive.Reader[A]) extends Primitive.Reader[Option[A]]:
       export self.{constraints, tpe}
 
-  sealed trait Writer[-A] extends Schema.Writer[Nothing, Nothing, A], Primitive.Ops:
+  sealed trait Writer[-A] extends Value.Writer[Nothing, Nothing, A]:
     override def contramap[B](f: B => A): Primitive.Writer[B] = Writer.Transform(this, f)
     override def optional: Primitive.Writer[Option[A]] = Writer.Optional(this)
+    def tpe: Type[?]
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Writer[A] = this
 
   object Writer:

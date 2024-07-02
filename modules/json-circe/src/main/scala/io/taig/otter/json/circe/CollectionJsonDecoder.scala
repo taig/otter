@@ -10,7 +10,7 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import io.taig.otter.Decoder
 
-object JsonCollectionDecoder:
+object CollectionJsonDecoder:
   def apply[A](schema: Collection.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     schema match
       case Base.Collection.Transform(self, validation, _)     => ???

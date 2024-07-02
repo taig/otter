@@ -8,7 +8,7 @@ import io.taig.otter as Base
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-object JsonTypeDecoder:
+object TypeJsonDecoder:
   def apply[A](tpe: Type[A], json: Json): CirceDecoder.Result[A] = tpe match
     case Type.BigDecimal => json.as[JBigDecimal]
     case Type.BigInteger => json.as[JBigInteger]
