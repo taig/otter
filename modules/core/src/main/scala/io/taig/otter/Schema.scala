@@ -205,6 +205,7 @@ sealed trait Enumeration[+F[+_], +A, B]
       Enumeration.Reader[F, A, B],
       Enumeration.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Enumeration[F, A, C] = ???
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, B] = ???
 
 object Enumeration:
   sealed trait Required[+F[+_], +A, B]
@@ -213,19 +214,31 @@ object Enumeration:
         Enumeration.Required.Reader[F, A, B],
         Enumeration.Required.Writer[F, A, B]:
     override def imap[C](f: B => C)(g: C => B): Enumeration.Required[F, A, C] = ???
+    override def optional: Enumeration.Required[F, A, Option[B]] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required[G, ?, B] = ???
 
   object Required:
     sealed trait Reader[+F[+_], +A, +B] extends Value.Required.Reader[F, A, B], Enumeration.Reader[F, A, B]:
       override def map[C](f: B => C): Enumeration.Required.Reader[F, A, C] = ???
+      override def optional: Enumeration.Required.Reader[F, A, Option[B]] = ???
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B] = ???
 
     sealed trait Writer[+F[+_], +A, -B] extends Value.Required.Writer[F, A, B], Enumeration.Writer[F, A, B]:
       override def contramap[C](f: C => B): Enumeration.Required.Writer[F, A, C] = ???
+      override def optional: Enumeration.Required.Writer[F, A, Option[B]] = ???
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B] = ???
+
+    object Writer:
+      final case class Root[F[+_], +A <: F[Value.Required.Writer[F, ?, B]], B](schema: A)
+          extends Enumeration.Required.Writer[F, A, B]
 
   sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
     override def map[C](f: B => C): Enumeration.Reader[F, A, C] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, B] = ???
 
   sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
     override def contramap[C](f: C => B): Enumeration.Writer[F, A, C] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Writer[G, ?, B] = ???
 
 sealed trait Primitive[A] extends Value[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[C] = ivalidate(Validation.lift(f))(g)
@@ -443,6 +456,11 @@ object Union:
 
       sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Required.Writer[F, A, B], Union.Value.Writer[F, A, B]:
         override def contramap[C](f: C => B): Union.Value.Required.Writer[F, A, C] = ???
+
+      object Writer:
+        final case class Root[+F[+_], A <: F[Base.Value.Required.Writer[F, ?, B]], B](schema: A)
+            extends Union.Value.Required.Writer[F, A, B]:
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B] = ???
 
     sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Reader[F, A, B], Union.Reader[F, A, B]:
       override def map[C](f: B => C): Union.Value.Reader[F, A, C] = ???

@@ -191,6 +191,42 @@ trait Types:
     type Of[A, B] = container.Union[Base.Union[container.Schema, A, B]]
     type Any = container.Union[Base.Union[container.Schema, ?, ?]]
 
+    type Value[A] = container.Union[Base.Union.Value[container.Schema, ?, A]]
+
+    object Value:
+      type Of[A, B] = container.Union[Base.Union.Value[container.Schema, A, B]]
+      type Any = container.Union[Base.Union.Value[container.Schema, ?, ?]]
+
+      type Required[A] = container.Union[Base.Union.Value.Required[container.Schema, ?, A]]
+
+      object Required:
+        type Of[A, B] = container.Union[Base.Union.Value.Required[container.Schema, A, B]]
+        type Any = container.Union[Base.Union.Value.Required[container.Schema, ?, ?]]
+
+        type Reader[A] = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, A]]
+
+        object Reader:
+          type Of[A, B] = container.Union[Base.Union.Value.Required.Reader[container.Schema, A, B]]
+          type Any = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, ?]]
+
+        type Writer[A] = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, A]]
+
+        object Writer:
+          type Of[A, B] = container.Union[Base.Union.Value.Required.Writer[container.Schema, A, B]]
+          type Any = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, ?]]
+
+      type Reader[A] = container.Union[Base.Union.Value.Reader[container.Schema, ?, A]]
+
+      object Reader:
+        type Of[A, B] = container.Union[Base.Union.Value.Reader[container.Schema, A, B]]
+        type Any = container.Union[Base.Union.Value.Reader[container.Schema, ?, ?]]
+
+      type Writer[A] = container.Union[Base.Union.Value.Writer[container.Schema, ?, A]]
+
+      object Writer:
+        type Of[A, B] = container.Union[Base.Union.Value.Writer[container.Schema, A, B]]
+        type Any = container.Union[Base.Union.Value.Writer[container.Schema, ?, ?]]
+
     type Reader[A] = container.Union[Base.Union.Reader[container.Schema, ?, A]]
 
     object Reader:
