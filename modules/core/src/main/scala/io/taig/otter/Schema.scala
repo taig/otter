@@ -6,6 +6,7 @@ import cats.data.Chain
 import io.taig.otter.validation.Validation
 import cats.Functor
 import io.taig.otter.Union.Writer
+import scala.Product as SProduct
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   def imap[C](f: B => C)(g: C => B): Schema[F, A, C]
@@ -13,12 +14,12 @@ sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema[G, ?, B]
 
 object Schema:
-  sealed trait Reader[+F[+_], +A, +B] extends Product, Serializable:
+  sealed trait Reader[+F[+_], +A, +B] extends SProduct, Serializable:
     def map[C](f: B => C): Schema.Reader[F, A, C]
     def optional: Schema.Reader[F, A, Option[B]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Reader[G, ?, B]
 
-  sealed trait Writer[+F[+_], +A, -B] extends Product, Serializable:
+  sealed trait Writer[+F[+_], +A, -B] extends SProduct, Serializable:
     def contramap[C](f: C => B): Schema.Writer[F, A, C]
     def optional: Schema.Writer[F, A, Option[B]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Writer[G, ?, B]
@@ -281,3 +282,73 @@ object Union:
   final case class Transform[+F[+_], A, B, C](self: Union[F, A, B], f: B => C, g: C => B) extends Union[F, A, C]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, C] =
       copy(self = self.translate(fK))
+
+sealed trait Dictionary[+F[+_], +A, B] extends Schema[F, A, B], Dictionary.Reader[F, A, B], Dictionary.Writer[F, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Dictionary[F, A, C] = Dictionary.Transform(this, f, g)
+  override def optional: Dictionary[F, A, Option[B]] = Dictionary.Optional(this)
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, B]
+
+object Dictionary:
+  sealed trait Reader[+F[+_], +A, B] extends Schema.Reader[F, A, B]:
+    override def map[C](f: B => C): Dictionary.Reader[F, A, C] = Reader.Transform(this, f)
+    override def optional: Dictionary.Reader[F, A, Option[B]] = Reader.Optional(this)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, B]
+
+  object Reader:
+    final case class Optional[F[+_], A, B](self: Dictionary.Reader[F, A, B]) extends Dictionary.Reader[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Root[F[+_], A, B <: F[Schema.Reader[F, ?, C]], C](key: F[Primitive.Required.Reader[A]], value: B)
+        extends Dictionary.Reader[F, A, List[(A, C)]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, List[(A, C)]] =
+        copy(key = fK(key), value = fK(value).map(_.translate(fK)))
+
+    final case class Transform[F[+_], A, B, C](self: Dictionary.Reader[F, A, B], f: B => C)
+        extends Dictionary.Reader[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, C] =
+        copy(self = self.translate(fK))
+
+  sealed trait Writer[+F[+_], +A, B] extends Schema.Writer[F, A, B]:
+    override def contramap[C](f: C => B): Dictionary.Writer[F, A, C] = Writer.Transform(this, f)
+    override def optional: Dictionary.Writer[F, A, Option[B]] = Writer.Optional(this)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, B]
+
+  object Writer:
+    final case class Optional[F[+_], A, B](self: Dictionary.Writer[F, A, B]) extends Dictionary.Writer[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Root[F[+_], A, B <: F[Schema.Writer[F, ?, C]], C](key: F[Primitive.Required.Writer[A]], value: B)
+        extends Dictionary.Writer[F, A, List[(A, C)]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, List[(A, C)]] =
+        copy(key = fK(key), value = fK(value).map(_.translate(fK)))
+
+    final case class Transform[F[+_], A, B, C](self: Dictionary.Writer[F, A, B], f: C => B)
+        extends Dictionary.Writer[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, C] =
+        copy(self = self.translate(fK))
+
+  final case class Optional[F[+_], A, B](self: Dictionary[F, A, B]) extends Dictionary[F, A, Option[B]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, Option[B]] =
+      copy(self = self.translate(fK))
+
+  final case class Root[F[+_], A, B <: F[Schema[F, ?, C]], C](key: F[Primitive.Required[A]], value: B)
+      extends Dictionary[F, A, List[(A, C)]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, List[(A, C)]] =
+      copy(key = fK(key), value = fK(value).map(_.translate(fK)))
+
+  final case class Transform[F[+_], A, B, C](self: Dictionary[F, A, B], f: B => C, g: C => B)
+      extends Dictionary[F, A, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, C] =
+      copy(self = self.translate(fK))
+
+sealed trait Dynamic[+F[+_], +A, B] extends Schema[F, A, B]
+
+sealed trait Enumeration[+F[+_], +A, B] extends Schema[F, A, B]
+
+sealed trait Product[+F[+_], +A, B] extends Schema[F, A, B]
+
+sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B]
+
+sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B]
