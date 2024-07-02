@@ -2,7 +2,6 @@ package io.taig.otter.json.circe
 
 import io.circe.Json
 import io.taig.otter as Base
-import io.taig.otter.Plain.*
 import io.taig.otter.Type
 import io.circe.syntax.*
 import java.math.BigDecimal as JBigDecimal

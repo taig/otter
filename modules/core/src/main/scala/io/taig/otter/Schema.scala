@@ -442,8 +442,9 @@ object Union:
         Union[F, A, B],
         Union.Value.Reader[F, A, B],
         Union.Value.Writer[F, A, B]:
-    override def imap[C](f: B => C)(g: C => B): Union.Value[F, A, C] = ???
-    override def optional: Union.Value[F, A, Option[B]] = ???
+    override def imap[C](f: B => C)(g: C => B): Union.Value[F, A, C] =
+      Value.Transform(this, f, g)
+    override def optional: Union.Value[F, A, Option[B]] = Value.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, B]
 
   object Value:
@@ -480,6 +481,15 @@ object Union:
       override def contramap[C](f: C => B): Union.Value.Writer[F, A, C] = ???
       override def optional: Union.Value.Writer[F, A, Option[B]] = ???
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, B]
+
+    final case class Optional[F[+_], A, B](self: Union.Value[F, A, B]) extends Union.Value[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Union.Value[F, A, B], f: B => C, g: C => B)
+        extends Union.Value[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, C] =
+        copy(self = self.translate(fK))
 
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     override def map[C](f: B => C): Union.Reader[F, A, C] = Reader.Transform(this, f)
