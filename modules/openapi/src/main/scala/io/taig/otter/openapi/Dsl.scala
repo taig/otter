@@ -10,7 +10,7 @@ trait Dsl extends Base.Dsl:
     override type Schema[+A] = Annotation[Metadata, A]
     override type Collection[+A] = Annotation[Metadata.Collection, A]
     override type Primitive[+A] = Annotation[Metadata.Primitive, A]
-    override type Tuple[+A] = Annotation[Metadata.Tuple, A]
+    override type Product[+A] = Annotation[Metadata.Product, A]
     override type Union[+A] = Annotation[Metadata.Union, A]
 
   override given schemaApplicativeComonad: ApplicativeComonad[container.Schema] =

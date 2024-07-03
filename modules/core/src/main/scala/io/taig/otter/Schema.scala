@@ -482,19 +482,45 @@ object Product:
 
 sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, B], Record.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Record[F, A, C] = Record.Transform(this, f, g)
-  override def optional: Record[F, A, Option[B]] = ???
+  override def optional: Record[F, A, Option[B]] = Record.Optional(this)
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B]
 
 object Record:
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-    override def map[C](f: B => C): Record.Reader[F, A, C] = ???
-    override def optional: Record.Reader[F, A, Option[B]] = ???
+    override def map[C](f: B => C): Record.Reader[F, A, C] = Reader.Transform(this, f)
+    override def optional: Record.Reader[F, A, Option[B]] = Reader.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, B]
 
+  object Reader:
+    final case class One[F[+_], A, B](field: Field.Reader[F, A, B]) extends Record.Reader[F, A, B]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, B] =
+        copy(field = field.translate(fK))
+
+    final case class Optional[F[+_], A, B](self: Record.Reader[F, A, B]) extends Record.Reader[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Record.Reader[F, A, B], f: B => C) extends Record.Reader[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, C] =
+        copy(self = self.translate(fK))
+
   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-    override def contramap[C](f: C => B): Record.Writer[F, A, C] = ???
-    override def optional: Record.Writer[F, A, Option[B]] = ???
+    override def contramap[C](f: C => B): Record.Writer[F, A, C] = Writer.Transform(this, f)
+    override def optional: Record.Writer[F, A, Option[B]] = Writer.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B]
+
+  object Writer:
+    final case class One[F[+_], A, B](field: Field.Writer[F, A, B]) extends Record.Writer[F, A, B]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B] =
+        copy(field = field.translate(fK))
+
+    final case class Optional[F[+_], A, B](self: Record.Writer[F, A, B]) extends Record.Writer[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Record.Writer[F, A, B], f: C => B) extends Record.Writer[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, C] =
+        copy(self = self.translate(fK))
 
   case object Empty extends Record[Nothing, Nothing, Unit]:
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Record[G, ?, Unit] = this

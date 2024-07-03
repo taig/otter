@@ -16,10 +16,10 @@ object Metadata:
   object Primitive:
     val Default: Metadata.Primitive = Primitive(name = none)
 
-  final case class Tuple(name: Option[String]) extends Metadata
+  final case class Product(name: Option[String]) extends Metadata
 
-  object Tuple:
-    val Default: Metadata.Tuple = Tuple(name = none)
+  object Product:
+    val Default: Metadata.Product = Product(name = none)
 
   final case class Union(name: Option[String]) extends Metadata
 
