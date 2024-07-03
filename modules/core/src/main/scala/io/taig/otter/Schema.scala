@@ -525,7 +525,7 @@ object Record:
   case object Empty extends Record[Nothing, Nothing, Unit]:
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Record[G, ?, Unit] = this
 
-  final case class One[F[+_], A, B](field: Field[F, A, B]) extends Record[F, A, B]:
+  final case class One[+F[+_], +A, B](field: Field[F, A, B]) extends Record[F, A, B]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B] =
       copy(field = field.translate(fK))
 

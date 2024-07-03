@@ -185,6 +185,24 @@ trait Types:
       type Of[A, B] = container.Product[Base.Product.Writer[container.Schema, A, B]]
       type Any = container.Product[Base.Product.Writer[container.Schema, ?, ?]]
 
+  final type Record[A] = container.Record[Base.Record[container.Schema, ?, A]]
+
+  object Record:
+    type Of[A, B] = container.Record[Base.Record[container.Schema, A, B]]
+    type Any = container.Record[Base.Record[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Record[Base.Record.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Record[Base.Record.Reader[container.Schema, A, B]]
+      type Any = container.Record[Base.Record.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Record[Base.Record.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Record[Base.Record.Writer[container.Schema, A, B]]
+      type Any = container.Record[Base.Record.Writer[container.Schema, ?, ?]]
+
   final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 
   object Union:
@@ -238,3 +256,21 @@ trait Types:
     object Writer:
       type Of[A, B] = container.Union[Base.Union.Writer[container.Schema, A, B]]
       type Any = container.Union[Base.Union.Writer[container.Schema, ?, ?]]
+
+  final type Field[A] = Base.Field[container.Schema, ?, A]
+
+  object Field:
+    type Of[A, B] = Base.Field[container.Schema, A, B]
+    type Any = Base.Field[container.Schema, ?, ?]
+
+    type Reader[A] = Base.Field.Reader[container.Schema, ?, A]
+
+    object Reader:
+      type Of[A, B] = Base.Field.Reader[container.Schema, A, B]
+      type Any = Base.Field.Reader[container.Schema, ?, ?]
+
+    type Writer[A] = Base.Field.Writer[container.Schema, ?, A]
+
+    object Writer:
+      type Of[A, B] = Base.Field.Writer[container.Schema, A, B]
+      type Any = Base.Field.Writer[container.Schema, ?, ?]

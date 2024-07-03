@@ -8,4 +8,4 @@ object StringEncoder:
   def apply[A](schema: Value.Required.Writer[A], a: A) = schema match
     case schema: Primitive.Required.Writer[A]   => PrimitiveStringEncoder(schema, a)
     case schema: Union.Value.Required.Writer[A] => UnionStringEncoder(schema, a)
-    case schema: Enumeration.Required.Writer[A] => "lol"
+    case schema: Enumeration.Required.Writer[A] => EnumerationStringEncoder(schema, a)
