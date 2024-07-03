@@ -1,15 +1,23 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import cats.Applicative
+import cats.Monad
+import cats.syntax.GuardOps
 
 object TypeStringDecoder:
-  def apply[A](tpe: Type[A], value: String): Option[A] =
-    tpe match
-      case Type.BigDecimal => ??? // json.as[JBigDecimal]
-      case Type.BigInteger => ??? // json.as[JBigInteger]
-      case Type.Boolean    => ??? // json.as[Boolean]
-      case Type.Double     => ??? // json.as[Double]
-      case Type.Float      => ??? // json.as[Float]
-      case Type.Int        => ??? // json.as[Int]
-      case Type.Long       => ??? // json.as[Long]
-      case Type.String     => value.some
+  def apply[A](tpe: Type[A], value: String): Option[A] = tpe match
+    case Type.BigDecimal =>
+      try new JBigDecimal(value).some
+      catch { case _: NumberFormatException => none }
+    case Type.BigInteger =>
+      try new JBigInteger(value).some
+      catch { case _: NumberFormatException => none }
+    case Type.Boolean => value.toBooleanOption
+    case Type.Double  => value.toDoubleOption
+    case Type.Float   => value.toFloatOption
+    case Type.Int     => value.toIntOption
+    case Type.Long    => value.toLongOption
+    case Type.String  => value.some
