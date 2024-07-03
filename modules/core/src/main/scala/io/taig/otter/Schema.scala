@@ -208,8 +208,9 @@ sealed trait Enumeration[+F[+_], +A, B]
     extends Value[F, A, B],
       Enumeration.Reader[F, A, B],
       Enumeration.Writer[F, A, B]:
-  override def imap[C](f: B => C)(g: C => B): Enumeration[F, A, C] = ???
-  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, B] = ???
+  override def imap[C](f: B => C)(g: C => B): Enumeration[F, A, C] = Enumeration.Transform(this, f, g)
+  override def optional: Enumeration[F, A, Option[B]] = Enumeration.Optional(this)
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, B]
 
 object Enumeration:
   sealed trait Required[+F[+_], +A, B]
@@ -217,32 +218,85 @@ object Enumeration:
         Enumeration[F, A, B],
         Enumeration.Required.Reader[F, A, B],
         Enumeration.Required.Writer[F, A, B]:
-    override def imap[C](f: B => C)(g: C => B): Enumeration.Required[F, A, C] = ???
-    override def optional: Enumeration.Required[F, A, Option[B]] = ???
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required[G, ?, B] = ???
+    override def imap[C](f: B => C)(g: C => B): Enumeration.Required[F, A, C] = Required.Transform(this, f, g)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required[G, ?, B]
 
   object Required:
     sealed trait Reader[+F[+_], +A, +B] extends Value.Required.Reader[F, A, B], Enumeration.Reader[F, A, B]:
-      override def map[C](f: B => C): Enumeration.Required.Reader[F, A, C] = ???
-      override def optional: Enumeration.Required.Reader[F, A, Option[B]] = ???
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B] = ???
+      override def map[C](f: B => C): Enumeration.Required.Reader[F, A, C] = Reader.Transform(this, f)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B]
+
+    object Reader:
+      final case class Root[F[+_], +A <: F[Value.Required.Reader[F, ?, B]], B](schema: A)
+          extends Enumeration.Required.Reader[F, A, B]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B] =
+          copy(schema = fK(schema).map(_.translate(fK)))
+
+      final case class Transform[F[+_], A, B, C](self: Enumeration.Required.Reader[F, A, B], f: B => C)
+          extends Enumeration.Required.Reader[F, A, C]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, C] =
+          copy(self = self.translate(fK))
 
     sealed trait Writer[+F[+_], +A, -B] extends Value.Required.Writer[F, A, B], Enumeration.Writer[F, A, B]:
-      override def contramap[C](f: C => B): Enumeration.Required.Writer[F, A, C] = ???
-      override def optional: Enumeration.Required.Writer[F, A, Option[B]] = ???
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B] = ???
+      override def contramap[C](f: C => B): Enumeration.Required.Writer[F, A, C] = Writer.Transform(this, f)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B]
 
     object Writer:
       final case class Root[F[+_], +A <: F[Value.Required.Writer[F, ?, B]], B](schema: A)
-          extends Enumeration.Required.Writer[F, A, B]
+          extends Enumeration.Required.Writer[F, A, B]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B] =
+          copy(schema = fK(schema).map(_.translate(fK)))
+
+      final case class Transform[F[+_], A, B, C](self: Enumeration.Required.Writer[F, A, B], f: C => B)
+          extends Enumeration.Required.Writer[F, A, C]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, C] =
+          copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Enumeration.Required[F, A, B], f: B => C, g: C => B)
+        extends Enumeration.Required[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required[G, ?, C] =
+        copy(self = self.translate(fK))
 
   sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
-    override def map[C](f: B => C): Enumeration.Reader[F, A, C] = ???
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, B] = ???
+    override def map[C](f: B => C): Enumeration.Reader[F, A, C] = Reader.Transform(this, f)
+    override def optional: Enumeration.Reader[F, A, Option[B]] = Reader.Optional(this)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, B]
+
+  object Reader:
+    final case class Optional[F[+_], A, B](self: Enumeration.Reader[F, A, B])
+        extends Enumeration.Reader[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Enumeration.Reader[F, A, B], f: B => C)
+        extends Enumeration.Reader[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, C] =
+        copy(self = self.translate(fK))
 
   sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
-    override def contramap[C](f: C => B): Enumeration.Writer[F, A, C] = ???
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Writer[G, ?, B] = ???
+    override def contramap[C](f: C => B): Enumeration.Writer[F, A, C] = Writer.Transform(this, f)
+    override def optional: Enumeration.Writer[F, A, Option[B]] = Writer.Optional(this)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Writer[G, ?, B]
+
+  object Writer:
+    final case class Optional[F[+_], A, B](self: Enumeration.Writer[F, A, B])
+        extends Enumeration.Writer[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Writer[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
+    final case class Transform[F[+_], A, B, C](self: Enumeration.Writer[F, A, B], f: C => B)
+        extends Enumeration.Writer[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Writer[G, ?, C] =
+        copy(self = self.translate(fK))
+
+  final case class Optional[F[+_], A, B](self: Enumeration[F, A, B]) extends Enumeration[F, A, Option[B]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, Option[B]] =
+      copy(self = self.translate(fK))
+
+  final case class Transform[F[+_], A, B, C](self: Enumeration[F, A, B], f: B => C, g: C => B)
+      extends Enumeration[F, A, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, C] =
+      copy(self = self.translate(fK))
 
 sealed trait Primitive[A] extends Value[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   override def imap[C](f: A => C)(g: C => A): Primitive[C] = ivalidate(Validation.lift(f))(g)
