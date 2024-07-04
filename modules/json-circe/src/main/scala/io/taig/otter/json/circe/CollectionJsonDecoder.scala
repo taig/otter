@@ -13,19 +13,12 @@ import io.taig.otter.Decoder
 object CollectionJsonDecoder:
   def apply[A](schema: Collection.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     schema match
-      case Base.Collection.Transform(self, validation, _)     => ???
+      case Base.Collection.Transform(self, validation, _)     => transform(self, validation, values)
       case Base.Collection.Optional(self)                     => optional(self, values)
-      case Base.Collection.Reader.Transform(self, validation) => ???
+      case Base.Collection.Reader.Transform(self, validation) => transform(self, validation, values)
       case Base.Collection.Reader.Optional(self)              => optional(self, values)
       case Base.Collection.Reader.Root(schema)                => root(schema, values)
       case Base.Collection.Root(schema)                       => root(schema, values)
-
-  // def functor[A, V1, V2, B](
-  //     self: Collection.Reader[A],
-  //     validation: Validation[A, V1, V2, B],
-  //     values: Option[Vector[Json]]
-  // ): Validated[Violations[Json, Json], B] = apply(self, values).andThen:
-  //   validation(_).leftMap(_.map(_.bimap(JsonEncoder.apply, JsonEncoder.apply))).leftMap(Violations.root)
 
   def optional[A](self: Collection.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, Option[A]] =
     values.fold(none.valid)(_ => apply(self, values).map(_.some))

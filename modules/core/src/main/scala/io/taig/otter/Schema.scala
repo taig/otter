@@ -783,7 +783,7 @@ object Union:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[+F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]:
+    final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, B] =
         copy(schema = fK(schema).map(_.translate(fK)))
 

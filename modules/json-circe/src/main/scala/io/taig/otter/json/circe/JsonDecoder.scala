@@ -36,4 +36,4 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
           case Some(obj) => RecordJsonDecoder(schema, Chain.fromIterableOnce(obj.toIterable).some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Union.Reader[A] => ???
+    case schema: Union.Reader[A] => UnionJsonDecoder(schema, json)

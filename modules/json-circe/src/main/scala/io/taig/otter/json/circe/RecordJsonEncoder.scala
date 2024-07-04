@@ -12,16 +12,16 @@ object RecordJsonEncoder:
 
   def apply[A](schema: Record.Writer[A], nulls: Record.Null, a: A): Option[Chain[(String, Json)]] = schema match
     case Base.Record.Combine(left, right)        => combine(left, right, nulls, a).some
-    case Base.Record.Writer.Combine(left, right) => combine(left, right, nulls, a).some
     case Base.Record.Empty                       => Chain.empty.some
+    case Base.Record.Nulls(self, nulls)          => RecordJsonEncoder(self, nulls, a)
     case Base.Record.One(field)                  => one(field, nulls, a)
     case Base.Record.Optional(self)              => optional(self, nulls, a)
     case Base.Record.Transform(self, _, f)       => transform(self, f, nulls, a)
+    case Base.Record.Writer.Combine(left, right) => combine(left, right, nulls, a).some
+    case Base.Record.Writer.Nulls(self, nulls)   => RecordJsonEncoder(self, nulls, a)
     case Base.Record.Writer.One(field)           => one(field, nulls, a)
     case Base.Record.Writer.Optional(self)       => optional(self, nulls, a)
     case Base.Record.Writer.Transform(self, f)   => transform(self, f, nulls, a)
-    case Base.Record.Nulls(self, nulls)          => RecordJsonEncoder(self, nulls, a)
-    case Base.Record.Writer.Nulls(self, nulls)   => RecordJsonEncoder(self, nulls, a)
 
   def combine[A, B](
       left: Record.Writer[A],
