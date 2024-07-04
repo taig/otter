@@ -33,9 +33,7 @@ object RecordJsonDecoder:
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], (A, B))] = withRemainders(left, values) match
     case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))
     case Validated.Invalid(violations) =>
-      withRemainders(right, values) match
-        case Validated.Valid(_)            => violations.invalid
-        case Validated.Invalid(additional) => violations.combine(additional).invalid
+      withRemainders(right, values).fold(violations.combine, _ => violations).invalid
 
   def one[A](
       field: Field.Reader[A],

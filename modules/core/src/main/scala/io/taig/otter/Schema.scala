@@ -430,7 +430,7 @@ object Product:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, (B, D)] =
         copy(left = left.translate(fK), right = right.translate(fK))
 
-    final case class One[F[+_], A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Product.Reader[F, A, B]:
+    final case class One[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Product.Reader[F, A, B]:
       override def schemas: Chain[F[Schema.Reader[F, ?, ?]]] = Chain.one(schema)
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, B] =
         copy(schema = fK(schema).map(_.translate(fK)))
