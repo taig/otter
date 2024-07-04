@@ -8,6 +8,7 @@ import cats.Functor
 import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
+import cats.kernel.Eq
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   override def default: Option[B] = ???
@@ -487,6 +488,9 @@ object Product:
       copy(self = self.translate(fK))
 
 sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, B], Record.Writer[F, A, B]:
+  override def nulls: Record.Null
+  override def nulls(value: Record.Null): Record.Writer[F, A, B]
+
   override def imap[C](f: B => C)(g: C => B): Record[F, A, C] = Record.Transform(this, f, g)
   override def optional: Record[F, A, Option[B]] = Record.Optional(this)
   def product[G[+a] >: F[a], C, D](product: Record[G, C, D]): Record[G, A & C, (B, D)] = Record.Combine(this, product)
@@ -512,24 +516,33 @@ object Record:
         copy(self = self.translate(fK))
 
   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
+    def nulls: Record.Null
+    def nulls(value: Record.Null): Record.Writer[F, A, B]
+
     override def contramap[C](f: C => B): Record.Writer[F, A, C] = Writer.Transform(this, f)
     override def optional: Record.Writer[F, A, Option[B]] = Writer.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B]
 
   object Writer:
-    final case class One[F[+_], A, B](field: Field.Writer[F, A, B]) extends Record.Writer[F, A, B]:
+    final case class One[F[+_], A, B](field: Field.Writer[F, A, B], nulls: Record.Null) extends Record.Writer[F, A, B]:
+      override def nulls(value: Record.Null): Record.Writer[F, A, B] = copy(nulls = value)
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B] =
         copy(field = field.translate(fK))
 
     final case class Optional[F[+_], A, B](self: Record.Writer[F, A, B]) extends Record.Writer[F, A, Option[B]]:
+      override def nulls: Null = self.nulls
+      override def nulls(value: Record.Null): Record.Writer[F, A, Option[B]] = copy(self = self.nulls(value))
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
     final case class Transform[F[+_], A, B, C](self: Record.Writer[F, A, B], f: C => B) extends Record.Writer[F, A, C]:
+      override def nulls: Null = self.nulls
+      override def nulls(value: Record.Null): Record.Writer[F, A, C] = copy(self = self.nulls(value))
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, C] =
         copy(self = self.translate(fK))
 
-  case object Empty extends Record[Nothing, Nothing, Unit]:
+  final case class Empty(nulls: Record.Null) extends Record[Nothing, Nothing, Unit]:
+    override def nulls(value: Record.Null): Record[Nothing, Nothing, Unit] = copy(nulls = value)
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Record[G, ?, Unit] = this
 
   final case class Combine[F[+_], A, B, C, D](left: Record[F, A, B], right: Record[F, C, D])
@@ -537,17 +550,28 @@ object Record:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, (B, D)] =
       copy(left = left.translate(fK), right = right.translate(fK))
 
-  final case class One[F[+_], +A, B](field: Field[F, A, B]) extends Record[F, A, B]:
+  final case class One[F[+_], +A, B](field: Field[F, A, B], nulls: Record.Null) extends Record[F, A, B]:
+    override def nulls(value: Record.Null): Record[F, A, B] = copy(nulls = value)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B] =
       copy(field = field.translate(fK))
 
   final case class Optional[F[+_], A, B](self: Record[F, A, B]) extends Record[F, A, Option[B]]:
+    export self.nulls
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, Option[B]] =
       copy(self = self.translate(fK))
 
   final case class Transform[F[+_], A, B, C](self: Record[F, A, B], f: B => C, g: C => B) extends Record[F, A, C]:
+    export self.nulls
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, C] =
       copy(self = self.translate(fK))
+
+  enum Null:
+    case Show
+    case Hide
+
+  object Null:
+    val Default: Null = Show
+    given Eq[Null] = Eq.fromUniversalEquals
 
 sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B]
 

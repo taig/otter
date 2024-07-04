@@ -310,3 +310,6 @@ trait Types:
     object Writer:
       type Of[A, B] = Base.Field.Writer[container.Schema, A, B]
       type Any = Base.Field.Writer[container.Schema, ?, ?]
+
+    type Null = Base.Field.Null
+    val Null: Base.Field.Null.type = Base.Field.Null
