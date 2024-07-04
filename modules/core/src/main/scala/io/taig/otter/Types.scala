@@ -101,6 +101,24 @@ trait Types:
       type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, B]]
       type Any = container.Collection[Base.Collection.Writer[container.Schema, ?, ?]]
 
+  final type Dictionary[A] = container.Dictionary[Base.Dictionary[container.Schema, ?, A]]
+
+  object Dictionary:
+    type Of[A, B] = container.Dictionary[Base.Dictionary[container.Schema, A, B]]
+    type Any = container.Dictionary[Base.Dictionary[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Dictionary[Base.Dictionary.Reader[container.Schema, A, B]]
+      type Any = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Dictionary[Base.Dictionary.Writer[container.Schema, A, B]]
+      type Any = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, ?]]
+
   final type Enumeration[A] = container.Enumeration[Base.Enumeration[container.Schema, ?, A]]
 
   object Enumeration:

@@ -489,6 +489,7 @@ object Product:
 sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, B], Record.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Record[F, A, C] = Record.Transform(this, f, g)
   override def optional: Record[F, A, Option[B]] = Record.Optional(this)
+  def product[G[+a] >: F[a], C, D](product: Record[G, C, D]): Record[G, A & C, (B, D)] = Record.Combine(this, product)
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B]
 
 object Record:
@@ -531,7 +532,12 @@ object Record:
   case object Empty extends Record[Nothing, Nothing, Unit]:
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Record[G, ?, Unit] = this
 
-  final case class One[+F[+_], +A, B](field: Field[F, A, B]) extends Record[F, A, B]:
+  final case class Combine[F[+_], A, B, C, D](left: Record[F, A, B], right: Record[F, C, D])
+      extends Record[F, A & C, (B, D)]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, (B, D)] =
+      copy(left = left.translate(fK), right = right.translate(fK))
+
+  final case class One[F[+_], +A, B](field: Field[F, A, B]) extends Record[F, A, B]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B] =
       copy(field = field.translate(fK))
 
@@ -687,7 +693,7 @@ object Union:
         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, Option[B]] =
           copy(self = self.translate(fK))
 
-      final case class Transform[F[+_], A, B, C](self: Union.Value.Writer[F, A, B], f: B => C)
+      final case class Transform[F[+_], A, B, C](self: Union.Value.Writer[F, A, B], f: C => B)
           extends Union.Value.Writer[F, A, C]:
         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, C] =
           copy(self = self.translate(fK))
@@ -765,7 +771,7 @@ object Union:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, Option[B]] =
       copy(self = self.translate(fK))
 
-  final case class Root[+F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Union[F, A, B]:
+  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Union[F, A, B]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, B] =
       copy(schema = fK(schema).map(_.translate(fK)))
 

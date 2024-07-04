@@ -7,6 +7,11 @@ import io.taig.otter.Plain.*
 
 object JsonEncoder extends Encoder[Schema.Writer, Json]:
   override def apply[A](schema: Schema.Writer[A], a: A): Json = schema match
-    case schema: Collection.Writer[A] => CollectionJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
-    case schema: Primitive.Writer[A]  => PrimitiveJsonEncoder(schema, a)
-    case schema: Union.Writer[A]      => UnionJsonEncoder(schema, a)
+    case schema: Collection.Writer[A]  => CollectionJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
+    case schema: Dictionary.Writer[A]  => ???
+    case schema: Enumeration.Writer[A] => ???
+    case schema: Primitive.Writer[A]   => PrimitiveJsonEncoder(schema, a)
+    case schema: Product.Writer[A]     => ???
+    case schema: Record.Writer[A] =>
+      RecordJsonEncoder(schema, a).fold(Json.Null)(values => Json.fromFields(values.toList))
+    case schema: Union.Writer[A] => UnionJsonEncoder(schema, a)
