@@ -19,6 +19,7 @@ object RecordJsonDecoder:
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = schema match
     case Base.Record.Combine(left, right)      => combine(left, right, values)
     case Base.Record.Empty                     => (values, ()).valid
+    case Base.Record.Nulls(self, _)            => withRemainders(self, values)
     case Base.Record.One(field)                => one(field, values)
     case Base.Record.Optional(self)            => optional(self, values)
     case Base.Record.Reader.One(field)         => one(field, values)

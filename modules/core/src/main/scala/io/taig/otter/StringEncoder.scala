@@ -2,7 +2,6 @@ package io.taig.otter
 
 import io.taig.otter.Plain.*
 import io.taig.otter as Base
-import cats.Id
 
 object StringEncoder:
   def apply[A](schema: Value.Required.Writer[A], a: A) = schema match

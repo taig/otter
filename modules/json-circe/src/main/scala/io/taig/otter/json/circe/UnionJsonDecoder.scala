@@ -1,17 +1,14 @@
 package io.taig.otter.json.circe
 
-import io.taig.otter.+
 import io.circe.Json
-import cats.data.Validated
-import io.taig.otter.validation.Violations
 import io.taig.otter.Decoder
 import io.taig.otter.Plain.*
 import io.taig.otter as Base
 import cats.syntax.all.*
-import io.taig.otter.SchemaValidation
 
 // TODO branch / namespace, as the errors are otherwise hard to track, perhaps this
 // can / should be incorporated into Sum?
+// actually, using an index might do?
 object UnionJsonDecoder:
   def apply[A](schema: Union.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
     case Base.Union.Combine(left, right)                       => combine(left, right, json)
