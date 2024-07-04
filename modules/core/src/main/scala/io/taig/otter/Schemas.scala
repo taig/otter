@@ -17,3 +17,17 @@ trait Schemas extends Instances:
   final val int: Primitive.Required[Int] = primitive(Type.Int)
   final val long: Primitive.Required[Long] = primitive(Type.Long)
   final val string: Primitive.Required[String] = primitive(Type.String)
+
+  final def branch[A](name: String, schema: Schema[A]): Branch.Of[schema.type, A] =
+    Base.Branch.Root(name, schema)
+  final def branch[A](name: String, schema: Schema.Reader[A]): Branch.Reader.Of[schema.type, A] =
+    Base.Branch.Reader.Root(name, schema)
+  final def branch[A](name: String, schema: Schema.Writer[A]): Branch.Writer.Of[schema.type, A] =
+    Base.Branch.Writer.Root(name, schema)
+
+  final def field[A](name: String, schema: Schema[A]): Field.Of[schema.type, A] =
+    Base.Field.Root(name, schema)
+  final def field[A](name: String, schema: Schema.Reader[A]): Field.Reader.Of[schema.type, A] =
+    Base.Field.Reader.Root(name, schema)
+  final def field[A](name: String, schema: Schema.Writer[A]): Field.Writer.Of[schema.type, A] =
+    Base.Field.Writer.Root(name, schema)

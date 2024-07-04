@@ -4,8 +4,7 @@ import cats.syntax.all.*
 import cats.Functor
 
 sealed trait Field[+F[+_], +A, B] extends Field.Reader[F, A, B], Field.Writer[F, A, B]:
-  def name: String
-  def schema: F[Schema[F, ?, ?]]
+  override def schema: F[Schema[F, ?, ?]]
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Field[G, ?, B]
 
 object Field:

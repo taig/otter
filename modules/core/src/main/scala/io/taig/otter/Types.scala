@@ -275,6 +275,24 @@ trait Types:
       type Of[A, B] = container.Union[Base.Union.Writer[container.Schema, A, B]]
       type Any = container.Union[Base.Union.Writer[container.Schema, ?, ?]]
 
+  final type Branch[A] = Base.Branch[container.Schema, ?, A]
+
+  object Branch:
+    type Of[A, B] = Base.Branch[container.Schema, A, B]
+    type Any = Base.Branch[container.Schema, ?, ?]
+
+    type Reader[A] = Base.Branch.Reader[container.Schema, ?, A]
+
+    object Reader:
+      type Of[A, B] = Base.Branch.Reader[container.Schema, A, B]
+      type Any = Base.Branch.Reader[container.Schema, ?, ?]
+
+    type Writer[A] = Base.Branch.Writer[container.Schema, ?, A]
+
+    object Writer:
+      type Of[A, B] = Base.Branch.Writer[container.Schema, A, B]
+      type Any = Base.Branch.Writer[container.Schema, ?, ?]
+
   final type Field[A] = Base.Field[container.Schema, ?, A]
 
   object Field:
