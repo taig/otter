@@ -8,8 +8,8 @@ import cats.data.Chain
 
 object RecordJsonEncoder:
   def apply[A](schema: Record.Writer[A], a: A): Option[Chain[(String, Json)]] = schema match
-    case Base.Record.Empty                     => Chain.empty.some
     case Base.Record.Combine(left, right)      => combine(left, right, a).some
+    case Base.Record.Empty                     => Chain.empty.some
     case Base.Record.One(field)                => one(field, a)
     case Base.Record.Optional(self)            => optional(self, a)
     case Base.Record.Transform(self, _, f)     => transform(self, f, a)

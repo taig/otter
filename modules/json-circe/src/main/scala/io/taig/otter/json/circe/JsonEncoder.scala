@@ -12,6 +12,5 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
     case schema: Enumeration.Writer[A] => ???
     case schema: Primitive.Writer[A]   => PrimitiveJsonEncoder(schema, a)
     case schema: Product.Writer[A]     => ???
-    case schema: Record.Writer[A] =>
-      RecordJsonEncoder(schema, a).fold(Json.Null)(values => Json.fromFields(values.toList))
-    case schema: Union.Writer[A] => UnionJsonEncoder(schema, a)
+    case schema: Record.Writer[A]      => RecordJsonEncoder(schema, a).map(_.toList).fold(Json.Null)(Json.fromFields)
+    case schema: Union.Writer[A]       => UnionJsonEncoder(schema, a)

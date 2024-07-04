@@ -2,10 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.Functor
-import cats.Id as Identity
-import cats.Show
-import io.taig.otter.Decoder.Result
-import cats.kernel.Eq
 
 sealed trait Field[+F[+_], +A, B] extends Field.Reader[F, A, B], Field.Writer[F, A, B]:
   def name: String

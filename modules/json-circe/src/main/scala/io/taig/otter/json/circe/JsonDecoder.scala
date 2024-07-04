@@ -8,6 +8,7 @@ import io.taig.otter.Decoder
 import io.taig.otter as Base
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
+import cats.data.Chain
 
 object JsonDecoder extends Decoder[Schema.Reader, Json]:
   override def apply[A](schema: Schema.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
@@ -18,5 +19,15 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
           case Some(array) => CollectionJsonDecoder(schema, array.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
-    case schema: Primitive.Reader[A] => PrimitiveJsonDecoder(schema, json)
-    case schema: Union.Reader[A]     => ???
+    case schema: Dictionary.Reader[A]  => ???
+    case schema: Enumeration.Reader[A] => ???
+    case schema: Primitive.Reader[A]   => PrimitiveJsonDecoder(schema, json)
+    case schema: Product.Reader[A]     => ???
+    case schema: Record.Reader[A] =>
+      if json.isNull then RecordJsonDecoder(schema, none)
+      else
+        json.asObject match
+          case Some(obj) => RecordJsonDecoder(schema, Chain.fromIterableOnce(obj.toIterable).some)
+          case None =>
+            Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
+    case schema: Union.Reader[A] => ???

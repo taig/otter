@@ -27,5 +27,10 @@ object Violations:
   def root[A, B](violations: NonEmptyChain[Violation[A, B]]): Violations[A, B] = Group(violations.map(Root.apply))
   def rootNec[A, B](violation: Violation[A, B]): Violations[A, B] = Root(violation)
 
+  def namespace[A, B](step: History.Step, violations: NonEmptyChain[Violations[A, B]]) =
+    Namespace(step, Group(violations))
+  def namespaceNec[A, B](step: History.Step, violation: Violation[A, B]): Violations[A, B] =
+    Namespace(step, Root(violation))
+
   given [A, B]: Semigroup[Violations[A, B]] with
     override def combine(x: Violations[A, B], y: Violations[A, B]): Violations[A, B] = x.combine(y)
