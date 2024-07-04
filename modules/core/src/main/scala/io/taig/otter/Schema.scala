@@ -604,34 +604,78 @@ object Record:
     given Eq[Null] = Eq.fromUniversalEquals
 
 sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B], Sum.Reader[F, A, B], Sum.Writer[F, A, B]:
-  override def imap[C](f: B => C)(g: C => B): Sum[F, A, C] = ???
-  override def optional: Sum[F, A, Option[B]] = ???
+  override def imap[C](f: B => C)(g: C => B): Sum[F, A, C] = Sum.Transform(this, f, g)
+  override def optional: Sum[F, A, Option[B]] = Sum.Optional(this)
+  def orElse[G[+a] >: F[a], C, D](sum: Sum[G, C, D]): Sum[G, A | C, Either[B, D]] = Sum.Combine(this, sum)
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B]
 
 object Sum:
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-    final override def map[C](f: B => C): Sum.Reader[F, A, C] = ???
-    override def optional: Sum.Reader[F, A, Option[B]] = ???
+    final override def map[C](f: B => C): Sum.Reader[F, A, C] = Reader.Transform(this, f)
+    override def optional: Sum.Reader[F, A, Option[B]] = Reader.Optional(this)
+    def orElse[G[+a] >: F[a], C, D](sum: Sum.Reader[G, C, D]): Sum.Reader[G, A | C, Either[B, D]] =
+      Reader.Combine(this, sum)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B]
 
   object Reader:
+    final case class Combine[F[+_], A, B, C, D](left: Sum.Reader[F, A, B], right: Sum.Reader[F, C, D])
+        extends Sum.Reader[F, A | C, Either[B, D]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, Either[B, D]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
+
+    final case class Optional[F[+_], A, B](self: Sum.Reader[F, A, B]) extends Sum.Reader[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
     final case class Root[F[+_], A, B](branch: Branch.Reader[F, A, B]) extends Sum.Reader[F, A, B]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B] =
         copy(branch = branch.translate(fK))
 
+    final case class Transform[F[+_], A, B, C](self: Sum.Reader[F, A, B], f: C => B) extends Sum.Reader[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, C] =
+        copy(self = self.translate(fK))
+
   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-    final override def contramap[C](f: C => B): Sum.Writer[F, A, C] = ???
-    override def optional: Sum.Writer[F, A, Option[B]] = ???
+    final override def contramap[C](f: C => B): Sum.Writer[F, A, C] = Writer.Transform(this, f)
+    override def optional: Sum.Writer[F, A, Option[B]] = Writer.Optional(this)
+    def orElse[G[+a] >: F[a], C, D](sum: Sum.Writer[G, C, D]): Sum.Writer[G, A | C, Either[B, D]] =
+      Writer.Combine(this, sum)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B]
 
   object Writer:
+    final case class Combine[F[+_], A, B, C, D](left: Sum.Writer[F, A, B], right: Sum.Writer[F, C, D])
+        extends Sum.Writer[F, A | C, Either[B, D]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, Either[B, D]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
+
+    final case class Optional[F[+_], A, B](self: Sum.Writer[F, A, B]) extends Sum.Writer[F, A, Option[B]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, Option[B]] =
+        copy(self = self.translate(fK))
+
     final case class Root[F[+_], A, B](branch: Branch.Writer[F, A, B]) extends Sum.Writer[F, A, B]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B] =
         copy(branch = branch.translate(fK))
 
+    final case class Transform[F[+_], A, B, C](self: Sum.Writer[F, A, B], f: C => B) extends Sum.Writer[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, C] =
+        copy(self = self.translate(fK))
+
+  final case class Combine[F[+_], A, B, C, D](left: Sum[F, A, B], right: Sum[F, C, D])
+      extends Sum[F, A | C, Either[B, D]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, Either[B, D]] =
+      copy(left = left.translate(fK), right = right.translate(fK))
+
+  final case class Optional[F[+_], A, B](self: Sum[F, A, B]) extends Sum[F, A, Option[B]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, Option[B]] =
+      copy(self = self.translate(fK))
+
   final case class Root[F[+_], A, B](branch: Branch[F, A, B]) extends Sum[F, A, B]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B] =
       copy(branch = branch.translate(fK))
+
+  final case class Transform[F[+_], A, B, C](self: Sum[F, A, B], f: B => C, g: C => B) extends Sum[F, A, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, C] =
+      copy(self = self.translate(fK))
 
 sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)
