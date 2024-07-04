@@ -13,15 +13,16 @@ enum Violations[+A, +B]:
   final def /:(index: Int): Violations[A, B] = /:(History.Step.Index(index))
   final def /:(field: String): Violations[A, B] = /:(History.Step.Field(field))
 
-  final def combine[A1 >: A, B1 >: B](violations: Violations[A1, B1]): Violations[A1, B1] = (this, violations) match
-    case (left @ Root(_), right @ Root(_)) => Group(NonEmptyChain(left, right))
-    case (Group(xs), Group(ys))            => Group(xs ++ ys)
-    case (left @ Namespace(x, xs), right @ Namespace(y, ys)) =>
-      if x === y then Namespace(x, xs.combine(ys)) else Group(NonEmptyChain(left, right))
-    case (left, Group(ys))                => Group(left +: ys)
-    case (Group(xs), right)               => Group(xs :+ right)
-    case (left @ Namespace(x, xs), right) => Group(NonEmptyChain(left, right))
-    case (left, right @ Namespace(y, ys)) => Group(NonEmptyChain(left, right))
+  final infix def combine[A1 >: A, B1 >: B](violations: Violations[A1, B1]): Violations[A1, B1] =
+    (this, violations) match
+      case (left @ Root(_), right @ Root(_)) => Group(NonEmptyChain(left, right))
+      case (Group(xs), Group(ys))            => Group(xs ++ ys)
+      case (left @ Namespace(x, xs), right @ Namespace(y, ys)) =>
+        if x === y then Namespace(x, xs.combine(ys)) else Group(NonEmptyChain(left, right))
+      case (left, Group(ys))                => Group(left +: ys)
+      case (Group(xs), right)               => Group(xs :+ right)
+      case (left @ Namespace(x, xs), right) => Group(NonEmptyChain(left, right))
+      case (left, right @ Namespace(y, ys)) => Group(NonEmptyChain(left, right))
 
 object Violations:
   def root[A, B](violations: NonEmptyChain[Violation[A, B]]): Violations[A, B] = Group(violations.map(Root.apply))

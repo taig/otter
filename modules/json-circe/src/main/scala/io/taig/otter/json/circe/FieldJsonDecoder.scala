@@ -16,7 +16,7 @@ object FieldJsonDecoder:
   def apply[A](
       field: Field.Reader[A],
       values: Option[Chain[(String, Json)]]
-  ): (Option[Chain[(String, Json)]], Decoder.Result[Json, A]) = field match
+  ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
     case Base.Field.Root(name, schema)        => root(name, schema, values)
     case Base.Field.Reader.Root(name, schema) => root(name, schema, values)
 
@@ -24,18 +24,17 @@ object FieldJsonDecoder:
       name: String,
       schema: Schema.Reader[A],
       values: Option[Chain[(String, Json)]]
-  ): (Option[Chain[(String, Json)]], Decoder.Result[Json, A]) =
-    values match
-      case Some(values) =>
-        val (json, remainders) = values.findWithRemainders { case (`name`, json) => json }
+  ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = values match
+    case Some(values) =>
+      val (json, remainders) = values.findWithRemainders { case (`name`, json) => json }
 
-        json match
-          case Some(json) => remainders.some -> JsonDecoder(schema, json).leftMap(name /: _)
-          case None =>
-            remainders.some -> Violations
-              .namespaceNec(
-                History.Step.Field(name),
-                Violation(Constraint.Type("json"), actual = "null".asJson)
-              )
-              .invalid
-      case None => (values, JsonDecoder(schema, Json.Null).leftMap(name /: _))
+      json match
+        case Some(json) => JsonDecoder(schema, json).leftMap(name /: _).tupleLeft(remainders.some)
+        case None =>
+          Violations
+            .namespaceNec(
+              History.Step.Field(name),
+              Violation(Constraint.Type("json"), actual = "null".asJson)
+            )
+            .invalid
+    case None => JsonDecoder(schema, Json.Null).leftMap(name /: _).tupleLeft(values)
