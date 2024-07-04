@@ -28,6 +28,6 @@ trait Schemas extends Instances:
   final def field[A](name: String, schema: Schema[A]): Field.Of[schema.type, A] =
     Base.Field.Root(name, Field.Null.Default, schema)
   final def field[A](name: String, schema: Schema.Reader[A]): Field.Reader.Of[schema.type, A] =
-    Base.Field.Reader.Root(name, Field.Null.Default, schema)
+    Base.Field.Reader.Root(name, schema)
   final def field[A](name: String, schema: Schema.Writer[A]): Field.Writer.Of[schema.type, A] =
     Base.Field.Writer.Root(name, Field.Null.Default, schema)

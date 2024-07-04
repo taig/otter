@@ -221,6 +221,9 @@ trait Types:
       type Of[A, B] = container.Record[Base.Record.Writer[container.Schema, A, B]]
       type Any = container.Record[Base.Record.Writer[container.Schema, ?, ?]]
 
+    type Null = Base.Record.Null
+    val Null: Base.Record.Null.type = Base.Record.Null
+
   final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 
   object Union:

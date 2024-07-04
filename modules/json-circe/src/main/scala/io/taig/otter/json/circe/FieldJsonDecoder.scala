@@ -17,7 +17,7 @@ object FieldJsonDecoder:
       field: Field.Reader[A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
-    case Base.Field.Root(name, schema)        => root(name, schema, values)
+    case Base.Field.Root(name, _, schema)     => root(name, schema, values)
     case Base.Field.Reader.Root(name, schema) => root(name, schema, values)
 
   def root[A](

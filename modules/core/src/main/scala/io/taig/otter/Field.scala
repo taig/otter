@@ -47,7 +47,7 @@ object Field:
   final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](name: String, nulls: Field.Null, schema: A)
       extends Field[F, A, B]:
     override def name(value: String): Field[F, A, B] = copy(name = name)
-      override def nulls(value: Null): Field[F, A, B] = copy(nulls = nulls)
+    override def nulls(value: Null): Field[F, A, B] = copy(nulls = nulls)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Field[G, ?, B] =
       copy(schema = fK(schema).map(_.translate(fK)))
 
