@@ -6,7 +6,6 @@ import io.taig.otter as Base
 import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.Json
-import cats.Foldable
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.History
 import io.taig.otter.validation.Violation
