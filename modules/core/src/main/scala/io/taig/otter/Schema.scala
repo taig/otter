@@ -603,7 +603,35 @@ object Record:
     val Default: Null = Show
     given Eq[Null] = Eq.fromUniversalEquals
 
-sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B]
+sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B], Sum.Reader[F, A, B], Sum.Writer[F, A, B]:
+  override def imap[C](f: B => C)(g: C => B): Sum[F, A, C] = ???
+  override def optional: Sum[F, A, Option[B]] = ???
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B]
+
+object Sum:
+  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
+    final override def map[C](f: B => C): Sum.Reader[F, A, C] = ???
+    override def optional: Sum.Reader[F, A, Option[B]] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B]
+
+  object Reader:
+    final case class Root[F[+_], A, B](branch: Branch.Reader[F, A, B]) extends Sum.Reader[F, A, B]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B] =
+        copy(branch = branch.translate(fK))
+
+  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
+    final override def contramap[C](f: C => B): Sum.Writer[F, A, C] = ???
+    override def optional: Sum.Writer[F, A, Option[B]] = ???
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B]
+
+  object Writer:
+    final case class Root[F[+_], A, B](branch: Branch.Writer[F, A, B]) extends Sum.Writer[F, A, B]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B] =
+        copy(branch = branch.translate(fK))
+
+  final case class Root[F[+_], A, B](branch: Branch[F, A, B]) extends Sum[F, A, B]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B] =
+      copy(branch = branch.translate(fK))
 
 sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)

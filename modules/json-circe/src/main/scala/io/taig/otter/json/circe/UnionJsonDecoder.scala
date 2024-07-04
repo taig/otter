@@ -34,7 +34,7 @@ object UnionJsonDecoder:
     case Base.Union.Value.Required.Transform(self, f, _)       => transform(self, f, json)
     case Base.Union.Value.Transform(self, f, _)                => transform(self, f, json)
 
-  def combine[A, B](left: Union.Reader[A], right: Union.Reader[B], json: Json): Decoder.Result[Json, Either[A, B]] = 
+  def combine[A, B](left: Union.Reader[A], right: Union.Reader[B], json: Json): Decoder.Result[Json, Either[A, B]] =
     UnionJsonDecoder(left, json).map(_.asLeft).orElse(UnionJsonDecoder(right, json).map(_.asRight))
 
   def optional[A](self: Union.Reader[A], json: Json): Decoder.Result[Json, Option[A]] =

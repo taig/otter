@@ -21,6 +21,7 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
     case schema: Dictionary.Reader[A]  => ???
     case schema: Enumeration.Reader[A] => ???
+    case schema: Sum.Reader[A]         => ???
     case schema: Primitive.Reader[A]   => PrimitiveJsonDecoder(schema, json)
     case schema: Product.Reader[A] =>
       if json.isNull then ProductJsonDecoder(schema, none)

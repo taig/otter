@@ -224,6 +224,24 @@ trait Types:
     type Null = Base.Record.Null
     val Null: Base.Record.Null.type = Base.Record.Null
 
+  final type Sum[A] = container.Sum[Base.Sum[container.Schema, ?, A]]
+
+  object Sum:
+    type Of[A, B] = container.Sum[Base.Sum[container.Schema, A, B]]
+    type Any = container.Sum[Base.Sum[container.Schema, ?, ?]]
+
+    type Reader[A] = container.Sum[Base.Sum.Reader[container.Schema, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Sum[Base.Sum.Reader[container.Schema, A, B]]
+      type Any = container.Sum[Base.Sum.Reader[container.Schema, ?, ?]]
+
+    type Writer[A] = container.Sum[Base.Sum.Writer[container.Schema, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Sum[Base.Sum.Writer[container.Schema, A, B]]
+      type Any = container.Sum[Base.Sum.Writer[container.Schema, ?, ?]]
+
   final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
 
   object Union:
