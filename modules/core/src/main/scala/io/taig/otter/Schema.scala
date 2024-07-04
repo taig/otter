@@ -10,12 +10,18 @@ import scala.Product as SProduct
 import io.taig.otter
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
+  override def default: Option[B] = ???
+  override def default[B1 >: B](value: B1): Schema[F, A, B1] = ???
+
   def imap[C](f: B => C)(g: C => B): Schema[F, A, C]
   override def optional: Schema[F, A, Option[B]]
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema[G, ?, B]
 
 object Schema:
   sealed trait Reader[+F[+_], +A, +B] extends SProduct, Serializable:
+    def default: Option[B] = ???
+    def default[B1 >: B](value: B1): Schema.Reader[F, A, B1] = ???
+
     def map[C](f: B => C): Schema.Reader[F, A, C]
     def optional: Schema.Reader[F, A, Option[B]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Reader[G, ?, B]
