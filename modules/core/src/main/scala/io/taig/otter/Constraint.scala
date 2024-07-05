@@ -9,6 +9,15 @@ enum Constraint:
 object Constraint:
   type Any[A] = Constraint | Collection | Object | Primitive[A]
 
+  enum Collection:
+    case MaxItems(reference: Long)
+    case MinItems(reference: Long)
+    case UniqueItems
+
+  enum Object:
+    case MaxProperties(reference: Int)
+    case MinProperties(reference: Int)
+
   enum Primitive[+A]:
     case Matches(pattern: Pattern)
     case Maximum(reference: A, exclusive: Boolean)
@@ -29,11 +38,9 @@ object Constraint:
     given Functor[Constraint.Primitive] with
       override def map[A, B](fa: Constraint.Primitive[A])(f: A => B): Constraint.Primitive[B] = fa.map(f)
 
-  enum Collection:
-    case MaxItems(reference: Long)
-    case MinItems(reference: Long)
-    case UniqueItems
-
-  enum Object:
-    case MaxProperties(reference: Int)
-    case MinProperties(reference: Int)
+  given Functor[Constraint.Any] with
+    override def map[A, B](fa: Constraint.Any[A])(f: A => B): Constraint.Any[B] = fa match
+      case constraint: Constraint              => constraint
+      case constraint: Constraint.Collection   => constraint
+      case constraint: Constraint.Object       => constraint
+      case constraint: Constraint.Primitive[A] => constraint.map(f)

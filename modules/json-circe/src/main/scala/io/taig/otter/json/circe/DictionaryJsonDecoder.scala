@@ -3,7 +3,7 @@ package io.taig.otter.json.circe
 import io.taig.otter.Plain.*
 import io.taig.otter as Base
 import cats.syntax.all.*
-import io.taig.otter.StringDecoder
+import io.taig.otter.ValueRequiredStringDecoder
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.circe.Json
@@ -29,18 +29,16 @@ object DictionaryJsonDecoder:
       values: Option[List[(String, Json)]]
   ): Decoder.Result[Json, List[(A, B)]] = values
     .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = "null".asJson)))
-    .andThen(values =>
+    .andThen: values =>
       values.traverse { case (a, b) =>
-        val x: Decoder.Result[Json, A] = ??? // StringDecoder(key, a)
-        val y: Decoder.Result[Json, B] = JsonDecoder(value, b)
-        val z = (x, y).tupled
-        z
+        (
+          ValueRequiredStringDecoder(key, a).leftMap(_.bimap(_.map(_.asJson), _.asJson)),
+          JsonDecoder(value, b)
+        ).tupled.leftMap(a /: _)
       }
-    )
 
   def transform[A, B](
       self: Dictionary.Reader[A],
       f: A => B,
       values: Option[List[(String, Json)]]
-  ): Decoder.Result[Json, B] =
-    DictionaryJsonDecoder(self, values).map(f)
+  ): Decoder.Result[Json, B] = DictionaryJsonDecoder(self, values).map(f)

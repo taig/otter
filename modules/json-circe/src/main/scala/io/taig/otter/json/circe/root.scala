@@ -1,6 +1,5 @@
 package io.taig.otter.json.circe
 
-import io.taig.otter.Type
 import io.circe.Json
 import cats.data.Chain
 import scala.collection.mutable.ListBuffer

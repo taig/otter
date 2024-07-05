@@ -3,6 +3,8 @@ package io.taig.otter.validation
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import cats.Semigroup
+import cats.Bifunctor
+import cats.Functor
 
 enum Violations[+A, +B]:
   case Root(violation: Violation[A, B])
@@ -12,6 +14,11 @@ enum Violations[+A, +B]:
   final def /:(step: History.Step): Violations[A, B] = Namespace(step, this)
   final def /:(index: Int): Violations[A, B] = /:(History.Step.Index(index))
   final def /:(field: String): Violations[A, B] = /:(History.Step.Field(field))
+
+  final def bimap[C, D](f: A => C, g: B => D): Violations[C, D] = this match
+    case Root(violation)             => Root(violation.bimap(f, g))
+    case Group(violations)           => Group(violations.map(_.bimap(f, g)))
+    case Namespace(step, violations) => Namespace(step, violations.bimap(f, g))
 
   final infix def combine[A1 >: A, B1 >: B](violations: Violations[A1, B1]): Violations[A1, B1] =
     (this, violations) match
@@ -35,3 +42,9 @@ object Violations:
 
   given [A, B]: Semigroup[Violations[A, B]] with
     override def combine(x: Violations[A, B], y: Violations[A, B]): Violations[A, B] = x.combine(y)
+
+  given bifunctor: Bifunctor[Violations] with
+    override def bimap[A, B, C, D](fab: Violations[A, B])(f: A => C, g: B => D): Violations[C, D] =
+      fab.bimap(f, g)
+
+  given [A]: Functor[Violations[A, *]] = bifunctor.rightFunctor

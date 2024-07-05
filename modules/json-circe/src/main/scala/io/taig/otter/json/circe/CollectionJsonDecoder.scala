@@ -33,7 +33,4 @@ object CollectionJsonDecoder:
       validation: SchemaValidation.Collection[A, B, C],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, C] = apply(self, values).andThen: a =>
-    validation
-      .apply(a)
-      .leftMap(_.map(_.bimap(_ => ???, JsonValidationWriterEncoder.apply)))
-      .leftMap(Violations.root)
+    validation.apply(a).leftMap(_.map(_.map(ValidationWriterJsonEncoder.apply))).leftMap(Violations.root)

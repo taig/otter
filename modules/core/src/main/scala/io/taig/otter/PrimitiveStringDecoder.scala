@@ -10,7 +10,7 @@ object PrimitiveStringDecoder:
     case Primitive.Required.Transform(self, validation, _)     => transform(self, validation, value)
     case Primitive.Required.Root(tpe) =>
       TypeStringDecoder(tpe, value).toValid(
-        Violations.rootNec(Violation(Constraint.Type(name = typeOf(tpe)), actual = value.some))
+        Violations.rootNec(Violation(Constraint.Type(name = tpe.toString), actual = value.some))
       )
 
   def transform[A, B, C, D](

@@ -15,3 +15,8 @@ enum Type[A]:
   case Int extends Type[Int]
   case Long extends Type[Long]
   case String extends Type[JString]
+
+  final override def toString: String = this match
+    case Type.BigDecimal | Type.BigInteger | Type.Double | Type.Float | Type.Int | Type.Long => "number"
+    case Type.Boolean                                                                        => "boolean"
+    case Type.String                                                                         => "string"

@@ -26,7 +26,7 @@ object PrimitiveJsonDecoder:
 
   def root[A](tpe: Type[A], json: Json): Decoder.Result[Json, A] =
     TypeJsonDecoder(tpe, json).toValidated.leftMap: _ =>
-      Violations.rootNec(Violation(Constraint.Type(typeOf(tpe)), typeOf(json).asJson))
+      Violations.rootNec(Violation(Constraint.Type(name = tpe.toString), actual = typeOf(json).asJson))
 
   def transform[A, B, C, D](
       self: Primitive.Reader[A],
@@ -35,5 +35,5 @@ object PrimitiveJsonDecoder:
   ): Decoder.Result[Json, D] = apply(self, json).andThen: a =>
     validation
       .apply(a)
-      .leftMap(_.map(_.bimap(_.map(JsonValidationWriterEncoder.apply), JsonValidationWriterEncoder.apply)))
+      .leftMap(_.map(_.bimap(_.map(ValidationWriterJsonEncoder.apply), ValidationWriterJsonEncoder.apply)))
       .leftMap(Violations.root)

@@ -3,7 +3,7 @@ package io.taig.otter.json.circe
 import io.taig.otter.Plain.*
 import io.taig.otter as Base
 import cats.syntax.all.*
-import io.taig.otter.StringEncoder
+import io.taig.otter.ValueRequiredStringEncoder
 import io.circe.Json
 
 object DictionaryJsonEncoder:
@@ -19,7 +19,7 @@ object DictionaryJsonEncoder:
     a.flatMap(DictionaryJsonEncoder(self, _))
 
   def root[A, B](key: Value.Required.Writer[A], value: Schema.Writer[B], abs: List[(A, B)]): List[(String, Json)] =
-    abs.map { case (a, b) => (StringEncoder(key, a), JsonEncoder(value, b)) }
+    abs.map { case (a, b) => (ValueRequiredStringEncoder(key, a), JsonEncoder(value, b)) }
 
   def transform[A, B](self: Dictionary.Writer[A], f: B => A, b: B): Option[List[(String, Json)]] =
     DictionaryJsonEncoder(self, f(b))
