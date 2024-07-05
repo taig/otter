@@ -5,11 +5,6 @@ import io.circe.Json
 import cats.data.Chain
 import scala.collection.mutable.ListBuffer
 
-def typeOf(tpe: Type[?]): String = tpe match
-  case Type.BigDecimal | Type.BigInteger | Type.Double | Type.Float | Type.Int | Type.Long => "number"
-  case Type.Boolean                                                                        => "boolean"
-  case Type.String                                                                         => "string"
-
 def typeOf(json: Json): String = json.fold(
   "null",
   _ => "boolean",
