@@ -185,7 +185,7 @@ object Dictionary:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], A, B <: F[Schema.Writer[F, ?, C]], C](key: F[Primitive.Required.Writer[A]], value: B)
+    final case class Root[F[+_], A, +B <: F[Schema.Writer[F, ?, C]], C](key: F[Primitive.Required.Writer[A]], value: B)
         extends Dictionary.Writer[F, A, List[(A, C)]]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Writer[G, ?, List[(A, C)]] =
         copy(key = fK(key), value = fK(value).map(_.translate(fK)))
@@ -199,7 +199,7 @@ object Dictionary:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, Option[B]] =
       copy(self = self.translate(fK))
 
-  final case class Root[F[+_], A, B <: F[Schema[F, ?, C]], C](key: F[Primitive.Required[A]], value: B)
+  final case class Root[F[+_], A, +B <: F[Schema[F, ?, C]], C](key: F[Primitive.Required[A]], value: B)
       extends Dictionary[F, A, List[(A, C)]]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, ?, List[(A, C)]] =
       copy(key = fK(key), value = fK(value).map(_.translate(fK)))
