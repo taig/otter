@@ -9,6 +9,7 @@ import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
 import cats.kernel.Eq
+import io.taig.enumeration.ext.Mapping
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   override def default: Option[B] = ???
@@ -234,9 +235,9 @@ object Enumeration:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B]
 
     object Reader:
-      final case class Root[F[+_], +A <: F[Value.Required.Reader[F, ?, B]], B](schema: A)
-          extends Enumeration.Required.Reader[F, A, B]:
-        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B] =
+      final case class Root[F[+_], +A <: F[Value.Required.Reader[F, ?, B]], B, C](schema: A, f: B => Option[C])
+          extends Enumeration.Required.Reader[F, A, C]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, C] =
           copy(schema = fK(schema).map(_.translate(fK)))
 
       final case class Transform[F[+_], A, B, C](self: Enumeration.Required.Reader[F, A, B], f: B => C)
@@ -249,9 +250,9 @@ object Enumeration:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B]
 
     object Writer:
-      final case class Root[F[+_], +A <: F[Value.Required.Writer[F, ?, B]], B](schema: A)
-          extends Enumeration.Required.Writer[F, A, B]:
-        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, B] =
+      final case class Root[F[+_], +A <: F[Value.Required.Writer[F, ?, B]], B, C](schema: A, f: C => B)
+          extends Enumeration.Required.Writer[F, A, C]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Writer[G, ?, C] =
           copy(schema = fK(schema).map(_.translate(fK)))
 
       final case class Transform[F[+_], A, B, C](self: Enumeration.Required.Writer[F, A, B], f: C => B)
@@ -299,6 +300,11 @@ object Enumeration:
   final case class Optional[F[+_], A, B](self: Enumeration[F, A, B]) extends Enumeration[F, A, Option[B]]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, Option[B]] =
       copy(self = self.translate(fK))
+
+  final case class Root[F[+_], +A <: F[Value[F, ?, B]], B, C](schema: A, mapping: Mapping[C, B])
+      extends Enumeration[F, A, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration[G, ?, C] =
+      copy(schema = fK(schema).map(_.translate(fK)))
 
   final case class Transform[F[+_], A, B, C](self: Enumeration[F, A, B], f: B => C, g: C => B)
       extends Enumeration[F, A, C]:
