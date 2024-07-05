@@ -5,29 +5,27 @@ import io.taig.otter as Base
 trait Types:
   val container: Container
 
-  final type Constraint = Base.Constraint
-  val Constraint: Base.Constraint.type = Base.Constraint
+  export Base.{Constraint, ValidationWriter}
 
-  type ValidationWriter[A] = Base.ValidationWriter[A]
-
-  type SchemaValidation[Constraint[+a] <: Constraint.Any[a], A, B, C, D] = Base.SchemaValidation[Constraint, A, B, C, D]
+  type SchemaValidation[Writer[+a] <: ValidationWriter[a], Constraint[+a] <: Constraint.Any[a], A, B, C, D] =
+    Base.SchemaValidation[Writer, Constraint, A, B, C, D]
   val SchemaValidation: Base.SchemaValidation.type = Base.SchemaValidation
 
   object ValidationInvariant:
     type Collection[F[_]] = Base.ValidationInvariant[[_] =>> Constraint.Collection, ValidationWriter, F]
     type Primitive[F[_]] =
-      Base.ValidationInvariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
+      Base.ValidationInvariant[[a] =>> Constraint.Primitive[ValidationWriter.Value[a]], ValidationWriter.Value, F]
 
   object ValidationFunctor:
     type Collection[F[_]] = Base.ValidationFunctor[[_] =>> Constraint.Collection, ValidationWriter, F]
     type Primitive[F[_]] =
-      Base.ValidationFunctor[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
+      Base.ValidationFunctor[[a] =>> Constraint.Primitive[ValidationWriter.Value[a]], ValidationWriter.Value, F]
 
   object ValidationContravariant:
     type Collection[F[_]] =
       Base.ValidationContravariant[[_] =>> Constraint.Collection, ValidationWriter, F]
     type Primitive[F[_]] =
-      Base.ValidationContravariant[[a] =>> Constraint.Primitive[ValidationWriter[a]], ValidationWriter, F]
+      Base.ValidationContravariant[[a] =>> Constraint.Primitive[ValidationWriter.Value[a]], ValidationWriter.Value, F]
 
   final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
 

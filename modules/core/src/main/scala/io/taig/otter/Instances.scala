@@ -43,7 +43,7 @@ trait Instances1 extends Instances2:
     new ValidationFunctor.Primitive[Primitive.Required.Reader]:
       extension [A](fa: Primitive.Required.Reader[A])
         override def validate[B, C, D](
-            validation: Validation[A, Constraint.Primitive[ValidationWriter[B]], ValidationWriter[C], D]
+            validation: SchemaValidation.Primitive[A, B, C, D]
         ): Primitive.Required.Reader[D] =
           Functor[container.Primitive].map(fa)(_.validate(validation))
 
