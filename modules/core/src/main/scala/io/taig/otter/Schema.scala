@@ -165,7 +165,7 @@ object Dictionary:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], A, B <: F[Schema.Reader[F, ?, C]], C](key: F[Primitive.Required.Reader[A]], value: B)
+    final case class Root[F[+_], A, +B <: F[Schema.Reader[F, ?, C]], C](key: F[Primitive.Required.Reader[A]], value: B)
         extends Dictionary.Reader[F, A, List[(A, C)]]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, ?, List[(A, C)]] =
         copy(key = fK(key), value = fK(value).map(_.translate(fK)))

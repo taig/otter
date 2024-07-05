@@ -21,7 +21,7 @@ object CollectionJsonDecoder:
       case Base.Collection.Root(schema)                       => root(schema, values)
 
   def optional[A](self: Collection.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, Option[A]] =
-    values.fold(none.valid)(_ => apply(self, values).map(_.some))
+    values.fold(none.valid)(_ => CollectionJsonDecoder(self, values).map(_.some))
 
   def root[A](schema: Schema.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, Vector[A]] =
     values
