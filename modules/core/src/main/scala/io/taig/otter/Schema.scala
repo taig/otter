@@ -58,10 +58,12 @@ object Value:
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
     override def map[C](f: B => C): Value.Reader[F, A, C]
     override def optional: Value.Reader[F, A, Option[B]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Reader[G, ?, B]
 
   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
     override def contramap[C](f: C => B): Value.Writer[F, A, C]
     override def optional: Value.Writer[F, A, Option[B]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Writer[G, ?, B]
 
 sealed trait Collection[+F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
   final override def imap[C](f: B => C)(g: C => B): Collection[F, A, C] = ivalidate(Validation.lift(f))(g)
@@ -275,6 +277,11 @@ object Enumeration:
         extends Enumeration.Reader[F, A, Option[B]]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
+
+    final case class Root[F[+_], +A <: F[Value.Reader[F, ?, B]], B, C](schema: A, f: B => Option[C])
+        extends Enumeration.Reader[F, A, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
     final case class Transform[F[+_], A, B, C](self: Enumeration.Reader[F, A, B], f: B => C)
         extends Enumeration.Reader[F, A, C]:
