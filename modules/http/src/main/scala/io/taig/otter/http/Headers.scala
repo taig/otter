@@ -1,43 +1,39 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.data.{Chain, Validated}
-// import cats.syntax.all.*
-// import io.taig.otter.validation.Violations
+import cats.data.Chain
+import cats.syntax.all.*
 
-// sealed abstract class Headers[A]:
-//   self =>
-//   def toChain: Chain[Header[?]]
+sealed trait Headers[+F[+_], A] extends Headers.Reader[F, A], Headers.Writer[F, A]:
+  override def headers: Chain[Header[F, ?]]
 
-//   final def imap[B](f: A => B)(g: B => A): Headers[B] = new Headers[B]:
-//     export self.toChain
-//     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, B)] =
-//       self.decodeWithRemainders(remainders).map(_.map(f))
-//     override def encode(b: B): Http.Headers = self.encode(g(b))
+object Headers:
+  sealed trait Reader[+F[+_], +A]:
+    def headers: Chain[Header.Reader[F, ?]]
 
-//   final def zip[B](headers: Headers[B]): Headers[(A, B)] = new Headers[(A, B)]:
-//     export self.toChain
-//     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, (A, B))] =
-//       self.decodeWithRemainders(remainders) match
-//         case Validated.Valid((remainders, a)) => headers.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-//         case Validated.Invalid(left) =>
-//           headers.decodeWithRemainders(remainders) match
-//             case Validated.Valid(_)       => left.invalid
-//             case Validated.Invalid(right) => (left |+| right).invalid
-//     override def encode(ab: (A, B)): Http.Headers = self.encode(ab._1) ++ headers.encode(ab._2)
+  object Reader:
+    final case class Combine[F[+_], A, B](left: Headers.Reader[F, A], right: Headers.Reader[F, B])
+        extends Headers.Reader[F, (A, B)]:
+      override def headers: Chain[Header.Reader[F, ?]] = left.headers ++ right.headers
 
-//   final def decode(headers: Http.Headers): Validated[Violations, A] = decodeWithRemainders(headers).map(_._2)
-//   def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)]
-//   def encode(a: A): Http.Headers
+    final case class One[F[+_], A](header: Header.Reader[F, A]) extends Headers.Reader[F, A]:
+      override def headers: Chain[Header.Reader[F, ?]] = Chain.one(header)
 
-// object Headers:
-//   val Empty: Headers[Unit] = new Headers[Unit]:
-//     override def toChain: Chain[Header[?]] = Chain.empty
-//     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, Unit)] =
-//       (remainders, ()).valid
-//     override def encode(a: Unit): Http.Headers = Chain.empty
+  sealed trait Writer[+F[+_], -A]:
+    def headers: Chain[Header.Writer[F, ?]]
 
-//   def apply[A](header: Header[A]): Headers[A] = new Headers[A]:
-//     override def toChain: Chain[Header[A]] = Chain.one(header)
-//     override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-//       header.decodeWithRemainders(remainders).leftMap(_.modifyHistory(header.name.toString /: _))
-//     override def encode(a: A): Http.Headers = header.encode(a)
+  object Writer:
+    final case class Combine[F[+_], A, B](left: Headers.Writer[F, A], right: Headers.Writer[F, B])
+        extends Headers.Writer[F, (A, B)]:
+      override def headers: Chain[Header.Writer[F, ?]] = left.headers ++ right.headers
+
+    final case class One[F[+_], A](header: Header.Writer[F, A]) extends Headers.Writer[F, A]:
+      override def headers: Chain[Header.Writer[F, ?]] = Chain.one(header)
+
+  final case class Combine[F[+_], A, B](left: Headers[F, A], right: Headers[F, B]) extends Headers[F, (A, B)]:
+    override def headers: Chain[Header[F, ?]] = left.headers ++ right.headers
+
+  case object Empty extends Headers[Nothing, Unit]:
+    override def headers: Chain[Nothing] = Chain.empty
+
+  final case class One[F[+_], A](header: Header[F, A]) extends Headers[F, A]:
+    override def headers: Chain[Header[F, ?]] = Chain.one(header)

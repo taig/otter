@@ -67,7 +67,8 @@ lazy val root = module(identifier = None, jvmOnly = true)
     openapi,
     // typescript,
     openapiCirce,
-    http
+    http,
+    httpHttp4s
     // httpOpenapi,
     // httpCirce,
     // server,
@@ -94,7 +95,6 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
-        // "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         // "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
@@ -131,7 +131,8 @@ lazy val openapiCirce = module(identifier = Some("openapi-circe"))
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-      "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -162,13 +163,13 @@ lazy val http = module(identifier = Some("http"))
 // lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
 //   .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
 
-// lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
-//   .settings(
-//     libraryDependencies ++=
-//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
-//         Nil
-//   )
-//   .dependsOn(server % "compile->compile;test->test")
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
 // lazy val munit = module(identifier = Some("munit"))
 //   .settings(
