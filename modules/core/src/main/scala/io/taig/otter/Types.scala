@@ -230,12 +230,13 @@ trait Types:
       type Of[A, B] = container.Record[Base.Record.Writer[container.Schema, A, B]]
       type Any = container.Record[Base.Record.Writer[container.Schema, ?, ?]]
 
-    type Null = Base.Record.Null
-    val Null: Base.Record.Null.type = Base.Record.Null
+    export Base.Record.Null
 
   final type Sum[A] = container.Sum[Base.Sum[container.Schema, ?, A]]
 
   object Sum:
+    export Base.Sum.Discriminator
+
     type Of[A, B] = container.Sum[Base.Sum[container.Schema, A, B]]
     type Any = container.Sum[Base.Sum[container.Schema, ?, ?]]
 
@@ -326,6 +327,8 @@ trait Types:
   final type Field[A] = Base.Field[container.Schema, ?, A]
 
   object Field:
+    export Base.Field.Null
+
     type Of[A, B] = Base.Field[container.Schema, A, B]
     type Any = Base.Field[container.Schema, ?, ?]
 
@@ -340,6 +343,3 @@ trait Types:
     object Writer:
       type Of[A, B] = Base.Field.Writer[container.Schema, A, B]
       type Any = Base.Field.Writer[container.Schema, ?, ?]
-
-    type Null = Base.Field.Null
-    val Null: Base.Field.Null.type = Base.Field.Null
