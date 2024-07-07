@@ -30,11 +30,11 @@ object EnumerationJsonDecoder:
       writer: Schema.Writer[A],
       json: Json
   ): Decoder.Result[Json, B] = JsonDecoder(schema, json).andThen: a =>
-      mapping
-        .prj(a)
-        .toValid:
-          val values = mapping.values.map(mapping.inj).map(JsonEncoder(writer, _))
-          Violations.rootNec(Violation(constraint = Constraint.OneOf(values), actual = json))
+    mapping
+      .prj(a)
+      .toValid:
+        val values = mapping.values.map(mapping.inj).map(JsonEncoder(writer, _))
+        Violations.rootNec(Violation(constraint = Constraint.OneOf(values), actual = json))
 
   def transform[A, B](self: Enumeration.Reader[A], f: A => B, json: Json): Decoder.Result[Json, B] =
     EnumerationJsonDecoder(self, json).map(f)
