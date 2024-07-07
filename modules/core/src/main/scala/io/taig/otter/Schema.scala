@@ -534,6 +534,7 @@ sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, 
   override def nulls: Record.Null
   final def nulls(value: Record.Null): Record.Writer[F, A, B] = Record.Nulls(this, value)
 
+  def fields: Chain[Field[F, ?, ?]]
   override def imap[C](f: B => C)(g: C => B): Record[F, A, C] = Record.Transform(this, f, g)
   override def optional: Record[F, A, Option[B]] = Record.Optional(this)
   def product[G[+a] >: F[a], C, D](product: Record[G, C, D]): Record[G, A & C, (B, D)] =
@@ -542,20 +543,24 @@ sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, 
 
 object Record:
   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
+    def fields: Chain[Field.Reader[F, ?, ?]]
     override def map[C](f: B => C): Record.Reader[F, A, C] = Reader.Transform(this, f)
     override def optional: Record.Reader[F, A, Option[B]] = Reader.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, B]
 
   object Reader:
     final case class One[F[+_], A, B](field: Field.Reader[F, A, B]) extends Record.Reader[F, A, B]:
+      override def fields: Chain[Field.Reader[F, ?, ?]] = Chain.one(field)
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, B] =
         copy(field = field.translate(fK))
 
     final case class Optional[F[+_], A, B](self: Record.Reader[F, A, B]) extends Record.Reader[F, A, Option[B]]:
+      export self.fields
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
     final case class Transform[F[+_], A, B, C](self: Record.Reader[F, A, B], f: B => C) extends Record.Reader[F, A, C]:
+      export self.fields
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Reader[G, ?, C] =
         copy(self = self.translate(fK))
 
@@ -563,62 +568,70 @@ object Record:
     def nulls: Record.Null
 
     override def contramap[C](f: C => B): Record.Writer[F, A, C] = Writer.Transform(this, f)
+    def fields: Chain[Field.Writer[F, ?, ?]]
     override def optional: Record.Writer[F, A, Option[B]] = Writer.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B]
 
   object Writer:
     final case class Combine[F[+_], A, B, C, D](left: Record.Writer[F, A, B], right: Record.Writer[F, C, D])
         extends Record.Writer[F, A & C, (B, D)]:
+      override def fields: Chain[Field.Writer[F, ?, ?]] = left.fields ++ right.fields
       override def nulls: Record.Null = Record.Null.Default
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, (B, D)] =
         copy(left = left.translate(fK), right = right.translate(fK))
 
     final case class Nulls[F[+_], A, B](self: Record.Writer[F, A, B], nulls: Record.Null)
         extends Record.Writer[F, A, B]:
+      export self.fields
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B] =
         copy(self = self.translate(fK))
 
     final case class One[F[+_], A, B](field: Field.Writer[F, A, B]) extends Record.Writer[F, A, B]:
       override def nulls: Record.Null = Record.Null.Default
+      override def fields: Chain[Field.Writer[F, ?, ?]] = Chain.one(field)
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, B] =
         copy(field = field.translate(fK))
 
     final case class Optional[F[+_], A, B](self: Record.Writer[F, A, B]) extends Record.Writer[F, A, Option[B]]:
-      export self.nulls
+      export self.{fields, nulls}
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
     final case class Transform[F[+_], A, B, C](self: Record.Writer[F, A, B], f: C => B) extends Record.Writer[F, A, C]:
-      export self.nulls
+      export self.{fields, nulls}
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record.Writer[G, ?, C] =
         copy(self = self.translate(fK))
 
   case object Empty extends Record[Nothing, Nothing, Unit]:
     override def nulls: Record.Null = Record.Null.Default
+    override def fields: Chain[Nothing] = Chain.empty
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Record[G, ?, Unit] = this
 
   final case class Combine[F[+_], A, B, C, D](left: Record[F, A, B], right: Record[F, C, D])
       extends Record[F, A & C, (B, D)]:
     override def nulls: Record.Null = Record.Null.Default
+    override def fields: Chain[Field[F, ?, ?]] = left.fields ++ right.fields
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, (B, D)] =
       copy(left = left.translate(fK), right = right.translate(fK))
 
   final case class Nulls[F[+_], A, B](self: Record[F, A, B], nulls: Record.Null) extends Record[F, A, B]:
+    export self.fields
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B] =
       copy(self = self.translate(fK))
 
   final case class One[F[+_], +A, B](field: Field[F, A, B]) extends Record[F, A, B]:
     override def nulls: Record.Null = Record.Null.Default
+    override def fields: Chain[Field[F, ?, ?]] = Chain.one(field)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, B] =
       copy(field = field.translate(fK))
 
   final case class Optional[F[+_], A, B](self: Record[F, A, B]) extends Record[F, A, Option[B]]:
-    export self.nulls
+    export self.{fields, nulls}
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, Option[B]] =
       copy(self = self.translate(fK))
 
   final case class Transform[F[+_], A, B, C](self: Record[F, A, B], f: B => C, g: C => B) extends Record[F, A, C]:
-    export self.nulls
+    export self.{fields, nulls}
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Record[G, ?, C] =
       copy(self = self.translate(fK))
 
