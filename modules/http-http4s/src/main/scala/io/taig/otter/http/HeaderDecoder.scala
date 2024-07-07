@@ -6,6 +6,8 @@ import io.taig.otter.http as Base
 import io.taig.otter.http.Plain.*
 import org.typelevel.ci.CIString
 import io.taig.otter.Decoder
+import io.taig.otter.ValueRequiredStringDecoder
+import io.taig.otter.ValueStringDecoder
 
 object HeaderDecoder:
   def apply[A](header: Header.Reader[A], headers: List[Http4sHeader.Raw]): Decoder.Result[Any, A] = ???
@@ -26,6 +28,5 @@ object HeaderDecoder:
   ): Decoder.Result[Any, (List[Http4sHeader.Raw], A)] =
     val (value, remainders) = headers.findWithRemainders { case Http4sHeader.Raw(`name`, value) => value }
 
-    value match
-      case Some(value) => ???
-      case None        => ???
+    ValueStringDecoder(schema, value)
+    ???
