@@ -48,7 +48,10 @@ trait Validations extends Schemas, Syntax:
   def sortedSet[A: Schema.Writer: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], SortedSet[A]] =
     set[A].imap(SortedSet.from)(_.toSet)
 
-  def nonEmptySet[A: Schema.Writer: Order]
-      : SchemaTransformation.Collection[Vector[A], NonEmptyList[A] | Long, NonEmptySet[A]] = sortedSet[A]
+  def nonEmptySet[A: Schema.Writer: Order]: SchemaTransformation.Collection[
+    Vector[A],
+    NonEmptyList[A] | Long,
+    NonEmptySet[A]
+  ] = sortedSet[A]
     .ivalidate(nonEmpty)({ case (a, as) => as + a })
     .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))
