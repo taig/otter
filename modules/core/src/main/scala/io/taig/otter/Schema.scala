@@ -8,7 +8,8 @@ import cats.Functor
 import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
-import cats.kernel.Eq
+import cats.Eq
+import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
@@ -237,8 +238,11 @@ object Enumeration:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, B]
 
     object Reader:
-      final case class Root[F[+_], +A <: F[Value.Required.Reader[F, ?, B]], B, C](schema: A, f: B => Option[C])
-          extends Enumeration.Required.Reader[F, A, C]:
+      final case class Root[F[+_], +A <: F[Value.Required.Reader[F, ?, B]], B, C](
+          schema: A,
+          mapping: Mapping[C, B],
+          writer: Schema.Writer[Identity, ?, B]
+      ) extends Enumeration.Required.Reader[F, A, C]:
         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Required.Reader[G, ?, C] =
           copy(schema = fK(schema).map(_.translate(fK)))
 
@@ -278,8 +282,11 @@ object Enumeration:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, Option[B]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], +A <: F[Value.Reader[F, ?, B]], B, C](schema: A, f: B => Option[C])
-        extends Enumeration.Reader[F, A, C]:
+    final case class Root[F[+_], +A <: F[Value.Reader[F, ?, B]], B, C](
+        schema: A,
+        mapping: Mapping[C, B],
+        writer: Schema.Writer[Identity, ?, B]
+    ) extends Enumeration.Reader[F, A, C]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Enumeration.Reader[G, ?, C] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
