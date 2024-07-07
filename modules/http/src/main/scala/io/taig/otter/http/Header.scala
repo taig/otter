@@ -10,7 +10,7 @@ sealed trait Header[+F[+_], A] extends Header.Reader[F, A], Header.Writer[F, A]:
   final def imap[B](f: A => B)(g: B => A): Header[F, B] = Header.Transform(this, f, g)
 
 object Header:
-  sealed trait Reader[+F[+_], +A]:
+  sealed trait Reader[+F[+_], +A] extends Product, Serializable:
     final def map[B](f: A => B): Header.Reader[F, B] = Reader.Transform(this, f)
     def name: CIString
     def schema: F[Base.Value.Reader[F, ?, ?]]
@@ -20,7 +20,7 @@ object Header:
     final case class Transform[F[+_], A, B](self: Header.Reader[F, A], f: A => B) extends Header.Reader[F, B]:
       export self.{name, schema}
 
-  sealed trait Writer[+F[+_], -A]:
+  sealed trait Writer[+F[+_], -A] extends Product, Serializable:
     final def contramap[B](f: B => A): Header.Writer[F, B] = Writer.Transform(this, f)
     def name: CIString
     def schema: F[Base.Value.Writer[F, ?, ?]]

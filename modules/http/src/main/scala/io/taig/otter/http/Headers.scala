@@ -7,7 +7,7 @@ sealed trait Headers[+F[+_], A] extends Headers.Reader[F, A], Headers.Writer[F, 
   override def headers: Chain[Header[F, ?]]
 
 object Headers:
-  sealed trait Reader[+F[+_], +A]:
+  sealed trait Reader[+F[+_], +A] extends Product, Serializable:
     def headers: Chain[Header.Reader[F, ?]]
 
   object Reader:
@@ -18,7 +18,7 @@ object Headers:
     final case class One[F[+_], A](header: Header.Reader[F, A]) extends Headers.Reader[F, A]:
       override def headers: Chain[Header.Reader[F, ?]] = Chain.one(header)
 
-  sealed trait Writer[+F[+_], -A]:
+  sealed trait Writer[+F[+_], -A] extends Product, Serializable:
     def headers: Chain[Header.Writer[F, ?]]
 
   object Writer:

@@ -8,7 +8,6 @@ import cats.syntax.all.*
 import cats.Invariant
 import cats.Applicative
 import cats.Comonad
-import io.taig.otter.ValidationWriter
 
 trait Syntax extends Syntax1:
   implicit val primitiveRequiredIsomoprhicOps

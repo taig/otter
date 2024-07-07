@@ -3,9 +3,6 @@ package io.taig.otter
 import cats.syntax.all.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.Applicative
-import cats.Monad
-import cats.syntax.GuardOps
 
 object TypeStringDecoder:
   def apply[A](tpe: Type[A], value: String): Option[A] = tpe match
