@@ -3,11 +3,16 @@ package io.taig.otter
 import java.util.regex.Pattern
 import cats.Functor
 
-enum Constraint:
+enum Constraint[+A]:
   case Type(name: String)
+  case OneOf(values: List[A])
+
+  final def map[B](f: A => B): Constraint[B] = this match
+    case Type(name)    => Type(name)
+    case OneOf(values) => OneOf(values.map(f))
 
 object Constraint:
-  type Any[A] = Constraint | Collection | Object | Primitive[A]
+  type Any[A] = Constraint[A] | Collection | Object | Primitive[A]
 
   enum Collection:
     case MaxItems(reference: Long)
@@ -40,7 +45,7 @@ object Constraint:
 
   given Functor[Constraint.Any] with
     override def map[A, B](fa: Constraint.Any[A])(f: A => B): Constraint.Any[B] = fa match
-      case constraint: Constraint              => constraint
+      case constraint: Constraint[A]           => ???
       case constraint: Constraint.Collection   => constraint
       case constraint: Constraint.Object       => constraint
       case constraint: Constraint.Primitive[A] => constraint.map(f)

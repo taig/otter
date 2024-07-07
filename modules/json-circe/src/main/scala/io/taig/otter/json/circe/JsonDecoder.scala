@@ -26,7 +26,7 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
           case Some(obj) => DictionaryJsonDecoder(schema, obj.toList.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Enumeration.Reader[A] => ???
+    case schema: Enumeration.Reader[A] => EnumerationJsonDecoder(schema, json)
     case schema: Sum.Reader[A]         => ???
     case schema: Primitive.Reader[A]   => PrimitiveJsonDecoder(schema, json)
     case schema: Product.Reader[A] =>
