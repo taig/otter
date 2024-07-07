@@ -12,9 +12,13 @@ import io.taig.otter.validation.Violation
 
 object SumJsonDecoder:
   def apply[A](schema: Sum.Reader[A], json: Option[JsonObject]): Decoder.Result[Json, A] =
-    SumJsonDecoder(schema, schema.discriminator, json)
-      // TODO actual = null is a lie, we can do better
-      .andThen(_.toValid(Violations.rootNec(Violation(Constraint.OneOf(???), actual = "null".asJson))))
+    SumJsonDecoder(schema, schema.discriminator, json).andThen(
+      _.toValid(
+        Violations.rootNec(
+          Violation(Constraint.OneOf(schema.branches.map(_.name.asJson).toList), actual = "null".asJson)
+        )
+      )
+    )
 
   def apply[A](
       schema: Sum.Reader[A],
