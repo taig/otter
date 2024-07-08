@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import org.http4s.Header as Http4sHeader
+import org.http4s.Headers as Http4sHeaders
 import io.taig.otter.http as Base
 import io.taig.otter.http.Plain.*
 import io.taig.otter.Decoder
@@ -8,8 +9,8 @@ import cats.syntax.all.*
 import cats.data.Validated
 
 object HeadersDecoder:
-  def apply[A](headers: Headers.Reader[A], values: List[Http4sHeader.Raw]): Decoder.Result[Option[String], A] =
-    withRemainders(headers, values).map { case (_, a) => a }
+  def apply[A](headers: Headers.Reader[A], values: Http4sHeaders): Decoder.Result[Option[String], A] =
+    withRemainders(headers, values.headers).map { case (_, a) => a }
 
   def withRemainders[A](
       headers: Headers.Reader[A],
