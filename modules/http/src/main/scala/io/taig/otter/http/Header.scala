@@ -20,12 +20,12 @@ object Header:
 
   object Reader:
     final case class Root[F[+_], A](name: CIString, schema: F[Base.Value.Reader[F, ?, A]]) extends Header.Reader[F, A]:
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A] = 
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
     final case class Transform[F[+_], A, B](self: Header.Reader[F, A], f: A => B) extends Header.Reader[F, B]:
       export self.{name, schema}
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, B] = 
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, B] =
         copy(self = self.translate(fK))
 
   sealed trait Writer[+F[+_], -A] extends Product, Serializable:
@@ -36,19 +36,19 @@ object Header:
 
   object Writer:
     final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value.Writer[F, ?, A]]) extends Header.Writer[F, A]:
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A] = 
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
     final case class Transform[F[+_], A, B](self: Header.Writer[F, A], f: B => A) extends Header.Writer[F, B]:
       export self.{name, schema}
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, B] = 
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, B] =
         copy(self = self.translate(fK))
 
   final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value[F, ?, A]]) extends Header[F, A]:
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A] = 
-        copy(schema = fK(schema).map(_.translate(fK)))
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A] =
+      copy(schema = fK(schema).map(_.translate(fK)))
 
   final case class Transform[F[+_], A, B](self: Header[F, A], f: A => B, g: B => A) extends Header[F, B]:
     export self.{name, schema}
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, B] = 
-        copy(self = self.translate(fK))
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, B] =
+      copy(self = self.translate(fK))
