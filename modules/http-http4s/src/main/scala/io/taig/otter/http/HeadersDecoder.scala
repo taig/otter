@@ -1,0 +1,36 @@
+package io.taig.otter.http
+
+import org.http4s.Header as Http4sHeader
+import io.taig.otter.http as Base
+import io.taig.otter.http.Plain.*
+import io.taig.otter.Decoder
+import cats.syntax.all.*
+import cats.data.Validated
+
+object HeadersDecoder:
+  def apply[A](headers: Headers.Reader[A], values: List[Http4sHeader.Raw]): Decoder.Result[Option[String], A] =
+    withRemainders(headers, values).map { case (_, a) => a }
+
+  def withRemainders[A](
+      headers: Headers.Reader[A],
+      values: List[Http4sHeader.Raw]
+  ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] = headers match
+    case Base.Headers.Empty                       => (values, ()).valid
+    case Base.Headers.One(header)                 => one(header, values)
+    case Base.Headers.Reader.One(header)          => one(header, values)
+    case Base.Headers.Combine(left, right)        => combine(left, right, values)
+    case Base.Headers.Reader.Combine(left, right) => combine(left, right, values)
+
+  def one[A](
+      header: Header.Reader[A],
+      values: List[Http4sHeader.Raw]
+  ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] = HeaderDecoder(header, values)
+
+  def combine[A, B](
+      left: Headers.Reader[A],
+      right: Headers.Reader[B],
+      values: List[Http4sHeader.Raw]
+  ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], (A, B))] = withRemainders(left, values) match
+    case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))
+    case Validated.Invalid(violations) =>
+      withRemainders(right, values).fold(violations.combine, _ => violations).invalid

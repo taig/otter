@@ -1,12 +1,15 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.data.{Chain, Validated}
-// import cats.syntax.all.*
-// import io.taig.otter.{Codec, Data}
-// import io.taig.otter.codecs.*
-// import io.taig.otter.http.Http.Request.Body
-// import io.taig.otter.http.Http.{Payload, Request}
-// import io.taig.otter.validation.{Constraint, History, Violation, Violations}
+import io.taig.otter.Schema
+
+sealed trait Request[+F[+_], +G[+_], +H[+_], +I[+_], +A]:
+  def method: Method
+  def url: Url[F, G, I, ?]
+  def headers: Headers[H, I, ?]
+
+object Request:
+  sealed trait Body[F[+_], +A]:
+    def schema: F[Schema[F, ?, ?]]
 
 // sealed abstract class Request[A](val description: Option[String]):
 //   self =>

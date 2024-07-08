@@ -6,4 +6,5 @@ object Plain extends Types:
   override object container extends Container:
     export Base.Plain.container.*
     override type Header[A] = A
-    override type Headers[A] = A
+    override type Query[A] = A
+    override type Segment[A] = A

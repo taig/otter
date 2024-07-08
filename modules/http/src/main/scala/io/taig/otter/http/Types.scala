@@ -13,9 +13,17 @@ trait Types extends Base.Types:
 
     type Writer[A] = container.Header[Http.Header.Writer[container.Schema, A]]
 
-  type Headers[A] = container.Headers[Http.Headers[container.Schema, A]]
+  type Headers[A] = Http.Headers[container.Header, container.Schema, A]
 
   object Headers:
-    type Reader[A] = container.Headers[Http.Headers.Reader[container.Schema, A]]
+    type Reader[A] = Http.Headers.Reader[container.Header, container.Schema, A]
 
-    type Writer[A] = container.Headers[Http.Headers.Writer[container.Schema, A]]
+    type Writer[A] = Http.Headers.Writer[container.Header, container.Schema, A]
+
+  type Path[A] = Http.Path[container.Segment, container.Schema, A]
+
+  type Query[A] = container.Query[Http.Query[container.Schema, A]]
+
+  type Queries[A] = Http.Queries[container.Query, container.Schema, A]
+
+  type Segment[A] = container.Segment[Http.Segment[container.Schema, A]]
