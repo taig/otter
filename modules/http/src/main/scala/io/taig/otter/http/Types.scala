@@ -22,23 +22,31 @@ trait Types extends Base.Types:
 
     type Writer[A] = Http.Headers.Writer[container.Header, container.Schema, A]
 
-  type Path[A] = Http.Path[container.Segment, container.Schema, A]
+  type Path[A] = Http.Path[container.PathParameter, container.Schema, A]
+
+  object Path:
+    type Parameter[A] = container.PathParameter[Http.Path.Parameter[container.Schema, A]]
 
   type Query[A] = container.Query[Http.Query[container.Schema, A]]
 
   type Queries[A] = Http.Queries[container.Query, container.Schema, A]
 
-  type Segment[A] = container.Segment[Http.Segment[container.Schema, A]]
-
-  type Url[A] = Http.Url[container.Segment, container.Query, container.Schema, A]
+  type Url[A] = Http.Url[container.PathParameter, container.Query, container.Schema, A]
 
   type Request[A] = container.Request[
-    Http.Request[container.Segment, container.Query, container.Header, container.RequestBody, container.Schema, A]
+    Http.Request[container.PathParameter, container.Query, container.Header, container.RequestBody, container.Schema, A]
   ]
 
   object Request:
     type Any = container.Request[
-      Http.Request[container.Segment, container.Query, container.Header, container.RequestBody, container.Schema, ?]
+      Http.Request[
+        container.PathParameter,
+        container.Query,
+        container.Header,
+        container.RequestBody,
+        container.Schema,
+        ?
+      ]
     ]
 
     type Body[A] = container.RequestBody[Http.Request.Body[container.Schema, A]]

@@ -7,4 +7,4 @@ trait Container extends Base.Container:
   type Query[+A]
   type Request[+A]
   type RequestBody[+A]
-  type Segment[+A]
+  type PathParameter[+A]
