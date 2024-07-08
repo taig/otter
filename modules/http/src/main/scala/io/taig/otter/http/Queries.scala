@@ -1,66 +1,30 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.InvariantSemigroupal
-// import cats.data.{Chain, Validated}
-// import cats.syntax.all.*
-// import io.taig.otter.validation.Violations
-// import io.taig.otter.Evidence
+import cats.data.Chain
 
-// sealed abstract class Queries[A]:
-//   self =>
-//   def toChain: Chain[Query[?]]
+sealed trait Queries[+F[+_], +G[+_], +A]:
+  final def map[B](f: A => B): Queries[F, G, B] = Queries.Transform(this, f)
+  def toQueries: Chain[F[Query[G, ?]]]
+  def translate[H[+_]](fK: [A] => F[A] => H[A]): Queries[H, G, A]
+  final def zip[F1[+a] >: F[a], G1[+a] >: G[a], B](queries: Queries[F1, G1, B]): Queries[F1, G1, (A, B)] =
+    Queries.Combine(this, queries)
 
-//   final def imap[B](f: A => B)(g: B => A): Queries[B] = new Queries[B]:
-//     export self.{matchesWithRemainders, toChain}
-//     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, B)] =
-//       self.decodeWithRemainders(remainders).map(_.map(f))
-//     override def encode(b: B): Http.Queries = self.encode(g(b))
+object Queries:
+  final case class Combine[F[+_], G[+_], A, B](left: Queries[F, G, A], right: Queries[F, G, B])
+      extends Queries[F, G, (A, B)]:
+    override def toQueries: Chain[F[Query[G, ?]]] = left.toQueries ++ right.toQueries
+    override def translate[H[+_]](fK: [A] => F[A] => H[A]): Queries[H, G, (A, B)] =
+      copy(left = left.translate(fK), right = right.translate(fK))
 
-//   final infix def product[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
-//     override def toChain: Chain[Query[?]] = self.toChain ++ queries.toChain
-//     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
-//       self.matchesWithRemainders(remainders).flatMap(queries.matchesWithRemainders)
-//     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, (A, B))] =
-//       self.decodeWithRemainders(remainders) match
-//         case Validated.Valid((remainders, a)) => queries.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-//         case Validated.Invalid(left) =>
-//           queries.decodeWithRemainders(remainders) match
-//             case Validated.Valid(_)       => left.invalid
-//             case Validated.Invalid(right) => (left |+| right).invalid
-//     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
+  case object Empty extends Queries[Nothing, Nothing, Unit]:
+    override def toQueries: Chain[Nothing] = Chain.empty
+    override def translate[H[+_]](fK: [A] => Nothing => H[A]): Queries[H, Nothing, Unit] = this
 
-//   final infix def zip[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] =
-//     product(queries).imap(evidence.apply)(evidence.unapply)
-//   final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = zip(queries)
-//   final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = +?(query.toQueries)
+  final case class One[F[+_], G[+_], A](query: F[Query[G, A]]) extends Queries[F, G, A]:
+    override def toQueries: Chain[F[Query[G, A]]] = Chain.one(query)
+    override def translate[H[+_]](fK: [A] => F[A] => H[A]): Queries[H, G, A] =
+      copy(query = fK(query))
 
-//   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Queries[B] = imap(evidence.from)(evidence.to)
-
-//   final def matches(queries: Http.Queries): Boolean = matchesWithRemainders(queries).isDefined
-//   def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries]
-
-//   final def decode(queries: Http.Queries): Validated[Violations, A] = decodeWithRemainders(queries).map(_._2)
-//   def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
-//   def encode(a: A): Http.Queries
-
-//   final def toUrl: Url[A] = Url(this)
-
-// object Queries:
-//   val Empty: Queries[Unit] = new Queries[Unit]:
-//     override def toChain: Chain[Query[?]] = Chain.empty
-//     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] = remainders.some
-//     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, Unit)] =
-//       (remainders, ()).valid
-//     override def encode(a: Unit): Http.Queries = Chain.empty
-
-//   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
-//     override def toChain: Chain[Query[?]] = Chain.one(query)
-//     override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
-//       query.matchesWithRemainders(remainders)
-//     override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
-//       query.decodeWithRemainders(remainders)
-//     override def encode(a: A): Http.Queries = query.encode(a)
-
-//   given InvariantSemigroupal[Queries] with
-//     override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)
-//     override def product[A, B](fa: Queries[A], fb: Queries[B]): Queries[(A, B)] = fa.zip(fb)
+  final case class Transform[F[+_], G[+_], A, B](self: Queries[F, G, A], f: A => B) extends Queries[F, G, B]:
+    export self.toQueries
+    override def translate[H[+_]](fK: [A] => F[A] => H[A]): Queries[H, G, B] = copy(self = self.translate(fK))
