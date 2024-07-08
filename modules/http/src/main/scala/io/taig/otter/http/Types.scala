@@ -27,3 +27,10 @@ trait Types extends Base.Types:
   type Queries[A] = Http.Queries[container.Query, container.Schema, A]
 
   type Segment[A] = container.Segment[Http.Segment[container.Schema, A]]
+
+  type Request[A] = container.Request[
+    Http.Request[container.Segment, container.Query, container.Header, container.RequestBody, container.Schema, A]
+  ]
+
+  object Request:
+    type Body[A] = container.RequestBody[Http.Request.Body[container.Schema, A]]
