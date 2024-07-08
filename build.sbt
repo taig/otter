@@ -62,7 +62,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
   .aggregate(
     validation,
     core,
-    jsonCirce,
+    coreJsonCirce,
     // circe,
     openapi,
     // typescript,
@@ -106,7 +106,7 @@ lazy val core = module(identifier = Some("core"))
   // )
   .dependsOn(validation)
 
-lazy val jsonCirce = module(identifier = Some("json-circe"))
+lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
