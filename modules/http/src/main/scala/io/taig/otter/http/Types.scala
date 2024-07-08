@@ -6,6 +6,8 @@ import io.taig.otter.http as Http
 trait Types extends Base.Types:
   val container: Container
 
+  export Http.Method
+
   type Header[A] = container.Header[Http.Header[container.Schema, A]]
 
   object Header:
@@ -28,9 +30,15 @@ trait Types extends Base.Types:
 
   type Segment[A] = container.Segment[Http.Segment[container.Schema, A]]
 
+  type Url[A] = Http.Url[container.Segment, container.Query, container.Schema, A]
+
   type Request[A] = container.Request[
     Http.Request[container.Segment, container.Query, container.Header, container.RequestBody, container.Schema, A]
   ]
 
   object Request:
+    type Any = container.Request[
+      Http.Request[container.Segment, container.Query, container.Header, container.RequestBody, container.Schema, ?]
+    ]
+
     type Body[A] = container.RequestBody[Http.Request.Body[container.Schema, A]]

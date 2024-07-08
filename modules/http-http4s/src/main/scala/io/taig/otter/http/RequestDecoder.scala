@@ -7,4 +7,9 @@ import org.http4s.Request as Http4sRequest
 import io.taig.otter.Decoder
 
 object RequestDecoder:
-  def apply[F[_], A](request: Request[A], value: Http4sRequest[F]): Decoder.Result[Any, Option[A]] = ???
+  def apply[F[_], A](request: Request[A], value: Http4sRequest[F]): Decoder.Result[Any, Option[A]] =
+    RequestMatcher(request, value)
+    ???
+
+  def unsafeApply[F[_], A](request: Request[A], value: Http4sRequest[F]): Decoder.Result[Any, A] =
+    ???
