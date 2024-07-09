@@ -8,4 +8,4 @@ import scala.reflect.ClassTag
 object DynamicJsonEncoder:
   def apply[A: ClassTag](schema: Dynamic.Writer[A], a: A): Json = schema match
     case _: Base.Dynamic.Root[Json] => ???
-    case _: Base.Dynamic.Root[Any] => ???
+    case _: Base.Dynamic.Root[Any]  => ???

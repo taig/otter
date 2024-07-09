@@ -24,6 +24,3 @@ trait JsonHttpSyntax extends Dsl:
     )
 
   // TODO dynamic????????
-  val json: Dynamic[Json] = Base.Dynamic.Root[Json]()
-
-  
