@@ -16,6 +16,10 @@ sealed abstract class Data extends SProduct with Serializable:
     case Data.Null => true
     case _         => false
 
+  final def toValue: Option[Data.Value] = this match
+    case data: Data.Value => Some(data)
+    case Data.Null        => None
+
   final def name: String = this match
     case _: Data.Array   => "array"
     case _: Data.Boolean => "boolean"
@@ -35,13 +39,15 @@ object Data:
     def one(key: JString, value: Data): Data.Object = Object(Chain.one((key, value)))
     def of(kv: (JString, Data)*): Data.Object = Object(Chain.fromSeq(kv))
 
-  final case class Array(values: Chain[Data]) extends Value:
-    def length: Long = values.length
-    def ++(data: Data.Array): Data.Array = Array(values ++ data.values)
+  final case class Array(toVector: Vector[Data]) extends Value:
+    def length: Long = toVector.length
+    def ++(data: Data.Array): Data.Array = Array(toVector ++ data.toVector)
+    def uncons: Option[(Data, Data.Array)] = toVector.headOption.map(head => (head, Data.Array(toVector.tail)))
 
   object Array:
-    val Empty: Data.Array = Array(Chain.empty)
-    def fill(n: Long)(value: => Data): Data.Array = Array(Chain.fromSeq(Seq.fill(n.toInt)(value)))
+    val Empty: Data.Array = Array(Vector.empty)
+    def of(data: Data*): Data.Array = Array(data.toVector)
+    def fill(n: Long)(value: => Data): Data.Array = Array(Vector.fill(n.toInt)(value))
 
   sealed abstract class Primitive extends Value
 
