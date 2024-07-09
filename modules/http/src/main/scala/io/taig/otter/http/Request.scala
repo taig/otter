@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.Id as Identity
 import io.taig.otter.Schema
 import io.taig.otter.Decoder
 
@@ -22,7 +23,7 @@ object Request:
       object Strict:
         final case class Apply[F[+_], A, B](
             parser: Array[Byte] => A,
-            decoder: Decoder[[a] =>> F[Schema.Reader[F, ?, a]], A],
+            decoder: Decoder[Schema.Reader[Identity, ?, *], A],
             schema: F[Schema.Reader[F, ?, B]]
         ) extends Request.Body.Singlepart.Strict[F, B]
 

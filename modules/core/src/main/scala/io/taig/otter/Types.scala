@@ -128,6 +128,21 @@ trait Types:
       type Of[A, B] = container.Dictionary[Base.Dictionary.Writer[container.Schema, A, B]]
       type Any = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, ?]]
 
+  final type Dynamic[A] = container.Dynamic[Base.Dynamic[A]]
+
+  object Dynamic:
+    type Any = container.Dynamic[Base.Dynamic[?]]
+
+    type Reader[A] = container.Dynamic[Base.Dynamic.Reader[A]]
+
+    object Reader:
+      type Any = container.Dynamic[Base.Dynamic.Reader[?]]
+
+    type Writer[A] = container.Dynamic[Base.Dynamic.Writer[A]]
+
+    object Writer:
+      type Any = container.Dynamic[Base.Dynamic.Writer[?]]
+
   final type Enumeration[A] = container.Enumeration[Base.Enumeration[container.Schema, ?, A]]
 
   object Enumeration:

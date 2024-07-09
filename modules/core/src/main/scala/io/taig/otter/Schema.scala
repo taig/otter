@@ -12,6 +12,7 @@ import io.taig.otter
 import cats.Eq
 import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
+import scala.reflect.ClassTag
 
 sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
   override def default: Option[B] = ???
@@ -215,12 +216,19 @@ object Dictionary:
       copy(self = self.translate(fK))
 
 // TODO
-sealed trait Dynamic[+F[+_], +A, B] extends Schema[F, A, B]
+sealed trait Dynamic[A] extends Schema[Nothing, Nothing, A], Dynamic.Reader[A], Dynamic.Writer[A]:
+  override def optional: Dynamic[Option[A]] = ???
+  override def imap[C](f: A => C)(g: C => A): Base.Schema[Nothing, Nothing, C] = ???
+  final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic[A] = this
 
 object Dynamic:
-  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]
+  sealed trait Reader[+A] extends Schema.Reader[Nothing, Nothing, A]:
+    override def map[C](f: A => C): Dynamic.Reader[C] = ???
 
-  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]
+  sealed trait Writer[-A] extends Schema.Writer[Nothing, Nothing, A]:
+    override def contramap[C](f: C => A): Dynamic.Writer[C] = ???
+
+  final case class Root[A: ClassTag]() extends Dynamic[A]
 
 sealed trait Enumeration[+F[+_], +A, B]
     extends Value[F, A, B],
