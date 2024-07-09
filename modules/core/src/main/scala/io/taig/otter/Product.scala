@@ -13,24 +13,37 @@ import io.taig.otter.Codec.Result
 sealed trait Product[+F[+_], +A, B] extends Codec[F, A, B], Product.Reader[F, A, B], Product.Writer[F, A, B]:
   self =>
 
+  override def asReader: Product.Reader[F, A, B] = this
+  override def asWriter: Product.Writer[F, A, B] = this
+
   def schemas: Chain[F[Codec[F, ?, ?]]]
 
   override def imap[C](f: B => C)(g: C => B): Product[F, A, C] = new Product[F, A, C]:
     export self.schemas
     override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], C)] =
-      self.decodeWithRemainders(data).map(_.map(f))
-    override def encode(c: C): Option[Data.Array] = self.encode(g(c))
+      self.asReader.map(f).decodeWithRemainders(data)
+    override def encode(c: C): Option[Data.Array] = self.asWriter.contramap(g).encode(c)
 
   override def default(value: B): Product[F, A, B] = new Product[F, A, B]:
     export self.{encode, schemas}
     override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], B)] =
-      data.fold((data, value).valid)(_ => self.decodeWithRemainders(data))
+      self.asReader.default(value).decodeWithRemainders(data)
 
   override def optional: Product[F, A, Option[B]] = new Product[F, A, Option[B]]:
     export self.schemas
     override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], Option[B])] =
-      data.fold((data, none).valid)(_ => self.decodeWithRemainders(data).map(_.map(_.some)))
-    override def encode(b: Option[B]): Option[Data.Array] = b.flatMap(self.encode)
+      self.asReader.optional.decodeWithRemainders(data)
+    override def encode(b: Option[B]): Option[Data.Array] = self.asWriter.optional.encode(b)
+
+  def zip[F1[+a] >: F[a], C, D](product: Product[F1, C, D]): Product[F1, A & C, (B, D)] =
+    new Product[F1, A & C, (B, D)]:
+
+      override def schemas: Chain[F1[Codec[F1, ?, ?]]] = self.schemas ++ product.schemas
+
+      override def decodeWithRemainders(data: Option[Data.Array]): Result[(Option[Data.Array], (B, D))] =
+        self.asReader.zip(product.asReader).decodeWithRemainders(data)
+
+      override def encode(b: (B, D)): Option[Data.Array] = self.asWriter.zip(product.asWriter).encode(b)
 
 object Product:
   sealed trait Reader[+F[+_], +A, +B] extends Codec.Reader[F, A, B]:
@@ -52,6 +65,16 @@ object Product:
       export self.schemas
       override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], Option[B])] =
         data.fold((data, none).valid)(_ => self.decodeWithRemainders(data).map(_.map(_.some)))
+
+    def zip[F1[+a] >: F[a], C, D](product: Product.Reader[F1, C, D]): Product.Reader[F1, A & C, (B, D)] =
+      new Product.Reader[F1, A & C, (B, D)]:
+        override def schemas: Chain[F1[Codec.Reader[F1, ?, ?]]] = self.schemas ++ product.schemas
+
+        override def decodeWithRemainders(data: Option[Data.Array]): Result[(Option[Data.Array], (B, D))] =
+          self.decodeWithRemainders(data) match
+            case Validated.Valid((remainders, a)) => product.decodeWithRemainders(remainders).map(_.tupleLeft(a))
+            case Validated.Invalid(violations) =>
+              product.decodeWithRemainders(data).fold(violations.combine, _ => violations).invalid
 
     final override def decode(data: Option[Data.Value]): Codec.Result[B] = data match
       case Some(data: Data.Array) => decode(Some(data))
@@ -78,22 +101,30 @@ object Product:
       export self.schemas
       override def encode(b: Option[B]): Option[Data.Array] = b.flatMap(self.encode)
 
+    def zip[F1[+a] >: F[a], C, D](product: Product.Writer[F1, C, D]): Product.Writer[F1, A & C, (B, D)] =
+      new Product.Writer[F1, A & C, (B, D)]:
+        override def schemas: Chain[F1[Codec.Writer[F1, ?, ?]]] = self.schemas ++ product.schemas
+        override def encode(bd: (B, D)): Option[Data.Array] = (self.encode(bd._1), product.encode(bd._2)) match
+          case (Some(left), Some(right)) => (left ++ right).some
+          case (None, Some(right))       => (Data.Array.fill(self.schemas.length.toInt)(Data.Null) ++ right).some
+          case (Some(left), None)        => (left ++ Data.Array.fill(product.schemas.length.toInt)(Data.Null)).some
+          case (None, None)              => Data.Array.fill(schemas.length.toInt)(Data.Null).some
+
     override def encode(b: B): Option[Data.Array]
 
   val Empty: Product[Nothing, Nothing, Unit] = new Product[Nothing, Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
-    override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], Unit)] =
-      data match
-        case Some(Data.Array(values)) =>
-          val length = values.length
+    override def decodeWithRemainders(data: Option[Data.Array]): Codec.Result[(Option[Data.Array], Unit)] = data match
+      case Some(Data.Array(values)) =>
+        val length = values.length
 
-          Validated.cond(
-            length === 0,
-            (data, ()),
-            Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference = 0), actual = Data.Number(length)))
-          )
-        case None =>
-          Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = Data.String("null"))).invalid
+        Validated.cond(
+          length === 0,
+          (data, ()),
+          Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference = 0), actual = Data.Number(length)))
+        )
+      case None =>
+        Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = Data.String("null"))).invalid
     override def encode(b: Unit): Option[Data.Array] = Data.Array.Empty.some
 
   def apply[F[+_]: Comonad, A, B](schema: F[Codec[F, A, B]]): Product[F, schema.type, B] =

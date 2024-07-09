@@ -10,33 +10,39 @@ import scala.annotation.targetName
 sealed trait Primitive[A] extends Value[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   self =>
 
+  override def asReader: Primitive.Reader[A] = this
+  override def asWriter: Primitive.Writer[A] = this
+
   override def imap[C](f: A => C)(g: C => A): Primitive[C] = new Primitive[C]:
     export self.tpe
     @targetName("decodePrimitive")
-    override def decode(data: Option[Data.Primitive]): Codec.Result[C] = self.decode(data).map(f)
-    override def encode(c: C): Option[Data.Primitive] = self.encode(g(c))
+    override def decode(data: Option[Data.Primitive]): Codec.Result[C] = self.asReader.map(f).decode(data)
+    override def encode(c: C): Option[Data.Primitive] = self.asWriter.contramap(g).encode(c)
 
   override def default(value: A): Primitive[A] = new Primitive[A]:
     export self.{encode, tpe}
     @targetName("decodePrimitive")
     override def decode(data: Option[Data.Primitive]): Codec.Result[A] =
-      data.fold(value.valid)(_ => self.decode(data))
+      self.asReader.default(value).decode(data)
 
-  override def optional: Primitive[Option[A]] = new Primitive[Option[A]]:
+  override final def optional: Primitive[Option[A]] = new Primitive[Option[A]]:
     export self.tpe
     @targetName("decodePrimitive")
     override def decode(data: Option[Data.Primitive]): Codec.Result[Option[A]] =
-      data.fold(none.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Option[Data.Primitive] = a.flatMap(self.encode)
+      self.asReader.optional.decode(data)
+    override def encode(a: Option[A]): Option[Data.Primitive] = self.asWriter.optional.encode(a)
 
 object Primitive:
   sealed trait Required[A] extends Primitive[A], Primitive.Required.Reader[A], Primitive.Required.Writer[A]:
     self =>
 
+    override def asReader: Primitive.Required.Reader[A] = this
+    override def asWriter: Primitive.Required.Writer[A] = this
+
     override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = new Primitive.Required[C]:
       export self.tpe
-      override def decode(data: Data.Primitive): Codec.Result[C] = self.decode(data).map(f)
-      override def encodeRequired(c: C): Data.Primitive = self.encodeRequired(g(c))
+      override def decode(data: Data.Primitive): Codec.Result[C] = self.asReader.map(f).decode(data)
+      override def encodeRequired(c: C): Data.Primitive = self.asWriter.contramap(g).encodeRequired(c)
 
   object Required:
     sealed trait Reader[+A] extends Primitive.Reader[A]:
