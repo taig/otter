@@ -1,35 +1,35 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.Functor
-// import cats.syntax.all.*
+import cats.Functor
+import cats.syntax.all.*
 
-// sealed trait Branch[+F[+_], +A, B] extends Branch.Reader[F, A, B], Branch.Writer[F, A, B]:
-//   override def schema: F[Schema[F, ?, ?]]
-//   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch[G, ?, B]
+sealed trait Branch[+F[+_], -A, +B, C] extends Branch.Reader[F, A, B, C], Branch.Writer[F, A, B, C]:
+  override def schema: F[Schema[F, A, ?, ?]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch[G, A, ?, C]
 
-// object Branch:
-//   sealed trait Reader[+F[+_], +A, +B]:
-//     def name: String
-//     def schema: F[Schema.Reader[F, ?, ?]]
-//     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Reader[G, ?, B]
+object Branch:
+  sealed trait Reader[+F[+_], -A, +B, +C]:
+    def name: String
+    def schema: F[Schema.Reader[F, A, ?, ?]]
+    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Reader[G, A, ?, C]
 
-//   object Reader:
-//     final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](name: String, schema: A)
-//         extends Branch.Reader[F, A, B]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Reader[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+  object Reader:
+    final case class Root[F[+_], A, +B <: F[Schema.Reader[F, A, ?, C]], C](name: String, schema: B)
+        extends Branch.Reader[F, A, B, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Reader[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//   sealed trait Writer[+F[+_], +A, -B]:
-//     def name: String
-//     def schema: F[Schema.Writer[F, ?, ?]]
-//     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C]:
+    def name: String
+    def schema: F[Schema.Writer[F, A, ?, ?]]
+    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Writer[G, A, ?, C]
 
-//   object Writer:
-//     final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](name: String, schema: A)
-//         extends Branch.Writer[F, A, B]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Writer[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+  object Writer:
+    final case class Root[F[+_], A, +B <: F[Schema.Writer[F, A, ?, C]], C](name: String, schema: B)
+        extends Branch.Writer[F, A, B, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch.Writer[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//   final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](name: String, schema: A) extends Branch[F, A, B]:
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch[G, ?, B] =
-//       copy(schema = fK(schema).map(_.translate(fK)))
+  final case class Root[F[+_], A, +B <: F[Schema[F, A, ?, C]], C](name: String, schema: B) extends Branch[F, A, B, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Branch[G, A, ?, C] =
+      copy(schema = fK(schema).map(_.translate(fK)))
