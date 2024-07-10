@@ -233,23 +233,29 @@ sealed trait Dynamic[A, B] extends Schema[Nothing, A, Nothing, B], Dynamic.Reade
   final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic[A, B] = this
 
 object Dynamic:
-  sealed trait Reader[A, +B] extends Schema.Reader[Nothing, A, Nothing, B]:
-    override def optional: Dynamic.Reader[A, Option[B]] = ???
-    override def map[C](f: B => C): Dynamic.Reader[A, C] = ???
+  sealed trait Reader[-A, +B] extends Schema.Reader[Nothing, A, Nothing, B]:
+    override def optional: Dynamic.Reader[A, Option[B]] = Reader.Optional(this)
+    final override def map[C](f: B => C): Dynamic.Reader[A, C] = Reader.Transform(this, f)
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic.Reader[A, B] = this
 
   object Reader:
+    final case class Optional[A, B](self: Dynamic.Reader[A, B]) extends Dynamic.Reader[A, Option[B]]
+
     final case class Root[A]() extends Dynamic.Reader[A, A]
 
     final case class Transform[A, B, C](self: Dynamic.Reader[A, B], f: B => C) extends Dynamic.Reader[A, C]
 
   sealed trait Writer[A, -B] extends Schema.Writer[Nothing, A, Nothing, B]:
-    override def optional: Dynamic.Writer[A, Option[B]] = ???
-    override def contramap[C](f: C => B): Dynamic.Writer[A, C] = ???
+    override def optional: Dynamic.Writer[A, Option[B]] = Writer.Optional(this)
+    final override def contramap[C](f: C => B): Dynamic.Writer[A, C] = Writer.Transform(this, f)
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic.Writer[A, B] = this
 
   object Writer:
+    final case class Optional[A, B](self: Dynamic.Writer[A, B]) extends Dynamic.Writer[A, Option[B]]
+
     final case class Root[A]() extends Dynamic.Writer[A, A]
+
+    final case class Transform[A, B, C](self: Dynamic.Writer[A, B], f: C => B) extends Dynamic.Writer[A, C]
 
   final case class Root[A]() extends Dynamic[A, A]
 

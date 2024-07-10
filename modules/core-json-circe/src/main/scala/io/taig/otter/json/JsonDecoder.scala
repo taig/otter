@@ -9,7 +9,6 @@ import io.taig.otter as Base
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import cats.data.Chain
-import cats.Id
 
 object JsonDecoder extends Decoder[Schema.Reader.Via[Json, *], Json]:
   override def apply[A](schema: Schema.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] = schema match
@@ -27,7 +26,7 @@ object JsonDecoder extends Decoder[Schema.Reader.Via[Json, *], Json]:
           case Some(obj) => DictionaryJsonDecoder(schema, obj.toList.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Dynamic.Reader[Json, A]         => DynamicJsonDecoder(???, json)
+    case schema: Dynamic.Reader[Json, A]         => DynamicJsonDecoder(schema, json)
     case schema: Enumeration.Reader.Via[Json, A] => EnumerationJsonDecoder(schema, json)
     case schema: Sum.Reader.Via[Json, A] =>
       if json.isNull then SumJsonDecoder(schema, none)
