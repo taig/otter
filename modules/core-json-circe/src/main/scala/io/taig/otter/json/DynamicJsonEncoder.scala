@@ -7,4 +7,3 @@ import scala.reflect.ClassTag
 
 object DynamicJsonEncoder:
   def apply[A](schema: Dynamic[Json, A], a: A): Json = schema.encode(a)
-

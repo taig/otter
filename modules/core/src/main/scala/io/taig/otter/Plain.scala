@@ -18,9 +18,9 @@ trait Plain extends Dsl:
     override type Sum[+A] = A
     override type Union[+A] = A
 
-  implicit override def schemaApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  implicit override def collectionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  implicit override def primitiveApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
-  implicit override def unionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  // implicit override def schemaApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  // implicit override def collectionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  // implicit override def primitiveApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
+  // implicit override def unionApplicativeComonad: ApplicativeComonad[Identity] = applicativeComonad
 
 object Plain extends Plain
