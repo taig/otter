@@ -27,7 +27,7 @@ object JsonDecoder extends Decoder[Schema.Reader.Via[Json, *], Json]:
           case Some(obj) => DictionaryJsonDecoder(schema, obj.toList.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Dynamic.Reader[Json, A]            => DynamicJsonDecoder(???, json)
+    case schema: Dynamic.Reader[Json, A]         => DynamicJsonDecoder(???, json)
     case schema: Enumeration.Reader.Via[Json, A] => EnumerationJsonDecoder(schema, json)
     case schema: Sum.Reader.Via[Json, A] =>
       if json.isNull then SumJsonDecoder(schema, none)
@@ -52,6 +52,3 @@ object JsonDecoder extends Decoder[Schema.Reader.Via[Json, *], Json]:
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
     case schema: Union.Reader.Via[Json, A] => UnionJsonDecoder(schema, json)
-
-  def apply2[A](schema: Base.Schema.Reader[Id, Json, ?, A], json: Json): Decoder.Result[Json, A] = schema match
-    case schema: Base.Dynamic.Reader[Json, A] => ???
