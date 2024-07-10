@@ -464,102 +464,111 @@ object Primitive:
     export self.tpe
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-// sealed trait Product[+F[+_], +A, B] extends Schema[F, A, B], Product.Reader[F, A, B], Product.Writer[F, A, B]:
-//   override def imap[C](f: B => C)(g: C => B): Product[F, A, C] = Product.Transform(this, f, g)
-//   override def optional: Product[F, A, Option[B]] = Product.Optional(this)
-//   def product[G[+a] >: F[a], C, D](product: Product[G, C, D]): Product[G, A & C, (B, D)] =
-//     Product.Combine(this, product)
-//   def schemas: Chain[F[Schema[F, ?, ?]]]
-//   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, ?, B]
+sealed trait Product[+F[+_], -A, +B, C]
+    extends Schema[F, A, B, C],
+      Product.Reader[F, A, B, C],
+      Product.Writer[F, A, B, C]:
+  override def imap[D](f: C => D)(g: D => C): Product[F, A, B, D] = Product.Transform(this, f, g)
+  override def optional: Product[F, A, B, Option[C]] = Product.Optional(this)
+  def product[G[+a] >: F[a], A1 <: A, D, E](product: Product[G, A1, D, E]): Product[G, A1, B & D, (C, E)] =
+    Product.Combine(this, product)
+  def schemas: Chain[F[Schema[F, A, ?, ?]]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, A, ?, C]
 
-// object Product:
-//   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-//     override def map[C](f: B => C): Product.Reader[F, A, C] = Reader.Transform(this, f)
-//     override def optional: Product.Reader[F, A, Option[B]] = Reader.Optional(this)
-//     def product[G[+a] >: F[a], C, D](product: Product.Reader[G, C, D]): Product.Reader[G, A & C, (B, D)] =
-//       Reader.Combine(this, product)
-//     def schemas: Chain[F[Schema.Reader[F, ?, ?]]]
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, B]
+object Product:
+  sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
+    override def map[D](f: C => D): Product.Reader[F, A, B, D] = Reader.Transform(this, f)
+    override def optional: Product.Reader[F, A, B, Option[C]] = Reader.Optional(this)
+    def product[G[+a] >: F[a], A1 <: A, D, E](
+        product: Product.Reader[G, A1, D, E]
+    ): Product.Reader[G, A1, B & D, (C, E)] =
+      Reader.Combine(this, product)
+    def schemas: Chain[F[Schema.Reader[F, A, ?, ?]]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, A, ?, C]
 
-//   object Reader:
-//     final case class Combine[F[+_], A, B, C, D](left: Product.Reader[F, A, B], right: Product.Reader[F, C, D])
-//         extends Product.Reader[F, A & C, (B, D)]:
-//       override def schemas: Chain[F[Schema.Reader[F, ?, ?]]] = left.schemas ++ right.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, (B, D)] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Reader:
+    final case class Combine[F[+_], A, B, C, D, E](left: Product.Reader[F, A, B, C], right: Product.Reader[F, A, D, E])
+        extends Product.Reader[F, A, B & D, (C, E)]:
+      override def schemas: Chain[F[Schema.Reader[F, A, ?, ?]]] = left.schemas ++ right.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, A, ?, (C, E)] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class One[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Product.Reader[F, A, B]:
-//       override def schemas: Chain[F[Schema.Reader[F, ?, ?]]] = Chain.one(schema)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+    final case class One[F[+_], A, +B <: F[Schema.Reader[F, A, ?, C]], C](schema: B) extends Product.Reader[F, A, B, C]:
+      override def schemas: Chain[F[Schema.Reader[F, A, ?, ?]]] = Chain.one(schema)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//     final case class Optional[F[+_], A, B](self: Product.Reader[F, A, B]) extends Product.Reader[F, A, Option[B]]:
-//       export self.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Product.Reader[F, A, B, C])
+        extends Product.Reader[F, A, B, Option[C]]:
+      export self.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Transform[F[+_], A, B, C](self: Product.Reader[F, A, B], f: B => C)
-//         extends Product.Reader[F, A, C]:
-//       export self.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Product.Reader[F, A, B, C], f: C => D)
+        extends Product.Reader[F, A, B, D]:
+      export self.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Reader[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-//     override def contramap[C](f: C => B): Product.Writer[F, A, C] =
-//       Writer.Transform(this, f)
-//     override def optional: Product.Writer[F, A, Option[B]] = Writer.Optional(this)
-//     def product[G[+a] >: F[a], C, D](product: Product.Writer[G, C, D]): Product.Writer[G, A & C, (B, D)] =
-//       Writer.Combine(this, product)
-//     def schemas: Chain[F[Schema.Writer[F, ?, ?]]]
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
+    override def contramap[D](f: D => C): Product.Writer[F, A, B, D] = Writer.Transform(this, f)
+    override def optional: Product.Writer[F, A, B, Option[C]] = Writer.Optional(this)
+    def product[G[+a] >: F[a], A1 <: A, D, E](
+        product: Product.Writer[G, A1, D, E]
+    ): Product.Writer[G, A1, B & D, (C, E)] =
+      Writer.Combine(this, product)
+    def schemas: Chain[F[Schema.Writer[F, A, ?, ?]]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, A, ?, C]
 
-//   object Writer:
-//     final case class Combine[F[+_], A, B, C, D](left: Product.Writer[F, A, B], right: Product.Writer[F, C, D])
-//         extends Product.Writer[F, A & C, (B, D)]:
-//       override def schemas: Chain[F[Schema.Writer[F, ?, ?]]] = left.schemas ++ right.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, ?, (B, D)] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Writer:
+    final case class Combine[F[+_], A, B, C, D, E](left: Product.Writer[F, A, B, C], right: Product.Writer[F, A, D, E])
+        extends Product.Writer[F, A, B & D, (C, E)]:
+      override def schemas: Chain[F[Schema.Writer[F, A, ?, ?]]] = left.schemas ++ right.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, A, ?, (C, E)] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class One[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Product.Writer[F, A, B]:
-//       override def schemas: Chain[F[Schema.Writer[F, ?, ?]]] = Chain.one(schema)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+    final case class One[F[+_], A, +B <: F[Schema.Writer[F, A, ?, C]], C](schema: B) extends Product.Writer[F, A, B, C]:
+      override def schemas: Chain[F[Schema.Writer[F, A, ?, ?]]] = Chain.one(schema)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//     final case class Optional[F[+_], A, B](self: Product.Writer[F, A, B]) extends Product.Writer[F, A, Option[B]]:
-//       export self.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Product.Writer[F, A, B, C])
+        extends Product.Writer[F, A, B, Option[C]]:
+      export self.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Transform[F[+_], A, B, C](self: Product.Writer[F, A, B], f: C => B)
-//         extends Product.Writer[F, A, C]:
-//       export self.schemas
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Product.Writer[F, A, B, C], f: D => C)
+        extends Product.Writer[F, A, B, D]:
+      export self.schemas
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product.Writer[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   final case class Combine[F[+_], A, B, C, D](left: Product[F, A, B], right: Product[F, C, D])
-//       extends Product[F, A & C, (B, D)]:
-//     override def schemas: Chain[F[Schema[F, ?, ?]]] = left.schemas ++ right.schemas
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, ?, (B, D)] =
-//       copy(left = left.translate(fK), right = right.translate(fK))
+  final case class Combine[F[+_], A, B, C, D, E](left: Product[F, A, B, C], right: Product[F, A, D, E])
+      extends Product[F, A, B & D, (C, E)]:
+    override def schemas: Chain[F[Schema[F, A, ?, ?]]] = left.schemas ++ right.schemas
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, A, ?, (C, E)] =
+      copy(left = left.translate(fK), right = right.translate(fK))
 
-//   case object Empty extends Product[Nothing, Nothing, Unit]:
-//     override def schemas: Chain[Nothing] = Chain.empty
-//     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Product[G, ?, Unit] = this
+  case object Empty extends Product[Nothing, Any, Nothing, Unit]:
+    override def schemas: Chain[Nothing] = Chain.empty
+    override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Product[G, Any, ?, Unit] = this
 
-//   final case class One[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Product[F, A, B]:
-//     override def schemas: Chain[F[Schema[F, ?, ?]]] = Chain.one(schema)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, ?, B] =
-//       copy(schema = fK(schema).map(_.translate(fK)))
+  final case class One[F[+_], A, +B <: F[Schema[F, A, ?, C]], C](schema: B) extends Product[F, A, B, C]:
+    override def schemas: Chain[F[Schema[F, A, ?, ?]]] = Chain.one(schema)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, A, ?, C] =
+      copy(schema = fK(schema).map(_.translate(fK)))
 
-//   final case class Optional[F[+_], A, B](self: Product[F, A, B]) extends Product[F, A, Option[B]]:
-//     export self.schemas
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, ?, Option[B]] =
-//       copy(self = self.translate(fK))
+  final case class Optional[F[+_], A, B, C](self: Product[F, A, B, C]) extends Product[F, A, B, Option[C]]:
+    export self.schemas
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, A, ?, Option[C]] =
+      copy(self = self.translate(fK))
 
-//   final case class Transform[F[+_], A, B, C](self: Product[F, A, B], f: B => C, g: C => B) extends Product[F, A, C]:
-//     export self.schemas
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, ?, C] =
-//       copy(self = self.translate(fK))
+  final case class Transform[F[+_], A, B, C, D](self: Product[F, A, B, C], f: C => D, g: D => C)
+      extends Product[F, A, B, D]:
+    export self.schemas
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Product[G, A, ?, D] =
+      copy(self = self.translate(fK))
 
 // sealed trait Record[+F[+_], +A, B] extends Schema[F, A, B], Record.Reader[F, A, B], Record.Writer[F, A, B]:
 //   override def nulls: Record.Null
