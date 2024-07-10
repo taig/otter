@@ -19,7 +19,7 @@ enum Type[A]:
   case Long extends Type[Long]
   case String extends Type[JString]
 
-  final def decode(data: Data.Primitive): Validated[Violations[Constraint[Data], Data], A] = (data, this) match
+  final def decode(data: Data.Primitive): Codec.Result[A] = (data, this) match
     case (Data.Boolean(value), Type.Boolean) => value.valid
     case (data: Data.Number, Type.Long) =>
       data.toLong.toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(data.name))))
