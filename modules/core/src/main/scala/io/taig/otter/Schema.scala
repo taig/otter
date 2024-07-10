@@ -702,143 +702,146 @@ object Record:
     val Default: Null = Show
     given Eq[Null] = Eq.fromUniversalEquals
 
-// sealed trait Sum[+F[+_], +A, B] extends Schema[F, A, B], Sum.Reader[F, A, B], Sum.Writer[F, A, B]:
-//   final override def discriminator(value: Sum.Discriminator): Sum[F, A, B] = Sum.Discriminators(this, value)
+sealed trait Sum[+F[+_], -A, +B, C] extends Schema[F, A, B, C], Sum.Reader[F, A, B, C], Sum.Writer[F, A, B, C]:
+  final override def discriminator(value: Sum.Discriminator): Sum[F, A, B, C] = Sum.Discriminators(this, value)
 
-//   override def branches: NonEmptyChain[Branch[F, ?, ?]]
-//   override def imap[C](f: B => C)(g: C => B): Sum[F, A, C] = Sum.Transform(this, f, g)
-//   override def optional: Sum[F, A, Option[B]] = Sum.Optional(this)
-//   def orElse[G[+a] >: F[a], C, D](sum: Sum[G, C, D]): Sum[G, A | C, Either[B, D]] = Sum.Combine(this, sum)
-//   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B]
+  override def branches: NonEmptyChain[Branch[F, A, ?, ?]]
+  override def imap[D](f: C => D)(g: D => C): Sum[F, A, B, D] = Sum.Transform(this, f, g)
+  override def optional: Sum[F, A, B, Option[C]] = Sum.Optional(this)
+  def orElse[G[+a] >: F[a], A1 <: A, D, E](sum: Sum[G, A1, D, E]): Sum[G, A1, B | D, Either[C, E]] =
+    Sum.Combine(this, sum)
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, C]
 
-// object Sum:
-//   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-//     def discriminator: Sum.Discriminator
-//     def discriminator(value: Sum.Discriminator): Sum.Reader[F, A, B] = Reader.Discriminators(this, value)
+object Sum:
+  sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
+    def discriminator: Sum.Discriminator
+    def discriminator(value: Sum.Discriminator): Sum.Reader[F, A, B, C] = Reader.Discriminators(this, value)
 
-//     def branches: NonEmptyChain[Branch.Reader[F, ?, ?]]
-//     final override def map[C](f: B => C): Sum.Reader[F, A, C] = Reader.Transform(this, f)
-//     override def optional: Sum.Reader[F, A, Option[B]] = Reader.Optional(this)
-//     def orElse[G[+a] >: F[a], C, D](sum: Sum.Reader[G, C, D]): Sum.Reader[G, A | C, Either[B, D]] =
-//       Reader.Combine(this, sum)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B]
+    def branches: NonEmptyChain[Branch.Reader[F, A, ?, ?]]
+    final override def map[D](f: C => D): Sum.Reader[F, A, B, D] = Reader.Transform(this, f)
+    override def optional: Sum.Reader[F, A, B, Option[C]] = Reader.Optional(this)
+    def orElse[G[+a] >: F[a], A1 <: A, D, E](sum: Sum.Reader[G, A1, D, E]): Sum.Reader[G, A1, B | D, Either[C, E]] =
+      Reader.Combine(this, sum)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, C]
 
-//   object Reader:
-//     final case class Combine[F[+_], A, B, C, D](left: Sum.Reader[F, A, B], right: Sum.Reader[F, C, D])
-//         extends Sum.Reader[F, A | C, Either[B, D]]:
-//       override def branches: NonEmptyChain[Branch.Reader[F, ?, ?]] = left.branches ++ right.branches
-//       override def discriminator: Discriminator = Discriminator.Default
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, Either[B, D]] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Reader:
+    final case class Combine[F[+_], A, B, C, D, E](left: Sum.Reader[F, A, B, C], right: Sum.Reader[F, A, D, E])
+        extends Sum.Reader[F, A, B | D, Either[C, E]]:
+      override def branches: NonEmptyChain[Branch.Reader[F, A, ?, ?]] = left.branches ++ right.branches
+      override def discriminator: Discriminator = Discriminator.Default
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, Either[C, E]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class Discriminators[F[+_], A, B](self: Sum.Reader[F, A, B], discriminator: Sum.Discriminator)
-//         extends Sum.Reader[F, A, B]:
-//       export self.branches
-//       override def discriminator(value: Sum.Discriminator): Sum.Reader[F, A, B] = copy(discriminator = value)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B] =
-//         copy(self = self.translate(fK))
+    final case class Discriminators[F[+_], A, B, C](self: Sum.Reader[F, A, B, C], discriminator: Sum.Discriminator)
+        extends Sum.Reader[F, A, B, C]:
+      export self.branches
+      override def discriminator(value: Sum.Discriminator): Sum.Reader[F, A, B, C] = copy(discriminator = value)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, C] =
+        copy(self = self.translate(fK))
 
-//     final case class Optional[F[+_], A, B](self: Sum.Reader[F, A, B]) extends Sum.Reader[F, A, Option[B]]:
-//       export self.{branches, discriminator}
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Sum.Reader[F, A, B, C]) extends Sum.Reader[F, A, B, Option[C]]:
+      export self.{branches, discriminator}
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Root[F[+_], A, B](branch: Branch.Reader[F, A, B]) extends Sum.Reader[F, A, B]:
-//       override def branches: NonEmptyChain[Branch.Reader[F, A, B]] = NonEmptyChain.one(branch)
-//       override def discriminator: Discriminator = Discriminator.Default
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, B] =
-//         copy(branch = branch.translate(fK))
+    final case class Root[F[+_], A, B, C](branch: Branch.Reader[F, A, B, C]) extends Sum.Reader[F, A, B, C]:
+      override def branches: NonEmptyChain[Branch.Reader[F, A, B, C]] = NonEmptyChain.one(branch)
+      override def discriminator: Discriminator = Discriminator.Default
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, C] =
+        copy(branch = branch.translate(fK))
 
-//     final case class Transform[F[+_], A, B, C](self: Sum.Reader[F, A, B], f: B => C) extends Sum.Reader[F, A, C]:
-//       export self.{branches, discriminator}
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Sum.Reader[F, A, B, C], f: C => D)
+        extends Sum.Reader[F, A, B, D]:
+      export self.{branches, discriminator}
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Reader[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-//     def discriminator: Discriminator
-//     def discriminator(value: Discriminator): Sum.Writer[F, A, B] = Writer.Discriminators(this, value)
+  sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
+    def discriminator: Discriminator
+    def discriminator(value: Discriminator): Sum.Writer[F, A, B, C] = Writer.Discriminators(this, value)
 
-//     def branches: NonEmptyChain[Branch.Writer[F, ?, ?]]
-//     final override def contramap[C](f: C => B): Sum.Writer[F, A, C] = Writer.Transform(this, f)
-//     override def optional: Sum.Writer[F, A, Option[B]] = Writer.Optional(this)
-//     def orElse[G[+a] >: F[a], C, D](sum: Sum.Writer[G, C, D]): Sum.Writer[G, A | C, Either[B, D]] =
-//       Writer.Combine(this, sum)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B]
+    def branches: NonEmptyChain[Branch.Writer[F, A, ?, ?]]
+    final override def contramap[D](f: D => C): Sum.Writer[F, A, B, D] = Writer.Transform(this, f)
+    override def optional: Sum.Writer[F, A, B, Option[C]] = Writer.Optional(this)
+    def orElse[G[+a] >: F[a], A1 <: A, D, E](sum: Sum.Writer[G, A1, D, E]): Sum.Writer[G, A1, B | D, Either[C, E]] =
+      Writer.Combine(this, sum)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, C]
 
-//   object Writer:
-//     final case class Combine[F[+_], A, B, C, D](left: Sum.Writer[F, A, B], right: Sum.Writer[F, C, D])
-//         extends Sum.Writer[F, A | C, Either[B, D]]:
-//       override def branches: NonEmptyChain[Branch.Writer[F, ?, ?]] = left.branches ++ right.branches
-//       override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, Either[B, D]] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Writer:
+    final case class Combine[F[+_], A, B, C, D, E](left: Sum.Writer[F, A, B, C], right: Sum.Writer[F, A, D, E])
+        extends Sum.Writer[F, A, B | D, Either[C, E]]:
+      override def branches: NonEmptyChain[Branch.Writer[F, A, ?, ?]] = left.branches ++ right.branches
+      override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, Either[C, E]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class Discriminators[F[+_], A, B](self: Sum.Writer[F, A, B], discriminator: Sum.Discriminator)
-//         extends Sum.Writer[F, A, B]:
-//       export self.branches
-//       override def discriminator(value: Sum.Discriminator): Sum.Writer[F, A, B] = copy(discriminator = value)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B] =
-//         copy(self = self.translate(fK))
+    final case class Discriminators[F[+_], A, B, C](self: Sum.Writer[F, A, B, C], discriminator: Sum.Discriminator)
+        extends Sum.Writer[F, A, B, C]:
+      export self.branches
+      override def discriminator(value: Sum.Discriminator): Sum.Writer[F, A, B, C] = copy(discriminator = value)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, C] =
+        copy(self = self.translate(fK))
 
-//     final case class Optional[F[+_], A, B](self: Sum.Writer[F, A, B]) extends Sum.Writer[F, A, Option[B]]:
-//       export self.{branches, discriminator}
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Sum.Writer[F, A, B, C]) extends Sum.Writer[F, A, B, Option[C]]:
+      export self.{branches, discriminator}
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Root[F[+_], A, B](branch: Branch.Writer[F, A, B]) extends Sum.Writer[F, A, B]:
-//       override def branches: NonEmptyChain[Branch.Writer[F, A, B]] = NonEmptyChain.one(branch)
-//       override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, B] =
-//         copy(branch = branch.translate(fK))
+    final case class Root[F[+_], A, B, C](branch: Branch.Writer[F, A, B, C]) extends Sum.Writer[F, A, B, C]:
+      override def branches: NonEmptyChain[Branch.Writer[F, A, B, C]] = NonEmptyChain.one(branch)
+      override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, C] =
+        copy(branch = branch.translate(fK))
 
-//     final case class Transform[F[+_], A, B, C](self: Sum.Writer[F, A, B], f: C => B) extends Sum.Writer[F, A, C]:
-//       export self.{branches, discriminator}
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Sum.Writer[F, A, B, C], f: D => C)
+        extends Sum.Writer[F, A, B, D]:
+      export self.{branches, discriminator}
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum.Writer[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   final case class Combine[F[+_], A, B, C, D](left: Sum[F, A, B], right: Sum[F, C, D])
-//       extends Sum[F, A | C, Either[B, D]]:
-//     override def branches: NonEmptyChain[Branch[F, ?, ?]] = left.branches ++ right.branches
-//     override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, Either[B, D]] =
-//       copy(left = left.translate(fK), right = right.translate(fK))
+  final case class Combine[F[+_], A, B, C, D, E](left: Sum[F, A, B, C], right: Sum[F, A, D, E])
+      extends Sum[F, A, B | D, Either[C, E]]:
+    override def branches: NonEmptyChain[Branch[F, A, ?, ?]] = left.branches ++ right.branches
+    override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, Either[C, E]] =
+      copy(left = left.translate(fK), right = right.translate(fK))
 
-//   final case class Discriminators[F[+_], A, B](self: Sum[F, A, B], discriminator: Sum.Discriminator)
-//       extends Sum[F, A, B]:
-//     export self.branches
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B] = copy(self = self.translate(fK))
+  final case class Discriminators[F[+_], A, B, C](self: Sum[F, A, B, C], discriminator: Sum.Discriminator)
+      extends Sum[F, A, B, C]:
+    export self.branches
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, C] = copy(self = self.translate(fK))
 
-//   final case class Optional[F[+_], A, B](self: Sum[F, A, B]) extends Sum[F, A, Option[B]]:
-//     export self.{branches, discriminator}
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, Option[B]] =
-//       copy(self = self.translate(fK))
+  final case class Optional[F[+_], A, B, C](self: Sum[F, A, B, C]) extends Sum[F, A, B, Option[C]]:
+    export self.{branches, discriminator}
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, Option[C]] =
+      copy(self = self.translate(fK))
 
-//   final case class Root[F[+_], A, B](branch: Branch[F, A, B]) extends Sum[F, A, B]:
-//     override def branches: NonEmptyChain[Branch[F, A, B]] = NonEmptyChain.one(branch)
-//     override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, B] =
-//       copy(branch = branch.translate(fK))
+  final case class Root[F[+_], A, B, C](branch: Branch[F, A, B, C]) extends Sum[F, A, B, C]:
+    override def branches: NonEmptyChain[Branch[F, A, B, C]] = NonEmptyChain.one(branch)
+    override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, C] =
+      copy(branch = branch.translate(fK))
 
-//   final case class Transform[F[+_], A, B, C](self: Sum[F, A, B], f: B => C, g: C => B) extends Sum[F, A, C]:
-//     export self.{branches, discriminator}
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, ?, C] =
-//       copy(self = self.translate(fK))
+  final case class Transform[F[+_], A, B, C, D](self: Sum[F, A, B, C], f: C => D, g: D => C) extends Sum[F, A, B, D]:
+    export self.{branches, discriminator}
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Sum[G, A, ?, D] =
+      copy(self = self.translate(fK))
 
-//   enum Discriminator:
-//     case Nested(identifier: String, value: String)
-//     case Merged(identifier: String)
-//     case Keyed
+  enum Discriminator:
+    case Nested(identifier: String, value: String)
+    case Merged(identifier: String)
+    case Keyed
 
-//   object Discriminator:
-//     object Nested:
-//       val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
+  object Discriminator:
+    object Nested:
+      val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
 
-//     object Merged:
-//       val Default: Discriminator.Merged = Merged(identifier = "type")
+    object Merged:
+      val Default: Discriminator.Merged = Merged(identifier = "type")
 
-//     val Default: Discriminator = Nested.Default
+    val Default: Discriminator = Nested.Default
 
-//     given Eq[Discriminator] = Eq.fromUniversalEquals
+    given Eq[Discriminator] = Eq.fromUniversalEquals
 
 // sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
 //   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)
