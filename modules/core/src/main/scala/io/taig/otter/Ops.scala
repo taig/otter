@@ -7,7 +7,6 @@ import cats.Comonad
 
 trait Ops extends Instances:
   trait SchemaOps[Self[_, _, _], Optional[_, _, _], Collection[_, _, _], Union[_, _, _], Plain[_, _]]
-      extends Base.SchemaOps[Self, Optional, Collection, Union, Plain]
 
   object SchemaOps:
     trait Isomorphic[Self[a, b, c] <: Optional[a, b, c], Optional[a, b, c] <: Schema.With[a, b, c]]

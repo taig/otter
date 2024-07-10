@@ -8,5 +8,7 @@ object Playground:
   val y: Primitive[String] = ???
 
   x.union
+  x.optional
   val z: Union.Of[y.type, String] = y.union
   y.tpe
+  val a: Schema[Option[String]] = y.optional

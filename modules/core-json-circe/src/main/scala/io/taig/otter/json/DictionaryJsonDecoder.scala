@@ -27,7 +27,7 @@ object DictionaryJsonDecoder:
     values.fold(none.valid)(_ => DictionaryJsonDecoder(self, values).map(_.some))
 
   def root[A, B](
-      key: Value.Required.Reader.Via[Json, A],
+      key: Value.Required.Reader[A],
       value: Schema.Reader.Via[Json, B],
       values: Option[List[(String, Json)]]
   ): Decoder.Result[Json, List[(A, B)]] = values

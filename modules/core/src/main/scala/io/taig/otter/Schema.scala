@@ -15,18 +15,12 @@ import io.taig.enumeration.ext.Mapping
 import scala.reflect.ClassTag
 
 sealed trait Schema[+F[+_], -A, +B, C] extends Schema.Reader[F, A, B, C], Schema.Writer[F, A, B, C]:
-  override def default: Option[C] = ???
-  override def default[C1 >: C](value: C1): Schema[F, A, B, C1] = ???
-
   def imap[D](f: C => D)(g: D => C): Schema[F, A, B, D]
   override def optional: Schema[F, A, B, Option[C]]
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema[G, A, ?, C]
 
 object Schema:
   sealed trait Reader[+F[+_], -A, +B, +C] extends SProduct, Serializable:
-    def default: Option[C] = ???
-    def default[B1 >: C](value: B1): Schema.Reader[F, A, B, B1] = ???
-
     def map[D](f: C => D): Schema.Reader[F, A, B, D]
     def optional: Schema.Reader[F, A, B, Option[C]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Reader[G, A, ?, C]

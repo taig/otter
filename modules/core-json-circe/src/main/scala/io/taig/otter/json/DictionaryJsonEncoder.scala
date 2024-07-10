@@ -19,11 +19,10 @@ object DictionaryJsonEncoder:
     a.flatMap(DictionaryJsonEncoder(self, _))
 
   def root[A, B](
-      key: Value.Required.Writer.Via[Json, A],
+      key: Value.Required.Writer[A],
       value: Schema.Writer.Via[Json, B],
       abs: List[(A, B)]
-  ): List[(String, Json)] =
-    abs.map { case (a, b) => (ValueRequiredStringEncoder(key, a), JsonEncoder(value, b)) }
+  ): List[(String, Json)] = abs.map { case (a, b) => (ValueRequiredStringEncoder(key, a), JsonEncoder(value, b)) }
 
   def transform[A, B](self: Dictionary.Writer.Via[Json, A], f: B => A, b: B): Option[List[(String, Json)]] =
     DictionaryJsonEncoder(self, f(b))
