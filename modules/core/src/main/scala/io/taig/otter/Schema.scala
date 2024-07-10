@@ -378,6 +378,9 @@ sealed trait Primitive[A] extends Value[Nothing, Any, Nothing, A], Primitive.Rea
   override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive[A] = this
 
 object Primitive:
+  trait Ops:
+    def tpe: Type[?]
+
   sealed trait Required[A]
       extends Value.Required[Nothing, Any, Nothing, A],
         Primitive[A],
@@ -425,14 +428,13 @@ object Primitive:
       export self.tpe
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
 
-  sealed trait Reader[+A] extends Value.Reader[Nothing, Any, Nothing, A]:
+  sealed trait Reader[+A] extends Value.Reader[Nothing, Any, Nothing, A], Primitive.Ops:
     def constraints: Chain[Constraint.Primitive[?]]
     override def map[C](f: A => C): Primitive.Reader[C] = validate(Validation.lift(f))
     override def optional: Primitive.Reader[Option[A]] = Reader.Optional(this)
     def validate[A1 >: A, B, C, D](
         validation: SchemaValidation.Primitive[A1, B, C, D]
     ): Primitive.Reader[D] = Reader.Transform(this, validation)
-    def tpe: Type[?]
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Reader[A] = this
 
   object Reader:
@@ -446,10 +448,9 @@ object Primitive:
     final case class Optional[+F[+_], A](self: Primitive.Reader[A]) extends Primitive.Reader[Option[A]]:
       export self.{constraints, tpe}
 
-  sealed trait Writer[-A] extends Value.Writer[Nothing, Any, Nothing, A]:
+  sealed trait Writer[-A] extends Value.Writer[Nothing, Any, Nothing, A], Primitive.Ops:
     override def contramap[B](f: B => A): Primitive.Writer[B] = Writer.Transform(this, f)
     override def optional: Primitive.Writer[Option[A]] = Writer.Optional(this)
-    def tpe: Type[?]
     override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Primitive.Writer[A] = this
 
   object Writer:
