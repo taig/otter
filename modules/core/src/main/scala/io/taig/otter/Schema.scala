@@ -13,8 +13,6 @@ import cats.Eq
 import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
 import scala.reflect.ClassTag
-import cats.data.Validated
-import io.taig.otter.validation.Violations
 
 sealed trait Schema[+F[+_], -A, +B, C] extends Schema.Reader[F, A, B, C], Schema.Writer[F, A, B, C]:
   override def default: Option[C] = ???
@@ -843,230 +841,244 @@ object Sum:
 
     given Eq[Discriminator] = Eq.fromUniversalEquals
 
-// sealed trait Union[+F[+_], +A, B] extends Schema[F, A, B], Union.Reader[F, A, B], Union.Writer[F, A, B]:
-//   override def imap[C](f: B => C)(g: C => B): Union[F, A, C] = Union.Transform(this, f, g)
-//   override def optional: Union[F, A, Option[B]] = Union.Optional(this)
-//   def orElse[G[+a] >: F[a], C, D](union: Union[G, C, D]): Union[G, A | C, Either[B, D]] = Union.Combine(this, union)
-//   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, B]
+sealed trait Union[+F[+_], -A, +B, C] extends Schema[F, A, B, C], Union.Reader[F, A, B, C], Union.Writer[F, A, B, C]:
+  override def imap[D](f: C => D)(g: D => C): Union[F, A, B, D] = Union.Transform(this, f, g)
+  override def optional: Union[F, A, B, Option[C]] = Union.Optional(this)
+  def orElse[G[+a] >: F[a], A1 <: A, D, E](union: Union[G, A1, D, E]): Union[G, A1, B | D, Either[C, E]] =
+    Union.Combine(this, union)
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, A, ?, C]
 
-// object Union:
-//   sealed trait Value[+F[+_], +A, B]
-//       extends Base.Value[F, A, B],
-//         Union[F, A, B],
-//         Union.Value.Reader[F, A, B],
-//         Union.Value.Writer[F, A, B]:
-//     override def imap[C](f: B => C)(g: C => B): Union.Value[F, A, C] =
-//       Value.Transform(this, f, g)
-//     final override def optional: Union.Value[F, A, Option[B]] = Value.Optional(this)
-//     def orElse[G[+a] >: F[a], C, D](union: Union.Value[G, C, D]): Union.Value[G, A | C, Either[B, D]] =
-//       Value.Combine(this, union)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, B]
+object Union:
+  sealed trait Value[+F[+_], -A, +B, C]
+      extends Base.Value[F, A, B, C],
+        Union[F, A, B, C],
+        Union.Value.Reader[F, A, B, C],
+        Union.Value.Writer[F, A, B, C]:
+    override def imap[D](f: C => D)(g: D => C): Union.Value[F, A, B, D] = Value.Transform(this, f, g)
+    final override def optional: Union.Value[F, A, B, Option[C]] = Value.Optional(this)
+    def orElse[G[+a] >: F[a], A1 <: A, D, E](union: Union.Value[G, A1, D, E]): Union.Value[G, A1, B | D, Either[C, E]] =
+      Value.Combine(this, union)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, A, ?, C]
 
-//   object Value:
-//     sealed trait Required[+F[+_], +A, B]
-//         extends Base.Value.Required[F, A, B],
-//           Union.Value[F, A, B],
-//           Union.Value.Required.Reader[F, A, B],
-//           Union.Value.Required.Writer[F, A, B]:
-//       override def imap[C](f: B => C)(g: C => B): Union.Value.Required[F, A, C] = Required.Transform(this, f, g)
-//       def orElse[G[+a] >: F[a], C, D](
-//           union: Union.Value.Required[G, C, D]
-//       ): Union.Value.Required[G, A | C, Either[B, D]] =
-//         Required.Combine(this, union)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, ?, B]
+  object Value:
+    sealed trait Required[+F[+_], -A, +B, C]
+        extends Base.Value.Required[F, A, B, C],
+          Union.Value[F, A, B, C],
+          Union.Value.Required.Reader[F, A, B, C],
+          Union.Value.Required.Writer[F, A, B, C]:
+      override def imap[D](f: C => D)(g: D => C): Union.Value.Required[F, A, B, D] = Required.Transform(this, f, g)
+      def orElse[G[+a] >: F[a], A1 <: A, D, E](
+          union: Union.Value.Required[G, A1, D, E]
+      ): Union.Value.Required[G, A1, B | D, Either[C, E]] = Required.Combine(this, union)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, A, ?, C]
 
-//     object Required:
-//       sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Required.Reader[F, A, B], Union.Value.Reader[F, A, B]:
-//         override def map[C](f: B => C): Union.Value.Required.Reader[F, A, C] = Reader.Transform(this, f)
-//         def orElse[G[+a] >: F[a], C, D](
-//             union: Union.Value.Required.Reader[G, C, D]
-//         ): Union.Value.Required.Reader[G, A | C, Either[B, D]] =
-//           Reader.Combine(this, union)
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, ?, B]
+    object Required:
+      sealed trait Reader[+F[+_], -A, +B, +C]
+          extends Base.Value.Required.Reader[F, A, B, C],
+            Union.Value.Reader[F, A, B, C]:
+        override def map[D](f: C => D): Union.Value.Required.Reader[F, A, B, D] = Reader.Transform(this, f)
+        def orElse[G[+a] >: F[a], A1 <: A, D, E](
+            union: Union.Value.Required.Reader[G, A1, D, E]
+        ): Union.Value.Required.Reader[G, A1, B | D, Either[C, E]] = Reader.Combine(this, union)
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, A, ?, C]
 
-//       object Reader:
-//         final case class Combine[F[+_], A, B, C, D](
-//             left: Union.Value.Required.Reader[F, A, B],
-//             right: Union.Value.Required.Reader[F, C, D]
-//         ) extends Union.Value.Required.Reader[F, A | C, Either[B, D]]:
-//           override def translate[G[+_]: Functor](
-//               fK: [A] => F[A] => G[A]
-//           ): Union.Value.Required.Reader[G, ?, Either[B, D]] =
-//             copy(left = left.translate(fK), right = right.translate(fK))
+      object Reader:
+        final case class Combine[F[+_], A, B, C, D, E](
+            left: Union.Value.Required.Reader[F, A, B, C],
+            right: Union.Value.Required.Reader[F, A, D, E]
+        ) extends Union.Value.Required.Reader[F, A, B | D, Either[C, E]]:
+          override def translate[G[+_]: Functor](
+              fK: [A] => F[A] => G[A]
+          ): Union.Value.Required.Reader[G, A, ?, Either[C, E]] =
+            copy(left = left.translate(fK), right = right.translate(fK))
 
-//         final case class Root[F[+_], +A <: F[Base.Value.Required.Reader[F, ?, B]], B](schema: A)
-//             extends Union.Value.Required.Reader[F, A, B]:
-//           override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, ?, B] =
-//             copy(schema = fK(schema).map(_.translate(fK)))
+        final case class Root[F[+_], A, +B <: F[Base.Value.Required.Reader[F, A, ?, C]], C](schema: B)
+            extends Union.Value.Required.Reader[F, A, B, C]:
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, A, ?, C] =
+            copy(schema = fK(schema).map(_.translate(fK)))
 
-//         final case class Transform[F[+_], A, B, C](self: Union.Value.Required.Reader[F, A, B], f: B => C)
-//             extends Union.Value.Required.Reader[F, A, C]:
-//           override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, ?, C] =
-//             copy(self = self.translate(fK))
+        final case class Transform[F[+_], A, B, C, D](self: Union.Value.Required.Reader[F, A, B, C], f: C => D)
+            extends Union.Value.Required.Reader[F, A, B, D]:
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Reader[G, A, ?, D] =
+            copy(self = self.translate(fK))
 
-//       sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Required.Writer[F, A, B], Union.Value.Writer[F, A, B]:
-//         override def contramap[C](f: C => B): Union.Value.Required.Writer[F, A, C] = Writer.Transform(this, f)
-//         def orElse[G[+a] >: F[a], C, D](
-//             union: Union.Value.Required.Writer[G, C, D]
-//         ): Union.Value.Required.Writer[G, A | C, Either[B, D]] =
-//           Writer.Combine(this, union)
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B]
+      sealed trait Writer[+F[+_], -A, +B, -C]
+          extends Base.Value.Required.Writer[F, A, B, C],
+            Union.Value.Writer[F, A, B, C]:
+        override def contramap[D](f: D => C): Union.Value.Required.Writer[F, A, B, D] = Writer.Transform(this, f)
+        def orElse[G[+a] >: F[a], A1 <: A, D, E](
+            union: Union.Value.Required.Writer[G, A1, D, E]
+        ): Union.Value.Required.Writer[G, A1, B | D, Either[C, E]] = Writer.Combine(this, union)
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, A, ?, C]
 
-//       object Writer:
-//         final case class Combine[F[+_], A, B, C, D](
-//             left: Union.Value.Required.Writer[F, A, B],
-//             right: Union.Value.Required.Writer[F, C, D]
-//         ) extends Union.Value.Required.Writer[F, A | C, Either[B, D]]:
-//           override def translate[G[+_]: Functor](
-//               fK: [A] => F[A] => G[A]
-//           ): Union.Value.Required.Writer[G, ?, Either[B, D]] =
-//             copy(left = left.translate(fK), right = right.translate(fK))
+      object Writer:
+        final case class Combine[F[+_], A, B, C, D, E](
+            left: Union.Value.Required.Writer[F, A, B, C],
+            right: Union.Value.Required.Writer[F, A, D, E]
+        ) extends Union.Value.Required.Writer[F, A, B | D, Either[C, E]]:
+          override def translate[G[+_]: Functor](
+              fK: [A] => F[A] => G[A]
+          ): Union.Value.Required.Writer[G, A, ?, Either[C, E]] =
+            copy(left = left.translate(fK), right = right.translate(fK))
 
-//         final case class Root[F[+_], +A <: F[Base.Value.Required.Writer[F, ?, B]], B](schema: A)
-//             extends Union.Value.Required.Writer[F, A, B]:
-//           override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, B] =
-//             copy(schema = fK(schema).map(_.translate(fK)))
+        final case class Root[F[+_], A, +B <: F[Base.Value.Required.Writer[F, A, ?, C]], C](schema: B)
+            extends Union.Value.Required.Writer[F, A, B, C]:
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, A, ?, C] =
+            copy(schema = fK(schema).map(_.translate(fK)))
 
-//         final case class Transform[F[+_], A, B, C](self: Union.Value.Required.Writer[F, A, B], f: C => B)
-//             extends Union.Value.Required.Writer[F, A, C]:
-//           override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, ?, C] =
-//             copy(self = self.translate(fK))
+        final case class Transform[F[+_], A, B, C, D](self: Union.Value.Required.Writer[F, A, B, C], f: D => C)
+            extends Union.Value.Required.Writer[F, A, B, D]:
+          override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required.Writer[G, A, ?, D] =
+            copy(self = self.translate(fK))
 
-//       final case class Combine[F[+_], A, B, C, D](
-//           left: Union.Value.Required[F, A, B],
-//           right: Union.Value.Required[F, C, D]
-//       ) extends Union.Value.Required[F, A | C, Either[B, D]]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, ?, Either[B, D]] =
-//           copy(left = left.translate(fK), right = right.translate(fK))
+      final case class Combine[F[+_], A, B, C, D, E](
+          left: Union.Value.Required[F, A, B, C],
+          right: Union.Value.Required[F, A, D, E]
+      ) extends Union.Value.Required[F, A, B | D, Either[C, E]]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, A, ?, Either[C, E]] =
+          copy(left = left.translate(fK), right = right.translate(fK))
 
-//       final case class Transform[F[+_], A, B, C](self: Union.Value.Required[F, A, B], f: B => C, g: C => B)
-//           extends Union.Value.Required[F, A, C]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, ?, C] =
-//           copy(self = self.translate(fK))
+      final case class Transform[F[+_], A, B, C, D](self: Union.Value.Required[F, A, B, C], f: C => D, g: D => C)
+          extends Union.Value.Required[F, A, B, D]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Required[G, A, ?, D] =
+          copy(self = self.translate(fK))
 
-//     sealed trait Reader[+F[+_], +A, +B] extends Base.Value.Reader[F, A, B], Union.Reader[F, A, B]:
-//       override def map[C](f: B => C): Union.Value.Reader[F, A, C] = Reader.Transform(this, f)
-//       override def optional: Union.Value.Reader[F, A, Option[B]] = Reader.Optional(this)
-//       def orElse[G[+a] >: F[a], C, D](union: Union.Value.Reader[G, C, D]): Union.Value.Reader[G, A | C, Either[B, D]] =
-//         Reader.Combine(this, union)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, ?, B]
+    sealed trait Reader[+F[+_], -A, +B, +C] extends Base.Value.Reader[F, A, B, C], Union.Reader[F, A, B, C]:
+      override def map[D](f: C => D): Union.Value.Reader[F, A, B, D] = Reader.Transform(this, f)
+      override def optional: Union.Value.Reader[F, A, B, Option[C]] = Reader.Optional(this)
+      def orElse[G[+a] >: F[a], A1 <: A, D, E](
+          union: Union.Value.Reader[G, A1, D, E]
+      ): Union.Value.Reader[G, A1, B | D, Either[C, E]] = Reader.Combine(this, union)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, A, ?, C]
 
-//     object Reader:
-//       final case class Combine[F[+_], A, B, C, D](left: Union.Value.Reader[F, A, B], right: Union.Value.Reader[F, C, D])
-//           extends Union.Value.Reader[F, A | C, Either[B, D]]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, ?, Either[B, D]] =
-//           copy(left = left.translate(fK), right = right.translate(fK))
+    object Reader:
+      final case class Combine[F[+_], A, B, C, D, E](
+          left: Union.Value.Reader[F, A, B, C],
+          right: Union.Value.Reader[F, A, D, E]
+      ) extends Union.Value.Reader[F, A, B | D, Either[C, E]]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, A, ?, Either[C, E]] =
+          copy(left = left.translate(fK), right = right.translate(fK))
 
-//       final case class Optional[F[+_], A, B, C](self: Union.Value.Reader[F, A, B])
-//           extends Union.Value.Reader[F, A, Option[B]]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, ?, Option[B]] =
-//           copy(self = self.translate(fK))
+      final case class Optional[F[+_], A, B, C, D](self: Union.Value.Reader[F, A, B, C])
+          extends Union.Value.Reader[F, A, B, Option[C]]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, A, ?, Option[C]] =
+          copy(self = self.translate(fK))
 
-//       final case class Transform[F[+_], A, B, C](self: Union.Value.Reader[F, A, B], f: B => C)
-//           extends Union.Value.Reader[F, A, C]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, ?, C] =
-//           copy(self = self.translate(fK))
+      final case class Transform[F[+_], A, B, C, D](self: Union.Value.Reader[F, A, B, C], f: C => D)
+          extends Union.Value.Reader[F, A, B, D]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Reader[G, A, ?, D] =
+          copy(self = self.translate(fK))
 
-//     sealed trait Writer[+F[+_], +A, -B] extends Base.Value.Writer[F, A, B], Union.Writer[F, A, B]:
-//       override def contramap[C](f: C => B): Union.Value.Writer[F, A, C] = Writer.Transform(this, f)
-//       override def optional: Union.Value.Writer[F, A, Option[B]] = Writer.Optional(this)
-//       def orElse[G[+a] >: F[a], C, D](union: Union.Value.Writer[G, C, D]): Union.Value.Writer[G, A | C, Either[B, D]] =
-//         Writer.Combine(this, union)
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, B]
+    sealed trait Writer[+F[+_], -A, +B, -C] extends Base.Value.Writer[F, A, B, C], Union.Writer[F, A, B, C]:
+      override def contramap[D](f: D => C): Union.Value.Writer[F, A, B, D] = Writer.Transform(this, f)
+      override def optional: Union.Value.Writer[F, A, B, Option[C]] = Writer.Optional(this)
+      def orElse[G[+a] >: F[a], A1 <: A, D, E](
+          union: Union.Value.Writer[G, A1, D, E]
+      ): Union.Value.Writer[G, A1, B | D, Either[C, E]] = Writer.Combine(this, union)
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, A, ?, C]
 
-//     object Writer:
-//       final case class Combine[F[+_], A, B, C, D](left: Union.Value.Writer[F, A, B], right: Union.Value.Writer[F, C, D])
-//           extends Union.Value.Writer[F, A | C, Either[B, D]]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, Either[B, D]] =
-//           copy(left = left.translate(fK), right = right.translate(fK))
+    object Writer:
+      final case class Combine[F[+_], A, B, C, D, E](
+          left: Union.Value.Writer[F, A, B, C],
+          right: Union.Value.Writer[F, A, D, E]
+      ) extends Union.Value.Writer[F, A, B | D, Either[C, E]]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, A, ?, Either[C, E]] =
+          copy(left = left.translate(fK), right = right.translate(fK))
 
-//       final case class Optional[F[+_], A, B, C](self: Union.Value.Writer[F, A, B])
-//           extends Union.Value.Writer[F, A, Option[B]]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, Option[B]] =
-//           copy(self = self.translate(fK))
+      final case class Optional[F[+_], A, B, C, D](self: Union.Value.Writer[F, A, B, C])
+          extends Union.Value.Writer[F, A, B, Option[C]]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, A, ?, Option[C]] =
+          copy(self = self.translate(fK))
 
-//       final case class Transform[F[+_], A, B, C](self: Union.Value.Writer[F, A, B], f: C => B)
-//           extends Union.Value.Writer[F, A, C]:
-//         override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, ?, C] =
-//           copy(self = self.translate(fK))
+      final case class Transform[F[+_], A, B, C, D](self: Union.Value.Writer[F, A, B, C], f: D => C)
+          extends Union.Value.Writer[F, A, B, D]:
+        override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value.Writer[G, A, ?, D] =
+          copy(self = self.translate(fK))
 
-//     final case class Combine[F[+_], A, B, C, D](left: Union.Value[F, A, B], right: Union.Value[F, C, D])
-//         extends Union.Value[F, A | C, Either[B, D]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, Either[B, D]] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+    final case class Combine[F[+_], A, B, C, D, E](left: Union.Value[F, A, B, C], right: Union.Value[F, A, D, E])
+        extends Union.Value[F, A, B | D, Either[C, E]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, A, ?, Either[C, E]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class Optional[F[+_], A, B](self: Union.Value[F, A, B]) extends Union.Value[F, A, Option[B]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Union.Value[F, A, B, C]) extends Union.Value[F, A, B, Option[C]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Transform[F[+_], A, B, C](self: Union.Value[F, A, B], f: B => C, g: C => B)
-//         extends Union.Value[F, A, C]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Union.Value[F, A, B, C], f: C => D, g: D => C)
+        extends Union.Value[F, A, B, D]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Value[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-//     override def map[C](f: B => C): Union.Reader[F, A, C] = Reader.Transform(this, f)
-//     override def optional: Union.Reader[F, A, Option[B]] = Reader.Optional(this)
-//     def orElse[G[+a] >: F[a], C, D](union: Union.Reader[G, C, D]): Union.Reader[G, A | C, Either[B, D]] =
-//       Reader.Combine(this, union)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, B]
+  sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
+    override def map[D](f: C => D): Union.Reader[F, A, B, D] = Reader.Transform(this, f)
+    override def optional: Union.Reader[F, A, B, Option[C]] = Reader.Optional(this)
+    def orElse[G[+a] >: F[a], A1 <: A, D, E](
+        union: Union.Reader[G, A1, D, E]
+    ): Union.Reader[G, A1, B | D, Either[C, E]] =
+      Reader.Combine(this, union)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, A, ?, C]
 
-//   object Reader:
-//     final case class Combine[F[+_], A, B, C, D](left: Union.Reader[F, A, B], right: Union.Reader[F, C, D])
-//         extends Union.Reader[F, A | C, Either[B, D]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, Either[B, D]] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Reader:
+    final case class Combine[F[+_], A, B, C, D, E](left: Union.Reader[F, A, B, C], right: Union.Reader[F, A, D, E])
+        extends Union.Reader[F, A, B | D, Either[C, E]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, A, ?, Either[C, E]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class Optional[F[+_], A, B](self: Union.Reader[F, A, B]) extends Union.Reader[F, A, Option[B]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Union.Reader[F, A, B, C]) extends Union.Reader[F, A, B, Option[C]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A) extends Union.Reader[F, A, B]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+    final case class Root[F[+_], A, +B <: F[Schema.Reader[F, A, ?, C]], C](schema: B) extends Union.Reader[F, A, B, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//     final case class Transform[F[+_], A, B, C](self: Union.Reader[F, A, B], f: B => C) extends Union.Reader[F, A, C]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Union.Reader[F, A, B, C], f: C => D)
+        extends Union.Reader[F, A, B, D]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Reader[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-//     override def contramap[C](f: C => B): Union.Writer[F, A, C] = Writer.Transform(this, f)
-//     override def optional: Union.Writer[F, A, Option[B]] = Writer.Optional(this)
-//     def orElse[G[+a] >: F[a], C, D](union: Union.Writer[G, C, D]): Union.Writer[G, A | C, Either[B, D]] =
-//       Writer.Combine(this, union)
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
+    override def contramap[D](f: D => C): Union.Writer[F, A, B, D] = Writer.Transform(this, f)
+    override def optional: Union.Writer[F, A, B, Option[C]] = Writer.Optional(this)
+    def orElse[G[+a] >: F[a], A1 <: A, D, E](
+        union: Union.Writer[G, A1, D, E]
+    ): Union.Writer[G, A1, B | D, Either[C, E]] =
+      Writer.Combine(this, union)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, A, ?, C]
 
-//   object Writer:
-//     final case class Combine[F[+_], A, B, C, D](left: Union.Writer[F, A, B], right: Union.Writer[F, C, D])
-//         extends Union.Writer[F, A | C, Either[B, D]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, Either[B, D]] =
-//         copy(left = left.translate(fK), right = right.translate(fK))
+  object Writer:
+    final case class Combine[F[+_], A, B, C, D, E](left: Union.Writer[F, A, B, C], right: Union.Writer[F, A, D, E])
+        extends Union.Writer[F, A, B | D, Either[C, E]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, A, ?, Either[C, E]] =
+        copy(left = left.translate(fK), right = right.translate(fK))
 
-//     final case class Optional[F[+_], A, B](self: Union.Writer[F, A, B]) extends Union.Writer[F, A, Option[B]]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, Option[B]] =
-//         copy(self = self.translate(fK))
+    final case class Optional[F[+_], A, B, C](self: Union.Writer[F, A, B, C]) extends Union.Writer[F, A, B, Option[C]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, A, ?, Option[C]] =
+        copy(self = self.translate(fK))
 
-//     final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A) extends Union.Writer[F, A, B]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, B] =
-//         copy(schema = fK(schema).map(_.translate(fK)))
+    final case class Root[F[+_], A, +B <: F[Schema.Writer[F, A, ?, C]], C](schema: B) extends Union.Writer[F, A, B, C]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, A, ?, C] =
+        copy(schema = fK(schema).map(_.translate(fK)))
 
-//     final case class Transform[F[+_], A, B, C](self: Union.Writer[F, A, B], f: C => B) extends Union.Writer[F, A, C]:
-//       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, ?, C] =
-//         copy(self = self.translate(fK))
+    final case class Transform[F[+_], A, B, C, D](self: Union.Writer[F, A, B, C], f: D => C)
+        extends Union.Writer[F, A, B, D]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union.Writer[G, A, ?, D] =
+        copy(self = self.translate(fK))
 
-//   final case class Combine[F[+_], A, B, C, D](left: Union[F, A, B], right: Union[F, C, D])
-//       extends Union[F, A | C, Either[B, D]]:
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, Either[B, D]] =
-//       copy(left = left.translate(fK), right = right.translate(fK))
+  final case class Combine[F[+_], A, B, C, D, E](left: Union[F, A, B, C], right: Union[F, A, D, E])
+      extends Union[F, A, B | D, Either[C, E]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, A, ?, Either[C, E]] =
+      copy(left = left.translate(fK), right = right.translate(fK))
 
-//   final case class Optional[F[+_], A, B](self: Union[F, A, B]) extends Union[F, A, Option[B]]:
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, Option[B]] =
-//       copy(self = self.translate(fK))
+  final case class Optional[F[+_], A, B, C](self: Union[F, A, B, C]) extends Union[F, A, B, Option[C]]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, A, ?, Option[C]] =
+      copy(self = self.translate(fK))
 
-//   final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Union[F, A, B]:
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, B] =
-//       copy(schema = fK(schema).map(_.translate(fK)))
+  final case class Root[F[+_], A, +B <: F[Schema[F, A, ?, C]], C](schema: B) extends Union[F, A, B, C]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, A, ?, C] =
+      copy(schema = fK(schema).map(_.translate(fK)))
 
-//   final case class Transform[+F[+_], A, B, C](self: Union[F, A, B], f: B => C, g: C => B) extends Union[F, A, C]:
-//     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, ?, C] =
-//       copy(self = self.translate(fK))
+  final case class Transform[+F[+_], A, B, C, D](self: Union[F, A, B, C], f: C => D, g: D => C)
+      extends Union[F, A, B, D]:
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Union[G, A, ?, D] =
+      copy(self = self.translate(fK))
