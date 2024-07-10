@@ -38,323 +38,413 @@ trait Types:
   //     F
   //   ]
 
-  // final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, A]]
+  final type Schema[A] = container.Schema[Base.Schema[container.Schema, ?, ?, A]]
+
+  object Schema:
+    type Of[A, B] = container.Schema[Base.Schema[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Schema[Base.Schema[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Schema[Base.Schema[container.Schema, A, B, C]]
+    type Any = container.Schema[Base.Schema[container.Schema, ?, ?, ?]]
 
-  // object Schema:
-  //   type Of[A, B] = container.Schema[Base.Schema[container.Schema, A, B]]
-  //   type Any = container.Schema[Base.Schema[container.Schema, ?, ?]]
+    type Reader[A] = container.Schema[Base.Schema.Reader[container.Schema, ?, ?, A]]
+
+    object Reader:
+      type Of[A, B] = container.Schema[Base.Schema.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Schema[Base.Schema.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Schema[Base.Schema.Reader[container.Schema, A, B, C]]
+      type Any = container.Schema[Base.Schema.Reader[container.Schema, ?, ?, ?]]
 
-  //   type Reader[A] = container.Schema[Base.Schema.Reader[container.Schema, ?, A]]
+    type Writer[A] = container.Schema[Base.Schema.Writer[container.Schema, ?, ?, A]]
+
+    object Writer:
+      type Of[A, B] = container.Schema[Base.Schema.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Schema[Base.Schema.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Schema[Base.Schema.Writer[container.Schema, A, B, C]]
+      type Any = container.Schema[Base.Schema.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Schema[Base.Schema.Reader[container.Schema, A, B]]
-  //     type Any = container.Schema[Base.Schema.Reader[container.Schema, ?, ?]]
+  final type Value[A] = container.Schema[Base.Value[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Schema[Base.Schema.Writer[container.Schema, ?, A]]
+  object Value:
+    type Of[A, B] = container.Schema[Base.Value[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Schema[Base.Value[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Schema[Base.Value[container.Schema, A, B, C]]
+    type Any = container.Schema[Base.Value[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Schema[Base.Schema.Writer[container.Schema, A, B]]
-  //     type Any = container.Schema[Base.Schema.Writer[container.Schema, ?, ?]]
+    type Required[A] = container.Schema[Base.Value.Required[container.Schema, ?, ?, A]]
 
-  // final type Value[A] = container.Schema[Base.Value[container.Schema, ?, A]]
+    object Required:
+      type Of[A, B] = container.Schema[Base.Value.Required[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Schema[Base.Value.Required[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Schema[Base.Value.Required[container.Schema, A, B, C]]
+      type Any = container.Schema[Base.Value.Required[container.Schema, ?, ?, ?]]
 
-  // object Value:
-  //   type Of[A, B] = container.Schema[Base.Value[container.Schema, A, B]]
-  //   type Any = container.Schema[Base.Value[container.Schema, ?, ?]]
+      type Reader[A] = container.Schema[Base.Value.Required.Reader[container.Schema, ?, ?, A]]
 
-  //   type Required[A] = container.Schema[Base.Value.Required[container.Schema, ?, A]]
+      object Reader:
+        type Of[A, B] = container.Schema[Base.Value.Required.Reader[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Schema[Base.Value.Required.Reader[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Schema[Base.Value.Required.Reader[container.Schema, A, B, C]]
+        type Any = container.Schema[Base.Value.Required.Reader[container.Schema, ?, ?, ?]]
 
-  //   object Required:
-  //     type Of[A, B] = container.Schema[Base.Value.Required[container.Schema, A, B]]
-  //     type Any = container.Schema[Base.Value.Required[container.Schema, ?, ?]]
+      type Writer[A] = container.Schema[Base.Value.Required.Writer[container.Schema, ?, ?, A]]
 
-  //     type Reader[A] = container.Schema[Base.Value.Required.Reader[container.Schema, ?, A]]
+      object Writer:
+        type Of[A, B] = container.Schema[Base.Value.Required.Writer[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Schema[Base.Value.Required.Writer[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Schema[Base.Value.Required.Writer[container.Schema, A, B, C]]
+        type Any = container.Schema[Base.Value.Required.Writer[container.Schema, ?, ?, ?]]
 
-  //     object Reader:
-  //       type Of[A, B] = container.Schema[Base.Value.Required.Reader[container.Schema, A, B]]
-  //       type Any = container.Schema[Base.Value.Required.Reader[container.Schema, ?, ?]]
+    type Reader[A] = container.Schema[Base.Value.Reader[container.Schema, ?, ?, A]]
 
-  //     type Writer[A] = container.Schema[Base.Value.Required.Writer[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Schema[Base.Value.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Schema[Base.Value.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Schema[Base.Value.Reader[container.Schema, A, B, C]]
+      type Any = container.Schema[Base.Value.Reader[container.Schema, ?, ?, ?]]
 
-  //     object Writer:
-  //       type Of[A, B] = container.Schema[Base.Value.Required.Writer[container.Schema, A, B]]
-  //       type Any = container.Schema[Base.Value.Required.Writer[container.Schema, ?, ?]]
+    type Writer[A] = container.Schema[Base.Value.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Schema[Base.Value.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Schema[Base.Value.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Schema[Base.Value.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Schema[Base.Value.Writer[container.Schema, A, B, C]]
+      type Any = container.Schema[Base.Value.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Schema[Base.Value.Reader[container.Schema, A, B]]
-  //     type Any = container.Schema[Base.Value.Reader[container.Schema, ?, ?]]
+  final type Collection[A] = container.Collection[Base.Collection[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Schema[Base.Value.Writer[container.Schema, ?, A]]
+  object Collection:
+    type Of[A, B] = container.Collection[Base.Collection[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Collection[Base.Collection[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Collection[Base.Collection[container.Schema, A, B, C]]
+    type Any = container.Collection[Base.Collection[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Schema[Base.Value.Writer[container.Schema, A, B]]
-  //     type Any = container.Schema[Base.Value.Writer[container.Schema, ?, ?]]
+    type Reader[A] = container.Collection[Base.Collection.Reader[container.Schema, ?, ?, A]]
 
-  // final type Collection[A] = container.Collection[Base.Collection[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Collection[Base.Collection.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Collection[Base.Collection.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Collection[Base.Collection.Reader[container.Schema, A, B, C]]
+      type Any = container.Collection[Base.Collection.Reader[container.Schema, ?, ?, ?]]
 
-  // object Collection:
-  //   type Of[A, B] = container.Collection[Base.Collection[container.Schema, A, B]]
-  //   type Any = container.Collection[Base.Collection[container.Schema, ?, ?]]
+    type Writer[A] = container.Collection[Base.Collection.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Collection[Base.Collection.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Collection[Base.Collection.Writer[container.Schema, A, B, C]]
+      type Any = container.Collection[Base.Collection.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Collection[Base.Collection.Reader[container.Schema, A, B]]
-  //     type Any = container.Collection[Base.Collection.Reader[container.Schema, ?, ?]]
+  final type Dictionary[A] = container.Dictionary[Base.Dictionary[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Collection[Base.Collection.Writer[container.Schema, ?, A]]
+  object Dictionary:
+    type Of[A, B] = container.Dictionary[Base.Dictionary[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Dictionary[Base.Dictionary[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Dictionary[Base.Dictionary[container.Schema, A, B, C]]
+    type Any = container.Dictionary[Base.Dictionary[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Collection[Base.Collection.Writer[container.Schema, A, B]]
-  //     type Any = container.Collection[Base.Collection.Writer[container.Schema, ?, ?]]
+    type Reader[A] = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, ?, A]]
 
-  // final type Dictionary[A] = container.Dictionary[Base.Dictionary[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Dictionary[Base.Dictionary.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Dictionary[Base.Dictionary.Reader[container.Schema, A, B, C]]
+      type Any = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, ?, ?]]
 
-  // object Dictionary:
-  //   type Of[A, B] = container.Dictionary[Base.Dictionary[container.Schema, A, B]]
-  //   type Any = container.Dictionary[Base.Dictionary[container.Schema, ?, ?]]
+    type Writer[A] = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Dictionary[Base.Dictionary.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Dictionary[Base.Dictionary.Writer[container.Schema, A, B, C]]
+      type Any = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Dictionary[Base.Dictionary.Reader[container.Schema, A, B]]
-  //     type Any = container.Dictionary[Base.Dictionary.Reader[container.Schema, ?, ?]]
+  final type Dynamic[A, B] = container.Dynamic[Base.Dynamic[A, B]]
 
-  //   type Writer[A] = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, A]]
+  object Dynamic:
+    type Any[A] = container.Dynamic[Base.Dynamic[A, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Dictionary[Base.Dictionary.Writer[container.Schema, A, B]]
-  //     type Any = container.Dictionary[Base.Dictionary.Writer[container.Schema, ?, ?]]
+    type Reader[A, B] = container.Dynamic[Base.Dynamic.Reader[A, B]]
 
-  // final type Dynamic[A, B] = container.Dynamic[Base.Dynamic[A, B]]
+    object Reader:
+      type Any[A] = container.Dynamic[Base.Dynamic.Reader[A, ?]]
 
-  // object Dynamic:
-  //   type Any[A] = container.Dynamic[Base.Dynamic[A, ?]]
+    type Writer[A, B] = container.Dynamic[Base.Dynamic.Writer[A, B]]
 
-  //   type Reader[A, B] = container.Dynamic[Base.Dynamic.Reader[A, B]]
+    object Writer:
+      type Any[A] = container.Dynamic[Base.Dynamic.Writer[A, ?]]
 
-  //   object Reader:
-  //     type Any[A] = container.Dynamic[Base.Dynamic.Reader[A, ?]]
+  final type Enumeration[A] = container.Enumeration[Base.Enumeration[container.Schema, ?, ?, A]]
 
-  //   type Writer[A, B] = container.Dynamic[Base.Dynamic.Writer[A, B]]
+  object Enumeration:
+    type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B, C]]
+    type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Any[A] = container.Dynamic[Base.Dynamic.Writer[A, ?]]
+    type Required[A] = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?, A]]
 
-  // final type Enumeration[A] = container.Enumeration[Base.Enumeration[container.Schema, ?, A]]
+    object Required:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B, C]]
+      type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?, ?]]
 
-  // object Enumeration:
-  //   type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B]]
-  //   type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?]]
+      type Reader[A] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, ?, A]]
 
-  //   type Required[A] = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, A]]
+      object Reader:
+        type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, A, B, C]]
+        type Any = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, ?, ?]]
 
-  //   object Required:
-  //     type Of[A, B] = container.Enumeration[Base.Enumeration.Required[container.Schema, A, B]]
-  //     type Any = container.Enumeration[Base.Enumeration.Required[container.Schema, ?, ?]]
+      type Writer[A] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, ?, A]]
 
-  //     type Reader[A] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, A]]
+      object Writer:
+        type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, A, B, C]]
+        type Any = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, ?, ?]]
 
-  //     object Reader:
-  //       type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, A, B]]
-  //       type Any = container.Enumeration[Base.Enumeration.Required.Reader[container.Schema, ?, ?]]
+    type Reader[A] = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, ?, A]]
 
-  //     type Writer[A] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Enumeration[Base.Enumeration.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Enumeration[Base.Enumeration.Reader[container.Schema, A, B, C]]
+      type Any = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, ?, ?]]
 
-  //     object Writer:
-  //       type Of[A, B] = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, A, B]]
-  //       type Any = container.Enumeration[Base.Enumeration.Required.Writer[container.Schema, ?, ?]]
+    type Writer[A] = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Enumeration[Base.Enumeration.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Enumeration[Base.Enumeration.Writer[container.Schema, A, B, C]]
+      type Any = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Enumeration[Base.Enumeration.Reader[container.Schema, A, B]]
-  //     type Any = container.Enumeration[Base.Enumeration.Reader[container.Schema, ?, ?]]
+  final type Primitive[A] = container.Primitive[Base.Primitive[A]]
 
-  //   type Writer[A] = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, A]]
+  object Primitive:
+    type Any = container.Primitive[Base.Primitive.Required[?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Enumeration[Base.Enumeration.Writer[container.Schema, A, B]]
-  //     type Any = container.Enumeration[Base.Enumeration.Writer[container.Schema, ?, ?]]
+    type Required[A] = container.Primitive[Base.Primitive.Required[A]]
 
-  // final type Primitive[A] = container.Primitive[Base.Primitive[A]]
+    object Required:
+      type Any = container.Primitive[Base.Primitive.Required[?]]
 
-  // object Primitive:
-  //   type Any = container.Primitive[Base.Primitive.Required[?]]
+      type Reader[A] = container.Primitive[Base.Primitive.Required.Reader[A]]
 
-  //   type Required[A] = container.Primitive[Base.Primitive.Required[A]]
+      object Reader:
+        type Any = container.Primitive[Base.Primitive.Required.Reader[?]]
 
-  //   object Required:
-  //     type Any = container.Primitive[Base.Primitive.Required[?]]
+      type Writer[A] = container.Primitive[Base.Primitive.Required.Writer[A]]
 
-  //     type Reader[A] = container.Primitive[Base.Primitive.Required.Reader[A]]
+      object Writer:
+        type Any = container.Primitive[Base.Primitive.Required.Writer[?]]
 
-  //     object Reader:
-  //       type Any = container.Primitive[Base.Primitive.Required.Reader[?]]
+    type Reader[A] = container.Primitive[Base.Primitive.Reader[A]]
 
-  //     type Writer[A] = container.Primitive[Base.Primitive.Required.Writer[A]]
+    object Reader:
+      type Any = container.Primitive[Base.Primitive.Reader[?]]
 
-  //     object Writer:
-  //       type Any = container.Primitive[Base.Primitive.Required.Writer[?]]
+    type Writer[A] = container.Primitive[Base.Primitive.Writer[A]]
 
-  //   type Reader[A] = container.Primitive[Base.Primitive.Reader[A]]
+    object Writer:
+      type Any = container.Primitive[Base.Primitive.Writer[?]]
 
-  //   object Reader:
-  //     type Any = container.Primitive[Base.Primitive.Reader[?]]
+  final type Product[A] = container.Product[Base.Product[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Primitive[Base.Primitive.Writer[A]]
+  object Product:
+    type Of[A, B] = container.Product[Base.Product[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Product[Base.Product[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Product[Base.Product[container.Schema, A, B, C]]
+    type Any = container.Product[Base.Product[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Any = container.Primitive[Base.Primitive.Writer[?]]
+    type Reader[A] = container.Product[Base.Product.Reader[container.Schema, ?, ?, A]]
 
-  // final type Product[A] = container.Product[Base.Product[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Product[Base.Product.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Product[Base.Product.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Product[Base.Product.Reader[container.Schema, A, B, C]]
+      type Any = container.Product[Base.Product.Reader[container.Schema, ?, ?, ?]]
 
-  // object Product:
-  //   type Of[A, B] = container.Product[Base.Product[container.Schema, A, B]]
-  //   type Any = container.Product[Base.Product[container.Schema, ?, ?]]
+    type Writer[A] = container.Product[Base.Product.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Product[Base.Product.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Product[Base.Product.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Product[Base.Product.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Product[Base.Product.Writer[container.Schema, A, B, C]]
+      type Any = container.Product[Base.Product.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Product[Base.Product.Reader[container.Schema, A, B]]
-  //     type Any = container.Product[Base.Product.Reader[container.Schema, ?, ?]]
+  final type Record[A] = container.Record[Base.Record[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Product[Base.Product.Writer[container.Schema, ?, A]]
+  object Record:
+    type Of[A, B] = container.Record[Base.Record[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Record[Base.Record[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Record[Base.Record[container.Schema, A, B, C]]
+    type Any = container.Record[Base.Record[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Product[Base.Product.Writer[container.Schema, A, B]]
-  //     type Any = container.Product[Base.Product.Writer[container.Schema, ?, ?]]
+    type Reader[A] = container.Record[Base.Record.Reader[container.Schema, ?, ?, A]]
 
-  // final type Record[A] = container.Record[Base.Record[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Record[Base.Record.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Record[Base.Record.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Record[Base.Record.Reader[container.Schema, A, B, C]]
+      type Any = container.Record[Base.Record.Reader[container.Schema, ?, ?, ?]]
 
-  // object Record:
-  //   type Of[A, B] = container.Record[Base.Record[container.Schema, A, B]]
-  //   type Any = container.Record[Base.Record[container.Schema, ?, ?]]
+    type Writer[A] = container.Record[Base.Record.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Record[Base.Record.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Record[Base.Record.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Record[Base.Record.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Record[Base.Record.Writer[container.Schema, A, B, C]]
+      type Any = container.Record[Base.Record.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Record[Base.Record.Reader[container.Schema, A, B]]
-  //     type Any = container.Record[Base.Record.Reader[container.Schema, ?, ?]]
+    export Base.Record.Null
 
-  //   type Writer[A] = container.Record[Base.Record.Writer[container.Schema, ?, A]]
+  final type Sum[A] = container.Sum[Base.Sum[container.Schema, ?, ?, A]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Record[Base.Record.Writer[container.Schema, A, B]]
-  //     type Any = container.Record[Base.Record.Writer[container.Schema, ?, ?]]
+  object Sum:
+    export Base.Sum.Discriminator
 
-  //   export Base.Record.Null
+    type Of[A, B] = container.Sum[Base.Sum[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Sum[Base.Sum[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Sum[Base.Sum[container.Schema, A, B, C]]
+    type Any = container.Sum[Base.Sum[container.Schema, ?, ?, ?]]
 
-  // final type Sum[A] = container.Sum[Base.Sum[container.Schema, ?, A]]
+    type Reader[A] = container.Sum[Base.Sum.Reader[container.Schema, ?, ?, A]]
 
-  // object Sum:
-  //   export Base.Sum.Discriminator
+    object Reader:
+      type Of[A, B] = container.Sum[Base.Sum.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Sum[Base.Sum.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Sum[Base.Sum.Reader[container.Schema, A, B, C]]
+      type Any = container.Sum[Base.Sum.Reader[container.Schema, ?, ?, ?]]
 
-  //   type Of[A, B] = container.Sum[Base.Sum[container.Schema, A, B]]
-  //   type Any = container.Sum[Base.Sum[container.Schema, ?, ?]]
+    type Writer[A] = container.Sum[Base.Sum.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Sum[Base.Sum.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Sum[Base.Sum.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Sum[Base.Sum.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Sum[Base.Sum.Writer[container.Schema, A, B, C]]
+      type Any = container.Sum[Base.Sum.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Sum[Base.Sum.Reader[container.Schema, A, B]]
-  //     type Any = container.Sum[Base.Sum.Reader[container.Schema, ?, ?]]
+  final type Union[A] = container.Union[Base.Union[container.Schema, ?, ?, A]]
 
-  //   type Writer[A] = container.Sum[Base.Sum.Writer[container.Schema, ?, A]]
+  object Union:
+    type Of[A, B] = container.Union[Base.Union[container.Schema, ?, A, B]]
+    type Via[A, B] = container.Union[Base.Union[container.Schema, A, ?, B]]
+    type With[A, B, C] = container.Union[Base.Union[container.Schema, A, B, C]]
+    type Any = container.Union[Base.Union[container.Schema, ?, ?, ?]]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Sum[Base.Sum.Writer[container.Schema, A, B]]
-  //     type Any = container.Sum[Base.Sum.Writer[container.Schema, ?, ?]]
+    type Value[A] = container.Union[Base.Union.Value[container.Schema, ?, ?, A]]
 
-  // final type Union[A] = container.Union[Base.Union[container.Schema, ?, A]]
+    object Value:
+      type Of[A, B] = container.Union[Base.Union.Value[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Union[Base.Union.Value[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Union[Base.Union.Value[container.Schema, A, B, C]]
+      type Any = container.Union[Base.Union.Value[container.Schema, ?, ?, ?]]
 
-  // object Union:
-  //   type Of[A, B] = container.Union[Base.Union[container.Schema, A, B]]
-  //   type Any = container.Union[Base.Union[container.Schema, ?, ?]]
+      type Required[A] = container.Union[Base.Union.Value.Required[container.Schema, ?, ?, A]]
 
-  //   type Value[A] = container.Union[Base.Union.Value[container.Schema, ?, A]]
+      object Required:
+        type Of[A, B] = container.Union[Base.Union.Value.Required[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Union[Base.Union.Value.Required[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Union[Base.Union.Value.Required[container.Schema, A, B, C]]
+        type Any = container.Union[Base.Union.Value.Required[container.Schema, ?, ?, ?]]
 
-  //   object Value:
-  //     type Of[A, B] = container.Union[Base.Union.Value[container.Schema, A, B]]
-  //     type Any = container.Union[Base.Union.Value[container.Schema, ?, ?]]
+        type Reader[A] = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, ?, A]]
 
-  //     type Required[A] = container.Union[Base.Union.Value.Required[container.Schema, ?, A]]
+        object Reader:
+          type Of[A, B] = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, A, B]]
+          type Via[A, B] = container.Union[Base.Union.Value.Required.Reader[container.Schema, A, ?, B]]
+          type With[A, B, C] = container.Union[Base.Union.Value.Required.Reader[container.Schema, A, B, C]]
+          type Any = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, ?, ?]]
 
-  //     object Required:
-  //       type Of[A, B] = container.Union[Base.Union.Value.Required[container.Schema, A, B]]
-  //       type Any = container.Union[Base.Union.Value.Required[container.Schema, ?, ?]]
+        type Writer[A] = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, ?, A]]
 
-  //       type Reader[A] = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, A]]
+        object Writer:
+          type Of[A, B] = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, A, B]]
+          type Via[A, B] = container.Union[Base.Union.Value.Required.Writer[container.Schema, A, ?, B]]
+          type With[A, B, C] = container.Union[Base.Union.Value.Required.Writer[container.Schema, A, B, C]]
+          type Any = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, ?, ?]]
 
-  //       object Reader:
-  //         type Of[A, B] = container.Union[Base.Union.Value.Required.Reader[container.Schema, A, B]]
-  //         type Any = container.Union[Base.Union.Value.Required.Reader[container.Schema, ?, ?]]
+      type Reader[A] = container.Union[Base.Union.Value.Reader[container.Schema, ?, ?, A]]
 
-  //       type Writer[A] = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, A]]
+      object Reader:
+        type Of[A, B] = container.Union[Base.Union.Value.Reader[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Union[Base.Union.Value.Reader[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Union[Base.Union.Value.Reader[container.Schema, A, B, C]]
+        type Any = container.Union[Base.Union.Value.Reader[container.Schema, ?, ?, ?]]
 
-  //       object Writer:
-  //         type Of[A, B] = container.Union[Base.Union.Value.Required.Writer[container.Schema, A, B]]
-  //         type Any = container.Union[Base.Union.Value.Required.Writer[container.Schema, ?, ?]]
+      type Writer[A] = container.Union[Base.Union.Value.Writer[container.Schema, ?, ?, A]]
 
-  //     type Reader[A] = container.Union[Base.Union.Value.Reader[container.Schema, ?, A]]
+      object Writer:
+        type Of[A, B] = container.Union[Base.Union.Value.Writer[container.Schema, ?, A, B]]
+        type Via[A, B] = container.Union[Base.Union.Value.Writer[container.Schema, A, ?, B]]
+        type With[A, B, C] = container.Union[Base.Union.Value.Writer[container.Schema, A, B, C]]
+        type Any = container.Union[Base.Union.Value.Writer[container.Schema, ?, ?, ?]]
 
-  //     object Reader:
-  //       type Of[A, B] = container.Union[Base.Union.Value.Reader[container.Schema, A, B]]
-  //       type Any = container.Union[Base.Union.Value.Reader[container.Schema, ?, ?]]
+    type Reader[A] = container.Union[Base.Union.Reader[container.Schema, ?, ?, A]]
 
-  //     type Writer[A] = container.Union[Base.Union.Value.Writer[container.Schema, ?, A]]
+    object Reader:
+      type Of[A, B] = container.Union[Base.Union.Reader[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Union[Base.Union.Reader[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Union[Base.Union.Reader[container.Schema, A, B, C]]
+      type Any = container.Union[Base.Union.Reader[container.Schema, ?, ?, ?]]
 
-  //     object Writer:
-  //       type Of[A, B] = container.Union[Base.Union.Value.Writer[container.Schema, A, B]]
-  //       type Any = container.Union[Base.Union.Value.Writer[container.Schema, ?, ?]]
+    type Writer[A] = container.Union[Base.Union.Writer[container.Schema, ?, ?, A]]
 
-  //   type Reader[A] = container.Union[Base.Union.Reader[container.Schema, ?, A]]
+    object Writer:
+      type Of[A, B] = container.Union[Base.Union.Writer[container.Schema, ?, A, B]]
+      type Via[A, B] = container.Union[Base.Union.Writer[container.Schema, A, ?, B]]
+      type With[A, B, C] = container.Union[Base.Union.Writer[container.Schema, A, B, C]]
+      type Any = container.Union[Base.Union.Writer[container.Schema, ?, ?, ?]]
 
-  //   object Reader:
-  //     type Of[A, B] = container.Union[Base.Union.Reader[container.Schema, A, B]]
-  //     type Any = container.Union[Base.Union.Reader[container.Schema, ?, ?]]
+  final type Branch[A] = Base.Branch[container.Schema, ?, ?, A]
 
-  //   type Writer[A] = container.Union[Base.Union.Writer[container.Schema, ?, A]]
+  object Branch:
+    type Of[A, B] = Base.Branch[container.Schema, ?, A, B]
+    type Via[A, B] = Base.Branch[container.Schema, A, ?, B]
+    type With[A, B, C] = Base.Branch[container.Schema, A, B, C]
+    type Any = Base.Branch[container.Schema, ?, ?, ?]
 
-  //   object Writer:
-  //     type Of[A, B] = container.Union[Base.Union.Writer[container.Schema, A, B]]
-  //     type Any = container.Union[Base.Union.Writer[container.Schema, ?, ?]]
+    type Reader[A] = Base.Branch.Reader[container.Schema, ?, ?, A]
 
-  // final type Branch[A] = Base.Branch[container.Schema, ?, A]
+    object Reader:
+      type Of[A, B] = Base.Branch.Reader[container.Schema, ?, A, B]
+      type Via[A, B] = Base.Branch.Reader[container.Schema, A, ?, B]
+      type With[A, B, C] = Base.Branch.Reader[container.Schema, A, B, C]
+      type Any = Base.Branch.Reader[container.Schema, ?, ?, ?]
 
-  // object Branch:
-  //   type Of[A, B] = Base.Branch[container.Schema, A, B]
-  //   type Any = Base.Branch[container.Schema, ?, ?]
+    type Writer[A] = Base.Branch.Writer[container.Schema, ?, ?, A]
 
-  //   type Reader[A] = Base.Branch.Reader[container.Schema, ?, A]
+    object Writer:
+      type Of[A, B] = Base.Branch.Writer[container.Schema, ?, A, B]
+      type Via[A, B] = Base.Branch.Writer[container.Schema, A, ?, B]
+      type With[A, B, C] = Base.Branch.Writer[container.Schema, A, B, C]
+      type Any = Base.Branch.Writer[container.Schema, ?, ?, ?]
 
-  //   object Reader:
-  //     type Of[A, B] = Base.Branch.Reader[container.Schema, A, B]
-  //     type Any = Base.Branch.Reader[container.Schema, ?, ?]
+  final type Field[A] = Base.Field[container.Schema, ?, ?, A]
 
-  //   type Writer[A] = Base.Branch.Writer[container.Schema, ?, A]
+  object Field:
+    export Base.Field.Null
 
-  //   object Writer:
-  //     type Of[A, B] = Base.Branch.Writer[container.Schema, A, B]
-  //     type Any = Base.Branch.Writer[container.Schema, ?, ?]
+    type Of[A, B] = Base.Field[container.Schema, ?, A, B]
+    type Via[A, B] = Base.Field[container.Schema, A, ?, B]
+    type With[A, B, C] = Base.Field[container.Schema, A, B, C]
+    type Any = Base.Field[container.Schema, ?, ?, ?]
 
-  // final type Field[A] = Base.Field[container.Schema, ?, A]
+    type Reader[A] = Base.Field.Reader[container.Schema, ?, ?, A]
 
-  // object Field:
-  //   export Base.Field.Null
+    object Reader:
+      type Of[A, B] = Base.Field.Reader[container.Schema, ?, A, B]
+      type Via[A, B] = Base.Field.Reader[container.Schema, A, ?, B]
+      type With[A, B, C] = Base.Field.Reader[container.Schema, A, B, C]
+      type Any = Base.Field.Reader[container.Schema, ?, ?, ?]
 
-  //   type Of[A, B] = Base.Field[container.Schema, A, B]
-  //   type Any = Base.Field[container.Schema, ?, ?]
+    type Writer[A] = Base.Field.Writer[container.Schema, ?, ?, A]
 
-  //   type Reader[A] = Base.Field.Reader[container.Schema, ?, A]
-
-  //   object Reader:
-  //     type Of[A, B] = Base.Field.Reader[container.Schema, A, B]
-  //     type Any = Base.Field.Reader[container.Schema, ?, ?]
-
-  //   type Writer[A] = Base.Field.Writer[container.Schema, ?, A]
-
-  //   object Writer:
-  //     type Of[A, B] = Base.Field.Writer[container.Schema, A, B]
-  //     type Any = Base.Field.Writer[container.Schema, ?, ?]
+    object Writer:
+      type Of[A, B] = Base.Field.Writer[container.Schema, ?, A, B]
+      type Via[A, B] = Base.Field.Writer[container.Schema, A, ?, B]
+      type With[A, B, C] = Base.Field.Writer[container.Schema, A, B, C]
+      type Any = Base.Field.Writer[container.Schema, ?, ?, ?]
