@@ -12,10 +12,6 @@ import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 
 sealed abstract class Data extends SProduct with Serializable:
-  final def isNull: Boolean = this match
-    case Data.Null => true
-    case _         => false
-
   final def name: String = this match
     case _: Data.Array   => "array"
     case _: Data.Boolean => "boolean"
@@ -25,9 +21,7 @@ sealed abstract class Data extends SProduct with Serializable:
     case Data.Null       => "null"
 
 object Data:
-  sealed trait Value extends Data
-
-  final case class Object(values: Chain[(JString, Data)]) extends Value:
+  final case class Object(values: Chain[(JString, Data)]) extends Data:
     def ++(obj: Data.Object): Data.Object = Object(values ++ obj.values)
 
   object Object:
@@ -35,7 +29,7 @@ object Data:
     def one(key: JString, value: Data): Data.Object = Object(Chain.one((key, value)))
     def of(kv: (JString, Data)*): Data.Object = Object(Chain.fromSeq(kv))
 
-  final case class Array(values: Chain[Data]) extends Value:
+  final case class Array(values: Chain[Data]) extends Data:
     def length: Long = values.length
     def ++(data: Data.Array): Data.Array = Array(values ++ data.values)
 
@@ -43,7 +37,7 @@ object Data:
     val Empty: Data.Array = Array(Chain.empty)
     def fill(n: Long)(value: => Data): Data.Array = Array(Chain.fromSeq(Seq.fill(n.toInt)(value)))
 
-  sealed abstract class Primitive extends Value
+  sealed abstract class Primitive extends Data
 
   final case class String(value: JString) extends Data.Primitive
 
