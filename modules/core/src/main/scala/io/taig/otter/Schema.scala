@@ -13,8 +13,6 @@ import cats.Eq
 import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
 import scala.reflect.ClassTag
-import cats.Id as Identity
-import cats.Comonad
 
 sealed trait Schema[+F[+_], -A, +B, C] extends Schema.Reader[F, A, B, C], Schema.Writer[F, A, B, C]:
   override def default: Option[C] = ???
@@ -187,7 +185,7 @@ object Dictionary:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, A, ?, List[(B, D)]] =
         copy(key = fK(key), value = fK(value).map(_.translate(fK)))
 
-    final case class Transform[F[+_], A, B, C, D](self: Dictionary.Reader[F, A, B, C], f: D => C)
+    final case class Transform[F[+_], A, B, C, D](self: Dictionary.Reader[F, A, B, C], f: C => D)
         extends Dictionary.Reader[F, A, B, D]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, A, ?, D] =
         copy(self = self.translate(fK))
@@ -242,6 +240,8 @@ object Dynamic:
 
   object Reader:
     final case class Root[A]() extends Dynamic.Reader[A, A]
+
+    final case class Transform[A, B, C](self: Dynamic.Reader[A, B], f: B => C) extends Dynamic.Reader[A, C]
 
   sealed trait Writer[A, -B] extends Schema.Writer[Nothing, A, Nothing, B]:
     override def optional: Dynamic.Writer[A, Option[B]] = ???

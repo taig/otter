@@ -10,7 +10,7 @@ import cats.syntax.all.*
 // can / should be incorporated into Sum?
 // actually, using an index might do?
 object UnionJsonDecoder:
-  def apply[A](schema: Union.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
+  def apply[A](schema: Union.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] = schema match
     case Base.Union.Combine(left, right)                       => combine(left, right, json)
     case Base.Union.Optional(self)                             => optional(self, json)
     case Base.Union.Reader.Combine(left, right)                => combine(left, right, json)
@@ -31,14 +31,18 @@ object UnionJsonDecoder:
     case Base.Union.Value.Required.Transform(self, f, _)       => transform(self, f, json)
     case Base.Union.Value.Transform(self, f, _)                => transform(self, f, json)
 
-  def combine[A, B](left: Union.Reader[A], right: Union.Reader[B], json: Json): Decoder.Result[Json, Either[A, B]] =
+  def combine[A, B](
+      left: Union.Reader.Via[Json, A],
+      right: Union.Reader.Via[Json, B],
+      json: Json
+  ): Decoder.Result[Json, Either[A, B]] =
     UnionJsonDecoder(left, json).map(_.asLeft).orElse(UnionJsonDecoder(right, json).map(_.asRight))
 
-  def optional[A](self: Union.Reader[A], json: Json): Decoder.Result[Json, Option[A]] =
+  def optional[A](self: Union.Reader.Via[Json, A], json: Json): Decoder.Result[Json, Option[A]] =
     if json.isNull then none.valid else apply(self, json).map(_.some)
 
-  def root[A](schema: Schema.Reader[A], json: Json): Decoder.Result[Json, A] =
+  def root[A](schema: Schema.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] =
     JsonDecoder(schema, json)
 
-  def transform[A, B](schema: Union.Reader[A], f: A => B, json: Json): Decoder.Result[Json, B] =
+  def transform[A, B](schema: Union.Reader.Via[Json, A], f: A => B, json: Json): Decoder.Result[Json, B] =
     apply(schema, json).map(f)

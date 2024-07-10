@@ -13,7 +13,7 @@ import io.circe.syntax.*
 
 object FieldJsonDecoder:
   def apply[A](
-      field: Field.Reader[A],
+      field: Field.Reader.Via[Json, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
     case Base.Field.Root(name, _, schema)     => root(name, schema, values)
@@ -21,7 +21,7 @@ object FieldJsonDecoder:
 
   def root[A](
       name: String,
-      schema: Schema.Reader[A],
+      schema: Schema.Reader.Via[Json, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = values match
     case Some(values) =>

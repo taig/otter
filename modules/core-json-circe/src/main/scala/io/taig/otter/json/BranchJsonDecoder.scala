@@ -13,7 +13,7 @@ import io.taig.otter.validation.Violation
 
 object BranchJsonDecoder:
   def apply[A](
-      branch: Branch.Reader[A],
+      branch: Branch.Reader.Via[Json, A],
       disciminator: Sum.Discriminator,
       json: JsonObject
   ): Decoder.Result[Json, Option[A]] = branch match
@@ -22,7 +22,7 @@ object BranchJsonDecoder:
 
   def root[A](
       name: String,
-      schema: Schema.Reader[A],
+      schema: Schema.Reader.Via[Json, A],
       discriminator: Sum.Discriminator,
       json: JsonObject
   ): Decoder.Result[Json, Option[A]] = discriminator match

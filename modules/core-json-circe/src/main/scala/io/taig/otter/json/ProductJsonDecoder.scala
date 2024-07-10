@@ -11,13 +11,13 @@ import io.circe.syntax.*
 import io.taig.otter.Decoder
 
 object ProductJsonDecoder:
-  def apply[A](schema: Product.Reader[A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Product.Reader.Via[Json, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     // TODO disallow values with additional items
     withRemainders(schema, values).map(_._2)
 
   // TODO add index to errors
   def withRemainders[A](
-      schema: Product.Reader[A],
+      schema: Product.Reader.Via[Json, A],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], A)] = schema match
     case Base.Product.Combine(left, right)               => combine(left, right, values)
@@ -31,8 +31,8 @@ object ProductJsonDecoder:
     case Base.Product.Transform(self, validation, _)     => transform(self, validation, values)
 
   def combine[A, B](
-      left: Product.Reader[A],
-      right: Product.Reader[B],
+      left: Product.Reader.Via[Json, A],
+      right: Product.Reader.Via[Json, B],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], (A, B))] = withRemainders(left, values) match
     case Validated.Valid((remainders, a)) =>
@@ -43,7 +43,7 @@ object ProductJsonDecoder:
         .invalid
 
   def one[A](
-      schema: Schema.Reader[A],
+      schema: Schema.Reader.Via[Json, A],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], A)] = values
     .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = "null").map(_.asJson)))
@@ -54,13 +54,13 @@ object ProductJsonDecoder:
           Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = 0.asJson)).invalid
 
   def optional[A](
-      self: Product.Reader[A],
+      self: Product.Reader.Via[Json, A],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], Option[A])] =
     values.fold((none, none).valid)(_ => withRemainders(self, values).map(_.map(_.some)))
 
   def transform[A, B](
-      self: Product.Reader[A],
+      self: Product.Reader.Via[Json, A],
       f: A => B,
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], B)] = withRemainders(self, values).map(_.map(f))

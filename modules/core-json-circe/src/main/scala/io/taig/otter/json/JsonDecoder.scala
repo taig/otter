@@ -9,25 +9,27 @@ import io.taig.otter as Base
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import cats.data.Chain
+import cats.Id
 
-object JsonDecoder extends Decoder[Schema.Reader, Json]:
-  override def apply[A](schema: Schema.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
-    case schema: Collection.Reader[A] =>
+object JsonDecoder extends Decoder[Schema.Reader.Via[Json, *], Json]:
+  override def apply[A](schema: Schema.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] = schema match
+    case schema: Collection.Reader.Via[Json, A] =>
       if json.isNull then CollectionJsonDecoder(schema, none)
       else
         json.asArray match
           case Some(array) => CollectionJsonDecoder(schema, array.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
-    case schema: Dictionary.Reader[A] =>
+    case schema: Dictionary.Reader.Via[Json, A] =>
       if json.isNull then DictionaryJsonDecoder(schema, none)
       else
         json.asObject match
           case Some(obj) => DictionaryJsonDecoder(schema, obj.toList.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Enumeration.Reader[A] => EnumerationJsonDecoder(schema, json)
-    case schema: Sum.Reader[A] =>
+    case schema: Dynamic.Reader[Json, A]            => DynamicJsonDecoder(???, json)
+    case schema: Enumeration.Reader.Via[Json, A] => EnumerationJsonDecoder(schema, json)
+    case schema: Sum.Reader.Via[Json, A] =>
       if json.isNull then SumJsonDecoder(schema, none)
       else
         json.asObject match
@@ -35,18 +37,21 @@ object JsonDecoder extends Decoder[Schema.Reader, Json]:
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
     case schema: Primitive.Reader[A] => PrimitiveJsonDecoder(schema, json)
-    case schema: Product.Reader[A] =>
+    case schema: Product.Reader.Via[Json, A] =>
       if json.isNull then ProductJsonDecoder(schema, none)
       else
         json.asArray match
           case Some(array) => ProductJsonDecoder(schema, array.some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = typeOf(json).asJson)).invalid
-    case schema: Record.Reader[A] =>
+    case schema: Record.Reader.Via[Json, A] =>
       if json.isNull then RecordJsonDecoder(schema, none)
       else
         json.asObject match
           case Some(obj) => RecordJsonDecoder(schema, Chain.fromIterableOnce(obj.toIterable).some)
           case None =>
             Violations.rootNec(Violation(Constraint.Type(name = "object"), actual = typeOf(json).asJson)).invalid
-    case schema: Union.Reader[A] => UnionJsonDecoder(schema, json)
+    case schema: Union.Reader.Via[Json, A] => UnionJsonDecoder(schema, json)
+
+  def apply2[A](schema: Base.Schema.Reader[Id, Json, ?, A], json: Json): Decoder.Result[Json, A] = schema match
+    case schema: Base.Dynamic.Reader[Json, A] => ???

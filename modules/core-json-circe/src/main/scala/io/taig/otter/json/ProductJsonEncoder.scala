@@ -6,7 +6,7 @@ import io.taig.otter.Plain.*
 import cats.syntax.all.*
 
 object ProductJsonEncoder:
-  def apply[A](schema: Product.Writer[A], a: A): Option[Vector[Json]] = schema match
+  def apply[A](schema: Product.Writer.Via[Json, A], a: A): Option[Vector[Json]] = schema match
     case Base.Product.Combine(left, right)        => combine(left, right, a).some
     case Base.Product.Empty                       => Vector.empty.some
     case Base.Product.One(schema)                 => one(schema, a).some
@@ -17,13 +17,13 @@ object ProductJsonEncoder:
     case Base.Product.Writer.Optional(self)       => optional(self, a)
     case Base.Product.Writer.Transform(self, f)   => transform(self, f, a)
 
-  def one[A](schema: Schema.Writer[A], a: A): Vector[Json] = Vector(JsonEncoder(schema, a))
+  def one[A](schema: Schema.Writer.Via[Json, A], a: A): Vector[Json] = Vector(JsonEncoder(schema, a))
 
-  def optional[A](self: Product.Writer[A], a: Option[A]): Option[Vector[Json]] = a.flatMap(apply(self, _))
+  def optional[A](self: Product.Writer.Via[Json, A], a: Option[A]): Option[Vector[Json]] = a.flatMap(apply(self, _))
 
-  def transform[A, B](self: Product.Writer[A], f: B => A, b: B): Option[Vector[Json]] = apply(self, f(b))
+  def transform[A, B](self: Product.Writer.Via[Json, A], f: B => A, b: B): Option[Vector[Json]] = apply(self, f(b))
 
-  def combine[A, B](left: Product.Writer[A], right: Product.Writer[B], ab: (A, B)): Vector[Json] =
+  def combine[A, B](left: Product.Writer.Via[Json, A], right: Product.Writer.Via[Json, B], ab: (A, B)): Vector[Json] =
     (ProductJsonEncoder(left, ab._1), ProductJsonEncoder(right, ab._2)) match
       case (Some(left), Some(right)) => left ++ right
       case (None, Some(right))       => Vector.fill(left.schemas.size.toInt)(Json.Null) ++ right

@@ -11,7 +11,7 @@ import io.circe.syntax.*
 import io.taig.otter.Decoder
 
 object DictionaryJsonDecoder:
-  def apply[A](schema: Dictionary.Reader[A], values: Option[List[(String, Json)]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Dictionary.Reader.Via[Json, A], values: Option[List[(String, Json)]]): Decoder.Result[Json, A] =
     schema match
       case Base.Dictionary.Optional(self)            => optional(self, values)
       case Base.Dictionary.Root(key, value)          => root(key, value, values)
@@ -20,12 +20,15 @@ object DictionaryJsonDecoder:
       case Base.Dictionary.Reader.Root(key, value)   => root(key, value, values)
       case Base.Dictionary.Reader.Transform(self, f) => transform(self, f, values)
 
-  def optional[A](self: Dictionary.Reader[A], values: Option[List[(String, Json)]]): Decoder.Result[Json, Option[A]] =
+  def optional[A](
+      self: Dictionary.Reader.Via[Json, A],
+      values: Option[List[(String, Json)]]
+  ): Decoder.Result[Json, Option[A]] =
     values.fold(none.valid)(_ => DictionaryJsonDecoder(self, values).map(_.some))
 
   def root[A, B](
-      key: Value.Required.Reader[A],
-      value: Schema.Reader[B],
+      key: Value.Required.Reader.Via[Json, A],
+      value: Schema.Reader.Via[Json, B],
       values: Option[List[(String, Json)]]
   ): Decoder.Result[Json, List[(A, B)]] = values
     .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = "null".asJson)))
@@ -38,7 +41,7 @@ object DictionaryJsonDecoder:
       }
 
   def transform[A, B](
-      self: Dictionary.Reader[A],
+      self: Dictionary.Reader.Via[Json, A],
       f: A => B,
       values: Option[List[(String, Json)]]
   ): Decoder.Result[Json, B] = DictionaryJsonDecoder(self, values).map(f)

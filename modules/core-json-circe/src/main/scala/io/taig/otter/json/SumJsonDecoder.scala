@@ -11,7 +11,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
 object SumJsonDecoder:
-  def apply[A](schema: Sum.Reader[A], json: Option[JsonObject]): Decoder.Result[Json, A] =
+  def apply[A](schema: Sum.Reader.Via[Json, A], json: Option[JsonObject]): Decoder.Result[Json, A] =
     SumJsonDecoder(schema, schema.discriminator, json).andThen(
       _.toValid(
         Violations.rootNec(
@@ -21,7 +21,7 @@ object SumJsonDecoder:
     )
 
   def apply[A](
-      schema: Sum.Reader[A],
+      schema: Sum.Reader.Via[Json, A],
       discriminator: Sum.Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[A]] = schema match
@@ -37,8 +37,8 @@ object SumJsonDecoder:
     case Base.Sum.Reader.Transform(self, f)                  => transform(self, discriminator, f, json)
 
   def combine[A, B](
-      left: Sum.Reader[A],
-      right: Sum.Reader[B],
+      left: Sum.Reader.Via[Json, A],
+      right: Sum.Reader.Via[Json, B],
       discriminator: Sum.Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[Either[A, B]]] = SumJsonDecoder(left, discriminator, json).andThen:
@@ -46,14 +46,14 @@ object SumJsonDecoder:
     case None    => SumJsonDecoder(right, discriminator, json).map(_.map(_.asRight))
 
   def optional[A](
-      self: Sum.Reader[A],
+      self: Sum.Reader.Via[Json, A],
       discriminator: Sum.Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[Option[A]]] =
     json.fold(none.valid)(json => SumJsonDecoder(self, discriminator, json.some).map(_.some))
 
   def root[A](
-      branch: Branch.Reader[A],
+      branch: Branch.Reader.Via[Json, A],
       discriminator: Sum.Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[A]] = json
@@ -61,7 +61,7 @@ object SumJsonDecoder:
     .andThen(BranchJsonDecoder(branch, discriminator, _))
 
   def transform[A, B](
-      self: Sum.Reader[A],
+      self: Sum.Reader.Via[Json, A],
       discriminator: Sum.Discriminator,
       f: A => B,
       json: Option[JsonObject]

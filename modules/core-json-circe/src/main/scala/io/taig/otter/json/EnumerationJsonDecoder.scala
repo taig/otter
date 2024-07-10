@@ -10,7 +10,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
 object EnumerationJsonDecoder:
-  def apply[A](schema: Enumeration.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
+  def apply[A](schema: Enumeration.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] = schema match
     case Base.Enumeration.Optional(self)                                => optional(self, json)
     case Base.Enumeration.Reader.Optional(self)                         => optional(self, json)
     case Base.Enumeration.Reader.Root(self, mapping, writer)            => root(self, mapping, writer, json)
@@ -21,13 +21,13 @@ object EnumerationJsonDecoder:
     case Base.Enumeration.Root(self, mapping)                           => root(self, mapping, self, json)
     case Base.Enumeration.Transform(self, f, _)                         => transform(self, f, json)
 
-  def optional[A](self: Enumeration.Reader[A], json: Json): Decoder.Result[Json, Option[A]] =
+  def optional[A](self: Enumeration.Reader.Via[Json, A], json: Json): Decoder.Result[Json, Option[A]] =
     if json.isNull then none.valid else EnumerationJsonDecoder(self, json).map(_.some)
 
   def root[A, B](
-      schema: Value.Reader[A],
+      schema: Value.Reader.Via[Json, A],
       mapping: Mapping[B, A],
-      writer: Schema.Writer[A],
+      writer: Schema.Writer.Via[Json, A],
       json: Json
   ): Decoder.Result[Json, B] = JsonDecoder(schema, json).andThen: a =>
     mapping
@@ -36,5 +36,5 @@ object EnumerationJsonDecoder:
         val values = mapping.values.map(mapping.inj).map(JsonEncoder(writer, _))
         Violations.rootNec(Violation(constraint = Constraint.OneOf(values), actual = json))
 
-  def transform[A, B](self: Enumeration.Reader[A], f: A => B, json: Json): Decoder.Result[Json, B] =
+  def transform[A, B](self: Enumeration.Reader.Via[Json, A], f: A => B, json: Json): Decoder.Result[Json, B] =
     EnumerationJsonDecoder(self, json).map(f)

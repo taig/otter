@@ -6,13 +6,13 @@ import io.circe.Json
 import cats.syntax.all.*
 
 object FieldJsonEncoder:
-  def apply[A](field: Field.Writer[A], parent: Record.Null, a: A): Option[(String, Json)] = field match
+  def apply[A](field: Field.Writer.Via[Json, A], parent: Record.Null, a: A): Option[(String, Json)] = field match
     case Base.Field.Root(name, nulls, schema)        => root(name, schema, parent, nulls, a)
     case Base.Field.Writer.Root(name, nulls, schema) => root(name, schema, parent, nulls, a)
 
   def root[A](
       name: String,
-      schema: Schema.Writer[A],
+      schema: Schema.Writer.Via[Json, A],
       parent: Record.Null,
       nulls: Field.Null,
       a: A
