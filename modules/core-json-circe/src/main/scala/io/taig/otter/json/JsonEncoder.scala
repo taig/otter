@@ -15,3 +15,4 @@ object JsonEncoder extends Encoder[Schema.Writer, Json]:
     case schema: Record.Writer[A]      => RecordJsonEncoder(schema, a).map(_.toList).fold(Json.Null)(Json.fromFields)
     case schema: Sum.Writer[A]         => SumJsonEncoder(schema, a).fold(Json.Null)(Json.fromJsonObject)
     case schema: Union.Writer[A]       => UnionJsonEncoder(schema, a)
+    case schema: Dynamic.Writer[Json, A] => ???

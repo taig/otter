@@ -8,6 +8,7 @@ import io.circe.parser.parse
 import io.circe.jawn.JawnParser
 import io.taig.otter.Dsl
 import io.circe.Json
+import cats.syntax.all.*
 
 trait JsonHttpSyntax extends Dsl:
   val binary: Request.Body.Singlepart.Strict[Nothing, Array[Byte]] =
@@ -23,7 +24,10 @@ trait JsonHttpSyntax extends Dsl:
       schema
     )
 
-  // TODO dynamic????????
-  val json: Dynamic[Json] = Base.Dynamic.Root[Json]()
+object Playground:
+  import io.taig.otter.Plain.*
 
-  
+  // TODO dynamic????????
+  val json: Dynamic[Json, Json] = Base.Dynamic.Root[Json, Json](_.valid, identity)
+
+  val whatever: Dynamic[String, String] = Base.Dynamic.Root[String, String](_.valid, identity)

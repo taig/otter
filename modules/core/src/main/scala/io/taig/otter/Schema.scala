@@ -13,146 +13,148 @@ import cats.Eq
 import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
 import scala.reflect.ClassTag
+import cats.data.Validated
+import io.taig.otter.validation.Violations
 
-sealed trait Schema[+F[+_], +A, B] extends Schema.Reader[F, A, B], Schema.Writer[F, A, B]:
-  override def default: Option[B] = ???
-  override def default[B1 >: B](value: B1): Schema[F, A, B1] = ???
+sealed trait Schema[+F[+_], -A, +B, C] extends Schema.Reader[F, A, B, C], Schema.Writer[F, A, B, C]:
+  override def default: Option[C] = ???
+  override def default[C1 >: C](value: C1): Schema[F, A, B, C1] = ???
 
-  def imap[C](f: B => C)(g: C => B): Schema[F, A, C]
-  override def optional: Schema[F, A, Option[B]]
-  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema[G, ?, B]
+  def imap[D](f: C => D)(g: D => C): Schema[F, A, B, D]
+  override def optional: Schema[F, A, B, Option[C]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema[G, A, ?, C]
 
 object Schema:
-  sealed trait Reader[+F[+_], +A, +B] extends SProduct, Serializable:
-    def default: Option[B] = ???
-    def default[B1 >: B](value: B1): Schema.Reader[F, A, B1] = ???
+  sealed trait Reader[+F[+_], -A, +B, +C] extends SProduct, Serializable:
+    def default: Option[C] = ???
+    def default[B1 >: C](value: B1): Schema.Reader[F, A, B, B1] = ???
 
-    def map[C](f: B => C): Schema.Reader[F, A, C]
-    def optional: Schema.Reader[F, A, Option[B]]
-    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Reader[G, ?, B]
+    def map[D](f: C => D): Schema.Reader[F, A, B, D]
+    def optional: Schema.Reader[F, A, B, Option[C]]
+    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Reader[G, A, ?, C]
 
-  sealed trait Writer[+F[+_], +A, -B] extends SProduct, Serializable:
-    def contramap[C](f: C => B): Schema.Writer[F, A, C]
-    def optional: Schema.Writer[F, A, Option[B]]
-    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C] extends SProduct, Serializable:
+    def contramap[D](f: D => C): Schema.Writer[F, A, B, D]
+    def optional: Schema.Writer[F, A, B, Option[C]]
+    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Schema.Writer[G, A, ?, C]
 
-sealed trait Value[+F[+_], +A, B] extends Schema[F, A, B], Value.Reader[F, A, B], Value.Writer[F, A, B]:
-  override def imap[C](f: B => C)(g: C => B): Value[F, A, C]
-  override def optional: Value[F, A, Option[B]]
-  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value[G, ?, B]
+sealed trait Value[+F[+_], -A, +B, C] extends Schema[F, A, B, C], Value.Reader[F, A, B, C], Value.Writer[F, A, B, C]:
+  override def imap[D](f: C => D)(g: D => C): Value[F, A, B, D]
+  override def optional: Value[F, A, B, Option[C]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value[G, A, ?, C]
 
 object Value:
-  sealed trait Required[+F[+_], +A, B]
-      extends Value[F, A, B],
-        Value.Required.Reader[F, A, B],
-        Value.Required.Writer[F, A, B]:
-    override def imap[C](f: B => C)(g: C => B): Value.Required[F, A, C]
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required[G, ?, B]
+  sealed trait Required[+F[+_], -A, +B, C]
+      extends Value[F, A, B, C],
+        Value.Required.Reader[F, A, B, C],
+        Value.Required.Writer[F, A, B, C]:
+    override def imap[D](f: C => D)(g: D => C): Value.Required[F, A, B, D]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required[G, A, ?, C]
 
   object Required:
-    sealed trait Reader[+F[+_], +A, +B] extends Value.Reader[F, A, B]:
-      override def map[C](f: B => C): Value.Required.Reader[F, A, C]
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Reader[G, ?, B]
+    sealed trait Reader[+F[+_], -A, +B, +C] extends Value.Reader[F, A, B, C]:
+      override def map[D](f: C => D): Value.Required.Reader[F, A, B, D]
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Reader[G, A, ?, C]
 
-    sealed trait Writer[+F[+_], +A, -B] extends Value.Writer[F, A, B]:
-      override def contramap[C](f: C => B): Value.Required.Writer[F, A, C]
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Writer[G, ?, B]
+    sealed trait Writer[+F[+_], -A, +B, -C] extends Value.Writer[F, A, B, C]:
+      override def contramap[D](f: D => C): Value.Required.Writer[F, A, B, D]
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Required.Writer[G, A, ?, C]
 
-  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
-    override def map[C](f: B => C): Value.Reader[F, A, C]
-    override def optional: Value.Reader[F, A, Option[B]]
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Reader[G, ?, B]
+  sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
+    override def map[D](f: C => D): Value.Reader[F, A, B, D]
+    override def optional: Value.Reader[F, A, B, Option[C]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Reader[G, A, ?, C]
 
-  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-    override def contramap[C](f: C => B): Value.Writer[F, A, C]
-    override def optional: Value.Writer[F, A, Option[B]]
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
+    override def contramap[D](f: D => C): Value.Writer[F, A, B, D]
+    override def optional: Value.Writer[F, A, B, Option[C]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Value.Writer[G, A, ?, C]
 
-sealed trait Collection[+F[+_], +A, B] extends Schema[F, A, B], Collection.Reader[F, A, B], Collection.Writer[F, A, B]:
-  final override def imap[C](f: B => C)(g: C => B): Collection[F, A, C] = ivalidate(Validation.lift(f))(g)
-  final def ivalidate[C, D](validation: SchemaValidation.Collection[B, C, D])(f: D => B): Collection[F, A, D] =
+sealed trait Collection[+F[+_], -A, +B, C] extends Schema[F, A, B, C], Collection.Reader[F, A, B, C], Collection.Writer[F, A, B, C]:
+  final override def imap[D](f: C => D)(g: D => C): Collection[F, A, B, D] = ivalidate(Validation.lift(f))(g)
+  final def ivalidate[D, E](validation: SchemaValidation.Collection[C, D, E])(f: E => C): Collection[F, A, B, E] =
     Collection.Transform(this, validation, f)
-  final override def optional: Collection[F, A, Option[B]] = Collection.Optional(this)
-  override def schema: F[Schema[F, ?, ?]]
-  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, ?, B]
+  final override def optional: Collection[F, A, B, Option[C]] = Collection.Optional(this)
+  override def schema: F[Schema[F, A, ?, ?]]
+  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, A, ?, C]
 
 object Collection:
-  sealed trait Reader[+F[+_], +A, +B] extends Schema.Reader[F, A, B]:
+  sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
     def constraints: Chain[Constraint.Collection]
-    final override def map[C](f: B => C): Collection.Reader[F, A, C] = validate(Validation.lift(f))
-    override def optional: Collection.Reader[F, A, Option[B]] = Reader.Optional(this)
-    def schema: F[Schema.Reader[F, ?, ?]]
-    final def validate[B1 >: B, C, D](
-        validation: SchemaValidation.Collection[B1, C, D]
-    ): Collection.Reader[F, A, D] = Reader.Transform(this, validation)
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, B]
+    final override def map[D](f: C => D): Collection.Reader[F, A, B, D] = validate(Validation.lift(f))
+    override def optional: Collection.Reader[F, A, B, Option[C]] = Reader.Optional(this)
+    def schema: F[Schema.Reader[F, ?, ?, ?]]
+    final def validate[C1 >: C, D, E](
+        validation: SchemaValidation.Collection[C1, D, E]
+    ): Collection.Reader[F, A, B, E] = Reader.Transform(this, validation)
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, C]
 
   object Reader:
-    final case class Transform[+F[+_], A, B, C, D](
-        self: Collection.Reader[F, A, B],
-        validation: SchemaValidation.Collection[B, C, D]
-    ) extends Collection.Reader[F, A, D]:
+    final case class Transform[+F[+_], A, B, C, D, E](
+        self: Collection.Reader[F, A, B, C],
+        validation: SchemaValidation.Collection[C, D, E]
+    ) extends Collection.Reader[F, A, B, E]:
       export self.schema
       override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, D] =
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, E] =
         copy(self = self.translate(fK))
 
-    final case class Optional[+F[+_], A, B](self: Collection.Reader[F, A, B])
-        extends Collection.Reader[F, A, Option[B]]:
+    final case class Optional[+F[+_], A, B, C](self: Collection.Reader[F, A, B, C])
+        extends Collection.Reader[F, A, B, Option[C]]:
       export self.{constraints, schema}
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, Option[B]] =
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, Option[C]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], +A <: F[Schema.Reader[F, ?, B]], B](schema: A)
-        extends Collection.Reader[F, A, Vector[B]]:
+    final case class Root[F[+_], A, +B <: F[Schema.Reader[F, A, ?, C]], C](schema: B)
+        extends Collection.Reader[F, A, B, Vector[C]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, ?, Vector[B]] =
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, Vector[C]] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
-  sealed trait Writer[+F[+_], +A, -B] extends Schema.Writer[F, A, B]:
-    final def contramap[C](f: C => B): Collection.Writer[F, A, C] = Writer.Transform(this, f)
-    def optional: Collection.Writer[F, A, Option[B]] = Writer.Optional(this)
-    def schema: F[Schema.Writer[F, ?, ?]]
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, ?, B]
+  sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
+    final def contramap[D](f: D => C): Collection.Writer[F, A, B, D] = Writer.Transform(this, f)
+    def optional: Collection.Writer[F, A, B, Option[C]] = Writer.Optional(this)
+    def schema: F[Schema.Writer[F, A, ?, ?]]
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, A, ?, C]
 
   object Writer:
-    final case class Transform[+F[+_], A, B, C](
-        self: Collection.Writer[F, A, B],
-        f: C => B
-    ) extends Collection.Writer[F, A, C]:
+    final case class Transform[+F[+_], A, B, C, D](
+        self: Collection.Writer[F, A, B, C],
+        f: D => C
+    ) extends Collection.Writer[F, A, B, D]:
       export self.schema
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, ?, C] =
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, A, ?, D] =
         copy(self = self.translate(fK))
 
-    final case class Optional[+F[+_], A, B](self: Collection.Writer[F, A, B])
-        extends Collection.Writer[F, A, Option[B]]:
+    final case class Optional[+F[+_], A, B, C](self: Collection.Writer[F, A, B, C])
+        extends Collection.Writer[F, A, B, Option[C]]:
       export self.schema
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, ?, Option[B]] =
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, A, ?, Option[C]] =
         copy(self = self.translate(fK))
 
-    final case class Root[F[+_], +A <: F[Schema.Writer[F, ?, B]], B](schema: A)
-        extends Collection.Writer[F, A, Vector[B]]:
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, ?, Vector[B]] =
+    final case class Root[F[+_], A, +B <: F[Schema.Writer[F, A, ?, C]], C](schema: B)
+        extends Collection.Writer[F, A, B, Vector[C]]:
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Writer[G, A, ?, Vector[C]] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
-  final case class Optional[+F[+_], A, B](self: Collection[F, A, B]) extends Collection[F, A, Option[B]]:
+  final case class Optional[+F[+_], A, B, C](self: Collection[F, A, B, C]) extends Collection[F, A, B, Option[C]]:
     export self.{constraints, schema}
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, ?, Option[B]] =
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, A, ?, Option[C]] =
       copy(self = self.translate(fK))
 
-  final case class Root[F[+_], +A <: F[Schema[F, ?, B]], B](schema: A) extends Collection[F, A, Vector[B]]:
+  final case class Root[F[+_], A, +B <: F[Schema[F, A, ?, C]], C](schema: B) extends Collection[F, A, B, Vector[C]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, ?, Vector[B]] =
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, A, ?, Vector[C]] =
       copy(schema = fK(schema).map(_.translate(fK)))
 
-  final case class Transform[+F[+_], A, B, C, D](
-      self: Collection[F, A, B],
-      validation: SchemaValidation.Collection[B, C, D],
-      f: D => B
-  ) extends Collection[F, A, D]:
+  final case class Transform[+F[+_], A, B, C, D, E](
+      self: Collection[F, A, B, C],
+      validation: SchemaValidation.Collection[C, D, E],
+      f: E => C
+  ) extends Collection[F, A, B, E]:
     export self.schema
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, ?, D] =
+    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection[G, A, ?, E] =
       copy(self = self.translate(fK))
 
 sealed trait Dictionary[+F[+_], +A, B] extends Schema[F, A, B], Dictionary.Reader[F, A, B], Dictionary.Writer[F, A, B]:
@@ -216,19 +218,30 @@ object Dictionary:
       copy(self = self.translate(fK))
 
 // TODO
-sealed trait Dynamic[A] extends Schema[Nothing, Nothing, A], Dynamic.Reader[A], Dynamic.Writer[A]:
-  override def optional: Dynamic[Option[A]] = ???
-  override def imap[C](f: A => C)(g: C => A): Base.Schema[Nothing, Nothing, C] = ???
-  final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic[A] = this
+sealed trait Dynamic[A, B] extends Schema[Nothing, Nothing, B], Dynamic.Reader[A, B], Dynamic.Writer[A, B]:
+  override def optional: Dynamic[A, Option[B]] = ???
+  override def imap[C](f: B => C)(g: C => B): Dynamic[A, C] = ???
+  final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic[A, B] = this
+
+  def decode(a: A): Validated[Violations[?, ?], B]
+  def encode(b: B): A
 
 object Dynamic:
-  sealed trait Reader[+A] extends Schema.Reader[Nothing, Nothing, A]:
-    override def map[C](f: A => C): Dynamic.Reader[C] = ???
+  sealed trait Reader[A, +B] extends Schema.Reader[Nothing, Nothing, B]:
+    override def optional: Dynamic.Reader[A, Option[B]] = ???
+    override def map[C](f: B => C): Dynamic.Reader[A, C] = ???
 
-  sealed trait Writer[-A] extends Schema.Writer[Nothing, Nothing, A]:
-    override def contramap[C](f: C => A): Dynamic.Writer[C] = ???
+  sealed trait Writer[A, -B] extends Schema.Writer[Nothing, Nothing, B]:
+    override def optional: Dynamic.Writer[A, Option[B]] = ???
+    override def contramap[C](f: C => B): Dynamic.Writer[A, C] = ???
 
-  final case class Root[A: ClassTag]() extends Dynamic[A]
+  final case class Root[A, B](f: A => Validated[Violations[?, ?], B], g: B => A) extends Dynamic[A, B]:
+    override def decode(a: A): Validated[Violations[?, ?], B] = f(a)
+    override def encode(b: B): A = g(b)
+
+//   object Writer:
+//     final case class Root[A]() extends Dynamic.Writer[A]:
+//       override def translate[G[+_]](fK: [A] => Nothing => G[A])(using Functor[G]): Dynamic.Writer[A] = ???
 
 sealed trait Enumeration[+F[+_], +A, B]
     extends Value[F, A, B],
