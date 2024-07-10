@@ -1,32 +1,30 @@
 package io.taig.otter
 
+import cats.data.Validated
 import cats.syntax.all.*
 
 import io.taig.otter.validation.Violations
 import io.taig.otter.Primitive.Reader
 import io.taig.otter.validation.Violation
-import scala.annotation.targetName
 
 sealed trait Primitive[A] extends Value[Nothing, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   self =>
 
   override def imap[C](f: A => C)(g: C => A): Primitive[C] = new Primitive[C]:
     export self.tpe
-    @targetName("decodePrimitive")
-    override def decode(data: Option[Data.Primitive]): Codec.Result[C] = self.decode(data).map(f)
+    override def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[C] =
+      self.decodePrimitive(data).map(f)
     override def encode(c: C): Option[Data.Primitive] = self.encode(g(c))
 
   override def default(value: A): Primitive[A] = new Primitive[A]:
     export self.{encode, tpe}
-    @targetName("decodePrimitive")
-    override def decode(data: Option[Data.Primitive]): Codec.Result[A] =
-      data.fold(value.valid)(_ => self.decode(data))
+    override def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[A] =
+      data.fold(value.valid)(_ => self.decodePrimitive(data))
 
   override def optional: Primitive[Option[A]] = new Primitive[Option[A]]:
     export self.tpe
-    @targetName("decodePrimitive")
-    override def decode(data: Option[Data.Primitive]): Codec.Result[Option[A]] =
-      data.fold(none.valid)(_ => self.decode(data).map(_.some))
+    override def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[Option[A]] =
+      data.fold(none.valid)(_ => self.decodePrimitive(data).map(_.some))
     override def encode(a: Option[A]): Option[Data.Primitive] = a.flatMap(self.encode)
 
 object Primitive:
@@ -35,7 +33,7 @@ object Primitive:
 
     override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = new Primitive.Required[C]:
       export self.tpe
-      override def decode(data: Data.Primitive): Codec.Result[C] = self.decode(data).map(f)
+      override def decodeRequired(data: Data.Primitive): Codec.Result[C] = self.decodeRequired(data).map(f)
       override def encodeRequired(c: C): Data.Primitive = self.encodeRequired(g(c))
 
   object Required:
@@ -44,14 +42,13 @@ object Primitive:
 
       override def map[C](f: A => C): Primitive.Required.Reader[C] = new Primitive.Required.Reader[C]:
         export self.tpe
-        override def decode(data: Data.Primitive): Codec.Result[C] = self.decode(data).map(f)
+        override def decodeRequired(data: Data.Primitive): Codec.Result[C] = self.decodeRequired(data).map(f)
 
-      @targetName("decodePrimitive")
-      final override def decode(data: Option[Data.Primitive]): Codec.Result[A] = data
+      final override def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[A] = data
         .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String("null"))))
-        .andThen(decode)
+        .andThen(decodeRequired)
 
-      def decode(data: Data.Primitive): Codec.Result[A]
+      def decodeRequired(data: Data.Primitive): Codec.Result[A]
 
     sealed trait Writer[-A] extends Primitive.Writer[A]:
       self =>
@@ -65,7 +62,7 @@ object Primitive:
 
     def apply[A](of: Type[A]): Primitive.Required[A] = new Primitive.Required[A]:
       override def tpe: Type[?] = of
-      override def decode(data: Data.Primitive): Codec.Result[A] = of.decode(data)
+      override def decodeRequired(data: Data.Primitive): Codec.Result[A] = of.decode(data)
       override def encodeRequired(a: A): Data.Primitive = of.encode(a)
 
   sealed trait Reader[+A] extends Value.Reader[Nothing, Nothing, A]:
@@ -75,29 +72,26 @@ object Primitive:
 
     override def map[C](f: A => C): Primitive.Reader[C] = new Primitive.Reader[C]:
       export self.tpe
-      @targetName("decodePrimitive")
-      override def decode(data: Option[Data.Primitive]): Codec.Result[C] = self.decode(data).map(f)
+      override def decodePrimitive(data: Option[Data.Primitive]): Validated[Violations[Constraint[Data], Data], C] =
+        self.decodePrimitive(data).map(f)
 
     final override def default[A1 >: A](value: A1): Primitive.Reader[A1] = new Primitive.Reader[A1]:
       export self.tpe
-      @targetName("decodePrimitive")
-      override def decode(data: Option[Data.Primitive]): Codec.Result[A1] =
-        data.fold(value.valid)(_ => self.decode(data))
+      override def decodePrimitive(data: Option[Data.Primitive]): Validated[Violations[Constraint[Data], Data], A1] =
+        data.fold(value.valid)(_ => self.decodePrimitive(data))
 
     override def optional: Primitive.Reader[Option[A]] = new Primitive.Reader[Option[A]]:
       export self.tpe
-      @targetName("decodePrimitive")
-      override def decode(data: Option[Data.Primitive]): Codec.Result[Option[A]] =
-        data.fold(none.valid)(_ => self.decode(data).map(_.some))
+      override def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[Option[A]] =
+        data.fold(none.valid)(_ => self.decodePrimitive(data).map(_.some))
 
     final override def decode(data: Option[Data.Value]): Codec.Result[A] = data match
-      case Some(data: Data.Primitive) => decode(Some(data))
+      case Some(data: Data.Primitive) => decodePrimitive(Some(data))
       case Some(data) =>
         Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(data.name))).invalid
-      case None => decode(None)
+      case None => decodePrimitive(None)
 
-    @targetName("decodePrimitive")
-    def decode(data: Option[Data.Primitive]): Codec.Result[A]
+    def decodePrimitive(data: Option[Data.Primitive]): Codec.Result[A]
 
   sealed trait Writer[-A] extends Value.Writer[Nothing, Nothing, A]:
     self =>

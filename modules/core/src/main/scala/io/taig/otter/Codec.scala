@@ -16,7 +16,6 @@ object Codec:
     def map[C](f: B => C): Codec.Reader[F, A, C]
     def default[B1 >: B](value: B1): Codec.Reader[F, A, B1]
     def optional: Codec.Reader[F, A, Option[B]]
-    final def decode(data: Data): Codec.Result[B] = decode(data.toValue)
     def decode(data: Option[Data.Value]): Codec.Result[B]
 
   trait Writer[+F[+_], +A, -B]:
@@ -24,4 +23,4 @@ object Codec:
     def optional: Codec.Writer[F, A, Option[B]]
     def encode(b: B): Option[Data]
 
-  type Result[A] = Validated[Violations[Constraint.Any[Data], Data], A]
+  type Result[A] = Validated[Violations[Constraint[Data], Data], A]
