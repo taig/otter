@@ -5,39 +5,38 @@ import cats.Applicative
 import cats.Id as Identity
 import cats.Comonad
 
-trait Ops extends Instances
-// trait Ops extends Instances:
-//   trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _], Plain[_]]:
-//     extension [A, B](self: Self[A, B])
-//       def collection: Collection[self.type, Vector[B]]
-//       def optional: Optional[A, Option[B]]
-//       def union: Union[self.type, B]
-//       def toPlain: Plain[B]
+trait Ops extends Instances:
+  trait SchemaOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _], Plain[_]]:
+    extension [A, B](self: Self[A, B])
+      def collection: Collection[self.type, Vector[B]]
+      def optional: Optional[A, Option[B]]
+      def union: Union[self.type, B]
+      def toPlain: Plain[B]
 
-//   object SchemaOps:
-//     trait Isomorphic[Self[a, b] <: Schema.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema[Identity, ?, a]]
-//         extends SchemaOps[Self, Optional, Collection.Of, Union.Of, Plain]:
-//       extension [A, B](self: Self[A, B])
-//         final override def collection: Collection.Of[self.type, Vector[B]] =
-//           Applicative[container.Collection].pure(Base.Collection.Root(self))
-//         final override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
+  // object SchemaOps:
+  //   trait Isomorphic[Self[a, b] <: Schema.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema[Identity, ?, a]]
+  //       extends SchemaOps[Self, Optional, Collection.Of, Union.Of, Plain]:
+  //     extension [A, B](self: Self[A, B])
+  //       final override def collection: Collection.Of[self.type, Vector[B]] =
+  //         Applicative[container.Collection].pure(Base.Collection.Root(self))
+  //       final override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
 
-//     trait Reader[Self[a, b] <: Schema.Reader.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Reader[Identity, ?, a]]
-//         extends SchemaOps[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
-//       extension [A, B](self: Self[A, B])
-//         final override def collection: Collection.Reader.Of[self.type, Vector[B]] =
-//           Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
-//         final override def union: Union.Reader.Of[self.type, B] =
-//           Applicative[container.Union].pure(Base.Union.Reader.Root(self))
+  //   trait Reader[Self[a, b] <: Schema.Reader.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Reader[Identity, ?, a]]
+  //       extends SchemaOps[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
+  //     extension [A, B](self: Self[A, B])
+  //       final override def collection: Collection.Reader.Of[self.type, Vector[B]] =
+  //         Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
+  //       final override def union: Union.Reader.Of[self.type, B] =
+  //         Applicative[container.Union].pure(Base.Union.Reader.Root(self))
 
-//     trait Writer[Self[a, b] <: Schema.Writer.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Writer[Identity, ?, a]]
-//         extends SchemaOps[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
-//       extension [A, B](self: Self[A, B])
-//         final override def collection: Collection.Writer.Of[self.type, Vector[B]] =
-//           Applicative[container.Collection].pure(Base.Collection.Writer.Root(self))
-//         final override def union: Union.Writer.Of[self.type, B] =
-//           Applicative[container.Union].pure(Base.Union.Writer.Root(self))
-//         def toValidationWriter: B => ValidationWriter[B] = ValidationWriter.Root(self.toPlain, _)
+  //   trait Writer[Self[a, b] <: Schema.Writer.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Writer[Identity, ?, a]]
+  //       extends SchemaOps[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
+  //     extension [A, B](self: Self[A, B])
+  //       final override def collection: Collection.Writer.Of[self.type, Vector[B]] =
+  //         Applicative[container.Collection].pure(Base.Collection.Writer.Root(self))
+  //       final override def union: Union.Writer.Of[self.type, B] =
+  //         Applicative[container.Union].pure(Base.Union.Writer.Root(self))
+  //       def toValidationWriter: B => ValidationWriter[B] = ValidationWriter.Root(self.toPlain, _)
 
 //   trait ValueOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _], Plain[_]]
 //       extends SchemaOps[Self, Optional, Collection, Union, Plain]

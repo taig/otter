@@ -13,6 +13,8 @@ import cats.Eq
 import cats.Id as Identity
 import io.taig.enumeration.ext.Mapping
 import scala.reflect.ClassTag
+import cats.Id as Identity
+import cats.Comonad
 
 sealed trait Schema[+F[+_], -A, +B, C] extends Schema.Reader[F, A, B, C], Schema.Writer[F, A, B, C]:
   override def default: Option[C] = ???
