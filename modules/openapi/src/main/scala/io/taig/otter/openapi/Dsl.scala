@@ -12,19 +12,18 @@ import cats.Invariant
 trait Dsl extends Base.Dsl:
   override object container extends Base.Container:
     override type Schema[+A] = Annotation[Metadata[A], A]
-    type Schema2[F[_], A] = Annotation[Metadata[A], F[A]]
     override type Collection[+A] = Annotation[Metadata.Collection[A], A]
     override type Primitive[+A] = Annotation[Metadata.Primitive[A], A]
     override type Product[+A] = Annotation[Metadata.Product[A], A]
     override type Union[+A] = Annotation[Metadata.Union[A], A]
 
-  type MySchema[A] = Annotation[Metadata[A], Base.Schema[Annotation[Metadata[?], *], Any, ?, A]]
+  type MySchema[A, B, C] = Annotation[Metadata[A], Base.Schema[[a] =>> Annotation[Metadata[a], a], A, B, C]]
 
-  val x: MySchema[String] = ???
+  // val x: MySchema[?, ?, String] = ???
   
-  given xxx: Invariant[MySchema] = new Invariant[MySchema]:
-    override def imap[A, B](fa: MySchema[A])(f: A => B)(g: B => A): MySchema[B] = 
-      fa.copy(metadata = fa.metadata.imap(f)(g), self = fa.self.imap(f)(g))
+  // given xxx: Invariant[MySchema] = new Invariant[MySchema]:
+  //   override def imap[A, B](fa: MySchema[A])(f: A => B)(g: B => A): MySchema[B] = 
+  //     fa.copy(metadata = fa.metadata.imap(f)(g), self = fa.self.imap(f)(g))
   
 
   override given schemaApplicativeComonad: ApplicativeComonad[container.Schema] =
