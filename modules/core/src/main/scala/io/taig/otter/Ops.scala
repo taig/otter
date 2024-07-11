@@ -5,95 +5,95 @@ import cats.Id as Identity
 import cats.Applicative
 import cats.Comonad
 
-trait Ops extends Instances:
-  trait SchemaOps[Self[_, _, _], Optional[_, _, _], Collection[_, _, _], Union[_, _, _], Plain[_, _]]
+trait Ops extends Instances
+// trait SchemaOps[Self[_, _, _], Optional[_, _, _], Collection[_, _, _], Union[_, _, _], Plain[_, _]]
 
-  object SchemaOps:
-    trait Isomorphic[Self[a, b, c] <: Optional[a, b, c], Optional[a, b, c] <: Schema.With[a, b, c]]
-        extends SchemaOps[Self, Optional, Collection.With, Union.With, Base.Schema[Identity, *, ?, *]]:
-      extension [A, B, C](self: Self[A, B, C])
-        final def collection: Collection.With[A, self.type, Vector[C]] =
-          Applicative[container.Collection].pure(Base.Collection.Root(self))
-        final def union: Union.With[A, self.type, C] =
-          Applicative[container.Union].pure(Base.Union.Root(self))
-        def optional: Optional[A, B, Option[C]]
-        def plain: Base.Schema[Identity, A, ?, C]
+// object SchemaOps:
+//   trait Isomorphic[Self[a, b, c] <: Optional[a, b, c], Optional[a, b, c] <: Schema.With[a, b, c]]
+//       extends SchemaOps[Self, Optional, Collection.With, Union.With, Base.Schema[Identity, *, ?, *]]:
+//     extension [A, B, C](self: Self[A, B, C])
+//       final def collection: Collection.With[A, self.type, Vector[C]] =
+//         Applicative[container.Collection].pure(Base.Collection.Root(self))
+//       final def union: Union.With[A, self.type, C] =
+//         Applicative[container.Union].pure(Base.Union.Root(self))
+//       def optional: Optional[A, B, Option[C]]
+//       def plain: Base.Schema[Identity, A, ?, C]
 
-  trait PrimitiveOps[
-      Self[_] <: container.Primitive[Base.Primitive.Ops],
-      Optional[_],
-      Collection[_, _, _],
-      Union[_, _, _],
-      Plain[_]
-  ] extends Base.PrimitiveOps[Self, Optional, Collection, Union, Plain]:
-    extension [A](self: Self[A]) final override def tpe: Type[?] = Comonad[container.Primitive].extract(self).tpe
+// trait PrimitiveOps[
+//     Self[_] <: container.Primitive[Base.Primitive.Ops],
+//     Optional[_],
+//     Collection[_, _, _],
+//     Union[_, _, _],
+//     Plain[_]
+// ] extends Base.PrimitiveOps[Self, Optional, Collection, Union, Plain]:
+//   extension [A](self: Self[A]) final override def tpe: Type[?] = Comonad[container.Primitive].extract(self).tpe
 
-  object PrimitiveOps:
-    trait Isomorphic[Self[a] <: Optional[a], Optional[a] <: Primitive[a]]
-        extends PrimitiveOps[Self, Optional, Collection.With, Union.With, Base.Primitive]
+// object PrimitiveOps:
+//   trait Isomorphic[Self[a] <: Optional[a], Optional[a] <: Primitive[a]]
+//       extends PrimitiveOps[Self, Optional, Collection.With, Union.With, Base.Primitive]
 
-  //   trait Reader[Self[_, _, _], Optional[_, _, _]]:
-  //     extension [A, B, C](self: Self[A, B, C])
-  //       final def collection: Collection.Reader.With[A, self.type, Vector[C]] =
-  //         Applicative[container.Collection].pure(???)
-  //       final def union: Union.Reader.With[A, self.type, C] = ???
-  //       def optional: Optional[A, B, Option[C]]
-  //       def toPlain: Base.Schema.Reader[Identity, A, ?, C]
+//   trait Reader[Self[_, _, _], Optional[_, _, _]]:
+//     extension [A, B, C](self: Self[A, B, C])
+//       final def collection: Collection.Reader.With[A, self.type, Vector[C]] =
+//         Applicative[container.Collection].pure(???)
+//       final def union: Union.Reader.With[A, self.type, C] = ???
+//       def optional: Optional[A, B, Option[C]]
+//       def toPlain: Base.Schema.Reader[Identity, A, ?, C]
 
-  //   trait Writer[Self[_, _, _], Optional[_, _, _]]:
-  //     extension [A, B, C](self: Self[A, B, C])
-  //       final def collection: Collection.Writer.With[A, self.type, Vector[C]] =  Applicative[container.Collection].pure(???)
-  //       final def optional: Optional[A, B, Option[C]] = ???
-  //       def union: Union.Writer.With[A, self.type, C]
-  //       def toPlain: Base.Schema.Writer[Identity, A, ?, C]
+//   trait Writer[Self[_, _, _], Optional[_, _, _]]:
+//     extension [A, B, C](self: Self[A, B, C])
+//       final def collection: Collection.Writer.With[A, self.type, Vector[C]] =  Applicative[container.Collection].pure(???)
+//       final def optional: Optional[A, B, Option[C]] = ???
+//       def union: Union.Writer.With[A, self.type, C]
+//       def toPlain: Base.Schema.Writer[Identity, A, ?, C]
 
-  // trait PrimitiveOps[Self[a] <: Optional[a], Optional[a] <: Primitive[a]]
-  //     extends SchemaOps[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
-  //   extension [A](self: Self[A])
-  //       def tpe: Type[?]
+// trait PrimitiveOps[Self[a] <: Optional[a], Optional[a] <: Primitive[a]]
+//     extends SchemaOps[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
+//   extension [A](self: Self[A])
+//       def tpe: Type[?]
 
-  //   extension [A, B, C](self: Self[C])
-  //       override def plain: Base.Primitive[C]
+//   extension [A, B, C](self: Self[C])
+//       override def plain: Base.Primitive[C]
 
-  // object PrimitiveOps:
-  //   trait Reader[Self[_], Optional[_]] extends SchemaOps.Reader[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
-  //     extension [A](self: Self[A])
-  //       def tpe: Type[?]
+// object PrimitiveOps:
+//   trait Reader[Self[_], Optional[_]] extends SchemaOps.Reader[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
+//     extension [A](self: Self[A])
+//       def tpe: Type[?]
 
-  //     extension [A, B, C](self: Self[C])
-  //       override def toPlain: Base.Primitive.Reader[C]
+//     extension [A, B, C](self: Self[C])
+//       override def toPlain: Base.Primitive.Reader[C]
 
-  //   trait Writer[Self[_], Optional[_]] extends SchemaOps.Writer[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
-  //     extension [A](self: Self[A])
-  //       def tpe: Type[?]
+//   trait Writer[Self[_], Optional[_]] extends SchemaOps.Writer[[_, _, a] =>> Self[a], [_, _, a] =>> Optional[a]]:
+//     extension [A](self: Self[A])
+//       def tpe: Type[?]
 
-  //     extension [A, B, C](self: Self[C])
-  //       override def toPlain: Base.Primitive.Writer[C]
+//     extension [A, B, C](self: Self[C])
+//       override def toPlain: Base.Primitive.Writer[C]
 
-  // object SchemaOps:
-  //   trait Isomorphic[Self[a, b] <: Schema.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema[Identity, ?, a]]
-  //       extends SchemaOps[Self, Optional, Collection.Of, Union.Of, Plain]:
-  //     extension [A, B](self: Self[A, B])
-  //       final override def collection: Collection.Of[self.type, Vector[B]] =
-  //         Applicative[container.Collection].pure(Base.Collection.Root(self))
-  //       final override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
+// object SchemaOps:
+//   trait Isomorphic[Self[a, b] <: Schema.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema[Identity, ?, a]]
+//       extends SchemaOps[Self, Optional, Collection.Of, Union.Of, Plain]:
+//     extension [A, B](self: Self[A, B])
+//       final override def collection: Collection.Of[self.type, Vector[B]] =
+//         Applicative[container.Collection].pure(Base.Collection.Root(self))
+//       final override def union: Union.Of[self.type, B] = Applicative[container.Union].pure(Base.Union.Root(self))
 
-  //   trait Reader[Self[a, b] <: Schema.Reader.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Reader[Identity, ?, a]]
-  //       extends SchemaOps[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
-  //     extension [A, B](self: Self[A, B])
-  //       final override def collection: Collection.Reader.Of[self.type, Vector[B]] =
-  //         Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
-  //       final override def union: Union.Reader.Of[self.type, B] =
-  //         Applicative[container.Union].pure(Base.Union.Reader.Root(self))
+//   trait Reader[Self[a, b] <: Schema.Reader.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Reader[Identity, ?, a]]
+//       extends SchemaOps[Self, Optional, Collection.Reader.Of, Union.Reader.Of, Plain]:
+//     extension [A, B](self: Self[A, B])
+//       final override def collection: Collection.Reader.Of[self.type, Vector[B]] =
+//         Applicative[container.Collection].pure(Base.Collection.Reader.Root(self))
+//       final override def union: Union.Reader.Of[self.type, B] =
+//         Applicative[container.Union].pure(Base.Union.Reader.Root(self))
 
-  //   trait Writer[Self[a, b] <: Schema.Writer.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Writer[Identity, ?, a]]
-  //       extends SchemaOps[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
-  //     extension [A, B](self: Self[A, B])
-  //       final override def collection: Collection.Writer.Of[self.type, Vector[B]] =
-  //         Applicative[container.Collection].pure(Base.Collection.Writer.Root(self))
-  //       final override def union: Union.Writer.Of[self.type, B] =
-  //         Applicative[container.Union].pure(Base.Union.Writer.Root(self))
-  //       def toValidationWriter: B => ValidationWriter[B] = ValidationWriter.Root(self.toPlain, _)
+//   trait Writer[Self[a, b] <: Schema.Writer.Of[a, b], Optional[_, _], Plain[a] <: Base.Schema.Writer[Identity, ?, a]]
+//       extends SchemaOps[Self, Optional, Collection.Writer.Of, Union.Writer.Of, Plain]:
+//     extension [A, B](self: Self[A, B])
+//       final override def collection: Collection.Writer.Of[self.type, Vector[B]] =
+//         Applicative[container.Collection].pure(Base.Collection.Writer.Root(self))
+//       final override def union: Union.Writer.Of[self.type, B] =
+//         Applicative[container.Union].pure(Base.Union.Writer.Root(self))
+//       def toValidationWriter: B => ValidationWriter[B] = ValidationWriter.Root(self.toPlain, _)
 
 //   trait ValueOps[Self[_, _], Optional[_, _], Collection[_, _], Union[_, _], Plain[_]]
 //       extends SchemaOps[Self, Optional, Collection, Union, Plain]

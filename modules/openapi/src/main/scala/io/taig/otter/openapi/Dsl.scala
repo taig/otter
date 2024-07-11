@@ -10,7 +10,7 @@ import cats.Functor
 import cats.Invariant
 
 trait Dsl extends Base.Dsl:
-  override object container extends Base.Container:
+  override object container extends Base.Metadata:
     override type Schema[+A] = Annotation[Metadata[A], A]
     override type Collection[+A] = Annotation[Metadata.Collection[A], A]
     override type Primitive[+A] = Annotation[Metadata.Primitive[A], A]
@@ -20,11 +20,10 @@ trait Dsl extends Base.Dsl:
   type MySchema[A, B, C] = Annotation[Metadata[A], Base.Schema[[a] =>> Annotation[Metadata[a], a], A, B, C]]
 
   // val x: MySchema[?, ?, String] = ???
-  
+
   // given xxx: Invariant[MySchema] = new Invariant[MySchema]:
-  //   override def imap[A, B](fa: MySchema[A])(f: A => B)(g: B => A): MySchema[B] = 
+  //   override def imap[A, B](fa: MySchema[A])(f: A => B)(g: B => A): MySchema[B] =
   //     fa.copy(metadata = fa.metadata.imap(f)(g), self = fa.self.imap(f)(g))
-  
 
   override given schemaApplicativeComonad: ApplicativeComonad[container.Schema] =
     new Applicative[container.Schema] with Comonad[container.Schema]:

@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import io.taig.otter as Base
 
-trait Container extends Base.Container:
+trait Container extends Base.Metadata:
   type Header[+A]
   type Query[+A]
   type Request[+A]

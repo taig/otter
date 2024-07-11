@@ -9,9 +9,9 @@ import cats.Invariant
 import cats.Applicative
 import cats.Comonad
 
-trait Syntax extends Ops:
-  implicit def schemaOps: SchemaOps.Isomorphic[Schema.With, Schema.With] = ???
-  implicit def primitiveOps: PrimitiveOps.Isomorphic[Primitive, Primitive] = ???
+trait Syntax extends Ops
+// implicit def schemaOps: SchemaOps.Isomorphic[Schema.With, Schema.With] = ???
+// implicit def primitiveOps: PrimitiveOps.Isomorphic[Primitive, Primitive] = ???
 
 // trait Syntax extends Syntax1:
 //   implicit val primitiveRequiredIsomoprhicOps
