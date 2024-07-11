@@ -69,7 +69,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     http,
     httpHttp4s,
     httpJsonCirce,
-    openapi,
+    openapi
     // httpOpenapi,
     // httpCirce,
     // server,
@@ -96,6 +96,7 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        "org.typelevel" %% "alleycats-core" % Version.Cats ::
         // "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
