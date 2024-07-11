@@ -20,7 +20,7 @@ object HeaderDecoder:
 
   def root[A](
       name: CIString,
-      schema: Value.Reader[A],
+      schema: Value.Reader.Via[String, A],
       values: List[Http4sHeader.Raw]
   ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] =
     val (value, remainders) = values.findWithRemainders { case Http4sHeader.Raw(`name`, value) => value }

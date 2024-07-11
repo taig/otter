@@ -4,7 +4,7 @@ import io.taig.otter as Base
 import io.taig.otter.Plain.*
 
 object UnionValueRequiredStringEncoder:
-  def apply[A](schema: Union.Value.Required.Writer[A], a: A): String = schema match
+  def apply[A](schema: Union.Value.Required.Writer.Via[String, A], a: A): String = schema match
     case Base.Union.Value.Required.Combine(left, right)        => combine(left, right, a)
     case Base.Union.Value.Required.Writer.Combine(left, right) => combine(left, right, a)
     case Base.Union.Value.Required.Writer.Root(schema)         => ValueRequiredStringEncoder(schema, a)
@@ -12,10 +12,10 @@ object UnionValueRequiredStringEncoder:
     case Base.Union.Value.Required.Transform(self, _, f)       => transform(self, f, a)
 
   def combine[A, B](
-      left: Union.Value.Required.Writer[A],
-      right: Union.Value.Required.Writer[B],
+      left: Union.Value.Required.Writer.Via[String, A],
+      right: Union.Value.Required.Writer.Via[String, B],
       ab: Either[A, B]
   ): String = ab.fold(ValueRequiredStringEncoder(left, _), ValueRequiredStringEncoder(right, _))
 
-  def transform[A, B](self: Union.Value.Required.Writer[A], f: B => A, b: B): String =
+  def transform[A, B](self: Union.Value.Required.Writer.Via[String, A], f: B => A, b: B): String =
     UnionValueRequiredStringEncoder(self, f(b))

@@ -13,7 +13,7 @@ object HeaderEncoder:
     case Base.Header.Writer.Root(name, schema) => root(name, schema, a)
     case Base.Header.Writer.Transform(self, f) => transform(self, f, a)
 
-  def root[A](name: CIString, schema: Value.Writer[A], a: A): Option[Http4sHeader.Raw] =
+  def root[A](name: CIString, schema: Value.Writer.Via[String, A], a: A): Option[Http4sHeader.Raw] =
     ValueStringEncoder(schema, a).map(Http4sHeader.Raw(name, _))
 
   def transform[A, B](self: Header.Writer[A], f: B => A, b: B): Option[Http4sHeader.Raw] =
