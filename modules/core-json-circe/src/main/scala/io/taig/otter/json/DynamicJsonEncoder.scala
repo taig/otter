@@ -9,7 +9,9 @@ object DynamicJsonEncoder:
     case Base.Dynamic.Root()                    => a
     case Base.Dynamic.Writer.Root()             => a
     case Base.Dynamic.Writer.Optional(self)     => optional(self, a)
+    case Base.Dynamic.Optional(self)            => optional(self, a)
     case Base.Dynamic.Writer.Transform(self, f) => transform(self, f, a)
+    case Base.Dynamic.Transform(self, _, f)     => transform(self, f, a)
 
   def optional[A](self: Dynamic.Writer[Json, A], a: Option[A]): Json =
     a.fold(Json.Null)(DynamicJsonEncoder(self, _))

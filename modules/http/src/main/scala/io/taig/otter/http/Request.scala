@@ -23,8 +23,8 @@ object Request:
       object Strict:
         final case class Apply[F[+_], A, B](
             parser: Array[Byte] => A,
-            decoder: Decoder[Schema.Reader[Identity, ?, *], A],
-            schema: F[Schema.Reader[F, ?, B]]
+            decoder: Decoder[Schema.Reader[Identity, String, ?, *], A],
+            schema: F[Schema.Reader[F, String, ?, B]]
         ) extends Request.Body.Singlepart.Strict[F, B]
 
         case object Binary extends Request.Body.Singlepart.Strict[Nothing, Array[Byte]]

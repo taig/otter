@@ -5,11 +5,11 @@ import cats.Functor
 import cats.syntax.all.*
 
 sealed trait Query[+F[+_], +A]:
-  def schema: F[Value[F, ?, ?]]
+  def schema: F[Value[F, String, ?, ?]]
   def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Query[G, A]
 
 object Query:
-  final case class Root[F[+_], A](name: String, schema: F[Value[F, ?, A]]) extends Query[F, A]:
+  final case class Root[F[+_], A](name: String, schema: F[Value[F, String, ?, A]]) extends Query[F, A]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Query[G, A] =
       copy(schema = fK(schema).map(_.translate(fK)))
 

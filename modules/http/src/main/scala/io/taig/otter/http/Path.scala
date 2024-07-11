@@ -37,11 +37,11 @@ object Path:
 
   sealed trait Parameter[+F[+_], +A]:
     def name: String
-    def schema: F[Value.Required.Reader[F, ?, ?]]
+    def schema: F[Value.Required.Reader[F, String, ?, ?]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Path.Parameter[G, A]
 
   object Parameter:
-    final case class Root[F[+_], A](name: String, schema: F[Value.Required.Reader[F, ?, A]])
+    final case class Root[F[+_], A](name: String, schema: F[Value.Required.Reader[F, String, ?, A]])
         extends Path.Parameter[F, A]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Path.Parameter[G, A] =
         copy(schema = fK(schema).map(_.translate(fK)))

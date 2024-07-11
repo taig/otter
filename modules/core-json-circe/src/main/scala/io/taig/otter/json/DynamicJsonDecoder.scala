@@ -11,7 +11,9 @@ object DynamicJsonDecoder:
     case Base.Dynamic.Root()                    => json.valid
     case Base.Dynamic.Reader.Root()             => json.valid
     case Base.Dynamic.Reader.Optional(self)     => optional(self, json)
+    case Base.Dynamic.Optional(self)            => optional(self, json)
     case Base.Dynamic.Reader.Transform(self, f) => transform(self, f, json)
+    case Base.Dynamic.Transform(self, f, _)     => transform(self, f, json)
 
   def optional[A](self: Dynamic.Reader[Json, A], json: Json): Decoder.Result[Json, Option[A]] =
     if json.isNull then none.valid else DynamicJsonDecoder(self, json).map(_.some)

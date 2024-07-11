@@ -85,15 +85,6 @@ object Collection:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, C]
 
   object Reader:
-    final case class Transform[+F[+_], A, B, C, D, E](
-        self: Collection.Reader[F, A, B, C],
-        validation: SchemaValidation.Collection[C, D, E]
-    ) extends Collection.Reader[F, A, B, E]:
-      export self.schema
-      override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, E] =
-        copy(self = self.translate(fK))
-
     final case class Optional[+F[+_], A, B, C](self: Collection.Reader[F, A, B, C])
         extends Collection.Reader[F, A, B, Option[C]]:
       export self.{constraints, schema}
@@ -105,6 +96,15 @@ object Collection:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, Vector[C]] =
         copy(schema = fK(schema).map(_.translate(fK)))
+
+    final case class Transform[+F[+_], A, B, C, D, E](
+        self: Collection.Reader[F, A, B, C],
+        validation: SchemaValidation.Collection[C, D, E]
+    ) extends Collection.Reader[F, A, B, E]:
+      export self.schema
+      override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
+      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Collection.Reader[G, A, ?, E] =
+        copy(self = self.translate(fK))
 
   sealed trait Writer[+F[+_], -A, +B, -C] extends Schema.Writer[F, A, B, C]:
     final def contramap[D](f: D => C): Collection.Writer[F, A, B, D] = Writer.Transform(this, f)
@@ -156,13 +156,13 @@ sealed trait Dictionary[+F[+_], -A, +B, C]
     extends Schema[F, A, B, C],
       Dictionary.Reader[F, A, B, C],
       Dictionary.Writer[F, A, B, C]:
-  override def imap[D](f: C => D)(g: D => C): Dictionary[F, A, B, D] = Dictionary.Transform(this, f, g)
-  override def optional: Dictionary[F, A, B, Option[C]] = Dictionary.Optional(this)
+  final override def imap[D](f: C => D)(g: D => C): Dictionary[F, A, B, D] = Dictionary.Transform(this, f, g)
+  final override def optional: Dictionary[F, A, B, Option[C]] = Dictionary.Optional(this)
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary[G, A, ?, C]
 
 object Dictionary:
   sealed trait Reader[+F[+_], -A, +B, +C] extends Schema.Reader[F, A, B, C]:
-    override def map[D](f: C => D): Dictionary.Reader[F, A, B, D] = Reader.Transform(this, f)
+    final override def map[D](f: C => D): Dictionary.Reader[F, A, B, D] = Reader.Transform(this, f)
     override def optional: Dictionary.Reader[F, A, B, Option[C]] = Reader.Optional(this)
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Dictionary.Reader[G, A, ?, C]
 
@@ -222,8 +222,8 @@ object Dictionary:
       copy(self = self.translate(fK))
 
 sealed trait Dynamic[A, B] extends Schema[Nothing, A, Nothing, B], Dynamic.Reader[A, B], Dynamic.Writer[A, B]:
-  override def optional: Dynamic[A, Option[B]] = ???
-  override def imap[C](f: B => C)(g: C => B): Dynamic[A, C] = ???
+  override def optional: Dynamic[A, Option[B]] = Dynamic.Optional(this)
+  override def imap[C](f: B => C)(g: C => B): Dynamic[A, C] = Dynamic.Transform(this, f, g)
   final override def translate[G[+_]: Functor](fK: [A] => Nothing => G[A]): Dynamic[A, B] = this
 
 object Dynamic:
@@ -251,7 +251,11 @@ object Dynamic:
 
     final case class Transform[A, B, C](self: Dynamic.Writer[A, B], f: C => B) extends Dynamic.Writer[A, C]
 
+  final case class Optional[A, B](self: Dynamic[A, B]) extends Dynamic[A, Option[B]]
+
   final case class Root[A]() extends Dynamic[A, A]
+
+  final case class Transform[A, B, C](self: Dynamic[A, B], f: B => C, g: C => B) extends Dynamic[A, C]
 
 sealed trait Enumeration[+F[+_], -A, +B, C]
     extends Value[F, A, B, C],

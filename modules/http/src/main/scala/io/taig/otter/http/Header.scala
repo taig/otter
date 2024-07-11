@@ -7,7 +7,7 @@ import org.typelevel.ci.CIString
 import cats.Functor
 
 sealed trait Header[+F[+_], A] extends Header.Reader[F, A], Header.Writer[F, A]:
-  override def schema: F[Base.Value[F, ?, ?]]
+  override def schema: F[Base.Value[F, String, ?, ?]]
   final def imap[B](f: A => B)(g: B => A): Header[F, B] = Header.Transform(this, f, g)
   override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A]
 
@@ -15,11 +15,12 @@ object Header:
   sealed trait Reader[+F[+_], +A] extends Product, Serializable:
     final def map[B](f: A => B): Header.Reader[F, B] = Reader.Transform(this, f)
     def name: CIString
-    def schema: F[Base.Value.Reader[F, ?, ?]]
+    def schema: F[Base.Value.Reader[F, String, ?, ?]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A]
 
   object Reader:
-    final case class Root[F[+_], A](name: CIString, schema: F[Base.Value.Reader[F, ?, A]]) extends Header.Reader[F, A]:
+    final case class Root[F[+_], A](name: CIString, schema: F[Base.Value.Reader[F, String, ?, A]])
+        extends Header.Reader[F, A]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
@@ -31,11 +32,12 @@ object Header:
   sealed trait Writer[+F[+_], -A] extends Product, Serializable:
     final def contramap[B](f: B => A): Header.Writer[F, B] = Writer.Transform(this, f)
     def name: CIString
-    def schema: F[Base.Value.Writer[F, ?, ?]]
+    def schema: F[Base.Value.Writer[F, String, ?, ?]]
     def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A]
 
   object Writer:
-    final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value.Writer[F, ?, A]]) extends Header.Writer[F, A]:
+    final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value.Writer[F, String, ?, A]])
+        extends Header.Writer[F, A]:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A] =
         copy(schema = fK(schema).map(_.translate(fK)))
 
@@ -44,7 +46,7 @@ object Header:
       override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, B] =
         copy(self = self.translate(fK))
 
-  final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value[F, ?, A]]) extends Header[F, A]:
+  final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value[F, String, ?, A]]) extends Header[F, A]:
     override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A] =
       copy(schema = fK(schema).map(_.translate(fK)))
 
