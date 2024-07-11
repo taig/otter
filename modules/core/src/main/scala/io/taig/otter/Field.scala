@@ -1,51 +1,27 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.Functor
 
-sealed trait Field[-A, +B, C] extends Field.Reader[A, B, C], Field.Writer[A, B, C]:
-  override def name(value: String): Field[A, B, C]
-
-  def nulls(value: Field.Null): Field[A, B, C]
-
-  override def schema: Schema[A, ?, ?]
+sealed trait Field[-F, +O, A] extends Field.Reader[F, O, A], Field.Writer[F, O, A]:
+  override def schema: Schema[F, ?, ?]
 
 object Field:
-  sealed trait Reader[-A, +B, +C]:
+  sealed trait Reader[-F, +O, +A]:
+    def metadata: Metadata
     def name: String
-    def name(value: String): Field.Reader[A, B, C]
-
-    def schema: Schema.Reader[A, ?, ?]
+    def schema: Schema.Reader[F, ?, ?]
 
   object Reader:
-    final case class Root[F[+_], A, +B <: Schema.Reader[A, ?, C], C](name: String, schema: B)
-        extends Field.Reader[A, B, C]:
-      override def name(value: String): Field.Reader[A, B, C] = copy(name = name)
+    final case class Root[F, +O <: Schema.Reader[F, ?, A], A](metadata: Metadata, name: String, schema: O)
+        extends Field.Reader[F, O, A]
 
-  sealed trait Writer[-A, +B, -C]:
+  sealed trait Writer[-F, +O, -A]:
+    def metadata: Metadata
     def name: String
-    def name(value: String): Field.Writer[A, B, C]
-
-    def nulls: Field.Null
-    def nulls(value: Field.Null): Field.Writer[A, B, C]
-
-    def schema: Schema.Writer[A, ?, ?]
+    def schema: Schema.Writer[F, ?, ?]
 
   object Writer:
-    final case class Root[F[+_], A, +B <: Schema.Writer[A, ?, C], C](name: String, nulls: Field.Null, schema: B)
-        extends Field.Writer[A, B, C]:
-      override def name(value: String): Field.Writer[A, B, C] = copy(name = name)
-      override def nulls(value: Null): Field.Writer[A, B, C] = copy(nulls = nulls)
+    final case class Root[F, +O <: Schema.Writer[F, ?, A], A](metadata: Metadata, name: String, schema: O)
+        extends Field.Writer[F, O, A]
 
-  final case class Root[F[+_], A, +B <: Schema[A, ?, C], C](name: String, nulls: Field.Null, schema: B)
-      extends Field[A, B, C]:
-    override def name(value: String): Field[A, B, C] = copy(name = name)
-    override def nulls(value: Null): Field[A, B, C] = copy(nulls = nulls)
-
-  enum Null:
-    case Hide
-    case Show
-    case Inherit
-
-  object Null:
-    val Default: Field.Null = Inherit
+  final case class Root[F, +O <: Schema[F, ?, A], A](metadata: Metadata, name: String, schema: O) extends Field[F, O, A]

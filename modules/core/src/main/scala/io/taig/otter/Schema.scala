@@ -7,9 +7,7 @@ import io.taig.otter.validation.Validation
 import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
-import cats.Eq
 import io.taig.enumeration.ext.Mapping
-import scala.reflect.ClassTag
 
 sealed trait Schema[-F, +O, A] extends Schema.Reader[F, O, A], Schema.Writer[F, O, A]:
   def imap[B](f: A => B)(g: B => A): Schema[F, O, B]
@@ -423,9 +421,6 @@ object Product:
     export self.schemas
 
 sealed trait Record[-F, +B, C] extends Schema[F, B, C], Record.Reader[F, B, C], Record.Writer[F, B, C]:
-  override def nulls: Record.Null
-  final def nulls(value: Record.Null): Record.Writer[F, B, C] = Record.Nulls(this, value)
-
   def fields: Chain[Field[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Record[F, B, D] = Record.Transform(this, f, g)
   override def optional: Record[F, B, Option[C]] = Record.Optional(this)
@@ -455,8 +450,6 @@ object Record:
       export self.fields
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
-    def nulls: Record.Null
-
     override def contramap[D](f: D => C): Record.Writer[F, B, D] = Writer.Transform(this, f)
     def fields: Chain[Field.Writer[F, ?, ?]]
     override def optional: Record.Writer[F, B, Option[C]] = Writer.Optional(this)
@@ -467,54 +460,33 @@ object Record:
     final case class Combine[F, B, C, D, E](left: Record.Writer[F, B, C], right: Record.Writer[F, D, E])
         extends Record.Writer[F, B & D, (C, E)]:
       override def fields: Chain[Field.Writer[F, ?, ?]] = left.fields ++ right.fields
-      override def nulls: Record.Null = Record.Null.Default
-
-    final case class Nulls[F, B, C](self: Record.Writer[F, B, C], nulls: Record.Null) extends Record.Writer[F, B, C]:
-      export self.fields
 
     final case class One[F, B, C](field: Field.Writer[F, B, C]) extends Record.Writer[F, B, C]:
-      override def nulls: Record.Null = Record.Null.Default
       override def fields: Chain[Field.Writer[F, ?, ?]] = Chain.one(field)
 
     final case class Optional[F, B, C](self: Record.Writer[F, B, C]) extends Record.Writer[F, B, Option[C]]:
-      export self.{fields, nulls}
+      export self.fields
 
     final case class Transform[F, B, C, D](self: Record.Writer[F, B, C], f: D => C) extends Record.Writer[F, B, D]:
-      export self.{fields, nulls}
+      export self.fields
 
   case object Empty extends Record[Any, Nothing, Unit]:
-    override def nulls: Record.Null = Record.Null.Default
     override def fields: Chain[Nothing] = Chain.empty
 
   final case class Combine[F, B, C, D, E](left: Record[F, B, C], right: Record[F, D, E])
       extends Record[F, B & D, (C, E)]:
-    override def nulls: Record.Null = Record.Null.Default
     override def fields: Chain[Field[F, ?, ?]] = left.fields ++ right.fields
 
-  final case class Nulls[F, B, C](self: Record[F, B, C], nulls: Record.Null) extends Record[F, B, C]:
-    export self.fields
-
   final case class One[F, B, C](field: Field[F, B, C]) extends Record[F, B, C]:
-    override def nulls: Record.Null = Record.Null.Default
     override def fields: Chain[Field[F, ?, ?]] = Chain.one(field)
 
   final case class Optional[F, B, C](self: Record[F, B, C]) extends Record[F, B, Option[C]]:
-    export self.{fields, nulls}
+    export self.fields
 
   final case class Transform[F, B, C, D](self: Record[F, B, C], f: C => D, g: D => C) extends Record[F, B, D]:
-    export self.{fields, nulls}
-
-  enum Null:
-    case Show
-    case Hide
-
-  object Null:
-    val Default: Null = Show
-    given Eq[Null] = Eq.fromUniversalEquals
+    export self.fields
 
 sealed trait Sum[-F, +B, C] extends Schema[F, B, C], Sum.Reader[F, B, C], Sum.Writer[F, B, C]:
-  final override def discriminator(value: Sum.Discriminator): Sum[F, B, C] = Sum.Discriminators(this, value)
-
   override def branches: NonEmptyChain[Branch[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Sum[F, B, D] = Sum.Transform(this, f, g)
   override def optional: Sum[F, B, Option[C]] = Sum.Optional(this)
@@ -522,9 +494,6 @@ sealed trait Sum[-F, +B, C] extends Schema[F, B, C], Sum.Reader[F, B, C], Sum.Wr
 
 object Sum:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
-    def discriminator: Sum.Discriminator
-    def discriminator(value: Sum.Discriminator): Sum.Reader[F, B, C] = Reader.Discriminators(this, value)
-
     def branches: NonEmptyChain[Branch.Reader[F, ?, ?]]
     final override def map[D](f: C => D): Sum.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Sum.Reader[F, B, Option[C]] = Reader.Optional(this)
@@ -535,27 +504,17 @@ object Sum:
     final case class Combine[F, B, C, D, E](left: Sum.Reader[F, B, C], right: Sum.Reader[F, D, E])
         extends Sum.Reader[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Reader[F, ?, ?]] = left.branches ++ right.branches
-      override def discriminator: Discriminator = Discriminator.Default
-
-    final case class Discriminators[F, B, C](self: Sum.Reader[F, B, C], discriminator: Sum.Discriminator)
-        extends Sum.Reader[F, B, C]:
-      export self.branches
-      override def discriminator(value: Sum.Discriminator): Sum.Reader[F, B, C] = ???
 
     final case class Optional[F, B, C](self: Sum.Reader[F, B, C]) extends Sum.Reader[F, B, Option[C]]:
-      export self.{branches, discriminator}
+      export self.branches
 
     final case class Root[F, B, C](branch: Branch.Reader[F, B, C]) extends Sum.Reader[F, B, C]:
       override def branches: NonEmptyChain[Branch.Reader[F, B, C]] = NonEmptyChain.one(branch)
-      override def discriminator: Discriminator = Discriminator.Default
 
     final case class Transform[F, B, C, D](self: Sum.Reader[F, B, C], f: C => D) extends Sum.Reader[F, B, D]:
-      export self.{branches, discriminator}
+      export self.branches
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
-    def discriminator: Discriminator
-    def discriminator(value: Discriminator): Sum.Writer[F, B, C] = Writer.Discriminators(this, value)
-
     def branches: NonEmptyChain[Branch.Writer[F, ?, ?]]
     final override def contramap[D](f: D => C): Sum.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Sum.Writer[F, B, Option[C]] = Writer.Optional(this)
@@ -566,55 +525,27 @@ object Sum:
     final case class Combine[F, B, C, D, E](left: Sum.Writer[F, B, C], right: Sum.Writer[F, D, E])
         extends Sum.Writer[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Writer[F, ?, ?]] = left.branches ++ right.branches
-      override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-
-    final case class Discriminators[F, B, C](self: Sum.Writer[F, B, C], discriminator: Sum.Discriminator)
-        extends Sum.Writer[F, B, C]:
-      export self.branches
-      override def discriminator(value: Sum.Discriminator): Sum.Writer[F, B, C] = ???
 
     final case class Optional[F, B, C](self: Sum.Writer[F, B, C]) extends Sum.Writer[F, B, Option[C]]:
-      export self.{branches, discriminator}
+      export self.branches
 
     final case class Root[F, B, C](branch: Branch.Writer[F, B, C]) extends Sum.Writer[F, B, C]:
       override def branches: NonEmptyChain[Branch.Writer[F, B, C]] = NonEmptyChain.one(branch)
-      override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
 
     final case class Transform[F, B, C, D](self: Sum.Writer[F, B, C], f: D => C) extends Sum.Writer[F, B, D]:
-      export self.{branches, discriminator}
+      export self.branches
 
   final case class Combine[F, B, C, D, E](left: Sum[F, B, C], right: Sum[F, D, E]) extends Sum[F, B | D, Either[C, E]]:
     override def branches: NonEmptyChain[Branch[F, ?, ?]] = left.branches ++ right.branches
-    override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
-
-  final case class Discriminators[F, B, C](self: Sum[F, B, C], discriminator: Sum.Discriminator) extends Sum[F, B, C]:
-    export self.branches
 
   final case class Optional[F, B, C](self: Sum[F, B, C]) extends Sum[F, B, Option[C]]:
-    export self.{branches, discriminator}
+    export self.branches
 
   final case class Root[F, B, C](branch: Branch[F, B, C]) extends Sum[F, B, C]:
     override def branches: NonEmptyChain[Branch[F, B, C]] = NonEmptyChain.one(branch)
-    override def discriminator: Sum.Discriminator = Sum.Discriminator.Default
 
   final case class Transform[F, B, C, D](self: Sum[F, B, C], f: C => D, g: D => C) extends Sum[F, B, D]:
-    export self.{branches, discriminator}
-
-  enum Discriminator:
-    case Nested(identifier: String, value: String)
-    case Merged(identifier: String)
-    case Keyed
-
-  object Discriminator:
-    object Nested:
-      val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
-
-    object Merged:
-      val Default: Discriminator.Merged = Merged(identifier = "type")
-
-    val Default: Discriminator = Nested.Default
-
-    given Eq[Discriminator] = Eq.fromUniversalEquals
+    export self.branches
 
 sealed trait Union[-F, +B, C] extends Schema[F, B, C], Union.Reader[F, B, C], Union.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Union[F, B, D] = Union.Transform(this, f, g)
