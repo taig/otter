@@ -1,7 +1,6 @@
 package io.taig.otter.openapi
 
-import io.taig.otter.http.Dsl.*
-import io.taig.otter.http.Dsl.given
+import io.taig.otter.openapi.Dsl.*
 
 object Playground:
   val x: Schema[String] = ???

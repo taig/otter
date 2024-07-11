@@ -1,4 +1,4 @@
-package io.taig.otter.http
+package io.taig.otter.openapi
 
 import cats.Applicative
 import cats.Comonad

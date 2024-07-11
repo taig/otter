@@ -64,12 +64,12 @@ lazy val root = module(identifier = None, jvmOnly = true)
     core,
     coreJsonCirce,
     // circe,
-    openapi,
     // typescript,
     openapiCirce,
     http,
     httpHttp4s,
-    httpJsonCirce
+    httpJsonCirce,
+    openapi,
     // httpOpenapi,
     // httpCirce,
     // server,
@@ -115,9 +115,6 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi"))
-  .dependsOn(core % "compile->compile;test->test")
-
 lazy val openapiCirce = module(identifier = Some("openapi-circe"))
   .settings(
     libraryDependencies ++=
@@ -145,6 +142,9 @@ lazy val httpJsonCirce = module(identifier = Some("http-circe-json"), jvmOnly = 
         Nil
   )
   .dependsOn(coreJsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
+
+lazy val openapi = module(identifier = Some("openapi"))
+  .dependsOn(http % "compile->compile;test->test")
 
 // lazy val httpOpenapi = module(identifier = Some("http-openapi"))
 //   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
