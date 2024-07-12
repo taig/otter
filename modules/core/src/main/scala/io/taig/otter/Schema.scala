@@ -151,7 +151,7 @@ object Dictionary:
       override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Root[F, B, +C <: Schema.Reader[F, ?, D], D](
-      metadata: Metadata,
+        metadata: Metadata,
         key: Primitive.Required.Reader[B],
         value: C
     ) extends Dictionary.Reader[F, C, List[(B, D)]]:
@@ -181,8 +181,8 @@ object Dictionary:
 
     final case class Transform[F, B, C, D](self: Dictionary.Writer[F, B, C], f: D => C)
         extends Dictionary.Writer[F, B, D]:
-          export self.metadata
-          override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, D] = copy(self = self.update(f))
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, D] = copy(self = self.update(f))
 
   final case class Optional[F, B, C](self: Dictionary[F, B, C]) extends Dictionary[F, B, Option[C]]:
     export self.metadata
@@ -190,7 +190,7 @@ object Dictionary:
 
   final case class Root[F, B, +C <: Schema[F, ?, D], D](metadata: Metadata, key: Primitive.Required[B], value: C)
       extends Dictionary[F, C, List[(B, D)]]:
-        override def update(f: Metadata => Metadata): Dictionary[F, C, List[(B, D)]] = copy(metadata = f(metadata))
+    override def update(f: Metadata => Metadata): Dictionary[F, C, List[(B, D)]] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D](self: Dictionary[F, B, C], f: C => D, g: D => C) extends Dictionary[F, B, D]:
     export self.metadata
@@ -205,16 +205,16 @@ object Dynamic:
   sealed trait Reader[-F, +B] extends Schema.Reader[F, Nothing, B]:
     final override def map[C](f: B => C): Dynamic.Reader[F, C] = Reader.Transform(this, f)
     override def optional: Dynamic.Reader[F, Option[B]] = Reader.Optional(this)
-    override def update(f: Metadata => Metadata): Dynamic.Reader[F, B] 
+    override def update(f: Metadata => Metadata): Dynamic.Reader[F, B]
 
   object Reader:
     final case class Optional[F, B](self: Dynamic.Reader[F, B]) extends Dynamic.Reader[F, Option[B]]:
       export self.metadata
-      override def update(f: Metadata => Metadata): Dynamic.Reader[F, Option[B]] = 
+      override def update(f: Metadata => Metadata): Dynamic.Reader[F, Option[B]] =
         copy(self = self.update(f))
 
     final case class Root[F](metadata: Metadata) extends Dynamic.Reader[F, F]:
-      override def update(f: Metadata => Metadata): Dynamic.Reader[F, F] = 
+      override def update(f: Metadata => Metadata): Dynamic.Reader[F, F] =
         copy(metadata = f(metadata))
 
     final case class Transform[F, B, C](self: Dynamic.Reader[F, B], f: B => C) extends Dynamic.Reader[F, C]:
@@ -247,11 +247,12 @@ object Dynamic:
 
   final case class Transform[F, B, C](self: Dynamic[F, B], f: B => C, g: C => B) extends Dynamic[F, C]:
     export self.metadata
-    override def update(f: Metadata => Metadata): Dynamic[F, C] = copy(self = self.update(F))
+    override def update(f: Metadata => Metadata): Dynamic[F, C] = copy(self = self.update(f))
 
 sealed trait Enumeration[-F, +B, C] extends Value[F, B, C], Enumeration.Reader[F, B, C], Enumeration.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Enumeration[F, B, D] = Enumeration.Transform(this, f, g)
   override def optional: Enumeration[F, B, Option[C]] = Enumeration.Optional(this)
+  override def update(f: Metadata => Metadata): Enumeration[F, B, C]
 
 object Enumeration:
   sealed trait Required[-F, +B, C]
@@ -260,65 +261,103 @@ object Enumeration:
         Enumeration.Required.Reader[F, B, C],
         Enumeration.Required.Writer[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Enumeration.Required[F, B, D] = Required.Transform(this, f, g)
+    override def update(f: Metadata => Metadata): Enumeration.Required[F, B, C]
 
   object Required:
     sealed trait Reader[-F, +B, +C] extends Value.Required.Reader[F, B, C], Enumeration.Reader[F, B, C]:
       override def map[D](f: C => D): Enumeration.Required.Reader[F, B, D] = Reader.Transform(this, f)
+      override def update(f: Metadata => Metadata): Enumeration.Required.Reader[F, B, C]
 
     object Reader:
       final case class Root[F, +B <: Value.Required.Reader[F, ?, C], C, D](
+          metadata: Metadata,
           schema: B,
           mapping: Mapping[D, C],
           writer: Schema.Writer[F, ?, C]
-      ) extends Enumeration.Required.Reader[F, B, D]
+      ) extends Enumeration.Required.Reader[F, B, D]:
+        override def update(f: Metadata => Metadata): Enumeration.Required.Reader[F, B, D] =
+          copy(metadata = f(metadata))
 
       final case class Transform[F, B, C, D](self: Enumeration.Required.Reader[F, B, C], f: C => D)
-          extends Enumeration.Required.Reader[F, B, D]
+          extends Enumeration.Required.Reader[F, B, D]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Enumeration.Required.Reader[F, B, D] =
+          copy(self = self.update(f))
 
     sealed trait Writer[-F, +B, -C] extends Value.Required.Writer[F, B, C], Enumeration.Writer[F, B, C]:
       override def contramap[D](f: D => C): Enumeration.Required.Writer[F, B, D] = Writer.Transform(this, f)
+      override def update(f: Metadata => Metadata): Enumeration.Required.Writer[F, B, C]
 
     object Writer:
-      final case class Root[F, +B <: Value.Required.Writer[F, ?, C], C, D](schema: B, f: D => C)
-          extends Enumeration.Required.Writer[F, B, D]
+      final case class Root[F, +B <: Value.Required.Writer[F, ?, C], C, D](metadata: Metadata, schema: B, f: D => C)
+          extends Enumeration.Required.Writer[F, B, D]:
+        override def update(f: Metadata => Metadata): Enumeration.Required.Writer[F, B, D] =
+          copy(metadata = f(metadata))
 
       final case class Transform[F, B, C, D](self: Enumeration.Required.Writer[F, B, C], f: D => C)
-          extends Enumeration.Required.Writer[F, B, D]
+          extends Enumeration.Required.Writer[F, B, D]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Enumeration.Required.Writer[F, B, D] =
+          copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Enumeration.Required[F, B, C], f: C => D, g: D => C)
-        extends Enumeration.Required[F, B, D]
+        extends Enumeration.Required[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Enumeration.Required[F, B, D] = copy(self = self.update(f))
 
   sealed trait Reader[-F, +B, +C] extends Value.Reader[F, B, C]:
     override def map[D](f: C => D): Enumeration.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Enumeration.Reader[F, B, Option[C]] = Reader.Optional(this)
+    override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, C]
 
   object Reader:
-    final case class Optional[F, B, C](self: Enumeration.Reader[F, B, C]) extends Enumeration.Reader[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Enumeration.Reader[F, B, C]) extends Enumeration.Reader[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Root[F, +B <: Value.Reader[F, ?, C], C, D](
+        metadata: Metadata,
         schema: B,
         mapping: Mapping[D, C],
         writer: Schema.Writer[F, ?, C]
-    ) extends Enumeration.Reader[F, B, D]
+    ) extends Enumeration.Reader[F, B, D]:
+      override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, D] =
+        copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D](self: Enumeration.Reader[F, B, C], f: C => D)
-        extends Enumeration.Reader[F, B, D]
+        extends Enumeration.Reader[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, D] =
+        copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Value.Writer[F, B, C]:
     override def contramap[D](f: D => C): Enumeration.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Enumeration.Writer[F, B, Option[C]] = Writer.Optional(this)
+    override def update(f: Metadata => Metadata): Enumeration.Writer[F, B, C]
 
   object Writer:
-    final case class Optional[F, B, C](self: Enumeration.Writer[F, B, C]) extends Enumeration.Writer[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Enumeration.Writer[F, B, C]) extends Enumeration.Writer[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Enumeration.Writer[F, B, Option[C]] =
+        copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Enumeration.Writer[F, B, C], f: D => C)
-        extends Enumeration.Writer[F, B, D]
+        extends Enumeration.Writer[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Enumeration.Writer[F, B, D] =
+        copy(self = self.update(f))
 
-  final case class Optional[F, B, C](self: Enumeration[F, B, C]) extends Enumeration[F, B, Option[C]]
+  final case class Optional[F, B, C](self: Enumeration[F, B, C]) extends Enumeration[F, B, Option[C]]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Enumeration[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, +B <: Value[F, ?, C], C, D](schema: B, mapping: Mapping[D, C]) extends Enumeration[F, B, D]
+  final case class Root[F, +B <: Value[F, ?, C], C, D](metadata: Metadata, schema: B, mapping: Mapping[D, C])
+      extends Enumeration[F, B, D]:
+    override def update(f: Metadata => Metadata): Enumeration[F, B, D] = copy(metadata = f(metadata))
 
-  final case class Transform[F, B, C, D](self: Enumeration[F, B, C], f: C => D, g: D => C) extends Enumeration[F, B, D]
+  final case class Transform[F, B, C, D](self: Enumeration[F, B, C], f: C => D, g: D => C) extends Enumeration[F, B, D]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Enumeration[F, B, D] = copy(self = self.update(f))
 
 sealed trait Primitive[A] extends Value[Any, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
