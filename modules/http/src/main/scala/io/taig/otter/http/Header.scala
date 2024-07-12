@@ -1,56 +1,51 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter as Base
-import io.taig.otter.Value
+import io.taig.otter.*
 import org.typelevel.ci.CIString
-import cats.Functor
+import scala.Product as SProduct
 
-sealed trait Header[+F[+_], A] extends Header.Reader[F, A], Header.Writer[F, A]:
-  override def schema: F[Base.Value[F, String, ?, ?]]
-  final def imap[B](f: A => B)(g: B => A): Header[F, B] = Header.Transform(this, f, g)
-  override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A]
+sealed trait Header[A] extends Header.Reader[A], Header.Writer[A]:
+  override def schema: Value[String, ?, ?]
+  final def imap[B](f: A => B)(g: B => A): Header[B] = Header.Transform(this, f, g)
+  def update(f: Metadata => Metadata): Header[A]
 
 object Header:
-  sealed trait Reader[+F[+_], +A] extends Product, Serializable:
-    final def map[B](f: A => B): Header.Reader[F, B] = Reader.Transform(this, f)
+  sealed trait Reader[+A] extends SProduct, Serializable:
+    final def map[B](f: A => B): Header.Reader[B] = Reader.Transform(this, f)
+    def metadata: Metadata
     def name: CIString
-    def schema: F[Base.Value.Reader[F, String, ?, ?]]
-    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A]
+    def schema: Value.Reader[String, ?, ?]
+    def update(f: Metadata => Metadata): Header.Reader[A]
 
   object Reader:
-    final case class Root[F[+_], A](name: CIString, schema: F[Base.Value.Reader[F, String, ?, A]])
-        extends Header.Reader[F, A]:
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, A] =
-        copy(schema = fK(schema).map(_.translate(fK)))
+    final case class Root[A](metadata: Metadata, name: CIString, schema: Value.Reader[String, ?, A])
+        extends Header.Reader[A]:
+      override def update(f: Metadata => Metadata): Header.Reader[A] = copy(metadata = f(metadata))
 
-    final case class Transform[F[+_], A, B](self: Header.Reader[F, A], f: A => B) extends Header.Reader[F, B]:
-      export self.{name, schema}
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Reader[G, B] =
-        copy(self = self.translate(fK))
+    final case class Transform[A, B](self: Header.Reader[A], f: A => B) extends Header.Reader[B]:
+      export self.{metadata, name, schema}
+      override def update(f: Metadata => Metadata): Header.Reader[B] = copy(self = self.update(f))
 
-  sealed trait Writer[+F[+_], -A] extends Product, Serializable:
-    final def contramap[B](f: B => A): Header.Writer[F, B] = Writer.Transform(this, f)
+  sealed trait Writer[-A] extends SProduct, Serializable:
+    final def contramap[B](f: B => A): Header.Writer[B] = Writer.Transform(this, f)
+    def metadata: Metadata
     def name: CIString
-    def schema: F[Base.Value.Writer[F, String, ?, ?]]
-    def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A]
+    def schema: Value.Writer[String, ?, ?]
+    def update(f: Metadata => Metadata): Header.Writer[A]
 
   object Writer:
-    final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value.Writer[F, String, ?, A]])
-        extends Header.Writer[F, A]:
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, A] =
-        copy(schema = fK(schema).map(_.translate(fK)))
+    final case class Root[A](metadata: Metadata, name: CIString, schema: Value.Writer[String, ?, A])
+        extends Header.Writer[A]:
+      override def update(f: Metadata => Metadata): Header.Writer[A] = copy(metadata = f(metadata))
 
-    final case class Transform[F[+_], A, B](self: Header.Writer[F, A], f: B => A) extends Header.Writer[F, B]:
-      export self.{name, schema}
-      override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header.Writer[G, B] =
-        copy(self = self.translate(fK))
+    final case class Transform[A, B](self: Header.Writer[A], f: B => A) extends Header.Writer[B]:
+      export self.{metadata, name, schema}
+      override def update(f: Metadata => Metadata): Header.Writer[B] = copy(self = self.update(f))
 
-  final case class Root[+F[+_], A](name: CIString, schema: F[Base.Value[F, String, ?, A]]) extends Header[F, A]:
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, A] =
-      copy(schema = fK(schema).map(_.translate(fK)))
+  final case class Root[A](metadata: Metadata, name: CIString, schema: Value[String, ?, A]) extends Header[A]:
+    override def update(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
 
-  final case class Transform[F[+_], A, B](self: Header[F, A], f: A => B, g: B => A) extends Header[F, B]:
-    export self.{name, schema}
-    override def translate[G[+_]: Functor](fK: [A] => F[A] => G[A]): Header[G, B] =
-      copy(self = self.translate(fK))
+  final case class Transform[A, B](self: Header[A], f: A => B, g: B => A) extends Header[B]:
+    export self.{metadata, name, schema}
+    override def update(f: Metadata => Metadata): Header[B] = copy(self = self.update(f))
