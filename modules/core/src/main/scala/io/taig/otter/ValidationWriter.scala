@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import cats.Id as Identity
 import io.taig.otter as Base
 
 sealed abstract class ValidationWriter[+A]:
@@ -9,9 +8,9 @@ sealed abstract class ValidationWriter[+A]:
 object ValidationWriter:
   sealed abstract class Value[+A] extends ValidationWriter[A]
 
-  // object Value:
-  //   final case class Root[A](writer: Base.Value.Writer[Identity, Any, ?, A], value: A) extends ValidationWriter.Value[A]
+  object Value:
+    final case class Root[A](writer: Base.Value.Writer[Any, ?, A], value: A) extends ValidationWriter.Value[A]
 
-  // final case class Root[A, B](writer: Base.Schema.Writer[Identity, Any, ?, A], value: A) extends ValidationWriter[A]
+  final case class Root[A, B](writer: Schema.Writer[Any, ?, A], value: A) extends ValidationWriter[A]
 
-  // def apply[A](writer: Base.Schema.Writer[Identity, Any, ?, A], value: A): ValidationWriter[A] = Root(writer, value)
+  def apply[A](writer: Schema.Writer[Any, ?, A], value: A): ValidationWriter[A] = Root(writer, value)

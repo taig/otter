@@ -9,7 +9,7 @@ import cats.Order
 import cats.implicits.*
 import io.taig.otter.validation.Validations as Base
 
-trait Validations extends Schemas, Syntax
+trait Validations
 // val email: SchemaValidation.Primitive[String, Nothing, String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
 // def matches(pattern: Pattern): SchemaValidation.Primitive[String, Nothing, String, Unit] =
