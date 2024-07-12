@@ -11,23 +11,26 @@ import io.taig.enumeration.ext.Mapping
 
 sealed trait Schema[-F, +O, A] extends Schema.Reader[F, O, A], Schema.Writer[F, O, A]:
   def imap[B](f: A => B)(g: B => A): Schema[F, O, B]
-  override def metadata: Metadata = ???
   override def optional: Schema[F, O, Option[A]]
+  override def update(f: Metadata => Metadata): Schema[F, O, A]
 
 object Schema:
   sealed trait Reader[-F, +B, +C] extends SProduct, Serializable:
-    def metadata: Metadata = ???
+    def metadata: Metadata
     def map[D](f: C => D): Schema.Reader[F, B, D]
     def optional: Schema.Reader[F, B, Option[C]]
+    def update(f: Metadata => Metadata): Schema.Reader[F, B, C]
 
   sealed trait Writer[-F, +B, -C] extends SProduct, Serializable:
     def contramap[D](f: D => C): Schema.Writer[F, B, D]
-    def metadata: Metadata = ???
+    def metadata: Metadata
     def optional: Schema.Writer[F, B, Option[C]]
+    def update(f: Metadata => Metadata): Schema.Writer[F, B, C]
 
 sealed trait Value[-F, +B, C] extends Schema[F, B, C], Value.Reader[F, B, C], Value.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Value[F, B, D]
   override def optional: Value[F, B, Option[C]]
+  override def update(f: Metadata => Metadata): Value[F, B, C]
 
 object Value:
   sealed trait Required[-F, +B, C]
@@ -35,21 +38,26 @@ object Value:
         Value.Required.Reader[F, B, C],
         Value.Required.Writer[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Value.Required[F, B, D]
+    override def update(f: Metadata => Metadata): Value.Required[F, B, C]
 
   object Required:
     sealed trait Reader[-F, +B, +C] extends Value.Reader[F, B, C]:
       override def map[D](f: C => D): Value.Required.Reader[F, B, D]
+      override def update(f: Metadata => Metadata): Value.Required.Reader[F, B, C]
 
     sealed trait Writer[-F, +B, -C] extends Value.Writer[F, B, C]:
       override def contramap[D](f: D => C): Value.Required.Writer[F, B, D]
+      override def update(f: Metadata => Metadata): Value.Required.Writer[F, B, C]
 
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     override def map[D](f: C => D): Value.Reader[F, B, D]
     override def optional: Value.Reader[F, B, Option[C]]
+    override def update(f: Metadata => Metadata): Value.Reader[F, B, C]
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Value.Writer[F, B, D]
     override def optional: Value.Writer[F, B, Option[C]]
+    override def update(f: Metadata => Metadata): Value.Writer[F, B, C]
 
 sealed trait Collection[-F, +B, C] extends Schema[F, B, C], Collection.Reader[F, B, C], Collection.Writer[F, B, C]:
   final override def imap[D](f: C => D)(g: D => C): Collection[F, B, D] = ivalidate(Validation.lift(f))(g)
@@ -57,6 +65,7 @@ sealed trait Collection[-F, +B, C] extends Schema[F, B, C], Collection.Reader[F,
     Collection.Transform(this, validation, f)
   final override def optional: Collection[F, B, Option[C]] = Collection.Optional(this)
   override def schema: Schema[F, ?, ?]
+  override def update(f: Metadata => Metadata): Collection[F, B, C]
 
 object Collection:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
@@ -64,129 +73,181 @@ object Collection:
     final override def map[D](f: C => D): Collection.Reader[F, B, D] = validate(Validation.lift(f))
     override def optional: Collection.Reader[F, B, Option[C]] = Reader.Optional(this)
     def schema: Schema.Reader[?, ?, ?]
-    final def validate[C1 >: C, D, E](
-        validation: SchemaValidation.Collection[C1, D, E]
-    ): Collection.Reader[F, B, E] = Reader.Transform(this, validation)
+    override def update(f: Metadata => Metadata): Collection.Reader[F, B, C]
+    final def validate[C1 >: C, D, E](validation: SchemaValidation.Collection[C1, D, E]): Collection.Reader[F, B, E] =
+      Reader.Transform(this, validation)
 
   object Reader:
     final case class Optional[F, B, C](self: Collection.Reader[F, B, C]) extends Collection.Reader[F, B, Option[C]]:
-      export self.{constraints, schema}
+      export self.{constraints, metadata, schema}
+      override def update(f: Metadata => Metadata): Collection.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, +B <: Schema.Reader[F, ?, C], C](schema: B) extends Collection.Reader[F, B, Vector[C]]:
+    final case class Root[F, +B <: Schema.Reader[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Collection.Reader[F, B, Vector[C]]:
       override def constraints: Chain[Constraint.Collection] = Chain.empty
+      override def update(f: Metadata => Metadata): Collection.Reader[F, B, Vector[C]] = copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D, E](
         self: Collection.Reader[F, B, C],
         validation: SchemaValidation.Collection[C, D, E]
     ) extends Collection.Reader[F, B, E]:
-      export self.schema
+      export self.{metadata, schema}
       override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
+      override def update(f: Metadata => Metadata): Collection.Reader[F, B, E] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     final def contramap[D](f: D => C): Collection.Writer[F, B, D] = Writer.Transform(this, f)
     def optional: Collection.Writer[F, B, Option[C]] = Writer.Optional(this)
     def schema: Schema.Writer[F, ?, ?]
+    override def update(f: Metadata => Metadata): Collection.Writer[F, B, C]
 
   object Writer:
     final case class Transform[F, B, C, D](
         self: Collection.Writer[F, B, C],
         f: D => C
     ) extends Collection.Writer[F, B, D]:
-      export self.schema
+      export self.{metadata, schema}
+      override def update(f: Metadata => Metadata): Collection.Writer[F, B, D] = copy(self = self.update(f))
 
     final case class Optional[F, B, C](self: Collection.Writer[F, B, C]) extends Collection.Writer[F, B, Option[C]]:
-      export self.schema
+      export self.{metadata, schema}
+      override def update(f: Metadata => Metadata): Collection.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, +B <: Schema.Writer[F, ?, C], C](schema: B) extends Collection.Writer[F, B, Vector[C]]
+    final case class Root[F, +B <: Schema.Writer[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Collection.Writer[F, B, Vector[C]]:
+      override def update(f: Metadata => Metadata): Writer[F, B, Vector[C]] = copy(metadata = f(metadata))
 
   final case class Optional[F, B, C](self: Collection[F, B, C]) extends Collection[F, B, Option[C]]:
-    export self.{constraints, schema}
+    export self.{constraints, metadata, schema}
+    override def update(f: Metadata => Metadata): Collection[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, +B <: Schema[F, ?, C], C](schema: B) extends Collection[F, B, Vector[C]]:
+  final case class Root[F, +B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Collection[F, B, Vector[C]]:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
+    override def update(f: Metadata => Metadata): Collection[F, B, Vector[C]] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D, E](
       self: Collection[F, B, C],
       validation: SchemaValidation.Collection[C, D, E],
       f: E => C
   ) extends Collection[F, B, E]:
-    export self.schema
+    export self.{metadata, schema}
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
+    override def update(f: Metadata => Metadata): Collection[F, B, E] = copy(self = self.update(f))
 
 sealed trait Dictionary[-F, +B, C] extends Schema[F, B, C], Dictionary.Reader[F, B, C], Dictionary.Writer[F, B, C]:
   final override def imap[D](f: C => D)(g: D => C): Dictionary[F, B, D] = Dictionary.Transform(this, f, g)
   final override def optional: Dictionary[F, B, Option[C]] = Dictionary.Optional(this)
+  override def update(f: Metadata => Metadata): Dictionary[F, B, C]
 
 object Dictionary:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     final override def map[D](f: C => D): Dictionary.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Dictionary.Reader[F, B, Option[C]] = Reader.Optional(this)
+    override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, C]
 
   object Reader:
-    final case class Optional[F, B, C](self: Dictionary.Reader[F, B, C]) extends Dictionary.Reader[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Dictionary.Reader[F, B, C]) extends Dictionary.Reader[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Root[F, B, +C <: Schema.Reader[F, ?, D], D](
+      metadata: Metadata,
         key: Primitive.Required.Reader[B],
         value: C
-    ) extends Dictionary.Reader[F, C, List[(B, D)]]
+    ) extends Dictionary.Reader[F, C, List[(B, D)]]:
+      override def update(f: Metadata => Metadata): Dictionary.Reader[F, C, List[(B, D)]] = copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D](self: Dictionary.Reader[F, B, C], f: C => D)
-        extends Dictionary.Reader[F, B, D]
+        extends Dictionary.Reader[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, D] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Dictionary.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Dictionary.Writer[F, B, Option[C]] = Writer.Optional(this)
+    override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, C]
 
   object Writer:
-    final case class Optional[F, B, C](self: Dictionary.Writer[F, B, C]) extends Dictionary.Writer[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Dictionary.Writer[F, B, C]) extends Dictionary.Writer[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Root[F, B, +C <: Schema.Writer[F, ?, D], D](
+        metadata: Metadata,
         key: Primitive.Required.Writer[B],
         value: C
-    ) extends Dictionary.Writer[F, C, List[(B, D)]]
+    ) extends Dictionary.Writer[F, C, List[(B, D)]]:
+      override def update(f: Metadata => Metadata): Dictionary.Writer[F, C, List[(B, D)]] = copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D](self: Dictionary.Writer[F, B, C], f: D => C)
-        extends Dictionary.Writer[F, B, D]
+        extends Dictionary.Writer[F, B, D]:
+          export self.metadata
+          override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, D] = copy(self = self.update(f))
 
-  final case class Optional[F, B, C](self: Dictionary[F, B, C]) extends Dictionary[F, B, Option[C]]
+  final case class Optional[F, B, C](self: Dictionary[F, B, C]) extends Dictionary[F, B, Option[C]]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Dictionary[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, B, +C <: Schema[F, ?, D], D](key: Primitive.Required[B], value: C)
-      extends Dictionary[F, C, List[(B, D)]]
+  final case class Root[F, B, +C <: Schema[F, ?, D], D](metadata: Metadata, key: Primitive.Required[B], value: C)
+      extends Dictionary[F, C, List[(B, D)]]:
+        override def update(f: Metadata => Metadata): Dictionary[F, C, List[(B, D)]] = copy(metadata = f(metadata))
 
-  final case class Transform[F, B, C, D](self: Dictionary[F, B, C], f: C => D, g: D => C) extends Dictionary[F, B, D]
+  final case class Transform[F, B, C, D](self: Dictionary[F, B, C], f: C => D, g: D => C) extends Dictionary[F, B, D]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Dictionary[F, B, D] = copy(self = self.update(f))
 
 sealed trait Dynamic[F, B] extends Schema[F, Nothing, B], Dynamic.Reader[F, B], Dynamic.Writer[F, B]:
-  override def optional: Dynamic[F, Option[B]] = Dynamic.Optional(this)
   override def imap[C](f: B => C)(g: C => B): Dynamic[F, C] = Dynamic.Transform(this, f, g)
+  override def optional: Dynamic[F, Option[B]] = Dynamic.Optional(this)
+  override def update(f: Metadata => Metadata): Dynamic[F, B]
 
 object Dynamic:
   sealed trait Reader[-F, +B] extends Schema.Reader[F, Nothing, B]:
-    override def optional: Dynamic.Reader[F, Option[B]] = Reader.Optional(this)
     final override def map[C](f: B => C): Dynamic.Reader[F, C] = Reader.Transform(this, f)
+    override def optional: Dynamic.Reader[F, Option[B]] = Reader.Optional(this)
+    override def update(f: Metadata => Metadata): Dynamic.Reader[F, B] 
 
   object Reader:
-    final case class Optional[F, B](self: Dynamic.Reader[F, B]) extends Dynamic.Reader[F, Option[B]]
+    final case class Optional[F, B](self: Dynamic.Reader[F, B]) extends Dynamic.Reader[F, Option[B]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dynamic.Reader[F, Option[B]] = 
+        copy(self = self.update(f))
 
-    final case class Root[F]() extends Dynamic.Reader[F, F]
+    final case class Root[F](metadata: Metadata) extends Dynamic.Reader[F, F]:
+      override def update(f: Metadata => Metadata): Dynamic.Reader[F, F] = 
+        copy(metadata = f(metadata))
 
-    final case class Transform[F, B, C](self: Dynamic.Reader[F, B], f: B => C) extends Dynamic.Reader[F, C]
+    final case class Transform[F, B, C](self: Dynamic.Reader[F, B], f: B => C) extends Dynamic.Reader[F, C]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dynamic.Reader[F, C] = copy(self = self.update(f))
 
-  sealed trait Writer[F, -B] extends Schema.Writer[F, Nothing, B]:
-    override def optional: Dynamic.Writer[F, Option[B]] = Writer.Optional(this)
-    final override def contramap[C](f: C => B): Dynamic.Writer[F, C] = Writer.Transform(this, f)
+  sealed trait Writer[F, -A] extends Schema.Writer[F, Nothing, A]:
+    final override def contramap[B](f: B => A): Dynamic.Writer[F, B] = Writer.Transform(this, f)
+    override def optional: Dynamic.Writer[F, Option[A]] = Writer.Optional(this)
+    override def update(f: Metadata => Metadata): Dynamic.Writer[F, A]
 
   object Writer:
-    final case class Optional[F, B](self: Dynamic.Writer[F, B]) extends Dynamic.Writer[F, Option[B]]
+    final case class Optional[F, B](self: Dynamic.Writer[F, B]) extends Dynamic.Writer[F, Option[B]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dynamic.Writer[F, Option[B]] = copy(self = self.update(f))
 
-    final case class Root[F]() extends Dynamic.Writer[F, F]
+    final case class Root[F](metadata: Metadata) extends Dynamic.Writer[F, F]:
+      override def update(f: Metadata => Metadata): Dynamic.Writer[F, F] = copy(metadata = f(metadata))
 
-    final case class Transform[F, B, C](self: Dynamic.Writer[F, B], f: C => B) extends Dynamic.Writer[F, C]
+    final case class Transform[F, B, C](self: Dynamic.Writer[F, B], f: C => B) extends Dynamic.Writer[F, C]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Dynamic.Writer[F, C] = copy(self = self.update(f))
 
-  final case class Optional[F, B](self: Dynamic[F, B]) extends Dynamic[F, Option[B]]
+  final case class Optional[F, B](self: Dynamic[F, B]) extends Dynamic[F, Option[B]]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Dynamic[F, Option[B]] = copy(self = self.update(f))
 
-  final case class Root[F]() extends Dynamic[F, F]
+  final case class Root[F](metadata: Metadata) extends Dynamic[F, F]:
+    override def update(f: Metadata => Metadata): Dynamic[F, F] = copy(metadata = f(metadata))
 
-  final case class Transform[F, B, C](self: Dynamic[F, B], f: B => C, g: C => B) extends Dynamic[F, C]
+  final case class Transform[F, B, C](self: Dynamic[F, B], f: B => C, g: C => B) extends Dynamic[F, C]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Dynamic[F, C] = copy(self = self.update(F))
 
 sealed trait Enumeration[-F, +B, C] extends Value[F, B, C], Enumeration.Reader[F, B, C], Enumeration.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Enumeration[F, B, D] = Enumeration.Transform(this, f, g)
