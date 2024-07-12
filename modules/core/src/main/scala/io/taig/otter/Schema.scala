@@ -361,10 +361,11 @@ object Enumeration:
 
 sealed trait Primitive[A] extends Value[Any, Nothing, A], Primitive.Reader[A], Primitive.Writer[A]:
   override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
-  final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
   def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
       f: D => A
   ): Primitive[D] = Primitive.Transform(this, validation, f)
+  final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
+  override def update(f: Metadata => Metadata): Primitive[A]
 
 object Primitive:
   sealed trait Required[A]
@@ -376,6 +377,7 @@ object Primitive:
     override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
         f: D => A
     ): Primitive.Required[D] = Required.Transform(this, validation, f)
+    override def update(f: Metadata => Metadata): Primitive.Required[A]
 
   object Required:
     sealed trait Reader[+A] extends Value.Required.Reader[Any, Nothing, A], Primitive.Reader[A]:
@@ -383,33 +385,39 @@ object Primitive:
       final override def validate[F1 >: A, B, C, D](
           transformation: SchemaValidation.Primitive[F1, B, C, D]
       ): Primitive.Required.Reader[D] = Reader.Transform(this, transformation)
+      override def update(f: Metadata => Metadata): Primitive.Required.Reader[A]
 
     object Reader:
       final case class Transform[A, B, C, D](
           self: Primitive.Required.Reader[A],
           validation: SchemaValidation.Primitive[A, B, C, D]
       ) extends Primitive.Required.Reader[D]:
-        export self.tpe
+        export self.{tpe, metadata}
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
+        override def update(f: Metadata => Metadata): Primitive.Required.Reader[D] = copy(self = self.update(f))
 
     sealed trait Writer[-A] extends Value.Required.Writer[Any, Nothing, A], Primitive.Writer[A]:
       final override def contramap[B](f: B => A): Primitive.Required.Writer[B] = Writer.Transform(this, f)
+      override def update(f: Metadata => Metadata): Primitive.Required.Writer[A]
 
     object Writer:
       final case class Transform[A, B](self: Primitive.Required.Writer[A], f: B => A)
           extends Primitive.Required.Writer[B]:
-        export self.tpe
+        export self.{tpe, metadata}
+        override def update(f: Metadata => Metadata): Primitive.Required.Writer[B] = copy(self = self.update(f))
 
-    final case class Root[A](tpe: Type[A]) extends Primitive.Required[A]:
+    final case class Root[A](metadata: Metadata, tpe: Type[A]) extends Primitive.Required[A]:
       override def constraints: Chain[Constraint.Primitive[?]] = Chain.empty
+      override def update(f: Metadata => Metadata): Primitive.Required[A] = copy(metadata = f(metadata))
 
     final case class Transform[A, B, C, D](
         self: Primitive.Required[A],
         validation: SchemaValidation.Primitive[A, B, C, D],
         f: D => A
     ) extends Primitive.Required[D]:
-      export self.tpe
+      export self.{metadata, tpe}
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
+      override def update(f: Metadata => Metadata): Primitive.Required[D] = copy(self = self.update(f))
 
   sealed trait Reader[+A] extends Value.Reader[Any, Nothing, A]:
     def constraints: Chain[Constraint.Primitive[?]]
@@ -419,40 +427,48 @@ object Primitive:
     def validate[A1 >: A, B, C, D](
         validation: SchemaValidation.Primitive[A1, B, C, D]
     ): Primitive.Reader[D] = Reader.Transform(this, validation)
+    override def update(f: Metadata => Metadata): Primitive.Reader[A]
 
   object Reader:
     final case class Transform[A, B, C, D](
         self: Primitive.Reader[A],
         validation: SchemaValidation.Primitive[A, B, C, D]
     ) extends Primitive.Reader[D]:
-      export self.tpe
+      export self.{metadata, tpe}
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
+      override def update(f: Metadata => Metadata): Primitive.Reader[D] = copy(self = self.update(f))
 
     final case class Optional[A](self: Primitive.Reader[A]) extends Primitive.Reader[Option[A]]:
-      export self.{constraints, tpe}
+      export self.{constraints, metadata, tpe}
+      override def update(f: Metadata => Metadata): Primitive.Reader[Option[A]] = copy(self = self.update(f))
 
   sealed trait Writer[-A] extends Value.Writer[Any, Nothing, A]:
     override def contramap[B](f: B => A): Primitive.Writer[B] = Writer.Transform(this, f)
     override def optional: Primitive.Writer[Option[A]] = Writer.Optional(this)
     def tpe: Type[?]
+    override def update(f: Metadata => Metadata): Primitive.Writer[A]
 
   object Writer:
     final case class Transform[A, B](self: Primitive.Writer[A], f: B => A) extends Primitive.Writer[B]:
-      export self.tpe
+      export self.{metadata, tpe}
+      override def update(f: Metadata => Metadata): Primitive.Writer[B] = copy(self = self.update(f))
 
     final case class Optional[A](self: Primitive.Writer[A]) extends Primitive.Writer[Option[A]]:
-      export self.tpe
+      export self.{metadata, tpe}
+      override def update(f: Metadata => Metadata): Primitive.Writer[Option[A]] = copy(self = self.update(f))
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
-    export self.{constraints, tpe}
+    export self.{constraints, tpe, metadata}
+    override def update(f: Metadata => Metadata): Primitive[Option[A]] = copy(self = self.update(f))
 
   final case class Transform[A, B, C, D](
       self: Primitive[A],
       validation: SchemaValidation.Primitive[A, B, C, D],
       f: D => A
   ) extends Primitive[D]:
-    export self.tpe
+    export self.{metadata, tpe}
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
+    override def update(f: Metadata => Metadata): Primitive[D] = copy(self = self.update(f))
 
 sealed trait Product[-F, +B, C] extends Schema[F, B, C], Product.Reader[F, B, C], Product.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Product[F, B, D] = Product.Transform(this, f, g)
