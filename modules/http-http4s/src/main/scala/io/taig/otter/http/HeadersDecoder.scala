@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import org.http4s.Header as Http4sHeader
 import org.http4s.Headers as Http4sHeaders
-import io.taig.otter.http as Base
-import io.taig.otter.http.Plain.*
+import io.taig.otter.http.*
+import io.taig.otter.*
 import io.taig.otter.Decoder
 import cats.syntax.all.*
 import cats.data.Validated
@@ -16,11 +16,11 @@ object HeadersDecoder:
       headers: Headers.Reader[A],
       values: List[Http4sHeader.Raw]
   ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] = headers match
-    case Base.Headers.Empty                       => (values, ()).valid
-    case Base.Headers.One(header)                 => one(header, values)
-    case Base.Headers.Reader.One(header)          => one(header, values)
-    case Base.Headers.Combine(left, right)        => combine(left, right, values)
-    case Base.Headers.Reader.Combine(left, right) => combine(left, right, values)
+    case Headers.Empty                       => (values, ()).valid
+    case Headers.One(header)                 => one(header, values)
+    case Headers.Reader.One(header)          => one(header, values)
+    case Headers.Combine(left, right)        => combine(left, right, values)
+    case Headers.Reader.Combine(left, right) => combine(left, right, values)
 
   def one[A](
       header: Header.Reader[A],

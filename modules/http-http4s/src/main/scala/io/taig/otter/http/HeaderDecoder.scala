@@ -1,10 +1,9 @@
 package io.taig.otter.http
 
 import org.http4s.Header as Http4sHeader
-import io.taig.otter.http as Base
-import io.taig.otter.http.Plain.*
+import io.taig.otter.http.*
 import org.typelevel.ci.CIString
-import io.taig.otter.Decoder
+import io.taig.otter.*
 import io.taig.otter.ValueStringDecoder
 import cats.syntax.all.*
 
@@ -13,10 +12,10 @@ object HeaderDecoder:
       header: Header.Reader[A],
       values: List[Http4sHeader.Raw]
   ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] = header match
-    case Base.Header.Root(name, schema)        => root(name, schema, values)
-    case Base.Header.Transform(self, f, _)     => transform(self, f, values)
-    case Base.Header.Reader.Root(name, schema) => root(name, schema, values)
-    case Base.Header.Reader.Transform(self, f) => transform(self, f, values)
+    case Header.Root(_, name, schema)        => root(name, schema, values)
+    case Header.Transform(self, f, _)        => transform(self, f, values)
+    case Header.Reader.Root(_, name, schema) => root(name, schema, values)
+    case Header.Reader.Transform(self, f)    => transform(self, f, values)
 
   def root[A](
       name: CIString,

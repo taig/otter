@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
 import io.taig.otter.http as Base
-import io.taig.otter.http.Plain.*
+import io.taig.otter.http.*
 import io.taig.otter.Decoder
 import cats.syntax.all.*
 import cats.data.Validated
@@ -12,8 +12,8 @@ object QueryDecoder:
       query: Query[A],
       values: List[(String, Option[String])]
   ): Decoder.Result[Option[String], (List[(String, Option[String])], A)] = query match
-    case Base.Query.Transform(self, f) => transform(self, f, values)
-    case Base.Query.Root(name, schema) =>
+    case Query.Transform(self, f) => transform(self, f, values)
+    case Query.Root(_, name, schema) =>
       val (value, remainders) = values.findWithRemainders { case (`name`, value) => value }
       ValueStringDecoder(schema, value.flatten).tupleLeft(remainders)
 

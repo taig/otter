@@ -1,6 +1,6 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.Plain.*
+import io.taig.otter.http.*
 import org.http4s.Request as Http4sRequest
 import io.taig.otter.Decoder
 import cats.syntax.all.*
