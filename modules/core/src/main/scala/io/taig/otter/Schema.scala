@@ -474,10 +474,10 @@ object Primitive:
 sealed trait Product[-F, +B, C] extends Schema[F, B, C], Product.Reader[F, B, C], Product.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Product[F, B, D] = Product.Transform(this, f, g)
   override def optional: Product[F, B, Option[C]] = Product.Optional(this)
-  def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+  def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       product: Product[F1, D, E]
   ): Product[F1, B & D, (C, E)] =
-    Product.Combine(f(metadata, product.metadata), this, product)
+    Product.Combine(merge(metadata, product.metadata), this, product)
   def schemas: Chain[Schema[F, ?, ?]]
   override def update(f: Metadata => Metadata): Product[F, B, C]
 
@@ -517,10 +517,10 @@ object Product:
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Product.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Product.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+    def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         product: Product.Writer[F1, D, E]
     ): Product.Writer[F1, B & D, (C, E)] =
-      Writer.Combine(f(metadata, product.metadata), this, product)
+      Writer.Combine(merge(metadata, product.metadata), this, product)
     def schemas: Chain[Schema.Writer[F, ?, ?]]
     override def update(f: Metadata => Metadata): Product.Writer[F, B, C]
 
@@ -549,7 +549,7 @@ object Product:
   final case class Combine[F, B, C, D, E](metadata: Metadata, left: Product[F, B, C], right: Product[F, D, E])
       extends Product[F, B & D, (C, E)]:
     override def schemas: Chain[Schema[F, ?, ?]] = left.schemas ++ right.schemas
-    override def update(f: Metadata => Metadata): Product[F, B & D, (C, E)] = ???
+    override def update(f: Metadata => Metadata): Product[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
   case class Empty(metadata: Metadata) extends Product[Any, Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
@@ -571,10 +571,9 @@ sealed trait Record[-F, +B, C] extends Schema[F, B, C], Record.Reader[F, B, C], 
   def fields: Chain[Field[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Record[F, B, D] = Record.Transform(this, f, g)
   override def optional: Record[F, B, Option[C]] = Record.Optional(this)
-  def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+  def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       product: Record[F1, D, E]
-  ): Record[F1, B & D, (C, E)] =
-    Record.Combine(f(metadata, product.metadata), this, product)
+  ): Record[F1, B & D, (C, E)] = Record.Combine(merge(metadata, product.metadata), this, product)
   override def update(f: Metadata => Metadata): Record[F, B, C]
 
 object Record:
@@ -582,10 +581,9 @@ object Record:
     def fields: Chain[Field.Reader[F, ?, ?]]
     override def map[D](f: C => D): Record.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Record.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+    def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         product: Record.Reader[F1, D, E]
-    ): Record.Reader[F1, B & D, (C, E)] =
-      Reader.Combine(f(metadata, product.metadata), this, product)
+    ): Record.Reader[F1, B & D, (C, E)] = Reader.Combine(merge(metadata, product.metadata), this, product)
     override def update(f: Metadata => Metadata): Record.Reader[F, B, C]
 
   object Reader:
@@ -613,10 +611,9 @@ object Record:
     override def contramap[D](f: D => C): Record.Writer[F, B, D] = Writer.Transform(this, f)
     def fields: Chain[Field.Writer[F, ?, ?]]
     override def optional: Record.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+    def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         product: Record.Writer[F1, D, E]
-    ): Record.Writer[F1, B & D, (C, E)] =
-      Writer.Combine(f(metadata, product.metadata), this, product)
+    ): Record.Writer[F1, B & D, (C, E)] = Writer.Combine(merge(metadata, product.metadata), this, product)
     override def update(f: Metadata => Metadata): Record.Writer[F, B, C]
 
   object Writer:
@@ -647,7 +644,7 @@ object Record:
   final case class Combine[F, B, C, D, E](metadata: Metadata, left: Record[F, B, C], right: Record[F, D, E])
       extends Record[F, B & D, (C, E)]:
     override def fields: Chain[Field[F, ?, ?]] = left.fields ++ right.fields
-    override def update(f: Metadata => Metadata): Record[F, B & D, (C, E)] = ???
+    override def update(f: Metadata => Metadata): Record[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
   final case class One[F, B, C](metadata: Metadata, field: Field[F, B, C]) extends Record[F, B, C]:
     override def fields: Chain[Field[F, ?, ?]] = Chain.one(field)
@@ -665,8 +662,10 @@ sealed trait Sum[-F, +B, C] extends Schema[F, B, C], Sum.Reader[F, B, C], Sum.Wr
   override def branches: NonEmptyChain[Branch[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Sum[F, B, D] = Sum.Transform(this, f, g)
   override def optional: Sum[F, B, Option[C]] = Sum.Optional(this)
-  def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(sum: Sum[F1, D, E]): Sum[F1, B | D, Either[C, E]] =
-    Sum.Combine(f(metadata, sum.metadata), this, sum)
+  def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+      sum: Sum[F1, D, E]
+  ): Sum[F1, B | D, Either[C, E]] =
+    Sum.Combine(merge(metadata, sum.metadata), this, sum)
   override def update(f: Metadata => Metadata): Sum[F, B, C]
 
 object Sum:
@@ -674,10 +673,9 @@ object Sum:
     def branches: NonEmptyChain[Branch.Reader[F, ?, ?]]
     final override def map[D](f: C => D): Sum.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Sum.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         sum: Sum.Reader[F1, D, E]
-    ): Sum.Reader[F1, B | D, Either[C, E]] =
-      Reader.Combine(f(metadata, sum.metadata), this, sum)
+    ): Sum.Reader[F1, B | D, Either[C, E]] = Reader.Combine(merge(metadata, sum.metadata), this, sum)
     override def update(f: Metadata => Metadata): Sum.Reader[F, B, C]
 
   object Reader:
@@ -702,10 +700,9 @@ object Sum:
     def branches: NonEmptyChain[Branch.Writer[F, ?, ?]]
     final override def contramap[D](f: D => C): Sum.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Sum.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         sum: Sum.Writer[F1, D, E]
-    ): Sum.Writer[F1, B | D, Either[C, E]] =
-      Writer.Combine(f(metadata, sum.metadata), this, sum)
+    ): Sum.Writer[F1, B | D, Either[C, E]] = Writer.Combine(merge(metadata, sum.metadata), this, sum)
     override def update(f: Metadata => Metadata): Sum.Writer[F, B, C]
 
   object Writer:
@@ -746,8 +743,10 @@ object Sum:
 sealed trait Union[-F, +B, C] extends Schema[F, B, C], Union.Reader[F, B, C], Union.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Union[F, B, D] = Union.Transform(this, f, g)
   override def optional: Union[F, B, Option[C]] = Union.Optional(this)
-  def orElse[F1 <: F, D, E](union: Union[F1, D, E]): Union[F1, B | D, Either[C, E]] =
-    Union.Combine(this, union)
+  def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+      union: Union[F1, D, E]
+  ): Union[F1, B | D, Either[C, E]] = Union.Combine(merge(metadata, union.metadata), this, union)
+  override def update(f: Metadata => Metadata): Union[F, B, C]
 
 object Union:
   sealed trait Value[-F, +B, C]
@@ -757,8 +756,10 @@ object Union:
         Union.Value.Writer[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Union.Value[F, B, D] = Value.Transform(this, f, g)
     final override def optional: Union.Value[F, B, Option[C]] = Value.Optional(this)
-    def orElse[F1 <: F, D, E](union: Union.Value[F1, D, E]): Union.Value[F1, B | D, Either[C, E]] =
-      Value.Combine(this, union)
+    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+        union: Union.Value[F1, D, E]
+    ): Union.Value[F1, B | D, Either[C, E]] = Value.Combine(merge(metadata, union.metadata), this, union)
+    override def update(f: Metadata => Metadata): Union.Value[F, B, C]
 
   object Value:
     sealed trait Required[-F, +B, C]
@@ -767,136 +768,215 @@ object Union:
           Union.Value.Required.Reader[F, B, C],
           Union.Value.Required.Writer[F, B, C]:
       override def imap[D](f: C => D)(g: D => C): Union.Value.Required[F, B, D] = Required.Transform(this, f, g)
-      def orElse[F1 <: F, D, E](
+      def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
           union: Union.Value.Required[F1, D, E]
-      ): Union.Value.Required[F1, B | D, Either[C, E]] = Required.Combine(this, union)
+      ): Union.Value.Required[F1, B | D, Either[C, E]] = Required.Combine(merge(metadata, union.metadata), this, union)
+      override def update(f: Metadata => Metadata): Union.Value.Required[F, B, C]
 
     object Required:
       sealed trait Reader[-F, +B, +C] extends Base.Value.Required.Reader[F, B, C], Union.Value.Reader[F, B, C]:
         override def map[D](f: C => D): Union.Value.Required.Reader[F, B, D] = Reader.Transform(this, f)
-        def orElse[F1 <: F, D, E](
+        def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
             union: Union.Value.Required.Reader[F1, D, E]
-        ): Union.Value.Required.Reader[F1, B | D, Either[C, E]] = Reader.Combine(this, union)
+        ): Union.Value.Required.Reader[F1, B | D, Either[C, E]] =
+          Reader.Combine(merge(metadata, union.metadata), this, union)
+        override def update(f: Metadata => Metadata): Union.Value.Required.Reader[F, B, C]
 
       object Reader:
         final case class Combine[F, B, C, D, E](
+            metadata: Metadata,
             left: Union.Value.Required.Reader[F, B, C],
             right: Union.Value.Required.Reader[F, D, E]
-        ) extends Union.Value.Required.Reader[F, B | D, Either[C, E]]
+        ) extends Union.Value.Required.Reader[F, B | D, Either[C, E]]:
+          override def update(f: Metadata => Metadata): Union.Value.Required.Reader[F, B | D, Either[C, E]] =
+            copy(metadata = f(metadata))
 
-        final case class Root[F, +B <: Base.Value.Required.Reader[F, ?, C], C](schema: B)
-            extends Union.Value.Required.Reader[F, B, C]
+        final case class Root[F, +B <: Base.Value.Required.Reader[F, ?, C], C](metadata: Metadata, schema: B)
+            extends Union.Value.Required.Reader[F, B, C]:
+          override def update(f: Metadata => Metadata): Union.Value.Required.Reader[F, B, C] =
+            copy(metadata = f(metadata))
 
         final case class Transform[F, B, C, D](self: Union.Value.Required.Reader[F, B, C], f: C => D)
-            extends Union.Value.Required.Reader[F, B, D]
+            extends Union.Value.Required.Reader[F, B, D]:
+          export self.metadata
+          override def update(f: Metadata => Metadata): Union.Value.Required.Reader[F, B, D] =
+            copy(self = self.update(f))
 
       sealed trait Writer[-F, +B, -C] extends Base.Value.Required.Writer[F, B, C], Union.Value.Writer[F, B, C]:
         override def contramap[D](f: D => C): Union.Value.Required.Writer[F, B, D] = Writer.Transform(this, f)
-        def orElse[F1 <: F, D, E](
+        def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
             union: Union.Value.Required.Writer[F1, D, E]
-        ): Union.Value.Required.Writer[F1, B | D, Either[C, E]] = Writer.Combine(this, union)
+        ): Union.Value.Required.Writer[F1, B | D, Either[C, E]] =
+          Writer.Combine(merge(metadata, union.metadata), this, union)
+        override def update(f: Metadata => Metadata): Union.Value.Required.Writer[F, B, C]
 
       object Writer:
         final case class Combine[F, B, C, D, E](
+            metadata: Metadata,
             left: Union.Value.Required.Writer[F, B, C],
             right: Union.Value.Required.Writer[F, D, E]
-        ) extends Union.Value.Required.Writer[F, B | D, Either[C, E]]
+        ) extends Union.Value.Required.Writer[F, B | D, Either[C, E]]:
+          override def update(f: Metadata => Metadata): Union.Value.Required.Writer[F, B | D, Either[C, E]] =
+            copy(metadata = f(metadata))
 
-        final case class Root[F, +B <: Base.Value.Required.Writer[F, ?, C], C](schema: B)
-            extends Union.Value.Required.Writer[F, B, C]
+        final case class Root[F, +B <: Base.Value.Required.Writer[F, ?, C], C](metadata: Metadata, schema: B)
+            extends Union.Value.Required.Writer[F, B, C]:
+          override def update(f: Metadata => Metadata): Union.Value.Required.Writer[F, B, C] =
+            copy(metadata = f(metadata))
 
         final case class Transform[F, B, C, D](self: Union.Value.Required.Writer[F, B, C], f: D => C)
-            extends Union.Value.Required.Writer[F, B, D]
+            extends Union.Value.Required.Writer[F, B, D]:
+          export self.metadata
+          override def update(f: Metadata => Metadata): Union.Value.Required.Writer[F, B, D] =
+            copy(self = self.update(f))
 
       final case class Combine[F, B, C, D, E](
+          metadata: Metadata,
           left: Union.Value.Required[F, B, C],
           right: Union.Value.Required[F, D, E]
-      ) extends Union.Value.Required[F, B | D, Either[C, E]]
+      ) extends Union.Value.Required[F, B | D, Either[C, E]]:
+        override def update(f: Metadata => Metadata): Union.Value.Required[F, B | D, Either[C, E]] =
+          copy(metadata = f(metadata))
 
       final case class Transform[F, B, C, D](self: Union.Value.Required[F, B, C], f: C => D, g: D => C)
-          extends Union.Value.Required[F, B, D]
+          extends Union.Value.Required[F, B, D]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Union.Value.Required[F, B, D] = copy(self = self.update(f))
 
     sealed trait Reader[-F, +B, +C] extends Base.Value.Reader[F, B, C], Union.Reader[F, B, C]:
       override def map[D](f: C => D): Union.Value.Reader[F, B, D] = Reader.Transform(this, f)
       override def optional: Union.Value.Reader[F, B, Option[C]] = Reader.Optional(this)
-      def orElse[F1 <: F, D, E](union: Union.Value.Reader[F1, D, E]): Union.Value.Reader[F1, B | D, Either[C, E]] =
-        Reader.Combine(this, union)
+      def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+          union: Union.Value.Reader[F1, D, E]
+      ): Union.Value.Reader[F1, B | D, Either[C, E]] = Reader.Combine(merge(metadata, union.metadata), this, union)
+      override def update(f: Metadata => Metadata): Union.Value.Reader[F, B, C]
 
     object Reader:
       final case class Combine[F, B, C, D, E](
+          metadata: Metadata,
           left: Union.Value.Reader[F, B, C],
           right: Union.Value.Reader[F, D, E]
-      ) extends Union.Value.Reader[F, B | D, Either[C, E]]
+      ) extends Union.Value.Reader[F, B | D, Either[C, E]]:
+        override def update(f: Metadata => Metadata): Union.Value.Reader[F, B | D, Either[C, E]] =
+          copy(metadata = f(metadata))
 
       final case class Optional[F, B, C, D](self: Union.Value.Reader[F, B, C])
-          extends Union.Value.Reader[F, B, Option[C]]
+          extends Union.Value.Reader[F, B, Option[C]]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Union.Value.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
       final case class Transform[F, B, C, D](self: Union.Value.Reader[F, B, C], f: C => D)
-          extends Union.Value.Reader[F, B, D]
+          extends Union.Value.Reader[F, B, D]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Union.Value.Reader[F, B, D] = copy(self = self.update(f))
 
     sealed trait Writer[-F, +B, -C] extends Base.Value.Writer[F, B, C], Union.Writer[F, B, C]:
       override def contramap[D](f: D => C): Union.Value.Writer[F, B, D] = Writer.Transform(this, f)
       override def optional: Union.Value.Writer[F, B, Option[C]] = Writer.Optional(this)
-      def orElse[F1 <: F, D, E](union: Union.Value.Writer[F1, D, E]): Union.Value.Writer[F1, B | D, Either[C, E]] =
-        Writer.Combine(this, union)
+      def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+          union: Union.Value.Writer[F1, D, E]
+      ): Union.Value.Writer[F1, B | D, Either[C, E]] = Writer.Combine(merge(metadata, union.metadata), this, union)
+      override def update(f: Metadata => Metadata): Union.Value.Writer[F, B, C]
 
     object Writer:
       final case class Combine[F, B, C, D, E](
+          metadata: Metadata,
           left: Union.Value.Writer[F, B, C],
           right: Union.Value.Writer[F, D, E]
-      ) extends Union.Value.Writer[F, B | D, Either[C, E]]
+      ) extends Union.Value.Writer[F, B | D, Either[C, E]]:
+        override def update(f: Metadata => Metadata): Union.Value.Writer[F, B | D, Either[C, E]] =
+          copy(metadata = f(metadata))
 
       final case class Optional[F, B, C, D](self: Union.Value.Writer[F, B, C])
-          extends Union.Value.Writer[F, B, Option[C]]
+          extends Union.Value.Writer[F, B, Option[C]]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Union.Value.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
       final case class Transform[F, B, C, D](self: Union.Value.Writer[F, B, C], f: D => C)
-          extends Union.Value.Writer[F, B, D]
+          extends Union.Value.Writer[F, B, D]:
+        export self.metadata
+        override def update(f: Metadata => Metadata): Union.Value.Writer[F, B, D] = copy(self = self.update(f))
 
-    final case class Combine[F, B, C, D, E](left: Union.Value[F, B, C], right: Union.Value[F, D, E])
-        extends Union.Value[F, B | D, Either[C, E]]
+    final case class Combine[F, B, C, D, E](metadata: Metadata, left: Union.Value[F, B, C], right: Union.Value[F, D, E])
+        extends Union.Value[F, B | D, Either[C, E]]:
+      override def update(f: Metadata => Metadata): Union.Value[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
-    final case class Optional[F, B, C](self: Union.Value[F, B, C]) extends Union.Value[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Union.Value[F, B, C]) extends Union.Value[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Value[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Union.Value[F, B, C], f: C => D, g: D => C)
-        extends Union.Value[F, B, D]
+        extends Union.Value[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Value[F, B, D] = copy(self = self.update(f))
 
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     override def map[D](f: C => D): Union.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Union.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def orElse[F1 <: F, D, E](union: Union.Reader[F1, D, E]): Union.Reader[F1, B | D, Either[C, E]] =
-      Reader.Combine(this, union)
+    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+        union: Union.Reader[F1, D, E]
+    ): Union.Reader[F1, B | D, Either[C, E]] = Reader.Combine(merge(metadata, union.metadata), this, union)
+    override def update(f: Metadata => Metadata): Union.Reader[F, B, C]
 
   object Reader:
-    final case class Combine[F, B, C, D, E](left: Union.Reader[F, B, C], right: Union.Reader[F, D, E])
-        extends Union.Reader[F, B | D, Either[C, E]]
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Union.Reader[F, B, C],
+        right: Union.Reader[F, D, E]
+    ) extends Union.Reader[F, B | D, Either[C, E]]:
+      override def update(f: Metadata => Metadata): Union.Reader[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
-    final case class Optional[F, B, C](self: Union.Reader[F, B, C]) extends Union.Reader[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Union.Reader[F, B, C]) extends Union.Reader[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, +B <: Schema.Reader[F, ?, C], C](schema: B) extends Union.Reader[F, B, C]
+    final case class Root[F, +B <: Schema.Reader[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Union.Reader[F, B, C]:
+      override def update(f: Metadata => Metadata): Union.Reader[F, B, C] = copy(metadata = f(metadata))
 
-    final case class Transform[F, B, C, D](self: Union.Reader[F, B, C], f: C => D) extends Union.Reader[F, B, D]
+    final case class Transform[F, B, C, D](self: Union.Reader[F, B, C], f: C => D) extends Union.Reader[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Reader[F, B, D] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Union.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Union.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def orElse[F1 <: F, D, E](union: Union.Writer[F1, D, E]): Union.Writer[F1, B | D, Either[C, E]] =
-      Writer.Combine(this, union)
+    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+        union: Union.Writer[F1, D, E]
+    ): Union.Writer[F1, B | D, Either[C, E]] = Writer.Combine(merge(metadata, union.metadata), this, union)
+    override def update(f: Metadata => Metadata): Union.Writer[F, B, C]
 
   object Writer:
-    final case class Combine[F, B, C, D, E](left: Union.Writer[F, B, C], right: Union.Writer[F, D, E])
-        extends Union.Writer[F, B | D, Either[C, E]]
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Union.Writer[F, B, C],
+        right: Union.Writer[F, D, E]
+    ) extends Union.Writer[F, B | D, Either[C, E]]:
+      override def update(f: Metadata => Metadata): Union.Writer[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
-    final case class Optional[F, B, C](self: Union.Writer[F, B, C]) extends Union.Writer[F, B, Option[C]]
+    final case class Optional[F, B, C](self: Union.Writer[F, B, C]) extends Union.Writer[F, B, Option[C]]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, +B <: Schema.Writer[F, ?, C], C](schema: B) extends Union.Writer[F, B, C]
+    final case class Root[F, +B <: Schema.Writer[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Union.Writer[F, B, C]:
+      override def update(f: Metadata => Metadata): Union.Writer[F, B, C] = copy(metadata = f(metadata))
 
-    final case class Transform[F, B, C, D](self: Union.Writer[F, B, C], f: D => C) extends Union.Writer[F, B, D]
+    final case class Transform[F, B, C, D](self: Union.Writer[F, B, C], f: D => C) extends Union.Writer[F, B, D]:
+      export self.metadata
+      override def update(f: Metadata => Metadata): Union.Writer[F, B, D] = copy(self = self.update(f))
 
-  final case class Combine[F, B, C, D, E](left: Union[F, B, C], right: Union[F, D, E])
-      extends Union[F, B | D, Either[C, E]]
+  final case class Combine[F, B, C, D, E](metadata: Metadata, left: Union[F, B, C], right: Union[F, D, E])
+      extends Union[F, B | D, Either[C, E]]:
+    override def update(f: Metadata => Metadata): Union[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
-  final case class Optional[F, B, C](self: Union[F, B, C]) extends Union[F, B, Option[C]]
+  final case class Optional[F, B, C](self: Union[F, B, C]) extends Union[F, B, Option[C]]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Union[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, +B <: Schema[F, ?, C], C](schema: B) extends Union[F, B, C]
+  final case class Root[F, +B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Union[F, B, C]:
+    override def update(f: Metadata => Metadata): Union[F, B, C] = copy(metadata = f(metadata))
 
-  final case class Transform[F, B, C, D](self: Union[F, B, C], f: C => D, g: D => C) extends Union[F, B, D]
+  final case class Transform[F, B, C, D](self: Union[F, B, C], f: C => D, g: D => C) extends Union[F, B, D]:
+    export self.metadata
+    override def update(f: Metadata => Metadata): Union[F, B, D] = copy(self = self.update(f))
