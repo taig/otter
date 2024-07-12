@@ -16,17 +16,25 @@ sealed trait Schema[-F, +O, A] extends Schema.Reader[F, O, A], Schema.Writer[F, 
   override def update(f: Metadata => Metadata): Schema[F, O, A]
 
 object Schema:
+  type Via[F, A] = Schema[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends SProduct, Serializable:
     def metadata: Metadata
     def map[D](f: C => D): Schema.Reader[F, B, D]
     def optional: Schema.Reader[F, B, Option[C]]
     def update(f: Metadata => Metadata): Schema.Reader[F, B, C]
 
+  object Reader:
+    type Via[F, A] = Schema.Reader[F, ?, A]
+
   sealed trait Writer[-F, +B, -C] extends SProduct, Serializable:
     def contramap[D](f: D => C): Schema.Writer[F, B, D]
     def metadata: Metadata
     def optional: Schema.Writer[F, B, Option[C]]
     def update(f: Metadata => Metadata): Schema.Writer[F, B, C]
+
+  object Writer:
+    type Via[F, A] = Schema.Writer[F, ?, A]
 
 sealed trait Value[-F, +B, C] extends Schema[F, B, C], Value.Reader[F, B, C], Value.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Value[F, B, D]
@@ -81,6 +89,8 @@ sealed trait Collection[-F, +B, C] extends Schema[F, B, C], Collection.Reader[F,
   override def update(f: Metadata => Metadata): Collection[F, B, C]
 
 object Collection:
+  type Via[F, A] = Collection[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     def constraints: Chain[Constraint.Collection]
     final override def map[D](f: C => D): Collection.Reader[F, B, D] = validate(Validation.lift(f))
@@ -91,6 +101,8 @@ object Collection:
       Reader.Transform(this, validation)
 
   object Reader:
+    type Via[F, A] = Collection.Reader[F, ?, A]
+
     final case class Optional[F, B, C](self: Collection.Reader[F, B, C]) extends Collection.Reader[F, B, Option[C]]:
       export self.{constraints, metadata, schema}
       override def update(f: Metadata => Metadata): Collection.Reader[F, B, Option[C]] = copy(self = self.update(f))
@@ -115,6 +127,8 @@ object Collection:
     override def update(f: Metadata => Metadata): Collection.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Collection.Writer[F, ?, A]
+
     final case class Transform[F, B, C, D](
         self: Collection.Writer[F, B, C],
         f: D => C
@@ -153,12 +167,16 @@ sealed trait Dictionary[-F, +B, C] extends Schema[F, B, C], Dictionary.Reader[F,
   override def update(f: Metadata => Metadata): Dictionary[F, B, C]
 
 object Dictionary:
+  type Via[F, A] = Dictionary[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     final override def map[D](f: C => D): Dictionary.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Dictionary.Reader[F, B, Option[C]] = Reader.Optional(this)
     override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Dictionary.Reader[F, ?, A]
+
     final case class Optional[F, B, C](self: Dictionary.Reader[F, B, C]) extends Dictionary.Reader[F, B, Option[C]]:
       export self.metadata
       override def update(f: Metadata => Metadata): Dictionary.Reader[F, B, Option[C]] = copy(self = self.update(f))
@@ -181,6 +199,8 @@ object Dictionary:
     override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Dictionary.Writer[F, ?, A]
+
     final case class Optional[F, B, C](self: Dictionary.Writer[F, B, C]) extends Dictionary.Writer[F, B, Option[C]]:
       export self.metadata
       override def update(f: Metadata => Metadata): Dictionary.Writer[F, B, Option[C]] = copy(self = self.update(f))
@@ -268,6 +288,8 @@ sealed trait Enumeration[-F, +B, C] extends Value[F, B, C], Enumeration.Reader[F
   override def update(f: Metadata => Metadata): Enumeration[F, B, C]
 
 object Enumeration:
+  type Via[F, A] = Enumeration[F, ?, A]
+
   sealed trait Required[-F, +B, C]
       extends Value.Required[F, B, C],
         Enumeration[F, B, C],
@@ -277,6 +299,8 @@ object Enumeration:
     override def update(f: Metadata => Metadata): Enumeration.Required[F, B, C]
 
   object Required:
+    type Via[F, A] = Enumeration.Required[F, ?, A]
+
     sealed trait Reader[-F, +B, +C] extends Value.Required.Reader[F, B, C], Enumeration.Reader[F, B, C]:
       override def map[D](f: C => D): Enumeration.Required.Reader[F, B, D] = Reader.Transform(this, f)
       override def update(f: Metadata => Metadata): Enumeration.Required.Reader[F, B, C]
@@ -328,6 +352,8 @@ object Enumeration:
     override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Enumeration.Reader[F, ?, A]
+
     final case class Optional[F, B, C](self: Enumeration.Reader[F, B, C]) extends Enumeration.Reader[F, B, Option[C]]:
       export self.metadata
       override def update(f: Metadata => Metadata): Enumeration.Reader[F, B, Option[C]] = copy(self = self.update(f))
@@ -500,6 +526,8 @@ sealed trait Product[-F, +B, C] extends Schema[F, B, C], Product.Reader[F, B, C]
   override def update(f: Metadata => Metadata): Product[F, B, C]
 
 object Product:
+  type Via[F, A] = Product[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     override def map[D](f: C => D): Product.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Product.Reader[F, B, Option[C]] = Reader.Optional(this)
@@ -511,6 +539,8 @@ object Product:
     override def update(f: Metadata => Metadata): Product.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Product.Reader[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Product.Reader[F, B, C],
@@ -543,6 +573,8 @@ object Product:
     override def update(f: Metadata => Metadata): Product.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Product.Writer[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Product.Writer[F, B, C],
@@ -595,6 +627,8 @@ sealed trait Record[-F, +B, C] extends Schema[F, B, C], Record.Reader[F, B, C], 
   override def update(f: Metadata => Metadata): Record[F, B, C]
 
 object Record:
+  type Via[F, A] = Record[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     def fields: Chain[Field.Reader[F, ?, ?]]
     override def map[D](f: C => D): Record.Reader[F, B, D] = Reader.Transform(this, f)
@@ -605,6 +639,8 @@ object Record:
     override def update(f: Metadata => Metadata): Record.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Record.Reader[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Record.Reader[F, B, C],
@@ -635,6 +671,8 @@ object Record:
     override def update(f: Metadata => Metadata): Record.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Record.Writer[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Record.Writer[F, B, C],
@@ -687,6 +725,8 @@ sealed trait Sum[-F, +B, C] extends Schema[F, B, C], Sum.Reader[F, B, C], Sum.Wr
   override def update(f: Metadata => Metadata): Sum[F, B, C]
 
 object Sum:
+  type Via[F, A] = Sum[F, ?, A]
+
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     def branches: NonEmptyChain[Branch.Reader[F, ?, ?]]
     final override def map[D](f: C => D): Sum.Reader[F, B, D] = Reader.Transform(this, f)
@@ -697,6 +737,8 @@ object Sum:
     override def update(f: Metadata => Metadata): Sum.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Sum.Reader[F, ?, A]
+
     final case class Combine[F, B, C, D, E](metadata: Metadata, left: Sum.Reader[F, B, C], right: Sum.Reader[F, D, E])
         extends Sum.Reader[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Reader[F, ?, ?]] = left.branches ++ right.branches
@@ -724,6 +766,8 @@ object Sum:
     override def update(f: Metadata => Metadata): Sum.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Sum.Writer[F, ?, A]
+
     final case class Combine[F, B, C, D, E](metadata: Metadata, left: Sum.Writer[F, B, C], right: Sum.Writer[F, D, E])
         extends Sum.Writer[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Writer[F, ?, ?]] = left.branches ++ right.branches
@@ -767,6 +811,8 @@ sealed trait Union[-F, +B, C] extends Schema[F, B, C], Union.Reader[F, B, C], Un
   override def update(f: Metadata => Metadata): Union[F, B, C]
 
 object Union:
+  type Via[F, A] = Union[F, ?, A]
+
   sealed trait Value[-F, +B, C]
       extends Base.Value[F, B, C],
         Union[F, B, C],
@@ -780,6 +826,8 @@ object Union:
     override def update(f: Metadata => Metadata): Union.Value[F, B, C]
 
   object Value:
+    type Via[F, A] = Union.Value[F, ?, A]
+
     sealed trait Required[-F, +B, C]
         extends Base.Value.Required[F, B, C],
           Union.Value[F, B, C],
@@ -792,6 +840,8 @@ object Union:
       override def update(f: Metadata => Metadata): Union.Value.Required[F, B, C]
 
     object Required:
+      type Via[F, A] = Union.Value.Required[F, ?, A]
+
       sealed trait Reader[-F, +B, +C] extends Base.Value.Required.Reader[F, B, C], Union.Value.Reader[F, B, C]:
         override def map[D](f: C => D): Union.Value.Required.Reader[F, B, D] = Reader.Transform(this, f)
         def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
@@ -874,6 +924,8 @@ object Union:
       override def update(f: Metadata => Metadata): Union.Value.Reader[F, B, C]
 
     object Reader:
+      type Via[F, A] = Union.Value.Reader[F, ?, A]
+
       final case class Combine[F, B, C, D, E](
           metadata: Metadata,
           left: Union.Value.Reader[F, B, C],
@@ -943,6 +995,8 @@ object Union:
     override def update(f: Metadata => Metadata): Union.Reader[F, B, C]
 
   object Reader:
+    type Via[F, A] = Union.Reader[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Union.Reader[F, B, C],
@@ -971,6 +1025,8 @@ object Union:
     override def update(f: Metadata => Metadata): Union.Writer[F, B, C]
 
   object Writer:
+    type Via[F, A] = Union.Writer[F, ?, A]
+
     final case class Combine[F, B, C, D, E](
         metadata: Metadata,
         left: Union.Writer[F, B, C],

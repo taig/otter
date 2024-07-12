@@ -1,8 +1,7 @@
 package io.taig.otter.json
 
 import cats.syntax.all.*
-import io.taig.otter as Base
-import io.taig.otter.Plain.*
+import io.taig.otter.*
 import io.circe.Json
 import cats.data.Validated
 import io.taig.otter.validation.Violations
@@ -20,15 +19,15 @@ object ProductJsonDecoder:
       schema: Product.Reader.Via[Json, A],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], A)] = schema match
-    case Base.Product.Combine(left, right)               => combine(left, right, values)
-    case Base.Product.Empty                              => (values, ()).valid
-    case Base.Product.One(schema)                        => one(schema, values)
-    case Base.Product.Optional(self)                     => optional(self, values)
-    case Base.Product.Reader.Combine(left, right)        => combine(left, right, values)
-    case Base.Product.Reader.One(schema)                 => one(schema, values)
-    case Base.Product.Reader.Optional(self)              => optional(self, values)
-    case Base.Product.Reader.Transform(self, validation) => transform(self, validation, values)
-    case Base.Product.Transform(self, validation, _)     => transform(self, validation, values)
+    case Product.Combine(_, left, right)            => combine(left, right, values)
+    case Product.Empty(_)                           => (values, ()).valid
+    case Product.One(_, schema)                     => one(schema, values)
+    case Product.Optional(self)                     => optional(self, values)
+    case Product.Reader.Combine(_, left, right)     => combine(left, right, values)
+    case Product.Reader.One(_, schema)              => one(schema, values)
+    case Product.Reader.Optional(self)              => optional(self, values)
+    case Product.Reader.Transform(self, validation) => transform(self, validation, values)
+    case Product.Transform(self, validation, _)     => transform(self, validation, values)
 
   def combine[A, B](
       left: Product.Reader.Via[Json, A],

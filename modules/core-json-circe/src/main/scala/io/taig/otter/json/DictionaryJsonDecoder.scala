@@ -1,24 +1,21 @@
 package io.taig.otter.json
 
-import io.taig.otter.Plain.*
-import io.taig.otter as Base
 import cats.syntax.all.*
-import io.taig.otter.ValueRequiredStringDecoder
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.circe.Json
 import io.circe.syntax.*
-import io.taig.otter.Decoder
+import io.taig.otter.*
 
 object DictionaryJsonDecoder:
   def apply[A](schema: Dictionary.Reader.Via[Json, A], values: Option[List[(String, Json)]]): Decoder.Result[Json, A] =
     schema match
-      case Base.Dictionary.Optional(self)            => optional(self, values)
-      case Base.Dictionary.Root(key, value)          => root(key, value, values)
-      case Base.Dictionary.Transform(self, f, _)     => transform(self, f, values)
-      case Base.Dictionary.Reader.Optional(self)     => optional(self, values)
-      case Base.Dictionary.Reader.Root(key, value)   => root(key, value, values)
-      case Base.Dictionary.Reader.Transform(self, f) => transform(self, f, values)
+      case Dictionary.Optional(self)             => optional(self, values)
+      case Dictionary.Root(_, key, value)        => root(key, value, values)
+      case Dictionary.Transform(self, f, _)      => transform(self, f, values)
+      case Dictionary.Reader.Optional(self)      => optional(self, values)
+      case Dictionary.Reader.Root(_, key, value) => root(key, value, values)
+      case Dictionary.Reader.Transform(self, f)  => transform(self, f, values)
 
   def optional[A](
       self: Dictionary.Reader.Via[Json, A],
@@ -27,7 +24,7 @@ object DictionaryJsonDecoder:
     values.fold(none.valid)(_ => DictionaryJsonDecoder(self, values).map(_.some))
 
   def root[A, B](
-      key: Value.Required.Reader[A],
+      key: Value.Required.Reader.Via[String, A],
       value: Schema.Reader.Via[Json, B],
       values: Option[List[(String, Json)]]
   ): Decoder.Result[Json, List[(A, B)]] = values

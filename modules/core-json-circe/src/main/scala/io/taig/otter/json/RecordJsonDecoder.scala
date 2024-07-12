@@ -1,7 +1,6 @@
 package io.taig.otter.json
 
-import io.taig.otter.Plain.*
-import io.taig.otter as Base
+import io.taig.otter.*
 import cats.data.Chain
 import io.circe.Json
 import io.taig.otter.Decoder
@@ -17,16 +16,15 @@ object RecordJsonDecoder:
       schema: Record.Reader.Via[Json, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = schema match
-    case Base.Record.Combine(left, right)        => combine(left, right, values)
-    case Base.Record.Empty                       => (values, ()).valid
-    case Base.Record.Nulls(self, _)              => withRemainders(self, values)
-    case Base.Record.One(field)                  => one(field, values)
-    case Base.Record.Optional(self)              => optional(self, values)
-    case Base.Record.Reader.Combine(left, right) => combine(left, right, values)
-    case Base.Record.Reader.One(field)           => one(field, values)
-    case Base.Record.Reader.Optional(self)       => optional(self, values)
-    case Base.Record.Reader.Transform(self, f)   => transform(self, f, values)
-    case Base.Record.Transform(self, f, _)       => transform(self, f, values)
+    case Record.Combine(_, left, right)        => combine(left, right, values)
+    case Record.Empty(_)                       => (values, ()).valid
+    case Record.One(_, field)                  => one(field, values)
+    case Record.Optional(self)                 => optional(self, values)
+    case Record.Reader.Combine(_, left, right) => combine(left, right, values)
+    case Record.Reader.One(_, field)           => one(field, values)
+    case Record.Reader.Optional(self)          => optional(self, values)
+    case Record.Reader.Transform(self, f)      => transform(self, f, values)
+    case Record.Transform(self, f, _)          => transform(self, f, values)
 
   def combine[A, B](
       left: Record.Reader.Via[Json, A],

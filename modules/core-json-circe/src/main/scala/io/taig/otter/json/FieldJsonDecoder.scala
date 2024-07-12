@@ -1,8 +1,6 @@
 package io.taig.otter.json
 
-import io.taig.otter.Plain.*
-import io.taig.otter.Decoder
-import io.taig.otter as Base
+import io.taig.otter.*
 import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.Json
@@ -16,8 +14,8 @@ object FieldJsonDecoder:
       field: Field.Reader.Via[Json, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
-    case Base.Field.Root(name, _, schema)     => root(name, schema, values)
-    case Base.Field.Reader.Root(name, schema) => root(name, schema, values)
+    case Field.Root(_, name, schema)        => root(name, schema, values)
+    case Field.Reader.Root(_, name, schema) => root(name, schema, values)
 
   def root[A](
       name: String,

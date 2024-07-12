@@ -1,9 +1,7 @@
 package io.taig.otter.json
 
 import io.circe.Json
-import io.taig.otter as Base
-import io.taig.otter.Encoder
-import io.taig.otter.Plain.*
+import io.taig.otter.*
 
 object JsonEncoder extends Encoder[Schema.Writer.Via[Json, *], Json]:
   override def apply[A](schema: Schema.Writer.Via[Json, A], a: A): Json = schema match

@@ -1,25 +1,23 @@
 package io.taig.otter.json
 
-import io.taig.otter.Plain.*
-import io.taig.otter as Base
 import io.circe.Json
 import cats.syntax.all.*
-import io.taig.otter.Decoder
+import io.taig.otter.*
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
 object EnumerationJsonDecoder:
   def apply[A](schema: Enumeration.Reader.Via[Json, A], json: Json): Decoder.Result[Json, A] = schema match
-    case Base.Enumeration.Optional(self)                                => optional(self, json)
-    case Base.Enumeration.Reader.Optional(self)                         => optional(self, json)
-    case Base.Enumeration.Reader.Root(self, mapping, writer)            => root(self, mapping, writer, json)
-    case Base.Enumeration.Reader.Transform(self, f)                     => transform(self, f, json)
-    case Base.Enumeration.Required.Reader.Root(schema, mapping, writer) => root(schema, mapping, writer, json)
-    case Base.Enumeration.Required.Reader.Transform(self, f)            => transform(self, f, json)
-    case Base.Enumeration.Required.Transform(self, f, _)                => transform(self, f, json)
-    case Base.Enumeration.Root(self, mapping)                           => root(self, mapping, self, json)
-    case Base.Enumeration.Transform(self, f, _)                         => transform(self, f, json)
+    case Enumeration.Optional(self)                                   => optional(self, json)
+    case Enumeration.Reader.Optional(self)                            => optional(self, json)
+    case Enumeration.Reader.Root(_, schema, mapping, writer)          => root(schema, mapping, writer, json)
+    case Enumeration.Reader.Transform(self, f)                        => transform(self, f, json)
+    case Enumeration.Required.Reader.Root(_, schema, mapping, writer) => root(schema, mapping, writer, json)
+    case Enumeration.Required.Reader.Transform(self, f)               => transform(self, f, json)
+    case Enumeration.Required.Transform(self, f, _)                   => transform(self, f, json)
+    case Enumeration.Root(_, schema, mapping)                         => root(schema, mapping, schema, json)
+    case Enumeration.Transform(self, f, _)                            => transform(self, f, json)
 
   def optional[A](self: Enumeration.Reader.Via[Json, A], json: Json): Decoder.Result[Json, Option[A]] =
     if json.isNull then none.valid else EnumerationJsonDecoder(self, json).map(_.some)

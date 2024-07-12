@@ -1,21 +1,20 @@
 package io.taig.otter.json
 
 import io.circe.Json
-import io.taig.otter as Base
-import io.taig.otter.Plain.*
+import io.taig.otter.*
 import cats.syntax.all.*
 
 object ProductJsonEncoder:
   def apply[A](schema: Product.Writer.Via[Json, A], a: A): Option[Vector[Json]] = schema match
-    case Base.Product.Combine(left, right)        => combine(left, right, a).some
-    case Base.Product.Empty                       => Vector.empty.some
-    case Base.Product.One(schema)                 => one(schema, a).some
-    case Base.Product.Optional(self)              => optional(self, a)
-    case Base.Product.Transform(self, _, f)       => transform(self, f, a)
-    case Base.Product.Writer.Combine(left, right) => combine(left, right, a).some
-    case Base.Product.Writer.One(schema)          => one(schema, a).some
-    case Base.Product.Writer.Optional(self)       => optional(self, a)
-    case Base.Product.Writer.Transform(self, f)   => transform(self, f, a)
+    case Product.Combine(_, left, right)        => combine(left, right, a).some
+    case Product.Empty(_)                       => Vector.empty.some
+    case Product.One(_, schema)                 => one(schema, a).some
+    case Product.Optional(self)                 => optional(self, a)
+    case Product.Transform(self, _, f)          => transform(self, f, a)
+    case Product.Writer.Combine(_, left, right) => combine(left, right, a).some
+    case Product.Writer.One(_, schema)          => one(schema, a).some
+    case Product.Writer.Optional(self)          => optional(self, a)
+    case Product.Writer.Transform(self, f)      => transform(self, f, a)
 
   def one[A](schema: Schema.Writer.Via[Json, A], a: A): Vector[Json] = Vector(JsonEncoder(schema, a))
 

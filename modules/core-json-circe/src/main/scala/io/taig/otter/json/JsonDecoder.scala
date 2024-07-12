@@ -3,9 +3,7 @@ package io.taig.otter.json
 import cats.syntax.all.*
 import io.circe.Json
 import io.taig.otter.validation.Violations
-import io.taig.otter.Plain.*
-import io.taig.otter.Decoder
-import io.taig.otter as Base
+import io.taig.otter.*
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import cats.data.Chain

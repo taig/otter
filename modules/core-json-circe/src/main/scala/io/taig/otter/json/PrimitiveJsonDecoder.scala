@@ -1,11 +1,9 @@
 package io.taig.otter.json
 
 import cats.syntax.all.*
-import io.taig.otter.Type
 import io.circe.Json
 import io.taig.otter.validation.Violations
-import io.taig.otter as Base
-import io.taig.otter.Plain.*
+import io.taig.otter.*
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import io.taig.otter.Constraint
@@ -13,13 +11,13 @@ import io.taig.otter.Decoder
 
 object PrimitiveJsonDecoder:
   def apply[A](schema: Primitive.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
-    case Base.Primitive.Optional(self)                              => optional(self, json)
-    case Base.Primitive.Reader.Optional(self)                       => optional(self, json)
-    case Base.Primitive.Reader.Transform(self, validation)          => transform(self, validation, json)
-    case Base.Primitive.Required.Reader.Transform(self, validation) => transform(self, validation, json)
-    case Base.Primitive.Required.Root(tpe)                          => root(tpe, json)
-    case Base.Primitive.Required.Transform(self, validation, _)     => transform(self, validation, json)
-    case Base.Primitive.Transform(self, validation, _)              => transform(self, validation, json)
+    case Primitive.Optional(self)                              => optional(self, json)
+    case Primitive.Reader.Optional(self)                       => optional(self, json)
+    case Primitive.Reader.Transform(self, validation)          => transform(self, validation, json)
+    case Primitive.Required.Reader.Transform(self, validation) => transform(self, validation, json)
+    case Primitive.Required.Root(_, tpe)                       => root(tpe, json)
+    case Primitive.Required.Transform(self, validation, _)     => transform(self, validation, json)
+    case Primitive.Transform(self, validation, _)              => transform(self, validation, json)
 
   def optional[A](self: Primitive.Reader[A], json: Json): Decoder.Result[Json, Option[A]] =
     if json.isNull then none.valid else apply(self, json).map(_.some)

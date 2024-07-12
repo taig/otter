@@ -3,22 +3,20 @@ package io.taig.otter.json
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Json
-import io.taig.otter.Plain.*
-import io.taig.otter as Base
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.circe.syntax.*
-import io.taig.otter.Decoder
+import io.taig.otter.*
 
 object CollectionJsonDecoder:
   def apply[A](schema: Collection.Reader.Via[Json, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     schema match
-      case Base.Collection.Transform(self, validation, _)     => transform(self, validation, values)
-      case Base.Collection.Optional(self)                     => optional(self, values)
-      case Base.Collection.Reader.Transform(self, validation) => transform(self, validation, values)
-      case Base.Collection.Reader.Optional(self)              => optional(self, values)
-      case Base.Collection.Reader.Root(schema)                => root(schema, values)
-      case Base.Collection.Root(schema)                       => root(schema, values)
+      case Collection.Transform(self, validation, _)     => transform(self, validation, values)
+      case Collection.Optional(self)                     => optional(self, values)
+      case Collection.Reader.Transform(self, validation) => transform(self, validation, values)
+      case Collection.Reader.Optional(self)              => optional(self, values)
+      case Collection.Reader.Root(_, schema)             => root(schema, values)
+      case Collection.Root(_, schema)                    => root(schema, values)
 
   def optional[A](self: Collection.Reader.Via[Json, A], values: Option[Vector[Json]]): Decoder.Result[Json, Option[A]] =
     values.fold(none.valid)(_ => CollectionJsonDecoder(self, values).map(_.some))
