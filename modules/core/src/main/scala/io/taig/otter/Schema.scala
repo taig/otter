@@ -8,6 +8,7 @@ import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
 import io.taig.enumeration.ext.Mapping
+import io.taig.otter.Record.Reader
 
 sealed trait Schema[-F, +O, A] extends Schema.Reader[F, O, A], Schema.Writer[F, O, A]:
   def imap[B](f: A => B)(g: B => A): Schema[F, O, B]
@@ -392,7 +393,7 @@ object Primitive:
           self: Primitive.Required.Reader[A],
           validation: SchemaValidation.Primitive[A, B, C, D]
       ) extends Primitive.Required.Reader[D]:
-        export self.{tpe, metadata}
+        export self.{metadata, tpe}
         override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
         override def update(f: Metadata => Metadata): Primitive.Required.Reader[D] = copy(self = self.update(f))
 
@@ -403,7 +404,7 @@ object Primitive:
     object Writer:
       final case class Transform[A, B](self: Primitive.Required.Writer[A], f: B => A)
           extends Primitive.Required.Writer[B]:
-        export self.{tpe, metadata}
+        export self.{metadata, tpe}
         override def update(f: Metadata => Metadata): Primitive.Required.Writer[B] = copy(self = self.update(f))
 
     final case class Root[A](metadata: Metadata, tpe: Type[A]) extends Primitive.Required[A]:
@@ -458,7 +459,7 @@ object Primitive:
       override def update(f: Metadata => Metadata): Primitive.Writer[Option[A]] = copy(self = self.update(f))
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
-    export self.{constraints, tpe, metadata}
+    export self.{constraints, metadata, tpe}
     override def update(f: Metadata => Metadata): Primitive[Option[A]] = copy(self = self.update(f))
 
   final case class Transform[A, B, C, D](
@@ -473,195 +474,274 @@ object Primitive:
 sealed trait Product[-F, +B, C] extends Schema[F, B, C], Product.Reader[F, B, C], Product.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Product[F, B, D] = Product.Transform(this, f, g)
   override def optional: Product[F, B, Option[C]] = Product.Optional(this)
-  def product[F1 <: F, D, E](product: Product[F1, D, E]): Product[F1, B & D, (C, E)] =
-    Product.Combine(this, product)
+  def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+      product: Product[F1, D, E]
+  ): Product[F1, B & D, (C, E)] =
+    Product.Combine(f(metadata, product.metadata), this, product)
   def schemas: Chain[Schema[F, ?, ?]]
+  override def update(f: Metadata => Metadata): Product[F, B, C]
 
 object Product:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     override def map[D](f: C => D): Product.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Product.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def product[F1 <: F, D, E](product: Product.Reader[F1, D, E]): Product.Reader[F1, B & D, (C, E)] =
-      Reader.Combine(this, product)
+    def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+        product: Product.Reader[F1, D, E]
+    ): Product.Reader[F1, B & D, (C, E)] =
+      Reader.Combine(merge(metadata, product.metadata), this, product)
     def schemas: Chain[Schema.Reader[F, ?, ?]]
+    override def update(f: Metadata => Metadata): Product.Reader[F, B, C]
 
   object Reader:
-    final case class Combine[F, B, C, D, E](left: Product.Reader[F, B, C], right: Product.Reader[F, D, E])
-        extends Product.Reader[F, B & D, (C, E)]:
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Product.Reader[F, B, C],
+        right: Product.Reader[F, D, E]
+    ) extends Product.Reader[F, B & D, (C, E)]:
       override def schemas: Chain[Schema.Reader[F, ?, ?]] = left.schemas ++ right.schemas
+      override def update(f: Metadata => Metadata): Product.Reader[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
-    final case class One[F, +B <: Schema.Reader[F, ?, C], C](schema: B) extends Product.Reader[F, B, C]:
+    final case class One[F, +B <: Schema.Reader[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Product.Reader[F, B, C]:
       override def schemas: Chain[Schema.Reader[F, ?, ?]] = Chain.one(schema)
+      override def update(f: Metadata => Metadata): Product.Reader[F, B, C] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Product.Reader[F, B, C]) extends Product.Reader[F, B, Option[C]]:
-      export self.schemas
+      export self.{metadata, schemas}
+      override def update(f: Metadata => Metadata): Product.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Product.Reader[F, B, C], f: C => D) extends Product.Reader[F, B, D]:
-      export self.schemas
+      export self.{metadata, schemas}
+      override def update(f: Metadata => Metadata): Product.Reader[F, B, D] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Product.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Product.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def product[F1 <: F, D, E](product: Product.Writer[F1, D, E]): Product.Writer[F1, B & D, (C, E)] =
-      Writer.Combine(this, product)
+    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+        product: Product.Writer[F1, D, E]
+    ): Product.Writer[F1, B & D, (C, E)] =
+      Writer.Combine(f(metadata, product.metadata), this, product)
     def schemas: Chain[Schema.Writer[F, ?, ?]]
+    override def update(f: Metadata => Metadata): Product.Writer[F, B, C]
 
   object Writer:
-    final case class Combine[F, B, C, D, E](left: Product.Writer[F, B, C], right: Product.Writer[F, D, E])
-        extends Product.Writer[F, B & D, (C, E)]:
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Product.Writer[F, B, C],
+        right: Product.Writer[F, D, E]
+    ) extends Product.Writer[F, B & D, (C, E)]:
       override def schemas: Chain[Schema.Writer[F, ?, ?]] = left.schemas ++ right.schemas
+      override def update(f: Metadata => Metadata): Product.Writer[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
-    final case class One[F, +B <: Schema.Writer[F, ?, C], C](schema: B) extends Product.Writer[F, B, C]:
+    final case class One[F, +B <: Schema.Writer[F, ?, C], C](metadata: Metadata, schema: B)
+        extends Product.Writer[F, B, C]:
       override def schemas: Chain[Schema.Writer[F, ?, ?]] = Chain.one(schema)
+      override def update(f: Metadata => Metadata): Product.Writer[F, B, C] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Product.Writer[F, B, C]) extends Product.Writer[F, B, Option[C]]:
-      export self.schemas
+      export self.{metadata, schemas}
+      override def update(f: Metadata => Metadata): Product.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Product.Writer[F, B, C], f: D => C) extends Product.Writer[F, B, D]:
-      export self.schemas
+      export self.{metadata, schemas}
+      override def update(f: Metadata => Metadata): Product.Writer[F, B, D] = copy(self = self.update(f))
 
-  final case class Combine[F, B, C, D, E](left: Product[F, B, C], right: Product[F, D, E])
+  final case class Combine[F, B, C, D, E](metadata: Metadata, left: Product[F, B, C], right: Product[F, D, E])
       extends Product[F, B & D, (C, E)]:
     override def schemas: Chain[Schema[F, ?, ?]] = left.schemas ++ right.schemas
+    override def update(f: Metadata => Metadata): Product[F, B & D, (C, E)] = ???
 
-  case object Empty extends Product[Any, Nothing, Unit]:
+  case class Empty(metadata: Metadata) extends Product[Any, Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
+    override def update(f: Metadata => Metadata): Product[Any, Nothing, Unit] = copy(metadata = f(metadata))
 
-  final case class One[F, +B <: Schema[F, ?, C], C](schema: B) extends Product[F, B, C]:
+  final case class One[F, +B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Product[F, B, C]:
     override def schemas: Chain[Schema[F, ?, ?]] = Chain.one(schema)
+    override def update(f: Metadata => Metadata): Product[F, B, C] = copy(metadata = f(metadata))
 
   final case class Optional[F, B, C](self: Product[F, B, C]) extends Product[F, B, Option[C]]:
-    export self.schemas
+    export self.{metadata, schemas}
+    override def update(f: Metadata => Metadata): Product[F, B, Option[C]] = copy(self = self.update(f))
 
   final case class Transform[F, B, C, D](self: Product[F, B, C], f: C => D, g: D => C) extends Product[F, B, D]:
-    export self.schemas
+    export self.{metadata, schemas}
+    override def update(f: Metadata => Metadata): Product[F, B, D] = copy(self = self.update(f))
 
 sealed trait Record[-F, +B, C] extends Schema[F, B, C], Record.Reader[F, B, C], Record.Writer[F, B, C]:
   def fields: Chain[Field[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Record[F, B, D] = Record.Transform(this, f, g)
   override def optional: Record[F, B, Option[C]] = Record.Optional(this)
-  def product[F1 <: F, D, E](product: Record[F1, D, E]): Record[F1, B & D, (C, E)] =
-    Record.Combine(this, product)
+  def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+      product: Record[F1, D, E]
+  ): Record[F1, B & D, (C, E)] =
+    Record.Combine(f(metadata, product.metadata), this, product)
+  override def update(f: Metadata => Metadata): Record[F, B, C]
 
 object Record:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     def fields: Chain[Field.Reader[F, ?, ?]]
     override def map[D](f: C => D): Record.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Record.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def product[F1 <: F, D, E](product: Record.Reader[F1, D, E]): Record.Reader[F1, B & D, (C, E)] =
-      Reader.Combine(this, product)
+    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+        product: Record.Reader[F1, D, E]
+    ): Record.Reader[F1, B & D, (C, E)] =
+      Reader.Combine(f(metadata, product.metadata), this, product)
+    override def update(f: Metadata => Metadata): Record.Reader[F, B, C]
 
   object Reader:
-    final case class Combine[F, B, C, D, E](left: Record.Reader[F, B, C], right: Record.Reader[F, D, E])
-        extends Record.Reader[F, B & D, (C, E)]:
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Record.Reader[F, B, C],
+        right: Record.Reader[F, D, E]
+    ) extends Record.Reader[F, B & D, (C, E)]:
       override def fields: Chain[Field.Reader[F, ?, ?]] = left.fields ++ right.fields
+      override def update(f: Metadata => Metadata): Record.Reader[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
-    final case class One[F, B, C](field: Field.Reader[F, B, C]) extends Record.Reader[F, B, C]:
+    final case class One[F, B, C](metadata: Metadata, field: Field.Reader[F, B, C]) extends Record.Reader[F, B, C]:
       override def fields: Chain[Field.Reader[F, ?, ?]] = Chain.one(field)
+      override def update(f: Metadata => Metadata): Record.Reader[F, B, C] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Record.Reader[F, B, C]) extends Record.Reader[F, B, Option[C]]:
-      export self.fields
+      export self.{fields, metadata}
+      override def update(f: Metadata => Metadata): Record.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Record.Reader[F, B, C], f: C => D) extends Record.Reader[F, B, D]:
-      export self.fields
+      export self.{fields, metadata}
+      override def update(f: Metadata => Metadata): Record.Reader[F, B, D] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     override def contramap[D](f: D => C): Record.Writer[F, B, D] = Writer.Transform(this, f)
     def fields: Chain[Field.Writer[F, ?, ?]]
     override def optional: Record.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def product[F1 <: F, D, E](product: Record.Writer[F1, D, E]): Record.Writer[F1, B & D, (C, E)] =
-      Writer.Combine(this, product)
+    def productWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+        product: Record.Writer[F1, D, E]
+    ): Record.Writer[F1, B & D, (C, E)] =
+      Writer.Combine(f(metadata, product.metadata), this, product)
+    override def update(f: Metadata => Metadata): Record.Writer[F, B, C]
 
   object Writer:
-    final case class Combine[F, B, C, D, E](left: Record.Writer[F, B, C], right: Record.Writer[F, D, E])
-        extends Record.Writer[F, B & D, (C, E)]:
+    final case class Combine[F, B, C, D, E](
+        metadata: Metadata,
+        left: Record.Writer[F, B, C],
+        right: Record.Writer[F, D, E]
+    ) extends Record.Writer[F, B & D, (C, E)]:
       override def fields: Chain[Field.Writer[F, ?, ?]] = left.fields ++ right.fields
+      override def update(f: Metadata => Metadata): Record.Writer[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
-    final case class One[F, B, C](field: Field.Writer[F, B, C]) extends Record.Writer[F, B, C]:
+    final case class One[F, B, C](metadata: Metadata, field: Field.Writer[F, B, C]) extends Record.Writer[F, B, C]:
       override def fields: Chain[Field.Writer[F, ?, ?]] = Chain.one(field)
+      override def update(f: Metadata => Metadata): Record.Writer[F, B, C] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Record.Writer[F, B, C]) extends Record.Writer[F, B, Option[C]]:
-      export self.fields
+      export self.{fields, metadata}
+      override def update(f: Metadata => Metadata): Record.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
     final case class Transform[F, B, C, D](self: Record.Writer[F, B, C], f: D => C) extends Record.Writer[F, B, D]:
-      export self.fields
+      export self.{fields, metadata}
+      override def update(f: Metadata => Metadata): Record.Writer[F, B, D] = copy(self = self.update(f))
 
-  case object Empty extends Record[Any, Nothing, Unit]:
+  final case class Empty(metadata: Metadata) extends Record[Any, Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty
+    override def update(f: Metadata => Metadata): Record[Any, Nothing, Unit] = copy(metadata = f(metadata))
 
-  final case class Combine[F, B, C, D, E](left: Record[F, B, C], right: Record[F, D, E])
+  final case class Combine[F, B, C, D, E](metadata: Metadata, left: Record[F, B, C], right: Record[F, D, E])
       extends Record[F, B & D, (C, E)]:
     override def fields: Chain[Field[F, ?, ?]] = left.fields ++ right.fields
+    override def update(f: Metadata => Metadata): Record[F, B & D, (C, E)] = ???
 
-  final case class One[F, B, C](field: Field[F, B, C]) extends Record[F, B, C]:
+  final case class One[F, B, C](metadata: Metadata, field: Field[F, B, C]) extends Record[F, B, C]:
     override def fields: Chain[Field[F, ?, ?]] = Chain.one(field)
+    override def update(f: Metadata => Metadata): Record[F, B, C] = copy(metadata = f(metadata))
 
   final case class Optional[F, B, C](self: Record[F, B, C]) extends Record[F, B, Option[C]]:
-    export self.fields
+    export self.{fields, metadata}
+    override def update(f: Metadata => Metadata): Record[F, B, Option[C]] = copy(self = self.update(f))
 
   final case class Transform[F, B, C, D](self: Record[F, B, C], f: C => D, g: D => C) extends Record[F, B, D]:
-    export self.fields
+    export self.{fields, metadata}
+    override def update(f: Metadata => Metadata): Record[F, B, D] = copy(self = self.update(f))
 
 sealed trait Sum[-F, +B, C] extends Schema[F, B, C], Sum.Reader[F, B, C], Sum.Writer[F, B, C]:
   override def branches: NonEmptyChain[Branch[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Sum[F, B, D] = Sum.Transform(this, f, g)
   override def optional: Sum[F, B, Option[C]] = Sum.Optional(this)
-  def orElse[F1 <: F, D, E](sum: Sum[F1, D, E]): Sum[F1, B | D, Either[C, E]] = Sum.Combine(this, sum)
+  def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(sum: Sum[F1, D, E]): Sum[F1, B | D, Either[C, E]] =
+    Sum.Combine(f(metadata, sum.metadata), this, sum)
+  override def update(f: Metadata => Metadata): Sum[F, B, C]
 
 object Sum:
   sealed trait Reader[-F, +B, +C] extends Schema.Reader[F, B, C]:
     def branches: NonEmptyChain[Branch.Reader[F, ?, ?]]
     final override def map[D](f: C => D): Sum.Reader[F, B, D] = Reader.Transform(this, f)
     override def optional: Sum.Reader[F, B, Option[C]] = Reader.Optional(this)
-    def orElse[F1 <: F, D, E](sum: Sum.Reader[F1, D, E]): Sum.Reader[F1, B | D, Either[C, E]] =
-      Reader.Combine(this, sum)
+    def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+        sum: Sum.Reader[F1, D, E]
+    ): Sum.Reader[F1, B | D, Either[C, E]] =
+      Reader.Combine(f(metadata, sum.metadata), this, sum)
+    override def update(f: Metadata => Metadata): Sum.Reader[F, B, C]
 
   object Reader:
-    final case class Combine[F, B, C, D, E](left: Sum.Reader[F, B, C], right: Sum.Reader[F, D, E])
+    final case class Combine[F, B, C, D, E](metadata: Metadata, left: Sum.Reader[F, B, C], right: Sum.Reader[F, D, E])
         extends Sum.Reader[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Reader[F, ?, ?]] = left.branches ++ right.branches
+      override def update(f: Metadata => Metadata): Sum.Reader[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Sum.Reader[F, B, C]) extends Sum.Reader[F, B, Option[C]]:
-      export self.branches
+      export self.{branches, metadata}
+      override def update(f: Metadata => Metadata): Sum.Reader[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, B, C](branch: Branch.Reader[F, B, C]) extends Sum.Reader[F, B, C]:
+    final case class Root[F, B, C](metadata: Metadata, branch: Branch.Reader[F, B, C]) extends Sum.Reader[F, B, C]:
       override def branches: NonEmptyChain[Branch.Reader[F, B, C]] = NonEmptyChain.one(branch)
+      override def update(f: Metadata => Metadata): Sum.Reader[F, B, C] = copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D](self: Sum.Reader[F, B, C], f: C => D) extends Sum.Reader[F, B, D]:
-      export self.branches
+      export self.{branches, metadata}
+      override def update(f: Metadata => Metadata): Sum.Reader[F, B, D] = copy(self = self.update(f))
 
   sealed trait Writer[-F, +B, -C] extends Schema.Writer[F, B, C]:
     def branches: NonEmptyChain[Branch.Writer[F, ?, ?]]
     final override def contramap[D](f: D => C): Sum.Writer[F, B, D] = Writer.Transform(this, f)
     override def optional: Sum.Writer[F, B, Option[C]] = Writer.Optional(this)
-    def orElse[F1 <: F, D, E](sum: Sum.Writer[F1, D, E]): Sum.Writer[F1, B | D, Either[C, E]] =
-      Writer.Combine(this, sum)
+    def orElseWith[F1 <: F, D, E](f: (Metadata, Metadata) => Metadata)(
+        sum: Sum.Writer[F1, D, E]
+    ): Sum.Writer[F1, B | D, Either[C, E]] =
+      Writer.Combine(f(metadata, sum.metadata), this, sum)
+    override def update(f: Metadata => Metadata): Sum.Writer[F, B, C]
 
   object Writer:
-    final case class Combine[F, B, C, D, E](left: Sum.Writer[F, B, C], right: Sum.Writer[F, D, E])
+    final case class Combine[F, B, C, D, E](metadata: Metadata, left: Sum.Writer[F, B, C], right: Sum.Writer[F, D, E])
         extends Sum.Writer[F, B | D, Either[C, E]]:
       override def branches: NonEmptyChain[Branch.Writer[F, ?, ?]] = left.branches ++ right.branches
+      override def update(f: Metadata => Metadata): Sum.Writer[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
     final case class Optional[F, B, C](self: Sum.Writer[F, B, C]) extends Sum.Writer[F, B, Option[C]]:
-      export self.branches
+      export self.{branches, metadata}
+      override def update(f: Metadata => Metadata): Sum.Writer[F, B, Option[C]] = copy(self = self.update(f))
 
-    final case class Root[F, B, C](branch: Branch.Writer[F, B, C]) extends Sum.Writer[F, B, C]:
+    final case class Root[F, B, C](metadata: Metadata, branch: Branch.Writer[F, B, C]) extends Sum.Writer[F, B, C]:
       override def branches: NonEmptyChain[Branch.Writer[F, B, C]] = NonEmptyChain.one(branch)
+      override def update(f: Metadata => Metadata): Sum.Writer[F, B, C] = copy(metadata = f(metadata))
 
     final case class Transform[F, B, C, D](self: Sum.Writer[F, B, C], f: D => C) extends Sum.Writer[F, B, D]:
-      export self.branches
+      export self.{branches, metadata}
+      override def update(f: Metadata => Metadata): Sum.Writer[F, B, D] = copy(self = self.update(f))
 
-  final case class Combine[F, B, C, D, E](left: Sum[F, B, C], right: Sum[F, D, E]) extends Sum[F, B | D, Either[C, E]]:
+  final case class Combine[F, B, C, D, E](metadata: Metadata, left: Sum[F, B, C], right: Sum[F, D, E])
+      extends Sum[F, B | D, Either[C, E]]:
     override def branches: NonEmptyChain[Branch[F, ?, ?]] = left.branches ++ right.branches
+    override def update(f: Metadata => Metadata): Sum[F, B | D, Either[C, E]] = copy(metadata = f(metadata))
 
   final case class Optional[F, B, C](self: Sum[F, B, C]) extends Sum[F, B, Option[C]]:
-    export self.branches
+    export self.{branches, metadata}
+    override def update(f: Metadata => Metadata): Sum[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, B, C](branch: Branch[F, B, C]) extends Sum[F, B, C]:
+  final case class Root[F, B, C](metadata: Metadata, branch: Branch[F, B, C]) extends Sum[F, B, C]:
     override def branches: NonEmptyChain[Branch[F, B, C]] = NonEmptyChain.one(branch)
+    override def update(f: Metadata => Metadata): Sum[F, B, C] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D](self: Sum[F, B, C], f: C => D, g: D => C) extends Sum[F, B, D]:
-    export self.branches
+    export self.{branches, metadata}
+    override def update(f: Metadata => Metadata): Sum[F, B, D] = copy(self = self.update(f))
 
 sealed trait Union[-F, +B, C] extends Schema[F, B, C], Union.Reader[F, B, C], Union.Writer[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Union[F, B, D] = Union.Transform(this, f, g)
