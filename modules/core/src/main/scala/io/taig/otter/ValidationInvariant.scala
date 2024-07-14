@@ -13,4 +13,4 @@ trait ValidationInvariant[Constraint[_], Actual[_], F[_]] extends Invariant[F]:
       ivalidate(validation.tap)(identity)
 
     final def apply[B, C, D](transformation: Transformation[A, Constraint[B], Actual[C], D]): F[D] =
-      fa.ivalidate(transformation.validation)(transformation.apply)
+      ???

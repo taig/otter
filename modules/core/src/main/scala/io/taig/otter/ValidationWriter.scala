@@ -9,8 +9,8 @@ object ValidationWriter:
   sealed abstract class Value[+A] extends ValidationWriter[A]
 
   object Value:
-    final case class Root[A](writer: Base.Value.Writer[Any, ?, A], value: A) extends ValidationWriter.Value[A]
+    final case class Root[A](writer: Base.Value[Any, ?, A], value: A) extends ValidationWriter.Value[A]
 
-  final case class Root[A, B](writer: Schema.Writer[Any, ?, A], value: A) extends ValidationWriter[A]
+  final case class Root[A, B](writer: Schema[Any, ?, A], value: A) extends ValidationWriter[A]
 
-  def apply[A](writer: Schema.Writer[Any, ?, A], value: A): ValidationWriter[A] = Root(writer, value)
+  def apply[A](writer: Schema[Any, ?, A], value: A): ValidationWriter[A] = Root(writer, value)
