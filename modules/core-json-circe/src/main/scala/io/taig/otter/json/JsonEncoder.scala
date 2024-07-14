@@ -3,15 +3,15 @@ package io.taig.otter.json
 import io.circe.Json
 import io.taig.otter.*
 
-object JsonEncoder extends Encoder[Schema.Via[Json, *], Json]:
-  override def apply[A](schema: Schema.Via[Json, A], a: A): Json = schema match
-    case schema: Collection.Via[Json, A]  => CollectionJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
-    case schema: Dictionary.Via[Json, A]  => DictionaryJsonEncoder(schema, a).fold(Json.Null)(Json.fromFields)
-    case schema: Enumeration.Via[Json, A] => EnumerationJsonEncoder(schema, a)
-    case schema: Primitive[A]             => PrimitiveJsonEncoder(schema, a)
-    case schema: Product.Via[Json, A]     => ProductJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
-    case schema: Record.Via[Json, A] =>
+object JsonEncoder extends Encoder[Schema[?, *], Json]:
+  override def apply[A](schema: Schema[?, A], a: A): Json = schema match
+    case schema: Collection[?, A]  => CollectionJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
+    case schema: Dictionary[?, A]  => DictionaryJsonEncoder(schema, a).fold(Json.Null)(Json.fromFields)
+    case schema: Enumeration[?, A] => EnumerationJsonEncoder(schema, a)
+    case schema: Primitive[A]      => PrimitiveJsonEncoder(schema, a)
+    case schema: Product[?, A]     => ProductJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
+    case schema: Record[?, A] =>
       RecordJsonEncoder(schema, a).map(_.toList).fold(Json.Null)(Json.fromFields)
-    case schema: Sum.Via[Json, A]   => SumJsonEncoder(schema, a).fold(Json.Null)(Json.fromJsonObject)
-    case schema: Union.Via[Json, A] => UnionJsonEncoder(schema, a)
-    case schema: Dynamic[Json, A]   => DynamicJsonEncoder(schema, a)
+    case schema: Sum[?, A]   => SumJsonEncoder(schema, a).fold(Json.Null)(Json.fromJsonObject)
+    case schema: Union[?, A] => UnionJsonEncoder(schema, a)
+    case schema: Dynamic[A]  => DynamicJsonEncoder(schema, a)

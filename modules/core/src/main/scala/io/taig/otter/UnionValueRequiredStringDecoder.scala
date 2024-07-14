@@ -1,5 +1,5 @@
 package io.taig.otter
 
 object UnionValueRequiredStringDecoder:
-  def apply[A](union: Union.Value.Required.Via[String, A], value: String): Decoder.Result[Option[String], A] =
+  def apply[A](union: Union.Value.Required[?, A], value: String): Decoder.Result[Option[String], A] =
     ???

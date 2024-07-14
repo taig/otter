@@ -10,7 +10,7 @@ import io.taig.otter.*
 
 object BranchJsonDecoder:
   def apply[A](
-      branch: Branch.Via[Json, A],
+      branch: Branch[?, A],
       discriminator: Discriminator,
       json: JsonObject
   ): Decoder.Result[Json, Option[A]] = branch match

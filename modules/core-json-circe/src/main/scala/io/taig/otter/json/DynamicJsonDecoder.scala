@@ -5,7 +5,7 @@ import io.taig.otter.*
 import cats.syntax.all.*
 
 object DynamicJsonDecoder:
-  def apply[A](schema: Dynamic[Json, A], json: Json): Decoder.Result[Json, A] = schema match
-    case Dynamic.Root(_)               => json.valid
+  def apply[A](schema: Dynamic[A], json: Json): Decoder.Result[Json, A] = schema match
+    case Dynamic.Root(_)               => ???
     case Dynamic.Optional(self)        => if json.isNull then None.valid else DynamicJsonDecoder(self, json).map(_.some)
     case Dynamic.Transform(self, f, _) => DynamicJsonDecoder(self, json).map(f)

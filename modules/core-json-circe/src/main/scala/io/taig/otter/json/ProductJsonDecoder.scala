@@ -10,13 +10,13 @@ import io.circe.syntax.*
 import io.taig.otter.Decoder
 
 object ProductJsonDecoder:
-  def apply[A](schema: Product.Via[Json, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Product[?, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     // TODO disallow values with additional items
     withRemainders(schema, values).map(_._2)
 
   // TODO add index to errors
   def withRemainders[A](
-      schema: Product.Via[Json, A],
+      schema: Product[?, A],
       values: Option[Vector[Json]]
   ): Decoder.Result[Json, (Option[Vector[Json]], A)] = schema match
     case Product.Combine(_, left, right) =>

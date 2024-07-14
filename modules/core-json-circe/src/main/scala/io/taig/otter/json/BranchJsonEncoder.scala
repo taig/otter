@@ -6,7 +6,7 @@ import io.taig.otter.*
 import io.circe.syntax.*
 
 object BranchJsonEncoder:
-  def apply[A](branch: Branch.Via[Json, A], discriminator: Discriminator, a: A): JsonObject = branch match
+  def apply[A](branch: Branch[?, A], discriminator: Discriminator, a: A): JsonObject = branch match
     case Branch.Root(_, name, schema) =>
       discriminator match
         case Discriminator.Nested(identifier, value) =>

@@ -5,7 +5,7 @@ import io.taig.otter.*
 import io.circe.Json
 
 object DictionaryJsonEncoder:
-  def apply[A](schema: Dictionary.Via[Json, A], a: A): Option[List[(String, Json)]] = schema match
+  def apply[A](schema: Dictionary[?, A], a: A): Option[List[(String, Json)]] = schema match
     case Dictionary.Optional(self) => a.flatMap(DictionaryJsonEncoder(self, _))
     case Dictionary.Root(_, key, value) =>
       a.map { case (a, b) => (ValueRequiredStringEncoder(key, a), JsonEncoder(value, b)) }.some

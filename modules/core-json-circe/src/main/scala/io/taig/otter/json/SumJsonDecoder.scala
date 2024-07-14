@@ -10,7 +10,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
 object SumJsonDecoder:
-  def apply[A](schema: Sum.Via[Json, A], json: Option[JsonObject]): Decoder.Result[Json, A] =
+  def apply[A](schema: Sum[?, A], json: Option[JsonObject]): Decoder.Result[Json, A] =
     SumJsonDecoder(schema, schema.metadata(discriminator).getOrElse(Discriminator.Default), json).andThen(
       _.toValid(
         Violations.rootNec(
@@ -20,7 +20,7 @@ object SumJsonDecoder:
     )
 
   def apply[A](
-      schema: Sum.Via[Json, A],
+      schema: Sum[?, A],
       discriminator: Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[A]] = schema match
@@ -33,8 +33,8 @@ object SumJsonDecoder:
     case Sum.Transform(self, f, _) => SumJsonDecoder(self, discriminator, json).map(_.map(f))
 
   def combine[A, B](
-      left: Sum.Via[Json, A],
-      right: Sum.Via[Json, B],
+      left: Sum[?, A],
+      right: Sum[?, B],
       discriminator: Discriminator,
       json: Option[JsonObject]
   ): Decoder.Result[Json, Option[Either[A, B]]] = SumJsonDecoder(left, discriminator, json).andThen:

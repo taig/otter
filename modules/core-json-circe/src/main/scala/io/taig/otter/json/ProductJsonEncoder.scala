@@ -5,7 +5,7 @@ import io.taig.otter.*
 import cats.syntax.all.*
 
 object ProductJsonEncoder:
-  def apply[A](schema: Product.Via[Json, A], a: A): Option[Vector[Json]] = schema match
+  def apply[A](schema: Product[?, A], a: A): Option[Vector[Json]] = schema match
     case Product.Combine(_, left, right) =>
       (ProductJsonEncoder(left, a._1), ProductJsonEncoder(right, a._2))
         .match

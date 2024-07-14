@@ -8,7 +8,7 @@ import io.circe.syntax.*
 import io.taig.otter.*
 
 object DictionaryJsonDecoder:
-  def apply[A](schema: Dictionary.Via[Json, A], values: Option[List[(String, Json)]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Dictionary[?, A], values: Option[List[(String, Json)]]): Decoder.Result[Json, A] =
     schema match
       case Dictionary.Optional(self) => values.fold(none.valid)(_ => DictionaryJsonDecoder(self, values).map(_.some))
       case Dictionary.Root(_, key, value) =>

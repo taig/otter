@@ -24,7 +24,7 @@ trait Validations extends Schemas:
     Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
 
   def uniqueItems[F[a] <: Iterable[a], A](using
-      schema: Schema[Nothing, ?, A]
+      schema: Schema[?, A]
   ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
     .mapConstraint(_ => Constraint.Collection.UniqueItems)
     .mapActual((schema.collection.apply(nonEmptyList), _))
@@ -41,10 +41,10 @@ trait Validations extends Schemas:
   def nonEmptyList[A]: SchemaTransformation.Collection[Vector[A], Long, NonEmptyList[A]] =
     list[A].ivalidate(nonEmpty)(_ :: _).imap(NonEmptyList.apply)(fa => (fa.head, fa.tail))
 
-  def set[A: Schema.Of: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], Set[A]] =
+  def set[A: Schema[?, *]: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], Set[A]] =
     vector[A].ivalidate_(uniqueItems).imap(_.to(Set))(_.toVector)
 
-  def sortedSet[A: Schema.Of: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], SortedSet[A]] =
+  def sortedSet[A: Schema[?, *]: Order]: SchemaTransformation.Collection[Vector[A], NonEmptyList[A], SortedSet[A]] =
     set[A].imap(SortedSet.from)(_.toSet)
 
   // def nonEmptySet[A: Schema.Of: Order]: SchemaTransformation.Collection[

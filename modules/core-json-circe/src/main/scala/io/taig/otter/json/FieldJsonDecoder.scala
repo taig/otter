@@ -11,7 +11,7 @@ import io.circe.syntax.*
 
 object FieldJsonDecoder:
   def apply[A](
-      field: Field.Via[Json, A],
+      field: Field[?, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
     case Field.Root(_, name, schema) =>

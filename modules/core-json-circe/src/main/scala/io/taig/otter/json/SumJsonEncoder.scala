@@ -4,13 +4,12 @@ import io.taig.otter.*
 import io.taig.otter.Keys.*
 import io.circe.JsonObject
 import cats.syntax.all.*
-import io.circe.Json
 
 object SumJsonEncoder:
-  def apply[A](schema: Sum.Via[Json, A], a: A): Option[JsonObject] =
+  def apply[A](schema: Sum[?, A], a: A): Option[JsonObject] =
     SumJsonEncoder(schema, schema.metadata(discriminator).getOrElse(Discriminator.Default), a)
 
-  def apply[A](schema: Sum.Via[Json, A], discriminator: Discriminator, a: A): Option[JsonObject] =
+  def apply[A](schema: Sum[?, A], discriminator: Discriminator, a: A): Option[JsonObject] =
     schema match
       case Sum.Combine(_, left, right) =>
         a.fold(SumJsonEncoder(left, discriminator, _), SumJsonEncoder(right, discriminator, _))

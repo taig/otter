@@ -9,7 +9,7 @@ import io.circe.syntax.*
 import io.taig.otter.*
 
 object CollectionJsonDecoder:
-  def apply[A](schema: Collection.Via[Json, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Collection[?, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
     schema match
       case Collection.Transform(self, validation, _) =>
         CollectionJsonDecoder(self, values).andThen: a =>
