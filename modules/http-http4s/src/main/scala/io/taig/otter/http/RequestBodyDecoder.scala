@@ -3,7 +3,6 @@ package io.taig.otter.http
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.Decoder
-import io.taig.otter.http.*
 import org.http4s.Entity as Http4sEntity
 import org.http4s.Entity.Streamed
 import org.http4s.Entity.Strict

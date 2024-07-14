@@ -2,14 +2,14 @@ package io.taig.otter.json
 
 import cats.syntax.all.*
 import io.taig.otter.*
+import io.taig.otter.Keys.*
 import io.circe.Json
 import cats.data.Chain
 
 object RecordJsonEncoder:
   def apply[A](schema: Record.Writer.Via[Json, A], a: A): Option[Chain[(String, Json)]] =
-    RecordJsonEncoder(schema, Null.Default, a)
+    RecordJsonEncoder(schema, schema.metadata(nulls).getOrElse(Null.Default), a)
 
-  // TODO nulls
   def apply[A](schema: Record.Writer.Via[Json, A], nulls: Null, a: A): Option[Chain[(String, Json)]] =
     schema match
       case Record.Combine(_, left, right)        => combine(left, right, nulls, a).some
