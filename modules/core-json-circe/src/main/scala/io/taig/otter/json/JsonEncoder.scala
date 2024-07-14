@@ -14,4 +14,4 @@ object JsonEncoder extends Encoder[Schema.Via[Json, *], Json]:
       RecordJsonEncoder(schema, a).map(_.toList).fold(Json.Null)(Json.fromFields)
     case schema: Sum.Via[Json, A]   => SumJsonEncoder(schema, a).fold(Json.Null)(Json.fromJsonObject)
     case schema: Union.Via[Json, A] => UnionJsonEncoder(schema, a)
-    case schema: Dynamic[Json, A]      => DynamicJsonEncoder(schema, a)
+    case schema: Dynamic[Json, A]   => DynamicJsonEncoder(schema, a)

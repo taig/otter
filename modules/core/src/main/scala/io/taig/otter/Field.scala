@@ -3,7 +3,7 @@ package io.taig.otter
 import cats.syntax.all.*
 import scala.Product as SProduct
 
-sealed trait Field[-F, +O, A] extends SProduct, Serializable:
+sealed trait Field[+F, +O, A] extends SProduct, Serializable:
   final def imap[B](f: A => B)(g: B => A): Field[F, O, B] = Field.Transform(this, f, g)
   def metadata: Metadata
   def name: String

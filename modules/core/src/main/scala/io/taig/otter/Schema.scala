@@ -9,7 +9,7 @@ import scala.Product as SProduct
 import io.taig.otter
 import io.taig.enumeration.ext.Mapping
 
-sealed trait Schema[-F, +O, A] extends SProduct, Serializable:
+sealed trait Schema[+F, +O, A] extends SProduct, Serializable:
   final def collection: Collection[F, this.type, Vector[A]] = Collection.Root(Metadata.Empty, this)
   def metadata: Metadata
   def imap[B](f: A => B)(g: B => A): Schema[F, O, B]
@@ -19,25 +19,25 @@ sealed trait Schema[-F, +O, A] extends SProduct, Serializable:
   def update(f: Metadata => Metadata): Schema[F, O, A]
 
 object Schema:
-  type Of[A] = Schema[Any, ?, A]
+  type Of[A] = Schema[Nothing, ?, A]
   type Via[F, A] = Schema[F, ?, A]
 
-sealed trait Value[-F, +B, C] extends Schema[F, B, C]:
-  override def imap[D](f: C => D)(g: D => C): Value[F, B, D]
-  override def optional: Value[F, B, Option[C]]
-  override def update(f: Metadata => Metadata): Value[F, B, C]
+sealed trait Value[+F, +O, A] extends Schema[F, O, A]:
+  override def imap[B](f: A => B)(g: B => A): Value[F, O, B]
+  override def optional: Value[F, O, Option[A]]
+  override def update(f: Metadata => Metadata): Value[F, O, A]
 
 object Value:
   type Via[F, A] = Value[F, ?, A]
 
-  sealed trait Required[-F, +B, C] extends Value[F, B, C]:
+  sealed trait Required[+F, +B, C] extends Value[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Value.Required[F, B, D]
     override def update(f: Metadata => Metadata): Value.Required[F, B, C]
 
   object Required:
     type Via[F, A] = Value.Required[F, ?, A]
 
-sealed trait Collection[-F, +O, A] extends Schema[F, O, A]:
+sealed trait Collection[+F, +O, A] extends Schema[F, O, A]:
   def constraints: Chain[Constraint.Collection]
   final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ivalidate(Validation.lift(f))(g)
   final def ivalidate[B, C](validation: SchemaValidation.Collection[A, B, C])(f: C => A): Collection[F, O, C] =
@@ -68,7 +68,7 @@ object Collection:
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
     override def update(f: Metadata => Metadata): Collection[F, B, E] = copy(self = self.update(f))
 
-sealed trait Dictionary[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Dictionary[+F, +B, C] extends Schema[F, B, C]:
   final override def imap[D](f: C => D)(g: D => C): Dictionary[F, B, D] = Dictionary.Transform(this, f, g)
   final override def optional: Dictionary[F, B, Option[C]] = Dictionary.Optional(this)
   override def update(f: Metadata => Metadata): Dictionary[F, B, C]
@@ -80,9 +80,9 @@ object Dictionary:
     export self.metadata
     override def update(f: Metadata => Metadata): Dictionary[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, B, +C <: Schema[F, ?, D], D](metadata: Metadata, key: Primitive.Required[B], value: C)
-      extends Dictionary[F, C, List[(B, D)]]:
-    override def update(f: Metadata => Metadata): Dictionary[F, C, List[(B, D)]] = copy(metadata = f(metadata))
+  final case class Root[F, +O <: Schema[F, ?, B], A, B](metadata: Metadata, key: Primitive.Required[A], value: O)
+      extends Dictionary[F, O, List[(A, B)]]:
+    override def update(f: Metadata => Metadata): Dictionary[F, O, List[(A, B)]] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D](self: Dictionary[F, B, C], f: C => D, g: D => C) extends Dictionary[F, B, D]:
     export self.metadata
@@ -105,7 +105,7 @@ object Dynamic:
     export self.metadata
     override def update(f: Metadata => Metadata): Dynamic[F, B] = copy(self = self.update(f))
 
-sealed trait Enumeration[-F, +O, A] extends Value[F, O, A]:
+sealed trait Enumeration[+F, +O, A] extends Value[F, O, A]:
   override def imap[B](f: A => B)(g: B => A): Enumeration[F, O, B] = Enumeration.Transform(this, f, g)
   override def optional: Enumeration[F, O, Option[A]] = Enumeration.Optional(this)
   override def update(f: Metadata => Metadata): Enumeration[F, O, A]
@@ -113,7 +113,7 @@ sealed trait Enumeration[-F, +O, A] extends Value[F, O, A]:
 object Enumeration:
   type Via[F, A] = Enumeration[F, ?, A]
 
-  sealed trait Required[-F, +B, C] extends Value.Required[F, B, C], Enumeration[F, B, C]:
+  sealed trait Required[+F, +B, C] extends Value.Required[F, B, C], Enumeration[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Enumeration.Required[F, B, D] = Required.Transform(this, f, g)
     override def update(f: Metadata => Metadata): Enumeration.Required[F, B, C]
 
@@ -133,15 +133,15 @@ object Enumeration:
     export self.metadata
     override def update(f: Metadata => Metadata): Enumeration[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, +B <: Value[F, ?, C], C, D](metadata: Metadata, schema: B, mapping: Mapping[D, C])
-      extends Enumeration[F, B, D]:
-    override def update(f: Metadata => Metadata): Enumeration[F, B, D] = copy(metadata = f(metadata))
+  final case class Root[F, O <: Value[F, ?, A], A, B](metadata: Metadata, schema: O, mapping: Mapping[B, A])
+      extends Enumeration[F, O, B]:
+    override def update(f: Metadata => Metadata): Enumeration[F, O, B] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D](self: Enumeration[F, B, C], f: C => D, g: D => C) extends Enumeration[F, B, D]:
     export self.metadata
     override def update(f: Metadata => Metadata): Enumeration[F, B, D] = copy(self = self.update(f))
 
-sealed trait Primitive[A] extends Value[Any, Nothing, A]:
+sealed trait Primitive[A] extends Value[Nothing, Nothing, A]:
   def constraints: Chain[Constraint.Primitive[?]]
   override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
   def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
@@ -152,7 +152,7 @@ sealed trait Primitive[A] extends Value[Any, Nothing, A]:
   override def update(f: Metadata => Metadata): Primitive[A]
 
 object Primitive:
-  sealed trait Required[A] extends Value.Required[Any, Nothing, A], Primitive[A]:
+  sealed trait Required[A] extends Value.Required[Nothing, Nothing, A], Primitive[A]:
     final override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = ivalidate(Validation.lift(f))(g)
     override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
         f: D => A
@@ -186,10 +186,10 @@ object Primitive:
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
     override def update(f: Metadata => Metadata): Primitive[D] = copy(self = self.update(f))
 
-sealed trait Product[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Product[+F, +B, C] extends Schema[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Product[F, B, D] = Product.Transform(this, f, g)
   override def optional: Product[F, B, Option[C]] = Product.Optional(this)
-  def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+  def productWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       product: Product[F1, D, E]
   ): Product[F1, B & D, (C, E)] =
     Product.Combine(merge(metadata, product.metadata), this, product)
@@ -204,9 +204,9 @@ object Product:
     override def schemas: Chain[Schema[F, ?, ?]] = left.schemas ++ right.schemas
     override def update(f: Metadata => Metadata): Product[F, B & D, (C, E)] = copy(metadata = f(metadata))
 
-  case class Empty(metadata: Metadata) extends Product[Any, Nothing, Unit]:
+  case class Empty(metadata: Metadata) extends Product[Nothing, Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
-    override def update(f: Metadata => Metadata): Product[Any, Nothing, Unit] = copy(metadata = f(metadata))
+    override def update(f: Metadata => Metadata): Product[Nothing, Nothing, Unit] = copy(metadata = f(metadata))
 
   final case class One[F, O <: Schema[F, ?, A], A](metadata: Metadata, schema: O) extends Product[F, O, A]:
     override def schemas: Chain[Schema[F, ?, ?]] = Chain.one(schema)
@@ -220,11 +220,11 @@ object Product:
     export self.{metadata, schemas}
     override def update(f: Metadata => Metadata): Product[F, B, D] = copy(self = self.update(f))
 
-sealed trait Record[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Record[+F, +B, C] extends Schema[F, B, C]:
   def fields: Chain[Field[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Record[F, B, D] = Record.Transform(this, f, g)
   override def optional: Record[F, B, Option[C]] = Record.Optional(this)
-  def productWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+  def productWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       product: Record[F1, D, E]
   ): Record[F1, B & D, (C, E)] = Record.Combine(merge(metadata, product.metadata), this, product)
   override def update(f: Metadata => Metadata): Record[F, B, C]
@@ -232,9 +232,9 @@ sealed trait Record[-F, +B, C] extends Schema[F, B, C]:
 object Record:
   type Via[F, A] = Record[F, ?, A]
 
-  final case class Empty(metadata: Metadata) extends Record[Any, Nothing, Unit]:
+  final case class Empty(metadata: Metadata) extends Record[Nothing, Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty
-    override def update(f: Metadata => Metadata): Record[Any, Nothing, Unit] = copy(metadata = f(metadata))
+    override def update(f: Metadata => Metadata): Record[Nothing, Nothing, Unit] = copy(metadata = f(metadata))
 
   final case class Combine[F, B, C, D, E](metadata: Metadata, left: Record[F, B, C], right: Record[F, D, E])
       extends Record[F, B & D, (C, E)]:
@@ -253,11 +253,11 @@ object Record:
     export self.{fields, metadata}
     override def update(f: Metadata => Metadata): Record[F, B, D] = copy(self = self.update(f))
 
-sealed trait Sum[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Sum[+F, +B, C] extends Schema[F, B, C]:
   def branches: NonEmptyChain[Branch[F, ?, ?]]
   override def imap[D](f: C => D)(g: D => C): Sum[F, B, D] = Sum.Transform(this, f, g)
   override def optional: Sum[F, B, Option[C]] = Sum.Optional(this)
-  def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+  def orElseWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       sum: Sum[F1, D, E]
   ): Sum[F1, B | D, Either[C, E]] =
     Sum.Combine(merge(metadata, sum.metadata), this, sum)
@@ -283,10 +283,10 @@ object Sum:
     export self.{branches, metadata}
     override def update(f: Metadata => Metadata): Sum[F, B, D] = copy(self = self.update(f))
 
-sealed trait Union[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Union[+F, +B, C] extends Schema[F, B, C]:
   override def imap[D](f: C => D)(g: D => C): Union[F, B, D] = Union.Transform(this, f, g)
   override def optional: Union[F, B, Option[C]] = Union.Optional(this)
-  def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+  def orElseWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
       union: Union[F1, D, E]
   ): Union[F1, B | D, Either[C, E]] = Union.Combine(merge(metadata, union.metadata), this, union)
   override def update(f: Metadata => Metadata): Union[F, B, C]
@@ -294,10 +294,10 @@ sealed trait Union[-F, +B, C] extends Schema[F, B, C]:
 object Union:
   type Via[F, A] = Union[F, ?, A]
 
-  sealed trait Value[-F, +B, C] extends Base.Value[F, B, C], Union[F, B, C]:
+  sealed trait Value[+F, +B, C] extends Base.Value[F, B, C], Union[F, B, C]:
     override def imap[D](f: C => D)(g: D => C): Union.Value[F, B, D] = Value.Transform(this, f, g)
     final override def optional: Union.Value[F, B, Option[C]] = Value.Optional(this)
-    def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+    def orElseWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
         union: Union.Value[F1, D, E]
     ): Union.Value[F1, B | D, Either[C, E]] = Value.Combine(merge(metadata, union.metadata), this, union)
     override def update(f: Metadata => Metadata): Union.Value[F, B, C]
@@ -305,9 +305,9 @@ object Union:
   object Value:
     type Via[F, A] = Union.Value[F, ?, A]
 
-    sealed trait Required[-F, +B, C] extends Base.Value.Required[F, B, C], Union.Value[F, B, C]:
+    sealed trait Required[+F, +B, C] extends Base.Value.Required[F, B, C], Union.Value[F, B, C]:
       override def imap[D](f: C => D)(g: D => C): Union.Value.Required[F, B, D] = Required.Transform(this, f, g)
-      def orElseWith[F1 <: F, D, E](merge: (Metadata, Metadata) => Metadata)(
+      def orElseWith[F1 >: F, D, E](merge: (Metadata, Metadata) => Metadata)(
           union: Union.Value.Required[F1, D, E]
       ): Union.Value.Required[F1, B | D, Either[C, E]] = Required.Combine(merge(metadata, union.metadata), this, union)
       override def update(f: Metadata => Metadata): Union.Value.Required[F, B, C]

@@ -24,10 +24,10 @@ trait Validations extends Schemas:
     Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual((long, _))
 
   def uniqueItems[F[a] <: Iterable[a], A](using
-      schema: Schema[Any, ?, A]
+      schema: Schema[Nothing, ?, A]
   ): SchemaValidation.Collection[F[A], NonEmptyList[A], Unit] = Base.uniqueItems
     .mapConstraint(_ => Constraint.Collection.UniqueItems)
-    .mapActual(a => (schema.collection.apply(nonEmptyList), a))
+    .mapActual((schema.collection.apply(nonEmptyList), _))
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 
