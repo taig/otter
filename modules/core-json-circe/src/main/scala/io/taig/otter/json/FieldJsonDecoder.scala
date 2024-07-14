@@ -11,27 +11,22 @@ import io.circe.syntax.*
 
 object FieldJsonDecoder:
   def apply[A](
-      field: Field.Reader.Via[Json, A],
+      field: Field.Via[Json, A],
       values: Option[Chain[(String, Json)]]
   ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
-    case Field.Root(_, name, schema)        => root(name, schema, values)
-    case Field.Reader.Root(_, name, schema) => root(name, schema, values)
+    case Field.Root(_, name, schema) =>
+      values match
+        case Some(values) =>
+          val (json, remainders) = values.findWithRemainders { case (`name`, json) => json }
 
-  def root[A](
-      name: String,
-      schema: Schema.Reader.Via[Json, A],
-      values: Option[Chain[(String, Json)]]
-  ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = values match
-    case Some(values) =>
-      val (json, remainders) = values.findWithRemainders { case (`name`, json) => json }
-
-      json match
-        case Some(json) => JsonDecoder(schema, json).leftMap(name /: _).tupleLeft(remainders.some)
-        case None =>
-          Violations
-            .namespaceNec(
-              History.Step.Field(name),
-              Violation(Constraint.Type("json"), actual = "null".asJson)
-            )
-            .invalid
-    case None => JsonDecoder(schema, Json.Null).leftMap(name /: _).tupleLeft(values)
+          json match
+            case Some(json) => JsonDecoder(schema, json).leftMap(name /: _).tupleLeft(remainders.some)
+            case None =>
+              Violations
+                .namespaceNec(
+                  History.Step.Field(name),
+                  Violation(Constraint.Type("json"), actual = "null".asJson)
+                )
+                .invalid
+        case None => JsonDecoder(schema, Json.Null).leftMap(name /: _).tupleLeft(values)
+    case Field.Transform(self, f, _) => FieldJsonDecoder(self, values).map(_.map(f))

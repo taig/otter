@@ -16,7 +16,7 @@ object RequestMatcher:
   def apply(reference: Url[?], actual: Uri): Boolean = RequestMatcher(reference.path, actual.path)
 
   def apply(reference: Path[?], actual: Uri.Path): Boolean =
-    RequestMatcher(reference.toSegments.toList, actual.segments.toList)
+    RequestMatcher(reference.segments.toList, actual.segments.toList)
 
   def apply(reference: List[String | Path.Parameter[?]], actual: List[Uri.Path.Segment]): Boolean =
     (reference, actual) match

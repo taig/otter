@@ -2,7 +2,6 @@ package io.taig.otter
 
 import java.util.regex.Pattern
 import cats.data.NonEmptyList
-import cats.data.NonEmptySet
 import cats.data.NonEmptySeq
 import scala.collection.immutable.SortedSet
 import cats.Order

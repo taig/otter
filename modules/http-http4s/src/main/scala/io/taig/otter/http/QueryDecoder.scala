@@ -12,14 +12,7 @@ object QueryDecoder:
       query: Query[A],
       values: List[(String, Option[String])]
   ): Decoder.Result[Option[String], (List[(String, Option[String])], A)] = query match
-    case Query.Transform(self, f) => transform(self, f, values)
+    case Query.Transform(self, f) => QueryDecoder(self, values).map(_.map(f))
     case Query.Root(_, name, schema) =>
       val (value, remainders) = values.findWithRemainders { case (`name`, value) => value }
       ValueStringDecoder(schema, value.flatten).tupleLeft(remainders)
-
-  def transform[A, B](
-      self: Query[A],
-      f: A => B,
-      values: List[(String, Option[String])]
-  ): Decoder.Result[Option[String], (List[(String, Option[String])], B)] =
-    QueryDecoder(self, values).map(_.map(f))

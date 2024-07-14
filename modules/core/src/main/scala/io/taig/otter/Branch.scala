@@ -12,8 +12,7 @@ sealed trait Branch[-F, +O, A] extends SProduct, Serializable:
 object Branch:
   type Via[F, A] = Branch[F, ?, A]
 
-  final case class Root[F, +O <: Schema[F, ?, A], A](metadata: Metadata, name: String, schema: O)
-      extends Branch[F, O, A]
+  final case class Root[F, O <: Schema[F, ?, A], A](metadata: Metadata, name: String, schema: O) extends Branch[F, O, A]
 
   final case class Transform[F, O, A, B](self: Branch[F, O, A], f: A => B, g: B => A) extends Branch[F, O, B]:
     export self.{metadata, name, schema}

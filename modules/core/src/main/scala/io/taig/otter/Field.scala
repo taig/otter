@@ -12,7 +12,7 @@ sealed trait Field[-F, +O, A] extends SProduct, Serializable:
 object Field:
   type Via[F, A] = Field[F, ?, A]
 
-  final case class Root[F, +O <: Schema[F, ?, A], A](metadata: Metadata, name: String, schema: O) extends Field[F, O, A]
+  final case class Root[F, O <: Schema[F, ?, A], A](metadata: Metadata, name: String, schema: O) extends Field[F, O, A]
 
   final case class Transform[F, O, A, B](self: Field[F, O, A], f: A => B, g: B => A) extends Field[F, O, B]:
     export self.{metadata, name, schema}

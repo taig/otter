@@ -10,35 +10,20 @@ import io.taig.otter.Constraint
 import io.taig.otter.Decoder
 
 object PrimitiveJsonDecoder:
-  def apply[A](schema: Primitive.Reader[A], json: Json): Decoder.Result[Json, A] = schema match
-    case Primitive.Optional(self)                              => optional(self, json)
-    case Primitive.Reader.Optional(self)                       => optional(self, json)
-    case Primitive.Reader.Transform(self, validation)          => transform(self, validation, json)
-    case Primitive.Required.Reader.Transform(self, validation) => transform(self, validation, json)
-    case Primitive.Required.Root(_, tpe)                       => root(tpe, json)
-    case Primitive.Required.Transform(self, validation, _)     => transform(self, validation, json)
-    case Primitive.Transform(self, validation, _)              => transform(self, validation, json)
-
-  def optional[A](self: Primitive.Reader[A], json: Json): Decoder.Result[Json, Option[A]] =
-    if json.isNull then none.valid else apply(self, json).map(_.some)
-
-  def root[A](tpe: Type[A], json: Json): Decoder.Result[Json, A] =
-    TypeJsonDecoder(tpe, json).toValidated.leftMap: _ =>
-      Violations.rootNec(Violation(Constraint.Type(name = tpe.toString), actual = typeOf(json).asJson))
+  def apply[A](schema: Primitive[A], json: Json): Decoder.Result[Json, A] = schema match
+    case Primitive.Optional(self) => if json.isNull then None.valid else apply(self, json).map(_.some)
+    case Primitive.Required.Root(_, tpe) =>
+      TypeJsonDecoder(tpe, json).toValidated.leftMap: _ =>
+        Violations.rootNec(Violation(Constraint.Type(name = tpe.toString), actual = typeOf(json).asJson))
+    case Primitive.Required.Transform(self, validation, _) => transform(self, validation, json)
+    case Primitive.Transform(self, validation, _)          => transform(self, validation, json)
 
   def transform[A, B, C, D](
-      self: Primitive.Reader[A],
+      self: Primitive[A],
       validation: SchemaValidation.Primitive[A, B, C, D],
       json: Json
   ): Decoder.Result[Json, D] = apply(self, json).andThen: a =>
     validation
       .apply(a)
-      .leftMap(
-        _.map(
-          _.bimap(
-            _.map(io.taig.otter.json.ValidationWriterJsonEncoder.apply),
-            io.taig.otter.json.ValidationWriterJsonEncoder.apply
-          )
-        )
-      )
+      .leftMap(_.map(_.bimap(_.map(JsonEncoder.apply), JsonEncoder.apply)))
       .leftMap(Violations.root)

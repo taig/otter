@@ -88,27 +88,27 @@ object Dictionary:
     export self.metadata
     override def update(f: Metadata => Metadata): Dictionary[F, B, D] = copy(self = self.update(f))
 
-sealed trait Dynamic[F, B] extends Schema[F, Nothing, B]:
-  override def imap[C](f: B => C)(g: C => B): Dynamic[F, C] = Dynamic.Transform(this, f, g)
-  override def optional: Dynamic[F, Option[B]] = Dynamic.Optional(this)
-  override def update(f: Metadata => Metadata): Dynamic[F, B]
+sealed trait Dynamic[F, A] extends Schema[F, Nothing, A]:
+  override def imap[B](f: A => B)(g: B => A): Dynamic[F, B] = Dynamic.Transform(this, f, g)
+  override def optional: Dynamic[F, Option[A]] = Dynamic.Optional(this)
+  override def update(f: Metadata => Metadata): Dynamic[F, A]
 
 object Dynamic:
-  final case class Optional[F, B](self: Dynamic[F, B]) extends Dynamic[F, Option[B]]:
+  final case class Optional[F, A](self: Dynamic[F, A]) extends Dynamic[F, Option[A]]:
     export self.metadata
-    override def update(f: Metadata => Metadata): Dynamic[F, Option[B]] = copy(self = self.update(f))
+    override def update(f: Metadata => Metadata): Dynamic[F, Option[A]] = copy(self = self.update(f))
 
   final case class Root[F](metadata: Metadata) extends Dynamic[F, F]:
     override def update(f: Metadata => Metadata): Dynamic[F, F] = copy(metadata = f(metadata))
 
-  final case class Transform[F, B, C](self: Dynamic[F, B], f: B => C, g: C => B) extends Dynamic[F, C]:
+  final case class Transform[F, A, B](self: Dynamic[F, A], f: A => B, g: B => A) extends Dynamic[F, B]:
     export self.metadata
-    override def update(f: Metadata => Metadata): Dynamic[F, C] = copy(self = self.update(f))
+    override def update(f: Metadata => Metadata): Dynamic[F, B] = copy(self = self.update(f))
 
-sealed trait Enumeration[-F, +B, C] extends Value[F, B, C]:
-  override def imap[D](f: C => D)(g: D => C): Enumeration[F, B, D] = Enumeration.Transform(this, f, g)
-  override def optional: Enumeration[F, B, Option[C]] = Enumeration.Optional(this)
-  override def update(f: Metadata => Metadata): Enumeration[F, B, C]
+sealed trait Enumeration[-F, +O, A] extends Value[F, O, A]:
+  override def imap[B](f: A => B)(g: B => A): Enumeration[F, O, B] = Enumeration.Transform(this, f, g)
+  override def optional: Enumeration[F, O, Option[A]] = Enumeration.Optional(this)
+  override def update(f: Metadata => Metadata): Enumeration[F, O, A]
 
 object Enumeration:
   type Via[F, A] = Enumeration[F, ?, A]
@@ -208,9 +208,9 @@ object Product:
     override def schemas: Chain[Nothing] = Chain.empty
     override def update(f: Metadata => Metadata): Product[Any, Nothing, Unit] = copy(metadata = f(metadata))
 
-  final case class One[F, +B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Product[F, B, C]:
+  final case class One[F, O <: Schema[F, ?, A], A](metadata: Metadata, schema: O) extends Product[F, O, A]:
     override def schemas: Chain[Schema[F, ?, ?]] = Chain.one(schema)
-    override def update(f: Metadata => Metadata): Product[F, B, C] = copy(metadata = f(metadata))
+    override def update(f: Metadata => Metadata): Product[F, O, A] = copy(metadata = f(metadata))
 
   final case class Optional[F, B, C](self: Product[F, B, C]) extends Product[F, B, Option[C]]:
     export self.{metadata, schemas}
@@ -349,7 +349,7 @@ object Union:
     export self.metadata
     override def update(f: Metadata => Metadata): Union[F, B, Option[C]] = copy(self = self.update(f))
 
-  final case class Root[F, +B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Union[F, B, C]:
+  final case class Root[F, B <: Schema[F, ?, C], C](metadata: Metadata, schema: B) extends Union[F, B, C]:
     override def update(f: Metadata => Metadata): Union[F, B, C] = copy(metadata = f(metadata))
 
   final case class Transform[F, B, C, D](self: Union[F, B, C], f: C => D, g: D => C) extends Union[F, B, D]:

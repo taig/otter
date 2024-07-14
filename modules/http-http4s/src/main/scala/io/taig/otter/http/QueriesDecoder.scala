@@ -10,23 +10,11 @@ object QueriesDecoder:
       query: Queries[A],
       values: List[(String, Option[String])]
   ): Decoder.Result[Option[String], (List[(String, Option[String])], A)] = query match
-    case Queries.Combine(left, right) => combine(left, right, values)
-    case Queries.Empty                => (values, ()).valid
-    case Queries.One(query)           => QueryDecoder(query, values)
-    case Queries.Transform(self, f)   => transform(self, f, values)
-
-  def combine[A, B](
-      left: Queries[A],
-      right: Queries[B],
-      values: List[(String, Option[String])]
-  ): Decoder.Result[Option[String], (List[(String, Option[String])], (A, B))] = withRemainders(left, values) match
-    case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))
-    case Validated.Invalid(violations) =>
-      withRemainders(right, values).fold(violations.combine, _ => violations).invalid
-
-  def transform[A, B](
-      self: Queries[A],
-      f: A => B,
-      values: List[(String, Option[String])]
-  ): Decoder.Result[Option[String], (List[(String, Option[String])], B)] =
-    withRemainders(self, values).map(_.map(f))
+    case Queries.Combine(left, right) =>
+      withRemainders(left, values) match
+        case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) =>
+          withRemainders(right, values).fold(violations.combine, _ => violations).invalid
+    case Queries.Empty              => (values, ()).valid
+    case Queries.One(query)         => QueryDecoder(query, values)
+    case Queries.Transform(self, f) => withRemainders(self, values).map(_.map(f))

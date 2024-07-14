@@ -8,6 +8,9 @@ sealed trait Headers[A] extends SProduct, Serializable:
   def headers: Chain[Header[?]]
 
 object Headers:
+  final case class Combine[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
+    override def headers: Chain[Header[?]] = left.headers ++ right.headers
+
   case object Empty extends Headers[Unit]:
     override def headers: Chain[Nothing] = Chain.empty
 
