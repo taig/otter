@@ -17,5 +17,6 @@ object PrimitiveRequiredStringDecoder:
       validation: SchemaValidation.Primitive[A, B, C, D],
       value: String
   ): Decoder.Result[Option[String], D] = PrimitiveRequiredStringDecoder(self, value).andThen: a =>
-    val encode = ValidationWriterValueStringEncoder.apply
-    validation(a).leftMap(_.map(_.bimap(_.map(encode), encode))).leftMap(Violations.root)
+    validation(a)
+      .leftMap(_.map(_.bimap(_.map(ValueStringEncoder.apply), ValueStringEncoder.apply)))
+      .leftMap(Violations.root)

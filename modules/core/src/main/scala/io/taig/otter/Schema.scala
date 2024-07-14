@@ -10,12 +10,16 @@ import io.taig.otter
 import io.taig.enumeration.ext.Mapping
 
 sealed trait Schema[-F, +O, A] extends SProduct, Serializable:
+  final def collection: Collection[F, this.type, Vector[A]] = Collection.Root(Metadata.Empty, this)
   def metadata: Metadata
   def imap[B](f: A => B)(g: B => A): Schema[F, O, B]
   def optional: Schema[F, O, Option[A]]
+  final def product: Product[F, this.type, A] = Product.One(Metadata.Empty, this)
+  final def union: Union[F, this.type, A] = Union.Root(Metadata.Empty, this)
   def update(f: Metadata => Metadata): Schema[F, O, A]
 
 object Schema:
+  type Of[A] = Schema[Any, ?, A]
   type Via[F, A] = Schema[F, ?, A]
 
 sealed trait Value[-F, +B, C] extends Schema[F, B, C]:
@@ -33,14 +37,16 @@ object Value:
   object Required:
     type Via[F, A] = Value.Required[F, ?, A]
 
-sealed trait Collection[-F, +B, C] extends Schema[F, B, C]:
+sealed trait Collection[-F, +O, A] extends Schema[F, O, A]:
   def constraints: Chain[Constraint.Collection]
-  final override def imap[D](f: C => D)(g: D => C): Collection[F, B, D] = ivalidate(Validation.lift(f))(g)
-  final def ivalidate[D, E](validation: SchemaValidation.Collection[C, D, E])(f: E => C): Collection[F, B, E] =
+  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ivalidate(Validation.lift(f))(g)
+  final def ivalidate[B, C](validation: SchemaValidation.Collection[A, B, C])(f: C => A): Collection[F, O, C] =
     Collection.Transform(this, validation, f)
-  final override def optional: Collection[F, B, Option[C]] = Collection.Optional(this)
+  final def apply[B, C](transformation: SchemaTransformation.Collection[A, B, C]): Collection[F, O, C] =
+    ivalidate(transformation.validation)(transformation.apply)
+  final override def optional: Collection[F, O, Option[A]] = Collection.Optional(this)
   def schema: Schema[F, ?, ?]
-  override def update(f: Metadata => Metadata): Collection[F, B, C]
+  override def update(f: Metadata => Metadata): Collection[F, O, A]
 
 object Collection:
   type Via[F, A] = Collection[F, ?, A]
