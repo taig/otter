@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import io.taig.otter.Schema
 import io.taig.otter.Decoder
+import io.taig.otter.Data
 
 sealed trait Request[A]:
   def method: Method
@@ -20,8 +21,8 @@ object Request:
         final def optional: Request.Body.Singlepart.Strict[Option[A]] = Strict.Optional(this)
 
       object Strict:
-        final case class Apply[A, B](headers: Headers[A], schema: Schema[?, B])
-            extends Request.Body.Singlepart.Strict[(A, B)]
+        final case class  Apply[A, B, C](headers: Headers[A], parse: (A, Array[Byte]) => Either[Throwable, B], decoder: Decoder[Schema[?, *], Data, B], schema: Schema[?, C])
+            extends Request.Body.Singlepart.Strict[(A, C)]
 
         case object Binary extends Request.Body.Singlepart.Strict[Array[Byte]]
 
