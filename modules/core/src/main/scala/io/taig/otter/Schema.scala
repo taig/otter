@@ -8,8 +8,6 @@ import io.taig.otter as Base
 import scala.Product as SProduct
 import io.taig.otter
 import io.taig.enumeration.ext.Mapping
-import cats.data.Validated
-import io.taig.otter.validation.Violations
 
 sealed trait Schema[+O, A] extends SProduct, Serializable:
   final def collection: Collection[this.type, Vector[A]] = Collection.Root(Metadata.Empty, this)
