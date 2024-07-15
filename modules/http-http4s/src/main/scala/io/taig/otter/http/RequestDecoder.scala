@@ -14,7 +14,7 @@ object RequestDecoder:
   def unsafeApply[F[_]: Concurrent, A](request: Request[A], value: Http4sRequest[F]): Decoder.Result[Any, A] =
     request match
       case Request.Root(method, url, headers, body) =>
-        val a = UrlDecoder(url, value.uri)
+        // val a = UrlDecoder(url, ???)
         val b = HeadersDecoder(headers, value.headers)
         val c = RequestBodyDecoder(body, value.entity)
         ???
