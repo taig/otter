@@ -8,14 +8,14 @@ import cats.syntax.all.*
 import cats.data.Validated
 
 object RecordJsonDecoder:
-  def apply[A](schema: Record[?, A], values: Option[Chain[(String, Json)]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Record[?, A], values: Option[Chain[(String, Json)]]): Decoder.Result[Data, A] =
     // TODO allow to configure whether additional properties are allowed
     withRemainders(schema, values).map { case (_, a) => a }
 
   def withRemainders[A](
       schema: Record[?, A],
       values: Option[Chain[(String, Json)]]
-  ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = schema match
+  ): Decoder.Result[Data, (Option[Chain[(String, Json)]], A)] = schema match
     case Record.Combine(_, left, right) =>
       withRemainders(left, values) match
         case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))

@@ -9,16 +9,12 @@ import io.circe.syntax.*
 import io.taig.otter.*
 
 object CollectionJsonDecoder:
-  def apply[A](schema: Collection[?, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Collection[?, A], values: Option[Vector[Json]]): Decoder.Result[Data, A] =
     schema match
       case Collection.Transform(self, validation, _) =>
-        CollectionJsonDecoder(self, values).andThen: a =>
-          validation
-            .apply(a)
-            .leftMap(_.map(_.map(JsonEncoder.apply)))
-            .leftMap(Violations.root)
+        CollectionJsonDecoder(self, values).andThen(validation.apply(_).leftMap(Violations.root))
       case Collection.Optional(self) => values.fold(none.valid)(_ => CollectionJsonDecoder(self, values).map(_.some))
       case Collection.Root(_, schema) =>
         values
-          .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = "null".asJson)))
+          .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = Data.Null)))
           .andThen(_.zipWithIndex.traverse { case (a, index) => JsonDecoder(schema, a).leftMap(index /: _) })

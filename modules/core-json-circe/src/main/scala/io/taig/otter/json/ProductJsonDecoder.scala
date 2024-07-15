@@ -10,7 +10,7 @@ import io.circe.syntax.*
 import io.taig.otter.Decoder
 
 object ProductJsonDecoder:
-  def apply[A](schema: Product[?, A], values: Option[Vector[Json]]): Decoder.Result[Json, A] =
+  def apply[A](schema: Product[?, A], values: Option[Vector[Json]]): Decoder.Result[Data, A] =
     // TODO disallow values with additional items
     withRemainders(schema, values).map(_._2)
 
@@ -18,7 +18,7 @@ object ProductJsonDecoder:
   def withRemainders[A](
       schema: Product[?, A],
       values: Option[Vector[Json]]
-  ): Decoder.Result[Json, (Option[Vector[Json]], A)] = schema match
+  ): Decoder.Result[Data, (Option[Vector[Json]], A)] = schema match
     case Product.Combine(_, left, right) =>
       withRemainders(left, values) match
         case Validated.Valid((remainders, a)) =>
@@ -30,12 +30,12 @@ object ProductJsonDecoder:
     case Product.Empty(_) => (values, ()).valid
     case Product.One(_, schema) =>
       values
-        .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = "null").map(_.asJson)))
+        .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = Data.Null)))
         .andThen: values =>
           values.headOption match
             case Some(head) => JsonDecoder(schema, head).tupleLeft(values.tail.some)
             case None =>
-              Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = 0.asJson)).invalid
+              Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = Data.Number(0))).invalid
     case Product.Optional(self) =>
       values.fold((none, none).valid)(_ => withRemainders(self, values).map(_.map(_.some)))
     case Product.Transform(self, f, _) => withRemainders(self, values).map(_.map(f))

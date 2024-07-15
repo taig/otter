@@ -5,13 +5,9 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violation
 
 object PrimitiveRequiredStringDecoder:
-  def apply[A](schema: Primitive.Required[A], value: String): Decoder.Result[Option[String], A] = schema match
+  def apply[A](schema: Primitive.Required[A], value: String): Decoder.Result[Data, A] = schema match
     case Primitive.Required.Transform(self, validation, _) =>
-      PrimitiveRequiredStringDecoder(self, value).andThen: a =>
-        validation(a)
-          .leftMap(_.map(_.bimap(_.map(ValueStringEncoder.apply), ValueStringEncoder.apply)))
-          .leftMap(Violations.root)
+      PrimitiveRequiredStringDecoder(self, value).andThen(validation(_).leftMap(Violations.root))
     case Primitive.Required.Root(_, tpe) =>
-      TypeStringDecoder(tpe, value).toValid(
-        Violations.rootNec(Violation(Constraint.Type(name = tpe.toString), actual = value.some))
-      )
+      TypeStringDecoder(tpe, value)
+        .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.toString), actual = Data.String(value))))

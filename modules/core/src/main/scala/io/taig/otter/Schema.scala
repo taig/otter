@@ -31,9 +31,9 @@ object Value:
 sealed trait Collection[+O, A] extends Schema[O, A]:
   def constraints: Chain[Constraint.Collection]
   final override def imap[B](f: A => B)(g: B => A): Collection[O, B] = ivalidate(Validation.lift(f))(g)
-  final def ivalidate[B, C](validation: SchemaValidation.Collection[A, B, C])(f: C => A): Collection[O, C] =
+  final def ivalidate[B](validation: SchemaValidation.Collection[A, B])(f: B => A): Collection[O, B] =
     Collection.Transform(this, validation, f)
-  final def apply[B, C](transformation: SchemaTransformation.Collection[A, B, C]): Collection[O, C] =
+  final def apply[B](transformation: SchemaTransformation.Collection[A, B]): Collection[O, B] =
     ivalidate(transformation.validation)(transformation.apply)
   final override def optional: Collection[O, Option[A]] = Collection.Optional(this)
   def schema: Schema[?, ?]
@@ -48,14 +48,14 @@ object Collection:
     override def constraints: Chain[Constraint.Collection] = Chain.empty
     override def update(f: Metadata => Metadata): Collection[B, Vector[C]] = copy(metadata = f(metadata))
 
-  final case class Transform[B, C, D, E](
-      self: Collection[B, C],
-      validation: SchemaValidation.Collection[C, D, E],
-      f: E => C
-  ) extends Collection[B, E]:
+  final case class Transform[A, B, C](
+      self: Collection[A, B],
+      validation: SchemaValidation.Collection[B, C],
+      f: C => B
+  ) extends Collection[A, C]:
     export self.{metadata, schema}
     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-    override def update(f: Metadata => Metadata): Collection[B, E] = copy(self = self.update(f))
+    override def update(f: Metadata => Metadata): Collection[A, C] = copy(self = self.update(f))
 
 sealed trait Dictionary[+B, C] extends Schema[B, C]:
   final override def imap[D](f: C => D)(g: D => C): Dictionary[B, D] = Dictionary.Transform(this, f, g)
@@ -127,9 +127,8 @@ object Enumeration:
 sealed trait Primitive[A] extends Value[Nothing, A]:
   def constraints: Chain[Constraint.Primitive[?]]
   override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
-  def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
-      f: D => A
-  ): Primitive[D] = Primitive.Transform(this, validation, f)
+  def ivalidate[B](validation: SchemaValidation.Primitive[A, B])(f: B => A): Primitive[B] =
+    Primitive.Transform(this, validation, f)
   final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
   def tpe: Type[?]
   override def update(f: Metadata => Metadata): Primitive[A]
@@ -137,9 +136,8 @@ sealed trait Primitive[A] extends Value[Nothing, A]:
 object Primitive:
   sealed trait Required[A] extends Value.Required[Nothing, A], Primitive[A]:
     final override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = ivalidate(Validation.lift(f))(g)
-    override def ivalidate[B, C, D](validation: SchemaValidation.Primitive[A, B, C, D])(
-        f: D => A
-    ): Primitive.Required[D] = Required.Transform(this, validation, f)
+    override def ivalidate[B](validation: SchemaValidation.Primitive[A, B])(f: B => A): Primitive.Required[B] =
+      Required.Transform(this, validation, f)
     override def update(f: Metadata => Metadata): Primitive.Required[A]
 
   object Required:
@@ -147,27 +145,27 @@ object Primitive:
       override def constraints: Chain[Constraint.Primitive[?]] = Chain.empty
       override def update(f: Metadata => Metadata): Primitive.Required[A] = copy(metadata = f(metadata))
 
-    final case class Transform[A, B, C, D](
+    final case class Transform[A, B](
         self: Primitive.Required[A],
-        validation: SchemaValidation.Primitive[A, B, C, D],
-        f: D => A
-    ) extends Primitive.Required[D]:
+        validation: SchemaValidation.Primitive[A, B],
+        f: B => A
+    ) extends Primitive.Required[B]:
       export self.{metadata, tpe}
       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-      override def update(f: Metadata => Metadata): Primitive.Required[D] = copy(self = self.update(f))
+      override def update(f: Metadata => Metadata): Primitive.Required[B] = copy(self = self.update(f))
 
   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
     export self.{constraints, metadata, tpe}
     override def update(f: Metadata => Metadata): Primitive[Option[A]] = copy(self = self.update(f))
 
-  final case class Transform[A, B, C, D](
+  final case class Transform[A, B](
       self: Primitive[A],
-      validation: SchemaValidation.Primitive[A, B, C, D],
-      f: D => A
-  ) extends Primitive[D]:
+      validation: SchemaValidation.Primitive[A, B],
+      f: B => A
+  ) extends Primitive[B]:
     export self.{metadata, tpe}
     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-    override def update(f: Metadata => Metadata): Primitive[D] = copy(self = self.update(f))
+    override def update(f: Metadata => Metadata): Primitive[B] = copy(self = self.update(f))
 
 sealed trait Product[+B, C] extends Schema[B, C]:
   override def imap[D](f: C => D)(g: D => C): Product[B, D] = Product.Transform(this, f, g)

@@ -8,7 +8,7 @@ import cats.syntax.all.*
 // can / should be incorporated into Sum?
 // actually, using an index might do?
 object UnionJsonDecoder:
-  def apply[A](schema: Union[?, A], json: Json): Decoder.Result[Json, A] = schema match
+  def apply[A](schema: Union[?, A], json: Json): Decoder.Result[Data, A] = schema match
     case Union.Combine(_, left, right)                => combine(left, right, json)
     case Union.Optional(self)                         => optional(self, json)
     case Union.Root(_, schema)                        => root(schema, json)
@@ -23,14 +23,14 @@ object UnionJsonDecoder:
       left: Union[?, A],
       right: Union[?, B],
       json: Json
-  ): Decoder.Result[Json, Either[A, B]] =
+  ): Decoder.Result[Data, Either[A, B]] =
     UnionJsonDecoder(left, json).map(_.asLeft).orElse(UnionJsonDecoder(right, json).map(_.asRight))
 
-  def optional[A](self: Union[?, A], json: Json): Decoder.Result[Json, Option[A]] =
+  def optional[A](self: Union[?, A], json: Json): Decoder.Result[Data, Option[A]] =
     if json.isNull then none.valid else apply(self, json).map(_.some)
 
-  def root[A](schema: Schema[?, A], json: Json): Decoder.Result[Json, A] =
+  def root[A](schema: Schema[?, A], json: Json): Decoder.Result[Data, A] =
     JsonDecoder(schema, json)
 
-  def transform[A, B](schema: Union[?, A], f: A => B, json: Json): Decoder.Result[Json, B] =
+  def transform[A, B](schema: Union[?, A], f: A => B, json: Json): Decoder.Result[Data, B] =
     apply(schema, json).map(f)

@@ -13,7 +13,7 @@ object FieldJsonDecoder:
   def apply[A](
       field: Field[?, A],
       values: Option[Chain[(String, Json)]]
-  ): Decoder.Result[Json, (Option[Chain[(String, Json)]], A)] = field match
+  ): Decoder.Result[Data, (Option[Chain[(String, Json)]], A)] = field match
     case Field.Root(_, name, schema) =>
       values match
         case Some(values) =>
@@ -25,7 +25,7 @@ object FieldJsonDecoder:
               Violations
                 .namespaceNec(
                   History.Step.Field(name),
-                  Violation(Constraint.Type("json"), actual = "null".asJson)
+                  Violation(Constraint.Type("json"), actual = Data.Null)
                 )
                 .invalid
         case None => JsonDecoder(schema, Json.Null).leftMap(name /: _).tupleLeft(values)

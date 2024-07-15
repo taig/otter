@@ -13,14 +13,16 @@ object BranchJsonDecoder:
       branch: Branch[?, A],
       discriminator: Discriminator,
       json: JsonObject
-  ): Decoder.Result[Json, Option[A]] = branch match
+  ): Decoder.Result[Data, Option[A]] = branch match
     case Branch.Root(_, name, schema) =>
       discriminator match
         case Discriminator.Nested(identifier, value) =>
           json(identifier)
-            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = "null".asJson)))
+            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.Null)))
             .andThen: identifier =>
-              identifier.asString.toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = identifier)))
+              identifier.asString.toValid(
+                Violations.rootNec(Violation(Constraint.Type("string"), actual = toData(identifier)))
+              )
             .leftMap(identifier /: _)
             .map(_ === identifier)
             .andThen:
@@ -28,9 +30,11 @@ object BranchJsonDecoder:
               case false => none.valid
         case Discriminator.Merged(identifier) =>
           json(identifier)
-            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = "null".asJson)))
+            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.Null)))
             .andThen: identifier =>
-              identifier.asString.toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = identifier)))
+              identifier.asString.toValid(
+                Violations.rootNec(Violation(Constraint.Type("string"), actual = toData(identifier)))
+              )
             .leftMap(identifier /: _)
             .map(_ === identifier)
             .andThen:

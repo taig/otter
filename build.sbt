@@ -136,7 +136,7 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val httpJsonCirce = module(identifier = Some("http-circe-json"), jvmOnly = true)
+lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
