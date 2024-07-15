@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
-sealed trait Url[+A]:
+sealed trait Url[A]:
+  final def imap[B](f: A => B)(g: B => A): Url[B] = Url.Transform(this, f, g)
   def path: Path[?]
   def queries: Queries[?]
 
@@ -11,5 +12,5 @@ object Url:
 
   final case class Root[A, B](path: Path[A], queries: Queries[B]) extends Url[(A, B)]
 
-  final case class Transform[A, B](self: Url[A], f: A => B) extends Url[B]:
+  final case class Transform[A, B](self: Url[A], f: A => B, g: B => A) extends Url[B]:
     export self.{path, queries}

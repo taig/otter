@@ -1,9 +1,10 @@
-package io.taig.otter.http
+package io.taig.otter
 
+import cats.data.Chain
 import scala.collection.mutable.ListBuffer
 
-extension [A](self: List[A])
-  def findWithRemainders[B](pf: PartialFunction[A, B]): (Option[B], List[A]) =
+extension [A](self: Chain[A])
+  def findWithRemainders[B](pf: PartialFunction[A, B]): (Option[B], Chain[A]) =
     val remainders = ListBuffer.empty[A]
     var result: Option[B] = None
 
@@ -11,4 +12,4 @@ extension [A](self: List[A])
       if (result.isDefined || !pf.isDefinedAt(a)) then remainders += a
       else result = pf.lift(a)
 
-    (result, remainders.toList)
+    (result, Chain.fromIterableOnce(remainders))

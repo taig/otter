@@ -7,15 +7,16 @@ import io.taig.otter.*
 import io.taig.otter.Decoder
 import cats.syntax.all.*
 import cats.data.Validated
+import cats.data.Chain
 
 object HeadersDecoder:
   def apply[A](headers: Headers[A], values: Http4sHeaders): Decoder.Result[Option[String], A] =
-    withRemainders(headers, values.headers).map { case (_, a) => a }
+    withRemainders(headers, Chain.fromSeq(values.headers)).map { case (_, a) => a }
 
   def withRemainders[A](
       headers: Headers[A],
-      values: List[Http4sHeader.Raw]
-  ): Decoder.Result[Option[String], (List[Http4sHeader.Raw], A)] = headers match
+      values: Chain[Http4sHeader.Raw]
+  ): Decoder.Result[Option[String], (Chain[Http4sHeader.Raw], A)] = headers match
     case Headers.Empty       => (values, ()).valid
     case Headers.One(header) => HeaderDecoder(header, values)
     case Headers.Combine(left, right) =>
