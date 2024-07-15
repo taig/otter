@@ -18,9 +18,9 @@ object RequestMatcher:
   def apply(reference: Path[?], actual: Uri.Path): Boolean =
     RequestMatcher(reference.segments.toList, actual.segments.toList)
 
-  def apply(reference: List[String | Path.Parameter[?]], actual: List[Uri.Path.Segment]): Boolean =
+  def apply(reference: List[Segment[?]], actual: List[Uri.Path.Segment]): Boolean =
     (reference, actual) match
-      case ((x: String) :: reference, y :: actual) if x === y.encoded => RequestMatcher(reference, actual)
-      case ((_: Path.Parameter[?]) :: reference, _ :: actual)         => RequestMatcher(reference, actual)
-      case (Nil, Nil)                                                 => true
-      case _                                                          => false
+      case ((Segment.Static(name)) :: reference, y :: actual) if name === y.encoded => RequestMatcher(reference, actual)
+      case ((_: Segment.Parameter[?]) :: reference, _ :: actual)                    => RequestMatcher(reference, actual)
+      case (Nil, Nil)                                                               => true
+      case _                                                                        => false

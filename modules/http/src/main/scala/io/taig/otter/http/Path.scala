@@ -2,33 +2,25 @@ package io.taig.otter.http
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.Value
+import cats.Invariant
 
-sealed trait Path[+A] extends Product, Serializable:
-  def segments: Chain[String | Path.Parameter[?]]
-  def parameters: Chain[Path.Parameter[?]]
+sealed trait Path[A] extends Product, Serializable:
+  final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Transform(this, f, g)
+  def segments: Chain[Segment[?]]
   final def zip[B](path: Path[B]): Path[(A, B)] = Path.Combine(this, path)
 
 object Path:
   final case class Combine[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
-    override def segments: Chain[String | Path.Parameter[?]] = left.segments ++ right.segments
-    override def parameters: Chain[Path.Parameter[?]] = left.parameters ++ right.parameters
-
-  final case class Dynamic[A](segment: Path.Parameter[A]) extends Path[A]:
-    override def segments: Chain[String | Path.Parameter[?]] = parameters
-    override def parameters: Chain[Path.Parameter[?]] = Chain.one(segment)
+    override def segments: Chain[Segment[?]] = left.segments ++ right.segments
 
   case object Empty extends Path[Unit]:
     override def segments: Chain[Nothing] = Chain.empty
-    override def parameters: Chain[Nothing] = Chain.empty
 
-  final case class Static(name: String) extends Path[Unit]:
-    override def segments: Chain[String] = Chain.one(name)
-    override def parameters: Chain[Nothing] = Chain.empty
+  final case class One[A](segment: Segment[A]) extends Path[A]:
+    override def segments: Chain[Segment[A]] = Chain.one(segment)
 
-  sealed trait Parameter[+A]:
-    def name: String
-    def schema: Value.Required[?, ?]
+  final case class Transform[A, B](self: Path[A], f: A => B, g: B => A) extends Path[B]:
+    export self.segments
 
-  object Parameter:
-    final case class Root[A](name: String, schema: Value.Required[?, A]) extends Path.Parameter[A]
+  given Invariant[Path] with
+    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)

@@ -3,7 +3,7 @@ package io.taig.otter.http
 import io.taig.otter.Schema
 import io.taig.otter.Decoder
 
-sealed trait Request[+A]:
+sealed trait Request[A]:
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
@@ -32,3 +32,6 @@ object Request:
 
         final case class Optional[A](self: Request.Body.Singlepart.Strict[A])
             extends Request.Body.Singlepart.Strict[Option[A]]
+
+  final case class Root[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])
+      extends Request[(A, B, C)]

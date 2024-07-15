@@ -15,6 +15,6 @@ object QueriesDecoder:
         case Validated.Valid((remainders, a)) => withRemainders(right, remainders).map(_.tupleLeft(a))
         case Validated.Invalid(violations) =>
           withRemainders(right, values).fold(violations.combine, _ => violations).invalid
-    case Queries.Empty              => (values, ()).valid
-    case Queries.One(query)         => QueryDecoder(query, values)
-    case Queries.Transform(self, f) => withRemainders(self, values).map(_.map(f))
+    case Queries.Empty                 => (values, ()).valid
+    case Queries.One(query)            => QueryDecoder(query, values)
+    case Queries.Transform(self, f, _) => withRemainders(self, values).map(_.map(f))
