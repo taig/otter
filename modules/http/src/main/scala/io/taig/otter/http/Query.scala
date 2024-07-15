@@ -6,11 +6,11 @@ import io.taig.otter.Metadata
 
 sealed trait Query[+A]:
   def metadata: Metadata
-  def schema: Value[String, ?, ?]
+  def schema: Value[?, ?]
   def update(f: Metadata => Metadata): Query[A]
 
 object Query:
-  final case class Root[A](metadata: Metadata, name: String, schema: Value[String, ?, A]) extends Query[A]:
+  final case class Root[A](metadata: Metadata, name: String, schema: Value[?, A]) extends Query[A]:
     override def update(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
 
   final case class Transform[A, B](self: Query[A], f: A => B) extends Query[B]:

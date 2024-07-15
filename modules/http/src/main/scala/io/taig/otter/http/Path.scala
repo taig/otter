@@ -10,7 +10,7 @@ sealed trait Path[+A] extends Product, Serializable:
   final def zip[B](path: Path[B]): Path[(A, B)] = Path.Combine(this, path)
 
 object Path:
-  final case class Combine[F[+_], G[+_], A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
+  final case class Combine[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
     override def segments: Chain[String | Path.Parameter[?]] = left.segments ++ right.segments
     override def parameters: Chain[Path.Parameter[?]] = left.parameters ++ right.parameters
 
@@ -28,7 +28,7 @@ object Path:
 
   sealed trait Parameter[+A]:
     def name: String
-    def schema: Value.Required[String, ?, ?]
+    def schema: Value.Required[?, ?]
 
   object Parameter:
-    final case class Root[A](name: String, schema: Value.Required[String, ?, A]) extends Path.Parameter[A]
+    final case class Root[A](name: String, schema: Value.Required[?, A]) extends Path.Parameter[A]
