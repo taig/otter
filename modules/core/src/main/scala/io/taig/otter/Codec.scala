@@ -1,105 +1,44 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-import cats.data.Chain
-import cats.data.NonEmptyChain
-import io.taig.otter.validation.Validation
-import io.taig.otter as Base
 import io.taig.otter
-import io.taig.enumeration.ext.Mapping
 import cats.data.Validated
-import Base.validation.Violations
-import Base.validation.Violation
+import cats.syntax.all.*
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
 
 abstract class Codec[+O, A]:
   def metadata: Metadata
+  def metadata(f: Metadata => Metadata): Codec[O, A]
+
+  def default: Option[A]
+  def default(f: Option[A] => Option[A]): Codec[O, A]
+
   def imap[B](f: A => B)(g: B => A): Codec[O, B]
+
   def optional: Codec[O, Option[A]]
-  def update(f: Metadata => Metadata): Codec[O, A]
 
-  final def decode(data: Data): Codec.Result[Data, A] = decodeOption(data.toValue)
-  def decodeOption(data: Option[Data.Value]): Codec.Result[Data, A]
+  def decode(data: Data): Codec.Result[A]
 
-  final def encode(a: A): Data = encodeOption(a).getOrElse(Data.Null)
-  def encodeOption(a: A): Option[Data.Value]
+  def encode(a: A): Data
 
 object Codec:
-  type Result[A, B] = Validated[Violations[Violation[Constraint.Any[A], A]], B]
+  type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
 
-// sealed trait Enumeration[+O, A] extends Value[O, A]:
-//   override def imap[B](f: A => B)(g: B => A): Enumeration[O, B] = Enumeration.Transform(this, f, g)
-//   override def optional: Enumeration[O, Option[A]] = Enumeration.Optional(this)
-//   override def update(f: Metadata => Metadata): Enumeration[O, A]
+  trait Required[+O, A] extends Codec[O, A]:
+    override def metadata(f: Metadata => Metadata): Codec.Required[O, A]
 
-// object Enumeration:
-//   sealed trait Required[+B, C] extends Value.Required[B, C], Enumeration[B, C]:
-//     override def imap[D](f: C => D)(g: D => C): Enumeration.Required[B, D] = Required.Transform(this, f, g)
-//     override def update(f: Metadata => Metadata): Enumeration.Required[B, C]
+    override def imap[B](f: A => B)(g: B => A): Codec.Required[O, B]
 
-//   object Required:
-//     final case class Root[O, A, B](metadata: Metadata, schema: Value.Required[O, A], mapping: Mapping[B, A])
-//         extends Enumeration.Required[O, B]:
-//       override def update(f: Metadata => Metadata): Enumeration.Required[O, B] = copy(metadata = f(metadata))
+    final override def decode(data: Data): Codec.Result[A] = data match
+      case data: Data.Value => decodeValue(data)
+      case Data.Null =>
+        Violations.rootNec(Violation(Constraint.Type(data.name), actual = Data.String("null"))).invalid
 
-//     final case class Transform[B, C, D](self: Enumeration.Required[B, C], f: C => D, g: D => C)
-//         extends Enumeration.Required[B, D]:
-//       export self.metadata
-//       override def update(f: Metadata => Metadata): Enumeration.Required[B, D] = copy(self = self.update(f))
+    def decodeValue(data: Data.Value): Codec.Result[A]
 
-//   final case class Optional[B, C](self: Enumeration[B, C]) extends Enumeration[B, Option[C]]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Enumeration[B, Option[C]] = copy(self = self.update(f))
+    final override def encode(a: A): Data = encodeValue(a)
 
-//   final case class Root[O <: Value[?, A], A, B](metadata: Metadata, schema: O, mapping: Mapping[B, A])
-//       extends Enumeration[O, B]:
-//     override def update(f: Metadata => Metadata): Enumeration[O, B] = copy(metadata = f(metadata))
-
-//   final case class Transform[B, C, D](self: Enumeration[B, C], f: C => D, g: D => C) extends Enumeration[B, D]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Enumeration[B, D] = copy(self = self.update(f))
-
-// sealed trait Primitive[A] extends Value[Nothing, A]:
-//   def constraints: Chain[Constraint.Primitive[?]]
-//   override def imap[B](f: A => B)(g: B => A): Primitive[B] = ivalidate(Validation.lift(f))(g)
-//   def ivalidate[B](validation: SchemaValidation.Primitive[A, B])(f: B => A): Primitive[B] =
-//     Primitive.Transform(this, validation, f)
-//   final override def optional: Primitive[Option[A]] = Primitive.Optional(this)
-//   def tpe: Type[?]
-//   override def update(f: Metadata => Metadata): Primitive[A]
-
-// object Primitive:
-//   sealed trait Required[A] extends Value.Required[Nothing, A], Primitive[A]:
-//     final override def imap[C](f: A => C)(g: C => A): Primitive.Required[C] = ivalidate(Validation.lift(f))(g)
-//     override def ivalidate[B](validation: SchemaValidation.Primitive[A, B])(f: B => A): Primitive.Required[B] =
-//       Required.Transform(this, validation, f)
-//     override def update(f: Metadata => Metadata): Primitive.Required[A]
-
-//   object Required:
-//     final case class Root[A](metadata: Metadata, tpe: Type[A]) extends Primitive.Required[A]:
-//       override def constraints: Chain[Constraint.Primitive[?]] = Chain.empty
-//       override def update(f: Metadata => Metadata): Primitive.Required[A] = copy(metadata = f(metadata))
-
-//     final case class Transform[A, B](
-//         self: Primitive.Required[A],
-//         validation: SchemaValidation.Primitive[A, B],
-//         f: B => A
-//     ) extends Primitive.Required[B]:
-//       export self.{metadata, tpe}
-//       override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-//       override def update(f: Metadata => Metadata): Primitive.Required[B] = copy(self = self.update(f))
-
-//   final case class Optional[A](self: Primitive[A]) extends Primitive[Option[A]]:
-//     export self.{constraints, metadata, tpe}
-//     override def update(f: Metadata => Metadata): Primitive[Option[A]] = copy(self = self.update(f))
-
-//   final case class Transform[A, B](
-//       self: Primitive[A],
-//       validation: SchemaValidation.Primitive[A, B],
-//       f: B => A
-//   ) extends Primitive[B]:
-//     export self.{metadata, tpe}
-//     override def constraints: Chain[Constraint.Primitive[?]] = self.constraints ++ validation.constraints
-//     override def update(f: Metadata => Metadata): Primitive[B] = copy(self = self.update(f))
+    def encodeValue(a: A): Data.Value
 
 // sealed trait Product[+B, C] extends Schema[B, C]:
 //   override def imap[D](f: C => D)(g: D => C): Product[B, D] = Product.Transform(this, f, g)

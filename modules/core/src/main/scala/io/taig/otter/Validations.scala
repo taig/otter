@@ -9,9 +9,9 @@ import cats.implicits.*
 import io.taig.otter.validation.Validations as Base
 
 trait Validations extends Schemas:
-  val email: SchemaValidation.Primitive[String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
+  val email: CodecValidation.Primitive[String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
 
-  def matches(pattern: Pattern): SchemaValidation.Primitive[String, Unit] =
+  def matches(pattern: Pattern): CodecValidation.Primitive[String, Unit] =
     Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual(Data.String.apply)
 
 // def maxItems[F[a] <: Iterable[a], A](reference: Long): SchemaValidation.Collection[F[A], Long, Unit] =
