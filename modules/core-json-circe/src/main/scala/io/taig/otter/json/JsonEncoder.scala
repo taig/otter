@@ -3,8 +3,8 @@ package io.taig.otter.json
 import io.circe.Json
 import io.taig.otter.*
 
-object JsonEncoder extends Encoder[Schema[?, *], Json]:
-  override def apply[A](schema: Schema[?, A], a: A): Json = schema match
+object JsonEncoder extends Encoder[Codec[?, *], Json]:
+  override def apply[A](schema: Codec[?, A], a: A): Json = schema match
     case schema: Collection[?, A]  => CollectionJsonEncoder(schema, a).fold(Json.Null)(Json.fromValues)
     case schema: Dictionary[?, A]  => DictionaryJsonEncoder(schema, a).fold(Json.Null)(Json.fromFields)
     case schema: Enumeration[?, A] => EnumerationJsonEncoder(schema, a)

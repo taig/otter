@@ -5,24 +5,24 @@ import io.taig.otter as Base
 trait Types:
   export Base.{Constraint, SchemaValidation, Type}
 
-  final type Schema[A] = Base.Schema[?, A]
+  final type Schema[A] = Base.Codec[?, A]
 
   object Schema:
-    type Of[A, B] = Base.Schema[A, B]
+    type Of[A, B] = Base.Codec[A, B]
 
-  final type Value[A] = Base.Schema[?, A]
+  // final type Value[A] = Base.Schema[?, A]
 
-  object Value:
-    type Of[A, B] = Base.Value[A, B]
+  // object Value:
+  //   type Of[A, B] = Base.Value[A, B]
 
-  final type Enumeration[A] = Base.Enumeration[?, A]
+  // final type Enumeration[A] = Base.Enumeration[?, A]
 
-  object Enumeration:
-    type Of[A, B] = Base.Enumeration[A, B]
+  // object Enumeration:
+  //   type Of[A, B] = Base.Enumeration[A, B]
 
-    type Required[A] = Base.Enumeration.Required[?, A]
+  //   type Required[A] = Base.Enumeration.Required[?, A]
 
-    object Required:
-      type Of[A, B] = Base.Enumeration.Required[A, B]
+  //   object Required:
+  //     type Of[A, B] = Base.Enumeration.Required[A, B]
 
 object Types extends Types

@@ -1,6 +1,6 @@
 package io.taig.otter.http
 
-import io.taig.otter.Schema
+import io.taig.otter.Codec
 import io.taig.otter.Decoder
 import io.taig.otter.Data
 
@@ -21,8 +21,12 @@ object Request:
         final def optional: Request.Body.Singlepart.Strict[Option[A]] = Strict.Optional(this)
 
       object Strict:
-        final case class  Apply[A, B, C](headers: Headers[A], parse: (A, Array[Byte]) => Either[Throwable, B], decoder: Decoder[Schema[?, *], Data, B], schema: Schema[?, C])
-            extends Request.Body.Singlepart.Strict[(A, C)]
+        final case class Apply[A, B, C](
+            headers: Headers[A],
+            parse: (A, Array[Byte]) => Either[Throwable, B],
+            decoder: Decoder[Codec[?, *], Data, B],
+            schema: Codec[?, C]
+        ) extends Request.Body.Singlepart.Strict[(A, C)]
 
         case object Binary extends Request.Body.Singlepart.Strict[Array[Byte]]
 

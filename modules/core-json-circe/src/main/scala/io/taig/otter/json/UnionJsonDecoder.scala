@@ -29,7 +29,7 @@ object UnionJsonDecoder:
   def optional[A](self: Union[?, A], json: Json): Decoder.Result[Data, Option[A]] =
     if json.isNull then none.valid else apply(self, json).map(_.some)
 
-  def root[A](schema: Schema[?, A], json: Json): Decoder.Result[Data, A] =
+  def root[A](schema: Codec[?, A], json: Json): Decoder.Result[Data, A] =
     JsonDecoder(schema, json)
 
   def transform[A, B](schema: Union[?, A], f: A => B, json: Json): Decoder.Result[Data, B] =

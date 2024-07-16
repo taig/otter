@@ -8,8 +8,8 @@ import io.taig.otter.validation.Violation
 import io.circe.syntax.*
 import cats.data.Chain
 
-object JsonDecoder extends Decoder[Schema[?, *], Data, Json]:
-  override def apply[A](schema: Schema[?, A], json: Json): Decoder.Result[Data, A] = schema match
+object JsonDecoder extends Decoder[Codec[?, *], Data, Json]:
+  override def apply[A](schema: Codec[?, A], json: Json): Decoder.Result[Data, A] = schema match
     case schema: Collection[?, A] =>
       if json.isNull then CollectionJsonDecoder(schema, none)
       else

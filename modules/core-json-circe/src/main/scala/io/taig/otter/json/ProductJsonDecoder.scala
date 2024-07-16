@@ -35,7 +35,9 @@ object ProductJsonDecoder:
           values.headOption match
             case Some(head) => JsonDecoder(schema, head).tupleLeft(values.tail.some)
             case None =>
-              Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = Data.Number(0))).invalid
+              Violations
+                .rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = Data.Number(0)))
+                .invalid
     case Product.Optional(self) =>
       values.fold((none, none).valid)(_ => withRemainders(self, values).map(_.map(_.some)))
     case Product.Transform(self, f, _) => withRemainders(self, values).map(_.map(f))

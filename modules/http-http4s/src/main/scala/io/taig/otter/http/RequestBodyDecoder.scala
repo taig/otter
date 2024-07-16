@@ -11,7 +11,11 @@ import org.http4s.Entity.Empty
 import cats.data.Validated
 
 object RequestBodyDecoder:
-  def apply[F[_]: Concurrent, A](body: Request.Body[A], values: Http4sHeaders, value: Http4sEntity[F]): F[Decoder.Result[Option[String], A]] =
+  def apply[F[_]: Concurrent, A](
+      body: Request.Body[A],
+      values: Http4sHeaders,
+      value: Http4sEntity[F]
+  ): F[Decoder.Result[Option[String], A]] =
     body match
       case Request.Body.Singlepart.Strict.Empty =>
         value match

@@ -10,13 +10,17 @@ import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 
 sealed abstract class Data extends SProduct with Serializable:
-  final def asValue: Option[Data.Value] = this match
+  final def toValue: Option[Data.Value] = this match
     case data: Data.Value => Some(data)
     case Data.Null        => None
 
-  final def asObject: Option[Data.Object] = this match
+  final def toObject: Option[Data.Object] = this match
     case data: Data.Object => Some(data)
     case _                 => None
+
+  final def toArray: Option[Data.Array] = this match
+    case data: Data.Array => Some(data)
+    case _                => None
 
   final def name: String = this match
     case _: Data.Array   => "array"
@@ -31,16 +35,19 @@ object Data:
 
   final case class Object(values: Chain[(JString, Data)]) extends Data.Value:
     def ++(obj: Data.Object): Data.Object = Object(values ++ obj.values)
+
   object Object:
     val Empty: Data.Object = Object(Chain.empty)
     def one(key: JString, value: Data): Data.Object = Object(Chain.one((key, value)))
     def of(kv: (JString, Data)*): Data.Object = Object(Chain.fromSeq(kv))
-  final case class Array(values: Chain[Data]) extends Data.Value:
+
+  final case class Array(values: Vector[Data]) extends Data.Value:
     def length: Long = values.length
     def ++(data: Data.Array): Data.Array = Array(values ++ data.values)
+
   object Array:
-    val Empty: Data.Array = Array(Chain.empty)
-    def fill(n: Long)(value: => Data): Data.Array = Array(Chain.fromSeq(Seq.fill(n.toInt)(value)))
+    val Empty: Data.Array = Array(Vector.empty)
+    def fill(n: Long)(value: => Data): Data.Array = Array(Vector.fill(n.toInt)(value))
 
   sealed abstract class Primitive extends Value
 
