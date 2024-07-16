@@ -20,9 +20,18 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
-  final override def imap[B](f: A => B)(g: B => A): Dictionary[O, B] = ???
+  final override def imap[B](f: A => B)(g: B => A): Dictionary[O, B] = new Dictionary[O, B]:
+    export self.metadata
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): Data = self.encode(g(b))
 
-  final override def optional: Dictionary[O, Option[A]] = ???
+  final override def optional: Dictionary[O, Option[A]] = new Dictionary[O, Option[A]]:
+    export self.metadata
+    override def default: Option[Option[A]] = self.default.map(_.some)
+    override def decode(data: Data): Codec.Result[Option[A]] =
+      data.toValue.fold(none.valid)(self.decode(_).map(_.some))
+    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
 
 object Dictionary:
   def apply[A, B](key: Value.Required[?, A], value: Codec[?, B]): Dictionary[value.type, Chain[(A, B)]] =

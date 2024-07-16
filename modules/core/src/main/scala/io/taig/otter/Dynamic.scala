@@ -63,8 +63,7 @@ object Dynamic:
   val Primitive: Dynamic[Data.Primitive] = new Dynamic[Data.Primitive]:
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Data.Primitive] = None
-    override def decode(data: Data): Result[Data.Primitive] =
-      data.toPrimitive.toValid(
-        Violations.rootNec(Violation(Constraint.Type("primitive"), actual = Data.String(data.name)))
-      )
+    override def decode(data: Data): Result[Data.Primitive] = data.toPrimitive.toValid(
+      Violations.rootNec(Violation(Constraint.Type("primitive"), actual = Data.String(data.name)))
+    )
     override def encode(a: Data.Primitive): Data = a
