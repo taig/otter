@@ -21,7 +21,7 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
       override def decodeArray(data: Option[Data.Array]): Codec.Result[Data, B] =
         self.decodeArray(data).andThen(validation(_).leftMap(Violations.root))
 
-      override def encodeOption(b: B): Option[Data.Value] = self.encodeOption(f(b))
+      override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(f(b))
 
   final override def optional: Collection[O, Option[A]] = new Collection[O, Option[A]]:
     export self.{metadata, schema}
@@ -29,10 +29,10 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
     override def decodeArray(data: Option[Data.Array]): Codec.Result[Data, Option[A]] =
       data.fold(none.valid)(_ => self.decodeArray(data).map(_.some))
 
-    override def encodeOption(a: Option[A]): Option[Data.Value] = a.flatMap(self.encodeOption)
+    override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
 
   final override def update(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
-    export self.{decodeArray, encodeOption, schema}
+    export self.{decodeArray, encodeArray, schema}
     override def metadata: Metadata = f(self.metadata)
 
   final override def decodeOption(data: Option[Data.Value]): Codec.Result[Data, A] = data match
@@ -43,6 +43,10 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
 
   def decodeArray(data: Option[Data.Array]): Codec.Result[Data, A]
 
+  final override def encodeOption(a: A): Option[Data.Value] = encodeArray(a)
+
+  def encodeArray(a: A): Option[Data.Array]
+
 object Collection:
   def apply[A](value: Codec[?, A]): Collection[value.type, Vector[A]] = new Collection[value.type, Vector[A]]:
     override def metadata: Metadata = Metadata.Empty
@@ -50,5 +54,4 @@ object Collection:
     override def decodeArray(data: Option[Data.Array]): Codec.Result[Data, Vector[A]] = data
       .toValid(Violations.rootNec(Violation(Constraint.Type(name = "array"), actual = Data.String("null"))))
       .andThen(_.values.traverse(schema.decode(_)))
-
-    override def encodeOption(a: Vector[A]): Option[Data.Value] = Data.Array(a.map(value.encode)).some
+    override def encodeArray(a: Vector[A]): Option[Data.Array] = Data.Array(a.map(value.encode)).some

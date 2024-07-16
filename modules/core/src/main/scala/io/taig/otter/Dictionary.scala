@@ -13,16 +13,16 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     export self.metadata
     override def decodeObject(data: Option[Data.Object]): Codec.Result[Data, B] =
       self.decodeOption(data).map(f)
-    override def encodeOption(b: B): Option[Data.Value] = self.encodeOption(g(b))
+    override def encodeObject(b: B): Option[Data.Object] = self.encodeObject(g(b))
 
   override def optional: Dictionary[O, Option[A]] = new Dictionary[O, Option[A]]:
     export self.metadata
     override def decodeObject(data: Option[Data.Object]): Codec.Result[Data, Option[A]] =
       data.fold(none.valid)(_ => self.decodeOption(data).map(_.some))
-    override def encodeOption(a: Option[A]): Option[Data.Value] = a.flatMap(self.encodeOption)
+    override def encodeObject(a: Option[A]): Option[Data.Object] = a.flatMap(self.encodeObject)
 
   override def update(f: Metadata => Metadata): Dictionary[O, A] = new Dictionary[O, A]:
-    export self.{decodeObject, encodeOption}
+    export self.{decodeObject, encodeObject}
     override def metadata: Metadata = f(self.metadata)
 
   final override def decodeOption(data: Option[Data.Value]): Codec.Result[Data, A] = data match
@@ -31,6 +31,10 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     case None       => decodeObject(None)
 
   def decodeObject(data: Option[Data.Object]): Codec.Result[Data, A]
+
+  final override def encodeOption(a: A): Option[Data.Value] = encodeObject(a)
+
+  def encodeObject(a: A): Option[Data.Object]
 
 object Dictionary:
   def apply[A, B](key: Value.Required[?, A], value: Codec[?, B]): Dictionary[value.type, Chain[(A, B)]] =
@@ -44,5 +48,5 @@ object Dictionary:
             value.decode(b)
           ).tupled
         })
-      override def encodeOption(abs: Chain[(A, B)]): Option[Data.Value] =
+      override def encodeObject(abs: Chain[(A, B)]): Option[Data.Object] =
         Data.Object(abs.map { case (a, b) => (key.printValue(a), value.encode(b)) }).some
