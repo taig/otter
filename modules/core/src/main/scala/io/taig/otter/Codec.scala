@@ -9,6 +9,7 @@ import io.taig.otter
 import io.taig.enumeration.ext.Mapping
 import cats.data.Validated
 import Base.validation.Violations
+import Base.validation.Violation
 
 abstract class Codec[+O, A]:
   def metadata: Metadata
@@ -16,78 +17,14 @@ abstract class Codec[+O, A]:
   def optional: Codec[O, Option[A]]
   def update(f: Metadata => Metadata): Codec[O, A]
 
-  final def decode(data: Data): Codec.Result[A] = decodeValue(data.toValue)
-  def decodeValue(data: Option[Data.Value]): Codec.Result[A]
+  final def decode(data: Data): Codec.Result[Data, A] = decodeOption(data.toValue)
+  def decodeOption(data: Option[Data.Value]): Codec.Result[Data, A]
 
-  final def encode(a: A): Data = encodeValue(a).getOrElse(Data.Null)
-  def encodeValue(a: A): Option[Data.Value]
+  final def encode(a: A): Data = encodeOption(a).getOrElse(Data.Null)
+  def encodeOption(a: A): Option[Data.Value]
 
 object Codec:
-  type Result[A] = Validated[Violations[Constraint.Any[Data], Data], A]
-
-// sealed trait Collection[+O, A] extends Schema[O, A]:
-//   def constraints: Chain[Constraint.Collection]
-//   final override def imap[B](f: A => B)(g: B => A): Collection[O, B] = ivalidate(Validation.lift(f))(g)
-//   final def ivalidate[B](validation: SchemaValidation.Collection[A, B])(f: B => A): Collection[O, B] =
-//     Collection.Transform(this, validation, f)
-//   final def apply[B](transformation: SchemaTransformation.Collection[A, B]): Collection[O, B] =
-//     ivalidate(transformation.validation)(transformation.apply)
-//   final override def optional: Collection[O, Option[A]] = Collection.Optional(this)
-//   def schema: Schema[?, ?]
-//   override def update(f: Metadata => Metadata): Collection[O, A]
-
-// object Collection:
-//   final case class Optional[B, C](self: Collection[B, C]) extends Collection[B, Option[C]]:
-//     export self.{constraints, metadata, schema}
-//     override def update(f: Metadata => Metadata): Collection[B, Option[C]] = copy(self = self.update(f))
-
-//   final case class Root[+B <: Schema[?, C], C](metadata: Metadata, schema: B) extends Collection[B, Vector[C]]:
-//     override def constraints: Chain[Constraint.Collection] = Chain.empty
-//     override def update(f: Metadata => Metadata): Collection[B, Vector[C]] = copy(metadata = f(metadata))
-
-//   final case class Transform[A, B, C](
-//       self: Collection[A, B],
-//       validation: SchemaValidation.Collection[B, C],
-//       f: C => B
-//   ) extends Collection[A, C]:
-//     export self.{metadata, schema}
-//     override def constraints: Chain[Constraint.Collection] = self.constraints ++ validation.constraints
-//     override def update(f: Metadata => Metadata): Collection[A, C] = copy(self = self.update(f))
-
-// sealed trait Dictionary[+B, C] extends Schema[B, C]:
-//   final override def imap[D](f: C => D)(g: D => C): Dictionary[B, D] = Dictionary.Transform(this, f, g)
-//   final override def optional: Dictionary[B, Option[C]] = Dictionary.Optional(this)
-//   override def update(f: Metadata => Metadata): Dictionary[B, C]
-
-// object Dictionary:
-//   final case class Optional[B, C](self: Dictionary[B, C]) extends Dictionary[B, Option[C]]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Dictionary[B, Option[C]] = copy(self = self.update(f))
-
-//   final case class Root[+O <: Schema[?, B], A, B](metadata: Metadata, key: Primitive.Required[A], value: O)
-//       extends Dictionary[O, List[(A, B)]]:
-//     override def update(f: Metadata => Metadata): Dictionary[O, List[(A, B)]] = copy(metadata = f(metadata))
-
-//   final case class Transform[B, C, D](self: Dictionary[B, C], f: C => D, g: D => C) extends Dictionary[B, D]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Dictionary[B, D] = copy(self = self.update(f))
-
-// sealed trait Dynamic[A] extends Schema[Nothing, A]:
-//   override def imap[B](f: A => B)(g: B => A): Dynamic[B] = Dynamic.Transform(this, f, g)
-//   override def optional: Dynamic[Option[A]] = Dynamic.Optional(this)
-//   override def update(f: Metadata => Metadata): Dynamic[A]
-
-// object Dynamic:
-//   final case class Optional[A](self: Dynamic[A]) extends Dynamic[Option[A]]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Dynamic[Option[A]] = copy(self = self.update(f))
-
-//   final case class Root(metadata: Metadata) extends Dynamic[Data]:
-//     override def update(f: Metadata => Metadata): Dynamic[Data] = copy(metadata = f(metadata))
-
-//   final case class Transform[A, B](self: Dynamic[A], f: A => B, g: B => A) extends Dynamic[B]:
-//     export self.metadata
-//     override def update(f: Metadata => Metadata): Dynamic[B] = copy(self = self.update(f))
+  type Result[A, B] = Validated[Violations[Violation[Constraint.Any[A], A]], B]
 
 // sealed trait Enumeration[+O, A] extends Value[O, A]:
 //   override def imap[B](f: A => B)(g: B => A): Enumeration[O, B] = Enumeration.Transform(this, f, g)
