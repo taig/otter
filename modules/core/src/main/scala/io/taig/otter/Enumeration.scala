@@ -9,7 +9,7 @@ import io.taig.otter.validation.Violation
 abstract class Enumeration[+O, A] extends Value[O, A]:
   self =>
 
-  override def metadata(f: Metadata => Metadata): Enumeration[O, A] = new Enumeration[O, A]:
+  override def modifyMetadata(f: Metadata => Metadata): Enumeration[O, A] = new Enumeration[O, A]:
     export self.{decode, default, encode, parse, print}
     override def metadata: Metadata = f(self.metadata)
 
@@ -45,7 +45,7 @@ object Enumeration:
   abstract class Required[+O, A] extends Enumeration[O, A], Value.Required[O, A]:
     self =>
 
-    final override def metadata(f: Metadata => Metadata): Enumeration.Required[O, A] = new Required[O, A]:
+    final override def modifyMetadata(f: Metadata => Metadata): Enumeration.Required[O, A] = new Required[O, A]:
       export self.{decodeValue, default, encodeValue, parseValue, printValue}
       override def metadata: Metadata = f(self.metadata)
 

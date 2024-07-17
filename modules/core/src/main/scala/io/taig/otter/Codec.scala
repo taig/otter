@@ -8,7 +8,7 @@ import io.taig.otter.validation.Violation
 
 abstract class Codec[+O, A]:
   def metadata: Metadata
-  def metadata(f: Metadata => Metadata): Codec[O, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
   def default: Option[A]
   def default(f: Option[A] => Option[A]): Codec[O, A]
@@ -25,7 +25,7 @@ object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
 
   trait Required[+O, A] extends Codec[O, A]:
-    override def metadata(f: Metadata => Metadata): Codec.Required[O, A]
+    override def modifyMetadata(f: Metadata => Metadata): Codec.Required[O, A]
 
     override def imap[B](f: A => B)(g: B => A): Codec.Required[O, B]
 

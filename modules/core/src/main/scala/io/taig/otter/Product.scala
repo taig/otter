@@ -12,7 +12,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
 
   def codecs: Chain[Codec[?, ?]]
 
-  final override def metadata(f: Metadata => Metadata): Product[O, A] = new Product[O, A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Product[O, A] = new Product[O, A]:
     export self.{codecs, decode, default, encodeArray}
     override def metadata: Metadata = f(self.metadata)
 

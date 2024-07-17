@@ -13,7 +13,7 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
 
   def codec: Codec[?, ?]
 
-  final override def metadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
     export self.{codec, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 

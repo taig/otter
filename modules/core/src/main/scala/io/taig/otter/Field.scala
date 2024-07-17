@@ -40,5 +40,7 @@ object Field:
       override def name: String = _name
       override def codec: Codec[?, A] = _codec
       override def metadata: Metadata = Metadata.Empty
-      override def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] = ???
+      override def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] =
+        val (head, remainders) = values.findWithRemainders { case (reference, data) if reference === name => data }
+        codec.decode(head.getOrElse(Data.Null)).leftMap(name /: _).tupleLeft(remainders)
       override def encodeValue(a: A): Data = codec.encode(a)

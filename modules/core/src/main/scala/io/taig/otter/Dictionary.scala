@@ -9,7 +9,7 @@ import io.taig.otter.validation.Violation
 abstract class Dictionary[+O, A] extends Codec[O, A]:
   self =>
 
-  final override def metadata(f: Metadata => Metadata): Dictionary[O, A] = new Dictionary[O, A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Dictionary[O, A] = new Dictionary[O, A]:
     export self.{decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 

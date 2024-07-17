@@ -9,7 +9,7 @@ import io.taig.otter.validation.Validation
 abstract class Primitive[A] extends Value[Nothing, A]:
   self =>
 
-  override def metadata(f: Metadata => Metadata): Primitive[A] = new Primitive[A]:
+  override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = new Primitive[A]:
     export self.{decode, default, encode, parse, print}
     override def metadata: Metadata = f(self.metadata)
 
@@ -49,7 +49,7 @@ object Primitive:
   abstract class Required[A] extends Primitive[A], Value.Required[Nothing, A]:
     self =>
 
-    final override def metadata(f: Metadata => Metadata): Primitive.Required[A] = new Required[A]:
+    final override def modifyMetadata(f: Metadata => Metadata): Primitive.Required[A] = new Required[A]:
       export self.{decodeValue, default, encodeValue, parseValue, printValue}
       override def metadata: Metadata = f(self.metadata)
 

@@ -8,7 +8,7 @@ import io.taig.otter.validation.Violation
 abstract class Dynamic[A] extends Codec[Nothing, A]:
   self =>
 
-  override def metadata(f: Metadata => Metadata): Dynamic[A] = new Dynamic[A]:
+  override def modifyMetadata(f: Metadata => Metadata): Dynamic[A] = new Dynamic[A]:
     export self.{decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 

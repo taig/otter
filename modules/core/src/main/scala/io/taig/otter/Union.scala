@@ -10,7 +10,7 @@ abstract class Union[+O, A] extends Codec[O, A]:
 
   def codecs: NonEmptyChain[Codec[?, ?]]
 
-  override def metadata(f: Metadata => Metadata): Union[O, A] = new Union[O, A]:
+  override def modifyMetadata(f: Metadata => Metadata): Union[O, A] = new Union[O, A]:
     export self.{codecs, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
@@ -46,7 +46,7 @@ object Union:
   abstract class Value[+O, A] extends Union[O, A], Base.Value[O, A]:
     self =>
 
-    override def metadata(f: Metadata => Metadata): Union.Value[O, A] = new Union.Value[O, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Union.Value[O, A] = new Union.Value[O, A]:
       export self.{codecs, decode, default, encode, parse, print}
       override def metadata: Metadata = f(self.metadata)
 
@@ -93,7 +93,7 @@ object Union:
     abstract class Required[O, A] extends Union.Value[O, A], Base.Value.Required[O, A]:
       self =>
 
-      override def metadata(f: Metadata => Metadata): Union.Value.Required[O, A] = new Union.Value.Required[O, A]:
+      override def modifyMetadata(f: Metadata => Metadata): Union.Value.Required[O, A] = new Union.Value.Required[O, A]:
         export self.{codecs, decodeValue, default, encodeValue, parseValue, printValue}
         override def metadata: Metadata = f(self.metadata)
 

@@ -6,7 +6,7 @@ import io.taig.otter.validation.Violation
 import io.taig.otter.Codec.Result
 
 trait Value[+O, A] extends Codec[O, A]:
-  override def metadata(f: Metadata => Metadata): Value[O, A]
+  override def modifyMetadata(f: Metadata => Metadata): Value[O, A]
 
   override def default(f: Option[A] => Option[A]): Value[O, A]
 
@@ -20,7 +20,7 @@ trait Value[+O, A] extends Codec[O, A]:
 
 object Value:
   trait Required[+O, A] extends Value[O, A], Codec.Required[O, A]:
-    override def metadata(f: Metadata => Metadata): Value.Required[O, A]
+    override def modifyMetadata(f: Metadata => Metadata): Value.Required[O, A]
 
     override def imap[B](f: A => B)(g: B => A): Value.Required[O, B]
 
