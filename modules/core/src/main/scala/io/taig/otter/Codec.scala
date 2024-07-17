@@ -40,36 +40,6 @@ object Codec:
 
     def encodeValue(a: A): Data.Value
 
-// sealed trait Product[+B, C] extends Schema[B, C]:
-//   override def imap[D](f: C => D)(g: D => C): Product[B, D] = Product.Transform(this, f, g)
-//   override def optional: Product[B, Option[C]] = Product.Optional(this)
-//   def productWith[D, E](merge: (Metadata, Metadata) => Metadata)(product: Product[D, E]): Product[B & D, (C, E)] =
-//     Product.Combine(merge(metadata, product.metadata), this, product)
-//   def schemas: Chain[Schema[?, ?]]
-//   override def update(f: Metadata => Metadata): Product[B, C]
-
-// object Product:
-//   final case class Combine[B, C, D, E](metadata: Metadata, left: Product[B, C], right: Product[D, E])
-//       extends Product[B & D, (C, E)]:
-//     override def schemas: Chain[Schema[?, ?]] = left.schemas ++ right.schemas
-//     override def update(f: Metadata => Metadata): Product[B & D, (C, E)] = copy(metadata = f(metadata))
-
-//   case class Empty(metadata: Metadata) extends Product[Nothing, Unit]:
-//     override def schemas: Chain[Nothing] = Chain.empty
-//     override def update(f: Metadata => Metadata): Product[Nothing, Unit] = copy(metadata = f(metadata))
-
-//   final case class One[O <: Schema[?, A], A](metadata: Metadata, schema: O) extends Product[O, A]:
-//     override def schemas: Chain[Schema[?, ?]] = Chain.one(schema)
-//     override def update(f: Metadata => Metadata): Product[O, A] = copy(metadata = f(metadata))
-
-//   final case class Optional[B, C](self: Product[B, C]) extends Product[B, Option[C]]:
-//     export self.{metadata, schemas}
-//     override def update(f: Metadata => Metadata): Product[B, Option[C]] = copy(self = self.update(f))
-
-//   final case class Transform[B, C, D](self: Product[B, C], f: C => D, g: D => C) extends Product[B, D]:
-//     export self.{metadata, schemas}
-//     override def update(f: Metadata => Metadata): Product[B, D] = copy(self = self.update(f))
-
 // sealed trait Record[+B, C] extends Schema[B, C]:
 //   def fields: Chain[Field[?, ?]]
 //   override def imap[D](f: C => D)(g: D => C): Record[B, D] = Record.Transform(this, f, g)

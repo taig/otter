@@ -5,7 +5,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.taig.otter.Codec.Result
 
-abstract class Value[+O, A] extends Codec[O, A]:
+trait Value[+O, A] extends Codec[O, A]:
   override def metadata(f: Metadata => Metadata): Value[O, A]
 
   override def default(f: Option[A] => Option[A]): Value[O, A]
