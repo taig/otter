@@ -34,7 +34,12 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
       override def encode(b: B): Data = self.encode(f(b))
 
-  final override def optional: Collection[O, Option[A]] = ???
+  final override def optional: Collection[O, Option[A]] = new Collection[O, Option[A]]:
+    export self.{codec, metadata}
+    override def default: Option[Option[A]] = self.default.map(_.some)
+    override def decode(data: Data): Codec.Result[Option[A]] =
+      data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
 
 object Collection:
   def apply[A](of: Codec[?, A]): Collection[of.type, Vector[A]] = new Collection[of.type, Vector[A]]:

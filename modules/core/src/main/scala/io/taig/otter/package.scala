@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import scala.collection.mutable.ListBuffer
+import scala.collection.immutable.Iterable
 
 extension [A](self: Chain[A])
   def findWithRemainders[B](pf: PartialFunction[A, B]): (Option[B], Chain[A]) =
@@ -13,3 +14,6 @@ extension [A](self: Chain[A])
       else result = pf.lift(a)
 
     (result, Chain.fromIterableOnce(remainders))
+
+extension [F[a] <: Iterable[a], A](self: F[A])
+  def uncons: Option[(A, F[A])] = self.headOption.map((_, self.tail.asInstanceOf[F[A]]))

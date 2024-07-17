@@ -35,7 +35,15 @@ abstract class Primitive[A] extends Value[Nothing, A]:
       self.parse(value).andThen(validation(_).leftMap(Violations.root))
     override def print(b: B): Option[String] = self.print(f(b))
 
-  final override def optional: Primitive[Option[A]] = ???
+  final override def optional: Primitive[Option[A]] = new Primitive[Option[A]]:
+    export self.metadata
+    override def default: Option[Option[A]] = self.default.map(_.some)
+    override def decode(data: Data): Codec.Result[Option[A]] =
+      data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
+    override def parse(value: Option[String]): Result[Option[A]] =
+      value.fold(default.flatten.valid)(_ => self.parse(value).map(_.some))
+    override def print(a: Option[A]): Option[String] = a.flatMap(self.print)
 
 object Primitive:
   abstract class Required[A] extends Primitive[A], Value.Required[Nothing, A]:
@@ -55,17 +63,12 @@ object Primitive:
 
   def apply[A](tpe: Type[A]): Primitive.Required[A] = new Required[A]:
     override def metadata: Metadata = Metadata.Empty
-
     override def default: Option[A] = None
-
     override def decodeValue(data: Data.Value): Result[A] = data.toPrimitive
       .flatMap(tpe.decode)
       .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(data.name))))
-
     override def encodeValue(a: A): Data.Value = tpe.encode(a)
-
     override def parseValue(value: String): Codec.Result[A] = tpe
       .parse(value)
       .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(value))))
-
     override def printValue(a: A): String = tpe.print(a)
