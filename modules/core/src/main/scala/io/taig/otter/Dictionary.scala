@@ -30,6 +30,7 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
+      // TODO default
       data.toValue.fold(none.valid)(self.decode(_).map(_.some))
     override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
 
