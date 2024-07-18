@@ -24,8 +24,11 @@ abstract class Codec[+O, A]:
 
   final def product: Product[this.type, A] = Product(this)
 
-  final def :*[B](codec: Codec[?, B]): Product[this.type & codec.type, (A, B)] =
+  final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[this.type & codec.type, merge.Out] =
     self.product.zip(codec.product)
+
+  final def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[B, A]): Product[codec.type & this.type, merge.Out] =
+    codec.product.zip(self.product)
 
   final def :+[B](codec: Codec[?, B]): Union[this.type & codec.type, Either[A, B]] =
     self.union.orElse(codec.union)

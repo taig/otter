@@ -64,6 +64,9 @@ object Evidence:
 
     given [A]: Merge.Aux[Unit, A, A] = instance[Unit, A, A] { case (_, a) => a }(a => ((), a))
 
+    given [A, B <: STuple]: Merge.Aux[A, B, A *: B] =
+      instance[A, B, A *: B] { case (a, b) => a *: b } { case a *: b => (a, b) }
+
     given [A <: STuple, B]: Merge.Aux[A, B, STuple.Append[A, B]] =
       instance[A, B, STuple.Append[A, B]] { case (a, b) => a :* b } { ab =>
         (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
