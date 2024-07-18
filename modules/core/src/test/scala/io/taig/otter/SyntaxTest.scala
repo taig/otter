@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import io.taig.otter.Plain.*
+import io.taig.otter.*
 import munit.FunSuite
 
 final class SyntaxTest extends FunSuite:

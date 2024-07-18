@@ -5,24 +5,81 @@ import io.taig.otter as Base
 trait Types:
   export Base.{CodecValidation, Constraint, Type}
 
-  final type Schema[A] = Base.Codec[?, A]
+  final type Codec[A] = Base.Codec[?, A]
 
-  object Schema:
-    type Of[A, B] = Base.Codec[A, B]
+  object Codec:
+    type Of[O, A] = Base.Codec[O, A]
 
-  // final type Value[A] = Base.Schema[?, A]
+  final type Value[A] = Base.Value[?, A]
 
-  // object Value:
-  //   type Of[A, B] = Base.Value[A, B]
+  object Value:
+    type Of[O, A] = Base.Value[O, A]
 
-  // final type Enumeration[A] = Base.Enumeration[?, A]
+  final type Collection[A] = Base.Collection[?, A]
 
-  // object Enumeration:
-  //   type Of[A, B] = Base.Enumeration[A, B]
+  object Collection:
+    type Of[O, A] = Base.Collection[O, A]
 
-  //   type Required[A] = Base.Enumeration.Required[?, A]
+  final type Dictionary[A] = Base.Dictionary[?, A]
 
-  //   object Required:
-  //     type Of[A, B] = Base.Enumeration.Required[A, B]
+  object Dictionary:
+    type Of[O, A] = Base.Dictionary[O, A]
+
+  final type Dynamic[A] = Base.Dynamic[A]
+
+  final type Enumeration[A] = Base.Enumeration[?, A]
+
+  object Enumeration:
+    type Of[O, A] = Base.Enumeration[O, A]
+
+    type Required[A] = Base.Enumeration.Required[?, A]
+
+    object Required:
+      type Of[O, A] = Base.Enumeration.Required[O, A]
+
+  final type Primitive[A] = Base.Primitive[A]
+
+  object Primitive:
+    type Required[A] = Base.Primitive.Required[A]
+
+  final type Product[A] = Base.Product[?, A]
+
+  object Product:
+    type Of[O, A] = Base.Product[O, A]
+
+  final type Record[A] = Base.Record[?, A]
+
+  object Record:
+    type Of[O, A] = Base.Record[O, A]
+
+  final type Sum[A] = Base.Sum[?, A]
+
+  object Sum:
+    type Of[O, A] = Base.Sum[O, A]
+
+  final type Union[A] = Base.Union[?, A]
+
+  object Union:
+    type Of[O, A] = Base.Union[O, A]
+
+    type Value[A] = Base.Union.Value[?, A]
+
+    object Value:
+      type Of[O, A] = Base.Union.Value[O, A]
+
+      type Required[A] = Base.Union.Value.Required[?, A]
+
+      object Required:
+        type Of[O, A] = Base.Union.Value.Required[O, A]
+
+  final type Branch[A] = Base.Branch[?, A]
+
+  object Branch:
+    type Of[O, A] = Base.Branch[O, A]
+
+  final type Field[A] = Base.Branch[?, A]
+
+  object Field:
+    type Of[O, A] = Base.Field[O, A]
 
 object Types extends Types
