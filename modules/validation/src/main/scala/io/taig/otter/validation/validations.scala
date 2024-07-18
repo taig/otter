@@ -3,8 +3,11 @@ package io.taig.otter.validation
 import java.util.regex.Pattern
 import cats.data.Validated
 import cats.data.NonEmptyList
+import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import scala.util.chaining.*
+import scala.collection.immutable.Iterable
+import cats.data.Chain
 
 trait Validations:
   def matches(pattern: Pattern): Validation[String, Pattern, String, Unit] =
@@ -20,8 +23,11 @@ trait Validations:
       val length = fa.size
       Validated.condNec(length >= reference, (), length.toLong)
 
-  def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: Validation[F[A], 1L, 0L, (A, F[A])] =
-    Validation.validated(1L)(fa => fa.headOption.toValidNec[0L](0L).tupleRight(fa.tail))
+  def nonEmpty[F[a] <: Iterable[a], A]: Validation[F[A], 1L, 0L, (A, F[A])] =
+    Validation.validated(1L)(fa => fa.headOption.toValidNec[0L](0L).tupleRight(fa.tail.asInstanceOf[F[A]]))
+
+  def nonEmptyChain[A]: Validation[Chain[A], 1L, 0L, NonEmptyChain[A]] =
+    Validation.option[Chain[A], 1L, NonEmptyChain[A]](1L)(NonEmptyChain.fromChain).mapActual(_ => 0L)
 
   def uniqueItems[F[a] <: Iterable[a], A]: Validation[F[A], "uniqueItems", NonEmptyList[A], Unit] =
     Validation.validated("uniqueItems"):

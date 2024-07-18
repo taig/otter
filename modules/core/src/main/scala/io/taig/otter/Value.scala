@@ -15,7 +15,7 @@ trait Value[+O, A] extends Codec[O, A]:
 
   override def optional: Value[O, Option[A]]
 
-  override def union: Union.Value[this.type, A] = Union.Value(this)
+  override def toUnion: Union.Value[this.type, A] = Union.Value(this)
 
   def parse(value: Option[String]): Codec.Result[A]
 
@@ -27,7 +27,7 @@ object Value:
 
     override def imap[B](f: A => B)(g: B => A): Value.Required[O, B]
 
-    override def union: Union.Value.Required[this.type, A] = Union.Value.Required(this)
+    override def toUnion: Union.Value.Required[this.type, A] = Union.Value.Required(this)
 
     override def parse(value: Option[String]): Codec.Result[A] = value
       .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))

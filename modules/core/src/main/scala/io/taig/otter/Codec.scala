@@ -20,14 +20,9 @@ abstract class Codec[+O, A]:
 
   def optional: Codec[O, Option[A]]
 
-  final def collection: Collection[this.type, Vector[A]] = Collection(this)
-
-  final def product: Product[this.type, A] = Product(this)
-
-  final def :+[B](codec: Codec[?, B]): Union[this.type & codec.type, Either[A, B]] =
-    self.union.orElse(codec.union)
-
-  def union: Union[this.type, A] = Union(this)
+  final def toCollection: Collection[this.type, Vector[A]] = Collection(this)
+  final def toProduct: Product[this.type, A] = Product(this)
+  def toUnion: Union[this.type, A] = Union(this)
 
   def decode(data: Data): Codec.Result[A]
 
@@ -58,10 +53,15 @@ object Codec:
 
   extension [O, A](self: Codec[O, A])
     def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-      self.product :* codec
+      self.toProduct :* codec
 
     def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-      self.product :* codec
+      self.toProduct :* codec
+
+  extension [O, A](self: Codec[O, A])
+    def :+[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
+
+    def +:[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
 
   given [O]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)

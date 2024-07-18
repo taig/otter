@@ -28,13 +28,17 @@ abstract class Union[+O, A] extends Codec[O, A]:
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data = self.encode(g(b))
 
-  def orElse[P, B](codec: Union[P, B]): Union[O & P, Either[A, B]] = new Union[O & P, Either[A, B]]:
+  def orElse[P, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = new Union[O | P, Either[A, B]]:
     override def codecs: NonEmptyChain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Either[A, B]] = None
     override def decode(data: Data): Codec.Result[Either[A, B]] =
       self.decode(data).map(_.asLeft).findValid(codec.decode(data).map(_.asRight))
     override def encode(ab: Either[A, B]): Data = ab.fold(self.encode, codec.encode)
+
+  def :+[B](codec: Codec[?, B]): Union[O | codec.type, Either[A, B]] = orElse(codec.toUnion)
+
+  def +:[B](codec: Codec[?, B]): Union[codec.type | O, Either[B, A]] = codec.toUnion.orElse(self)
 
   override def optional: Union[O, Option[A]] = new Union[O, Option[A]]:
     export self.{codecs, metadata}

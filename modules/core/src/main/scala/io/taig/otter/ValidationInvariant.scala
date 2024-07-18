@@ -8,6 +8,5 @@ trait ValidationInvariant[Constraint[+a] <: Constraint.Any[a], F[_]] extends Inv
 
   extension [A](self: F[A])
     def ivalidate[B](validation: CodecValidation[Constraint, A, B])(f: B => A): F[B]
+
     final def ivalidate_(validation: CodecValidation[Constraint, A, Unit]): F[A] = ivalidate(validation.tap)(identity)
-    final def apply[B](transformation: CodecTransformation[Constraint, A, B]): F[B] =
-      ivalidate(transformation.validation)(transformation.apply)

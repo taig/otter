@@ -39,7 +39,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
     override def encodeArray(ab: (A, B)): Option[Data.Array] =
       (self.encodeArray(ab._1), codec.encodeArray(ab._2)) match
         case (Some(left), Some(right)) => Some(left ++ right)
-        case (Some(left), None)        => Some(left ++ Data.Array.fill(product.codecs.length)(Data.Null))
+        case (Some(left), None)        => Some(left ++ Data.Array.fill(toProduct.codecs.length)(Data.Null))
         case (None, Some(right))       => Some(Data.Array.fill(self.codecs.length)(Data.Null))
         case (None, None)              => Some(Data.Array.fill(this.codecs.length)(Data.Null))
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] = values
@@ -54,10 +54,10 @@ abstract class Product[+O, A] extends Codec[O, A]:
     zipWith(codec).imap(merge.apply)(merge.unapply)
 
   final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[O | codec.type, merge.Out] =
-    self.zip(codec.product)
+    self.zip(codec.toProduct)
 
   final def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[B, A]): Product[codec.type | O, merge.Out] =
-    codec.product.zip(self)
+    codec.toProduct.zip(self)
 
   final override def optional: Product[O, Option[A]] = new Product[O, Option[A]]:
     export self.{codecs, metadata}
