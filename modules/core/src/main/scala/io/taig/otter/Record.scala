@@ -6,13 +6,14 @@ import io.taig.otter.Codec.Result
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.Invariant
+import cats.data.Validated
 
 abstract class Record[+O, A] extends Codec[O, A]:
   self =>
 
   def fields: Chain[Field[?, ?]]
 
-  override def modifyDefault(f: Option[A] => Option[A]): Record[O, A] = new Record[O, A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Record[O, A] = new Record[O, A]:
     export self.{encodeObject, fields, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] =
@@ -20,19 +21,37 @@ abstract class Record[+O, A] extends Codec[O, A]:
         case (None, Some(default)) => (data, default).valid
         case _                     => self.decode(data)
 
-  override def modifyMetadata(f: Metadata => Metadata): Record[O, A] = new Record[O, A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Record[O, A] = new Record[O, A]:
     export self.{decode, default, encodeObject, fields}
     override def metadata: Metadata = f(self.metadata)
 
-  override def imap[B](f: A => B)(g: B => A): Record[O, B] = ???
+  final override def imap[B](f: A => B)(g: B => A): Record[O, B] = new Record[O, B]:
+    export self.{fields, metadata}
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], B)] =
+      self.decode(data).map(_.map(f))
+    override def encodeObject(b: B): Option[Data.Object] = self.encodeObject(g(b))
 
-  override def optional: Record[O, Option[A]] = new Record[O, Option[A]]:
+  final def zip[P, B](codec: Record[P, B]): Record[O & P, (A, B)] = new Record[O & P, (A, B)]:
+    override def fields: Chain[Field[?, ?]] = self.fields ++ codec.fields
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[(A, B)] = None
+    override def decode(values: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], (A, B))] =
+      self.decode(values) match
+        case Validated.Valid((values, a))  => codec.decode(values).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) => codec.decode(values).fold(violations.combine, _ => violations).invalid
+    override def encodeObject(ab: (A, B)): Option[Data.Object] = (
+      self.encodeObject(ab._1).getOrElse(Data.Object.Empty) ++
+        codec.encodeObject(ab._2).getOrElse(Data.Object.Empty)
+    ).some
+
+  final override def optional: Record[O, Option[A]] = new Record[O, Option[A]]:
     export self.{fields, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Chain[(String, Data)]]): Result[(Option[Chain[(String, Data)]], Option[A])] = ???
     override def encodeObject(a: Option[A]): Option[Data.Object] = a.flatMap(self.encodeObject)
 
-  override def decode(data: Data): Codec.Result[A] = data
+  final override def decode(data: Data): Codec.Result[A] = data
     .match
       case Data.Null           => decode(none)
       case Data.Object(values) => decode(values.some)

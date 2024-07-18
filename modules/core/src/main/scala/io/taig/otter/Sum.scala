@@ -5,8 +5,6 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.data.Chain
-import io.taig.otter.Codec.Result
-import cats.data.NonEmptyChainImpl
 import cats.Invariant
 
 abstract class Sum[+O, A] extends Codec[O, A]:
@@ -19,7 +17,6 @@ abstract class Sum[+O, A] extends Codec[O, A]:
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Sum[O, A] = new Sum[O, A]:
-
     export self.{branches, encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[Option[A]] =

@@ -24,11 +24,10 @@ trait Validations extends Codecs:
   def nonEmpty[F[a] <: Iterable[a] { def tail: F[a] }, A]: CodecValidation.Collection[F[A], (A, F[A])] =
     Base.nonEmpty[F, A].mapConstraint(Constraint.Collection.MinItems.apply).mapActual(Data.Number.apply)
 
-  def uniqueItems[F[a] <: Iterable[a], A](using
-      codec: Codec[?, A]
-  ): CodecValidation.Collection[F[A], Unit] = Base.uniqueItems
-    .mapConstraint(_ => Constraint.Collection.UniqueItems)
-    .mapActual(codec.collection.apply(nonEmptyList).encode)
+  def uniqueItems[F[a] <: Iterable[a], A](using codec: Codec[A]): CodecValidation.Collection[F[A], Unit] =
+    Base.uniqueItems
+      .mapConstraint(_ => Constraint.Collection.UniqueItems)
+      .mapActual(codec.collection.apply(nonEmptyList).encode)
 
   def vector[A]: Transformation.Plain[Vector[A], Vector[A]] = Transformation.ask
 
@@ -42,12 +41,12 @@ trait Validations extends Codecs:
   def nonEmptyList[A]: CodecTransformation.Collection[Vector[A], NonEmptyList[A]] =
     list[A].ivalidate(nonEmpty)(_ :: _).imap(NonEmptyList.apply)(fa => (fa.head, fa.tail))
 
-  def set[A: Codec[?, *]: Order]: CodecTransformation.Collection[Vector[A], Set[A]] =
+  def set[A: Codec: Order]: CodecTransformation.Collection[Vector[A], Set[A]] =
     vector[A].ivalidate_(uniqueItems).imap(_.to(Set))(_.toVector)
 
-  def sortedSet[A: Codec[?, *]: Order]: CodecTransformation.Collection[Vector[A], SortedSet[A]] =
+  def sortedSet[A: Codec: Order]: CodecTransformation.Collection[Vector[A], SortedSet[A]] =
     set[A].imap(SortedSet.from)(_.toSet)
 
-  def nonEmptySet[A: Codec[?, *]: Order]: CodecTransformation.Collection[Vector[A], NonEmptySet[A]] = sortedSet[A]
+  def nonEmptySet[A: Codec: Order]: CodecTransformation.Collection[Vector[A], NonEmptySet[A]] = sortedSet[A]
     .ivalidate(nonEmpty)({ case (a, as) => as + a })
     .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))

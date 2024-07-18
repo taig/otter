@@ -8,6 +8,8 @@ import io.taig.otter.validation.Violation
 import cats.Invariant
 
 abstract class Codec[+O, A]:
+  self =>
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
@@ -16,9 +18,19 @@ abstract class Codec[+O, A]:
 
   def imap[B](f: A => B)(g: B => A): Codec[O, B]
 
+  def optional: Codec[O, Option[A]]
+
   final def collection: Collection[this.type, Vector[A]] = Collection(this)
 
-  def optional: Codec[O, Option[A]]
+  final def product: Product[this.type, A] = Product(this)
+
+  final def :*[B](codec: Codec[?, B]): Product[this.type & codec.type, (A, B)] =
+    self.product.zip(codec.product)
+
+  final def :+[B](codec: Codec[?, B]): Union[this.type & codec.type, Either[A, B]] =
+    self.union.orElse(codec.union)
+
+  def union: Union[this.type, A] = Union(this)
 
   def decode(data: Data): Codec.Result[A]
 

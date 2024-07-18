@@ -32,12 +32,12 @@ abstract class Product[+O, A] extends Codec[O, A]:
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], B)] =
       self.decode(values).map(_.map(f))
 
-  final def zip[P, B](product: Product[P, B]): Product[O & P, (A, B)] = new Product[O & P, (A, B)]:
-    override def codecs: Chain[Codec[?, ?]] = self.codecs ++ product.codecs
+  final def zip[P, B](codec: Product[P, B]): Product[O & P, (A, B)] = new Product[O & P, (A, B)]:
+    override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
     override def encodeArray(ab: (A, B)): Option[Data.Array] =
-      (self.encodeArray(ab._1), product.encodeArray(ab._2)) match
+      (self.encodeArray(ab._1), codec.encodeArray(ab._2)) match
         case (Some(left), Some(right)) => Some(left ++ right)
         case (Some(left), None)        => Some(left ++ Data.Array.fill(product.codecs.length)(Data.Null))
         case (None, Some(right))       => Some(Data.Array.fill(self.codecs.length)(Data.Null))
@@ -46,9 +46,9 @@ abstract class Product[+O, A] extends Codec[O, A]:
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
       .andThen: values =>
         self.decode(values.some) match
-          case Validated.Valid((values, a)) => product.decode(values).map(_.tupleLeft(a))
+          case Validated.Valid((values, a)) => codec.decode(values).map(_.tupleLeft(a))
           case Validated.Invalid(violations) =>
-            product.decode(values.drop(self.codecs.length.toInt).some).fold(violations.combine, _ => violations).invalid
+            codec.decode(values.drop(self.codecs.length.toInt).some).fold(violations.combine, _ => violations).invalid
 
   final override def optional: Product[O, Option[A]] = new Product[O, Option[A]]:
     export self.{codecs, metadata}
@@ -89,8 +89,11 @@ object Product:
       (values, ()).valid
     override def encodeArray(a: Unit): Option[Data.Array] = Data.Array.Empty.some
 
-    def apply[A](of: Codec[?, A]): Product[of.type, A] = new Product[of.type, A]:
-      override def codecs: Chain[Codec[?, ?]] = Chain.one(of)
+  def apply[A](codec: Codec[?, A]): Product[codec.type, A] =
+    val _codec = codec
+
+    new Product[codec.type, A]:
+      override def codecs: Chain[Codec[?, ?]] = Chain.one(_codec)
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[A] = None
       override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =
@@ -101,8 +104,8 @@ object Product:
               Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = Data.Number(0)))
             )
           )
-          .andThen { case (head, tail) => of.decode(head).tupleLeft(tail.some) }
-      override def encodeArray(a: A): Option[Data.Array] = Data.Array.one(of.encode(a)).some
+          .andThen { case (head, tail) => _codec.decode(head).tupleLeft(tail.some) }
+      override def encodeArray(a: A): Option[Data.Array] = Data.Array.one(_codec.encode(a)).some
 
   given [O]: Invariant[Product[O, *]] with
     override def imap[A, B](fa: Product[O, A])(f: A => B)(g: B => A): Product[O, B] = fa.imap(f)(g)
