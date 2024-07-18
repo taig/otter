@@ -12,7 +12,7 @@ abstract class Dynamic[A] extends Codec[Nothing, A]:
     export self.{decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  override def default(f: Option[A] => Option[A]): Dynamic[A] = new Dynamic[A]:
+  override def modifyDefault(f: Option[A] => Option[A]): Dynamic[A] = new Dynamic[A]:
     export self.{encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match

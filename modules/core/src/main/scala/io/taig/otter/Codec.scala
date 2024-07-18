@@ -11,7 +11,7 @@ abstract class Codec[+O, A]:
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
   def default: Option[A]
-  def default(f: Option[A] => Option[A]): Codec[O, A]
+  def modifyDefault(f: Option[A] => Option[A]): Codec[O, A]
 
   def imap[B](f: A => B)(g: B => A): Codec[O, B]
 

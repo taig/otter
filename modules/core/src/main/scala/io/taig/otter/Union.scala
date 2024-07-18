@@ -14,7 +14,7 @@ abstract class Union[+O, A] extends Codec[O, A]:
     export self.{codecs, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  override def default(f: Option[A] => Option[A]): Union[O, A] = new Union[O, A]:
+  override def modifyDefault(f: Option[A] => Option[A]): Union[O, A] = new Union[O, A]:
     export self.{codecs, encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match
@@ -50,7 +50,7 @@ object Union:
       export self.{codecs, decode, default, encode, parse, print}
       override def metadata: Metadata = f(self.metadata)
 
-    final override def default(f: Option[A] => Option[A]): Union.Value[O, A] =
+    final override def modifyDefault(f: Option[A] => Option[A]): Union.Value[O, A] =
       new Union.Value[O, A]:
         export self.{codecs, encode, metadata, print}
         override def default: Option[A] = f(self.default)

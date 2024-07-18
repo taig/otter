@@ -17,7 +17,7 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
     export self.{codec, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def default(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
     export self.{codec, encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match

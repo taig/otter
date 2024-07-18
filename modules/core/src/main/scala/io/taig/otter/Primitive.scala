@@ -13,7 +13,7 @@ abstract class Primitive[A] extends Value[Nothing, A]:
     export self.{decode, default, encode, parse, print}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def default(f: Option[A] => Option[A]): Primitive[A] = new Primitive[A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Primitive[A] = new Primitive[A]:
     export self.{encode, metadata, print}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match

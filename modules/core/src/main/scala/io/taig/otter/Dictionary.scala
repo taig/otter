@@ -13,7 +13,7 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     export self.{decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def default(f: Option[A] => Option[A]): Dictionary[O, A] = new Dictionary[O, A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Dictionary[O, A] = new Dictionary[O, A]:
     export self.{encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match

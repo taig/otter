@@ -8,7 +8,7 @@ import io.taig.otter.Codec.Result
 trait Value[+O, A] extends Codec[O, A]:
   override def modifyMetadata(f: Metadata => Metadata): Value[O, A]
 
-  override def default(f: Option[A] => Option[A]): Value[O, A]
+  override def modifyDefault(f: Option[A] => Option[A]): Value[O, A]
 
   override def imap[B](f: A => B)(g: B => A): Value[O, B]
 

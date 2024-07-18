@@ -16,7 +16,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
     export self.{codecs, decode, default, encodeArray}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def default(f: Option[A] => Option[A]): Product[O, A] = new Product[O, A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Product[O, A] = new Product[O, A]:
     export self.{codecs, encodeArray, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =

@@ -11,7 +11,7 @@ abstract class Record[+O, A] extends Codec[O, A]:
 
   def fields: Chain[Field[?, ?]]
 
-  override def default(f: Option[A] => Option[A]): Record[O, A] = new Record[O, A]:
+  override def modifyDefault(f: Option[A] => Option[A]): Record[O, A] = new Record[O, A]:
     export self.{encodeObject, fields, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] =
