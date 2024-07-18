@@ -24,12 +24,6 @@ abstract class Codec[+O, A]:
 
   final def product: Product[this.type, A] = Product(this)
 
-  final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[this.type & codec.type, merge.Out] =
-    self.product.zip(codec.product)
-
-  final def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[B, A]): Product[codec.type & this.type, merge.Out] =
-    codec.product.zip(self.product)
-
   final def :+[B](codec: Codec[?, B]): Union[this.type & codec.type, Either[A, B]] =
     self.union.orElse(codec.union)
 
@@ -61,6 +55,13 @@ object Codec:
   object Required:
     given [O]: Invariant[Codec.Required[O, *]] with
       override def imap[A, B](fa: Codec.Required[O, A])(f: A => B)(g: B => A): Codec.Required[O, B] = fa.imap(f)(g)
+
+  extension [O, A](self: Codec[O, A])
+    def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
+      self.product :* codec
+
+    def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
+      self.product :* codec
 
   given [O]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)

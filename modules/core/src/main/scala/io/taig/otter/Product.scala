@@ -32,7 +32,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], B)] =
       self.decode(values).map(_.map(f))
 
-  final def zipWith[P, B](codec: Product[P, B]): Product[O & P, (A, B)] = new Product[O & P, (A, B)]:
+  final def zipWith[P, B](codec: Product[P, B]): Product[O | P, (A, B)] = new Product[O | P, (A, B)]:
     override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
@@ -50,8 +50,14 @@ abstract class Product[+O, A] extends Codec[O, A]:
           case Validated.Invalid(violations) =>
             codec.decode(values.drop(self.codecs.length.toInt).some).fold(violations.combine, _ => violations).invalid
 
-  final def zip[P, B](codec: Product[P, B])(using merge: Evidence.Merge[A, B]): Product[O & P, merge.Out] =
+  final def zip[P, B](codec: Product[P, B])(using merge: Evidence.Merge[A, B]): Product[O | P, merge.Out] =
     zipWith(codec).imap(merge.apply)(merge.unapply)
+
+  final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[O | codec.type, merge.Out] =
+    self.zip(codec.product)
+
+  final def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[B, A]): Product[codec.type | O, merge.Out] =
+    codec.product.zip(self)
 
   final override def optional: Product[O, Option[A]] = new Product[O, Option[A]]:
     export self.{codecs, metadata}

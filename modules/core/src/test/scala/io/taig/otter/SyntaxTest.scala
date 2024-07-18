@@ -26,7 +26,7 @@ final class SyntaxTest extends FunSuite:
     val _: Product[(String, Int, Long)] = string :* int :* long
     val _: Product[(Int, String)] = int *: string
     val _: Product[(Int, String, Long)] = int *: string *: long
+    val _: Product.Of[Primitive[?] | Collection[?], (Int, Vector[String])] = int :* string.collection
     val _: Product.Of[Primitive.Required[?], (Int, String, Long)] = int *: string *: long
     val _: Product.Of[Primitive[?], (Int, String, Long)] = int *: string *: long
     val _: Product.Of[Codec[?], (Int, String, Long)] = int *: string *: long
-    val _: Product.Of[Primitive[?], (Int, Vector[String])] = int *: string.collection
