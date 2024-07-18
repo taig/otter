@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.taig.otter.Codec.Result
+import cats.Invariant
 
 trait Value[+O, A] extends Codec[O, A]:
   override def modifyMetadata(f: Metadata => Metadata): Value[O, A]
@@ -33,3 +34,10 @@ object Value:
     override def print(a: A): Option[String] = printValue(a).some
 
     def printValue(a: A): String
+
+  object Required:
+    given [O]: Invariant[Value.Required[O, *]] with
+      override def imap[A, B](fa: Value.Required[O, A])(f: A => B)(g: B => A): Value.Required[O, B] = fa.imap(f)(g)
+
+  given [O]: Invariant[Value[O, *]] with
+    override def imap[A, B](fa: Value[O, A])(f: A => B)(g: B => A): Value[O, B] = fa.imap(f)(g)

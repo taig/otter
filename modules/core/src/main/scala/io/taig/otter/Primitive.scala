@@ -53,13 +53,25 @@ object Primitive:
       export self.{decodeValue, default, encodeValue, parseValue, printValue}
       override def metadata: Metadata = f(self.metadata)
 
-    final override def imap[B](f: A => B)(g: B => A): Primitive.Required[B] = new Required[B]:
-      export self.metadata
-      override def default: Option[B] = self.default.map(f)
-      override def decodeValue(data: Data.Value): Codec.Result[B] = self.decodeValue(data).map(f)
-      override def encodeValue(b: B): Data.Value = self.encodeValue(g(b))
-      override def parseValue(value: String): Codec.Result[B] = self.parseValue(value).map(f)
-      override def printValue(b: B): String = self.printValue(g(b))
+    final override def imap[B](f: A => B)(g: B => A): Primitive.Required[B] = ivalidate(Validation.lift(f))(g)
+
+    override def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive.Required[B] =
+      new Required[B]:
+        export self.metadata
+        override def default: Option[B] = self.default.flatMap(validation(_).toOption)
+        override def decodeValue(data: Data.Value): Codec.Result[B] =
+          self.decodeValue(data).andThen(validation(_).leftMap(Violations.root))
+        override def encodeValue(b: B): Data.Value = self.encodeValue(f(b))
+        override def parseValue(value: String): Codec.Result[B] =
+          self.parseValue(value).andThen(validation(_).leftMap(Violations.root))
+        override def printValue(b: B): String = self.printValue(f(b))
+
+  object Required:
+    given ValidationInvariant[Constraint.Primitive, Primitive.Required] with
+
+      extension [A](self: Primitive.Required[A])
+        override def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive.Required[B] =
+          self.ivalidate(validation)(f)
 
   def apply[A](tpe: Type[A]): Primitive.Required[A] = new Required[A]:
     override def metadata: Metadata = Metadata.Empty
@@ -72,3 +84,9 @@ object Primitive:
       .parse(value)
       .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(value))))
     override def printValue(a: A): String = tpe.print(a)
+
+  given ValidationInvariant[Constraint.Primitive, Primitive] with
+
+    extension [A](self: Primitive[A])
+      override def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive[B] =
+        self.ivalidate(validation)(f)

@@ -7,6 +7,7 @@ import io.taig.otter.validation.Violation
 import cats.data.Chain
 import io.taig.otter.Codec.Result
 import cats.data.NonEmptyChainImpl
+import cats.Invariant
 
 abstract class Sum[+O, A] extends Codec[O, A]:
   self =>
@@ -80,3 +81,6 @@ object Sum:
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
       .andThen(branch.decode)
     override def encode(a: A): Data = branch.encode(a)
+
+  given [O]: Invariant[Sum[O, *]] with
+    override def imap[A, B](fa: Sum[O, A])(f: A => B)(g: B => A): Sum[O, B] = fa.imap(f)(g)

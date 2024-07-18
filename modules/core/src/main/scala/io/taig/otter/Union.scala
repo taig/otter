@@ -4,6 +4,7 @@ import io.taig.otter as Base
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import cats.data.NonEmptyChainImpl
+import cats.Invariant
 
 abstract class Union[+O, A] extends Codec[O, A]:
   self =>
@@ -117,9 +118,20 @@ object Union:
             self.parseValue(value).map(_.asLeft).findValid(union.parseValue(value).map(_.asRight))
           override def printValue(ab: Either[A, B]): String = ab.fold(self.printValue, union.printValue)
 
+    object Required:
+      given [O]: Invariant[Union.Value.Required[O, *]] with
+        override def imap[A, B](fa: Union.Value.Required[O, A])(f: A => B)(g: B => A): Union.Value.Required[O, B] =
+          fa.imap(f)(g)
+
+    given [O]: Invariant[Union.Value[O, *]] with
+      override def imap[A, B](fa: Union.Value[O, A])(f: A => B)(g: B => A): Union.Value[O, B] = fa.imap(f)(g)
+
   def apply[A](of: Codec[?, A]): Union[of.type, A] = new Union[of.type, A]:
     override def codecs: NonEmptyChain[Codec[?, ?]] = NonEmptyChain.one(of)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
     override def decode(data: Data): Codec.Result[A] = of.decode(data)
     override def encode(a: A): Data = of.encode(a)
+
+  given [O]: Invariant[Union[O, *]] with
+    override def imap[A, B](fa: Union[O, A])(f: A => B)(g: B => A): Union[O, B] = fa.imap(f)(g)

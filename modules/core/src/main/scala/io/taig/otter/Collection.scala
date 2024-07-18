@@ -50,3 +50,8 @@ object Collection:
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
       .andThen(_.values.traverse(of.decode))
     override def encode(a: Vector[A]): Data = Data.Array(a.map(of.encode))
+
+  given [O]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
+    extension [A](self: Collection[O, A])
+      override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[O, B] =
+        self.ivalidate(validation)(f)

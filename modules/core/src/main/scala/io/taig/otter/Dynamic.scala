@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec.Result
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
+import cats.Invariant
 
 abstract class Dynamic[A] extends Codec[Nothing, A]:
   self =>
@@ -67,3 +68,6 @@ object Dynamic:
       Violations.rootNec(Violation(Constraint.Type("primitive"), actual = Data.String(data.name)))
     )
     override def encode(a: Data.Primitive): Data = a
+
+  given Invariant[Dynamic] with
+    override def imap[A, B](fa: Dynamic[A])(f: A => B)(g: B => A): Dynamic[B] = fa.imap(f)(g)

@@ -6,6 +6,7 @@ import cats.data.Chain
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.data.Validated
+import cats.Invariant
 
 abstract class Product[+O, A] extends Codec[O, A]:
   self =>
@@ -102,3 +103,6 @@ object Product:
           )
           .andThen { case (head, tail) => of.decode(head).tupleLeft(tail.some) }
       override def encodeArray(a: A): Option[Data.Array] = Data.Array.one(of.encode(a)).some
+
+  given [O]: Invariant[Product[O, *]] with
+    override def imap[A, B](fa: Product[O, A])(f: A => B)(g: B => A): Product[O, B] = fa.imap(f)(g)

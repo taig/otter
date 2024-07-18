@@ -5,6 +5,7 @@ import io.taig.otter.Codec.Result
 import cats.data.Chain
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
+import cats.Invariant
 
 abstract class Dictionary[+O, A] extends Codec[O, A]:
   self =>
@@ -30,8 +31,7 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
-      // TODO default
-      data.toValue.fold(none.valid)(self.decode(_).map(_.some))
+      data.toValue.fold(default.flatten.valid)(self.decode(_).map(_.some))
     override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
 
 object Dictionary:
@@ -44,3 +44,7 @@ object Dictionary:
         .andThen(_.values.traverse { case (a, b) => (key.parseValue(a), value.decode(b)).tupled })
       override def encode(abs: Chain[(A, B)]): Data =
         Data.Object(abs.map { case (a, b) => (key.printValue(a), value.encode(b)) })
+
+  given [O]: Invariant[Dictionary[O, *]] with
+    override def imap[A, B](fa: Dictionary[O, A])(f: A => B)(g: B => A): Dictionary[O, B] =
+      fa.imap(f)(g)

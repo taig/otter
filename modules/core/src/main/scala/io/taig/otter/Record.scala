@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec.Result
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
+import cats.Invariant
 
 abstract class Record[+O, A] extends Codec[O, A]:
   self =>
@@ -62,3 +63,6 @@ object Record:
         .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
         .andThen(field.decode(_).map(_.leftMap(_.some)))
     override def encodeObject(a: A): Option[Data.Object] = Data.Object.fromOption(field.encode(a)).some
+
+  given [O]: Invariant[Record[O, *]] with
+    override def imap[A, B](fa: Record[O, A])(f: A => B)(g: B => A): Record[O, B] = fa.imap(f)(g)

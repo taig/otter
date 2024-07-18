@@ -1,6 +1,6 @@
 package io.taig.otter
 
-trait Schemas:
+trait Codecs:
   final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Primitive(tpe)
 
   val double: Primitive.Required[Double] = primitive(Type.Double)
@@ -8,4 +8,4 @@ trait Schemas:
   val long: Primitive.Required[Long] = primitive(Type.Long)
   val string: Primitive.Required[String] = primitive(Type.String)
 
-object Schemas extends Schemas
+object Codecs extends Codecs

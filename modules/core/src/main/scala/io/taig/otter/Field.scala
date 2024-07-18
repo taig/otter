@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.data.Chain
 import io.taig.otter.Keys.*
+import cats.Invariant
 
 sealed abstract class Field[+O, A]:
   self =>
@@ -44,3 +45,6 @@ object Field:
         val (head, remainders) = values.findWithRemainders { case (reference, data) if reference === name => data }
         codec.decode(head.getOrElse(Data.Null)).leftMap(name /: _).tupleLeft(remainders)
       override def encodeValue(a: A): Data = codec.encode(a)
+
+  given [O]: Invariant[Field[O, *]] with
+    override def imap[A, B](fa: Field[O, A])(f: A => B)(g: B => A): Field[O, B] = fa.imap(f)(g)

@@ -5,6 +5,7 @@ import io.taig.otter.Codec.Result
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
+import cats.Invariant
 
 abstract class Enumeration[+O, A] extends Value[O, A]:
   self =>
@@ -57,6 +58,11 @@ object Enumeration:
       override def parseValue(value: String): Codec.Result[B] = self.parseValue(value).map(f)
       override def printValue(b: B): String = self.printValue(g(b))
 
+  object Required:
+    given [O]: Invariant[Enumeration.Required[O, *]] with
+      override def imap[A, B](fa: Enumeration.Required[O, A])(f: A => B)(g: B => A): Enumeration.Required[O, B] =
+        fa.imap(f)(g)
+
   def apply[A, B](of: Value.Required[?, A], mapping: Mapping[B, A]): Enumeration.Required[of.type, B] =
     new Enumeration.Required[of.type, B]:
       override def metadata: Metadata = Metadata.Empty
@@ -77,3 +83,6 @@ object Enumeration:
               Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = Data.String(value)))
             )
       override def printValue(b: B): String = of.printValue(mapping(b))
+
+  given [O]: Invariant[Enumeration[O, *]] with
+    override def imap[A, B](fa: Enumeration[O, A])(f: A => B)(g: B => A): Enumeration[O, B] = fa.imap(f)(g)
