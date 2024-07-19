@@ -71,13 +71,13 @@ sealed abstract class Branch[+O, A]:
   protected def encodeValue(a: A): Data
 
 object Branch:
-  def apply[O, A](name: String, codec: Codec[O, A]): Branch[O, A] =
+  def apply[A](name: String, codec: Codec[?, A]): Branch[codec.type, A] =
     val _name = name
     val _codec = codec
 
-    new Branch[O, A]:
+    new Branch[codec.type, A]:
       override def name: String = _name
-      override def codec: Codec[O, A] = _codec
+      override def codec: Codec[?, A] = _codec
       override def metadata: Metadata = Metadata.Empty
       override def decodeValue(data: Data): Codec.Result[A] = codec.decode(data)
       override def encodeValue(a: A): Data = codec.encode(a)

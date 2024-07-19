@@ -58,6 +58,7 @@ object Evidence:
 
   object Merge extends Merge1:
     type Aux[A, B, C] = Evidence.Merge[A, B] { type Out = C }
+    
     inline def apply[A, B](using evidence: Evidence.Merge[A, B]): evidence.type = evidence
 
     given [A]: Merge.Aux[A, Unit, A] = instance[A, Unit, A] { case (a, _) => a }(a => (a, ()))

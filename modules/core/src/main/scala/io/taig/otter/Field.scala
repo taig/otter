@@ -24,6 +24,12 @@ sealed abstract class Field[+O, A]:
       self.decode(values).map(_.map(f))
     override def encodeValue(b: B): Data = self.encodeValue(g(b))
 
+  final def :*[P, B](field: Field[P, B]): Record[O & P, (A, B)] = toRecord.product(field.toRecord)
+  
+  final def *:[P, B](field: Field[P, B]): Record[P & O, (B ,A)] = field.toRecord.product(toRecord)
+
+  final def toRecord: Record[O, A] = Record(this)
+
   def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)]
 
   final def encode(a: A): Option[(String, Data)] = (metadata(nulls).getOrElse(Null.Default), encodeValue(a)) match

@@ -82,7 +82,7 @@ trait Types:
   object Branch:
     type Of[O, A] = Base.Branch[O, A]
 
-  final type Field[A] = Base.Branch[?, A]
+  final type Field[A] = Base.Field[?, A]
 
   object Field:
     type Of[O, A] = Base.Field[O, A]

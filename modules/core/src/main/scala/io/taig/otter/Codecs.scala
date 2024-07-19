@@ -30,6 +30,9 @@ trait Codecs extends Validations:
   val long: Primitive.Required[Long] = primitive(Type.Long)
   val string: Primitive.Required[String] = primitive(Type.String)
 
+  def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.type, A] = Base.Branch(name, codec)
+  def field[A](name: String, codec: Codec[A]): Field.Of[codec.type, A] = Base.Field(name, codec)
+
   object collection:
     def vector[A](codec: Codec[A]): Collection.Of[codec.type, Vector[A]] = codec.toCollection
 

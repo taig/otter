@@ -27,6 +27,9 @@ final class CodecTest[A] extends FunSuite:
     test(collection.list(string), List("foo", "bar", "baz"))
     test(collection.list(string.optional), List("foo".some, none, "baz".some))
 
+  test("record"):
+    test(field("foo", int) :* field("bar", string) :* field("baz", long), (42, "foobar", 0L))
+
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))
     test(bigDecimal, JBigDecimal.valueOf(Double.MaxValue))

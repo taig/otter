@@ -32,7 +32,9 @@ abstract class Record[+O, A] extends Codec[O, A]:
       self.decode(data).map(_.map(f))
     override def encodeObject(b: B): Option[Data.Object] = self.encodeObject(g(b))
 
-  final def zip[P, B](codec: Record[P, B]): Record[O & P, (A, B)] = new Record[O & P, (A, B)]:
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[O, B] = imap(evidence.from)(evidence.to)
+
+  final def product[P, B](codec: Record[P, B]): Record[O & P, (A, B)] = new Record[O & P, (A, B)]:
     override def fields: Chain[Field[?, ?]] = self.fields ++ codec.fields
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
@@ -44,6 +46,15 @@ abstract class Record[+O, A] extends Codec[O, A]:
       self.encodeObject(ab._1).getOrElse(Data.Object.Empty) ++
         codec.encodeObject(ab._2).getOrElse(Data.Object.Empty)
     ).some
+
+  final def zip[P, B](codec: Record[P, B])(using merge: Evidence.Merge[A, B]): Record[O & P, merge.Out] = 
+    product(codec).imap(merge.apply)(merge.unapply)
+
+  final def :*[P, B](field: Field[P, B])(using merge: Evidence.Merge[A, B]): Record[O & P, merge.Out] =
+    zip(field.toRecord)
+
+  final def *:[P, B](field: Field[P, B])(using merge: Evidence.Merge[B, A]): Record[P & O, merge.Out] =
+    field.toRecord.zip(this)
 
   final override def optional: Record[O, Option[A]] = new Record[O, Option[A]]:
     export self.{fields, metadata}
