@@ -54,13 +54,11 @@ object Codec:
   extension [O, A](self: Codec[O, A])
     def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
       self.toProduct :* codec
-
     def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
       self.toProduct :* codec
 
   extension [O, A](self: Codec[O, A])
     def :+[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
-
     def +:[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
 
   given [O]: Invariant[Codec[O, *]] with

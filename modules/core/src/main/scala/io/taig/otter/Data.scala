@@ -3,10 +3,9 @@ package io.taig.otter
 import cats.Eq
 import cats.data.Chain
 import cats.syntax.all.*
-import java.lang.Float as JFloat
-import java.lang.Double as JDouble
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.lang.Math.toIntExact
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
@@ -65,17 +64,61 @@ object Data:
   final case class Boolean(value: SBoolean) extends Data.Primitive
 
   final case class Number(value: Int | Long | Float | Double | JBigDecimal | JBigInteger) extends Data.Primitive:
-    def toBigDecimal: Option[JBigDecimal] = ???
+    def toBigDecimal: Option[JBigDecimal] = value match
+      case value: Int         => JBigDecimal.valueOf(value).some
+      case value: Long        => JBigDecimal.valueOf(value).some
+      case value: Float       => JBigDecimal.valueOf(value.toDouble).some
+      case value: Double      => JBigDecimal.valueOf(value).some
+      case value: JBigDecimal => value.some
+      case value: JBigInteger => new JBigDecimal(value).some
 
-    def toBigInteger: Option[JBigInteger] = ???
+    def toBigInteger: Option[JBigInteger] = value match
+      case value: Int         => JBigInteger.valueOf(value).some
+      case value: Long        => JBigInteger.valueOf(value).some
+      case value: Float       => attempt(JBigDecimal.valueOf(value).toBigIntegerExact())
+      case value: Double      => attempt(JBigDecimal.valueOf(value).toBigIntegerExact())
+      case value: JBigDecimal => attempt(value.toBigIntegerExact())
+      case value: JBigInteger => value.some
 
-    def toDouble: Option[Double] = ???
+    def toDouble: Option[Double] = value match
+      case value: Int         => value.toDouble.some
+      case value: Long        => value.toDouble.some
+      case value: Float       => value.toDouble.some
+      case value: Double      => value.some
+      case value: JBigDecimal => attempt(value, _.doubleValue())
+      case value: JBigInteger => attempt(value, _.doubleValue())
 
-    def toFloat: Option[Float] = ???
+    def toFloat: Option[Float] = value match
+      case value: Int         => value.toFloat.some
+      case value: Long        => value.toFloat.some
+      case value: Float       => value.some
+      case value: Double      => attempt(value, _.toFloat)
+      case value: JBigDecimal => attempt(value, _.floatValue())
+      case value: JBigInteger => attempt(value, _.floatValue())
 
-    def toInt: Option[Int] = ???
+    def toInt: Option[Int] = value match
+      case value: Int    => value.some
+      case value: Long   => attempt(toIntExact(value))
+      case value: Float  => Option.when(value >= Int.MinValue && value <= Int.MaxValue && value % 1 == 0)(value.toInt)
+      case value: Double => Option.when(value >= Int.MinValue && value <= Int.MaxValue && value % 1 == 0)(value.toInt)
+      case value: JBigDecimal => attempt(value.intValueExact())
+      case value: JBigInteger => attempt(value.intValueExact())
 
-    def toLong: Option[Long] = ???
+    def toLong: Option[Long] = value match
+      case value: Int   => value.toLong.some
+      case value: Long  => value.some
+      case value: Float => Option.when(value >= Long.MinValue && value <= Long.MaxValue && value % 1 == 0)(value.toLong)
+      case value: Double =>
+        Option.when(value >= Long.MinValue && value <= Long.MaxValue && value % 1 == 0)(value.toLong)
+      case value: JBigDecimal => attempt(value.longValueExact())
+      case value: JBigInteger => attempt(value.longValueExact())
+
+    private def attempt[A](f: => A): Option[A] = try f.some
+    catch { case _: ArithmeticException => none }
+
+    private def attempt[A, B](value: A, convert: A => B): Option[B] =
+      val target = convert(value)
+      Option.when(value == target)(target)
 
   case object Null extends Data
 
