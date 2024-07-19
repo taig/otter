@@ -10,6 +10,8 @@ import cats.Invariant
 abstract class Codec[+O, A]:
   self =>
 
+  type Format <: Data.Value
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
@@ -27,6 +29,8 @@ abstract class Codec[+O, A]:
   def decode(data: Data): Codec.Result[A]
 
   def encode(a: A): Data
+
+  def encodeExperiment(a: A): Option[Format] = ???
 
 object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]

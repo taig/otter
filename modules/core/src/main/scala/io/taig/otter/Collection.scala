@@ -6,12 +6,13 @@ import io.taig.otter.validation.Violations
 import cats.syntax.all.*
 import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Validation
-import io.taig.otter.Codec.Result
 
-sealed abstract class Collection[+O, A] extends Codec[O, A]:
+sealed abstract class Collection[+O <: Codec[?, ?], A] extends Codec[O, A]:
   self =>
 
-  def codec: Codec[?, ?]
+  val codec: O
+
+  final override type Format = codec.Format
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
     export self.{codec, decode, default, encode}
@@ -43,21 +44,21 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
 
 object Collection:
   def apply[A](of: Codec[?, A]): Collection[of.type, Vector[A]] = new Collection[of.type, Vector[A]]:
-    override def codec: Codec[?, ?] = of
-    override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Vector[A]] = None
-    override def decode(data: Data): Codec.Result[Vector[A]] = data.toArray
-      .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
-      .andThen(_.values.traverse(of.decode))
-    override def encode(a: Vector[A]): Data = Data.Array(a.map(of.encode))
+      override val codec: of.type = of
+      override def metadata: Metadata = Metadata.Empty
+      override def default: Option[Vector[A]] = None
+      override def decode(data: Data): Codec.Result[Vector[A]] = data.toArray
+        .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
+        .andThen(_.values.traverse(codec.decode))
+      override def encode(a: Vector[A]): Data = Data.Array(a.map(codec.encode))
 
   // Not sure why we need the explicit singleton addition, but otherwise type inference does not do what we expect :/
-  given invariantSingleton[O <: Singleton]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
+  given invariantSingleton[O <: Codec[?, ?] & Singleton]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
     extension [A](self: Collection[O, A])
       override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[O, B] =
         self.ivalidate(validation)(f)
 
-  given invariant[O]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
+  given invariant[O <: Codec[?, ?]]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
     extension [A](self: Collection[O, A])
       override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[O, B] =
         self.ivalidate(validation)(f)

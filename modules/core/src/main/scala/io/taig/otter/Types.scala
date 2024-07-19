@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  export Base.{CodecValidation, Constraint, Type, Metadata}
+  export Base.{CodecValidation, Constraint, Metadata, Type}
 
   final type Codec[A] = Base.Codec[?, A]
 
@@ -30,7 +30,7 @@ trait Types:
   final type Collection[A] = Base.Collection[?, A]
 
   object Collection:
-    type Of[O, A] = Base.Collection[O, A]
+    type Of[O <: Codec[?], A] = Base.Collection[O, A]
 
   final type Dictionary[A] = Base.Dictionary[?, A]
 

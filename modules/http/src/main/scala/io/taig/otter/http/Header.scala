@@ -26,17 +26,29 @@ sealed abstract class Header[A]:
   def encode(a: A): Http.Headers
 
 object Header:
-  def apply[A](name: CIString, codec: Value.Required[A]): Header[A] = 
+  def apply[A](name: CIString, codec: Value.Required[A]): Header[A] =
     val _name = name
     val _codec = codec
-    
+
     new Header[A]:
       override def name: CIString = _name
       override def codec: Value.Required[A] = _codec
-      override def metadata: Metadata = ???
+      override def metadata: Metadata = Metadata.Empty
       override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] =
         val (value, remainders) = headers.findWithRemainders { case (`_name`, value) => value }
         codec.parse(value).tupleLeft(remainders)
       override def encode(a: A): Http.Headers = Chain.one((name, codec.printValue(a)))
 
-  def apply[A](name: CIString, codec: Collection.Of[Value.Required[?], A]): Header[A] = ???
+  def apply[A](name: CIString, codec: Collection.Of[Value.Required[?], A]): Header[A] =
+    val _name = name
+    val _codec = codec
+
+    new Header[A]:
+
+      override def name: CIString = _name
+      override def codec: Collection.Of[Value.Required[?], A] = _codec
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] = ???
+      override def encode(a: A): Http.Headers =
+        val x: Option[Data.Primitive] = codec.encodeExperiment(a)
+        ???
