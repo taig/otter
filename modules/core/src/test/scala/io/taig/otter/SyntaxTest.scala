@@ -15,11 +15,10 @@ final class SyntaxTest extends FunSuite:
   test("union"):
     val _: Union[Either[String, Int]] = string :+ int
     val _: Union.Of[Primitive[?], Either[String, Int]] = string :+ int
-    // val _: Union[Either[String, Either[Int, Long]]] = string +: int +: long
-    // val _: Union.Of[Union.Any | Primitive.Any, Either[Either[String, Int], Long]] = string :+ int :+ long
-    // val _: Union[String | Int] = string.union | int
-    // val _: Union[Either[String, Int]] = string or int
-    // val _: Union[String | Int | Long] = string | int | long
+    val _: Union[Either[String, Either[Int, Long]]] = string +: int +: long
+    val _: Union.Of[Primitive[?], Either[Either[String, Int], Long]] = string :+ int :+ long
+    val _: Union[String | Int] = string | int
+    val _: Union[String | Int | Long] = string | int | long
 
   test("product"):
     val _: Product[(String, Int)] = string :* int

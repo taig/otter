@@ -58,8 +58,18 @@ object Codec:
       self.toProduct :* codec
 
   extension [O, A](self: Codec[O, A])
-    def :+[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
-    def +:[B](codec: Codec[?, B]): Union[self.type | codec.type, Either[A, B]] = self.toUnion :+ codec
+    def :+[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
+    def +:[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
+
+  extension [O, A <: Matchable](self: Codec[O, A])
+    inline def |[B <: Matchable](codec: Codec[?, B]): Union[self.type & codec.type, A | B] =
+      (self :+ codec).imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
 
   given [O]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)

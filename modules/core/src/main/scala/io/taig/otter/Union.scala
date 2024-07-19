@@ -28,7 +28,7 @@ abstract class Union[+O, A] extends Codec[O, A]:
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data = self.encode(g(b))
 
-  def orElse[P, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = new Union[O | P, Either[A, B]]:
+  infix def orElse[P, B](codec: Union[P, B]): Union[O & P, Either[A, B]] = new Union[O & P, Either[A, B]]:
     override def codecs: NonEmptyChain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Either[A, B]] = None
@@ -36,9 +36,9 @@ abstract class Union[+O, A] extends Codec[O, A]:
       self.decode(data).map(_.asLeft).findValid(codec.decode(data).map(_.asRight))
     override def encode(ab: Either[A, B]): Data = ab.fold(self.encode, codec.encode)
 
-  def :+[B](codec: Codec[?, B]): Union[O | codec.type, Either[A, B]] = orElse(codec.toUnion)
+  def :+[B](codec: Codec[?, B]): Union[O & codec.type, Either[A, B]] = orElse(codec.toUnion)
 
-  def +:[B](codec: Codec[?, B]): Union[codec.type | O, Either[B, A]] = codec.toUnion.orElse(self)
+  def +:[B](codec: Codec[?, B]): Union[codec.type & O, Either[B, A]] = codec.toUnion.orElse(self)
 
   override def optional: Union[O, Option[A]] = new Union[O, Option[A]]:
     export self.{codecs, metadata}
@@ -155,6 +155,27 @@ object Union:
     override def default: Option[A] = None
     override def decode(data: Data): Codec.Result[A] = of.decode(data)
     override def encode(a: A): Data = of.encode(a)
+
+  extension [O, A <: Matchable](self: Union[O, A])
+    inline def ||[P, B <: Matchable](codec: Union[P, B]): Union[O & P, A | B] =
+      self
+        .orElse(codec)
+        .imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }
+
+    inline def |[B <: Matchable](codec: Codec[?, B]): Union[O & codec.type, A | B] =
+      (self :+ codec).imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
 
   given [O]: Invariant[Union[O, *]] with
     override def imap[A, B](fa: Union[O, A])(f: A => B)(g: B => A): Union[O, B] = fa.imap(f)(g)

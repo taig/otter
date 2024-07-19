@@ -8,7 +8,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.Dsl.*
 
-final class SchemaTest[A] extends FunSuite:
+final class CodecTest[A] extends FunSuite:
   def test[B](codec: Codec[B], value: B)(using Location): Unit = assertEquals(
     obtained = codec.decode(codec.encode(value)).valueOr(violations => fail(violations.toString)),
     expected = value
@@ -19,13 +19,13 @@ final class SchemaTest[A] extends FunSuite:
     test(collection.vector(int), Vector(1, 2, 3))
     test(collection.vector(int.optional), Vector(1.some, none, 3.some))
 
-  // test("collection: optional"):
-  //   test(int.collection.optional, Vector(1, 2, 3).some)
-  //   test(int.collection.optional, none)
+  test("collection: optional"):
+    test(collection.vector(int).optional, Vector(1, 2, 3).some)
+    test(collection.vector(int).optional, none)
 
-  // test("collection: list"):
-  //   test(string.collection(list), List("foo", "bar", "baz"))
-  //   test(string.optional.collection(list), List("foo".some, none, "baz".some))
+  test("collection: list"):
+    test(collection.list(string), List("foo", "bar", "baz"))
+    test(collection.list(string.optional), List("foo".some, none, "baz".some))
 
   test("primitive: bigDecimal"):
     test(bigDecimal, JBigDecimal.valueOf(Double.MinValue))
