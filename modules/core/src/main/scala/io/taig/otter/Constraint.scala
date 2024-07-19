@@ -20,8 +20,8 @@ object Constraint:
     case UniqueItems
 
   enum Object:
-    case MaxProperties(reference: Int)
-    case MinProperties(reference: Int)
+    case MaxProperties(reference: Long)
+    case MinProperties(reference: Long)
 
   enum Primitive[+A]:
     case Matches(pattern: Pattern)

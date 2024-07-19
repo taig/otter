@@ -47,6 +47,7 @@ object Data:
     def one(key: JString, value: Data): Data.Object = Object(Chain.one((key, value)))
     def of(kv: (JString, Data)*): Data.Object = Object(Chain.fromSeq(kv))
     def fromOption(kv: Option[(JString, Data)]): Data.Object = Object(Chain.fromOption(kv))
+    def fromSeq(kvs: Seq[(JString, Data)]): Data.Object = Object(Chain.fromSeq(kvs))
 
   final case class Array(values: Vector[Data]) extends Data.Value:
     def length: Long = values.length

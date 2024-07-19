@@ -15,6 +15,11 @@ trait Types:
   object Value:
     type Of[O, A] = Base.Value[O, A]
 
+    type Required[A] = Base.Value.Required[?, A]
+
+    object Required:
+      type Of[O, A] = Base.Value.Required[O, A]
+
   final type Collection[A] = Base.Collection[?, A]
 
   object Collection:
