@@ -4,6 +4,8 @@ import io.taig.otter.Dsl.*
 import munit.FunSuite
 
 final class SyntaxTest extends FunSuite:
+  final case class Person(name: String, age: Int)
+
   test("collection"):
     val _: Collection.Of[Primitive.Required[String], Vector[String]] = string.toCollection
     val _: Collection.Of[Primitive.Required[?], Vector[String]] = string.toCollection
@@ -30,3 +32,6 @@ final class SyntaxTest extends FunSuite:
     val _: Product.Of[Primitive.Required[?], (Int, String, Long)] = int *: string *: long
     val _: Product.Of[Primitive[?], (Int, String, Long)] = int *: string *: long
     val _: Product.Of[Codec[?], (Int, String, Long)] = int *: string *: long
+
+  test("record"):
+    val _: Record[Person] = (field("name", string) :* field("age", int)).to
