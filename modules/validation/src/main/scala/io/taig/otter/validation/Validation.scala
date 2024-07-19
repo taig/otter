@@ -21,6 +21,8 @@ sealed abstract class Validation[-In, +A, +B, +Out]:
   final def first[C]: Validation[(In, C), A, B, (Out, C)] =
     Validation(constraints)(apply(_).tupleRight(_))
 
+  final def tap[In1 <: In]: Validation[In1, A, B, In1] = Validation(constraints)(a => apply(a).as(a))
+
 object Validation:
   def apply[In, A, B, Out](constraints: Chain[A])(
       f: In => ValidatedNec[Violation[A, B], Out]
@@ -43,9 +45,6 @@ object Validation:
   def lift[A, B](f: A => B): Validation[A, Nothing, Nothing, B] = Validation(Chain.empty)(f(_).valid)
   def valid[A](a: A): Validation[Any, Nothing, Nothing, A] = lift(_ => a)
   def ask[A]: Validation[A, Nothing, Nothing, A] = lift(identity)
-
-  extension [In, A, B, Out](self: Validation[In, A, B, Out])
-    def tap: Validation[In, A, B, In] = Validation(self.constraints)(a => self(a).as(a))
 
   given [In, A, B]: Applicative[Validation[In, A, B, *]] with
     override def pure[C](c: C): Validation[In, A, B, C] = valid(c)
