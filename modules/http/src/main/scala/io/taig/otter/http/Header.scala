@@ -1,21 +1,42 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.*
+import io.taig.otter.Types.*
+import io.taig.otter.findWithRemainders
 import org.typelevel.ci.CIString
-import scala.Product as SProduct
+import cats.data.Chain
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.History
+import io.taig.otter.validation.Violation
+import io.taig.otter.Data
 
-sealed trait Header[A] extends SProduct, Serializable:
-  final def imap[B](f: A => B)(g: B => A): Header[B] = Header.Transform(this, f, g)
-  def metadata: Metadata
+sealed abstract class Header[A]:
   def name: CIString
-  def schema: Value[?, ?]
-  def update(f: Metadata => Metadata): Header[A]
+
+  def codec: Value.Required[?] | Collection.Of[Value.Required[?], ?]
+
+  def metadata: Metadata
+
+  def modifyMetadata(f: Metadata => Metadata): Header[A] = ???
+
+  final def imap[B](f: A => B)(g: B => A): Header[B] = ???
+
+  def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)]
+
+  def encode(a: A): Http.Headers
 
 object Header:
-  final case class Root[A](metadata: Metadata, name: CIString, schema: Value[?, A]) extends Header[A]:
-    override def update(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+  def apply[A](name: CIString, codec: Value.Required[A]): Header[A] = 
+    val _name = name
+    val _codec = codec
+    
+    new Header[A]:
+      override def name: CIString = _name
+      override def codec: Value.Required[A] = _codec
+      override def metadata: Metadata = ???
+      override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] =
+        val (value, remainders) = headers.findWithRemainders { case (`_name`, value) => value }
+        codec.parse(value).tupleLeft(remainders)
+      override def encode(a: A): Http.Headers = Chain.one((name, codec.printValue(a)))
 
-  final case class Transform[A, B](self: Header[A], f: A => B, g: B => A) extends Header[B]:
-    export self.{metadata, name, schema}
-    override def update(f: Metadata => Metadata): Header[B] = copy(self = self.update(f))
+  def apply[A](name: CIString, codec: Collection.Of[Value.Required[?], A]): Header[A] = ???

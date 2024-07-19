@@ -3,12 +3,19 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  export Base.{CodecValidation, Constraint, Type}
+  export Base.{CodecValidation, Constraint, Type, Metadata}
 
   final type Codec[A] = Base.Codec[?, A]
 
   object Codec:
     type Of[O, A] = Base.Codec[O, A]
+
+    type Required[A] = Base.Codec.Required[?, A]
+
+    object Required:
+      type Of[O, A] = Base.Codec.Required[O, A]
+
+    export Base.Codec.Result
 
   final type Value[A] = Base.Value[?, A]
 
