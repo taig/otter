@@ -47,7 +47,7 @@ abstract class Record[+O, A] extends Codec[O, A]:
         codec.encodeObject(ab._2).getOrElse(Data.Object.Empty)
     ).some
 
-  final def zip[P, B](codec: Record[P, B])(using merge: Evidence.Merge[A, B]): Record[O & P, merge.Out] = 
+  final def zip[P, B](codec: Record[P, B])(using merge: Evidence.Merge[A, B]): Record[O & P, merge.Out] =
     product(codec).imap(merge.apply)(merge.unapply)
 
   final def :*[P, B](field: Field[P, B])(using merge: Evidence.Merge[A, B]): Record[O & P, merge.Out] =
