@@ -10,12 +10,14 @@ import cats.Invariant
 abstract class Enumeration[+O, A] extends Value[O, A]:
   self =>
 
+  def codec: Value[?, ?]
+
   override def modifyMetadata(f: Metadata => Metadata): Enumeration[O, A] = new Enumeration[O, A]:
-    export self.{decode, default, encode, parse, print}
+    export self.{codec, decode, default, encode, parse, print}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Enumeration[O, A] = new Enumeration[O, A]:
-    export self.{encode, metadata, print}
+    export self.{codec, encode, metadata, print}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
@@ -25,7 +27,7 @@ abstract class Enumeration[+O, A] extends Value[O, A]:
       case _                     => self.parse(value)
 
   override def imap[B](f: A => B)(g: B => A): Enumeration[O, B] = new Enumeration[O, B]:
-    export self.metadata
+    export self.{codec, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data = self.encode(g(b))
@@ -33,7 +35,7 @@ abstract class Enumeration[+O, A] extends Value[O, A]:
     override def print(b: B): Option[String] = self.print(g(b))
 
   final override def optional: Enumeration[O, Option[A]] = new Enumeration[O, Option[A]]:
-    export self.metadata
+    export self.{codec, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
       data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
@@ -46,12 +48,14 @@ object Enumeration:
   abstract class Required[+O, A] extends Enumeration[O, A], Value.Required[O, A]:
     self =>
 
+    override def codec: Value.Required[?, ?]
+
     final override def modifyMetadata(f: Metadata => Metadata): Enumeration.Required[O, A] = new Required[O, A]:
-      export self.{decodeValue, default, encodeValue, parseValue, printValue}
+      export self.{codec, decodeValue, default, encodeValue, parseValue, printValue}
       override def metadata: Metadata = f(self.metadata)
 
     final override def imap[B](f: A => B)(g: B => A): Enumeration.Required[O, B] = new Required[O, B]:
-      export self.metadata
+      export self.{codec, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decodeValue(data: Data.Value): Codec.Result[B] = self.decodeValue(data).map(f)
       override def encodeValue(b: B): Data.Value = self.encodeValue(g(b))
@@ -63,18 +67,21 @@ object Enumeration:
       override def imap[A, B](fa: Enumeration.Required[O, A])(f: A => B)(g: B => A): Enumeration.Required[O, B] =
         fa.imap(f)(g)
 
-  def apply[A, B](of: Value.Required[?, A], mapping: Mapping[B, A]): Enumeration.Required[of.type, B] =
-    new Enumeration.Required[of.type, B]:
+  def apply[A, B](codec: Value.Required[?, A], mapping: Mapping[B, A]): Enumeration.Required[codec.type, B] =
+    val _codec = codec
+
+    new Enumeration.Required[codec.type, B]:
+      override def codec: Value.Required[?, A] = _codec
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[B] = None
-      override def decodeValue(data: Data.Value): Codec.Result[B] = of
+      override def decodeValue(data: Data.Value): Codec.Result[B] = _codec
         .decodeValue(data)
         .andThen: a =>
           mapping
             .unapply(a)
             .toValid(Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = data)))
-      override def encodeValue(b: B): Data.Value = of.encodeValue(mapping(b))
-      override def parseValue(value: String): Codec.Result[B] = of
+      override def encodeValue(b: B): Data.Value = codec.encodeValue(mapping(b))
+      override def parseValue(value: String): Codec.Result[B] = codec
         .parseValue(value)
         .andThen: a =>
           mapping
@@ -82,7 +89,7 @@ object Enumeration:
             .toValid(
               Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = Data.String(value)))
             )
-      override def printValue(b: B): String = of.printValue(mapping(b))
+      override def printValue(b: B): String = codec.printValue(mapping(b))
 
   given [O]: Invariant[Enumeration[O, *]] with
     override def imap[A, B](fa: Enumeration[O, A])(f: A => B)(g: B => A): Enumeration[O, B] = fa.imap(f)(g)

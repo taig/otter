@@ -13,6 +13,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import cats.data.NonEmptyMap
 import scala.collection.immutable.SortedMap
+import io.taig.enumeration.ext.Mapping
+import io.taig.enumeration.ext.EnumerationValues
 
 trait Codecs extends Validations:
   self =>
@@ -82,5 +84,12 @@ trait Codecs extends Validations:
     ): Dictionary.Of[value.type, NonEmptyMap[A, B]] = sortedMap(key, value)
       .ivalidate(nonEmpty.obj.map) { case (head, tail) => SortedMap.from(tail) + head }
       .imap(NonEmptyMap.apply)(fa => (fa.head, fa.tail))
+
+  def enumeration[A, B](codec: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
+    Base.Enumeration(codec, mapping)
+
+  def enumeration[A: Order, B](codec: Value.Required[A])(f: B => A)(using
+      EnumerationValues.Aux[B, B]
+  ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
 
 object Codecs extends Codecs
