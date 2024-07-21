@@ -10,8 +10,6 @@ import cats.Invariant
 abstract class Codec[+O, A]:
   self =>
 
-  type Format <: Data.Value
-
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
@@ -22,15 +20,13 @@ abstract class Codec[+O, A]:
 
   def optional: Codec[O, Option[A]]
 
-  final def toCollection: Collection[this.type, Vector[A]] = Collection(this)
+  final def toCollection: Collection[this.type, Vector[A]] = ??? // Collection(this)
   final def toProduct: Product[this.type, A] = Product(this)
   def toUnion: Union[this.type, A] = Union(this)
 
   def decode(data: Data): Codec.Result[A]
 
   def encode(a: A): Data
-
-  def encodeExperiment(a: A): Option[Format] = ???
 
 object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]

@@ -7,8 +7,6 @@ import io.taig.otter.Codec.Result
 import cats.Invariant
 
 trait Value[+O, A] extends Codec[O, A]:
-  override final type Format = Data.Primitive
-  
   override def modifyMetadata(f: Metadata => Metadata): Value[O, A]
 
   override def modifyDefault(f: Option[A] => Option[A]): Value[O, A]
