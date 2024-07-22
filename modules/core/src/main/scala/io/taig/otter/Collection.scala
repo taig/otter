@@ -14,18 +14,15 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
 
   def codec: Codec[?, ?]
 
-  def parse(values: Vector[Option[String]])(using ev: O <:< Value[?, ?]): Codec.Result[A]
-  def parseValue(values: Vector[String])(using ev: O <:< Value.Required[?, ?]): Codec.Result[A]
-
-  // def print(a: A)(using ev: O <:< Value[?, ?]): Any
-  // def printValue(a: A)(using ev: O <:< Value.Required[?, ?]): Any
+  // def parse(values: Vector[Option[String]])(using ev: O <:< Value[?, ?]): Codec.Result[A]
+  // def parseValue(values: Vector[String])(using ev: O <:< Value.Required[?, ?]): Codec.Result[A]
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
-    export self.{codec, decode, default, encode, parse, parseValue}
+    export self.{codec, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
-    export self.{codec, encode, metadata, parse, parseValue}
+    export self.{codec, encode, metadata}
     override def default: Option[A] = f(self.default)
     override def decode(data: Data): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
@@ -40,8 +37,6 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
       override def decode(data: Data): Codec.Result[B] =
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
       override def encode(b: B): Data = self.encode(f(b))
-      override def parse(values: Vector[Option[String]])(using ev: O <:< Value[?, ?]): Codec.Result[B] = ???
-      override def parseValue(values: Vector[String])(using ev: O <:< Value.Required[?, ?]): Codec.Result[B] = ???
 
   final override def optional: Collection[O, Option[A]] = new Collection[O, Option[A]]:
     export self.{codec, metadata}
@@ -49,8 +44,6 @@ sealed abstract class Collection[+O, A] extends Codec[O, A]:
     override def decode(data: Data): Codec.Result[Option[A]] =
       data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
-    override def parse(values: Vector[Option[String]])(using ev: O <:< Value[?, ?]): Codec.Result[Option[A]] = ???
-    override def parseValue(values: Vector[String])(using ev: O <:< Value.Required[?, ?]): Codec.Result[Option[A]] = ???
 
 object Collection:
   def apply[A](of: Codec[?, A]): Collection[of.type, Vector[A]] = new Collection[of.type, Vector[A]]:
@@ -61,15 +54,11 @@ object Collection:
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
       .andThen(_.values.traverse(codec.decode))
     override def encode(a: Vector[A]): Data = Data.Array(a.map(codec.encode))
-    override def parse(values: Vector[Option[String]])(using ev: of.type <:< Value[?, ?]): Codec.Result[Vector[B]] =
-      ???
-    override def parseValue(values: Vector[String])(using ev: of.type <:< Value.Required[?, ?]): Codec.Result[Vector[B]] = ???
     // override def print(a: A)(using ev: of.type <:< Value[?, ?]): Any = ???
     // override def printValue(a: A)(using ev: of.type <:< Value.Required[?, ?]): Any = ???
 
   // Not sure why we need the explicit singleton addition, but otherwise type inference does not do what we expect :/
-  given invariantSingleton[O <: Singleton]
-      : ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
+  given invariantSingleton[O <: Singleton]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
     extension [A](self: Collection[O, A])
       override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[O, B] =
         self.ivalidate(validation)(f)
