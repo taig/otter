@@ -19,21 +19,21 @@ sealed abstract class Data extends SProduct with Serializable:
     case data: Data.Object => Some(data)
     case _                 => None
 
-  final def toArray: Option[Data.Array] = this match
-    case data: Data.Array => Some(data)
-    case _                => None
+  final def toArray: Option[Data.Array[?]] = this match
+    case data: Data.Array[?] => Some(data)
+    case _                   => None
 
   final def toPrimitive: Option[Data.Primitive] = this match
     case data: Data.Primitive => Some(data)
     case _                    => None
 
   final def name: String = this match
-    case _: Data.Array   => "array"
-    case _: Data.Boolean => "boolean"
-    case _: Data.Number  => "number"
-    case _: Data.Object  => "object"
-    case _: Data.String  => "string"
-    case Data.Null       => "null"
+    case _: Data.Array[?] => "array"
+    case _: Data.Boolean  => "boolean"
+    case _: Data.Number   => "number"
+    case _: Data.Object   => "object"
+    case _: Data.String   => "string"
+    case Data.Null        => "null"
 
 object Data:
   sealed abstract class Value extends Data
@@ -48,14 +48,14 @@ object Data:
     def fromOption(kv: Option[(JString, Data)]): Data.Object = Object(Chain.fromOption(kv))
     def fromSeq(kvs: Seq[(JString, Data)]): Data.Object = Object(Chain.fromSeq(kvs))
 
-  final case class Array(values: Vector[Data]) extends Data.Value:
+  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length
-    def ++(data: Data.Array): Data.Array = Array(values ++ data.values)
+    def ++[A1 >: A <: Data](data: Data.Array[A1]): Data.Array[A1] = Array(values ++ data.values)
 
   object Array:
-    val Empty: Data.Array = Array(Vector.empty)
-    def one(data: Data): Data.Array = Data.Array(Vector(data))
-    def fill(n: Long)(value: => Data): Data.Array = Array(Vector.fill(n.toInt)(value))
+    val Empty: Data.Array[Nothing] = Array(Vector.empty)
+    def one[A <: Data](data: A): Data.Array[A] = Data.Array(Vector(data))
+    def fill[A <: Data](n: Long)(value: => A): Data.Array[A] = Array(Vector.fill(n.toInt)(value))
 
   sealed abstract class Primitive extends Value
 

@@ -28,7 +28,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
   final override def imap[B](f: A => B)(g: B => A): Product[O, B] = new Product[O, B]:
     export self.{codecs, metadata}
     override def default: Option[B] = self.default.map(f)
-    override def encodeArray(b: B): Option[Data.Array] = self.encodeArray(g(b))
+    override def encodeArray(b: B): Option[Data.Array[?]] = self.encodeArray(g(b))
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], B)] =
       self.decode(values).map(_.map(f))
 
@@ -36,7 +36,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
     override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
-    override def encodeArray(ab: (A, B)): Option[Data.Array] =
+    override def encodeArray(ab: (A, B)): Option[Data.Array[?]] =
       (self.encodeArray(ab._1), codec.encodeArray(ab._2)) match
         case (Some(left), Some(right)) => Some(left ++ right)
         case (Some(left), None)        => Some(left ++ Data.Array.fill(toProduct.codecs.length)(Data.Null))
@@ -62,7 +62,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
   final override def optional: Product[O, Option[A]] = new Product[O, Option[A]]:
     export self.{codecs, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
-    override def encodeArray(a: Option[A]): Option[Data.Array] = a.flatMap(self.encodeArray)
+    override def encodeArray(a: Option[A]): Option[Data.Array[?]] = a.flatMap(self.encodeArray)
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Option[A])] =
       values.fold((values, default.flatten).valid)(_ => self.decode(values).map(_.map(_.some)))
 
@@ -87,7 +87,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
 
   final override def encode(a: A): Data = encodeArray(a).getOrElse(Data.Null)
 
-  def encodeArray(a: A): Option[Data.Array]
+  def encodeArray(a: A): Option[Data.Array[?]]
 
 object Product:
   val Empty: Product[Nothing, Unit] = new Product[Nothing, Unit]:
@@ -96,7 +96,7 @@ object Product:
     override def default: Option[Unit] = None
     override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Unit)] =
       (values, ()).valid
-    override def encodeArray(a: Unit): Option[Data.Array] = Data.Array.Empty.some
+    override def encodeArray(a: Unit): Option[Data.Array[?]] = Data.Array.Empty.some
 
   def apply[A](codec: Codec[?, A]): Product[codec.type, A] =
     val _codec = codec
@@ -114,7 +114,7 @@ object Product:
             )
           )
           .andThen { case (head, tail) => _codec.decode(head).tupleLeft(tail.some) }
-      override def encodeArray(a: A): Option[Data.Array] = Data.Array.one(_codec.encode(a)).some
+      override def encodeArray(a: A): Option[Data.Array[?]] = Data.Array.one(_codec.encode(a)).some
 
   given [O]: Invariant[Product[O, *]] with
     override def imap[A, B](fa: Product[O, A])(f: A => B)(g: B => A): Product[O, B] = fa.imap(f)(g)

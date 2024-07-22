@@ -10,6 +10,8 @@ import cats.Invariant
 abstract class Codec[+O, A]:
   self =>
 
+  type Format <: Data.Value
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 

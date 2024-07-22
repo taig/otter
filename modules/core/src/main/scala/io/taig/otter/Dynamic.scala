@@ -54,12 +54,12 @@ object Dynamic:
       data.toObject.toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
     override def encode(a: Data.Object): Data = a
 
-  val Array: Dynamic[Data.Array] = new Dynamic[Data.Array]:
+  val Array: Dynamic[Data.Array[?]] = new Dynamic[Data.Array[?]]:
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Data.Array] = None
-    override def decode(data: Data): Result[Data.Array] =
+    override def default: Option[Data.Array[?]] = None
+    override def decode(data: Data): Result[Data.Array[?]] =
       data.toArray.toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
-    override def encode(a: Data.Array): Data = a
+    override def encode(a: Data.Array[?]): Data = a
 
   val Primitive: Dynamic[Data.Primitive] = new Dynamic[Data.Primitive]:
     override def metadata: Metadata = Metadata.Empty

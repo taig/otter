@@ -6,16 +6,12 @@ import io.taig.otter.validation.Violations
 import cats.syntax.all.*
 import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Validation
-import io.taig.otter.Codec.Result
-import io.taig.otter.Value.Required
+import cats.data.Chain
 
 sealed abstract class Collection[+O, A] extends Codec[O, A]:
   self =>
 
-  def codec: Codec[?, ?]
-
-  // def parse(values: Vector[Option[String]])(using ev: O <:< Value[?, ?]): Codec.Result[A]
-  // def parseValue(values: Vector[String])(using ev: O <:< Value.Required[?, ?]): Codec.Result[A]
+  def codec: O
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
     export self.{codec, decode, default, encode}
@@ -56,6 +52,11 @@ object Collection:
     override def encode(a: Vector[A]): Data = Data.Array(a.map(codec.encode))
     // override def print(a: A)(using ev: of.type <:< Value[?, ?]): Any = ???
     // override def printValue(a: A)(using ev: of.type <:< Value.Required[?, ?]): Any = ???
+
+  extension [O <: Value[?, ?], A](self: Collection[O, A])
+    def print(a: A): Option[Chain[Option[String]]] =
+      self.codec.print(???)
+      ???
 
   // Not sure why we need the explicit singleton addition, but otherwise type inference does not do what we expect :/
   given invariantSingleton[O <: Singleton]: ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
