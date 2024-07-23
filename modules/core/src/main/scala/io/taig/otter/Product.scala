@@ -8,10 +8,14 @@ import io.taig.otter.validation.Violation
 import cats.data.Validated
 import cats.Invariant
 
-abstract class Product[+O, A] extends Codec[O, A]:
+abstract class Product[+O, A](using Format[O]) extends Codec[O, A]:
   self =>
 
   def codecs: Chain[Codec[?, ?]]
+
+  def encode2[O1 >: O](a: A)(using format: Format[O1]): format.Out = ???
+  
+  def encode3[O1 >: O](a: A): Data.Array[Format2[O1]] = ???
 
   final override def modifyMetadata(f: Metadata => Metadata): Product[O, A] = new Product[O, A]:
     export self.{codecs, decode, default, encodeArray}
@@ -90,7 +94,7 @@ abstract class Product[+O, A] extends Codec[O, A]:
   def encodeArray(a: A): Option[Data.Array[?]]
 
 object Product:
-  val Empty: Product[Nothing, Unit] = new Product[Nothing, Unit]:
+  val Empty: Product[Nothing, Unit] = new Product[Nothing, Unit](using ???):
     override def codecs: Chain[Codec[?, ?]] = Chain.empty
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Unit] = None
@@ -101,7 +105,7 @@ object Product:
   def apply[A](codec: Codec[?, A]): Product[codec.type, A] =
     val _codec = codec
 
-    new Product[codec.type, A]:
+    new Product[codec.type, A](using ???):
       override def codecs: Chain[Codec[?, ?]] = Chain.one(_codec)
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[A] = None
