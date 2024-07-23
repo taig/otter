@@ -19,80 +19,80 @@ import io.taig.enumeration.ext.EnumerationValues
 trait Codecs extends Validations:
   self =>
 
-  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
+  // final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
 
-  val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
-  val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
-  val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
-  val double: Primitive.Required[Double] = primitive(Type.Double)
-  val float: Primitive.Required[Float] = primitive(Type.Float)
-  val int: Primitive.Required[Int] = primitive(Type.Int)
-  val long: Primitive.Required[Long] = primitive(Type.Long)
-  val string: Primitive.Required[String] = primitive(Type.String)
+  // val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
+  // val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
+  // val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
+  // val double: Primitive.Required[Double] = primitive(Type.Double)
+  // val float: Primitive.Required[Float] = primitive(Type.Float)
+  // val int: Primitive.Required[Int] = primitive(Type.Int)
+  // val long: Primitive.Required[Long] = primitive(Type.Long)
+  // val string: Primitive.Required[String] = primitive(Type.String)
 
-  def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.type, A] = Base.Branch(name, codec)
-  def field[A](name: String, codec: Codec[A]): Field.Of[codec.type, A] = Base.Field(name, codec)
+  // def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.type, A] = Base.Branch(name, codec)
+  // def field[A](name: String, codec: Codec[A]): Field.Of[codec.type, A] = Base.Field(name, codec)
 
-  object collection:
-    def vector[A](codec: Codec[A]): Collection.Of[codec.type, Vector[A]] = codec.toCollection
+  // object collection:
+  //   def vector[A](codec: Codec[A]): Collection.Of[codec.type, Vector[A]] = codec.toCollection
 
-    def seq[A](codec: Codec[A]): Collection.Of[codec.type, Seq[A]] = vector(codec).imap(identity)(_.toVector)
+  //   def seq[A](codec: Codec[A]): Collection.Of[codec.type, Seq[A]] = vector(codec).imap(identity)(_.toVector)
 
-    def nonEmptySeq[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptySeq[A]] =
-      seq(codec).ivalidate(nonEmpty.collection.iterable)(_ +: _).imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail))
+  //   def nonEmptySeq[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptySeq[A]] =
+  //     seq(codec).ivalidate(nonEmpty.collection.iterable)(_ +: _).imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail))
 
-    def list[A](codec: Codec[A]): Collection.Of[codec.type, List[A]] = vector(codec).imap(_.toList)(_.toVector)
+  //   def list[A](codec: Codec[A]): Collection.Of[codec.type, List[A]] = vector(codec).imap(_.toList)(_.toVector)
 
-    def nonEmptyList[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptyList[A]] =
-      list(codec).ivalidate(nonEmpty.collection.iterable)(_ :: _).imap(NonEmptyList.apply)(fa => (fa.head, fa.tail))
+  //   def nonEmptyList[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptyList[A]] =
+  //     list(codec).ivalidate(nonEmpty.collection.iterable)(_ :: _).imap(NonEmptyList.apply)(fa => (fa.head, fa.tail))
 
-    def chain[A](codec: Codec[A]): Collection.Of[codec.type, Chain[A]] = vector(codec).imap(Chain.fromSeq)(_.toVector)
+  //   def chain[A](codec: Codec[A]): Collection.Of[codec.type, Chain[A]] = vector(codec).imap(Chain.fromSeq)(_.toVector)
 
-    def nonEmptyChain[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptyChain[A]] =
-      chain(codec).ivalidate(nonEmpty.collection.chain)(_.toChain)
+  //   def nonEmptyChain[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptyChain[A]] =
+  //     chain(codec).ivalidate(nonEmpty.collection.chain)(_.toChain)
 
-    def set[A: Order](codec: Codec[A]): Collection.Of[codec.type, Set[A]] =
-      vector(codec).ivalidate_(uniqueItems(codec)).imap(_.toSet)(_.toVector)
+  //   def set[A: Order](codec: Codec[A]): Collection.Of[codec.type, Set[A]] =
+  //     vector(codec).ivalidate_(uniqueItems(codec)).imap(_.toSet)(_.toVector)
 
-    def sortedSet[A: Order](codec: Codec[A]): Collection.Of[codec.type, SortedSet[A]] =
-      vector(codec).ivalidate_(uniqueItems(codec)).imap(SortedSet.from)(_.toVector)
+  //   def sortedSet[A: Order](codec: Codec[A]): Collection.Of[codec.type, SortedSet[A]] =
+  //     vector(codec).ivalidate_(uniqueItems(codec)).imap(SortedSet.from)(_.toVector)
 
-    def nonEmptySet[A: Order](codec: Codec[A]): Collection.Of[codec.type, NonEmptySet[A]] =
-      sortedSet(codec)
-        .ivalidate(nonEmpty.collection.iterable) { case (a, as) => as + a }
-        .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))
+  //   def nonEmptySet[A: Order](codec: Codec[A]): Collection.Of[codec.type, NonEmptySet[A]] =
+  //     sortedSet(codec)
+  //       .ivalidate(nonEmpty.collection.iterable) { case (a, as) => as + a }
+  //       .imap(NonEmptySet.apply)(fa => (fa.head, fa.tail))
 
-  object dictionary:
-    def list[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, List[(A, B)]] =
-      Base.Dictionary(key, value)
+  // object dictionary:
+  //   def list[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, List[(A, B)]] =
+  //     Base.Dictionary(key, value)
 
-    def vector[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Vector[(A, B)]] =
-      list(key, value).imap(_.toVector)(_.toList)
+  //   def vector[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Vector[(A, B)]] =
+  //     list(key, value).imap(_.toVector)(_.toList)
 
-    def seq[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Seq[(A, B)]] =
-      list(key, value).imap(identity)(_.toList)
+  //   def seq[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Seq[(A, B)]] =
+  //     list(key, value).imap(identity)(_.toList)
 
-    def chain[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Chain[(A, B)]] =
-      list(key, value).imap(Chain.fromSeq)(_.toList)
+  //   def chain[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Chain[(A, B)]] =
+  //     list(key, value).imap(Chain.fromSeq)(_.toList)
 
-    def map[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Map[A, B]] =
-      list(key, value).imap(Map.from)(_.toList)
+  //   def map[A, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, Map[A, B]] =
+  //     list(key, value).imap(Map.from)(_.toList)
 
-    def sortedMap[A: Order, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, SortedMap[A, B]] =
-      list(key, value).imap(SortedMap.from)(_.toList)
+  //   def sortedMap[A: Order, B](key: Value.Required[A], value: Codec[B]): Dictionary.Of[value.type, SortedMap[A, B]] =
+  //     list(key, value).imap(SortedMap.from)(_.toList)
 
-    def nonEmptyMap[A: Order, B](
-        key: Value.Required[A],
-        value: Codec[B]
-    ): Dictionary.Of[value.type, NonEmptyMap[A, B]] = sortedMap(key, value)
-      .ivalidate(nonEmpty.obj.map) { case (head, tail) => SortedMap.from(tail) + head }
-      .imap(NonEmptyMap.apply)(fa => (fa.head, fa.tail))
+  //   def nonEmptyMap[A: Order, B](
+  //       key: Value.Required[A],
+  //       value: Codec[B]
+  //   ): Dictionary.Of[value.type, NonEmptyMap[A, B]] = sortedMap(key, value)
+  //     .ivalidate(nonEmpty.obj.map) { case (head, tail) => SortedMap.from(tail) + head }
+  //     .imap(NonEmptyMap.apply)(fa => (fa.head, fa.tail))
 
-  def enumeration[A, B](codec: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
-    Base.Enumeration(codec, mapping)
+  // def enumeration[A, B](codec: Value.Required[A])(using mapping: Mapping[B, A]): Enumeration.Required[B] =
+  //   Base.Enumeration(codec, mapping)
 
-  def enumeration[A: Order, B](codec: Value.Required[A])(f: B => A)(using
-      EnumerationValues.Aux[B, B]
-  ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
+  // def enumeration[A: Order, B](codec: Value.Required[A])(f: B => A)(using
+  //     EnumerationValues.Aux[B, B]
+  // ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
 
 object Codecs extends Codecs

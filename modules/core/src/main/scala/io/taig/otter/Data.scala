@@ -15,9 +15,9 @@ sealed abstract class Data extends SProduct with Serializable:
     case data: Data.Value => Some(data)
     case Data.Null        => None
 
-  final def toObject: Option[Data.Object] = this match
-    case data: Data.Object => Some(data)
-    case _                 => None
+  final def toObject: Option[Data.Object[?]] = this match
+    case data: Data.Object[?] => Some(data)
+    case _                    => None
 
   final def toArray: Option[Data.Array[?]] = this match
     case data: Data.Array[?] => Some(data)
@@ -28,25 +28,25 @@ sealed abstract class Data extends SProduct with Serializable:
     case _                    => None
 
   final def name: String = this match
-    case _: Data.Array[?] => "array"
-    case _: Data.Boolean  => "boolean"
-    case _: Data.Number   => "number"
-    case _: Data.Object   => "object"
-    case _: Data.String   => "string"
-    case Data.Null        => "null"
+    case _: Data.Array[?]  => "array"
+    case _: Data.Boolean   => "boolean"
+    case _: Data.Number    => "number"
+    case _: Data.Object[?] => "object"
+    case _: Data.String    => "string"
+    case Data.Null         => "null"
 
 object Data:
   sealed abstract class Value extends Data
 
-  final case class Object(values: Chain[(JString, Data)]) extends Data.Value:
-    def ++(obj: Data.Object): Data.Object = Object(values ++ obj.values)
+  final case class Object[+A <: Data](values: Chain[(JString, A)]) extends Data.Value:
+    def ++[A1 >: A <: Data](obj: Data.Object[A1]): Data.Object[A1] = Object(values ++ obj.values)
 
   object Object:
-    val Empty: Data.Object = Object(Chain.empty)
-    def one(key: JString, value: Data): Data.Object = Object(Chain.one((key, value)))
-    def of(kv: (JString, Data)*): Data.Object = Object(Chain.fromSeq(kv))
-    def fromOption(kv: Option[(JString, Data)]): Data.Object = Object(Chain.fromOption(kv))
-    def fromSeq(kvs: Seq[(JString, Data)]): Data.Object = Object(Chain.fromSeq(kvs))
+    val Empty: Data.Object[Nothing] = Object(Chain.empty)
+    def one[A <: Data](key: JString, value: A): Data.Object[A] = Object(Chain.one((key, value)))
+    def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(Chain.fromSeq(kv))
+    def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(Chain.fromOption(kv))
+    def fromSeq[A <: Data](kvs: Seq[(JString, A)]): Data.Object[A] = Object(Chain.fromSeq(kvs))
 
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length

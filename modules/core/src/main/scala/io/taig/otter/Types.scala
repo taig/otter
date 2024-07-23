@@ -5,93 +5,93 @@ import io.taig.otter as Base
 trait Types:
   export Base.{CodecValidation, Constraint, Metadata, Type}
 
-  final type Codec[A] = Base.Codec[?, A]
+  // final type Codec[A] = Base.Codec[?, A]
 
-  object Codec:
-    type Of[O, A] = Base.Codec[O, A]
+  // object Codec:
+  //   type Of[O, A] = Base.Codec[O, A]
 
-    type Required[A] = Base.Codec.Required[?, A]
+  //   type Required[A] = Base.Codec.Required[?, A]
 
-    object Required:
-      type Of[O, A] = Base.Codec.Required[O, A]
+  //   object Required:
+  //     type Of[O, A] = Base.Codec.Required[O, A]
 
-    export Base.Codec.Result
+  //   export Base.Codec.Result
 
-  final type Value[A] = Base.Value[?, A]
+  // final type Value[A] = Base.Value[?, A]
 
-  object Value:
-    type Of[O, A] = Base.Value[O, A]
+  // object Value:
+  //   type Of[O, A] = Base.Value[O, A]
 
-    type Required[A] = Base.Value.Required[?, A]
+  //   type Required[A] = Base.Value.Required[?, A]
 
-    object Required:
-      type Of[O, A] = Base.Value.Required[O, A]
+  //   object Required:
+  //     type Of[O, A] = Base.Value.Required[O, A]
 
-  final type Collection[A] = Base.Collection[?, A]
+  // final type Collection[A] = Base.Collection[?, A]
 
-  object Collection:
-    type Of[O <: Codec[?], A] = Base.Collection[O, A]
+  // object Collection:
+  //   type Of[O <: Codec[?], A] = Base.Collection[O, A]
 
-  final type Dictionary[A] = Base.Dictionary[?, A]
+  // final type Dictionary[A] = Base.Dictionary[?, A]
 
-  object Dictionary:
-    type Of[O, A] = Base.Dictionary[O, A]
+  // object Dictionary:
+  //   type Of[O, A] = Base.Dictionary[O, A]
 
-  final type Dynamic[A] = Base.Dynamic[A]
+  // final type Dynamic[A] = Base.Dynamic[A]
 
-  final type Enumeration[A] = Base.Enumeration[?, A]
+  // final type Enumeration[A] = Base.Enumeration[?, A]
 
-  object Enumeration:
-    type Of[O, A] = Base.Enumeration[O, A]
+  // object Enumeration:
+  //   type Of[O, A] = Base.Enumeration[O, A]
 
-    type Required[A] = Base.Enumeration.Required[?, A]
+  //   type Required[A] = Base.Enumeration.Required[?, A]
 
-    object Required:
-      type Of[O, A] = Base.Enumeration.Required[O, A]
+  //   object Required:
+  //     type Of[O, A] = Base.Enumeration.Required[O, A]
 
-  final type Primitive[A] = Base.Primitive[A]
+  // final type Primitive[A] = Base.Primitive[A]
 
-  object Primitive:
-    type Required[A] = Base.Primitive.Required[A]
+  // object Primitive:
+  //   type Required[A] = Base.Primitive.Required[A]
 
-  final type Product[A] = Base.Product[?, A]
+  // final type Product[A] = Base.Product[?, A]
 
-  object Product:
-    type Of[O, A] = Base.Product[O, A]
+  // object Product:
+  //   type Of[O, A] = Base.Product[O, A]
 
-  final type Record[A] = Base.Record[?, A]
+  // final type Record[A] = Base.Record[?, A]
 
-  object Record:
-    type Of[O, A] = Base.Record[O, A]
+  // object Record:
+  //   type Of[O, A] = Base.Record[O, A]
 
-  final type Sum[A] = Base.Sum[?, A]
+  // final type Sum[A] = Base.Sum[?, A]
 
-  object Sum:
-    type Of[O, A] = Base.Sum[O, A]
+  // object Sum:
+  //   type Of[O, A] = Base.Sum[O, A]
 
-  final type Union[A] = Base.Union[?, A]
+  // final type Union[A] = Base.Union[?, A]
 
-  object Union:
-    type Of[O, A] = Base.Union[O, A]
+  // object Union:
+  //   type Of[O, A] = Base.Union[O, A]
 
-    type Value[A] = Base.Union.Value[?, A]
+  //   type Value[A] = Base.Union.Value[?, A]
 
-    object Value:
-      type Of[O, A] = Base.Union.Value[O, A]
+  //   object Value:
+  //     type Of[O, A] = Base.Union.Value[O, A]
 
-      type Required[A] = Base.Union.Value.Required[?, A]
+  //     type Required[A] = Base.Union.Value.Required[?, A]
 
-      object Required:
-        type Of[O, A] = Base.Union.Value.Required[O, A]
+  //     object Required:
+  //       type Of[O, A] = Base.Union.Value.Required[O, A]
 
-  final type Branch[A] = Base.Branch[?, A]
+  // final type Branch[A] = Base.Branch[?, A]
 
-  object Branch:
-    type Of[O, A] = Base.Branch[O, A]
+  // object Branch:
+  //   type Of[O, A] = Base.Branch[O, A]
 
-  final type Field[A] = Base.Field[?, A]
+  // final type Field[A] = Base.Field[?, A]
 
-  object Field:
-    type Of[O, A] = Base.Field[O, A]
+  // object Field:
+  //   type Of[O, A] = Base.Field[O, A]
 
 object Types extends Types

@@ -26,7 +26,8 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .build()
     .settings(
       Compile / console / scalacOptions -= "-Wunused:all",
-      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
+      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: "-Xkind-projector" :: Nil,
+      Compile / scalacOptions -= "-Ykind-projector",
       name := "otter" + identifier.fold("")("-" + _)
     )
 }

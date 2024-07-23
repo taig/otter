@@ -20,13 +20,13 @@ abstract class Codec[+O, A]:
 
   def optional: Codec[O, Option[A]]
 
-  final def toCollection: Collection[this.type, Vector[A]] = ??? // Collection(this)
-  final def toProduct: Product[this.type, A] = Product(this)
-  def toUnion: Union[this.type, A] = Union(this)
+  // final def toCollection: Collection[this.type, Vector[A]] = ??? // Collection(this)
+  // final def toProduct: Product[this.type, A] = Product(this)
+  // def toUnion: Union[this.type, A] = Union(this)
 
   def decode(data: Data): Codec.Result[A]
 
-  def encode(a: A): Data
+  def encode(a: A): Format[this.type]
 
 object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
@@ -43,33 +43,29 @@ object Codec:
 
     def decodeValue(data: Data.Value): Codec.Result[A]
 
-    final override def encode(a: A): Data = encodeValue(a)
-
-    def encodeValue(a: A): Data.Value
-
   object Required:
     given [O]: Invariant[Codec.Required[O, *]] with
       override def imap[A, B](fa: Codec.Required[O, A])(f: A => B)(g: B => A): Codec.Required[O, B] = fa.imap(f)(g)
 
-  extension [O, A](self: Codec[O, A])
-    def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-      self.toProduct :* codec
-    def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-      self.toProduct :* codec
+  // extension [O, A](self: Codec[O, A])
+  //   def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
+  //     self.toProduct :* codec
+  //   def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
+  //     self.toProduct :* codec
 
-  extension [O, A](self: Codec[O, A])
-    def :+[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
-    def +:[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
+  // extension [O, A](self: Codec[O, A])
+  //   def :+[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
+  //   def +:[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec
 
-  extension [O, A <: Matchable](self: Codec[O, A])
-    inline def |[B <: Matchable](codec: Codec[?, B]): Union[self.type & codec.type, A | B] =
-      (self :+ codec).imap {
-        case Left(a)  => a
-        case Right(b) => b
-      } {
-        case a: A => Left(a)
-        case b: B => Right(b)
-      }
+  // extension [O, A <: Matchable](self: Codec[O, A])
+  //   inline def |[B <: Matchable](codec: Codec[?, B]): Union[self.type & codec.type, A | B] =
+  //     (self :+ codec).imap {
+  //       case Left(a)  => a
+  //       case Right(b) => b
+  //     } {
+  //       case a: A => Left(a)
+  //       case b: B => Right(b)
+  //     }
 
-  given [O]: Invariant[Codec[O, *]] with
+  given [O <: Data.Value]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)

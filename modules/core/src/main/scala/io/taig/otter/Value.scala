@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
-import io.taig.otter.Codec.Result
 import cats.Invariant
 
 trait Value[+O, A] extends Codec[O, A]:
@@ -15,7 +14,7 @@ trait Value[+O, A] extends Codec[O, A]:
 
   override def optional: Value[O, Option[A]]
 
-  override def toUnion: Union.Value[this.type, A] = Union.Value(this)
+  // override def toUnion: Union.Value[this.type, A] = Union.Value(this)
 
   def parse(value: Option[String]): Codec.Result[A]
 
@@ -27,7 +26,7 @@ object Value:
 
     override def imap[B](f: A => B)(g: B => A): Value.Required[O, B]
 
-    override def toUnion: Union.Value.Required[this.type, A] = Union.Value.Required(this)
+    // override def toUnion: Union.Value.Required[this.type, A] = Union.Value.Required(this)
 
     override def parse(value: Option[String]): Codec.Result[A] = value
       .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
@@ -37,7 +36,7 @@ object Value:
 
     override def print(a: A): Option[String] = printValue(a).some
 
-    def printValue(a: A): String
+    final def printValue(a: A): String = ???
 
   object Required:
     given [O]: Invariant[Value.Required[O, *]] with

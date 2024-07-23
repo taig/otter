@@ -66,7 +66,7 @@ trait Validations extends Types:
       def chain[A]: CodecValidation.Object[Chain[A], NonEmptyChain[A]] =
         apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
 
-  def uniqueItems[F[a] <: Iterable[a], A](codec: Codec[A]): CodecValidation.Collection[F[A], Unit] =
-    Base.uniqueItems
-      .mapConstraint(_ => Constraint.Collection.UniqueItems)
-      .mapActual(as => codec.toCollection.encode(as.toList.toVector))
+  // def uniqueItems[F[a] <: Iterable[a], A](codec: Codec[A]): CodecValidation.Collection[F[A], Unit] =
+  //   Base.uniqueItems
+  //     .mapConstraint(_ => Constraint.Collection.UniqueItems)
+  //     .mapActual(as => codec.toCollection.encode(as.toList.toVector))

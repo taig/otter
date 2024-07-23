@@ -27,14 +27,14 @@ abstract class Dictionary[+O, A] extends Codec[O, A]:
     export self.metadata
     override def default: Option[B] = self.default.flatMap(validation(_).toOption)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).andThen(validation(_).leftMap(Violations.root))
-    override def encode(b: B): Data = self.encode(f(b))
+    override def encode(b: B): Format[this.type] = self.encode(f(b))
 
   final override def optional: Dictionary[O, Option[A]] = new Dictionary[O, Option[A]]:
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
       data.toValue.fold(default.flatten.valid)(self.decode(_).map(_.some))
-    override def encode(a: Option[A]): Data = a.map(self.encode).getOrElse(Data.Null)
+    override def encode(a: Option[A]): Format[this.type] = a.map(self.encode).getOrElse(Data.Null)
 
 object Dictionary:
   def apply[A, B](key: Value.Required[?, A], value: Codec[?, B]): Dictionary[value.type, List[(A, B)]] =
@@ -44,7 +44,7 @@ object Dictionary:
       override def decode(data: Data): Codec.Result[List[(A, B)]] = data.toObject
         .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
         .andThen(_.values.toList.traverse { case (a, b) => (key.parseValue(a), value.decode(b)).tupled })
-      override def encode(abs: List[(A, B)]): Data =
+      override def encode(abs: List[(A, B)]): Format[this.type] =
         Data.Object.fromSeq(abs.map { case (a, b) => (key.printValue(a), value.encode(b)) })
 
   given [O]: Invariant[Dictionary[O, *]] with

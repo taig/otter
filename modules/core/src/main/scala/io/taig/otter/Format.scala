@@ -1,17 +1,11 @@
 package io.taig.otter
 
-trait Format[+A]:
-  type Out <: Data
-
-object Format:
-  type Aux[+A, B <: Data] = Format[A] { type Out = B }
-  
-  def apply[A, B <: Data] = new Format[A] { override type Out = B }
-
-  given Format.Aux[Product[?, ?], Data.Array[?]] = ???
-
-type Format2[A] <: Data = A match
-  case Primitive[?] => Data.Primitive
-  case Dictionary[?, ?] => Data.Object
-  case Codec[?, ?] => Data
-  // case Product[?, ?] => Data.Array[?]
+type Format[A] <: Data = A match
+  // case Primitive[?]     => Data.Primitive
+  case Dictionary[o, ?] => Data.Object[Format[o]] | Data.Null.type
+  // case Product[o, ?]    => Data.Array[Format[o]]
+  case Collection[o, ?]     => Data.Array[Format[o]] | Data.Null.type
+  case Value.Required[o, ?] => Format[o]
+  case Value[o, ?] => Format[o] | Data.Null.type
+  case Codec.Required[?, ?] => Data.Value
+  case Codec[?, ?]          => Data
