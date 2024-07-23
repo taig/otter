@@ -16,9 +16,9 @@ trait Value[+O, A] extends Codec[O, A]:
 
   // override def toUnion: Union.Value[this.type, A] = Union.Value(this)
 
-  def parse(value: Option[String]): Codec.Result[A]
+  final def parse(value: Option[String]): Codec.Result[A] = ???
 
-  def print(a: A): Option[String]
+  final def print(a: A): Option[String] = ???
 
 object Value:
   trait Required[+O, A] extends Value[O, A], Codec.Required[O, A]:
@@ -28,13 +28,13 @@ object Value:
 
     // override def toUnion: Union.Value.Required[this.type, A] = Union.Value.Required(this)
 
-    override def parse(value: Option[String]): Codec.Result[A] = value
-      .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
-      .andThen(parseValue)
+    // override def parse(value: Option[String]): Codec.Result[A] = value
+    //   .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
+    //   .andThen(parseValue)
 
-    def parseValue(value: String): Codec.Result[A] = ???
+    final def parseValue(value: String): Codec.Result[A] = ???
 
-    override def print(a: A): Option[String] = printValue(a).some
+    // override def print(a: A): Option[String] = printValue(a).some
 
     final def printValue(a: A): String = ???
 
