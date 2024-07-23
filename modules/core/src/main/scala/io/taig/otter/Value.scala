@@ -32,7 +32,7 @@ object Value:
       .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
       .andThen(parseValue)
 
-    def parseValue(value: String): Codec.Result[A]
+    def parseValue(value: String): Codec.Result[A] = ???
 
     override def print(a: A): Option[String] = printValue(a).some
 
