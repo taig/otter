@@ -38,11 +38,11 @@ object Codec:
     def parseRequired(value: String): Codec.Result[A] = ???
     def printRequired(a: A): String = ???
 
-  // extension [O, A](self: Codec[O, A])
-  //   def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-  //     self.toProduct :* codec
-  //   def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
-  //     self.toProduct :* codec
+  extension [O <: Data, A](self: Codec[O, A])
+    def :*[P <: Data, B](codec: Codec[P, B])(using merge: Evidence.Merge[A, B]): Product[Data.Array[O | P], merge.Out] =
+      self.toProduct :* codec
+    def *:[P <: Data, B](codec: Codec[P, B])(using merge: Evidence.Merge[A, B]): Product[Data.Array[O | P], merge.Out] =
+      self.toProduct :* codec
 
   // extension [O, A](self: Codec[O, A])
   //   def :+[B](codec: Codec[?, B]): Union[self.type & codec.type, Either[A, B]] = self.toUnion :+ codec

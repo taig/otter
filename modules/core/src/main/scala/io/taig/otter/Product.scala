@@ -55,11 +55,15 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
       merge: Evidence.Merge[A, B]
   ): Product[O | P, merge.Out] = zipWith(codec).imap(merge.apply)(merge.unapply)
 
-  // final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[O | codec.type, merge.Out] =
-  //   self.zip(codec.toProduct)
+  final def :*[P <: Data, B](codec: Codec[P, B])(using
+      merge: Evidence.Merge[A, B]
+  ): Product[O | Data.Array[P], merge.Out] =
+    self.zip(codec.toProduct)
 
-  // final def *:[B](codec: Codec[?, B])(using merge: Evidence.Merge[B, A]): Product[codec.type | O, merge.Out] =
-  //   codec.toProduct.zip(self)
+  final def *:[P <: Data, B](codec: Codec[P, B])(using
+      merge: Evidence.Merge[B, A]
+  ): Product[Data.Array[P] | O, merge.Out] =
+    codec.toProduct.zip(self)
 
   final override def optional: Product[Data.Optional[O], Option[A]] = new Product[Data.Optional[O], Option[A]]:
     export self.{codecs, metadata}
