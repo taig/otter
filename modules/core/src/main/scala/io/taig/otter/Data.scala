@@ -10,16 +10,12 @@ import java.lang.Math.toIntExact
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 
-sealed abstract class Data extends SProduct with Serializable:
-  final def toValue: Option[Data.Value] = this match
-    case data: Data.Value => Some(data)
-    case Data.Null        => None
-
-  final def toObject: Option[Data.Object[?]] = this match
+sealed abstract class Data[+A <: Data[?]] extends SProduct with Serializable:
+  final def toObject[A1 >: A <: Data[?]]: Option[Data.Object[A1]] = this match
     case data: Data.Object[?] => Some(data)
     case _                    => None
 
-  final def toArray: Option[Data.Array[?]] = this match
+  final def toArray[A1 >: A <: Data[?]]: Option[Data.Array[A1]] = this match
     case data: Data.Array[?] => Some(data)
     case _                   => None
 
@@ -36,28 +32,33 @@ sealed abstract class Data extends SProduct with Serializable:
     case Data.Null         => "null"
 
 object Data:
-  sealed abstract class Value extends Data
+  extension [A <: Data[?]](self: Data[A])
+    final def toValue: Option[Data.Value[A]] = self match
+      case data: Data.Value[A] => Some(data)
+      case Data.Null           => None
 
-  final case class Object[+A <: Data](values: Chain[(JString, A)]) extends Data.Value:
-    def ++[A1 >: A <: Data](obj: Data.Object[A1]): Data.Object[A1] = Object(values ++ obj.values)
+  sealed abstract class Value[+A <: Data[?]] extends Data[A]
+
+  final case class Object[+A <: Data[?]](values: Chain[(JString, A)]) extends Data.Value[A]:
+    def ++[A1 >: A <: Data[?]](obj: Data.Object[A1]): Data.Object[A1] = Object(values ++ obj.values)
 
   object Object:
     val Empty: Data.Object[Nothing] = Object(Chain.empty)
-    def one[A <: Data](key: JString, value: A): Data.Object[A] = Object(Chain.one((key, value)))
-    def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(Chain.fromSeq(kv))
-    def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(Chain.fromOption(kv))
-    def fromSeq[A <: Data](kvs: Seq[(JString, A)]): Data.Object[A] = Object(Chain.fromSeq(kvs))
+    def one[A <: Data[?]](key: JString, value: A): Data.Object[A] = Object(Chain.one((key, value)))
+    def of[A <: Data[?]](kv: (JString, A)*): Data.Object[A] = Object(Chain.fromSeq(kv))
+    def fromOption[A <: Data[?]](kv: Option[(JString, A)]): Data.Object[A] = Object(Chain.fromOption(kv))
+    def fromSeq[A <: Data[?]](kvs: Seq[(JString, A)]): Data.Object[A] = Object(Chain.fromSeq(kvs))
 
-  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
+  final case class Array[+A <: Data[?]](values: Vector[A]) extends Data.Value[A]:
     def length: Long = values.length
-    def ++[A1 >: A <: Data](data: Data.Array[A1]): Data.Array[A1] = Array(values ++ data.values)
+    def ++[A1 >: A <: Data[?]](data: Data.Array[A1]): Data.Array[A1] = Array(values ++ data.values)
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
-    def one[A <: Data](data: A): Data.Array[A] = Data.Array(Vector(data))
-    def fill[A <: Data](n: Long)(value: => A): Data.Array[A] = Array(Vector.fill(n.toInt)(value))
+    def one[A <: Data[?]](data: A): Data.Array[A] = Data.Array(Vector(data))
+    def fill[A <: Data[?]](n: Long)(value: => A): Data.Array[A] = Array(Vector.fill(n.toInt)(value))
 
-  sealed abstract class Primitive extends Value
+  sealed abstract class Primitive extends Value[Nothing]
 
   final case class String(value: JString) extends Data.Primitive
 
@@ -122,6 +123,6 @@ object Data:
 
   case object Null extends Data
 
-  type Optional[A <: Data] = A | Data.Null.type
+  type Optional[A <: Data[?]] = A | Data.Null.type
 
-  given Eq[Data] = Eq.fromUniversalEquals
+  given [A <: Data[?]]: Eq[Data[A]] = Eq.fromUniversalEquals

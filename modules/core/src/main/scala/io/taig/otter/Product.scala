@@ -20,7 +20,7 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
   final override def modifyDefault(f: Option[A] => Option[A]): Product[O, A] = new Product[O, A]:
     export self.{codecs, encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =
+    override def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], A)] =
       (values, default) match
         case (None, Some(default)) => (values, default).valid
         case _                     => self.decode(values)
@@ -29,7 +29,7 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
     export self.{codecs, metadata}
     override def default: Option[B] = self.default.map(f)
     override def encode(b: B): O = self.encode(g(b))
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], B)] =
+    override def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], B)] =
       self.decode(values).map(_.map(f))
 
   final def zipWith[P <: Data.Optional[Data.Array[?]], B](codec: Product[P, B]): Product[O | P, (A, B)] = ???
@@ -55,12 +55,12 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
       merge: Evidence.Merge[A, B]
   ): Product[O | P, merge.Out] = zipWith(codec).imap(merge.apply)(merge.unapply)
 
-  final def :*[P <: Data, B](codec: Codec[P, B])(using
+  final def :*[P <: Data[?], B](codec: Codec[P, B])(using
       merge: Evidence.Merge[A, B]
   ): Product[O | Data.Array[P], merge.Out] =
     self.zip(codec.toProduct)
 
-  final def *:[P <: Data, B](codec: Codec[P, B])(using
+  final def *:[P <: Data[?], B](codec: Codec[P, B])(using
       merge: Evidence.Merge[B, A]
   ): Product[Data.Array[P] | O, merge.Out] =
     codec.toProduct.zip(self)
@@ -69,10 +69,10 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
     export self.{codecs, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def encode(a: Option[A]): Data.Optional[O] = a.map(self.encode).getOrElse(Data.Null)
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Option[A])] =
+    override def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], Option[A])] =
       values.fold((values, default.flatten).valid)(_ => self.decode(values).map(_.map(_.some)))
 
-  final override def decode(data: Data): Codec.Result[A] = data
+  final override def decode(data: Data[?]): Codec.Result[A] = data
     .match
       case Data.Array(values) =>
         val actual = values.length
@@ -89,22 +89,22 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
       case _         => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
     .map { case (_, a) => a }
 
-  protected def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)]
+  protected def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], A)]
 
 object Product:
   val Empty: Product[Data.Array[Nothing], Unit] = new Product[Data.Array[Nothing], Unit]:
     override def codecs: Chain[Codec[?, ?]] = Chain.empty
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Unit] = None
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Unit)] =
+    override def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], Unit)] =
       (values, ()).valid
     override def encode(a: Unit): Data.Array[Nothing] = Data.Array.Empty
 
-  def apply[O <: Data, A](of: Codec[O, A]): Product[Data.Array[O], A] = new Product[Data.Array[O], A]:
+  def apply[O <: Data[?], A](of: Codec[O, A]): Product[Data.Array[O], A] = new Product[Data.Array[O], A]:
     override def codecs: Chain[Codec[?, ?]] = Chain.one(of)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = values
+    override def decode(values: Option[Vector[Data[?]]]): Codec.Result[(Option[Vector[Data[?]]], A)] = values
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
       .andThen(
         _.uncons.toValid(

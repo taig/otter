@@ -20,7 +20,7 @@ sealed abstract class Collection[+O <: Data.Optional[Data.Array[?]], A] extends 
   final override def modifyDefault(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
     export self.{codec, encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def decode(data: Data): Codec.Result[A] = (data, default) match
+    override def decode(data: Data[?]): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
@@ -30,26 +30,27 @@ sealed abstract class Collection[+O <: Data.Optional[Data.Array[?]], A] extends 
     new Collection[O, B]:
       export self.{codec, metadata}
       override def default: Option[B] = self.default.flatMap(validation(_).toOption)
-      override def decode(data: Data): Codec.Result[B] =
+      override def decode(data: Data[?]): Codec.Result[B] =
         self.decode(data).andThen(validation(_).leftMap(Violations.root))
       override def encode(b: B): O = self.encode(f(b))
 
   override def optional: Collection[Data.Optional[O], Option[A]] = new Collection[Data.Optional[O], Option[A]]:
     export self.{codec, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Data): Codec.Result[Option[A]] =
+    override def decode(data: Data[?]): Codec.Result[Option[A]] =
       data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data.Optional[O] = a.map(self.encode).getOrElse(Data.Null)
 
 object Collection:
-  def apply[O <: Data, A](of: Codec[O, A]): Collection[Data.Array[O], Vector[A]] =
+  def apply[O <: Data[?], A](of: Codec[O, A]): Collection[Data.Array[O], Vector[A]] =
     new Collection[Data.Array[O], Vector[A]]:
       override def codec: Codec[?, ?] = of
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Vector[A]] = None
-      override def decode(data: Data): Codec.Result[Vector[A]] = data.toArray
-        .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
-        .andThen(_.values.traverse(of.decode))
+      override def decode(data: Data[?]): Codec.Result[Vector[A]] = ???
+      // data.toArray
+      //   .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))))
+      //   .andThen(_.values.traverse(of.decode))
       override def encode(as: Vector[A]): Data.Array[O] = Data.Array(as.map(of.encode))
 
   given invariant[O <: Data.Optional[Data.Array[?]]]

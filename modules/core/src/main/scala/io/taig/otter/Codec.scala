@@ -6,7 +6,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.Invariant
 
-abstract class Codec[+O <: Data, A]:
+abstract class Codec[+O <: Data[?], A]:
   self =>
 
   def metadata: Metadata
@@ -23,12 +23,12 @@ abstract class Codec[+O <: Data, A]:
   final def toProduct: Product[Data.Array[O], A] = Product(this)
   final def toUnion: Union[O, A] = Union(this)
 
-  def decode(data: Data): Codec.Result[A]
+  def decode(data: Data[?]): Codec.Result[A]
 
   def encode(a: A): O
 
 object Codec:
-  type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
+  type Result[A] = Validated[Violations[Violation[Constraint.Any[Data[?]], Data[?]]], A]
 
   extension [O <: Data.Optional[Data.Primitive], A](self: Codec[O, A])
     def parseOptional(value: Option[String]): Codec.Result[A] = ???
@@ -38,10 +38,14 @@ object Codec:
     def parseRequired(value: String): Codec.Result[A] = ???
     def printRequired(a: A): String = ???
 
-  extension [O <: Data, A](self: Codec[O, A])
-    def :*[P <: Data, B](codec: Codec[P, B])(using merge: Evidence.Merge[A, B]): Product[Data.Array[O | P], merge.Out] =
+  extension [O <: Data[?], A](self: Codec[O, A])
+    def :*[P <: Data[?], B](codec: Codec[P, B])(using
+        merge: Evidence.Merge[A, B]
+    ): Product[Data.Array[O | P], merge.Out] =
       self.toProduct :* codec
-    def *:[P <: Data, B](codec: Codec[P, B])(using merge: Evidence.Merge[A, B]): Product[Data.Array[O | P], merge.Out] =
+    def *:[P <: Data[?], B](codec: Codec[P, B])(using
+        merge: Evidence.Merge[A, B]
+    ): Product[Data.Array[O | P], merge.Out] =
       self.toProduct :* codec
 
   // extension [O, A](self: Codec[O, A])
@@ -58,5 +62,5 @@ object Codec:
   //       case b: B => Right(b)
   //     }
 
-  given [O <: Data]: Invariant[Codec[O, *]] with
+  given [O <: Data[?]]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)
