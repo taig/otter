@@ -58,7 +58,7 @@ object Data:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
     def one[A <: Data](data: A): Data.Array[A] = Data.Array(Vector(data))
     def of[A <: Data](data: A*): Data.Array[A] = Data.Array(data.toVector)
-    def fill[A <: Data](n: Long)(value: => A): Data.Array[A] = Array(Vector.fill(n.toInt)(value))
+    def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
   sealed abstract class Primitive extends Value
 

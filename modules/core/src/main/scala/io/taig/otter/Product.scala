@@ -92,6 +92,30 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
   protected def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)]
 
 object Product:
+  // extension [O <: Data, A](self: Product[Data.Array[O], A])
+  //   def product[P <: Data, B](codec: Product[Data.Array[P], B]): Product[Data.Array[O | P], (A, B)] =
+  //     new Product[Data.Array[O | P], (A, B)]:
+  //       override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
+  //       override def metadata: Metadata = Metadata.Empty
+  //       override def default: Option[(A, B)] = None
+  //       override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] = ???
+  //       override def encode(ab: (A, B)): Data.Array[O | P] = self.encode(ab._1) ++ codec.encode(ab._2)
+
+  extension [O <: Data, A](self: Product[Data.Optional[Data.Array[O]], A])
+    def product[P <: Data, B](
+        codec: Product[Data.Optional[Data.Array[P]], B]
+    ): Product[Data.Array[Data.Optional[O | P]], (A, B)] = new Product[Data.Array[Data.Optional[O | P]], (A, B)]:
+      override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
+      override def metadata: Metadata = Metadata.Empty
+      override def default: Option[(A, B)] = None
+      override def decode(values: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] = ???
+      override def encode(ab: (A, B)): Data.Array[Data.Optional[O | P]] =
+        (self.encode(ab._1), codec.encode(ab._2)) match
+          case (Data.Array(a), Data.Array(b)) => Data.Array(a ++ b)
+          case (a @ Data.Array(_), Data.Null) => a ++ Data.Array.fill(codec.codecs.length.toInt)(Data.Null)
+          case (Data.Null, b @ Data.Array(_)) => Data.Array.fill(self.codecs.length.toInt)(Data.Null) ++ b
+          case (Data.Null, Data.Null)         => Data.Array.fill(codecs.length.toInt)(Data.Null)
+
   val Empty: Product[Data.Array[Nothing], Unit] = new Product[Data.Array[Nothing], Unit]:
     override def codecs: Chain[Codec[?, ?]] = Chain.empty
     override def metadata: Metadata = Metadata.Empty
