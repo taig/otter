@@ -8,7 +8,7 @@ import io.taig.otter.validation.Violation
 import io.taig.otter.Codec.Result
 import cats.Invariant
 
-sealed abstract class Branch[+O <: Data[?], A]:
+sealed abstract class Branch[+O <: Data, A]:
   self =>
 
   def name: String
@@ -23,10 +23,10 @@ sealed abstract class Branch[+O <: Data[?], A]:
 
   final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
     export self.{codec, metadata, name}
-    override def decodeValue(data: Data[?]): Codec.Result[B] = self.decodeValue(data).map(f)
+    override def decodeValue(data: Data): Codec.Result[B] = self.decodeValue(data).map(f)
     override def encodeValue(b: B): O = self.encodeValue(g(b))
 
-  def decode(data: Chain[(String, Data[?])]): Codec.Result[Option[A]] =
+  def decode(data: Chain[(String, Data)]): Codec.Result[Option[A]] =
     metadata(discriminator).getOrElse(Discriminator.Default) match
       case Discriminator.Nested(identifier, value) =>
         data
@@ -58,7 +58,7 @@ sealed abstract class Branch[+O <: Data[?], A]:
         decodeValue(data.collectFirst { case (key, data) if key === name => data }.getOrElse(Data.Null))
           .map(_.some)
 
-  protected def decodeValue(data: Data[?]): Codec.Result[A]
+  protected def decodeValue(data: Data): Codec.Result[A]
 
   // def encode(a: A): Data.Object[Data.String | O] = metadata(discriminator).getOrElse(Discriminator.Default) match
   //   case Discriminator.Nested(identifier, value) =>
@@ -75,7 +75,7 @@ sealed abstract class Branch[+O <: Data[?], A]:
   final def encodeNested(identifier: String, value: String, a: A): Data.Object[Data.String | O] =
     Data.Object.of(identifier -> Data.String(name), value -> encodeValue(a))
 
-  final def encodeMerged[P <: Data[?]](identifier: String, a: A)(using
+  final def encodeMerged[P <: Data](identifier: String, a: A)(using
       O <:< Data.Object[P]
   ): Data.Object[Data.String | P] = encodeValue(a) ++ Data.Object.of(identifier -> Data.String(name))
 
@@ -84,13 +84,13 @@ sealed abstract class Branch[+O <: Data[?], A]:
   protected def encodeValue(a: A): O
 
 object Branch:
-  def apply[O <: Data[?], A](identifier: String, of: Codec[O, A]): Branch[O, A] = new Branch[O, A]:
+  def apply[O <: Data, A](identifier: String, of: Codec[O, A]): Branch[O, A] = new Branch[O, A]:
     override def name: String = identifier
     override def codec: Codec[?, A] = of
     override def metadata: Metadata = Metadata.Empty
-    override def decodeValue(data: Data[?]): Codec.Result[A] = codec.decode(data)
+    override def decodeValue(data: Data): Codec.Result[A] = codec.decode(data)
     override def encodeValue(a: A): O = of.encode(a)
 
-  given [O <: Data[?]]: Invariant[Branch[O, *]] with
+  given [O <: Data]: Invariant[Branch[O, *]] with
     override def imap[A, B](fa: Branch[O, A])(f: A => B)(g: B => A): Branch[O, B] =
       fa.imap(f)(g)

@@ -8,12 +8,12 @@ trait Types:
   final type Codec[A] = Base.Codec[?, A]
 
   object Codec:
-    type Of[O <: Data[?], A] = Base.Codec[O, A]
+    type Of[O <: Data, A] = Base.Codec[O, A]
 
-    type Required[A] = Base.Codec[Data.Value[?], A]
+    type Required[A] = Base.Codec[Data.Value, A]
 
     object Required:
-      type Of[O <: Data.Value[?], A] = Base.Codec[O, A]
+      type Of[O <: Data.Value, A] = Base.Codec[O, A]
 
     export Base.Codec.Result
 
@@ -30,12 +30,12 @@ trait Types:
   final type Collection[A] = Base.Collection[?, A]
 
   object Collection:
-    type Of[O <: Data[?], A] = Base.Collection[Data.Optional[Data.Array[O]], A]
+    type Of[O <: Data, A] = Base.Collection[Data.Optional[Data.Array[O]], A]
 
     type Required[A] = Base.Collection[Data.Array[?], A]
 
     object Required:
-      type Of[O <: Data[?], A] = Base.Collection[Data.Array[O], A]
+      type Of[O <: Data, A] = Base.Collection[Data.Array[O], A]
 
   // final type Dictionary[A] = Base.Dictionary[?, A]
 

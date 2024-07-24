@@ -5,7 +5,7 @@ import cats.data.Chain
 import io.taig.otter.Keys.*
 import cats.Invariant
 
-sealed abstract class Field[+O <: Data[?], A]:
+sealed abstract class Field[+O <: Data, A]:
   self =>
 
   def name: String
@@ -20,7 +20,7 @@ sealed abstract class Field[+O <: Data[?], A]:
 
   final def imap[B](f: A => B)(g: B => A): Field[O, B] = new Field[O, B]:
     export self.{codec, metadata, name}
-    override def decode(values: Chain[(String, Data[?])]): Codec.Result[(Chain[(String, Data[?])], B)] =
+    override def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], B)] =
       self.decode(values).map(_.map(f))
     override def encodeValue(b: B): O = self.encodeValue(g(b))
 
@@ -30,7 +30,7 @@ sealed abstract class Field[+O <: Data[?], A]:
 
   // final def toRecord: Record[O, A] = Record(this)
 
-  def decode(values: Chain[(String, Data[?])]): Codec.Result[(Chain[(String, Data[?])], A)]
+  def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)]
 
   final def encode(a: A): Option[(String, O)] = (metadata(nulls).getOrElse(Null.Default), encodeValue(a)) match
     case (Null.Hide, Data.Null) => None
@@ -39,14 +39,14 @@ sealed abstract class Field[+O <: Data[?], A]:
   protected def encodeValue(a: A): O
 
 object Field:
-  def apply[O <: Data[?], A](identifier: String, of: Codec[O, A]): Field[O, A] = new Field[O, A]:
+  def apply[O <: Data, A](identifier: String, of: Codec[O, A]): Field[O, A] = new Field[O, A]:
     override def name: String = identifier
     override def codec: Codec[?, A] = of
     override def metadata: Metadata = Metadata.Empty
-    override def decode(values: Chain[(String, Data[?])]): Codec.Result[(Chain[(String, Data[?])], A)] =
+    override def decode(values: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] =
       val (head, remainders) = values.findWithRemainders { case (reference, data) if reference === name => data }
       codec.decode(head.getOrElse(Data.Null)).leftMap(name /: _).tupleLeft(remainders)
     override def encodeValue(a: A): O = of.encode(a)
 
-  given [O <: Data[?]]: Invariant[Field[O, *]] with
+  given [O <: Data]: Invariant[Field[O, *]] with
     override def imap[A, B](fa: Field[O, A])(f: A => B)(g: B => A): Field[O, B] = fa.imap(f)(g)

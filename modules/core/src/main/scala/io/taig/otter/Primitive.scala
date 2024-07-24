@@ -15,7 +15,7 @@ sealed abstract class Primitive[+O <: Data.Optional[Data.Primitive], A] extends 
   final override def modifyDefault(f: Option[A] => Option[A]): Primitive[O, A] = new Primitive[O, A]:
     export self.{encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def decode(data: Data[?]): Codec.Result[A] = (data, default) match
+    override def decode(data: Data): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
@@ -25,13 +25,13 @@ sealed abstract class Primitive[+O <: Data.Optional[Data.Primitive], A] extends 
     export self.metadata
     override def default: Option[B] = self.default.flatMap(validation(_).toOption)
     override def encode(b: B): O = self.encode(f(b))
-    override def decode(data: Data[?]): Codec.Result[B] =
+    override def decode(data: Data): Codec.Result[B] =
       self.decode(data).andThen(validation(_).leftMap(Violations.root))
 
   final override def optional: Primitive[Data.Optional[O], Option[A]] = new Primitive[Data.Optional[O], Option[A]]:
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Data[?]): Codec.Result[Option[A]] =
+    override def decode(data: Data): Codec.Result[Option[A]] =
       data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data.Optional[O] = a.map(self.encode).getOrElse(Data.Null)
 
@@ -39,7 +39,7 @@ object Primitive:
   def apply[A](tpe: Type[A]): Primitive[Data.Primitive, A] = new Primitive[Data.Primitive, A]:
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
-    override def decode(data: Data[?]): Codec.Result[A] = data.toPrimitive
+    override def decode(data: Data): Codec.Result[A] = data.toPrimitive
       .flatMap(tpe.decode)
       .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(data.name))))
     override def encode(a: A): Data.Primitive = tpe.encode(a)
