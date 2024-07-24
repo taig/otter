@@ -122,4 +122,6 @@ object Data:
 
   case object Null extends Data
 
+  type Optional[A <: Data] = A | Data.Null.type
+
   given Eq[Data] = Eq.fromUniversalEquals

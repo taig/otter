@@ -7,7 +7,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.Invariant
 
-abstract class Codec[+O, A]:
+abstract class Codec[+O <: Data, A]:
   self =>
 
   def metadata: Metadata
@@ -18,7 +18,7 @@ abstract class Codec[+O, A]:
 
   def imap[B](f: A => B)(g: B => A): Codec[O, B]
 
-  def optional: Codec[O, Option[A]]
+  def optional: Codec[Data.Optional[O], Option[A]]
 
   // final def toCollection: Collection[this.type, Vector[A]] = ??? // Collection(this)
   // final def toProduct: Product[this.type, A] = Product(this)
@@ -26,26 +26,18 @@ abstract class Codec[+O, A]:
 
   def decode(data: Data): Codec.Result[A]
 
-  def encode(a: A): Format[this.type]
+  def encode(a: A): O
 
 object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
 
-  trait Required[+O, A] extends Codec[O, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Codec.Required[O, A]
+  extension [O <: Data.Optional[Data.Primitive], A](self: Codec[O, A])
+    def parseOptional(value: Option[String]): Codec.Result[A] = ???
+    def printOptional(a: A): Option[String] = ???
 
-    override def imap[B](f: A => B)(g: B => A): Codec.Required[O, B]
-
-    final override def decode(data: Data): Codec.Result[A] = data match
-      case data: Data.Value => decodeValue(data)
-      case Data.Null =>
-        Violations.rootNec(Violation(Constraint.Type(data.name), actual = Data.String("null"))).invalid
-
-    def decodeValue(data: Data.Value): Codec.Result[A]
-
-  object Required:
-    given [O]: Invariant[Codec.Required[O, *]] with
-      override def imap[A, B](fa: Codec.Required[O, A])(f: A => B)(g: B => A): Codec.Required[O, B] = fa.imap(f)(g)
+  extension [O <: Data.Primitive, A](self: Codec[O, A])
+    def parseRequired(value: String): Codec.Result[A] = ???
+    def printRequired(a: A): String = ???
 
   // extension [O, A](self: Codec[O, A])
   //   def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[self.type | codec.type, merge.Out] =
@@ -67,5 +59,5 @@ object Codec:
   //       case b: B => Right(b)
   //     }
 
-  given [O <: Data.Value]: Invariant[Codec[O, *]] with
+  given [O <: Data]: Invariant[Codec[O, *]] with
     override def imap[A, B](fa: Codec[O, A])(f: A => B)(g: B => A): Codec[O, B] = fa.imap(f)(g)
