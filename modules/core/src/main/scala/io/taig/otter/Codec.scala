@@ -2,7 +2,6 @@ package io.taig.otter
 
 import io.taig.otter
 import cats.data.Validated
-import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.Invariant
@@ -20,9 +19,9 @@ abstract class Codec[+O <: Data, A]:
 
   def optional: Codec[Data.Optional[O], Option[A]]
 
-  // final def toCollection: Collection[this.type, Vector[A]] = ??? // Collection(this)
-  // final def toProduct: Product[this.type, A] = Product(this)
-  // def toUnion: Union[this.type, A] = Union(this)
+  final def toCollection: Collection[Data.Array[O], Vector[A]] = Collection(this)
+  final def toProduct: Product[Data.Array[O], A] = Product(this)
+  final def toUnion: Union[O, A] = Union(this)
 
   def decode(data: Data): Codec.Result[A]
 

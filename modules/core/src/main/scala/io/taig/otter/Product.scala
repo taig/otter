@@ -53,8 +53,7 @@ abstract class Product[+O <: Data.Optional[Data.Array[?]], A] extends Codec[O, A
 
   final def zip[P <: Data.Optional[Data.Array[?]], B](codec: Product[P, B])(using
       merge: Evidence.Merge[A, B]
-  ): Product[O | P, merge.Out] =
-    zipWith(codec).imap(merge.apply)(merge.unapply)
+  ): Product[O | P, merge.Out] = zipWith(codec).imap(merge.apply)(merge.unapply)
 
   // final def :*[B](codec: Codec[?, B])(using merge: Evidence.Merge[A, B]): Product[O | codec.type, merge.Out] =
   //   self.zip(codec.toProduct)
