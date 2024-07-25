@@ -15,19 +15,22 @@ sealed abstract class Branch[+O, A]:
 
   def name: String
 
+  def discriminator: Option[Discriminator]
+
   def codec: Codec[?, ?]
 
   def metadata: Metadata
 
   final def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
-    export self.{codec, encode, name}
+    export self.{codec, decode, discriminator, encode, name}
     override def metadata: Metadata = f(self.metadata)
 
   final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
-    export self.{codec, metadata, name}
+    export self.{codec, discriminator, metadata, name}
+    override def decode(data: Data): Codec.Result[Option[B]] = self.decode(data).map(_.map(f))
     override def encode(b: B): O = self.encode(g(b))
-    // override def decodeValue(data: Data): Codec.Result[B] = self.decodeValue(data).map(f)
-    // override def encodeUntagged(b: B): O = self.encodeUntagged(g(b))
+
+  def decode(data: Data): Codec.Result[Option[A]]
 
   def encode(a: A): O
 
@@ -100,44 +103,45 @@ object Branch:
 //     Data.Object.of(identifier -> Data.String(this.name), value -> this.codec.encode(a))
 
   // def keyed[F[+_] <: Data, O, A](name: String, codec: Codec[F, O, A]): Branch[Data.Object[F[O]], A] = ???
-    // new Root[F, O, Data.Object[F[O]], A](name, codec):
-    //   override def encode(a: A): Data.Object[F[O]] = Data.Object.of(this.name -> this.codec.encode(a))
+  // new Root[F, O, Data.Object[F[O]], A](name, codec):
+  //   override def encode(a: A): Data.Object[F[O]] = Data.Object.of(this.name -> this.codec.encode(a))
+
+  private def apply[O <: Data, P, A](_name: String, _discriminator: Option[Discriminator], _codec: Codec[O, A])(
+      f: Data => Codec.Result[Option[A]]
+  )(g: A => P): Branch[P, A] = new Branch[P, A]:
+    override def name: String = _name
+    override def discriminator: Option[Discriminator] = _discriminator
+    override def codec: Codec[?, ?] = _codec
+    override def metadata: Metadata = Metadata.Empty
+    override def decode(data: Data): Result[Option[A]] = f(data)
+    override def encode(a: A): P = g(a)
+
+  def nested[O <: Data, A](
+      name: String,
+      codec: Codec[O, A],
+      discriminator: Discriminator.Nested
+  ): Branch[Data.Object[Data.String | O], A] = Branch(name, discriminator.some, codec)(???): a =>
+    Data.Object.of(discriminator.identifier -> Data.String(name), discriminator.value -> codec.encode(a))
 
   def merged[O <: Data.Optional[Data.Object[P]], P <: Data, A](
-      identifier: String,
       name: String,
-      codec: Codec[O, A]
-  ): Branch[Data.Object[Data.String | P], A] = new Branch[Data.Object[Data.String | P], A]:
-    override def name: String = ???
-    override def metadata: Metadata = Metadata.Empty
+      codec: Codec[O, A],
+      discriminator: Discriminator.Merged
+  ): Branch[Data.Object[Data.String | P], A] = Branch(name, discriminator.some, codec)(???): a =>
+    val data: Data.Null.type | Data.Object[P] = codec.encode(a)
+    val result = Data.Object.one(discriminator.identifier, Data.String(name))
 
-    override def codec: Codec[O, A] = ???
+    data match
+      case data: Data.Object[P] => data ++ result
+      case Data.Null            => result
 
-    override def encode(a: A): Data.Object[Data.String | P] =
-      val data: Data.Null.type | Data.Object[P] = codec.encode(a)
+  def keyed[O <: Data, A](name: String, codec: Codec[O, A]): Branch[Data.Object[O], A] =
+    Branch(name, Discriminator.Keyed.some, codec)(???): a =>
+      Data.Object.of(name -> codec.encode(a))
 
-      data match
-        case data: Data.Object[P] => data ++ Data.Object.one(identifier, Data.String(name))
-        case Data.Null => Data.Object.one(identifier, Data.String(name))
+  def untagged[O <: Data, A](name: String, codec: Codec[O, A]): Branch[O, A] =
+    Branch(name, none, codec)(codec.decode(_).toOption.valid)(codec.encode)
 
-// def merged[F[+a] <: Data.Optional[Data.Object[a]], O <: Data, A](identifier: String, name: String, codec: Codec[Id, F[O], A]): Branch[Data.Object[Data.String | F[O]], A] =
-//   new Root[F, O, Data.Object[Data.String | F[P]], A](name, codec) {
-//     override def encode(a: A): Data.Object[Data.String | F[P]] =
-//       val x: F[O] = this.codec.encode(a)
-//       x match
-//         case _: Data.Optional[?] => ???
-//         case _: Data.Value => ???
-
-// y match
-//   case Data.Null => Data.Object.one(identifier, Data.String(this.name))
-//   case x: O => ???
-// .++(Data.Object.one(identifier, Data.String(this.name)))
-// }
-
-// def untagged[F[+_], O, A](name: String, codec: Codec[F, O, A]): Branch[F[O], A] =
-//   new Root[F, O, F[O], A](name, codec):
-//     override def encode(a: A): F[O] = this.codec.encode(a)
-
-given [O <: Data]: Invariant[Branch[O, *]] with
-  override def imap[A, B](fa: Branch[O, A])(f: A => B)(g: B => A): Branch[O, B] =
-    fa.imap(f)(g)
+  given [O <: Data]: Invariant[Branch[O, *]] with
+    override def imap[A, B](fa: Branch[O, A])(f: A => B)(g: B => A): Branch[O, B] =
+      fa.imap(f)(g)

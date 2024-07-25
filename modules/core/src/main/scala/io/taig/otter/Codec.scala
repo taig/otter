@@ -9,14 +9,14 @@ abstract class Codec[+O <: Data, A]:
   self =>
 
   def metadata: Metadata
-  // def modifyMetadata(f: Metadata => Metadata): Codec[V, O, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
-  // def default: Option[A]
-  // def modifyDefault(f: Option[A] => Option[A]): Codec[V, O, A]
+  def default: Option[A]
+  def modifyDefault(f: Option[A] => Option[A]): Codec[O, A]
 
-  // def imap[B](f: A => B)(g: B => A): Codec[V, O, B]
+  def imap[B](f: A => B)(g: B => A): Codec[O, B]
 
-  // def optional: Codec[Codec.Variant.Optional, O, Option[A]]
+  def optional: Codec[Data.Optional[O], Option[A]]
 
   // final def toCollection: Collection[Data.Array[O], Vector[A]] = Collection(this)
   // final def toProduct: Product[Data.Array[O], A] = Product(this)

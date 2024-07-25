@@ -14,3 +14,5 @@ object Metadata:
     def remove[A](key: Metadata.Key[A]): Metadata = self.removed(key)
 
   val Empty: Metadata = Map.empty
+
+  def one[A](key: Metadata.Key[A], value: A): Metadata = Map(key -> value)
