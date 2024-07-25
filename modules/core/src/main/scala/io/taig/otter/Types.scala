@@ -1,63 +1,64 @@
 package io.taig.otter
 
 import io.taig.otter as Base
+import cats.Id
 
 trait Types:
   export Base.{CodecValidation, Constraint, Metadata, Type}
 
-  final type Codec[A] = Base.Codec[?, A]
+  // final type Codec[A] = Base.Codec[?, A]
 
-  object Codec:
-    type Of[O <: Data, A] = Base.Codec[O, A]
+  // object Codec:
+  //   type Of[O <: Data, A] = Base.Codec[O, A]
 
-    type Required[A] = Base.Codec[Data.Value, A]
-
-    object Required:
-      type Of[O <: Data.Value, A] = Base.Codec[O, A]
-
-    export Base.Codec.Result
-
-  // final type Value[A] = Base.Value[?, A]
-
-  // object Value:
-  //   type Of[O, A] = Base.Value[O, A]
-
-  //   type Required[A] = Base.Value.Required[?, A]
+  //   type Required[A] = Base.Codec[Data.Value, A]
 
   //   object Required:
-  //     type Of[O, A] = Base.Value.Required[O, A]
+  //     type Of[O <: Data.Value, A] = Base.Codec[O, A]
 
-  final type Collection[A] = Base.Collection[?, A]
+  // export Base.Codec.Result
 
-  object Collection:
-    type Of[O <: Data, A] = Base.Collection[Data.Optional[Data.Array[O]], A]
+  // // final type Value[A] = Base.Value[?, A]
 
-    type Required[A] = Base.Collection[Data.Array[?], A]
+  // // object Value:
+  // //   type Of[O, A] = Base.Value[O, A]
 
-    object Required:
-      type Of[O <: Data, A] = Base.Collection[Data.Array[O], A]
+  // //   type Required[A] = Base.Value.Required[?, A]
 
-  // final type Dictionary[A] = Base.Dictionary[?, A]
+  // //   object Required:
+  // //     type Of[O, A] = Base.Value.Required[O, A]
 
-  // object Dictionary:
-  //   type Of[O, A] = Base.Dictionary[O, A]
+  // final type Collection[A] = Base.Collection[?, A]
 
-  // final type Dynamic[A] = Base.Dynamic[A]
+  // object Collection:
+  //   type Of[O <: Data, A] = Base.Collection[Data.Optional[Data.Array[O]], A]
 
-  // final type Enumeration[A] = Base.Enumeration[?, A]
-
-  // object Enumeration:
-  //   type Of[O, A] = Base.Enumeration[O, A]
-
-  //   type Required[A] = Base.Enumeration.Required[?, A]
+  //   type Required[A] = Base.Collection[Data.Array[?], A]
 
   //   object Required:
-  //     type Of[O, A] = Base.Enumeration.Required[O, A]
+  //     type Of[O <: Data, A] = Base.Collection[Data.Array[O], A]
 
-  final type Primitive[A] = Base.Primitive[?, A]
+  // // final type Dictionary[A] = Base.Dictionary[?, A]
 
-  object Primitive:
-    type Required[A] = Base.Primitive[Data.Primitive, A]
+  // // object Dictionary:
+  // //   type Of[O, A] = Base.Dictionary[O, A]
+
+  // // final type Dynamic[A] = Base.Dynamic[A]
+
+  // // final type Enumeration[A] = Base.Enumeration[?, A]
+
+  // // object Enumeration:
+  // //   type Of[O, A] = Base.Enumeration[O, A]
+
+  // //   type Required[A] = Base.Enumeration.Required[?, A]
+
+  // //   object Required:
+  // //     type Of[O, A] = Base.Enumeration.Required[O, A]
+
+  // final type Primitive[A] = Base.Primitive[?, A]
+
+  // object Primitive:
+  //   type Required[A] = Base.Primitive[Data.Primitive, A]
 
   // final type Product[A] = Base.Product[?, A]
 

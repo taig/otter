@@ -9,7 +9,6 @@ import java.lang.Math.toIntExact
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
-import cats.kernel.Semigroup
 
 sealed abstract class Data extends SProduct with Serializable:
   final def toValue: Option[Data.Value] = this match
@@ -40,7 +39,7 @@ object Data:
   sealed abstract class Value extends Data
 
   final case class Object[+A <: Data](values: Chain[(JString, A)]) extends Data.Value:
-    def ++[A1 >: A <: Data](obj: Data.Object[A1]): Data.Object[A1] = Object(values ++ obj.values)
+    def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     final def map[B <: Data](f: A => B): Data.Object[B] = Data.Object(values.map(_.map(f)))
 
   object Object:
@@ -125,14 +124,6 @@ object Data:
 
   case object Null extends Data
 
-  type Optional[A <: Data] = A | Data.Null.type
+  type Optional[+A] = A | Data.Null.type
 
   given Eq[Data] = Eq.fromUniversalEquals
-
-  given xxx[A <: Data]: Semigroup[Data.Optional[Data.Object[A]]] with
-
-    override def combine(x: Optional[Object[A]], y: Optional[Object[A]]): Optional[Data.Object[A]] =
-      (x, y) match
-        case (Data.Object(x), Data.Object(y)) => Data.Object(x ++ y)
-        case (x, Data.Null)                   => x
-        case (Data.Null, y)                   => y

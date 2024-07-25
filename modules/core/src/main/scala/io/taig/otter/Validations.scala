@@ -51,8 +51,8 @@ trait Validations extends Types:
 
       def iterable[F[a] <: Iterable[a], A]: CodecValidation.Collection[F[A], (A, F[A])] = apply(_.uncons)
 
-      def chain[A]: CodecValidation.Collection[Chain[A], NonEmptyChain[A]] =
-        apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
+      // def chain[A]: CodecValidation.Collection[Chain[A], NonEmptyChain[A]] =
+      //   apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
 
     object obj:
       def apply[A, B](uncons: A => Option[(B, A)]): CodecValidation.Object[A, (B, A)] =
@@ -63,8 +63,8 @@ trait Validations extends Types:
       def map[F[a, b] <: Map[a, b], A, B]: CodecValidation.Object[F[A, B], ((A, B), F[A, B])] =
         apply(fab => fab.headOption.map((_, fab.tail.asInstanceOf[F[A, B]])))
 
-      def chain[A]: CodecValidation.Object[Chain[A], NonEmptyChain[A]] =
-        apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
+      // def chain[A]: CodecValidation.Object[Chain[A], NonEmptyChain[A]] =
+      //   apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
 
   // def uniqueItems[F[a] <: Iterable[a], A](codec: Codec[A]): CodecValidation.Collection[F[A], Unit] =
   //   Base.uniqueItems
