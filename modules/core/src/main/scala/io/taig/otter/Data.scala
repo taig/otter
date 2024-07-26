@@ -9,6 +9,7 @@ import java.lang.Math.toIntExact
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
+import cats.Applicative
 
 sealed abstract class Data extends SProduct with Serializable:
   final def toValue: Option[Data.Value] = this match
@@ -51,7 +52,7 @@ object Data:
 
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length
-    def ++[A1 >: A <: Data](data: Data.Array[A1]): Data.Array[A1] = Array(values ++ data.values)
+    def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
@@ -124,6 +125,6 @@ object Data:
 
   case object Null extends Data
 
-  type Optional[+A] = A | Data.Null.type
+  type Optional[+A <: Data] = A | Data.Null.type
 
   given Eq[Data] = Eq.fromUniversalEquals

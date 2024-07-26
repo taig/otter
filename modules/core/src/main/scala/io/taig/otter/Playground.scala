@@ -5,12 +5,11 @@ import cats.Id
 object Playground:
   import io.taig.otter.Types.*
 
-  extension [A <: Matchable](self: Data.Optional[A])
-    inline def getOrElse[B >: A](b: => B): B =
-      self match
-        case Data.Null => b
-        case a: A      => a
+/*
+sealed class Product
 
-  val a: Data.Object[Data.Array[?]] = Data.Object.of("foo" -> Data.Array.Empty)
-  val b: Data.Optional[Data.Object[Data.Number]] = Data.Null
-  val c: Data.Object[Data.String] = Data.Object.one("asdf", Data.String("asdf"))
+sealed class Record extends Product
+
+sealed class Tuple extends Product
+
+ */
