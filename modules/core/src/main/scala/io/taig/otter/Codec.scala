@@ -5,18 +5,18 @@ import cats.data.Validated
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
-abstract class Codec[+O <: Data, A]:
+abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   self =>
 
   def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 
   def default: Option[A]
-  def modifyDefault(f: Option[A] => Option[A]): Codec[O, A]
+  def modifyDefault(f: Option[A] => Option[A]): Codec[F, O, A]
 
-  def imap[B](f: A => B)(g: B => A): Codec[O, B]
+  def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
 
-  def optional: Codec[Data.Optional[O], Option[A]]
+  def optional: Codec[Data.Optional, O, Option[A]]
 
   // final def toCollection: Collection[Data.Array[O], Vector[A]] = Collection(this)
   // final def toProduct: Product[Data.Array[O], A] = Product(this)

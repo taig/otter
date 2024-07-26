@@ -2,87 +2,98 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import cats.data.Chain
-import cats.Invariant
 import io.taig.otter.Data.Optional
-import io.taig.otter.Data.Value
-import io.taig.otter.Codec.Result
-import cats.data.NonEmptyChainImpl
-import cats.Id
+import cats.Id as Identity
 
-sealed abstract class Sum[+O <: Data, A] extends Codec[O, A]:
+sealed abstract class Sum[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, O, A]:
   self =>
 
   def branches: NonEmptyChain[Branch[?, ?]]
 
-  final override def modifyMetadata(f: Metadata => Metadata): Sum[O, A] = new Sum[O, A]:
-    export self.{attemptDecode, branches, default, encode}
-    override def metadata: Metadata = f(self.metadata)
+  override def modifyMetadata(f: Metadata => Metadata): Sum[F, O, A]
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Sum[O, A] = new Sum[O, A]:
-    export self.{branches, encode, metadata}
-    override def default: Option[A] = f(self.default)
-    override def attemptDecode(data: Data): Codec.Result[Option[A]] = (data, default) match
-      case (Data.Null, Some(default)) => default.some.valid
-      case _                          => self.attemptDecode(data)
+  override def modifyDefault(f: Option[A] => Option[A]): Sum[F, O, A]
 
-  override def imap[B](f: A => B)(g: B => A): Sum[O, B] = ???
-  // final override def imap[B](f: A => B)(g: B => A): Sum[O, B] = new Sum[O, B]:
-  //   export self.{branches, metadata}
-  //   override def default: Option[B] = self.default.map(f)
-  //   override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[Option[B]] =
-  //     self.decode(data).map(_.map(f))
-  //   override def encode(b: B): O = self.encode(g(b))
+  override def imap[B](f: A => B)(g: B => A): Sum[F, O, B]
 
-  // new Sum[O | P, Either[A, B]]:
-  //   override def branches: NonEmptyChain[Branch[?, ?]] = self.branches ++ sum.branches
-  //   override def metadata: Metadata = Metadata.Empty
-  //   override def default: Option[Either[A, B]] = None
-  //   override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[Option[Either[A, B]]] =
-  //     self
-  //       .decode(data)
-  //       .andThen:
-  //         case Some(a) => a.asLeft.some.valid
-  //         case None    => sum.decode(data).map(_.map(_.asRight))
-  //   override def encode(ab: Either[A, B]): Data = ab.fold(self.encode, sum.encode)
+  override def optional: Sum[Data.Optional, O, Option[A]]
 
-  final override def optional: Sum[Data.Optional[O], Option[A]] = new Sum[Data.Optional[O], Option[A]]:
-    export self.{branches, metadata}
-    override def default: Option[Option[A]] = self.default.map(_.some)
-    override def attemptDecode(data: Data): Codec.Result[Option[Option[A]]] =
-      // TODO not sure if `default.valid` is correct
-      data.toValue.fold(default.valid)(_ => self.attemptDecode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Optional[O] = a.map(self.encode).getOrElse(Data.Null)
+  def orElse[B](sum: Sum[?, ?, B]): Sum[Identity, O, Either[A, B]] = ???
 
-  final override def decode(data: Data): Codec.Result[A] = ???
-  // data
-  //   .match
-  //     case Data.Null           => decode(none)
-  //     case Data.Object(values) => decode(values.some)
-  //     case data => Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))).invalid
-  //   .andThen(
-  //     _.toValid(
-  //       Violations.rootNec(
-  //         Violation(
-  //           Constraint.OneOf(branches.map(branch => Data.String(branch.name)).toList),
-  //           actual = Data.String("null")
-  //         )
-  //       )
-  //     )
-  //   )
+  def untagged: Sum.Untagged[F, Data, A]
 
-  def attemptDecode(data: Data): Codec.Result[Option[A]]
+  def encode(a: A): O
 
 object Sum:
-  def apply[O <: Data, A](branch: Branch[O, A]): Sum[O, A] = new Sum[O, A] {
-    override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
-    override def metadata: Metadata = Metadata.Empty
-    override def default: Option[A] = None
-    override def attemptDecode(data: Data): Codec.Result[Option[A]] = branch.decode(data)
-    override def encode(a: A): O = branch.encode(a)
-  }
+  sealed abstract class Nested[+F[+a] <: Data.Optional[a], +O <: Data, A]
+      extends Sum[F, Data.Object[Data.String | O], A]:
+    override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = ???
+    override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
+    override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = ???
+    override def optional: Sum.Nested[Data.Optional, O, Option[A]] = ???
+    override def orElse[B](sum: Sum[?, ?, B]): Sum.Nested[Identity, O, Either[A, B]] = ???
+    override def untagged: Sum.Untagged[F, O, A]
 
-// given [F[+a <: Data] <: Data.Optional[a], O <: Data]: Invariant[Sum[F, O, *]] with
-//   override def imap[A, B](fa: Sum[F, O, A])(f: A => B)(g: B => A): Sum[F, O, B] = fa.imap(f)(g)
+  object Nested:
+    def apply[O <: Data, A](branch: Branch[O, A], discriminator: Discriminator.Nested): Sum.Nested[Identity, O, A] =
+      new Nested[Identity, O, A]:
+        override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
+        override def metadata: Metadata = Metadata.Empty
+        override def default: Option[A] = None
+        override def untagged: Untagged[Identity, O, A] = Untagged(branch)
+        override def decode(data: Data): Codec.Result[A] = ???
+        override def encode(a: A): Data.Object[Data.String | O] =
+          Data.Object.of(discriminator.value -> branch.encode(a), discriminator.identifier -> Data.String(branch.name))
+
+  sealed abstract class Merged[+F[+a] <: Data.Optional[a], +O <: Data, A]
+      extends Sum[F, Data.Object[Data.String | O], A]:
+    override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = ???
+    override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
+    override def imap[B](f: A => B)(g: B => A): Sum.Merged[F, O, B] = ???
+    override def optional: Sum.Merged[Data.Optional, O, Option[A]] = ???
+    override def orElse[B](sum: Sum[?, ?, B]): Sum.Merged[Identity, O, Either[A, B]] = ???
+    override def untagged: Sum.Untagged[F, Data.Object[O], A]
+
+  object Merged:
+    def apply[O <: Data.Object[P], P <: Data, A](
+        branch: Branch[O, A],
+        discriminator: Discriminator.Merged
+    ): Sum.Merged[Identity, P, A] = new Merged[Identity, P, A]:
+      override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
+      override def metadata: Metadata = Metadata.Empty
+      override def default: Option[A] = None
+      override def untagged: Untagged[Identity, Data.Object[P], A] = Untagged(branch)
+      override def decode(data: Data): Codec.Result[A] = ???
+      override def encode(a: A): O & Data.Object[Data.String] =
+        ??? // Data.Object.one(discriminator.identifier, Data.String(branch.name)) ++ branch.encode(a)
+
+  sealed abstract class Keyed[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Sum[F, Data.Object[O], A]:
+    override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = ???
+    override def modifyDefault(f: Option[A] => Option[A]): Sum.Keyed[F, O, A] = ???
+    override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = ???
+    override def optional: Sum.Keyed[Data.Optional, O, Option[A]] = ???
+    override def untagged: Sum.Untagged[F, O, A]
+
+  object Keyed:
+    def apply[O <: Data, A](branch: Branch[O, A]): Sum.Keyed[Identity, O, A] = new Keyed[Identity, O, A]:
+      override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
+      override def metadata: Metadata = Metadata.Empty
+      override def default: Option[A] = None
+      override def untagged: Sum.Untagged[Identity, O, A] = Untagged(branch)
+      override def decode(data: Data): Codec.Result[A] = ???
+      override def encode(a: A): Data.Object[O] = Data.Object.one(branch.name, branch.encode(a))
+
+  sealed abstract class Untagged[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Sum[F, O, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = ???
+    override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
+    override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = ???
+    override def optional: Sum.Untagged[Data.Optional, O, Option[A]] = ???
+    final override def untagged: Sum.Untagged[F, O, A] = this
+
+  object Untagged:
+    def apply[O <: Data, A](branch: Branch[O, A]): Sum.Untagged[Identity, O, A] = new Untagged[Identity, O, A]:
+      override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
+      override def metadata: Metadata = Metadata.Empty
+      override def default: Option[A] = None
+      override def decode(data: Data): Codec.Result[A] = branch.decode(data)
+      override def encode(a: A): O = branch.encode(a)
