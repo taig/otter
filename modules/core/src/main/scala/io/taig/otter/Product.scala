@@ -29,16 +29,30 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     extends Product[F, Data.Object, O, A]:
   self =>
 
-  final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = ???
+  final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
+    export self.{default, decode, encode, fields}
+    override def metadata: Metadata = f(self.metadata)
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Record[F, O, A] = ???
+  final override def modifyDefault(f: Option[A] => Option[A]): Record[F, O, A] = new Record[F, O, A]:
+    export self.{metadata, encode, fields}
+    override def default: Option[A] = f(self.default)
+    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] = 
+      (data, default) match
+        case (None, Some(default)) => (data, default).valid
+        case _ => self.decode(data)
 
-  final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = ???
+  final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = new Record[F, O, B]:
+    export self.{fields,metadata}
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], B)] = 
+      self.decode(data).map(_.map(f))
+    override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], Option[A])] =
+      // TODO check if data is empty by verifying if fields exist
       data.fold(Validated.valid(default.flatten).tupleLeft(data))(_ => self.decode(data).map(_.map(_.some)))
     override def encode(a: Option[A]): Data.Optional[Data.Object[O]] = a.map(self.encode).getOrElse(Data.Null)
 
@@ -48,9 +62,12 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def fields: Fields[?, ?] = self.fields.product(codec.fields)
     override def default: Option[(A, B)] = None
     override def metadata: Metadata = Metadata.Empty
-    override def decode(data: Option[Chain[(String, Data)]]): Result[(Option[Chain[(String, Data)]], (A, B))] = ???
+    override def decode(data: Option[Chain[(String, Data)]]): Result[(Option[Chain[(String, Data)]], (A, B))] =
+      self.decode(data) match
+        case Validated.Valid((data, a))    => codec.decode(data).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) => codec.decode(data).fold(violations.combine, _ => violations).invalid
     override def encode(ab: (A, B)): Data.Object[F[O] | G[P]] =
-      self.encode(ab._1).fill ++ codec.encode(ab._2).fill
+      self.encode(ab._1).sequence ++ codec.encode(ab._2).sequence
 
   final override def decode(data: Data): Codec.Result[A] = data
     .match
@@ -61,44 +78,21 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
 
   def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)]
 
-// object Record:
-//   extension [O <: Data, A](self: Record[Data.Optional[Data.Object[O]], A])
-//     def product[P <: Data, B](codec: Record[Data.Optional[Data.Object[P]], B]): Record[Data.Object[O | P], (A, B)] =
-//       new Record[Data.Object[O | P], (A, B)]:
-//         override def fields: Fields[?, ?] = self.fields.product(codec.fields)
-//         override def metadata: Metadata = Metadata.Empty
-//         override def default: Option[(A, B)] = None
-//         override def decode(data: Option[Chain[(String, Data)]]): Result[(Option[Chain[(String, Data)]], (A, B))] = ???
-//         override def encode(ab: (A, B)): Data.Object[O | P] = (self.encode(ab._1) match {
-//           case Data.Null => Data.Object.Empty
-//           case data: Data.Object[O] => data
-//         }) ++ (codec.encode(ab._2) match {
-//           case Data.Null => Data.Object.Empty
-//           case data: Data.Object[P] => data
-//         })
-
-// // object Record:
-// //   def apply[O <: Data, A](fields: Fields[O, A]): Record[Data.Optional.Some, O, A] =
-// //     val _fields = fields
-
-// //     new Record[Data.Optional.Some, O, A]:
-// //       override def fields: Fields[O, A] = _fields
-// //       override def metadata: Metadata = Metadata.Empty
-// //       override def default: Option[A] = None
-// //       override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] =
-// //         data
-// //           .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
-// //           .andThen(fields.decodeRecord(_).map(_.leftMap(_.some)))
-// //       override def encode(a: A): Data.Optional.Some[Data.Object[O]] =
-// //         Data.Optional.Some(Data.Object(fields.encodeRecord(a)))
-
 sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
     extends Product[F, Data.Array, O, A]:
   self =>
 
-  final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = ???
+  final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
+    export self.{default, decode, encode, fields}
+    override def metadata: Metadata = f(self.metadata)
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Tuple[F, O, A] = ???
+  final override def modifyDefault(f: Option[A] => Option[A]): Tuple[F, O, A] = new Tuple[F, O, A]:
+    export self.{metadata, encode, fields}
+    override def default: Option[A] = f(self.default)
+    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = 
+      (data, default) match
+        case (None, Some(default)) => (data, default).valid
+        case _ => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = ???
 
@@ -110,10 +104,13 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
     override def fields: Fields[?, ?] = self.fields.product(codec.fields)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
-    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] = ???
+    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] =
+      self.decode(data) match
+        case Validated.Valid((data, a))    => codec.decode(data).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) => codec.decode(data).fold(violations.combine, _ => violations).invalid
     override def encode(ab: (A, B)): Data.Array[F[O] | G[P]] =
-      self.encode(ab._1).fill(self.fields.toChain.length.toInt) ++
-        codec.encode(ab._2).fill(codec.fields.toChain.length.toInt)
+      self.encode(ab._1).sequence(self.fields.toChain.length.toInt) ++
+        codec.encode(ab._2).sequence(codec.fields.toChain.length.toInt)
 
   override def decode(data: Data): Codec.Result[A] = data
     .match
