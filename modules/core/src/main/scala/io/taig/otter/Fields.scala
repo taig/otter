@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.Chain
 import cats.syntax.all.*
 import cats.data.Validated
+import io.taig.otter.Codec.Result
 
 sealed abstract class Fields[+O, A]:
   self =>
@@ -11,26 +12,41 @@ sealed abstract class Fields[+O, A]:
 
   final def product[P, B](fields: Fields[P, B]): Fields[O | P, (A, B)] = new Fields[O | P, (A, B)]:
     export self.toChain
-    override def decode(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], (A, B))] =
-      self.decode(data) match
-        case Validated.Valid((data, a))    => fields.decode(data).map(_.tupleLeft(a))
-        case Validated.Invalid(violations) => fields.decode(data).fold(violations.combine, _ => violations).invalid
-    override def encode(ab: (A, B)): Chain[(String, O | P)] = self.encode(ab._1) ++ fields.encode(ab._2)
+    override def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], (A, B))] =
+      self.decodeRecord(data) match
+        case Validated.Valid((data, a)) => fields.decodeRecord(data).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) =>
+          fields.decodeRecord(data).fold(violations.combine, _ => violations).invalid
+    override def decodeArray(data: Vector[Data]): Codec.Result[(Vector[Data], (A, B))] = ???
+    override def encodeRecord(ab: (A, B)): Chain[(String, O | P)] =
+      self.encodeRecord(ab._1) ++ fields.encodeRecord(ab._2)
+    override def encodeArray(ab: (A, B)): Vector[O | P] = self.encodeArray(ab._1) ++ fields.encodeArray(ab._2)
 
-  def decode(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)]
+  def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)]
 
-  def encode(a: A): Chain[(String, O)]
+  def decodeArray(data: Vector[Data]): Codec.Result[(Vector[Data], A)]
+
+  def encodeRecord(a: A): Chain[(String, O)]
+
+  def encodeArray(a: A): Vector[O]
 
 object Fields:
   val Empty: Fields[Nothing, Unit] = new Fields[Nothing, Unit]:
     override def toChain: Chain[Nothing] = Chain.empty
-    override def decode(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], Unit)] =
+    override def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], Unit)] =
       (data, ()).valid
-    override def encode(a: Unit): Chain[Nothing] = Chain.empty
+    override def decodeArray(data: Vector[Data]): Result[(Vector[Data], Unit)] = (data, ()).valid
+    override def encodeRecord(a: Unit): Chain[Nothing] = Chain.empty
+    override def encodeArray(a: Unit): Vector[Nothing] = Vector.empty
 
   def apply[O <: Data, A](field: Field[O, A]): Fields[O, A] = new Fields[O, A]:
     override def toChain: Chain[Field[?, ?]] = Chain.one(field)
-    override def decode(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] =
+    override def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] =
       val (head, remainders) = data.findWithRemainders { case (name, data) if name === field.name => data }
       field.decode(head.getOrElse(Data.Null)).leftMap(field.name /: _).tupleLeft(remainders)
-    override def encode(a: A): Chain[(String, O)] = Chain.one(field.name -> field.encode(a))
+    override def decodeArray(data: Vector[Data]): Result[(Vector[Data], A)] =
+      data.uncons match
+        case Some((head, tail)) => field.decode(head).tupleLeft(tail)
+        case None               => ???
+    override def encodeRecord(a: A): Chain[(String, O)] = Chain.one(field.name -> field.encode(a))
+    override def encodeArray(a: A): Vector[O] = Vector(field.encode(a))

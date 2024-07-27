@@ -2,12 +2,12 @@ package io.taig.otter
 
 import io.taig.otter.Codec.Result
 
-sealed abstract class Field[+O <: Data, A]:
+sealed abstract class Field[+O, A]:
   self =>
 
   def name: String
 
-  def codec: Codec[?, ?]
+  def codec: Codec[?, ?, ?]
 
   def metadata: Metadata
 
@@ -25,13 +25,16 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): O
 
 object Field:
-  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Field[O, A] =
+  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+      name: String,
+      codec: Codec[F, O, A]
+  ): Field[F[O], A] =
     val _name = name
     val _codec = codec
 
-    new Field[O, A]:
+    new Field[F[O], A]:
       override def name: String = _name
-      override def codec: Codec[O, A] = _codec
+      override def codec: Codec[F, O, A] = _codec
       override def metadata: Metadata = Metadata.Empty
       override def decode(data: Data): Codec.Result[A] = ???
-      override def encode(a: A): O = codec.encode(a)
+      override def encode(a: A): F[O] = codec.encode(a)

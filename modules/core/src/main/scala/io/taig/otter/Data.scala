@@ -10,6 +10,10 @@ import java.lang.Math.toIntExact
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 import cats.Applicative
+import cats.Monad
+import cats.Traverse
+import scala.reflect.TypeTest
+import cats.Id
 
 sealed abstract class Data extends SProduct with Serializable:
   final def toValue: Option[Data.Value] = this match
@@ -125,6 +129,33 @@ object Data:
 
   case object Null extends Data
 
-  type Optional[+A <: Data] = A | Data.Null.type
+  type Optional[A <: Data] = A | Data.Null.type
+
+  extension [A <: Data.Value: TypeTest[Data.Optional[A], *]](self: Data.Optional[A])
+    def getOrElse[B >: A](b: => B): B = self match
+      case Data.Null => b
+      case a: A      => a
+
+  trait Ops[F[+a <: Data] <: Data.Optional[a]]:
+    extension [A <: Data](self: F[Data.Array[A]]) def fill(n: Int): Data.Array[F[A]]
+
+    extension [A <: Data](self: F[Data.Object[A]]) def fill: Data.Object[F[A]]
+
+  object Ops:
+    given Ops[Id] = new Ops[Id]:
+      extension [A <: Data](self: Data.Object[A]) override def fill: Data.Object[A] = self
+
+      extension [A <: Data](self: Data.Array[A]) override def fill(n: Int): Data.Array[A] = self
+
+    given Ops[Data.Optional] = new Ops[Data.Optional]:
+      extension [A <: Data](self: Data.Optional[Data.Object[A]])
+        override def fill: Data.Object[Data.Optional[A]] = self match
+          case Data.Null            => Data.Object.Empty
+          case data: Data.Object[A] => data
+
+      extension [A <: Data](self: Data.Optional[Data.Array[A]])
+        override def fill(n: Int): Data.Array[Data.Optional[A]] = self match
+          case Data.Null           => Data.Array.fill(n)(Data.Null)
+          case data: Data.Array[A] => data
 
   given Eq[Data] = Eq.fromUniversalEquals
