@@ -94,12 +94,16 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = ???
 
-  final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]] {
+  final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Option[A])] = ???
+    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], Option[A])] =
+      data match
+        case Some(values) if values.forall(_ === Data.Null) =>
+          (data.map(_.drop(self.fields.toVector.length)), default.flatten).valid
+        case Some(_) => self.decode(data).map(_.map(_.some))
+        case None    => (data.map(_.drop(self.fields.toVector.length)), default.flatten).valid
     override def encode(a: Option[A]): Data.Optional[Data.Array[O]] = a.map(self.encode).getOrElse(Data.Null)
-  }
 
   final def zip[G[+a <: Data] <: Data.Optional[a]: Data.Ops, P <: Data, B](
       codec: Tuple[G, P, B]
@@ -133,8 +137,7 @@ object Tuple:
       override def fields: Fields[O, A] = _fields
       override def default: Option[A] = None
       override def metadata: Metadata = Metadata.Empty
-      override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =
-        data
-          .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
-          .andThen(fields.decodeArray(_).map(_.leftMap(_.some)))
+      override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = data
+        .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
+        .andThen(fields.decodeArray(_).map(_.leftMap(_.some)))
       override def encode(a: A): Data.Array[O] = Data.Array(fields.encodeArray(a))
