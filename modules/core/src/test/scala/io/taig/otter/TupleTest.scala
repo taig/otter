@@ -95,17 +95,20 @@ final class TupleTest extends FunSuite:
 
     assertEquals(
       obtained = codec.decode(Data.Array.of()),
-      expected = Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 2), actual = Data.Number(0))).invalid
+      expected =
+        Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 2), actual = Data.Number(0))).invalid
     )
 
     assertEquals(
       obtained = codec.decode(Data.Array.of(Data.String("foobar"))),
-      expected = Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 2), actual = Data.Number(1))).invalid
+      expected =
+        Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 2), actual = Data.Number(1))).invalid
     )
 
     assertEquals(
       obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42), Data.String("foobar"))),
-      expected = Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference = 2), actual = Data.Number(3))).invalid
+      expected =
+        Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference = 2), actual = Data.Number(3))).invalid
     )
 
   test("encode"):

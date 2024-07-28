@@ -35,8 +35,10 @@ trait Codecs extends Validations:
   def field[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
       name: String,
       codec: Base.Codec[F, O, A]
-  ): Field.Of[F[O], A] =
-    Base.Field(name, codec)
+  ): Field.Of[F[O], A] = Base.Field(name, codec)
+
+  def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = fields.toRecord
+  def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = record(field.toFields)
 
   def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
   def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)

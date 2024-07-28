@@ -45,6 +45,7 @@ sealed abstract class Fields[+O <: Data, A]:
     field.toFields.zip(this).imap(merge.apply)(merge.unapply)
 
   final def toTuple: Tuple[Identity, O, A] = Tuple(this)
+  final def toRecord: Record[Identity, O, A] = Record(this)
 
   def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)]
 

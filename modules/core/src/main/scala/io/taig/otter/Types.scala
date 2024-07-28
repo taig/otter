@@ -65,10 +65,15 @@ trait Types:
   // object Product:
   //   type Of[O, A] = Base.Product[O, A]
 
-  // final type Record[A] = Base.Record[?, A]
+  type Record[A] = Base.Record[Data.Optional, ?, A]
 
-  // object Record:
-  //   type Of[O, A] = Base.Record[O, A]
+  object Record:
+    type Of[O <: Data, A] = Base.Record[Data.Optional, O, A]
+
+    type Required[A] = Base.Record[Identity, ?, A]
+
+    object Required:
+      type Of[O <: Data, A] = Base.Record[Identity, O, A]
 
   // final type Sum[A] = Base.Sum[?, A]
 

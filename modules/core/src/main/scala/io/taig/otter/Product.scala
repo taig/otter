@@ -76,6 +76,20 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
 
   def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)]
 
+object Record:
+  def apply[O <: Data, A](fields: Fields[O, A]): Record[Identity, O, A] =
+    val _fields = fields
+
+    new Record[Identity, O, A]:
+      override def fields: Fields[O, A] = _fields
+      override def default: Option[A] = None
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] =
+        data
+          .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
+          .andThen(fields.decodeRecord(_).map(_.leftMap(_.some)))
+      override def encode(a: A): Data.Object[O] = Data.Object(fields.encodeRecord(a))
+
 sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
     extends Product[F, Data.Array, O, A]:
   self =>
