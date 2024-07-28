@@ -77,6 +77,19 @@ final class TupleTest extends FunSuite:
       expected = (none, none).valid
     )
 
+  test("decode: optional (nested)"):
+    val codec = tuple(field("foo", string.optional) :* field("bar", int.optional)).optional
+
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42))),
+      expected = ("foobar".some, 42.some).some.valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.Null, Data.Null)),
+      expected = none.valid
+    )
+
   test("encode"):
     val codec = tuple(field("foo", string) :* field("bar", int))
 
