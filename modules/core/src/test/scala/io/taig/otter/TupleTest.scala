@@ -9,9 +9,8 @@ import java.math.BigInteger as JBigInteger
 import io.taig.otter.Dsl.*
 
 final class TupleTest extends FunSuite:
-  test("decode"):
-    tuple {
-      field("foo", string)
-    }
-    val x: Tuple[String] = ???
-    ???
+  test("encode"):
+    assertEquals(
+      obtained = tuple(field("foo", string) :* field("bar", int)).encode(("foobar", 42)),
+      expected = Data.Array.of(Data.String("foobar"), Data.Number(42))
+    )

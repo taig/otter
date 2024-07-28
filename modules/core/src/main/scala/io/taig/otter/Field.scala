@@ -20,6 +20,9 @@ sealed abstract class Field[+O <: Data, A]:
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
+  final def :*[P <: Data, B](field: Field[P, B]): Fields[O | P, (A, B)] =
+    toFields.zip(field.toFields)
+
   final def toFields: Fields[O, A] = Fields(this)
 
   def decode(data: Data): Codec.Result[A]

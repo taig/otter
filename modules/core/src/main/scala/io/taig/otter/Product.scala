@@ -7,7 +7,7 @@ import io.taig.otter.validation.Violation
 import cats.data.Validated
 import io.taig.otter.Data.Optional
 import io.taig.otter.Codec.Result
-import cats.Id
+import cats.Id as Identity
 
 sealed abstract class Product[
     +F[+a <: Data] <: Data.Optional[a],
@@ -56,7 +56,7 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
 
   def product[G[+a <: Data] <: Data.Optional[a]: Data.Ops, P <: Data, B](
       codec: Record[G, P, B]
-  ): Record[Id, F[O] | G[P], (A, B)] = new Record[Id, F[O] | G[P], (A, B)]:
+  ): Record[Identity, F[O] | G[P], (A, B)] = new Record[Identity, F[O] | G[P], (A, B)]:
     override def fields: Fields[?, ?] = self.fields.product(codec.fields)
     override def default: Option[(A, B)] = None
     override def metadata: Metadata = Metadata.Empty
@@ -98,7 +98,7 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
 
   def product[G[+a <: Data] <: Data.Optional[a]: Data.Ops, P <: Data, B](
       codec: Tuple[G, P, B]
-  ): Tuple[Id, F[O] | G[P], (A, B)] = new Tuple[Id, F[O] | G[P], (A, B)]:
+  ): Tuple[Identity, F[O] | G[P], (A, B)] = new Tuple[Identity, F[O] | G[P], (A, B)]:
     override def fields: Fields[?, ?] = self.fields.product(codec.fields)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
@@ -119,7 +119,17 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
 
   def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)]
 
-// object Tuple:
+object Tuple:
+  def apply[O <: Data, A](fields: Fields[O, A]): Tuple[Identity, O, A] =
+    val _fields = fields
+    new Tuple[Identity, O, A] {
+      override def fields: Fields[O, A] = _fields
+      override def default: Option[A] = None
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = ???
+      override def encode(a: A): Data.Array[O] = Data.Array(fields.encodeArray(a))
+
+    }
 //   extension [O <: Data, A](self: Tuple[Data.Optional[Data.Array[O]], A])
 //     def product[P <: Data, B](codec: Tuple[Data.Optional[Data.Array[P]], B]): Tuple[Data.Array[O | P], (A, B)] =
 //       new Tuple[Data.Array[O | P], (A, B)]:
