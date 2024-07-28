@@ -25,7 +25,11 @@ sealed abstract class Fields[+O <: Data, A]:
         case Validated.Valid((data, a)) => fields.decodeRecord(data).map(_.tupleLeft(a))
         case Validated.Invalid(violations) =>
           fields.decodeRecord(data).fold(violations.combine, _ => violations).invalid
-    override def decodeArray(data: Vector[Data]): Codec.Result[(Vector[Data], (A, B))] = ???
+    override def decodeArray(data: Vector[Data]): Codec.Result[(Vector[Data], (A, B))] =
+      self.decodeArray(data) match
+        case Validated.Valid((data, a)) => fields.decodeArray(data).map(_.tupleLeft(a))
+        case Validated.Invalid(violations) =>
+          fields.decodeArray(data.drop(self.toVector.length)).fold(violations.combine, _ => violations).invalid
     override def encodeRecord(ab: (A, B)): Chain[(String, O | P)] =
       self.encodeRecord(ab._1) ++ fields.encodeRecord(ab._2)
     override def encodeArray(ab: (A, B)): Vector[O | P] = self.encodeArray(ab._1) ++ fields.encodeArray(ab._2)
@@ -61,7 +65,7 @@ object Fields:
       val (head, remainders) = data.findWithRemainders { case (name, data) if name === field.name => data }
       field.decode(head.getOrElse(Data.Null)).leftMap(field.name /: _).tupleLeft(remainders)
     override def decodeArray(data: Vector[Data]): Codec.Result[(Vector[Data], A)] = data.uncons match
-      case Some((head, tail)) => field.decode(head).tupleLeft(tail)
+      case Some((head, tail)) => field.decode(head).leftMap(field.name /: _).tupleLeft(tail)
       case None               => ???
     override def encodeRecord(a: A): Chain[(String, O)] = Chain.one(field.name -> field.encode(a))
     override def encodeArray(a: A): Vector[O] = Vector(field.encode(a))

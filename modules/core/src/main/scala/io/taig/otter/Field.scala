@@ -41,5 +41,5 @@ object Field:
       override def name: String = _name
       override def codec: Codec[F, O, A] = _codec
       override def metadata: Metadata = Metadata.Empty
-      override def decode(data: Data): Codec.Result[A] = ???
+      override def decode(data: Data): Codec.Result[A] = codec.decode(data)
       override def encode(a: A): F[O] = codec.encode(a)

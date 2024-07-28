@@ -133,28 +133,8 @@ object Tuple:
       override def fields: Fields[O, A] = _fields
       override def default: Option[A] = None
       override def metadata: Metadata = Metadata.Empty
-      override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = ???
+      override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =
+        data
+          .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
+          .andThen(fields.decodeArray(_).map(_.leftMap(_.some)))
       override def encode(a: A): Data.Array[O] = Data.Array(fields.encodeArray(a))
-
-//   extension [O <: Data, A](self: Tuple[Data.Optional[Data.Array[O]], A])
-//     def product[P <: Data, B](codec: Tuple[Data.Optional[Data.Array[P]], B]): Tuple[Data.Array[O | P], (A, B)] =
-//       new Tuple[Data.Array[O | P], (A, B)]:
-//         override def fields: Fields[?, ?] = self.fields.product(codec.fields)
-//         override def default: Option[(A, B)] = None
-//         override def metadata: Metadata = Metadata.Empty
-//         override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], (A, B))] = ???
-//         override def encode(ab: (A, B)): Data.Array[O | P] =
-//           self.encode(ab._1)
-//           ???
-
-// // //   def apply[O <: Data, A](fields: Fields[O, A]): Tuple[Data.Array[O], A] =
-// // //     val _fields = fields
-
-// // //     new Tuple[Data.Array[O], A]:
-// // //       override def fields: Fields[O, A] = _fields
-// // //       override def metadata: Metadata = Metadata.Empty
-// // //       override def default: Option[A] = None
-// // //       override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = data
-// // //         .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
-// // //         .andThen(fields.decodeArray(_).map(_.leftMap(_.some)))
-// // //       override def encode(a: A): Data.Array[O] = Data.Array(fields.encodeArray(a))

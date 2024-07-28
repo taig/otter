@@ -31,6 +31,10 @@ enum Violations[+A]:
       case (left, right @ Namespace(y, ys)) => Group(NonEmptyChain(left, right))
 
 object Violations:
+  def of[A](violation: Violations[A], violations: Violations[A]*): Violations[A] = Group(
+    NonEmptyChain(violation, violations*)
+  )
+
   def root[A](violations: NonEmptyChain[A]): Violations[A] = Group(violations.map(Root.apply))
   def rootNec[A](violation: A): Violations[A] = Root(violation)
 

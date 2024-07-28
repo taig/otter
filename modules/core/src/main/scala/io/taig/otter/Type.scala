@@ -5,9 +5,6 @@ import cats.syntax.all.*
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.Validated
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
 
 enum Type[A]:
   case BigDecimal extends Type[JBigDecimal]
