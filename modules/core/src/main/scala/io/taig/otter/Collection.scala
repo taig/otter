@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Validation
 import io.taig.otter.validation.Violation
-import cats.Id
+import cats.Id as Identity
 
 sealed abstract class Collection[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>
@@ -42,10 +42,10 @@ sealed abstract class Collection[+F[+a <: Data] <: Data.Optional[a], +O <: Data,
 object Collection:
   def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
       codec: Codec[F, O, A]
-  ): Collection[Id, F[O], Vector[A]] =
+  ): Collection[Identity, F[O], Vector[A]] =
     val _codec = codec
 
-    new Collection[Id, F[O], Vector[A]]:
+    new Collection[Identity, F[O], Vector[A]]:
       override def codec: Codec[F, O, A] = _codec
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Vector[A]] = None
@@ -54,8 +54,8 @@ object Collection:
         .andThen(_.values.traverse(codec.decode))
       override def encode(as: Vector[A]): Data.Array[F[O]] = Data.Array(as.map(codec.encode))
 
-  // given invariant[O <: Data.Optional[Data.Array[?]]]
-  //     : ValidationInvariant[[_] =>> Constraint.Collection, Collection[O, *]] with
-  //   extension [A](self: Collection[O, A])
-  //     override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[O, B] =
-  //       self.ivalidate(validation)(f)
+  given invariant[F[+a <: Data] <: Data.Optional[a], O <: Data]
+      : ValidationInvariant[[_] =>> Constraint.Collection, Collection[F, O, *]] with
+    extension [A](self: Collection[F, O, A])
+      override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[F, O, B] =
+        self.ivalidate(validation)(f)

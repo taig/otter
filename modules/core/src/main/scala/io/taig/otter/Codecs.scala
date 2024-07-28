@@ -1,20 +1,8 @@
 package io.taig.otter
 
 import io.taig.otter as Base
-import cats.data.NonEmptyList
-import cats.data.NonEmptySeq
-import cats.data.NonEmptySet
-import cats.data.NonEmptyChain
-import cats.data.Chain
-import cats.Order
-import cats.implicits.*
-import scala.collection.immutable.SortedSet
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.NonEmptyMap
-import scala.collection.immutable.SortedMap
-import io.taig.enumeration.ext.Mapping
-import io.taig.enumeration.ext.EnumerationValues
 
 trait Codecs extends Validations:
   self =>

@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import io.taig.otter
+import cats.Id as Identity
 import cats.data.Validated
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
@@ -19,9 +19,7 @@ abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A]:
   def decode(data: Data): Codec.Result[A]
   def encode(a: A): F[O]
 
-  // final def toCollection: Collection[Data.Array[O], Vector[A]] = Collection(this)
-  // final def toProduct: Product[Data.Array[O], A] = Product(this)
-  // final def toUnion: Union[O, A] = Union(this)
+  final def toCollection: Collection[Identity, F[O], Vector[A]] = Collection(this)
 
 object Codec:
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
