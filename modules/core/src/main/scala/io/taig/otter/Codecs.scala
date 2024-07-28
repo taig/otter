@@ -19,19 +19,27 @@ import io.taig.enumeration.ext.EnumerationValues
 trait Codecs extends Validations:
   self =>
 
-  // final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
 
-  // val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
-  // val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
-  // val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
-  // val double: Primitive.Required[Double] = primitive(Type.Double)
-  // val float: Primitive.Required[Float] = primitive(Type.Float)
-  // val int: Primitive.Required[Int] = primitive(Type.Int)
-  // val long: Primitive.Required[Long] = primitive(Type.Long)
-  // val string: Primitive.Required[String] = primitive(Type.String)
+  val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
+  val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
+  val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
+  val double: Primitive.Required[Double] = primitive(Type.Double)
+  val float: Primitive.Required[Float] = primitive(Type.Float)
+  val int: Primitive.Required[Int] = primitive(Type.Int)
+  val long: Primitive.Required[Long] = primitive(Type.Long)
+  val string: Primitive.Required[String] = primitive(Type.String)
 
   // def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.type, A] = Base.Branch(name, codec)
-  // def field[A](name: String, codec: Codec[A]): Field.Of[codec.type, A] = Base.Field(name, codec)
+
+  def field[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+      name: String,
+      codec: Base.Codec[F, O, A]
+  ): Field.Of[F[O], A] =
+    Base.Field(name, codec)
+
+  def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
+  def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
 
   // object collection:
   //   def vector[A](codec: Codec[A]): Collection.Of[codec.type, Vector[A]] = codec.toCollection

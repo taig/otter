@@ -1,22 +1,22 @@
 package io.taig.otter
 
 import io.taig.otter as Base
-import cats.Id
+import cats.Id as Identity
 
 trait Types:
   export Base.{CodecValidation, Constraint, Metadata, Type}
 
-  // final type Codec[A] = Base.Codec[?, A]
+  final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 
-  // object Codec:
-  //   type Of[O <: Data, A] = Base.Codec[O, A]
+  object Codec:
+    type Of[O <: Data.Value, A] = Base.Codec[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Codec[Data.Value, A]
+    type Required[A] = Base.Codec[Identity, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data.Value, A] = Base.Codec[O, A]
+    object Required:
+      type Of[O <: Data.Value, A] = Base.Codec[Identity, O, A]
 
-  // export Base.Codec.Result
+    export Base.Codec.Result
 
   // // final type Value[A] = Base.Value[?, A]
 
@@ -55,10 +55,10 @@ trait Types:
   // //   object Required:
   // //     type Of[O, A] = Base.Enumeration.Required[O, A]
 
-  // final type Primitive[A] = Base.Primitive[?, A]
+  final type Primitive[A] = Base.Primitive[Data.Optional, A]
 
-  // object Primitive:
-  //   type Required[A] = Base.Primitive[Data.Primitive, A]
+  object Primitive:
+    type Required[A] = Base.Primitive[Identity, A]
 
   // final type Product[A] = Base.Product[?, A]
 
@@ -90,14 +90,24 @@ trait Types:
   //     object Required:
   //       type Of[O, A] = Base.Union.Value.Required[O, A]
 
+  type Tuple[A] = Base.Tuple[Data.Optional, ?, A]
+
+  object Tuple:
+    type Of[O <: Data, A] = Base.Tuple[Data.Optional, O, A]
+
+    type Required[A] = Base.Tuple[Identity, ?, A]
+
+    object Required:
+      type Of[O <: Data, A] = Base.Tuple[Identity, O, A]
+
   // final type Branch[A] = Base.Branch[?, A]
 
   // object Branch:
   //   type Of[O, A] = Base.Branch[O, A]
 
-  // final type Field[A] = Base.Field[?, A]
+  final type Field[A] = Base.Field[?, A]
 
-  // object Field:
-  //   type Of[O, A] = Base.Field[O, A]
+  object Field:
+    type Of[O <: Data, A] = Base.Field[O, A]
 
 object Types extends Types

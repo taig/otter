@@ -8,8 +8,6 @@ import cats.data.Validated
 import io.taig.otter.Data.Optional
 import io.taig.otter.Codec.Result
 import cats.Id
-import cats.Traverse
-import cats.Applicative
 
 sealed abstract class Product[
     +F[+a <: Data] <: Data.Optional[a],
@@ -30,21 +28,21 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
-    export self.{default, decode, encode, fields}
+    export self.{decode, default, encode, fields}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Record[F, O, A] = new Record[F, O, A]:
-    export self.{metadata, encode, fields}
+    export self.{encode, fields, metadata}
     override def default: Option[A] = f(self.default)
-    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] = 
+    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], A)] =
       (data, default) match
         case (None, Some(default)) => (data, default).valid
-        case _ => self.decode(data)
+        case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = new Record[F, O, B]:
-    export self.{fields,metadata}
+    export self.{fields, metadata}
     override def default: Option[B] = self.default.map(f)
-    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], B)] = 
+    override def decode(data: Option[Chain[(String, Data)]]): Codec.Result[(Option[Chain[(String, Data)]], B)] =
       self.decode(data).map(_.map(f))
     override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
@@ -83,16 +81,16 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
-    export self.{default, decode, encode, fields}
+    export self.{decode, default, encode, fields}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Tuple[F, O, A] = new Tuple[F, O, A]:
-    export self.{metadata, encode, fields}
+    export self.{encode, fields, metadata}
     override def default: Option[A] = f(self.default)
-    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] = 
+    override def decode(data: Option[Vector[Data]]): Codec.Result[(Option[Vector[Data]], A)] =
       (data, default) match
         case (None, Some(default)) => (data, default).valid
-        case _ => self.decode(data)
+        case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = ???
 

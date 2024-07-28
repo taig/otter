@@ -2,7 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.Codec.Result
 
-sealed abstract class Field[+O, A]:
+sealed abstract class Field[+O <: Data, A]:
   self =>
 
   def name: String
@@ -19,6 +19,8 @@ sealed abstract class Field[+O, A]:
     export self.{codec, metadata, name}
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
+
+  final def toFields: Fields[O, A] = Fields(this)
 
   def decode(data: Data): Codec.Result[A]
 
