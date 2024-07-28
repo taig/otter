@@ -120,13 +120,25 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
         case Validated.Invalid(violations) =>
           codec.decode(split.map(_._2)).fold(violations.combine, _ => violations).invalid
     override def encode(ab: (A, B)): Data.Array[F[O] | G[P]] =
-      self.encode(ab._1).sequence(self.fields.toVector.length) ++ codec
-        .encode(ab._2)
-        .sequence(codec.fields.toVector.length)
+      self.encode(ab._1).sequence(self.fields.toVector.length) ++
+        codec.encode(ab._2).sequence(codec.fields.toVector.length)
 
   override def decode(data: Data): Codec.Result[A] = data match
-    case Data.Null          => decode(none)
-    case Data.Array(values) => decode(values.some)
+    case Data.Null => decode(none)
+    case Data.Array(values) =>
+      val length = self.fields.toVector.length
+
+      if values.length < length
+      then
+        Violations
+          .rootNec(Violation(Constraint.Collection.MinItems(reference = length), actual = Data.Number(values.length)))
+          .invalid
+      else if values.length > length
+      then
+        Violations
+          .rootNec(Violation(Constraint.Collection.MaxItems(reference = length), actual = Data.Number(values.length)))
+          .invalid
+      else decode(values.some)
     case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
 
   def decode(data: Option[Vector[Data]]): Codec.Result[A]

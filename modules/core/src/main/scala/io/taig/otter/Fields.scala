@@ -4,6 +4,8 @@ import cats.data.Chain
 import cats.syntax.all.*
 import cats.data.Validated
 import cats.Id as Identity
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
 
 sealed abstract class Fields[+O <: Data, A]:
   self =>
@@ -66,8 +68,13 @@ object Fields:
     override def decodeRecord(data: Chain[(String, Data)]): Codec.Result[(Chain[(String, Data)], A)] =
       val (head, remainders) = data.findWithRemainders { case (name, data) if name === field.name => data }
       field.decode(head.getOrElse(Data.Null)).leftMap(field.name /: _).tupleLeft(remainders)
-    override def decodeArray(data: Vector[Data]): Codec.Result[A] = data.uncons match
-      case Some((head, tail)) => field.decode(head).leftMap(field.name /: _)
-      case None               => ???
+    override def decodeArray(data: Vector[Data]): Codec.Result[A] = data match
+      case Vector(head) => field.decode(head).leftMap(field.name /: _)
+      case Vector() =>
+        Violations.rootNec(Violation(Constraint.Collection.MinItems(reference = 1), actual = Data.Number(0))).invalid
+      case _ =>
+        Violations
+          .rootNec(Violation(Constraint.Collection.MaxItems(reference = 1), actual = Data.Number(data.length)))
+          .invalid
     override def encodeRecord(a: A): Chain[(String, O)] = Chain.one(field.name -> field.encode(a))
     override def encodeArray(a: A): Vector[O] = Vector(field.encode(a))
