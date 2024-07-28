@@ -138,17 +138,17 @@ object Data:
 
   trait Ops[F[+a <: Data] <: Data.Optional[a]]:
     extension [A <: Data](self: F[Data.Array[A]]) def sequence(n: Int): Data.Array[F[A]]
-    extension [A <: Data](self: F[Data.Object[A]]) def sequence: Data.Object[F[A]]
+    extension [A <: Data](self: F[Data.Object[A]]) def sequence(fields: Vector[JString]): Data.Object[F[A]]
 
   object Ops:
     given Ops[Id] = new Ops[Id]:
-      extension [A <: Data](self: Data.Object[A]) override def sequence: Data.Object[A] = self
       extension [A <: Data](self: Data.Array[A]) override def sequence(n: Int): Data.Array[A] = self
+      extension [A <: Data](self: Data.Object[A]) override def sequence(fields: Vector[JString]): Data.Object[A] = self
 
     given Ops[Data.Optional] = new Ops[Data.Optional]:
       extension [A <: Data](self: Data.Optional[Data.Object[A]])
-        override def sequence: Data.Object[Data.Optional[A]] = self match
-          case Data.Null            => Data.Object.Empty
+        override def sequence(fields: Vector[JString]): Data.Object[Data.Optional[A]] = self match
+          case Data.Null            => Data.Object(Chain.fromSeq(fields.tupleRight(Data.Null)))
           case data: Data.Object[A] => data
 
       extension [A <: Data](self: Data.Optional[Data.Array[A]])

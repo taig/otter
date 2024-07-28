@@ -65,7 +65,8 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
         case Validated.Valid((data, a))    => codec.decode(data).map(_.tupleLeft(a))
         case Validated.Invalid(violations) => codec.decode(data).fold(violations.combine, _ => violations).invalid
     override def encode(ab: (A, B)): Data.Object[F[O] | G[P]] =
-      self.encode(ab._1).sequence ++ codec.encode(ab._2).sequence
+      self.encode(ab._1).sequence(self.fields.toVector.map(_.name)) ++
+      codec.encode(ab._2).sequence(codec.fields.toVector.map(_.name))
 
   final override def decode(data: Data): Codec.Result[A] = data
     .match

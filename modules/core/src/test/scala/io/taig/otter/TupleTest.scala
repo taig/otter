@@ -53,8 +53,8 @@ final class TupleTest extends FunSuite:
     )
 
   test("decode: optional (product)"):
-    val codec = tuple(field("foo", string) :* field("bar", int))
-    val product = codec.optional.zip(codec.optional)
+    val product =
+      tuple(field("a", string) :* field("b", int)).optional.zip(tuple(field("c", string) :* field("d", int)).optional)
 
     assertEquals(
       obtained =
@@ -130,25 +130,25 @@ final class TupleTest extends FunSuite:
     assertEquals(obtained = codec.encode(none), expected = Data.Null)
 
   test("encode: optional (product)"):
-    val codec = tuple(field("foo", string) :* field("bar", int))
-    val product = codec.optional.zip(codec.optional)
+    val codec = tuple(field("a", string) :* field("b", int)).optional
+      .zip(tuple(field("c", string) :* field("d", int)).optional)
 
     assertEquals(
-      obtained = product.encode(("foobar", 42).some, ("foobar", 42).some),
+      obtained = codec.encode(("foobar", 42).some, ("foobar", 42).some),
       expected = Data.Array.of(Data.String("foobar"), Data.Number(42), Data.String("foobar"), Data.Number(42))
     )
 
     assertEquals(
-      obtained = product.encode(none, ("foobar", 42).some),
+      obtained = codec.encode(none, ("foobar", 42).some),
       expected = Data.Array.of(Data.Null, Data.Null, Data.String("foobar"), Data.Number(42))
     )
 
     assertEquals(
-      obtained = product.encode(("foobar", 42).some, none),
+      obtained = codec.encode(("foobar", 42).some, none),
       expected = Data.Array.of(Data.String("foobar"), Data.Number(42), Data.Null, Data.Null)
     )
 
     assertEquals(
-      obtained = product.encode(none, none),
+      obtained = codec.encode(none, none),
       expected = Data.Array.of(Data.Null, Data.Null, Data.Null, Data.Null)
     )

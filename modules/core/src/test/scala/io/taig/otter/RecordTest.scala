@@ -32,8 +32,12 @@ final class RecordTest extends FunSuite:
 
     assertEquals(
       obtained = codec.encode(("foobar", 42).some, ("foobar", 42).some),
-      expected = Data.Object
-        .of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.String("foobar"), "d" -> Data.Number(42))
+      expected = Data.Object.of(
+        "a" -> Data.String("foobar"),
+        "b" -> Data.Number(42),
+        "c" -> Data.String("foobar"),
+        "d" -> Data.Number(42)
+      )
     )
 
     assertEquals(
