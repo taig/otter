@@ -13,5 +13,14 @@ extension [A](self: Vector[A])
 
     (result, remainders.result())
 
+extension [A](self: Vector[(String, A)])
+  def filterKeys(keys: Iterable[String]): Vector[(String, A)] =
+    val result = Vector.newBuilder[(String, A)]
+
+    keys.foreach: reference =>
+      self.find { case (key, _) => reference == key }.foreach(result += _)
+
+    result.result()
+
 extension [F[a] <: Iterable[a], A](self: F[A])
   def uncons: Option[(A, F[A])] = self.headOption.map((_, self.tail.asInstanceOf[F[A]]))

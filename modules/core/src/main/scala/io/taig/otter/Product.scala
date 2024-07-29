@@ -48,8 +48,8 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[A]] = data match
       case Some(values) if values.forall { case (_, data) => data === Data.Null } => default.flatten.valid
-      case Some(_) => self.decode(data).map(_.some)
-      case None    => default.flatten.valid
+      case Some(_)                                                                => self.decode(data).map(_.some)
+      case None                                                                   => default.flatten.valid
     override def encode(a: Option[A]): Data.Optional[Data.Object[O]] = a.map(self.encode).getOrElse(Data.Null)
 
   def zip[G[+a <: Data] <: Data.Optional[a]: Data.Ops, P <: Data, B](
@@ -58,10 +58,16 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def fields: Fields[?, ?] = self.fields.zip(codec.fields)
     override def default: Option[(A, B)] = None
     override def metadata: Metadata = Metadata.Empty
-    // TODO divide and conquer
-    override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[(A, B)] = self.decode(data) match
-      case Validated.Valid(a)            => codec.decode(data).tupleLeft(a)
-      case Validated.Invalid(violations) => codec.decode(data).fold(violations.combine, _ => violations).invalid
+    override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[(A, B)] =
+      val split = data.map: values =>
+        val left = values.filterKeys(self.fields.toVector.map(_.name))
+        val right = values.filterKeys(codec.fields.toVector.map(_.name))
+        (left, right)
+
+      self.decode(split.map(_._1)) match
+        case Validated.Valid(a) => codec.decode(split.map(_._2)).tupleLeft(a)
+        case Validated.Invalid(violations) =>
+          codec.decode(split.map(_._2)).fold(violations.combine, _ => violations).invalid
     override def encode(ab: (A, B)): Data.Object[F[O] | G[P]] =
       self.encode(ab._1).sequence(self.fields.toVector.map(_.name)) ++
         codec.encode(ab._2).sequence(codec.fields.toVector.map(_.name))
