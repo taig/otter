@@ -4,8 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import cats.data.Validated
-import io.taig.otter.Data.Optional
-import io.taig.otter.Codec.Result
+import io.taig.otter.Keys.*
 import cats.Id as Identity
 
 sealed abstract class Product[
@@ -41,7 +40,7 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     export self.{fields, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
-    override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
+    override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
@@ -50,7 +49,8 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
       case Some(values) if values.forall { case (_, data) => data === Data.Null } => default.flatten.valid
       case Some(_)                                                                => self.decode(data).map(_.some)
       case None                                                                   => default.flatten.valid
-    override def encode(a: Option[A]): Data.Optional[Data.Object[O]] = a.map(self.encode).getOrElse(Data.Null)
+    override def encode(a: Option[A], nulls: Null): Data.Optional[Data.Object[O]] =
+      a.map(self.encode(_, nulls)).getOrElse(Data.Null)
 
   def zip[G[+a <: Data] <: Data.Optional[a]: Data.Ops, P <: Data, B](
       codec: Record[G, P, B]
@@ -68,7 +68,7 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
         case Validated.Valid(a) => codec.decode(split.map(_._2)).tupleLeft(a)
         case Validated.Invalid(violations) =>
           codec.decode(split.map(_._2)).fold(violations.combine, _ => violations).invalid
-    override def encode(ab: (A, B)): Data.Object[F[O] | G[P]] =
+    override def encode(ab: (A, B), nulls: Null): Data.Object[F[O] | G[P]] =
       self.encode(ab._1).sequence(self.fields.toVector.map(_.name)) ++
         codec.encode(ab._2).sequence(codec.fields.toVector.map(_.name))
 
@@ -78,6 +78,11 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     case _ => Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))).invalid
 
   def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A]
+
+  override def encode(a: A): F[Data.Object[O]] =
+    encode(a, metadata(nulls).getOrElse(Null.Default))
+
+  def encode(a: A, nulls: Null): F[Data.Object[O]]
 
 object Record:
   def apply[O <: Data, A](fields: Fields[O, A]): Record[Identity, O, A] =
@@ -90,7 +95,8 @@ object Record:
       override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A] = data
         .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
         .andThen(fields.decodeRecord)
-      override def encode(a: A): Data.Object[O] = Data.Object(fields.encodeRecord(a))
+      override def encode(a: A, nulls: Null): Data.Object[O] =
+        Data.Object(fields.encodeRecord(a, nulls))
 
 sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
     extends Product[F, Data.Array, O, A]:

@@ -147,11 +147,11 @@ final class RecordTest extends FunSuite:
     assertEquals(obtained = codec.encode(none), expected = Data.Null)
 
   test("encode: optional (product)"):
-    val codec =
-      record(field("a", string) :* field("b", int)).optional.zip(record(field("c", string) :* field("d", int)).optional)
+    val codec = record(field("a", string) :* field("b", int)).optional
+      .zip(record(field("c", string) :* field("d", int)).optional)
 
     assertEquals(
-      obtained = codec.encode(("foobar", 42).some, ("foobar", 42).some),
+      obtained = codec.encode((("foobar", 42).some, ("foobar", 42).some)),
       expected = Data.Object.of(
         "a" -> Data.String("foobar"),
         "b" -> Data.Number(42),
@@ -161,18 +161,35 @@ final class RecordTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = codec.encode(none, ("foobar", 42).some),
+      obtained = codec.encode((none, ("foobar", 42).some)),
       expected =
         Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.String("foobar"), "d" -> Data.Number(42))
     )
 
     assertEquals(
-      obtained = codec.encode(("foobar", 42).some, none),
+      obtained = codec.encode((("foobar", 42).some, none)),
       expected =
         Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Null, "d" -> Data.Null)
     )
 
     assertEquals(
-      obtained = codec.encode(none, none),
+      obtained = codec.encode((none, none)),
       expected = Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.Null, "d" -> Data.Null)
+    )
+
+  test("encode: nulls"):
+    val codec = record(
+      field("foo", string.optional).modifyMetadata(_.put(nulls, Null.Hide)) :*
+        field("bar", int.optional).modifyMetadata(_.put(nulls, Null.Show)) :*
+        field("baz", long.optional)
+    )
+
+    assertEquals(
+      obtained = codec.modifyMetadata(_.put(nulls, Null.Show)).encode((none, none, none)),
+      expected = Data.Object.of("bar" -> Data.Null, "baz" -> Data.Null)
+    )
+
+    assertEquals(
+      obtained = codec.modifyMetadata(_.put(nulls, Null.Hide)).encode((none, none, none)),
+      expected = Data.Object.of("bar" -> Data.Null)
     )
