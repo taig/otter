@@ -22,4 +22,12 @@ abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A]:
   final def toCollection: Collection[Identity, F[O], Vector[A]] = Collection(this)
 
 object Codec:
+  extension [A](self: Codec[Data.Optional, Data.Primitive, A])
+    def parseOptional(value: Option[String]): Codec.Result[A] = ???
+    def printOptional(a: A): Option[String] = ???
+
+  extension [A](self: Codec[Identity, Data.Primitive, A])
+    def parseRequired(value: String): Codec.Result[A] = ???
+    def printRequired(a: A): String = ???
+
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]

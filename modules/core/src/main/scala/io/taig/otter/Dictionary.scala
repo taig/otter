@@ -2,8 +2,8 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.Invariant
-import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
+import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Validation
 import cats.Id as Identity
 
@@ -42,15 +42,14 @@ object Dictionary:
   def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A, B](
       key: Codec[Identity, Data.Primitive, A],
       value: Codec[F, O, B]
-  ): Dictionary[Identity, O, List[(A, B)]] = ???
-  // new Dictionary:
-  //   override def metadata: Metadata = Metadata.Empty
-  //   override def default: Option[List[(A, B)]] = None
-  //   override def decode(data: Data): Codec.Result[List[(A, B)]] = data.toObject
-  //     .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-  //     .andThen(_.values.toList.traverse { case (a, b) => (key.parseRequired(a), value.decode(b)).tupled })
-  //   override def encode(abs: List[(A, B)]): Data.Object[O] =
-  //     Data.Object.fromSeq(abs.map { case (a, b) => (key.printRequired(a), value.encode(b)) })
+  ): Dictionary[Identity, F[O], Vector[(A, B)]] = new Dictionary:
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[Vector[(A, B)]] = None
+    override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.toObject
+      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
+      .andThen(_.values.traverse { case (a, b) => (key.parseRequired(a), value.decode(b)).tupled })
+    override def encode(abs: Vector[(A, B)]): Data.Object[F[O]] =
+      Data.Object(abs.map { case (a, b) => (key.printRequired(a), value.encode(b)) })
 
   given [F[+a <: Data] <: Data.Optional[a], O <: Data]: Invariant[Dictionary[F, O, *]] with
     override def imap[A, B](fa: Dictionary[F, O, A])(f: A => B)(g: B => A): Dictionary[F, O, B] =
