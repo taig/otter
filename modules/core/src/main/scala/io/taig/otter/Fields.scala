@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import cats.data.Chain
 import cats.syntax.all.*
 import cats.data.Validated
 import cats.Id as Identity

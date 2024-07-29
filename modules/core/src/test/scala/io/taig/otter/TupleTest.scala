@@ -90,6 +90,8 @@ final class TupleTest extends FunSuite:
       expected = none.valid
     )
 
+    assertEquals(obtained = codec.decode(Data.Null), expected = none.valid)
+
   test("decode: length"):
     val codec = tuple(field("foo", string) :* field("bar", int))
 

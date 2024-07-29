@@ -52,42 +52,81 @@ final class RecordTest extends FunSuite:
       expected = none.valid
     )
 
-  // test("decode: optional (product)"):
-  //   val codec = record(field("a", string) :* field("b", int)).optional
-  //   .zip(record(field("c", string) :* field("d", int)).optional)
+  test("decode: optional (product)"):
+    val codec = record(field("a", string) :* field("b", int)).optional
+      .zip(record(field("c", string) :* field("d", int)).optional)
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42), Data.String("foobar"), Data.Number(42))),
-  //     expected = (("foobar", 42).some, ("foobar", 42).some).valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          "a" -> Data.String("foobar"),
+          "b" -> Data.Number(42),
+          "c" -> Data.String("foobar"),
+          "d" -> Data.Number(42)
+        )
+      ),
+      expected = (("foobar", 42).some, ("foobar", 42).some).valid
+    )
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.Null, Data.Null, Data.String("foobar"), Data.Number(42))),
-  //     expected = (none, ("foobar", 42).some).valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.String("foobar"), "d" -> Data.Number(42))
+      ),
+      expected = (none, ("foobar", 42).some).valid
+    )
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42), Data.Null, Data.Null)),
-  //     expected = (("foobar", 42).some, none).valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of("a" -> Data.Null, "c" -> Data.String("foobar"), "d" -> Data.Number(42))
+      ),
+      expected = (none, ("foobar", 42).some).valid
+    )
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.Null, Data.Null, Data.Null, Data.Null)),
-  //     expected = (none, none).valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("c" -> Data.String("foobar"), "d" -> Data.Number(42))),
+      expected = (none, ("foobar", 42).some).valid
+    )
 
-  // test("decode: optional (nested)"):
-  //   val codec = tuple(field("foo", string.optional) :* field("bar", int.optional)).optional
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Null, "d" -> Data.Null)
+      ),
+      expected = (("foobar", 42).some, none).valid
+    )
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42))),
-  //     expected = ("foobar".some, 42.some).some.valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Null)),
+      expected = (("foobar", 42).some, none).valid
+    )
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Array.of(Data.Null, Data.Null)),
-  //     expected = none.valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
+      expected = (("foobar", 42).some, none).valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.Null, "d" -> Data.Null)),
+      expected = (none, none).valid
+    )
+
+    assertEquals(obtained = codec.decode(Data.Object.Empty), expected = (none, none).valid)
+
+  test("decode: optional (nested)"):
+    val codec = record(field("foo", string.optional) :* field("bar", int.optional)).optional
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))),
+      expected = ("foobar".some, 42.some).some.valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("foo" -> Data.Null, "bar" -> Data.Null)),
+      expected = none.valid
+    )
+
+    assertEquals(obtained = codec.decode(Data.Object.Empty), expected = none.valid)
+
+    assertEquals(obtained = codec.decode(Data.Null), expected = none.valid)
 
   test("encode"):
     val codec = record(field("foo", string) :* field("bar", int))
