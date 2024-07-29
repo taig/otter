@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.data.NonEmptySeq
 import io.taig.otter as Base
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -31,10 +32,20 @@ trait Codecs extends Validations:
   def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
   def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
 
-  // object collection:
-  //   def vector[A](codec: Codec[A]): Collection.Of[codec.type, Vector[A]] = codec.toCollection
+  object collection:
+    def vector[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+        codec: Base.Codec[F, O, A]
+    ): Collection.Required.Of[F[O], Vector[A]] = Base.Collection(codec)
 
-  //   def seq[A](codec: Codec[A]): Collection.Of[codec.type, Seq[A]] = vector(codec).imap(identity)(_.toVector)
+    def seq[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+        codec: Base.Codec[F, O, A]
+    ): Collection.Required.Of[F[O], Seq[A]] = vector(codec).imap(identity)(_.toVector)
+
+    def nonEmptySeq[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+        codec: Base.Codec[F, O, A]
+    ): Collection.Required.Of[F[O], NonEmptySeq[A]] = seq(codec)
+      .ivalidate(nonEmpty.collection.iterable)(_ +: _)
+      .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail))
 
   //   def nonEmptySeq[A](codec: Codec[A]): Collection.Of[codec.type, NonEmptySeq[A]] =
   //     seq(codec).ivalidate(nonEmpty.collection.iterable)(_ +: _).imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail))

@@ -28,15 +28,15 @@ trait Types:
   // //   object Required:
   // //     type Of[O, A] = Base.Value.Required[O, A]
 
-  // final type Collection[A] = Base.Collection[?, A]
+  final type Collection[A] = Base.Collection[Data.Optional, ?, A]
 
-  // object Collection:
-  //   type Of[O <: Data, A] = Base.Collection[Data.Optional[Data.Array[O]], A]
+  object Collection:
+    type Of[O <: Data, A] = Base.Collection[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Collection[Data.Array[?], A]
+    type Required[A] = Base.Collection[Identity, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Collection[Data.Array[O], A]
+    object Required:
+      type Of[O <: Data, A] = Base.Collection[Identity, O, A]
 
   // // final type Dictionary[A] = Base.Dictionary[?, A]
 
