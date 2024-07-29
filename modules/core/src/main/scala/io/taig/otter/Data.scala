@@ -43,16 +43,15 @@ sealed abstract class Data extends SProduct with Serializable:
 object Data:
   sealed abstract class Value extends Data
 
-  final case class Object[+A <: Data](values: Chain[(JString, A)]) extends Data.Value:
+  final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value:
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     final def map[B <: Data](f: A => B): Data.Object[B] = Data.Object(values.map(_.map(f)))
 
   object Object:
-    val Empty: Data.Object[Nothing] = Object(Chain.empty)
-    def one[A <: Data](key: JString, value: A): Data.Object[A] = Object(Chain.one((key, value)))
-    def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(Chain.fromSeq(kv))
-    def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(Chain.fromOption(kv))
-    def fromSeq[A <: Data](kvs: Seq[(JString, A)]): Data.Object[A] = Object(Chain.fromSeq(kvs))
+    val Empty: Data.Object[Nothing] = Object(Vector.empty)
+    def one[A <: Data](key: JString, value: A): Data.Object[A] = Object(Vector((key, value)))
+    def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(kv.toVector)
+    def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(kv.toVector)
 
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length
@@ -148,7 +147,7 @@ object Data:
     given Ops[Data.Optional] = new Ops[Data.Optional]:
       extension [A <: Data](self: Data.Optional[Data.Object[A]])
         override def sequence(fields: Vector[JString]): Data.Object[Data.Optional[A]] = self match
-          case Data.Null            => Data.Object(Chain.fromSeq(fields.tupleRight(Data.Null)))
+          case Data.Null            => Data.Object(fields.tupleRight(Data.Null))
           case data: Data.Object[A] => data
 
       extension [A <: Data](self: Data.Optional[Data.Array[A]])
