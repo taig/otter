@@ -45,3 +45,33 @@ final class CollectionTest extends FunSuite:
     )
 
     assertEquals(obtained = codec.decode(Data.Array.Empty), expected = Vector.empty.valid)
+
+  test("decode: optional"):
+    val codec = collection.vector(string).optional
+
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.String("foo"))),
+      expected = Vector("foo").some.valid
+    )
+
+    assertEquals(obtained = codec.decode(Data.Null), expected = none.valid)
+
+  test("decode: default"):
+    val codec = collection.vector(string).modifyDefault(_ => Some(Vector("foobar")))
+
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.String("foo"))),
+      expected = Vector("foo").valid
+    )
+
+    assertEquals(obtained = codec.decode(Data.Null), expected = Vector("foobar").valid)
+
+  test("decode: default (optional)"):
+    val codec = collection.vector(string).modifyDefault(_ => Some(Vector("foobar"))).optional
+
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.String("foo"))),
+      expected = Vector("foo").some.valid
+    )
+
+    assertEquals(obtained = codec.decode(Data.Null), expected = Vector("foobar").some.valid)
