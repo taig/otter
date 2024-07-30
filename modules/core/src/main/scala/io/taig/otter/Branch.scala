@@ -1,27 +1,40 @@
-// package io.taig.otter
+package io.taig.otter
 
-// sealed abstract class Branch[+F[+_], +O, A]:
-//   def name: String
+import io.taig.otter.Codec.Result
 
-//   def metadata: Metadata
-//   final def modifyMetadata(f: Metadata => Metadata): Branch[F, O, A] = ???
+sealed abstract class Branch[+O <: Data, A]:
+  self =>
 
-//   def codec: Codec[?, ?, ?]
+  def name: String
 
-//   final def imap[B](f: A => B): Branch[F, O, B] = ???
+  def codec: Codec[?, ?, ?]
 
-//   def decode(data: Data): Codec.Result[A]
+  def metadata: Metadata
 
-//   def encode(a: A): F[O]
+  final def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
+    export self.{codec, decode, encode, name}
+    override def metadata: Metadata = f(self.metadata)
 
-// object Branch:
-//   def apply[F[+_], O, A](name: String, codec: Codec[F, O, A]): Branch[F, O, A] =
-//     val _name = name
-//     val _codec = codec
+  final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
+    export self.{codec, metadata, name}
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): O = self.encode(g(b))
 
-//     new Branch[F, O, A]:
-//       override def name: String = _name
-//       override def metadata: Metadata = Metadata.Empty
-//       override def codec: Codec[F, O, A] = _codec
-//       override def decode(data: Data): Codec.Result[A] = codec.decode(data)
-//       override def encode(a: A): F[O] = codec.encode(a)
+  def decode(data: Data): Codec.Result[A]
+
+  def encode(a: A): O
+
+object Branch:
+  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+      name: String,
+      codec: Codec[F, O, A]
+  ): Branch[F[O], A] =
+    val _name = name
+    val _codec = codec
+
+    new Branch[F[O], A]:
+      override def name: String = _name
+      override def codec: Codec[F, O, A] = _codec
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Data): Codec.Result[A] = codec.decode(data)
+      override def encode(a: A): F[O] = codec.encode(a)
