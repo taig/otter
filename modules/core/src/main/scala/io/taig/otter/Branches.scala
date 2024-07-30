@@ -1,7 +1,7 @@
 package io.taig.otter
 
 import cats.data.NonEmptyVector
-import io.taig.otter.Codec.Result
+import cats.syntax.all.*
 
 sealed abstract class Branches[+O <: Data, A]:
   self =>
@@ -50,7 +50,7 @@ object Branches:
 
     override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[A]] = ???
 
-    override def decodeUntagged(data: Data): Codec.Result[Option[A]] = ???
+    override def decodeUntagged(data: Data): Codec.Result[Option[A]] = branch.decode(data).toOption.valid
 
     override def encodeNested(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
       Data.Object.of(
@@ -61,7 +61,7 @@ object Branches:
     override def encodeMerged[P <: Data](a: A, discriminator: Discriminator.Merged)(using
         O <:< Data.Object[P]
     ): Data.Object[Data.String | P] =
-      branch.encode(a) ++ Data.Object.one(discriminator.identifier, Data.String(branch.name))
+      branch.encode(a) + (discriminator.identifier, Data.String(branch.name))
 
     override def encodeKeyed(a: A): Data.Object[O] = Data.Object.one(branch.name, branch.encode(a))
 

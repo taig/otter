@@ -1,17 +1,26 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.syntax.all.*
-// import cats.Id as Identity
-// import io.taig.otter.Codec.Result
+import cats.syntax.all.*
+import cats.Id as Identity
+import io.taig.otter.Codec.Result
+import io.taig.otter.Data.Optional
 
-// sealed abstract class Sum[+F[+_], +G[+_], +O, A] extends Codec[F, G[O], A]:
-//   def branches: Branches[?, ?, ?]
-//   override def modifyMetadata(f: Metadata => Metadata): Sum[F, G, O, A] = ???
-//   override def modifyDefault(f: Option[A] => Option[A]): Sum[F, G, O, A] = ???
-//   override def imap[B](f: A => B)(g: B => A): Sum[F, G, O, B] = ???
-//   override def optional: Sum[Data.Optional, G, O, Option[A]] = ???
-//   def orElse[H[+a] >: F[a], P, B](sum: Sum[H, ?, P, B]): Sum[H, G, O | P, Either[A, B]]
-//   def nested(discriminator: Discriminator.Nested): Sum.Nested[F, O, A]
+sealed abstract class Sum[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A] extends Codec[F, O, A]:
+  def branches: Branches[?, ?]
+  override def modifyMetadata(f: Metadata => Metadata): Sum[F, O, A]
+  override def modifyDefault(f: Option[A] => Option[A]): Sum[F, O, A]
+  override def imap[B](f: A => B)(g: B => A): Sum[F, O, B]
+  override def optional: Sum[Data.Optional, O, Option[A]]
+
+object Sum:
+  sealed abstract class Untagged[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A] extends Sum[F, O, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = ???
+    override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
+    override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = ???
+    override def optional: Sum.Untagged[Optional, O, Option[A]] = ???
+
+  object Untagged:
+    def apply[O <: Data, A](branches: Branches[O, A]): Sum.Untagged[Identity, O, A] = ???
 
 // object Sum:
 //   sealed abstract class Nested[+F[+_], +O, A] extends Sum[F, [a] =>> Data.Object[Data.String | a], O, A]:

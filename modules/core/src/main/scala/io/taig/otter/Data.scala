@@ -45,7 +45,8 @@ object Data:
 
   final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value:
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
-    final def map[B <: Data](f: A => B): Data.Object[B] = Data.Object(values.map(_.map(f)))
+    def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
+    final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
 
   object Object:
     val Empty: Data.Object[Nothing] = Object(Vector.empty)
