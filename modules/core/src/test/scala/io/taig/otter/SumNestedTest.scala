@@ -71,6 +71,9 @@ final class SumNestedTest extends FunSuite:
       expected = 42.asRight.valid
     )
 
+  test("decode: identifier unknown"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
     assertEquals(
       obtained = codec.decode(
         Data.Object.of(
@@ -82,6 +85,99 @@ final class SumNestedTest extends FunSuite:
         .namespaceNec(
           History.Step.Field(Discriminator.Nested.Default.identifier),
           Violation(Constraint.OneOf(List(Data.String("foo"), Data.String("bar"))), actual = Data.String("baz"))
+        )
+        .invalid
+    )
+
+  test("decode: identifier missing"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(Discriminator.Nested.Default.value -> Data.String("foobar"))
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Violation(Constraint.Type("string"), actual = Data.String("null"))
+        )
+        .invalid
+    )
+
+  test("decode: identifier invalid"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.Number(42),
+          Discriminator.Nested.Default.value -> Data.String("foobar")
+        )
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Violation(Constraint.Type("string"), actual = Data.String("number"))
+        )
+        .invalid
+    )
+
+  test("decode: value missing"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(Discriminator.Nested.Default.identifier -> Data.String("foo"))
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.value),
+          Violation(Constraint.Type("string"), actual = Data.String("null"))
+        )
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(Discriminator.Nested.Default.identifier -> Data.String("bar"))
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.value),
+          Violation(Constraint.Type("number"), actual = Data.String("null"))
+        )
+        .invalid
+    )
+
+  test("decode: value invalid"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.String("foo"),
+          Discriminator.Nested.Default.value -> Data.Array.Empty
+        )
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.value),
+          Violation(Constraint.Type("string"), actual = Data.String("array"))
+        )
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.String("bar"),
+          Discriminator.Nested.Default.value -> Data.Array.Empty
+        )
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.value),
+          Violation(Constraint.Type("number"), actual = Data.String("array"))
         )
         .invalid
     )

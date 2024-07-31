@@ -108,10 +108,9 @@ object Branches:
       .leftMap(discriminator.identifier /: _)
       .andThen:
         case true =>
-          data
-            .collectFirst { case (key, data) if key === discriminator.value => data }
-            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
-            .andThen(branch.decode(_).map(_.some))
+          branch
+            .decode(data.collectFirst { case (key, data) if key === discriminator.value => data }.getOrElse(Data.Null))
+            .map(_.some)
             .leftMap(discriminator.value /: _)
         case false => none.valid
     override def decodeMerged(
