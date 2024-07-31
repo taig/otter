@@ -7,11 +7,8 @@ import cats.data.Validated
 import io.taig.otter.Keys.*
 import cats.Id as Identity
 
-sealed abstract class Product[
-    +F[+a <: Data] <: Data.Optional[a],
-    +O <: Data.Object[?] | Data.Array[?],
-    A
-] extends Codec[F, O, A]:
+sealed abstract class Product[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Object[?] | Data.Array[?], A]
+    extends Codec[F, O, A]:
   self =>
 
   def fields: Fields[?, ?]
@@ -59,14 +56,10 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[(A, B)] =
       val split = data.map: values =>
-        val left = values.filterKeys(self.fields.toVector.map(_.name))
-        val right = values.filterKeys(codec.fields.toVector.map(_.name))
+        val (left, remainders) = values.filterKeys(self.fields.toVector.map(_.name))
+        val (right, _) = remainders.filterKeys(codec.fields.toVector.map(_.name))
         (left, right)
-
-      self.decode(split.map(_._1)) match
-        case Validated.Valid(a) => codec.decode(split.map(_._2)).tupleLeft(a)
-        case Validated.Invalid(violations) =>
-          codec.decode(split.map(_._2)).fold(violations.combine, _ => violations).invalid
+      (self.decode(split.map(_._1)), codec.decode(split.map(_._2))).tupled
     override def encode(ab: (A, B), nulls: Null): Data.Object[F[O] | G[P]] =
       self.encode(ab._1).sequence(self.fields.toVector.map(_.name)) ++
         codec.encode(ab._2).sequence(codec.fields.toVector.map(_.name))

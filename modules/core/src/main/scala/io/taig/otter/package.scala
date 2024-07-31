@@ -1,6 +1,8 @@
 package io.taig.otter
 
 import scala.collection.immutable.Iterable
+import cats.Eq
+import cats.syntax.all.*
 
 extension [A](self: Vector[A])
   def findWithRemainders[B](pf: PartialFunction[A, B]): (Option[B], Vector[A]) =
@@ -13,14 +15,21 @@ extension [A](self: Vector[A])
 
     (result, remainders.result())
 
-extension [A](self: Vector[(String, A)])
-  def filterKeys(keys: Iterable[String]): Vector[(String, A)] =
-    val result = Vector.newBuilder[(String, A)]
+extension [A: Eq, B](self: Vector[(A, B)])
+  def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
+    val remainingKeys = keys.toBuffer
+    val result = Vector.newBuilder[(A, B)]
+    val remainders = Vector.newBuilder[(A, B)]
 
-    keys.foreach: reference =>
-      self.find { case (key, _) => reference == key }.foreach(result += _)
+    self.foreach { case value @ (key, _) =>
+      if remainingKeys.exists(_ === key)
+      then
+        remainingKeys -= key
+        result += value
+      else remainders += value
+    }
 
-    result.result()
+    (result.result(), remainders.result())
 
 extension [F[a] <: Iterable[a], A](self: F[A])
   def uncons: Option[(A, F[A])] = self.headOption.map((_, self.tail.asInstanceOf[F[A]]))

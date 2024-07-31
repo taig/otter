@@ -4,7 +4,7 @@ import io.taig.otter as Base
 import cats.Id as Identity
 
 trait Types:
-  export Base.{CodecValidation, Constraint, Metadata, Type}
+  export Base.{CodecValidation, Constraint, Data, Metadata, Type}
 
   final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 

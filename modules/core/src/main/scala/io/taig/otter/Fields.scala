@@ -21,13 +21,9 @@ sealed abstract class Fields[+O <: Data, A]:
   final def zip[P <: Data, B](fields: Fields[P, B]): Fields[O | P, (A, B)] = new Fields[O | P, (A, B)]:
     override def toVector: Vector[Field[?, ?]] = self.toVector ++ fields.toVector
     override def decodeRecord(data: Vector[(String, Data)]): Codec.Result[((A, B))] =
-      val left = data.filterKeys(self.toVector.map(_.name))
-      val right = data.filterKeys(fields.toVector.map(_.name))
-
-      self.decodeRecord(left) match
-        case Validated.Valid(a) => fields.decodeRecord(right).tupleLeft(a)
-        case Validated.Invalid(violations) =>
-          fields.decodeRecord(right).fold(violations.combine, _ => violations).invalid
+      val (left, remainders) = data.filterKeys(self.toVector.map(_.name))
+      val (right, _) = remainders.filterKeys(fields.toVector.map(_.name))
+      (self.decodeRecord(left), fields.decodeRecord(right)).tupled
     override def decodeArray(data: Vector[Data]): Codec.Result[(A, B)] =
       val (left, right) = data.splitAt(self.toVector.length)
 

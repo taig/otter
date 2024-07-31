@@ -1,73 +1,58 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.findWithRemainders
 import org.typelevel.ci.CIString
-import io.taig.otter.validation.Violations
+import io.taig.otter.Metadata
 import io.taig.otter.Data
 import io.taig.otter.Codec
-import io.taig.otter.Collection
-import io.taig.otter.Metadata
+import scala.Array as SArray
 
-sealed abstract class Header[A]:
+sealed abstract class Header[A] extends Product, Serializable:
+  self =>
+
   def name: CIString
 
   def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
 
   def metadata: Metadata
 
-  def modifyMetadata(f: Metadata => Metadata): Header[A] = ???
+  def modifyMetadata(f: Metadata => Metadata): Header[A]
 
-  final def imap[B](f: A => B)(g: B => A): Header[B] = ???
+  def imap[B](f: A => B)(g: B => A): Header[B]
 
-  def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)]
+  def optional: Header[Option[A]]
 
-  def encode(a: A): Option[(CIString, String)]
+  def decode(header: Option[String]): Codec.Result[A]
+
+  def encode(a: A): Option[String]
 
 object Header:
-  def apply[A](name: CIString, codec: Codec[?, Data.Primitive, A]): Header[A] =
-    val _name = name
-    val _codec = codec
+  final case class Default[A](name: CIString, codec: Codec[?, Data.Primitive, A], metadata: Metadata) extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] = codec.parseOptional(header)
+    override def encode(a: A): Option[String] = codec.printOptional(a)
 
-    new Header[A]:
-      override def name: CIString = _name
-      override def codec: Codec[?, Data.Primitive, A] = _codec
-      override def metadata: Metadata = Metadata.Empty
-      override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] =
-        val (value, remainders) = headers.findWithRemainders { case (`_name`, value) => value }
-        codec.parseOptional(value).tupleLeft(remainders)
-      override def encode(a: A): Option[(CIString, String)] = codec.printOptional(a).tupleLeft(name)
+  final case class Array[A](name: CIString, codec: Codec[?, Data.Array[Data.Primitive], A], metadata: Metadata)
+      extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] =
+      codec.parseOptionalArray(header.map(_.split(',').toVector))
+    override def encode(a: A): Option[String] = codec.printOptionalArray(a).map(_.mkString(","))
 
-  def array[A](name: CIString, codec: Codec[?, Data.Array[Data.Primitive], A]): Header[A] =
-    val _name = name
-    val _codec = codec
-
-    new Header[A]:
-      override def name: CIString = _name
-      override def codec: Codec[?, Data.Array[Data.Primitive], A] = _codec
-      override def metadata: Metadata = Metadata.Empty
-      override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] =
-        val (value, remainders) = headers.findWithRemainders { case (`_name`, value) => value.split(',').toVector }
-        codec.parseOptionalArray(value).tupleLeft(remainders)
-      override def encode(a: A): Option[(CIString, String)] =
-        codec.printOptionalArray(a).map(_.mkString(",")).tupleLeft(name)
-
-  def obj[A](name: CIString, codec: Codec[?, Data.Object[Data.Primitive], A]): Header[A] =
-    val _name = name
-    val _codec = codec
-
-    new Header[A]:
-      override def name: CIString = _name
-      override def codec: Codec[?, Data.Object[Data.Primitive], A] = _codec
-      override def metadata: Metadata = Metadata.Empty
-      override def decode(headers: Http.Headers): Codec.Result[(Http.Headers, A)] =
-        val (value, remainders) = headers.findWithRemainders { case (`_name`, value) =>
-          value.split(',').map(_.split("=", 2)).collect { case Array(key, value) => (key, value) }.toVector
-        }
-
-        codec.parseOptionalObject(value).tupleLeft(remainders)
-      override def encode(a: A): Option[(CIString, String)] = codec
-        .printOptionalObject(a)
-        .map(_.map { case (key, value) => s"$key=$value" })
-        .map(_.mkString(","))
-        .tupleLeft(name)
+  final case class Object[A](name: CIString, codec: Codec[?, Data.Object[Data.Primitive], A], metadata: Metadata)
+      extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] = codec
+      .parseOptionalObject(
+        header.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
+      )
+    override def encode(a: A): Option[String] = codec
+      .printOptionalObject(a)
+      .map(_.map { case (key, value) => s"$key=$value" })
+      .map(_.mkString(","))
