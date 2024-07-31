@@ -52,7 +52,7 @@ object Sum:
       ): G[Data.Object[Data.String | (O | P)]] =
         ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
-    final override def decode(data: Data): Codec.Result[A] = data.toObject
+    final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .map(_.values)
       .andThen(decode(_, discriminator))
@@ -110,7 +110,7 @@ object Sum:
 
     final override def optional: Sum.Merged[Data.Optional, O, Option[A]] = ???
 
-    final override def decode(data: Data): Codec.Result[A] = data.toObject
+    final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .map(_.values)
       .andThen(decode(_, discriminator))
@@ -145,7 +145,7 @@ object Sum:
 
     final override def optional: Sum.Keyed[Data.Optional, O, Option[A]] = ???
 
-    final override def decode(data: Data): Codec.Result[A] = data.toObject
+    final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .map(_.values)
       .andThen(decode)

@@ -16,19 +16,19 @@ import scala.reflect.TypeTest
 import cats.Id
 
 sealed abstract class Data extends SProduct with Serializable:
-  final def toValue: Option[Data.Value] = this match
+  final def asValue: Option[Data.Value] = this match
     case data: Data.Value => Some(data)
     case _                => None
 
-  final def toObject: Option[Data.Object[?]] = this match
+  final def asObject: Option[Data.Object[?]] = this match
     case data: Data.Object[?] => Some(data)
     case _                    => None
 
-  final def toArray: Option[Data.Array[?]] = this match
+  final def asArray: Option[Data.Array[?]] = this match
     case data: Data.Array[?] => Some(data)
     case _                   => None
 
-  final def toPrimitive: Option[Data.Primitive] = this match
+  final def asPrimitive: Option[Data.Primitive] = this match
     case data: Data.Primitive => Some(data)
     case _                    => None
 
@@ -65,7 +65,10 @@ object Data:
     def of[A <: Data](data: A*): Data.Array[A] = Data.Array(data.toVector)
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
-  sealed abstract class Primitive extends Value
+  sealed abstract class Primitive extends Value:
+    def asString: Option[Data.String] = this match
+      case data: Data.String => data.some
+      case _                 => none
 
   final case class String(value: JString) extends Data.Primitive
 

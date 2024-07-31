@@ -3,6 +3,8 @@ package io.taig.otter
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import cats.Id as Identity
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
 
 sealed abstract class Branches[+O <: Data, A]:
   self =>
@@ -14,13 +16,11 @@ sealed abstract class Branches[+O <: Data, A]:
     override def decodeNested(
         data: Vector[(String, Data)],
         discriminator: Discriminator.Nested
-    ): Codec.Result[Option[B]] =
-      self.decodeNested(data, discriminator).map(_.map(f))
+    ): Codec.Result[Option[B]] = self.decodeNested(data, discriminator).map(_.map(f))
     override def decodeMerged(
         data: Vector[(String, Data)],
         discriminator: Discriminator.Merged
-    ): Codec.Result[Option[B]] =
-      self.decodeMerged(data, discriminator).map(_.map(f))
+    ): Codec.Result[Option[B]] = self.decodeMerged(data, discriminator).map(_.map(f))
     override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[B]] =
       self.decodeKeyed(data).map(_.map(f))
     override def decodeUntagged(data: Data): Codec.Result[Option[B]] = self.decodeUntagged(data).map(_.map(f))
@@ -38,7 +38,12 @@ sealed abstract class Branches[+O <: Data, A]:
       override def decodeNested(
           data: Vector[(String, Data)],
           discriminator: Discriminator.Nested
-      ): Codec.Result[Option[Either[A, B]]] = ???
+      ): Codec.Result[Option[Either[A, B]]] = self
+        .decodeNested(data, discriminator)
+        .map(_.map(_.asLeft))
+        .andThen:
+          case a @ Some(_) => a.valid
+          case None        => branches.decodeNested(data, discriminator).map(_.map(_.asRight))
       override def decodeMerged(
           data: Vector[(String, Data)],
           discriminator: Discriminator.Merged
@@ -92,7 +97,23 @@ object Branches:
     override def decodeNested(
         data: Vector[(String, Data)],
         discriminator: Discriminator.Nested
-    ): Codec.Result[Option[A]] = ???
+    ): Codec.Result[Option[A]] = data
+      .collectFirst { case (key, data) if key === discriminator.identifier => data }
+      .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
+      .andThen: data =>
+        data.asPrimitive
+          .flatMap(_.asString)
+          .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))))
+      .map(_.value === branch.name)
+      .leftMap(discriminator.identifier /: _)
+      .andThen:
+        case true =>
+          data
+            .collectFirst { case (key, data) if key === discriminator.value => data }
+            .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))))
+            .andThen(branch.decode(_).map(_.some))
+            .leftMap(discriminator.value /: _)
+        case false => none.valid
     override def decodeMerged(
         data: Vector[(String, Data)],
         discriminator: Discriminator.Merged

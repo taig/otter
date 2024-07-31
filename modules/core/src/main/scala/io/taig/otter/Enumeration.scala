@@ -34,7 +34,7 @@ abstract class Enumeration[+F[+a <: Data] <: Data.Optional[a], A] extends Codec[
     export self.{codec, metadata}
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
-      data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+      data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data.Optional[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
 
 object Enumeration:

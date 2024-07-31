@@ -33,14 +33,14 @@ sealed abstract class Primitive[+F[+a <: Data] <: Data.Optional[a], A] extends C
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
-      data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+      data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
     override def encode(a: Option[A]): Data.Optional[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
 
 object Primitive:
   def apply[A](tpe: Type[A]): Primitive[Identity, A] = new Primitive[Identity, A]:
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
-    override def decode(data: Data): Codec.Result[A] = data.toPrimitive
+    override def decode(data: Data): Codec.Result[A] = data.asPrimitive
       .flatMap(tpe.decode)
       .toValid(Violations.rootNec(Violation(Constraint.Type(tpe.name), actual = Data.String(data.name))))
     override def encode(a: A): Data.Primitive = tpe.encode(a)

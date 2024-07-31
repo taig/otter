@@ -3,6 +3,9 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
+import io.taig.otter.validation.History
 
 final class SumNestedTest extends FunSuite:
   test("encode"):
@@ -43,4 +46,42 @@ final class SumNestedTest extends FunSuite:
     assertEquals(
       obtained = codec.encode("foobar".asLeft),
       expected = Data.Object.of(discriminator.identifier -> Data.String("foo"))
+    )
+
+  test("decode"):
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int))
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.String("foo"),
+          Discriminator.Nested.Default.value -> Data.String("foobar")
+        )
+      ),
+      expected = "foobar".asLeft.valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.String("bar"),
+          Discriminator.Nested.Default.value -> Data.Number(42)
+        )
+      ),
+      expected = 42.asRight.valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of(
+          Discriminator.Nested.Default.identifier -> Data.String("baz"),
+          Discriminator.Nested.Default.value -> Data.String("foobar")
+        )
+      ),
+      expected = Violations
+        .namespaceNec(
+          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Violation(Constraint.OneOf(List(Data.String("foo"), Data.String("bar"))), actual = Data.String("baz"))
+        )
+        .invalid
     )

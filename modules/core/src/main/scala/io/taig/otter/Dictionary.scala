@@ -35,7 +35,7 @@ abstract class Dictionary[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] ext
     export self.metadata
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
-      data.toValue.fold(default.flatten.valid)(self.decode(_).map(_.some))
+      data.asValue.fold(default.flatten.valid)(self.decode(_).map(_.some))
     override def encode(a: Option[A]): Data.Optional[Data.Object[O]] = a.map(self.encode).getOrElse(Data.Null)
 
 object Dictionary:
@@ -45,7 +45,7 @@ object Dictionary:
   ): Dictionary[Identity, F[O], Vector[(A, B)]] = new Dictionary:
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Vector[(A, B)]] = None
-    override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.toObject
+    override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .andThen(_.values.traverse { case (a, b) => (key.parseRequired(a), value.decode(b)).tupled })
     override def encode(abs: Vector[(A, B)]): Data.Object[F[O]] =

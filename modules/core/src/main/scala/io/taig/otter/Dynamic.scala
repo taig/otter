@@ -31,7 +31,7 @@ abstract class Dynamic[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A] 
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def encode(a: Option[A]): Data.Optional[O] = a.map(self.encode).getOrElse(Data.Null)
     override def decode(data: Data): Codec.Result[Option[A]] =
-      data.toValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+      data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
 
 object Dynamic:
   def apply[A <: Data.Value](f: Data => Codec.Result[A]): Dynamic[Identity, A, A] = new Dynamic[Identity, A, A]:
@@ -43,11 +43,11 @@ object Dynamic:
   def apply[A <: Data.Value](name: String)(f: Data => Option[A]): Dynamic[Identity, A, A] = Dynamic: data =>
     f(data).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(data.name))))
 
-  val Value: Dynamic[Identity, Data.Value, Data.Value] = Dynamic("value")(_.toValue)
-  val Any: Dynamic[Data.Optional, Data.Value, Data] = Value.optional.imap(_.getOrElse(Data.Null))(_.toValue)
-  val Object: Dynamic[Identity, Data.Object[?], Data.Object[?]] = Dynamic("object")(_.toObject)
-  val Array: Dynamic[Identity, Data.Array[?], Data.Array[?]] = Dynamic("array")(_.toArray)
-  val Primitive: Dynamic[Identity, Data.Primitive, Data.Primitive] = Dynamic("primitive")(_.toPrimitive)
+  val Value: Dynamic[Identity, Data.Value, Data.Value] = Dynamic("value")(_.asValue)
+  val Any: Dynamic[Data.Optional, Data.Value, Data] = Value.optional.imap(_.getOrElse(Data.Null))(_.asValue)
+  val Object: Dynamic[Identity, Data.Object[?], Data.Object[?]] = Dynamic("object")(_.asObject)
+  val Array: Dynamic[Identity, Data.Array[?], Data.Array[?]] = Dynamic("array")(_.asArray)
+  val Primitive: Dynamic[Identity, Data.Primitive, Data.Primitive] = Dynamic("primitive")(_.asPrimitive)
 
   given [F[+a <: Data] <: Data.Optional[a], O <: Data.Value]: Invariant[Dynamic[F, O, *]] with
     override def imap[A, B](fa: Dynamic[F, O, A])(f: A => B)(g: B => A): Dynamic[F, O, B] = fa.imap(f)(g)
