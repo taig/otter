@@ -30,4 +30,5 @@ object Codec:
     def parseRequired(value: String): Codec.Result[A] = ???
     def printRequired(a: A): String = ???
 
-  type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]
+  type Error = Violations[Violation[Constraint.Any[Data], Data]]
+  type Result[A] = Validated[Codec.Error, A]

@@ -23,7 +23,7 @@ sealed abstract class Branches[+O <: Data, A]:
     ): Codec.Result[Option[B]] = self.decodeMerged(data, discriminator).map(_.map(f))
     override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[B]] =
       self.decodeKeyed(data).map(_.map(f))
-    override def decodeUntagged(data: Data): Codec.Result[Option[B]] = self.decodeUntagged(data).map(_.map(f))
+    override def decodeUntagged(data: Data): Codec.Result[B] = self.decodeUntagged(data).map(f)
     override def encodeNested(b: B, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
       self.encodeNested(g(b), discriminator)
     override def encodeMerged[P <: Data](b: B, discriminator: Discriminator.Merged)(using
@@ -49,7 +49,10 @@ sealed abstract class Branches[+O <: Data, A]:
           discriminator: Discriminator.Merged
       ): Codec.Result[Option[Either[A, B]]] = ???
       override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[Either[A, B]]] = ???
-      override def decodeUntagged(data: Data): Codec.Result[Option[Either[A, B]]] = ???
+      override def decodeUntagged(data: Data): Codec.Result[Either[A, B]] = self
+        .decodeUntagged(data)
+        .map(_.asLeft)
+        .findValid(branches.decodeUntagged(data).map(_.asRight))
       override def encodeNested(
           ab: Either[A, B],
           discriminator: Discriminator.Nested
@@ -79,7 +82,7 @@ sealed abstract class Branches[+O <: Data, A]:
 
   def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[A]]
 
-  def decodeUntagged(data: Data): Codec.Result[Option[A]]
+  def decodeUntagged(data: Data): Codec.Result[A]
 
   def encodeNested(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O]
 
@@ -118,7 +121,7 @@ object Branches:
         discriminator: Discriminator.Merged
     ): Codec.Result[Option[A]] = ???
     override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[A]] = ???
-    override def decodeUntagged(data: Data): Codec.Result[Option[A]] = branch.decode(data).toOption.valid
+    override def decodeUntagged(data: Data): Codec.Result[A] = branch.decode(data).leftMap(branch.name /: _)
     override def encodeNested(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
       Data.Object.one(discriminator.identifier, Data.String(branch.name)) ++ Data.Object.fromOption(
         Some(discriminator.value).filter(_ =!= discriminator.identifier).tupleRight(branch.encode(a))

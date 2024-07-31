@@ -192,5 +192,5 @@ object Sum:
         override def branches: Branches[O, A] = _branches
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
-        override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data).andThen(???)
+        override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data)
         override def encode(a: A): O = branches.encodeUntagged(a)
