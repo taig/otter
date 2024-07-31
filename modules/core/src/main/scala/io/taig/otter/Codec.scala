@@ -5,7 +5,6 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
-import scala.annotation.targetName
 
 abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]:
   def metadata: Metadata
@@ -26,7 +25,9 @@ abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]:
 object Codec:
   extension [A](self: Codec[Data.Optional, Data.Primitive, A])
     def parseOptional(value: Option[String]): Codec.Result[A] = ???
-    def printOptional(a: A): Option[String] = ???
+    def printOptional(a: A): Option[String] = self.encode(a) match
+      case Data.Null            => none
+      case data: Data.Primitive => data.print.some
 
   extension [A](self: Codec[Identity, Data.Primitive, A])
     def parseRequired(value: String): Codec.Result[A] = ???
@@ -36,12 +37,16 @@ object Codec:
     def parseOptionalArray(value: Option[Vector[String]]): Codec.Result[A] = ???
     def printOptionalArray(a: A): Option[Vector[String]] = self.encode(a) match
       case Data.Null          => none
-      case Data.Array(values) => ???
+      case Data.Array(values) => values.map(_.print).some
 
-  extension [A](self: Codec[Data.Optional, Data.Object[Data.Primitive], A])
+  extension [A](self: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A])
     def parseOptionalObject(value: Option[Vector[(String, String)]]): Codec.Result[A] = ???
     def printOptionalObject(a: A): Option[Vector[(String, String)]] = self.encode(a) match
-      case Data.Null           => none
-      case Data.Object(values) => ???
+      case Data.Null => none
+      case Data.Object(values) =>
+        values.mapFilter {
+          case (key, data: Data.Primitive) => (key, data.print).some
+          case (_, Data.Null)              => none
+        }.some
 
   type Result[A] = Validated[Violations[Violation[Constraint.Any[Data], Data]], A]

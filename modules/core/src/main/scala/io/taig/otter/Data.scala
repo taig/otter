@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.data.Chain
 import cats.syntax.all.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -9,9 +8,6 @@ import java.lang.Math.toIntExact
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
-import cats.Applicative
-import cats.Monad
-import cats.Traverse
 import scala.reflect.TypeTest
 import cats.Id
 
@@ -66,9 +62,14 @@ object Data:
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
   sealed abstract class Primitive extends Value:
-    def asString: Option[Data.String] = this match
+    final def asString: Option[Data.String] = this match
       case data: Data.String => data.some
       case _                 => none
+
+    final def print: JString = this match
+      case Data.Boolean(value) => JString.valueOf(value)
+      case Data.Number(value)  => JString.valueOf(value)
+      case Data.String(value)  => value
 
   final case class String(value: JString) extends Data.Primitive
 

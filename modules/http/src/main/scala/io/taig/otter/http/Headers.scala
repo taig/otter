@@ -5,7 +5,7 @@ import io.taig.otter.Codec
 import cats.data.Validated
 import io.taig.otter.validation.Violations
 import io.taig.otter.filterKeys
-import io.taig.otter.Codec.Result
+import io.taig.otter.Evidence
 
 sealed abstract class Headers[A]:
   self =>
@@ -24,6 +24,12 @@ sealed abstract class Headers[A]:
       val (right, _) = remainders.filterKeys(headers.toVector.map(_.name))
       (self.decode(left), headers.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Headers = self.encode(ab._1) ++ headers.encode(ab._2)
+
+  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Headers[merge.Out] =
+    zip(header.toHeaders).imap(merge.apply)(merge.unapply)
+
+  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Headers[merge.Out] =
+    header.toHeaders.zip(this).imap(merge.apply)(merge.unapply)
 
   def encode(a: A): Http.Headers
 

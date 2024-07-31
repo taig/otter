@@ -52,15 +52,15 @@ enum Type[A]:
     case Type.Long    => value.toLongOption
     case Type.String  => Some(value)
 
-  def print(a: A): String = this match
-    case Type.BigDecimal => a.toPlainString
-    case Type.BigInteger => a.toString
-    case Type.Boolean    => JString.valueOf(a)
-    case Type.Double     => JString.valueOf(a)
-    case Type.Float      => JString.valueOf(a)
-    case Type.Int        => JString.valueOf(a)
-    case Type.Long       => JString.valueOf(a)
-    case Type.String     => JString.valueOf(a)
+  // def print(a: A): String = this match
+  //   case Type.BigDecimal => a.toPlainString
+  //   case Type.BigInteger => a.toString
+  //   case Type.Boolean    => JString.valueOf(a)
+  //   case Type.Double     => JString.valueOf(a)
+  //   case Type.Float      => JString.valueOf(a)
+  //   case Type.Int        => JString.valueOf(a)
+  //   case Type.Long       => JString.valueOf(a)
+  //   case Type.String     => JString.valueOf(a)
 
   final def name: String = this match
     case Type.BigDecimal | Type.BigInteger | Type.Double | Type.Float | Type.Int | Type.Long => "number"

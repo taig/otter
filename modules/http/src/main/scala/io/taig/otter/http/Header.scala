@@ -6,13 +6,14 @@ import io.taig.otter.Metadata
 import io.taig.otter.Data
 import io.taig.otter.Codec
 import scala.Array as SArray
+import io.taig.otter.Evidence
 
 sealed abstract class Header[A] extends Product, Serializable:
   self =>
 
   def name: CIString
 
-  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
+  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], ?]
 
   def metadata: Metadata
 
@@ -21,6 +22,12 @@ sealed abstract class Header[A] extends Product, Serializable:
   def imap[B](f: A => B)(g: B => A): Header[B]
 
   def optional: Header[Option[A]]
+
+  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Headers[merge.Out] = toHeaders :* header
+
+  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Headers[merge.Out] = header *: toHeaders
+
+  final def toHeaders: Headers[A] = Headers(this)
 
   def decode(header: Option[String]): Codec.Result[A]
 
@@ -43,8 +50,11 @@ object Header:
       codec.parseOptionalArray(header.map(_.split(',').toVector))
     override def encode(a: A): Option[String] = codec.printOptionalArray(a).map(_.mkString(","))
 
-  final case class Object[A](name: CIString, codec: Codec[?, Data.Object[Data.Primitive], A], metadata: Metadata)
-      extends Header[A]:
+  final case class Object[A](
+      name: CIString,
+      codec: Codec[?, Data.Object[Data.Optional[Data.Primitive]], A],
+      metadata: Metadata
+  ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
     override def optional: Header[Option[A]] = copy(codec = codec.optional)
