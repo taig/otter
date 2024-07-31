@@ -28,22 +28,22 @@ trait Types:
     object Required:
       type Of[O <: Data, A] = Base.Collection[Identity, O, A]
 
-  // // final type Dictionary[A] = Base.Dictionary[?, A]
+  final type Dictionary[A] = Base.Dictionary[Data.Optional, ?, A]
 
-  // // object Dictionary:
-  // //   type Of[O, A] = Base.Dictionary[O, A]
+  object Dictionary:
+    type Of[O <: Data, A] = Base.Dictionary[Data.Optional, O, A]
 
-  // // final type Dynamic[A] = Base.Dynamic[A]
+    type Required[A] = Base.Dictionary[Identity, ?, A]
 
-  // // final type Enumeration[A] = Base.Enumeration[?, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Dictionary[Identity, O, A]
 
-  // // object Enumeration:
-  // //   type Of[O, A] = Base.Enumeration[O, A]
+  final type Dynamic[A] = Base.Dynamic[Data.Optional, ?, A]
 
-  // //   type Required[A] = Base.Enumeration.Required[?, A]
+  final type Enumeration[A] = Base.Enumeration[Data.Optional, A]
 
-  // //   object Required:
-  // //     type Of[O, A] = Base.Enumeration.Required[O, A]
+  object Enumeration:
+    type Required[A] = Base.Enumeration[Identity, A]
 
   final type Primitive[A] = Base.Primitive[Data.Optional, A]
 
