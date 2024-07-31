@@ -18,16 +18,6 @@ trait Types:
 
     export Base.Codec.Result
 
-  // // final type Value[A] = Base.Value[?, A]
-
-  // // object Value:
-  // //   type Of[O, A] = Base.Value[O, A]
-
-  // //   type Required[A] = Base.Value.Required[?, A]
-
-  // //   object Required:
-  // //     type Of[O, A] = Base.Value.Required[O, A]
-
   final type Collection[A] = Base.Collection[Data.Optional, ?, A]
 
   object Collection:
@@ -60,10 +50,15 @@ trait Types:
   object Primitive:
     type Required[A] = Base.Primitive[Identity, A]
 
-  // final type Product[A] = Base.Product[?, A]
+  final type Product[A] = Base.Product[Data.Optional, ?, A]
 
-  // object Product:
-  //   type Of[O, A] = Base.Product[O, A]
+  object Product:
+    type Of[O <: Data, A] = Base.Product[Data.Optional, Data.Array[O] | Data.Object[O], A]
+
+    type Required[A] = Base.Product[Identity, ?, A]
+
+    object Required:
+      type Of[O <: Data, A] = Base.Product[Identity, Data.Array[O] | Data.Object[O], A]
 
   type Record[A] = Base.Record[Data.Optional, ?, A]
 
@@ -75,25 +70,25 @@ trait Types:
     object Required:
       type Of[O <: Data, A] = Base.Record[Identity, O, A]
 
-  // final type Sum[A] = Base.Sum[?, A]
+  final type Sum[A] = Base.Sum[Data.Optional, ?, A]
 
-  // object Sum:
-  //   type Of[O, A] = Base.Sum[O, A]
+  object Sum:
+    type Of[O <: Data, A] = Base.Sum[Data.Optional, O, A]
 
-  // final type Union[A] = Base.Union[?, A]
+    type Required[A] = Base.Sum[Identity, ?, A]
 
-  // object Union:
-  //   type Of[O, A] = Base.Union[O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Sum[Identity, O, A]
 
-  //   type Value[A] = Base.Union.Value[?, A]
+    type Nested[A] = Base.Sum.Nested[Data.Optional, ?, A]
 
-  //   object Value:
-  //     type Of[O, A] = Base.Union.Value[O, A]
+    object Nested:
+      type Of[O <: Data, A] = Base.Sum.Nested[Data.Optional, O, A]
 
-  //     type Required[A] = Base.Union.Value.Required[?, A]
+      type Required[O <: Data, A] = Base.Sum.Nested[Identity, O, A]
 
-  //     object Required:
-  //       type Of[O, A] = Base.Union.Value.Required[O, A]
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Nested[Identity, O, A]
 
   type Tuple[A] = Base.Tuple[Data.Optional, ?, A]
 
@@ -105,10 +100,10 @@ trait Types:
     object Required:
       type Of[O <: Data, A] = Base.Tuple[Identity, O, A]
 
-  // final type Branch[A] = Base.Branch[?, A]
+  final type Branch[A] = Base.Branch[?, A]
 
-  // object Branch:
-  //   type Of[O, A] = Base.Branch[O, A]
+  object Branch:
+    type Of[O <: Data, A] = Base.Branch[O, A]
 
   final type Field[A] = Base.Field[?, A]
 

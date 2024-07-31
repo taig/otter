@@ -5,7 +5,7 @@ import cats.data.Validated
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
-abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Value, A]:
+abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]:
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 

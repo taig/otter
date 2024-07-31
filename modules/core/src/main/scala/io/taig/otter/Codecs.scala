@@ -19,7 +19,10 @@ trait Codecs extends Validations:
   val long: Primitive.Required[Long] = primitive(Type.Long)
   val string: Primitive.Required[String] = primitive(Type.String)
 
-  // def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.type, A] = Base.Branch(name, codec)
+  def branch[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+      name: String,
+      codec: Base.Codec[F, O, A]
+  ): Branch.Of[F[O], A] = Base.Branch(name, codec)
 
   def field[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
       name: String,
@@ -31,6 +34,10 @@ trait Codecs extends Validations:
 
   def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
   def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
+
+  object sum:
+    def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Required.Of[O, A] = branches.toSumNested
+    def nested[O <: Data, A](branch: Branch.Of[O, A]): Sum.Nested.Required.Of[O, A] = nested(branch.toBranches)
 
   object collection:
     def vector[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](

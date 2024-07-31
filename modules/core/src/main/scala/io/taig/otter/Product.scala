@@ -9,20 +9,19 @@ import cats.Id as Identity
 
 sealed abstract class Product[
     +F[+a <: Data] <: Data.Optional[a],
-    +G[+a <: Data] <: Data.Object[a] | Data.Array[a],
-    +O <: Data,
+    +O <: Data.Object[?] | Data.Array[?],
     A
-] extends Codec[F, G[O], A]:
+] extends Codec[F, O, A]:
   self =>
 
   def fields: Fields[?, ?]
-  override def modifyMetadata(f: Metadata => Metadata): Product[F, G, O, A]
-  override def modifyDefault(f: Option[A] => Option[A]): Product[F, G, O, A]
-  override def imap[B](f: A => B)(g: B => A): Product[F, G, O, B]
-  override def optional: Product[Data.Optional, G, O, Option[A]]
+  override def modifyMetadata(f: Metadata => Metadata): Product[F, O, A]
+  override def modifyDefault(f: Option[A] => Option[A]): Product[F, O, A]
+  override def imap[B](f: A => B)(g: B => A): Product[F, O, B]
+  override def optional: Product[Data.Optional, O, Option[A]]
 
 sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
-    extends Product[F, Data.Object, O, A]:
+    extends Product[F, Data.Object[O], A]:
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
@@ -99,7 +98,7 @@ object Record:
         Data.Object(fields.encodeRecord(a, nulls))
 
 sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
-    extends Product[F, Data.Array, O, A]:
+    extends Product[F, Data.Array[O], A]:
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:

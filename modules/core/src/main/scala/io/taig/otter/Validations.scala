@@ -3,8 +3,6 @@ package io.taig.otter
 import java.util.regex.Pattern
 import io.taig.otter.validation.Validations as Base
 import scala.collection.immutable.Iterable
-import cats.data.NonEmptyChain
-import cats.data.Chain
 import cats.syntax.all.*
 
 trait Validations extends Types:

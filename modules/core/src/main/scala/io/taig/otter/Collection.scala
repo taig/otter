@@ -48,7 +48,7 @@ sealed abstract class Collection[+F[+a <: Data] <: Data.Optional[a], +O <: Data,
   def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
 object Collection:
-  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
       codec: Codec[F, O, A]
   ): Collection[Identity, F[O], Vector[A]] =
     val _codec = codec
