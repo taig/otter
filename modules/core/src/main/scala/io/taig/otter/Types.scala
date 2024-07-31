@@ -100,6 +100,16 @@ trait Types:
       object Required:
         type Of[O <: Data, A] = Base.Sum.Merged[Identity, O, A]
 
+    type Keyed[A] = Base.Sum.Merged[Data.Optional, ?, A]
+
+    object Keyed:
+      type Of[O <: Data, A] = Base.Sum.Keyed[Data.Optional, O, A]
+
+      type Required[O <: Data, A] = Base.Sum.Keyed[Identity, O, A]
+
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Keyed[Identity, O, A]
+
     type Untagged[A] = Base.Sum.Untagged[Data.Optional, ?, A]
 
     object Untagged:

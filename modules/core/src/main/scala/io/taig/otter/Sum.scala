@@ -134,6 +134,37 @@ object Sum:
         override def encode(a: A, discriminator: Discriminator.Merged): Data.Object[Data.String | O] =
           branches.encodeMerged(a, discriminator)
 
+  sealed abstract class Keyed[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Sum[F, Data.Object[O], A]:
+    self =>
+
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = ???
+
+    final override def modifyDefault(f: Option[A] => Option[A]): Sum.Keyed[F, O, A] = ???
+
+    final override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = ???
+
+    final override def optional: Sum.Keyed[Data.Optional, O, Option[A]] = ???
+
+    final override def decode(data: Data): Codec.Result[A] = data.toObject
+      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
+      .map(_.values)
+      .andThen(decode)
+
+    def decode(data: Vector[(String, Data)]): Codec.Result[A]
+
+  object Keyed:
+    def apply[O <: Data, A](branches: Branches[O, A]): Sum.Keyed[Identity, O, A] =
+      val _branches = branches
+
+      new Keyed[Identity, O, A]:
+        override def branches: Branches[O, A] = _branches
+        override def metadata: Metadata = Metadata.Empty
+        override def default: Option[A] = None
+        override def decode(data: Vector[(String, Data)]): Codec.Result[A] =
+          branches.decodeKeyed(data)
+          ???
+        override def encode(a: A): Data.Object[O] = branches.encodeKeyed(a)
+
   sealed abstract class Untagged[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Sum[F, O, A]:
     self =>
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = ???

@@ -64,8 +64,8 @@ sealed abstract class Branches[+O <: Data, A]:
   final def toSumNested: Sum.Nested[Identity, O, A] = Sum.Nested(this)
   final def toSumMerged[P <: Data](using
       evidence: this.type <:< Branches[Data.Object[P], A]
-  ): Sum.Merged[Identity, P, A] =
-    Sum.Merged(evidence(this))
+  ): Sum.Merged[Identity, P, A] = Sum.Merged(evidence(this))
+  final def toSumKeyed: Sum.Keyed[Identity, O, A] = Sum.Keyed(this)
   final def toSumUntagged: Sum.Untagged[Identity, O, A] = Sum.Untagged(this)
 
   def decodeNested(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[Option[A]]
