@@ -6,7 +6,7 @@ import org.typelevel.ci.CIString
 object Http:
   type Path = Vector[String]
 
-  type Queries = Vector[(String, String)]
+  type Queries = Vector[(String, Option[String])]
 
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)

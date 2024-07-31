@@ -22,4 +22,12 @@ trait Codecs:
     case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] =>
       Segment.Parameter.Object(name, codec, Metadata.Empty)
 
+  inline def query[A](
+      name: String,
+      codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], A]
+  ): Query[A] = inline codec match
+    case codec: Codec.Of[Data.Primitive, A]                             => Query.Default(name, codec, Metadata.Empty)
+    case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
+    case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
+
 object Codecs extends Codecs
