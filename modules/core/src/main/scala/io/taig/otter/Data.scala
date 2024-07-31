@@ -47,6 +47,7 @@ object Data:
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
     final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
+    final def filterKeys(f: JString => SBoolean): Data.Object[A] = Object(values.filter { case (key, _) => f(key) })
 
   object Object:
     val Empty: Data.Object[Nothing] = Object(Vector.empty)

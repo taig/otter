@@ -52,11 +52,10 @@ object Sum:
       ): G[Data.Object[Data.String | (O | P)]] =
         ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
-    final override def decode(data: Data): Codec.Result[A] =
-      data.toObject
-        .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-        .map(_.values)
-        .andThen(decode(_, discriminator))
+    final override def decode(data: Data): Codec.Result[A] = data.toObject
+      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
+      .map(_.values)
+      .andThen(decode(_, discriminator))
 
     def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A]
 
@@ -91,6 +90,49 @@ object Sum:
             )
         override def encode(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
           branches.encodeNested(a, discriminator)
+
+  sealed abstract class Merged[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]
+      extends Sum[F, Data.Object[Data.String | O], A]:
+    self =>
+
+    def discriminator: Discriminator.Merged
+
+    final def modifyDiscriminator(f: Discriminator.Merged => Discriminator.Merged): Sum.Merged[F, O, A] =
+      new Sum.Merged[F, O, A]:
+        export self.{branches, decode, default, encode, metadata}
+        override def discriminator: Discriminator.Merged = f(self.discriminator)
+
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = ???
+
+    final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
+
+    final override def imap[B](f: A => B)(g: B => A): Sum.Merged[F, O, B] = ???
+
+    final override def optional: Sum.Merged[Data.Optional, O, Option[A]] = ???
+
+    final override def decode(data: Data): Codec.Result[A] = data.toObject
+      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
+      .map(_.values)
+      .andThen(decode(_, discriminator))
+
+    def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A]
+
+    final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator)
+
+    def encode(a: A, discriminator: Discriminator.Merged): F[Data.Object[Data.String | O]]
+
+  object Merged:
+    def apply[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged[Identity, O, A] =
+      val _branches = branches
+
+      new Merged[Identity, O, A]:
+        override def branches: Branches[Data.Object[O], A] = _branches
+        override def metadata: Metadata = Metadata.Empty
+        override def default: Option[A] = None
+        override def discriminator: Discriminator.Merged = Discriminator.Merged.Default
+        override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A] = ???
+        override def encode(a: A, discriminator: Discriminator.Merged): Data.Object[Data.String | O] =
+          branches.encodeMerged(a, discriminator)
 
   sealed abstract class Untagged[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Sum[F, O, A]:
     self =>

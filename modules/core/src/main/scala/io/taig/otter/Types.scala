@@ -90,6 +90,26 @@ trait Types:
       object Required:
         type Of[O <: Data, A] = Base.Sum.Nested[Identity, O, A]
 
+    type Merged[A] = Base.Sum.Merged[Data.Optional, ?, A]
+
+    object Merged:
+      type Of[O <: Data, A] = Base.Sum.Merged[Data.Optional, O, A]
+
+      type Required[O <: Data, A] = Base.Sum.Merged[Identity, O, A]
+
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Merged[Identity, O, A]
+
+    type Untagged[A] = Base.Sum.Untagged[Data.Optional, ?, A]
+
+    object Untagged:
+      type Of[O <: Data, A] = Base.Sum.Untagged[Data.Optional, O, A]
+
+      type Required[O <: Data, A] = Base.Sum.Untagged[Identity, O, A]
+
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Untagged[Identity, O, A]
+
   type Tuple[A] = Base.Tuple[Data.Optional, ?, A]
 
   object Tuple:
