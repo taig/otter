@@ -31,12 +31,12 @@ trait Codecs extends Validations:
   val long: Primitive.Required[Long] = primitive(Type.Long)
   val string: Primitive.Required[String] = primitive(Type.String)
 
-  def branch[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+  def branch[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
       name: String,
       codec: Base.Codec[F, O, A]
   ): Branch.Of[F[O], A] = Base.Branch(name, codec)
 
-  def field[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+  def field[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
       name: String,
       codec: Base.Codec[F, O, A]
   ): Field.Of[F[O], A] = Base.Field(name, codec)
@@ -157,8 +157,7 @@ trait Codecs extends Validations:
 
   def enumeration[A, B](codec: Codec.Required.Of[Data.Primitive, A])(using
       mapping: Mapping[B, A]
-  ): Enumeration.Required[B] =
-    Base.Enumeration(codec, mapping)
+  ): Enumeration.Required[B] = Base.Enumeration(codec, mapping)
 
   def enumeration[A: Order, B](codec: Codec.Required.Of[Data.Primitive, A])(f: B => A)(using
       EnumerationValues.Aux[B, B]

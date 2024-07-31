@@ -31,7 +31,7 @@ sealed abstract class Branch[+O <: Data, A]:
   def encode(a: A): O
 
 object Branch:
-  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A](
+  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
       name: String,
       codec: Codec[F, O, A]
   ): Branch[F[O], A] =

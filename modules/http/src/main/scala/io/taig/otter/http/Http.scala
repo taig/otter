@@ -19,7 +19,7 @@ object Http:
   object Url:
     val Empty: Http.Url = Url(Chain.empty, Chain.empty)
 
-  type Headers = Chain[(CIString, String)]
+  type Headers = Vector[(CIString, String)]
 
   final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Request.Body):
     def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))
