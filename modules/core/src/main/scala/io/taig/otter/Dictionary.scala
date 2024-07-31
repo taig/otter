@@ -39,7 +39,7 @@ abstract class Dictionary[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] ext
     override def encode(a: Option[A]): Data.Optional[Data.Object[O]] = a.map(self.encode).getOrElse(Data.Null)
 
 object Dictionary:
-  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data.Value, A, B](
+  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data, A, B](
       key: Codec[Identity, Data.Primitive, A],
       value: Codec[F, O, B]
   ): Dictionary[Identity, F[O], Vector[(A, B)]] = new Dictionary:
