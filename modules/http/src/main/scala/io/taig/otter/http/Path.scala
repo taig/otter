@@ -1,26 +1,81 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.data.Chain
-// import cats.syntax.all.*
-// import cats.Invariant
+import cats.syntax.all.*
+import cats.Invariant
+import io.taig.otter.Codec
+import io.taig.otter.Codec.Result
+import io.taig.otter.validation.Violations
+import io.taig.otter.validation.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Data
+import java.util.regex.Pattern
+import cats.data.Validated
+import io.taig.otter.Evidence
 
-// sealed trait Path[A] extends Product, Serializable:
-//   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Transform(this, f, g)
-//   def segments: Chain[Segment[?]]
-//   final def zip[B](path: Path[B]): Path[(A, B)] = Path.Combine(this, path)
+sealed abstract class Path[A]:
+  self =>
 
-// object Path:
-//   final case class Combine[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
-//     override def segments: Chain[Segment[?]] = left.segments ++ right.segments
+  def toVector: Vector[Segment[?]]
 
-//   case object Empty extends Path[Unit]:
-//     override def segments: Chain[Nothing] = Chain.empty
+  final def imap[B](f: A => B)(g: B => A): Path[B] = new Path[B]:
+    export self.toVector
+    override def decode(values: Http.Path): Codec.Result[B] = self.decode(values).map(f)
+    override def encode(b: B): Http.Path = self.encode(g(b))
 
-//   final case class One[A](segment: Segment[A]) extends Path[A]:
-//     override def segments: Chain[Segment[A]] = Chain.one(segment)
+  final def zip[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
+    override def toVector: Vector[Segment[?]] = self.toVector ++ path.toVector
+    override def decode(values: Http.Path): Codec.Result[(A, B)] =
+      val (left, right) = values.splitAt(self.toVector.length)
+      (self.decode(left), path.decode(right)).tupled
+    override def encode(ab: (A, B)): Http.Path = self.encode(ab._1) ++ path.encode(ab._2)
 
-//   final case class Transform[A, B](self: Path[A], f: A => B, g: B => A) extends Path[B]:
-//     export self.segments
+  final def /(segment: String): Path[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
 
-//   given Invariant[Path] with
-//     override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)
+  final def /[B](segment: Segment.Parameter[B])(using merge: Evidence.Merge[A, B]): Path[merge.Out] =
+    zip(segment.toPath).imap(merge.apply)(merge.unapply)
+
+  def decode(values: Http.Path): Codec.Result[A]
+
+  def encode(a: A): Http.Path
+
+object Path:
+  val Empty: Path[Unit] = new Path[Unit]:
+    override def toVector: Vector[Segment[?]] = Vector.empty
+    override def decode(values: Http.Path): Codec.Result[Unit] = Validated.cond(
+      values.isEmpty,
+      (),
+      Violations.rootNec(
+        Violation(
+          Constraint.Primitive.Matches(Pattern.compile(Pattern.quote("/"))),
+          actual = Data.String("/" + values.mkString("/"))
+        )
+      )
+    )
+    override def encode(a: Unit): Http.Path = Vector.empty
+
+  def apply[A](segment: Segment[A]): Path[A] = new Path[A]:
+    override def toVector: Vector[Segment[?]] = Vector(segment)
+    override def decode(values: Http.Path): Codec.Result[A] = values match
+      case Vector(value) => segment.decode(value)
+      case Vector() =>
+        Violations
+          .rootNec(
+            Violation(
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(s"/${segment.print}"))),
+              actual = Data.String("/")
+            )
+          )
+          .invalid
+      case _ =>
+        Violations
+          .rootNec(
+            Violation(
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(s"/${segment.print}"))),
+              actual = Data.String("/" + values.mkString("/"))
+            )
+          )
+          .invalid
+    override def encode(a: A): Http.Path = Vector(segment.encode(a))
+
+  given Invariant[Path] with
+    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)

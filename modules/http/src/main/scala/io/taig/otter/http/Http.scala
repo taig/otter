@@ -1,13 +1,12 @@
 package io.taig.otter.http
 
-import cats.data.Chain
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
 object Http:
-  type Path = Chain[String]
+  type Path = Vector[String]
 
-  type Queries = Chain[(String, String)]
+  type Queries = Vector[(String, String)]
 
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
@@ -17,7 +16,7 @@ object Http:
         queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
 
   object Url:
-    val Empty: Http.Url = Url(Chain.empty, Chain.empty)
+    val Empty: Http.Url = Url(Vector.empty, Vector.empty)
 
   type Headers = Vector[(CIString, String)]
 

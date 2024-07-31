@@ -39,6 +39,10 @@ object Codec:
       case Data.Null          => none
       case Data.Array(values) => values.map(_.print).some
 
+  extension [A](self: Codec[Identity, Data.Array[Data.Primitive], A])
+    def parseArray(value: Vector[String]): Codec.Result[A] = ???
+    def printArray(a: A): Vector[String] = self.encode(a).values.map(_.print)
+
   extension [A](self: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A])
     def parseOptionalObject(value: Option[Vector[(String, String)]]): Codec.Result[A] = ???
     def printOptionalObject(a: A): Option[Vector[(String, String)]] = self.encode(a) match
