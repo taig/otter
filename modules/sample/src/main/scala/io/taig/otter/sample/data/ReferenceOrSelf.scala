@@ -1,5 +1,5 @@
-package io.taig.otter.sample.data
+// package io.taig.otter.sample.data
 
-enum ReferenceOrSelf[+A]:
-  case Self
-  case Reference(value: A)
+// enum ReferenceOrSelf[+A]:
+//   case Self
+//   case Reference(value: A)

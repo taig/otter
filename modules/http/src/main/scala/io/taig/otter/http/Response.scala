@@ -1,16 +1,21 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
+import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.{Codec, Data}
 import io.taig.otter.http.Http.Payload
 import io.taig.otter.validation.{History, Violation, Violations}
 import org.typelevel.ci.*
+import io.taig.otter.Constraint
 
-final case class Response[A](results: Results[A], violations: Result[Violations[Data]]):
+final case class Response[A](
+    results: Results[A],
+    violations: Result[Violations[Violation[Constraint.Any[Data], Data]]]
+):
   def decode(response: Http.Response): Codec.Result[A] = results.decode(response)
 
-  def encode(a: Validated[Violations[Data], A]): Http.Response = a.fold(violations.encode, results.encode)
+  def encode(a: Validated[Violations[Violation[Constraint.Any[Data], Data]], A]): Http.Response =
+    a.fold(violations.encode, results.encode)
 
 object Response:
   sealed abstract class Body[A]:

@@ -72,12 +72,12 @@ lazy val root = module(identifier = None, jvmOnly = true)
     openapi,
     // httpOpenapi,
     // httpCirce,
-    server
+    server,
     // csv,
     // dsl,
     // http4s,
     // munit,
-    // sample
+    sample
   )
 
 lazy val validation = module(identifier = Some("validation"))
@@ -198,20 +198,21 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
 //   )
 //   .dependsOn(http)
 
-// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-//   .enablePlugins(BuildInfoPlugin)
-//   .settings(noPublishSettings)
-//   .settings(
-//     buildInfoKeys := Seq(version),
-//     buildInfoObject := "Build",
-//     buildInfoPackage := organization.value + ".otter.sample",
-//     libraryDependencies ++=
-//       "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-//         "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-//         "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-//         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-//         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-//         "org.typelevel" %% "mouse" % Version.Mouse ::
-//         Nil
-//   )
-//   .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
+lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .enablePlugins(BuildInfoPlugin)
+  .settings(noPublishSettings)
+  .settings(
+    buildInfoKeys := Seq(version),
+    buildInfoObject := "Build",
+    buildInfoPackage := organization.value + ".otter.sample",
+    libraryDependencies ++=
+      // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
+      //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+      //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
+      //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+      //   "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+      //   "org.typelevel" %% "mouse" % Version.Mouse ::
+      Nil
+  )
+  .dependsOn(httpHttp4s)
+// .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
