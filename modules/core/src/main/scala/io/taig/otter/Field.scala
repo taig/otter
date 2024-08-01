@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import io.taig.otter.Keys.*
 import cats.syntax.all.*
 
 sealed abstract class Field[+O <: Data, A]:
@@ -9,6 +8,8 @@ sealed abstract class Field[+O <: Data, A]:
   def name: String
 
   def codec: Codec[?, ?, ?]
+
+  final def nulls: Attribute.Optional[Field[O, A], Null] = Attribute.Optional(this, Keys.nulls)
 
   def metadata: Metadata
 
@@ -32,7 +33,7 @@ sealed abstract class Field[+O <: Data, A]:
   def decode(data: Data): Codec.Result[A]
 
   final def encode(a: A, parent: Null): Option[(String, O)] =
-    val hideNull = (parent, metadata(nulls)) match
+    val hideNull = (parent, nulls.value) match
       case (_, Some(nulls)) => nulls === Null.Hide
       case (nulls, None)    => nulls === Null.Hide
 
@@ -56,3 +57,8 @@ object Field:
       override def metadata: Metadata = Metadata.Empty
       override def decode(data: Data): Codec.Result[A] = codec.decode(data)
       override def encode(a: A): F[O] = codec.encode(a)
+
+  given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
+    extension (self: Field[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Field[O, A] = self.modifyMetadata(f)

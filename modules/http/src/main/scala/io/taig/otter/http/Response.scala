@@ -8,9 +8,8 @@ import io.taig.otter.validation.{History, Violation, Violations}
 import org.typelevel.ci.*
 
 final case class Response[A](results: Results[A], violations: Result[Violations[Data]]):
-  // def results[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
-
   def decode(response: Http.Response): Codec.Result[A] = results.decode(response)
+
   def encode(a: Validated[Violations[Data], A]): Http.Response = a.fold(violations.encode, results.encode)
 
 object Response:

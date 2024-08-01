@@ -21,6 +21,8 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     extends Product[F, Data.Object[O], A]:
   self =>
 
+  final def nulls: Attribute[Record[F, O, A], Null] = Attribute(this, Keys.nulls, Null.Default)
+
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
     export self.{decode, default, encode, fields}
     override def metadata: Metadata = f(self.metadata)
@@ -71,8 +73,7 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
 
   def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A]
 
-  override def encode(a: A): F[Data.Object[O]] =
-    encode(a, metadata(nulls).getOrElse(Null.Default))
+  final override def encode(a: A): F[Data.Object[O]] = encode(a, nulls.value)
 
   def encode(a: A, nulls: Null): F[Data.Object[O]]
 
@@ -89,6 +90,11 @@ object Record:
         .andThen(fields.decodeRecord)
       override def encode(a: A, nulls: Null): Data.Object[O] =
         Data.Object(fields.encodeRecord(a, nulls))
+
+  given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Record[F, O, A]] with
+    extension (self: Record[F, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = self.modifyMetadata(f)
 
 sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
     extends Product[F, Data.Array[O], A]:

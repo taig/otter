@@ -35,7 +35,7 @@ final class SumMergedTest extends FunSuite:
         branch("foo", record(field("a", string) :* field("b", int))) :+
           branch("bar", record(field("c", string)))
       )
-      .modifyDiscriminator(_ => discriminator)
+      .discriminator(discriminator)
 
     assertEquals(
       obtained = codec.encode(("foobar", 42).asLeft),
@@ -53,7 +53,7 @@ final class SumMergedTest extends FunSuite:
         branch("foo", record(field(discriminator.identifier, string) :* field("b", int))) :+
           branch("bar", record(field("c", string)))
       )
-      .modifyDiscriminator(_ => discriminator)
+      .discriminator(discriminator)
 
     assertEquals(
       obtained = codec.encode(("foobar", 42).asLeft),

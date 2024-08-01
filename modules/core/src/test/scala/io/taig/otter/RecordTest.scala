@@ -179,17 +179,17 @@ final class RecordTest extends FunSuite:
 
   test("encode: nulls"):
     val codec = record(
-      field("foo", string.optional).modifyMetadata(_.put(nulls, Null.Hide)) :*
-        field("bar", int.optional).modifyMetadata(_.put(nulls, Null.Show)) :*
+      field("foo", string.optional).nulls(Null.Hide) :*
+        field("bar", int.optional).nulls(Null.Show) :*
         field("baz", long.optional)
     )
 
     assertEquals(
-      obtained = codec.modifyMetadata(_.put(nulls, Null.Show)).encode((none, none, none)),
+      obtained = codec.nulls(Null.Show).encode((none, none, none)),
       expected = Data.Object.of("bar" -> Data.Null, "baz" -> Data.Null)
     )
 
     assertEquals(
-      obtained = codec.modifyMetadata(_.put(nulls, Null.Hide)).encode((none, none, none)),
+      obtained = codec.nulls(Null.Hide).encode((none, none, none)),
       expected = Data.Object.of("bar" -> Data.Null)
     )

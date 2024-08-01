@@ -29,7 +29,7 @@ final class SumNestedTest extends FunSuite:
 
   test("encode: discriminator"):
     val discriminator: Discriminator.Nested = Discriminator.Nested(identifier = "a", value = "b")
-    val codec = sum.nested(branch("foo", string) :+ branch("bar", int)).modifyDiscriminator(_ => discriminator)
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int)).discriminator(discriminator)
 
     assertEquals(
       obtained = codec.encode("foobar".asLeft),
@@ -41,7 +41,7 @@ final class SumNestedTest extends FunSuite:
 
   test("encode: discriminator (conflict)"):
     val discriminator: Discriminator.Nested = Discriminator.Nested(identifier = "x", value = "x")
-    val codec = sum.nested(branch("foo", string) :+ branch("bar", int)).modifyDiscriminator(_ => discriminator)
+    val codec = sum.nested(branch("foo", string) :+ branch("bar", int)).discriminator(discriminator)
 
     assertEquals(
       obtained = codec.encode("foobar".asLeft),

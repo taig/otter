@@ -44,3 +44,8 @@ object Branch:
       override def metadata: Metadata = Metadata.Empty
       override def decode(data: Data): Codec.Result[A] = codec.decode(data)
       override def encode(a: A): F[O] = codec.encode(a)
+
+  given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
+    extension (self: Branch[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = self.modifyMetadata(f)

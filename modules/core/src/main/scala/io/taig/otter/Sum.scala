@@ -20,14 +20,12 @@ object Sum:
       extends Sum[F, Data.Object[Data.String | O], A]:
     self =>
 
-    def discriminator: Discriminator.Nested
+    final def discriminator: Attribute[Sum.Nested[F, O, A], Discriminator.Nested] =
+      Attribute(this, Keys.discriminator.nested, Discriminator.Nested.Default)
 
-    final def modifyDiscriminator(f: Discriminator.Nested => Discriminator.Nested): Sum.Nested[F, O, A] =
-      new Sum.Nested[F, O, A]:
-        export self.{branches, decode, default, encode, metadata}
-        override def discriminator: Discriminator.Nested = f(self.discriminator)
-
-    final override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = ???
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = new Nested[F, O, A]:
+      export self.{branches, decode, default, encode}
+      override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
 
@@ -39,7 +37,6 @@ object Sum:
         codec: Sum.Nested[G, P, B]
     ): Sum.Nested[G, O | P, Either[A, B]] = new Nested[G, O | P, Either[A, B]]:
       override def branches: Branches[?, ?] = self.branches.orElse(codec.branches)
-      override def discriminator: Discriminator.Nested = Discriminator.Nested.Default
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(
@@ -55,11 +52,11 @@ object Sum:
     final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .map(_.values)
-      .andThen(decode(_, discriminator))
+      .andThen(decode(_, discriminator.value))
 
     def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A]
 
-    final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator)
+    final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator.value)
 
     def encode(a: A, discriminator: Discriminator.Nested): F[Data.Object[Data.String | O]]
 
@@ -69,7 +66,6 @@ object Sum:
 
       new Nested[Identity, O, A]:
         override def branches: Branches[O, A] = _branches
-        override def discriminator: Discriminator.Nested = Discriminator.Nested.Default
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A] =
@@ -91,18 +87,21 @@ object Sum:
         override def encode(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
           branches.encodeNested(a, discriminator)
 
+    given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Nested[F, O, A]] with
+      extension (self: Sum.Nested[F, O, A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = self.modifyMetadata(f)
+
   sealed abstract class Merged[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]
       extends Sum[F, Data.Object[Data.String | O], A]:
     self =>
 
-    def discriminator: Discriminator.Merged
+    def discriminator: Attribute[Sum.Merged[F, O, A], Discriminator.Merged] =
+      Attribute(this, Keys.discriminator.merged, Discriminator.Merged.Default)
 
-    final def modifyDiscriminator(f: Discriminator.Merged => Discriminator.Merged): Sum.Merged[F, O, A] =
-      new Sum.Merged[F, O, A]:
-        export self.{branches, decode, default, encode, metadata}
-        override def discriminator: Discriminator.Merged = f(self.discriminator)
-
-    final override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = ???
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = new Merged[F, O, A]:
+      export self.{branches, decode, default, encode}
+      override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
 
@@ -113,11 +112,11 @@ object Sum:
     final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
       .map(_.values)
-      .andThen(decode(_, discriminator))
+      .andThen(decode(_, discriminator.value))
 
     def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A]
 
-    final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator)
+    final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator.value)
 
     def encode(a: A, discriminator: Discriminator.Merged): F[Data.Object[Data.String | O]]
 
@@ -129,15 +128,21 @@ object Sum:
         override def branches: Branches[Data.Object[O], A] = _branches
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
-        override def discriminator: Discriminator.Merged = Discriminator.Merged.Default
         override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A] = ???
         override def encode(a: A, discriminator: Discriminator.Merged): Data.Object[Data.String | O] =
           branches.encodeMerged(a, discriminator)
 
+    given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Merged[F, O, A]] with
+      extension (self: Sum.Merged[F, O, A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = self.modifyMetadata(f)
+
   sealed abstract class Keyed[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Sum[F, Data.Object[O], A]:
     self =>
 
-    final override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = ???
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = new Keyed[F, O, A]:
+      export self.{branches, decode, default, encode}
+      override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Keyed[F, O, A] = ???
 
@@ -165,9 +170,17 @@ object Sum:
           ???
         override def encode(a: A): Data.Object[O] = branches.encodeKeyed(a)
 
+    given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Keyed[F, O, A]] with
+      extension (self: Sum.Keyed[F, O, A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = self.modifyMetadata(f)
+
   sealed abstract class Untagged[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Sum[F, O, A]:
     self =>
-    final override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = ???
+
+    final override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = new Untagged[F, O, A]:
+      export self.{branches, decode, default, encode}
+      override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
@@ -194,3 +207,13 @@ object Sum:
         override def default: Option[A] = None
         override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data)
         override def encode(a: A): O = branches.encodeUntagged(a)
+
+    given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Untagged[F, O, A]] with
+      extension (self: Sum.Untagged[F, O, A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = self.modifyMetadata(f)
+
+  given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum[F, O, A]] with
+    extension (self: Sum[F, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Sum[F, O, A] = self.modifyMetadata(f)
