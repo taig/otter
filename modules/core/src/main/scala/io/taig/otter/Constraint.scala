@@ -2,6 +2,7 @@ package io.taig.otter
 
 import java.util.regex.Pattern
 import cats.Functor
+import scala.Product as SProduct
 
 enum Constraint[+A]:
   case Type(name: String) extends Constraint[Nothing]
@@ -14,10 +15,12 @@ enum Constraint[+A]:
 object Constraint:
   type Any[A] = Constraint[A] | Collection | Object | Primitive[A]
 
-  enum Collection:
-    case MaxItems(reference: Long)
-    case MinItems(reference: Long)
-    case UniqueItems
+  sealed abstract class Collection extends SProduct with Serializable
+
+  object Collection:
+    final case class MaxItems(reference: Long) extends Constraint.Collection
+    final case class MinItems(reference: Long) extends Constraint.Collection
+    case object UniqueItems extends Constraint.Collection
 
   enum Object:
     case MaxProperties(reference: Long)

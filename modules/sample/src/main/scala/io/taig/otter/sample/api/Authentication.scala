@@ -19,4 +19,6 @@ object Authentication:
     val permissionDenied: Codec[Authentication.Error.Forbidden.type] =
       error("permissionDenied", singleton(Authentication.Error.Forbidden))
 
-    (result(code.unauthorized, output.json(userUnknown)) :+ result(code.forbidden, output.json(permissionDenied))).to
+    ???
+
+    // (result(code.unauthorized, output.json(userUnknown)) :+ result(code.forbidden, output.json(permissionDenied))).to

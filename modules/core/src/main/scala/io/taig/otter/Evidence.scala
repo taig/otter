@@ -27,7 +27,7 @@ object Evidence:
     ): Evidence.Product.Aux[A, B] =
       instance[A, B](STuple.fromProductTyped(_).head)(b => mirror.fromProduct(b *: EmptyTuple))
 
-    given productN[A <: SProduct, B <: STuple](using
+    inline given productN[A <: SProduct, B <: STuple](using
         mirror: Mirror.ProductOf[A] { type MirroredElemTypes = B }
     ): Evidence.Product.Aux[A, B] = instance[A, B](STuple.fromProductTyped)(mirror.fromProduct)
 

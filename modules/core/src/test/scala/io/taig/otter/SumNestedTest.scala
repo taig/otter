@@ -5,7 +5,7 @@ import io.taig.otter.Dsl.*
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
-import io.taig.otter.validation.History
+import io.taig.otter.validation.Step
 
 final class SumNestedTest extends FunSuite:
   test("encode"):
@@ -83,7 +83,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Step.Field(Discriminator.Nested.Default.identifier),
           Violation(Constraint.OneOf(List(Data.String("foo"), Data.String("bar"))), actual = Data.String("baz"))
         )
         .invalid
@@ -98,7 +98,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Step.Field(Discriminator.Nested.Default.identifier),
           Violation(Constraint.Type("string"), actual = Data.String("null"))
         )
         .invalid
@@ -116,7 +116,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.identifier),
+          Step.Field(Discriminator.Nested.Default.identifier),
           Violation(Constraint.Type("string"), actual = Data.String("number"))
         )
         .invalid
@@ -131,7 +131,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.value),
+          Step.Field(Discriminator.Nested.Default.value),
           Violation(Constraint.Type("string"), actual = Data.String("null"))
         )
         .invalid
@@ -143,7 +143,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.value),
+          Step.Field(Discriminator.Nested.Default.value),
           Violation(Constraint.Type("number"), actual = Data.String("null"))
         )
         .invalid
@@ -161,7 +161,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.value),
+          Step.Field(Discriminator.Nested.Default.value),
           Violation(Constraint.Type("string"), actual = Data.String("array"))
         )
         .invalid
@@ -176,7 +176,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          History.Step.Field(Discriminator.Nested.Default.value),
+          Step.Field(Discriminator.Nested.Default.value),
           Violation(Constraint.Type("number"), actual = Data.String("array"))
         )
         .invalid

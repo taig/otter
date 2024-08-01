@@ -5,17 +5,17 @@ import cats.Id as Identity
 
 trait Types:
   export Base.{CodecValidation, Constraint, Data, Metadata, Type}
-  export validation.{History, Validation, Violation, Violations}
+  export validation.{Step, Validation, Violation, Violations}
 
   final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 
   object Codec:
-    type Of[O <: Data.Value, A] = Base.Codec[Data.Optional, O, A]
+    type Of[O <: Data, A] = Base.Codec[Data.Optional, O, A]
 
     type Required[A] = Base.Codec[Identity, ?, A]
 
     object Required:
-      type Of[O <: Data.Value, A] = Base.Codec[Identity, O, A]
+      type Of[O <: Data, A] = Base.Codec[Identity, O, A]
 
     export Base.Codec.Result
 
@@ -94,7 +94,7 @@ trait Types:
     object Nested:
       type Of[O <: Data, A] = Base.Sum.Nested[Data.Optional, O, A]
 
-      type Required[O <: Data, A] = Base.Sum.Nested[Identity, O, A]
+      type Required[A] = Base.Sum.Nested[Identity, ?, A]
 
       object Required:
         type Of[O <: Data, A] = Base.Sum.Nested[Identity, O, A]

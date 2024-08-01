@@ -5,7 +5,7 @@ import io.taig.otter.Dsl.*
 import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
-import io.taig.otter.validation.History
+import io.taig.otter.validation.Step
 
 final class CollectionTest extends FunSuite:
   test("encode"):
@@ -30,8 +30,8 @@ final class CollectionTest extends FunSuite:
       obtained = codec.decode(Data.Array.of(Data.String("foo"), Data.Array.Empty, Data.Object.Empty)),
       expected = Violations
         .of(
-          History.Step.Index(1) -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-          History.Step.Index(2) -> Violation(Constraint.Type("string"), actual = Data.String("object"))
+          Step.Index(1) -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          Step.Index(2) -> Violation(Constraint.Type("string"), actual = Data.String("object"))
         )
         .invalid
     )

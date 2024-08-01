@@ -9,27 +9,27 @@ import cats.data.NonEmptyChainImpl
 
 enum Violations[+A]:
   case Root(violations: NonEmptyChain[A])
-  case Namespace(toNem: NonEmptyMap[Option[History.Step], Violations[A]])
+  case Namespace(toNem: NonEmptyMap[Option[Step], Violations[A]])
 
-  final def /:(step: History.Step): Violations[A] = Namespace(NonEmptyMap.one(step.some, this))
-  final def /:(index: Int): Violations[A] = /:(History.Step.Index(index))
-  final def /:(field: String): Violations[A] = /:(History.Step.Field(field))
+  final def /:(step: Step): Violations[A] = Namespace(NonEmptyMap.one(step.some, this))
+  final def /:(index: Int): Violations[A] = /:(Step.Index(index))
+  final def /:(field: String): Violations[A] = /:(Step.Field(field))
 
   final def map[B](f: A => B): Violations[B] = this match
     case Root(violations) => Root(violations.map(f))
     case Namespace(toNem) => Namespace(toNem.fmap(_.map(f)))
 
 object Violations:
-  def of[A](violation: (History.Step, A), violations: (History.Step, A)*): Violations[A] = Namespace(
+  def of[A](violation: (Step, A), violations: (Step, A)*): Violations[A] = Namespace(
     NonEmptyMap.of(violation, violations*).mapBoth { case (key, value) => (key.some, Root(NonEmptyChain.one(value))) }
   )
 
   def root[A](violations: NonEmptyChain[A]): Violations[A] = Root(violations)
   def rootNec[A](violation: A): Violations[A] = root(NonEmptyChain.one(violation))
 
-  def namespace[A](step: History.Step, violations: NonEmptyChain[A]): Violations[A] =
+  def namespace[A](step: Step, violations: NonEmptyChain[A]): Violations[A] =
     Namespace(NonEmptyMap.one(step.some, Root(violations)))
-  def namespaceNec[A](step: History.Step, violation: A): Violations[A] =
+  def namespaceNec[A](step: Step, violation: A): Violations[A] =
     namespace(step, NonEmptyChain.one(violation))
 
   given [A]: Semigroup[Violations[A]] with

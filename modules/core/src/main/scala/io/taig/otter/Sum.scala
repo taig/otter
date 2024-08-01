@@ -6,7 +6,7 @@ import io.taig.otter.Data.Optional
 import io.taig.otter.Codec.Result
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
-import io.taig.otter.validation.History
+import io.taig.otter.validation.Step
 
 sealed abstract class Sum[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Codec[F, O, A]:
   def branches: Branches[?, ?]
@@ -30,7 +30,13 @@ object Sum:
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
 
-    final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = ???
+    final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = new Sum.Nested[F, O, B]:
+      export self.{branches, metadata}
+      override def default: Option[B] = self.default.map(f)
+      override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[B] =
+        self.decode(data, discriminator).map(f)
+      override def encode(b: B, discriminator: Discriminator.Nested): F[Data.Object[Data.String | O]] =
+        self.encode(g(b), discriminator)
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Nested[F, O, B] =
       imap(evidence.from)(evidence.to)
@@ -77,7 +83,7 @@ object Sum:
             .andThen(
               _.toValid(
                 Violations.namespaceNec(
-                  History.Step.Field(discriminator.identifier),
+                  Step.Field(discriminator.identifier),
                   Violation(
                     Constraint.OneOf(branches.toNev.toList.map(branch => Data.String(branch.name))),
                     actual = data
@@ -207,7 +213,11 @@ object Sum:
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
-    final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = ???
+    final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = new Sum.Untagged[F, O, B]:
+      export self.{branches, metadata}
+      override def default: Option[B] = self.default.map(f)
+      override def decode(data: Data): Result[B] = self.decode(data).map(f)
+      override def encode(b: B): F[O] = self.encode(g(b))
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Untagged[F, O, B] =
       imap(evidence.from)(evidence.to)

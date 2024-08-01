@@ -6,6 +6,8 @@ import io.taig.otter.validation.Violation
 import cats.data.Validated
 import io.taig.otter.Keys.*
 import cats.Id as Identity
+import scala.deriving.Mirror
+import scala.deriving.Mirror.ProductOf
 
 sealed abstract class Product[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Object[?] | Data.Array[?], A]
     extends Codec[F, O, A]:
@@ -15,8 +17,7 @@ sealed abstract class Product[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Obj
   override def modifyMetadata(f: Metadata => Metadata): Product[F, O, A]
   override def modifyDefault(f: Option[A] => Option[A]): Product[F, O, A]
   override def imap[B](f: A => B)(g: B => A): Product[F, O, B]
-  def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[F, O, B] =
-    imap(evidence.from)(evidence.to)
+  def to[B](using mirror: Mirror.ProductOf[B]): Product[F, O, B] = ???
   override def optional: Product[Data.Optional, O, Option[A]]
 
 sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
@@ -42,8 +43,8 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
 
-  final override def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[F, O, B] =
-    imap(evidence.from)(evidence.to)
+  final override def to[B](using mirror: Mirror.ProductOf[B]): Record[F, O, B] =
+    ???
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
@@ -121,6 +122,8 @@ sealed abstract class Tuple[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: 
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
+
+  override def to[B](using mirror: Mirror.ProductOf[B]): Tuple[F, O, B] = ???
 
   final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
