@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import io.taig.otter.Metadata
-import io.taig.otter.Attribute
 
 final case class Endpoint[I, O](request: Request[I], response: Response[O], metadata: Metadata):
   def modifyMetadata(f: Metadata => Metadata): Endpoint[I, O] = copy(metadata = f(metadata))
