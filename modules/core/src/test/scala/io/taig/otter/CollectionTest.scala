@@ -30,16 +30,8 @@ final class CollectionTest extends FunSuite:
       obtained = codec.decode(Data.Array.of(Data.String("foo"), Data.Array.Empty, Data.Object.Empty)),
       expected = Violations
         .of(
-          Violations
-            .namespaceNec(
-              History.Step.Index(1),
-              Violation(Constraint.Type("string"), actual = Data.String("array"))
-            ),
-          Violations
-            .namespaceNec(
-              History.Step.Index(2),
-              Violation(Constraint.Type("string"), actual = Data.String("object"))
-            )
+          History.Step.Index(1) -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          History.Step.Index(2) -> Violation(Constraint.Type("string"), actual = Data.String("object"))
         )
         .invalid
     )

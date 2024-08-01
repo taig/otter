@@ -16,6 +16,9 @@ trait Validations extends Types:
   def matches(pattern: Pattern): CodecValidation.Primitive[String, Unit] =
     Base.matches(pattern).mapConstraint(Constraint.Primitive.Matches.apply).mapActual(Data.String.apply)
 
+  def matches(reference: String): CodecValidation.Primitive[String, Unit] =
+    matches(Pattern.compile(Pattern.quote(reference)))
+
   object maxItems:
     def apply[A](reference: Long, count: A => Long): CodecValidation.Collection[A, Unit] =
       Base.maxItems(reference, count).mapConstraint(Constraint.Collection.MaxItems.apply).mapActual(Data.Number.apply)
@@ -96,6 +99,9 @@ trait Validations extends Types:
 
       def chain[A]: CodecValidation.Object[Chain[A], NonEmptyChain[A]] =
         apply[Chain[A], A](_.uncons).map(NonEmptyChain.fromChainPrepend)
+
+  def parse[A](name: String)(f: String => Option[A]): CodecValidation[Constraint, String, A] =
+    Base.parse[A](name)(f).mapConstraint(Constraint.Type.apply).mapActual(Data.String.apply)
 
   def uniqueItems[F[a] <: Iterable[a], A](codec: Codec[A]): CodecValidation.Collection[F[A], Unit] =
     Base.uniqueItems

@@ -53,6 +53,9 @@ trait Validations:
   def nonEmpty[A, B](uncons: A => Option[(B, A)]): Validation[A, 1L, 0L, (B, A)] =
     Validation.validated(1L)(fa => uncons(fa).toValidNec[0L](0L))
 
+  def parse[A](name: String)(f: String => Option[A]): Validation[String, String, String, A] =
+    Validation.option(name)(f)
+
   def uniqueItems[F[a] <: Iterable[a], A]: Validation[F[A], "uniqueItems", NonEmptyList[A], Unit] =
     Validation.validated("uniqueItems"):
       _.groupBy(identity)

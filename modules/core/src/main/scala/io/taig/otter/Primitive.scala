@@ -22,6 +22,8 @@ sealed abstract class Primitive[+F[+a <: Data] <: Data.Optional[a], A] extends C
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[F, B] = ivalidate(Validation.lift(f))(g)
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Primitive[F, B] = imap(evidence.from)(evidence.to)
+
   final def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive[F, B] = new Primitive[F, B]:
     export self.metadata
     override def default: Option[B] = self.default.flatMap(validation(_).toOption)

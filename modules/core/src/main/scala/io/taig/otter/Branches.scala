@@ -132,3 +132,13 @@ object Branches:
       branch.encode(a).filterKeys(_ =!= discriminator.identifier)
     override def encodeKeyed(a: A): Data.Object[O] = Data.Object.one(branch.name, branch.encode(a))
     override def encodeUntagged(a: A): O = branch.encode(a)
+
+  extension [O <: Data, A <: Matchable](self: Branches[O, A])
+    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
+      (self :+ branch).imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }

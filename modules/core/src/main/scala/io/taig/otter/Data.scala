@@ -28,6 +28,10 @@ sealed abstract class Data extends SProduct with Serializable:
     case data: Data.Primitive => Some(data)
     case _                    => None
 
+  final def isNull: Boolean = this match
+    case Data.Null => true
+    case _         => false
+
   final def name: String = this match
     case _: Data.Array[?]  => "array"
     case _: Data.Boolean   => "boolean"

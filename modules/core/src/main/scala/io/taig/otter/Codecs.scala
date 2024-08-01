@@ -16,6 +16,7 @@ import scala.collection.immutable.SortedSet
 import scala.collection.immutable.SortedMap
 import io.taig.enumeration.ext.Mapping
 import io.taig.enumeration.ext.EnumerationValues
+import java.util.regex.Pattern
 
 trait Codecs extends Validations:
   self =>
@@ -98,7 +99,7 @@ trait Codecs extends Validations:
 
     def nonEmptyChain[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
         codec: Base.Codec[F, O, A]
-    ): Collection.Of[F[O], NonEmptyChain[A]] =
+    ): Collection.Required.Of[F[O], NonEmptyChain[A]] =
       chain(codec).ivalidate(nonEmpty.collection.chain)(_.toChain)
 
     def set[F[+a <: Data] <: Data.Optional[a], O <: Data, A: Order](
@@ -162,5 +163,81 @@ trait Codecs extends Validations:
   def enumeration[A: Order, B](codec: Codec.Required.Of[Data.Primitive, A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
   ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
+
+  object dynamic:
+    val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
+    val value: Dynamic.Required.Of[Data.Value, Data.Value] = Base.Dynamic.Value
+    val obj: Dynamic.Required.Of[Data.Object[?], Data.Object[?]] = Base.Dynamic.Object
+    val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
+    val primitive: Dynamic.Required.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
+    val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
+
+  def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
+    dynamic.void.imap(_ => a)(_ => Data.Null)
+
+  val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+
+  val violations: Sum.Nested[Violations[Violation[Constraint.Any[Data], Data]]] =
+    val constraint: Sum.Nested[Constraint.Any[Data]] = sum
+      .nested {
+        branch("type", record(field("name", string)).to[Constraint.Type]) :+
+          branch("oneOf", record(field("values", collection.list(dynamic.any))).to[Constraint.OneOf[Data]])
+      }
+      .to[Constraint[Data]] | sum
+      .nested {
+        branch("maxItems", record(field("reference", long)).to[Constraint.Collection.MaxItems]) :+
+          branch("maxItems", record(field("reference", long)).to[Constraint.Collection.MinItems]) :+
+          branch("uniqueItems", singleton(Constraint.Collection.UniqueItems))
+      }
+      .to[Constraint.Collection] | sum
+      .nested {
+        branch("maxProperties", record(field("reference", long)).to[Constraint.Object.MaxProperties]) :+
+          branch("minProperties", record(field("reference", long)).to[Constraint.Object.MinProperties])
+      }
+      .to[Constraint.Object] | sum
+      .nested {
+        branch("matches", record(field("pattern", pattern)).to[Constraint.Primitive.Matches]) :+
+          branch(
+            "maximum",
+            record(field("reference", dynamic.any) :* field("exclusive", boolean))
+              .to[Constraint.Primitive.Maximum[Data]]
+          ) :+
+          branch(
+            "minimum",
+            record(field("reference", dynamic.any) :* field("exclusive", boolean))
+              .to[Constraint.Primitive.Minimum[Data]]
+          ) :+
+          branch("maxLength", record(field("reference", int)).to[Constraint.Primitive.MaxLength]) :+
+          branch("minLength", record(field("reference", int)).to[Constraint.Primitive.MinLength]) :+
+          branch("multiple", record(field("reference", dynamic.any)).to[Constraint.Primitive.Multiple[Data]])
+      }
+      .to[Constraint.Primitive[Data]]
+
+    val violation: Record[Violation[Constraint.Any[Data], Data]] =
+      record(field("constraint", constraint) :* field("actual", dynamic.any)).to
+
+    val step: Sum.Untagged.Required.Of[Data.Primitive, Option[History.Step]] = sum
+      .untagged {
+        branch("root", string.ivalidate_(matches("."))) |
+          branch("index", int.to[History.Step.Index]) |
+          branch("field", string.to[History.Step.Field])
+      }
+      .imap {
+        case _: String          => none
+        case step: History.Step => step.some
+      } {
+        case Some(step: (History.Step.Index | History.Step.Field)) => step
+        case None                                                  => "."
+      }
+
+    val root: Codec.Required[Violations.Root[Violation[Constraint.Any[Data], Data]]] =
+      collection.nonEmptyChain(violation).to[Violations.Root[Violation[Constraint.Any[Data], Data]]]
+
+    val namespace: Codec.Required[Violations.Namespace[Violation[Constraint.Any[Data], Data]]] =
+      dictionary.nonEmptyMap(step, violations).to[Violations.Namespace[Violation[Constraint.Any[Data], Data]]]
+
+    sum.nested(branch("root", root) :+ branch("namespace", namespace)).to
+
+  def error[A](identifier: String, codec: Codec[A]): Sum.Nested[A] = ??? // branch(identifier, codec).toCoproduct
 
 object Codecs extends Codecs

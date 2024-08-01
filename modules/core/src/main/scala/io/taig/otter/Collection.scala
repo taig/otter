@@ -25,6 +25,8 @@ sealed abstract class Collection[+F[+a <: Data] <: Data.Optional[a], +O <: Data,
 
   final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ivalidate(Validation.lift(f))(g)
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection[F, O, B] = imap(evidence.from)(evidence.to)
+
   final def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[F, O, B] =
     new Collection[F, O, B]:
       export self.{codec, metadata}

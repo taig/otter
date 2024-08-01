@@ -25,14 +25,8 @@ final class RecordTest extends FunSuite:
       obtained = codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))),
       expected = Violations
         .of(
-          Violations.namespaceNec(
-            History.Step.Field("foo"),
-            Violation(Constraint.Type("string"), actual = Data.String("array"))
-          ),
-          Violations.namespaceNec(
-            History.Step.Field("bar"),
-            Violation(Constraint.Type("number"), actual = Data.String("string"))
-          )
+          History.Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          History.Step.Field("bar") -> Violation(Constraint.Type("number"), actual = Data.String("string"))
         )
         .invalid
     )

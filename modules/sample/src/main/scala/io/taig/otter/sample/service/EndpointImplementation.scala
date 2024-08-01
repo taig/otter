@@ -1,14 +1,12 @@
-// package io.taig.otter.sample.service
+package io.taig.otter.sample.service
 
-// import cats.effect.IO
-// import cats.syntax.all.*
-// import io.taig.otter.http.Route
-// import io.taig.otter.sample.User
-// import io.taig.otter.sample.api.endpoints.AuthenticatedEndpoint
-// import io.taig.otter.sample.api.{AuthenticatedRoute, Authentication, Role, Self}
-// import io.taig.otter.sample.data.Session
-// import io.taig.otter.sample.repository.LibrarianRepository
-// import io.taig.otter.sample.syntax.*
+import cats.effect.IO
+import cats.syntax.all.*
+import io.taig.otter.http.Route
+import io.taig.otter.sample.User
+import io.taig.otter.sample.api.{Role, Self}
+import io.taig.otter.sample.data.Session
+import io.taig.otter.sample.repository.LibrarianRepository
 
 // final class EndpointImplementation(librarians: LibrarianRepository):
 //   def apply[R <: Role, I, O](endpoint: AuthenticatedEndpoint[R, I, O])(

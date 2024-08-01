@@ -45,6 +45,10 @@ object Branch:
       override def decode(data: Data): Codec.Result[A] = codec.decode(data)
       override def encode(a: A): F[O] = codec.encode(a)
 
+  extension [O <: Data, A <: Matchable](self: Branch[O, A])
+    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
+      self.toBranches | branch
+
   given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
     extension (self: Branch[O, A])
       override def metadata: Metadata = self.metadata

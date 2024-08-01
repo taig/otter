@@ -23,6 +23,8 @@ abstract class Dictionary[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] ext
 
   final override def imap[B](f: A => B)(g: B => A): Dictionary[F, O, B] = ivalidate(Validation.lift(f))(g)
 
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Dictionary[F, O, B] = imap(evidence.from)(evidence.to)
+
   final def ivalidate[B](validation: CodecValidation.Object[A, B])(f: B => A): Dictionary[F, O, B] =
     new Dictionary[F, O, B]:
       export self.metadata

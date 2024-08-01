@@ -13,6 +13,7 @@ sealed abstract class Sum[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] ext
   override def modifyMetadata(f: Metadata => Metadata): Sum[F, O, A]
   override def modifyDefault(f: Option[A] => Option[A]): Sum[F, O, A]
   override def imap[B](f: A => B)(g: B => A): Sum[F, O, B]
+  def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum[F, O, B] = imap(evidence.from)(evidence.to)
   override def optional: Sum[Data.Optional, O, Option[A]]
 
 object Sum:
@@ -31,6 +32,9 @@ object Sum:
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = ???
 
+    final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Nested[F, O, B] =
+      imap(evidence.from)(evidence.to)
+
     final override def optional: Sum.Nested[Data.Optional, O, Option[A]] = ???
 
     final def orElse[G[+a <: Data] >: F[a] <: Data.Optional[a], P <: Data, B](
@@ -46,8 +50,7 @@ object Sum:
       override def encode(
           ab: Either[A, B],
           discriminator: Discriminator.Nested
-      ): G[Data.Object[Data.String | (O | P)]] =
-        ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
+      ): G[Data.Object[Data.String | (O | P)]] = ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
     final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
@@ -87,6 +90,20 @@ object Sum:
         override def encode(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
           branches.encodeNested(a, discriminator)
 
+    extension [F[+a <: Data] <: Data.Optional[a], O <: Data, A <: Matchable](self: Sum.Nested[F, O, A])
+      inline def |[G[+a <: Data] >: F[a] <: Data.Optional[a], P <: Data, B <: Matchable](
+          codec: Sum.Nested[G, P, B]
+      ): Sum.Nested[G, O | P, A | B] =
+        self
+          .orElse(codec)
+          .imap {
+            case Left(a)  => a
+            case Right(b) => b
+          } {
+            case a: A => Left(a)
+            case b: B => Right(b)
+          }
+
     given [F[+a <: Data] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Nested[F, O, A]] with
       extension (self: Sum.Nested[F, O, A])
         override def metadata: Metadata = self.metadata
@@ -106,6 +123,9 @@ object Sum:
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Merged[F, O, B] = ???
+
+    final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Merged[F, O, B] =
+      imap(evidence.from)(evidence.to)
 
     final override def optional: Sum.Merged[Data.Optional, O, Option[A]] = ???
 
@@ -148,6 +168,9 @@ object Sum:
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = ???
 
+    final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Keyed[F, O, B] =
+      imap(evidence.from)(evidence.to)
+
     final override def optional: Sum.Keyed[Data.Optional, O, Option[A]] = ???
 
     final override def decode(data: Data): Codec.Result[A] = data.asObject
@@ -185,6 +208,9 @@ object Sum:
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = ???
+
+    final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Untagged[F, O, B] =
+      imap(evidence.from)(evidence.to)
 
     final override def optional: Sum.Untagged[Optional, O, Option[A]] = ???
 

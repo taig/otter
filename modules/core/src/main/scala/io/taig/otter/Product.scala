@@ -15,6 +15,8 @@ sealed abstract class Product[+F[+a <: Data] <: Data.Optional[a], +O <: Data.Obj
   override def modifyMetadata(f: Metadata => Metadata): Product[F, O, A]
   override def modifyDefault(f: Option[A] => Option[A]): Product[F, O, A]
   override def imap[B](f: A => B)(g: B => A): Product[F, O, B]
+  def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[F, O, B] =
+    imap(evidence.from)(evidence.to)
   override def optional: Product[Data.Optional, O, Option[A]]
 
 sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <: Data, A]
@@ -39,6 +41,9 @@ sealed abstract class Record[+F[+a <: Data] <: Data.Optional[a]: Data.Ops, +O <:
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
+
+  final override def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[F, O, B] =
+    imap(evidence.from)(evidence.to)
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}

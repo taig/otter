@@ -2,8 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 
-type CodecValidation[Contraint[+a] <: Constraint.Any[a], A, B] =
-  Validation[A, Contraint[Data], Data, B]
+type CodecValidation[C[+a] <: Constraint.Any[a], A, B] = Validation[A, C[Data] | Constraint[Data], Data, B]
 
 object CodecValidation:
   type Collection[A, B] = CodecValidation[[_] =>> Constraint.Collection, A, B]

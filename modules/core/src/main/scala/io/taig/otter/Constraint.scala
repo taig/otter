@@ -4,8 +4,8 @@ import java.util.regex.Pattern
 import cats.Functor
 
 enum Constraint[+A]:
-  case Type(name: String)
-  case OneOf(values: List[A])
+  case Type(name: String) extends Constraint[Nothing]
+  case OneOf(values: List[A]) extends Constraint[A]
 
   final def map[B](f: A => B): Constraint[B] = this match
     case Type(name)    => Type(name)
@@ -24,12 +24,12 @@ object Constraint:
     case MinProperties(reference: Long)
 
   enum Primitive[+A]:
-    case Matches(pattern: Pattern)
-    case Maximum(reference: A, exclusive: Boolean)
-    case MaxLength(reference: Int)
-    case Minimum(reference: A, exclusive: Boolean)
-    case MinLength(reference: Int)
-    case Multiple(reference: A)
+    case Matches(pattern: Pattern) extends Primitive[Nothing]
+    case Maximum(reference: A, exclusive: Boolean) extends Primitive[A]
+    case Minimum(reference: A, exclusive: Boolean) extends Primitive[A]
+    case MaxLength(reference: Int) extends Primitive[Nothing]
+    case MinLength(reference: Int) extends Primitive[Nothing]
+    case Multiple(reference: A) extends Primitive[A]
 
     final def map[B](f: A => B): Constraint.Primitive[B] = this match
       case Matches(pattern)              => Matches(pattern)

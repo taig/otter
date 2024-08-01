@@ -41,6 +41,14 @@ trait Types:
 
   final type Dynamic[A] = Base.Dynamic[Data.Optional, ?, A]
 
+  object Dynamic:
+    type Of[O <: Data, A] = Base.Dynamic[Data.Optional, O, A]
+
+    type Required[A] = Base.Dynamic[Identity, ?, A]
+
+    object Required:
+      type Of[O <: Data, A] = Base.Dynamic[Identity, O, A]
+
   final type Enumeration[A] = Base.Enumeration[Data.Optional, A]
 
   object Enumeration:
