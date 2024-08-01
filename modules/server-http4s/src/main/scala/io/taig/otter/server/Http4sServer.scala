@@ -26,16 +26,17 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
       headers: Http.Headers,
       body: Request.Body[?] => F[Http.Request.Body],
       onError: Throwable => F[Unit]
-  ): F[Http.Response] = app.routes
-    .find(method, url)
-    .fold(app.notFound.encode(().pure).pure): route =>
-      body(route.endpoint.request.body)
-        .map(Http.Request(method, url, headers, _))
-        .map(route.endpoint.request.decode)
-        .flatMap(_.traverse(route.implementation))
-        .map(route.endpoint.response.encode)
-    .handleErrorWith: throwable =>
-      onError(throwable).as(app.failure.encode(().valid))
+  ): F[Http.Response] = ???
+  // app.routes
+  //   .find(method, url)
+  //   .fold(app.notFound.encode(().pure).pure): route =>
+  //     body(route.endpoint.request.body)
+  //       .map(Http.Request(method, url, headers, _))
+  //       .map(route.endpoint.request.decode)
+  //       .flatMap(_.traverse(route.implementation))
+  //       .map(route.endpoint.response.encode)
+  //   .handleErrorWith: throwable =>
+  //     onError(throwable).as(app.failure.encode(().valid))
 
 object Http4sServer:
   def apply[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]): Server[F] = new Http4sServer[F](f)

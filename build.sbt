@@ -143,6 +143,14 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
 lazy val openapi = module(identifier = Some("openapi"))
   .dependsOn(http % "compile->compile;test->test")
 
@@ -173,21 +181,13 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
         "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
         Nil
   )
-  .dependsOn(server % "compile->compile;test->test")
+  .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
 // lazy val csv = module(identifier = Some("csv"))
 //   .dependsOn(core % "compile->compile;test->test")
 
 // lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
 //   .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
-
-lazy val httpHttp4s = module(identifier = Some("http-http4s"))
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %%% "http4s-server" % Version.Http4s ::
-        Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
 
 // lazy val munit = module(identifier = Some("munit"))
 //   .settings(
