@@ -6,6 +6,9 @@ import scala.collection.immutable.Iterable
 import cats.syntax.all.*
 import cats.data.Chain
 import cats.data.NonEmptyChain
+import scala.Numeric.Implicits.*
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
 
 trait Validations extends Types:
   val email: CodecValidation.Primitive[String, Unit] = matches(Pattern.compile(".+@.+\\..+"))
@@ -42,6 +45,18 @@ trait Validations extends Types:
 
     def iterable[A <: Iterable[?]](reference: Long): CodecValidation.Object[A, Unit] = minProperties(reference, _.size)
 
+  def maximum[A <: Matchable: Numeric](reference: A, exclusive: Boolean = false): CodecValidation.Primitive[A, Unit] =
+    Base
+      .maximum(reference, exclusive)
+      .mapConstraint(value => Constraint.Primitive.Maximum(toNumber(value), exclusive))
+      .mapActual(toNumber)
+
+  def minimum[A <: Matchable: Numeric](reference: A, exclusive: Boolean = false): CodecValidation.Primitive[A, Unit] =
+    Base
+      .minimum(reference, exclusive)
+      .mapConstraint(value => Constraint.Primitive.Minimum(toNumber(value), exclusive))
+      .mapActual(toNumber)
+
   object nonEmpty:
     object collection:
       def apply[A, B](uncons: A => Option[(B, A)]): CodecValidation.Collection[A, (B, A)] =
@@ -68,3 +83,14 @@ trait Validations extends Types:
     Base.uniqueItems
       .mapConstraint(_ => Constraint.Collection.UniqueItems)
       .mapActual(as => codec.toCollection.encode(as.toList.toVector))
+
+  private def toNumber[A <: Matchable: Numeric](a: A): Data.Number = a match
+    case value: Int         => Data.Number(value)
+    case value: Long        => Data.Number(value)
+    case value: Double      => Data.Number(value)
+    case value: Float       => Data.Number(value)
+    case value: JBigDecimal => Data.Number(value)
+    case value: JBigInteger => Data.Number(value)
+    case value: BigDecimal  => Data.Number(value.bigDecimal)
+    case value: BigInt      => Data.Number(value.bigInteger)
+    case value              => Data.Number(value.toDouble)

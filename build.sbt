@@ -43,8 +43,8 @@ inThisBuild(
   )
 )
 
-// addCommandAlias("start", s"${sample.jvm.id}/reStart")
-// addCommandAlias("stop", s"${sample.jvm.id}/reStop")
+addCommandAlias("start", s"${sample.jvm.id}/reStart")
+addCommandAlias("stop", s"${sample.jvm.id}/reStop")
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
@@ -73,6 +73,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     // httpOpenapi,
     // httpCirce,
     server,
+    serverHttp4s,
     // csv,
     // dsl,
     // http4s,

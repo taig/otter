@@ -5,6 +5,7 @@ import cats.Id as Identity
 
 trait Types:
   export Base.{CodecValidation, Constraint, Data, Metadata, Type}
+  export validation.{History, Validation, Violation, Violations}
 
   final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 

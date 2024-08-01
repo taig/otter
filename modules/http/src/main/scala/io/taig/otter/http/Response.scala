@@ -3,9 +3,7 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.{Codec, Data}
-import io.taig.otter.http.Http.Payload
-import io.taig.otter.validation.{History, Violation, Violations}
-import org.typelevel.ci.*
+import io.taig.otter.validation.{Violation, Violations}
 import io.taig.otter.Constraint
 
 final case class Response[A](
@@ -29,7 +27,7 @@ object Response:
     sealed abstract class Strict[A] extends Response.Body[A]:
       self =>
 
-      override def decode(headers: Http.Headers, payload: Payload): Codec.Result[A] = ???
+      override def decode(headers: Http.Headers, payload: Http.Payload): Codec.Result[A] = ???
       // payload match
       //   case Http.Payload.Strict(data) => decode(headers, data)
       //   case Http.Payload.Streaming(_) =>
