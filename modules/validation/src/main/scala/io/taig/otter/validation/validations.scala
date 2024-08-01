@@ -22,6 +22,16 @@ trait Validations:
       val size = count(a)
       Validated.condNec(size >= reference, (), size.toLong)
 
+  def maxLength[A](reference: Int, count: A => Int): Validation[A, reference.type, Int, Unit] =
+    Validation.validated(reference): value =>
+      val length = count(value)
+      Validated.condNec(length <= reference, (), length)
+
+  def minLength[A](reference: Int, count: A => Int): Validation[A, reference.type, Int, Unit] =
+    Validation.validated(reference): value =>
+      val length = count(value)
+      Validated.condNec(length >= reference, (), length)
+
   def maxProperties[A](reference: Long, count: A => Long): Validation[A, reference.type, Long, Unit] =
     Validation.validated(reference): a =>
       val size = count(a)

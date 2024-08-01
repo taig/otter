@@ -23,6 +23,30 @@ trait Validations extends Types:
     def iterable[A <: Iterable[?]](reference: Long): CodecValidation.Collection[A, Unit] =
       maxItems(reference, _.size.toLong)
 
+  object minItems:
+    def apply[A](reference: Long, count: A => Long): CodecValidation.Collection[A, Unit] =
+      Base.minItems(reference, count).mapConstraint(Constraint.Collection.MinItems.apply).mapActual(Data.Number.apply)
+
+    def iterable[A <: Iterable[?]](reference: Long): CodecValidation.Collection[A, Unit] = minItems(reference, _.size)
+
+  object maxLength:
+    def apply[A](reference: Int, count: A => Int): CodecValidation.Primitive[A, Unit] =
+      Base.maxLength(reference, count).mapConstraint(Constraint.Primitive.MaxLength.apply).mapActual(Data.Number.apply)
+
+    def apply(reference: Int): CodecValidation.Primitive[CharSequence, Unit] = maxLength(reference, _.length)
+
+  object minLength:
+    def apply[A](reference: Int, count: A => Int): CodecValidation.Primitive[A, Unit] =
+      Base.minLength(reference, count).mapConstraint(Constraint.Primitive.MinLength.apply).mapActual(Data.Number.apply)
+
+    def apply(reference: Int): CodecValidation.Primitive[CharSequence, Unit] = minLength(reference, _.length)
+
+  object length:
+    def apply[A](reference: Int, count: A => Int): CodecValidation.Primitive[A, Unit] =
+      minLength(reference, count) *> maxLength(reference, count)
+
+    def apply(reference: Int): CodecValidation.Primitive[CharSequence, Unit] = length(reference, _.length)
+
   object maxProperties:
     def apply[A](reference: Long, count: A => Long): CodecValidation.Object[A, Unit] = Base
       .maxProperties(reference, count)
@@ -30,12 +54,6 @@ trait Validations extends Types:
       .mapActual(Data.Number.apply)
 
     def iterable[A <: Iterable[?]](reference: Long): CodecValidation.Object[A, Unit] = maxProperties(reference, _.size)
-
-  object minItems:
-    def apply[A](reference: Long, count: A => Long): CodecValidation.Collection[A, Unit] =
-      Base.minItems(reference, count).mapConstraint(Constraint.Collection.MinItems.apply).mapActual(Data.Number.apply)
-
-    def iterable[A <: Iterable[?]](reference: Long): CodecValidation.Collection[A, Unit] = minItems(reference, _.size)
 
   object minProperties:
     def apply[A](reference: Long, count: A => Long): CodecValidation.Object[A, Unit] = Base

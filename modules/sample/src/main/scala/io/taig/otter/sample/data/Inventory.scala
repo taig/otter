@@ -1,5 +1,5 @@
-// package io.taig.otter.sample.data
+package io.taig.otter.sample.data
 
-// import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedMap
 
-// opaque type Inventory = SortedMap[Book, Int]
+opaque type Inventory = SortedMap[Book, Int]

@@ -215,5 +215,5 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
       //   "org.typelevel" %% "mouse" % Version.Mouse ::
       Nil
   )
-  .dependsOn(httpHttp4s)
+  .dependsOn(jsonCirce, httpHttp4s)
 // .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
