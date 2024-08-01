@@ -62,17 +62,17 @@ lazy val root = module(identifier = None, jvmOnly = true)
   .aggregate(
     validation,
     core,
+    javaTime,
     jsonCirce,
     // circe,
     // typescript,
     openapiCirce,
     http,
     httpHttp4s,
-    httpJsonCirce,
-    openapi
+    openapi,
     // httpOpenapi,
     // httpCirce,
-    // server,
+    server
     // csv,
     // dsl,
     // http4s,
@@ -97,7 +97,6 @@ lazy val core = module(identifier = Some("core"))
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %% "alleycats-core" % Version.Cats ::
-        // "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
@@ -107,6 +106,14 @@ lazy val core = module(identifier = Some("core"))
   //     .cross(CrossVersion.for3Use2_13)
   // )
   .dependsOn(validation)
+
+lazy val javaTime = module(identifier = Some("java-time"))
+  .settings(
+    libraryDependencies ++=
+      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+        Nil
+  )
+  .dependsOn(core)
 
 lazy val jsonCirce = module(identifier = Some("json-circe"))
   .settings(
@@ -136,14 +143,6 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = true)
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %% "circe-parser" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
-
 lazy val openapi = module(identifier = Some("openapi"))
   .dependsOn(http % "compile->compile;test->test")
 
@@ -159,13 +158,22 @@ lazy val openapi = module(identifier = Some("openapi"))
 //   )
 //   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
 
-// lazy val server = module(identifier = Some("server"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(http % "compile->compile;test->test")
+lazy val server = module(identifier = Some("server"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
+lazy val serverHttp4s = module(identifier = Some("server-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+        Nil
+  )
+  .dependsOn(server % "compile->compile;test->test")
 
 // lazy val csv = module(identifier = Some("csv"))
 //   .dependsOn(core % "compile->compile;test->test")

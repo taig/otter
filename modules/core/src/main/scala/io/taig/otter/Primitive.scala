@@ -49,3 +49,8 @@ object Primitive:
     extension [A](self: Primitive[F, A])
       override def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive[F, B] =
         self.ivalidate(validation)(f)
+
+  given [F[+a <: Data] <: Data.Optional[a], A]: Metadata.Ops[Primitive[F, A]] = new Metadata.Ops[Primitive[F, A]]:
+    extension (self: Primitive[F, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Primitive[F, A] = self.modifyMetadata(f)
