@@ -1,5 +1,5 @@
-// package io.taig.otter.sample
+package io.taig.otter.sample
 
-// import io.taig.otter.sample.data.{Librarian, Member}
+import io.taig.otter.sample.data.{Librarian, Member}
 
-// type User = Librarian.Summary | Member
+type User = Librarian.Summary | Member

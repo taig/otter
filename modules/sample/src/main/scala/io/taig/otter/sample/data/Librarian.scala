@@ -7,6 +7,7 @@ import org.typelevel.ci.*
 
 import java.util.regex.Pattern
 import io.taig.otter.CodecValidation
+import java.util.UUID
 
 final case class Librarian(
     reference: Librarian.Reference,
@@ -17,12 +18,11 @@ final case class Librarian(
   def toSummary: Librarian.Summary = Librarian.Summary(reference, email)
 
 object Librarian:
-  opaque type Reference = CIString
+  opaque type Reference = UUID
   object Reference:
     val Length = 8
-    extension (self: Librarian.Reference) def toCIString: CIString = self
-    def unsafe(value: CIString): Librarian.Reference = value
-    val validation: CodecValidation.Primitive[CIString, Librarian.Reference] = length[CIString](Length, _.length).tap
+    extension (self: Librarian.Reference) def toUUID: UUID = self
+    def apply(value: UUID): Librarian.Reference = value
 
   opaque type Email = CIString
   object Email:
@@ -43,5 +43,11 @@ object Librarian:
 
   final case class Create(email: Librarian.Email, password: Librarian.Password):
     def toLogin: Librarian.Login = Login(email.toCIString, password.toString)
+
+  object Create:
+    val Default: Librarian.Create = Create(
+      Librarian.Email.unsafe(ci"otter@taig.io"),
+      Librarian.Password.unsafe("password")
+    )
 
   final case class Summary(reference: Librarian.Reference, email: Librarian.Email)
