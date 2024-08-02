@@ -1,71 +1,76 @@
-package io.taig.otter
+// package io.taig.otter
 
-import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Validation
-import io.taig.otter.validation.Violation
-import cats.Id as Identity
-import io.taig.otter.Codec.Result
+// import cats.syntax.all.*
+// import io.taig.otter.validation.Violations
+// import io.taig.otter.validation.Validation
+// import io.taig.otter.validation.Violation
+// import cats.Id as Identity
+// import io.taig.otter.Codec.Result
 
-sealed abstract class Collection[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
-  self =>
+// sealed abstract class Collection[A] extends Codec[A]:
+//   self =>
 
-  def codec: Codec[?, ?, ?]
+//   final override type Of = Data.Array[Element]
 
-  final override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = new Collection[F, O, A]:
-    export self.{codec, decode, default, encode}
-    override def metadata: Metadata = f(self.metadata)
+//   type Element <: Data
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Collection[F, O, A] = new Collection[F, O, A]:
-    export self.{codec, encode, metadata}
-    override def default: Option[A] = f(self.default)
-    override def decode(data: Option[Vector[Data]]): Codec.Result[A] = (data, default) match
-      case (None, Some(default)) => default.valid
-      case _                     => self.decode(data)
+//   def codec: Codec[?]
 
-  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ivalidate(Validation.lift(f))(g)
+//   final override def modifyMetadata(f: Metadata => Metadata): Collection.Of[Optional, Element, A] = new Collection[A]:
+//     export self.{codec, decode, default, encode, Element, Optional}
+//     override def metadata: Metadata = f(self.metadata)
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection[F, O, B] = imap(evidence.from)(evidence.to)
+//   final override def modifyDefault(f: Option[A] => Option[A]): Collection.Of[Optional, Element, A] = new Collection[A]:
+//     export self.{codec, encode, metadata, Element, Optional}
+//     override def default: Option[A] = f(self.default)
+//     override def decode(data: Option[Vector[Data]]): Codec.Result[A] = (data, default) match
+//       case (None, Some(default)) => default.valid
+//       case _                     => self.decode(data)
 
-  final def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[F, O, B] =
-    new Collection[F, O, B]:
-      export self.{codec, metadata}
-      override def default: Option[B] = self.default.flatMap(validation(_).toOption)
-      override def decode(data: Option[Vector[Data]]): Codec.Result[B] =
-        self.decode(data).andThen(validation(_).leftMap(Violations.root))
-      override def encode(b: B): F[Data.Array[O]] = self.encode(f(b))
+//   final override def imap[B](f: A => B)(g: B => A): Collection.Of[Optional, Element, B] = ivalidate(Validation.lift(f))(g)
 
-  override def optional: Collection[Data.Optional, O, Option[A]] = new Collection[Data.Optional, O, Option[A]]:
-    export self.{codec, metadata}
-    override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Option[Vector[Data]]): Codec.Result[Option[A]] =
-      data.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Optional[Data.Array[O]] = a.map(self.encode).getOrElse(Data.Null)
+//   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection.Of[Optional, Element, B] = imap(evidence.from)(evidence.to)
 
-  override def decode(data: Data): Codec.Result[A] = data match
-    case Data.Array(values) => decode(values.some)
-    case Data.Null          => decode(none)
-    case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
+//   final override def ivalidate[B](validation: CodecValidation[Of, A, B])(f: B => A): Collection.Of[Optional, Element, B] =
+//     new Collection[B]:
+//       export self.{codec, metadata, Element, Optional}
+//       override def default: Option[B] = self.default.flatMap(validation(_).toOption)
+//       override def decode(data: Option[Vector[Data]]): Codec.Result[B] =
+//         self.decode(data).andThen(validation(_).leftMap(Violations.root))
+//       override def encode(b: B): self.Out = self.encode(f(b))
 
-  def decode(data: Option[Vector[Data]]): Codec.Result[A]
+//   override def optional: Collection.Of[Data.Optional, Element, Option[A]] = new Collection[Option[A]]:
+//     export self.{codec, metadata, Element}
+//     override type Optional[+a] = Data.Optional[a]
+//     override def default: Option[Option[A]] = self.default.map(_.some)
+//     override def decode(data: Option[Vector[Data]]): Codec.Result[Option[A]] =
+//       data.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
+//     override def encode(a: Option[A]): Data.Optional[self.Of] = a.map(self.encode).getOrElse(Data.Null)
 
-object Collection:
-  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
-      codec: Codec[F, O, A]
-  ): Collection[Identity, F[O], Vector[A]] =
-    val _codec = codec
+//   override def decode(data: Data): Codec.Result[A] = data match
+//     case Data.Array(values) => decode(values.some)
+//     case Data.Null          => decode(none)
+//     case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
 
-    new Collection[Identity, F[O], Vector[A]]:
-      override def codec: Codec[F, O, A] = _codec
-      override def metadata: Metadata = Metadata.Empty
-      override def default: Option[Vector[A]] = None
-      override def decode(data: Option[Vector[Data]]): Codec.Result[Vector[A]] = data
-        .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
-        .andThen(_.zipWithIndex.traverse { case (data, index) => codec.decode(data).leftMap(index /: _) })
-      override def encode(as: Vector[A]): Data.Array[F[O]] = Data.Array(as.map(codec.encode))
+//   def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
-  given invariant[F[+a <: Data] <: Data.Optional[a], O <: Data]
-      : ValidationInvariant[[_] =>> Constraint.Collection, Collection[F, O, *]] with
-    extension [A](self: Collection[F, O, A])
-      override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[F, O, B] =
-        self.ivalidate(validation)(f)
+// object Collection:
+//   type Of[F[+a] <: Data.Optional[a], O <: Data, A] = Collection[A] { type Optional[+a] <: F[a]; type Element <: O }
+
+//   def apply[A](of: Codec[A]): Collection.Of[Identity, of.Out, Vector[A]] =
+//     new Collection[Vector[A]]:
+//       override type Optional[+a] = a
+//       override type Element = of.Out
+//       override def codec: Codec[?] = of
+//       override def metadata: Metadata = Metadata.Empty
+//       override def default: Option[Vector[A]] = None
+//       override def decode(data: Option[Vector[Data]]): Codec.Result[Vector[A]] = data
+//         .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
+//         .andThen(_.zipWithIndex.traverse { case (data, index) => of.decode(data).leftMap(index /: _) })
+//       override def encode(as: Vector[A]): Data.Array[of.Out] = Data.Array(as.map(of.encode))
+
+//   // given invariant[F[+a <: Data] <: Data.Optional[a], O <: Data]
+//   //     : ValidationInvariant[[_] =>> Constraint.Collection, Collection[F, O, *]] with
+//   //   extension [A](self: Collection[F, O, A])
+//   //     override def ivalidate[B](validation: CodecValidation.Collection[A, B])(f: B => A): Collection[F, O, B] =
+//   //       self.ivalidate(validation)(f)

@@ -7,7 +7,7 @@ sealed abstract class Field[+O <: Data, A]:
 
   def name: String
 
-  def codec: Codec[?, ?, ?]
+  def codec: Codec[?]
 
   final def nulls: Attribute.Optional[Field[O, A], Null] = Attribute.Optional(this, Keys.nulls)
 
@@ -44,19 +44,15 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): O
 
 object Field:
-  def apply[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
-      name: String,
-      codec: Codec[F, O, A]
-  ): Field[F[O], A] =
+  def apply[A](name: String, of: Codec[A]): Field[of.Out, A] =
     val _name = name
-    val _codec = codec
 
-    new Field[F[O], A]:
+    new Field[of.Out, A]:
       override def name: String = _name
-      override def codec: Codec[F, O, A] = _codec
+      override def codec: Codec[?] = of
       override def metadata: Metadata = Metadata.Empty
-      override def decode(data: Data): Codec.Result[A] = codec.decode(data)
-      override def encode(a: A): F[O] = codec.encode(a)
+      override def decode(data: Data): Codec.Result[A] = of.decode(data)
+      override def encode(a: A): of.Out = of.encode(a)
 
   given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
     extension (self: Field[O, A])

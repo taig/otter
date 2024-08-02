@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.Validated
-import cats.Id as Identity
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
@@ -41,8 +40,8 @@ sealed abstract class Fields[+O <: Data, A]:
   final def *:[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[B, A]): Fields[P | O, merge.Out] =
     field.toFields.zip(this).imap(merge.apply)(merge.unapply)
 
-  final def toTuple: Tuple[Identity, O, A] = Tuple(this)
-  final def toRecord: Record[Identity, O, A] = Record(this)
+  final def toTuple: Tuple.Of[Data.Required, O, A] = Tuple(this)
+  final def toRecord: Record.Of[Data.Required, O, A] = Record(this)
 
   def decodeRecord(data: Vector[(String, Data)]): Codec.Result[A]
 

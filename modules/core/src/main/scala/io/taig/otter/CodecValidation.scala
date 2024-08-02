@@ -2,11 +2,13 @@ package io.taig.otter
 
 import io.taig.otter.validation.Validation
 
-type CodecValidation[C[+a] <: Constraint.Any[a], A, B] = Validation[A, C[Data] | Constraint[Data], Data, B]
+type CodecValidation[+O, A, B] = Validation[A, Constraint[O], Data, B]
 
 object CodecValidation:
-  type Collection[A, B] = CodecValidation[[_] =>> Constraint.Collection, A, B]
+  type Any[A, B] = CodecValidation[Nothing, A, B]
 
-  type Object[A, B] = CodecValidation[[_] =>> Constraint.Object, A, B]
+  type Primitive[A, B] = CodecValidation[Data.Primitive, A, B]
 
-  type Primitive[A, B] = CodecValidation[Constraint.Primitive, A, B]
+  type Array[A, B] = CodecValidation[Data.Array[?], A, B]
+
+  type Object[A, B] = CodecValidation[Data.Object[?], A, B]
