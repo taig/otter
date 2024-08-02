@@ -32,7 +32,7 @@ trait Codecs extends Validations:
   // val long: Primitive.Required[Long] = primitive(Type.Long)
   // val string: Primitive.Required[String] = primitive(Type.String)
 
-  // // val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
+  // val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
   // def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.Out, A] = Base.Branch(name, codec)
 
