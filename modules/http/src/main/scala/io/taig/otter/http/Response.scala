@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.{Codec, Data}
 import io.taig.otter.validation.{Violation, Violations}
 import io.taig.otter.Constraint
+import io.taig.otter.http.Http.Payload
 
 final case class Response[A](
     results: Results[A],
@@ -35,7 +36,11 @@ object Response:
       // def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A]
       override def encode(a: A): (Http.Headers, Http.Payload.Strict)
 
-    // object Strict:
+    object Strict:
+      val Empty: Response.Body.Strict[Unit] = new Strict[Unit]:
+        override def encode(a: Unit): (Http.Headers, Http.Payload.Strict) =
+          (Vector.empty, Http.Payload.Strict(Array.emptyByteArray))
+
     // sealed abstract class Payload[A](val codec: Codec[?], val mediaType: MediaType) extends Response.Body.Strict[A]:
     //   // TODO decode depending on media type!
     //   override def encode(a: A): (Http.Headers, Http.Payload.Strict) =

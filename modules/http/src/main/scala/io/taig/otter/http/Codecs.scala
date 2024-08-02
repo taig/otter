@@ -73,6 +73,8 @@ trait Codecs extends Base.Codecs:
   final def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
   def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
-  def result(code: Code): Result[Unit] = Result(code, ???)
+  def result(code: Code): Result[Unit] = Result(code, Response.Body.Strict.Empty)
+
+  export ViolationsCodecs.*
 
 object Codecs extends Codecs

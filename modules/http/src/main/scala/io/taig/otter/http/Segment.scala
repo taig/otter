@@ -12,7 +12,7 @@ import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.taig.otter.Constraint
 import java.util.regex.Pattern
-import io.taig.otter.validation.History
+import io.taig.otter.validation.Step
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
@@ -31,7 +31,7 @@ object Segment:
       name === value,
       (),
       Violations.namespaceNec(
-        History.Step.Field(name),
+        Step.Field(name),
         Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = Data.String(value))
       )
     )

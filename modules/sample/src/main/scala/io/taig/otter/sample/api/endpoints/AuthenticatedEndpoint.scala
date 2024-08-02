@@ -1,7 +1,7 @@
 // package io.taig.otter.sample.api.endpoints
 
 // import io.taig.otter.http.Endpoint
-// import io.taig.otter.sample.api.{headers, Authentication, Role}
+// import io.taig.otter.sample.api.{Authentication, Role}
 
 // final case class AuthenticatedEndpoint[R <: Role, I, O](
 //     role: R,
@@ -12,7 +12,7 @@
 //   def role[R <: Role](role: R): AuthenticatedEndpoint[R, I, O] = AuthenticatedEndpoint(
 //     role,
 //     self
-//       .request { request =>
+//       .modifyRequest { request =>
 //         // TODO provide better syntax
 //         request
 //           .zip(headers.session.optional.toHeaders)
@@ -20,5 +20,5 @@
 //             Authentication(session, payload)
 //           }(authentication => (authentication.payload, authentication.session))
 //       }
-//       .response(_.results(Authentication.codec.orElse))
+//       .modifyResponse(_.results(Authentication.codec.orElse))
 //   )

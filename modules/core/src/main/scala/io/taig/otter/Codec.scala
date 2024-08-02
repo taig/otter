@@ -15,6 +15,8 @@ abstract class Codec[+F[+a <: Data] <: Data.Optional[a], +O <: Data, A]:
 
   def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
 
+  // def ivalidate[B](validation: CodecValidation[?, A, B])(f: B => A): Codec[F, O, B]
+
   // TODO move into typeclass
   def const(a: A): Codec[F, O, Unit] = imap(_ => ())(_ => a)
 
