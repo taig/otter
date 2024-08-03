@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Validation
-import cats.Id as Identity
 
 sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:
   self =>

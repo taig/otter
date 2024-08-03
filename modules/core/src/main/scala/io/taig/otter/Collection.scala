@@ -7,7 +7,7 @@ import io.taig.otter.validation.Violation
 import cats.Id as Identity
 import io.taig.otter.Codec.Result
 
-sealed abstract class Collection[F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
+sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>
 
   final override type Group = Data.Array[?]
