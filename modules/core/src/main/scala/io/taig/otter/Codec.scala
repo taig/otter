@@ -5,33 +5,32 @@ import cats.syntax.all.*
 import io.taig.otter.validation.Violations
 import io.taig.otter.validation.Violation
 
-abstract class Codec[+F[+a] <: Data.Optional[a], A]:
+abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   self =>
 
-  type Of
+  type Group
 
   def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Codec.Of[F, Of, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 
   def default: Option[A]
-  def modifyDefault(f: Option[A] => Option[A]): Codec.Of[F, Of, A]
+  def modifyDefault(f: Option[A] => Option[A]): Codec[F, O, A]
 
-  def imap[B](f: A => B)(g: B => A): Codec.Of[F, Of, B]
+  def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
 
-  def ivalidate[B](validation: CodecValidation[Of, A, B])(f: B => A): Codec.Of[F, Of, B]
+  def ivalidate[B](validation: CodecValidation[Group, A, B])(f: B => A): Codec[F, O, B]
 
   // TODO move into typeclass
-  def const(a: A): Codec.Of[F, Of, Unit] = imap(_ => ())(_ => a)
+  def const(a: A): Codec[F, O, Unit] = imap(_ => ())(_ => a)
 
-  def optional: Codec.Of[Data.Optional, Of, Option[A]]
+  def optional: Codec[Data.Optional, O, Option[A]]
 
   def decode(data: Data): Codec.Result[A]
-  def encode(a: A): F[Of]
+  def encode(a: A): F[O]
 
-  // final def toCollection: Collection.Of[Identity, self.Out, Vector[A]] = Collection(this)
+  final def toCollection: Collection[Data.Required, F[O], Vector[A]] = Collection(this)
 
 object Codec:
-  type Of[+F[+a] <: Data.Optional[a], O, A] = Codec[F, A] { type Of = O }
 
   // extension [A](self: Codec.Of[Data.Optional, Data.Primitive, A])
   //   def parseOptional(value: Option[String]): Codec.Result[A] = ???

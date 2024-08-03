@@ -138,52 +138,52 @@ final class RecordTest extends FunSuite:
       expected = Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))
     )
 
-    // assertEquals(obtained = codec.encode(none), expected = Data.Null)
+    assertEquals(obtained = codec.encode(none), expected = Data.Null)
 
-  // test("encode: optional (product)"):
-  //   val codec = record(field("a", string) :* field("b", int)).optional
-  //     .zip(record(field("c", string) :* field("d", int)).optional)
+  test("encode: optional (product)"):
+    val codec = record(field("a", string) :* field("b", int)).optional
+      .zip(record(field("c", string) :* field("d", int)).optional)
 
-  //   assertEquals(
-  //     obtained = codec.encode((("foobar", 42).some, ("foobar", 42).some)),
-  //     expected = Data.Object.of(
-  //       "a" -> Data.String("foobar"),
-  //       "b" -> Data.Number(42),
-  //       "c" -> Data.String("foobar"),
-  //       "d" -> Data.Number(42)
-  //     )
-  //   )
+    assertEquals(
+      obtained = codec.encode((("foobar", 42).some, ("foobar", 42).some)),
+      expected = Data.Object.of(
+        "a" -> Data.String("foobar"),
+        "b" -> Data.Number(42),
+        "c" -> Data.String("foobar"),
+        "d" -> Data.Number(42)
+      )
+    )
 
-  //   assertEquals(
-  //     obtained = codec.encode((none, ("foobar", 42).some)),
-  //     expected =
-  //       Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.String("foobar"), "d" -> Data.Number(42))
-  //   )
+    assertEquals(
+      obtained = codec.encode((none, ("foobar", 42).some)),
+      expected =
+        Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.String("foobar"), "d" -> Data.Number(42))
+    )
 
-  //   assertEquals(
-  //     obtained = codec.encode((("foobar", 42).some, none)),
-  //     expected =
-  //       Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Null, "d" -> Data.Null)
-  //   )
+    assertEquals(
+      obtained = codec.encode((("foobar", 42).some, none)),
+      expected =
+        Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Null, "d" -> Data.Null)
+    )
 
-  //   assertEquals(
-  //     obtained = codec.encode((none, none)),
-  //     expected = Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.Null, "d" -> Data.Null)
-  //   )
+    assertEquals(
+      obtained = codec.encode((none, none)),
+      expected = Data.Object.of("a" -> Data.Null, "b" -> Data.Null, "c" -> Data.Null, "d" -> Data.Null)
+    )
 
-  // test("encode: nulls"):
-  //   val codec = record(
-  //     field("foo", string.optional).nulls(Null.Hide) :*
-  //       field("bar", int.optional).nulls(Null.Show) :*
-  //       field("baz", long.optional)
-  //   )
+  test("encode: nulls"):
+    val codec = record(
+      field("foo", string.optional).nulls(Null.Hide) :*
+        field("bar", int.optional).nulls(Null.Show) :*
+        field("baz", long.optional)
+    )
 
-  //   assertEquals(
-  //     obtained = codec.nulls(Null.Show).encode((none, none, none)),
-  //     expected = Data.Object.of("bar" -> Data.Null, "baz" -> Data.Null)
-  //   )
+    assertEquals(
+      obtained = codec.nulls(Null.Show).encode((none, none, none)),
+      expected = Data.Object.of("bar" -> Data.Null, "baz" -> Data.Null)
+    )
 
-  //   assertEquals(
-  //     obtained = codec.nulls(Null.Hide).encode((none, none, none)),
-  //     expected = Data.Object.of("bar" -> Data.Null)
-  //   )
+    assertEquals(
+      obtained = codec.nulls(Null.Hide).encode((none, none, none)),
+      expected = Data.Object.of("bar" -> Data.Null)
+    )

@@ -6,10 +6,10 @@ import io.taig.otter.validation.Violation
 import io.taig.otter.validation.Validation
 import cats.Id as Identity
 
-sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, A]:
+sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:
   self =>
 
-  final override type Of = Data.Primitive
+  final override type Group = Data.Primitive
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[F, A] = new Primitive[F, A]:
     export self.{decode, default, encode}
@@ -27,7 +27,7 @@ sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Primitive[F, B] =
     imap(evidence.from)(evidence.to)
 
-  override def ivalidate[B](validation: CodecValidation[Data.Primitive, A, B])(f: B => A): Primitive[F, B] =
+  override def ivalidate[B](validation: CodecValidation.Primitive[A, B])(f: B => A): Primitive[F, B] =
     new Primitive[F, B]:
       export self.metadata
       override def default: Option[B] = self.default.flatMap(validation(_).toOption)

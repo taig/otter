@@ -6,27 +6,27 @@ trait Types:
   export Base.{CodecValidation, Constraint, Data, Metadata, Type}
   export validation.{Step, Validation, Violation, Violations}
 
-  // final type Codec[A] = Base.Codec.Of[Data.Optional, Data, A]
+  final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 
-  // object Codec:
-  //   type Of[O <: Data, A] = Base.Codec.Of[Data.Optional, O, A]
+  object Codec:
+    type Of[O <: Data, A] = Base.Codec[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Codec.Of[Data.Required, Data, A]
+    type Required[A] = Base.Codec[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Codec.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Codec[Data.Required, O, A]
 
-  //   export Base.Codec.Result
+    export Base.Codec.Result
 
-  // final type Collection[A] = Base.Collection.Of[Data.Optional, Data, A]
+  final type Collection[A] = Base.Collection[Data.Optional, ?, A]
 
-  // object Collection:
-  //   type Of[O <: Data, A] = Base.Collection.Of[Data.Optional, O, A]
+  object Collection:
+    type Of[O <: Data, A] = Base.Collection[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Collection.Of[Data.Required, Data, A]
+    type Required[A] = Base.Collection[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Collection.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Collection[Data.Required, O, A]
 
   // final type Dictionary[A] = Base.Dictionary.Of[Data.Optional, Data, A]
 
@@ -53,10 +53,10 @@ trait Types:
   // object Enumeration:
   //   type Required[A] = Base.Enumeration.Of[Data.Required, A]
 
-  // final type Primitive[A] = Base.Primitive.Of[Data.Optional, A]
+  final type Primitive[A] = Base.Primitive[Data.Optional, A]
 
-  // object Primitive:
-  //   type Required[A] = Base.Primitive.Of[Data.Required, A]
+  object Primitive:
+    type Required[A] = Base.Primitive[Data.Required, A]
 
   // final type Product[A] = Base.Product.Of[Data.Optional, Data.Object[?] | Data.Array[?], A]
 
@@ -68,84 +68,84 @@ trait Types:
   //   object Required:
   //     type Of[O <: Data, A] = Base.Product.Of[Data.Required, Data.Object[O] | Data.Array[O], A]
 
-  // type Record[A] = Base.Record.Of[Data.Optional, Data, A]
+  type Record[A] = Base.Record[Data.Optional, ?, A]
 
-  // object Record:
-  //   type Of[O <: Data, A] = Base.Record.Of[Data.Optional, O, A]
+  object Record:
+    type Of[O <: Data, A] = Base.Record[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Record.Of[Data.Required, Data, A]
+    type Required[A] = Base.Record[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Record.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Record[Data.Required, O, A]
 
-  // final type Sum[A] = Base.Sum[Data.Optional, ?, A]
+  final type Sum[A] = Base.Sum[Data.Optional, ?, A]
 
-  // object Sum:
-  //   type Of[O <: Data, A] = Base.Sum[Data.Optional, O, A]
+  object Sum:
+    type Of[O <: Data, A] = Base.Sum[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Sum[Data.Required, ?, A]
+    type Required[A] = Base.Sum[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Sum[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Sum[Data.Required, O, A]
 
-  //   type Nested[A] = Base.Sum.Nested[Data.Optional, ?, A]
+    type Nested[A] = Base.Sum.Nested[Data.Optional, ?, A]
 
-  //   object Nested:
-  //     type Of[O <: Data, A] = Base.Sum.Nested[Data.Optional, O, A]
+    object Nested:
+      type Of[O <: Data, A] = Base.Sum.Nested[Data.Optional, O, A]
 
-  //     type Required[A] = Base.Sum.Nested[Data.Required, ?, A]
+      type Required[A] = Base.Sum.Nested[Data.Required, ?, A]
 
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Nested[Data.Required, O, A]
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Nested[Data.Required, O, A]
 
-  //   type Merged[A] = Base.Sum.Merged[Data.Optional, ?, A]
+    type Merged[A] = Base.Sum.Merged[Data.Optional, ?, A]
 
-  //   object Merged:
-  //     type Of[O <: Data, A] = Base.Sum.Merged[Data.Optional, O, A]
+    object Merged:
+      type Of[O <: Data, A] = Base.Sum.Merged[Data.Optional, O, A]
 
-  //     type Required[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
+      type Required[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
 
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
 
-  //   type Keyed[A] = Base.Sum.Merged[Data.Optional, ?, A]
+    type Keyed[A] = Base.Sum.Merged[Data.Optional, ?, A]
 
-  //   object Keyed:
-  //     type Of[O <: Data, A] = Base.Sum.Keyed[Data.Optional, O, A]
+    object Keyed:
+      type Of[O <: Data, A] = Base.Sum.Keyed[Data.Optional, O, A]
 
-  //     type Required[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
+      type Required[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
 
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
 
-  //   type Untagged[A] = Base.Sum.Untagged[Data.Optional, ?, A]
+    type Untagged[A] = Base.Sum.Untagged[Data.Optional, ?, A]
 
-  //   object Untagged:
-  //     type Of[O <: Data, A] = Base.Sum.Untagged[Data.Optional, O, A]
+    object Untagged:
+      type Of[O <: Data, A] = Base.Sum.Untagged[Data.Optional, O, A]
 
-  //     type Required[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
+      type Required[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
 
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
+      object Required:
+        type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
 
-  // type Tuple[A] = Base.Tuple.Of[Data.Optional, Data, A]
+  type Tuple[A] = Base.Tuple[Data.Optional, ?, A]
 
-  // object Tuple:
-  //   type Of[O <: Data, A] = Base.Tuple.Of[Data.Optional, O, A]
+  object Tuple:
+    type Of[O <: Data, A] = Base.Tuple[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Tuple.Of[Data.Required, Data, A]
+    type Required[A] = Base.Tuple[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Tuple.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
 
-  // final type Branch[A] = Base.Branch[?, A]
+  final type Branch[A] = Base.Branch[?, A]
 
-  // object Branch:
-  //   type Of[O <: Data, A] = Base.Branch[O, A]
+  object Branch:
+    type Of[O <: Data, A] = Base.Branch[O, A]
 
-  // final type Field[A] = Base.Field[?, A]
+  final type Field[A] = Base.Field[?, A]
 
-  // object Field:
-  //   type Of[O <: Data, A] = Base.Field[O, A]
+  object Field:
+    type Of[O <: Data, A] = Base.Field[O, A]
 
 object Types extends Types

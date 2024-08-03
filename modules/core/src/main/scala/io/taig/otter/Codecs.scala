@@ -21,46 +21,50 @@ import java.util.regex.Pattern
 trait Codecs extends Validations:
   self =>
 
-  // final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
+  final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
 
-  // val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
-  // val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
-  // val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
-  // val double: Primitive.Required[Double] = primitive(Type.Double)
-  // val float: Primitive.Required[Float] = primitive(Type.Float)
-  // val int: Primitive.Required[Int] = primitive(Type.Int)
-  // val long: Primitive.Required[Long] = primitive(Type.Long)
-  // val string: Primitive.Required[String] = primitive(Type.String)
+  val bigDecimal: Primitive.Required[JBigDecimal] = primitive(Type.BigDecimal)
+  val bigInteger: Primitive.Required[JBigInteger] = primitive(Type.BigInteger)
+  val boolean: Primitive.Required[Boolean] = primitive(Type.Boolean)
+  val double: Primitive.Required[Double] = primitive(Type.Double)
+  val float: Primitive.Required[Float] = primitive(Type.Float)
+  val int: Primitive.Required[Int] = primitive(Type.Int)
+  val long: Primitive.Required[Long] = primitive(Type.Long)
+  val string: Primitive.Required[String] = primitive(Type.String)
 
-  // val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
+  val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
-  // def branch[A](name: String, codec: Codec[A]): Branch.Of[codec.Out, A] = Base.Branch(name, codec)
+  def branch[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: Base.Codec[F, O, A]): Branch.Of[F[O], A] =
+    Base.Branch(name, codec)
 
-  // def field[A](name: String, codec: Codec[A]): Field.Of[codec.Out, A] = Base.Field(name, codec)
+  def field[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: Base.Codec[F, O, A]): Field.Of[F[O], A] =
+    Base.Field(name, codec)
 
-  // def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = fields.toRecord
-  // def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = record(field.toFields)
+  def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = fields.toRecord
+  def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = record(field.toFields)
 
-  // def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
-  // def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
+  def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = fields.toTuple
+  def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
 
-  // // object sum:
-  // //   def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Required.Of[O, A] = branches.toSumNested
-  // //   def nested[O <: Data, A](branch: Branch.Of[O, A]): Sum.Nested.Required.Of[O, A] = nested(branch.toBranches)
+  object sum:
+    def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Required.Of[O, A] = branches.toSumNested
+    def nested[O <: Data, A](branch: Branch.Of[O, A]): Sum.Nested.Required.Of[O, A] = nested(branch.toBranches)
 
-  // //   def merged[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
-  // //     branches.toSumMerged
-  // //   def merged[O <: Data, A](branch: Branch.Of[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
-  // //     merged(branch.toBranches)
+    def merged[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
+      branches.toSumMerged
+    def merged[O <: Data, A](branch: Branch.Of[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
+      merged(branch.toBranches)
 
-  // //   def keyed[O <: Data, A](branches: Branches[O, A]): Sum.Keyed.Required.Of[O, A] = branches.toSumKeyed
-  // //   def keyed[O <: Data, A](branch: Branch.Of[O, A]): Sum.Keyed.Required.Of[O, A] = keyed(branch.toBranches)
+    def keyed[O <: Data, A](branches: Branches[O, A]): Sum.Keyed.Required.Of[O, A] = branches.toSumKeyed
+    def keyed[O <: Data, A](branch: Branch.Of[O, A]): Sum.Keyed.Required.Of[O, A] = keyed(branch.toBranches)
 
-  // //   def untagged[O <: Data, A](branches: Branches[O, A]): Sum.Untagged.Required.Of[O, A] = branches.toSumUntagged
-  // //   def untagged[O <: Data, A](branch: Branch.Of[O, A]): Sum.Untagged.Required.Of[O, A] = untagged(branch.toBranches)
+    def untagged[O <: Data, A](branches: Branches[O, A]): Sum.Untagged.Required.Of[O, A] = branches.toSumUntagged
+    def untagged[O <: Data, A](branch: Branch.Of[O, A]): Sum.Untagged.Required.Of[O, A] = untagged(branch.toBranches)
 
-  // object collection:
-  //   def vector[A](codec: Codec[A]): Collection.Required.Of[codec.Out, Vector[A]] = Base.Collection(codec)
+  object collection:
+    def vector[F[+a] <: Data.Optional[a], O <: Data, A](
+        codec: Base.Codec[F, O, A]
+    ): Collection.Required.Of[F[O], Vector[A]] = Base.Collection(codec)
 
   //   def nonEmptyVector[A](codec: Codec[A]): Collection.Required.Of[codec.Out, NonEmptyVector[A]] =
   //     vector(codec)
