@@ -48,6 +48,7 @@ object Dynamic:
   val Object: Dynamic[Identity, Data.Object[?], Data.Object[?]] = Dynamic("object")(_.asObject)
   val Array: Dynamic[Identity, Data.Array[?], Data.Array[?]] = Dynamic("array")(_.asArray)
   val Primitive: Dynamic[Identity, Data.Primitive, Data.Primitive] = Dynamic("primitive")(_.asPrimitive)
+  val Number: Dynamic[Identity, Data.Number, Data.Number] = Dynamic("number")(_.asPrimitive.flatMap(_.asNumber))
   val Null: Dynamic[Identity, Data.Null.type, Data.Null.type] =
     Dynamic("null")(data => Option.when(data.isNull)(Data.Null))
 

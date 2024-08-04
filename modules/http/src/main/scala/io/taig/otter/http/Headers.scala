@@ -3,7 +3,6 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import cats.data.Validated
-import io.taig.otter.validation.Violations
 import io.taig.otter.filterKeys
 import io.taig.otter.Evidence
 

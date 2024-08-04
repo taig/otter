@@ -3,9 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import cats.Invariant
 import io.taig.otter.Codec
-import io.taig.otter.Codec.Result
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violations
+import io.taig.otter.Violation
 import io.taig.otter.Constraint
 import io.taig.otter.Data
 import java.util.regex.Pattern

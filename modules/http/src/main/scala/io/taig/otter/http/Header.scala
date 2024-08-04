@@ -34,15 +34,19 @@ sealed abstract class Header[A] extends Product, Serializable:
   def encode(a: A): Option[String]
 
 object Header:
-  final case class Default[A](name: CIString, codec: Codec[?, Data.Primitive, A], metadata: Metadata) extends Header[A]:
+  final case class Default[A](name: CIString, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
+      extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
     override def optional: Header[Option[A]] = copy(codec = codec.optional)
     override def decode(header: Option[String]): Codec.Result[A] = codec.parseOptional(header)
     override def encode(a: A): Option[String] = codec.printOptional(a)
 
-  final case class Array[A](name: CIString, codec: Codec[?, Data.Array[Data.Primitive], A], metadata: Metadata)
-      extends Header[A]:
+  final case class Array[A](
+      name: CIString,
+      codec: Codec[Data.Optional, Data.Array[Data.Primitive], A],
+      metadata: Metadata
+  ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
     override def optional: Header[Option[A]] = copy(codec = codec.optional)
@@ -52,7 +56,7 @@ object Header:
 
   final case class Object[A](
       name: CIString,
-      codec: Codec[?, Data.Object[Data.Optional[Data.Primitive]], A],
+      codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
       metadata: Metadata
   ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))

@@ -8,11 +8,11 @@ import scala.Array as SArray
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
 import cats.data.Validated
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violations
+import io.taig.otter.Violation
 import io.taig.otter.Constraint
 import java.util.regex.Pattern
-import io.taig.otter.validation.Step
+import io.taig.otter.Step
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String

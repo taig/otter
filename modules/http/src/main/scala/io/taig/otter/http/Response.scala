@@ -3,17 +3,17 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.{Codec, Data}
-import io.taig.otter.validation.{Violation, Violations}
+import io.taig.otter.{Violation, Violations}
 import io.taig.otter.Constraint
 import io.taig.otter.http.Http.Payload
 
 final case class Response[A](
     results: Results[A],
-    violations: Result[Violations[Violation[Constraint.Any[Data], Data]]]
+    violations: Result[Violations[Violation[Constraint, Data]]]
 ):
   def decode(response: Http.Response): Codec.Result[A] = results.decode(response)
 
-  def encode(a: Validated[Violations[Violation[Constraint.Any[Data], Data]], A]): Http.Response =
+  def encode(a: Validated[Violations[Violation[Constraint, Data]], A]): Http.Response =
     a.fold(violations.encode, results.encode)
 
 object Response:

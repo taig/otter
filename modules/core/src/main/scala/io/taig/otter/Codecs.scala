@@ -104,6 +104,8 @@ trait Codecs extends Types:
       maxLength: Option[Int] = none,
       matches: Option[Pattern] = none
   ): Primitive.Required[String] = Base.Primitive.string(minLength, maxLength, matches)
+  def string(matches: String): Primitive.Required[String] =
+    string(matches = Pattern.compile(Pattern.quote(matches)).some)
   val string: Primitive.Required[String] = string()
   val emptyString: Primitive.Required[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
@@ -345,6 +347,7 @@ trait Codecs extends Types:
     val obj: Dynamic.Required.Of[Data.Object[?], Data.Object[?]] = Base.Dynamic.Object
     val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
     val primitive: Dynamic.Required.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
+    val number: Dynamic.Required.Of[Data.Number, Data.Number] = Base.Dynamic.Number
     val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
   def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =

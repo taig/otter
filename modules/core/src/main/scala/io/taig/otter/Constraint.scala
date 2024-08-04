@@ -1,33 +1,27 @@
 package io.taig.otter
 
 import java.util.regex.Pattern
-import scala.Product as SProduct
 
-sealed abstract class Constraint extends SProduct with Serializable
+enum Constraint:
+  case Type(name: String)
+  case OneOf(values: List[Data.Primitive])
 
 object Constraint:
-  final case class Type(name: String) extends Constraint
-  final case class OneOf(values: List[Data.Primitive]) extends Constraint
+  type Any = Constraint | Constraint.Collection | Constraint.Object | Constraint.Primitive
 
-  sealed abstract class Collection extends Constraint
+  enum Collection:
+    case MaxItems(reference: Int)
+    case MinItems(reference: Int)
+    case UniqueItems
 
-  object Collection:
-    final case class MaxItems(reference: Int) extends Constraint.Collection
-    final case class MinItems(reference: Int) extends Constraint.Collection
-    case object UniqueItems extends Constraint.Collection
+  enum Object:
+    case MaxProperties(reference: Int)
+    case MinProperties(reference: Int)
 
-  sealed abstract class Object extends Constraint
-
-  object Object:
-    final case class MaxProperties(reference: Int) extends Constraint.Object
-    final case class MinProperties(reference: Int) extends Constraint.Object
-
-  sealed abstract class Primitive extends Constraint
-
-  object Primitive:
-    final case class Matches(pattern: Pattern) extends Primitive
-    final case class Maximum(comparison: Comparison[Data.Number]) extends Primitive
-    final case class Minimum(comparison: Comparison[Data.Number]) extends Primitive
-    final case class MaxLength(reference: Int) extends Primitive
-    final case class MinLength(reference: Int) extends Primitive
-    final case class Multiple(reference: Data.Number) extends Primitive
+  enum Primitive:
+    case Matches(pattern: Pattern)
+    case Maximum(comparison: Comparison[Data.Number])
+    case Minimum(comparison: Comparison[Data.Number])
+    case MaxLength(reference: Int)
+    case MinLength(reference: Int)
+    case Multiple(reference: Data.Number)
