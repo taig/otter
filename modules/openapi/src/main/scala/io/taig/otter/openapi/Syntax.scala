@@ -10,7 +10,7 @@ trait Syntax:
   extension [A <: Codec[?, ?, ?]: Metadata.Ops](self: A)
     def description: Attribute.Optional[A, String] = Attribute.Optional(self, Keys.description)
 
-  extension [F[+a <: Data] <: Data.Optional[a], A](self: Primitive[F, A])
+  extension [F[+a] <: Data.Optional[a], A](self: Primitive[F, A])
     def format: Attribute.Optional[Primitive[F, A], String] = Attribute.Optional(self, Keys.format)
 
 object Syntax extends Syntax

@@ -9,13 +9,13 @@ import io.taig.otter.http.Http.Payload
 
 final case class Response[A](
     results: Results[A],
-    violations: Result[Violations[Violation[Constraint, Data]]]
+    violations: Result[Violations[Violation[Constraint.Any, Data]]]
 ):
   final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
 
   def decode(response: Http.Response): Codec.Result[A] = results.decode(response)
 
-  def encode(a: Validated[Violations[Violation[Constraint, Data]], A]): Http.Response =
+  def encode(a: Validated[Violations[Violation[Constraint.Any, Data]], A]): Http.Response =
     a.fold(violations.encode, results.encode)
 
 object Response:

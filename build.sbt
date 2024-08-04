@@ -150,14 +150,14 @@ lazy val openapi = module(identifier = Some("openapi"))
 // lazy val httpOpenapi = module(identifier = Some("http-openapi"))
 //   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
 
-// // TODO waiting for circe 0.15 with scala.js jawn support
-// lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %% "circe-parser" % Version.Circe ::
-//         Nil
-//   )
-//   .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+// TODO waiting for circe 0.15 with scala.js jawn support
+lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = true)
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %% "circe-parser" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
 
 lazy val server = module(identifier = Some("server"))
   .settings(

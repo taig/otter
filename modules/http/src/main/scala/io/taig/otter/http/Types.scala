@@ -4,6 +4,6 @@ import io.taig.otter as Base
 import io.taig.otter.http as Http
 
 trait Types extends Base.Types:
-  export Http.{Url, Result, Results}
+  export Http.{Result, Results, Url}
 
 object Types extends Types

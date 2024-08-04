@@ -23,7 +23,7 @@ final class Http4sServer[F[+_]: Concurrent](f: Http4sApp[F] => Resource[F, org.h
       url: Http.Url,
       headers: Http.Headers,
       body: Request.Body[?] => F[Http.Request.Body]
-  ): F[Http.Response] = app.routes
+  ): F[Http.Response] =  app.routes
     .find(method, url)
     .fold(app.notFound.encode(().pure).pure): route =>
       body(route.endpoint.request.body)
