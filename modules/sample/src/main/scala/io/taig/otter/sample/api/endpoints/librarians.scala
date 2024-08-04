@@ -25,17 +25,16 @@ object librarians:
 
             result(code.unauthorized, json.output(emailOrPasswordIncorrect)).toResults.to
 
-        def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] = ???
-        // endpoint(
-        //   request(method.post, url, input.json(codecs.librarian.login)),
+        def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
+          endpoint(
+            request(method.post, url, json.input(LibrarianApiSchema.Login.codec)),
+            response(???)
+          ).summary("Create librarian session")
+            .description(
+              "For security reasons, this endpoint does not give away whether the given email address is " +
+                "unknown or the given password is incorrect."
+            )
+            .operationId("createLibrarianSession")
+            .tags("librarians")
+            .role(Role.Guest)
         //   response(Post.results :+ result(code.created, output.json(codecs.session)))
-        // ).summary("Create librarian session")
-        //   .description(
-        //     "For security reasons, this endpoint does not give away whether the given email address is " +
-        //       "unknown or the given password is incorrect."
-        //   )
-        //   .operationId("createLibrarianSession")
-        //   .tags("librarians")
-        //   .role(Role.Guest)
-
-        ???

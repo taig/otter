@@ -6,6 +6,7 @@ import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.util.regex.Pattern
 import cats.data.Validated
+import Base.Evidence
 
 trait Codecs extends Base.Codecs:
   def cistring(
@@ -99,8 +100,13 @@ trait Codecs extends Base.Codecs:
 
   final def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
-  def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
-  def result(code: Code): Result[Unit] = Result(code, Response.Body.Strict.Empty)
+  final def result[A](code: Code, body: Response.Body.Strict[A]): Result[A] = Result(code, body)
+  final def result(code: Code): Result[Unit] = Result(code, Response.Body.Strict.Empty)
+
+  final def request[A, B](method: Method, url: Url[A], body: Request.Body[B])(using
+      merge: Evidence.Merge[A, B]
+  ): Request[merge.Out] = ???
+  final def response[A](results: Results[A]): Response[A] = Response(results, ???)
 
   // Scala.js won't compile if this is included here (for reason unknown)
   export ViolationsCodecs.*
