@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.filterKeys
+import io.taig.otter.Evidence
 
 sealed abstract class Url[A]:
   self =>
@@ -25,6 +26,12 @@ sealed abstract class Url[A]:
       val (queriesRight, _) = remainders.filterKeys(url.queries.toVector.map(_.name))
       (self.decode(Http.Url(pathLeft, queriesLeft)), url.decode(Http.Url(pathRight, queriesRight))).tupled
     override def encode(ab: (A, B)): Http.Url = self.encode(ab._1) ++ url.encode(ab._2)
+
+  final def /(segment: String): Url[A] =
+    zip(Segment.Static(segment).toPath.toUrl).imap { case (a, _) => a }(a => (a, ()))
+
+  final def /[B](segment: Segment.Parameter[B])(using merge: Evidence.Merge[A, B]): Url[merge.Out] =
+    zip(segment.toPath.toUrl).imap(merge.apply)(merge.unapply)
 
   def decode(values: Http.Url): Codec.Result[A]
 

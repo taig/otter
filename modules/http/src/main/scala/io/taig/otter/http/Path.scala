@@ -33,6 +33,8 @@ sealed abstract class Path[A]:
   final def /[B](segment: Segment.Parameter[B])(using merge: Evidence.Merge[A, B]): Path[merge.Out] =
     zip(segment.toPath).imap(merge.apply)(merge.unapply)
 
+  final def toUrl: Url[A] = Url(this)
+
   def decode(values: Http.Path): Codec.Result[A]
 
   def encode(a: A): Http.Path
