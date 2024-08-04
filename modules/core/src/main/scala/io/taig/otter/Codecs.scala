@@ -14,6 +14,7 @@ import cats.Order
 import cats.implicits.*
 import scala.collection.immutable.SortedSet
 import scala.collection.immutable.SortedMap
+import scala.collection.immutable.Map
 import io.taig.enumeration.ext.Mapping
 import io.taig.enumeration.ext.EnumerationValues
 import java.util.regex.Pattern
@@ -250,30 +251,68 @@ trait Codecs extends Types:
         value: Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
-    ): Dictionary.Required.Of[F[O], NonEmptyVector[(A, B)]] =
-      Base.Dictionary
-        .nonEmpty(key, value, minProperties, maxProperties)
-        .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
+    ): Dictionary.Required.Of[F[O], NonEmptyVector[(A, B)]] = Base.Dictionary
+      .nonEmpty(key, value, minProperties, maxProperties)
+      .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
 
-    // //   def list[F[+a <: Data] <: Data.Optional[a], O <: Data, A, B](
-    // //       key: Codec.Required.Of[Data.Primitive, A],
-    // //       value: Base.Codec[F, O, B]
-    // //   ): Dictionary.Required.Of[F[O], List[(A, B)]] = vector(key, value).imap(_.toList)(_.toVector)
+    def seq[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], Seq[(A, B)]] =
+      vector(key, value, minProperties, maxProperties).imap(identity)(_.toVector)
 
-    // //   def seq[F[+a <: Data] <: Data.Optional[a], O <: Data, A, B](
-    // //       key: Codec.Required.Of[Data.Primitive, A],
-    // //       value: Base.Codec[F, O, B]
-    // //   ): Dictionary.Required.Of[F[O], Seq[(A, B)]] = vector(key, value).imap(identity)(_.toVector)
+    def nonEmptySeq[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], NonEmptySeq[(A, B)]] = Base.Dictionary
+      .nonEmpty(key, value, minProperties, maxProperties)
+      .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail.toVector))
 
-    // //   def chain[F[+a <: Data] <: Data.Optional[a], O <: Data, A, B](
-    // //       key: Codec.Required.Of[Data.Primitive, A],
-    // //       value: Base.Codec[F, O, B]
-    // //   ): Dictionary.Required.Of[F[O], Chain[(A, B)]] = vector(key, value).imap(Chain.fromSeq)(_.toVector)
+    def list[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], List[(A, B)]] =
+      vector(key, value, minProperties, maxProperties).imap(_.toList)(_.toVector)
 
-    // //   def map[F[+a <: Data] <: Data.Optional[a], O <: Data, A, B](
-    // //       key: Codec.Required.Of[Data.Primitive, A],
-    // //       value: Base.Codec[F, O, B]
-    // //   ): Dictionary.Required.Of[F[O], Map[A, B]] = vector(key, value).imap(Map.from)(_.toVector)
+    def nonEmptyList[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], NonEmptyList[(A, B)]] = Base.Dictionary
+      .nonEmpty(key, value, minProperties, maxProperties)
+      .imap { case (head, tail) => NonEmptyList(head, tail.toList) }(fa => (fa.head, fa.tail.toVector))
+
+    def chain[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], Chain[(A, B)]] =
+      vector(key, value, minProperties, maxProperties).imap(Chain.fromSeq)(_.toVector)
+
+    def nonEmptyChain[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], NonEmptyChain[(A, B)]] = Base.Dictionary
+      .nonEmpty(key, value, minProperties, maxProperties)
+      .imap { case (head, tail) => NonEmptyChain(head, tail*) }(fa => (fa.head, fa.tail.toVector))
+
+    def map[F[+a] <: Data.Optional[a], O <: Data, A, B](
+        key: Codec.Required.Of[Data.Primitive, A],
+        value: Base.Codec[F, O, B],
+        minProperties: Option[Int] = none,
+        maxProperties: Option[Int] = none
+    ): Dictionary.Required.Of[F[O], Map[A, B]] =
+      vector(key, value, minProperties, maxProperties).imap(_.to(Map))(_.toVector)
 
     def sortedMap[F[+a] <: Data.Optional[a], O <: Data, A: Order, B](
         key: Codec.Required.Of[Data.Primitive, A],
@@ -300,16 +339,16 @@ trait Codecs extends Types:
       EnumerationValues.Aux[B, B]
   ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
 
-  // object dynamic:
-  //   val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
-  //   val value: Dynamic.Required.Of[Data.Value, Data.Value] = Base.Dynamic.Value
-  //   val obj: Dynamic.Required.Of[Data.Object[?], Data.Object[?]] = Base.Dynamic.Object
-  //   val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
-  //   val primitive: Dynamic.Required.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
-  //   val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
+  object dynamic:
+    val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
+    val value: Dynamic.Required.Of[Data.Value, Data.Value] = Base.Dynamic.Value
+    val obj: Dynamic.Required.Of[Data.Object[?], Data.Object[?]] = Base.Dynamic.Object
+    val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
+    val primitive: Dynamic.Required.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
+    val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  // def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
-  //   dynamic.void.imap(_ => a)(_ => Data.Null)
+  def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
+    dynamic.void.imap(_ => a)(_ => Data.Null)
 
   // // def error[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
   // //     identifier: String,
