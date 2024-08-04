@@ -353,9 +353,4 @@ trait Codecs extends Types:
   def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
     dynamic.void.imap(_ => a)(_ => Data.Null)
 
-  // // def error[F[+a <: Data] <: Data.Optional[a], O <: Data, A](
-  // //     identifier: String,
-  // //     codec: Base.Codec[F, O, A]
-  // // ): Sum.Nested.Required.Of[F[O], A] = branch(identifier, codec).toBranches.toSumNested
-
 object Codecs extends Codecs

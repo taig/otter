@@ -6,7 +6,6 @@ import io.taig.otter.sample.Dsl.*
 import org.typelevel.ci.*
 
 import java.util.regex.Pattern
-import io.taig.otter.CodecValidation
 import java.util.UUID
 
 final case class Librarian(
@@ -28,16 +27,16 @@ object Librarian:
   object Email:
     extension (self: Librarian.Email) def toCIString: CIString = self
     def unsafe(value: CIString): Librarian.Email = value
-    val validation: CodecValidation.Primitive[String, Librarian.Email] =
-      val pattern = Pattern.compile(".+@.+")
-      matches(pattern).tap.map(CIString.apply)
+    // val validation: CodecValidation.Primitive[String, Librarian.Email] =
+    //   val pattern = Pattern.compile(".+@.+")
+    //   matches(pattern).tap.map(CIString.apply)
 
     given (using eq: Eq[CIString]): Eq[Librarian.Email] = eq
 
   opaque type Password = String
   object Password:
     def unsafe(value: String): Librarian.Password = value
-    val validation: CodecValidation.Primitive[String, Librarian.Password] = minLength(6).tap
+    // val validation: CodecValidation.Primitive[String, Librarian.Password] = minLength(6).tap
 
   final case class Login(email: CIString, password: String)
 

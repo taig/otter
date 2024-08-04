@@ -11,9 +11,9 @@ final case class Book(isbn: Isbn, title: Book.Title, genres: SortedSet[Book.Genr
 
 object Book:
   opaque type Title = String
-  object Title:
-    def unsafeFromString(value: String): Book.Title = value
-    val validation: CodecValidation.Primitive[String, Book.Title] = (minLength(1) *> maxLength(200)).tap
+  // object Title:
+  //   def unsafeFromString(value: String): Book.Title = value
+  //   val validation: CodecValidation.Primitive[String, Book.Title] = (minLength(1) *> maxLength(200)).tap
 
   enum Genre:
     case Biography

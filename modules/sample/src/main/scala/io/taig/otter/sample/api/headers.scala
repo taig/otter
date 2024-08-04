@@ -9,18 +9,15 @@ import org.typelevel.ci.*
 import java.util.UUID
 
 object headers:
-  val authorization: Header[String] = header(ci"Authorization", string)
-
-  val authorizationBearer: Header[String] =
+  val session: Header[Session] =
     val Prefix = "Bearer"
+    val codec = parser("bearer-session") { value =>
+      Option
+        .when(value.startsWith(Prefix) && value.length > Prefix.length + 1)(value.substring(Prefix.length + 1))
+        .flatMap(value =>
+          try UUID.fromString(value).some
+          catch { case _: IllegalArgumentException => none }
+        )
+    }(uuid => s"Bearer $uuid").imap(Session.apply)(_.toUUID)
 
-    val bearer: CodecValidation.Primitive[String, String] = parse(Prefix) { value =>
-      Option.when(value.startsWith(Prefix) && value.length > Prefix.length + 1)(value.substring(Prefix.length + 1))
-    }
-
-    // authorization.ivalidate(bearer)(token => show"$Prefix $token")
-    ???
-
-  // val authorizationBearerUuid: Header[UUID] = authorizationBearer.ivalidate(validations.uuid)(_.toString)
-
-  // val session: Header[Session] = authorizationBearerUuid.imap(Session.fromUUID)(_.toUUID)
+    header.authorization(codec)
