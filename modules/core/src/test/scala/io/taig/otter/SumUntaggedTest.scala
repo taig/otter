@@ -3,9 +3,6 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Step
 
 final class SumUntaggedTest extends FunSuite:
   test("encode"):
@@ -39,7 +36,7 @@ final class SumUntaggedTest extends FunSuite:
       expected = Violations
         .of(
           Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-          Step.Field("bar") -> Violation(Constraint.Type("number"), actual = Data.String("array"))
+          Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("array"))
         )
         .invalid
     )

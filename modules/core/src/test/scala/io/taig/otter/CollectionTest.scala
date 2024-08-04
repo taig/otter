@@ -3,15 +3,10 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Step
 
 final class CollectionTest extends FunSuite:
   test("encode"):
     val codec = collection.vector(string)
-
-    Dynamic.Array.ivalidate(minItems.apply(3, ???))(???)
 
     assertEquals(
       obtained = codec.encode(Vector("foo", "bar", "baz")),

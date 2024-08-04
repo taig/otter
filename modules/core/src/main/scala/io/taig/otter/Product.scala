@@ -27,8 +27,7 @@ sealed abstract class Product[
 sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Product[F, Data.Object, O, A]:
   self =>
 
-  final def nulls: Attribute[Record[F, O, A], Null] =
-    Attribute(this, Keys.nulls, Null.Default)
+  final def nulls: Attribute[Record[F, O, A], Null] = Attribute(this, Keys.nulls, Null.Default)
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
     export self.{decode, default, encode, encodeSequence, fields}

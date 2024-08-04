@@ -22,7 +22,7 @@ abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   def decode(data: Data): Codec.Result[A]
   def encode(a: A): F[O]
 
-  final def toCollection: Collection[Data.Required, F[O], Vector[A]] = Collection(this)
+  final def toCollection: Collection[Data.Required, F[O], Vector[A]] = ??? // Collection(this)
 
 object Codec:
   extension [A](self: Codec[Data.Optional, Data.Primitive, A])
@@ -57,4 +57,5 @@ object Codec:
             case (_, Data.Null)              => none
           }.some
 
-  type Result[A] = Validated[Violations[Violation[Constraint[Data], Data]], A]
+  type Error = Violations[Violation[Constraint, Data]]
+  type Result[A] = Validated[Error, A]

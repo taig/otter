@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  export Base.{Constraint, Data, Metadata, Step, Type, Violation, Violations}
+  export Base.{Comparison, Constraint, Data, Metadata, Step, Violation, Violations}
 
   final type Codec[A] = Base.Codec[Data.Optional, ?, A]
 
@@ -27,45 +27,45 @@ trait Types:
     object Required:
       type Of[O <: Data, A] = Base.Collection[Data.Required, O, A]
 
-  // final type Dictionary[A] = Base.Dictionary.Of[Data.Optional, Data, A]
+  final type Dictionary[A] = Base.Dictionary[Data.Optional, ?, A]
 
-  // object Dictionary:
-  //   type Of[O <: Data, A] = Base.Dictionary.Of[Data.Optional, O, A]
+  object Dictionary:
+    type Of[O <: Data, A] = Base.Dictionary[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Dictionary.Of[Data.Required, Data, A]
+    type Required[A] = Base.Dictionary[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Dictionary.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Dictionary[Data.Required, O, A]
 
-  // final type Dynamic[A] = Base.Dynamic.Of[Data.Optional, Data, A]
+  final type Dynamic[A] = Base.Dynamic[Data.Optional, ?, A]
 
-  // object Dynamic:
-  //   type Of[O <: Data, A] = Base.Dynamic.Of[Data.Optional, O, A]
+  object Dynamic:
+    type Of[O <: Data, A] = Base.Dynamic[Data.Optional, O, A]
 
-  //   type Required[A] = Base.Dynamic.Of[Data.Required, Data, A]
+    type Required[A] = Base.Dynamic[Data.Required, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Dynamic.Of[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Dynamic[Data.Required, O, A]
 
-  // final type Enumeration[A] = Base.Enumeration.Of[Data.Optional, A]
+  final type Enumeration[A] = Base.Enumeration[Data.Optional, A]
 
-  // object Enumeration:
-  //   type Required[A] = Base.Enumeration.Of[Data.Required, A]
+  object Enumeration:
+    type Required[A] = Base.Enumeration[Data.Required, A]
 
   final type Primitive[A] = Base.Primitive[Data.Optional, A]
 
   object Primitive:
     type Required[A] = Base.Primitive[Data.Required, A]
 
-  // final type Product[A] = Base.Product.Of[Data.Optional, Data.Object[?] | Data.Array[?], A]
+  final type Product[A] = Base.Product[Data.Optional, ?, ?, A]
 
-  // object Product:
-  //   type Of[O <: Data, A] = Base.Product.Of[Data.Optional, Data.Object[O] | Data.Array[O], A]
+  object Product:
+    type Of[O <: Data, A] = Base.Product[Data.Optional, ?, O, A]
 
-  //   type Required[A] = Base.Product.Of[Data.Required, Data.Object[?] | Data.Array[?], A]
+    type Required[A] = Base.Product[Data.Required, ?, ?, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Product.Of[Data.Required, Data.Object[O] | Data.Array[O], A]
+    object Required:
+      type Of[O <: Data, A] = Base.Product[Data.Required, ?, O, A]
 
   type Record[A] = Base.Record[Data.Optional, ?, A]
 

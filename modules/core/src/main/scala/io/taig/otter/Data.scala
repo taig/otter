@@ -8,6 +8,7 @@ import java.lang.Math.toIntExact
 
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
+import cats.Order
 
 sealed abstract class Data extends SProduct with Serializable:
   final def asValue: Option[Data.Value] = this match
@@ -53,6 +54,8 @@ object Data:
     def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(kv.toVector)
     def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(kv.toVector)
 
+    given [A <: Data: Order]: Order[Data.Object[A]] = Order.by(_.values)
+
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
@@ -63,10 +66,20 @@ object Data:
     def of[A <: Data](data: A*): Data.Array[A] = Data.Array(data.toVector)
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
+    given [A <: Data: Order]: Order[Data.Array[A]] = Order.by(_.values)
+
   sealed abstract class Primitive extends Value:
     final def asString: Option[Data.String] = this match
       case data: Data.String => data.some
       case _                 => none
+
+    final def asNumber: Option[Data.Number] = this match
+      case data: Data.Number => data.some
+      case _                 => none
+
+    final def asBoolean: Option[Data.Boolean] = this match
+      case data: Data.Boolean => data.some
+      case _                  => none
 
     final def print: JString = this match
       case Data.Boolean(value) => JString.valueOf(value)

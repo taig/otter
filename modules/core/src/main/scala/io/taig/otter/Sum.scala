@@ -1,8 +1,6 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.Id as Identity
-import io.taig.otter.Data.Optional
 
 sealed abstract class Sum[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, O, A]:
   def branches: Branches[?, ?]
@@ -81,7 +79,7 @@ object Sum:
                 Violations.namespaceNec(
                   Step.Field(discriminator.identifier),
                   Violation(
-                    Constraint.Primitive.OneOf(branches.toNev.toList.map(branch => Data.String(branch.name))),
+                    Constraint.OneOf(branches.toNev.toList.map(branch => Data.String(branch.name))),
                     actual = data
                       .collectFirst { case (name, data) if name === discriminator.identifier => data }
                       .getOrElse(Data.Null)
@@ -217,7 +215,7 @@ object Sum:
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Untagged[F, O, B] =
       imap(evidence.from)(evidence.to)
 
-    final override def optional: Sum.Untagged[Optional, O, Option[A]] = ???
+    final override def optional: Sum.Untagged[Data.Optional, O, Option[A]] = ???
 
     final def orElse[G[+a] >: F[a] <: Data.Optional[a], P <: Data, B](
         codec: Sum.Untagged[G, P, B]

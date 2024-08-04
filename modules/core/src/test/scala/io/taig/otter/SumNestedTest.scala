@@ -3,9 +3,6 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Step
 
 final class SumNestedTest extends FunSuite:
   test("encode"):
@@ -85,7 +82,7 @@ final class SumNestedTest extends FunSuite:
         .namespaceNec(
           Step.Field(Discriminator.Nested.Default.identifier),
           Violation(
-            Constraint.Primitive.OneOf(List(Data.String("foo"), Data.String("bar"))),
+            Constraint.OneOf(List(Data.String("foo"), Data.String("bar"))),
             actual = Data.String("baz")
           )
         )
@@ -147,7 +144,7 @@ final class SumNestedTest extends FunSuite:
       expected = Violations
         .namespaceNec(
           Step.Field(Discriminator.Nested.Default.value),
-          Violation(Constraint.Type("number"), actual = Data.String("null"))
+          Violation(Constraint.Type("int"), actual = Data.String("null"))
         )
         .invalid
     )
@@ -180,7 +177,7 @@ final class SumNestedTest extends FunSuite:
       expected = Violations
         .namespaceNec(
           Step.Field(Discriminator.Nested.Default.value),
-          Violation(Constraint.Type("number"), actual = Data.String("array"))
+          Violation(Constraint.Type("int"), actual = Data.String("array"))
         )
         .invalid
     )
