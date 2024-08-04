@@ -11,7 +11,4 @@ object Isbn:
 
   def unsafe(value: Long): Isbn = value
 
-  // val validation: CodecValidation.Primitive[Long, Isbn] =
-  //   (minimum(1000000000000L) *> maximum(9999999999999L)).tap
-
   given (using order: Order[Long]): Order[Isbn] = order

@@ -1,12 +1,12 @@
 package io.taig.otter.sample.api
 
-import io.taig.otter.sample.data.Session
+import io.taig.otter.sample.api.schema.SessionApiSchema
 import io.taig.otter.http.Results
 import io.taig.otter.sample.Dsl.*
 
 import scala.util.control.NoStackTrace
 
-final case class Authentication[A](session: Option[Session], payload: A)
+final case class Authentication[A](session: Option[SessionApiSchema], payload: A)
 
 object Authentication:
   enum Error extends NoStackTrace:

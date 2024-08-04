@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.http.Request.Body
 import io.taig.otter.Codec.Result
+import io.taig.otter.Evidence
 
 sealed abstract class Request[A]:
   self =>
@@ -17,6 +18,16 @@ sealed abstract class Request[A]:
     export self.{body, headers, method, url}
     override def decode(value: Http.Request): Codec.Result[B] = self.decode(value).map(f)
     override def encode(b: B): Http.Request = self.encode(g(b))
+
+  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Request[B] = imap(evidence.from)(evidence.to)
+
+  final def zip[B](headers: Headers[B]): Request[(A, B)] = ???
+
+  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Request[merge.Out] =
+    zip(header.toHeaders).imap(merge.apply)(merge.unapply)
+
+  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Request[merge.Out] =
+    zip(header.toHeaders).imap(ab => merge(ab.swap))(merge.unapply(_).swap)
 
   def decode(value: Http.Request): Codec.Result[A]
 

@@ -11,6 +11,8 @@ final case class Response[A](
     results: Results[A],
     violations: Result[Violations[Violation[Constraint, Data]]]
 ):
+  final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
+
   def decode(response: Http.Response): Codec.Result[A] = results.decode(response)
 
   def encode(a: Validated[Violations[Violation[Constraint, Data]], A]): Http.Response =
