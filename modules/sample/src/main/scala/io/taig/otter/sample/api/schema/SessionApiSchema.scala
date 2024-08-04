@@ -15,3 +15,5 @@ object SessionApiSchema:
         catch { case _: IllegalArgumentException => none }
       )
   }(uuid => s"Bearer $uuid")
+
+  val codec: Primitive.Required[SessionApiSchema] = codec(prefix = "")

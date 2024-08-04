@@ -19,7 +19,7 @@ sealed abstract class Results[A]:
       self.decodeOption(response).map(_.map(f))
     override def encode(b: B): Http.Response = self.encode(g(b))
 
-  final infix def orElse[B](results: Results[B]): Results[A + B] = new Results[A + B]:
+  final infix def orElse[B](results: Results[B]): Results[A + B] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
     // TODO Ior (?)
     override def decodeOption(response: Http.Response): Codec.Result[Option[A + B]] =
@@ -31,8 +31,8 @@ sealed abstract class Results[A]:
       case Left(a)  => self.encode(a)
       case Right(b) => results.encode(b)
 
-  // final def :+[B](result: Result[B]): Results[A + B] = orElse(result.toResults)
-  // final def +:[B](result: Result[B]): Results[B + A] = result.toResults.orElse(this)
+  final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result.toResults)
+  final def +:[B](result: Result[B]): Results[Either[B, A]] = result.toResults.orElse(this)
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = imap(evidence.from)(evidence.to)
 

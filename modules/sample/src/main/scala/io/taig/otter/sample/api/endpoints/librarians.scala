@@ -4,6 +4,7 @@ import io.taig.otter.sample.Dsl.*
 import io.taig.otter.sample.api.schema.SessionApiSchema
 import io.taig.otter.sample.api.schema.LibrarianApiSchema
 import io.taig.otter.sample.api.Role
+import io.taig.otter.sample.api.endpoints.librarians.self.sessions.post.Error.results
 
 object librarians:
   val url: Url[Unit] = __ / "librarians"
@@ -28,7 +29,7 @@ object librarians:
         def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
           endpoint(
             request(method.post, url, json.input(LibrarianApiSchema.Login.codec)),
-            response(???)
+            response(Error.results :+ result(code.created, json.output(SessionApiSchema.codec)))
           ).summary("Create librarian session")
             .description(
               "For security reasons, this endpoint does not give away whether the given email address is " +
@@ -37,4 +38,3 @@ object librarians:
             .operationId("createLibrarianSession")
             .tags("librarians")
             .role(Role.Guest)
-        //   response(Post.results :+ result(code.created, output.json(codecs.session)))
