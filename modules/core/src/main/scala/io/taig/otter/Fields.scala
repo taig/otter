@@ -2,8 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.Validated
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
 
 sealed abstract class Fields[+O <: Data, A]:
   self =>

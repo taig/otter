@@ -1,16 +1,9 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Validation
-import io.taig.otter.validation.Violation
-import cats.Id as Identity
-import io.taig.otter.Codec.Result
 
 sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>
-
-  final override type Group = Data.Array[?]
 
   def codec: Codec[?, ?, ?]
 
@@ -25,17 +18,9 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
       case (None, Some(default)) => default.valid
       case _                     => self.decode(data)
 
-  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ivalidate(Validation.lift(f))(g)
+  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ???
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection[F, O, B] = imap(evidence.from)(evidence.to)
-
-  final override def ivalidate[B](validation: CodecValidation.Array[A, B])(f: B => A): Collection[F, O, B] =
-    new Collection[F, O, B]:
-      export self.{codec, metadata}
-      override def default: Option[B] = self.default.flatMap(validation(_).toOption)
-      override def decode(data: Option[Vector[Data]]): Codec.Result[B] =
-        self.decode(data).andThen(validation(_).leftMap(Violations.root))
-      override def encode(b: B): F[Data.Array[O]] = self.encode(f(b))
 
   override def optional: Collection[Data.Optional, O, Option[A]] = new Collection[Data.Optional, O, Option[A]]:
     export self.{codec, metadata}

@@ -3,20 +3,13 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.Id as Identity
 import io.taig.otter.Data.Optional
-import io.taig.otter.Codec.Result
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Step
 
 sealed abstract class Sum[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, O, A]:
-  final override type Group = Nothing
-
   def branches: Branches[?, ?]
   override def modifyMetadata(f: Metadata => Metadata): Sum[F, O, A]
   override def modifyDefault(f: Option[A] => Option[A]): Sum[F, O, A]
   override def imap[B](f: A => B)(g: B => A): Sum[F, O, B]
-  override def ivalidate[B](validation: CodecValidation.Any[A, B])(f: B => A): Sum[F, O, B]
-  def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum[F, O, B] = imap(evidence.from)(evidence.to)
+  def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum[F, O, B]
   override def optional: Sum[Data.Optional, O, Option[A]]
 
 object Sum:
@@ -43,8 +36,6 @@ object Sum:
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Nested[F, O, B] =
       imap(evidence.from)(evidence.to)
-
-    final override def ivalidate[B](validation: CodecValidation.Any[A, B])(f: B => A): Sum.Nested[F, O, B] = ???
 
     final override def optional: Sum.Nested[Data.Optional, O, Option[A]] = ???
 
@@ -133,7 +124,6 @@ object Sum:
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Merged[F, O, B] = ???
-    final override def ivalidate[B](validation: CodecValidation.Any[A, B])(f: B => A): Sum.Merged[F, O, B] = ???
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Merged[F, O, B] =
       imap(evidence.from)(evidence.to)
@@ -179,8 +169,6 @@ object Sum:
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = ???
 
-    final override def ivalidate[B](validation: CodecValidation.Any[A, B])(f: B => A): Sum[F, Data.Object[O], B] = ???
-
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Keyed[F, O, B] =
       imap(evidence.from)(evidence.to)
 
@@ -223,13 +211,11 @@ object Sum:
     final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = new Sum.Untagged[F, O, B]:
       export self.{branches, metadata}
       override def default: Option[B] = self.default.map(f)
-      override def decode(data: Data): Result[B] = self.decode(data).map(f)
+      override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
       override def encode(b: B): F[O] = self.encode(g(b))
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Untagged[F, O, B] =
       imap(evidence.from)(evidence.to)
-
-    final override def ivalidate[B](validation: CodecValidation.Any[A, B])(f: B => A): Sum.Untagged[F, O, B] = ???
 
     final override def optional: Sum.Untagged[Optional, O, Option[A]] = ???
 

@@ -16,7 +16,7 @@ object Attribute:
         override def value: Option[A] = self.apply(key)
         override def apply(a: Option[A]): S = self.apply(key, a)
 
-  def apply[S: Metadata.Ops, A](self: S, key: Metadata.Key[A], default: => A): Attribute[S, A] =
+  def apply[S, A](self: S, key: Metadata.Key[A], default: => A)(using Metadata.Ops[S]): Attribute[S, A] =
     new Attribute[S, A]:
       override def value: A = self.apply(key).getOrElse(default)
       override def apply(a: A): S = self.apply(key, a)

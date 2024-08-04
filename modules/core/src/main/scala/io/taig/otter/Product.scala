@@ -1,12 +1,8 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
 import io.taig.otter.Keys.*
-import io.taig.otter.Data.Required
 import cats.data.Validated
-import io.taig.otter.Codec.Result
 
 sealed abstract class Product[
     +F[+a] <: Data.Optional[a],
@@ -16,8 +12,6 @@ sealed abstract class Product[
 ] extends Codec[F, G[O], A]:
   self =>
 
-  override type Group <: Data.Object[?] | Data.Array[?]
-
   def fields: Fields[?, ?]
 
   override def modifyMetadata(f: Metadata => Metadata): Product[F, G, O, A]
@@ -26,16 +20,12 @@ sealed abstract class Product[
 
   override def imap[B](f: A => B)(g: B => A): Product[F, G, O, B]
 
-  override def ivalidate[B](validation: CodecValidation[Group, A, B])(f: B => A): Product[F, G, O, B]
-
   def to[B](using evidence: Evidence.Product.Aux[B, A]): Product[F, G, O, B]
 
   override def optional: Product[Data.Optional, G, O, Option[A]]
 
 sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Product[F, Data.Object, O, A]:
   self =>
-
-  final override type Group = Data.Object[?]
 
   final def nulls: Attribute[Record[F, O, A], Null] =
     Attribute(this, Keys.nulls, Null.Default)
@@ -59,18 +49,6 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
     override def encodeSequence(b: B, nulls: Null): Data.Object[F[O]] = self.encodeSequence(g(b), nulls)
 
   final override def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[F, O, B] = ???
-
-  final override def ivalidate[B](validation: CodecValidation.Object[A, B])(f: B => A): Record[F, O, B] =
-    new Record[F, O, B]:
-      export self.{fields, metadata}
-      override def default: Option[B] = self.default.flatMap(validation(_).toOption)
-      override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] =
-        self.decode(data).andThen(validation(_).leftMap(Violations.root))
-      override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(f(b), nulls)
-      override def encodeSequence(b: B, nulls: Null): Data.Object[F[O]] = self.encodeSequence(f(b), nulls)
-
-  final def validate(validation: CodecValidation.Object[A, Unit]): Record[F, O, A] =
-    ivalidate(validation.tap)(identity)
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
@@ -132,8 +110,6 @@ object Record:
 sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Product[F, Data.Array, O, A]:
   self =>
 
-  final override type Group = Data.Array[?]
-
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
     export self.{decode, default, encode, encodeSequence, fields}
     override def metadata: Metadata = f(self.metadata)
@@ -153,8 +129,6 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
     override def encodeSequence(b: B): Data.Array[F[O]] = self.encodeSequence(g(b))
 
   override def to[B](using evidence: Evidence.Product.Aux[B, A]): Tuple[F, O, B] = ???
-
-  override def ivalidate[B](validation: CodecValidation.Array[A, B])(f: B => A): Tuple[F, O, B] = ???
 
   final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}

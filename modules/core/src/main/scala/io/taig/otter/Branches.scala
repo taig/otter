@@ -2,8 +2,6 @@ package io.taig.otter
 
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.validation.Violation
 
 sealed abstract class Branches[+O <: Data, A]:
   self =>

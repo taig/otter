@@ -60,7 +60,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
-    validation,
     core,
     javaTime,
     jsonCirce,
@@ -81,13 +80,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     sample
   )
 
-lazy val validation = module(identifier = Some("validation"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %% "cats-core" % Version.Cats ::
-        Nil
-  )
-
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -98,15 +90,15 @@ lazy val core = module(identifier = Some("core"))
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %% "alleycats-core" % Version.Cats ::
+        "org.typelevel" %% "cats-core" % Version.Cats ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-  // .jsSettings(
-  //   libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
-  //     .cross(CrossVersion.for3Use2_13)
-  // )
-  .dependsOn(validation)
+// .jsSettings(
+//   libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
+//     .cross(CrossVersion.for3Use2_13)
+// )
 
 lazy val javaTime = module(identifier = Some("java-time"))
   .settings(

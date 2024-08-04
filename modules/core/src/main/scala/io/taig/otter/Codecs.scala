@@ -18,7 +18,7 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.enumeration.ext.EnumerationValues
 import java.util.regex.Pattern
 
-trait Codecs extends Validations:
+trait Codecs extends Types:
   self =>
 
   final def primitive[A](tpe: Type[A]): Primitive.Required[A] = Base.Primitive(tpe)
