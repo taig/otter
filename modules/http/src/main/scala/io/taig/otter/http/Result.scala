@@ -27,11 +27,12 @@ sealed abstract class Result[A](val description: Option[String]):
     zip(header.toHeaders).imap(merge.apply)(merge.unapply)
 
   // final def orElse[B](result: Result[B]): Results[A + B] = toResults.orElse(result.toResults)
-  // def toResults: Results[A] = Results(this)
+
+  def toResults: Results[A] = Results(this)
 
   // def :+[B](result: Result[B]): Results[A + B] = orElse(result)
 
-  // final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = toResults.to
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Result[B] = imap(evidence.from)(evidence.to)
 
   def decode(response: Http.Response): Codec.Result[Option[A]]
   def encode(a: A): Http.Response

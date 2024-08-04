@@ -29,3 +29,8 @@ trait Codecs extends Http.Types, Http.Codecs:
         )
 
       def apply[A](codec: Codec[A]): Request.Body.Singlepart.Strict[A] = apply(codec, Printer.noSpaces)
+
+    object output:
+      def apply[A](codec: Codec[A]): Response.Body.Strict[A] = ???
+
+object Codecs extends Codecs

@@ -4,6 +4,10 @@ import cats.data.{NonEmptyVector, Validated}
 import cats.syntax.all.*
 import io.taig.otter.{+, Evidence}
 import io.taig.otter.Codec
+import io.taig.otter.Violation
+import io.taig.otter.Data
+import io.taig.otter.Violations
+import io.taig.otter.Constraint
 
 sealed abstract class Results[A]:
   self =>
@@ -37,7 +41,7 @@ sealed abstract class Results[A]:
   protected def decodeOption(response: Http.Response): Codec.Result[Option[A]]
   def encode(a: A): Http.Response
 
-object Results
+object Results:
 // extension [A <: Matchable](self: Results[A])
 //   inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
 //     case Left(a)  => a
@@ -47,7 +51,9 @@ object Results
 //     case b: B => Right(b)
 //   }
 
-// def apply[A](result: Result[A]): Results[A] = new Results[A]:
-//   override def toNonEmptyChain: NonEmptyChain[Result[?]] = NonEmptyChain.one(result)
-//   override def decodeOption(response: Http.Response): Validated[Violations, Option[A]] = result.decode(response)
-//   override def encode(a: A): Http.Response = result.encode(a)
+  def apply[A](result: Result[A]): Results[A] = new Results[A]:
+    override def toNev: NonEmptyVector[Result[?]] = NonEmptyVector.one(result)
+    override def decodeOption(
+        response: Http.Response
+    ): Validated[Violations[Violation[Constraint.Any, Data]], Option[A]] = result.decode(response)
+    override def encode(a: A): Http.Response = result.encode(a)

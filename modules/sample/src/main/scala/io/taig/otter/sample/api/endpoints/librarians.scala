@@ -20,8 +20,7 @@ object librarians:
             val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
               error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
 
-            // result(code.unauthorized, output.json(emailOrPasswordIncorrect)).to
-            ???
+            result(code.unauthorized, json.output(emailOrPasswordIncorrect)).toResults.to
 
 //       val post: AuthenticatedEndpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = endpoint(
 //         request(method.post, url, input.json(codecs.librarian.login)),
