@@ -13,8 +13,8 @@ trait Codecs extends Base.Codecs:
       maxLength: Option[Int] = none,
       matches: Option[Pattern] = none
   ): Primitive.Required[CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
-  def cistring(matches: String): Primitive.Required[CIString] =
-    cistring(matches = Pattern.compile(Pattern.quote(matches)).some)
+  def cistring(matches: CIString): Primitive.Required[CIString] =
+    cistring(matches = Pattern.compile(Pattern.quote(matches.toString), Pattern.CASE_INSENSITIVE).some)
   val cistring: Primitive.Required[CIString] = cistring()
 
   val __ : Url[Unit] = Url.Empty

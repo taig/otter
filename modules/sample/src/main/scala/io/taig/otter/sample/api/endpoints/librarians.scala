@@ -1,6 +1,9 @@
 package io.taig.otter.sample.api.endpoints
 
 import io.taig.otter.sample.Dsl.*
+import io.taig.otter.sample.api.schema.SessionApiSchema
+import io.taig.otter.sample.api.schema.LibrarianApiSchema
+import io.taig.otter.sample.api.Role
 
 object librarians:
   val url: Url[Unit] = __ / "librarians"
@@ -22,14 +25,17 @@ object librarians:
 
             result(code.unauthorized, json.output(emailOrPasswordIncorrect)).toResults.to
 
-//       val post: AuthenticatedEndpoint[Role.Guest, Librarian.Login, Either[Post, Session]] = endpoint(
-//         request(method.post, url, input.json(codecs.librarian.login)),
-//         response(Post.results :+ result(code.created, output.json(codecs.session)))
-//       ).summary("Create librarian session")
-//         .description(
-//           "For security reasons, this endpoint does not give away whether the given email address is " +
-//             "unknown or the given password is incorrect."
-//         )
-//         .operationId("createLibrarianSession")
-//         .tags("librarians")
-//         .role(Role.Guest)
+        def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] = ???
+        // endpoint(
+        //   request(method.post, url, input.json(codecs.librarian.login)),
+        //   response(Post.results :+ result(code.created, output.json(codecs.session)))
+        // ).summary("Create librarian session")
+        //   .description(
+        //     "For security reasons, this endpoint does not give away whether the given email address is " +
+        //       "unknown or the given password is incorrect."
+        //   )
+        //   .operationId("createLibrarianSession")
+        //   .tags("librarians")
+        //   .role(Role.Guest)
+
+        ???
