@@ -5,6 +5,7 @@ import io.taig.otter as Base
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.util.regex.Pattern
+import cats.data.Validated
 
 trait Codecs extends Base.Codecs:
   def cistring(
@@ -87,6 +88,14 @@ trait Codecs extends Base.Codecs:
     case codec: Codec.Of[Data.Primitive, A]                             => Query.Default(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
+
+  object input:
+    def apply[A](
+        f: Array[Byte] => Validated[Violations[Violation[Constraint, Data]], Data],
+        g: Data => Array[Byte],
+        codec: Codec[A]
+    ): Request.Body.Singlepart.Strict[A] =
+      Request.Body.Singlepart.Strict(f, g, codec)
 
   final def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 

@@ -68,6 +68,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     openapiCirce,
     http,
     httpHttp4s,
+    httpJsonCirce,
     openapi,
     // httpOpenapi,
     // httpCirce,

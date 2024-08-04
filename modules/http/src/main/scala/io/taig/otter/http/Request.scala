@@ -5,6 +5,12 @@ import io.taig.otter.Codec
 import io.taig.otter.http.Request.Body
 import io.taig.otter.Codec.Result
 import io.taig.otter.Evidence
+import cats.data.Validated
+import io.taig.otter.Violations
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Data
+import io.taig.otter.http.Http.Request.Body.Multipart
 
 sealed abstract class Request[A]:
   self =>
@@ -52,6 +58,17 @@ object Request:
         val Empty: Request.Body.Singlepart.Strict[Unit] = ???
 
         val Binary: Request.Body.Singlepart.Strict[Array[Byte]] = ???
+
+        def apply[A](
+            f: Array[Byte] => Validated[Violations[Violation[Constraint, Data]], Data],
+            g: Data => Array[Byte],
+            of: Codec[Data.Optional, Data, A]
+        ): Request.Body.Singlepart.Strict[A] = new Strict[A]:
+          override def decode(body: Http.Request.Body): Codec.Result[A] = body match
+            case Http.Request.Body.Singlepart(Http.Payload.Strict(data)) => f(data).andThen(of.decode)
+            case Http.Request.Body.Multipart()                           => ???
+          override def encode(a: A): Http.Request.Body.Singlepart =
+            Http.Request.Body.Singlepart(Http.Payload.Strict(g(of.encode(a))))
 
   def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C]): Request[(A, B, C)] =
     val _method = method
