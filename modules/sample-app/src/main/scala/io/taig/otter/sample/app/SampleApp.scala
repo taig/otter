@@ -15,5 +15,5 @@ object SampleApp extends IOApp.Simple:
     _ <- IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)")
     implementation = SampleEndpointImplementation(repositories.librarian)
     routes = SampleRoutes(implementation, repositories)
-    _ = App(routes, notFound = ???, failure = ???)
+    _ = App(routes, notFound = ???, unsupportedMediaType = ???, failure = ???)
   yield ()

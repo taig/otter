@@ -64,7 +64,14 @@ object Request:
     def encode(a: A): Http.Payload
 
   object Body:
-    val Binary: Request.Body[Array[Byte]] = ???
+    def binary(mediaType: MediaType): Request.Body[Array[Byte]] =
+      val _mediaType = mediaType
+
+      new Body[Array[Byte]]:
+        override def mediaType: MediaType = _mediaType
+        override def decode(body: Http.Payload): Codec.Result[Array[Byte]] =
+          body.data.valid
+        override def encode(a: Array[Byte]): Http.Payload = Http.Payload(a)
 
     def apply[A](
         mediaType: MediaType,
@@ -80,9 +87,25 @@ object Request:
         override def encode(a: A): Http.Payload = Http.Payload(g(of.encode(a)))
 
   sealed abstract class Bodies[A]:
+    self =>
+
     def toVector: Vector[Request.Body[?]]
 
-    final def orElse[B](bodies: Bodies[B]): Request.Bodies[Either[A, B]] = ???
+    final def orElse[B](bodies: Request.Bodies[B]): Request.Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
+      override def toVector: Vector[Request.Body[?]] = self.toVector ++ bodies.toVector
+      override def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[Either[A, B]]] =
+        self
+          .decode(mediaType, body)
+          .map(_.map(_.asLeft))
+          .andThen:
+            case a @ Some(_) => a.valid
+            case None        => bodies.decode(mediaType, body).map(_.map(_.asRight))
+      override def encode(ab: Either[A, B]): (MediaType, Http.Payload) =
+        ab.fold(self.encode, bodies.encode)
+
+    final def :+[B](body: Request.Body[B]): Request.Bodies[Either[A, B]] = orElse(body.toBodies)
+
+    final def +:[B](body: Request.Body[B]): Request.Bodies[Either[B, A]] = body.toBodies.orElse(this)
 
     def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[A]]
 
@@ -109,8 +132,8 @@ object Request:
       override def headers: Headers[B] = _headers
       override def bodies: Option[Request.Bodies[C]] = Some(_bodies)
       override def encode(abc: (A, B, C)): Http.Request =
-        _bodies.encode(abc._3)
-        Http.Request(method, url.encode(abc._1), headers.encode(abc._2), ???)
+        val (mediaType, payload) = _bodies.encode(abc._3)
+        Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
       override def decode(request: Http.Request): Either[Request.Error, Codec.Result[(A, B, C)]] = request.headers
         .collectFirst { case (ci"Content-Type", value) => value }
         .toRight(Request.Error.ContentTypeMissing)
