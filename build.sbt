@@ -234,6 +234,7 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
   // .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
+    Compile / run / fork := true,
     // buildInfoKeys := Seq(version),
     // buildInfoObject := "Build",
     // buildInfoPackage := organization.value + ".otter.sample",

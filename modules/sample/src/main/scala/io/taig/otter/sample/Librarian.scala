@@ -9,6 +9,10 @@ final case class Librarian(reference: UUID, email: CIString, password: String, s
 object Librarian:
   final case class Login(email: CIString, password: String)
 
-  final case class Create(email: CIString, password: String)
+  final case class Create(email: CIString, password: String):
+    def toLibrarianLogin: Librarian.Login = Login(email, password)
+
+  object Create:
+    val Default: Librarian.Create = Create(email = ci"otter@taig.io", password = "password")
 
   final case class Summary(reference: UUID, email: CIString)
