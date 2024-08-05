@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import io.taig.otter.Metadata
 import io.taig.otter.Codec
 import io.taig.otter.Data
-import scala.Array as SArray
 import io.taig.otter.Evidence
 
 sealed abstract class Query[A]:
@@ -28,17 +27,24 @@ sealed abstract class Query[A]:
 
   final def *:[B](query: Query[B])(using merge: Evidence.Merge[B, A]): Queries[merge.Out] = query *: toQueries
 
-  def decode(value: Option[String]): Codec.Result[A]
+  def decode(value: Query.Value): Codec.Result[A]
 
-  def encode(a: A): Option[(String, Option[String])]
+  def encode(a: A): Query.Value
 
 object Query:
+  enum Value:
+    case Some(value: String)
+    case None extends Value
+    case Abscent extends Value
+
   final case class Default[A](name: String, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
       extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
     override def optional: Query[Option[A]] = copy(codec = codec.optional)
-    override def decode(value: Option[String]): Codec.Result[A] = codec.parseOptional(value)
-    override def encode(a: A): Option[(String, Option[String])] = (name, codec.printOptional(a)).some
+    override def decode(value: Query.Value): Codec.Result[A] = value match
+      case Query.Value.Some(value)                => codec.parseOptional(value.some)
+      case Query.Value.None | Query.Value.Abscent => codec.parseOptional(none)
+    override def encode(a: A): Query.Value = codec.printOptional(a).fold(Query.Value.None)(Query.Value.Some.apply)
 
   final case class Array[A](
       name: String,
@@ -47,12 +53,14 @@ object Query:
   ) extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
     override def optional: Query[Option[A]] = copy(codec = codec.optional)
-    override def decode(value: Option[String]): Codec.Result[A] =
-      codec.parseOptionalArray(value.map(_.split(',').toVector))
-    override def encode(a: A): Option[(String, Option[String])] = codec.printOptionalArray(a) match
-      case Some(Vector()) => (name, none).some
-      case Some(values)   => (name, values.mkString(",").some).some
-      case None           => None
+    override def decode(value: Query.Value): Codec.Result[A] = value match
+      case Query.Value.Some(value) => codec.parseOptionalArray(value.split(',').toVector.some)
+      case Query.Value.None        => codec.parseOptionalArray(Vector.empty.some)
+      case Query.Value.Abscent     => codec.parseOptionalArray(none)
+    override def encode(a: A): Query.Value = codec.printOptionalArray(a) match
+      case Some(Vector()) => Query.Value.None
+      case Some(values)   => Query.Value.Some(values.mkString(","))
+      case None           => Query.Value.Abscent
 
   final case class Object[A](
       name: String,
@@ -61,11 +69,8 @@ object Query:
   ) extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
     override def optional: Query[Option[A]] = copy(codec = codec.optional)
-    override def decode(value: Option[String]): Codec.Result[A] = codec
-      .parseOptionalObject(
-        value.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
-      )
-    override def encode(a: A): Option[(String, Option[String])] = codec.printOptionalObject(a) match
-      case Some(Vector()) => (name, none).some
-      case Some(values)   => (name, values.map { case (key, value) => s"$key=$value" }.mkString(",").some).some
-      case None           => None
+    override def decode(value: Query.Value): Codec.Result[A] = ???
+    override def encode(a: A): Query.Value = codec.printOptionalObject(a) match
+      case Some(Vector()) => Query.Value.None
+      case Some(values)   => Query.Value.Some(values.map { case (key, value) => s"$key=$value" }.mkString(","))
+      case None           => Query.Value.Abscent

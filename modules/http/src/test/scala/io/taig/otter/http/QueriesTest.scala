@@ -43,3 +43,53 @@ final class QueriesTest extends FunSuite:
       obtained = queries.encode(none),
       expected = Vector("foo" -> none)
     )
+
+  test("decode"):
+    val queries = query("foo", int) :* query("bar", string).optional
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "42".some, "bar" -> "foobar".some)),
+      expected = (42, "foobar".some).valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "42".some, "bar" -> none)),
+      expected = (42, none).valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "42".some)),
+      expected = (42, none).valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "foobar".some)),
+      expected = Violations
+        .namespaceNec(Step.Field("foo"), Violation(Constraint.Type("int"), actual = Data.String("string")))
+        .invalid
+    )
+
+  test("decode: array"):
+    val queries = query("foo", collection.vector(string)).toQueries
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "bar,baz".some)),
+      expected = Vector("bar", "baz").valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> "".some)),
+      expected = Vector("").valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector("foo" -> none)),
+      expected = Vector().valid
+    )
+
+    assertEquals(
+      obtained = queries.decode(Vector()),
+      expected = Violations
+        .namespaceNec(Step.Field("foo"), Violation(Constraint.Type("array"), actual = Data.String("null")))
+        .invalid
+    )

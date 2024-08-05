@@ -24,21 +24,22 @@ abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
 
 object Codec:
   extension [A](self: Codec[Data.Optional, Data.Primitive, A])
-    def parseOptional(value: Option[String]): Codec.Result[A] = ???
-    def printOptional(a: A): Option[String] = (self.encode(a): Data.Optional[Data.Primitive]) match
+    def parseOptional(value: Option[String]): Codec.Result[A] =
+      self.decode(value.fold(Data.Null)(Data.String.apply))
+    def printOptional(a: A): Option[String] = self.encode(a) match
       case Data.Null            => none
       case data: Data.Primitive => data.print.some
 
   extension [A](self: Codec[Data.Required, Data.Primitive, A])
-    def parseRequired(value: String): Codec.Result[A] = ???
+    def parseRequired(value: String): Codec.Result[A] = self.decode(Data.String(value))
     def printRequired(a: A): String = self.encode(a).print
 
   extension [A](self: Codec[Data.Optional, Data.Array[Data.Primitive], A])
-    def parseOptionalArray(value: Option[Vector[String]]): Codec.Result[A] = ???
-    def printOptionalArray(a: A): Option[Vector[String]] =
-      (self.encode(a): Data.Optional[Data.Array[Data.Primitive]]) match
-        case Data.Null          => none
-        case Data.Array(values) => values.map(_.print).some
+    def parseOptionalArray(value: Option[Vector[String]]): Codec.Result[A] =
+      self.decode(value.fold(Data.Null)(values => Data.Array(values.map(Data.String.apply))))
+    def printOptionalArray(a: A): Option[Vector[String]] = self.encode(a) match
+      case Data.Null          => none
+      case Data.Array(values) => values.map(_.print).some
 
   extension [A](self: Codec[Data.Required, Data.Array[Data.Primitive], A])
     def parseArray(value: Vector[String]): Codec.Result[A] = ???

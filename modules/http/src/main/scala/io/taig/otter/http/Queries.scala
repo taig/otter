@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.filterKeys
 import io.taig.otter.Evidence
+import io.taig.otter.http.Query.Value
 
 sealed abstract class Queries[A]:
   self =>
@@ -44,7 +45,11 @@ object Queries:
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toVector: Vector[Query[?]] = Vector(query)
     override def decode(values: Http.Queries): Codec.Result[A] =
-      query
-        .decode(values.collectFirst { case (key, value) if key === query.name => value }.flatten)
-        .leftMap(query.name /: _)
-    override def encode(a: A): Http.Queries = Vector.from(query.encode(a))
+      val value = values
+        .collectFirst { case (key, value) if key === query.name => value }
+        .fold(Query.Value.Abscent)(_.fold(Query.Value.None)(Query.Value.Some.apply))
+      query.decode(value).leftMap(query.name /: _)
+    override def encode(a: A): Http.Queries = query.encode(a) match
+      case Query.Value.Some(value) => Vector(query.name -> value.some)
+      case Query.Value.None        => Vector(query.name -> none)
+      case Query.Value.Abscent     => Http.Queries.Empty
