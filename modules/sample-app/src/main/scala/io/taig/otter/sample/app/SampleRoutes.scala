@@ -9,12 +9,6 @@ final class SampleRoutes(implementation: EndpointImplementation[IO], repositorie
   def apply(): Routes[IO] =
     LibrariansSelfSessionsRoutes(implementation, repositories.librarian)
 
-//   def apply(implementation: EndpointImplementation, repositories: SampleRepositories): Routes[IO] =
-//     val routes = BooksRoutes(implementation, repositories.books) ++
-//       LibrariansSelfSessionsRoutes(implementation, repositories.librarian) ++
-//       MembersRoutes(implementation, repositories.member) ++
-//       MembersReferenceRoutes(implementation, repositories.member) ++
-//       MembersSelfSessionsRoutes(implementation, repositories.member)
-//     val openapi = OpenApiRoutes(implementation, routes)
-
-//     routes ++ openapi
+object SampleRoutes:
+  def apply(implementation: EndpointImplementation[IO], repositories: SampleRepositories): Routes[IO] =
+    new SampleRoutes(implementation, repositories)()

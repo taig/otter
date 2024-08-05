@@ -20,7 +20,7 @@ object Http:
 
   type Headers = Vector[(CIString, String)]
 
-  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Request.Body):
+  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Payload):
     def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))
     def withMethod(method: Method): Http.Request = modifyMethod(_ => method)
 
@@ -29,16 +29,6 @@ object Http:
 
     def modifyHeaders(f: Http.Headers => Http.Headers): Http.Request = copy(headers = f(headers))
     def withHeaders(headers: Http.Headers): Http.Request = modifyHeaders(_ => headers)
-
-    def modifyBody(f: Http.Request.Body => Http.Request.Body): Http.Request = copy(body = f(body))
-    def withBody(body: Http.Request.Body): Http.Request = modifyBody(_ => body)
-
-  object Request:
-    sealed abstract class Body extends Product with Serializable
-
-    object Body:
-      final case class Singlepart(payload: Http.Payload) extends Request.Body
-      final case class Multipart() extends Request.Body
 
   final case class Response(code: Code, headers: Http.Headers, body: Http.Payload):
     def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))
@@ -50,5 +40,4 @@ object Http:
     def modifyBody(f: Http.Payload => Http.Payload): Http.Response = copy(body = f(body))
     def withBody(body: Http.Payload): Http.Response = modifyBody(_ => body)
 
-  enum Payload:
-    case Strict(data: Array[Byte])
+  final case class Payload(data: Array[Byte])

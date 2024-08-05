@@ -45,10 +45,7 @@ def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request): F[Http4sRequest[F]
     .liftTo[F]
   uri <- toHttp4sUri(request.url).liftTo[F]
   headers = toHttp4sHeaders(request.headers)
-  entity = request.body match
-    case Http.Request.Body.Singlepart(Http.Payload.Strict(data)) => Http4sEntity.strict(ByteVector(data))
-    // case Http.Request.Body.Singlepart(Http.Payload.Streaming(_)) => ???
-    case Http.Request.Body.Multipart() => ???
+  entity = Http4sEntity.strict(ByteVector(request.body.data))
 yield Http4sRequest(method, uri = uri, headers = headers, entity = entity)
 
 def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sResponse[F]] = for
@@ -57,10 +54,7 @@ def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sRespons
   entity <- toHttp4sEntity(response.body)
 yield Http4sResponse(status, headers = headers, entity = entity)
 
-def toHttp4sEntity[F[_]: MonadThrow](body: Http.Payload): F[Http4sEntity[F]] = body match
-  case Http.Payload.Strict(data) if data.isEmpty => Http4sEntity.empty.pure
-  case Http.Payload.Strict(data)                 => Http4sEntity.strict(ByteVector(data)).pure
-  // case Http.Payload.Streaming(stream) =>
-  //   ApplicativeThrow[F]
-  //     .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F, Byte]].toFs2)
-  //     .map(Http4sEntity.stream(_))
+def toHttp4sEntity[F[_]: MonadThrow](body: Http.Payload): F[Http4sEntity[F]] =
+  if body.data.isEmpty
+  then Http4sEntity.empty.pure
+  else Http4sEntity.strict(ByteVector(body.data)).pure

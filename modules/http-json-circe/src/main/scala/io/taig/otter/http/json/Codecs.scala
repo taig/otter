@@ -7,6 +7,7 @@ import io.taig.otter.json.toData
 import io.taig.otter.json.fromData
 import java.nio.charset.StandardCharsets
 import cats.data.Validated
+import Http.MediaType
 
 trait Codecs extends Http.Types, Http.Codecs:
   self =>
@@ -15,8 +16,9 @@ trait Codecs extends Http.Types, Http.Codecs:
 
   object json:
     object input:
-      def apply[A](codec: Codec[A], printer: Printer): Request.Body.Singlepart.Strict[A] =
-        self.input.apply(
+      def apply[A](codec: Codec[A], printer: Printer): Request.Body[A] =
+        self.input(
+          MediaType.application.json,
           bytes =>
             Validated
               .fromEither(parser.parseByteArray(bytes))
@@ -28,9 +30,9 @@ trait Codecs extends Http.Types, Http.Codecs:
           codec
         )
 
-      def apply[A](codec: Codec[A]): Request.Body.Singlepart.Strict[A] = apply(codec, Printer.noSpaces)
+      def apply[A](codec: Codec[A]): Request.Body[A] = apply(codec, Printer.noSpaces)
 
     object output:
-      def apply[A](codec: Codec[A]): Response.Body.Strict[A] = ???
+      def apply[A](codec: Codec[A]): Response.Body[A] = ???
 
 object Codecs extends Codecs
