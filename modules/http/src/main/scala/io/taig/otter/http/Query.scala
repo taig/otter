@@ -22,20 +22,23 @@ sealed abstract class Query[A]:
 
   def imap[B](f: A => B)(g: B => A): Query[B]
 
+  def optional: Query[Option[A]]
+
   final def :*[B](query: Query[B])(using merge: Evidence.Merge[A, B]): Queries[merge.Out] = toQueries :* query
 
   final def *:[B](query: Query[B])(using merge: Evidence.Merge[B, A]): Queries[merge.Out] = query *: toQueries
 
   def decode(value: Option[String]): Codec.Result[A]
 
-  def encode(a: A): Option[String]
+  def encode(a: A): Option[(String, Option[String])]
 
 object Query:
   final case class Default[A](name: String, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
       extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
     override def decode(value: Option[String]): Codec.Result[A] = codec.parseOptional(value)
-    override def encode(a: A): Option[String] = codec.printOptional(a)
+    override def encode(a: A): Option[(String, Option[String])] = (name, codec.printOptional(a)).some
 
   final case class Array[A](
       name: String,
@@ -43,9 +46,13 @@ object Query:
       metadata: Metadata
   ) extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
     override def decode(value: Option[String]): Codec.Result[A] =
       codec.parseOptionalArray(value.map(_.split(',').toVector))
-    override def encode(a: A): Option[String] = codec.printOptionalArray(a).map(_.mkString(","))
+    override def encode(a: A): Option[(String, Option[String])] = codec.printOptionalArray(a) match
+      case Some(Vector()) => (name, none).some
+      case Some(values)   => (name, values.mkString(",").some).some
+      case None           => None
 
   final case class Object[A](
       name: String,
@@ -53,11 +60,12 @@ object Query:
       metadata: Metadata
   ) extends Query[A]:
     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
     override def decode(value: Option[String]): Codec.Result[A] = codec
       .parseOptionalObject(
         value.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
       )
-    override def encode(a: A): Option[String] = codec
-      .printOptionalObject(a)
-      .map(_.map { case (key, value) => s"$key=$value" })
-      .map(_.mkString(","))
+    override def encode(a: A): Option[(String, Option[String])] = codec.printOptionalObject(a) match
+      case Some(Vector()) => (name, none).some
+      case Some(values)   => (name, values.map { case (key, value) => s"$key=$value" }.mkString(",").some).some
+      case None           => None

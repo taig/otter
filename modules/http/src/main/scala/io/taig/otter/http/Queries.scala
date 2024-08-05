@@ -47,4 +47,4 @@ object Queries:
       query
         .decode(values.collectFirst { case (key, value) if key === query.name => value }.flatten)
         .leftMap(query.name /: _)
-    override def encode(a: A): Http.Queries = Vector.from(query.encode(a).map(_.some).tupleLeft(query.name))
+    override def encode(a: A): Http.Queries = Vector.from(query.encode(a))
