@@ -27,11 +27,17 @@ sealed abstract class Url[A]:
       (self.decode(Http.Url(pathLeft, queriesLeft)), url.decode(Http.Url(pathRight, queriesRight))).tupled
     override def encode(ab: (A, B)): Http.Url = self.encode(ab._1) ++ url.encode(ab._2)
 
-  final def /(segment: String): Url[A] =
-    zip(Segment.Static(segment).toPath.toUrl).imap { case (a, _) => a }(a => (a, ()))
+  final def zip[B](path: Path[B]): Url[(A, B)] = zip(path.toUrl)
+
+  final def /(segment: String): Url[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
 
   final def /[B](segment: Segment.Parameter[B])(using merge: Evidence.Merge[A, B]): Url[merge.Out] =
     zip(segment.toPath.toUrl).imap(merge.apply)(merge.unapply)
+
+  final def zip[B](queries: Queries[B]): Url[(A, B)] = zip(queries.toUrl)
+
+  final def &[B](query: Query[B])(using merge: Evidence.Merge[A, B]): Url[merge.Out] =
+    zip(query.toQueries).imap(merge.apply)(merge.unapply)
 
   def decode(values: Http.Url): Codec.Result[A]
 

@@ -6,7 +6,13 @@ import org.typelevel.ci.CIString
 object Http:
   type Path = Vector[String]
 
+  object Path:
+    val Empty: Http.Path = Vector.empty
+
   type Queries = Vector[(String, Option[String])]
+
+  object Queries:
+    val Empty: Http.Queries = Vector.empty
 
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
@@ -19,6 +25,9 @@ object Http:
     val Empty: Http.Url = Url(Vector.empty, Vector.empty)
 
   type Headers = Vector[(CIString, String)]
+
+  object Headers:
+    val Empty: Http.Headers = Vector.empty
 
   final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Payload):
     def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))

@@ -31,7 +31,7 @@ object Codec:
 
   extension [A](self: Codec[Data.Required, Data.Primitive, A])
     def parseRequired(value: String): Codec.Result[A] = ???
-    def printRequired(a: A): String = ???
+    def printRequired(a: A): String = self.encode(a).print
 
   extension [A](self: Codec[Data.Optional, Data.Array[Data.Primitive], A])
     def parseOptionalArray(value: Option[Vector[String]]): Codec.Result[A] = ???

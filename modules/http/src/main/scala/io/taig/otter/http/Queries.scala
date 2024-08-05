@@ -29,6 +29,8 @@ sealed abstract class Queries[A]:
   final def *:[B](query: Query[B])(using merge: Evidence.Merge[B, A]): Queries[merge.Out] =
     query.toQueries.zip(this).imap(merge.apply)(merge.unapply)
 
+  final def toUrl: Url[A] = Url(this)
+
   def decode(values: Http.Queries): Codec.Result[A]
 
   def encode(a: A): Http.Queries
