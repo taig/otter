@@ -7,6 +7,7 @@ import org.http4s.server.Server as Underlying
 import io.taig.otter.http.*
 import cats.syntax.all.*
 import fs2.Stream
+import org.http4s.UrlForm
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]) extends Server[F]:
   override def start(app: App[F], onError: Throwable => F[Unit]): Resource[F, String] =
@@ -17,6 +18,8 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
     val url = toHttpUrl(request.uri)
     val headers = toHttpHeaders(request.headers)
     handle(app, method, url, headers, toHttpRequestBody(_, request.body), onError).flatMap(toHttp4sResponse)
+
+  val x: UrlForm = ???
 
   // TODO make this broadly available, this should in fact also be happening in AppClient
   def handle(
