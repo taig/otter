@@ -26,11 +26,13 @@ sealed abstract class Result[A](val description: Option[String]):
   final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Result[merge.Out] =
     zip(header.toHeaders).imap(merge.apply)(merge.unapply)
 
-  // final def orElse[B](result: Result[B]): Results[A + B] = toResults.orElse(result.toResults)
+  final def orElse[B](result: Result[B]): Results[Either[A, B]] = toResults.orElse(result.toResults)
 
-  def toResults: Results[A] = Results(this)
+  final def toResults: Results[A] = Results(this)
 
-  // def :+[B](result: Result[B]): Results[A + B] = orElse(result)
+  final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result)
+
+  final def +:[B](result: Result[B]): Results[Either[B, A]] = result :+ this
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Result[B] = imap(evidence.from)(evidence.to)
 
