@@ -111,27 +111,39 @@ trait Codecs extends Base.Codecs:
   final def result(code: Code): Result[Unit] =
     Result(code, Headers.Empty, Response.Body.Empty).imap(_ => ())(_ => ((), ()))
 
-  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])(using
+  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Request.Bodies[C])(using
       merge1: Evidence.Merge[A, B],
       merge2: Evidence.Merge[merge1.Out, C]
-  ): Request[merge2.Out] = Request(method, url, headers, body).imap { case (a, b, c) =>
+  ): Request[merge2.Out] = Request(method, url, headers, bodies).imap { case (a, b, c) =>
     merge2(merge1(a, b), c)
   } { out =>
     val (ab, c) = merge2.unapply(out)
     merge1.unapply(ab) :* c
   }
 
-  final def request[A, B](method: Method, url: Url[A], body: Request.Body[B])(using
+  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])(using
+      merge1: Evidence.Merge[A, B],
+      merge2: Evidence.Merge[merge1.Out, C]
+  ): Request[merge2.Out] = request(method, url, headers, body.toBodies)
+
+  final def request[A, B](method: Method, url: Url[A], bodies: Request.Bodies[B])(using
       merge: Evidence.Merge[A, B]
-  ): Request[merge.Out] = Request(method, url, Headers.Empty, body)
+  ): Request[merge.Out] = Request(method, url, Headers.Empty, bodies)
     .imap { case (a, _, b) => merge((a, b)) } { out =>
       val (a, b) = merge.unapply(out)
       (a, (), b)
     }
 
+  final def request[A, B](method: Method, url: Url[A], body: Request.Body[B])(using
+      merge: Evidence.Merge[A, B]
+  ): Request[merge.Out] = request(method, url, body.toBodies)
+
+  final def request[A, B](method: Method, url: Url[A], headers: Headers[B])(using
+      merge: Evidence.Merge[A, B]
+  ): Request[merge.Out] = Request(method, url, headers).imap(merge.apply)(merge.unapply)
+
   final def request[A](method: Method, url: Url[A]): Request[A] =
-    Request(method, url, Headers.Empty, Request.Body.Empty)
-      .imap { case (a, _, _) => a }(a => (a, (), ()))
+    Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   final def response[A](results: Results[A]): Response[A] = Response(results, ???)
 

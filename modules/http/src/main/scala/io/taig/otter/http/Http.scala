@@ -41,3 +41,6 @@ object Http:
     def withBody(body: Http.Payload): Http.Response = modifyBody(_ => body)
 
   final case class Payload(data: Array[Byte])
+
+  object Payload:
+    val Empty: Http.Payload = Payload(Array.emptyByteArray)

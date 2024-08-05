@@ -74,6 +74,8 @@ object MediaType:
           case Array(key, value) => Some(key.trim -> value.trim)
           case _                 => None
 
+    given (using eq: Eq[Chain[(String, String)]]): Eq[MediaType.Parameters] = eq
+
   def parse(value: String): Option[MediaType] = value.split(";", 2) match
     case Array(mediaType)             => Type.parse(mediaType).map(MediaType(_, Parameters.Empty))
     case Array(mediaType, parameters) => (Type.parse(mediaType), Parameters.parse(parameters)).mapN(MediaType.apply)
@@ -87,3 +89,5 @@ object MediaType:
   object text:
     def apply(subtype: MediaType.Type.Secondary): MediaType = Type.Primary.text / subtype
     val plain: MediaType = text(Type.Secondary.plain)
+
+  given Eq[MediaType] = Eq.by(mediaType => (mediaType.tpe, mediaType.parameters))
