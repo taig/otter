@@ -59,6 +59,10 @@ object Request:
         self.decode(charset, body).map(f)
       override def encode(charset: Option[Charset], b: B): Http.Payload = self.encode(charset, g(b))
 
+    final def :+[B](body: Body[B]): Request.Bodies[Either[A, B]] = toBodies :+ body
+
+    final def +:[B](body: Body[B]): Request.Bodies[Either[B, A]] = body +: toBodies
+
     final def toBodies: Request.Bodies[A] = Bodies(this)
 
     def decode(charset: Option[Charset], body: Http.Payload): Codec.Result[A]
