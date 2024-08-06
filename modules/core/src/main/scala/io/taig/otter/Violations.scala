@@ -5,7 +5,8 @@ import cats.syntax.all.*
 import cats.Semigroup
 import cats.Functor
 import cats.data.NonEmptyMap
-import cats.data.NonEmptyChainImpl
+import cats.data.NonEmptyList
+import cats.data.Chain
 
 enum Violations[+A]:
   case Root(violations: NonEmptyChain[A])
@@ -18,6 +19,17 @@ enum Violations[+A]:
   final def map[B](f: A => B): Violations[B] = this match
     case Root(violations) => Root(violations.map(f))
     case Namespace(toNem) => Namespace(toNem.fmap(_.map(f)))
+
+  final def print: NonEmptyList[String] = print(history = Chain.nil)
+
+  private def print(history: Chain[Step]): NonEmptyList[String] = this match
+    case Root(violations) => violations.map(violation => s"${printHistory(history)}: $violation").toNonEmptyList
+    case Namespace(toNem) =>
+      toNem.toNel.flatMap:
+        case (Some(step), violations) => violations.print(history :+ step)
+        case (None, violations)       => violations.print(history)
+
+  final override def toString: String = print.mkString_("\n")
 
 object Violations:
   def of[A](violation: (Step, A), violations: (Step, A)*): Violations[A] = Namespace(

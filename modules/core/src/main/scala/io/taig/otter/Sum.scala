@@ -79,7 +79,7 @@ object Sum:
                 Violations.namespaceNec(
                   Step.Field(discriminator.identifier),
                   Violation(
-                    Constraint.OneOf(branches.toNev.toList.map(branch => Data.String(branch.name))),
+                    Constraint.OneOf(branches.toNev.toNonEmptyList.map(branch => Data.String(branch.name))),
                     actual = data
                       .collectFirst { case (name, data) if name === discriminator.identifier => data }
                       .getOrElse(Data.Null)

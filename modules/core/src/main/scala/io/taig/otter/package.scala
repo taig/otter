@@ -3,17 +3,7 @@ package io.taig.otter
 import scala.collection.immutable.Iterable
 import cats.Eq
 import cats.syntax.all.*
-
-extension [A](self: Vector[A])
-  def findWithRemainders[B](pf: PartialFunction[A, B]): (Option[B], Vector[A]) =
-    val remainders = Vector.newBuilder[A]
-    var result: Option[B] = None
-
-    self.iterator.foreach: a =>
-      if (result.isDefined || !pf.isDefinedAt(a)) then remainders += a
-      else result = pf.lift(a)
-
-    (result, remainders.result())
+import cats.data.Chain
 
 extension [A: Eq, B](self: Vector[(A, B)])
   def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
@@ -31,5 +21,9 @@ extension [A: Eq, B](self: Vector[(A, B)])
 
     (result.result(), remainders.result())
 
-extension [F[a] <: Iterable[a], A](self: F[A])
-  def uncons: Option[(A, F[A])] = self.headOption.map((_, self.tail.asInstanceOf[F[A]]))
+private def printHistory(history: Chain[Step]): String =
+  val steps = history.map:
+    case step @ Step.Field(_) => s".${step.print}"
+    case step @ Step.Index(_) => step.print
+
+  "$" + steps.mkString_("")

@@ -86,6 +86,8 @@ object Data:
       case Data.Number(value)  => JString.valueOf(value)
       case Data.String(value)  => value
 
+    final override def toString(): JString = print
+
   final case class String(value: JString) extends Data.Primitive
 
   final case class Boolean(value: SBoolean) extends Data.Primitive

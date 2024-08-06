@@ -6,9 +6,11 @@ enum Step:
   case Field(name: String)
   case Index(value: Int)
 
-  final override def toString: String = this match
+  final def print: String = this match
     case Index(value) => s"[$value]"
     case Field(name)  => name
+
+  final override def toString: String = print
 
 object Step:
   given Order[Step] =

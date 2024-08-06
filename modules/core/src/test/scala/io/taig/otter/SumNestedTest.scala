@@ -3,6 +3,7 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
+import cats.data.NonEmptyList
 
 final class SumNestedTest extends FunSuite:
   test("encode"):
@@ -82,7 +83,7 @@ final class SumNestedTest extends FunSuite:
         .namespaceNec(
           Step.Field(Discriminator.Nested.Default.identifier),
           Violation(
-            Constraint.OneOf(List(Data.String("foo"), Data.String("bar"))),
+            Constraint.OneOf(NonEmptyList.of("foo", "bar").map(Data.String.apply)),
             actual = Data.String("baz")
           )
         )

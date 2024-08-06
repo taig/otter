@@ -93,7 +93,7 @@ object Request:
           ).tupled match
             case Validated.Valid((a, b, Some(c))) => Result.Success((a, b, c))
             case Validated.Valid((_, _, None)) =>
-              val supportedContentTypes = _bodies.toNev.map(_.mediaType.print).map(Data.String.apply).toList
+              val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.print).map(Data.String.apply)
               Result.MediaTypesUnsupported(
                 Violations
                   .rootNec(Violation(Constraint.OneOf(supportedContentTypes), actual = Data.String(mediaType.print)))
