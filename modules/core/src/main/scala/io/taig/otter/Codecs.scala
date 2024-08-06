@@ -108,7 +108,6 @@ trait Codecs extends Types:
     string(matches = Pattern.compile(Pattern.quote(matches)).some)
   val string: Primitive.Required[String] = string()
   val emptyString: Primitive.Required[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
-  val nonEmptyString: Primitive.Required[(String, String)] = ???
 
   val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
 

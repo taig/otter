@@ -122,7 +122,7 @@ trait Types:
     object Untagged:
       type Of[O <: Data, A] = Base.Sum.Untagged[Data.Optional, O, A]
 
-      type Required[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
+      type Required[A] = Base.Sum.Untagged[Data.Required, Data, A]
 
       object Required:
         type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]

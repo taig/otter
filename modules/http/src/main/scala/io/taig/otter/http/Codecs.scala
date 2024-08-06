@@ -64,18 +64,17 @@ trait Codecs extends Base.Codecs:
     val serviceUnavailable: Code = code(503)
 
   object header:
+    private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]]
+
     inline def apply[A](
         name: CIString,
-        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], A]
+        codec: Codec.Of[Of, A]
     ): Header[A] = inline codec match
       case codec: Codec.Of[Data.Primitive, A]                             => Header.Default(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Header.Array(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Header.Object(name, codec, Metadata.Empty)
 
-    inline def authorization[A](
-        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], A]
-    ): Header[A] =
-      header(ci"Authorization", codec)
+    inline def authorization[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Authorization", codec)
 
   final inline def segment[A](
       name: String,
@@ -184,10 +183,11 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final def response[A](results: Results[A]): Response[A] =
-    // result(code.unsupportedMediaTypes, violations)
-
-    Response(results, mediaTypesUnsupported = ???, validationViolations = ???)
+  final def response[A](results: Results[A]): Response[A] = Response(
+      results,
+      mediaTypesUnsupported = result(code.unsupportedMediaTypes, text(violationsString)),
+      validationViolations = result(code.unprocessableEntity, text(violationsString))
+    )
 
   // Scala.js won't compile if this is included here (for reason unknown)
   export ViolationsCodecs.*
