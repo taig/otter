@@ -4,13 +4,14 @@ val Version = new {
   val CaseInsensitive = "1.4.0"
   val Cats = "2.12.0"
   val CatsEffect = "3.5.3"
+  val CatsParse = "1.0.0"
   val Circe = "0.14.9"
   val EnumerationExt = "0.2.0"
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
   val Log4Cats = "2.6.0"
-  val Mouse = "1.2.3"
+  val Mouse = "1.3.1"
   val Munit = "1.0.0"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.3"
@@ -92,16 +93,12 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
-        "org.typelevel" %% "alleycats-core" % Version.Cats ::
-        "org.typelevel" %% "cats-core" % Version.Cats ::
+        "org.typelevel" %%% "cats-core" % Version.Cats ::
+        "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-// .jsSettings(
-//   libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
-//     .cross(CrossVersion.for3Use2_13)
-// )
 
 lazy val javaTime = module(identifier = Some("java-time"))
   .settings(

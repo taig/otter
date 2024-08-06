@@ -9,6 +9,7 @@ import java.lang.Math.toIntExact
 import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 import cats.Order
+import cats.parse.Parser
 
 sealed abstract class Data extends SProduct with Serializable:
   final def asValue: Option[Data.Value] = this match
@@ -39,7 +40,9 @@ sealed abstract class Data extends SProduct with Serializable:
     case _: Data.String    => "string"
     case Data.Null         => "null"
 
-  def print: String
+  final def print(quoted: Boolean): String = DataPrinter(this, quoted)
+
+  final def print: String = print(quoted = true)
 
   final override def toString: JString = print
 
@@ -51,7 +54,6 @@ object Data:
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
     final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
     final def filterKeys(f: JString => SBoolean): Data.Object[A] = Object(values.filter { case (key, _) => f(key) })
-    override def print: JString = s"{${values.map { case (key, value) => s"$key:$value" }.mkString(",")}}"
 
   object Object:
     val Empty: Data.Object[Nothing] = Object(Vector.empty)
@@ -64,7 +66,6 @@ object Data:
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Long = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
-    override def print: JString = s"[${values.map(_.print).mkString(",")}]"
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
@@ -86,16 +87,6 @@ object Data:
     final def asBoolean: Option[Data.Boolean] = this match
       case data: Data.Boolean => data.some
       case _                  => none
-
-    final def printPlain: JString = this match
-      case Data.Boolean(value) => JString.valueOf(value)
-      case Data.Number(value)  => JString.valueOf(value)
-      case Data.String(value)  => value
-
-    final def print: JString = this match
-      case Data.Boolean(value) => JString.valueOf(value)
-      case Data.Number(value)  => JString.valueOf(value)
-      case Data.String(value)  => s"\"$value\""
 
   final case class String(value: JString) extends Data.Primitive
 
@@ -158,11 +149,12 @@ object Data:
       val target = convert(value)
       Option.when(value == target)(target)
 
-  case object Null extends Data:
-    override def print: JString = "null"
+  case object Null extends Data
 
   type Optional[A] = A | Data.Null.type
 
   type Required[A] = A
+
+  def parse(value: JString): Either[Parser.Error, Data] = DataParser(value)
 
   given Eq[Data] = Eq.fromUniversalEquals

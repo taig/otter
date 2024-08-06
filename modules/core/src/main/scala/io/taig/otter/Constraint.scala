@@ -3,14 +3,15 @@ package io.taig.otter
 import java.util.regex.Pattern
 import cats.data.NonEmptyList
 import cats.syntax.all.*
+import cats.parse.Parser
+import cats.Eq
 
 enum Constraint:
   case Type(name: String)
   case OneOf(values: NonEmptyList[Data.Primitive])
 
-  final override def toString: String = this match
-    case Type(name)    => s"type '$name'"
-    case OneOf(values) => s"oneOf ${values.map(_.print).mkString_(",")}"
+  final def print: String = ConstraintPrinter(this)
+  final override def toString: String = print
 
 object Constraint:
   type Any = Constraint | Constraint.Collection | Constraint.Object | Constraint.Primitive
@@ -20,18 +21,15 @@ object Constraint:
     case MinItems(reference: Int)
     case UniqueItems
 
-    final override def toString: String = this match
-      case MaxItems(reference: Int) => s"maxItems $reference"
-      case MinItems(reference: Int) => s"minItems $reference"
-      case UniqueItems              => "uniqueItems"
+    final def print: String = ConstraintPrinter(this)
+    final override def toString: String = print
 
   enum Object:
     case MaxProperties(reference: Int)
     case MinProperties(reference: Int)
 
-    final override def toString: String = this match
-      case MaxProperties(reference) => s"maxProperties $reference"
-      case MinProperties(reference) => s"minProperties $reference"
+    final def print: String = ConstraintPrinter(this)
+    final override def toString: String = print
 
   enum Primitive:
     case Matches(pattern: Pattern)
@@ -41,15 +39,11 @@ object Constraint:
     case MinLength(reference: Int)
     case Multiple(reference: Data.Number)
 
-    final override def toString: String = this match
-      case Matches(pattern)                      => s"matches '$pattern'"
-      case Maximum(Comparison(reference, true))  => s"lt $reference"
-      case Maximum(Comparison(reference, false)) => s"lteq $reference"
-      case Minimum(Comparison(reference, true))  => s"gt $reference"
-      case Minimum(Comparison(reference, false)) => s"gteq $reference"
-      case MaxLength(reference)                  => s"maxLength $reference"
-      case MinLength(reference)                  => s"minLength $reference"
-      case Multiple(reference)                   => s"multiple $reference"
+    final def print: String = ConstraintPrinter(this)
+    final override def toString: String = print
 
-  def parse(value: String): Option[Constraint.Any] =
-    ???
+  def parse(value: String): Either[Parser.Error, Constraint.Any] = ConstraintParser(value)
+
+  given Eq[Constraint.Any] = Eq.instance:
+    case (Primitive.Matches(x), Primitive.Matches(y)) => x.pattern() === y.pattern()
+    case (x, y)                                       => x == y
