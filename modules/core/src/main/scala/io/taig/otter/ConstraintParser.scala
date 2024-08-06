@@ -8,9 +8,9 @@ import cats.parse.Numbers
 import java.util.regex.Pattern
 
 object ConstraintParser:
-  def apply(value: String): Either[Parser.Error, Constraint.Any] = parser.parseAll(value)
+  def apply(value: String): Either[Parser.Error, Constraint] = parser.parseAll(value)
 
-  val parser: Parser[Constraint.Any] =
+  val parser: Parser[Constraint] =
     val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
     def nonEmptyList[A](parser: Parser[A]): Parser[NonEmptyList[A]] =
       parser.repSep(DataParser.listSeparator).surroundedBy(whitespace)

@@ -8,7 +8,7 @@ object ViolationsCodecs:
     record(field("reference", reference) :* field("exclusive", boolean)).to
 
   val violations: Sum.Nested.Required[Violations] =
-    val constraint: Sum.Nested.Required[Constraint.Any] = sum
+    val constraint: Sum.Nested.Required[Constraint] = sum
       .nested {
         branch("type", record(field("name", string)).to[Constraint.Type]) :+
           branch("oneOf", record(field("values", collection.nonEmptyList(dynamic.primitive))).to[Constraint.OneOf])

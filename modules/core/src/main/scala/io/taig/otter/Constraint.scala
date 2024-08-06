@@ -5,45 +5,41 @@ import cats.data.NonEmptyList
 import cats.syntax.all.*
 import cats.parse.Parser
 import cats.Eq
+import scala.Product as SProduct
 
-enum Constraint:
-  case Type(name: String)
-  case OneOf(values: NonEmptyList[Data.Primitive])
-
+sealed abstract class Constraint extends SProduct, Serializable:
   final def print: String = ConstraintPrinter(this)
   final override def toString: String = print
 
 object Constraint:
-  type Any = Constraint | Constraint.Collection | Constraint.Object | Constraint.Primitive
+  final case class Type(name: String) extends Constraint
+  final case class OneOf(values: NonEmptyList[Data.Primitive]) extends Constraint
 
-  enum Collection:
-    case MaxItems(reference: Int)
-    case MinItems(reference: Int)
-    case UniqueItems
+  sealed abstract class Collection extends Constraint
 
-    final def print: String = ConstraintPrinter(this)
-    final override def toString: String = print
+  object Collection:
+    final case class MaxItems(reference: Int) extends Constraint.Collection
+    final case class MinItems(reference: Int) extends Constraint.Collection
+    case object UniqueItems extends Constraint.Collection
 
-  enum Object:
-    case MaxProperties(reference: Int)
-    case MinProperties(reference: Int)
+  sealed abstract class Object extends Constraint
 
-    final def print: String = ConstraintPrinter(this)
-    final override def toString: String = print
+  object Object:
+    final case class MaxProperties(reference: Int) extends Constraint.Object
+    final case class MinProperties(reference: Int) extends Constraint.Object
 
-  enum Primitive:
-    case Matches(pattern: Pattern)
-    case Maximum(comparison: Comparison[Data.Number])
-    case Minimum(comparison: Comparison[Data.Number])
-    case MaxLength(reference: Int)
-    case MinLength(reference: Int)
-    case Multiple(reference: Data.Number)
+  sealed abstract class Primitive extends Constraint
 
-    final def print: String = ConstraintPrinter(this)
-    final override def toString: String = print
+  object Primitive:
+    final case class Matches(pattern: Pattern) extends Constraint.Primitive
+    final case class Maximum(comparison: Comparison[Data.Number]) extends Constraint.Primitive
+    final case class Minimum(comparison: Comparison[Data.Number]) extends Constraint.Primitive
+    final case class MaxLength(reference: Int) extends Constraint.Primitive
+    final case class MinLength(reference: Int) extends Constraint.Primitive
+    final case class Multiple(reference: Data.Number) extends Constraint.Primitive
 
-  def parse(value: String): Either[Parser.Error, Constraint.Any] = ConstraintParser(value)
+  def parse(value: String): Either[Parser.Error, Constraint] = ConstraintParser(value)
 
-  given Eq[Constraint.Any] = Eq.instance:
+  given Eq[Constraint] = Eq.instance:
     case (Primitive.Matches(x), Primitive.Matches(y)) => x.pattern() === y.pattern()
     case (x, y)                                       => x == y

@@ -1,9 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-
 object ConstraintPrinter:
-  def apply(constraint: Constraint.Any): String = constraint match
+  def apply(constraint: Constraint): String = constraint match
     case Constraint.Type(name)                                      => s"type \"$name\""
     case Constraint.OneOf(values)                                   => s"oneOf [${values.toList.mkString(",")}]"
     case Constraint.Collection.MaxItems(reference)                  => s"maxItem $reference"
