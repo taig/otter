@@ -151,3 +151,39 @@ final class RequestTest extends FunSuite:
       ),
       expected = "foobar".asRight.valid.asRight
     )
+
+    assertEquals(
+      obtained = codec.decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url.Empty,
+          headers = Http.Headers.Empty,
+          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+        )
+      ),
+      expected = Request.Error.ContentTypeMissing.asLeft
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url.Empty,
+          headers = Vector(ci"Content-Type" -> "application/json"),
+          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+        )
+      ),
+      expected = Request.Error.ContentTypeUnsupported.asLeft
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url.Empty,
+          headers = Vector(ci"Content-Type" -> "foobar"),
+          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+        )
+      ),
+      expected = Request.Error.ContentTypeInvalid.asLeft
+    )
