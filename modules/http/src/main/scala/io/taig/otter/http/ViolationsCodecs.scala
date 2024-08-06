@@ -10,7 +10,8 @@ object ViolationsCodecs:
   val violations: Sum.Nested.Required[Violations[Violation[Constraint.Any, Data]]] =
     val constraint: Sum.Nested.Required[Constraint.Any] = sum
       .nested {
-        branch("type", record(field("name", string)).to[Constraint.Type]) :+
+        branch("error", record(field("message", string)).to[Constraint.Error]) :+
+          branch("type", record(field("name", string)).to[Constraint.Type]) :+
           branch("oneOf", record(field("values", collection.list(dynamic.primitive))).to[Constraint.OneOf])
       }
       .to[Constraint] | sum

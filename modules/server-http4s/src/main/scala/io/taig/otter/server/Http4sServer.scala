@@ -27,7 +27,7 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
       method: Method,
       url: Http.Url,
       headers: Http.Headers,
-      body: Request.Body[?] => F[Http.Payload],
+      body: Body[?] => F[Http.Payload],
       onError: Throwable => F[Unit]
   ): F[Http.Response] = app.routes
     .find(method, url)
@@ -41,7 +41,7 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
     .handleErrorWith: throwable =>
       onError(throwable).as(app.failure.encode(().valid))
 
-  def toHttpRequestBody(body: Request.Body[?], data: Stream[F, Byte]): F[Http.Payload] = ???
+  def toHttpRequestBody(body: Body[?], data: Stream[F, Byte]): F[Http.Payload] = ???
   // body match
   //   case _: Request.Body.Singlepart.Strict[?] =>
   //     data.compile.to(Array).map(Http.Payload.apply)

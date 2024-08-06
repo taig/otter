@@ -9,7 +9,7 @@ sealed abstract class Result[A]:
 
   def code: Code
   def headers: Headers[?]
-  def bodies: Option[Response.Bodies[?]]
+  def bodies: Option[Bodies[?]]
 
   final def imap[B](f: A => B)(g: B => A): Result[B] = new Result[B]:
     export self.{bodies, code, headers}
@@ -33,7 +33,7 @@ sealed abstract class Result[A]:
   def encode(a: A): Http.Response
 
 object Result:
-  def apply[A, B](code: Code, headers: Headers[A], bodies: Response.Bodies[B]): Result[(A, B)] =
+  def apply[A, B](code: Code, headers: Headers[A], bodies: Bodies[B]): Result[(A, B)] =
     val _code = code
     val _headers = headers
     val _bodies = bodies
@@ -41,7 +41,7 @@ object Result:
     new Result[(A, B)]:
       override def code: Code = _code
       override def headers: Headers[A] = _headers
-      override def bodies: Option[Response.Bodies[?]] = Some(_bodies)
+      override def bodies: Option[Bodies[?]] = Some(_bodies)
       override def unsafeDecode(response: Http.Response): Codec.Result[(A, B)] =
         ???
         // (headers.decode(response.headers), _bodies.decode(response.body)).tupled
@@ -56,7 +56,7 @@ object Result:
     new Result[A]:
       override def code: Code = _code
       override def headers: Headers[A] = _headers
-      override def bodies: Option[Response.Bodies[?]] = none
+      override def bodies: Option[Bodies[?]] = none
       override def unsafeDecode(response: Http.Response): Codec.Result[A] =
         headers.decode(response.headers)
       override def encode(a: A): Http.Response = Http.Response(code, headers.encode(a), Http.Payload.Empty)

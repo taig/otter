@@ -14,32 +14,26 @@ trait Codecs extends Http.Types, Http.Codecs:
 
   private val parser = new JawnParser()
 
-  object json:
-    object input:
-      def apply[A](codec: Codec[A], printer: Printer): Request.Body[A] =
-        self.input(
-          MediaType.application.json,
-          codec,
-          (charset, bytes) =>
-            // Jawn only supports byte decoding via UTF-8, so we have to decode a string first
-            // for alternative encodings
-            val result = charset match
-              case Some(StandardCharsets.UTF_8) | None => parser.parseByteArray(bytes)
-              case Some(charset)                       => parser.parse(new String(bytes, charset))
+  def json[A](codec: Codec[A], printer: Printer): Body[A] = body(
+    mediaType = MediaType.application.json,
+    codec,
+    (charset, bytes) =>
+      // Jawn only supports byte decoding via UTF-8, so we have to decode a string first
+      // for alternative encodings
+      val result = charset match
+        case Some(StandardCharsets.UTF_8) | None => parser.parseByteArray(bytes)
+        case Some(charset)                       => parser.parse(new String(bytes, charset))
 
-            Validated
-              .fromEither(result)
-              .leftMap(exception =>
-                Violations.rootNec(Violation(Constraint.Type("json"), actual = Data.String(exception.getMessage)))
-              )
-              .map(toData)
-          ,
-          (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+      Validated
+        .fromEither(result)
+        .leftMap(exception =>
+          Violations.rootNec(Violation(Constraint.Type("json"), actual = Data.String(exception.getMessage)))
         )
+        .map(toData)
+    ,
+    (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+  )
 
-      def apply[A](codec: Codec[A]): Request.Body[A] = apply(codec, Printer.noSpaces)
-
-    object output:
-      def apply[A](codec: Codec[A]): Response.Body[A] = ???
+  def json[A](codec: Codec[A]): Body[A] = json(codec, Printer.noSpaces)
 
 object Codecs extends Codecs

@@ -9,6 +9,7 @@ import cats.data.Validated
 import Base.Evidence
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import Base.http.ViolationsCodecs.violations
 
 trait Codecs extends Base.Codecs:
   self =>
@@ -94,69 +95,63 @@ trait Codecs extends Base.Codecs:
     case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
 
-  def input[F[+a] <: Data.Optional[a], O <: Data, A](
+  def body[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
       codec: Base.Codec[F, O, A],
-      f: (Option[Charset], Array[Byte]) => Validated[Violations[Violation[Constraint, Data]], Data],
+      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
-  ): Request.Body[A] = Request.Body(mediaType, codec, f, g)
+  ): Body[A] = Body(mediaType, codec, f, g)
 
-  object binary:
-    def input(mediaType: MediaType): Request.Body[Array[Byte]] = Request.Body.binary(mediaType)
-    val input: Request.Body[Array[Byte]] = input(MediaType.application.octetStream)
+  def binary(mediaType: MediaType): Body[Array[Byte]] = Body.binary(mediaType)
+  val binary: Body[Array[Byte]] = binary(MediaType.application.octetStream)
 
-  object text:
-    object input:
-      def apply[A](codec: Codec.Required.Of[Data.Primitive, A]): Request.Body[A] = self.input(
-        MediaType.text.plain,
-        codec,
-        (charset, bytes) =>
-          val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
-          Data.String(value).valid
-        ,
-        (charset, data) => data.print.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
-      )
+  def text[A](codec: Codec.Required.Of[Data.Primitive, A]): Body[A] = body(
+    mediaType = MediaType.text.plain,
+    codec,
+    (charset, bytes) =>
+      val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+      Data.String(value).valid
+    ,
+    (charset, data) => data.print.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+  )
 
-  object formData:
-    object input:
-      def apply[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Request.Body[A] =
-        self.input(
-          MediaType.application.wwwFormUrlencoded,
-          codec,
-          (charset, bytes) =>
-            val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
-            val formData = FormData.parse(value).toVector
-            Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
-          ,
-          (charset, data) =>
-            val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
-            val values = data.values.map {
-              case (key, Data.Null)            => (key, none)
-              case (key, data: Data.Primitive) => (key, data.print.some)
-            }
-            FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
-        )
+  def formData[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Body[A] = body(
+    mediaType = MediaType.application.wwwFormUrlencoded,
+    codec,
+    (charset, bytes) =>
+      val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+      val formData = FormData.parse(value).toVector
+      Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
+    ,
+    (charset, data) =>
+      val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
+      val values = data.values.map {
+        case (key, Data.Null)            => (key, none)
+        case (key, data: Data.Primitive) => (key, data.print.some)
+      }
+      FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
+  )
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
-  final def result[A, B](code: Code, headers: Headers[A], bodies: Response.Bodies[B])(using
+  final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
       merge: Evidence.Merge[A, B]
   ): Result[merge.Out] = Result(code, headers, bodies).imap(merge.apply)(merge.unapply)
 
-  final def result[A, B](code: Code, headers: Headers[A], body: Response.Body[B])(using
+  final def result[A, B](code: Code, headers: Headers[A], body: Body[B])(using
       merge: Evidence.Merge[A, B]
-  ): Result[merge.Out] = result(code, headers, body.toResponseBodies)
+  ): Result[merge.Out] = result(code, headers, body.toBodies)
 
-  final def result[A](code: Code, bodies: Response.Bodies[A]): Result[A] =
+  final def result[A](code: Code, bodies: Bodies[A]): Result[A] =
     Result(code, Headers.Empty, bodies).imap { case (_, a) => a }(a => ((), a))
 
-  final def result[A](code: Code, body: Response.Body[A]): Result[A] = result(code, body.toResponseBodies)
+  final def result[A](code: Code, body: Body[A]): Result[A] = result(code, body.toBodies)
 
   final def result[A](code: Code, headers: Headers[A]): Result[A] = Result(code, headers)
 
   final def result(code: Code): Result[Unit] = result(code, Headers.Empty)
 
-  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Request.Bodies[C])(using
+  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Bodies[C])(using
       merge1: Evidence.Merge[A, B],
       merge2: Evidence.Merge[merge1.Out, C]
   ): Request[merge2.Out] = Request(method, url, headers, bodies).imap { case (a, b, c) =>
@@ -166,12 +161,12 @@ trait Codecs extends Base.Codecs:
     merge1.unapply(ab) :* c
   }
 
-  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Request.Body[C])(using
+  final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])(using
       merge1: Evidence.Merge[A, B],
       merge2: Evidence.Merge[merge1.Out, C]
   ): Request[merge2.Out] = request(method, url, headers, body.toBodies)
 
-  final def request[A, B](method: Method, url: Url[A], bodies: Request.Bodies[B])(using
+  final def request[A, B](method: Method, url: Url[A], bodies: Bodies[B])(using
       merge: Evidence.Merge[A, B]
   ): Request[merge.Out] = Request(method, url, Headers.Empty, bodies)
     .imap { case (a, _, b) => merge((a, b)) } { out =>
@@ -179,7 +174,7 @@ trait Codecs extends Base.Codecs:
       (a, (), b)
     }
 
-  final def request[A, B](method: Method, url: Url[A], body: Request.Body[B])(using
+  final def request[A, B](method: Method, url: Url[A], body: Body[B])(using
       merge: Evidence.Merge[A, B]
   ): Request[merge.Out] = request(method, url, body.toBodies)
 
@@ -190,7 +185,10 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final def response[A](results: Results[A]): Response[A] = Response(results, error = ???, violations = ???)
+  final def response[A](results: Results[A]): Response[A] =
+    // result(code.unsupportedMediaTypes, violations)
+
+    Response(results, mediaTypesUnsupported = ???, validationViolations = ???)
 
   // Scala.js won't compile if this is included here (for reason unknown)
   export ViolationsCodecs.*

@@ -30,7 +30,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (binary)"):
-    val obtained = request(method.get, __, binary.input).encode(charset = none, Array(1, 2, 3).map(_.toByte))
+    val obtained = request(method.get, __, binary).encode(charset = none, Array(1, 2, 3).map(_.toByte))
 
     assertEquals(
       obtained = obtained.headers,
@@ -43,7 +43,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (text)"):
-    val obtained = request(method.get, __, text.input(string)).encode(charset = none, "foobar")
+    val obtained = request(method.get, __, text(string)).encode(charset = none, "foobar")
 
     assertEquals(
       obtained = obtained.headers,
@@ -57,7 +57,7 @@ final class RequestTest extends FunSuite:
 
   test("encode: body (formData)"):
     val codec = record(field("foo", string) :* field("bar", int))
-    val obtained = request(method.get, __, formData.input(codec)).encode(charset = none, ("foobar", 42))
+    val obtained = request(method.get, __, formData(codec)).encode(charset = none, ("foobar", 42))
 
     assertEquals(
       obtained = obtained.headers,
@@ -70,8 +70,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (text & formData)"):
-    val bodies = formData.input(record(field("foo", string) :* field("bar", int))) :+
-      text.input(string)
+    val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
     val codec = request(method.get, __, bodies)
 
     val obtainedFormData = codec.encode(charset = none, Left(("foobar", 42)))
@@ -124,8 +123,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("decode: body (text & formData)"):
-    val bodies = formData.input(record(field("foo", string) :* field("bar", int))) :+
-      text.input(string)
+    val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
     val codec = request(method.get, __, bodies)
 
     assertEquals(

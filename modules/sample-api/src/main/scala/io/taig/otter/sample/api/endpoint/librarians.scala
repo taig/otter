@@ -24,12 +24,12 @@ object librarians:
             val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
               error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
 
-            result(code.unauthorized, json.output(emailOrPasswordIncorrect)).toResults.to
+            result(code.unauthorized, json(emailOrPasswordIncorrect)).toResults.to
 
         def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
           endpoint(
-            request(method.post, url, json.input(LibrarianApiSchema.Login.codec)),
-            response(Error.results :+ result(code.created, json.output(SessionApiSchema.codec)))
+            request(method.post, url, json(LibrarianApiSchema.Login.codec)),
+            response(Error.results :+ result(code.created, json(SessionApiSchema.codec)))
           ).summary("Create librarian session")
             .description(
               "For security reasons, this endpoint does not give away whether the given email address is " +

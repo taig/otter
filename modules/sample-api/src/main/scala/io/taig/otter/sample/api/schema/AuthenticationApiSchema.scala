@@ -17,4 +17,4 @@ object AuthenticationApiSchema:
     val permissionDenied: Codec[AuthenticationApiSchema.Error.Forbidden.type] =
       error("permissionDenied", singleton(AuthenticationApiSchema.Error.Forbidden))
 
-    (result(code.unauthorized, json.output(userUnknown)) :+ result(code.forbidden, json.output(permissionDenied))).to
+    (result(code.unauthorized, json(userUnknown)) :+ result(code.forbidden, json(permissionDenied))).to
