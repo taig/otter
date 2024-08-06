@@ -112,7 +112,7 @@ trait Codecs extends Base.Codecs:
       val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
       Data.String(value).valid
     ,
-    (charset, data) => data.print.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+    (charset, data) => data.printPlain.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
   )
 
   def formData[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Body[A] = body(
@@ -127,7 +127,7 @@ trait Codecs extends Base.Codecs:
       val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
       val values = data.values.map {
         case (key, Data.Null)            => (key, none)
-        case (key, data: Data.Primitive) => (key, data.print.some)
+        case (key, data: Data.Primitive) => (key, data.printPlain.some)
       }
       FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
   )

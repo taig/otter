@@ -43,8 +43,8 @@ sealed abstract class Request[A]:
 object Request:
   enum Result[+A]:
     case Success(value: A)
-    case ValidationViolations(violations: Codec.Error) extends Result[Nothing]
-    case MediaTypesUnsupported(violations: Codec.Error) extends Result[Nothing]
+    case ValidationViolations(violations: Violations) extends Result[Nothing]
+    case MediaTypesUnsupported(violations: Violations) extends Result[Nothing]
 
     final def map[B](f: A => B): Request.Result[B] = this match
       case Success(a)                    => Success(f(a))

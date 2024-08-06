@@ -7,11 +7,11 @@ object ViolationsCodecs:
   def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
     record(field("reference", reference) :* field("exclusive", boolean)).to
 
-  val violations: Sum.Nested.Required[Violations[Violation[Constraint.Any, Data]]] =
+  val violations: Sum.Nested.Required[Violations] =
     val constraint: Sum.Nested.Required[Constraint.Any] = sum
       .nested {
         branch("type", record(field("name", string)).to[Constraint.Type]) :+
-          branch("oneOf", record(field("values", collection.list(dynamic.primitive))).to[Constraint.OneOf])
+          branch("oneOf", record(field("values", collection.nonEmptyList(dynamic.primitive))).to[Constraint.OneOf])
       }
       .to[Constraint] | sum
       .nested {
@@ -35,7 +35,7 @@ object ViolationsCodecs:
       }
       .to[Constraint.Primitive]
 
-    val violation: Record.Required[Violation[Constraint.Any, Data]] =
+    val violation: Record.Required[Violation] =
       record(field("constraint", constraint) :* field("actual", dynamic.any)).to
 
     val step: Sum.Untagged.Required.Of[Data.Primitive, Option[Step]] =
@@ -53,9 +53,6 @@ object ViolationsCodecs:
           case None                                  => "."
         }
 
-    val root: Codec.Required[Violations.Root[Violation[Constraint.Any, Data]]] =
-      collection.nonEmptyChain(violation).to
-    val namespace: Codec.Required[Violations.Namespace[Violation[Constraint.Any, Data]]] =
-      dictionary.nonEmptyMap(step, violations).to
-
+    val root: Codec.Required[Violations.Root] = collection.nonEmptyChain(violation).to
+    val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, violations).to
     sum.nested(branch("root", root) :+ branch("namespace", namespace)).to

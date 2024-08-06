@@ -81,12 +81,17 @@ object Data:
       case data: Data.Boolean => data.some
       case _                  => none
 
-    final def print: JString = this match
+    final def printPlain: JString = this match
       case Data.Boolean(value) => JString.valueOf(value)
       case Data.Number(value)  => JString.valueOf(value)
       case Data.String(value)  => value
 
-    final override def toString(): JString = print
+    final def printQuoted: JString = this match
+      case Data.Boolean(value) => JString.valueOf(value)
+      case Data.Number(value)  => JString.valueOf(value)
+      case Data.String(value)  => s"'$value'"
+
+    final override def toString: JString = printQuoted
 
   final case class String(value: JString) extends Data.Primitive
 
