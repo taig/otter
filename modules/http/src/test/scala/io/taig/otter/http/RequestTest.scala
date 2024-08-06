@@ -102,3 +102,30 @@ final class RequestTest extends FunSuite:
       expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
   }
+
+  test("decode") {
+    assertEquals(
+      obtained = request(method.get, __ / "foo").decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url(path = Vector("foo"), queries = Http.Queries.Empty),
+          headers = Http.Headers.Empty,
+          body = Http.Payload.Empty
+        )
+      ),
+      expected = ().valid.asRight
+    )
+
+    assertEquals(
+      obtained = request(method.get, __ / "foo" / segment("bar", int) & query("baz", string))
+        .decode(
+          Http.Request(
+            method = method.get,
+            url = Http.Url(path = Vector("foo", "42"), queries = Vector("baz" -> "foobar".some)),
+            headers = Http.Headers.Empty,
+            body = Http.Payload.Empty
+          )
+        ),
+      expected = (42, "foobar").valid.asRight
+    )
+  }
