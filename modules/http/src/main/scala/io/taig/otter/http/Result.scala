@@ -3,19 +3,18 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Evidence
 import io.taig.otter.Codec
-import io.taig.otter.http.Response.Body
 
 sealed abstract class Result[A]:
   self =>
 
   def code: Code
   def headers: Headers[?]
-  def body: Response.Body[?]
+  def bodies: Option[Response.Bodies[?]]
 
   final def imap[B](f: A => B)(g: B => A): Result[B] = new Result[B]:
-    export self.{body, code, headers}
-    override def decode(response: Http.Response): Codec.Result[Option[B]] =
-      self.decode(response).map(_.map(f))
+    export self.{bodies, code, headers}
+    override def unsafeDecode(response: Http.Response): Codec.Result[B] =
+      self.unsafeDecode(response).map(f)
     override def encode(b: B): Http.Response = self.encode(g(b))
 
   final def orElse[B](result: Result[B]): Results[Either[A, B]] = toResults.orElse(result.toResults)
@@ -28,22 +27,36 @@ sealed abstract class Result[A]:
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Result[B] = imap(evidence.from)(evidence.to)
 
-  def decode(response: Http.Response): Codec.Result[Option[A]]
+  final def decode(response: Http.Response): Codec.Result[Option[A]] =
+    if code =!= response.code then none.valid else unsafeDecode(response).map(_.some)
+  def unsafeDecode(response: Http.Response): Codec.Result[A]
   def encode(a: A): Http.Response
 
 object Result:
-  def apply[A, B](code: Code, headers: Headers[A], body: Response.Body[B]): Result[(A, B)] =
+  def apply[A, B](code: Code, headers: Headers[A], bodies: Response.Bodies[B]): Result[(A, B)] =
     val _code = code
     val _headers = headers
-    val _body = body
+    val _bodies = bodies
 
     new Result[(A, B)]:
       override def code: Code = _code
       override def headers: Headers[A] = _headers
-      override def body: Response.Body[B] = _body
-      override def decode(response: Http.Response): Codec.Result[Option[(A, B)]] =
-        if code =!= response.code
-        then none.valid
-        else (headers.decode(response.headers), body.decode(response.body)).tupled.map(_.some)
+      override def bodies: Option[Response.Bodies[?]] = Some(_bodies)
+      override def unsafeDecode(response: Http.Response): Codec.Result[(A, B)] =
+        ???
+        // (headers.decode(response.headers), _bodies.decode(response.body)).tupled
       override def encode(ab: (A, B)): Http.Response =
-        Http.Response(code, headers.encode(ab._1), body.encode(ab._2))
+        ???
+        // Http.Response(code, headers.encode(ab._1), _body.encode(ab._2))
+
+  def apply[A](code: Code, headers: Headers[A]): Result[A] =
+    val _code = code
+    val _headers = headers
+
+    new Result[A]:
+      override def code: Code = _code
+      override def headers: Headers[A] = _headers
+      override def bodies: Option[Response.Bodies[?]] = none
+      override def unsafeDecode(response: Http.Response): Codec.Result[A] =
+        headers.decode(response.headers)
+      override def encode(a: A): Http.Response = Http.Response(code, headers.encode(a), Http.Payload.Empty)

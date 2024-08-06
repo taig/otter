@@ -76,7 +76,7 @@ object Request:
       new Body[Array[Byte]]:
         override def mediaType: MediaType = _mediaType
         override def decode(charset: Option[Charset], body: Http.Payload): Codec.Result[Array[Byte]] =
-          ???
+          body.data.valid
         override def encode(charset: Option[Charset], a: Array[Byte]): Http.Payload = Http.Payload(a)
 
     def apply[F[+a] <: Data.Optional[a], O <: Data, A](
@@ -101,13 +101,12 @@ object Request:
 
     final def orElse[B](bodies: Request.Bodies[B]): Request.Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
       override def toVector: Vector[Request.Body[?]] = self.toVector ++ bodies.toVector
-      override def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[Either[A, B]]] =
-        self
-          .decode(mediaType, body)
-          .map(_.map(_.asLeft))
-          .andThen:
-            case a @ Some(_) => a.valid
-            case None        => bodies.decode(mediaType, body).map(_.map(_.asRight))
+      override def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[Either[A, B]]] = self
+        .decode(mediaType, body)
+        .map(_.map(_.asLeft))
+        .andThen:
+          case a @ Some(_) => a.valid
+          case None        => bodies.decode(mediaType, body).map(_.map(_.asRight))
       override def encode(charset: Option[Charset], ab: Either[A, B]): (MediaType, Http.Payload) =
         ab.fold(self.encode(charset, _), bodies.encode(charset, _))
 

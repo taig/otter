@@ -137,18 +137,24 @@ trait Codecs extends Base.Codecs:
             FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
         )
 
-  final def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
+  def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
+
+  final def result[A, B](code: Code, headers: Headers[A], bodies: Response.Bodies[B])(using
+      merge: Evidence.Merge[A, B]
+  ): Result[merge.Out] = Result(code, headers, bodies).imap(merge.apply)(merge.unapply)
 
   final def result[A, B](code: Code, headers: Headers[A], body: Response.Body[B])(using
       merge: Evidence.Merge[A, B]
-  ): Result[merge.Out] =
-    Result(code, headers, body).imap(merge.apply)(merge.unapply)
-  final def result[A](code: Code, headers: Headers[A]): Result[A] =
-    Result(code, headers, Response.Body.Empty).imap { case (a, _) => a }(a => (a, ()))
-  final def result[A](code: Code, body: Response.Body[A]): Result[A] =
-    Result(code, Headers.Empty, body).imap { case (_, a) => a }(a => ((), a))
-  final def result(code: Code): Result[Unit] =
-    Result(code, Headers.Empty, Response.Body.Empty).imap(_ => ())(_ => ((), ()))
+  ): Result[merge.Out] = result(code, headers, body.toResponseBodies)
+
+  final def result[A](code: Code, bodies: Response.Bodies[A]): Result[A] =
+    Result(code, Headers.Empty, bodies).imap { case (_, a) => a }(a => ((), a))
+
+  final def result[A](code: Code, body: Response.Body[A]): Result[A] = result(code, body.toResponseBodies)
+
+  final def result[A](code: Code, headers: Headers[A]): Result[A] = Result(code, headers)
+
+  final def result(code: Code): Result[Unit] = result(code, Headers.Empty)
 
   final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Request.Bodies[C])(using
       merge1: Evidence.Merge[A, B],
@@ -184,7 +190,7 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final def response[A](results: Results[A]): Response[A] = Response(results, ???)
+  final def response[A](results: Results[A]): Response[A] = Response(results, error = ???, violations = ???)
 
   // Scala.js won't compile if this is included here (for reason unknown)
   export ViolationsCodecs.*

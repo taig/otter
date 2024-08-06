@@ -2,7 +2,11 @@ package io.taig.otter.http
 
 import io.taig.otter.Metadata
 
-final case class Endpoint[I, O](request: Request[I], response: Response[O], metadata: Metadata):
+final case class Endpoint[I, O](
+    request: Request[I],
+    response: Response[O],
+    metadata: Metadata
+):
   def modifyRequest[T](f: Request[I] => Request[T]): Endpoint[T, O] = copy(request = f(request))
 
   def modifyResponse[T](f: Response[O] => Response[T]): Endpoint[I, T] = copy(response = f(response))
