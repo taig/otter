@@ -3,6 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Evidence
 import io.taig.otter.Codec
+import java.nio.charset.StandardCharsets
+import org.typelevel.ci.*
 
 sealed abstract class Result[A]:
   self =>
@@ -43,11 +45,11 @@ object Result:
       override def headers: Headers[A] = _headers
       override def bodies: Option[Bodies[?]] = Some(_bodies)
       override def unsafeDecode(response: Http.Response): Codec.Result[(A, B)] =
+        (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
         ???
-        // (headers.decode(response.headers), _bodies.decode(response.body)).tupled
       override def encode(ab: (A, B)): Http.Response =
-        ???
-        // Http.Response(code, headers.encode(ab._1), _body.encode(ab._2))
+        val (mediaType, payload) = _bodies.encode(charset = none, ab._2)
+        Http.Response(code, (ci"Content-Type", mediaType.print) +: headers.encode(ab._1), payload)
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
     val _code = code

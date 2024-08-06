@@ -3,14 +3,15 @@ package io.taig.otter.http
 import java.nio.charset.Charset
 import io.taig.otter.Codec
 import cats.syntax.all.*
+import cats.data.NonEmptyVector
 
 sealed abstract class Bodies[A]:
   self =>
 
-  def toVector: Vector[Body[?]]
+  def toNev: NonEmptyVector[Body[?]]
 
   final def orElse[B](bodies: Bodies[B]): Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
-    override def toVector: Vector[Body[?]] = self.toVector ++ bodies.toVector
+    override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
     override def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[Either[A, B]]] = self
       .decode(mediaType, body)
       .map(_.map(_.asLeft))
@@ -30,7 +31,7 @@ sealed abstract class Bodies[A]:
 
 object Bodies:
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
-    override def toVector: Vector[Body[?]] = Vector(body)
+    override def toNev: NonEmptyVector[Body[?]] = NonEmptyVector.one(body)
     override def decode(mediaType: MediaType, payload: Http.Payload): Codec.Result[Option[A]] =
       if body.mediaType === mediaType
       then body.decode(mediaType.parameters.charset, payload).map(_.some)

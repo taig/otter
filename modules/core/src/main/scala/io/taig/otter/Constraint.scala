@@ -3,7 +3,6 @@ package io.taig.otter
 import java.util.regex.Pattern
 
 enum Constraint:
-  case Error(message: String)
   case Type(name: String)
   case OneOf(values: List[Data.Primitive])
 
