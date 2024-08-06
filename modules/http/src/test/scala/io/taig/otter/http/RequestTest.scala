@@ -7,7 +7,7 @@ import org.typelevel.ci.*
 import java.nio.charset.StandardCharsets
 
 final class RequestTest extends FunSuite:
-  test("encode") {
+  test("encode"):
     assertEquals(
       obtained = request(method.get, __ / "foo").encode(charset = none, ()),
       expected = Http.Request(
@@ -28,9 +28,8 @@ final class RequestTest extends FunSuite:
         body = Http.Payload.Empty
       )
     )
-  }
 
-  test("encode: body (binary)") {
+  test("encode: body (binary)"):
     val obtained = request(method.get, __, binary.input).encode(charset = none, Array(1, 2, 3).map(_.toByte))
 
     assertEquals(
@@ -42,9 +41,8 @@ final class RequestTest extends FunSuite:
       obtained = obtained.body.data.toVector,
       expected = Vector(1, 2, 3).map(_.toByte)
     )
-  }
 
-  test("encode: body (text)") {
+  test("encode: body (text)"):
     val obtained = request(method.get, __, text.input(string)).encode(charset = none, "foobar")
 
     assertEquals(
@@ -56,9 +54,8 @@ final class RequestTest extends FunSuite:
       obtained = obtained.body.data.toVector,
       expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
-  }
 
-  test("encode: body (formData)") {
+  test("encode: body (formData)"):
     val codec = record(field("foo", string) :* field("bar", int))
     val obtained = request(method.get, __, formData.input(codec)).encode(charset = none, ("foobar", 42))
 
@@ -71,12 +68,10 @@ final class RequestTest extends FunSuite:
       obtained = obtained.body.data.toVector,
       expected = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8).toVector
     )
-  }
 
-  test("encode: body (text & formData)") {
-    val bodies =
-      formData.input(record(field("foo", string) :* field("bar", int))) :+
-        text.input(string)
+  test("encode: body (text & formData)"):
+    val bodies = formData.input(record(field("foo", string) :* field("bar", int))) :+
+      text.input(string)
     val codec = request(method.get, __, bodies)
 
     val obtainedFormData = codec.encode(charset = none, Left(("foobar", 42)))
@@ -101,9 +96,8 @@ final class RequestTest extends FunSuite:
       obtained = obtainedText.body.data.toVector,
       expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
-  }
 
-  test("decode") {
+  test("decode"):
     assertEquals(
       obtained = request(method.get, __ / "foo").decode(
         Http.Request(
@@ -128,4 +122,32 @@ final class RequestTest extends FunSuite:
         ),
       expected = (42, "foobar").valid.asRight
     )
-  }
+
+  test("decode: body (text & formData)"):
+    val bodies = formData.input(record(field("foo", string) :* field("bar", int))) :+
+      text.input(string)
+    val codec = request(method.get, __, bodies)
+
+    assertEquals(
+      obtained = codec.decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url.Empty,
+          headers = Vector(ci"Content-Type" -> "application/x-www-form-urlencoded"),
+          body = Http.Payload("foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8))
+        )
+      ),
+      expected = ("foobar", 42).asLeft.valid.asRight
+    )
+
+    assertEquals(
+      obtained = codec.decode(
+        Http.Request(
+          method = method.get,
+          url = Http.Url.Empty,
+          headers = Vector(ci"Content-Type" -> "text/plain"),
+          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+        )
+      ),
+      expected = "foobar".asRight.valid.asRight
+    )
