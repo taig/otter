@@ -2,6 +2,7 @@ package io.taig.otter
 
 import java.util.regex.Pattern
 import cats.data.NonEmptyList
+import cats.syntax.all.*
 
 enum Constraint:
   case Type(name: String)
@@ -9,7 +10,7 @@ enum Constraint:
 
   final override def toString: String = this match
     case Type(name)    => s"type '$name'"
-    case OneOf(values) => s"oneOf ${values.map(_.printQuoted).toList.mkString(",")}"
+    case OneOf(values) => s"oneOf ${values.map(_.print).mkString_(",")}"
 
 object Constraint:
   type Any = Constraint | Constraint.Collection | Constraint.Object | Constraint.Primitive

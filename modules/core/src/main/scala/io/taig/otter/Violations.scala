@@ -19,7 +19,8 @@ enum Violations:
 
   private def print(history: Chain[Step]): NonEmptyList[String] = this match
     case Root(violations) => violations.map(violation => s"${printHistory(history)}: $violation").toNonEmptyList
-    case Namespace(toNem) => toNem.toNel.flatMap:
+    case Namespace(toNem) =>
+      toNem.toNel.flatMap:
         case (Some(step), violations) => violations.print(history :+ step)
         case (None, violations)       => violations.print(history)
 
