@@ -106,7 +106,7 @@ final class RequestTest extends FunSuite:
           body = Http.Payload.Empty
         )
       ),
-      expected = ().valid.asRight
+      expected = Request.Result.Success(())
     )
 
     assertEquals(
@@ -119,7 +119,7 @@ final class RequestTest extends FunSuite:
             body = Http.Payload.Empty
           )
         ),
-      expected = (42, "foobar").valid.asRight
+      expected = Request.Result.Success((42, "foobar"))
     )
 
   test("decode: body (text & formData)"):
@@ -135,7 +135,7 @@ final class RequestTest extends FunSuite:
           body = Http.Payload("foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8))
         )
       ),
-      expected = ("foobar", 42).asLeft.valid.asRight
+      expected = Request.Result.Success(("foobar", 42).asLeft)
     )
 
     assertEquals(
@@ -147,7 +147,7 @@ final class RequestTest extends FunSuite:
           body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
         )
       ),
-      expected = "foobar".asRight.valid.asRight
+      expected = Request.Result.Success("foobar".asRight)
     )
 
     assertEquals(
@@ -159,7 +159,9 @@ final class RequestTest extends FunSuite:
           body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
         )
       ),
-      expected = Request.Error.ContentTypeMissing.asLeft
+      expected = Request.Result.MediaTypesUnsupported(
+        Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null")))
+      )
     )
 
     assertEquals(
@@ -171,7 +173,14 @@ final class RequestTest extends FunSuite:
           body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
         )
       ),
-      expected = Request.Error.ContentTypeUnsupported.asLeft
+      expected = Request.Result.MediaTypesUnsupported(
+        Violations.rootNec(
+          Violation(
+            Constraint.OneOf(List("application/x-www-form-urlencoded", "text/plain").map(Data.String.apply)),
+            actual = Data.String("application/json")
+          )
+        )
+      )
     )
 
     assertEquals(
@@ -183,5 +192,7 @@ final class RequestTest extends FunSuite:
           body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
         )
       ),
-      expected = Request.Error.ContentTypeInvalid.asLeft
+      expected = Request.Result.MediaTypesUnsupported(
+        Violations.rootNec(Violation(Constraint.Type("mediaType"), actual = Data.String("foobar")))
+      )
     )
