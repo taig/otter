@@ -1,13 +1,13 @@
 package io.taig.otter.http
 
-import cats.data.{NonEmptyVector, Validated}
+import cats.data.NonEmptyVector
 import cats.syntax.all.*
 import io.taig.otter.{+, Evidence}
 import io.taig.otter.Codec
 import io.taig.otter.Violation
 import io.taig.otter.Data
 import io.taig.otter.Violations
-import io.taig.otter.Constraint
+import cats.data.Ior
 
 sealed abstract class Results[A]:
   self =>
@@ -15,18 +15,27 @@ sealed abstract class Results[A]:
 
   final def imap[B](f: A => B)(g: B => A): Results[B] = new Results[B]:
     export self.toNev
-    override def decodeOption(response: Http.Response): Codec.Result[Option[B]] =
-      self.decodeOption(response).map(_.map(f))
+    override def decode(response: Http.Response): Ior[Codec.Error, Option[B]] =
+      self.decode(response).map(_.map(f))
     override def encode(b: B): Http.Response = self.encode(g(b))
 
   final infix def orElse[B](results: Results[B]): Results[A + B] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
-    // TODO Ior (?)
-    override def decodeOption(response: Http.Response): Codec.Result[Option[A + B]] =
-      self.decodeOption(response) match
-        case Validated.Valid(Some(a)) => a.asLeft.some.valid
-        case Validated.Valid(None)    => results.decodeOption(response).map(_.map(_.asRight))
-        // case Validated.Invalid(left)  => results.decodeOption(response).map(_.map(_.asRight)).leftMap(left |+| _)
+    override def decode(response: Http.Response): Ior[Codec.Error, Option[Either[A, B]]] =
+      self.decode(response) match
+        case Ior.Right(Some(a)) => a.asLeft.some.rightIor
+        case Ior.Right(None)    => results.decode(response).map(_.map(_.asRight))
+        case Ior.Left(left) =>
+          results.decode(response) match
+            case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
+            case Ior.Left(right)    => Ior.Left(left.combine(right))
+            case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
+        case Ior.Both(left, Some(a)) => Ior.Both(left, a.asLeft.some)
+        case Ior.Both(left, None) =>
+          results.decode(response) match
+            case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
+            case Ior.Left(right)    => Ior.Both(left.combine(right), none)
+            case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
     override def encode(ab: A + B): Http.Response = ab match
       case Left(a)  => self.encode(a)
       case Right(b) => results.encode(b)
@@ -36,9 +45,7 @@ sealed abstract class Results[A]:
 
   final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = imap(evidence.from)(evidence.to)
 
-  final def decode(response: Http.Response): Codec.Result[A] =
-    decodeOption(response).andThen(_.toValid(???))
-  protected def decodeOption(response: Http.Response): Codec.Result[Option[A]]
+  def decode(response: Http.Response): Ior[Codec.Error, Option[A]]
   def encode(a: A): Http.Response
 
 object Results:
@@ -53,7 +60,6 @@ object Results:
 
   def apply[A](result: Result[A]): Results[A] = new Results[A]:
     override def toNev: NonEmptyVector[Result[?]] = NonEmptyVector.one(result)
-    override def decodeOption(
-        response: Http.Response
-    ): Validated[Violations[Violation[Constraint.Any, Data]], Option[A]] = result.decode(response)
+    override def decode(response: Http.Response): Ior[Codec.Error, Option[A]] =
+      result.decode(response).toIor
     override def encode(a: A): Http.Response = result.encode(a)

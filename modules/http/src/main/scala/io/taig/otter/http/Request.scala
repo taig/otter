@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import io.taig.otter.Codec.Result
 import io.taig.otter.Evidence
 import cats.data.Validated
 import io.taig.otter.Violations
