@@ -107,7 +107,15 @@ trait Codecs extends Base.Codecs:
 
   object text:
     object input:
-      def apply[A](codec: Codec[A]): Request.Body[A] = ???
+      def apply[A](codec: Codec.Required.Of[Data.Primitive, A]): Request.Body[A] = self.input(
+        MediaType.text.plain,
+        codec,
+        (charset, bytes) =>
+          val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+          Data.String(value).valid
+        ,
+        (charset, data) => data.print.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+      )
 
   object formData:
     object input:
