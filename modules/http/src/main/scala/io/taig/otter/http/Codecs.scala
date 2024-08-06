@@ -7,8 +7,12 @@ import org.typelevel.ci.*
 import java.util.regex.Pattern
 import cats.data.Validated
 import Base.Evidence
+import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 trait Codecs extends Base.Codecs:
+  self =>
+
   def cistring(
       minLength: Option[Int] = none,
       maxLength: Option[Int] = none,
@@ -90,13 +94,40 @@ trait Codecs extends Base.Codecs:
     case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
 
-  object input:
-    def apply[A](
-        mediaType: MediaType,
-        f: Array[Byte] => Validated[Violations[Violation[Constraint, Data]], Data],
-        g: Data => Array[Byte],
-        codec: Codec[A]
-    ): Request.Body[A] = Request.Body(mediaType, f, g, codec)
+  def input[F[+a] <: Data.Optional[a], O <: Data, A](
+      mediaType: MediaType,
+      codec: Base.Codec[F, O, A],
+      f: (Option[Charset], Array[Byte]) => Validated[Violations[Violation[Constraint, Data]], Data],
+      g: (Option[Charset], F[O]) => Array[Byte]
+  ): Request.Body[A] = Request.Body(mediaType, codec, f, g)
+
+  object binary:
+    def input(mediaType: MediaType): Request.Body[Array[Byte]] = Request.Body.binary(mediaType)
+    val input: Request.Body[Array[Byte]] = input(MediaType.application.octetStream)
+
+  object text:
+    object input:
+      def apply[A](codec: Codec[A]): Request.Body[A] = ???
+
+  object formData:
+    object input:
+      def apply[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Request.Body[A] =
+        self.input(
+          MediaType.application.wwwFormUrlencoded,
+          codec,
+          (charset, bytes) =>
+            val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+            val formData = FormData.parse(value).toVector
+            Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
+          ,
+          (charset, data) =>
+            val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
+            val values = data.values.map {
+              case (key, Data.Null)            => (key, none)
+              case (key, data: Data.Primitive) => (key, data.print.some)
+            }
+            FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
+        )
 
   final def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 

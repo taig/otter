@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
+import java.nio.ByteBuffer
 
 object Http:
   type Path = Vector[String]

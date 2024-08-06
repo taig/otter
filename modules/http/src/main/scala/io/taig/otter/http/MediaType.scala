@@ -40,6 +40,7 @@ object MediaType:
       val json: MediaType.Type.Secondary = "json"
       val plain: MediaType.Type.Secondary = "plain"
       val octetStream: MediaType.Type.Secondary = "octet-stream"
+      val wwwFormUrlencoded: MediaType.Type.Secondary = "x-www-form-urlencoded"
 
       given (using eq: Eq[String]): Eq[MediaType.Type.Secondary] = eq
 
@@ -85,6 +86,7 @@ object MediaType:
     def apply(subtype: MediaType.Type.Secondary): MediaType = Type.Primary.application / subtype
     val json: MediaType = application(Type.Secondary.json)
     val octetStream: MediaType = application(Type.Secondary.octetStream)
+    val wwwFormUrlencoded: MediaType = application(Type.Secondary.wwwFormUrlencoded)
 
   object text:
     def apply(subtype: MediaType.Type.Secondary): MediaType = Type.Primary.text / subtype
