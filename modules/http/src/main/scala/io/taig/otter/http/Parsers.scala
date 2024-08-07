@@ -14,13 +14,15 @@ private[http] object Parsers:
 
   val equal: Parser[Unit] = Parser.char('=')
 
-  val token: Parser0[String] = Json.undelimited.parser
+  val token: Parser0[String] =
+    val forbidden = Set('=', '/', ';', '*', '"')
+    Parser.charsWhile(!forbidden.contains(_))
 
   val string: Parser[String] = Json.delimited.parser
 
   object contentType:
     val parameter: Parser[ContentType.Parameter] =
-      ((token.with1 <* equal) ~ (token | string)).map(ContentType.Parameter.apply)
+      ((token.with1 <* equal) ~ (string | token)).map(ContentType.Parameter.apply)
 
     val parameters: Parser0[List[ContentType.Parameter]] =
       (whitespace.with1 *> semicolon *> whitespace *> parameter).rep0
