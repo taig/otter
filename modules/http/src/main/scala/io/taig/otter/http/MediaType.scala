@@ -48,7 +48,7 @@ object MediaType:
       case Array(primary, secondary) if primary.nonEmpty && secondary.nonEmpty => Some(Type(primary, secondary))
       case _                                                                   => None
 
-    given Eq[MediaType.Type] = (x, y) => x.primary === y.primary && x.secondary === y.secondary
+    given Eq[MediaType.Type] = Eq.by(tpe => (tpe.primary, tpe.secondary))
 
   opaque type Parameters = Chain[(String, String)]
 
