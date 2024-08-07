@@ -3,6 +3,7 @@ package io.taig.otter.http
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
 import cats.data.NonEmptyList
+import io.taig.otter.XPath
 
 object ViolationsCodecs:
   object violations:
@@ -40,30 +41,33 @@ object ViolationsCodecs:
       val violation: Record.Required[Violation] =
         record(field("constraint", constraint) :* field("actual", dynamic.any)).to
 
-      val step: Sum.Untagged.Required.Of[Data.Primitive, Option[Step]] = sum
-        .untagged {
-          branch("root", string(matches = ".")) |
-            branch("index", int.to[Step.Index]) |
-            branch("field", string.to[Step.Field])
-        }
-        .imap {
-          case _: String  => none
-          case step: Step => step.some
-        } {
-          case Some(step: (Step.Index | Step.Field)) => step
-          case None                                  => "."
-        }
+      val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.print)
 
-      val root: Codec.Required[Violations.Root] = collection.nonEmptyChain(violation).to
+      val root: Codec.Required[Violations.Root] = record(
+        field("values", dictionary.sortedMap(step, structured)) :*
+          field("violations", collection.nonEmptyChain(violation))
+      ).to
+
       val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, structured).to
+
       sum.nested(branch("root", root) :+ branch("namespace", namespace)).to
 
-    val listed: Collection.Required.Of[Data.Primitive, List[String]] =
+    val listed: Collection.Required.Of[Data.Primitive, Violations] =
+      // parser[Violations](name = "violations")(Violations.parse(_).toOption)(_.print)
+      collection.nonEmptyList(???)
       // parser(name = "violations") { value =>
       //   NonEmptyList.fromList(value.split("\n").toList).flatMap(Violations.parse)
       // }(_.print.mkString_("\n"))
       // collection.list()
       ???
+
+    val obj: Dictionary.Required.Of[Data.Primitive, Violations] =
+      val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.print)
+
+      dictionary
+        .nonEmptyList(xpath, violation)
+        .imap(_.map(Violation.At.apply))(_.map(violation => (violation.xpath, violation.self)))
+        .imap(Violations.from)(_.toNel)
 
     val flattened: Primitive.Required[Violations] = parser(name = "violations") { value =>
       NonEmptyList.fromList(value.split("\n").toList).flatMap(Violations.parse(_).toOption)

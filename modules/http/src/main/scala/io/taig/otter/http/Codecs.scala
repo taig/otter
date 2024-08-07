@@ -182,10 +182,14 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
+  private val violationsBody = text(violations.flattened)
+
+  text(violations.flattened).:+(formData(violations.obj))
+
   final def response[A](results: Results[A]): Response[A] = Response(
     results,
-    mediaTypesUnsupported = result(code.unsupportedMediaTypes, text(violations.flattened)),
-    validationViolations = result(code.unprocessableEntity, text(violations.flattened))
+    mediaTypesUnsupported = result(code.unsupportedMediaTypes, violationsBody),
+    validationViolations = result(code.unprocessableEntity, violationsBody)
   )
 
   // Scala.js won't compile if this is included here (for reason unknown)

@@ -5,12 +5,11 @@ import cats.syntax.all.*
 import cats.data.NonEmptyList
 
 private[otter] object Printers:
-  def apply(history: Chain[Step]): String =
-    val steps = history.map:
-      case step @ Step.Field(_) => s".${step.print}"
-      case step @ Step.Index(_) => step.print
+  def apply(step: Step): String = step match
+    case Step.Field(field) => s".$field"
+    case Step.Index(index) => s"[$index]"
 
-    "$" + steps.mkString_("")
+  def apply(xpath: XPath): String = "$" + xpath.toChain.map(Printers.apply).mkString_("")
 
   def apply(constraint: Constraint): String = constraint match
     case Constraint.Type(name)                                      => s"type \"$name\""
@@ -40,8 +39,6 @@ private[otter] object Printers:
 
   def apply(violation: Violation): String = s"[${violation.constraint.print}] ! ${violation.actual.print}"
 
-  def apply(violations: Violations): NonEmptyList[String] =
-    violations.toNem.toNel.flatMap { case (history, violations) =>
-      val path = Printers(history)
-      violations.toNonEmptyList.map(Printers.apply).map(violation => s"$path: $violation")
-    }
+  def apply(violation: Violation.At): String = s"${Printers(violation)}: ${Printers(violation.self)}"
+
+  def apply(violations: Violations): NonEmptyList[String] = violations.toNel.map(Printers.apply)

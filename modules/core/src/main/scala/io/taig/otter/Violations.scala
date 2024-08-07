@@ -23,18 +23,22 @@ enum Violations:
     case (left: Root, Namespace(right))      => Root(left.values |+| right.toSortedMap, left.violations)
     case (Namespace(left), right: Root)      => Root(left.toSortedMap |+| right.values, right.violations)
 
-  final def toNem: NonEmptyMap[Chain[Step], NonEmptyChain[Violation]] = toNem(history = Chain.empty)
+  final def toNem: NonEmptyMap[XPath, NonEmptyChain[Violation]] = toNem(xpath = XPath.Empty)
 
-  private def toNem(history: Chain[Step]): NonEmptyMap[Chain[Step], NonEmptyChain[Violation]] = this match
+  private def toNem(xpath: XPath): NonEmptyMap[XPath, NonEmptyChain[Violation]] = this match
     case Root(values, violations) =>
-      val root = NonEmptyMap.one(history, violations)
+      val root = NonEmptyMap.one(xpath, violations)
 
       NonEmptyList
         .fromList(values.toList)
-        .map(_.map { case (step, violations) => violations.toNem(history :+ step) }.reduce)
+        .map(_.map { case (step, violations) => violations.toNem(xpath / step) }.reduce)
         .fold(root)(root.combine)
     case Namespace(values) =>
-      values.toNel.map { case (step, violations) => violations.toNem(history :+ step) }.reduce
+      values.toNel.map { case (step, violations) => violations.toNem(xpath / step) }.reduce
+
+  final def toNel: NonEmptyList[Violation.At] = toNem.toNel.flatMap { case (path, violations) =>
+    violations.toNonEmptyList.map(Violation.At(path, _))
+  }
 
   final def print: NonEmptyList[String] = Printers(this)
   final override def toString: String = print.mkString_("\n")
@@ -49,16 +53,23 @@ object Violations:
 
   def namespace(step: Step, violations: NonEmptyChain[Violation]): Violations =
     Namespace(NonEmptyMap.one(step, root(violations)))
-  def namespaceNec(step: Step, violation: Violation): Violations =
-    namespace(step, NonEmptyChain.one(violation))
+  def namespaceNec(step: Step, violation: Violation): Violations = namespace(step, NonEmptyChain.one(violation))
 
-  def from(nem: NonEmptyMap[Chain[Step], NonEmptyChain[Violation]]): Violations = ???
+  def from(nem: NonEmptyMap[XPath, NonEmptyChain[Violation]]): Violations = ???
 
-  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = values
-    .traverse(Parsers.violations.parseAll)
-    .map(_.groupMapNem { case (history, _) => history } { case (_, violation) => violation })
-    .map(_.map(NonEmptyChain.fromNonEmptyList))
-    .map(from)
+  def from(values: NonEmptyList[Violation.At]): Violations = ???
+
+  def parse(value: String): Either[Parser.Error, Violations] = ???
+  // Parsers.violations
+  //   .parseAll(value)
+  //   .map { case (history, violation) => history.foldRight(rootNec(violation))(_ /: _) }
+
+  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = ???
+  // values
+  //   .traverse(Parsers.violations.parseAll)
+  //   .map(_.groupMapNem { case (history, _) => history } { case (_, violation) => violation })
+  //   .map(_.map(NonEmptyChain.fromNonEmptyList))
+  //   .map(from)
 
   given Semigroup[Violations] with
     override def combine(x: Violations, y: Violations): Violations = x.combine(y)

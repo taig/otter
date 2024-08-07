@@ -11,6 +11,8 @@ import java.util.regex.Pattern
 private[otter] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
 
+  val colon: Parser[Unit] = Parser.char(':')
+
   val int: Parser[Int] = Numbers.signedIntString.mapFilter(_.toIntOption)
 
   def brackets[A](parser: Parser.With1[A]) = parser.between(Parser.char('['), Parser.char(']'))
@@ -41,7 +43,7 @@ private[otter] object Parsers:
       val array = brackets(list(recurse).with1).map(values => Data.Array(values.toVector))
 
       val keyValue: Parser[(String, Data)] =
-        Json.delimited.parser ~ (Parser.char(':').surroundedBy(whitespace) *> recurse)
+        Json.delimited.parser ~ (colon.surroundedBy(whitespace) *> recurse)
 
       val obj = list(keyValue).with1
         .between(Parser.char('{'), Parser.char('}'))
@@ -57,7 +59,7 @@ private[otter] object Parsers:
 
     Parser.oneOf(field :: index :: Nil)
 
-  val history: Parser[Chain[Step]] = Parser.string("$") *> step.rep0.map(Chain.fromSeq)
+  val xpath: Parser[XPath] = Parser.string("$") *> step.rep0.map(values => XPath(Chain.fromSeq(values)))
 
   val constraint: Parser[Constraint] =
     val tpe: Parser[Constraint.Type] =
@@ -139,4 +141,4 @@ private[otter] object Parsers:
   val violation: Parser[Violation] =
     ((brackets(Parsers.constraint.with1) <* Parser.string(" ! ")) ~ data.root).map(Violation.apply)
 
-  val violations: Parser[(Chain[Step], Violation)] = history ~ violation
+  val violationAt: Parser[Violation.At] = ((xpath <* colon <* whitespace) ~ violation).map(Violation.At.apply)
