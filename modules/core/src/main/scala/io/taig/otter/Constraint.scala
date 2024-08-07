@@ -8,7 +8,7 @@ import cats.Eq
 import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable:
-  final def print: String = ConstraintPrinter(this)
+  final def print: String = Printers(this)
   final override def toString: String = print
 
 object Constraint:
@@ -38,7 +38,7 @@ object Constraint:
     final case class MinLength(reference: Int) extends Constraint.Primitive
     final case class Multiple(reference: Data.Number) extends Constraint.Primitive
 
-  def parse(value: String): Either[Parser.Error, Constraint] = ConstraintParser(value)
+  def parse(value: String): Either[Parser.Error, Constraint] = Parsers.constraint.parseAll(value)
 
   given Eq[Constraint] = Eq.instance:
     case (Primitive.Matches(x), Primitive.Matches(y)) => x.pattern() === y.pattern()

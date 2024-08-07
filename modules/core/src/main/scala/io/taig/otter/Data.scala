@@ -40,7 +40,7 @@ sealed abstract class Data extends SProduct with Serializable:
     case _: Data.String    => "string"
     case Data.Null         => "null"
 
-  final def print(quoted: Boolean): String = DataPrinter(this, quoted)
+  final def print(quoted: Boolean): String = Printers(this, quoted)
 
   final def print: String = print(quoted = true)
 
@@ -155,6 +155,6 @@ object Data:
 
   type Required[A] = A
 
-  def parse(value: JString): Either[Parser.Error, Data] = DataParser(value)
+  def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given Eq[Data] = Eq.fromUniversalEquals

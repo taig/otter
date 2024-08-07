@@ -3,7 +3,6 @@ package io.taig.otter
 import scala.collection.immutable.Iterable
 import cats.Eq
 import cats.syntax.all.*
-import cats.data.Chain
 
 extension [A: Eq, B](self: Vector[(A, B)])
   def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
@@ -20,10 +19,3 @@ extension [A: Eq, B](self: Vector[(A, B)])
     }
 
     (result.result(), remainders.result())
-
-private def printHistory(history: Chain[Step]): String =
-  val steps = history.map:
-    case step @ Step.Field(_) => s".${step.print}"
-    case step @ Step.Index(_) => step.print
-
-  "$" + steps.mkString_("")

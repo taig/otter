@@ -5,6 +5,7 @@ import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.nio.charset.StandardCharsets
+import cats.data.NonEmptyList
 
 final class RequestTest extends FunSuite:
   test("encode"):
@@ -176,7 +177,7 @@ final class RequestTest extends FunSuite:
       expected = Request.Result.MediaTypesUnsupported(
         Violations.rootNec(
           Violation(
-            Constraint.OneOf(List("application/x-www-form-urlencoded", "text/plain").map(Data.String.apply)),
+            Constraint.OneOf(NonEmptyList.of("application/x-www-form-urlencoded", "text/plain").map(Data.String.apply)),
             actual = Data.String("application/json")
           )
         )

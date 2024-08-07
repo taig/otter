@@ -5,7 +5,6 @@ import io.taig.otter as Base
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.util.regex.Pattern
-import cats.data.Validated
 import Base.Evidence
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
@@ -184,10 +183,10 @@ trait Codecs extends Base.Codecs:
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   final def response[A](results: Results[A]): Response[A] = Response(
-      results,
-      mediaTypesUnsupported = result(code.unsupportedMediaTypes, text(violationsString)),
-      validationViolations = result(code.unprocessableEntity, text(violationsString))
-    )
+    results,
+    mediaTypesUnsupported = result(code.unsupportedMediaTypes, text(violations.flattened)),
+    validationViolations = result(code.unprocessableEntity, text(violations.flattened))
+  )
 
   // Scala.js won't compile if this is included here (for reason unknown)
   export ViolationsCodecs.*

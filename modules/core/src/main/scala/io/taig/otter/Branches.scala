@@ -29,6 +29,9 @@ sealed abstract class Branches[+O <: Data, A]:
     override def encodeKeyed(b: B): Data.Object[O] = self.encodeKeyed(g(b))
     override def encodeUntagged(b: B): O = self.encodeUntagged(g(b))
 
+  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Branches[O, B] =
+    imap(evidence.from)(evidence.to)
+
   final def orElse[P <: Data, B](branches: Branches[P, B]): Branches[O | P, Either[A, B]] =
     new Branches[O | P, Either[A, B]]:
       override def toNev: NonEmptyVector[Branch[?, ?]] = self.toNev.concatNev(branches.toNev)

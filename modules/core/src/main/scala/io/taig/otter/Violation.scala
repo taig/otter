@@ -1,6 +1,10 @@
 package io.taig.otter
 
-final case class Violation(constraint: Constraint, actual: Data):
-  def print: String = s"[${constraint.print}] ! ${actual.print}"
+import cats.parse.Parser
 
+final case class Violation(constraint: Constraint, actual: Data):
+  def print: String = Printers(this)
   override def toString: String = print
+
+object Violation:
+  def parse(value: String): Either[Parser.Error, Violation] = Parsers.violation.parseAll(value)
