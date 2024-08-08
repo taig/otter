@@ -19,6 +19,8 @@ sealed abstract class Body[A]:
   final def :+[B](body: Body[B]): Bodies[Either[A, B]] = toBodies :+ body
 
   final def +:[B](body: Body[B]): Bodies[Either[B, A]] = body +: toBodies
+  
+  final def +[B >: A](body: Body[B]): Bodies[B] = toBodies + body
 
   final def toBodies: Bodies[A] = Bodies(this)
 

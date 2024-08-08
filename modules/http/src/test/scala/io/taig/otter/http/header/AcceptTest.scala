@@ -96,40 +96,78 @@ final class AcceptTest extends FunSuite:
     )
 
   test("toSortedList"):
-    assertEquals(
-      obtained = Accept(
+    println(
+      Accept(
         NonEmptyList.of(
           Weighted(
-            self = MediaRange(
-              tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = Nil
-            ),
+            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
             weight = none
           ),
           Weighted(
             self = MediaRange(
-              tpe = MediaRange.Type.Secondary("application", "json"),
-              parameters = Nil
+              tpe = MediaRange.Type.Secondary("text", "plain"),
+              parameters = List(Parameter(ci"foo", "bar"))
             ),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
             weight = BigDecimal("0.5").some
           ),
           Weighted(
-            self = MediaRange(
-              tpe = MediaRange.Type.Secondary("text", "html"),
-              parameters = Nil
-            ),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Nil),
             weight = BigDecimal(0).some
+          )
+        )
+      ).toSortedList.map(_.show).mkString(", ")
+    )
+
+    assertEquals(
+      obtained = Accept(
+        NonEmptyList.of(
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Nil),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(
+              tpe = MediaRange.Type.Secondary("text", "plain"),
+              parameters = List(Parameter(ci"foo", "bar"))
+            ),
+            weight = none
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
+            weight = BigDecimal("0.5").some
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Nil),
+            weight = BigDecimal(0).some
+          ),
+          Weighted(
+            self = MediaRange(tpe = MediaRange.Type.Any, parameters = Nil),
+            weight = BigDecimal("0.1").some
           )
         )
       ).toSortedList,
       expected = List(
-        MediaRange(
-          tpe = MediaRange.Type.Secondary("text", "plain"),
-          parameters = Nil
-        ),
-        MediaRange(
-          tpe = MediaRange.Type.Secondary("application", "json"),
-          parameters = Nil
-        )
+        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = List(Parameter(ci"foo", "bar"))),
+        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
+        MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
+        MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Nil),
+        MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
+        MediaRange(tpe = MediaRange.Type.Any, parameters = Nil)
       )
     )

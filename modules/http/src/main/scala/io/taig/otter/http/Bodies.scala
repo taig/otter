@@ -25,6 +25,10 @@ sealed abstract class Bodies[A]:
 
   final def +:[B](body: Body[B]): Bodies[Either[B, A]] = body.toBodies.orElse(this)
 
+  final def or[B >: A](bodies: Bodies[B]): Bodies[B] = ???
+
+  final def +[B >: A](body: Body[B]): Bodies[B] = or(body.toBodies)
+
   def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[A]]
 
   def encode(charset: Option[Charset], a: A): (MediaType, Http.Payload)

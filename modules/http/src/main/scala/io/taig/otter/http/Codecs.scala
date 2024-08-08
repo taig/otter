@@ -113,21 +113,25 @@ trait Codecs extends Base.Codecs:
     (charset, data) => data.plain.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
   )
 
-  def formData[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Body[A] = body(
-    mediaType = MediaType.application.wwwFormUrlencoded,
-    codec,
-    (charset, bytes) =>
-      val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
-      val formData = FormData.parse(value).toVector
-      Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
-    ,
-    (charset, data) =>
-      val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
-      val values = data.values.map:
-        case (key, Data.Null)            => (key, none)
-        case (key, data: Data.Primitive) => (key, data.plain.some)
-      FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
-  )
+  object formData:
+    private type Of = Data.Object[Data.Optional[Data.Primitive]]
+
+    def apply[A](codec: Codec.Required.Of[Of, A]): Body[A] = body(
+      mediaType = MediaType.application.wwwFormUrlencoded,
+      codec,
+      (charset, bytes) =>
+        val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+        val formData = FormData.parse(value).toVector
+        Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
+      ,
+      (charset, data) =>
+        val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
+        val values = data.values.map:
+          case (key, Data.Null)            => (key, none)
+          case (key, data: Data.Primitive) => (key, data.plain.some)
+
+        FormData(values).show.getBytes(charsetOrUtf8),
+    )
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
@@ -182,9 +186,7 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  private val violationsBody = text(violations.flattened)
-
-  text(violations.flattened).:+(formData(violations.obj))
+  private val violationsBody = text(violations.printed) + formData(violations.flattened)
 
   final def response[A](results: Results[A]): Response[A] = Response(
     results,

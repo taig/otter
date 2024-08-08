@@ -3,12 +3,11 @@ package io.taig.otter.http
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
 import cats.data.NonEmptyList
-import io.taig.otter.XPath
-import io.taig.otter.Indexed
+import cats.data.NonEmptyChain
 
 object ViolationsCodecs:
   object violations:
-    val structured: Sum.Nested.Required[Violations] =
+    val nested: Sum.Nested.Required[Violations] =
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
         record(field("reference", reference) :* field("exclusive", boolean)).to
 
@@ -45,31 +44,24 @@ object ViolationsCodecs:
       val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.show)
 
       val root: Codec.Required[Violations.Root] = record(
-        field("values", dictionary.sortedMap(step, structured)) :*
+        field("values", dictionary.sortedMap(step, nested)) :*
           field("violations", collection.nonEmptyChain(violation))
       ).to
 
-      val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, structured).to
+      val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, nested).to
 
       sum.nested(branch("root", root) :+ branch("namespace", namespace)).to
 
-    def listed: Collection.Required.Of[Data.Primitive, Violations] =
-      // parser[Violations](name = "violations")(Violations.parse(_).toOption)(_.print)
-      collection.nonEmptyList(???)
-      // parser(name = "violations") { value =>
-      //   NonEmptyList.fromList(value.split("\n").toList).flatMap(Violations.parse)
-      // }(_.print.mkString_("\n"))
-      // collection.list()
-      ???
-
-    def obj: Dictionary.Required.Of[Data.Primitive, Violations] =
+    def flattened: Dictionary.Required.Of[Data.Primitive, Violations] =
       val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.show)
 
-      // dictionary
-      //   .nonEmptyList(xpath, violation)
-      //   .imap(_.map(Indexed.apply))(_.map(violation => (violation.xpath, violation.self)))
-      //   .imap(Violations.from)(_.toNel)
-      ???
+      dictionary
+        .nonEmptyList(xpath, violation)
+        .imap(_.groupMapNem { case (xpath, _) => xpath }{ case (_, violation) => violation }) {
+          _.toNel.flatMap { case (xpath, violations) => violations.tupleLeft(xpath) }
+        }
+        .imap(_.map(NonEmptyChain.fromNonEmptyList))(_.map(_.toNonEmptyList))
+        .imap(Violations.from)(_.toNem)
 
-    val flattened: Primitive.Required[Violations] =
+    val printed: Primitive.Required[Violations] =
       parser(name = "violations")(Violations.parse(_).toOption)(_.show)
