@@ -37,8 +37,8 @@ private[otter] object Printers:
     case Data.Number(value)  => String.valueOf(value)
     case Data.Null           => "null"
 
-  def apply(violation: Violation): String = s"[${violation.constraint.print}] ! ${violation.actual.print}"
+  def apply(violation: Violation): String = show"[${violation.constraint}] ! ${violation.actual}"
 
-  def apply(violation: Violation.At): String = s"${Printers(violation)}: ${Printers(violation.self)}"
+  def apply(violation: Indexed[Violation]): String = show"${violation.xpath}: ${violation.self}"
 
   def apply(violations: Violations): NonEmptyList[String] = violations.toNel.map(Printers.apply)

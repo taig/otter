@@ -6,10 +6,10 @@ import cats.syntax.all.*
 import cats.parse.Parser
 import cats.Eq
 import scala.Product as SProduct
+import cats.Show
 
 sealed abstract class Constraint extends SProduct, Serializable:
-  final def print: String = Printers(this)
-  final override def toString: String = print
+  final override def toString: String = Printers(this)
 
 object Constraint:
   final case class Type(name: String) extends Constraint
@@ -43,3 +43,5 @@ object Constraint:
   given Eq[Constraint] = Eq.instance:
     case (Primitive.Matches(x), Primitive.Matches(y)) => x.pattern() === y.pattern()
     case (x, y)                                       => x == y
+
+  given Show[Constraint] = Printers(_)

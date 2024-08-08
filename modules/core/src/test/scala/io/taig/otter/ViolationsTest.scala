@@ -17,22 +17,20 @@ final class ViolationsTest extends FunSuite:
       Violation(Constraint.Primitive.MinLength(reference = 3), actual = Data.Number(1))
     )
 
-  test("print"):
+  test("show"):
     assertEquals(
-      obtained = violations.print,
-      expected = NonEmptyList.of(
-        "$: [type 'string'] ! 'null'",
-        "$: [oneOf 'foo','bar','baz'] ! 'foobar'",
-        "$.foo: [minLength '3'] ! '1'"
-      )
+      obtained = violations.show,
+      expected = """$: [type 'string'] ! 'null'
+                   |$: [oneOf 'foo','bar','baz'] ! 'foobar'
+                   |$.foo: [minLength '3'] ! '1'""".stripMargin
     )
 
-  // test("parse"):
-  //   assertEquals(
-  //     obtained = Violations.parse(),
-  //     expected = NonEmptyList.of(
-  //       "$: [type 'string'] ! 'null'",
-  //       "$: [oneOf 'foo','bar','baz'] ! 'foobar'",
-  //       "$.foo: [minLength '3'] ! '1'"
-  //     )
-  //   )
+  test("parse"):
+    assertEquals(
+      obtained = Violations.parse(
+        """$: [type 'string'] ! 'null'
+          |$: [oneOf 'foo','bar','baz'] ! 'foobar'
+          |$.foo: [minLength '3'] ! '1'""".stripMargin
+      ),
+      expected = violations.asRight
+    )

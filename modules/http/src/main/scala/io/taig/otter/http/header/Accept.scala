@@ -1,5 +1,5 @@
 package io.taig.otter.http.header
 
-final case class Accept()
+import cats.data.NonEmptyList
 
-object Accept
+opaque type Accept = NonEmptyList[Weighted[MediaRange]]

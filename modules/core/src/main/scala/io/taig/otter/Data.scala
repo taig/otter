@@ -10,6 +10,7 @@ import java.lang.String as JString
 import scala.{Boolean as SBoolean, Product as SProduct}
 import cats.Order
 import cats.parse.Parser
+import cats.Show
 
 sealed abstract class Data extends SProduct with Serializable:
   final def asValue: Option[Data.Value] = this match
@@ -40,11 +41,7 @@ sealed abstract class Data extends SProduct with Serializable:
     case _: Data.String    => "string"
     case Data.Null         => "null"
 
-  final def print(quoted: Boolean): String = Printers(this, quoted)
-
-  final def print: String = print(quoted = true)
-
-  final override def toString: JString = print
+  final override def toString: JString = Printers(this, quoted = true)
 
 object Data:
   sealed abstract class Value extends Data
@@ -87,6 +84,8 @@ object Data:
     final def asBoolean: Option[Data.Boolean] = this match
       case data: Data.Boolean => data.some
       case _                  => none
+
+    final def plain: JString = Printers(this, quoted = false)
 
   final case class String(value: JString) extends Data.Primitive
 
@@ -158,3 +157,5 @@ object Data:
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given Eq[Data] = Eq.fromUniversalEquals
+
+  given [A <: Data]: Show[A] = Show.fromToString

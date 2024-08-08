@@ -1,53 +1,54 @@
 package io.taig.otter
 
+import cats.syntax.all.*
 import munit.FunSuite
 
 final class DataTest extends FunSuite:
-  test("print: primitive"):
+  test("show: primitive"):
     assertEquals(
-      obtained = Data.String("foobar").print,
+      obtained = Data.String("foobar").show,
       expected = "\"foobar\""
     )
 
     assertEquals(
-      obtained = Data.Boolean(true).print,
+      obtained = Data.Boolean(true).show,
       expected = "true"
     )
 
     assertEquals(
-      obtained = Data.Boolean(false).print,
+      obtained = Data.Boolean(false).show,
       expected = "false"
     )
 
     assertEquals(
-      obtained = Data.Number(0).print,
+      obtained = Data.Number(0).show,
       expected = "0"
     )
 
     assertEquals(
-      obtained = Data.Number(1.23f).print,
+      obtained = Data.Number(1.23f).show,
       expected = "1.23"
     )
 
     assertEquals(
-      obtained = Data.Number(1.23d).print,
+      obtained = Data.Number(1.23d).show,
       expected = "1.23"
     )
 
   test("print: null"):
     assertEquals(
-      obtained = Data.Null.print,
+      obtained = Data.Null.show,
       expected = "null"
     )
 
   test("print: object"):
     assertEquals(
-      obtained = Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42)).print,
+      obtained = Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42)).show,
       expected = "{foo:\"foobar\",bar:42}"
     )
 
   test("print: array"):
     assertEquals(
-      obtained = Data.Array.of(Data.String("foobar"), Data.Number(42)).print,
+      obtained = Data.Array.of(Data.String("foobar"), Data.Number(42)).show,
       expected = "[\"foobar\",42]"
     )

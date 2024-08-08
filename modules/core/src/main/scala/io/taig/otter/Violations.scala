@@ -8,6 +8,7 @@ import cats.parse.Parser
 import cats.data.Chain
 import scala.collection.immutable.SortedMap
 import cats.implicits.*
+import cats.Show
 
 enum Violations:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
@@ -36,12 +37,11 @@ enum Violations:
     case Namespace(values) =>
       values.toNel.map { case (step, violations) => violations.toNem(xpath / step) }.reduce
 
-  final def toNel: NonEmptyList[Violation.At] = toNem.toNel.flatMap { case (path, violations) =>
-    violations.toNonEmptyList.map(Violation.At(path, _))
+  final def toNel: NonEmptyList[Indexed[Violation]] = toNem.toNel.flatMap { case (path, violations) =>
+    violations.toNonEmptyList.map(Indexed(path, _))
   }
 
-  final def print: NonEmptyList[String] = Printers(this)
-  final override def toString: String = print.mkString_("\n")
+  final override def toString: String = Printers(this).mkString_("\n")
 
 object Violations:
   def root(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)
@@ -57,7 +57,7 @@ object Violations:
 
   def from(nem: NonEmptyMap[XPath, NonEmptyChain[Violation]]): Violations = ???
 
-  def from(values: NonEmptyList[Violation.At]): Violations = ???
+  def from(values: NonEmptyList[Indexed[Violation]]): Violations = ???
 
   def parse(value: String): Either[Parser.Error, Violations] = ???
   // Parsers.violations
@@ -73,3 +73,5 @@ object Violations:
 
   given Semigroup[Violations] with
     override def combine(x: Violations, y: Violations): Violations = x.combine(y)
+
+  given Show[Violations] = Show.fromToString

@@ -141,4 +141,4 @@ private[otter] object Parsers:
   val violation: Parser[Violation] =
     ((brackets(Parsers.constraint.with1) <* Parser.string(" ! ")) ~ data.root).map(Violation.apply)
 
-  val violationAt: Parser[Violation.At] = ((xpath <* colon <* whitespace) ~ violation).map(Violation.At.apply)
+  def indexed[A](self: Parser[A]): Parser[Indexed[A]] = ((xpath <* colon <* whitespace) ~ self).map(Indexed.apply)

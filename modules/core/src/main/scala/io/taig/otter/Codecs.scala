@@ -353,6 +353,6 @@ trait Codecs extends Types:
   def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
     dynamic.void.imap(_ => a)(_ => Data.Null)
 
-  val xpath: Primitive.Required[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.print)
+  val xpath: Primitive.Required[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 
 object Codecs extends Codecs
