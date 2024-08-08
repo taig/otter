@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.data.NonEmptyChain
 import cats.data.Chain
 import cats.syntax.all.*
 import cats.data.NonEmptyList
@@ -31,14 +32,16 @@ private[otter] object Printers:
   def apply(data: Data, quoted: Boolean): String = data match
     case Data.Object(values) =>
       s"{${values.map { case (key, value) => s"\"$key\":${Printers(value, quoted)}" }.mkString(",")}}"
-    case Data.Array(values)  => s"[${values.map(Printers(_, quoted).mkString(","))}]"
-    case Data.String(value)  => if quoted then "\"$value\"" else value
+    case Data.Array(values)  => s"[${values.map(Printers(_, quoted)).mkString(",")}]"
+    case Data.String(value)  => if quoted then s"\"$value\"" else value
     case Data.Boolean(value) => String.valueOf(value)
     case Data.Number(value)  => String.valueOf(value)
     case Data.Null           => "null"
 
-  def apply(violation: Violation): String = show"[${violation.constraint}] ! ${violation.actual}"
+  def apply(violation: Violation): String = show"${violation.constraint} ! ${violation.actual}"
 
-  def apply(violation: Indexed[Violation]): String = show"${violation.xpath}: ${violation.self}"
+  def apply(violations: Indexed[NonEmptyChain[Violation]]): String =
+    val path = violations.xpath.show
+    violations.self.map(violation => show"$path: $violation").mkString_("\n")
 
   def apply(violations: Violations): NonEmptyList[String] = violations.toNel.map(Printers.apply)

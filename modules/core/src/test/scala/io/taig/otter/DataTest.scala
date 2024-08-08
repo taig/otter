@@ -35,19 +35,19 @@ final class DataTest extends FunSuite:
       expected = "1.23"
     )
 
-  test("print: null"):
+  test("show: null"):
     assertEquals(
       obtained = Data.Null.show,
       expected = "null"
     )
 
-  test("print: object"):
+  test("show: object"):
     assertEquals(
       obtained = Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42)).show,
-      expected = "{foo:\"foobar\",bar:42}"
+      expected = "{\"foo\":\"foobar\",\"bar\":42}"
     )
 
-  test("print: array"):
+  test("show: array"):
     assertEquals(
       obtained = Data.Array.of(Data.String("foobar"), Data.Number(42)).show,
       expected = "[\"foobar\",42]"

@@ -20,17 +20,17 @@ final class ViolationsTest extends FunSuite:
   test("show"):
     assertEquals(
       obtained = violations.show,
-      expected = """$: [type 'string'] ! 'null'
-                   |$: [oneOf 'foo','bar','baz'] ! 'foobar'
-                   |$.foo: [minLength '3'] ! '1'""".stripMargin
+      expected = """$: type "string" ! "null"
+                   |$: oneOf ["foo","bar","baz"] ! "foobar"
+                   |$.foo: minLength 3 ! 1""".stripMargin
     )
 
   test("parse"):
     assertEquals(
       obtained = Violations.parse(
-        """$: [type 'string'] ! 'null'
-          |$: [oneOf 'foo','bar','baz'] ! 'foobar'
-          |$.foo: [minLength '3'] ! '1'""".stripMargin
+        """$: type "string" ! "null"
+          |$: oneOf ["foo","bar","baz"] ! "foobar"
+          |$.foo: minLength 3 ! 1""".stripMargin
       ),
       expected = violations.asRight
     )

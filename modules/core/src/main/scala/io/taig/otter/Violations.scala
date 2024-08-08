@@ -37,9 +37,7 @@ enum Violations:
     case Namespace(values) =>
       values.toNel.map { case (step, violations) => violations.toNem(xpath / step) }.reduce
 
-  final def toNel: NonEmptyList[Indexed[Violation]] = toNem.toNel.flatMap { case (path, violations) =>
-    violations.toNonEmptyList.map(Indexed(path, _))
-  }
+  final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation]]] = toNem.toNel.map(Indexed.apply)
 
   final override def toString: String = Printers(this).mkString_("\n")
 
@@ -55,21 +53,24 @@ object Violations:
     Namespace(NonEmptyMap.one(step, root(violations)))
   def namespaceNec(step: Step, violation: Violation): Violations = namespace(step, NonEmptyChain.one(violation))
 
-  def from(nem: NonEmptyMap[XPath, NonEmptyChain[Violation]]): Violations = ???
+  def from(violations: Indexed[NonEmptyChain[Violation]]): Violations =
+    violations.xpath.toChain.foldRight(root(violations.self))(_ /: _)
 
-  def from(values: NonEmptyList[Indexed[Violation]]): Violations = ???
+  def from(values: NonEmptyMap[XPath, NonEmptyChain[Violation]]): Violations = from(values.toNel.map(Indexed.apply))
 
-  def parse(value: String): Either[Parser.Error, Violations] = ???
-  // Parsers.violations
-  //   .parseAll(value)
-  //   .map { case (history, violation) => history.foldRight(rootNec(violation))(_ /: _) }
+  def from(values: NonEmptyList[Indexed[NonEmptyChain[Violation]]]): Violations =
+    val NonEmptyList(head, tail) = values.map(from)
+    tail.foldLeft(head)(_.combine(_))
 
-  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = ???
-  // values
-  //   .traverse(Parsers.violations.parseAll)
-  //   .map(_.groupMapNem { case (history, _) => history } { case (_, violation) => violation })
-  //   .map(_.map(NonEmptyChain.fromNonEmptyList))
-  //   .map(from)
+  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = NonEmptyChain
+      .fromNonEmptyList(values)
+      .traverse(Parsers.indexed(Parsers.violation).parseAll)
+      .map(_.groupMapNem(_.xpath)(_.self))
+      .map(from)
+
+  // TODO parse properly
+  def parse(value: String): Either[Parser.Error, Violations] =
+    parse(NonEmptyList.fromList(value.split('\n').toList).getOrElse(NonEmptyList.one("")))
 
   given Semigroup[Violations] with
     override def combine(x: Violations, y: Violations): Violations = x.combine(y)

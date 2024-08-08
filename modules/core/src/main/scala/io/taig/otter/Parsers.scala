@@ -23,6 +23,12 @@ private[otter] object Parsers:
 
   def nonEmptyList[A](parser: Parser[A]): Parser[NonEmptyList[A]] = parser.repSep(separator).surroundedBy(whitespace)
 
+  val token: Parser[String] = Parser.charsWhile { value =>
+    (value >= 'a' && value <= 'z') ||
+    (value >= 'A' && value <= 'Z') ||
+    (value >= '0' && value <= '9')
+  }
+
   object data:
     val nil: Parser[Data.Null.type] = Parser.string("null").as(Data.Null)
 
@@ -53,13 +59,13 @@ private[otter] object Parsers:
 
   val step: Parser[Step] =
     val field: Parser[Step.Field] =
-      Parser.string(".") *> Json.undelimited.parser.map(Step.Field.apply)
+      Parser.char('.') *> token.map(Step.Field.apply)
 
     val index: Parser[Step.Index] = brackets(int.with1).map(Step.Index.apply)
 
     Parser.oneOf(field :: index :: Nil)
 
-  val xpath: Parser[XPath] = Parser.string("$") *> step.rep0.map(values => XPath(Chain.fromSeq(values)))
+  val xpath: Parser[XPath] = Parser.char('$') *> step.rep0.map(values => XPath(Chain.fromSeq(values)))
 
   val constraint: Parser[Constraint] =
     val tpe: Parser[Constraint.Type] =
@@ -139,6 +145,6 @@ private[otter] object Parsers:
     )
 
   val violation: Parser[Violation] =
-    ((brackets(Parsers.constraint.with1) <* Parser.string(" ! ")) ~ data.root).map(Violation.apply)
+    ((Parsers.constraint.with1 <* Parser.string(" ! ")) ~ data.root).map(Violation.apply)
 
   def indexed[A](self: Parser[A]): Parser[Indexed[A]] = ((xpath <* colon <* whitespace) ~ self).map(Indexed.apply)
