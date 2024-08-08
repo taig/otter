@@ -22,7 +22,11 @@ abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Cod
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
-  final override def imap[B](f: A => B)(g: B => A): Dictionary[F, O, B] = ???
+  final override def imap[B](f: A => B)(g: B => A): Dictionary[F, O, B] = new Dictionary[F, O, B]:
+    export self.{constraints, metadata}
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Dictionary[F, O, B] =
     imap(evidence.from)(evidence.to)

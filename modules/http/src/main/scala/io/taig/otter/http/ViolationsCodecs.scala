@@ -4,6 +4,7 @@ import io.taig.otter.Dsl.*
 import cats.syntax.all.*
 import cats.data.NonEmptyList
 import io.taig.otter.XPath
+import io.taig.otter.Indexed
 
 object ViolationsCodecs:
   object violations:
@@ -41,7 +42,7 @@ object ViolationsCodecs:
       val violation: Record.Required[Violation] =
         record(field("constraint", constraint) :* field("actual", dynamic.any)).to
 
-      val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.print)
+      val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.show)
 
       val root: Codec.Required[Violations.Root] = record(
         field("values", dictionary.sortedMap(step, structured)) :*
@@ -52,7 +53,7 @@ object ViolationsCodecs:
 
       sum.nested(branch("root", root) :+ branch("namespace", namespace)).to
 
-    val listed: Collection.Required.Of[Data.Primitive, Violations] =
+    def listed: Collection.Required.Of[Data.Primitive, Violations] =
       // parser[Violations](name = "violations")(Violations.parse(_).toOption)(_.print)
       collection.nonEmptyList(???)
       // parser(name = "violations") { value =>
@@ -61,14 +62,14 @@ object ViolationsCodecs:
       // collection.list()
       ???
 
-    val obj: Dictionary.Required.Of[Data.Primitive, Violations] =
-      val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.print)
+    def obj: Dictionary.Required.Of[Data.Primitive, Violations] =
+      val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.show)
 
-      dictionary
-        .nonEmptyList(xpath, violation)
-        .imap(_.map(Violation.At.apply))(_.map(violation => (violation.xpath, violation.self)))
-        .imap(Violations.from)(_.toNel)
+      // dictionary
+      //   .nonEmptyList(xpath, violation)
+      //   .imap(_.map(Indexed.apply))(_.map(violation => (violation.xpath, violation.self)))
+      //   .imap(Violations.from)(_.toNel)
+      ???
 
-    val flattened: Primitive.Required[Violations] = parser(name = "violations") { value =>
-      NonEmptyList.fromList(value.split("\n").toList).flatMap(Violations.parse(_).toOption)
-    }(_.print.mkString_("\n"))
+    val flattened: Primitive.Required[Violations] =
+      parser(name = "violations")(Violations.parse(_).toOption)(_.show)

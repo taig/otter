@@ -47,7 +47,8 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
     override def encodeSequence(b: B, nulls: Null): Data.Object[F[O]] = self.encodeSequence(g(b), nulls)
 
-  final override def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[F, O, B] = ???
+  final override def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[F, O, B] =
+    imap(evidence.from)(evidence.to)
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}

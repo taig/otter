@@ -110,7 +110,7 @@ trait Codecs extends Base.Codecs:
       val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
       Data.String(value).valid
     ,
-    (charset, data) => data.print(quoted = false).getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+    (charset, data) => data.plain.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
   )
 
   def formData[A](codec: Codec.Required.Of[Data.Object[Data.Optional[Data.Primitive]], A]): Body[A] = body(
@@ -125,7 +125,7 @@ trait Codecs extends Base.Codecs:
       val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
       val values = data.values.map:
         case (key, Data.Null)            => (key, none)
-        case (key, data: Data.Primitive) => (key, data.print(quoted = false).some)
+        case (key, data: Data.Primitive) => (key, data.plain.some)
       FormData(values).print(charsetOrUtf8).getBytes(charsetOrUtf8),
   )
 
@@ -192,7 +192,7 @@ trait Codecs extends Base.Codecs:
     validationViolations = result(code.unprocessableEntity, violationsBody)
   )
 
-  // Scala.js won't compile if this is included here (for reason unknown)
+  // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
 
   def error[F[+a] <: Data.Optional[a], O <: Data, A](

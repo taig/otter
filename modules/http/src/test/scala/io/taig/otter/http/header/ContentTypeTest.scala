@@ -20,7 +20,7 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(ContentType.Parameter("charset", "utf-8"))
+        parameters = List(Parameter("charset", "utf-8"))
       ).asRight
     )
 
@@ -29,7 +29,7 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(ContentType.Parameter("charset", "utf-8"))
+        parameters = List(Parameter("charset", "utf-8"))
       ).asRight
     )
 
@@ -38,13 +38,13 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(ContentType.Parameter("charset", "utf-8"), ContentType.Parameter("foo", "bar"))
+        parameters = List(Parameter("charset", "utf-8"), Parameter("foo", "bar"))
       ).asRight
     )
 
-  test("print"):
+  test("show"):
     assertEquals(
-      obtained = ContentType(tpe = "text", subtype = "html", parameters = Nil).print,
+      obtained = ContentType(tpe = "text", subtype = "html", parameters = Nil).show,
       expected = "text/html"
     )
 
@@ -52,8 +52,8 @@ final class ContentTypeTest extends FunSuite:
       obtained = ContentType(
         tpe = "application",
         subtype = "json",
-        parameters = List(ContentType.Parameter("charset", "utf-8"))
-      ).print,
+        parameters = List(Parameter("charset", "utf-8"))
+      ).show,
       expected = "application/json; charset=\"utf-8\""
     )
 
@@ -61,10 +61,7 @@ final class ContentTypeTest extends FunSuite:
       obtained = ContentType(
         tpe = "application",
         subtype = "json",
-        parameters = List(
-          ContentType.Parameter("charset", "utf-8"),
-          ContentType.Parameter("foo", "bar")
-        )
-      ).print,
+        parameters = List(Parameter("charset", "utf-8"), Parameter("foo", "bar"))
+      ).show,
       expected = "application/json; charset=\"utf-8\"; foo=\"bar\""
     )

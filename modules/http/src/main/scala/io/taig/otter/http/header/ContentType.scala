@@ -4,20 +4,15 @@ import io.taig.otter.http.Printers
 import io.taig.otter.http.Parsers
 import io.taig.otter.http.Dsl.*
 import cats.parse.Parser
+import cats.Show
+import cats.syntax.all.*
 
-final case class ContentType(tpe: String, subtype: String, parameters: List[ContentType.Parameter]):
-  def print: String = Printers(this)
-  override def toString: String = print
+final case class ContentType(tpe: String, subtype: String, parameters: List[Parameter]):
+  override def toString: String = Printers(this)
 
 object ContentType:
-  final case class Parameter(key: String, value: String):
-    def print: String = Printers(this)
-    override def toString: String = print
+  def parse(value: String): Either[Parser.Error, ContentType] = Parsers.contentType.parseAll(value)
 
-  object Parameter:
-    def parse(value: String): Either[Parser.Error, ContentType.Parameter] =
-      Parsers.contentType.parameter.parseAll(value)
+  val codec: Primitive.Required[ContentType] = parser(name = "contentType")(parse(_).toOption)(_.show)
 
-  def parse(value: String): Either[Parser.Error, ContentType] = Parsers.contentType.root.parseAll(value)
-
-  val codec: Primitive.Required[ContentType] = parser(name = "contentType")(parse(_).toOption)(_.print)
+  given Show[ContentType] = Show.fromToString

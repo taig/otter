@@ -63,10 +63,10 @@ object Violations:
     tail.foldLeft(head)(_.combine(_))
 
   def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = NonEmptyChain
-      .fromNonEmptyList(values)
-      .traverse(Parsers.indexed(Parsers.violation).parseAll)
-      .map(_.groupMapNem(_.xpath)(_.self))
-      .map(from)
+    .fromNonEmptyList(values)
+    .traverse(Parsers.indexed(Parsers.violation).parseAll)
+    .map(_.groupMapNem(_.xpath)(_.self))
+    .map(from)
 
   // TODO parse properly
   def parse(value: String): Either[Parser.Error, Violations] =

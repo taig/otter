@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.data.Validated
 import cats.Invariant
+import io.taig.otter.Codec.Result
 
 sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>
@@ -22,7 +23,11 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
       case (None, Some(default)) => default.valid
       case _                     => self.decode(data)
 
-  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = ???
+  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = new Collection[F, O, B]:
+    export self.{codec, constraints, metadata}
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection[F, O, B] = imap(evidence.from)(evidence.to)
 
