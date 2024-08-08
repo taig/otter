@@ -12,7 +12,7 @@ private[http] object Printers:
     s"${contentType.tpe}/${contentType.subtype}" +
       contentType.parameters.map(parameter => s"; ${Printers(parameter)}").mkString
 
-  def apply(parameter: Parameter): String = s"${parameter.key}=\"${parameter.value}\""
+  def apply(parameter: Parameter): String = s"${parameter.name}=\"${parameter.value}\""
 
   def apply(parameters: List[Parameter]): String = parameters.map(parameter => s"; ${Printers(parameter)}").mkString
 

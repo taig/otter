@@ -2,6 +2,7 @@ package io.taig.otter.http.header
 
 import munit.FunSuite
 import cats.syntax.all.*
+import org.typelevel.ci.*
 
 final class ContentTypeTest extends FunSuite:
   test("parse"):
@@ -20,7 +21,7 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(Parameter("charset", "utf-8"))
+        parameters = List(Parameter(ci"charset", "utf-8"))
       ).asRight
     )
 
@@ -29,7 +30,7 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(Parameter("charset", "utf-8"))
+        parameters = List(Parameter(ci"charset", "utf-8"))
       ).asRight
     )
 
@@ -38,7 +39,7 @@ final class ContentTypeTest extends FunSuite:
       expected = ContentType(
         tpe = "text",
         subtype = "plain",
-        parameters = List(Parameter("charset", "utf-8"), Parameter("foo", "bar"))
+        parameters = List(Parameter(ci"charset", "utf-8"), Parameter(ci"foo", "bar"))
       ).asRight
     )
 
@@ -52,7 +53,7 @@ final class ContentTypeTest extends FunSuite:
       obtained = ContentType(
         tpe = "application",
         subtype = "json",
-        parameters = List(Parameter("charset", "utf-8"))
+        parameters = List(Parameter(ci"charset", "utf-8"))
       ).show,
       expected = "application/json; charset=\"utf-8\""
     )
@@ -61,7 +62,7 @@ final class ContentTypeTest extends FunSuite:
       obtained = ContentType(
         tpe = "application",
         subtype = "json",
-        parameters = List(Parameter("charset", "utf-8"), Parameter("foo", "bar"))
+        parameters = List(Parameter(ci"charset", "utf-8"), Parameter(ci"foo", "bar"))
       ).show,
       expected = "application/json; charset=\"utf-8\"; foo=\"bar\""
     )

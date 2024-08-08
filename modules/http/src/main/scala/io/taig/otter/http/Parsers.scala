@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import cats.parse.Parser
+import cats.syntax.all.*
 import io.taig.otter.http.header.ContentType
 import io.taig.otter.http.header.Parameter
 import cats.parse.Numbers.digit
@@ -9,6 +10,7 @@ import io.taig.otter.http.header.Weighted
 import cats.parse.Parser0
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaRange
+import org.typelevel.ci.*
 
 private[http] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").rep0.void
@@ -30,12 +32,13 @@ private[http] object Parsers:
   val token: Parser[String] = Parser.charsWhile { value =>
     (value >= 'a' && value <= 'z') ||
     (value >= 'A' && value <= 'Z') ||
-    (value >= '0' && value <= '9')
+    (value >= '0' && value <= '9') ||
+    value == '.'
   }
 
   val string: Parser[String] = Json.delimited.parser
 
-  val parameter: Parser[Parameter] = ((token <* equal) ~ (string | token)).map(Parameter.apply)
+  val parameter: Parser[Parameter] = ((token.map(CIString.apply) <* equal) ~ (string | token)).map(Parameter.apply)
 
   val parameters: Parser0[List[Parameter]] =
     (whitespace.with1 *> semicolon *> whitespace *> parameter).rep0
@@ -50,21 +53,32 @@ private[http] object Parsers:
 
   val mediaRange: Parser[MediaRange] = (mediaRangeType ~ parameters).map(MediaRange.apply)
 
-  val q: Parser[BigDecimal] =
-    val zero = (Parser.char('0') *> (dot *> digit.rep0(min = 0, max = 3)).?).map:
-      case Some(digits) => BigDecimal(s"0.${digits.mkString}")
-      case None         => BigDecimal(0)
+  object q:
+    val value: Parser[BigDecimal] =
+      val zero = (Parser.char('0') *> (dot *> digit.rep0(min = 0, max = 3)).?).map:
+        case Some(digits) => BigDecimal(s"0.${digits.mkString}")
+        case None         => BigDecimal(0)
 
-    val one = (Parser.char('1') *> (dot *> Parser.char('0').rep0(min = 0, max = 3)).?).as(BigDecimal(1))
+      val one = (Parser.char('1') *> (dot *> Parser.char('0').rep0(min = 0, max = 3)).?).as(BigDecimal(1))
 
-    val value: Parser[BigDecimal] = zero | one
+      zero | one
 
-    Parser.char('q') *> equal *> value
+    val parameter: Parser[BigDecimal] = Parser.ignoreCaseChar('q') *> equal *> value
 
-  def weighted[A](parser: Parser[BigDecimal] => Parser[(A, Option[BigDecimal])]): Parser[Weighted[A]] =
-    parser(q).map(Weighted.apply)
+  val weightedMediaRange: Parser[Weighted[MediaRange]] = mediaRange.map: mediaRange =>
+    val qValueWithIndex = mediaRange.parameters.zipWithIndex
+      .collect { case (parameter, index) if parameter.name === ci"q" => (index, parameter.value) }
+      .reverse
+      .collectFirstSome { case (index, value) =>
+        q.value.parseAll(value).toOption.tupleRight(index)
+      }
 
-  val weightedMediaRange: Parser[Weighted[MediaRange]] =
-    (mediaRange ~ q.?).map(Weighted.apply)
+    val qValue = qValueWithIndex.map { case (qValue, _) => qValue }
+
+    val parametersWithoutQValue = qValueWithIndex.fold(mediaRange.parameters) { case (_, index) =>
+      mediaRange.parameters.patch(index, Nil, 1)
+    }
+
+    Weighted(mediaRange.copy(parameters = parametersWithoutQValue), qValue)
 
   val accept: Parser[Accept] = weightedMediaRange.repSep(separator).map(Accept.apply)
