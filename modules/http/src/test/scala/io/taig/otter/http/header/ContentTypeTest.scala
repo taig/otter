@@ -63,8 +63,8 @@ final class ContentTypeTest extends FunSuite:
         subtype = "json",
         parameters = List(
           ContentType.Parameter("charset", "utf-8"),
-          ContentType.Parameter("foo", "bar"),
-          )
+          ContentType.Parameter("foo", "bar")
+        )
       ).print,
       expected = "application/json; charset=\"utf-8\"; foo=\"bar\""
     )
