@@ -1,8 +1,7 @@
-package io.taig.otter.http4s
+package io.taig.otter.http.http4s
 
-import cats.data.Chain
 import cats.syntax.all.*
-import cats.{ApplicativeThrow, MonadThrow}
+import cats.MonadThrow
 import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
 import org.http4s.{
@@ -23,17 +22,19 @@ def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
 
 def toHttp4sMethod(method: Method): Option[Http4sMethod] = Http4sMethod.all.find(_.name === method.toString)
 
-def toHttpPath(path: Http4sPath): Http.Path = Chain.fromSeq(path.segments.map(_.decoded()))
+def toHttpPath(path: Http4sPath): Http.Path = path.segments.map(_.decoded())
 
 def toHttpQueries(query: Http4sQuery): Http.Queries =
-  Chain.fromSeq(query.toVector).mapFilter { case (name, value) => value.tupleLeft(name) }
+  query.multiParams.toVector.flatMap:
+    case (key, Nil)    => Vector(key -> none)
+    case (key, values) => values.map(_.some).tupleLeft(key)
 
 def toHttpUrl(uri: Uri): Http.Url = Http.Url(toHttpPath(uri.path), toHttpQueries(uri.query))
 
 def toHttp4sUri(url: Http.Url): ParseResult[Uri] = Uri.fromString(url.print)
 
 def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
-  Chain.fromSeq(headers.headers.map(header => header.name -> header.value))
+  headers.headers.map(header => header.name -> header.value).toVector
 
 def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
   new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
@@ -44,10 +45,7 @@ def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request): F[Http4sRequest[F]
     .liftTo[F]
   uri <- toHttp4sUri(request.url).liftTo[F]
   headers = toHttp4sHeaders(request.headers)
-  entity = request.body match
-    case Http.Request.Body.Singlepart(Http.Payload.Strict(data)) => Http4sEntity.strict(ByteVector(data))
-    case Http.Request.Body.Singlepart(Http.Payload.Streaming(_)) => ???
-    case Http.Request.Body.Multipart()                           => ???
+  entity = Http4sEntity.strict(ByteVector(request.body.data))
 yield Http4sRequest(method, uri = uri, headers = headers, entity = entity)
 
 def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sResponse[F]] = for
@@ -56,10 +54,7 @@ def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sRespons
   entity <- toHttp4sEntity(response.body)
 yield Http4sResponse(status, headers = headers, entity = entity)
 
-def toHttp4sEntity[F[_]: MonadThrow](body: Http.Payload): F[Http4sEntity[F]] = body match
-  case Http.Payload.Strict(data) if data.isEmpty => Http4sEntity.empty.pure
-  case Http.Payload.Strict(data)                 => Http4sEntity.strict(ByteVector(data)).pure
-  case Http.Payload.Streaming(stream) =>
-    ApplicativeThrow[F]
-      .catchOnly[ClassCastException](stream.asInstanceOf[Http4sStream[F, Byte]].toFs2)
-      .map(Http4sEntity.stream(_))
+def toHttp4sEntity[F[_]: MonadThrow](body: Http.Payload): F[Http4sEntity[F]] =
+  if body.data.isEmpty
+  then Http4sEntity.empty.pure
+  else Http4sEntity.strict(ByteVector(body.data)).pure

@@ -5,8 +5,10 @@ import cats.effect.Concurrent
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.server.Server as Underlying
 import io.taig.otter.http.*
+import io.taig.otter.http.http4s.*
 import cats.syntax.all.*
 import fs2.Stream
+import io.taig.otter.http.http4s.{toHttp4sResponse, toHttpHeaders, toHttpMethod, toHttpUrl}
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]) extends Server[F]:
   override def start(app: App[F], onError: Throwable => F[Unit]): Resource[F, String] =
