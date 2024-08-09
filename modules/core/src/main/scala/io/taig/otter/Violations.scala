@@ -24,7 +24,7 @@ enum Violations:
     case (left: Root, Namespace(right))      => Root(left.values |+| right.toSortedMap, left.violations)
     case (Namespace(left), right: Root)      => Root(left.toSortedMap |+| right.values, right.violations)
 
-  final def toNem: NonEmptyMap[XPath, NonEmptyChain[Violation]] = toNem(xpath = XPath.Empty)
+  final def toNem: NonEmptyMap[XPath, NonEmptyChain[Violation]] = toNem(xpath = XPath.Root)
 
   private def toNem(xpath: XPath): NonEmptyMap[XPath, NonEmptyChain[Violation]] = this match
     case Root(values, violations) =>
@@ -49,9 +49,9 @@ object Violations:
     NonEmptyMap.of(violation, violations*).mapBoth { case (step, violation) => (step, rootNec(violation)) }
   )
 
-  def namespace(step: Step, violations: NonEmptyChain[Violation]): Violations =
-    Namespace(NonEmptyMap.one(step, root(violations)))
-  def namespaceNec(step: Step, violation: Violation): Violations = namespace(step, NonEmptyChain.one(violation))
+  def namespace(xpath: XPath, violations: NonEmptyChain[Violation]): Violations =
+    xpath.toChain.foldRight(Root(SortedMap.empty, violations))(_ /: _)
+  def namespaceNec(xpath: XPath, violation: Violation): Violations = namespace(xpath, NonEmptyChain.one(violation))
 
   def from(violations: Indexed[NonEmptyChain[Violation]]): Violations =
     violations.xpath.toChain.foldRight(root(violations.self))(_ /: _)

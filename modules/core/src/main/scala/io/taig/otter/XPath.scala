@@ -8,11 +8,13 @@ import cats.Show
 opaque type XPath = Chain[Step]
 
 object XPath:
-  val Empty: XPath = Chain.empty
+  val Root: XPath = Chain.empty
 
   extension (self: XPath)
     inline def toChain: Chain[Step] = self
     def /(step: Step): XPath = toChain :+ step
+    def /(field: String): XPath = /(Step.Field(field))
+    def /(index: Int): XPath = /(Step.Index(index))
 
   def apply(steps: Chain[Step]): XPath = steps
 

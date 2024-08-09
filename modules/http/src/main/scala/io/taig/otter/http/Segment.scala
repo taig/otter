@@ -13,6 +13,7 @@ import io.taig.otter.Violation
 import io.taig.otter.Constraint
 import java.util.regex.Pattern
 import io.taig.otter.Step
+import io.taig.otter.XPath
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
@@ -31,7 +32,7 @@ object Segment:
       name === value,
       (),
       Violations.namespaceNec(
-        Step.Field(name),
+        XPath.Root / name,
         Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = Data.String(value))
       )
     )

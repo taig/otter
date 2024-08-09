@@ -13,8 +13,8 @@ sealed abstract class Body[A]:
 
   final def imap[B](f: A => B)(g: B => A): Body[B] = new Body[B]:
     export self.mediaType
-    override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[(MediaType, B)] =
-      self.decode(contentType, body).map(_.map(f))
+    override def decode(charset: Option[Charset], body: Http.Payload): Codec.Result[B] =
+      self.decode(charset, body).map(f)
     override def encode(contentType: Option[MediaType], b: B): (MediaType, Http.Payload) =
       self.encode(contentType, g(b))
 
@@ -26,7 +26,13 @@ sealed abstract class Body[A]:
 
   final def toBodies: Bodies[A] = Bodies(this)
 
-  def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[(MediaType, A)]
+  // final def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[(MediaType, A)] =
+  //   val charset = contentType
+  //   .flatMap(_.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset))
+  //   .getOrElse(StandardCharsets.UTF_8)
+  //   ???
+
+  def decode(charset: Option[Charset], payload: Http.Payload): Codec.Result[A]
 
   def encode(contentType: Option[MediaType], a: A): (MediaType, Http.Payload)
 
@@ -36,23 +42,22 @@ object Body:
 
     new Body[Array[Byte]]:
       override def mediaType: MediaType = _mediaType
-      override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[(MediaType, Array[Byte])] =
-        ??? // body.data.valid
+      override def decode(charset: Option[Charset], body: Http.Payload): Codec.Result[Array[Byte]] =
+        body.data.valid
       override def encode(contentType: Option[MediaType], a: Array[Byte]): (MediaType, Http.Payload) =
         ??? // Http.Payload(a)
 
   def apply[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
       of: Codec[F, O, A],
-      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
+      f: (Charset, Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
   ): Body[A] =
     val _mediaType = mediaType
 
-    ???
-    // new Body[A]:
-    //   override def mediaType: MediaType = _mediaType
-    //   override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[A] =
-    //     ??? // f(charset, body.data).andThen(of.decode)
-    //   override def encode(charset: Option[Charset], a: A): Http.Payload =
-    //     Http.Payload(g(charset, of.encode(a)))
+    new Body[A]:
+      override def mediaType: MediaType = _mediaType
+      override def decode(charset: Option[Charset], payload: Http.Payload): Codec.Result[A] =
+        f(charset, payload.data).andThen(of.decode)
+      override def encode(contentType: Option[MediaType], a: A): (MediaType, Http.Payload) = ???
+      // Http.Payload(g(charset, of.encode(a)))

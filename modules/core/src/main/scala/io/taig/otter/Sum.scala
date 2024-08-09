@@ -77,7 +77,7 @@ object Sum:
             .andThen(
               _.toValid(
                 Violations.namespaceNec(
-                  Step.Field(discriminator.identifier),
+                  XPath.Root / discriminator.identifier,
                   Violation(
                     Constraint.OneOf(branches.toNev.toNonEmptyList.map(branch => Data.String(branch.name))),
                     actual = data

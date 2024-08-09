@@ -3,6 +3,7 @@ package io.taig.otter.http
 import munit.FunSuite
 import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.XPath
 
 final class QueriesTest extends FunSuite:
   test("encode"):
@@ -65,7 +66,7 @@ final class QueriesTest extends FunSuite:
     assertEquals(
       obtained = queries.decode(Vector("foo" -> "foobar".some)),
       expected = Violations
-        .namespaceNec(Step.Field("foo"), Violation(Constraint.Type("int"), actual = Data.String("string")))
+        .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("int"), actual = Data.String("string")))
         .invalid
     )
 
@@ -90,6 +91,6 @@ final class QueriesTest extends FunSuite:
     assertEquals(
       obtained = queries.decode(Vector()),
       expected = Violations
-        .namespaceNec(Step.Field("foo"), Violation(Constraint.Type("array"), actual = Data.String("null")))
+        .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("array"), actual = Data.String("null")))
         .invalid
     )

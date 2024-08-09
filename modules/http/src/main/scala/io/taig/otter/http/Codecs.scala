@@ -10,8 +10,8 @@ import Base.Evidence
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import Base.http.ViolationsCodecs.violations
-import Base.http.Parsers.parameters
 import Base.http.header.Accept
+import Base.http.header.Parameters
 
 trait Codecs extends Base.Codecs:
   self =>
@@ -67,7 +67,7 @@ trait Codecs extends Base.Codecs:
 
   object mediaType:
     def apply(primary: String, secondary: String): MediaType =
-      MediaType(tpe = MediaType.Type(primary, secondary), parameters = Nil)
+      MediaType(tpe = MediaType.Type(primary, secondary), parameters = Parameters.Empty)
 
     object application:
       def apply(secondary: String): MediaType = mediaType(primary = "application", secondary)
@@ -127,7 +127,7 @@ trait Codecs extends Base.Codecs:
   def body[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
       codec: Base.Codec[F, O, A],
-      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
+      f: (Charset, Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
   ): Body[A] = Body(mediaType, codec, f, g)
 
@@ -138,7 +138,7 @@ trait Codecs extends Base.Codecs:
     mediaType = mediaType.text.plain,
     codec,
     (charset, bytes) =>
-      val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+      val value = new String(bytes, charset)
       Data.String(value).valid
     ,
     (charset, data) => data.plain.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
@@ -151,7 +151,7 @@ trait Codecs extends Base.Codecs:
       mediaType = mediaType.application.wwwFormUrlencoded,
       codec,
       (charset, bytes) =>
-        val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
+        val value = new String(bytes, charset)
         val formData = FormData.parse(value).toVector
         Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
       ,

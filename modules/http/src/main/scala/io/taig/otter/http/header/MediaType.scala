@@ -6,8 +6,9 @@ import io.taig.otter.http.Parsers
 import cats.Show
 import cats.syntax.all.*
 import cats.parse.Parser
+import cats.Eq
 
-final case class MediaType(tpe: MediaType.Type, parameters: List[Parameter]):
+final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
   override def toString: String = Printers(this)
 
 object MediaType:
@@ -15,10 +16,14 @@ object MediaType:
     override def toString: String = Printers(this)
 
   object Type:
+    given Eq[MediaType.Type] = Eq.by(tpe => (tpe.primary, tpe.secondary))
+
     given Show[MediaType.Type] = Show.fromToString
 
   def parse(value: String): Either[Parser.Error, MediaType] = Parsers.mediaType.parseAll(value)
 
   val codec: Primitive.Required[MediaType] = parser(name = "contentType")(parse(_).toOption)(_.show)
+
+  given Eq[MediaType] = Eq.by(mediaType => (mediaType.tpe, mediaType.parameters))
 
   given Show[MediaType] = Show.fromToString

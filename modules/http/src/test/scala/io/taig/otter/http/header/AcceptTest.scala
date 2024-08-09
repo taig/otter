@@ -14,7 +14,7 @@ final class AcceptTest extends FunSuite:
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = Nil
+              parameters = Parameters.Empty
             ),
             weight = none
           )
@@ -29,14 +29,14 @@ final class AcceptTest extends FunSuite:
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = Nil
+              parameters = Parameters.Empty
             ),
             weight = none
           ),
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("image", "png"),
-              parameters = Nil
+              parameters = Parameters.Empty
             ),
             weight = none
           )
@@ -51,7 +51,7 @@ final class AcceptTest extends FunSuite:
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = Nil
+              parameters = Parameters.Empty
             ),
             weight = BigDecimal(1).some
           )
@@ -67,7 +67,7 @@ final class AcceptTest extends FunSuite:
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = List(Parameter(ci"q", "0.5"))
+              parameters = Parameters.of(ci"q" -> "0.5")
             ),
             weight = BigDecimal("0.7").some
           )
@@ -83,10 +83,10 @@ final class AcceptTest extends FunSuite:
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = List(
-                Parameter(ci"q", "foo"),
-                Parameter(ci"q", "1.1"),
-                Parameter(ci"q", "0.1234")
+              parameters = Parameters.of(
+                ci"q" -> "foo",
+                ci"q" -> "1.1",
+                ci"q" -> "0.1234"
               )
             ),
             weight = BigDecimal("0.5").some
@@ -100,26 +100,26 @@ final class AcceptTest extends FunSuite:
       Accept(
         NonEmptyList.of(
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
             weight = none
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
             weight = none
           ),
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = List(Parameter(ci"foo", "bar"))
+              parameters = Parameters.of(ci"foo" -> "bar")
             ),
             weight = none
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
             weight = BigDecimal("0.5").some
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Parameters.Empty),
             weight = BigDecimal(0).some
           )
         )
@@ -130,44 +130,44 @@ final class AcceptTest extends FunSuite:
       obtained = Accept(
         NonEmptyList.of(
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
             weight = none
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Parameters.Empty),
             weight = none
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
             weight = none
           ),
           Weighted(
             self = MediaRange(
               tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = List(Parameter(ci"foo", "bar"))
+              parameters = Parameters.of(ci"foo" -> "bar")
             ),
             weight = none
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
             weight = BigDecimal("0.5").some
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Parameters.Empty),
             weight = BigDecimal(0).some
           ),
           Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Any, parameters = Nil),
+            self = MediaRange(tpe = MediaRange.Type.Any, parameters = Parameters.Empty),
             weight = BigDecimal("0.1").some
           )
         )
       ).toSortedList,
       expected = List(
-        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = List(Parameter(ci"foo", "bar"))),
-        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Nil),
-        MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Nil),
-        MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Nil),
-        MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Nil),
-        MediaRange(tpe = MediaRange.Type.Any, parameters = Nil)
+        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.of(ci"foo" -> "bar")),
+        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
+        MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
+        MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Parameters.Empty),
+        MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
+        MediaRange(tpe = MediaRange.Type.Any, parameters = Parameters.Empty)
       )
     )

@@ -81,7 +81,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.identifier),
+          XPath.Root / Discriminator.Nested.Default.identifier,
           Violation(
             Constraint.OneOf(NonEmptyList.of("foo", "bar").map(Data.String.apply)),
             actual = Data.String("baz")
@@ -99,7 +99,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.identifier),
+          XPath.Root / Discriminator.Nested.Default.identifier,
           Violation(Constraint.Type("string"), actual = Data.String("null"))
         )
         .invalid
@@ -117,7 +117,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.identifier),
+          XPath.Root / Discriminator.Nested.Default.identifier,
           Violation(Constraint.Type("string"), actual = Data.String("number"))
         )
         .invalid
@@ -132,7 +132,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.value),
+          XPath.Root / Discriminator.Nested.Default.value,
           Violation(Constraint.Type("string"), actual = Data.String("null"))
         )
         .invalid
@@ -144,7 +144,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.value),
+          XPath.Root / Discriminator.Nested.Default.value,
           Violation(Constraint.Type("int"), actual = Data.String("null"))
         )
         .invalid
@@ -162,7 +162,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.value),
+          XPath.Root / Discriminator.Nested.Default.value,
           Violation(Constraint.Type("string"), actual = Data.String("array"))
         )
         .invalid
@@ -177,7 +177,7 @@ final class SumNestedTest extends FunSuite:
       ),
       expected = Violations
         .namespaceNec(
-          Step.Field(Discriminator.Nested.Default.value),
+          XPath.Root / Discriminator.Nested.Default.value,
           Violation(Constraint.Type("int"), actual = Data.String("array"))
         )
         .invalid

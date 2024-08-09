@@ -35,7 +35,7 @@ object Accept:
       case (MediaRange.Type.Primary(_), MediaRange.Type.Any)                  => 1
       case (MediaRange.Type.Primary(_), MediaRange.Type.Secondary(_, _))      => -1
 
-    given Order[List[Parameter]] = Order.by(_.length)
+    given Order[Parameters] = Order.by(_.toList.length)
 
     given Order[MediaRange] = Order.by(mediaRange => (mediaRange.tpe, mediaRange.parameters))
 

@@ -45,7 +45,7 @@ object Result:
       override def headers: Headers[A] = _headers
       override def bodies: Option[Bodies[?]] = Some(_bodies)
       override def unsafeDecode(response: Http.Response): Codec.Result[(A, B)] =
-        (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
+        // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
         ???
       override def encode(ab: (A, B)): Http.Response = ???
       // val (mediaType, payload) = _bodies.encode(charset = none, ab._2)

@@ -4,65 +4,60 @@ import munit.FunSuite
 import cats.syntax.all.*
 import org.typelevel.ci.*
 
-final class ContentTypeTest extends FunSuite:
+final class MediaTypeTest extends FunSuite:
   test("parse"):
     assertEquals(
-      obtained = ContentType.parse("text/html"),
-      expected = ContentType(tpe = "text", subtype = "html", parameters = Nil).asRight
+      obtained = MediaType.parse("text/html"),
+      expected = MediaType(tpe = MediaType.Type("text", "html"), parameters = Parameters.Empty).asRight
     )
 
     assertEquals(
-      obtained = ContentType.parse("image/png"),
-      expected = ContentType(tpe = "image", subtype = "png", parameters = Nil).asRight
+      obtained = MediaType.parse("image/png"),
+      expected = MediaType(tpe = MediaType.Type("image", "png"), parameters = Parameters.Empty).asRight
     )
 
     assertEquals(
-      obtained = ContentType.parse("text/plain; charset=utf-8"),
-      expected = ContentType(
-        tpe = "text",
-        subtype = "plain",
-        parameters = List(Parameter(ci"charset", "utf-8"))
+      obtained = MediaType.parse("text/plain; charset=utf-8"),
+      expected = MediaType(
+        tpe = MediaType.Type("text", "plain"),
+        parameters = Parameters.of(ci"charset" -> "utf-8")
       ).asRight
     )
 
     assertEquals(
-      obtained = ContentType.parse("text/plain; charset=\"utf-8\""),
-      expected = ContentType(
-        tpe = "text",
-        subtype = "plain",
-        parameters = List(Parameter(ci"charset", "utf-8"))
+      obtained = MediaType.parse("text/plain; charset=\"utf-8\""),
+      expected = MediaType(
+        tpe = MediaType.Type("text", "plain"),
+        parameters = Parameters.of(ci"charset" -> "utf-8")
       ).asRight
     )
 
     assertEquals(
-      obtained = ContentType.parse("text/plain;charset=utf-8;foo=bar"),
-      expected = ContentType(
-        tpe = "text",
-        subtype = "plain",
-        parameters = List(Parameter(ci"charset", "utf-8"), Parameter(ci"foo", "bar"))
+      obtained = MediaType.parse("text/plain;charset=utf-8;foo=bar"),
+      expected = MediaType(
+        tpe = MediaType.Type("text", "plain"),
+        parameters = Parameters.of(ci"charset" -> "utf-8", ci"foo" -> "bar")
       ).asRight
     )
 
   test("show"):
     assertEquals(
-      obtained = ContentType(tpe = "text", subtype = "html", parameters = Nil).show,
+      obtained = MediaType(tpe = MediaType.Type("text", "html"), parameters = Parameters.Empty).show,
       expected = "text/html"
     )
 
     assertEquals(
-      obtained = ContentType(
-        tpe = "application",
-        subtype = "json",
-        parameters = List(Parameter(ci"charset", "utf-8"))
+      obtained = MediaType(
+        tpe = MediaType.Type("application", "json"),
+        parameters = Parameters.of(ci"charset" -> "utf-8")
       ).show,
       expected = "application/json; charset=\"utf-8\""
     )
 
     assertEquals(
-      obtained = ContentType(
-        tpe = "application",
-        subtype = "json",
-        parameters = List(Parameter(ci"charset", "utf-8"), Parameter(ci"foo", "bar"))
+      obtained = MediaType(
+        tpe = MediaType.Type("application", "json"),
+        parameters = Parameters.of(ci"charset" -> "utf-8", ci"foo" -> "bar")
       ).show,
       expected = "application/json; charset=\"utf-8\"; foo=\"bar\""
     )

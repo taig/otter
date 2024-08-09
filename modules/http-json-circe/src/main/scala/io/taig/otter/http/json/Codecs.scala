@@ -20,8 +20,8 @@ trait Codecs extends Http.Types, Http.Codecs:
       // Jawn only supports byte decoding via UTF-8, so we have to decode a string first
       // for alternative encodings
       val result = charset match
-        case Some(StandardCharsets.UTF_8) | None => parser.parseByteArray(bytes)
-        case Some(charset)                       => parser.parse(new String(bytes, charset))
+        case StandardCharsets.UTF_8 => parser.parseByteArray(bytes)
+        case charset                => parser.parse(new String(bytes, charset))
 
       Validated
         .fromEither(result)

@@ -3,7 +3,7 @@ package io.taig.otter.http.header
 import cats.Show
 import io.taig.otter.http.Printers
 
-final case class MediaRange(tpe: MediaRange.Type, parameters: List[Parameter]):
+final case class MediaRange(tpe: MediaRange.Type, parameters: Parameters):
   override def toString: String = Printers(this)
 
 object MediaRange:

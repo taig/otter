@@ -6,11 +6,12 @@ import io.taig.otter.http.header.Parameter
 import cats.Show
 import cats.syntax.all.*
 import io.taig.otter.http.header.Weighted
+import io.taig.otter.http.header.Parameters
 
 private[http] object Printers:
   def apply(parameter: Parameter): String = s"${parameter.name}=\"${parameter.value}\""
 
-  def apply(parameters: List[Parameter]): String = parameters.map(parameter => s"; ${Printers(parameter)}").mkString
+  def apply(parameters: Parameters): String = parameters.toList.map(parameter => s"; ${Printers(parameter)}").mkString
 
   def apply(mediaType: MediaType.Type): String = s"${mediaType.primary}/${mediaType.secondary}"
 

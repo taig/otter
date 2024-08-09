@@ -13,7 +13,7 @@ final class ViolationsTest extends FunSuite:
       )
     ) |+|
     Violations.namespaceNec(
-      Step.Field("foo"),
+      XPath.Root / "foo",
       Violation(Constraint.Primitive.MinLength(reference = 3), actual = Data.Number(1))
     )
 

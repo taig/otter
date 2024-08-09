@@ -11,6 +11,7 @@ import cats.parse.Parser0
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaRange
 import org.typelevel.ci.*
+import io.taig.otter.http.header.Parameters
 
 private[http] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").rep0.void
@@ -40,8 +41,8 @@ private[http] object Parsers:
 
   val parameter: Parser[Parameter] = ((token.map(CIString.apply) <* equal) ~ (string | token)).map(Parameter.apply)
 
-  val parameters: Parser0[List[Parameter]] =
-    (whitespace.with1 *> semicolon *> whitespace *> parameter).rep0
+  val parameters: Parser0[Parameters] =
+    (whitespace.with1 *> semicolon *> whitespace *> parameter).rep0.map(Parameters.apply)
 
   val mediaType: Parser[MediaType] =
     val tpe = ((token <* slash) ~ token).map(MediaType.Type.apply)
@@ -68,7 +69,7 @@ private[http] object Parsers:
     val parameter: Parser[BigDecimal] = Parser.ignoreCaseChar('q') *> equal *> value
 
   val weightedMediaRange: Parser[Weighted[MediaRange]] = mediaRange.map: mediaRange =>
-    val qValueWithIndex = mediaRange.parameters.zipWithIndex
+    val qValueWithIndex = mediaRange.parameters.toList.zipWithIndex
       .collect { case (parameter, index) if parameter.name === ci"q" => (index, parameter.value) }
       .reverse
       .collectFirstSome { case (index, value) =>
@@ -78,7 +79,7 @@ private[http] object Parsers:
     val qValue = qValueWithIndex.map { case (qValue, _) => qValue }
 
     val parametersWithoutQValue = qValueWithIndex.fold(mediaRange.parameters) { case (_, index) =>
-      mediaRange.parameters.patch(index, Nil, 1)
+      Parameters(mediaRange.parameters.toList.patch(index, Nil, 1))
     }
 
     Weighted(mediaRange.copy(parameters = parametersWithoutQValue), qValue)
