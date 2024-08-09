@@ -134,15 +134,16 @@ trait Codecs extends Base.Codecs:
   def binary(mediaType: MediaType): Body[Array[Byte]] = Body.binary(mediaType)
   val binary: Body[Array[Byte]] = binary(mediaType.application.octetStream)
 
-  def text[A](codec: Codec.Required.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] = body(
-    mediaType = mediaType.text.plain,
-    codec,
-    (charset, bytes) =>
-      val value = new String(bytes, charset.getOrElse(fallback))
-      Data.String(value).valid
-    ,
-    (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
-  )
+  def text[A](codec: Codec.Required.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] =
+    body(
+      mediaType = mediaType.text.plain,
+      codec,
+      (charset, bytes) =>
+        val value = new String(bytes, charset.getOrElse(fallback))
+        Data.String(value).valid
+      ,
+      (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
+    )
 
   object formData:
     private type Of = Data.Object[Data.Optional[Data.Primitive]]

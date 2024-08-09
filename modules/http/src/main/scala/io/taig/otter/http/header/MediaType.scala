@@ -9,6 +9,8 @@ import cats.parse.Parser
 import cats.Eq
 
 final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
+  def satisfies(mediaRange: MediaRange): Boolean = ???
+
   override def toString: String = Printers(this)
 
 object MediaType:

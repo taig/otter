@@ -14,7 +14,11 @@ trait Codecs extends Http.Types, Http.Codecs:
 
   private val parser = new JawnParser()
 
-  def json[A](codec: Codec[A], printer: Printer = Printer.noSpaces, fallback: => Charset = StandardCharsets.UTF_8): Body[A] = body(
+  def json[A](
+      codec: Codec[A],
+      printer: Printer = Printer.noSpaces,
+      fallback: => Charset = StandardCharsets.UTF_8
+  ): Body[A] = body(
     mediaType = mediaType.application.json,
     codec,
     (charset, bytes) =>
