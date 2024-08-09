@@ -25,15 +25,15 @@ object Accept:
 
   val codec: Primitive.Required[Accept] = parser(name = "accept")(parse(_).toOption)(_.show)
 
-  private val sortOrdering: Ordering[Weighted[MediaRange]] = 
+  private val sortOrdering: Ordering[Weighted[MediaRange]] =
     given Order[MediaRange.Type] =
-      case (MediaRange.Type.Any, MediaRange.Type.Any) => 0
+      case (MediaRange.Type.Any, MediaRange.Type.Any)                         => 0
       case (MediaRange.Type.Secondary(_, _), MediaRange.Type.Secondary(_, _)) => 0
-      case (MediaRange.Type.Primary(_), MediaRange.Type.Primary(_)) => 0
-      case (MediaRange.Type.Any, _) => -1
-      case (MediaRange.Type.Secondary(_, _), _) => 1
-      case (MediaRange.Type.Primary(_), MediaRange.Type.Any) => 1
-      case (MediaRange.Type.Primary(_), MediaRange.Type.Secondary(_, _)) => -1
+      case (MediaRange.Type.Primary(_), MediaRange.Type.Primary(_))           => 0
+      case (MediaRange.Type.Any, _)                                           => -1
+      case (MediaRange.Type.Secondary(_, _), _)                               => 1
+      case (MediaRange.Type.Primary(_), MediaRange.Type.Any)                  => 1
+      case (MediaRange.Type.Primary(_), MediaRange.Type.Secondary(_, _))      => -1
 
     given Order[List[Parameter]] = Order.by(_.length)
 

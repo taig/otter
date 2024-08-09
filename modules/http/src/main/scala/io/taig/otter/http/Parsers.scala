@@ -49,10 +49,10 @@ private[http] object Parsers:
 
   val mediaRange: Parser[MediaRange] =
     val tpe: Parser[MediaRange.Type] =
-    (star *> slash *> star).as(MediaRange.Type.Any).backtrack |
-      (token <* slash <* star).map(MediaRange.Type.Primary.apply).backtrack |
-      ((token <* slash) ~ token).map(MediaRange.Type.Secondary.apply)
-      
+      (star *> slash *> star).as(MediaRange.Type.Any).backtrack |
+        (token <* slash <* star).map(MediaRange.Type.Primary.apply).backtrack |
+        ((token <* slash) ~ token).map(MediaRange.Type.Secondary.apply)
+
     (tpe ~ parameters).map(MediaRange.apply)
 
   object q:

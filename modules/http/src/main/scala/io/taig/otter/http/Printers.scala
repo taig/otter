@@ -29,7 +29,7 @@ private[http] object Printers:
     case Weighted(self, Some(weight)) => show"$self; q=$weight"
 
   def apply(formData: FormData): String = formData.toVector
-      .map:
-        case (key, Some(value)) => s"$key=$value"
-        case (key, None) => key
-      .mkString("&")
+    .map:
+      case (key, Some(value)) => s"$key=$value"
+      case (key, None)        => key
+    .mkString("&")

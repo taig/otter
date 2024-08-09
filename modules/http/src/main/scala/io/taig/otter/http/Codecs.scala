@@ -66,7 +66,8 @@ trait Codecs extends Base.Codecs:
     val serviceUnavailable: Code = code(503)
 
   object mediaType:
-    def apply(primary: String, secondary: String): MediaType = MediaType(tpe = MediaType.Type(primary, secondary), parameters = Nil)
+    def apply(primary: String, secondary: String): MediaType =
+      MediaType(tpe = MediaType.Type(primary, secondary), parameters = Nil)
 
     object application:
       def apply(secondary: String): MediaType = mediaType(primary = "application", secondary)
@@ -86,7 +87,6 @@ trait Codecs extends Base.Codecs:
       val plain: MediaType = text(secondary = "plain")
       val html: MediaType = text(secondary = "html")
 
-
   object header:
     private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]]
 
@@ -102,7 +102,7 @@ trait Codecs extends Base.Codecs:
     val accept: Header[Accept] = accept(Accept.codec)
 
     inline def authorization[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Authorization", codec)
-    
+
     inline def contentType[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Content-Type", codec)
     val contentType: Header[MediaType] = contentType(MediaType.codec)
 

@@ -7,7 +7,6 @@ import io.taig.otter.json.toData
 import io.taig.otter.json.fromData
 import java.nio.charset.StandardCharsets
 import cats.data.Validated
-import Http.MediaType
 
 trait Codecs extends Http.Types, Http.Codecs:
   self =>
@@ -15,7 +14,7 @@ trait Codecs extends Http.Types, Http.Codecs:
   private val parser = new JawnParser()
 
   def json[A](codec: Codec[A], printer: Printer): Body[A] = body(
-    mediaType = MediaType.application.json,
+    mediaType = mediaType.application.json,
     codec,
     (charset, bytes) =>
       // Jawn only supports byte decoding via UTF-8, so we have to decode a string first

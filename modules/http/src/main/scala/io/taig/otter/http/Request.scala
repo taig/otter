@@ -68,38 +68,39 @@ object Request:
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
       override def bodies: Option[Bodies[C]] = Some(_bodies)
-      override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request =
-        val (mediaType, payload) = _bodies.encode(charset, abc._3)
-        Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
-      override def decode(request: Http.Request): Request.Result[(A, B, C)] = request.headers
-        .collectFirst { case (ci"Content-Type", value) => value }
-        .fold(
-          Request.Result.MediaTypesUnsupported(
-            Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null")))
-          )
-        )(Request.Result.Success.apply)
-        .flatMap: contentType =>
-          MediaType
-            .parse(contentType)
-            .fold(
-              Result.MediaTypesUnsupported(
-                Violations.rootNec(Violation(Constraint.Type("mediaType"), actual = Data.String(contentType)))
-              )
-            )(Result.Success.apply)
-        .flatMap: mediaType =>
-          (
-            url.decode(request.url),
-            headers.decode(request.headers),
-            _bodies.decode(mediaType, request.body)
-          ).tupled match
-            case Validated.Valid((a, b, Some(c))) => Result.Success((a, b, c))
-            case Validated.Valid((_, _, None)) =>
-              val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.print).map(Data.String.apply)
-              Result.MediaTypesUnsupported(
-                Violations
-                  .rootNec(Violation(Constraint.OneOf(supportedContentTypes), actual = Data.String(mediaType.print)))
-              )
-            case Validated.Invalid(violations) => Result.ValidationViolations(violations)
+      override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request = ???
+      // val (mediaType, payload) = _bodies.encode(charset, abc._3)
+      // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
+      override def decode(request: Http.Request): Request.Result[(A, B, C)] = ???
+      // request.headers
+      //   .collectFirst { case (ci"Content-Type", value) => value }
+      //   .fold(
+      //     Request.Result.MediaTypesUnsupported(
+      //       Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null")))
+      //     )
+      //   )(Request.Result.Success.apply)
+      //   .flatMap: contentType =>
+      //     MediaType
+      //       .parse(contentType)
+      //       .fold(
+      //         Result.MediaTypesUnsupported(
+      //           Violations.rootNec(Violation(Constraint.Type("mediaType"), actual = Data.String(contentType)))
+      //         )
+      //       )(Result.Success.apply)
+      //   .flatMap: mediaType =>
+      //     (
+      //       url.decode(request.url),
+      //       headers.decode(request.headers),
+      //       _bodies.decode(mediaType, request.body)
+      //     ).tupled match
+      //       case Validated.Valid((a, b, Some(c))) => Result.Success((a, b, c))
+      //       case Validated.Valid((_, _, None)) =>
+      //         val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.print).map(Data.String.apply)
+      //         Result.MediaTypesUnsupported(
+      //           Violations
+      //             .rootNec(Violation(Constraint.OneOf(supportedContentTypes), actual = Data.String(mediaType.print)))
+      //         )
+      //       case Validated.Invalid(violations) => Result.ValidationViolations(violations)
 
   def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Request[(A, B)] =
     val _method = method

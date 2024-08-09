@@ -13,7 +13,7 @@ sealed abstract class Bodies[A]:
 
   final def orElse[B](bodies: Bodies[B]): Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
     override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
-    override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[Option[Either[A, B]]] = 
+    override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[Option[Either[A, B]]] =
       ???
       // self
       // .decode(mediaType, body)

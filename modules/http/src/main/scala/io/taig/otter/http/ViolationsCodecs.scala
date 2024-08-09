@@ -57,7 +57,7 @@ object ViolationsCodecs:
 
       dictionary
         .nonEmptyList(xpath, violation)
-        .imap(_.groupMapNem { case (xpath, _) => xpath }{ case (_, violation) => violation }) {
+        .imap(_.groupMapNem { case (xpath, _) => xpath } { case (_, violation) => violation }) {
           _.toNel.flatMap { case (xpath, violations) => violations.tupleLeft(xpath) }
         }
         .imap(_.map(NonEmptyChain.fromNonEmptyList))(_.map(_.toNonEmptyList))
