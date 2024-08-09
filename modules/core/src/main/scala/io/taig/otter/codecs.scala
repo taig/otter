@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import cats.{Applicative, Eq, Hash, Id, Order, Traverse}
+import cats.{Applicative, Eq, Id, Order, Traverse}
 import cats.data.{Chain, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet}
 import cats.implicits.*
 import io.taig.enumeration.ext.{EnumerationValues, Mapping}
@@ -148,10 +148,10 @@ final private[otter] class EnumerationApplyPartiallyApplied[A](val dummy: Boolea
   ): Enumeration.Required[F[A]] = Enumeration.Required(codec, mapping)
   def apply[B](codec: => Value.Required[B])(using mapping: Mapping[A, B]): Enumeration.Required[A] =
     apply[Id, B](codec)
-  inline def apply[F[_], B: Hash](codec: => Value.Required[F[B]])(f: A => B)(using
+  inline def apply[F[_], B: Order](codec: => Value.Required[F[B]])(f: A => B)(using
       EnumerationValues.Aux[A, A]
   )(using Applicative[F] & Traverse[F]): Enumeration.Required[F[A]] =
     Enumeration.Required(codec, Mapping.enumeration(f))
-  def apply[B: Hash](codec: => Value.Required[B])(f: A => B)(using
+  def apply[B: Order](codec: => Value.Required[B])(f: A => B)(using
       EnumerationValues.Aux[A, A]
   ): Enumeration.Required[A] = apply[Id, B](codec)(f)

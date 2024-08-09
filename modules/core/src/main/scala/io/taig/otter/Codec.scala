@@ -406,7 +406,7 @@ object Enumeration:
         Applicative[F] & Traverse[F]
     ): Enumeration.Required[F[B]] = new Required[F[B]](None, None):
       override def codec: Value[?] = of
-      override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.map(b => encode(b.pure)))
+      override def values: Chain[Data.Primitive] = Chain.fromSeq(mapping.values.toList.map(b => encode(b.pure)))
       override def constraints: Chain[Constraint] = Chain.empty
       override def decode(data: Option[Data.Value]): Validated[Violations, F[B]] = of
         .decode(data)
