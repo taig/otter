@@ -50,7 +50,7 @@ object Body:
   def apply[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
       of: Codec[F, O, A],
-      f: (Charset, Array[Byte]) => Codec.Result[Data],
+      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
   ): Body[A] =
     val _mediaType = mediaType

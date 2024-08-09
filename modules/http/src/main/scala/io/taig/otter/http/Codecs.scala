@@ -127,41 +127,40 @@ trait Codecs extends Base.Codecs:
   def body[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
       codec: Base.Codec[F, O, A],
-      f: (Charset, Array[Byte]) => Codec.Result[Data],
+      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
   ): Body[A] = Body(mediaType, codec, f, g)
 
   def binary(mediaType: MediaType): Body[Array[Byte]] = Body.binary(mediaType)
   val binary: Body[Array[Byte]] = binary(mediaType.application.octetStream)
 
-  def text[A](codec: Codec.Required.Of[Data.Primitive, A]): Body[A] = body(
+  def text[A](codec: Codec.Required.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] = body(
     mediaType = mediaType.text.plain,
     codec,
     (charset, bytes) =>
-      val value = new String(bytes, charset)
+      val value = new String(bytes, charset.getOrElse(fallback))
       Data.String(value).valid
     ,
-    (charset, data) => data.plain.getBytes(charset.getOrElse(StandardCharsets.UTF_8))
+    (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
   )
 
   object formData:
     private type Of = Data.Object[Data.Optional[Data.Primitive]]
 
-    def apply[A](codec: Codec.Required.Of[Of, A]): Body[A] = body(
+    def apply[A](codec: Codec.Required.Of[Of, A], fallback: Charset = StandardCharsets.UTF_8): Body[A] = body(
       mediaType = mediaType.application.wwwFormUrlencoded,
       codec,
       (charset, bytes) =>
-        val value = new String(bytes, charset)
+        val value = new String(bytes, charset.getOrElse(fallback))
         val formData = FormData.parse(value).toVector
         Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
       ,
       (charset, data) =>
-        val charsetOrUtf8 = charset.getOrElse(StandardCharsets.UTF_8)
         val values = data.values.map:
           case (key, Data.Null)            => (key, none)
           case (key, data: Data.Primitive) => (key, data.plain.some)
 
-        FormData(values).show.getBytes(charsetOrUtf8),
+        FormData(values).show.getBytes(charset.getOrElse(fallback)),
     )
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
