@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.Evidence
 import cats.data.Validated
+import io.taig.otter.http.header.MediaType
 import io.taig.otter.Violations
 import io.taig.otter.Violation
 import io.taig.otter.Data

@@ -5,6 +5,7 @@ import cats.parse.Parser
 import io.taig.otter.http.Parsers
 import cats.implicits.*
 import cats.Order
+import io.taig.otter.http.Dsl.*
 
 opaque type Accept = NonEmptyList[Weighted[MediaRange]]
 
@@ -21,6 +22,8 @@ object Accept:
   def apply(values: NonEmptyList[Weighted[MediaRange]]): Accept = values
 
   def parse(value: String): Either[Parser.Error, Accept] = Parsers.accept.parseAll(value)
+
+  val codec: Primitive.Required[Accept] = parser(name = "accept")(parse(_).toOption)(_.show)
 
   private val sortOrdering: Ordering[Weighted[MediaRange]] = 
     given Order[MediaRange.Type] =

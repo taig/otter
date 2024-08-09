@@ -4,6 +4,7 @@ import java.nio.charset.Charset
 import io.taig.otter.Codec
 import cats.syntax.all.*
 import cats.data.NonEmptyVector
+import io.taig.otter.http.header.MediaType
 
 sealed abstract class Bodies[A]:
   self =>
@@ -12,14 +13,16 @@ sealed abstract class Bodies[A]:
 
   final def orElse[B](bodies: Bodies[B]): Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
     override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
-    override def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[Either[A, B]]] = self
-      .decode(mediaType, body)
-      .map(_.map(_.asLeft))
-      .andThen:
-        case a @ Some(_) => a.valid
-        case None        => bodies.decode(mediaType, body).map(_.map(_.asRight))
-    override def encode(charset: Option[Charset], ab: Either[A, B]): (MediaType, Http.Payload) =
-      ab.fold(self.encode(charset, _), bodies.encode(charset, _))
+    override def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[Option[Either[A, B]]] = 
+      ???
+      // self
+      // .decode(mediaType, body)
+      // .map(_.map(_.asLeft))
+      // .andThen:
+      //   case a @ Some(_) => a.valid
+      //   case None        => bodies.decode(mediaType, body).map(_.map(_.asRight))
+    // override def encode(charset: Option[Charset], ab: Either[A, B]): (MediaType, Http.Payload) =
+    //   ab.fold(self.encode(charset, _), bodies.encode(charset, _))
 
   final def :+[B](body: Body[B]): Bodies[Either[A, B]] = orElse(body.toBodies)
 
@@ -29,16 +32,17 @@ sealed abstract class Bodies[A]:
 
   final def +[B >: A](body: Body[B]): Bodies[B] = or(body.toBodies)
 
-  def decode(mediaType: MediaType, body: Http.Payload): Codec.Result[Option[A]]
+  def decode(contentType: Option[MediaType], body: Http.Payload): Codec.Result[Option[A]]
 
-  def encode(charset: Option[Charset], a: A): (MediaType, Http.Payload)
+  // def encode(a: A): (MediaType, Http.Payload)
 
 object Bodies:
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = NonEmptyVector.one(body)
-    override def decode(mediaType: MediaType, payload: Http.Payload): Codec.Result[Option[A]] =
-      if body.mediaType === mediaType
-      then body.decode(mediaType.parameters.charset, payload).map(_.some)
-      else none.valid
-    override def encode(charset: Option[Charset], a: A): (MediaType, Http.Payload) =
-      (body.mediaType, body.encode(charset, a))
+    override def decode(contentType: Option[MediaType], payload: Http.Payload): Codec.Result[Option[A]] =
+      ???
+      // if body.mediaType === mediaType
+      // then body.decode(mediaType.parameters.charset, payload).map(_.some)
+      // else none.valid
+    // override def encode(charset: Option[Charset], a: A): (MediaType, Http.Payload) =
+    //   (body.mediaType, body.encode(charset, a))

@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import org.typelevel.ci.CIString
 import io.taig.otter as Base
+import io.taig.otter.http.header.MediaType
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.util.regex.Pattern
@@ -9,6 +10,8 @@ import Base.Evidence
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import Base.http.ViolationsCodecs.violations
+import Base.http.Parsers.parameters
+import Base.http.header.Accept
 
 trait Codecs extends Base.Codecs:
   self =>
@@ -62,6 +65,28 @@ trait Codecs extends Base.Codecs:
     val internalServerError: Code = code(500)
     val serviceUnavailable: Code = code(503)
 
+  object mediaType:
+    def apply(primary: String, secondary: String): MediaType = MediaType(tpe = MediaType.Type(primary, secondary), parameters = Nil)
+
+    object application:
+      def apply(secondary: String): MediaType = mediaType(primary = "application", secondary)
+
+      val json: MediaType = application(secondary = "json")
+      val octetStream: MediaType = application(secondary = "octet-stream")
+      val wwwFormUrlencoded: MediaType = application(secondary = "x-www-form-urlencoded")
+
+    object multipart:
+      def apply(secondary: String): MediaType = mediaType(primary = "multipart", secondary)
+
+      val fromData: MediaType = application(secondary = "form-data")
+
+    object text:
+      def apply(secondary: String): MediaType = mediaType(primary = "text", secondary)
+
+      val plain: MediaType = text(secondary = "plain")
+      val html: MediaType = text(secondary = "html")
+
+
   object header:
     private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]]
 
@@ -73,7 +98,13 @@ trait Codecs extends Base.Codecs:
       case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Header.Array(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Header.Object(name, codec, Metadata.Empty)
 
+    inline def accept[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Accept", codec)
+    val accept: Header[Accept] = accept(Accept.codec)
+
     inline def authorization[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Authorization", codec)
+    
+    inline def contentType[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Content-Type", codec)
+    val contentType: Header[MediaType] = contentType(MediaType.codec)
 
   final inline def segment[A](
       name: String,
@@ -101,10 +132,10 @@ trait Codecs extends Base.Codecs:
   ): Body[A] = Body(mediaType, codec, f, g)
 
   def binary(mediaType: MediaType): Body[Array[Byte]] = Body.binary(mediaType)
-  val binary: Body[Array[Byte]] = binary(MediaType.application.octetStream)
+  val binary: Body[Array[Byte]] = binary(mediaType.application.octetStream)
 
   def text[A](codec: Codec.Required.Of[Data.Primitive, A]): Body[A] = body(
-    mediaType = MediaType.text.plain,
+    mediaType = mediaType.text.plain,
     codec,
     (charset, bytes) =>
       val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
@@ -117,7 +148,7 @@ trait Codecs extends Base.Codecs:
     private type Of = Data.Object[Data.Optional[Data.Primitive]]
 
     def apply[A](codec: Codec.Required.Of[Of, A]): Body[A] = body(
-      mediaType = MediaType.application.wwwFormUrlencoded,
+      mediaType = mediaType.application.wwwFormUrlencoded,
       codec,
       (charset, bytes) =>
         val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))

@@ -2,11 +2,11 @@ package io.taig.otter.http
 
 import cats.parse.Parser
 import cats.syntax.all.*
-import io.taig.otter.http.header.ContentType
 import io.taig.otter.http.header.Parameter
 import cats.parse.Numbers.digit
 import cats.parse.strings.Json
 import io.taig.otter.http.header.Weighted
+import io.taig.otter.http.header.MediaType
 import cats.parse.Parser0
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaRange
@@ -43,15 +43,17 @@ private[http] object Parsers:
   val parameters: Parser0[List[Parameter]] =
     (whitespace.with1 *> semicolon *> whitespace *> parameter).rep0
 
-  val contentType: Parser0[ContentType] = ((token <* slash) ~ token ~ parameters)
-    .map { case ((tpe, subtype), parameters) => ContentType(tpe, subtype, parameters) }
+  val mediaType: Parser[MediaType] =
+    val tpe = ((token <* slash) ~ token).map(MediaType.Type.apply)
+    (tpe ~ parameters).map(MediaType.apply)
 
-  val mediaRangeType: Parser[MediaRange.Type] =
+  val mediaRange: Parser[MediaRange] =
+    val tpe: Parser[MediaRange.Type] =
     (star *> slash *> star).as(MediaRange.Type.Any).backtrack |
       (token <* slash <* star).map(MediaRange.Type.Primary.apply).backtrack |
       ((token <* slash) ~ token).map(MediaRange.Type.Secondary.apply)
-
-  val mediaRange: Parser[MediaRange] = (mediaRangeType ~ parameters).map(MediaRange.apply)
+      
+    (tpe ~ parameters).map(MediaRange.apply)
 
   object q:
     val value: Parser[BigDecimal] =

@@ -1,20 +1,20 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.header.ContentType
 import io.taig.otter.http.header.MediaRange
+import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameter
 import cats.Show
 import cats.syntax.all.*
 import io.taig.otter.http.header.Weighted
 
 private[http] object Printers:
-  def apply(contentType: ContentType): String =
-    s"${contentType.tpe}/${contentType.subtype}" +
-      contentType.parameters.map(parameter => s"; ${Printers(parameter)}").mkString
-
   def apply(parameter: Parameter): String = s"${parameter.name}=\"${parameter.value}\""
 
   def apply(parameters: List[Parameter]): String = parameters.map(parameter => s"; ${Printers(parameter)}").mkString
+
+  def apply(mediaType: MediaType.Type): String = s"${mediaType.primary}/${mediaType.secondary}"
+
+  def apply(mediaType: MediaType): String = s"${Printers(mediaType.tpe)}" + Printers(mediaType.parameters)
 
   def apply(mediaRange: MediaRange.Type): String = mediaRange match
     case MediaRange.Type.Secondary(tpe, subtype) => s"$tpe/$subtype"
