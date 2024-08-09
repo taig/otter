@@ -29,7 +29,11 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
       body: Body[?] => F[Http.Payload],
       onError: Throwable => F[Unit]
   ): F[Http.Response] =
-    app.routes.find(method, url)
+    app.routes
+      .find(method, url)
+      .fold(app.notFound.encode(Request.Result.Success(())).pure): route =>
+        // body(route.endpoint.request.bodies)
+        ???
     // .fold(app.notFound.encode(().pure).pure): route =>
     // body(route.endpoint.request.body)
     //   .map(Http.Request(method, url, headers, _))

@@ -1,15 +1,13 @@
 package io.taig.otter.http
 
-import java.nio.charset.Charset
-import io.taig.otter.Codec
 import cats.syntax.all.*
 import cats.data.NonEmptyVector
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.MediaRange
-import io.taig.otter.Violations
-import io.taig.otter.XPath
-import org.typelevel.ci.*
 import io.taig.otter.http.Http.Payload
+import io.taig.otter.Codec
+import io.taig.otter.Violations
+import org.typelevel.ci.*
 
 sealed abstract class Bodies[A]:
   self =>
