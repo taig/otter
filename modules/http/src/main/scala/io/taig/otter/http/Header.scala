@@ -15,6 +15,8 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], ?]
 
+  final def isOptional: Boolean = codec.isOptional
+
   def metadata: Metadata
 
   def modifyMetadata(f: Metadata => Metadata): Header[A]

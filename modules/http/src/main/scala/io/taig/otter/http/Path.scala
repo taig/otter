@@ -64,7 +64,7 @@ object Path:
     override def toVector: Vector[Segment[?]] = Vector(segment)
     override def matches(path: Http.Path): Boolean = path match
       case Vector(value) => segment.matches(value)
-      case _ => false
+      case _             => false
     override def decode(values: Http.Path): Codec.Result[A] = values match
       case Vector(value) => segment.decode(value)
       case Vector() =>

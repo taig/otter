@@ -20,7 +20,10 @@ sealed abstract class Queries[A]:
 
   final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
     override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector
-    override def matches(queries: Http.Queries): Boolean = ???
+    override def matches(values: Http.Queries): Boolean =
+      val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
+      val (right, _) = remainders.filterKeys(queries.toVector.map(_.name))
+      self.matches(left) && queries.matches(right)
     override def decode(values: Http.Queries): Codec.Result[(A, B)] =
       val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
       val (right, _) = remainders.filterKeys(queries.toVector.map(_.name))
@@ -48,7 +51,8 @@ object Queries:
 
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toVector: Vector[Query[?]] = Vector(query)
-    override def matches(queries: Http.Queries): Boolean = ???
+    override def matches(queries: Http.Queries): Boolean =
+      query.isOptional || queries.exists { case (key, _) => key === query.name }
     override def decode(values: Http.Queries): Codec.Result[A] =
       val value = values
         .collectFirst { case (key, value) if key === query.name => value }

@@ -28,7 +28,7 @@ sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, 
       case _                          => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[F, B] = new Primitive[F, B]:
-    export self.{constraints, metadata, isOptional}
+    export self.{constraints, isOptional, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Primitive] = self.encode(g(b))

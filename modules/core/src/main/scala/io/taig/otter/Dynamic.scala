@@ -22,7 +22,7 @@ abstract class Dynamic[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[
       case _                          => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Dynamic[F, O, B] = new Dynamic[F, O, B]:
-    export self.{metadata, isOptional}
+    export self.{isOptional, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[O] = self.encode(g(b))

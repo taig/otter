@@ -14,7 +14,7 @@ sealed abstract class Request[A]:
   def headers: Headers[?]
   def bodies: Bodies[?]
 
-  def matches(method: Method, url: Http.Url): Boolean = 
+  def matches(method: Method, url: Http.Url): Boolean =
     self.method === method && self.url.matches(url)
 
   final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:

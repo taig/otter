@@ -45,7 +45,7 @@ object Segment:
 
   sealed abstract class Parameter[A] extends Segment[A]:
     override def matches(segment: String): Boolean = true
-    
+
     def codec: Codec[Identity, Data.Primitive | Data.Array[Data.Primitive], ?] |
       Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], ?]
 

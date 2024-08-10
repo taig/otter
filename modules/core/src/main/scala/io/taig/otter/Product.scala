@@ -42,7 +42,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
       case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = new Record[F, O, B]:
-    export self.{fields, metadata, isOptional}
+    export self.{fields, isOptional, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
@@ -127,7 +127,7 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
       case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = new Tuple[F, O, B]:
-    export self.{fields, metadata,isOptional}
+    export self.{fields, isOptional, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))

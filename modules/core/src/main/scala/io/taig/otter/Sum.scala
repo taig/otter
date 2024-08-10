@@ -19,13 +19,13 @@ object Sum:
       Attribute(this, Keys.discriminator.nested, Discriminator.Nested.Default)
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = new Nested[F, O, A]:
-      export self.{branches, decode, default, encode,isOptional}
+      export self.{branches, decode, default, encode, isOptional}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = new Sum.Nested[F, O, B]:
-      export self.{branches, metadata, isOptional}
+      export self.{branches, isOptional, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[B] =
         self.decode(data, discriminator).map(f)
@@ -211,7 +211,7 @@ object Sum:
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = new Sum.Untagged[F, O, B]:
-      export self.{branches, metadata, isOptional}
+      export self.{branches, isOptional, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
       override def encode(b: B): F[O] = self.encode(g(b))

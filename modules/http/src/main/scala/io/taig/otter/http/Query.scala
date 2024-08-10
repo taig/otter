@@ -15,6 +15,8 @@ sealed abstract class Query[A]:
     ?
   ]
 
+  final def isOptional: Boolean = codec.isOptional
+
   def metadata: Metadata
 
   final def toQueries: Queries[A] = Queries(this)

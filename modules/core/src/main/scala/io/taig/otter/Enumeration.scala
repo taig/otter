@@ -23,7 +23,7 @@ abstract class Enumeration[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.
       case _                          => self.decode(data)
 
   override def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = new Enumeration[F, B]:
-    export self.{codec, metadata, isOptional}
+    export self.{codec, isOptional, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Primitive] = self.encode(g(b))
