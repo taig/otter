@@ -7,8 +7,10 @@ import org.http4s.server.Server as Underlying
 import io.taig.otter.http.*
 import io.taig.otter.http.http4s.*
 import cats.syntax.all.*
+import org.typelevel.ci.*
 import fs2.Stream
 import io.taig.otter.http.http4s.{toHttp4sResponse, toHttpHeaders, toHttpMethod, toHttpUrl}
+import io.taig.otter.http.header.MediaType
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]) extends Server[F]:
   override def start(app: App[F], onError: Throwable => F[Unit]): Resource[F, String] =
@@ -31,17 +33,13 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
   ): F[Http.Response] = app.routes
     .find(method, url)
     .fold(app.notFound.encode(Request.Result.Success(())).pure): route =>
-      payload.map(route.endpoint.request.bodies.decode(???, _))
-      // body(route.endpoint.request.bodies)
-      ???
-  // .fold(app.notFound.encode(().pure).pure): route =>
-  // body(route.endpoint.request.body)
-  //   .map(Http.Request(method, url, headers, _))
-  //   .map(route.endpoint.request.decode)
-  //   .flatMap(_.traverse(route.implementation))
-  //   .map(route.endpoint.response.encode)
-  // .handleErrorWith: throwable =>
-  //   onError(throwable).as(app.failure.encode(().valid))
+      payload
+        .map(Http.Request(method, url, headers, _))
+        .map(route.endpoint.request.decode)
+        .flatMap(_.traverse(route.implementation))
+        .map(route.endpoint.response.encode)
+    .handleErrorWith: throwable =>
+      onError(throwable).as(app.failure.encode(Request.Result.Success(())))
 
   def toHttpRequestBody(data: Stream[F, Byte]): F[Http.Payload] =
     data.compile.to(Array).map(Http.Payload.apply)

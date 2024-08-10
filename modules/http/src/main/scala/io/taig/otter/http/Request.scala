@@ -2,9 +2,9 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.Evidence
-import cats.data.Validated
 import io.taig.otter.Violations
 import java.nio.charset.Charset
+import cats.Applicative
 
 sealed abstract class Request[A]:
   self =>
@@ -48,6 +48,11 @@ object Request:
       case Success(a)                    => f(a)
       case result: ValidationViolations  => result
       case result: MediaTypesUnsupported => result
+
+    final def traverse[F[_]: Applicative, B](f: A => F[B]): F[Request.Result[B]] = this match
+      case Success(a)                    => f(a).map(Success.apply)
+      case result: ValidationViolations  => result.pure[F]
+      case result: MediaTypesUnsupported => result.pure[F]
 
   def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Bodies[C]): Request[(A, B, C)] =
     val _method = method
