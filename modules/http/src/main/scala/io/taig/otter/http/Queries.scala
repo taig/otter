@@ -11,13 +11,16 @@ sealed abstract class Queries[A]:
 
   def toVector: Vector[Query[?]]
 
+  def matches(queries: Http.Queries): Boolean
+
   final def imap[B](f: A => B)(g: B => A): Queries[B] = new Queries[B]:
-    export self.toVector
+    export self.{matches, toVector}
     override def decode(values: Http.Queries): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Queries = self.encode(g(b))
 
   final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
     override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector
+    override def matches(queries: Http.Queries): Boolean = ???
     override def decode(values: Http.Queries): Codec.Result[(A, B)] =
       val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
       val (right, _) = remainders.filterKeys(queries.toVector.map(_.name))
@@ -39,11 +42,13 @@ sealed abstract class Queries[A]:
 object Queries:
   val Empty: Queries[Unit] = new Queries[Unit]:
     override def toVector: Vector[Query[?]] = Vector.empty
+    override def matches(queries: Http.Queries): Boolean = true
     override def decode(values: Http.Queries): Codec.Result[Unit] = ().valid
     override def encode(a: Unit): Http.Queries = Vector.empty
 
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toVector: Vector[Query[?]] = Vector(query)
+    override def matches(queries: Http.Queries): Boolean = ???
     override def decode(values: Http.Queries): Codec.Result[A] =
       val value = values
         .collectFirst { case (key, value) if key === query.name => value }

@@ -10,24 +10,26 @@ abstract class Dynamic[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Dynamic[F, O, A] = new Dynamic[F, O, A]:
-    export self.{decode, default, encode}
+    export self.{decode, default, encode, isOptional}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Dynamic[F, O, A] = new Dynamic[F, O, A]:
     export self.{encode, metadata}
     override def default: Option[A] = f(self.default)
+    override def isOptional: Boolean = default.nonEmpty
     override def decode(data: Data): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Dynamic[F, O, B] = new Dynamic[F, O, B]:
-    export self.metadata
+    export self.{metadata, isOptional}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[O] = self.encode(g(b))
 
   final override def optional: Dynamic[Data.Optional, O, Option[A]] = new Dynamic[Data.Optional, O, Option[A]]:
     export self.metadata
+    override def isOptional: Boolean = true
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
       data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
@@ -35,6 +37,7 @@ abstract class Dynamic[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[
 
 object Dynamic:
   def apply[A <: Data](f: Data => Codec.Result[A]): Dynamic[Data.Required, A, A] = new Dynamic[Data.Required, A, A]:
+    override def isOptional: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
     override def decode(data: Data): Codec.Result[A] = f(data)

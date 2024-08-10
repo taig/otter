@@ -31,7 +31,7 @@ def toHttpQueries(query: Http4sQuery): Http.Queries =
 
 def toHttpUrl(uri: Uri): Http.Url = Http.Url(toHttpPath(uri.path), toHttpQueries(uri.query))
 
-def toHttp4sUri(url: Http.Url): ParseResult[Uri] = Uri.fromString(url.print)
+def toHttp4sUri(url: Http.Url): ParseResult[Uri] = Uri.fromString(url.show)
 
 def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
   headers.headers.map(header => header.name -> header.value).toVector

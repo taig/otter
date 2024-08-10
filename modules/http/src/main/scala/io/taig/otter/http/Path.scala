@@ -16,13 +16,18 @@ sealed abstract class Path[A]:
 
   def toVector: Vector[Segment[?]]
 
+  def matches(path: Http.Path): Boolean
+
   final def imap[B](f: A => B)(g: B => A): Path[B] = new Path[B]:
-    export self.toVector
+    export self.{matches, toVector}
     override def decode(values: Http.Path): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Path = self.encode(g(b))
 
   final def zip[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
     override def toVector: Vector[Segment[?]] = self.toVector ++ path.toVector
+    override def matches(value: Http.Path): Boolean =
+      val (left, right) = value.splitAt(self.toVector.length)
+      self.matches(left) && path.matches(right)
     override def decode(values: Http.Path): Codec.Result[(A, B)] =
       val (left, right) = values.splitAt(self.toVector.length)
       (self.decode(left), path.decode(right)).tupled
@@ -42,6 +47,7 @@ sealed abstract class Path[A]:
 object Path:
   val Empty: Path[Unit] = new Path[Unit]:
     override def toVector: Vector[Segment[?]] = Vector.empty
+    override def matches(path: Http.Path): Boolean = path.isEmpty
     override def decode(values: Http.Path): Codec.Result[Unit] = Validated.cond(
       values.isEmpty,
       (),
@@ -56,6 +62,9 @@ object Path:
 
   def apply[A](segment: Segment[A]): Path[A] = new Path[A]:
     override def toVector: Vector[Segment[?]] = Vector(segment)
+    override def matches(path: Http.Path): Boolean = path match
+      case Vector(value) => segment.matches(value)
+      case _ => false
     override def decode(values: Http.Path): Codec.Result[A] = values match
       case Vector(value) => segment.decode(value)
       case Vector() =>

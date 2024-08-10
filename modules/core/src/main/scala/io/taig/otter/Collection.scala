@@ -13,18 +13,19 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
   def codec: Codec[?, ?, ?]
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = new Collection[F, O, A]:
-    export self.{codec, constraints, decode, default, encode}
+    export self.{codec, constraints, decode, default, encode, isOptional}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Collection[F, O, A] = new Collection[F, O, A]:
     export self.{codec, constraints, encode, metadata}
     override def default: Option[A] = f(self.default)
+    override def isOptional: Boolean = default.nonEmpty
     override def decode(data: Option[Vector[Data]]): Codec.Result[A] = (data, default) match
       case (None, Some(default)) => default.valid
       case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = new Collection[F, O, B]:
-    export self.{codec, constraints, metadata}
+    export self.{codec, constraints, metadata, isOptional}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
@@ -33,6 +34,7 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
 
   override def optional: Collection[Data.Optional, O, Option[A]] = new Collection[Data.Optional, O, Option[A]]:
     export self.{codec, constraints, metadata}
+    override def isOptional: Boolean = true
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Vector[Data]]): Codec.Result[Option[A]] =
       data.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
@@ -56,6 +58,7 @@ object Collection:
       minItems.map(Constraint.Collection.MinItems.apply).toVector ++
         minItems.map(Constraint.Collection.MaxItems.apply).toVector ++
         Option.when(uniqueItems)(Constraint.Collection.UniqueItems).toVector
+    override def isOptional: Boolean = false
     override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Vector[A]] = None
@@ -96,6 +99,7 @@ object Collection:
   ): Collection[Data.Required, F[O], (A, Vector[A])] = new Collection[Data.Required, F[O], (A, Vector[A])]:
     val wrapped = Collection(of, minItems = minItems.max(1.some), maxItems, uniqueItems)
     override def constraints: Vector[Constraint.Collection] = wrapped.constraints
+    override def isOptional: Boolean = false
     override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, Vector[A])] = None

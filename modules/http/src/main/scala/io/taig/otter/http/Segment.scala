@@ -12,11 +12,12 @@ import io.taig.otter.Violations
 import io.taig.otter.Violation
 import io.taig.otter.Constraint
 import java.util.regex.Pattern
-import io.taig.otter.Step
 import io.taig.otter.XPath
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
+
+  def matches(segment: String): Boolean
 
   final def toPath: Path[A] = Path(this)
 
@@ -28,6 +29,7 @@ sealed abstract class Segment[A] extends Product, Serializable:
 
 object Segment:
   final case class Static(name: String) extends Segment[Unit]:
+    override def matches(segment: String): Boolean = segment === name
     override def decode(value: String): Codec.Result[Unit] = Validated.cond(
       name === value,
       (),
@@ -42,6 +44,8 @@ object Segment:
     override def print: String = name
 
   sealed abstract class Parameter[A] extends Segment[A]:
+    override def matches(segment: String): Boolean = true
+    
     def codec: Codec[Identity, Data.Primitive | Data.Array[Data.Primitive], ?] |
       Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], ?]
 

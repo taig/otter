@@ -15,4 +15,5 @@ object Method:
   val Trace: Method = "TRACE"
 
   def apply(value: String): Method = value
+  
   given (using eq: Eq[String]): Eq[Method] = eq

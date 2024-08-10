@@ -30,18 +30,19 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
   final def nulls: Attribute[Record[F, O, A], Null] = Attribute(this, Keys.nulls, Null.Default)
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
-    export self.{decode, default, encode, encodeSequence, fields}
+    export self.{decode, default, encode, encodeSequence, fields, isOptional}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Record[F, O, A] = new Record[F, O, A]:
     export self.{encode, encodeSequence, fields, metadata}
     override def default: Option[A] = f(self.default)
+    override def isOptional: Boolean = default.nonEmpty
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A] = (data, default) match
       case (None, Some(default)) => default.valid
       case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = new Record[F, O, B]:
-    export self.{fields, metadata}
+    export self.{fields, metadata, isOptional}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
@@ -52,6 +53,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
+    override def isOptional: Boolean = true
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[A]] = data match
       case Some(values) if values.forall { case (_, data) => data === Data.Null } => default.flatten.valid
@@ -66,6 +68,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
       codec: Record[G, P, B]
   ): Record[Data.Required, F[O] | G[P], (A, B)] = new Record[Data.Required, F[O] | G[P], (A, B)]:
     override def fields: Fields[?, ?] = self.fields.zip(codec.fields)
+    override def isOptional: Boolean = false
     override def default: Option[(A, B)] = None
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[(A, B)] =
@@ -94,6 +97,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
 object Record:
   def apply[O <: Data, A](of: Fields[O, A]): Record[Data.Required, O, A] = new Record[Data.Required, O, A]:
     override def fields: Fields[?, ?] = of
+    override def isOptional: Boolean = false
     override def default: Option[A] = None
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A] = data
@@ -111,18 +115,19 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
-    export self.{decode, default, encode, encodeSequence, fields}
+    export self.{decode, default, encode, encodeSequence, fields, isOptional}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Tuple[F, O, A] = new Tuple[F, O, A]:
     export self.{encode, encodeSequence, fields, metadata}
     override def default: Option[A] = f(self.default)
+    override def isOptional: Boolean = default.nonEmpty
     override def decode(data: Option[Vector[Data]]): Codec.Result[A] = (data, default) match
       case (None, Some(default)) => default.valid
       case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = new Tuple[F, O, B]:
-    export self.{fields, metadata}
+    export self.{fields, metadata,isOptional}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
@@ -132,6 +137,7 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
 
   final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
+    override def isOptional: Boolean = true
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Option[Vector[Data]]): Codec.Result[Option[A]] = data match
       case Some(values) if values.forall(_ === Data.Null) => default.flatten.valid
@@ -145,6 +151,7 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
       codec: Tuple[G, P, B]
   ): Tuple[Data.Required, F[O] | G[P], (A, B)] = new Tuple[Data.Required, F[O] | G[P], (A, B)]:
     override def fields: Fields[?, ?] = self.fields.zip(codec.fields)
+    override def isOptional: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = None
     override def decode(data: Option[Vector[Data]]): Codec.Result[(A, B)] =
@@ -179,6 +186,7 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
 object Tuple:
   def apply[O <: Data, A](of: Fields[O, A]): Tuple[Data.Required, O, A] = new Tuple[Data.Required, O, A]:
     override def fields: Fields[?, ?] = of
+    override def isOptional: Boolean = false
     override def default: Option[A] = None
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[Data]]): Codec.Result[A] = data

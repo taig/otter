@@ -19,13 +19,13 @@ object Sum:
       Attribute(this, Keys.discriminator.nested, Discriminator.Nested.Default)
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = new Nested[F, O, A]:
-      export self.{branches, decode, default, encode}
+      export self.{branches, decode, default, encode,isOptional}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = new Sum.Nested[F, O, B]:
-      export self.{branches, metadata}
+      export self.{branches, metadata, isOptional}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[B] =
         self.decode(data, discriminator).map(f)
@@ -41,6 +41,7 @@ object Sum:
         codec: Sum.Nested[G, P, B]
     ): Sum.Nested[G, O | P, Either[A, B]] = new Nested[G, O | P, Either[A, B]]:
       override def branches: Branches[?, ?] = self.branches.orElse(codec.branches)
+      override def isOptional: Boolean = false
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(
@@ -69,6 +70,7 @@ object Sum:
 
       new Nested[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
+        override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A] =
@@ -116,7 +118,7 @@ object Sum:
       Attribute(this, Keys.discriminator.merged, Discriminator.Merged.Default)
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = new Merged[F, O, A]:
-      export self.{branches, decode, default, encode}
+      export self.{branches, decode, default, encode, isOptional}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
@@ -145,6 +147,7 @@ object Sum:
 
       new Merged[Data.Required, O, A]:
         override def branches: Branches[Data.Object[O], A] = _branches
+        override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A] = ???
@@ -160,7 +163,7 @@ object Sum:
     self =>
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = new Keyed[F, O, A]:
-      export self.{branches, decode, default, encode}
+      export self.{branches, decode, default, encode, isOptional}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Keyed[F, O, A] = ???
@@ -185,6 +188,7 @@ object Sum:
 
       new Keyed[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
+        override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Vector[(String, Data)]): Codec.Result[A] =
@@ -201,13 +205,13 @@ object Sum:
     self =>
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = new Untagged[F, O, A]:
-      export self.{branches, decode, default, encode}
+      export self.{branches, decode, default, encode, isOptional}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = new Sum.Untagged[F, O, B]:
-      export self.{branches, metadata}
+      export self.{branches, metadata, isOptional}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
       override def encode(b: B): F[O] = self.encode(g(b))
@@ -221,6 +225,7 @@ object Sum:
         codec: Sum.Untagged[G, P, B]
     ): Sum.Untagged[G, O | P, Either[A, B]] = new Untagged[G, O | P, Either[A, B]]:
       override def branches: Branches[?, ?] = self.branches.orElse(codec.branches)
+      override def isOptional: Boolean = false
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(data: Data): Codec.Result[Either[A, B]] = ???
@@ -232,6 +237,7 @@ object Sum:
 
       new Untagged[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
+        override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data)

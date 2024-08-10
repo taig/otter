@@ -12,6 +12,9 @@ sealed abstract class Url[A]:
 
   def queries: Queries[?]
 
+  final def matches(url: Http.Url): Boolean =
+    self.path.matches(url.path) && self.queries.matches(url.queries)
+
   final def imap[B](f: A => B)(g: B => A): Url[B] = new Url[B]:
     export self.{path, queries}
     override def decode(values: Http.Url): Codec.Result[B] = self.decode(values).map(f)

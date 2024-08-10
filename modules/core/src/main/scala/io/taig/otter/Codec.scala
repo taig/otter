@@ -6,6 +6,8 @@ import cats.syntax.all.*
 abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   self =>
 
+  def isOptional: Boolean
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 

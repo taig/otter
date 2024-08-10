@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
-import java.nio.ByteBuffer
+import cats.Show
 
 object Http:
   type Path = Vector[String]
@@ -18,12 +18,14 @@ object Http:
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
 
-    def print: String =
+    override def toString: String =
       path.mkString_("/", "/", "") +
         queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
 
   object Url:
     val Empty: Http.Url = Url(Vector.empty, Vector.empty)
+
+    given Show[Http.Url] = Show.fromToString
 
   type Headers = Vector[(CIString, String)]
 

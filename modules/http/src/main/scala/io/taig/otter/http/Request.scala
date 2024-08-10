@@ -14,6 +14,9 @@ sealed abstract class Request[A]:
   def headers: Headers[?]
   def bodies: Bodies[?]
 
+  def matches(method: Method, url: Http.Url): Boolean = 
+    self.method === method && self.url.matches(url)
+
   final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:
     export self.{bodies, headers, method, url}
     override def decode(value: Http.Request): Request.Result[B] = self.decode(value).map(f)
