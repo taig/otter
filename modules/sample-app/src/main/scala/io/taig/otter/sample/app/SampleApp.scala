@@ -3,7 +3,7 @@ package io.taig.otter.sample.app
 import cats.effect.IOApp
 import cats.effect.IO
 import io.taig.otter.sample.Librarian
-import io.taig.otter.http.App
+import io.taig.otter.sample.api.Dsl.*
 
 object SampleApp extends IOApp.Simple:
   override def run: IO[Unit] = for
@@ -15,5 +15,5 @@ object SampleApp extends IOApp.Simple:
     _ <- IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)")
     implementation = SampleEndpointImplementation(repositories.librarian)
     routes = SampleRoutes(implementation, repositories)
-    _ = App(routes, notFound = ???, failure = ???)
+    _ = app(routes)
   yield ()

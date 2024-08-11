@@ -6,9 +6,7 @@ import io.taig.otter.Violations
 import java.nio.charset.Charset
 import cats.Applicative
 import org.typelevel.ci.*
-import io.taig.otter.Constraint
 import io.taig.otter.Violation
-import io.taig.otter.Data
 import io.taig.otter.http.header.MediaType
 import cats.data.Validated
 

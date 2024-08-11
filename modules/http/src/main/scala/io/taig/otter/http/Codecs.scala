@@ -166,6 +166,12 @@ trait Codecs extends Base.Codecs:
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
+  def app[F[_]](routes: Routes[F]): App[F] = App(
+    routes,
+    notFound = response(result(code.notFound)),
+    failure = response(result(code.internalServerError))
+  )
+
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
       merge: Evidence.Merge[A, B]
   ): Result[merge.Out] = Result(code, headers, bodies).imap(merge.apply)(merge.unapply)
@@ -220,11 +226,13 @@ trait Codecs extends Base.Codecs:
 
   private val violationsBody = text(violations.printed) + formData(violations.flattened)
 
-  final def response[A](results: Results[A]): Response[A] = Response(
+  def response[A](results: Results[A]): Response[A] = Response(
     results,
     mediaTypesUnsupported = result(code.unsupportedMediaTypes, violationsBody),
     validationViolations = result(code.unprocessableEntity, violationsBody)
   )
+
+  final def response[A](result: Result[A]): Response[A] = response(result.toResults)
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
