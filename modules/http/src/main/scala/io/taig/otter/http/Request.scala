@@ -5,6 +5,12 @@ import io.taig.otter.Evidence
 import io.taig.otter.Violations
 import java.nio.charset.Charset
 import cats.Applicative
+import org.typelevel.ci.*
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
+import io.taig.otter.Data
+import io.taig.otter.http.header.MediaType
+import cats.data.Validated
 
 sealed abstract class Request[A]:
   self =>
@@ -71,33 +77,28 @@ object Request:
       override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
-      override def decode(request: Http.Request): Request.Result[(A, B, C)] = ???
-      // request.headers
-      //   .collectFirst { case (ci"Content-Type", value) => value }
-      //   .fold(
-      //     Request.Result.MediaTypesUnsupported(
-      //       Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null")))
-      //     )
-      //   )(Request.Result.Success.apply)
-      //   .flatMap: contentType =>
-      //     MediaType
-      //       .parse(contentType)
-      //       .fold(
-      //         Result.MediaTypesUnsupported(
-      //           Violations.rootNec(Violation(Constraint.Type("mediaType"), actual = Data.String(contentType)))
-      //         )
-      //       )(Result.Success.apply)
-      //   .flatMap: mediaType =>
-      //     (
-      //       url.decode(request.url),
-      //       headers.decode(request.headers),
-      //       _bodies.decode(mediaType, request.body)
-      //     ).tupled match
-      //       case Validated.Valid((a, b, Some(c))) => Result.Success((a, b, c))
-      //       case Validated.Valid((_, _, None)) =>
-      //         val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.print).map(Data.String.apply)
-      //         Result.MediaTypesUnsupported(
-      //           Violations
-      //             .rootNec(Violation(Constraint.OneOf(supportedContentTypes), actual = Data.String(mediaType.print)))
-      //         )
-      //       case Validated.Invalid(violations) => Result.ValidationViolations(violations)
+      override def decode(request: Http.Request): Request.Result[(A, B, C)] = request.headers
+        .collectFirst { case (ci"Content-Type", value) => value }
+        .fold(Request.Result.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("string", "null"))))(
+          Request.Result.Success.apply
+        )
+        .flatMap: contentType =>
+          MediaType
+            .parse(contentType)
+            .fold(
+              _ => Result.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("mediaType", actual = contentType))),
+              Result.Success.apply
+            )
+        .flatMap: mediaType =>
+          (
+            url.decode(request.url),
+            headers.decode(request.headers),
+            _bodies.decode(mediaType, request.body)
+          ).tupled match
+            case Validated.Valid((a, b, Some((_, c)))) => Result.Success((a, b, c))
+            case Validated.Valid((_, _, None)) =>
+              val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
+              Result.MediaTypesUnsupported(
+                Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = mediaType.show))
+              )
+            case Validated.Invalid(violations) => Result.ValidationViolations(violations)
