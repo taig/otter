@@ -5,12 +5,9 @@ import cats.effect.Concurrent
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.server.Server as Underlying
 import io.taig.otter.http.*
-import io.taig.otter.http.http4s.*
 import cats.syntax.all.*
-import org.typelevel.ci.*
 import fs2.Stream
-import io.taig.otter.http.http4s.{toHttp4sResponse, toHttpHeaders, toHttpMethod, toHttpUrl}
-import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.http4s.*
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]) extends Server[F]:
   override def start(app: App[F], onError: Throwable => F[Unit]): Resource[F, String] =
@@ -22,7 +19,6 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
     val headers = toHttpHeaders(request.headers)
     handle(app, method, url, headers, toHttpRequestBody(request.body), onError).flatMap(toHttp4sResponse)
 
-  // TODO make this broadly available, this should in fact also be happening in AppClient
   def handle(
       app: App[F],
       method: Method,
@@ -30,16 +26,7 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
       headers: Http.Headers,
       payload: F[Http.Payload],
       onError: Throwable => F[Unit]
-  ): F[Http.Response] = app.routes
-    .find(method, url)
-    .fold(app.notFound.encode(Request.Result.Success(())).pure): route =>
-      payload
-        .map(Http.Request(method, url, headers, _))
-        .map(route.endpoint.request.decode)
-        .flatMap(_.traverse(route.implementation))
-        .map(route.endpoint.response.encode)
-    .handleErrorWith: throwable =>
-      onError(throwable).as(app.failure.encode(Request.Result.Success(())))
+  ): F[Http.Response] = app(Http.Request(method, url, headers, payload), onError)
 
   def toHttpRequestBody(data: Stream[F, Byte]): F[Http.Payload] =
     data.compile.to(Array).map(Http.Payload.apply)

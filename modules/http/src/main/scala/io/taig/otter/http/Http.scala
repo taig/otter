@@ -32,15 +32,15 @@ object Http:
   object Headers:
     val Empty: Http.Headers = Vector.empty
 
-  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Payload):
-    def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))
-    def withMethod(method: Method): Http.Request = modifyMethod(_ => method)
+  final case class Request[F[_]](method: Method, url: Http.Url, headers: Http.Headers, body: F[Http.Payload]):
+    def modifyMethod(f: Method => Method): Http.Request[F] = copy(method = f(method))
+    def withMethod(method: Method): Http.Request[F] = modifyMethod(_ => method)
 
-    def modifyUrl(f: Http.Url => Http.Url): Http.Request = copy(url = f(url))
-    def withUrl(url: Http.Url): Http.Request = modifyUrl(_ => url)
+    def modifyUrl(f: Http.Url => Http.Url): Http.Request[F] = copy(url = f(url))
+    def withUrl(url: Http.Url): Http.Request[F] = modifyUrl(_ => url)
 
-    def modifyHeaders(f: Http.Headers => Http.Headers): Http.Request = copy(headers = f(headers))
-    def withHeaders(headers: Http.Headers): Http.Request = modifyHeaders(_ => headers)
+    def modifyHeaders(f: Http.Headers => Http.Headers): Http.Request[F] = copy(headers = f(headers))
+    def withHeaders(headers: Http.Headers): Http.Request[F] = modifyHeaders(_ => headers)
 
   final case class Response(code: Code, headers: Http.Headers, body: Http.Payload):
     def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))

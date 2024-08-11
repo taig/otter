@@ -17,6 +17,8 @@ import org.http4s.{
   Uri
 }
 import scodec.bits.ByteVector
+import fs2.Stream
+import fs2.Chunk
 
 def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
 
@@ -39,13 +41,13 @@ def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
 def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
   new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
 
-def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request): F[Http4sRequest[F]] = for
+def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request[F]): F[Http4sRequest[F]] = for
   method <- toHttp4sMethod(request.method)
     .toRight(new IllegalArgumentException(s"Unknown method: '${request.method}'"))
     .liftTo[F]
   uri <- toHttp4sUri(request.url).liftTo[F]
   headers = toHttp4sHeaders(request.headers)
-  entity = Http4sEntity.strict(ByteVector(request.body.data))
+  entity = Http4sEntity.stream(Stream.evalUnChunk(request.body.map(payload => Chunk.array(payload.data))))
 yield Http4sRequest(method, uri = uri, headers = headers, entity = entity)
 
 def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sResponse[F]] = for
