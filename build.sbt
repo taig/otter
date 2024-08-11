@@ -10,7 +10,7 @@ val Version = new {
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
-  val Log4Cats = "2.6.0"
+  val Log4Cats = "2.7.0"
   val Mouse = "1.3.1"
   val Munit = "1.0.0"
   val MunitCatsEffect = "1.0.7"
@@ -237,14 +237,14 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
     // buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
       // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-      //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
       //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
       //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-      //   "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-      "org.typelevel" %% "mouse" % Version.Mouse ::
+      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
+        "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sample, sampleApi)
+  .dependsOn(serverHttp4s, sample, sampleApi)
 
 // lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
 //   .enablePlugins(BuildInfoPlugin)

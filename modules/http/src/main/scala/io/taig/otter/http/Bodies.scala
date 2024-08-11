@@ -55,7 +55,11 @@ sealed abstract class Bodies[A]:
   def encode(a: A): (MediaType, Http.Payload)
 
 object Bodies:
-  val Empty: Bodies[Unit] = ???
+  val Empty: Bodies[Unit] = new Bodies[Unit]:
+    override def toNev: NonEmptyVector[Body[?]] = ???
+    override def decode(contentType: MediaType, body: Payload): Codec.Result[Option[(MediaType, Unit)]] = ???
+    override def encode(accept: MediaRange, a: Unit): Option[(MediaType, Payload)] = ???
+    override def encode(a: Unit): (MediaType, Payload) = ???
 
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = NonEmptyVector.one(body)
