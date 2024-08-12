@@ -20,7 +20,7 @@ object Http:
 
     override def toString: String =
       path.mkString_("/", "/", "") +
-        queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
+        (if queries.isEmpty then "" else queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", ""))
 
   object Url:
     val Empty: Http.Url = Url(Vector.empty, Vector.empty)

@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import org.typelevel.ci.*
 import io.taig.otter.Violations
 
 final case class Response[A](

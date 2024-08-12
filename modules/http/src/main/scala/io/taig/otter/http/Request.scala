@@ -12,8 +12,7 @@ import io.taig.otter.http.header.MediaType
 import cats.data.Validated
 import cats.Traverse
 import cats.Eval
-import cats.Monad
-import cats.Functor
+import io.taig.otter.XPath
 
 sealed abstract class Request[A]:
   self =>
@@ -23,13 +22,12 @@ sealed abstract class Request[A]:
   def headers: Headers[?]
   def bodies: Bodies[?]
 
-  def matches(method: Method, url: Http.Url): Boolean =
-    self.method === method && self.url.matches(url)
+  final def matches(method: Method, url: Http.Url): Boolean = self.method === method && self.url.matches(url)
 
   final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:
     export self.{bodies, headers, method, url}
-    override def decode[F[_]: Applicative](value: Http.Request[F]): F[Request.Result[B]] =
-      self.decode(value).map(_.map(f))
+    override def decode[F[_]: Applicative](contentType: MediaType, request: Http.Request[F]): F[Request.Result[B]] =
+      self.decode(contentType, request).map(_.map(f))
     override def encode[F[_]](charset: Option[Charset], b: B): Http.Request[F] = self.encode(charset, g(b))
 
   final def to[B](using evidence: Evidence.Product.Aux[B, A]): Request[B] = imap(evidence.from)(evidence.to)
@@ -40,10 +38,13 @@ sealed abstract class Request[A]:
     new Request[(A, B)]:
       export self.{bodies, method, url}
       override def headers: Headers[?] = self.headers.zip(headers)
-      override def decode[F[_]: Applicative](value: Http.Request[F]): F[Request.Result[(A, B)]] =
-        val (left, remainders) = value.headers.filterKeys(self.headers.toVector.map(_.name))
+      override def decode[F[_]: Applicative](
+          contentType: MediaType,
+          request: Http.Request[F]
+      ): F[Request.Result[(A, B)]] =
+        val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
         val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
-        (self.decode(value.modifyHeaders(_ => left)), _headers.decode(right).pure[F]).tupled.map:
+        (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right).pure[F]).tupled.map:
           case (Request.Result.Success(a), Validated.Valid(b))       => Request.Result.Success((a, b))
           case (Request.Result.Success(_), Validated.Invalid(right)) => Request.Result.ValidationViolations(right)
           case (Request.Result.ValidationViolations(left), Validated.Valid(_)) =>
@@ -60,7 +61,20 @@ sealed abstract class Request[A]:
   final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Request[merge.Out] =
     zip(header.toHeaders).imap(ab => merge(ab.swap))(merge.unapply(_).swap)
 
-  def decode[F[_]: Applicative](value: Http.Request[F]): F[Request.Result[A]]
+  final def decode[F[_]: Applicative](request: Http.Request[F]): F[Request.Result[A]] = request.headers
+    .collectFirst { case (ci"Content-Type", value) => value }
+    .toRight(Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("string", "null")))
+    .flatMap: contentType =>
+      MediaType
+        .parse(contentType)
+        .leftMap(_ =>
+          Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("mediaType", contentType))
+        )
+    .match
+      case Right(mediaType) => decode(mediaType, request)
+      case Left(violations) => Request.Result.MediaTypesUnsupported(violations).pure[F]
+
+  def decode[F[_]: Applicative](contentType: MediaType, request: Http.Request[F]): F[Request.Result[A]]
 
   def encode[F[_]](charset: Option[Charset], a: A): Http.Request[F]
 
@@ -90,11 +104,11 @@ object Request:
       override def map[A, B](fa: Request.Result[A])(f: A => B): Request.Result[B] = fa.map(f)
       override def foldLeft[A, B](fa: Request.Result[A], b: B)(f: (B, A) => B): B = fa match
         case Success(a) => f(b, a)
-        case _ => b
-      override def foldRight[A, B](fa: Request.Result[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = 
+        case _          => b
+      override def foldRight[A, B](fa: Request.Result[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] =
         fa match
           case Success(a) => f(a, lb)
-          case _ => lb
+          case _          => lb
       override def traverse[G[_]: Applicative, A, B](fa: Request.Result[A])(f: A => G[B]): G[Request.Result[B]] =
         fa.traverse(f)
 
@@ -109,30 +123,22 @@ object Request:
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
       override def bodies: Bodies[C] = _bodies
-      override def decode[F[_]: Applicative](request: Http.Request[F]): F[Request.Result[(A, B, C)]] =
-        request.headers
-          .collectFirst { case (ci"Content-Type", value) => value }
-          .toRight(Violations.rootNec(Violation.tpe("string", "null")))
-          .flatMap: contentType =>
-            MediaType
-              .parse(contentType)
-              .leftMap(_ => Violations.rootNec(Violation.tpe("mediaType", actual = contentType)))
-          .match
-            case Right(mediaType) =>
-              (url.decode(request.url), headers.decode(request.headers)).tupled match
-                case Validated.Valid((a, b)) =>
-                  request.body
-                    .map(_bodies.decode(mediaType, _))
-                    .map:
-                      case Validated.Valid(Some((mediaType, c))) => ???
-                      case Validated.Valid(None) =>
-                        val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
-                        Result.MediaTypesUnsupported(
-                          Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = mediaType.show))
-                        )
-                      case Validated.Invalid(violations) => Result.ValidationViolations(violations)
-                case Validated.Invalid(violations) => Result.ValidationViolations(violations).pure[F]
-            case Left(violations) => Result.MediaTypesUnsupported(violations).pure[F]
+      override def decode[F[_]: Applicative](
+          contentType: MediaType,
+          request: Http.Request[F]
+      ): F[Request.Result[(A, B, C)]] = (url.decode(request.url), headers.decode(request.headers)).tupled match
+        case Validated.Valid((a, b)) =>
+          request.body
+            .map(_bodies.decode(contentType, _))
+            .map:
+              case Validated.Valid(Some((_, c))) => Request.Result.Success((a, b, c))
+              case Validated.Valid(None) =>
+                val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
+                Result.MediaTypesUnsupported(
+                  Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
+                )
+              case Validated.Invalid(violations) => Result.ValidationViolations("body" /: violations)
+        case Validated.Invalid(violations) => Result.ValidationViolations(violations).pure[F]
       override def encode[F[_]](charset: Option[Charset], abc: (A, B, C)): Http.Request[F] = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)

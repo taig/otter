@@ -18,6 +18,6 @@ object SessionApiSchema:
         try UUID.fromString(value).some
         catch { case _: IllegalArgumentException => none }
       )
-  }(uuid => s"Bearer $uuid")
+  }(uuid => prefix + uuid.show)
 
   val codec: Primitive.Required[SessionApiSchema] = codec(prefix = "")

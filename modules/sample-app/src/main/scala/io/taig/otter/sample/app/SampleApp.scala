@@ -1,6 +1,5 @@
 package io.taig.otter.sample.app
 
-import cats.effect.IOApp
 import cats.effect.IO
 import io.taig.otter.sample.Librarian
 import io.taig.otter.sample.api.Dsl.*

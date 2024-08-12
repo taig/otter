@@ -96,36 +96,6 @@ final class AcceptTest extends FunSuite:
     )
 
   test("toSortedList"):
-    println(
-      Accept(
-        NonEmptyList.of(
-          Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
-            weight = none
-          ),
-          Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
-            weight = none
-          ),
-          Weighted(
-            self = MediaRange(
-              tpe = MediaRange.Type.Secondary("text", "plain"),
-              parameters = Parameters.of(ci"foo" -> "bar")
-            ),
-            weight = none
-          ),
-          Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
-            weight = BigDecimal("0.5").some
-          ),
-          Weighted(
-            self = MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Parameters.Empty),
-            weight = BigDecimal(0).some
-          )
-        )
-      ).toSortedList.map(_.show).mkString(", ")
-    )
-
     assertEquals(
       obtained = Accept(
         NonEmptyList.of(
