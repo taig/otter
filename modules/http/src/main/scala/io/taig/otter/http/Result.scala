@@ -47,9 +47,9 @@ object Result:
       override def unsafeDecode(response: Http.Response): Codec.Result[(A, B)] =
         // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
         ???
-      override def encode(ab: (A, B)): Http.Response = ???
-      // val (mediaType, payload) = _bodies.encode(charset = none, ab._2)
-      // Http.Response(code, (ci"Content-Type", mediaType.print) +: headers.encode(ab._1), payload)
+      override def encode(ab: (A, B)): Http.Response = 
+        val (mediaType, payload) = _bodies.encode(ab._2)
+        Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
     val _code = code

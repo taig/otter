@@ -12,6 +12,8 @@ import io.taig.otter.http.header.MediaType
 import cats.data.Validated
 import cats.Traverse
 import cats.Eval
+import cats.Monad
+import cats.Functor
 
 sealed abstract class Request[A]:
   self =>
@@ -86,8 +88,13 @@ object Request:
   object Result:
     given Traverse[Request.Result] with
       override def map[A, B](fa: Request.Result[A])(f: A => B): Request.Result[B] = fa.map(f)
-      override def foldLeft[A, B](fa: Request.Result[A], b: B)(f: (B, A) => B): B = ???
-      override def foldRight[A, B](fa: Request.Result[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = ???
+      override def foldLeft[A, B](fa: Request.Result[A], b: B)(f: (B, A) => B): B = fa match
+        case Success(a) => f(b, a)
+        case _ => b
+      override def foldRight[A, B](fa: Request.Result[A], lb: Eval[B])(f: (A, Eval[B]) => Eval[B]): Eval[B] = 
+        fa match
+          case Success(a) => f(a, lb)
+          case _ => lb
       override def traverse[G[_]: Applicative, A, B](fa: Request.Result[A])(f: A => G[B]): G[Request.Result[B]] =
         fa.traverse(f)
 
@@ -102,30 +109,30 @@ object Request:
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
       override def bodies: Bodies[C] = _bodies
-      override def decode[F[_]: Applicative](request: Http.Request[F]): F[Request.Result[(A, B, C)]] = ???
-      // request.headers
-      // .collectFirst { case (ci"Content-Type", value) => value }
-      // .fold(Request.Result.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("string", "null"))))(
-      //   Request.Result.Success.apply
-      // )
-      // .flatMap: contentType =>
-      //   MediaType
-      //     .parse(contentType)
-      //     .fold(
-      //       _ => Result.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("mediaType", actual = contentType))),
-      //       Result.Success.apply
-      //     )
-      // .flatMap: mediaType =>
-      //   (url.decode(request.url), headers.decode(request.headers)).tupled match
-      //     case Validated.Valid((a, b)) =>
-
-      //       Result.Success((a, b, c))
-      //     // case Validated.Valid((_, _)) =>
-      //     //   val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
-      //     //   Result.MediaTypesUnsupported(
-      //     //     Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = mediaType.show))
-      //     //   )
-      //     case Validated.Invalid(violations) => Result.ValidationViolations(violations)
+      override def decode[F[_]: Applicative](request: Http.Request[F]): F[Request.Result[(A, B, C)]] =
+        request.headers
+          .collectFirst { case (ci"Content-Type", value) => value }
+          .toRight(Violations.rootNec(Violation.tpe("string", "null")))
+          .flatMap: contentType =>
+            MediaType
+              .parse(contentType)
+              .leftMap(_ => Violations.rootNec(Violation.tpe("mediaType", actual = contentType)))
+          .match
+            case Right(mediaType) =>
+              (url.decode(request.url), headers.decode(request.headers)).tupled match
+                case Validated.Valid((a, b)) =>
+                  request.body
+                    .map(_bodies.decode(mediaType, _))
+                    .map:
+                      case Validated.Valid(Some((mediaType, c))) => ???
+                      case Validated.Valid(None) =>
+                        val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
+                        Result.MediaTypesUnsupported(
+                          Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = mediaType.show))
+                        )
+                      case Validated.Invalid(violations) => Result.ValidationViolations(violations)
+                case Validated.Invalid(violations) => Result.ValidationViolations(violations).pure[F]
+            case Left(violations) => Result.MediaTypesUnsupported(violations).pure[F]
       override def encode[F[_]](charset: Option[Charset], abc: (A, B, C)): Http.Request[F] = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)

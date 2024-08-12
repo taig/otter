@@ -1,15 +1,13 @@
 package io.taig.otter.http
 
+import cats.Monad
+import cats.syntax.all.*
+
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
-  def apply(request: Http.Request[F]): F[Http.Response] = ???
-  //     payload
-  //       .map(Http.Request(method, url, headers, _))
-  //       .map(route.endpoint.request.decode)
-  //       .flatMap(_.traverse(route.implementation))
-  //       .map(route.endpoint.response.encode)
-  //   .handleErrorWith: throwable =>
-  //     onError(throwable).as(app.failure.encode(Request.Result.Success(())))
-  // }
+  def apply(request: Http.Request[F])(using Monad[F]): F[Http.Response] = endpoint.request
+    .decode(request)
+    .flatMap(_.traverse(implementation))
+    .map(endpoint.response.encode)
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 
