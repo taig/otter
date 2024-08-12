@@ -2,10 +2,7 @@ package io.taig.otter.http
 
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
-import io.taig.otter.{+, Evidence}
-import io.taig.otter.Codec
-import io.taig.otter.Violation
-import io.taig.otter.Data
+import io.taig.otter.Evidence
 import io.taig.otter.Violations
 import cats.data.Ior
 
@@ -19,7 +16,7 @@ sealed abstract class Results[A]:
       self.decode(response).map(_.map(f))
     override def encode(b: B): Http.Response = self.encode(g(b))
 
-  final infix def orElse[B](results: Results[B]): Results[A + B] = new Results[Either[A, B]]:
+  final infix def orElse[B](results: Results[B]): Results[Either[A, B]] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
     override def decode(response: Http.Response): Ior[Violations, Option[Either[A, B]]] =
       self.decode(response) match
@@ -36,7 +33,7 @@ sealed abstract class Results[A]:
             case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
             case Ior.Left(right)    => Ior.Both(left.combine(right), none)
             case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
-    override def encode(ab: A + B): Http.Response = ab match
+    override def encode(ab: Either[A, B]): Http.Response = ab match
       case Left(a)  => self.encode(a)
       case Right(b) => results.encode(b)
 
@@ -49,14 +46,14 @@ sealed abstract class Results[A]:
   def encode(a: A): Http.Response
 
 object Results:
-// extension [A <: Matchable](self: Results[A])
-//   inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
-//     case Left(a)  => a
-//     case Right(b) => b
-//   } {
-//     case a: A => Left(a)
-//     case b: B => Right(b)
-//   }
+  extension [A <: Matchable](self: Results[A])
+    inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
 
   def apply[A](result: Result[A]): Results[A] = new Results[A]:
     override def toNev: NonEmptyVector[Result[?]] = NonEmptyVector.one(result)

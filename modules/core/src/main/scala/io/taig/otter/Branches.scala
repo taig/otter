@@ -69,13 +69,6 @@ sealed abstract class Branches[+O <: Data, A]:
 
   final def +:[P <: Data, B](branch: Branch[P, B]): Branches[P | O, Either[B, A]] = branch.toBranches.orElse(this)
 
-  final def toSumNested: Sum.Nested[Data.Required, O, A] = Sum.Nested(this)
-  final def toSumMerged[P <: Data](using
-      evidence: this.type <:< Branches[Data.Object[P], A]
-  ): Sum.Merged[Data.Required, P, A] = Sum.Merged(evidence(this))
-  final def toSumKeyed: Sum.Keyed[Data.Required, O, A] = Sum.Keyed(this)
-  final def toSumUntagged: Sum.Untagged[Data.Required, O, A] = Sum.Untagged(this)
-
   def decodeNested(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[Option[A]]
 
   def decodeMerged(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[Option[A]]
@@ -95,7 +88,7 @@ sealed abstract class Branches[+O <: Data, A]:
   def encodeUntagged(a: A): O
 
 object Branches:
-  def apply[O <: Data, A](branch: Branch[O, A]): Branches[O, A] = new Branches[O, A]:
+  def apply[O <: Data, A](branch: => Branch[O, A]): Branches[O, A] = new Branches[O, A]:
     override def toNev: NonEmptyVector[Branch[?, ?]] = NonEmptyVector.one(branch)
     override def decodeNested(
         data: Vector[(String, Data)],

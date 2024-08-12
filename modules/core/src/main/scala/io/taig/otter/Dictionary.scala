@@ -3,8 +3,6 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.Invariant
 import cats.data.Validated
-import io.taig.otter.Data.Required
-import io.taig.otter.Codec.Result
 
 abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Object[O], A]:
   self =>
@@ -42,8 +40,8 @@ abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Cod
 
 object Dictionary:
   def apply[F[+a] <: Data.Optional[a], O <: Data, A, B](
-      key: Codec[Data.Required, Data.Primitive, A],
-      of: Codec[F, O, B],
+      key: => Codec[Data.Required, Data.Primitive, A],
+      of: => Codec[F, O, B],
       minProperties: Option[Int],
       maxProperties: Option[Int]
   ): Dictionary[Data.Required, F[O], Vector[(A, B)]] = new Dictionary[Data.Required, F[O], Vector[(A, B)]]:
@@ -82,8 +80,8 @@ object Dictionary:
       Data.Object(abs.map { case (a, b) => (key.printRequired(a), of.encode(b)) })
 
   def nonEmpty[F[+a] <: Data.Optional[a], O <: Data, A, B](
-      key: Codec[Data.Required, Data.Primitive, A],
-      of: Codec[F, O, B],
+      key: => Codec[Data.Required, Data.Primitive, A],
+      of: => Codec[F, O, B],
       minProperties: Option[Int],
       maxProperties: Option[Int]
   ): Dictionary[Data.Required, F[O], ((A, B), Vector[(A, B)])] =

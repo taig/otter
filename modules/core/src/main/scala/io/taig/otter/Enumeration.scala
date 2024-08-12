@@ -37,7 +37,10 @@ abstract class Enumeration[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.
     override def encode(a: Option[A]): Data.Optional[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
 
 object Enumeration:
-  def apply[A, B](of: Codec[Data.Required, Data.Primitive, A], mapping: Mapping[B, A]): Enumeration[Data.Required, B] =
+  def apply[A, B](
+      of: => Codec[Data.Required, Data.Primitive, A],
+      mapping: Mapping[B, A]
+  ): Enumeration[Data.Required, B] =
     new Enumeration[Data.Required, B]:
       override def isOptional: Boolean = false
       override def codec: Codec[?, ?, ?] = of

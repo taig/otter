@@ -95,7 +95,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
   protected def encodeSequence(a: A, nulls: Null): Data.Object[F[O]]
 
 object Record:
-  def apply[O <: Data, A](of: Fields[O, A]): Record[Data.Required, O, A] = new Record[Data.Required, O, A]:
+  def apply[O <: Data, A](of: => Fields[O, A]): Record[Data.Required, O, A] = new Record[Data.Required, O, A]:
     override def fields: Fields[?, ?] = of
     override def isOptional: Boolean = false
     override def default: Option[A] = None
@@ -184,7 +184,7 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
   protected def encodeSequence(a: A): Data.Array[F[O]]
 
 object Tuple:
-  def apply[O <: Data, A](of: Fields[O, A]): Tuple[Data.Required, O, A] = new Tuple[Data.Required, O, A]:
+  def apply[O <: Data, A](of: => Fields[O, A]): Tuple[Data.Required, O, A] = new Tuple[Data.Required, O, A]:
     override def fields: Fields[?, ?] = of
     override def isOptional: Boolean = false
     override def default: Option[A] = None

@@ -49,7 +49,7 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
 
 object Collection:
   def apply[F[+a] <: Data.Optional[a], O <: Data, A](
-      of: Codec[F, O, A],
+      of: => Codec[F, O, A],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean
@@ -92,7 +92,7 @@ object Collection:
     override def encode(as: Vector[A]): Data.Array[F[O]] = Data.Array(as.map(of.encode))
 
   def nonEmpty[F[+a] <: Data.Optional[a], O <: Data, A](
-      of: Codec[F, O, A],
+      of: => Codec[F, O, A],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean

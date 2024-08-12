@@ -65,7 +65,7 @@ object Sum:
     def encode(a: A, discriminator: Discriminator.Nested): F[Data.Object[Data.String | O]]
 
   object Nested:
-    def apply[O <: Data, A](branches: Branches[O, A]): Sum.Nested[Data.Required, O, A] =
+    def apply[O <: Data, A](branches: => Branches[O, A]): Sum.Nested[Data.Required, O, A] =
       val _branches = branches
 
       new Nested[Data.Required, O, A]:
@@ -142,7 +142,7 @@ object Sum:
     def encode(a: A, discriminator: Discriminator.Merged): F[Data.Object[Data.String | O]]
 
   object Merged:
-    def apply[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged[Data.Required, O, A] =
+    def apply[O <: Data, A](branches: => Branches[Data.Object[O], A]): Sum.Merged[Data.Required, O, A] =
       val _branches = branches
 
       new Merged[Data.Required, O, A]:
@@ -183,7 +183,7 @@ object Sum:
     def decode(data: Vector[(String, Data)]): Codec.Result[A]
 
   object Keyed:
-    def apply[O <: Data, A](branches: Branches[O, A]): Sum.Keyed[Data.Required, O, A] =
+    def apply[O <: Data, A](branches: => Branches[O, A]): Sum.Keyed[Data.Required, O, A] =
       val _branches = branches
 
       new Keyed[Data.Required, O, A]:
@@ -232,7 +232,7 @@ object Sum:
       override def encode(ab: Either[A, B]): G[O | P] = ab.fold(self.encode, codec.encode)
 
   object Untagged:
-    def apply[O <: Data, A](branches: Branches[O, A]): Sum.Untagged[Data.Required, O, A] =
+    def apply[O <: Data, A](branches: => Branches[O, A]): Sum.Untagged[Data.Required, O, A] =
       val _branches = branches
 
       new Untagged[Data.Required, O, A]:

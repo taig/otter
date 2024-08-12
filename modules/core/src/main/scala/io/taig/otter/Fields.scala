@@ -38,9 +38,6 @@ sealed abstract class Fields[+O <: Data, A]:
   final def *:[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[B, A]): Fields[P | O, merge.Out] =
     field.toFields.zip(this).imap(merge.apply)(merge.unapply)
 
-  final def toTuple: Tuple[Data.Required, O, A] = Tuple(this)
-  final def toRecord: Record[Data.Required, O, A] = Record(this)
-
   def decodeRecord(data: Vector[(String, Data)]): Codec.Result[A]
 
   def decodeArray(data: Vector[Data]): Codec.Result[A]
@@ -57,7 +54,7 @@ object Fields:
     override def encodeRecord(a: Unit, nulls: Null): Vector[Nothing] = Vector.empty
     override def encodeArray(a: Unit): Vector[Nothing] = Vector.empty
 
-  def apply[O <: Data, A](field: Field[O, A]): Fields[O, A] = new Fields[O, A]:
+  def apply[O <: Data, A](field: => Field[O, A]): Fields[O, A] = new Fields[O, A]:
     override def toVector: Vector[Field[?, ?]] = Vector(field)
     override def decodeRecord(data: Vector[(String, Data)]): Codec.Result[A] =
       val value = data.collectFirst { case (name, data) if name === field.name => data }

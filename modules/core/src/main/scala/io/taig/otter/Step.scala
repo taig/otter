@@ -15,8 +15,8 @@ object Step:
   def parse(value: String): Either[Parser.Error, Step] = Parsers.step.parseAll(value)
 
   given Order[Step] =
-    case (Field(x), Field(y)) => x `compare` y
-    case (Index(x), Index(y)) => x `compare` y
+    case (Field(x), Field(y)) => x.compare(y)
+    case (Index(x), Index(y)) => x.compare(y)
     case (Field(_), Index(_)) => 1
     case (Index(_), Field(_)) => -1
 

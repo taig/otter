@@ -224,7 +224,7 @@ trait Codecs extends Base.Codecs:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty, Bodies.Empty).imap { case (a, _, _) => a }(a => (a, (), ()))
 
-  private val violationsBody = text(violations.printed) + formData(violations.flattened)
+  protected def violationsBody = text(violations.printed) + formData(violations.flattened)
 
   def response[A](results: Results[A]): Response[A] = Response(
     results,
@@ -240,6 +240,6 @@ trait Codecs extends Base.Codecs:
   def error[F[+a] <: Data.Optional[a], O <: Data, A](
       name: String,
       codec: Base.Codec[F, O, A]
-  ): Sum.Nested.Required.Of[F[O], A] = branch(name, codec).toBranches.toSumNested
+  ): Sum.Nested.Required.Of[F[O], A] = sum.nested(branch(name, codec))
 
 object Codecs extends Codecs

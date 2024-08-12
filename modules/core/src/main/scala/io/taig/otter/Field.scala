@@ -44,7 +44,7 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): O
 
 object Field:
-  def apply[F[+a] <: Data.Optional[a], O <: Data, A](name: String, of: Codec[F, O, A]): Field[F[O], A] =
+  def apply[F[+a] <: Data.Optional[a], O <: Data, A](name: String, of: => Codec[F, O, A]): Field[F[O], A] =
     val _name = name
 
     new Field[F[O], A]:
