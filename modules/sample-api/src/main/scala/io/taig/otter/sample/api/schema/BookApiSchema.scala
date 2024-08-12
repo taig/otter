@@ -5,7 +5,12 @@ import scala.collection.immutable.SortedSet
 import cats.implicits.*
 import cats.Order
 
-final case class BookApiSchema(title: String)
+final case class BookApiSchema(
+    isbn: IsbnApiSchema,
+    title: String,
+    genres: SortedSet[BookApiSchema.Genre],
+    metadata: Data.Object[?]
+)
 
 object BookApiSchema:
   enum Genre:
@@ -43,5 +48,8 @@ object BookApiSchema:
     }.to
 
   val codec: Record[BookApiSchema] = record {
-    field("title", string)
+    field("isbn", IsbnApiSchema.codec) :*
+      field("title", string) :*
+      field("genres", collection.sortedSet(Genre.codec)) :*
+      field("metadata", dynamic.obj)
   }.to

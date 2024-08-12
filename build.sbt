@@ -200,7 +200,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
     // buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
-      "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
         // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
         //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::

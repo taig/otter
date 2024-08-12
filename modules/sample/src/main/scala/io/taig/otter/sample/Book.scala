@@ -23,3 +23,6 @@ object Book:
 
   object Genre:
     given Order[Book.Genre] = Order.by(_.ordinal)
+
+  final case class Create(isbn: Isbn, title: Book.Title, genres: SortedSet[Book.Genre], metadata: JsonObject):
+    def toBook: Book = Book(isbn, title, genres, metadata)
