@@ -33,9 +33,6 @@ sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, 
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Primitive] = self.encode(g(b))
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Primitive[F, B] =
-    imap(evidence.from)(evidence.to)
-
   final override def optional: Primitive[Data.Optional, Option[A]] = new Primitive[Data.Optional, Option[A]]:
     export self.{constraints, metadata}
     override def isOptional: Boolean = true
@@ -292,7 +289,7 @@ object Primitive:
       .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))))
     override def encode(a: SBoolean): Data.Primitive = Data.Boolean(a)
 
-  given [F[+a] <: Data.Optional[a]]: Invariant[Primitive[F, *]] with
+  given [F[+a] <: Data.Optional[a]]: CodecInvariant[Primitive[F, *]] with
     override def imap[A, B](fa: Primitive[F, A])(f: A => B)(g: B => A): Primitive[F, B] = fa.imap(f)(g)
 
   given [F[+a] <: Data.Optional[a], A]: Metadata.Ops[Primitive[F, A]] with

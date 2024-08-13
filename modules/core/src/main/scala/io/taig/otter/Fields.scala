@@ -15,6 +15,8 @@ sealed abstract class Fields[+O <: Data, A]:
     override def encodeArray(b: B): Vector[O] = self.encodeArray(g(b))
     override def encodeRecord(b: B, nulls: Null): Vector[(String, O)] = self.encodeRecord(g(b), nulls)
 
+  final def to[B](using convert: Convert[A, B]): Fields[O, B] = imap(convert.to)(convert.from)
+
   final def zip[P <: Data, B](fields: Fields[P, B]): Fields[O | P, (A, B)] = new Fields[O | P, (A, B)]:
     override def toVector: Vector[Field[?, ?]] = self.toVector ++ fields.toVector
     override def decodeRecord(data: Vector[(String, Data)]): Codec.Result[((A, B))] =
@@ -32,10 +34,10 @@ sealed abstract class Fields[+O <: Data, A]:
       self.encodeRecord(ab._1, nulls) ++ fields.encodeRecord(ab._2, nulls)
     override def encodeArray(ab: (A, B)): Vector[O | P] = self.encodeArray(ab._1) ++ fields.encodeArray(ab._2)
 
-  final def :*[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[A, B]): Fields[O | P, merge.Out] =
+  final def :*[P <: Data, B](field: Field[P, B])(using merge: Merge[A, B]): Fields[O | P, merge.Out] =
     zip(field.toFields).imap(merge.apply)(merge.unapply)
 
-  final def *:[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[B, A]): Fields[P | O, merge.Out] =
+  final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Fields[P | O, merge.Out] =
     field.toFields.zip(this).imap(merge.apply)(merge.unapply)
 
   def decodeRecord(data: Vector[(String, Data)]): Codec.Result[A]

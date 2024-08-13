@@ -22,10 +22,12 @@ sealed abstract class Field[+O <: Data, A]:
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
-  final def :*[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[A, B]): Fields[O | P, merge.Out] =
+  final def to[B](using convert: Convert[A, B]): Field[O, B] = imap(convert.to)(convert.from)
+
+  final def :*[P <: Data, B](field: Field[P, B])(using merge: Merge[A, B]): Fields[O | P, merge.Out] =
     toFields :* field
 
-  final def *:[P <: Data, B](field: Field[P, B])(using merge: Evidence.Merge[B, A]): Fields[P | O, merge.Out] =
+  final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Fields[P | O, merge.Out] =
     field *: toFields
 
   final def toFields: Fields[O, A] = Fields(this)

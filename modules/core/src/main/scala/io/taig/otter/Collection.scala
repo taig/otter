@@ -30,8 +30,6 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Collection[F, O, B] = imap(evidence.from)(evidence.to)
-
   override def optional: Collection[Data.Optional, O, Option[A]] = new Collection[Data.Optional, O, Option[A]]:
     export self.{codec, constraints, metadata}
     override def isOptional: Boolean = true

@@ -20,6 +20,8 @@ sealed abstract class Branch[+O <: Data, A]:
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
+  final def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
+
   final def :+[P <: Data, B](branch: Branch[P, B]): Branches[O | P, Either[A, B]] = toBranches :+ branch
 
   final def +:[P <: Data, B](branch: Branch[P, B]): Branches[P | O, Either[B, A]] = branch +: toBranches

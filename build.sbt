@@ -87,8 +87,8 @@ lazy val root = module(identifier = None, jvmOnly = true)
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
-      val sumInstances = (Compile / sourceManaged).value / "CoproductInstances.scala"
-      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".otter"))
+      val sumInstances = (Compile / sourceManaged).value / "ConvertInstances.scala"
+      IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
