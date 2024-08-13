@@ -7,7 +7,7 @@ import cats.data.NonEmptyChain
 
 object ViolationsCodecs:
   object violations:
-    val nested: Sum.Nested.Required[Violations] =
+    val nested: Sum.Untagged.Required[Violations] =
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
         record(field("reference", reference) :* field("exclusive", boolean)).to[Comparison[A]]
 
@@ -17,23 +17,23 @@ object ViolationsCodecs:
             branch("oneOf", collection.nonEmptyList(dynamic.primitive).to[Constraint.OneOf])
         ).orElse {
           (
-            branch("maxItems", record(field("reference", int)).to[Constraint.Collection.MaxItems]) :+
-              branch("maxItems", record(field("reference", int)).to[Constraint.Collection.MinItems]) :+
+            branch("maxItems", int.to[Constraint.Collection.MaxItems]) :+
+              branch("maxItems", int.to[Constraint.Collection.MinItems]) :+
               branch("uniqueItems", singleton(Constraint.Collection.UniqueItems))
           ).to[Constraint.Collection]
         }.orElse {
           (
-            branch("maxProperties", record(field("reference", int)).to[Constraint.Object.MaxProperties]) :+
-              branch("minProperties", record(field("reference", int)).to[Constraint.Object.MinProperties])
+            branch("maxProperties", int.to[Constraint.Object.MaxProperties]) :+
+              branch("minProperties", int.to[Constraint.Object.MinProperties])
           ).to[Constraint.Object]
         }.orElse {
           (
-            branch("matches", record(field("pattern", pattern)).to[Constraint.Primitive.Matches]) :+
+            branch("matches", pattern.to[Constraint.Primitive.Matches]) :+
               branch("maximum", comparison(dynamic.number).to[Constraint.Primitive.Maximum]) :+
               branch("minimum", comparison(dynamic.number).to[Constraint.Primitive.Minimum]) :+
-              branch("maxLength", record(field("reference", int)).to[Constraint.Primitive.MaxLength]) :+
-              branch("minLength", record(field("reference", int)).to[Constraint.Primitive.MinLength]) :+
-              branch("multiple", record(field("reference", dynamic.number)).to[Constraint.Primitive.Multiple])
+              branch("maxLength", int.to[Constraint.Primitive.MaxLength]) :+
+              branch("minLength", int.to[Constraint.Primitive.MinLength]) :+
+              branch("multiple", dynamic.number.to[Constraint.Primitive.Multiple])
           ).to[Constraint.Primitive]
         }
       }.to
@@ -50,7 +50,7 @@ object ViolationsCodecs:
 
       val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, nested).to
 
-      sum.nested(branch("root", root) :+ branch("namespace", namespace)).to
+      sum.untagged(branch("root", root) :+ branch("namespace", namespace)).to
 
     def flattened: Dictionary.Required.Of[Data.Primitive, Violations] =
       val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.show)
