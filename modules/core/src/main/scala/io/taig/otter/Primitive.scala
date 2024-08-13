@@ -8,7 +8,6 @@ import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
 import cats.data.Validated
 import scala.Ordering.Implicits.*
-import cats.Invariant
 
 sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:
   self =>

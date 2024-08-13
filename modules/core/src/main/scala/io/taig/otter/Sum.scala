@@ -138,6 +138,9 @@ object Sum:
           case b: B => Right(b)
         }
 
+    given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum.Nested[F, O, *]] with
+      override def imap[A, B](fa: Sum.Nested[F, O, A])(f: A => B)(g: B => A): Sum.Nested[F, O, B] = fa.imap(f)(g)
+
     given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Nested[F, O, A]] with
       extension (self: Sum.Nested[F, O, A])
         override def metadata: Metadata = self.metadata
@@ -184,6 +187,9 @@ object Sum:
         override def encode(a: A, discriminator: Discriminator.Merged): Data.Object[Data.String | O] =
           branches.encodeMerged(a, discriminator)
 
+    given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum.Merged[F, O, *]] with
+      override def imap[A, B](fa: Sum.Merged[F, O, A])(f: A => B)(g: B => A): Sum.Merged[F, O, B] = fa.imap(f)(g)
+
     given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Merged[F, O, A]] with
       extension (self: Sum.Merged[F, O, A])
         override def metadata: Metadata = self.metadata
@@ -226,6 +232,9 @@ object Sum:
           branches.decodeKeyed(data)
           ???
         override def encode(a: A): Data.Object[O] = branches.encodeKeyed(a)
+
+    given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum.Keyed[F, O, *]] with
+      override def imap[A, B](fa: Sum.Keyed[F, O, A])(f: A => B)(g: B => A): Sum.Keyed[F, O, B] = fa.imap(f)(g)
 
     given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Keyed[F, O, A]] with
       extension (self: Sum.Keyed[F, O, A])
@@ -271,10 +280,16 @@ object Sum:
         override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data)
         override def encode(a: A): O = branches.encodeUntagged(a)
 
+    given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum.Untagged[F, O, *]] with
+      override def imap[A, B](fa: Sum.Untagged[F, O, A])(f: A => B)(g: B => A): Sum.Untagged[F, O, B] = fa.imap(f)(g)
+
     given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum.Untagged[F, O, A]] with
       extension (self: Sum.Untagged[F, O, A])
         override def metadata: Metadata = self.metadata
         override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = self.modifyMetadata(f)
+
+  given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum[F, O, *]] with
+    override def imap[A, B](fa: Sum[F, O, A])(f: A => B)(g: B => A): Sum[F, O, B] = fa.imap(f)(g)
 
   given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Sum[F, O, A]] with
     extension (self: Sum[F, O, A])

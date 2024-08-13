@@ -2,8 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import cats.data.Validated
-import cats.Invariant
-import io.taig.otter.Codec.Result
 
 sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>
@@ -41,7 +39,7 @@ sealed abstract class Collection[+F[+a] <: Data.Optional[a], +O <: Data, A] exte
   override def decode(data: Data): Codec.Result[A] = data match
     case Data.Array(values) => decode(values.some)
     case Data.Null          => decode(none)
-    case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
+    case _                  => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
 
   def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
@@ -106,5 +104,10 @@ object Collection:
       // Safe to call .head, because `wrapped` will perform a length check
       wrapped.decode(data).map(values => (values.head, values.tail))
 
-  given invariant[F[+a] <: Data.Optional[a], O <: Data]: Invariant[Collection[F, O, *]] with
+  given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Collection[F, O, *]] with
     override def imap[A, B](fa: Collection[F, O, A])(f: A => B)(g: B => A): Collection[F, O, B] = fa.imap(f)(g)
+
+  given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Collection[F, O, A]] with
+    extension (self: Collection[F, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = self.modifyMetadata(f)

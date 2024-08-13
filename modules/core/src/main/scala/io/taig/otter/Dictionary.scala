@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.Invariant
 import cats.data.Validated
 
 abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Object[O], A]:
@@ -93,6 +92,11 @@ object Dictionary:
         wrapped.decode(data).map(values => (values.head, values.tail))
       override def encode(abs: ((A, B), Vector[(A, B)])): Data.Object[F[O]] = wrapped.encode(abs._1 +: abs._2)
 
-  given [F[+a] <: Data.Optional[a], O <: Data]: Invariant[Dictionary[F, O, *]] with
+  given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Dictionary[F, O, *]] with
     override def imap[A, B](fa: Dictionary[F, O, A])(f: A => B)(g: B => A): Dictionary[F, O, B] =
       fa.imap(f)(g)
+
+  given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Dictionary[F, O, A]] with
+    extension (self: Dictionary[F, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, O, A] = self.modifyMetadata(f)

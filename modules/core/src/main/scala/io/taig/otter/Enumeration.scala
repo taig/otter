@@ -1,9 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.Invariant
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.Codec.Result
 
 abstract class Enumeration[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:
   self =>
@@ -40,21 +38,25 @@ object Enumeration:
   def apply[A, B](
       of: => Codec[Data.Required, Data.Primitive, A],
       mapping: Mapping[B, A]
-  ): Enumeration[Data.Required, B] =
-    new Enumeration[Data.Required, B]:
-      override def isOptional: Boolean = false
-      override def codec: Codec[?, ?, ?] = of
-      override def metadata: Metadata = Metadata.Empty
-      override def default: Option[B] = None
-      override def decode(data: Data): Codec.Result[B] = of
-        .decode(data)
-        .andThen: a =>
-          mapping
-            .unapply(a)
-            .toValid(
-              Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = data))
-            )
-      override def encode(b: B): Data.Primitive = of.encode(mapping(b))
+  ): Enumeration[Data.Required, B] = new Enumeration[Data.Required, B]:
+    override def isOptional: Boolean = false
+    override def codec: Codec[?, ?, ?] = of
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[B] = None
+    override def decode(data: Data): Codec.Result[B] = of
+      .decode(data)
+      .andThen: a =>
+        mapping
+          .unapply(a)
+          .toValid(
+            Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = data))
+          )
+    override def encode(b: B): Data.Primitive = of.encode(mapping(b))
 
-  given [F[+a] <: Data.Optional[a]]: Invariant[Enumeration[F, *]] with
+  given [F[+a] <: Data.Optional[a]]: CodecInvariant[Enumeration[F, *]] with
     override def imap[A, B](fa: Enumeration[F, A])(f: A => B)(g: B => A): Enumeration[F, B] = fa.imap(f)(g)
+
+  given [F[+a] <: Data.Optional[a], A]: Metadata.Ops[Enumeration[F, A]] with
+    extension (self: Enumeration[F, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Enumeration[F, A] = self.modifyMetadata(f)

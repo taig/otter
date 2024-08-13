@@ -22,6 +22,18 @@ sealed abstract class Product[
 
   override def optional: Product[Data.Optional, G, O, Option[A]]
 
+object Product:
+  given [F[+a] <: Data.Optional[a], G[+a <: Data] <: Data.Object[a] | Data.Array[a], O <: Data]
+      : CodecInvariant[Product[F, G, O, *]] with
+    override def imap[A, B](fa: Product[F, G, O, A])(f: A => B)(g: B => A): Product[F, G, O, B] =
+      fa.imap(f)(g)
+
+  given [F[+a] <: Data.Optional[a], G[+a <: Data] <: Data.Object[a] | Data.Array[a], O <: Data, A]
+      : Metadata.Ops[Product[F, G, O, A]] with
+    extension (self: Product[F, G, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Product[F, G, O, A] = self.modifyMetadata(f)
+
 sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Product[F, Data.Object, O, A]:
   self =>
 
@@ -100,6 +112,9 @@ object Record:
       .andThen(of.decodeRecord)
     override def encode(a: A, nulls: Null): Data.Object[O] = Data.Object(of.encodeRecord(a, nulls))
     override def encodeSequence(a: A, nulls: Null): Data.Object[O] = encode(a, nulls)
+
+  given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Record[F, O, *]] with
+    override def imap[A, B](fa: Record[F, O, A])(f: A => B)(g: B => A): Record[F, O, B] = fa.imap(f)(g)
 
   given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Record[F, O, A]] with
     extension (self: Record[F, O, A])
@@ -187,3 +202,11 @@ object Tuple:
       .andThen(of.decodeArray)
     override def encode(a: A): Data.Array[O] = Data.Array(of.encodeArray(a))
     override def encodeSequence(a: A): Data.Array[O] = encode(a)
+
+  given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Tuple[F, O, *]] with
+    override def imap[A, B](fa: Tuple[F, O, A])(f: A => B)(g: B => A): Tuple[F, O, B] = fa.imap(f)(g)
+
+  given [F[+a] <: Data.Optional[a], O <: Data, A]: Metadata.Ops[Tuple[F, O, A]] with
+    extension (self: Tuple[F, O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = self.modifyMetadata(f)
