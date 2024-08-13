@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Metadata
 import io.taig.otter.Codec
 import io.taig.otter.Data
-import io.taig.otter.Evidence
+import io.taig.otter.Merge
 
 sealed abstract class Query[A]:
   def name: String
@@ -25,9 +25,9 @@ sealed abstract class Query[A]:
 
   def optional: Query[Option[A]]
 
-  final def :*[B](query: Query[B])(using merge: Evidence.Merge[A, B]): Queries[merge.Out] = toQueries :* query
+  final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = toQueries :* query
 
-  final def *:[B](query: Query[B])(using merge: Evidence.Merge[B, A]): Queries[merge.Out] = query *: toQueries
+  final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] = query *: toQueries
 
   def decode(value: Query.Value): Codec.Result[A]
 

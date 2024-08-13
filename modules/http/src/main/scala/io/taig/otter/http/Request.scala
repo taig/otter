@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Evidence
 import io.taig.otter.Violations
 import java.nio.charset.Charset
 import cats.Applicative
@@ -13,6 +12,8 @@ import cats.data.Validated
 import cats.Traverse
 import cats.Eval
 import io.taig.otter.XPath
+import io.taig.otter.Convert
+import io.taig.otter.Merge
 
 sealed abstract class Request[A]:
   self =>
@@ -30,7 +31,7 @@ sealed abstract class Request[A]:
       self.decode(contentType, request).map(_.map(f))
     override def encode[F[_]](charset: Option[Charset], b: B): Http.Request[F] = self.encode(charset, g(b))
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Request[B] = imap(evidence.from)(evidence.to)
+  final def to[B](using convert: Convert[A, B]): Request[B] = imap(convert.to)(convert.from)
 
   final def zip[B](headers: Headers[B]): Request[(A, B)] =
     val _headers = headers
@@ -55,10 +56,10 @@ sealed abstract class Request[A]:
       override def encode[F[_]](charset: Option[Charset], ab: (A, B)): Http.Request[F] =
         self.encode(charset, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
 
-  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Request[merge.Out] =
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[merge.Out] =
     zip(header.toHeaders).imap(merge.apply)(merge.unapply)
 
-  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Request[merge.Out] =
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Request[merge.Out] =
     zip(header.toHeaders).imap(ab => merge(ab.swap))(merge.unapply(_).swap)
 
   final def decode[F[_]: Applicative](request: Http.Request[F]): F[Request.Result[A]] = request.headers

@@ -26,6 +26,8 @@ abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Cod
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
+  final override def to[B](using convert: Convert[A, B]): Dictionary[F, O, B] = imap(convert.to)(convert.from)
+
   final override def optional: Dictionary[Data.Optional, O, Option[A]] = new Dictionary[Data.Optional, O, Option[A]]:
     export self.{constraints, metadata}
     override def isOptional: Boolean = true

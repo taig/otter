@@ -15,6 +15,7 @@ abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   def modifyDefault(f: Option[A] => Option[A]): Codec[F, O, A]
 
   def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
+  def to[B](using convert: Convert[A, B]): Codec[F, O, B]
 
   def optional: Codec[Data.Optional, O, Option[A]]
 

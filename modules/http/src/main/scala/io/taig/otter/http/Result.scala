@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Evidence
 import io.taig.otter.Codec
 import org.typelevel.ci.*
+import io.taig.otter.Convert
 
 sealed abstract class Result[A]:
   self =>
@@ -26,7 +26,7 @@ sealed abstract class Result[A]:
 
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result :+ this
 
-  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Result[B] = imap(evidence.from)(evidence.to)
+  final def to[B](using convert: Convert[A, B]): Result[B] = imap(convert.to)(convert.from)
 
   final def decode(response: Http.Response): Codec.Result[Option[A]] =
     if code =!= response.code then none.valid else unsafeDecode(response).map(_.some)

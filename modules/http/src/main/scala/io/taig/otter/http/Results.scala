@@ -2,9 +2,9 @@ package io.taig.otter.http
 
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
-import io.taig.otter.Evidence
 import io.taig.otter.Violations
 import cats.data.Ior
+import io.taig.otter.Convert
 
 sealed abstract class Results[A]:
   self =>
@@ -40,7 +40,7 @@ sealed abstract class Results[A]:
   final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result.toResults)
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result.toResults.orElse(this)
 
-  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Results[B] = imap(evidence.from)(evidence.to)
+  final def to[B](using convert: Convert[A, B]): Results[B] = imap(convert.to)(convert.from)
 
   def decode(response: Http.Response): Ior[Violations, Option[A]]
   def encode(a: A): Http.Response

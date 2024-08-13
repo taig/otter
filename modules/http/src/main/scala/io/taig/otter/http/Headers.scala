@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import cats.data.Validated
 import io.taig.otter.filterKeys
-import io.taig.otter.Evidence
+import io.taig.otter.Merge
 
 sealed abstract class Headers[A]:
   self =>
@@ -24,10 +24,10 @@ sealed abstract class Headers[A]:
       (self.decode(left), headers.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Headers = self.encode(ab._1) ++ headers.encode(ab._2)
 
-  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Headers[merge.Out] =
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] =
     zip(header.toHeaders).imap(merge.apply)(merge.unapply)
 
-  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Headers[merge.Out] =
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] =
     header.toHeaders.zip(this).imap(merge.apply)(merge.unapply)
 
   def encode(a: A): Http.Headers

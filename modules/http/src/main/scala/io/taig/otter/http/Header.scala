@@ -6,7 +6,7 @@ import io.taig.otter.Metadata
 import io.taig.otter.Data
 import io.taig.otter.Codec
 import scala.Array as SArray
-import io.taig.otter.Evidence
+import io.taig.otter.Merge
 
 sealed abstract class Header[A] extends Product, Serializable:
   self =>
@@ -25,9 +25,9 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def optional: Header[Option[A]]
 
-  final def :*[B](header: Header[B])(using merge: Evidence.Merge[A, B]): Headers[merge.Out] = toHeaders :* header
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
 
-  final def *:[B](header: Header[B])(using merge: Evidence.Merge[B, A]): Headers[merge.Out] = header *: toHeaders
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header *: toHeaders
 
   final def toHeaders: Headers[A] = Headers(this)
 

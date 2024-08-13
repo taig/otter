@@ -9,7 +9,7 @@ object ViolationsCodecs:
   object violations:
     val nested: Sum.Nested.Required[Violations] =
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
-        record(field("reference", reference) :* field("exclusive", boolean)).to
+        record(field("reference", reference) :* field("exclusive", boolean)).to[Comparison[A]]
 
       val constraint: Sum.Keyed.Required[Constraint] = sum.keyed {
         (

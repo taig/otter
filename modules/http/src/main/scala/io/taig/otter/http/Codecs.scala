@@ -6,12 +6,12 @@ import io.taig.otter.http.header.MediaType
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.util.regex.Pattern
-import Base.Evidence
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import Base.http.ViolationsCodecs.violations
 import Base.http.header.Accept
 import Base.http.header.Parameters
+import Base.Merge
 
 trait Codecs extends Base.Codecs:
   self =>
@@ -173,11 +173,11 @@ trait Codecs extends Base.Codecs:
   )
 
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
-      merge: Evidence.Merge[A, B]
+      merge: Merge[A, B]
   ): Result[merge.Out] = Result(code, headers, bodies).imap(merge.apply)(merge.unapply)
 
   final def result[A, B](code: Code, headers: Headers[A], body: Body[B])(using
-      merge: Evidence.Merge[A, B]
+      merge: Merge[A, B]
   ): Result[merge.Out] = result(code, headers, body.toBodies)
 
   final def result[A](code: Code, bodies: Bodies[A]): Result[A] =
@@ -190,8 +190,8 @@ trait Codecs extends Base.Codecs:
   final def result(code: Code): Result[Unit] = result(code, Headers.Empty)
 
   final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Bodies[C])(using
-      merge1: Evidence.Merge[A, B],
-      merge2: Evidence.Merge[merge1.Out, C]
+      merge1: Merge[A, B],
+      merge2: Merge[merge1.Out, C]
   ): Request[merge2.Out] = Request(method, url, headers, bodies).imap { case (a, b, c) =>
     merge2(merge1(a, b), c)
   } { out =>
@@ -200,12 +200,12 @@ trait Codecs extends Base.Codecs:
   }
 
   final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])(using
-      merge1: Evidence.Merge[A, B],
-      merge2: Evidence.Merge[merge1.Out, C]
+      merge1: Merge[A, B],
+      merge2: Merge[merge1.Out, C]
   ): Request[merge2.Out] = request(method, url, headers, body.toBodies)
 
   final def request[A, B](method: Method, url: Url[A], bodies: Bodies[B])(using
-      merge: Evidence.Merge[A, B]
+      merge: Merge[A, B]
   ): Request[merge.Out] = Request(method, url, Headers.Empty, bodies)
     .imap { case (a, _, b) => merge((a, b)) } { out =>
       val (a, b) = merge.unapply(out)
@@ -213,11 +213,11 @@ trait Codecs extends Base.Codecs:
     }
 
   final def request[A, B](method: Method, url: Url[A], body: Body[B])(using
-      merge: Evidence.Merge[A, B]
+      merge: Merge[A, B]
   ): Request[merge.Out] = request(method, url, body.toBodies)
 
   final def request[A, B](method: Method, url: Url[A], headers: Headers[B])(using
-      merge: Evidence.Merge[A, B]
+      merge: Merge[A, B]
   ): Request[merge.Out] = Request(method, url, headers, Bodies.Empty)
     .imap { case (a, b, _) => merge.apply((a, b)) }(ab => merge.unapply(ab) :* ())
 

@@ -20,6 +20,8 @@ sealed abstract class Product[
 
   override def imap[B](f: A => B)(g: B => A): Product[F, G, O, B]
 
+  override def to[B](using convert: Convert[A, B]): Product[F, G, O, B]
+
   override def optional: Product[Data.Optional, G, O, Option[A]]
 
 object Product:
@@ -57,6 +59,8 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B, nulls: Null): F[Data.Object[O]] = self.encode(g(b), nulls)
     override def encodeSequence(b: B, nulls: Null): Data.Object[F[O]] = self.encodeSequence(g(b), nulls)
+
+  final override def to[B](using convert: Convert[A, B]): Record[F, O, B] = imap(convert.to)(convert.from)
 
   override def optional: Record[Data.Optional, O, Option[A]] = new Record[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}
@@ -142,6 +146,8 @@ sealed abstract class Tuple[+F[+a] <: Data.Optional[a], +O <: Data, A] extends P
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
     override def encodeSequence(b: B): Data.Array[F[O]] = self.encodeSequence(g(b))
+
+  final override def to[B](using convert: Convert[A, B]): Tuple[F, O, B] = imap(convert.to)(convert.from)
 
   final override def optional: Tuple[Data.Optional, O, Option[A]] = new Tuple[Data.Optional, O, Option[A]]:
     export self.{fields, metadata}

@@ -9,7 +9,7 @@ import io.taig.otter.Constraint
 import io.taig.otter.Data
 import java.util.regex.Pattern
 import cats.data.Validated
-import io.taig.otter.Evidence
+import io.taig.otter.Merge
 
 sealed abstract class Path[A]:
   self =>
@@ -35,7 +35,7 @@ sealed abstract class Path[A]:
 
   final def /(segment: String): Path[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
 
-  final def /[B](segment: Segment.Parameter[B])(using merge: Evidence.Merge[A, B]): Path[merge.Out] =
+  final def /[B](segment: Segment.Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] =
     zip(segment.toPath).imap(merge.apply)(merge.unapply)
 
   final def toUrl: Url[A] = Url(this)

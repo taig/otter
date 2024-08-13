@@ -3,8 +3,7 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.filterKeys
-import io.taig.otter.Evidence
-import io.taig.otter.http.Query.Value
+import io.taig.otter.Merge
 
 sealed abstract class Queries[A]:
   self =>
@@ -30,10 +29,10 @@ sealed abstract class Queries[A]:
       (self.decode(left), queries.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
 
-  final def :*[B](query: Query[B])(using merge: Evidence.Merge[A, B]): Queries[merge.Out] =
+  final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
     zip(query.toQueries).imap(merge.apply)(merge.unapply)
 
-  final def *:[B](query: Query[B])(using merge: Evidence.Merge[B, A]): Queries[merge.Out] =
+  final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] =
     query.toQueries.zip(this).imap(merge.apply)(merge.unapply)
 
   final def toUrl: Url[A] = Url(this)
