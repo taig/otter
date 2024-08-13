@@ -102,7 +102,7 @@ trait Types:
     object Merged:
       type Of[O <: Data, A] = Base.Sum.Merged[Data.Optional, O, A]
 
-      type Required[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
+      type Required[A] = Base.Sum.Merged[Data.Required, Data, A]
 
       object Required:
         type Of[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
@@ -112,7 +112,7 @@ trait Types:
     object Keyed:
       type Of[O <: Data, A] = Base.Sum.Keyed[Data.Optional, O, A]
 
-      type Required[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
+      type Required[A] = Base.Sum.Keyed[Data.Required, Data, A]
 
       object Required:
         type Of[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]

@@ -11,8 +11,8 @@ val Version = new {
   val Java = "17"
   val JNanoId = "2.0.0"
   val Log4Cats = "2.7.0"
-  val Mouse = "1.3.1"
-  val Munit = "1.0.0"
+  val Mouse = "1.3.2"
+  val Munit = "1.0.1"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.3"
   val ScalaJavaTime = "2.6.0"
@@ -96,7 +96,6 @@ lazy val core = module(identifier = Some("core"))
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
 

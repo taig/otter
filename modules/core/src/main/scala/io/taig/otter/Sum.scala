@@ -1,6 +1,8 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import io.taig.otter.Codec.Result
+import io.taig.otter.Data.Optional
 
 sealed abstract class Sum[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, O, A]:
   def branches: Branches[?, ?]
@@ -22,20 +24,41 @@ object Sum:
       export self.{branches, decode, default, encode, isOptional}
       override def metadata: Metadata = f(self.metadata)
 
-    final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = ???
+    final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = new Nested[F, O, A]:
+      export self.{branches, encode, metadata}
+      override def default: Option[A] = f(self.default)
+      override def isOptional: Boolean = default.nonEmpty
+      override def decode(
+          data: Option[Vector[(String, Data)]],
+          discriminator: Discriminator.Nested
+      ): Codec.Result[Option[A]] = data.fold(default.valid)(_ => self.decode(data, discriminator))
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = new Sum.Nested[F, O, B]:
       export self.{branches, isOptional, metadata}
       override def default: Option[B] = self.default.map(f)
-      override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[B] =
-        self.decode(data, discriminator).map(f)
+      override def decode(
+          data: Option[Vector[(String, Data)]],
+          discriminator: Discriminator.Nested
+      ): Codec.Result[Option[B]] =
+        self.decode(data, discriminator).map(_.map(f))
       override def encode(b: B, discriminator: Discriminator.Nested): F[Data.Object[Data.String | O]] =
         self.encode(g(b), discriminator)
 
     final override def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Sum.Nested[F, O, B] =
       imap(evidence.from)(evidence.to)
 
-    final override def optional: Sum.Nested[Data.Optional, O, Option[A]] = ???
+    final override def optional: Sum.Nested[Data.Optional, O, Option[A]] = new Nested[Data.Optional, O, Option[A]]:
+      export self.{branches, metadata}
+      override def isOptional: Boolean = true
+      override def default: Option[Option[A]] = self.default.map(_.some)
+      override def decode(
+          data: Option[Vector[(String, Data)]],
+          discriminator: Discriminator.Nested
+      ): Codec.Result[Option[Option[A]]] = data.fold(default.valid)(_ => self.decode(data, discriminator).map(_.some))
+      override def encode(
+          a: Option[A],
+          discriminator: Discriminator.Nested
+      ): Data.Optional[Data.Object[Data.String | O]] = a.fold(Data.Null)(self.encode)
 
     final def orElse[G[+a] >: F[a] <: Data.Optional[a], P <: Data, B](
         codec: Sum.Nested[G, P, B]
@@ -45,20 +68,43 @@ object Sum:
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(
-          data: Vector[(String, Data)],
+          data: Option[Vector[(String, Data)]],
           discriminator: Discriminator.Nested
-      ): Codec.Result[Either[A, B]] = ???
+      ): Codec.Result[Option[Either[A, B]]] = self
+        .decode(data, discriminator)
+        .andThen:
+          case Some(a) => a.asLeft.some.valid
+          case None    => codec.decode(data, discriminator).map(_.map(_.asRight))
       override def encode(
           ab: Either[A, B],
           discriminator: Discriminator.Nested
       ): G[Data.Object[Data.String | (O | P)]] = ab.fold(self.encode(_, discriminator), codec.encode(_, discriminator))
 
-    final override def decode(data: Data): Codec.Result[A] = data.asObject
-      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-      .map(_.values)
-      .andThen(decode(_, discriminator.value))
+    final override def decode(data: Data): Codec.Result[A] =
+      val discriminator = self.discriminator.value
 
-    def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A]
+      data
+        .match
+          case Data.Object(values) => decode(values.some, discriminator)
+          case Data.Null           => decode(none, discriminator)
+          case _                   => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
+        .andThen(
+          _.toValid(
+            Violations.namespaceNec(
+              XPath.Root / discriminator.identifier,
+              Violation(
+                Constraint.OneOf(branches.toNev.toNonEmptyList.map(branch => Data.String(branch.name))),
+                actual = data.asObject
+                  .map(_.values)
+                  .orEmpty
+                  .collectFirst { case (name, data) if name === discriminator.identifier => data }
+                  .getOrElse(Data.Null)
+              )
+            )
+          )
+        )
+
+    def decode(data: Option[Vector[(String, Data)]], discriminator: Discriminator.Nested): Codec.Result[Option[A]]
 
     final override def encode(a: A): F[Data.Object[Data.String | O]] = encode(a, discriminator.value)
 
@@ -73,22 +119,13 @@ object Sum:
         override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
-        override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Nested): Codec.Result[A] =
-          branches
-            .decodeNested(data, discriminator)
-            .andThen(
-              _.toValid(
-                Violations.namespaceNec(
-                  XPath.Root / discriminator.identifier,
-                  Violation(
-                    Constraint.OneOf(branches.toNev.toNonEmptyList.map(branch => Data.String(branch.name))),
-                    actual = data
-                      .collectFirst { case (name, data) if name === discriminator.identifier => data }
-                      .getOrElse(Data.Null)
-                  )
-                )
-              )
-            )
+        override def decode(
+            data: Option[Vector[(String, Data)]],
+            discriminator: Discriminator.Nested
+        ): Codec.Result[Option[A]] =
+          data
+            .toValid(Violations.rootNec(Violation.tpe("object", actual = "null")))
+            .andThen(branches.decodeNested(_, discriminator))
         override def encode(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
           branches.encodeNested(a, discriminator)
 

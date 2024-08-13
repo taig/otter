@@ -30,15 +30,12 @@ trait Codecs extends Http.Types, Http.Codecs:
 
       Validated
         .fromEither(result)
-        .leftMap(exception =>
-          Violations.rootNec(Violation(Constraint.Type("json"), actual = Data.String(exception.getMessage)))
-        )
+        .leftMap(exception => Violations.rootNec(Violation.tpe("json", actual = exception.getMessage)))
         .map(toData)
     ,
     (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(fallback))
   )
 
-  override protected def violationsBody: Http.Bodies[Violations] =
-    text(violations.printed) + formData(violations.flattened) + json(violations.nested)
+  override protected val violationsBody: Http.Bodies[Violations] = super.violationsBody + json(violations.nested)
 
 object Codecs extends Codecs

@@ -11,7 +11,7 @@ object ViolationsCodecs:
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
         record(field("reference", reference) :* field("exclusive", boolean)).to
 
-      val constraint: Sum.Nested.Required[Constraint] = sum.nested {
+      val constraint: Sum.Keyed.Required[Constraint] = sum.keyed {
         (
           branch("type", record(field("name", string)).to[Constraint.Type]) :+
             branch("oneOf", record(field("values", collection.nonEmptyList(dynamic.primitive))).to[Constraint.OneOf])
