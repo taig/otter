@@ -6,10 +6,10 @@ import cats.syntax.all.*
 
 final class SumMergedTest extends FunSuite:
   test("encode"):
-    val codec = sum.merged(
+    val codec = sum.merged {
       branch("foo", record(field("a", string) :* field("b", int))) :+
         branch("bar", record(field("c", string)))
-    )
+    }
 
     assertEquals(
       obtained = codec.encode(("foobar", 42).asLeft),

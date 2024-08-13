@@ -112,7 +112,7 @@ object Record:
     override def default: Option[A] = None
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[A] = data
-      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))))
+      .toValid(Violations.rootNec(Violation.tpe("object", actual = "null")))
       .andThen(of.decodeRecord)
     override def encode(a: A, nulls: Null): Data.Object[O] = Data.Object(of.encodeRecord(a, nulls))
     override def encodeSequence(a: A, nulls: Null): Data.Object[O] = encode(a, nulls)
@@ -205,8 +205,8 @@ object Tuple:
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Option[Vector[Data]]): Codec.Result[A] = data
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))
-      .andThen(of.decodeArray)
-    override def encode(a: A): Data.Array[O] = Data.Array(of.encodeArray(a))
+      .andThen(of.decodeTuple)
+    override def encode(a: A): Data.Array[O] = Data.Array(of.encodeTuple(a))
     override def encodeSequence(a: A): Data.Array[O] = encode(a)
 
   given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Tuple[F, O, *]] with

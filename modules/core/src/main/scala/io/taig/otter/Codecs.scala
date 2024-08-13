@@ -131,42 +131,26 @@ trait Codecs extends Types:
   def field[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Field.Of[F[O], A] =
     Base.Field(name, codec)
 
-  def record[O <: Data, A](fields: => Fields[O, A] | Field.Of[O, A]): Record.Required.Of[O, A] = Base.Record:
-    fields match
-      case fields: Fields[O, A]  => fields
-      case field: Field.Of[O, A] => field.toFields
+  def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = Base.Record(fields)
+  def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = record(field.toFields)
 
-  def tuple[O <: Data, A](fields: => Fields[O, A] | Field.Of[O, A]): Tuple.Required.Of[O, A] = Base.Tuple:
-    fields match
-      case fields: Fields[O, A]  => fields
-      case field: Field.Of[O, A] => field.toFields
+  def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = Base.Tuple(fields)
+  def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
 
   object sum:
-    def nested[O <: Data, A](branches: => Branches[O, A] | Branch.Of[O, A]): Sum.Nested.Required.Of[O, A] =
-      Base.Sum.Nested:
-        branches match
-          case branches: Branches[O, A] => branches
-          case branch: Branch.Of[O, A]  => branch.toBranches
+    def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Required.Of[O, A] = Base.Sum.Nested(branches)
+    def nested[O <: Data, A](branch: Branch.Of[O, A]): Sum.Nested.Required.Of[O, A] = nested(branch.toBranches)
 
-    def merged[O <: Data, A](
-        branches: => Branches[Data.Object[O], A] | Branch.Of[Data.Object[O], A]
-    ): Sum.Merged.Required.Of[O, A] =
-      Base.Sum.Merged:
-        branches match
-          case branches: Branches[Data.Object[O], A] => branches
-          case branch: Branch.Of[Data.Object[O], A]  => branch.toBranches
+    def merged[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
+      Base.Sum.Merged(branches)
+    def merged[O <: Data, A](branch: Branch.Of[Data.Object[O], A]): Sum.Merged.Required.Of[O, A] =
+      merged(branch.toBranches)
 
-    def keyed[O <: Data, A](branches: => Branches[O, A] | Branch.Of[O, A]): Sum.Keyed.Required.Of[O, A] =
-      Base.Sum.Keyed:
-        branches match
-          case branches: Branches[O, A] => branches
-          case branch: Branch.Of[O, A]  => branch.toBranches
+    def keyed[O <: Data, A](branches: Branches[O, A]): Sum.Keyed.Required.Of[O, A] = Base.Sum.Keyed(branches)
+    def keyed[O <: Data, A](branch: Branch.Of[O, A]): Sum.Keyed.Required.Of[O, A] = keyed(branch.toBranches)
 
-    def untagged[O <: Data, A](branches: => Branches[O, A] | Branch.Of[O, A]): Sum.Untagged.Required.Of[O, A] =
-      Base.Sum.Untagged:
-        branches match
-          case branches: Branches[O, A] => branches
-          case branch: Branch.Of[O, A]  => branch.toBranches
+    def untagged[O <: Data, A](branches: Branches[O, A]): Sum.Untagged.Required.Of[O, A] = Base.Sum.Untagged(branches)
+    def untagged[O <: Data, A](branch: Branch.Of[O, A]): Sum.Untagged.Required.Of[O, A] = untagged(branch.toBranches)
 
   object collection:
     def vector[F[+a] <: Data.Optional[a], O <: Data, A](
