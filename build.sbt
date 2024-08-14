@@ -65,21 +65,14 @@ lazy val root = module(identifier = None, jvmOnly = true)
     core,
     javaTime,
     jsonCirce,
-    // circe,
-    // typescript,
     openapiCirce,
     http,
     httpHttp4s,
     httpJsonCirce,
     openapi,
-    // httpOpenapi,
-    // httpCirce,
     server,
     serverHttp4s,
-    // csv,
-    // dsl,
-    // http4s,
-    // munit,
+    httpCsv,
     sample,
     sampleApi,
     sampleApp
@@ -159,6 +152,9 @@ lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = 
   )
   .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
 
+lazy val httpCsv = module(identifier = Some("http-csv"))
+  .dependsOn(http % "compile->compile;test->test")
+
 lazy val server = module(identifier = Some("server"))
   .settings(
     libraryDependencies ++=
@@ -175,9 +171,6 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
         Nil
   )
   .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
-
-// lazy val csv = module(identifier = Some("csv"))
-//   .dependsOn(core % "compile->compile;test->test")
 
 // lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
 //   .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
