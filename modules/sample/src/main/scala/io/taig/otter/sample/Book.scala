@@ -3,8 +3,8 @@ package io.taig.otter.sample
 import cats.Order
 import cats.syntax.all.*
 
-import scala.collection.immutable.SortedSet
 import io.circe.JsonObject
+import scala.collection.immutable.SortedSet
 
 final case class Book(isbn: Isbn, title: String, genres: SortedSet[Book.Genre], metadata: JsonObject)
 
