@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import cats.MonadThrow
 import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
+import org.http4s.HttpApp as Http4sApp
 import org.http4s.{
   Entity as Http4sEntity,
   Header as Http4sHeader,
@@ -16,9 +17,7 @@ import org.http4s.{
   Status,
   Uri
 }
-import scodec.bits.ByteVector
 import fs2.Stream
-import fs2.Chunk
 
 def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
 
@@ -49,6 +48,13 @@ def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request[F]): F[Http4sRequest
   headers = toHttp4sHeaders(request.headers)
 yield Http4sRequest(method, uri = uri, headers = headers, entity = Http4sEntity.stream(request.body))
 
+def toHttpRequest[F[_]](request: Http4sRequest[F]): Http.Request[F] = Http.Request(
+  toHttpMethod(request.method),
+  toHttpUrl(request.uri),
+  toHttpHeaders(request.headers),
+  request.entity.body
+)
+
 def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response[F]): F[Http4sResponse[F]] = for
   status <- Status.fromInt(response.code.toInt).liftTo[F]
   headers = toHttp4sHeaders(response.headers)
@@ -56,3 +62,6 @@ def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response[F]): F[Http4sResp
 yield Http4sResponse(status, headers = headers, entity = entity)
 
 def toHttp4sEntity[F[_]: MonadThrow](body: Stream[F, Byte]): Http4sEntity[F] = Http4sEntity.stream(body)
+
+def toHttp4sApp[F[_]: MonadThrow](app: App[F], onError: Throwable => F[Unit]): Http4sApp[F] = Http4sApp: request =>
+  app(toHttpRequest(request), onError).flatMap(toHttp4sResponse)
