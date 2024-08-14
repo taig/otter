@@ -17,19 +17,16 @@ final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underl
     val method = toHttpMethod(request.method)
     val url = toHttpUrl(request.uri)
     val headers = toHttpHeaders(request.headers)
-    handle(app, method, url, headers, toHttpRequestBody(request.body), onError).flatMap(toHttp4sResponse)
+    handle(app, method, url, headers, request.entity.body, onError).flatMap(toHttp4sResponse)
 
   def handle(
       app: App[F],
       method: Method,
       url: Http.Url,
       headers: Http.Headers,
-      payload: F[Http.Payload],
+      body: Stream[F, Byte],
       onError: Throwable => F[Unit]
-  ): F[Http.Response] = app(Http.Request(method, url, headers, payload), onError)
-
-  def toHttpRequestBody(data: Stream[F, Byte]): F[Http.Payload] =
-    data.compile.to(Array).map(Http.Payload.apply)
+  ): F[Http.Response[F]] = app(Http.Request(method, url, headers, body), onError)
 
 object Http4sServer:
   def apply[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying]): Server[F] = new Http4sServer[F](f)

@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
 import cats.Show
+import fs2.Stream
 
 object Http:
   type Path = Vector[String]
@@ -32,7 +33,7 @@ object Http:
   object Headers:
     val Empty: Http.Headers = Vector.empty
 
-  final case class Request[F[_]](method: Method, url: Http.Url, headers: Http.Headers, body: F[Http.Payload]):
+  final case class Request[F[_]](method: Method, url: Http.Url, headers: Http.Headers, body: Stream[F, Byte]):
     def modifyMethod(f: Method => Method): Http.Request[F] = copy(method = f(method))
     def withMethod(method: Method): Http.Request[F] = modifyMethod(_ => method)
 
@@ -42,14 +43,9 @@ object Http:
     def modifyHeaders(f: Http.Headers => Http.Headers): Http.Request[F] = copy(headers = f(headers))
     def withHeaders(headers: Http.Headers): Http.Request[F] = modifyHeaders(_ => headers)
 
-  final case class Response(code: Code, headers: Http.Headers, body: Http.Payload):
-    def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))
-    def withCode(code: Code): Http.Response = modifyCode(_ => code)
+  final case class Response[F[_]](code: Code, headers: Http.Headers, body: Stream[F, Byte]):
+    def modifyCode(f: Code => Code): Http.Response[F] = copy(code = f(code))
+    def withCode(code: Code): Http.Response[F] = modifyCode(_ => code)
 
-    def modifyHeaders(f: Http.Headers => Http.Headers): Http.Response = copy(headers = f(headers))
-    def withHeaders(headers: Http.Headers): Http.Response = modifyHeaders(_ => headers)
-
-  final case class Payload(data: Array[Byte])
-
-  object Payload:
-    val Empty: Http.Payload = Payload(Array.emptyByteArray)
+    def modifyHeaders(f: Http.Headers => Http.Headers): Http.Response[F] = copy(headers = f(headers))
+    def withHeaders(headers: Http.Headers): Http.Response[F] = modifyHeaders(_ => headers)

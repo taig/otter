@@ -3,7 +3,6 @@ package io.taig.otter.http.csv
 import io.taig.otter.http as Http
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import cats.data.Validated
 
 trait Codecs extends Http.Types, Http.Codecs:
   // TODO

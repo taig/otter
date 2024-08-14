@@ -47,16 +47,12 @@ def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request[F]): F[Http4sRequest
     .liftTo[F]
   uri <- toHttp4sUri(request.url).liftTo[F]
   headers = toHttp4sHeaders(request.headers)
-  entity = Http4sEntity.stream(Stream.evalUnChunk(request.body.map(payload => Chunk.array(payload.data))))
-yield Http4sRequest(method, uri = uri, headers = headers, entity = entity)
+yield Http4sRequest(method, uri = uri, headers = headers, entity = Http4sEntity.stream(request.body))
 
-def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sResponse[F]] = for
+def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response[F]): F[Http4sResponse[F]] = for
   status <- Status.fromInt(response.code.toInt).liftTo[F]
   headers = toHttp4sHeaders(response.headers)
-  entity <- toHttp4sEntity(response.body)
+  entity = toHttp4sEntity(response.body)
 yield Http4sResponse(status, headers = headers, entity = entity)
 
-def toHttp4sEntity[F[_]: MonadThrow](body: Http.Payload): F[Http4sEntity[F]] =
-  if body.data.isEmpty
-  then Http4sEntity.empty.pure
-  else Http4sEntity.strict(ByteVector(body.data)).pure
+def toHttp4sEntity[F[_]: MonadThrow](body: Stream[F, Byte]): Http4sEntity[F] = Http4sEntity.stream(body)

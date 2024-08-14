@@ -127,19 +127,18 @@ object Request:
       override def decode[F[_]: Applicative](
           contentType: MediaType,
           request: Http.Request[F]
-      ): F[Request.Result[(A, B, C)]] = (url.decode(request.url), headers.decode(request.headers)).tupled match
-        case Validated.Valid((a, b)) =>
-          request.body
-            .map(_bodies.decode(contentType, _))
-            .map:
-              case Validated.Valid(Some((_, c))) => Request.Result.Success((a, b, c))
-              case Validated.Valid(None) =>
-                val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
-                Result.MediaTypesUnsupported(
-                  Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
-                )
-              case Validated.Invalid(violations) => Result.ValidationViolations("body" /: violations)
-        case Validated.Invalid(violations) => Result.ValidationViolations(violations).pure[F]
+      ): F[Request.Result[(A, B, C)]] = ???
+      // (url.decode(request.url), headers.decode(request.headers)).tupled match
+      //   case Validated.Valid((a, b)) =>
+      //     _bodies.decode(contentType, request.body) match
+      //         case Validated.Valid(Some((_, c))) => Request.Result.Success((a, b, c))
+      //         case Validated.Valid(None) =>
+      //           val supportedContentTypes = _bodies.toNev.toNonEmptyList.map(_.mediaType.show)
+      //           Result.MediaTypesUnsupported(
+      //             Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
+      //           )
+      //         case Validated.Invalid(violations) => Result.ValidationViolations("body" /: violations)
+      //   case Validated.Invalid(violations) => Result.ValidationViolations(violations).pure[F]
       override def encode[F[_]](charset: Option[Charset], abc: (A, B, C)): Http.Request[F] = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
