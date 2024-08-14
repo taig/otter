@@ -49,9 +49,6 @@ object Http:
     def modifyHeaders(f: Http.Headers => Http.Headers): Http.Response = copy(headers = f(headers))
     def withHeaders(headers: Http.Headers): Http.Response = modifyHeaders(_ => headers)
 
-    def modifyBody(f: Http.Payload => Http.Payload): Http.Response = copy(body = f(body))
-    def withBody(body: Http.Payload): Http.Response = modifyBody(_ => body)
-
   final case class Payload(data: Array[Byte])
 
   object Payload:

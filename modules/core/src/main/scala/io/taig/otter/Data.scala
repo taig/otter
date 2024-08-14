@@ -66,8 +66,9 @@ object Data:
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
+    def fromSeq[A <: Data](values: Seq[A]): Data.Array[A] = Data.Array(values.toVector)
     def one[A <: Data](data: A): Data.Array[A] = Data.Array(Vector(data))
-    def of[A <: Data](data: A*): Data.Array[A] = Data.Array(data.toVector)
+    def of[A <: Data](values: A*): Data.Array[A] = fromSeq(values)
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
     given [A <: Data: Order]: Order[Data.Array[A]] = Order.by(_.values)

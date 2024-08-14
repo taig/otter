@@ -8,6 +8,7 @@ val Version = new {
   val Circe = "0.14.9"
   val Ducktape = "0.2.4"
   val EnumerationExt = "0.2.0"
+  val Fs2 = "3.10.2"
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
@@ -153,6 +154,11 @@ lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = 
   .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
 
 lazy val httpCsv = module(identifier = Some("http-csv"))
+  .settings(
+    libraryDependencies ++=
+      "co.fs2" %% "fs2-core" % Version.Fs2 ::
+        Nil
+  )
   .dependsOn(http % "compile->compile;test->test")
 
 lazy val server = module(identifier = Some("server"))
@@ -172,8 +178,13 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
   )
   .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
-// lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-//   .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
+lazy val client = module(identifier = Some("client"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
 // lazy val munit = module(identifier = Some("munit"))
 //   .settings(

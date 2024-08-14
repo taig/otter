@@ -19,4 +19,4 @@ private object Parsers:
 
   val labels: Parser[List[String]] = Json.delimited.parser.repSep(separator).map(_.toList)
 
-  val csv: Parser0[Csv] = (labels.? ~ rows0).map(Csv.apply)
+  val csv: Parser0[Csv.Strict] = (labels.? ~ rows0).map(Csv.apply)

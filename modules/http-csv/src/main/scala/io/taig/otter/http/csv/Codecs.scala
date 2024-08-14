@@ -6,19 +6,24 @@ import java.nio.charset.StandardCharsets
 import cats.data.Validated
 
 trait Codecs extends Http.Types, Http.Codecs:
-  def csv[A](codec: Record.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] = body(
+  // TODO
+  def csv[A](
+      codec: Record.Of[Data.Primitive, A] | Tuple.Of[Data.Primitive, A],
+      fallback: => Charset = StandardCharsets.UTF_8
+  ): Body[A] = body(
     mediaType = mediaType.text.csv,
     codec,
     (charset, bytes) =>
       val text = new String(bytes, charset.getOrElse(fallback))
-      Validated
-        .fromEither(Csv.parse(text))
-        .bimap(
-          error => Violations.rootNec(Violation.tpe("csv", error.toString)),
-          csv =>
-            Data
-              .Array(csv.rows.map(row => Data.Array(row.toList.map(cell => Data.String(cell.value)).toVector)).toVector)
-        )
+      // Validated
+      //   .fromEither(Csv.parse(text))
+      //   .bimap(
+      //     error => Violations.rootNec(Violation.tpe("csv", error.toString)),
+      //     csv =>
+      //       Data.Array.fromSeq(csv.rows.map(row => Data.Array.fromSeq(row.toList.map(cell => Data.String(cell.value)))))
+      //   )
+
+      ???
     ,
     (charset, data) => ???
   )
