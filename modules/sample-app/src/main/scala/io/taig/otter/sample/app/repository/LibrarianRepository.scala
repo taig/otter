@@ -23,7 +23,8 @@ final class LibrarianRepository(storage: AtomicCell[IO, Chain[Librarian]]):
         yield (librarians :+ value, value.toLibratianSummary)
       .attemptNarrow[Error.Create]
 
-  def findBySession(session: Session): IO[Option[Librarian]] = storage.get.map(_.find(_.session.contains_(session)))
+  def findBySession(session: Session): IO[Option[Librarian]] =
+    storage.get.map(_.find(_.session.contains_(session)))
 
   def login(librarian: Librarian.Login): IO[Either[Error.Login, Session]] = storage
     .evalModify: librarians =>

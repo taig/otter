@@ -13,11 +13,10 @@ object SessionApiSchema:
 
   def codec(prefix: String): Primitive.Required[SessionApiSchema] = parser("session") { value =>
     Option
-      .when(value.startsWith(prefix) && value.length > prefix.length + 1)(value.substring(prefix.length + 1))
-      .flatMap(value =>
+      .when(value.startsWith(prefix) && value.length > prefix.length + 1)(value.substring(prefix.length))
+      .flatMap: value =>
         try UUID.fromString(value).some
         catch { case _: IllegalArgumentException => none }
-      )
   }(uuid => prefix + uuid.show)
 
   val codec: Primitive.Required[SessionApiSchema] = codec(prefix = "")

@@ -8,10 +8,9 @@ import io.taig.otter.sample.app.repository.LibrarianRepository
 import io.taig.otter.sample.app.conversion.toLibrarianApiSchema
 
 final class SampleEndpointImplementation(librarian: LibrarianRepository) extends EndpointImplementation[IO]:
-  override def findUser(session: SessionApiSchema): IO[Option[UserApiSchema]] =
-    librarian
-      .findBySession(conversion.toSession(session))
-      .map(_.map(toLibrarianApiSchema))
+  override def findUser(session: SessionApiSchema): IO[Option[UserApiSchema]] = librarian
+    .findBySession(conversion.toSession(session))
+    .map(_.map(toLibrarianApiSchema))
 
 object SampleEndpointImplementation:
   def apply(librarian: LibrarianRepository): EndpointImplementation[IO] =
