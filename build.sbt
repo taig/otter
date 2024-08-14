@@ -6,6 +6,7 @@ val Version = new {
   val CatsEffect = "3.5.3"
   val CatsParse = "1.0.0"
   val Circe = "0.14.9"
+  val Ducktape = "0.2.4"
   val EnumerationExt = "0.2.0"
   val Http4s = "1.0.0-M41"
   val Java = "17"
@@ -191,76 +192,31 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
 //   .dependsOn(http)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  // .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
-    // buildInfoKeys := Seq(version),
-    // buildInfoObject := "Build",
-    // buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
         "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
-        // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-        //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-        //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-        //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        //   "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-        // "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
 
 lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-  // .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
-    // buildInfoKeys := Seq(version),
-    // buildInfoObject := "Build",
-    // buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
-      // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-      //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-      //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-      //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-      //   "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-      // "org.typelevel" %% "mouse" % Version.Mouse ::
       Nil
   )
   .dependsOn(httpJsonCirce, httpHttp4s, openapi)
 
 lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
-  // .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
     Compile / run / fork := true,
-    // buildInfoKeys := Seq(version),
-    // buildInfoObject := "Build",
-    // buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
-      // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-      //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-      //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+      "io.github.arainko" %% "ducktape" % Version.Ducktape ::
+        "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
   .dependsOn(serverHttp4s, sample, sampleApi)
-
-// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-//   .enablePlugins(BuildInfoPlugin)
-//   .settings(noPublishSettings)
-//   .settings(
-//     buildInfoKeys := Seq(version),
-//     buildInfoObject := "Build",
-//     buildInfoPackage := organization.value + ".otter.sample",
-//     libraryDependencies ++=
-//       // "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
-//       //   "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-//       //   "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-//       //   "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-//       //   "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-//       "org.typelevel" %% "mouse" % Version.Mouse ::
-//         Nil
-//   )
-//   .dependsOn(httpJsonCirce, httpHttp4s, openapi)
-// .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")

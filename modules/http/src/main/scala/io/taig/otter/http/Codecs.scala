@@ -13,7 +13,7 @@ import Base.http.header.Accept
 import Base.http.header.Parameters
 import Base.Merge
 
-trait Codecs extends Base.Codecs:
+trait Codecs extends Base.Codecs, Types:
   self =>
 
   def cistring(

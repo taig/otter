@@ -10,18 +10,17 @@ import java.util.UUID
 import io.taig.otter.sample.Session
 
 final class LibrarianRepository(storage: AtomicCell[IO, Chain[Librarian]]):
-  def create(librarian: Librarian.Create): IO[Either[Error.Create, Librarian.Summary]] =
-    storage
-      .evalModify: librarians =>
-        val verifyEmail: IO[Unit] =
-          IO.raiseWhen(librarians.exists(_.email === librarian.email))(Error.Create.EmailConflict)
+  def create(librarian: Librarian.Create): IO[Either[Error.Create, Librarian.Summary]] = storage
+    .evalModify: librarians =>
+      val verifyEmail: IO[Unit] =
+        IO.raiseWhen(librarians.exists(_.email === librarian.email))(Error.Create.EmailConflict)
 
-        for
-          _ <- verifyEmail
-          reference <- UUIDGen.randomUUID[IO]
-          value = Librarian(reference, librarian.email, librarian.password, session = none)
-        yield (librarians :+ value, value.toLibratianSummary)
-      .attemptNarrow[Error.Create]
+      for
+        _ <- verifyEmail
+        reference <- UUIDGen.randomUUID[IO]
+        value = Librarian(reference, librarian.email, librarian.password, session = none)
+      yield (librarians :+ value, value.toLibratianSummary)
+    .attemptNarrow[Error.Create]
 
   def findBySession(session: Session): IO[Option[Librarian]] =
     storage.get.map(_.find(_.session.contains_(session)))
