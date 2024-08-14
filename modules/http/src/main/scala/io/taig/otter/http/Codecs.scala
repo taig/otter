@@ -84,6 +84,7 @@ trait Codecs extends Base.Codecs, Types:
     object text:
       def apply(secondary: String): MediaType = mediaType(primary = "text", secondary)
 
+      val csv: MediaType = text(secondary = "csv")
       val plain: MediaType = text(secondary = "plain")
       val html: MediaType = text(secondary = "html")
 
