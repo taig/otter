@@ -5,7 +5,6 @@ import java.nio.charset.Charset
 import io.taig.otter.Codec
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.Data
-import fs2.Stream
 
 sealed abstract class Body[A]:
   self =>
@@ -14,9 +13,9 @@ sealed abstract class Body[A]:
 
   final def imap[B](f: A => B)(g: B => A): Body[B] = new Body[B]:
     export self.mediaType
-    override def decode[F[_]](charset: Option[Charset], body: Stream[F, Byte]): Codec.Result[B] =
+    override def decode(charset: Option[Charset], body: Array[Byte]): Codec.Result[B] =
       self.decode(charset, body).map(f)
-    override def encode[F[_]](charset: Option[Charset], b: B): Stream[F, Byte] = self.encode(charset, g(b))
+    override def encode(charset: Option[Charset], b: B): Array[Byte] = self.encode(charset, g(b))
 
   final def :+[B](body: Body[B]): Bodies[Either[A, B]] = toBodies :+ body
 
@@ -26,9 +25,9 @@ sealed abstract class Body[A]:
 
   final def toBodies: Bodies[A] = Bodies(this)
 
-  def decode[F[_]](charset: Option[Charset], payload: Stream[F, Byte]): Codec.Result[A]
+  def decode(charset: Option[Charset], payload: Array[Byte]): Codec.Result[A]
 
-  def encode[F[_]](charset: Option[Charset], a: A): Stream[F, Byte]
+  def encode(charset: Option[Charset], a: A): Array[Byte]
 
 object Body:
   def binary(mediaType: MediaType): Body[Array[Byte]] =
@@ -36,9 +35,9 @@ object Body:
 
     new Body[Array[Byte]]:
       override def mediaType: MediaType = _mediaType
-      override def decode[F[_]](charset: Option[Charset], body: Stream[F, Byte]): Codec.Result[Array[Byte]] =
-        ???
-      override def encode[F[_]](charset: Option[Charset], a: Array[Byte]): Stream[F, Byte] = ???
+      override def decode(charset: Option[Charset], body: Array[Byte]): Codec.Result[Array[Byte]] =
+        body.valid
+      override def encode(charset: Option[Charset], a: Array[Byte]): Array[Byte] = a
 
   def apply[F[+a] <: Data.Optional[a], O <: Data, A](
       mediaType: MediaType,
@@ -50,7 +49,6 @@ object Body:
 
     new Body[A]:
       override def mediaType: MediaType = _mediaType
-      override def decode[F[_]](charset: Option[Charset], payload: Stream[F, Byte]): Codec.Result[A] =
-        ??? // f(charset, payload.data).andThen(of.decode)
-      override def encode[F[_]](charset: Option[Charset], a: A): Stream[F, Byte] =
-        ??? // Http.Payload(g(charset, of.encode(a)))
+      override def decode(charset: Option[Charset], payload: Array[Byte]): Codec.Result[A] =
+        f(charset, payload).andThen(of.decode)
+      override def encode(charset: Option[Charset], a: A): Array[Byte] = g(charset, of.encode(a))

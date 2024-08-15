@@ -21,7 +21,10 @@ object SampleApp extends ResourceApp.Forever:
     session <- Resource.eval(repositories.librarian.login(login).rethrow)
     _ <- Resource.eval(IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)"))
     implementation = SampleEndpointImplementation(repositories.librarian)
-    server = Http4sServer[IO](EmberServerBuilder.default[IO].withHttpApp(_).build)
+    server = Http4sServer[IO](
+      EmberServerBuilder.default[IO].withHttpApp(_).build,
+      onError = throwable => IO(throwable.printStackTrace())
+    )
     routes = SampleRoutes(implementation, repositories)
-    _ <- server.start(app(routes), throwable => IO(throwable.printStackTrace()))
+    _ <- server.start(app(routes))
   yield ()

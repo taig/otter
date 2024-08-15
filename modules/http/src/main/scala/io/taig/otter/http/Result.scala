@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import org.typelevel.ci.*
 import io.taig.otter.Convert
-import fs2.Stream
 
 sealed abstract class Result[A]:
   self =>
@@ -49,8 +48,7 @@ object Result:
         ???
       override def encode(ab: (A, B)): Http.Response =
         val (mediaType, payload) = _bodies.encode(ab._2)
-        // Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
-        ???
+        Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
     val _code = code

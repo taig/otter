@@ -69,5 +69,4 @@ yield Http4sResponse(status, headers = headers, entity = entity)
 def toHttp4sEntity[F[_]: MonadThrow](body: Array[Byte]): Http4sEntity[F] = Http4sEntity.strict(ByteVector(body))
 
 def toHttp4sApp[F[_]: Concurrent](app: App[F], onError: Throwable => F[Unit])(using F: MonadThrow[F]): Http4sApp[F] =
-  Http4sApp: request =>
-    toHttpRequest(request).flatMap(app(_, onError)).flatMap(toHttp4sResponse)
+  Http4sApp(toHttpRequest(_).flatMap(app(_, onError)).flatMap(toHttp4sResponse))

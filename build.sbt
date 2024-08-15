@@ -124,8 +124,7 @@ lazy val openapiCirce = module(identifier = Some("openapi-circe"))
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
@@ -157,7 +156,8 @@ lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = 
 lazy val httpCsv = module(identifier = Some("http-csv"))
   .settings(
     libraryDependencies ++=
-      Nil
+      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
+        Nil
   )
   .dependsOn(http % "compile->compile;test->test")
 
