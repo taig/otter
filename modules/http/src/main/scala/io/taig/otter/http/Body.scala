@@ -29,12 +29,11 @@ object Body:
     def decode(charset: Option[Charset], payload: Array[Byte]): Codec.Result[A]
 
     def encode(charset: Option[Charset], a: A): Array[Byte]
-  
+
   sealed abstract class Streaming[A] extends Body[A]:
     def encode[F[_]](charset: Option[Charset], as: Stream[F, A]): Stream[F, Byte]
 
     def decode[F[_]](charset: Option[Charset], payload: Stream[F, Byte]): Stream[F, A]
-
 
   // def apply[A](
   //       mediaType: MediaType,

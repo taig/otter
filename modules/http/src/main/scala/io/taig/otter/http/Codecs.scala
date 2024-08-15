@@ -225,7 +225,8 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty, Bodies.Empty).imap { case (a, _, _) => a }(a => (a, (), ()))
 
-  protected def violationsBody = text(violations.printed) + formData(violations.flattened)
+  // protected def violationsBody = text(violations.printed) + formData(violations.flattened)
+  protected def violationsBody = formData(violations.flattened)
 
   def response[A](results: Results[A]): Response[A] = Response(
     results,

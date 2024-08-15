@@ -12,9 +12,9 @@ import io.taig.otter.Codec
 //   override def codec: Product[?, ?, ?, ?] = ???
 
 // object Csv:
-//   def apply[A](mediaType: MediaType, of: Product[?, ?, ?, A]): Csv[Vector[A]] = 
+//   def apply[A](mediaType: MediaType, of: Product[?, ?, ?, A]): Csv[Vector[A]] =
 //     val _mediaType = mediaType
-    
+
 //     new Csv[Vector[A]]:
 //       override def mediaType: MediaType = _mediaType
 //       override def decode(charset: Option[Charset], payload: Array[Byte]): Codec.Result[Vector[A]] = ???

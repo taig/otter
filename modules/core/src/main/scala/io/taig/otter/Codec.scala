@@ -4,14 +4,10 @@ import cats.data.Validated
 import cats.syntax.all.*
 
 abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
-  self =>
-
-  type Self[+f[+a] <: Data.Optional[a], a] <: Codec[f, O, a]
-
   def isOptional: Boolean
 
   def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Self[F, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 
   def default: Option[A]
   def modifyDefault(f: Option[A] => Option[A]): Codec[F, O, A]
