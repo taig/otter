@@ -2,6 +2,7 @@ package io.taig.otter.http.http4s
 
 import cats.syntax.all.*
 import cats.MonadThrow
+import cats.effect.Concurrent
 import io.taig.otter.http.*
 import org.http4s.Uri.Path as Http4sPath
 import org.http4s.HttpApp as Http4sApp
@@ -17,7 +18,7 @@ import org.http4s.{
   Status,
   Uri
 }
-import fs2.Stream
+import scodec.bits.ByteVector
 
 def toHttpMethod(method: Http4sMethod): Method = Method(method.name)
 
@@ -40,28 +41,33 @@ def toHttpHeaders(headers: Http4sHeaders): Http.Headers =
 def toHttp4sHeaders(headers: Http.Headers): Http4sHeaders =
   new Http4sHeaders(headers.toList.map(Http4sHeader.Raw.apply.tupled))
 
-def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request[F]): F[Http4sRequest[F]] = for
+def toHttp4sRequest[F[_]: MonadThrow](request: Http.Request): F[Http4sRequest[F]] = for
   method <- toHttp4sMethod(request.method)
     .toRight(new IllegalArgumentException(s"Unknown method: '${request.method}'"))
     .liftTo[F]
   uri <- toHttp4sUri(request.url).liftTo[F]
   headers = toHttp4sHeaders(request.headers)
-yield Http4sRequest(method, uri = uri, headers = headers, entity = Http4sEntity.stream(request.body))
+yield Http4sRequest(method, uri = uri, headers = headers, entity = toHttp4sEntity(request.body))
 
-def toHttpRequest[F[_]](request: Http4sRequest[F]): Http.Request[F] = Http.Request(
-  toHttpMethod(request.method),
-  toHttpUrl(request.uri),
-  toHttpHeaders(request.headers),
-  request.entity.body
-)
+def toHttpRequest[F[_]: Concurrent](request: Http4sRequest[F]): F[Http.Request] =
+  request.entity.body.compile
+    .to(Array)
+    .map: body =>
+      Http.Request(
+        toHttpMethod(request.method),
+        toHttpUrl(request.uri),
+        toHttpHeaders(request.headers),
+        body
+      )
 
-def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response[F]): F[Http4sResponse[F]] = for
+def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sResponse[F]] = for
   status <- Status.fromInt(response.code.toInt).liftTo[F]
   headers = toHttp4sHeaders(response.headers)
   entity = toHttp4sEntity(response.body)
 yield Http4sResponse(status, headers = headers, entity = entity)
 
-def toHttp4sEntity[F[_]: MonadThrow](body: Stream[F, Byte]): Http4sEntity[F] = Http4sEntity.stream(body)
+def toHttp4sEntity[F[_]: MonadThrow](body: Array[Byte]): Http4sEntity[F] = Http4sEntity.strict(ByteVector(body))
 
-def toHttp4sApp[F[_]: MonadThrow](app: App[F], onError: Throwable => F[Unit]): Http4sApp[F] = Http4sApp: request =>
-  app(toHttpRequest(request), onError).flatMap(toHttp4sResponse)
+def toHttp4sApp[F[_]: Concurrent](app: App[F], onError: Throwable => F[Unit])(using F: MonadThrow[F]): Http4sApp[F] =
+  Http4sApp: request =>
+    toHttpRequest(request).flatMap(app(_, onError)).flatMap(toHttp4sResponse)

@@ -4,7 +4,7 @@ import cats.Monad
 import cats.syntax.all.*
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
-  def apply(request: Http.Request[F])(using Monad[F]): F[Http.Response[F]] = endpoint.request
+  def apply(request: Http.Request)(using Monad[F]): F[Http.Response] = endpoint.request
     .decode(request)
     .flatMap(_.traverse(implementation))
     .map(endpoint.response.encode)
