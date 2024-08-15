@@ -1,7 +1,6 @@
 package io.taig.otter.server
 
 import cats.effect.Resource
-import cats.syntax.all.*
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.server.Server as Underlying
 import io.taig.otter.http.*

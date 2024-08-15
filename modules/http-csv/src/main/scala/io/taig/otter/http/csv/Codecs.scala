@@ -5,9 +5,11 @@ import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 
 trait Codecs extends Http.Types, Http.Codecs:
+
+
   // TODO
   def csv[A](
-      codec: Record.Of[Data.Primitive, A] | Tuple.Of[Data.Primitive, A],
+      codec: Product.Of[Data.Primitive, A],
       fallback: => Charset = StandardCharsets.UTF_8
   ): Body[A] = body(
     mediaType = mediaType.text.csv,
@@ -24,7 +26,10 @@ trait Codecs extends Http.Types, Http.Codecs:
 
       ???
     ,
-    (charset, data) => ???
+    {
+      case (charset, Data.Null) =>
+        ???
+    }
   )
 
 object Codecs extends Codecs

@@ -130,9 +130,9 @@ trait Codecs extends Base.Codecs, Types:
       codec: Base.Codec[F, O, A],
       f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
       g: (Option[Charset], F[O]) => Array[Byte]
-  ): Body[A] = Body(mediaType, codec, f, g)
+  ): Body[A] = ??? // Body.Encoded(mediaType, codec, f, g)
 
-  def binary(mediaType: MediaType): Body[Array[Byte]] = Body.binary(mediaType)
+  def binary(mediaType: MediaType): Body[Array[Byte]] = ??? // Body.Raw(mediaType)
   val binary: Body[Array[Byte]] = binary(mediaType.application.octetStream)
 
   def text[A](codec: Codec.Required.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] =

@@ -66,15 +66,16 @@ object Bodies:
 
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = NonEmptyVector.one(body)
-    override def decode(contentType: MediaType, payload: Array[Byte]): Codec.Result[Option[(MediaType, A)]] =
-      if body.mediaType.tpe === contentType.tpe
-      then
-        val charset = contentType.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
-        body.decode(charset, payload).tupleLeft(body.mediaType).map(_.some)
-      else none.valid
-    override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] =
-      Option.when(body.mediaType.satisfies(accept)):
-        // TODO include used charset (if anything other than utf-8) in returned media type?
-        val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
-        (body.mediaType, body.encode(charset, a))
-    override def encode(a: A): (MediaType, Array[Byte]) = (body.mediaType, body.encode(charset = none, a))
+    override def decode(contentType: MediaType, payload: Array[Byte]): Codec.Result[Option[(MediaType, A)]] = ???
+    //   if body.mediaType.tpe === contentType.tpe
+    //   then
+    //     val charset = contentType.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
+    //     body.decode(charset, payload).tupleLeft(body.mediaType).map(_.some)
+    //   else none.valid
+    // override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] =
+    //   Option.when(body.mediaType.satisfies(accept)):
+    //     // TODO include used charset (if anything other than utf-8) in returned media type?
+    //     val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
+    //     (body.mediaType, body.encode(charset, a))
+    override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] = ???
+    override def encode(a: A): (MediaType, Array[Byte]) = ??? // (body.mediaType, body.encode(charset = none, a))

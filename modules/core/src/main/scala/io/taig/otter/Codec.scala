@@ -6,16 +6,18 @@ import cats.syntax.all.*
 abstract class Codec[+F[+a] <: Data.Optional[a], +O <: Data, A]:
   self =>
 
+  type Self[+f[+a] <: Data.Optional[a], a] <: Codec[f, O, a]
+
   def isOptional: Boolean
 
   def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
+  def modifyMetadata(f: Metadata => Metadata): Self[F, A]
 
   def default: Option[A]
   def modifyDefault(f: Option[A] => Option[A]): Codec[F, O, A]
 
   def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
-  def to[B](using convert: Convert[A, B]): Codec[F, O, B]
+  def to[B](using Convert[A, B]): Codec[F, O, B]
 
   def optional: Codec[Data.Optional, O, Option[A]]
 
