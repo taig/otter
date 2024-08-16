@@ -156,6 +156,18 @@ trait Codecs extends Base.Codecs, Types:
     (charset, text) => text.getBytes(charset.getOrElse(fallback))
   )
   val text: Body.Strict[String] = text(fallback = StandardCharsets.UTF_8)
+  def text[A](
+      codec: Codec.Required.Of[Data.Primitive, A],
+      fallback: => Charset = StandardCharsets.UTF_8
+  ): Body.Strict[A] = body(
+    mediaType = mediaType.text.plain,
+    codec,
+    (charset, bytes) =>
+      val value = new String(bytes, charset.getOrElse(fallback))
+      Data.String(value).valid
+    ,
+    (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
+  )
 
   object formData:
     private type Of = Data.Object[Data.Optional[Data.Primitive]]
@@ -235,16 +247,20 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  // protected def violationsBody = text(violations.printed) + formData(violations.flattened)
-  protected def violationsBody = formData(violations.flattened).toBodies
+  protected val formDataOrTextViolations = formData(violations.flattened) + text(violations.printed)
 
-  def response[A](results: Results[A]): Response[A] = Response(
+  def response[A](results: Results[A], violations: Bodies[Violations]): Response[A] = Response(
     results,
-    mediaTypesUnsupported = result(code.unsupportedMediaTypes, violationsBody),
-    validationViolations = result(code.unprocessableEntity, violationsBody)
+    mediaTypesUnsupported = result(code.unsupportedMediaTypes, violations),
+    validationViolations = result(code.unprocessableEntity, violations)
   )
 
-  final def response[A](result: Result[A]): Response[A] = response(result.toResults)
+  def response[A](results: Results[A]): Response[A] = response(results, formDataOrTextViolations)
+
+  def response[A](result: Result[A], violations: Bodies[Violations]): Response[A] =
+    response(result.toResults, violations)
+
+  def response[A](result: Result[A]): Response[A] = response(result, formDataOrTextViolations)
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
