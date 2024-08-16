@@ -36,11 +36,11 @@ trait Codecs extends Http.Types, Http.Codecs:
     (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(fallback))
   )
 
-  private val formDataOrTextOrJsonViolations: Bodies[Violations] =
-    formDataOrTextViolations + json(violations.nested)
+  val textOrformDataOrJsonViolations: Bodies[Violations] =
+    textOrformDataViolations + json(violations.nested)
 
-  override def response[A](results: Results[A]): Response[A] = response(results, formDataOrTextOrJsonViolations)
+  override def response[A](results: Results[A]): Response[A] = response(results, textOrformDataOrJsonViolations)
 
-  override def response[A](result: Result[A]): Response[A] = response(result, formDataOrTextOrJsonViolations)
+  override def response[A](result: Result[A]): Response[A] = response(result, textOrformDataOrJsonViolations)
 
 object Codecs extends Codecs

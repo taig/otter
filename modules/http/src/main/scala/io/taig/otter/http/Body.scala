@@ -52,6 +52,8 @@ object Body:
           f(charset, payload)
         override def encode(charset: Option[Charset], a: A): Array[Byte] = g(charset, a)
 
+  // TODO figure out how to inject fs2.Stream or similiar into this
+  // TODO streaming does not automatically mean chunked, right?
   sealed abstract class Streaming[A] extends Body[A]:
     self =>
 

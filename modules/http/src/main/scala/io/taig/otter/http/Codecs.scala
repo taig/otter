@@ -8,10 +8,8 @@ import org.typelevel.ci.*
 import java.util.regex.Pattern
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import Base.http.ViolationsCodecs.violations
-import Base.http.header.Accept
-import Base.http.header.Parameters
-import Base.Merge
+import io.taig.otter.http.header.Parameters
+import io.taig.otter.http.header.Accept
 
 trait Codecs extends Base.Codecs, Types:
   self =>
@@ -148,8 +146,6 @@ trait Codecs extends Base.Codecs, Types:
     body(mediaType, (_, bytes) => bytes.valid, (_, bytes) => bytes)
   val binary: Body.Strict[Array[Byte]] = binary(mediaType.application.octetStream)
 
-  val yolo: Body.Streaming[Byte] = ???
-
   def text(fallback: => Charset): Body.Strict[String] = body(
     mediaType = mediaType.text.plain,
     (charset, bytes) => new String(bytes, charset.getOrElse(fallback)).valid,
@@ -247,7 +243,7 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  protected val formDataOrTextViolations = formData(violations.flattened) + text(violations.printed)
+  final val textOrformDataViolations = text(violations.printed) + formData(violations.flattened)
 
   def response[A](results: Results[A], violations: Bodies[Violations]): Response[A] = Response(
     results,
@@ -255,12 +251,12 @@ trait Codecs extends Base.Codecs, Types:
     validationViolations = result(code.unprocessableEntity, violations)
   )
 
-  def response[A](results: Results[A]): Response[A] = response(results, formDataOrTextViolations)
+  def response[A](results: Results[A]): Response[A] = response(results, textOrformDataViolations)
 
   def response[A](result: Result[A], violations: Bodies[Violations]): Response[A] =
     response(result.toResults, violations)
 
-  def response[A](result: Result[A]): Response[A] = response(result, formDataOrTextViolations)
+  def response[A](result: Result[A]): Response[A] = response(result, textOrformDataViolations)
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
