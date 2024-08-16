@@ -8,6 +8,9 @@ import io.taig.otter.sample.api.AuthenticatedEndpoint
 object books:
   val url: Url[Unit] = __ / "books"
 
+  object get:
+    def apply(): AuthenticatedEndpoint[Role.Guest, Unit, BookApiSchema] = ???
+
   object post:
     enum Error:
       case IsbnConflict
