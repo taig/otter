@@ -36,6 +36,6 @@ trait Codecs extends Http.Types, Http.Codecs:
     (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(fallback))
   )
 
-  override protected val violationsBody: Http.Bodies[Violations] = super.violationsBody + json(violations.nested)
+  override protected val violationsBody: Bodies[Violations] = super.violationsBody + json(violations.nested)
 
 object Codecs extends Codecs
