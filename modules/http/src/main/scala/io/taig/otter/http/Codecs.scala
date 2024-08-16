@@ -125,26 +125,37 @@ trait Codecs extends Base.Codecs, Types:
     case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
 
-  def body[F[+a] <: Data.Optional[a], O <: Data, A](
-      mediaType: MediaType,
-      codec: Base.Codec[F, O, A],
-      f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
-      g: (Option[Charset], F[O]) => Array[Byte]
-  ): Body[A] = ??? // Body.Encoded(mediaType, codec, f, g)
+  object body:
+    def apply[A](
+        mediaType: MediaType,
+        f: (Option[Charset], Array[Byte]) => Codec.Result[A],
+        g: (Option[Charset], A) => Array[Byte]
+    ): Body.Strict[A] = Body.Strict(mediaType, of = none, f, g)
 
-  def binary(mediaType: MediaType): Body[Array[Byte]] = ??? // Body.Raw(mediaType)
-  val binary: Body[Array[Byte]] = binary(mediaType.application.octetStream)
-
-  def text[A](codec: Codec.Required.Of[Data.Primitive, A], fallback: => Charset = StandardCharsets.UTF_8): Body[A] =
-    body(
-      mediaType = mediaType.text.plain,
-      codec,
-      (charset, bytes) =>
-        val value = new String(bytes, charset.getOrElse(fallback))
-        Data.String(value).valid
-      ,
-      (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
+    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
+        mediaType: MediaType,
+        codec: Base.Codec[F, O, A],
+        f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
+        g: (Option[Charset], F[O]) => Array[Byte]
+    ): Body.Strict[A] = Body.Strict(
+      mediaType,
+      of = codec.some,
+      f(_, _).andThen(codec.decode),
+      (charset, fo) => g(charset, codec.encode(fo))
     )
+
+  def binary(mediaType: MediaType): Body.Strict[Array[Byte]] =
+    body(mediaType, (_, bytes) => bytes.valid, (_, bytes) => bytes)
+  val binary: Body.Strict[Array[Byte]] = binary(mediaType.application.octetStream)
+
+  val yolo: Body.Streaming[Byte] = ???
+
+  def text(fallback: => Charset): Body.Strict[String] = body(
+    mediaType = mediaType.text.plain,
+    (charset, bytes) => new String(bytes, charset.getOrElse(fallback)).valid,
+    (charset, text) => text.getBytes(charset.getOrElse(fallback))
+  )
+  val text: Body.Strict[String] = text(fallback = StandardCharsets.UTF_8)
 
   object formData:
     private type Of = Data.Object[Data.Optional[Data.Primitive]]

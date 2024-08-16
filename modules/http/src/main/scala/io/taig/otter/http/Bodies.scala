@@ -5,8 +5,6 @@ import cats.data.NonEmptyVector
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.Codec
-import io.taig.otter.Violations
-import org.typelevel.ci.*
 
 sealed abstract class Bodies[A]:
   self =>
@@ -18,13 +16,12 @@ sealed abstract class Bodies[A]:
     override def decode(
         contentType: MediaType,
         body: Array[Byte]
-    ): Codec.Result[Option[(MediaType, Either[A, B])]] =
-      self
-        .decode(contentType, body)
-        .map(_.map(_.map(_.asLeft)))
-        .andThen:
-          case a @ Some(_) => a.valid
-          case None        => bodies.decode(contentType, body).map(_.map(_.map(_.asRight)))
+    ): Codec.Result[Option[(MediaType, Either[A, B])]] = self
+      .decode(contentType, body)
+      .map(_.map(_.map(_.asLeft)))
+      .andThen:
+        case a @ Some(_) => a.valid
+        case None        => bodies.decode(contentType, body).map(_.map(_.map(_.asRight)))
     override def encode(ab: Either[A, B]): (MediaType, Array[Byte]) = ab.fold(self.encode, bodies.encode)
     override def encode(accept: MediaRange, ab: Either[A, B]): Option[(MediaType, Array[Byte])] =
       ab.fold(self.encode(accept, _), bodies.encode(accept, _))
@@ -35,12 +32,11 @@ sealed abstract class Bodies[A]:
 
   final def or(bodies: Bodies[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
-    override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, A)]] =
-      self
-        .decode(contentType, body)
-        .andThen:
-          case a @ Some(_) => a.valid
-          case None        => bodies.decode(contentType, body)
+    override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, A)]] = self
+      .decode(contentType, body)
+      .andThen:
+        case a @ Some(_) => a.valid
+        case None        => bodies.decode(contentType, body)
     override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] =
       self.encode(accept, a).orElse(bodies.encode(accept, a))
     override def encode(a: A): (MediaType, Array[Byte]) = bodies.encode(a)
@@ -57,13 +53,6 @@ sealed abstract class Bodies[A]:
   def encode(a: A): (MediaType, Array[Byte])
 
 object Bodies:
-  val Empty: Bodies[Unit] = new Bodies[Unit]:
-    override def toNev: NonEmptyVector[Body[?]] = ???
-    override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, Unit)]] =
-      ???
-    override def encode(accept: MediaRange, a: Unit): Option[(MediaType, Array[Byte])] = ???
-    override def encode(a: Unit): (MediaType, Array[Byte]) = ???
-
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = NonEmptyVector.one(body)
     override def decode(contentType: MediaType, payload: Array[Byte]): Codec.Result[Option[(MediaType, A)]] = ???
