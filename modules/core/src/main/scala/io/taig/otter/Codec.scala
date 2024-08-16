@@ -46,6 +46,10 @@ object Codec:
       self.decode(Data.Array(values.map(Data.String.apply)))
     def printArray(a: A): Vector[String] = self.encode(a).values.map(_.plain)
 
+  extension [A](self: Codec[Data.Required, Data.Object[Data.Optional[Data.Primitive]], A])
+    def parseObject(value: Vector[(String, String)]): Codec.Result[A] = ???
+    def printObject(a: A): Vector[(String, String)] = ???
+
   extension [A](self: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A])
     def parseOptionalObject(value: Option[Vector[(String, String)]]): Codec.Result[A] =
       self.decode(value.fold(Data.Null): values =>

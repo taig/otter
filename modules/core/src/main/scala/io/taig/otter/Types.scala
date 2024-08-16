@@ -3,7 +3,7 @@ package io.taig.otter
 import io.taig.otter as Base
 
 trait Types:
-  export Base.{Attribute, Comparison, Constraint, Data, Metadata, Step, Violation, Violations, Merge}
+  export Base.{Attribute, Comparison, Constraint, Data, Merge, Metadata, Step, Violation, Violations}
 
   final type Codec[A] = Base.Codec[Data.Optional, Data, A]
 

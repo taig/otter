@@ -60,16 +60,16 @@ object Bodies:
       if body.mediaType.tpe === contentType.tpe
       then
         body match
-          case body: Body.Strict[?] => 
+          case body: Body.Strict[?] =>
             val charset = contentType.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
             body.decode(charset, payload).tupleLeft(body.mediaType).map(_.some)
           case _: Body.Streaming[?] => ???
       else none.valid
     override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] = ???
-      // Option.when(body.mediaType.satisfies(accept)):
-      //   // TODO include used charset (if anything other than utf-8) in returned media type?
-      //   val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
-      //   (body.mediaType, body.encode(charset, a))
+    // Option.when(body.mediaType.satisfies(accept)):
+    //   // TODO include used charset (if anything other than utf-8) in returned media type?
+    //   val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
+    //   (body.mediaType, body.encode(charset, a))
     override def encode(a: A): (MediaType, Array[Byte]) = body match
       case body: Body.Strict[?] => (body.mediaType, body.encode(charset = none, a))
       case _: Body.Streaming[?] => ???
