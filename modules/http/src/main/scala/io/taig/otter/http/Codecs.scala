@@ -230,11 +230,10 @@ trait Codecs extends Base.Codecs, Types:
 
   final def request[A, B](method: Method, url: Url[A], headers: Headers[B])(using
       merge: Merge[A, B]
-  ): Request[merge.Out] = Request(method, url, headers, Bodies.Empty)
-    .imap { case (a, b, _) => merge.apply((a, b)) }(ab => merge.unapply(ab) :* ())
+  ): Request[merge.Out] = Request(method, url, headers).imap(merge.apply)(merge.unapply)
 
   final def request[A](method: Method, url: Url[A]): Request[A] =
-    Request(method, url, Headers.Empty, Bodies.Empty).imap { case (a, _, _) => a }(a => (a, (), ()))
+    Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   // protected def violationsBody = text(violations.printed) + formData(violations.flattened)
   protected def violationsBody = formData(violations.flattened).toBodies

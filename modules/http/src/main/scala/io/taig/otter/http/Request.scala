@@ -21,7 +21,7 @@ sealed abstract class Request[A]:
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
-  def bodies: Bodies[?]
+  def bodies: Option[Bodies[?]]
 
   final def matches(method: Method, url: Http.Url): Boolean = self.method === method && self.url.matches(url)
 
@@ -123,7 +123,7 @@ object Request:
       override def method: Method = _method
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
-      override def bodies: Bodies[C] = _bodies
+      override def bodies: Option[Bodies[C]] = _bodies.some
       override def decode(
           contentType: MediaType,
           request: Http.Request
@@ -140,5 +140,22 @@ object Request:
             case Validated.Invalid(violations) => Result.ValidationViolations("body" /: violations)
         case Validated.Invalid(violations) => Result.ValidationViolations(violations)
       override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request = ???
+      // val (mediaType, payload) = _bodies.encode(charset, abc._3)
+      // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
+
+  def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Request[(A, B)] =
+    val _method = method
+    val _url = url
+    val _headers = headers
+
+    new Request[(A, B)]:
+      override def method: Method = _method
+      override def url: Url[A] = _url
+      override def headers: Headers[B] = _headers
+      override def bodies: Option[Bodies[?]] = none
+      override def decode(contentType: MediaType, request: Http.Request): Request.Result[(A, B)] =
+        (url.decode(request.url), headers.decode(request.headers)).tupled
+          .fold(Request.Result.ValidationViolations.apply, Request.Result.Success.apply)
+      override def encode(charset: Option[Charset], abc: (A, B)): Http.Request = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
