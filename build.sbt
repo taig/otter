@@ -210,7 +210,7 @@ lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
     libraryDependencies ++=
       Nil
   )
-  .dependsOn(httpJsonCirce, httpHttp4s, openapi)
+  .dependsOn(httpJsonCirce, httpCsv, httpHttp4s, openapi)
 
 lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
   .settings(noPublishSettings)

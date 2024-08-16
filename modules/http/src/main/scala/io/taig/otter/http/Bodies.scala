@@ -7,6 +7,7 @@ import io.taig.otter.http.header.MediaRange
 import io.taig.otter.Codec
 import org.typelevel.ci.*
 
+// TODO allow different codecs via taging, e.g. Bodies[Json[A] | Xml[B] | Csv[C]] (?)
 sealed abstract class Bodies[A]:
   self =>
 

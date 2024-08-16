@@ -1,11 +1,12 @@
 package io.taig.otter.sample.api
 
-import io.taig.otter.http.json as HttpJson
+import io.taig.otter.http.json as Json
+import io.taig.otter.http.csv as Csv
 import io.taig.otter.openapi as Openapi
 import cats.syntax.all.*
 import io.taig.otter.sample.api as Api
 
-object Dsl extends HttpJson.Dsl, Openapi.Dsl, Codecs:
+object Dsl extends Csv.Dsl, Json.Dsl, Openapi.Dsl, Codecs:
   given Conversion[header.type, Api.Headers] = _ => new Api.Headers {}
 
   extension [I, O](self: Endpoint[I, O])

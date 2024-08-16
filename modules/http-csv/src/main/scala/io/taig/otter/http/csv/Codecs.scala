@@ -9,7 +9,7 @@ trait Codecs extends Http.Types, Http.Codecs:
   def csv[A](
       codec: Product.Required.Of[Data.Primitive, A],
       fallback: => Charset = StandardCharsets.UTF_8
-  ): Body[List[A]] = body(
+  ): Body.Strict[List[A]] = body(
     mediaType = mediaType.text.csv,
     (charset, bytes) =>
       val value = new String(bytes, charset.getOrElse(fallback))

@@ -9,7 +9,10 @@ object books:
   val url: Url[Unit] = __ / "books"
 
   object get:
-    def apply(): AuthenticatedEndpoint[Role.Guest, Unit, BookApiSchema] = ???
+    def apply(): AuthenticatedEndpoint[Role.Guest, Unit, List[BookApiSchema.Summary]] = endpoint(
+      request(method.get, url),
+      response(result(code.ok, json(collection.list(BookApiSchema.Summary.codec)) + csv(BookApiSchema.Summary.codec)))
+    ).role(Role.Guest)
 
   object post:
     enum Error:

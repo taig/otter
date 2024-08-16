@@ -32,6 +32,16 @@ object BookApiSchema:
 
     given Order[BookApiSchema.Genre] = Order.by(_.ordinal)
 
+  final case class Summary(
+      isbn: IsbnApiSchema,
+      title: String
+  )
+
+  object Summary:
+    val codec: Record.Required.Of[Data.Primitive, BookApiSchema.Summary] = record {
+      field("isbn", IsbnApiSchema.codec) :* field("title", string)
+    }.to
+
   final case class Create(
       isbn: IsbnApiSchema,
       title: String,
