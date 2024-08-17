@@ -187,7 +187,8 @@ trait Codecs extends Base.Codecs, Types:
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
-  def app[F[_]](routes: Routes[F]): App[F] = App(routes, notFound = response(result(code.notFound)))
+  def app[F[_]](routes: Routes[F]): App[F] = ???
+  // App(routes, notFound = response(result(code.notFound)))
 
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
       merge: Merge[A, B]
@@ -244,11 +245,22 @@ trait Codecs extends Base.Codecs, Types:
 
   def response[A](results: Results[A], violations: Bodies[Violations]): Response[A] = Response(
     results,
-    mediaTypesUnsupported = result(code.unsupportedMediaTypes, violations),
-    contentNegotiationFailed = result(code.notAcceptable, violations),
-    validationViolations = result(code.unprocessableEntity, violations),
+    error =
+      result(
+        code.unsupportedMediaTypes,
+        violations.imap(Route.Error(Route.Error.Type.MediaTypesUnsupported, _))(_.violations)
+      )
+      ???
+    ,
     failure = result(code.internalServerError)
   )
+  // Response(
+  //   results,
+  //   mediaTypesUnsupported = result(code.unsupportedMediaTypes, violations),
+  //   contentNegotiationFailed = result(code.notAcceptable, violations),
+  //   validationViolations = result(code.unprocessableEntity, violations),
+  //   failure = result(code.internalServerError)
+  // )
 
   def response[A](results: Results[A]): Response[A] = response(results, textOrformDataViolations)
 

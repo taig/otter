@@ -22,6 +22,8 @@ sealed abstract class Result[A]:
     override def decode(response: Http.Response): Codec.Result[Option[B]] = self.decode(response).map(_.map(f))
     override def encode(accept: Option[Accept.Result], b: B): Option[Http.Response] = self.encode(accept, g(b))
 
+  final def to[B](using convert: Convert[A, B]): Result[B] = imap(convert.to)(convert.from)
+
   final def orElse[B](result: Result[B]): Results[Either[A, B]] = toResults.orElse(result.toResults)
 
   final def toResults: Results[A] = Results(this)
@@ -30,13 +32,20 @@ sealed abstract class Result[A]:
 
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result :+ this
 
-  final def to[B](using convert: Convert[A, B]): Result[B] = imap(convert.to)(convert.from)
-
   def decode(response: Http.Response): Codec.Result[Option[A]]
 
   def encode(accept: Option[Accept.Result], a: A): Option[Http.Response]
 
 object Result:
+  extension [A <: Matchable](self: Result[A])
+    inline def |[B <: Matchable](result: Result[B]): Results[A | B] = (self :+ result).imap {
+      case Left(a)  => a
+      case Right(b) => b
+    } {
+      case a: A => Left(a)
+      case b: B => Right(b)
+    }
+
   def apply[A, B](code: Code, headers: Headers[A], bodies: Bodies[B]): Result[(A, B)] =
     val _code = code
     val _headers = headers

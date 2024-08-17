@@ -6,13 +6,23 @@ import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.Codec
 import org.typelevel.ci.*
-import cats.data.NonEmptyList
+import io.taig.otter.Convert
 
 // TODO allow different codecs via taging, e.g. Bodies[Json[A] | Xml[B] | Csv[C]] (?)
 sealed abstract class Bodies[A]:
   self =>
 
   def toNev: NonEmptyVector[Body[?]]
+
+  final def imap[B](f: A => B)(g: B => A): Bodies[B] = new Bodies[B]:
+    export self.toNev
+    override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, B)]] =
+      self.decode(contentType, body).map(_.map(_.map(f)))
+    override def encode(accept: MediaRange, reject: List[MediaRange], b: B): Option[(MediaType, Array[Byte])] =
+      self.encode(accept, reject, g(b))
+    override def encodeFirst(b: B): (MediaType, Array[Byte]) = self.encodeFirst(g(b))
+
+  final def to[B](convert: Convert[A, B]): Bodies[B] = imap(convert.to)(convert.from)
 
   final def or(bodies: Bodies[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)

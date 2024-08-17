@@ -17,4 +17,6 @@ object MediaRange:
   object Type:
     given Show[MediaRange.Type] = Show.fromToString
 
+  val Any: MediaRange = MediaRange(Type.Any, Parameters.Empty)
+
   given Show[MediaRange] = Show.fromToString
