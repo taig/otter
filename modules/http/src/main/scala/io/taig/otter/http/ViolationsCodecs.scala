@@ -14,7 +14,7 @@ object ViolationsCodecs:
       val constraint: Sum.Keyed.Required[Constraint] = sum.keyed {
         (
           branch("type", string.to[Constraint.Type]) :+
-            branch("oneOf", collection.nonEmptyList(dynamic.primitive).to[Constraint.OneOf])
+            branch("oneOf", collection.list(dynamic.primitive).to[Constraint.OneOf])
         ).orElse {
           (
             branch("maxItems", int.to[Constraint.Collection.MaxItems]) :+

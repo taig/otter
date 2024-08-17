@@ -5,6 +5,11 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 import cats.data.Ior
 import io.taig.otter.Convert
+import io.taig.otter.http.header.Accept
+import org.typelevel.ci.*
+import io.taig.otter.Violation
+import io.taig.otter.XPath
+import io.taig.otter.Data
 
 sealed abstract class Results[A]:
   self =>
@@ -14,7 +19,7 @@ sealed abstract class Results[A]:
     export self.toNev
     override def decode(response: Http.Response): Ior[Violations, Option[B]] =
       self.decode(response).map(_.map(f))
-    override def encode(b: B): Http.Response = self.encode(g(b))
+    override def encode(accept: Option[Accept.Result], b: B): Option[Http.Response] = self.encode(accept, g(b))
 
   final infix def orElse[B](results: Results[B]): Results[Either[A, B]] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
@@ -33,9 +38,9 @@ sealed abstract class Results[A]:
             case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
             case Ior.Left(right)    => Ior.Both(left.combine(right), none)
             case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
-    override def encode(ab: Either[A, B]): Http.Response = ab match
-      case Left(a)  => self.encode(a)
-      case Right(b) => results.encode(b)
+    override def encode(accept: Option[Accept.Result], ab: Either[A, B]): Option[Http.Response] = ab match
+      case Left(a)  => self.encode(accept, a)
+      case Right(b) => results.encode(accept, b)
 
   final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result.toResults)
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result.toResults.orElse(this)
@@ -43,7 +48,7 @@ sealed abstract class Results[A]:
   final def to[B](using convert: Convert[A, B]): Results[B] = imap(convert.to)(convert.from)
 
   def decode(response: Http.Response): Ior[Violations, Option[A]]
-  def encode(a: A): Http.Response
+  def encode(accept: Option[Accept.Result], a: A): Option[Http.Response]
 
 object Results:
   extension [A <: Matchable](self: Results[A])
@@ -59,4 +64,4 @@ object Results:
     override def toNev: NonEmptyVector[Result[?]] = NonEmptyVector.one(result)
     override def decode(response: Http.Response): Ior[Violations, Option[A]] =
       result.decode(response).toIor
-    override def encode(a: A): Http.Response = result.encode(a)
+    override def encode(accept: Option[Accept.Result], a: A): Option[Http.Response] = result.encode(accept, a)

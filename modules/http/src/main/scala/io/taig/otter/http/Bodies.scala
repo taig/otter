@@ -6,6 +6,7 @@ import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.Codec
 import org.typelevel.ci.*
+import cats.data.NonEmptyList
 
 // TODO allow different codecs via taging, e.g. Bodies[Json[A] | Xml[B] | Csv[C]] (?)
 sealed abstract class Bodies[A]:
@@ -20,20 +21,28 @@ sealed abstract class Bodies[A]:
       .andThen:
         case a @ Some(_) => a.valid
         case None        => bodies.decode(contentType, body)
-    override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] =
-      self.encode(accept, a).orElse(bodies.encode(accept, a))
-    override def encode(a: A): (MediaType, Array[Byte]) = bodies.encode(a)
+    override def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])] =
+      self.encode(accept, reject, a).orElse(bodies.encode(accept, reject, a))
+    override def encodeFirst(a: A): (MediaType, Array[Byte]) = bodies.encodeFirst(a)
 
   final def +(body: Body[A]): Bodies[A] = or(body.toBodies)
 
   def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, A)]]
 
-  final def encode(accept: List[MediaRange], a: A): (MediaType, Array[Byte]) =
-    accept.collectFirstSome(encode(_, a)).getOrElse(encode(a))
+  /** Use the first `Body` that matches the given `MediaRange` rules to encode the given `a`
+    *
+    * @returns
+    *   `None` if no `Body` can fullfil the `Accept` rules, otherwise `Some` with the encoded result of the first `Body`
+    *   that matches the `Accept` rules
+    */
+  def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])]
 
-  def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])]
-
-  def encode(a: A): (MediaType, Array[Byte])
+  /** Use the first `Body` to encode the given `a`
+    *
+    * This method is intented to be used when the client does not submit an `Accept` header or uses a `&ast;&sol;&ast;`
+    * wildcard.
+    */
+  def encodeFirst(a: A): (MediaType, Array[Byte])
 
 object Bodies:
   def apply[A](body: Body[A]): Bodies[A] = new Bodies[A]:
@@ -47,11 +56,13 @@ object Bodies:
             body.decode(charset, payload).tupleLeft(body.mediaType).map(_.some)
           case _: Body.Streaming[?] => ???
       else none.valid
-    override def encode(accept: MediaRange, a: A): Option[(MediaType, Array[Byte])] = ???
+    override def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])] =
+      Option.when(body.mediaType.satisfies(accept) && reject.forall(reject => !body.mediaType.satisfies(reject))):
+        ???
     // Option.when(body.mediaType.satisfies(accept)):
     //   // TODO include used charset (if anything other than utf-8) in returned media type?
     //   val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
     //   (body.mediaType, body.encode(charset, a))
-    override def encode(a: A): (MediaType, Array[Byte]) = body match
+    override def encodeFirst(a: A): (MediaType, Array[Byte]) = body match
       case body: Body.Strict[?] => (body.mediaType, body.encode(charset = none, a))
       case _: Body.Streaming[?] => ???

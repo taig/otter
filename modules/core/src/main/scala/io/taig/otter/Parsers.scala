@@ -5,7 +5,6 @@ import cats.parse.strings.Json
 import cats.parse.{Numbers, Parser, Parser0}
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.NonEmptyList
 import java.util.regex.Pattern
 
 private[otter] object Parsers:
@@ -20,8 +19,6 @@ private[otter] object Parsers:
   val separator: Parser[Unit] = Parser.char(',').soft.surroundedBy(whitespace).void
 
   def list[A](parser: Parser[A]): Parser0[List[A]] = parser.repSep0(separator).surroundedBy(whitespace)
-
-  def nonEmptyList[A](parser: Parser[A]): Parser[NonEmptyList[A]] = parser.repSep(separator).surroundedBy(whitespace)
 
   val token: Parser[String] = Parser.charsWhile { value =>
     (value >= 'a' && value <= 'z') ||
@@ -74,7 +71,7 @@ private[otter] object Parsers:
     val oneOf: Parser[Constraint.OneOf] =
       Parser.string("oneOf") *>
         whitespace *>
-        brackets(nonEmptyList(data.primitive).with1).map(Constraint.OneOf.apply)
+        brackets(list(data.primitive).with1).map(Constraint.OneOf.apply)
 
     val maxItems: Parser[Constraint.Collection.MaxItems] =
       Parser.string("maxItems") *> whitespace *> int.map(Constraint.Collection.MaxItems.apply)

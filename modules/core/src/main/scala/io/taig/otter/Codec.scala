@@ -47,25 +47,28 @@ object Codec:
     def printArray(a: A): Vector[String] = self.encode(a).values.map(_.plain)
 
   extension [A](self: Codec[Data.Required, Data.Object[Data.Optional[Data.Primitive]], A])
-    def parseObject(values: Vector[(String, String)]): Codec.Result[A] = 
+    def parseObject(values: Vector[(String, String)]): Codec.Result[A] =
       self.decode(Data.Object(values.map { case (key, value) => (key, Data.String(value)) }))
     def printObject(a: A): Vector[(String, String)] =
-      self.encode(a).values.mapFilter:
-              case (key, data: Data.Primitive) => (key, data.plain).some
-              case (_, Data.Null)              => none
+      self
+        .encode(a)
+        .values
+        .mapFilter:
+          case (key, data: Data.Primitive) => (key, data.plain).some
+          case (_, Data.Null)              => none
 
   extension [A](self: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A])
     def parseOptionalObject(value: Option[Vector[(String, String)]]): Codec.Result[A] =
       self.decode(value.fold(Data.Null): values =>
         Data.Object(values.map { case (key, value) => (key, Data.String(value)) }))
     def printOptionalObject(a: A): Option[Vector[(String, String)]] = self.encode(a) match
-        case Data.Null => none
-        case Data.Object(values) =>
-          values
-            .mapFilter:
-              case (key, data: Data.Primitive) => (key, data.plain).some
-              case (_, Data.Null)              => none
-            .some
+      case Data.Null => none
+      case Data.Object(values) =>
+        values
+          .mapFilter:
+            case (key, data: Data.Primitive) => (key, data.plain).some
+            case (_, Data.Null)              => none
+          .some
 
   given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Codec[F, O, *]] =
     new CodecInvariant[Codec[F, O, *]]:

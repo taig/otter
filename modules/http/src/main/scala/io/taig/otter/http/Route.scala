@@ -1,11 +1,19 @@
 package io.taig.otter.http
 
-import cats.Monad
 import cats.syntax.all.*
+import io.taig.otter.http.header.Accept
+import cats.MonadThrow
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
-  def apply(request: Http.Request)(using Monad[F]): F[Http.Response] =
-    endpoint.request.decode(request).traverse(implementation).map(endpoint.response.encode)
+  def apply(accept: Option[Accept.Result], request: Http.Request, onError: Throwable => F[Unit])(using
+      MonadThrow[F]
+  ): F[Http.Response] = endpoint.request
+    .decode(request)
+    .traverse(implementation)
+    .map(endpoint.response.encode(accept, _))
+  // .handleErrorWith: throwable =>
+  //   onError(throwable) *>
+  //     endpoint.response.failure.encode(accept, Request.Result.Success(())).pure[F]
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 

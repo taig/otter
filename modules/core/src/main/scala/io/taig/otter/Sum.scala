@@ -92,7 +92,7 @@ object Sum:
             Violations.namespaceNec(
               XPath.Root / discriminator.identifier,
               Violation(
-                Constraint.OneOf(branches.toNev.toNonEmptyList.map(branch => Data.String(branch.name))),
+                Constraint.OneOf(branches.toNev.toList.map(branch => Data.String(branch.name))),
                 actual = data.asObject
                   .map(_.values)
                   .orEmpty

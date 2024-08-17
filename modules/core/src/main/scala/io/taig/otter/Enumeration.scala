@@ -51,7 +51,7 @@ object Enumeration:
         mapping
           .unapply(a)
           .toValid(
-            Violations.rootNec(Violation(Constraint.OneOf(mapping.values.map(encode)), actual = data))
+            Violations.rootNec(Violation(Constraint.OneOf(mapping.values.toList.map(encode)), actual = data))
           )
     override def encode(b: B): Data.Primitive = of.encode(mapping(b))
 

@@ -10,8 +10,7 @@ import cats.effect.Concurrent
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying], onError: Throwable => F[Unit])
     extends Server[F]:
-  override def start(app: App[F]): Resource[F, String] =
-    f(toHttp4sApp(app, onError)).map(_.baseUri.show)
+  override def start(app: App[F]): Resource[F, String] = f(toHttp4sApp(app, onError)).map(_.baseUri.show)
 
 object Http4sServer:
   def apply[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying], onError: Throwable => F[Unit]): Server[F] =

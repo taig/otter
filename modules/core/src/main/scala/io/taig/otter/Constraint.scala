@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import java.util.regex.Pattern
-import cats.data.NonEmptyList
 import cats.syntax.all.*
 import cats.parse.Parser
 import cats.Eq
@@ -13,7 +12,7 @@ sealed abstract class Constraint extends SProduct, Serializable:
 
 object Constraint:
   final case class Type(name: String) extends Constraint
-  final case class OneOf(values: NonEmptyList[Data.Primitive]) extends Constraint
+  final case class OneOf(values: List[Data.Primitive]) extends Constraint
 
   sealed abstract class Collection extends Constraint
 

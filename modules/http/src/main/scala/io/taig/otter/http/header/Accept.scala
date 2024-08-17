@@ -6,18 +6,28 @@ import io.taig.otter.http.Parsers
 import cats.implicits.*
 import cats.Order
 import io.taig.otter.http.Dsl.*
+import cats.data.Ior
 
 opaque type Accept = NonEmptyList[Weighted[MediaRange]]
 
 object Accept:
+  type Result = Ior[NonEmptyList[MediaRange], NonEmptyList[MediaRange]]
+
   extension (self: Accept)
     inline def toNel: NonEmptyList[Weighted[MediaRange]] = self
 
-    def toSortedList: List[MediaRange] = toNel
-      // TODO the result should actually include a blocklist for q=0
-      .filter(_.weight =!= BigDecimal(0).some)
-      .sorted(sortOrdering)
-      .map(_.self)
+    def toResult: Accept.Result =
+      val blocklist = toNel.filter(_.weight === BigDecimal(0).some).map(_.self)
+
+      blocklist.toNel match
+        case None => Ior.right(toNel.sorted(resultOrder).map(_.self))
+        case Some(blocklist) =>
+          toNel
+            .filter(_.weight =!= BigDecimal(0).some)
+            .sorted(resultOrder.toOrdering)
+            .map(_.self)
+            .toNel
+            .fold(Ior.left(blocklist))(Ior.both(blocklist, _))
 
   def apply(values: NonEmptyList[Weighted[MediaRange]]): Accept = values
 
@@ -25,7 +35,7 @@ object Accept:
 
   val codec: Primitive.Required[Accept] = parser(name = "accept")(parse(_).toOption)(_.show)
 
-  private val sortOrdering: Ordering[Weighted[MediaRange]] =
+  private val resultOrder: Order[Weighted[MediaRange]] =
     given Order[MediaRange.Type] =
       case (MediaRange.Type.Any, MediaRange.Type.Any)                         => 0
       case (MediaRange.Type.Secondary(_, _), MediaRange.Type.Secondary(_, _)) => 0
@@ -37,6 +47,6 @@ object Accept:
 
     given Order[Parameters] = Order.by(_.toList.length)
 
-    given Order[MediaRange] = Order.by(mediaRange => (mediaRange.tpe, mediaRange.parameters))
+    given mediaRange: Order[MediaRange] = Order.by(mediaRange => (mediaRange.tpe, mediaRange.parameters))
 
-    summon[Order[Weighted[MediaRange]]].toOrdering.reverse
+    Order.reverse(Weighted.order(using mediaRange))

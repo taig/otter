@@ -15,7 +15,7 @@ import io.taig.otter.sample.Book
 import cats.implicits.*
 
 final class BooksRoutes(implementation: EndpointImplementation[IO], book: BookRepository):
-  val get: AuthenticatedRoute[IO, Unit, List[BookApiSchema.Summary]] = 
+  val get: AuthenticatedRoute[IO, Unit, List[BookApiSchema.Summary]] =
     implementation(endpoint.books.get()): (_, _) =>
       book.list.map(_.toList.map(_.to[BookApiSchema.Summary]))
 
