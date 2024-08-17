@@ -15,6 +15,10 @@ import io.taig.otter.sample.Book
 import cats.implicits.*
 
 final class BooksRoutes(implementation: EndpointImplementation[IO], book: BookRepository):
+  val get: AuthenticatedRoute[IO, Unit, List[BookApiSchema.Summary]] = 
+    implementation(endpoint.books.get()): (_, _) =>
+      book.list.map(_.toList.map(_.to[BookApiSchema.Summary]))
+
   val post: AuthenticatedRoute[IO, BookApiSchema.Create, Either[Error, BookApiSchema]] =
     implementation(endpoint.books.post()): (_, create) =>
       book
@@ -26,4 +30,4 @@ final class BooksRoutes(implementation: EndpointImplementation[IO], book: BookRe
 object BooksRoutes:
   def apply(implementation: EndpointImplementation[IO], book: BookRepository): Routes[IO] =
     val routes = new BooksRoutes(implementation, book)
-    Routes(routes.post)
+    Routes(routes.get, routes.post)

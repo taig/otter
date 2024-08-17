@@ -14,6 +14,8 @@ final class BookRepository(storage: AtomicCell[IO, Chain[Book]]):
         .as((books :+ book.toBook, book.toBook))
     .attemptNarrow[Error.Create]
 
+  val list: IO[Chain[Book]] = storage.get
+
 object BookRepository:
   object Error:
     enum Create extends Throwable:
