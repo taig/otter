@@ -11,9 +11,11 @@ final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I =
     .decode(request)
     .traverse(implementation)
     .map(endpoint.response.encode(accept, _))
-  // .handleErrorWith: throwable =>
-  //   onError(throwable) *>
-  //     endpoint.response.failure.encode(accept, Request.Result.Success(())).pure[F]
+    .handleErrorWith: throwable =>
+      onError(throwable) *> accept
+        .flatMap(endpoint.response.failure.encode(_, ()))
+        .getOrElse(endpoint.response.failure.encode(()))
+        .pure[F]
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 

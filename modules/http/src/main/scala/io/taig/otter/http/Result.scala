@@ -20,7 +20,8 @@ sealed abstract class Result[A]:
   final def imap[B](f: A => B)(g: B => A): Result[B] = new Result[B]:
     export self.{bodies, code, headers}
     override def decode(response: Http.Response): Codec.Result[Option[B]] = self.decode(response).map(_.map(f))
-    override def encode(accept: Option[Accept.Result], b: B): Option[Http.Response] = self.encode(accept, g(b))
+    override def encode(accept: Accept.Result, b: B): Option[Http.Response] = self.encode(accept, g(b))
+    override def encode(b: B): Http.Response = self.encode(g(b))
 
   final def to[B](using convert: Convert[A, B]): Result[B] = imap(convert.to)(convert.from)
 
@@ -34,7 +35,9 @@ sealed abstract class Result[A]:
 
   def decode(response: Http.Response): Codec.Result[Option[A]]
 
-  def encode(accept: Option[Accept.Result], a: A): Option[Http.Response]
+  def encode(accept: Accept.Result, a: A): Option[Http.Response]
+
+  def encode(a: A): Http.Response
 
 object Result:
   extension [A <: Matchable](self: Result[A])
@@ -58,23 +61,24 @@ object Result:
       override def decode(response: Http.Response): Codec.Result[Option[(A, B)]] =
         // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
         ???
-      override def encode(accept: Option[Accept.Result], ab: (A, B)): Option[Http.Response] = accept match
-        case Some(accept) =>
-          val (blocklist, acceptlist) = accept.fold(
-            left => (left.toList, List.empty),
-            right => (List.empty, right.toList),
-            (left, right) => (left.toList, right.toList)
-          )
+      override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] = // accept match
+        // case Some(accept) =>
+        val (blocklist, acceptlist) = accept.fold(
+          left => (left.toList, List.empty),
+          right => (List.empty, right.toList),
+          (left, right) => (left.toList, right.toList)
+        )
 
-          acceptlist.toNel
-            .getOrElse(NonEmptyList.one(MediaRange(MediaRange.Type.Any, Parameters.Empty)))
-            .collectFirstSome(_bodies.encode(_, blocklist, ab._2))
-            .map { case (mediaType, payload) =>
-              Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
-            }
-        case None =>
-          val (mediaType, payload) = _bodies.encodeFirst(ab._2)
-          Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload).some
+        acceptlist.toNel
+          .getOrElse(NonEmptyList.one(MediaRange(MediaRange.Type.Any, Parameters.Empty)))
+          .collectFirstSome(_bodies.encode(_, blocklist, ab._2))
+          .map { case (mediaType, payload) =>
+            Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
+          }
+      // case None =>
+      //   val (mediaType, payload) = _bodies.encodeFirst(ab._2)
+      //   Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload).some
+      override def encode(a: (A, B)): Http.Response = ???
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
     val _code = code
@@ -86,5 +90,6 @@ object Result:
       override def bodies: Option[Bodies[?]] = none
       override def decode(response: Http.Response): Codec.Result[Option[A]] =
         if code =!= response.code then none.valid else headers.decode(response.headers).map(_.some)
-      override def encode(accept: Option[Accept.Result], a: A): Option[Http.Response] =
-        Http.Response(code, headers.encode(a), Array.emptyByteArray).some
+      override def encode(accept: Accept.Result, a: A): Option[Http.Response] = encode(a).some
+      override def encode(a: A): Http.Response =
+        Http.Response(code, headers.encode(a), Array.emptyByteArray)

@@ -9,7 +9,7 @@ final case class Response[A](results: Results[A], error: Results[Error[Route.Err
 
   def decode(response: Http.Response): Codec.Result[A] = ??? // results.decode(response)
 
-  def encode(accept: Option[Accept.Result], result: Either[Route.Error, A]): Http.Response =
+  def encode(accept: Option[Accept.Result], result: Either[Error[Route.Error], A]): Http.Response =
     /*
     encode(accept, a).toRight:
       val mediaTypes = toNev.toVector
