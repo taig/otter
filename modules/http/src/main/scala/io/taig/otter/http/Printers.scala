@@ -34,3 +34,6 @@ private[http] object Printers:
       case (key, Some(value)) => s"$key=$value"
       case (key, None)        => key
     .mkString("&")
+
+  def apply[A: Show](error: Error[A]): String =
+    show"Error: ${error.tpe}" + error.violations.map(violations => show"\n$violations").orEmpty

@@ -2,8 +2,6 @@ package io.taig.otter.http
 
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
-import cats.data.NonEmptyList
-import cats.data.NonEmptyChain
 
 object ViolationsCodecs:
   object violations:
@@ -51,17 +49,6 @@ object ViolationsCodecs:
       val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, nested).to
 
       sum.untagged(branch("root", root) :+ branch("namespace", namespace)).to
-
-    def flattened: Dictionary.Required.Of[Data.Primitive, Violations] =
-      val violation = parser[Violation](name = "violation")(Violation.parse(_).toOption)(_.show)
-
-      dictionary
-        .nonEmptyList(xpath, violation)
-        .imap(_.groupMapNem { case (xpath, _) => xpath } { case (_, violation) => violation }) {
-          _.toNel.flatMap { case (xpath, violations) => violations.tupleLeft(xpath) }
-        }
-        .imap(_.map(NonEmptyChain.fromNonEmptyList))(_.map(_.toNonEmptyList))
-        .imap(Violations.from)(_.toNem)
 
     val printed: Primitive.Required[Violations] =
       parser(name = "violations")(Violations.parse(_).toOption)(_.show)

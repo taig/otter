@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.http.header.Accept
 
-final case class Response[A](results: Results[A], error: Results[Route.Error], failure: Result[Unit]):
+final case class Response[A](results: Results[A], error: Results[Error[Route.Error]], failure: Result[Unit]):
   final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
 
   def decode(response: Http.Response): Codec.Result[A] = ??? // results.decode(response)

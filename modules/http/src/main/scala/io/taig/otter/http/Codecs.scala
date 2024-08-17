@@ -241,14 +241,14 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final val textOrformDataViolations = text(violations.printed) + formData(violations.flattened)
+  final val textViolations: Bodies[Violations] = text(violations.printed).toBodies
 
   def response[A](results: Results[A], violations: Bodies[Violations]): Response[A] = Response(
     results,
     error =
       result(
         code.unsupportedMediaTypes,
-        violations.imap(Route.Error(Route.Error.Type.MediaTypesUnsupported, _))(_.violations)
+        violations.imap(Error(Route.Error.MediaTypesUnsupported, _))(???)
       )
       ???
     ,
@@ -262,12 +262,12 @@ trait Codecs extends Base.Codecs, Types:
   //   failure = result(code.internalServerError)
   // )
 
-  def response[A](results: Results[A]): Response[A] = response(results, textOrformDataViolations)
+  def response[A](results: Results[A]): Response[A] = response(results, textViolations)
 
   def response[A](result: Result[A], violations: Bodies[Violations]): Response[A] =
     response(result.toResults, violations)
 
-  def response[A](result: Result[A]): Response[A] = response(result, textOrformDataViolations)
+  def response[A](result: Result[A]): Response[A] = response(result, textViolations)
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
