@@ -85,3 +85,5 @@ private[http] object Parsers:
     Weighted(mediaRange.copy(parameters = parametersWithoutQValue), qValue)
 
   val accept: Parser[Accept] = weightedMediaRange.repSep(separator).map(Accept.apply)
+
+  val error: Parser[String] = ???

@@ -354,8 +354,8 @@ trait Codecs extends Types:
       EnumerationValues.Aux[B, B]
   ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
 
-  def constant[A: Eq](codec: => Codec.Required.Of[Data.Primitive, A], a: A): Enumeration.Required[a.type] =
-    enumeration(codec)(using Mapping.constant[A](a))
+  def constant[A: Eq](codec: => Codec.Required.Of[Data.Primitive, A], a: A): Enumeration.Required[Unit] =
+    enumeration(codec)(using Mapping.constant[A](a)).const(a)
 
   object dynamic:
     val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
@@ -366,7 +366,7 @@ trait Codecs extends Types:
     val number: Dynamic.Required.Of[Data.Number, Data.Number] = Base.Dynamic.Number
     val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  def singleton[A](a: A): Dynamic.Of[Data.Null.type, A] = dynamic.void.imap(_ => a)(_ => Data.Null)
+  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = dynamic.void.imap(_ => a)(_ => Data.Null)
 
   val xpath: Primitive.Required[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 
