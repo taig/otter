@@ -30,3 +30,43 @@ object Route:
     case ContentNegotiationFailed(violations: Violations)
     case MediaTypesUnsupported(violations: Violations)
     case ValidationViolations(violations: Violations)
+
+  object Error:
+    object ContentNegotiationFailed:
+      val Type: String = "contentNegotiationFailed"
+
+      def parse(value: String): Option[Route.Error.ContentNegotiationFailed] =
+        value.split("\n", 1) match
+          case Array(error, violations) =>
+            Parsers.error.parseAll(error).toOption.filter(_ === Type) *>
+              Violations.parse(violations).toOption.map(Route.Error.ContentNegotiationFailed.apply)
+          case _ => none
+
+      given Show[Route.Error.ContentNegotiationFailed] = error => show"""${Printers.error(name = Type)}
+                                                                        |${error.violations}""".stripMargin
+
+    object MediaTypesUnsupported:
+      val Type: String = "mediaTypeUnsupported"
+
+      def parse(value: String): Option[Route.Error.MediaTypesUnsupported] =
+        value.split("\n", 1) match
+          case Array(error, violations) =>
+            Parsers.error.parseAll(error).toOption.filter(_ === Type) *>
+              Violations.parse(violations).toOption.map(Route.Error.MediaTypesUnsupported.apply)
+          case _ => none
+
+      given Show[Route.Error.MediaTypesUnsupported] = error => show"""${Printers.error(name = Type)}
+                                                                        |${error.violations}""".stripMargin
+
+    object ValidationViolations:
+      val Type: String = "validationViolations"
+
+      def parse(value: String): Option[Route.Error.ValidationViolations] =
+        value.split("\n", 1) match
+          case Array(error, violations) =>
+            Parsers.error.parseAll(error).toOption.filter(_ === Type) *>
+              Violations.parse(violations).toOption.map(Route.Error.ValidationViolations.apply)
+          case _ => none
+
+      given Show[Route.Error.ValidationViolations] = error => show"""${Printers.error(name = Type)}
+                                                                        |${error.violations}""".stripMargin

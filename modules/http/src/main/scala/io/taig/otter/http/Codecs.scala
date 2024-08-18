@@ -255,55 +255,43 @@ trait Codecs extends Base.Codecs, Types:
         field("error", constant(string, tpe)) :* field(payload, codec)
       }
 
-      val x: Record.Required[Route.Error.ContentNegotiationFailed] = error(
+      val contentNegotiationFailed: Record.Required[Route.Error.ContentNegotiationFailed] = error(
         tpe = "contentNegotationFailed",
         payload = "violations",
         codec = violations.structured.to
       )
 
-      val y: Record.Required[Route.Error.MediaTypesUnsupported] = error(
+      val mediaTypesUnsupported: Record.Required[Route.Error.MediaTypesUnsupported] = error(
         tpe = "mediaTypesUnsupported",
         payload = "violations",
         codec = violations.structured.to
       )
 
-      val z: Record.Required[Route.Error.ValidationViolations] = error(
+      val validationViolations: Record.Required[Route.Error.ValidationViolations] = error(
         tpe = "validationViolations",
         payload = "violations",
         codec = violations.structured.to
       )
 
-      val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] = ???
-      val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] = ???
-      val validationViolations: Primitive.Required[Route.Error.ValidationViolations] = ???
+      object text:
+        val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
+          parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
+        val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] = 
+          parser(name = "mediaTypesUnsupported")(Route.Error.MediaTypesUnsupported.parse)(_.show)
+        val validationViolations: Primitive.Required[Route.Error.ValidationViolations] = 
+          parser(name = "validationViolations")(Route.Error.ValidationViolations.parse)(_.show)
 
-  // Are multiple results with the same code allowed?
-  // They probably should be as we can't really prevent it through user defined results vs
-  // framework defined results.
-  // So they act as untagged sums?
   def response[A](results: Results[A]): Response[A] = Response(
     results,
     error = (
-      result(code.notAcceptable, text(route.error.contentNegotiationFailed)) :+
-        result(code.unsupportedMediaTypes, text(route.error.mediaTypesUnsupported)) :+
-        result(code.unprocessableEntity, text(route.error.validationViolations))
+      result(code.notAcceptable, text(route.error.text.contentNegotiationFailed)) :+
+        result(code.unsupportedMediaTypes, text(route.error.text.mediaTypesUnsupported)) :+
+        result(code.unprocessableEntity, text(route.error.text.validationViolations))
     ).to,
     failure = result(code.internalServerError)
   )
-  // Response(
-  //   results,
-  //   mediaTypesUnsupported = result(code.unsupportedMediaTypes, violations),
-  //   contentNegotiationFailed = result(code.notAcceptable, violations),
-  //   validationViolations = result(code.unprocessableEntity, violations),
-  //   failure = result(code.internalServerError)
-  // )
 
-  // def response[A](results: Results[A]): Response[A] = ??? // response(results, ???)
-
-  def response[A](result: Result[A], violations: Bodies[Violations]): Response[A] = ???
-  // response(result.toResults, violations)
-
-  def response[A](result: Result[A]): Response[A] = response(result, textViolations)
+  final def response[A](result: Result[A]): Response[A] = response(result.toResults)
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*

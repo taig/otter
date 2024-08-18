@@ -36,11 +36,14 @@ trait Codecs extends Http.Types, Http.Codecs:
     (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(fallback))
   )
 
-  val textOrformDataOrJsonViolations: Bodies[Violations] =
-    textViolations + json(violations.nested)
-
-  override def response[A](results: Results[A]): Response[A] = response(results, textOrformDataOrJsonViolations)
-
-  override def response[A](result: Result[A]): Response[A] = response(result, textOrformDataOrJsonViolations)
+  override def response[A](results: Results[A]): Response[A] = Http.Response(
+    results,
+    error = (
+      result(code.notAcceptable, text(route.error.text.contentNegotiationFailed) + json(route.error.contentNegotiationFailed)) :+
+        result(code.unsupportedMediaTypes, text(route.error.text.mediaTypesUnsupported) + json(route.error.mediaTypesUnsupported)) :+
+        result(code.unprocessableEntity, text(route.error.text.validationViolations) + json(route.error.validationViolations))
+    ).to,
+    failure = result(code.internalServerError)
+  )
 
 object Codecs extends Codecs

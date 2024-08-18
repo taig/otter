@@ -35,4 +35,4 @@ private[http] object Printers:
       case (key, None)        => key
     .mkString("&")
 
-  def apply[A: Show](error: A): String = show"Error: $error"
+  def error(name: String): String = s"Error: $name"
