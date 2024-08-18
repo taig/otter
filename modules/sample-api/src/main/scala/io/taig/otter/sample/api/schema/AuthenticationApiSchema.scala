@@ -11,7 +11,10 @@ object AuthenticationApiSchema:
     case UserUnknown
     case Forbidden
 
-  val codec: Results[AuthenticationApiSchema.Error] = ???
+  val codec: Results[AuthenticationApiSchema.Error] =
+    route.error(tpe = "userUnknown").as(Error.UserUnknown) :+
+    route.error(tpe = "forbidden").as(Error.Forbidden)
+    ???
   // val userUnknown: Codec[AuthenticationApiSchema.Error.UserUnknown.type] =
   //   error("userUnknown", singleton(AuthenticationApiSchema.Error.UserUnknown))
   // val permissionDenied: Codec[AuthenticationApiSchema.Error.Forbidden.type] =

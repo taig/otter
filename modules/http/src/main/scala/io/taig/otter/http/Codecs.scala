@@ -243,50 +243,43 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final val textViolations: Bodies[Violations] = text(violations.text).toBodies
+  // TODO HOW TO MAKE THIS WORK IN AN ACCEPTABLE CROSS FORMAT FASHION ITS ANNOYING AS FUCK
+  // def error[F[+a] <: Data.Optional[a], O <: Data, A](
+  //       tpe: String,
+  //       payload: String,
+  //       codec: Base.Codec[F, O, A]
+  //   ): Record.Required.Of[Data.Primitive | F[O], A] = record {
+  //     field("error", constant(string, tpe)) :* field(payload, codec)
+  //   }
 
-  object route:
-    object error:
-      def apply[F[+a] <: Data.Optional[a], O <: Data, A](
-          tpe: String,
-          payload: String,
-          codec: Base.Codec[F, O, A]
-      ): Record.Required.Of[Data.Primitive | F[O], A] = record {
-        field("error", constant(string, tpe)) :* field(payload, codec)
-      }
+  // def error1[F[+a] <: Data.Optional[a], O <: Data, A](
+  //   code: Code,
+  //       tpe: String,
+  //       payload: String,
+  //       codec: Base.Codec[F, O, A]
+  //   ): Result[A] = result(
+  //     code,
+  //     record(field("error", constant(string, tpe)) :* field(payload, codec)) 
+  //   )
 
-      val contentNegotiationFailed: Record.Required[Route.Error.ContentNegotiationFailed] = error(
-        tpe = "contentNegotationFailed",
-        payload = "violations",
-        codec = violations.structured.to
-      )
+  object error:
+    object text:
+      val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
+        parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
+      val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] = 
+        parser(name = "mediaTypesUnsupported")(Route.Error.MediaTypesUnsupported.parse)(_.show)
+      val validationViolations: Primitive.Required[Route.Error.ValidationViolations] = 
+        parser(name = "validationViolations")(Route.Error.ValidationViolations.parse)(_.show)
 
-      val mediaTypesUnsupported: Record.Required[Route.Error.MediaTypesUnsupported] = error(
-        tpe = "mediaTypesUnsupported",
-        payload = "violations",
-        codec = violations.structured.to
-      )
+  final def response[A](results: Results[A], error: Results[Route.Error], failure: Result[Unit]): Response[A] =
+    Response(results,error,failure)
 
-      val validationViolations: Record.Required[Route.Error.ValidationViolations] = error(
-        tpe = "validationViolations",
-        payload = "violations",
-        codec = violations.structured.to
-      )
-
-      object text:
-        val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
-          parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
-        val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] = 
-          parser(name = "mediaTypesUnsupported")(Route.Error.MediaTypesUnsupported.parse)(_.show)
-        val validationViolations: Primitive.Required[Route.Error.ValidationViolations] = 
-          parser(name = "validationViolations")(Route.Error.ValidationViolations.parse)(_.show)
-
-  def response[A](results: Results[A]): Response[A] = Response(
+  def response[A](results: Results[A]): Response[A] = response(
     results,
     error = (
-      result(code.notAcceptable, text(route.error.text.contentNegotiationFailed)) :+
-        result(code.unsupportedMediaTypes, text(route.error.text.mediaTypesUnsupported)) :+
-        result(code.unprocessableEntity, text(route.error.text.validationViolations))
+      result(code.notAcceptable, text(error.text.contentNegotiationFailed)) :+
+        result(code.unsupportedMediaTypes, text(error.text.mediaTypesUnsupported)) :+
+        result(code.unprocessableEntity, text(error.text.validationViolations))
     ).to,
     failure = result(code.internalServerError)
   )
