@@ -5,7 +5,7 @@ import cats.syntax.all.*
 
 object ViolationsCodecs:
   object violations:
-    val nested: Sum.Untagged.Required[Violations] =
+    val structured: Sum.Untagged.Required[Violations] =
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
         record(field("reference", reference) :* field("exclusive", boolean)).to[Comparison[A]]
 
@@ -17,7 +17,7 @@ object ViolationsCodecs:
           (
             branch("maxItems", int.to[Constraint.Collection.MaxItems]) :+
               branch("maxItems", int.to[Constraint.Collection.MinItems]) :+
-              branch("uniqueItems", singleton(Constraint.Collection.UniqueItems))
+              branch.singleton("uniqueItems", Constraint.Collection.UniqueItems)
           ).to[Constraint.Collection]
         }.orElse {
           (
@@ -42,13 +42,13 @@ object ViolationsCodecs:
       val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.show)
 
       val root: Codec.Required[Violations.Root] = record(
-        field("values", dictionary.sortedMap(step, nested)) :*
+        field("values", dictionary.sortedMap(step, structured)) :*
           field("violations", collection.nonEmptyChain(violation))
       ).to
 
-      val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, nested).to
+      val namespace: Codec.Required[Violations.Namespace] = dictionary.nonEmptyMap(step, structured).to
 
       sum.untagged(branch("root", root) :+ branch("namespace", namespace)).to
 
-    val printed: Primitive.Required[Violations] =
+    val text: Primitive.Required[Violations] =
       parser(name = "violations")(Violations.parse(_).toOption)(_.show)

@@ -50,9 +50,7 @@ object Enumeration:
       .andThen: a =>
         mapping
           .unapply(a)
-          .toValid(
-            Violations.rootNec(Violation(Constraint.OneOf(mapping.values.toList.map(encode)), actual = data))
-          )
+          .toValid(Violations.rootNec(Violation.oneOf(mapping.values.toList.map(encode), actual = data)))
     override def encode(b: B): Data.Primitive = of.encode(mapping(b))
 
   given [F[+a] <: Data.Optional[a]]: CodecInvariant[Enumeration[F, *]] with

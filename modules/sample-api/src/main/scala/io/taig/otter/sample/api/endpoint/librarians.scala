@@ -21,8 +21,8 @@ object librarians:
 
         object Error:
           val results: Results[Error] =
-            val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] =
-              error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
+            val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] = ???
+            // error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
 
             result(code.unauthorized, json(emailOrPasswordIncorrect)).toResults.to
 

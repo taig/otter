@@ -10,6 +10,9 @@ import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 import io.taig.otter.http.header.Parameters
 import io.taig.otter.http.header.Accept
+import Base.Discriminator
+import io.taig.enumeration.ext.Mapping
+import cats.Show
 
 trait Codecs extends Base.Codecs, Types:
   self =>
@@ -152,7 +155,9 @@ trait Codecs extends Base.Codecs, Types:
     (charset, bytes) => new String(bytes, charset.getOrElse(fallback)).valid,
     (charset, text) => text.getBytes(charset.getOrElse(fallback))
   )
+
   val text: Body.Strict[String] = text(fallback = StandardCharsets.UTF_8)
+
   def text[A](
       codec: Codec.Required.Of[Data.Primitive, A],
       fallback: => Charset = StandardCharsets.UTF_8
@@ -241,17 +246,23 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  final val textViolations: Bodies[Violations] = text(violations.printed).toBodies
+  final val textViolations: Bodies[Violations] = text(violations.text).toBodies
+
+  // object error:
+  //   def apply[A <: Singleton: Show](a: A): Record.Required[Error[A]] = record {
+  //     field("error", singleton(a)) :*
+  //       field("violations", violations.structured.optional)
+  //   }.to
+
+  //   def text[A: Show](a: A): Primitive.Required[Error[A]] =
+  //     parser(name = "error")(Error.parse(_).toOption.filter(_.tpe === a.show).map(_.as(a)))(_.show)
+
+  object route:
+    def error() = ???
 
   def response[A](results: Results[A], violations: Bodies[Violations]): Response[A] = Response(
     results,
-    error =
-      result(
-        code.unsupportedMediaTypes,
-        violations.imap(Error(Route.Error.MediaTypesUnsupported, _))(???)
-      )
-      ???
-    ,
+    error = ???,
     failure = result(code.internalServerError)
   )
   // Response(
@@ -271,10 +282,5 @@ trait Codecs extends Base.Codecs, Types:
 
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
-
-  def error[F[+a] <: Data.Optional[a], O <: Data, A](
-      name: String,
-      codec: Base.Codec[F, O, A]
-  ): Sum.Nested.Required.Of[F[O], A] = sum.nested(branch(name, codec))
 
 object Codecs extends Codecs

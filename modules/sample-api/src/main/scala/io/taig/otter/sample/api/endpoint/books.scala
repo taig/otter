@@ -19,8 +19,8 @@ object books:
       case IsbnConflict
 
     object Error:
-      val results: Results[Error] =
-        result(code.conflict, json(singleton(IsbnConflict))).toResults.to
+      val results: Results[Error] = ???
+      // result(code.conflict, json(singleton(IsbnConflict))).toResults.to
 
     def apply(): AuthenticatedEndpoint[Role.Librarian, BookApiSchema.Create, Either[Error, BookApiSchema]] =
       endpoint(

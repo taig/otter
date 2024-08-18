@@ -3,6 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
 import cats.MonadThrow
+import cats.Show
+import io.taig.otter.Violations
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
   def apply(accept: Option[Accept.Result], request: Http.Request, onError: Throwable => F[Unit])(using
@@ -25,6 +27,6 @@ final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I =
 
 object Route:
   enum Error:
-    case ContentNegotiationFailed
-    case MediaTypesUnsupported
-    case ValidationViolations
+    case ContentNegotiationFailed(violations: Violations)
+    case MediaTypesUnsupported(violations: Violations)
+    case ValidationViolations(violations: Violations)

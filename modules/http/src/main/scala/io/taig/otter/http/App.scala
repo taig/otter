@@ -8,7 +8,7 @@ import io.taig.otter.Violations
 import io.taig.otter.XPath
 import io.taig.otter.Violation
 
-final case class App[F[_]](routes: Routes[F], error: Results[Error[App.Error]]):
+final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =
     val accept = request.headers
       .collectFirst { case (ci"Accept", value) => value }
@@ -22,16 +22,15 @@ final case class App[F[_]](routes: Routes[F], error: Results[Error[App.Error]]):
     routes.find(request.method, request.url) match
       case Some(route) =>
         accept
-          .leftMap(Error(tpe = Route.Error.ValidationViolations, _))
+          .leftMap(Route.Error.ValidationViolations.apply)
           .fold(
             route.endpoint.response.error.encode(_).pure[F],
             route(_, request, onError)
           )
       case None =>
-        val value = Error(App.Error.RouteNotFound)
         accept.toOption.flatten
-          .flatMap(error.encode(_, value))
-          .getOrElse(error.encode(value))
+          .flatMap(error.encode(_, App.Error.RouteNotFound))
+          .getOrElse(error.encode(App.Error.RouteNotFound))
           .pure[F]
 
 object App:

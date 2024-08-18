@@ -11,10 +11,10 @@ object AuthenticationApiSchema:
     case UserUnknown
     case Forbidden
 
-  val codec: Results[AuthenticationApiSchema.Error] =
-    val userUnknown: Codec[AuthenticationApiSchema.Error.UserUnknown.type] =
-      error("userUnknown", singleton(AuthenticationApiSchema.Error.UserUnknown))
-    val permissionDenied: Codec[AuthenticationApiSchema.Error.Forbidden.type] =
-      error("permissionDenied", singleton(AuthenticationApiSchema.Error.Forbidden))
+  val codec: Results[AuthenticationApiSchema.Error] = ???
+  // val userUnknown: Codec[AuthenticationApiSchema.Error.UserUnknown.type] =
+  //   error("userUnknown", singleton(AuthenticationApiSchema.Error.UserUnknown))
+  // val permissionDenied: Codec[AuthenticationApiSchema.Error.Forbidden.type] =
+  //   error("permissionDenied", singleton(AuthenticationApiSchema.Error.Forbidden))
 
-    (result(code.unauthorized, json(userUnknown)) :+ result(code.forbidden, json(permissionDenied))).to
+  // (result(code.unauthorized, json(userUnknown)) :+ result(code.forbidden, json(permissionDenied))).to

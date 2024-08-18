@@ -19,6 +19,8 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.enumeration.ext.EnumerationValues
 import java.util.regex.Pattern
 import java.util.UUID
+import cats.kernel.Eq
+import scala.annotation.targetName
 
 trait Codecs extends Types:
   self =>
@@ -125,8 +127,19 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  def branch[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Branch.Of[F[O], A] =
-    Base.Branch(name, codec)
+  object branch:
+    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
+        name: String,
+        codec: => Base.Codec[F, O, A]
+    ): Branch.Of[F[O], A] =
+      Base.Branch(name, codec)
+
+    def singleton[A: ValueOf](name: String): Branch.Of[Data.Null.type, A] =
+      Base.Branch(name, dynamic.void.imap(_ => valueOf[A])(_ => Data.Null))
+
+    @targetName("singletonOf")
+    def singleton[A](name: String, value: A & Singleton): Branch.Of[Data.Null.type, value.type] =
+      singleton[value.type](name)
 
   def field[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Field.Of[F[O], A] =
     Base.Field(name, codec)
@@ -341,6 +354,9 @@ trait Codecs extends Types:
       EnumerationValues.Aux[B, B]
   ): Enumeration.Required[B] = enumeration(codec)(using Mapping.enumeration(f))
 
+  def constant[A: Eq](codec: => Codec.Required.Of[Data.Primitive, A], a: A): Enumeration.Required[a.type] =
+    enumeration(codec)(using Mapping.constant[A](a))
+
   object dynamic:
     val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
     val value: Dynamic.Required.Of[Data.Value, Data.Value] = Base.Dynamic.Value
@@ -350,8 +366,7 @@ trait Codecs extends Types:
     val number: Dynamic.Required.Of[Data.Number, Data.Number] = Base.Dynamic.Number
     val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  def singleton[A <: Singleton](a: A): Dynamic.Required.Of[Data.Null.type, A] =
-    dynamic.void.imap(_ => a)(_ => Data.Null)
+  def singleton[A](a: A): Dynamic.Of[Data.Null.type, A] = dynamic.void.imap(_ => a)(_ => Data.Null)
 
   val xpath: Primitive.Required[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 
