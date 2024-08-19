@@ -248,23 +248,29 @@ trait Codecs extends Base.Codecs, Types:
   object error:
     def apply[F[+a] <: Data.Optional[a], O <: Data, A](
         tpe: String,
+        payload: String,
         codec: Base.Codec[F, O, A]
-    ): Record.Required.Of[F[O], A] = ???
+    ): Record.Required.Of[Data.Primitive | F[O], A] = record {
+      field("error", constant(string, tpe)) :* field(payload, codec)
+    }
 
-    def apply(tpe: String): Record.Required[Unit] = ???
+    def apply(tpe: String): Record.Required[Unit] = record(field("error", constant(string, tpe)))
 
     val contentNegotiationFailed = error(
       tpe = "contentNegotiationFailed",
+      payload = "violations",
       codec = violations.structured.to[Route.Error.ContentNegotiationFailed]
     )
 
     val mediaTypesUnsupported = error(
       tpe = "mediaTypesUnsupported",
+      payload = "violations",
       codec = violations.structured.to[Route.Error.MediaTypesUnsupported]
     )
 
     val validationViolations = error(
       tpe = "validationViolations",
+      payload = "violations",
       codec = violations.structured.to[Route.Error.ValidationViolations]
     )
 

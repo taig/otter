@@ -20,11 +20,10 @@ object librarians:
           case EmailOrPasswordIncorrect
 
         object Error:
-          val results: Results[Error] =
-            val emailOrPasswordIncorrect: Codec[EmailOrPasswordIncorrect.type] = ???
-            // error("emailOrPasswordIncorrect", singleton(EmailOrPasswordIncorrect))
-
-            result(code.unauthorized, json(emailOrPasswordIncorrect)).toResults.to
+          val results: Results[Error] = result(
+            code.unauthorized,
+            json(error("emailOrPasswordIncorrect").as(Error.EmailOrPasswordIncorrect))
+          ).toResults.to
 
         def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
           endpoint(

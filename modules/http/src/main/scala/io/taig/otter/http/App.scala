@@ -10,6 +10,7 @@ import io.taig.otter.Violation
 
 final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =
+    try {
     val accept = request.headers
       .collectFirst { case (ci"Accept", value) => value }
       .traverse: value =>
@@ -32,6 +33,11 @@ final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
           .flatMap(error.encode(_, App.Error.RouteNotFound))
           .getOrElse(error.encode(App.Error.RouteNotFound))
           .pure[F]
+    } catch {
+      case throwable: Throwable =>
+        throwable.printStackTrace()
+        ???
+    }
 
 object App:
   enum Error:

@@ -86,4 +86,4 @@ private[http] object Parsers:
 
   val accept: Parser[Accept] = weightedMediaRange.repSep(separator).map(Accept.apply)
 
-  val error: Parser[String] = ???
+  val error: Parser[String] = Parser.string("Error:") *> whitespace *> token

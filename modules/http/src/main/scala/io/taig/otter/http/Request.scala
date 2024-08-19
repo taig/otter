@@ -39,15 +39,12 @@ sealed abstract class Request[A]:
       override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, (A, B)] =
         val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
         val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
-        ???
-        // (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)) match
-        //   case (Request.Result.Success(a), Validated.Valid(b))       => Request.Result.Success((a, b))
-        //   case (Request.Result.Success(_), Validated.Invalid(right)) => Request.Result.ValidationViolations(right)
-        //   case (Request.Result.ValidationViolations(left), Validated.Valid(_)) =>
-        //     Request.Result.ValidationViolations(left)
-        //   case (Request.Result.ValidationViolations(left), Validated.Invalid(right)) =>
-        //     Request.Result.ValidationViolations(left.combine(right))
-        //   case (Request.Result.MediaTypesUnsupported(left), _) => Request.Result.ValidationViolations(left)
+        (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)) match
+          case (Right(a), Validated.Valid(b))       => Right((a, b))
+          case (Right(_), Validated.Invalid(right)) => Left(Route.Error.ValidationViolations(right))
+          case (Left(Route.Error.ValidationViolations(left)), Validated.Invalid(right)) =>
+            Left(Route.Error.ValidationViolations(left.combine(right)))
+          case (left@Left(_), _) => left.asInstanceOf[Either[Route.Error, (A, B)]]
       override def encode(charset: Option[Charset], ab: (A, B)): Http.Request =
         self.encode(charset, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
 
