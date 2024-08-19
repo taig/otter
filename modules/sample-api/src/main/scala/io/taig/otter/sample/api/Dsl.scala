@@ -14,5 +14,5 @@ object Dsl extends Csv.Dsl, Json.Dsl, Openapi.Dsl, Codecs:
       role,
       self
         .modifyRequest(request => (header.session.optional *: request).to[AuthenticationApiSchema[I]])
-        .modifyResponse(_.modifyResults(AuthenticationApiSchema.codec.orElse))
+        .modifyResponse(_.modifyResults(AuthenticationApiSchema.results.orElse))
     )

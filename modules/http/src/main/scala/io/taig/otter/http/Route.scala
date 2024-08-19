@@ -56,7 +56,7 @@ object Route:
           case _ => none
 
       given Show[Route.Error.MediaTypesUnsupported] = error => show"""${Printers.error(name = Type)}
-                                                                        |${error.violations}""".stripMargin
+                                                                     |${error.violations}""".stripMargin
 
     object ValidationViolations:
       val Type: String = "validationViolations"
@@ -69,4 +69,4 @@ object Route:
           case _ => none
 
       given Show[Route.Error.ValidationViolations] = error => show"""${Printers.error(name = Type)}
-                                                                        |${error.violations}""".stripMargin
+                                                                    |${error.violations}""".stripMargin

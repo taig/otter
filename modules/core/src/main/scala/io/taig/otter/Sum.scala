@@ -39,8 +39,7 @@ object Sum:
       override def decode(
           data: Option[Vector[(String, Data)]],
           discriminator: Discriminator.Nested
-      ): Codec.Result[Option[B]] =
-        self.decode(data, discriminator).map(_.map(f))
+      ): Codec.Result[Option[B]] = self.decode(data, discriminator).map(_.map(f))
       override def encode(b: B, discriminator: Discriminator.Nested): F[Data.Object[Data.String | O]] =
         self.encode(g(b), discriminator)
 

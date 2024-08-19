@@ -189,8 +189,10 @@ trait Codecs extends Base.Codecs, Types:
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
 
-  def app[F[_]](routes: Routes[F]): App[F] = ???
-  // App(routes, notFound = response(result(code.notFound)))
+  def app[F[_]](routes: Routes[F]): App[F] = App(
+    routes,
+    error = result(code.notFound).toResults.imap(_ => App.Error.RouteNotFound)(_ => ())
+  )
 
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
       merge: Merge[A, B]
@@ -243,36 +245,39 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A](method: Method, url: Url[A]): Request[A] =
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
-  // TODO HOW TO MAKE THIS WORK IN AN ACCEPTABLE CROSS FORMAT FASHION ITS ANNOYING AS FUCK
-  // def error[F[+a] <: Data.Optional[a], O <: Data, A](
-  //       tpe: String,
-  //       payload: String,
-  //       codec: Base.Codec[F, O, A]
-  //   ): Record.Required.Of[Data.Primitive | F[O], A] = record {
-  //     field("error", constant(string, tpe)) :* field(payload, codec)
-  //   }
-
-  // def error1[F[+a] <: Data.Optional[a], O <: Data, A](
-  //   code: Code,
-  //       tpe: String,
-  //       payload: String,
-  //       codec: Base.Codec[F, O, A]
-  //   ): Result[A] = result(
-  //     code,
-  //     record(field("error", constant(string, tpe)) :* field(payload, codec)) 
-  //   )
-
   object error:
+    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
+        tpe: String,
+        codec: Base.Codec[F, O, A]
+    ): Record.Required.Of[F[O], A] = ???
+
+    def apply(tpe: String): Record.Required[Unit] = ???
+
+    val contentNegotiationFailed = error(
+      tpe = "contentNegotiationFailed",
+      codec = violations.structured.to[Route.Error.ContentNegotiationFailed]
+    )
+
+    val mediaTypesUnsupported = error(
+      tpe = "mediaTypesUnsupported",
+      codec = violations.structured.to[Route.Error.MediaTypesUnsupported]
+    )
+
+    val validationViolations = error(
+      tpe = "validationViolations",
+      codec = violations.structured.to[Route.Error.ValidationViolations]
+    )
+
     object text:
       val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
         parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
-      val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] = 
+      val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] =
         parser(name = "mediaTypesUnsupported")(Route.Error.MediaTypesUnsupported.parse)(_.show)
-      val validationViolations: Primitive.Required[Route.Error.ValidationViolations] = 
+      val validationViolations: Primitive.Required[Route.Error.ValidationViolations] =
         parser(name = "validationViolations")(Route.Error.ValidationViolations.parse)(_.show)
 
   final def response[A](results: Results[A], error: Results[Route.Error], failure: Result[Unit]): Response[A] =
-    Response(results,error,failure)
+    Response(results, error, failure)
 
   def response[A](results: Results[A]): Response[A] = response(
     results,

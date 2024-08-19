@@ -5,7 +5,6 @@ import io.taig.otter.Codec
 import org.typelevel.ci.*
 import io.taig.otter.Convert
 import io.taig.otter.http.header.Accept
-import cats.data.Ior
 import cats.data.NonEmptyList
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.Parameters

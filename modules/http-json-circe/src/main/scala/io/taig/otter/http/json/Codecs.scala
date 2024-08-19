@@ -39,9 +39,16 @@ trait Codecs extends Http.Types, Http.Codecs:
   override def response[A](results: Results[A]): Response[A] = Http.Response(
     results,
     error = (
-      result(code.notAcceptable, text(route.error.text.contentNegotiationFailed) + json(route.error.contentNegotiationFailed)) :+
-        result(code.unsupportedMediaTypes, text(route.error.text.mediaTypesUnsupported) + json(route.error.mediaTypesUnsupported)) :+
-        result(code.unprocessableEntity, text(route.error.text.validationViolations) + json(route.error.validationViolations))
+      result(
+        code.notAcceptable,
+        text(error.text.contentNegotiationFailed) + json(error.contentNegotiationFailed)
+      ) :+ result(
+        code.unsupportedMediaTypes,
+        text(error.text.mediaTypesUnsupported) + json(error.mediaTypesUnsupported)
+      ) :+ result(
+        code.unprocessableEntity,
+        text(error.text.validationViolations) + json(error.validationViolations)
+      )
     ).to,
     failure = result(code.internalServerError)
   )
