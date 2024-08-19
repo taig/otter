@@ -8,8 +8,8 @@ final case class MediaRange(tpe: MediaRange.Type, parameters: Parameters):
 
 object MediaRange:
   enum Type:
-    case Secondary(tpe: String, subtype: String)
-    case Primary(tpe: String)
+    case Secondary(primary: String, secondary: String)
+    case Primary(primary: String)
     case Any
 
     override def toString: String = Printers(this)

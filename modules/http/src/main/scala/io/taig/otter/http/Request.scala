@@ -44,7 +44,7 @@ sealed abstract class Request[A]:
           case (Right(_), Validated.Invalid(right)) => Left(Route.Error.ValidationViolations(right))
           case (Left(Route.Error.ValidationViolations(left)), Validated.Invalid(right)) =>
             Left(Route.Error.ValidationViolations(left.combine(right)))
-          case (left@Left(_), _) => left.asInstanceOf[Either[Route.Error, (A, B)]]
+          case (left @ Left(_), _) => left.asInstanceOf[Either[Route.Error, (A, B)]]
       override def encode(charset: Option[Charset], ab: (A, B)): Http.Request =
         self.encode(charset, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
 

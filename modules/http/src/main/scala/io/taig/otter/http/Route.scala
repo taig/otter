@@ -5,19 +5,38 @@ import io.taig.otter.http.header.Accept
 import cats.MonadThrow
 import cats.Show
 import io.taig.otter.Violations
+import org.typelevel.ci.*
+import io.taig.otter.XPath
+import io.taig.otter.Violation
+import cats.data.Validated
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
-  def apply(accept: Option[Accept.Result], request: Http.Request, onError: Throwable => F[Unit])(using
-      MonadThrow[F]
-  ): F[Http.Response] = endpoint.request
-    .decode(request)
-    .traverse(implementation)
-    .map(endpoint.response.encode(accept, _))
-    .handleErrorWith: throwable =>
-      onError(throwable) *> accept
-        .flatMap(endpoint.response.failure.encode(_, ()))
-        .getOrElse(endpoint.response.failure.encode(()))
-        .pure[F]
+  def apply(request: Http.Request, onError: Throwable => F[Unit])(using
+      F: MonadThrow[F]
+  ): F[Http.Response] =
+    val accept = request.headers
+      .collectFirst { case (ci"Accept", value) => value }
+      .traverse: value =>
+        Accept
+          .parse(value)
+          .toValidated
+          .leftMap(_ => Violations.namespaceNec(XPath.Root / "header" / "Accept", Violation.tpe("rfc9110", value)))
+      .map(_.map(_.toResult))
+
+    accept
+      .match
+        case Validated.Valid(accept) =>
+          endpoint.request
+            .decode(request)
+            .traverse(implementation)
+            .map(endpoint.response.encode(accept, _))
+        case Validated.Invalid(violations) =>
+          endpoint.response.errors.encode(Route.Error.ContentNegotiationFailed(violations)).pure[F]
+      .handleErrorWith: throwable =>
+        onError(throwable) *> accept.toOption.flatten
+          .flatMap(endpoint.response.failure.encode(_, ()))
+          .getOrElse(endpoint.response.failure.encode(()))
+          .pure[F]
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 

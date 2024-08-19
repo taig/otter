@@ -68,11 +68,11 @@ object Bodies:
       else none.valid
     override def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])] =
       Option.when(body.mediaType.satisfies(accept) && reject.forall(reject => !body.mediaType.satisfies(reject))):
-        ???
-    // Option.when(body.mediaType.satisfies(accept)):
-    //   // TODO include used charset (if anything other than utf-8) in returned media type?
-    //   val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
-    //   (body.mediaType, body.encode(charset, a))
+        val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)
+        body match
+          case body: Body.Strict[?] => (body.mediaType, body.encode(charset, a))
+          case _: Body.Streaming[?] => ???
+        
     override def encodeFirst(a: A): (MediaType, Array[Byte]) = body match
       case body: Body.Strict[?] => (body.mediaType, body.encode(charset = none, a))
       case _: Body.Streaming[?] => ???

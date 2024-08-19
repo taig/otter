@@ -38,7 +38,7 @@ trait Codecs extends Http.Types, Http.Codecs:
 
   override def response[A](results: Results[A]): Response[A] = Http.Response(
     results,
-    error = (
+    errors = (
       result(
         code.notAcceptable,
         text(error.text.contentNegotiationFailed) + json(error.contentNegotiationFailed)

@@ -65,6 +65,5 @@ object Results:
     override def toNev: NonEmptyVector[Result[?]] = NonEmptyVector.one(result)
     override def decode(response: Http.Response): Ior[Violations, Option[A]] =
       result.decode(response).toIor
-    override def encode(accept: Accept.Result, a: A): Option[Http.Response] = ???
-    override def encode(a: A): Http.Response = ???
-    // override def encode(accept: Option[Accept.Result], a: A): Option[Http.Response] = result.encode(accept, a)
+    override def encode(accept: Accept.Result, a: A): Option[Http.Response] = result.encode(accept, a)
+    override def encode(a: A): Http.Response = result.encode(a)
