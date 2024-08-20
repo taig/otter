@@ -27,12 +27,12 @@ final class DataTest extends FunSuite:
 
     assertEquals(
       obtained = Data.Number(1.23f).show,
-      expected = "1.23"
+      expected = 1.23f.show
     )
 
     assertEquals(
       obtained = Data.Number(1.23d).show,
-      expected = "1.23"
+      expected = 1.23d.show
     )
 
   test("show: null"):
