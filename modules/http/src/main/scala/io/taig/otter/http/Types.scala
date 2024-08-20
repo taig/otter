@@ -5,6 +5,7 @@ import io.taig.otter.http as Http
 
 trait Types extends Base.Types:
   export Http.{
+    App,
     Bodies,
     Body,
     Endpoint,
@@ -17,7 +18,6 @@ trait Types extends Base.Types:
     Result,
     Results,
     Routes,
-    App,
     Segment,
     Url
   }

@@ -38,7 +38,7 @@ sealed abstract class Results[A]:
     override def encode(accept: Accept.Result, ab: Either[A, B]): Option[Http.Response] = ab match
       case Left(a)  => self.encode(accept, a)
       case Right(b) => results.encode(accept, b)
-    override def encode(a: Either[A, B]): Http.Response = ???
+    override def encode(a: Either[A, B]): Http.Response = a.fold(self.encode, results.encode)
 
   final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result.toResults)
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result.toResults.orElse(this)

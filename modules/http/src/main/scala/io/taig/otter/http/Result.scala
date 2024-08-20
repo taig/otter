@@ -58,10 +58,9 @@ object Result:
       override def headers: Headers[A] = _headers
       override def bodies: Option[Bodies[?]] = Some(_bodies)
       override def decode(response: Http.Response): Codec.Result[Option[(A, B)]] =
-        // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
-        ???
-      override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] = // accept match
-        // case Some(accept) =>
+        if code =!= response.code then none.valid
+        else ??? // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
+      override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] =
         val (blocklist, acceptlist) = accept.fold(
           left => (left.toList, List.empty),
           right => (List.empty, right.toList),
@@ -74,10 +73,9 @@ object Result:
           .map { case (mediaType, payload) =>
             Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
           }
-      // case None =>
-      //   val (mediaType, payload) = _bodies.encodeFirst(ab._2)
-      //   Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload).some
-      override def encode(a: (A, B)): Http.Response = ???
+      override def encode(ab: (A, B)): Http.Response =
+        val (mediaType, payload) = _bodies.encodeFirst(ab._2)
+        Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
     val _code = code

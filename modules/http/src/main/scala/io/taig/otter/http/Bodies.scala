@@ -18,6 +18,8 @@ sealed abstract class Bodies[A]:
     export self.toNev
     override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, B)]] =
       self.decode(contentType, body).map(_.map(_.map(f)))
+    override def decodeFirst(body: Array[Byte]): Codec.Result[(MediaType, B)] =
+      self.decodeFirst(body).map(_.map(f))
     override def encode(accept: MediaRange, reject: List[MediaRange], b: B): Option[(MediaType, Array[Byte])] =
       self.encode(accept, reject, g(b))
     override def encodeFirst(b: B): (MediaType, Array[Byte]) = self.encodeFirst(g(b))
@@ -31,6 +33,7 @@ sealed abstract class Bodies[A]:
       .andThen:
         case a @ Some(_) => a.valid
         case None        => bodies.decode(contentType, body)
+    override def decodeFirst(body: Array[Byte]): Codec.Result[(MediaType, A)] = self.decodeFirst(body)
     override def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])] =
       self.encode(accept, reject, a).orElse(bodies.encode(accept, reject, a))
     override def encodeFirst(a: A): (MediaType, Array[Byte]) = bodies.encodeFirst(a)
@@ -38,6 +41,8 @@ sealed abstract class Bodies[A]:
   final def +(body: Body[A]): Bodies[A] = or(body.toBodies)
 
   def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, A)]]
+
+  def decodeFirst(body: Array[Byte]): Codec.Result[(MediaType, A)]
 
   /** Use the first `Body` that matches the given `MediaRange` rules to encode the given `a`
     *
@@ -66,6 +71,9 @@ object Bodies:
             body.decode(charset, payload).tupleLeft(body.mediaType).map(_.some)
           case _: Body.Streaming[?] => ???
       else none.valid
+    override def decodeFirst(payload: Array[Byte]): Codec.Result[(MediaType, A)] = body match
+      case body: Body.Strict[?] => body.decode(charset = none, payload).tupleLeft(body.mediaType)
+      case _: Body.Streaming[?] => ???
     override def encode(accept: MediaRange, reject: List[MediaRange], a: A): Option[(MediaType, Array[Byte])] =
       Option.when(body.mediaType.satisfies(accept) && reject.forall(reject => !body.mediaType.satisfies(reject))):
         val charset = accept.parameters.get(ci"charset").reverse.collectFirstSome(loadCharset)

@@ -24,7 +24,7 @@ sealed abstract class Request[A]:
 
   final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:
     export self.{bodies, headers, method, url}
-    override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, B] =
+    override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, B] =
       self.decode(contentType, request).map(f)
     override def encode(charset: Option[Charset], b: B): Http.Request = self.encode(charset, g(b))
 
@@ -36,7 +36,7 @@ sealed abstract class Request[A]:
     new Request[(A, B)]:
       export self.{bodies, method, url}
       override def headers: Headers[?] = self.headers.zip(headers)
-      override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, (A, B)] =
+      override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
         val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
         val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
         (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)) match
@@ -54,20 +54,24 @@ sealed abstract class Request[A]:
   final def *:[B](header: Header[B])(using merge: Merge[B, A]): Request[merge.Out] =
     zip(header.toHeaders).imap(ab => merge(ab.swap))(merge.unapply(_).swap)
 
-  final def decode(request: Http.Request): Either[Route.Error, A] = request.headers
-    .collectFirst { case (ci"Content-Type", value) => value }
-    .toRight(Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("string", "null")))
-    .flatMap: contentType =>
-      MediaType
-        .parse(contentType)
-        .leftMap(_ =>
-          Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("mediaType", contentType))
-        )
-    .match
-      case Right(mediaType) => decode(mediaType, request)
-      case Left(violations) => ??? // Request.Result.MediaTypesUnsupported(violations)
+  final def decode(request: Http.Request): Either[Route.Error, A] =
+    if request.body.isEmpty
+    then decode(contentType = none, request)
+    else
+      request.headers
+        .collectFirst { case (ci"Content-Type", value) => value }
+        .toRight(Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("string", "null")))
+        .flatMap: contentType =>
+          MediaType
+            .parse(contentType)
+            .leftMap(_ =>
+              Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("mediaType", contentType))
+            )
+        .match
+          case Right(mediaType) => decode(mediaType.some, request)
+          case Left(violations) => Left(Route.Error.MediaTypesUnsupported(violations))
 
-  def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, A]
+  def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, A]
 
   def encode(charset: Option[Charset], a: A): Http.Request
 
@@ -84,22 +88,27 @@ object Request:
       override def headers: Headers[B] = _headers
       override def bodies: Option[Bodies[C]] = _bodies.some
       override def decode(
-          contentType: MediaType,
+          contentType: Option[MediaType],
           request: Http.Request
       ): Either[Route.Error, (A, B, C)] = (url.decode(request.url), headers.decode(request.headers)).tupled match
         case Validated.Valid((a, b)) =>
-          _bodies
-            .decode(contentType, request.body) match
-            case Validated.Valid(Some((_, c))) => (a, b, c).asRight
-            case Validated.Valid(None) =>
-              val supportedContentTypes = _bodies.toNev.toList.map(_.mediaType.show)
-              Route.Error
-                .MediaTypesUnsupported(
-                  Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
-                )
-                .asLeft
-            case Validated.Invalid(violations) =>
-              Route.Error.ValidationViolations("body" /: violations).asLeft
+          contentType match
+            case Some(contentType) =>
+              _bodies
+                .decode(contentType, request.body) match
+                case Validated.Valid(Some((_, c))) => (a, b, c).asRight
+                case Validated.Valid(None) =>
+                  val supportedContentTypes = _bodies.toNev.toList.map(_.mediaType.show)
+                  Route.Error
+                    .MediaTypesUnsupported(
+                      Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
+                    )
+                    .asLeft
+                case Validated.Invalid(violations) => Route.Error.ValidationViolations("body" /: violations).asLeft
+            case None =>
+              _bodies.decodeFirst(request.body) match
+                case Validated.Valid((_, c))       => (a, b, c).asRight
+                case Validated.Invalid(violations) => Route.Error.ValidationViolations("body" /: violations).asLeft
         case Validated.Invalid(violations) => Route.Error.ValidationViolations(violations).asLeft
       override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
@@ -115,7 +124,7 @@ object Request:
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
       override def bodies: Option[Bodies[?]] = none
-      override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, (A, B)] =
+      override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
         (url.decode(request.url), headers.decode(request.headers)).tupled.toEither
           .leftMap(Route.Error.ValidationViolations.apply)
       override def encode(charset: Option[Charset], abc: (A, B)): Http.Request = ???
