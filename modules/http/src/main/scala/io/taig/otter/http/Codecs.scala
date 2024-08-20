@@ -191,7 +191,7 @@ trait Codecs extends Base.Codecs, Types:
 
   def app[F[_]](routes: Routes[F]): App[F] = App(
     routes,
-    error = result(code.notFound, text(parser(name = "app.error")(App.Error.parse)(_.show))).toResults
+    error = result(code.notFound, text(error.text.routeNotFound)).toResults.to[App.Error]
   )
 
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using
@@ -256,25 +256,29 @@ trait Codecs extends Base.Codecs, Types:
 
     def apply(tpe: String): Record.Required[Unit] = record(field("error", constant(string, tpe)))
 
+    val routeNotFound = error(tpe = "app.routeNotFound").as(App.Error.RouteNotFound)
+
     val contentNegotiationFailed = error(
-      tpe = "contentNegotiationFailed",
+      tpe = "route.contentNegotiationFailed",
       payload = "violations",
       codec = violations.structured.to[Route.Error.ContentNegotiationFailed]
     )
 
     val mediaTypesUnsupported = error(
-      tpe = "mediaTypesUnsupported",
+      tpe = "route.mediaTypesUnsupported",
       payload = "violations",
       codec = violations.structured.to[Route.Error.MediaTypesUnsupported]
     )
 
     val validationViolations = error(
-      tpe = "validationViolations",
+      tpe = "route.validationViolations",
       payload = "violations",
       codec = violations.structured.to[Route.Error.ValidationViolations]
     )
 
     object text:
+      val routeNotFound: Primitive.Required[App.Error.RouteNotFound.type] =
+        parser(name = "routeNotFound")(App.Error.parse)(_.show)
       val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
         parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
       val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] =

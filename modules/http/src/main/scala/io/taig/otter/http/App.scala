@@ -4,7 +4,6 @@ import cats.syntax.all.*
 import cats.MonadThrow
 import org.typelevel.ci.*
 import io.taig.otter.http.header.Accept
-import io.taig.otter.Violations
 import cats.Show
 
 final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
@@ -33,7 +32,7 @@ object App:
     case RouteNotFound
 
   object Error:
-    def parse(value: String): Option[App.Error] =
+    def parse(value: String): Option[App.Error.RouteNotFound.type] =
       Parsers.error.parseAll(value).toOption.filter(_ === "routeNotFound").as(RouteNotFound)
 
     given Show[App.Error] =

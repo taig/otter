@@ -36,6 +36,14 @@ trait Codecs extends Http.Types, Http.Codecs:
     (charset, data) => printer.print(fromData(data)).getBytes(charset.getOrElse(fallback))
   )
 
+  override def app[F[_]](routes: Routes[F]): App[F] = App(
+    routes,
+    error = result(
+      code.notFound,
+      text(error.text.routeNotFound) + json(error.routeNotFound)
+    ).toResults.to[App.Error]
+  )
+
   override def response[A](results: Results[A]): Response[A] = Http.Response(
     results,
     errors = (
