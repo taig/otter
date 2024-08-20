@@ -26,6 +26,28 @@ sealed abstract class Bodies[A]:
 
   final def to[B](convert: Convert[A, B]): Bodies[B] = imap(convert.to)(convert.from)
 
+  final def orElse[B](bodies: Bodies[B]): Bodies[Either[A, B]] = new Bodies[Either[A, B]]:
+    override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
+    override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, Either[A, B])]] =
+      self
+        .decode(contentType, body)
+        .andThen:
+          case Some((mediaType, a)) => (mediaType, a.asLeft).some.valid
+          case None                 => bodies.decode(contentType, body).map(_.map(_.map(_.asRight)))
+    override def decodeFirst(body: Array[Byte]): Codec.Result[(MediaType, Either[A, B])] =
+      self.decodeFirst(body).map(_.map(_.asLeft))
+    override def encode(
+        accept: MediaRange,
+        reject: List[MediaRange],
+        ab: Either[A, B]
+    ): Option[(MediaType, Array[Byte])] =
+      ab.fold(self.encode(accept, reject, _), bodies.encode(accept, reject, _))
+    override def encodeFirst(ab: Either[A, B]): (MediaType, Array[Byte]) = ab.fold(self.encodeFirst, bodies.encodeFirst)
+
+  final def :+[B](body: Body[B]): Bodies[Either[A, B]] = orElse(body.toBodies)
+
+  final def +:[B](body: Body[B]): Bodies[Either[B, A]] = body.toBodies.orElse(this)
+
   final def or(bodies: Bodies[A]): Bodies[A] = new Bodies[A]:
     override def toNev: NonEmptyVector[Body[?]] = self.toNev.concatNev(bodies.toNev)
     override def decode(contentType: MediaType, body: Array[Byte]): Codec.Result[Option[(MediaType, A)]] = self

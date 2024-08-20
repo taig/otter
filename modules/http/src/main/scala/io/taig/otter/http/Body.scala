@@ -15,6 +15,10 @@ sealed abstract class Body[A]:
 
   def imap[B](f: A => B)(g: B => A): Body[B]
 
+  final def :+[B](body: Body[B]): Bodies[Either[A, B]] = toBodies :+ body
+
+  final def +:[B](body: Body[B]): Bodies[Either[B, A]] = body +: toBodies
+
   final def +(body: Body[A]): Bodies[A] = toBodies + body
 
   final def toBodies: Bodies[A] = Bodies(this)

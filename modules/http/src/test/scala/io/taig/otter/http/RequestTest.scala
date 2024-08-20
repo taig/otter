@@ -5,7 +5,6 @@ import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.nio.charset.StandardCharsets
-import cats.data.NonEmptyList
 
 final class RequestTest extends FunSuite:
   test("encode"):
@@ -15,7 +14,7 @@ final class RequestTest extends FunSuite:
         method = method.get,
         url = Http.Url(path = Vector("foo"), queries = Http.Queries.Empty),
         headers = Http.Headers.Empty,
-        body = Http.Payload.Empty
+        body = Array.emptyByteArray
       )
     )
 
@@ -26,7 +25,7 @@ final class RequestTest extends FunSuite:
         method = method.get,
         url = Http.Url(path = Vector("foo", "42"), queries = Vector("baz" -> "foobar".some)),
         headers = Http.Headers.Empty,
-        body = Http.Payload.Empty
+        body = Array.emptyByteArray
       )
     )
 
@@ -39,7 +38,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = obtained.body.data.toVector,
+      obtained = obtained.body.toVector,
       expected = Vector(1, 2, 3).map(_.toByte)
     )
 
@@ -52,7 +51,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = obtained.body.data.toVector,
+      obtained = obtained.body.toVector,
       expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
 
@@ -66,7 +65,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = obtained.body.data.toVector,
+      obtained = obtained.body.toVector,
       expected = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8).toVector
     )
 
@@ -83,7 +82,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = obtainedFormData.body.data.toVector,
+      obtained = obtainedFormData.body.toVector,
       expected = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8).toVector
     )
 
@@ -93,7 +92,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = obtainedText.body.data.toVector,
+      obtained = obtainedText.body.toVector,
       expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
 
@@ -104,10 +103,10 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url(path = Vector("foo"), queries = Http.Queries.Empty),
           headers = Http.Headers.Empty,
-          body = Http.Payload.Empty
+          body = Array.emptyByteArray
         )
       ),
-      expected = Request.Result.Success(())
+      expected = ().asRight
     )
 
     assertEquals(
@@ -117,10 +116,10 @@ final class RequestTest extends FunSuite:
             method = method.get,
             url = Http.Url(path = Vector("foo", "42"), queries = Vector("baz" -> "foobar".some)),
             headers = Http.Headers.Empty,
-            body = Http.Payload.Empty
+            body = Array.emptyByteArray
           )
         ),
-      expected = Request.Result.Success((42, "foobar"))
+      expected = (42, "foobar").asRight
     )
 
   test("decode: body (text & formData)"):
@@ -133,10 +132,10 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url.Empty,
           headers = Vector(ci"Content-Type" -> "application/x-www-form-urlencoded"),
-          body = Http.Payload("foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8))
+          body = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected = Request.Result.Success(("foobar", 42).asLeft)
+      expected = ("foobar", 42).asLeft.asRight
     )
 
     assertEquals(
@@ -145,10 +144,10 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url.Empty,
           headers = Vector(ci"Content-Type" -> "text/plain"),
-          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+          body = "foobar".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected = Request.Result.Success("foobar".asRight)
+      expected = "foobar".asRight.asRight
     )
 
     assertEquals(
@@ -157,12 +156,14 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url.Empty,
           headers = Http.Headers.Empty,
-          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+          body = "foobar".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected = Request.Result.MediaTypesUnsupported(
-        Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null")))
-      )
+      expected = Route.Error
+        .MediaTypesUnsupported(
+          Violations.rootNec(Violation.tpe("string", actual = "null"))
+        )
+        .asLeft
     )
 
     assertEquals(
@@ -171,17 +172,16 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url.Empty,
           headers = Vector(ci"Content-Type" -> "application/json"),
-          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+          body = "foobar".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected = Request.Result.MediaTypesUnsupported(
-        Violations.rootNec(
-          Violation(
-            Constraint.OneOf(NonEmptyList.of("application/x-www-form-urlencoded", "text/plain").map(Data.String.apply)),
-            actual = Data.String("application/json")
+      expected = Route.Error
+        .MediaTypesUnsupported(
+          Violations.rootNec(
+            Violation.oneOf(List("application/x-www-form-urlencoded", "text/plain"), "application/json")
           )
         )
-      )
+        .asLeft
     )
 
     assertEquals(
@@ -190,10 +190,9 @@ final class RequestTest extends FunSuite:
           method = method.get,
           url = Http.Url.Empty,
           headers = Vector(ci"Content-Type" -> "foobar"),
-          body = Http.Payload("foobar".getBytes(StandardCharsets.UTF_8))
+          body = "foobar".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected = Request.Result.MediaTypesUnsupported(
-        Violations.rootNec(Violation(Constraint.Type("mediaType"), actual = Data.String("foobar")))
-      )
+      expected =
+        Route.Error.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("mediaType", actual = "foobar"))).asLeft
     )

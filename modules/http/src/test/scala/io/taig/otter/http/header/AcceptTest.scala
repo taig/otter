@@ -4,6 +4,7 @@ import munit.FunSuite
 import cats.data.NonEmptyList
 import cats.syntax.all.*
 import org.typelevel.ci.*
+import cats.data.Ior
 
 final class AcceptTest extends FunSuite:
   test("parse"):
@@ -95,7 +96,7 @@ final class AcceptTest extends FunSuite:
       ).asRight
     )
 
-  test("toSortedList"):
+  test("toResult"):
     assertEquals(
       obtained = Accept(
         NonEmptyList.of(
@@ -131,13 +132,16 @@ final class AcceptTest extends FunSuite:
             weight = BigDecimal("0.1").some
           )
         )
-      ).toSortedList,
-      expected = List(
-        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.of(ci"foo" -> "bar")),
-        MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
-        MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
-        MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Parameters.Empty),
-        MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
-        MediaRange(tpe = MediaRange.Type.Any, parameters = Parameters.Empty)
+      ).toResult,
+      expected = Ior.Both(
+        NonEmptyList.of(MediaRange(tpe = MediaRange.Type.Secondary("text", "html"), parameters = Parameters.Empty)),
+        NonEmptyList.of(
+          MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.of(ci"foo" -> "bar")),
+          MediaRange(tpe = MediaRange.Type.Secondary("text", "plain"), parameters = Parameters.Empty),
+          MediaRange(tpe = MediaRange.Type.Primary("image"), parameters = Parameters.Empty),
+          MediaRange(tpe = MediaRange.Type.Primary("text"), parameters = Parameters.Empty),
+          MediaRange(tpe = MediaRange.Type.Secondary("application", "json"), parameters = Parameters.Empty),
+          MediaRange(tpe = MediaRange.Type.Any, parameters = Parameters.Empty)
+        )
       )
     )
