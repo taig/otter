@@ -2,7 +2,6 @@ package io.taig.otter
 
 import munit.FunSuite
 import cats.syntax.all.*
-import cats.data.NonEmptyList
 import java.util.regex.Pattern
 import munit.Location
 import munit.Compare
@@ -26,7 +25,7 @@ final class ConstraintTest extends FunSuite:
 
     assertEquals(
       obtained = Constraint.parse("oneOf [\"foobar\",42,true]"),
-      expected = Constraint.OneOf(NonEmptyList.of(Data.String("foobar"), Data.Number(42), Data.Boolean(true))).asRight
+      expected = Constraint.OneOf(List(Data.String("foobar"), Data.Number(42), Data.Boolean(true))).asRight
     )
 
     assertEquals(

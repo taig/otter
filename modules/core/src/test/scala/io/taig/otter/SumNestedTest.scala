@@ -3,7 +3,6 @@ package io.taig.otter
 import munit.FunSuite
 import io.taig.otter.Dsl.*
 import cats.syntax.all.*
-import cats.data.NonEmptyList
 
 final class SumNestedTest extends FunSuite:
   test("encode"):
@@ -82,10 +81,7 @@ final class SumNestedTest extends FunSuite:
       expected = Violations
         .namespaceNec(
           XPath.Root / Discriminator.Nested.Default.identifier,
-          Violation(
-            Constraint.OneOf(NonEmptyList.of("foo", "bar").map(Data.String.apply)),
-            actual = Data.String("baz")
-          )
+          Violation.oneOf(List("foo", "bar"), "baz")
         )
         .invalid
     )

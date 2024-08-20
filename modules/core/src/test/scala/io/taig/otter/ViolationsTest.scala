@@ -1,17 +1,11 @@
 package io.taig.otter
 
 import munit.FunSuite
-import cats.data.NonEmptyList
 import cats.syntax.all.*
 
 final class ViolationsTest extends FunSuite:
   val violations = Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))) |+|
-    Violations.rootNec(
-      Violation(
-        Constraint.OneOf(NonEmptyList.of("foo", "bar", "baz").map(Data.String.apply)),
-        actual = Data.String("foobar")
-      )
-    ) |+|
+    Violations.rootNec(Violation.oneOf(List("foo", "bar", "baz"), "foobar")) |+|
     Violations.namespaceNec(
       XPath.Root / "foo",
       Violation(Constraint.Primitive.MinLength(reference = 3), actual = Data.Number(1))
