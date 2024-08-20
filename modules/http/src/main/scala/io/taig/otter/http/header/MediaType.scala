@@ -12,8 +12,8 @@ final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
   // TODO respect parameters (?)
   def satisfies(mediaRange: MediaRange): Boolean = mediaRange.tpe match
     case MediaRange.Type.Secondary(primary, secondary) => primary === tpe.primary && secondary === tpe.secondary
-    case MediaRange.Type.Primary(primary) => primary === tpe.primary
-    case MediaRange.Type.Any => true
+    case MediaRange.Type.Primary(primary)              => primary === tpe.primary
+    case MediaRange.Type.Any                           => true
 
   override def toString: String = Printers(this)
 

@@ -115,9 +115,9 @@ object Request:
       override def url: Url[A] = _url
       override def headers: Headers[B] = _headers
       override def bodies: Option[Bodies[?]] = none
-      override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, (A, B)] = ???
-      // (url.decode(request.url), headers.decode(request.headers)).tupled
-      //   .fold(Request.Result.ValidationViolations.apply, Request.Result.Success.apply)
+      override def decode(contentType: MediaType, request: Http.Request): Either[Route.Error, (A, B)] =
+        (url.decode(request.url), headers.decode(request.headers)).tupled.toEither
+          .leftMap(Route.Error.ValidationViolations.apply)
       override def encode(charset: Option[Charset], abc: (A, B)): Http.Request = ???
       // val (mediaType, payload) = _bodies.encode(charset, abc._3)
       // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)

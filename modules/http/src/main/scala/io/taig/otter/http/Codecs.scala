@@ -191,7 +191,7 @@ trait Codecs extends Base.Codecs, Types:
 
   def app[F[_]](routes: Routes[F]): App[F] = App(
     routes,
-    error = result(code.notFound).toResults.imap(_ => App.Error.RouteNotFound)(_ => ())
+    error = result(code.notFound, text(parser(name = "app.error")(App.Error.parse)(_.show))).toResults
   )
 
   final def result[A, B](code: Code, headers: Headers[A], bodies: Bodies[B])(using

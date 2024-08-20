@@ -72,7 +72,7 @@ object Bodies:
         body match
           case body: Body.Strict[?] => (body.mediaType, body.encode(charset, a))
           case _: Body.Streaming[?] => ???
-        
+
     override def encodeFirst(a: A): (MediaType, Array[Byte]) = body match
       case body: Body.Strict[?] => (body.mediaType, body.encode(charset = none, a))
       case _: Body.Streaming[?] => ???
