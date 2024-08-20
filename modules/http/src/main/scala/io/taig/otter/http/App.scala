@@ -19,7 +19,8 @@ final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
 
           accept
             .flatMap(error.encode(_, App.Error.RouteNotFound))
-            .getOrElse(error.encode(App.Error.RouteNotFound))
+            // TODO charset
+            .getOrElse(error.encode(charset = ???, App.Error.RouteNotFound))
             .pure[F]
     } catch {
       case throwable: Throwable =>

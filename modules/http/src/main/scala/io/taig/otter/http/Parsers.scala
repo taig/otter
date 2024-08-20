@@ -34,7 +34,7 @@ private[http] object Parsers:
     (value >= 'a' && value <= 'z') ||
     (value >= 'A' && value <= 'Z') ||
     (value >= '0' && value <= '9') ||
-    value == '.'
+    value == '.' || value == '-' || value == '_'
   }
 
   val string: Parser[String] = Json.delimited.parser
@@ -47,6 +47,7 @@ private[http] object Parsers:
   val mediaType: Parser[MediaType] =
     val tpe = ((token <* slash) ~ token).map(MediaType.Type.apply)
     (tpe ~ parameters).map(MediaType.apply)
+    // (tpe <* Parser.anyChar.rep0).map(MediaType(_, Parameters.Empty))
 
   val mediaRange: Parser[MediaRange] =
     val tpe: Parser[MediaRange.Type] =

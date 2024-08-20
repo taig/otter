@@ -6,6 +6,7 @@ import io.taig.otter.Violations
 import cats.data.Ior
 import io.taig.otter.Convert
 import io.taig.otter.http.header.Accept
+import java.nio.charset.Charset
 
 sealed abstract class Results[A]:
   self =>
@@ -16,7 +17,7 @@ sealed abstract class Results[A]:
     override def decode(response: Http.Response): Ior[Violations, Option[B]] =
       self.decode(response).map(_.map(f))
     override def encode(accept: Accept.Result, b: B): Option[Http.Response] = self.encode(accept, g(b))
-    override def encode(b: B): Http.Response = self.encode(g(b))
+    override def encode(charset: Option[Charset], b: B): Http.Response = self.encode(charset, g(b))
 
   final infix def orElse[B](results: Results[B]): Results[Either[A, B]] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
@@ -38,7 +39,8 @@ sealed abstract class Results[A]:
     override def encode(accept: Accept.Result, ab: Either[A, B]): Option[Http.Response] = ab match
       case Left(a)  => self.encode(accept, a)
       case Right(b) => results.encode(accept, b)
-    override def encode(a: Either[A, B]): Http.Response = a.fold(self.encode, results.encode)
+    override def encode(charset: Option[Charset], a: Either[A, B]): Http.Response =
+      a.fold(self.encode(charset, _), results.encode(charset, _))
 
   final def :+[B](result: Result[B]): Results[Either[A, B]] = orElse(result.toResults)
   final def +:[B](result: Result[B]): Results[Either[B, A]] = result.toResults.orElse(this)
@@ -49,7 +51,7 @@ sealed abstract class Results[A]:
 
   def encode(accept: Accept.Result, a: A): Option[Http.Response]
 
-  def encode(a: A): Http.Response
+  def encode(charset: Option[Charset], a: A): Http.Response
 
 object Results:
   extension [A <: Matchable](self: Results[A])
@@ -66,4 +68,4 @@ object Results:
     override def decode(response: Http.Response): Ior[Violations, Option[A]] =
       result.decode(response).toIor
     override def encode(accept: Accept.Result, a: A): Option[Http.Response] = result.encode(accept, a)
-    override def encode(a: A): Http.Response = result.encode(a)
+    override def encode(charset: Option[Charset], a: A): Http.Response = result.encode(charset, a)

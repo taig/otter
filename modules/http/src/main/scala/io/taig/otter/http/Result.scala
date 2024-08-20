@@ -8,6 +8,7 @@ import io.taig.otter.http.header.Accept
 import cats.data.NonEmptyList
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.Parameters
+import java.nio.charset.Charset
 
 sealed abstract class Result[A]:
   self =>
@@ -20,7 +21,7 @@ sealed abstract class Result[A]:
     export self.{bodies, code, headers}
     override def decode(response: Http.Response): Codec.Result[Option[B]] = self.decode(response).map(_.map(f))
     override def encode(accept: Accept.Result, b: B): Option[Http.Response] = self.encode(accept, g(b))
-    override def encode(b: B): Http.Response = self.encode(g(b))
+    override def encode(charset: Option[Charset], b: B): Http.Response = self.encode(charset, g(b))
 
   final def to[B](using convert: Convert[A, B]): Result[B] = imap(convert.to)(convert.from)
 
@@ -36,7 +37,7 @@ sealed abstract class Result[A]:
 
   def encode(accept: Accept.Result, a: A): Option[Http.Response]
 
-  def encode(a: A): Http.Response
+  def encode(charset: Option[Charset], a: A): Http.Response
 
 object Result:
   extension [A <: Matchable](self: Result[A])
@@ -73,8 +74,8 @@ object Result:
           .map { case (mediaType, payload) =>
             Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
           }
-      override def encode(ab: (A, B)): Http.Response =
-        val (mediaType, payload) = _bodies.encodeFirst(ab._2)
+      override def encode(charset: Option[Charset], ab: (A, B)): Http.Response =
+        val (mediaType, payload) = _bodies.encodeFirst(charset, ab._2)
         Http.Response(code, (ci"Content-Type", mediaType.show) +: headers.encode(ab._1), payload)
 
   def apply[A](code: Code, headers: Headers[A]): Result[A] =
@@ -87,6 +88,6 @@ object Result:
       override def bodies: Option[Bodies[?]] = none
       override def decode(response: Http.Response): Codec.Result[Option[A]] =
         if code =!= response.code then none.valid else headers.decode(response.headers).map(_.some)
-      override def encode(accept: Accept.Result, a: A): Option[Http.Response] = encode(a).some
-      override def encode(a: A): Http.Response =
+      override def encode(accept: Accept.Result, a: A): Option[Http.Response] = encode(charset = none, a).some
+      override def encode(charset: Option[Charset], a: A): Http.Response =
         Http.Response(code, headers.encode(a), Array.emptyByteArray)

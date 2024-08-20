@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.Violations
-import java.nio.charset.Charset
 import org.typelevel.ci.*
 import io.taig.otter.Violation
 import io.taig.otter.filterKeys
@@ -26,7 +25,7 @@ sealed abstract class Request[A]:
     export self.{bodies, headers, method, url}
     override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, B] =
       self.decode(contentType, request).map(f)
-    override def encode(charset: Option[Charset], b: B): Http.Request = self.encode(charset, g(b))
+    override def encode(contentType: Option[MediaType], b: B): Http.Request = self.encode(contentType, g(b))
 
   final def to[B](using convert: Convert[A, B]): Request[B] = imap(convert.to)(convert.from)
 
@@ -45,8 +44,8 @@ sealed abstract class Request[A]:
           case (Left(Route.Error.ValidationViolations(left)), Validated.Invalid(right)) =>
             Left(Route.Error.ValidationViolations(left.combine(right)))
           case (left @ Left(_), _) => left.asInstanceOf[Either[Route.Error, (A, B)]]
-      override def encode(charset: Option[Charset], ab: (A, B)): Http.Request =
-        self.encode(charset, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
+      override def encode(contentType: Option[MediaType], ab: (A, B)): Http.Request =
+        self.encode(contentType, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
 
   final def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[merge.Out] =
     zip(header.toHeaders).imap(merge.apply)(merge.unapply)
@@ -73,7 +72,7 @@ sealed abstract class Request[A]:
 
   def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, A]
 
-  def encode(charset: Option[Charset], a: A): Http.Request
+  def encode(contentType: Option[MediaType], a: A): Http.Request
 
 object Request:
   def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Bodies[C]): Request[(A, B, C)] =
@@ -110,9 +109,11 @@ object Request:
                 case Validated.Valid((_, c))       => (a, b, c).asRight
                 case Validated.Invalid(violations) => Route.Error.ValidationViolations("body" /: violations).asLeft
         case Validated.Invalid(violations) => Route.Error.ValidationViolations(violations).asLeft
-      override def encode(charset: Option[Charset], abc: (A, B, C)): Http.Request = ???
-      // val (mediaType, payload) = _bodies.encode(charset, abc._3)
-      // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
+      override def encode(contentType: Option[MediaType], abc: (A, B, C)): Http.Request =
+        val (mediaType, payload) = contentType
+          .flatMap(contentType => _bodies.encode(contentType, abc._3).tupleLeft(contentType))
+          .getOrElse(_bodies.encodeFirst(charset = none, abc._3))
+        Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.show) +: headers.encode(abc._2), payload)
 
   def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Request[(A, B)] =
     val _method = method
@@ -127,6 +128,5 @@ object Request:
       override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
         (url.decode(request.url), headers.decode(request.headers)).tupled.toEither
           .leftMap(Route.Error.ValidationViolations.apply)
-      override def encode(charset: Option[Charset], abc: (A, B)): Http.Request = ???
-      // val (mediaType, payload) = _bodies.encode(charset, abc._3)
-      // Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.print) +: headers.encode(abc._2), payload)
+      override def encode(contentType: Option[MediaType], ab: (A, B)): Http.Request =
+        Http.Request(method, url.encode(ab._1), headers.encode(ab._2), Array.emptyByteArray)

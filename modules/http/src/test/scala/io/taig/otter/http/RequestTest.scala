@@ -5,11 +5,12 @@ import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
 import org.typelevel.ci.*
 import java.nio.charset.StandardCharsets
+import io.taig.otter.XPath
 
 final class RequestTest extends FunSuite:
   test("encode"):
     assertEquals(
-      obtained = request(method.get, __ / "foo").encode(charset = none, ()),
+      obtained = request(method.get, __ / "foo").encode(contentType = none, ()),
       expected = Http.Request(
         method = method.get,
         url = Http.Url(path = Vector("foo"), queries = Http.Queries.Empty),
@@ -20,7 +21,7 @@ final class RequestTest extends FunSuite:
 
     assertEquals(
       obtained = request(method.get, __ / "foo" / segment("bar", int) & query("baz", string))
-        .encode(charset = none, (42, "foobar")),
+        .encode(contentType = none, (42, "foobar")),
       expected = Http.Request(
         method = method.get,
         url = Http.Url(path = Vector("foo", "42"), queries = Vector("baz" -> "foobar".some)),
@@ -30,7 +31,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (binary)"):
-    val obtained = request(method.get, __, binary).encode(charset = none, Array(1, 2, 3).map(_.toByte))
+    val obtained = request(method.get, __, binary).encode(contentType = none, Array(1, 2, 3).map(_.toByte))
 
     assertEquals(
       obtained = obtained.headers,
@@ -43,7 +44,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (text)"):
-    val obtained = request(method.get, __, text(string)).encode(charset = none, "foobar")
+    val obtained = request(method.get, __, text(string)).encode(contentType = none, "foobar")
 
     assertEquals(
       obtained = obtained.headers,
@@ -57,7 +58,7 @@ final class RequestTest extends FunSuite:
 
   test("encode: body (formData)"):
     val codec = record(field("foo", string) :* field("bar", int))
-    val obtained = request(method.get, __, formData(codec)).encode(charset = none, ("foobar", 42))
+    val obtained = request(method.get, __, formData(codec)).encode(contentType = none, ("foobar", 42))
 
     assertEquals(
       obtained = obtained.headers,
@@ -69,12 +70,12 @@ final class RequestTest extends FunSuite:
       expected = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8).toVector
     )
 
-  test("encode: body (text & formData)"):
+  test("encode: body (text orElse formData)"):
     val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
     val codec = request(method.get, __, bodies)
 
-    val obtainedFormData = codec.encode(charset = none, Left(("foobar", 42)))
-    val obtainedText = codec.encode(charset = none, Right("foobar"))
+    val obtainedFormData = codec.encode(contentType = none, Left(("foobar", 42)))
+    val obtainedText = codec.encode(contentType = none, Right("foobar"))
 
     assertEquals(
       obtained = obtainedFormData.headers,
@@ -84,6 +85,33 @@ final class RequestTest extends FunSuite:
     assertEquals(
       obtained = obtainedFormData.body.toVector,
       expected = "foo=foobar&bar=42".getBytes(StandardCharsets.UTF_8).toVector
+    )
+
+    assertEquals(
+      obtained = obtainedText.headers,
+      expected = Vector(ci"Content-Type" -> "text/plain")
+    )
+
+    assertEquals(
+      obtained = obtainedText.body.toVector,
+      expected = "foobar".getBytes(StandardCharsets.UTF_8).toVector
+    )
+
+  test("encode: body (text or formData)"):
+    val bodies = formData(record(field("foo", string))) + text(string)
+    val codec = request(method.get, __, bodies)
+
+    val obtainedFormData = codec.encode(contentType = mediaType.application.wwwFormUrlencoded.some, "foobar")
+    val obtainedText = codec.encode(contentType = mediaType.text.plain.some, "foobar")
+
+    assertEquals(
+      obtained = obtainedFormData.headers,
+      expected = Vector(ci"Content-Type" -> "application/x-www-form-urlencoded")
+    )
+
+    assertEquals(
+      obtained = obtainedFormData.body.toVector,
+      expected = "foo=foobar".getBytes(StandardCharsets.UTF_8).toVector
     )
 
     assertEquals(
@@ -122,7 +150,7 @@ final class RequestTest extends FunSuite:
       expected = (42, "foobar").asRight
     )
 
-  test("decode: body (text & formData)"):
+  test("decode: body (text orElse formData)"):
     val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
     val codec = request(method.get, __, bodies)
 
@@ -161,7 +189,7 @@ final class RequestTest extends FunSuite:
       ),
       expected = Route.Error
         .MediaTypesUnsupported(
-          Violations.rootNec(Violation.tpe("string", actual = "null"))
+          Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("string", actual = "null"))
         )
         .asLeft
     )
@@ -193,6 +221,9 @@ final class RequestTest extends FunSuite:
           body = "foobar".getBytes(StandardCharsets.UTF_8)
         )
       ),
-      expected =
-        Route.Error.MediaTypesUnsupported(Violations.rootNec(Violation.tpe("mediaType", actual = "foobar"))).asLeft
+      expected = Route.Error
+        .MediaTypesUnsupported(
+          Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("mediaType", actual = "foobar"))
+        )
+        .asLeft
     )

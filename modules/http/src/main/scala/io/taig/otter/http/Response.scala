@@ -17,18 +17,24 @@ final case class Response[A](results: Results[A], errors: Results[Route.Error], 
     case Right(a) =>
       accept match
         case Some(accept) => results.encode(accept, a).getOrElse(contentNegotationFailed(results, accept))
-        case None         => results.encode(a)
+        case None         =>
+          // TODO should be try to infer the charset from the Content-Type header?
+          results.encode(charset = none, a)
     case Left(error) =>
       accept match
         case Some(accept) => errors.encode(accept, error).getOrElse(contentNegotationFailed(errors, accept))
-        case None         => errors.encode(error)
+        case None         =>
+          // TODO should be try to infer the charset from the Content-Type header?
+          errors.encode(charset = none, error)
 
   private def contentNegotationFailed(results: Results[?], accept: Accept.Result): Http.Response =
-    val mediaTypes = results.toNev.toList.flatMap(_.bodies.toList).flatMap(_.toNev.toList).map(_.mediaType).map(_.show)
+    val mediaTypes =
+      results.toNev.toList.flatMap(_.bodies.toList).flatMap(_.toNev.toList).map(_.mediaType).map(_.show).distinct
     val actual = accept match
       case Ior.Left(_)             => "null"
       case Ior.Right(mediaTypes)   => mediaTypes.map(_.show).mkString_(",")
       case Ior.Both(_, mediaTypes) => mediaTypes.map(_.show).mkString_(",")
 
     val violations = Violations.namespaceNec(XPath.Root / "header" / "Accept", Violation.oneOf(mediaTypes, actual))
-    errors.encode(Route.Error.ContentNegotiationFailed(violations))
+    // TODO should be try to infer the charset from Accept and Content-Type headers?
+    errors.encode(charset = none, Route.Error.ContentNegotiationFailed(violations))

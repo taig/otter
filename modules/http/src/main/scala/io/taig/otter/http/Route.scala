@@ -23,20 +23,21 @@ final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I =
           .leftMap(_ => Violations.namespaceNec(XPath.Root / "header" / "Accept", Violation.tpe("rfc9110", value)))
       .map(_.map(_.toResult))
 
-    accept
-      .match
-        case Validated.Valid(accept) =>
-          endpoint.request
-            .decode(request)
-            .traverse(implementation)
-            .map(endpoint.response.encode(accept, _))
-        case Validated.Invalid(violations) =>
-          endpoint.response.errors.encode(Route.Error.ContentNegotiationFailed(violations)).pure[F]
-      .handleErrorWith: throwable =>
-        onError(throwable) *> accept.toOption.flatten
-          .flatMap(endpoint.response.failure.encode(_, ()))
-          .getOrElse(endpoint.response.failure.encode(()))
-          .pure[F]
+    ???
+    // accept
+    //   .match
+    //     case Validated.Valid(accept) =>
+    //       endpoint.request
+    //         .decode(request)
+    //         .traverse(implementation)
+    //         .map(endpoint.response.encode(accept, _))
+    //     case Validated.Invalid(violations) =>
+    //       endpoint.response.errors.encode(Route.Error.ContentNegotiationFailed(violations)).pure[F]
+    //   .handleErrorWith: throwable =>
+    //     onError(throwable) *> accept.toOption.flatten
+    //       .flatMap(endpoint.response.failure.encode(_, ()))
+    //       .getOrElse(endpoint.response.failure.encode(()))
+    //       .pure[F]
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 
