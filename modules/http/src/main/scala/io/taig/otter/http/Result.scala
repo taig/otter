@@ -60,7 +60,12 @@ object Result:
       override def bodies: Option[Bodies[?]] = Some(_bodies)
       override def decode(response: Http.Response): Codec.Result[Option[(A, B)]] =
         if code =!= response.code then none.valid
-        else ??? // (headers.decode(response.headers), _bodies.decode(???, response.body)).tupled
+        else
+          _bodies
+            .decode(???, response.body)
+            .andThen:
+              case Some((mediaType, b)) => _headers.decode(response.headers).map(a => (a, b).some)
+              case None                 => none.valid
       override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] =
         val (blocklist, acceptlist) = accept.fold(
           left => (left.toList, List.empty),
