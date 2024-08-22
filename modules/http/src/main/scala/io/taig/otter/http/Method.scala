@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import cats.Eq
+import cats.Show
 
 opaque type Method = String
 
@@ -15,5 +16,7 @@ object Method:
   val Trace: Method = "TRACE"
 
   def apply(value: String): Method = value
+
+  given Show[Method] = Show.fromToString
 
   given (using eq: Eq[String]): Eq[Method] = eq

@@ -13,6 +13,7 @@ import io.taig.otter.Violation
 import io.taig.otter.Constraint
 import java.util.regex.Pattern
 import io.taig.otter.XPath
+import cats.Show
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
@@ -25,7 +26,7 @@ sealed abstract class Segment[A] extends Product, Serializable:
 
   def decode(value: String): Codec.Result[A]
 
-  def print: String
+  override def toString: String
 
 object Segment:
   final case class Static(name: String) extends Segment[Unit]:
@@ -41,7 +42,7 @@ object Segment:
 
     override def encode(a: Unit): String = name
 
-    override def print: String = name
+    override def toString: String = name
 
   sealed abstract class Parameter[A] extends Segment[A]:
     override def matches(segment: String): Boolean = true
@@ -53,7 +54,7 @@ object Segment:
 
     def imap[B](f: A => B)(g: B => A): Segment[B]
 
-    final override def print: String = s"{$name}"
+    final override def toString: String = s"{$name}"
 
   object Parameter:
     final case class Default[A](name: String, codec: Codec[Identity, Data.Primitive, A], metadata: Metadata)
@@ -87,3 +88,5 @@ object Segment:
               value.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector.some
             )
             .leftMap(name /: _)
+
+  given Show[Segment[?]] = Show.fromToString

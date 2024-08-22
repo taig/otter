@@ -70,6 +70,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     http,
     httpHttp4s,
     httpJsonCirce,
+    munit,
     openapi,
     server,
     serverHttp4s,
@@ -186,14 +187,14 @@ lazy val client = module(identifier = Some("client"))
   )
   .dependsOn(http % "compile->compile;test->test")
 
-// lazy val munit = module(identifier = Some("munit"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.scalameta" %%% "munit" % Version.Munit ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(http)
+lazy val munit = module(identifier = Some("munit"))
+  .settings(
+    libraryDependencies ++=
+      "org.scalameta" %%% "munit" % Version.Munit ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
+        Nil
+  )
+  .dependsOn(http)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)

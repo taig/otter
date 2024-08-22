@@ -10,6 +10,7 @@ import io.taig.otter.Data
 import java.util.regex.Pattern
 import cats.data.Validated
 import io.taig.otter.Merge
+import cats.Show
 
 sealed abstract class Path[A]:
   self =>
@@ -71,7 +72,7 @@ object Path:
         Violations
           .rootNec(
             Violation(
-              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(s"/${segment.print}"))),
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
               actual = Data.String("/")
             )
           )
@@ -80,7 +81,7 @@ object Path:
         Violations
           .rootNec(
             Violation(
-              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(s"/${segment.print}"))),
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
               actual = Data.String("/" + values.mkString("/"))
             )
           )
@@ -89,3 +90,5 @@ object Path:
 
   given Invariant[Path] with
     override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)
+
+  given Show[Path[?]] = path => "/" + path.toVector.map(_.show).mkString("/")

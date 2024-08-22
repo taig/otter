@@ -1,19 +1,18 @@
 package io.taig.otter.munit
 
+import cats.syntax.all.*
 import cats.effect.SyncIO
 import io.taig.otter.http.Endpoint
 import munit.{CatsEffectSuite, Location, TestOptions}
+import scala.language.adhocExtensions
 
-import scala.annotation.nowarn
-
-abstract class OtterSuite extends CatsEffectSuite with OtterExtensions with OtterAssertions:
+abstract class Suite extends CatsEffectSuite with Assertions:
   def test(endpoint: Endpoint[?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
 
   def test(endpoint: Endpoint[?, ?])(body: => Any)(implicit loc: Location): Unit =
     test(endpoint, description = "")(body)(loc)
 
-  @nowarn
   implicit open class SyncIOFunFixtureOtterOps[T](private val self: SyncIO[FunFixture[T]])
       extends SyncIOFunFixtureOps(self):
     def test(endpoint: Endpoint[?, ?], options: TestOptions)(
@@ -29,5 +28,5 @@ abstract class OtterSuite extends CatsEffectSuite with OtterExtensions with Otte
 
 private def toMessage(endpoint: Endpoint[?, ?], description: String): String =
   val request = endpoint.request
-  val coordinates = s"${request.method} ${request.url.print}"
+  val coordinates = show"${request.method} ${request.url.path}"
   if description.isEmpty then coordinates else s"$coordinates: $description"
