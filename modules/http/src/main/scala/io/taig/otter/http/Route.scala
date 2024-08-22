@@ -2,13 +2,13 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
-import cats.Show
 import io.taig.otter.Violations
 import org.typelevel.ci.*
 import io.taig.otter.XPath
 import io.taig.otter.Violation
 import cats.data.Validated
 import cats.ApplicativeThrow
+import cats.Show
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
