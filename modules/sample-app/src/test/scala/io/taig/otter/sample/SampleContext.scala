@@ -1,3 +1,3 @@
-// package io.taig.otter.sample
+package io.taig.otter.sample
 
-// final case class SampleContext(client: SampleClient, api: SampleApi)
+final case class SampleContext(client: SampleClient, api: SampleApi)

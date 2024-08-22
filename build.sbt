@@ -179,14 +179,6 @@ lazy val serverHttp4s = module(identifier = Some("server-http4s"))
   )
   .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
-lazy val client = module(identifier = Some("client"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-        Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
-
 lazy val munit = module(identifier = Some("munit"))
   .settings(
     libraryDependencies ++=
@@ -224,4 +216,4 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(serverHttp4s, sample, sampleApi)
+  .dependsOn(serverHttp4s, sample, sampleApi, munit % "compile->compile;test->test")

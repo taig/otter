@@ -1,8 +1,5 @@
-package io.taig.otter.client
+package io.taig.otter.http
 
-import io.taig.otter.http.App
-import io.taig.otter.http.Http
-import io.taig.otter.http.Endpoint
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import cats.Functor

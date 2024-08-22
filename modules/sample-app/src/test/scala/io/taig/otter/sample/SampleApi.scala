@@ -1,14 +1,15 @@
-// package io.taig.otter.sample
+package io.taig.otter.sample
 
-// import cats.effect.IO
-// import io.taig.otter.sample.api.endpoints
-// import io.taig.otter.sample.data.{Librarian, Session}
+import cats.effect.IO
+import io.taig.otter.sample.api.endpoint
+import io.taig.otter.sample.api.schema.LibrarianApiSchema
+import io.github.arainko.ducktape.*
+import io.taig.otter.sample.api.schema.SessionApiSchema
 
-// final class SampleApi(client: SampleClient) extends SampleExtensions:
-//   // TODO can we use assertions here as well?
-//   val librarian: IO[Session] = client
-//     .submit(
-//       endpoints.librarians.self.sessions.post,
-//       Librarian.Create.Default.toLogin
-//     )
-//     .toSuccess
+final class SampleApi(client: SampleClient) extends SampleSyntax:
+  val librarian: IO[SessionApiSchema] = client
+    .submit(
+      endpoint.librarians.self.sessions.post(),
+      Librarian.Create.Default.toLibrarianLogin.to[LibrarianApiSchema.Login]
+    )
+    .toSuccess

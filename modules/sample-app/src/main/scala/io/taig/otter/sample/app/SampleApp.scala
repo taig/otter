@@ -14,17 +14,21 @@ object SampleApp extends ResourceApp.Forever:
   given LoggerFactory[IO] = NoOpFactory[IO]
 
   override def run(args: List[String]): Resource[IO, Unit] = for
-    repositories <- Resource.eval(SampleRepositories())
-    administrator = Librarian.Create.Default
-    _ <- Resource.eval(repositories.librarian.create(administrator).rethrow)
-    login = administrator.toLibrarianLogin
-    session <- Resource.eval(repositories.librarian.login(login).rethrow)
-    _ <- Resource.eval(IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)"))
-    implementation = SampleEndpointImplementation(repositories.librarian)
+    app <- Resource.eval(SampleApp())
     server = Http4sServer[IO](
       EmberServerBuilder.default[IO].withHttpApp(_).build,
       onError = throwable => IO(throwable.printStackTrace())
     )
-    routes = SampleRoutes(implementation, repositories)
-    _ <- server.start(app(routes))
+    _ <- server.start(app)
   yield ()
+
+  def apply(): IO[App[IO]] = for
+    repositories <- SampleRepositories()
+    administrator = Librarian.Create.Default
+    _ <- repositories.librarian.create(administrator).rethrow
+    login = administrator.toLibrarianLogin
+    session <- repositories.librarian.login(login).rethrow
+    _ <- IO.println(s"Created administrator account: ${login.email}:${login.password} ($session)")
+    implementation = SampleEndpointImplementation(repositories.librarian)
+    routes = SampleRoutes(implementation, repositories)
+  yield app(routes)
