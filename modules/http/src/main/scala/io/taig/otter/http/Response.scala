@@ -14,13 +14,20 @@ final case class Response[A](results: Results[A], errors: Results[Route.Error], 
   def decode(response: Http.Response): Codec.Result[Either[Route.Error, A]] = results.decode(response) match
     case Ior.Both(_, Some(a)) => a.asRight.valid
     case Ior.Right(Some(a))   => a.asRight.valid
-    case Ior.Both(violations, None) =>
+    case Ior.Both(left, None) =>
       errors.decode(response) match
         case Ior.Both(_, Some(error)) => error.asLeft.valid
-        case Ior.Both(_, None)        => ???
-        case Ior.Right(_)             => ???
-        case Ior.Left(_)              => ???
-    case Ior.Right(None)      => ???
+        case Ior.Both(right, None)    => left.combine(right).invalid
+        case Ior.Right(Some(error))   => error.asLeft.valid
+        case Ior.Right(None)          => left.invalid
+        case Ior.Left(right)          => left.combine(right).invalid
+    case Ior.Right(None) =>
+      errors.decode(response) match
+        case Ior.Both(_, Some(error)) => error.asLeft.valid
+        case Ior.Both(right, None)    => right.invalid
+        case Ior.Right(Some(error))   => error.asLeft.valid
+        case Ior.Right(None)          => ???
+        case Ior.Left(right)          => right.invalid
     case Ior.Left(violations) => violations.invalid
 
   def encode(accept: Option[Accept.Result], result: Either[Route.Error, A]): Http.Response = result match

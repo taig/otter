@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.Parameters
 import java.nio.charset.Charset
+import io.taig.otter.http.header.MediaType
 
 sealed abstract class Result[A]:
   self =>
@@ -61,11 +62,16 @@ object Result:
       override def decode(response: Http.Response): Codec.Result[Option[(A, B)]] =
         if code =!= response.code then none.valid
         else
-          _bodies
-            .decode(???, response.body)
+          val contentType = response.headers
+            .collectFirst { case (ci"Content-Type", value) => value }
+            .flatMap(MediaType.parse(_).toOption)
+
+          contentType
+            .flatTraverse(_bodies.decode(_, response.body))
             .andThen:
-              case Some((mediaType, b)) => _headers.decode(response.headers).map(a => (a, b).some)
-              case None                 => none.valid
+              case Some((mediaType, b)) => b.valid
+              case None                 => _bodies.decodeFirst(response.body).map { case (_, b) => b }
+            .andThen(b => _headers.decode(response.headers).map(a => (a, b).some))
       override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] =
         val (blocklist, acceptlist) = accept.fold(
           left => (left.toList, List.empty),
