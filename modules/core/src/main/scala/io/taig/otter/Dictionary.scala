@@ -70,7 +70,7 @@ object Dictionary:
 
     override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-      .andThen(decode)
+      .andThen(obj => decode(obj.values))
     def decode(values: Vector[(String, Data)]): Codec.Result[Vector[(A, B)]] =
       verifyMinProperties(values) *> verifyMaxProperties(values) *> values
         .traverse { case (a, b) => (key.parseRequired(a), of.decode(b)).tupled }

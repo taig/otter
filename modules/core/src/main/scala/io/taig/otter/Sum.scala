@@ -120,10 +120,9 @@ object Sum:
         override def decode(
             data: Option[Vector[(String, Data)]],
             discriminator: Discriminator.Nested
-        ): Codec.Result[Option[A]] =
-          data
-            .toValid(Violations.rootNec(Violation.tpe("object", actual = "null")))
-            .andThen(branches.decodeNested(_, discriminator))
+        ): Codec.Result[Option[A]] = data
+          .toValid(Violations.rootNec(Violation.tpe("object", actual = "null")))
+          .andThen(branches.decodeNested(_, discriminator))
         override def encode(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
           branches.encodeNested(a, discriminator)
 
@@ -211,19 +210,31 @@ object Sum:
     final override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = new Keyed[F, O, B]:
       export self.{branches, isOptional, metadata}
       override def default: Option[B] = self.default.map(f)
-      override def decode(data: Vector[(String, Data)]): Codec.Result[B] = self.decode(data).map(f)
+      override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[B]] =
+        self.decode(data).map(_.map(f))
       override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
     final override def to[B](using convert: Convert[A, B]): Sum.Keyed[F, O, B] = imap(convert.to)(convert.from)
 
     final override def optional: Sum.Keyed[Data.Optional, O, Option[A]] = ???
 
-    final override def decode(data: Data): Codec.Result[A] = data.asObject
-      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-      .map(_.values)
-      .andThen(decode)
+    final override def decode(data: Data): Codec.Result[A] = data
+      .match
+        case Data.Object(values) => decode(values.some)
+        case Data.Null           => decode(none)
+        case _                   => Violations.rootNec(Violation.tpe("object", actual = data.name)).invalid
+      .andThen(
+        _.toValid(
+          Violations.rootNec(
+            Violation.oneOf(
+              branches.toNev.toList.map(_.name),
+              actual = data.asObject.map(_.values).flatMap(_.headOption).map { case (key, _) => key }.getOrElse("null")
+            )
+          )
+        )
+      )
 
-    def decode(data: Vector[(String, Data)]): Codec.Result[A]
+    def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[A]]
 
   object Keyed:
     def apply[O <: Data, A](branches: => Branches[O, A]): Sum.Keyed[Data.Required, O, A] =
@@ -234,9 +245,8 @@ object Sum:
         override def isOptional: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
-        override def decode(data: Vector[(String, Data)]): Codec.Result[A] =
-          branches.decodeKeyed(data)
-          ???
+        override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[A]] =
+          data.toValid(Violations.rootNec(Violation.tpe("object", "null"))).andThen(branches.decodeKeyed)
         override def encode(a: A): Data.Object[O] = branches.encodeKeyed(a)
 
     given [F[+a] <: Data.Optional[a], O <: Data]: CodecInvariant[Sum.Keyed[F, O, *]] with

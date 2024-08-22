@@ -47,7 +47,12 @@ sealed abstract class Branches[+O <: Data, A]:
           data: Vector[(String, Data)],
           discriminator: Discriminator.Merged
       ): Codec.Result[Option[Either[A, B]]] = ???
-      override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[Either[A, B]]] = ???
+      override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[Either[A, B]]] =
+        self
+          .decodeKeyed(data)
+          .andThen:
+            case Some(a) => a.asLeft.some.valid
+            case None    => branches.decodeKeyed(data).map(_.map(_.asRight))
       override def decodeUntagged(data: Data): Codec.Result[Either[A, B]] = self
         .decodeUntagged(data)
         .map(_.asLeft)
@@ -112,7 +117,10 @@ object Branches:
         data: Vector[(String, Data)],
         discriminator: Discriminator.Merged
     ): Codec.Result[Option[A]] = ???
-    override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[A]] = ???
+    override def decodeKeyed(data: Vector[(String, Data)]): Codec.Result[Option[A]] = data
+      .collectFirst { case (key, data) if branch.name === key => data }
+      .traverse(branch.decode)
+
     override def decodeUntagged(data: Data): Codec.Result[A] = branch.decode(data).leftMap(branch.name /: _)
     override def encodeNested(a: A, discriminator: Discriminator.Nested): Data.Object[Data.String | O] =
       Data.Object.one(discriminator.identifier, Data.String(branch.name)) ++ Data.Object.fromOption(
