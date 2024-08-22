@@ -14,11 +14,13 @@ abstract class Client[F[_]]:
 
   final def submit[I, O](endpoint: Endpoint[I, O], input: I, contentType: Option[MediaType])(using
       Functor[F]
-  ): F[Codec.Result[O]] =
+  ): F[Codec.Result[Either[Route.Error, O]]] =
     val request = endpoint.request.encode(contentType, input)
     submit(request).map(endpoint.response.decode)
 
-  final def submit[I, O](endpoint: Endpoint[I, O], input: I)(using Functor[F]): F[Codec.Result[O]] =
+  final def submit[I, O](endpoint: Endpoint[I, O], input: I)(using
+      Functor[F]
+  ): F[Codec.Result[Either[Route.Error, O]]] =
     submit(endpoint, input, contentType = none)
 
 object Client:

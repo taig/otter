@@ -11,7 +11,3 @@ trait SampleAssertions extends Assertions, SampleSyntax:
   extension [O](self: IO[Validated[Violations, Either[AuthenticationApiSchema.Error, O]]])
     def assertAuthenticated(using Location): IO[O] = self.toAuthenticated
     def assertUnauthenticated(using Location): IO[AuthenticationApiSchema.Error] = self.toUnauthenticated
-
-  extension [E <: Matchable, O](self: IO[Validated[Violations, Either[AuthenticationApiSchema.Error, Either[E, O]]]])
-    def assertSuccess(using Location): IO[O] = self.toSuccess
-    def assertError(using Location): IO[E] = self.toError

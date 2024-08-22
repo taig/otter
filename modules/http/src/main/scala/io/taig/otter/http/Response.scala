@@ -11,7 +11,17 @@ import cats.data.Ior
 final case class Response[A](results: Results[A], errors: Results[Route.Error], failure: Result[Unit]):
   final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
 
-  def decode(response: Http.Response): Codec.Result[A] = ??? // results.decode(response)
+  def decode(response: Http.Response): Codec.Result[Either[Route.Error, A]] = results.decode(response) match
+    case Ior.Both(_, Some(a)) => a.asRight.valid
+    case Ior.Right(Some(a))   => a.asRight.valid
+    case Ior.Both(violations, None) =>
+      errors.decode(response) match
+        case Ior.Both(_, Some(error)) => error.asLeft.valid
+        case Ior.Both(_, None)        => ???
+        case Ior.Right(_)             => ???
+        case Ior.Left(_)              => ???
+    case Ior.Right(None)      => ???
+    case Ior.Left(violations) => violations.invalid
 
   def encode(accept: Option[Accept.Result], result: Either[Route.Error, A]): Http.Response = result match
     case Right(a) =>
@@ -36,5 +46,5 @@ final case class Response[A](results: Results[A], errors: Results[Route.Error], 
       case Ior.Both(_, mediaTypes) => mediaTypes.map(_.show).mkString_(",")
 
     val violations = Violations.namespaceNec(XPath.Root / "header" / "Accept", Violation.oneOf(mediaTypes, actual))
-    // TODO should be try to infer the charset from Accept and Content-Type headers?
+    // TODO should we try to infer the charset from Accept and Content-Type headers?
     errors.encode(charset = none, Route.Error.ContentNegotiationFailed(violations))

@@ -4,7 +4,7 @@ import io.taig.otter.sample.api.Dsl.*
 import io.taig.otter.sample.api.schema.SessionApiSchema
 import io.taig.otter.sample.api.schema.LibrarianApiSchema
 import io.taig.otter.sample.api.Role
-import io.taig.otter.sample.api.AuthenticatedEndpoint
+import io.taig.otter.sample.api.RoleEndpoint
 
 object librarians:
   val url: Url[Unit] = __ / "librarians"
@@ -25,7 +25,7 @@ object librarians:
             json(error("emailOrPasswordIncorrect").as(Error.EmailOrPasswordIncorrect))
           ).toResults.to
 
-        def apply(): AuthenticatedEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
+        def apply(): RoleEndpoint[Role.Guest, LibrarianApiSchema.Login, Either[Error, SessionApiSchema]] =
           endpoint(
             request(method.post, url, json(LibrarianApiSchema.Login.codec)),
             response(Error.results :+ result(code.created, json(SessionApiSchema.codec)))

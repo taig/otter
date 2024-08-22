@@ -8,9 +8,9 @@ import io.taig.otter.sample.api.schema.SessionApiSchema
 import cats.MonadThrow
 
 abstract class EndpointImplementation[F[_]](using F: MonadThrow[F]):
-  final def apply[R <: Role, I, O](endpoint: AuthenticatedEndpoint[R, I, O])(
+  final def apply[R <: Role, I, O](endpoint: RoleEndpoint[R, I, O])(
       f: (SelfApiSchema[R], I) => F[O]
-  ): AuthenticatedRoute[F, I, O] = Route(
+  ): RoleRoute[F, I, O] = Route(
     endpoint = endpoint.toAuthenticatedEndpoint,
     implementation = authentication =>
       authentication.session

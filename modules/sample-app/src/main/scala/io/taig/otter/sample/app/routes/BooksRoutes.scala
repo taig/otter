@@ -4,7 +4,7 @@ import cats.effect.IO
 import io.github.arainko.ducktape.*
 import io.taig.otter.http.Routes
 import io.taig.otter.sample.api.EndpointImplementation
-import io.taig.otter.sample.api.AuthenticatedRoute
+import io.taig.otter.sample.api.RoleRoute
 import io.taig.otter.sample.api.endpoint.books.post.Error
 import io.taig.otter.sample.api.endpoint
 import io.taig.otter.sample.app.transformers.given
@@ -15,11 +15,11 @@ import io.taig.otter.sample.Book
 import cats.implicits.*
 
 final class BooksRoutes(implementation: EndpointImplementation[IO], book: BookRepository):
-  val get: AuthenticatedRoute[IO, Unit, List[BookApiSchema.Summary]] =
+  val get: RoleRoute[IO, Unit, List[BookApiSchema.Summary]] =
     implementation(endpoint.books.get()): (_, _) =>
       book.list.map(_.toList.map(_.to[BookApiSchema.Summary]))
 
-  val post: AuthenticatedRoute[IO, BookApiSchema.Create, Either[Error, BookApiSchema]] =
+  val post: RoleRoute[IO, BookApiSchema.Create, Either[Error, BookApiSchema]] =
     implementation(endpoint.books.post()): (_, create) =>
       book
         .create(create.to[Book.Create])
