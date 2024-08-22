@@ -18,5 +18,5 @@ object LibrarianApiSchema:
   object Login:
     val codec: Record.Required[LibrarianApiSchema.Login] = record(
       field("email", email) :*
-        field("password", string(minLength = 1.some, maxLength = 500.some))
+        field("password", string(maxLength = 500.some))
     ).to
