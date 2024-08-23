@@ -11,6 +11,7 @@ import java.util.regex.Pattern
 import cats.data.Validated
 import io.taig.otter.Merge
 import cats.Show
+import io.taig.otter.Convert
 
 sealed abstract class Path[A]:
   self =>
@@ -23,6 +24,8 @@ sealed abstract class Path[A]:
     export self.{matches, toVector}
     override def decode(values: Http.Path): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Path = self.encode(g(b))
+
+  final def to[B](using convert: Convert[A, B]): Path[B] = imap(convert.to)(convert.from)
 
   final def zip[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
     override def toVector: Vector[Segment[?]] = self.toVector ++ path.toVector

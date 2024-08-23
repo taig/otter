@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.filterKeys
 import io.taig.otter.Merge
+import io.taig.otter.Convert
 
 sealed abstract class Queries[A]:
   self =>
@@ -16,6 +17,8 @@ sealed abstract class Queries[A]:
     export self.{matches, toVector}
     override def decode(values: Http.Queries): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Queries = self.encode(g(b))
+
+  final def to[B](using convert: Convert[A, B]): Queries[B] = imap(convert.to)(convert.from)
 
   final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
     override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector

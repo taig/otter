@@ -5,6 +5,7 @@ import io.taig.otter.Metadata
 import io.taig.otter.Codec
 import io.taig.otter.Data
 import io.taig.otter.Merge
+import io.taig.otter.Convert
 
 sealed abstract class Query[A]:
   def name: String
@@ -22,6 +23,8 @@ sealed abstract class Query[A]:
   final def toQueries: Queries[A] = Queries(this)
 
   def imap[B](f: A => B)(g: B => A): Query[B]
+
+  final def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
 
   def optional: Query[Option[A]]
 
