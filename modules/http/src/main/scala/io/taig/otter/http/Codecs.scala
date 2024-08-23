@@ -106,7 +106,7 @@ trait Codecs extends Base.Codecs, Types:
     inline def contentType[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Content-Type", codec)
     val contentType: Header[MediaType] = contentType(MediaType.codec)
 
-  final inline def segment[A](
+  final inline def parameter[A](
       name: String,
       codec: Codec.Required.Of[Data.Primitive | Data.Array[Data.Primitive], A] |
         Codec.Of[Data.Object[Data.Primitive], A]

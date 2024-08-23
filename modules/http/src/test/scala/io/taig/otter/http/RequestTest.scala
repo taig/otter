@@ -20,7 +20,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = request(method.get, __ / "foo" / segment("bar", int) & query("baz", string))
+      obtained = request(method.get, __ / "foo" / parameter("bar", int) & query("baz", string))
         .encode(contentType = none, (42, "foobar")),
       expected = Http.Request(
         method = method.get,
@@ -138,7 +138,7 @@ final class RequestTest extends FunSuite:
     )
 
     assertEquals(
-      obtained = request(method.get, __ / "foo" / segment("bar", int) & query("baz", string))
+      obtained = request(method.get, __ / "foo" / parameter("bar", int) & query("baz", string))
         .decode(
           Http.Request(
             method = method.get,
