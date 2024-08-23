@@ -32,15 +32,14 @@ sealed abstract class Url[A]:
 
   final def zip[B](path: Path[B]): Url[(A, B)] = zip(path.toUrl)
 
+  final def /[B](path: Path[B])(using merge: Merge[A, B]): Url[merge.Out] = zip(path).imap(merge.apply)(merge.unapply)
   final def /(segment: String): Url[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
-
-  final def /[B](segment: Segment.Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] =
-    zip(segment.toPath.toUrl).imap(merge.apply)(merge.unapply)
+  final def /[B](segment: Segment.Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = /(segment.toPath)
 
   final def zip[B](queries: Queries[B]): Url[(A, B)] = zip(queries.toUrl)
-
-  final def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] =
-    zip(query.toQueries).imap(merge.apply)(merge.unapply)
+  final def &[B](queries: Queries[B])(using merge: Merge[A, B]): Url[merge.Out] =
+    zip(queries).imap(merge.apply)(merge.unapply)
+  final def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] = &(query.toQueries)
 
   def decode(values: Http.Url): Codec.Result[A]
 
