@@ -301,6 +301,12 @@ trait Codecs extends Base.Codecs, Types:
 
   final def response[A](result: Result[A]): Response[A] = response(result.toResults)
 
+  final def response[A, B](errors: Results[A], results: Results[B]): Response[Either[A, B]] =
+    response(errors.orElse(results))
+
+  final def response[A, B](errors: Results[A], result: Result[B]): Response[Either[A, B]] =
+    response(errors :+ result)
+
   // Scala.js won't compile if this is included here (for reasons unknown)
   export ViolationsCodecs.*
 
