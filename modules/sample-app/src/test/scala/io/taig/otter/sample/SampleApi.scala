@@ -8,8 +8,9 @@ import io.taig.otter.sample.api.schema.SessionApiSchema
 
 final class SampleApi(client: SampleClient) extends SampleSyntax:
   val librarian: IO[SessionApiSchema] = client
-    .submit(
+    .fallible(
       endpoint.librarians.self.sessions.post(),
+      session = None,
       Librarian.Create.Default.toLibrarianLogin.to[LibrarianApiSchema.Login]
     )
     .toSuccess

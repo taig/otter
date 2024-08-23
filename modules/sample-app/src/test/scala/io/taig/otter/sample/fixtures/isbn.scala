@@ -1,5 +1,5 @@
-// package io.taig.otter.sample.fixtures
+package io.taig.otter.sample.fixtures
 
-// import io.taig.otter.sample.data.Isbn
+import io.taig.otter.sample.api.schema.IsbnApiSchema
 
-// def isbn(index: Int = 0): Isbn = Isbn.unsafeFromLong(9780763630188L + index)
+def isbn(index: Int = 0): IsbnApiSchema = IsbnApiSchema.unsafe(9780763630188L + index)

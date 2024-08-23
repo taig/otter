@@ -28,7 +28,7 @@ abstract class SampleSuite extends Suite with SampleAssertions:
       test(endpoint, description = "")(body)(loc)
 
   val app: SyncIO[FunFixture[SampleContext]] =
-    val context = SampleApp()
+    val context = SampleApp(_ => IO.unit)
       .map(app => new SampleClient(Client(app)))
       .map(client => SampleContext(client, SampleApi(client)))
 

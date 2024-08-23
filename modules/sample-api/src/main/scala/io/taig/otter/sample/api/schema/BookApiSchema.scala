@@ -10,7 +10,8 @@ final case class BookApiSchema(
     title: String,
     genres: SortedSet[BookApiSchema.Genre],
     metadata: Data.Object[?]
-)
+):
+  def toBookApiSchemaSummary: BookApiSchema.Summary = BookApiSchema.Summary(isbn, title)
 
 object BookApiSchema:
   enum Genre:

@@ -4,53 +4,37 @@ import cats.data.Validated
 import cats.effect.IO
 import cats.syntax.all.*
 import io.taig.otter.sample.api.Role
+import io.taig.otter.sample.api.Dsl.*
 import io.taig.otter.sample.api.RoleEndpoint
 import io.taig.otter.sample.api.AuthenticationApiSchema
 import io.taig.otter.Violations
 import io.taig.otter.http.Client
-import io.github.arainko.ducktape.*
-import io.taig.otter.sample.app.transformers.given
 import io.taig.otter.sample.api.schema.SessionApiSchema
 import io.taig.otter.http.Route
+import io.taig.otter.http.header.MediaType
 
 final class SampleClient(client: Client[IO]):
-  def submit[R <: Role, I, O](
+  def infallible[R <: Role, I, O](
       endpoint: RoleEndpoint[R, I, O],
-      session: Option[Session],
-      input: I
+      session: Option[SessionApiSchema],
+      input: I,
+      contentType: MediaType = mediaType.application.json
   ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error, O]]] = client
-    .submit(endpoint.toAuthenticatedEndpoint, AuthenticationApiSchema(session.map(_.to[SessionApiSchema]), input))
+    .submit(endpoint.toAuthenticatedEndpoint, AuthenticationApiSchema(session, input), contentType = contentType.some)
     .map(_.map {
       case Right(Right(o))    => o.asRight
       case Right(Left(error)) => error.asLeft
       case Left(error)        => error.asLeft
     })
 
-  inline def submit[R <: Role, E, I, O](
+  def fallible[R <: Role, E, I, O](
       endpoint: RoleEndpoint[R, I, Either[E, O]],
-      session: Option[Session],
-      input: I
+      session: Option[SessionApiSchema],
+      input: I,
+      contentType: MediaType = mediaType.application.json
   ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error | E, O]]] =
-    submit[R, I, Either[E, O]](endpoint, session, input).map(_.map {
+    infallible(endpoint, session, input, contentType).map(_.map {
       case Right(Right(o))    => o.asRight
       case Right(Left(error)) => error.asLeft
       case Left(error)        => error.asLeft
     })
-
-  def submit[R <: Role, I, O](
-      endpoint: RoleEndpoint[R, I, O],
-      input: I
-  ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error, O]]] = submit(endpoint, None, input)
-
-  inline def submit[R <: Role, E, I, O](
-      endpoint: RoleEndpoint[R, I, Either[E, O]],
-      input: I
-  ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error | E, O]]] =
-    submit(endpoint, None, input)
-
-  def submit[R <: Role, I, O](
-      endpoint: RoleEndpoint[R, I, O],
-      session: Session,
-      input: I
-  ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error, O]]] =
-    submit(endpoint, Some(session), input)
