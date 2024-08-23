@@ -75,7 +75,7 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
     override def encodeSequence(a: Option[A], nulls: Null): Data.Object[Data.Optional[O]] =
       a.fold(Data.Object(self.fields.toVector.map(_.name).tupleRight(Data.Null)))(self.encodeSequence(_, nulls))
 
-  def zip[G[+a] <: Data.Optional[a], P <: Data, B](
+  final def zip[G[+a] <: Data.Optional[a], P <: Data, B](
       codec: Record[G, P, B]
   ): Record[Data.Required, F[O] | G[P], (A, B)] = new Record[Data.Required, F[O] | G[P], (A, B)]:
     override def fields: Fields[?, ?] = self.fields.zip(codec.fields)
@@ -91,6 +91,12 @@ sealed abstract class Record[+F[+a] <: Data.Optional[a], +O <: Data, A] extends 
     override def encode(ab: (A, B), nulls: Null): Data.Object[F[O] | G[P]] = encodeSequence(ab, nulls)
     override def encodeSequence(ab: (A, B), nulls: Null): Data.Object[F[O] | G[P]] =
       self.encodeSequence(ab._1, nulls) ++ codec.encodeSequence(ab._2, nulls)
+
+  final def :*[G[+a] <: Data.Optional[a], P <: Data, B](field: Field[G[P], B])(using merge: Merge[A, B]): Record[Data.Required, F[O] | G[P], merge.Out] =
+    zip(Record(field.toFields)).imap(merge.apply)(merge.unapply)
+
+  final def *:[G[+a] <: Data.Optional[a], P <: Data, B](field: Field[G[P], B])(using merge: Merge[B, A]): Record[Data.Required, G[P] | F[O], merge.Out] =
+    Record(field.toFields).zip(this).imap(merge.apply)(merge.unapply)
 
   final override def decode(data: Data): Codec.Result[A] = data match
     case Data.Object(values) => decode(values.some)
