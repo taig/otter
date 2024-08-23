@@ -20,7 +20,6 @@ import io.taig.enumeration.ext.EnumerationValues
 import java.util.regex.Pattern
 import java.util.UUID
 import cats.kernel.Eq
-import scala.annotation.targetName
 
 trait Codecs extends Types:
   self =>
@@ -127,19 +126,8 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  object branch:
-    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
-        name: String,
-        codec: => Base.Codec[F, O, A]
-    ): Branch.Of[F[O], A] =
-      Base.Branch(name, codec)
-
-    def singleton[A: ValueOf](name: String): Branch.Of[Data.Null.type, A] =
-      Base.Branch(name, dynamic.void.imap(_ => valueOf[A])(_ => Data.Null))
-
-    @targetName("singletonOf")
-    def singleton[A](name: String, value: A & Singleton): Branch.Of[Data.Null.type, value.type] =
-      singleton[value.type](name)
+  def branch[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Branch.Of[F[O], A] =
+    Base.Branch(name, codec)
 
   def field[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Field.Of[F[O], A] =
     Base.Field(name, codec)
@@ -364,9 +352,11 @@ trait Codecs extends Types:
     val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
     val primitive: Dynamic.Required.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
     val number: Dynamic.Required.Of[Data.Number, Data.Number] = Base.Dynamic.Number
-    val void: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
+    val nil: Dynamic.Required.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = dynamic.void.imap(_ => a)(_ => Data.Null)
+  val void: Dynamic.Required.Of[Data.Null.type, Unit] = dynamic.nil.const(Data.Null)
+
+  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = void.as(a)
 
   val xpath: Primitive.Required[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 

@@ -17,7 +17,7 @@ object ViolationsCodecs:
           (
             branch("maxItems", int.to[Constraint.Collection.MaxItems]) :+
               branch("maxItems", int.to[Constraint.Collection.MinItems]) :+
-              branch.singleton("uniqueItems", Constraint.Collection.UniqueItems)
+              branch("uniqueItems", singleton(Constraint.Collection.UniqueItems))
           ).to[Constraint.Collection]
         }.orElse {
           (
