@@ -7,9 +7,9 @@ import cats.syntax.all.*
 import io.taig.otter.sample.api as Api
 
 object Dsl extends Csv.Dsl, Json.Dsl, Openapi.Dsl, Codecs:
-  given Conversion[header.type, Api.Headers] = _ => new Api.Headers {}
+  given Conversion[header.type, Api.Headers] = _ => Api.Headers
 
-  extension [E, I, O](self: Endpoint[I, O])
+  extension [I, O](self: Endpoint[I, O])
     def role[R <: Role](role: R): RoleEndpoint[R, I, O] = RoleEndpoint(
       role,
       self
