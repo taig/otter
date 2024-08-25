@@ -19,5 +19,7 @@ trait SampleSyntax extends Syntax:
 
     def toUnauthenticated: F[AuthenticationApiSchema.Error] = self.toValid.flatMap:
       case Right(o) =>
-        new IllegalArgumentException(s"Expected Error, but got Authenticated: $o").raiseError
-      case Left(error) => ??? // error.pure
+        new IllegalArgumentException(s"Expected AuthenticationError, but got Authenticated: $o").raiseError
+      case Left(error: AuthenticationApiSchema.Error) => error.pure
+      case Left(error: Route.Error) =>
+        new IllegalArgumentException(s"Expected Authentication.Error, but got Route.Error: $error").raiseError
