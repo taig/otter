@@ -11,11 +11,10 @@ trait Codecs extends Http.Types, Http.Codecs:
       fallback: => Charset = StandardCharsets.UTF_8
   ): Body.Strict[List[A]] = body(
     mediaType = mediaType.text.csv,
-    (charset, bytes) =>
+    (_, _) =>
       // TODO parse CSV
       // val value = new String(bytes, charset.getOrElse(fallback))
-      ???
-    ,
+      ???,
     (charset, as) =>
       val csv = codec match
         case codec: Record.Required.Of[Data.Primitive, A] =>
