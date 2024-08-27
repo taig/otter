@@ -12,8 +12,8 @@ trait Codecs extends Http.Types, Http.Codecs:
   ): Body.Strict[List[A]] = body(
     mediaType = mediaType.text.csv,
     (charset, bytes) =>
-      val value = new String(bytes, charset.getOrElse(fallback))
       // TODO parse CSV
+      // val value = new String(bytes, charset.getOrElse(fallback))
       ???
     ,
     (charset, as) =>
