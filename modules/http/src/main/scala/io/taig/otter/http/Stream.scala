@@ -1,8 +1,4 @@
 package io.taig.otter.http
 
-abstract class Stream[+A]:
-  def isEmpty: Boolean
-
-object Stream:
-  val Empty: Stream[Nothing] = new Stream:
-    override def isEmpty: Boolean = true
+abstract class Stream[F[_], A]:
+  def map[B](f: A => B): Stream[F, B]

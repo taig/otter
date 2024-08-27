@@ -1,101 +1,81 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.Collection.Of
-import io.taig.otter.syntax.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.{Collection, Evidence, Value}
+import io.taig.otter.Metadata
+import io.taig.otter.Codec
+import io.taig.otter.Data
+import io.taig.otter.Merge
+import io.taig.otter.Convert
 
-sealed abstract class Query[A](val explode: Boolean, val name: String, val style: Query.Style):
-  self =>
+sealed abstract class Query[A]:
+  def name: String
+
+  def codec: Codec[
+    Data.Optional,
+    Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]],
+    ?
+  ]
+
   final def isOptional: Boolean = codec.isOptional
 
-  final def isCollection: Boolean = codec match
-    case _: Collection[?] => true
-    case _                => false
+  def metadata: Metadata
 
-  def codec: Value[A] | Collection.Of[Value[?], A]
+  final def toQueries: Queries[A] = Queries(this)
 
-  final def explode(f: Boolean => Boolean): Query[A] = new Query[A](f(explode), name, style) { export self.* }
-  final def explode(value: Boolean): Query[A] = explode(_ => value)
+  def imap[B](f: A => B)(g: B => A): Query[B]
 
-  final def style(f: Query.Style => Query.Style): Query[A] = new Query[A](explode, name, f(style)) { export self.* }
-  final def style(value: Query.Style): Query[A] = style(_ => value)
+  final def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
 
-  final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] =
-    toQueries +? queries
+  def optional: Query[Option[A]]
 
-  final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = toQueries +? query
+  final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = toQueries :* query
 
-  def toQueries: Queries[A] = Queries(this)
+  final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] = query *: toQueries
 
-  final def matchesWithRemainders(queries: Http.Queries): Option[Http.Queries] =
-    matchesWithRemainders(queries, isOptional)
-  protected def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries]
+  def decode(value: Query.Value): Codec.Result[A]
 
-  final def decodeWithRemainders(queries: Http.Queries): Validated[Violations, (Http.Queries, A)] =
-    decodeWithRemainders(queries, explode, style)
-  protected def decodeWithRemainders(
-      queries: Http.Queries,
-      explode: Boolean,
-      style: Query.Style
-  ): Validated[Violations, (Http.Queries, A)]
-
-  final def encode(a: A): Http.Queries = encode(a, explode, style)
-  protected def encode(a: A, explode: Boolean, style: Query.Style): Http.Queries
+  def encode(a: A): Query.Value
 
 object Query:
-  enum Style:
-    case Form
-    case SpaceDelimited
-    case PipeDelimited
-    case DeepObject
+  enum Value:
+    case Some(value: String)
+    case None extends Value
+    case Abscent extends Value
 
-  object Style:
-    val Default: Query.Style = Form
+  final case class Default[A](name: String, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
+      extends Query[A]:
+    override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
+    override def decode(value: Query.Value): Codec.Result[A] = value match
+      case Query.Value.Some(value)                => codec.parseOptional(value.some)
+      case Query.Value.None | Query.Value.Abscent => codec.parseOptional(none)
+    override def encode(a: A): Query.Value = codec.printOptional(a).fold(Query.Value.None)(Query.Value.Some.apply)
 
-  def apply[A](name: String, of: Value[A]): Query[A] = new Query[A](true, name, Style.Default):
-    override def codec: Value[A] = of
-    override def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries] =
-      queries.firstWithRemainders(this.name) match
-        case Some((_, tail)) => Some(tail)
-        case None            => Option.when(optional)(queries)
-    override def decodeWithRemainders(
-        queries: Http.Queries,
-        explode: Boolean,
-        style: Style
-    ): Validated[Violations, (Http.Queries, A)] = queries.firstWithRemainders(this.name) match
-      case Some((head, tail)) => of.parse(head.some).tupleLeft(tail)
-      case None               => of.parse(None).tupleLeft(queries)
-    override def encode(a: A, explode: Boolean, style: Style): Http.Queries = of.print(a) match
-      case value: String         => Chain.one(this.name -> value)
-      case value: Option[String] => Chain.fromOption(value).tupleLeft(this.name)
+  final case class Array[A](
+      name: String,
+      codec: Codec[Data.Optional, Data.Array[Data.Primitive], A],
+      metadata: Metadata
+  ) extends Query[A]:
+    override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
+    override def decode(value: Query.Value): Codec.Result[A] = value match
+      case Query.Value.Some(value) => codec.parseOptionalArray(value.split(',').toVector.some)
+      case Query.Value.None        => codec.parseOptionalArray(Vector.empty.some)
+      case Query.Value.Abscent     => codec.parseOptionalArray(none)
+    override def encode(a: A): Query.Value = codec.printOptionalArray(a) match
+      case Some(Vector()) => Query.Value.None
+      case Some(values)   => Query.Value.Some(values.mkString(","))
+      case None           => Query.Value.Abscent
 
-  def apply[A](name: String, of: Collection.Of[Value[?], A]): Query[A] = new Query[A](true, name, Style.Default):
-    override def codec: Collection.Of[Value[?], A] = of
-    override def matchesWithRemainders(queries: Http.Queries, optional: Boolean): Option[Http.Queries] =
-      val (head, tail) = queries.allWithRemainders(this.name)
-      if optional then Some(tail)
-      else if head.isEmpty then None
-      else Some(tail)
-    override def decodeWithRemainders(
-        queries: Http.Queries,
-        explode: Boolean,
-        style: Style
-    ): Validated[Violations, (Http.Queries, A)] = (explode, style) match
-      case (true, _) =>
-        val (head, tail) = queries.allWithRemainders(this.name)
-        codec.parse(head.some).tupleLeft(tail)
-      case (false, Query.Style.Form) =>
-        queries.firstWithRemainders(this.name) match
-          case Some((head, tail)) =>
-            codec.parse(Chain.fromIterableOnce(head.split(',')).some).tupleLeft(tail)
-          case None => codec.parse(None).tupleLeft(queries)
-      case (_, style) => throw new NotImplementedError(s"Query style $style is not supported yet")
-    override def encode(a: A, explode: Boolean, style: Style): Http.Queries = (explode, style) match
-      case (true, _) => of.print(a).getOrElse(Chain.empty).tupleLeft(this.name)
-      case (false, Query.Style.Form) =>
-        val values = of.print(a).getOrElse(Chain.empty)
-        if values.isEmpty then Chain.empty else Chain.one(this.name -> values.mkString_(","))
-      case (_, style) => throw new NotImplementedError(s"Query style $style is not supported yet")
+  final case class Object[A](
+      name: String,
+      codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
+      metadata: Metadata
+  ) extends Query[A]:
+    override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Query[Option[A]] = copy(codec = codec.optional)
+    override def decode(value: Query.Value): Codec.Result[A] = ???
+    override def encode(a: A): Query.Value = codec.printOptionalObject(a) match
+      case Some(Vector()) => Query.Value.None
+      case Some(values)   => Query.Value.Some(values.map { case (key, value) => s"$key=$value" }.mkString(","))
+      case None           => Query.Value.Abscent

@@ -1,53 +1,53 @@
 package io.taig.otter
 
-import cats.Eq
-import cats.data.{Chain, Validated}
-import cats.syntax.all.*
-import io.taig.otter.syntax.*
-import io.taig.otter.validation.{History, Violation, Violations}
+import io.taig.otter.Codec.Result
 
-sealed abstract class Branch[A]:
-  def key: Value.Required[?]
-  def codec: Codec[?]
+sealed abstract class Branch[+O <: Data, A]:
+  self =>
+
   def name: String
 
-  def :+[B](branch: Branch[B]): Coproduct[Either[A, B]] = toCoproduct :+ branch
-  def +:[B](branch: Branch[B]): Coproduct[Either[B, A]] = branch +: toCoproduct
+  def codec: Codec[?, ?, ?]
 
-  final def to[B](using evidence: Evidence.Coproduct.Aux[B, A]): Coproduct[B] = toCoproduct.to
-  def toCoproduct: Coproduct[A] = Coproduct(this)
+  def metadata: Metadata
 
-  def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[A]]
-  def encode(a: A, discriminator: Discriminator): Chain[(String, Data)]
+  final def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
+    export self.{codec, decode, encode, name}
+    override def metadata: Metadata = f(self.metadata)
+
+  final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
+    export self.{codec, metadata, name}
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): O = self.encode(g(b))
+
+  final def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
+
+  final def :+[P <: Data, B](branch: Branch[P, B]): Branches[O | P, Either[A, B]] = toBranches :+ branch
+
+  final def +:[P <: Data, B](branch: Branch[P, B]): Branches[P | O, Either[B, A]] = branch +: toBranches
+
+  final def toBranches: Branches[O, A] = Branches(this)
+
+  def decode(data: Data): Codec.Result[A]
+
+  def encode(a: A): O
 
 object Branch:
-  extension [A <: Matchable](self: Branch[A])
-    inline def |[B <: Matchable](branch: Branch[B]): Coproduct[A | B] = self.toCoproduct | branch
+  def apply[F[+a] <: Data.Optional[a], O <: Data, A](name: String, of: => Codec[F, O, A]): Branch[F[O], A] =
+    val _name = name
 
-  def apply[A: Eq, B](a: A, ofKey: => Value.Required[A], ofCodec: => Codec[B]): Branch[B] = new Branch[B]:
-    override def key: Value.Required[?] = ofKey
-    override def codec: Codec[?] = ofCodec
-    override def name: String = ofKey.print(a)
+    new Branch[F[O], A]:
+      override def name: String = _name
+      override def codec: Codec[?, ?, ?] = of
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Data): Codec.Result[A] = of.decode(data)
+      override def encode(a: A): F[O] = of.encode(a)
 
-    override def decode(data: Chain[(String, Data)], discriminator: Discriminator): Validated[Violations, Option[B]] =
-      discriminator match
-        case Discriminator.Nested(identifier, value) =>
-          data.firstWithRemainders(identifier) match
-            case Some((identifier, data)) =>
-              ofKey.decode(identifier) match
-                case Validated.Valid(identifier) if identifier === a =>
-                  data.first(value) match
-                    case Some(data) => ofCodec.decode(data).map(_.some)
-                    case None       => ???
-                case Validated.Valid(_)            => none.valid
-                case Validated.Invalid(violations) => ???
-            case None => Violations.oneNec(History.Root / identifier, Violation.required).invalid
-        case Discriminator.Merged(identifier) => ???
-        case Discriminator.Keyed              => ???
+  extension [O <: Data, A <: Matchable](self: Branch[O, A])
+    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
+      self.toBranches | branch
 
-    override def encode(b: B, discriminator: Discriminator): Chain[(String, Data)] = discriminator match
-      case Discriminator.Nested(identifier, value) =>
-        Chain(identifier -> ofKey.encode(a), value -> ofCodec.encode(b))
-      case Discriminator.Merged(identifier) =>
-        Chain.one(identifier -> ofKey.encode(a)) ++ ofCodec.encode(b).asObject.map(_.values).orEmpty
-      case Discriminator.Keyed => Chain.one(name -> ofCodec.encode(b))
+  given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
+    extension (self: Branch[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = self.modifyMetadata(f)

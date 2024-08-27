@@ -1,27 +1,38 @@
 package io.taig.otter.http
 
-import cats.data.Chain
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
+import cats.Show
 
 object Http:
-  type Path = Chain[String]
+  type Path = Vector[String]
 
-  type Queries = Chain[(String, String)]
+  object Path:
+    val Empty: Http.Path = Vector.empty
+
+  type Queries = Vector[(String, Option[String])]
+
+  object Queries:
+    val Empty: Http.Queries = Vector.empty
 
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
 
-    def print: String =
+    override def toString: String =
       path.mkString_("/", "/", "") +
-        queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", "")
+        (if queries.isEmpty then "" else queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", ""))
 
   object Url:
-    val Empty: Http.Url = Url(Chain.empty, Chain.empty)
+    val Empty: Http.Url = Url(Vector.empty, Vector.empty)
 
-  type Headers = Chain[(CIString, String)]
+    given Show[Http.Url] = Show.fromToString
 
-  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Http.Request.Body):
+  type Headers = Vector[(CIString, String)]
+
+  object Headers:
+    val Empty: Http.Headers = Vector.empty
+
+  final case class Request(method: Method, url: Http.Url, headers: Http.Headers, body: Array[Byte]):
     def modifyMethod(f: Method => Method): Http.Request = copy(method = f(method))
     def withMethod(method: Method): Http.Request = modifyMethod(_ => method)
 
@@ -31,26 +42,9 @@ object Http:
     def modifyHeaders(f: Http.Headers => Http.Headers): Http.Request = copy(headers = f(headers))
     def withHeaders(headers: Http.Headers): Http.Request = modifyHeaders(_ => headers)
 
-    def modifyBody(f: Http.Request.Body => Http.Request.Body): Http.Request = copy(body = f(body))
-    def withBody(body: Http.Request.Body): Http.Request = modifyBody(_ => body)
-
-  object Request:
-    sealed abstract class Body extends Product with Serializable
-
-    object Body:
-      final case class Singlepart(payload: Http.Payload) extends Request.Body
-      final case class Multipart() extends Request.Body
-
-  final case class Response(code: Code, headers: Http.Headers, body: Http.Payload):
+  final case class Response(code: Code, headers: Http.Headers, body: Array[Byte]):
     def modifyCode(f: Code => Code): Http.Response = copy(code = f(code))
     def withCode(code: Code): Http.Response = modifyCode(_ => code)
 
     def modifyHeaders(f: Http.Headers => Http.Headers): Http.Response = copy(headers = f(headers))
     def withHeaders(headers: Http.Headers): Http.Response = modifyHeaders(_ => headers)
-
-    def modifyBody(f: Http.Payload => Http.Payload): Http.Response = copy(body = f(body))
-    def withBody(body: Http.Payload): Http.Response = modifyBody(_ => body)
-
-  enum Payload:
-    case Strict(data: Array[Byte])
-    case Streaming(stream: Stream[Byte])

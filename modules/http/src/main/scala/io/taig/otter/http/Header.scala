@@ -1,52 +1,74 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.Collection.Of
-import io.taig.otter.syntax.*
-import io.taig.otter.validation.{Validation, Violations}
-import io.taig.otter.{Collection, Value}
 import org.typelevel.ci.CIString
+import io.taig.otter.Metadata
+import io.taig.otter.Data
+import io.taig.otter.Codec
+import scala.Array as SArray
+import io.taig.otter.Merge
 
-sealed abstract class Header[A](val name: CIString):
-  def codec: Value[?] | Collection.Of[Value[?], ?]
+sealed abstract class Header[A] extends Product, Serializable:
+  self =>
+
+  def name: CIString
+
+  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], ?]
 
   final def isOptional: Boolean = codec.isOptional
 
-  final def isCollection: Boolean = codec match
-    case _: Collection[?] => true
-    case _                => false
+  def metadata: Metadata
 
-  def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B]
-  final def imap[B](f: A => B)(g: B => A): Header[B] = ivalidate(Validation.lift(f))(g)
+  def modifyMetadata(f: Metadata => Metadata): Header[A]
+
+  def imap[B](f: A => B)(g: B => A): Header[B]
+
   def optional: Header[Option[A]]
 
-  def toHeaders: Headers[A] = Headers(this)
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
 
-  def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)]
-  def encode(a: A): Http.Headers
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header *: toHeaders
+
+  final def toHeaders: Headers[A] = Headers(this)
+
+  def decode(header: Option[String]): Codec.Result[A]
+
+  def encode(a: A): Option[String]
 
 object Header:
-  final private class Single[A](name: CIString, val codec: Value[A]) extends Header[A](name):
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] =
-      new Single[B](name, codec.ivalidate(validation)(g))
-    override def optional: Header[Option[A]] = new Single[Option[A]](name, codec.optional)
-    override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      headers.firstWithRemainders(name) match
-        case Some((head, tail)) => codec.parse(head.some).tupleLeft(tail)
-        case None               => codec.parse(None).tupleLeft(headers)
-    override def encode(a: A): Http.Headers = codec.print(a) match
-      case value: String         => Chain.one(name -> value)
-      case value: Option[String] => Chain.fromOption(value).tupleLeft(name)
+  final case class Default[A](name: CIString, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
+      extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] = codec.parseOptional(header)
+    override def encode(a: A): Option[String] = codec.printOptional(a)
 
-  final private class Multiple[A](name: CIString, val codec: Collection.Of[Value[?], A]) extends Header[A](name):
-    override def ivalidate[B](validation: Validation[A, B])(g: B => A): Header[B] =
-      new Multiple[B](name, codec.ivalidate(validation)(g))
-    override def optional: Header[Option[A]] = new Multiple[Option[A]](name, codec.optional)
-    override def decodeWithRemainders(headers: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      val (head, tail) = headers.allWithRemainders(name)
-      codec.parse(head.some).tupleLeft(tail)
-    override def encode(a: A): Http.Headers = codec.print(a).getOrElse(Chain.empty).tupleLeft(name)
+  final case class Array[A](
+      name: CIString,
+      codec: Codec[Data.Optional, Data.Array[Data.Primitive], A],
+      metadata: Metadata
+  ) extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] =
+      codec.parseOptionalArray(header.map(_.split(',').toVector))
+    override def encode(a: A): Option[String] = codec.printOptionalArray(a).map(_.mkString(","))
 
-  def apply[A](name: CIString, codec: Value[A]): Header[A] = new Single[A](name, codec)
-  def apply[A](name: CIString, codec: Collection.Of[Value[?], A]): Header[A] = new Multiple[A](name, codec)
+  final case class Object[A](
+      name: CIString,
+      codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
+      metadata: Metadata
+  ) extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
+    override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
+    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def decode(header: Option[String]): Codec.Result[A] = codec
+      .parseOptionalObject(
+        header.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
+      )
+    override def encode(a: A): Option[String] = codec
+      .printOptionalObject(a)
+      .map(_.map { case (key, value) => s"$key=$value" })
+      .map(_.mkString(","))

@@ -1,19 +1,12 @@
 package io.taig.otter
 
-import cats.Eq
-
-enum Discriminator:
-  case Nested(identifier: String, value: String)
-  case Merged(identifier: String)
-  case Keyed
-
 object Discriminator:
+  final case class Nested(identifier: String, value: String)
+
   object Nested:
     val Default: Discriminator.Nested = Nested(identifier = "type", value = "value")
 
+  final case class Merged(identifier: String)
+
   object Merged:
     val Default: Discriminator.Merged = Merged(identifier = "type")
-
-  val Default: Discriminator = Nested.Default
-
-  given Eq[Discriminator] = Eq.fromUniversalEquals

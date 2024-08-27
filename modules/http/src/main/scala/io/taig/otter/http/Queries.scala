@@ -1,66 +1,66 @@
 package io.taig.otter.http
 
-import cats.InvariantSemigroupal
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.Evidence
+import io.taig.otter.Codec
+import io.taig.otter.filterKeys
+import io.taig.otter.Merge
+import io.taig.otter.Convert
 
 sealed abstract class Queries[A]:
   self =>
-  def toChain: Chain[Query[?]]
+
+  def toVector: Vector[Query[?]]
+
+  def matches(queries: Http.Queries): Boolean
 
   final def imap[B](f: A => B)(g: B => A): Queries[B] = new Queries[B]:
-    export self.{matchesWithRemainders, toChain}
-    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, B)] =
-      self.decodeWithRemainders(remainders).map(_.map(f))
+    export self.{matches, toVector}
+    override def decode(values: Http.Queries): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Queries = self.encode(g(b))
 
-  final infix def product[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
-    override def toChain: Chain[Query[?]] = self.toChain ++ queries.toChain
-    override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
-      self.matchesWithRemainders(remainders).flatMap(queries.matchesWithRemainders)
-    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, (A, B))] =
-      self.decodeWithRemainders(remainders) match
-        case Validated.Valid((remainders, a)) => queries.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-        case Validated.Invalid(left) =>
-          queries.decodeWithRemainders(remainders) match
-            case Validated.Valid(_)       => left.invalid
-            case Validated.Invalid(right) => (left |+| right).invalid
+  final def to[B](using convert: Convert[A, B]): Queries[B] = imap(convert.to)(convert.from)
+
+  final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
+    override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector
+    override def matches(values: Http.Queries): Boolean =
+      val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
+      val (right, _) = remainders.filterKeys(queries.toVector.map(_.name))
+      self.matches(left) && queries.matches(right)
+    override def decode(values: Http.Queries): Codec.Result[(A, B)] =
+      val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
+      val (right, _) = remainders.filterKeys(queries.toVector.map(_.name))
+      (self.decode(left), queries.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
 
-  final infix def zip[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] =
-    product(queries).imap(evidence.apply)(evidence.unapply)
-  final def +?[B](queries: Queries[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = zip(queries)
-  final def +?[B](query: Query[B])(using evidence: Evidence.Merge[A, B]): Queries[evidence.Out] = +?(query.toQueries)
+  final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
+    zip(query.toQueries).imap(merge.apply)(merge.unapply)
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Queries[B] = imap(evidence.from)(evidence.to)
-
-  final def matches(queries: Http.Queries): Boolean = matchesWithRemainders(queries).isDefined
-  def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries]
-
-  final def decode(queries: Http.Queries): Validated[Violations, A] = decodeWithRemainders(queries).map(_._2)
-  def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)]
-  def encode(a: A): Http.Queries
+  final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] =
+    query.toQueries.zip(this).imap(merge.apply)(merge.unapply)
 
   final def toUrl: Url[A] = Url(this)
 
+  def decode(values: Http.Queries): Codec.Result[A]
+
+  def encode(a: A): Http.Queries
+
 object Queries:
   val Empty: Queries[Unit] = new Queries[Unit]:
-    override def toChain: Chain[Query[?]] = Chain.empty
-    override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] = remainders.some
-    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, Unit)] =
-      (remainders, ()).valid
-    override def encode(a: Unit): Http.Queries = Chain.empty
+    override def toVector: Vector[Query[?]] = Vector.empty
+    override def matches(queries: Http.Queries): Boolean = true
+    override def decode(values: Http.Queries): Codec.Result[Unit] = ().valid
+    override def encode(a: Unit): Http.Queries = Vector.empty
 
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
-    override def toChain: Chain[Query[?]] = Chain.one(query)
-    override def matchesWithRemainders(remainders: Http.Queries): Option[Http.Queries] =
-      query.matchesWithRemainders(remainders)
-    override def decodeWithRemainders(remainders: Http.Queries): Validated[Violations, (Http.Queries, A)] =
-      query.decodeWithRemainders(remainders)
-    override def encode(a: A): Http.Queries = query.encode(a)
-
-  given InvariantSemigroupal[Queries] with
-    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)
-    override def product[A, B](fa: Queries[A], fb: Queries[B]): Queries[(A, B)] = fa.zip(fb)
+    override def toVector: Vector[Query[?]] = Vector(query)
+    override def matches(queries: Http.Queries): Boolean =
+      query.isOptional || queries.exists { case (key, _) => key === query.name }
+    override def decode(values: Http.Queries): Codec.Result[A] =
+      val value = values
+        .collectFirst { case (key, value) if key === query.name => value }
+        .fold(Query.Value.Abscent)(_.fold(Query.Value.None)(Query.Value.Some.apply))
+      query.decode(value).leftMap(query.name /: _)
+    override def encode(a: A): Http.Queries = query.encode(a) match
+      case Query.Value.Some(value) => Vector(query.name -> value.some)
+      case Query.Value.None        => Vector(query.name -> none)
+      case Query.Value.Abscent     => Http.Queries.Empty

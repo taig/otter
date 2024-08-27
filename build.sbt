@@ -4,14 +4,17 @@ val Version = new {
   val CaseInsensitive = "1.4.0"
   val Cats = "2.12.0"
   val CatsEffect = "3.5.3"
+  val CatsParse = "1.0.0"
   val Circe = "0.14.9"
+  val Ducktape = "0.2.4"
   val EnumerationExt = "0.2.0"
+  val Fs2 = "3.10.2"
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
   val Log4Cats = "2.7.0"
-  val Mouse = "1.3.1"
-  val Munit = "1.0.0"
+  val Mouse = "1.3.2"
+  val Munit = "1.0.1"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.3"
   val ScalaJavaTime = "2.6.0"
@@ -25,6 +28,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .withoutSuffixFor(JVMPlatform)
     .build()
     .settings(
+      Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
       name := "otter" + identifier.fold("")("-" + _)
     )
@@ -42,8 +46,8 @@ inThisBuild(
   )
 )
 
-addCommandAlias("start", s"${sample.jvm.id}/reStart")
-addCommandAlias("stop", s"${sample.jvm.id}/reStop")
+addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
+addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
@@ -60,43 +64,46 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(
     core,
-    circe,
-    openapi,
-    typescript,
+    javaTime,
+    jsonCirce,
     openapiCirce,
     http,
-    httpOpenapi,
-    httpCirce,
-    server,
-    csv,
-    dsl,
-    http4s,
+    httpHttp4s,
+    httpJsonCirce,
     munit,
-    sample
+    openapi,
+    server,
+    serverHttp4s,
+    httpCsv,
+    sample,
+    sampleApi,
+    sampleApp
   )
 
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
-      val sumInstances = (Compile / sourceManaged).value / "CoproductInstances.scala"
-      IO.write(sumInstances, SchemaSourceGenerators.sumInstances(organization.value + ".otter"))
+      val sumInstances = (Compile / sourceManaged).value / "ConvertInstances.scala"
+      IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %%% "cats-core" % Version.Cats ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+        "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        "org.scalameta" %%% "munit-scalacheck" % Version.Munit % "test" ::
         Nil
   )
-  .jsSettings(
-    libraryDependencies += ("org.scala-js" %%% "scalajs-java-securerandom" % "1.0.0" % "test")
-      .cross(CrossVersion.for3Use2_13)
-  )
 
-lazy val circe = module(identifier = Some("circe"))
+lazy val javaTime = module(identifier = Some("java-time"))
+  .settings(
+    libraryDependencies ++=
+      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+        Nil
+  )
+  .dependsOn(core)
+
+lazy val jsonCirce = module(identifier = Some("json-circe"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
@@ -104,34 +111,56 @@ lazy val circe = module(identifier = Some("circe"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val openapi = module(identifier = Some("openapi"))
-  .dependsOn(core % "compile->compile;test->test")
-
 lazy val openapiCirce = module(identifier = Some("openapi-circe"))
-  .dependsOn(openapi % "compile->compile;test->test", circe % "compile->compile;test->test")
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(openapi % "compile->compile;test->test")
 
-lazy val typescript = module(identifier = Some("typescript"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val typescript = module(identifier = Some("typescript"))
+//   .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(
     libraryDependencies ++=
-      "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
         Nil
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val httpOpenapi = module(identifier = Some("http-openapi"))
-  .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
+lazy val openapi = module(identifier = Some("openapi"))
+  .dependsOn(http % "compile->compile;test->test")
+
+// lazy val httpOpenapi = module(identifier = Some("http-openapi"))
+//   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
 
 // TODO waiting for circe 0.15 with scala.js jawn support
-lazy val httpCirce = module(identifier = Some("http-circe"), jvmOnly = true)
+lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = true)
   .settings(
     libraryDependencies ++=
       "io.circe" %% "circe-parser" % Version.Circe ::
         Nil
   )
-  .dependsOn(circe % "compile->compile;test->test", http % "compile->compile;test->test")
+  .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
+
+lazy val httpCsv = module(identifier = Some("http-csv"))
+  .settings(
+    libraryDependencies ++=
+      "co.fs2" %%% "fs2-core" % Version.Fs2 ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
 lazy val server = module(identifier = Some("server"))
   .settings(
@@ -141,19 +170,14 @@ lazy val server = module(identifier = Some("server"))
   )
   .dependsOn(http % "compile->compile;test->test")
 
-lazy val csv = module(identifier = Some("csv"))
-  .dependsOn(core % "compile->compile;test->test")
-
-lazy val dsl = module(identifier = Some("dsl"), jvmOnly = true)
-  .dependsOn(httpCirce % "compile->compile;test->test", server % "compile->compile;test->test")
-
-lazy val http4s = module(identifier = Some("http4s"), jvmOnly = true)
+lazy val serverHttp4s = module(identifier = Some("server-http4s"))
   .settings(
     libraryDependencies ++=
       "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
         Nil
   )
-  .dependsOn(server % "compile->compile;test->test")
+  .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(
@@ -165,19 +189,31 @@ lazy val munit = module(identifier = Some("munit"))
   .dependsOn(http)
 
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  .enablePlugins(BuildInfoPlugin)
   .settings(noPublishSettings)
   .settings(
-    buildInfoKeys := Seq(version),
-    buildInfoObject := "Build",
-    buildInfoPackage := organization.value + ".otter.sample",
     libraryDependencies ++=
-      "com.aventrix.jnanoid" % "jnanoid" % Version.JNanoId ::
+      "io.circe" %% "circe-parser" % Version.Circe ::
+        "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
+
+lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      Nil
+  )
+  .dependsOn(httpJsonCirce, httpCsv, httpHttp4s, openapi)
+
+lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    Compile / run / fork := true,
+    libraryDependencies ++=
+      "io.github.arainko" %% "ducktape" % Version.Ducktape ::
         "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-        "org.http4s" %% "http4s-dsl" % Version.Http4s ::
-        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+        "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(http4s, dsl, httpOpenapi, openapiCirce, typescript, munit % "compile->test")
+  .dependsOn(serverHttp4s, sample, sampleApi, munit % "compile->compile;test->test")

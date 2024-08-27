@@ -1,73 +1,97 @@
 package io.taig.otter.http
 
-import cats.InvariantSemigroupal
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
-import io.taig.otter.Evidence
+import cats.Invariant
+import io.taig.otter.Codec
+import io.taig.otter.Violations
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Data
+import java.util.regex.Pattern
+import cats.data.Validated
+import io.taig.otter.Merge
+import cats.Show
+import io.taig.otter.Convert
 
 sealed abstract class Path[A]:
   self =>
-  def toChain: Chain[Segment[?]]
+
+  def toVector: Vector[Segment[?]]
+
+  def matches(path: Http.Path): Boolean
 
   final def imap[B](f: A => B)(g: B => A): Path[B] = new Path[B]:
-    export self.{matchesWithRemainders, toChain}
-    override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, B)] =
-      self.decodeWithRemainders(remainders).map(_.map(f))
+    export self.{matches, toVector}
+    override def decode(values: Http.Path): Codec.Result[B] = self.decode(values).map(f)
     override def encode(b: B): Http.Path = self.encode(g(b))
 
-  final infix def product[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
-    override def toChain: Chain[Segment[?]] = self.toChain ++ path.toChain
-    override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = self
-      .matchesWithRemainders(remainders)
-      .flatMap(path.matchesWithRemainders(_).orElse(path.matchesWithRemainders(remainders)))
-    override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, (A, B))] =
-      self.decodeWithRemainders(remainders).andThen { case (remainders, a) =>
-        path.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-      }
+  final def to[B](using convert: Convert[A, B]): Path[B] = imap(convert.to)(convert.from)
+
+  final def zip[B](path: Path[B]): Path[(A, B)] = new Path[(A, B)]:
+    override def toVector: Vector[Segment[?]] = self.toVector ++ path.toVector
+    override def matches(value: Http.Path): Boolean =
+      val (left, right) = value.splitAt(self.toVector.length)
+      self.matches(left) && path.matches(right)
+    override def decode(values: Http.Path): Codec.Result[(A, B)] =
+      val (left, right) = values.splitAt(self.toVector.length)
+      (self.decode(left), path.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Path = self.encode(ab._1) ++ path.encode(ab._2)
 
-  final infix def zip[B](path: Path[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] =
-    product(path).imap(evidence.apply)(evidence.unapply)
-  final def /[B](path: Path[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = zip(path)
-  final def /[B](segment: Segment[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = /(segment.toPath)
-  final def /(static: String): Path[A] = /(Segment.Static(static))
+  final def /(segment: String): Path[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
 
-  final def matches(path: Http.Path): Boolean = matchesWithRemainders(path).exists(_.isEmpty)
-  def matchesWithRemainders(remainders: Http.Path): Option[Http.Path]
-
-  def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, A)]
-  def encode(a: A): Http.Path
-
-  final def print: String = toChain match
-    case Chain.nil => "/"
-    case segments  => segments.map(_.print).mkString_("/", "/", "")
+  final def /[B](segment: Segment.Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] =
+    zip(segment.toPath).imap(merge.apply)(merge.unapply)
 
   final def toUrl: Url[A] = Url(this)
 
+  def decode(values: Http.Path): Codec.Result[A]
+
+  def encode(a: A): Http.Path
+
 object Path:
-  val Root: Path[Unit] = new Path[Unit]:
-    override def toChain: Chain[Segment[?]] = Chain.empty
-    override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.some
-    override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, Unit)] =
-      (remainders, ()).valid
-    override def encode(a: Unit): Http.Path = Chain.empty
+  val Empty: Path[Unit] = new Path[Unit]:
+    override def toVector: Vector[Segment[?]] = Vector.empty
+    override def matches(path: Http.Path): Boolean = path.isEmpty
+    override def decode(values: Http.Path): Codec.Result[Unit] = Validated.cond(
+      values.isEmpty,
+      (),
+      Violations.rootNec(
+        Violation(
+          Constraint.Primitive.Matches(Pattern.compile(Pattern.quote("/"))),
+          actual = Data.String("/" + values.mkString("/"))
+        )
+      )
+    )
+    override def encode(a: Unit): Http.Path = Vector.empty
 
   def apply[A](segment: Segment[A]): Path[A] = new Path[A]:
-    override def toChain: Chain[Segment[?]] = Chain.one(segment)
-    // TODO test this, I don't think this will work
-    override def matchesWithRemainders(remainders: Http.Path): Option[Http.Path] = remainders.uncons match
-      case Some((head, tail)) => Option.when(segment.matches(head))(tail)
-      case None               => None
-    override def decodeWithRemainders(remainders: Http.Path): Validated[Violations, (Http.Path, A)] = remainders.uncons
-      .match
-//        case Some((head, tail)) if segment.isOptional =>
-//          segment.decode(head).tupleLeft(tail).findValid(segment.decode(none).tupleLeft(remainders))
-        case Some((head, tail)) => segment.decode(head).tupleLeft(tail)
-        case None               => ??? // segment.decode(none).tupleLeft(remainders)
-      .leftMap(_.modifyHistory(segment.name /: _))
-    override def encode(a: A): Http.Path = Chain.one(segment.encode(a))
+    override def toVector: Vector[Segment[?]] = Vector(segment)
+    override def matches(path: Http.Path): Boolean = path match
+      case Vector(value) => segment.matches(value)
+      case _             => false
+    override def decode(values: Http.Path): Codec.Result[A] = values match
+      case Vector(value) => segment.decode(value)
+      case Vector() =>
+        Violations
+          .rootNec(
+            Violation(
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
+              actual = Data.String("/")
+            )
+          )
+          .invalid
+      case _ =>
+        Violations
+          .rootNec(
+            Violation(
+              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
+              actual = Data.String("/" + values.mkString("/"))
+            )
+          )
+          .invalid
+    override def encode(a: A): Http.Path = Vector(segment.encode(a))
 
-  given InvariantSemigroupal[Path] with
+  given Invariant[Path] with
     override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)
-    override def product[A, B](fa: Path[A], fb: Path[B]): Path[(A, B)] = fa.zip(fb)
+
+  given Show[Path[?]] = path => "/" + path.toVector.map(_.show).mkString("/")

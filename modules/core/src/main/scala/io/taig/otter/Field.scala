@@ -1,50 +1,62 @@
 package io.taig.otter
 
-import cats.Eq
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.syntax.*
-import io.taig.otter.validation.Violations
 
-sealed abstract class Field[A](val nulls: Option[Null]):
+sealed abstract class Field[+O <: Data, A]:
   self =>
-  def key: Value.Required[?]
-  def codec: Codec[?]
+
   def name: String
 
-  final def isOptional: Boolean = codec.isOptional
+  def codec: Codec[?, ?, ?]
 
-  final def :*[B](field: Field[B])(using evidence: Evidence.Merge[A, B]): Record[evidence.Out] = toRecord :* field
-  final def *:[B](field: Field[B])(using evidence: Evidence.Merge[B, A]): Record[evidence.Out] = field.toRecord :* this
+  final def nulls: Attribute.Optional[Field[O, A], Null] = Attribute.Optional(this, Keys.nulls)
 
-  final def to[B](using evidence: Evidence.Product.Aux[B, A]): Record[B] = toRecord.to
-  final def toRecord: Record[A] = Record(this)
-  def toProduct: Product[A]
+  def metadata: Metadata
 
-  final def nulls(f: Option[Null] => Option[Null]): Field[A] = new Field[A](f(nulls)) { export self.* }
-  final def nulls(value: Option[Null]): Field[A] = nulls(_ => value)
-  final def nulls(value: Null): Field[A] = nulls(Some(value))
+  final def modifyMetadata(f: Metadata => Metadata): Field[O, A] = new Field[O, A]:
+    export self.{codec, decode, encode, name}
+    override def metadata: Metadata = f(self.metadata)
 
-  def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], A)]
-  final def encode(a: A, parent: Null): Chain[(String, Data)] = (parent, nulls) match
-    case (_, Some(nulls)) => encodeWithNull(a, nulls)
-    case (parent, _)      => encodeWithNull(a, parent)
-  protected def encodeWithNull(a: A, nulls: Null): Chain[(String, Data)]
+  final def imap[B](f: A => B)(g: B => A): Field[O, B] = new Field[O, B]:
+    export self.{codec, metadata, name}
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): O = self.encode(g(b))
+
+  final def to[B](using convert: Convert[A, B]): Field[O, B] = imap(convert.to)(convert.from)
+
+  final def :*[P <: Data, B](field: Field[P, B])(using merge: Merge[A, B]): Fields[O | P, merge.Out] =
+    toFields :* field
+
+  final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Fields[P | O, merge.Out] =
+    field *: toFields
+
+  final def toFields: Fields[O, A] = Fields(this)
+
+  def decode(data: Data): Codec.Result[A]
+
+  final def encode(a: A, parent: Null): Option[(String, O)] =
+    val hideNull = (parent, nulls.value) match
+      case (_, Some(nulls)) => nulls === Null.Hide
+      case (nulls, None)    => nulls === Null.Hide
+
+    encode(a) match
+      case Data.Null if hideNull => None
+      case data                  => Some((name, data))
+
+  def encode(a: A): O
 
 object Field:
-  def apply[A: Eq, B](a: A, ofKey: => Value.Required[A], ofCodec: => Codec[B]): Field[B] = new Field[B](None):
-    override def key: Value.Required[?] = ofKey
-    override def codec: Codec[?] = ofCodec
-    override def name: String = ofKey.print(a)
+  def apply[F[+a] <: Data.Optional[a], O <: Data, A](name: String, of: => Codec[F, O, A]): Field[F[O], A] =
+    val _name = name
 
-    override def toProduct: Product[B] = Product(ofCodec)
+    new Field[F[O], A]:
+      override def name: String = _name
+      override def codec: Codec[?, ?, ?] = of
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Data): Codec.Result[A] = of.decode(data)
+      override def encode(a: A): F[O] = of.encode(a)
 
-    // TODO we gotta do some parsing here!
-    override def decodeWithRemainders(data: Chain[(String, Data)]): Validated[Violations, (Chain[(String, Data)], B)] =
-      data.firstWithRemainders(name) match
-        case Some((head, tail)) => ofCodec.decode(head).tupleLeft(tail)
-        case None               => ofCodec.decode(None).tupleLeft(data)
-
-    override def encodeWithNull(b: B, nulls: Null): Chain[(String, Data)] = ofCodec.encode(b) match
-      case Data.Null if nulls === Null.Hide => Chain.empty
-      case data                             => Chain.one(this.name, data)
+  given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
+    extension (self: Field[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Field[O, A] = self.modifyMetadata(f)

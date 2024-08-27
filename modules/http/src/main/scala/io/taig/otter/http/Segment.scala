@@ -1,73 +1,92 @@
 package io.taig.otter.http
 
-import cats.data.Validated
+import io.taig.otter.Metadata
+import io.taig.otter.Codec
+import cats.Id as Identity
+import io.taig.otter.Data
+import scala.Array as SArray
 import cats.syntax.all.*
-import io.taig.otter.validation.{Constraint, Violation, Violations}
-import io.taig.otter.{Data, Evidence, Union, Value}
+import io.taig.otter.Codec.Result
+import cats.data.Validated
+import io.taig.otter.Violations
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
+import java.util.regex.Pattern
+import io.taig.otter.XPath
+import cats.Show
 
-sealed abstract class Segment[A]:
-  self =>
-  type Self[a] <: Segment[a]
-
+sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
 
-  def imap[B](f: A => B)(g: B => A): Self[B]
-
-  final def /[B](segment: Segment[B])(using evidence: Evidence.Merge[A, B]): Path[evidence.Out] = toPath / segment
-  final def /(static: String): Path[A] = /(Segment.Static(static))
-
-  def matches(value: String): Boolean
-
-  def decode(value: String): Validated[Violations, A]
-  def encode(a: A): String
-
-  def print: String
+  def matches(segment: String): Boolean
 
   final def toPath: Path[A] = Path(this)
 
+  def encode(a: A): String
+
+  def decode(value: String): Codec.Result[A]
+
+  override def toString: String
+
 object Segment:
-  sealed abstract class Static[A](val name: String) extends Segment[A]:
-    self =>
-    final override type Self[a] = Segment.Static[a]
-    final override def imap[B](f: A => B)(g: B => A): Segment.Static[B] = new Static[B](name):
-      override def decode(value: String): Validated[Violations, B] = self.decode(value).map(f)
-      override def encode(b: B): String = self.encode(g(b))
-    final override def matches(value: String): Boolean = name === value
-    final override def print: String = name
-
-  object Static:
-    def apply(of: String): Segment.Static[Unit] = new Static[Unit](of):
-      override def decode(value: String): Validated[Violations, Unit] = Validated.cond(
-        matches(value),
-        (),
-        Violations.rootNec(Violation(Constraint.Equals(of), actual = Data.String(value)))
+  final case class Static(name: String) extends Segment[Unit]:
+    override def matches(segment: String): Boolean = segment === name
+    override def decode(value: String): Codec.Result[Unit] = Validated.cond(
+      name === value,
+      (),
+      Violations.namespaceNec(
+        XPath.Root / name,
+        Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = Data.String(value))
       )
-      override def encode(a: Unit): String = of
+    )
 
-  sealed abstract class Parameter[A](
-      val name: String,
-      val codec: Value.Required[?] | Union.Required[?],
-      val description: Option[String]
-  ) extends Segment[A]:
-    self =>
-    final override type Self[a] = Segment.Parameter[a]
-    final def description(f: Option[String] => Option[String]): Segment.Parameter[A] =
-      new Parameter[A](name, codec, f(description)) { export self.* }
-    final def description(value: Option[String]): Segment.Parameter[A] = description(_ => value)
-    final def description(value: String): Segment.Parameter[A] = description(Some(value))
-    final override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = new Parameter[B](name, codec, description):
-      override def decode(value: String): Validated[Violations, B] = self.decode(value).map(f)
-      override def encode(b: B): String = self.encode(g(b))
-    final override def matches(value: String): Boolean = true
-    final override def print: String = s"{$name}"
+    override def encode(a: Unit): String = name
+
+    override def toString: String = name
+
+  sealed abstract class Parameter[A] extends Segment[A]:
+    override def matches(segment: String): Boolean = true
+
+    def codec: Codec[Identity, Data.Primitive | Data.Array[Data.Primitive], ?] |
+      Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], ?]
+
+    def metadata: Metadata
+
+    def imap[B](f: A => B)(g: B => A): Segment[B]
+
+    final override def toString: String = s"{$name}"
 
   object Parameter:
-    def apply[A](parameter: String, of: Value.Required[A]): Segment.Parameter[A] =
-      new Parameter[A](parameter, of, None):
-        override def decode(value: String): Validated[Violations, A] = of.parse(value)
-        override def encode(a: A): String = of.print(a)
+    final case class Default[A](name: String, codec: Codec[Identity, Data.Primitive, A], metadata: Metadata)
+        extends Segment.Parameter[A]:
+      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
+      override def encode(a: A): String = codec.printRequired(a)
+      override def decode(value: String): Codec.Result[A] = codec.parseRequired(value).leftMap(name /: _)
 
-    def apply[A](parameter: String, of: Union.Required.Of[Value.Required[?], A]): Segment.Parameter[A] =
-      new Parameter[A](parameter, of, None):
-        override def decode(value: String): Validated[Violations, A] = of.parse(value)
-        override def encode(a: A): String = of.print(a)
+    final case class Array[A](name: String, codec: Codec[Identity, Data.Array[Data.Primitive], A], metadata: Metadata)
+        extends Segment.Parameter[A]:
+      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
+      override def encode(a: A): String = codec.printArray(a).mkString(",")
+      override def decode(value: String): Codec.Result[A] =
+        codec.parseArray(value.split(',').toVector).leftMap(name /: _)
+
+    final case class Object[A](
+        name: String,
+        codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
+        metadata: Metadata
+    ) extends Segment.Parameter[A]:
+      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
+      override def encode(a: A): String = codec
+        .printOptionalObject(a)
+        .fold("")(_.map { case (key, value) => (key, value) }.mkString(","))
+      override def decode(value: String): Codec.Result[A] =
+        if value.isEmpty
+        then codec.parseOptionalObject(none).leftMap(name /: _)
+        else
+          codec
+            .parseOptionalObject(
+              value.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector.some
+            )
+            .leftMap(name /: _)
+
+  given Show[Segment[?]] = Show.fromToString

@@ -1,122 +1,132 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.{Codec, Data}
-import io.taig.otter.codecs.*
-import io.taig.otter.http.Http.Request.Body
-import io.taig.otter.http.Http.{Payload, Request}
-import io.taig.otter.validation.{Constraint, History, Violation, Violations}
+import io.taig.otter.Violations
+import org.typelevel.ci.*
+import io.taig.otter.Violation
+import io.taig.otter.filterKeys
+import io.taig.otter.http.header.MediaType
+import cats.data.Validated
+import io.taig.otter.XPath
+import io.taig.otter.Convert
+import io.taig.otter.Merge
 
-sealed abstract class Request[A](val description: Option[String]):
+sealed abstract class Request[A]:
   self =>
+
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
-  def body: Request.Body[?]
+  def bodies: Option[Bodies[?]]
 
-  def description(f: Option[String] => Option[String]): Request[A] = Request(this, f(description))
-  def description(value: Option[String]): Request[A] = description(_ => value)
-  def description(value: String): Request[A] = description(Some(value))
+  final def matches(method: Method, url: Http.Url): Boolean = self.method === method && self.url.matches(url)
 
-  final def matches(method: Method, url: Http.Url): Boolean = this.method === method && this.url.matches(url)
+  final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:
+    export self.{bodies, headers, method, url}
+    override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, B] =
+      self.decode(contentType, request).map(f)
+    override def encode(contentType: Option[MediaType], b: B): Http.Request = self.encode(contentType, g(b))
 
-  final def andThen[B](f: A => Validated[Violations, B])(g: B => A): Request[B] = new Request[B](description):
-    export self.{body, headers, method, url}
-    override def decode(request: Http.Request): Validated[Violations, B] = self.decode(request).andThen(f)
-    override def encode(b: B): Http.Request = self.encode(g(b))
+  final def to[B](using convert: Convert[A, B]): Request[B] = imap(convert.to)(convert.from)
 
-  final def imap[B](f: A => B)(g: B => A): Request[B] = andThen(f(_).valid)(g)
+  final def zip[B](headers: Headers[B]): Request[(A, B)] =
+    val _headers = headers
 
-  final def zip[B](other: Headers[B]): Request[(A, B)] = new Request[(A, B)](description):
-    export self.{body, method, url}
-    override def headers: Headers[?] = self.headers.zip(other)
-    override def decode(request: Http.Request): Validated[Violations, (A, B)] =
-      self
-        .decode(request)
-        .andThen(a => other.decode(request.headers).leftMap(_.modifyHistory("headers" /: _)).map((a, _)))
+    new Request[(A, B)]:
+      export self.{bodies, method, url}
+      override def headers: Headers[?] = self.headers.zip(headers)
+      override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
+        val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
+        val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
+        (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)) match
+          case (Right(a), Validated.Valid(b))       => Right((a, b))
+          case (Right(_), Validated.Invalid(right)) => Left(Route.Error.ValidationViolations(right))
+          case (Left(Route.Error.ValidationViolations(left)), Validated.Invalid(right)) =>
+            Left(Route.Error.ValidationViolations(left.combine(right)))
+          case (left @ Left(_), _) => left.asInstanceOf[Either[Route.Error, (A, B)]]
+      override def encode(contentType: Option[MediaType], ab: (A, B)): Http.Request =
+        self.encode(contentType, ab._1).modifyHeaders(_ ++ _headers.encode(ab._2))
 
-    override def encode(ab: (A, B)): Http.Request = self.encode(ab._1).modifyHeaders(_ ++ other.encode(ab._2))
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[merge.Out] =
+    zip(header.toHeaders).imap(merge.apply)(merge.unapply)
 
-  def decode(request: Http.Request): Validated[Violations, A]
-  def encode(a: A): Http.Request
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Request[merge.Out] =
+    zip(header.toHeaders).imap(ab => merge(ab.swap))(merge.unapply(_).swap)
+
+  final def decode(request: Http.Request): Either[Route.Error, A] =
+    if request.body.isEmpty
+    then decode(contentType = none, request)
+    else
+      request.headers
+        .collectFirst { case (ci"Content-Type", value) => value }
+        .toRight(Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("string", "null")))
+        .flatMap: contentType =>
+          MediaType
+            .parse(contentType)
+            .leftMap(_ =>
+              Violations.namespaceNec(XPath.Root / "header" / "Content-Type", Violation.tpe("mediaType", contentType))
+            )
+        .match
+          case Right(mediaType) => decode(mediaType.some, request)
+          case Left(violations) => Left(Route.Error.MediaTypesUnsupported(violations))
+
+  def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, A]
+
+  def encode(contentType: Option[MediaType], a: A): Http.Request
 
 object Request:
-  sealed abstract class Body[A]:
-    self =>
-    type Self[a] <: Body[a] { type Self[a] = self.Self[a] }
+  def apply[A, B, C](method: Method, url: Url[A], headers: Headers[B], bodies: Bodies[C]): Request[(A, B, C)] =
+    val _method = method
+    val _url = url
+    val _headers = headers
+    val _bodies = bodies
 
-    def codec: Option[Codec[?]]
+    new Request[(A, B, C)]:
+      override def method: Method = _method
+      override def url: Url[A] = _url
+      override def headers: Headers[B] = _headers
+      override def bodies: Option[Bodies[C]] = _bodies.some
+      override def decode(
+          contentType: Option[MediaType],
+          request: Http.Request
+      ): Either[Route.Error, (A, B, C)] = (url.decode(request.url), headers.decode(request.headers)).tupled match
+        case Validated.Valid((a, b)) =>
+          contentType match
+            case Some(contentType) =>
+              _bodies
+                .decode(contentType, request.body) match
+                case Validated.Valid(Some((_, c))) => (a, b, c).asRight
+                case Validated.Valid(None) =>
+                  val supportedContentTypes = _bodies.toNev.toList.map(_.mediaType.show)
+                  Route.Error
+                    .MediaTypesUnsupported(
+                      Violations.rootNec(Violation.oneOf(supportedContentTypes, actual = contentType.show))
+                    )
+                    .asLeft
+                case Validated.Invalid(violations) => Route.Error.ValidationViolations("body" /: violations).asLeft
+            case None =>
+              _bodies.decodeFirst(request.body) match
+                case Validated.Valid((_, c))       => (a, b, c).asRight
+                case Validated.Invalid(violations) => Route.Error.ValidationViolations("body" /: violations).asLeft
+        case Validated.Invalid(violations) => Route.Error.ValidationViolations(violations).asLeft
+      override def encode(contentType: Option[MediaType], abc: (A, B, C)): Http.Request =
+        val (mediaType, payload) = contentType
+          .flatMap(contentType => _bodies.encode(contentType, abc._3).tupleLeft(contentType))
+          .getOrElse(_bodies.encodeFirst(charset = none, abc._3))
+        Http.Request(method, url.encode(abc._1), (ci"Content-Type", mediaType.show) +: headers.encode(abc._2), payload)
 
-    def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A]
-    def encode(a: A): (Http.Headers, Http.Request.Body)
+  def apply[A, B](method: Method, url: Url[A], headers: Headers[B]): Request[(A, B)] =
+    val _method = method
+    val _url = url
+    val _headers = headers
 
-  object Body:
-    sealed abstract class Singlepart[A] extends Request.Body[A]:
-      self =>
-
-      override type Self[a] <: Request.Body.Singlepart[a] { type Self[a] = self.Self[a] }
-
-      override def decode(headers: Http.Headers, body: Http.Request.Body): Validated[Violations, A] = body match
-        case Http.Request.Body.Singlepart(payload) => decode(headers, payload)
-        case Http.Request.Body.Multipart()         => ???
-      def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A]
-      override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
-
-    object Singlepart:
-      sealed abstract class Strict[A](val codec: Option[Codec[?]]) extends Request.Body.Singlepart[A]:
-        self =>
-        final override type Self[a] = Request.Body.Singlepart.Strict[a]
-
-        final override def decode(headers: Http.Headers, payload: Http.Payload): Validated[Violations, A] =
-          payload match
-            case Payload.Strict(data) => decode(headers, data)
-            case Payload.Streaming(_) => Violations.rootNec(Violation.tpe("strict", "streaming")).invalid
-        def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A]
-        override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart)
-
-      object Strict:
-        val Empty: Request.Body.Singlepart.Strict[Unit] = new Strict[Unit](None):
-          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Unit] = ().valid
-          override def encode(a: Unit): (Http.Headers, Http.Request.Body.Singlepart) =
-            (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(Array.emptyByteArray)))
-
-        val Binary: Request.Body.Singlepart.Strict[Array[Byte]] =
-          new Strict[Array[Byte]](Some(string.format("binary"))):
-            override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, Array[Byte]] =
-              payload.valid
-            override def encode(a: Array[Byte]): (Http.Headers, Http.Request.Body.Singlepart) =
-              (Chain.empty, Http.Request.Body.Singlepart(Http.Payload.Strict(a)))
-
-        def apply[A](
-            f: (Http.Headers, Array[Byte]) => Validated[Violations, Data],
-            g: Data => (Http.Headers, Array[Byte]),
-            of: Codec[A]
-        ): Request.Body.Singlepart.Strict[A] = new Strict[A](Some(of)):
-          override def decode(headers: Http.Headers, payload: Array[Byte]): Validated[Violations, A] =
-            f(headers, payload).andThen(of.decode)
-          override def encode(a: A): (Http.Headers, Http.Request.Body.Singlepart) =
-            g(of.encode(a)).map(bytes => Http.Request.Body.Singlepart(Http.Payload.Strict(bytes)))
-
-  def apply[A](request: Request[A], description: Option[String]): Request[A] =
-    new Request[A](description) { export request.* }
-
-  def apply[A, B](m: Method, a: Url[A], b: Request.Body[B]): Request[(A, B)] = new Request[(A, B)](None):
-    override def method: Method = m
-    override def url: Url[A] = a
-    override def headers: Headers[Unit] = Headers.Empty
-    override def body: Body[B] = b
-    override def decode(request: Http.Request): Validated[Violations, (A, B)] = Validated
-      .cond(
-        method === request.method,
-        (),
-        Violations.oneNec(
-          History.Root / "method",
-          Violation(Constraint.Equals(method.toString), Data.String(request.method.toString))
-        )
-      )
-      .andThen(_ => url.decode(request.url).leftMap(_.modifyHistory("url" /: _)))
-      .andThen(body.decode(request.headers, request.body).leftMap(_.modifyHistory("body" /: _)).tupleLeft)
-    override def encode(ab: (A, B)): Http.Request =
-      val (additionalHeaders, body) = this.body.encode(ab._2)
-      Http.Request(method, url.encode(ab._1), additionalHeaders, body)
+    new Request[(A, B)]:
+      override def method: Method = _method
+      override def url: Url[A] = _url
+      override def headers: Headers[B] = _headers
+      override def bodies: Option[Bodies[?]] = none
+      override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
+        (url.decode(request.url), headers.decode(request.headers)).tupled.toEither
+          .leftMap(Route.Error.ValidationViolations.apply)
+      override def encode(contentType: Option[MediaType], ab: (A, B)): Http.Request =
+        Http.Request(method, url.encode(ab._1), headers.encode(ab._2), Array.emptyByteArray)

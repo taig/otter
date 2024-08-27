@@ -1,43 +1,47 @@
 package io.taig.otter.http
 
-import cats.data.{Chain, Validated}
 import cats.syntax.all.*
-import io.taig.otter.validation.Violations
+import io.taig.otter.Codec
+import cats.data.Validated
+import io.taig.otter.filterKeys
+import io.taig.otter.Merge
 
 sealed abstract class Headers[A]:
   self =>
-  def toChain: Chain[Header[?]]
+
+  def toVector: Vector[Header[?]]
 
   final def imap[B](f: A => B)(g: B => A): Headers[B] = new Headers[B]:
-    export self.toChain
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, B)] =
-      self.decodeWithRemainders(remainders).map(_.map(f))
+    export self.toVector
+    override def decode(headers: Http.Headers): Codec.Result[B] = self.decode(headers).map(f)
     override def encode(b: B): Http.Headers = self.encode(g(b))
 
   final def zip[B](headers: Headers[B]): Headers[(A, B)] = new Headers[(A, B)]:
-    export self.toChain
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, (A, B))] =
-      self.decodeWithRemainders(remainders) match
-        case Validated.Valid((remainders, a)) => headers.decodeWithRemainders(remainders).map(_.tupleLeft(a))
-        case Validated.Invalid(left) =>
-          headers.decodeWithRemainders(remainders) match
-            case Validated.Valid(_)       => left.invalid
-            case Validated.Invalid(right) => (left |+| right).invalid
+    override def toVector: Vector[Header[?]] = self.toVector ++ headers.toVector
+    override def decode(values: Http.Headers): Codec.Result[(A, B)] =
+      val (left, remainders) = values.filterKeys(self.toVector.map(_.name))
+      val (right, _) = remainders.filterKeys(headers.toVector.map(_.name))
+      (self.decode(left), headers.decode(right)).tupled
     override def encode(ab: (A, B)): Http.Headers = self.encode(ab._1) ++ headers.encode(ab._2)
 
-  final def decode(headers: Http.Headers): Validated[Violations, A] = decodeWithRemainders(headers).map(_._2)
-  def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)]
+  final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] =
+    zip(header.toHeaders).imap(merge.apply)(merge.unapply)
+
+  final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] =
+    header.toHeaders.zip(this).imap(merge.apply)(merge.unapply)
+
   def encode(a: A): Http.Headers
+
+  def decode(headers: Http.Headers): Codec.Result[A]
 
 object Headers:
   val Empty: Headers[Unit] = new Headers[Unit]:
-    override def toChain: Chain[Header[?]] = Chain.empty
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, Unit)] =
-      (remainders, ()).valid
-    override def encode(a: Unit): Http.Headers = Chain.empty
+    override def toVector: Vector[Header[?]] = Vector.empty
+    override def encode(a: Unit): Http.Headers = Vector.empty
+    override def decode(headers: Http.Headers): Codec.Result[Unit] = ().valid
 
   def apply[A](header: Header[A]): Headers[A] = new Headers[A]:
-    override def toChain: Chain[Header[A]] = Chain.one(header)
-    override def decodeWithRemainders(remainders: Http.Headers): Validated[Violations, (Http.Headers, A)] =
-      header.decodeWithRemainders(remainders).leftMap(_.modifyHistory(header.name.toString /: _))
-    override def encode(a: A): Http.Headers = header.encode(a)
+    override def toVector: Vector[Header[?]] = Vector(header)
+    override def encode(a: A): Http.Headers = Vector.from(header.encode(a).tupleLeft(header.name))
+    override def decode(headers: Http.Headers): Codec.Result[A] =
+      header.decode(headers.collectFirst { case (name, value) if name === header.name => value })
