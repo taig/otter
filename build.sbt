@@ -5,16 +5,16 @@ val Version = new {
   val Cats = "2.12.0"
   val CatsEffect = "3.5.3"
   val CatsParse = "1.0.0"
-  val Circe = "0.14.9"
-  val Ducktape = "0.2.4"
+  val Circe = "0.14.10"
+  val Ducktape = "0.2.5"
   val EnumerationExt = "0.2.0"
-  val Fs2 = "3.10.2"
+  val Fs2 = "3.11.0"
   val Http4s = "1.0.0-M41"
   val Java = "17"
   val JNanoId = "2.0.0"
   val Log4Cats = "2.7.0"
   val Mouse = "1.3.2"
-  val Munit = "1.0.1"
+  val Munit = "1.0.2"
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.3"
   val ScalaJavaTime = "2.6.0"
@@ -66,7 +66,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     core,
     javaTime,
     jsonCirce,
-    openapiCirce,
     http,
     httpHttp4s,
     httpJsonCirce,
@@ -110,14 +109,6 @@ lazy val jsonCirce = module(identifier = Some("json-circe"))
         Nil
   )
   .dependsOn(core % "compile->compile;test->test")
-
-lazy val openapiCirce = module(identifier = Some("openapi-circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(openapi % "compile->compile;test->test")
 
 // lazy val typescript = module(identifier = Some("typescript"))
 //   .dependsOn(core % "compile->compile;test->test")
