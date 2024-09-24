@@ -8,25 +8,19 @@ import cats.Show
 
 final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =
-    try {
-      routes.find(request.method, request.url) match
-        case Some(route) => route(request, onError)
-        case None =>
-          val accept = request.headers
-            .collectFirst { case (ci"Accept", value) => value }
-            .flatMap(Accept.parse(_).toOption)
-            .map(_.toResult)
+    routes.find(request.method, request.url) match
+      case Some(route) => route(request, onError)
+      case None =>
+        val accept = request.headers
+          .collectFirst { case (ci"Accept", value) => value }
+          .flatMap(Accept.parse(_).toOption)
+          .map(_.toResult)
 
-          accept
-            .flatMap(error.encode(_, App.Error.RouteNotFound))
-            // TODO charset
-            .getOrElse(error.encode(charset = ???, App.Error.RouteNotFound))
-            .pure[F]
-    } catch {
-      case throwable: Throwable =>
-        throwable.printStackTrace()
-        ???
-    }
+        accept
+          .flatMap(error.encode(_, App.Error.RouteNotFound))
+          // TODO charset
+          .getOrElse(error.encode(charset = none, App.Error.RouteNotFound))
+          .pure[F]
 
 object App:
   enum Error:
