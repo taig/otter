@@ -16,5 +16,5 @@ final class SampleRepositories(books: AtomicCell[IO, Chain[Book]], librarians: A
 object SampleRepositories:
   def apply(): IO[SampleRepositories] = (
     AtomicCell[IO].empty[Chain[Book]],
-    AtomicCell[IO].empty[Chain[Librarian]],
+    AtomicCell[IO].empty[Chain[Librarian]]
   ).mapN(new SampleRepositories(_, _))

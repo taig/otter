@@ -184,7 +184,7 @@ trait Codecs extends Base.Codecs, Types:
           case (key, Data.Null)            => (key, none)
           case (key, data: Data.Primitive) => (key, data.plain.some)
 
-        FormData(values).show.getBytes(charset.getOrElse(fallback)),
+        FormData(values).show.getBytes(charset.getOrElse(fallback))
     )
 
   def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
