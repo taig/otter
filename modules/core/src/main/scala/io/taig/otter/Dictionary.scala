@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 abstract class Dictionary[+F[+a] <: Data.Optional[a], +O <: Data, A] extends Codec[F, Data.Object[O], A]:
   self =>

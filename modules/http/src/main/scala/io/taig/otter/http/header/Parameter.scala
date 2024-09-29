@@ -1,11 +1,11 @@
 package io.taig.otter.http.header
 
-import io.taig.otter.http.Printers
-import io.taig.otter.http.Parsers
-import cats.parse.Parser
-import org.typelevel.ci.CIString
-import cats.Show
 import cats.Eq
+import cats.Show
+import cats.parse.Parser
+import io.taig.otter.http.Parsers
+import io.taig.otter.http.Printers
+import org.typelevel.ci.CIString
 
 final case class Parameter(name: CIString, value: String):
   override def toString: String = Printers(this)

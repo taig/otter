@@ -1,10 +1,10 @@
 package io.taig.otter.sample.app
 
 import cats.effect.IO
-import io.taig.otter.sample.api.EndpointImplementation
 import io.taig.otter.http.Routes
-import io.taig.otter.sample.app.routes.LibrariansSelfSessionsRoutes
+import io.taig.otter.sample.api.EndpointImplementation
 import io.taig.otter.sample.app.routes.BooksRoutes
+import io.taig.otter.sample.app.routes.LibrariansSelfSessionsRoutes
 
 final class SampleRoutes(implementation: EndpointImplementation[IO], repositories: SampleRepositories):
   def apply(): Routes[IO] = BooksRoutes(implementation, repositories.book) ++

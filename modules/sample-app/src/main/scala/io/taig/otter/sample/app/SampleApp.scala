@@ -1,14 +1,14 @@
 package io.taig.otter.sample.app
 
 import cats.effect.IO
+import cats.effect.ResourceApp
+import cats.effect.kernel.Resource
 import io.taig.otter.sample.Librarian
 import io.taig.otter.sample.api.Dsl.*
 import io.taig.otter.server.Http4sServer
 import org.http4s.ember.server.EmberServerBuilder
-import org.typelevel.log4cats.noop.NoOpFactory
 import org.typelevel.log4cats.LoggerFactory
-import cats.effect.ResourceApp
-import cats.effect.kernel.Resource
+import org.typelevel.log4cats.noop.NoOpFactory
 
 object SampleApp extends ResourceApp.Forever:
   given LoggerFactory[IO] = NoOpFactory[IO]

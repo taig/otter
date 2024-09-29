@@ -1,9 +1,10 @@
 package io.taig.otter.sample.api.schema
 
-import io.taig.otter.sample.api.Dsl.*
-import scala.collection.immutable.SortedSet
-import cats.implicits.*
 import cats.Order
+import cats.implicits.*
+import io.taig.otter.sample.api.Dsl.*
+
+import scala.collection.immutable.SortedSet
 
 final case class BookApiSchema(
     isbn: IsbnApiSchema,

@@ -1,7 +1,8 @@
 package io.taig.otter.sample
 
-import java.util.UUID
 import org.typelevel.ci.*
+
+import java.util.UUID
 
 final case class Librarian(reference: UUID, email: CIString, password: String, session: Option[Session]):
   def toLibratianSummary: Librarian.Summary = Librarian.Summary(reference, email)

@@ -1,8 +1,9 @@
 package io.taig.otter
 
-import scala.collection.immutable.Iterable
 import cats.Eq
 import cats.syntax.all.*
+
+import scala.collection.immutable.Iterable
 
 extension [A: Eq, B](self: Vector[(A, B)])
   def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =

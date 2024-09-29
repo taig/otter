@@ -1,12 +1,12 @@
 package io.taig.otter.http
 
+import cats.data.Ior
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import io.taig.otter.http.header.Accept
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.XPath
-import io.taig.otter.Violation
-import cats.data.Ior
+import io.taig.otter.http.header.Accept
 
 final case class Response[A](results: Results[A], errors: Results[Route.Error], failure: Result[Unit]):
   final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))

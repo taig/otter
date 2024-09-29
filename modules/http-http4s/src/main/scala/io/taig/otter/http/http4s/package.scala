@@ -1,23 +1,21 @@
 package io.taig.otter.http.http4s
 
-import cats.syntax.all.*
 import cats.MonadThrow
 import cats.effect.Concurrent
+import cats.syntax.all.*
 import io.taig.otter.http.*
-import org.http4s.Uri.Path as Http4sPath
+import org.http4s.Entity as Http4sEntity
+import org.http4s.Header as Http4sHeader
+import org.http4s.Headers as Http4sHeaders
 import org.http4s.HttpApp as Http4sApp
-import org.http4s.{
-  Entity as Http4sEntity,
-  Header as Http4sHeader,
-  Headers as Http4sHeaders,
-  Method as Http4sMethod,
-  ParseResult,
-  Query as Http4sQuery,
-  Request as Http4sRequest,
-  Response as Http4sResponse,
-  Status,
-  Uri
-}
+import org.http4s.Method as Http4sMethod
+import org.http4s.ParseResult
+import org.http4s.Query as Http4sQuery
+import org.http4s.Request as Http4sRequest
+import org.http4s.Response as Http4sResponse
+import org.http4s.Status
+import org.http4s.Uri
+import org.http4s.Uri.Path as Http4sPath
 import scodec.bits.ByteVector
 
 def toHttpMethod(method: Http4sMethod): Method = Method(method.name)

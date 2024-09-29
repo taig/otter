@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
+
 import java.nio.charset.Charset
 
 private def loadCharset(name: String): Option[Charset] =

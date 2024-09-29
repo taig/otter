@@ -1,14 +1,15 @@
 package io.taig.otter
 
-import cats.data.NonEmptyChain
 import cats.Semigroup
-import cats.data.NonEmptyMap
-import cats.data.NonEmptyList
-import cats.parse.Parser
-import cats.data.Chain
-import scala.collection.immutable.SortedMap
-import cats.implicits.*
 import cats.Show
+import cats.data.Chain
+import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
+import cats.data.NonEmptyMap
+import cats.implicits.*
+import cats.parse.Parser
+
+import scala.collection.immutable.SortedMap
 
 enum Violations:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])

@@ -1,13 +1,14 @@
 package io.taig.otter.http.json
 
-import io.circe.jawn.JawnParser
-import io.circe.Printer
-import io.taig.otter.http as Http
-import io.taig.otter.json.toData
-import io.taig.otter.json.fromData
-import java.nio.charset.StandardCharsets
 import cats.data.Validated
+import io.circe.Printer
+import io.circe.jawn.JawnParser
+import io.taig.otter.http as Http
+import io.taig.otter.json.fromData
+import io.taig.otter.json.toData
+
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 trait Codecs extends Http.Types, Http.Codecs:
   self =>

@@ -1,14 +1,14 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
-import io.taig.otter.http.header.Accept
-import io.taig.otter.Violations
-import org.typelevel.ci.*
-import io.taig.otter.XPath
-import io.taig.otter.Violation
-import cats.data.Validated
 import cats.ApplicativeThrow
 import cats.Show
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.XPath
+import io.taig.otter.http.header.Accept
+import org.typelevel.ci.*
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
@@ -23,22 +23,29 @@ final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I =
           .leftMap(_ => Violations.namespaceNec(XPath.Root / "header" / "Accept", Violation.tpe("rfc9110", value)))
       .map(_.map(_.toResult))
 
-    accept
-      .match
-        case Validated.Valid(accept) =>
-          endpoint.request
-            .decode(request)
-            .traverse(implementation)
-            .map(endpoint.response.encode(accept, _))
-        case Validated.Invalid(violations) =>
-          endpoint.response.errors
-            .encode(charset = none, Route.Error.ContentNegotiationFailed(violations))
+    try {
+      accept
+        .match
+          case Validated.Valid(accept) =>
+            endpoint.request
+              .decode(request)
+              .traverse(implementation)
+              .map(endpoint.response.encode(accept, _))
+          case Validated.Invalid(violations) =>
+            endpoint.response.errors
+              .encode(charset = none, Route.Error.ContentNegotiationFailed(violations))
+              .pure[F]
+        .handleErrorWith: throwable =>
+          onError(throwable) *> accept.toOption.flatten
+            .flatMap(endpoint.response.failure.encode(_, ()))
+            .getOrElse(endpoint.response.failure.encode(charset = none, ()))
             .pure[F]
-      .handleErrorWith: throwable =>
-        onError(throwable) *> accept.toOption.flatten
-          .flatMap(endpoint.response.failure.encode(_, ()))
-          .getOrElse(endpoint.response.failure.encode(charset = none, ()))
-          .pure[F]
+    } catch { throwable =>
+      onError(throwable) *> accept.toOption.flatten
+        .flatMap(endpoint.response.failure.encode(_, ()))
+        .getOrElse(endpoint.response.failure.encode(charset = none, ()))
+        .pure[F]
+    }
 
   def :+(endpoint: Route[F, ?, ?]): Routes[F] = toRoutes :+ endpoint
 

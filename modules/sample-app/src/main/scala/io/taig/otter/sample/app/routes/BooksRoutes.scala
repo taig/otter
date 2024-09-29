@@ -1,18 +1,18 @@
 package io.taig.otter.sample.app.routes
 
 import cats.effect.IO
+import cats.implicits.*
 import io.github.arainko.ducktape.*
 import io.taig.otter.http.Routes
+import io.taig.otter.sample.Book
 import io.taig.otter.sample.api.EndpointImplementation
 import io.taig.otter.sample.api.RoleRoute
-import io.taig.otter.sample.api.endpoint.books.post.Error
 import io.taig.otter.sample.api.endpoint
+import io.taig.otter.sample.api.endpoint.books.post.Error
+import io.taig.otter.sample.api.schema.BookApiSchema
+import io.taig.otter.sample.app.repository.BookRepository
 import io.taig.otter.sample.app.transformers.given
 import mouse.all.*
-import io.taig.otter.sample.app.repository.BookRepository
-import io.taig.otter.sample.api.schema.BookApiSchema
-import io.taig.otter.sample.Book
-import cats.implicits.*
 
 final class BooksRoutes(implementation: EndpointImplementation[IO], book: BookRepository):
   val get: RoleRoute[IO, Unit, List[BookApiSchema.Summary]] =

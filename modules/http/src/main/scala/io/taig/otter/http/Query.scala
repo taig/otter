@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Metadata
 import io.taig.otter.Codec
+import io.taig.otter.Convert
 import io.taig.otter.Data
 import io.taig.otter.Merge
-import io.taig.otter.Convert
+import io.taig.otter.Metadata
 
 sealed abstract class Query[A]:
   def name: String

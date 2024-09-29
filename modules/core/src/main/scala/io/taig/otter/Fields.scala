@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 sealed abstract class Fields[+O <: Data, A]:
   self =>

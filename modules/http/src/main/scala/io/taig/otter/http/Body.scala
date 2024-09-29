@@ -1,10 +1,11 @@
 package io.taig.otter.http
 
-import java.nio.charset.Charset
 import io.taig.otter.Codec
-import io.taig.otter.http.header.MediaType
 import io.taig.otter.Data
 import io.taig.otter.Data.Optional
+import io.taig.otter.http.header.MediaType
+
+import java.nio.charset.Charset
 
 sealed abstract class Body[A]:
   self =>

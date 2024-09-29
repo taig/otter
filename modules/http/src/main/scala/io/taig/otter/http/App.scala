@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.MonadThrow
-import org.typelevel.ci.*
-import io.taig.otter.http.header.Accept
 import cats.Show
+import cats.syntax.all.*
+import io.taig.otter.http.header.Accept
+import org.typelevel.ci.*
 
 final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =

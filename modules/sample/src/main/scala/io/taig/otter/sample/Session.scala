@@ -1,6 +1,7 @@
 package io.taig.otter.sample
 
 import cats.Eq
+
 import java.util.UUID
 
 opaque type Session = UUID

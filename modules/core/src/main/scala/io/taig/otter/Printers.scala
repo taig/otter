@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.data.NonEmptyChain
 import cats.data.Chain
-import cats.syntax.all.*
+import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
+import cats.syntax.all.*
 
 private[otter] object Printers:
   def apply(step: Step): String = step match
@@ -17,7 +17,7 @@ private[otter] object Printers:
     case Constraint.OneOf(values)                                   => s"oneOf [${values.toList.mkString(",")}]"
     case Constraint.Collection.MaxItems(reference)                  => s"maxItem $reference"
     case Constraint.Collection.MinItems(reference)                  => s"minItem $reference"
-    case Constraint.Collection.UniqueItems                          => s"uniqueItems"
+    case Constraint.Collection.UniqueItems                          => "uniqueItems"
     case Constraint.Object.MaxProperties(reference)                 => s"maxProperties $reference"
     case Constraint.Object.MinProperties(reference)                 => s"minProperties $reference"
     case Constraint.Primitive.Matches(pattern)                      => s"matches \"$pattern\""

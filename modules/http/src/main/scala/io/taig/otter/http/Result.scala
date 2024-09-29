@@ -1,15 +1,16 @@
 package io.taig.otter.http
 
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import org.typelevel.ci.*
 import io.taig.otter.Convert
 import io.taig.otter.http.header.Accept
-import cats.data.NonEmptyList
 import io.taig.otter.http.header.MediaRange
-import io.taig.otter.http.header.Parameters
-import java.nio.charset.Charset
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.header.Parameters
+import org.typelevel.ci.*
+
+import java.nio.charset.Charset
 
 sealed abstract class Result[A]:
   self =>

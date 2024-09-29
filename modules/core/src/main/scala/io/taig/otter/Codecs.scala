@@ -1,25 +1,26 @@
 package io.taig.otter
 
-import cats.data.NonEmptySeq
-import cats.data.NonEmptyList
+import cats.Order
+import cats.data.Chain
 import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
+import cats.data.NonEmptyMap
+import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
-import cats.data.NonEmptyMap
+import cats.implicits.*
+import cats.kernel.Eq
+import io.taig.enumeration.ext.EnumerationValues
+import io.taig.enumeration.ext.Mapping
 import io.taig.otter as Base
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.Chain
-import cats.Order
-import cats.implicits.*
-import scala.collection.immutable.SortedSet
-import scala.collection.immutable.SortedMap
-import scala.collection.immutable.Map
-import io.taig.enumeration.ext.Mapping
-import io.taig.enumeration.ext.EnumerationValues
-import java.util.regex.Pattern
 import java.util.UUID
-import cats.kernel.Eq
+import java.util.regex.Pattern
+import scala.collection.immutable.Map
+import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
 
 trait Codecs extends Types:
   self =>

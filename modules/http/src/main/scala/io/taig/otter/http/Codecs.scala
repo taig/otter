@@ -1,15 +1,16 @@
 package io.taig.otter.http
 
-import org.typelevel.ci.CIString
-import io.taig.otter as Base
-import io.taig.otter.http.header.MediaType
 import cats.syntax.all.*
+import io.taig.otter as Base
+import io.taig.otter.http.header.Accept
+import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.header.Parameters
 import org.typelevel.ci.*
-import java.util.regex.Pattern
+import org.typelevel.ci.CIString
+
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import io.taig.otter.http.header.Parameters
-import io.taig.otter.http.header.Accept
+import java.util.regex.Pattern
 
 trait Codecs extends Base.Codecs, Types:
   self =>

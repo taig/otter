@@ -1,11 +1,12 @@
 package io.taig.otter
 
-import java.util.regex.Pattern
-import cats.syntax.all.*
-import cats.parse.Parser
 import cats.Eq
-import scala.Product as SProduct
 import cats.Show
+import cats.parse.Parser
+import cats.syntax.all.*
+
+import java.util.regex.Pattern
+import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable:
   final override def toString: String = Printers(this)

@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.Order
-import cats.parse.Parser
 import cats.Show
+import cats.parse.Parser
 import cats.syntax.all.*
 
 enum Step:

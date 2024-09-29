@@ -1,11 +1,11 @@
 package io.taig.otter.sample.api
 
 import cats.implicits.*
-import io.taig.otter.sample.api.Role.Guest
 import cats.kernel.Eq
-import io.taig.otter.sample.api.schema.UserApiSchema
-import io.taig.otter.sample.api.schema.MemberApiSchema
+import io.taig.otter.sample.api.Role.Guest
 import io.taig.otter.sample.api.schema.LibrarianApiSchema
+import io.taig.otter.sample.api.schema.MemberApiSchema
+import io.taig.otter.sample.api.schema.UserApiSchema
 
 enum Role:
   case Guest

@@ -1,17 +1,17 @@
 package io.taig.otter.http
 
-import cats.parse.Parser
-import cats.syntax.all.*
-import io.taig.otter.http.header.Parameter
 import cats.parse.Numbers.digit
-import cats.parse.strings.Json
-import io.taig.otter.http.header.Weighted
-import io.taig.otter.http.header.MediaType
+import cats.parse.Parser
 import cats.parse.Parser0
+import cats.parse.strings.Json
+import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaRange
-import org.typelevel.ci.*
+import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.header.Parameter
 import io.taig.otter.http.header.Parameters
+import io.taig.otter.http.header.Weighted
+import org.typelevel.ci.*
 
 private[http] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").rep0.void

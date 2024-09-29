@@ -1,15 +1,15 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
-import io.taig.otter.Violations
-import org.typelevel.ci.*
-import io.taig.otter.Violation
-import io.taig.otter.filterKeys
-import io.taig.otter.http.header.MediaType
 import cats.data.Validated
-import io.taig.otter.XPath
+import cats.syntax.all.*
 import io.taig.otter.Convert
 import io.taig.otter.Merge
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.XPath
+import io.taig.otter.filterKeys
+import io.taig.otter.http.header.MediaType
+import org.typelevel.ci.*
 
 sealed abstract class Request[A]:
   self =>

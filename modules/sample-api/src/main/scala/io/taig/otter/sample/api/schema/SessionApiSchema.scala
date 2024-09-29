@@ -1,8 +1,9 @@
 package io.taig.otter.sample.api.schema
 
-import java.util.UUID
-import io.taig.otter.sample.api.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.sample.api.Dsl.*
+
+import java.util.UUID
 
 opaque type SessionApiSchema = UUID
 

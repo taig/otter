@@ -1,11 +1,11 @@
 package io.taig.otter.sample.api
 
-import io.taig.otter.sample.api.schema.SelfApiSchema
-import io.taig.otter.sample.api.schema.UserApiSchema
-import io.taig.otter.http.Route
-import cats.syntax.all.*
-import io.taig.otter.sample.api.schema.SessionApiSchema
 import cats.MonadThrow
+import cats.syntax.all.*
+import io.taig.otter.http.Route
+import io.taig.otter.sample.api.schema.SelfApiSchema
+import io.taig.otter.sample.api.schema.SessionApiSchema
+import io.taig.otter.sample.api.schema.UserApiSchema
 
 abstract class EndpointImplementation[F[_]](using F: MonadThrow[F]):
   final def apply[R <: Role, I, O](endpoint: RoleEndpoint[R, I, O])(

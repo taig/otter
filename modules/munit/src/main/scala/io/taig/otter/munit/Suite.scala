@@ -1,9 +1,12 @@
 package io.taig.otter.munit
 
-import cats.syntax.all.*
 import cats.effect.SyncIO
+import cats.syntax.all.*
 import io.taig.otter.http.Endpoint
-import munit.{CatsEffectSuite, Location, TestOptions}
+import munit.CatsEffectSuite
+import munit.Location
+import munit.TestOptions
+
 import scala.language.adhocExtensions
 
 abstract class Suite extends CatsEffectSuite with Assertions:

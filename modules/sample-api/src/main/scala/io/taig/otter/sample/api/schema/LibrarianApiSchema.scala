@@ -1,8 +1,9 @@
 package io.taig.otter.sample.api.schema
 
+import cats.syntax.all.*
 import io.taig.otter.sample.api.Dsl.*
 import org.typelevel.ci.*
-import cats.syntax.all.*
+
 import java.util.UUID
 
 final case class LibrarianApiSchema(

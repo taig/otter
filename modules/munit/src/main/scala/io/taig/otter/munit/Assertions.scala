@@ -1,10 +1,11 @@
 package io.taig.otter.munit
 
-import cats.data.Validated
 import cats.MonadThrow
+import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violations
-import munit.{Assertions as MunitAssertions, Location}
+import munit.Assertions as MunitAssertions
+import munit.Location
 
 trait Assertions extends MunitAssertions:
   extension [F[_]: MonadThrow, E, O](self: F[Validated[Violations, Either[E, O]]])

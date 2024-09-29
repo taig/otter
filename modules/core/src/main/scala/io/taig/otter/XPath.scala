@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.data.Chain
-import cats.parse.Parser
 import cats.Order
 import cats.Show
+import cats.data.Chain
+import cats.parse.Parser
 
 opaque type XPath = Chain[Step]
 

@@ -1,9 +1,9 @@
 package io.taig.otter.sample.routes
 
 import cats.implicits.*
+import io.taig.otter.sample.SampleSuite
 import io.taig.otter.sample.api.endpoint
 import io.taig.otter.sample.api.endpoint.books.post.Error
-import io.taig.otter.sample.SampleSuite
 import io.taig.otter.sample.fixtures
 
 final class BooksRoutesTest extends SampleSuite:

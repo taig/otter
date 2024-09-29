@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.Dsl.*
 
 object ViolationsCodecs:
   object violations:

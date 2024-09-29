@@ -1,12 +1,12 @@
 package io.taig.otter.http
 
+import cats.Show
+import cats.syntax.all.*
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameter
-import cats.Show
-import cats.syntax.all.*
-import io.taig.otter.http.header.Weighted
 import io.taig.otter.http.header.Parameters
+import io.taig.otter.http.header.Weighted
 
 private[http] object Printers:
   def apply(parameter: Parameter): String = s"${parameter.name}=\"${parameter.value}\""

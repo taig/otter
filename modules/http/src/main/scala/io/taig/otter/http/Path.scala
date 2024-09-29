@@ -1,17 +1,18 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.Invariant
-import io.taig.otter.Codec
-import io.taig.otter.Violations
-import io.taig.otter.Violation
-import io.taig.otter.Constraint
-import io.taig.otter.Data
-import java.util.regex.Pattern
-import cats.data.Validated
-import io.taig.otter.Merge
 import cats.Show
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Codec
+import io.taig.otter.Constraint
 import io.taig.otter.Convert
+import io.taig.otter.Data
+import io.taig.otter.Merge
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+
+import java.util.regex.Pattern
 
 sealed abstract class Path[A]:
   self =>

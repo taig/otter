@@ -1,7 +1,7 @@
 package io.taig.otter.sample.api.schema
 
-import io.taig.otter.sample.api.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.sample.api.Dsl.*
 
 opaque type IsbnApiSchema = Long
 

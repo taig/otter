@@ -1,12 +1,12 @@
 package io.taig.otter.http.header
 
-import cats.data.NonEmptyList
-import cats.parse.Parser
-import io.taig.otter.http.Parsers
-import cats.implicits.*
 import cats.Order
-import io.taig.otter.http.Dsl.*
 import cats.data.Ior
+import cats.data.NonEmptyList
+import cats.implicits.*
+import cats.parse.Parser
+import io.taig.otter.http.Dsl.*
+import io.taig.otter.http.Parsers
 
 opaque type Accept = NonEmptyList[Weighted[MediaRange]]
 

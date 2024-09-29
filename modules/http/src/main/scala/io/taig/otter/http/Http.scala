@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.Show
 import cats.syntax.all.*
 import org.typelevel.ci.CIString
-import cats.Show
 
 object Http:
   type Path = Vector[String]

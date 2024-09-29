@@ -2,6 +2,7 @@ package io.taig.otter.http.csv
 
 import cats.syntax.all.*
 import io.taig.otter.http as Http
+
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 

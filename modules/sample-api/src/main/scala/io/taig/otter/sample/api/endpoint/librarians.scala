@@ -1,10 +1,10 @@
 package io.taig.otter.sample.api.endpoint
 
 import io.taig.otter.sample.api.Dsl.*
-import io.taig.otter.sample.api.schema.SessionApiSchema
-import io.taig.otter.sample.api.schema.LibrarianApiSchema
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.RoleEndpoint
+import io.taig.otter.sample.api.schema.LibrarianApiSchema
+import io.taig.otter.sample.api.schema.SessionApiSchema
 
 object librarians:
   val url: Url[Unit] = __ / "librarians"

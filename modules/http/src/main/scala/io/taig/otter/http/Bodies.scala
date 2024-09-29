@@ -1,13 +1,14 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.data.NonEmptyVector
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.header.MediaRange
+import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.Convert
-import java.nio.charset.Charset
+import io.taig.otter.http.header.MediaRange
+import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
+
+import java.nio.charset.Charset
 
 // TODO allow different codecs via taging, e.g. Bodies[Json[A] | Xml[B] | Csv[C]] (?)
 sealed abstract class Bodies[A]:

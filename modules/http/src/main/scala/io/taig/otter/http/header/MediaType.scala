@@ -1,12 +1,12 @@
 package io.taig.otter.http.header
 
-import io.taig.otter.http.Dsl.*
-import io.taig.otter.http.Printers
-import io.taig.otter.http.Parsers
-import cats.Show
-import cats.syntax.all.*
-import cats.parse.Parser
 import cats.Eq
+import cats.Show
+import cats.parse.Parser
+import cats.syntax.all.*
+import io.taig.otter.http.Dsl.*
+import io.taig.otter.http.Parsers
+import io.taig.otter.http.Printers
 
 final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
   // TODO respect parameters (?)

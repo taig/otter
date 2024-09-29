@@ -1,19 +1,20 @@
 package io.taig.otter.http
 
-import io.taig.otter.Metadata
-import io.taig.otter.Codec
 import cats.Id as Identity
-import io.taig.otter.Data
-import scala.Array as SArray
-import cats.syntax.all.*
-import io.taig.otter.Codec.Result
-import cats.data.Validated
-import io.taig.otter.Violations
-import io.taig.otter.Violation
-import io.taig.otter.Constraint
-import java.util.regex.Pattern
-import io.taig.otter.XPath
 import cats.Show
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Codec
+import io.taig.otter.Codec.Result
+import io.taig.otter.Constraint
+import io.taig.otter.Data
+import io.taig.otter.Metadata
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.XPath
+
+import java.util.regex.Pattern
+import scala.Array as SArray
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String

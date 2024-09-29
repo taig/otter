@@ -1,11 +1,12 @@
 package io.taig.otter.http
 
+import cats.data.Ior
 import cats.data.NonEmptyVector
 import cats.syntax.all.*
-import io.taig.otter.Violations
-import cats.data.Ior
 import io.taig.otter.Convert
+import io.taig.otter.Violations
 import io.taig.otter.http.header.Accept
+
 import java.nio.charset.Charset
 
 sealed abstract class Results[A]:

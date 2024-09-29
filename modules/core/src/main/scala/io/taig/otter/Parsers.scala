@@ -1,8 +1,11 @@
 package io.taig.otter
 
 import cats.data.Chain
+import cats.parse.Numbers
+import cats.parse.Parser
+import cats.parse.Parser0
 import cats.parse.strings.Json
-import cats.parse.{Numbers, Parser, Parser0}
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern

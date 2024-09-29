@@ -1,12 +1,13 @@
 package io.taig.otter
 
+import cats.data.Validated
 import cats.syntax.all.*
-import java.util.regex.Pattern
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.regex.Pattern
 import scala.Boolean as SBoolean
-import cats.data.Validated
 import scala.Ordering.Implicits.*
 
 sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:

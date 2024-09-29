@@ -1,13 +1,13 @@
 package io.taig.otter.sample.app
 
-import io.taig.otter.sample.Session
-import io.taig.otter.sample.api.schema.SessionApiSchema
-import io.taig.otter.sample.api.schema.IsbnApiSchema
-import io.taig.otter.json.*
-import io.taig.otter.sample.Isbn
+import io.circe.JsonObject
 import io.github.arainko.ducktape.*
 import io.taig.otter.Data
-import io.circe.JsonObject
+import io.taig.otter.json.*
+import io.taig.otter.sample.Isbn
+import io.taig.otter.sample.Session
+import io.taig.otter.sample.api.schema.IsbnApiSchema
+import io.taig.otter.sample.api.schema.SessionApiSchema
 
 object transformers:
   given Transformer[Isbn, IsbnApiSchema] = isbn => IsbnApiSchema.unsafe(isbn.toLong)

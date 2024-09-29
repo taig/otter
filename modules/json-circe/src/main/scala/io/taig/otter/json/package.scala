@@ -1,8 +1,11 @@
 package io.taig.otter.json
 
-import io.circe.{Json, JsonNumber, JsonObject}
+import io.circe.Json
+import io.circe.JsonNumber
+import io.circe.JsonObject
 import io.circe.syntax.*
 import io.taig.otter.Data
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 

@@ -1,12 +1,12 @@
 package io.taig.otter.server
 
+import cats.effect.Concurrent
 import cats.effect.Resource
+import cats.syntax.all.*
+import io.taig.otter.http.*
+import io.taig.otter.http.http4s.*
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.server.Server as Underlying
-import io.taig.otter.http.*
-import cats.syntax.all.*
-import io.taig.otter.http.http4s.*
-import cats.effect.Concurrent
 
 final class Http4sServer[F[_]: Concurrent](f: Http4sApp[F] => Resource[F, Underlying], onError: Throwable => F[Unit])
     extends Server[F]:

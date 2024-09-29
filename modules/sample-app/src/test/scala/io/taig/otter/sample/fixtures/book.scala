@@ -1,11 +1,12 @@
 package io.taig.otter.sample.fixtures
 
 import cats.implicits.*
-import scala.collection.immutable.SortedSet
-import io.taig.otter.sample.fixtures
+import io.taig.otter.Data
 import io.taig.otter.sample.api.schema.BookApiSchema
 import io.taig.otter.sample.api.schema.IsbnApiSchema
-import io.taig.otter.Data
+import io.taig.otter.sample.fixtures
+
+import scala.collection.immutable.SortedSet
 
 object book:
   def create(isbn: IsbnApiSchema = fixtures.isbn(), title: String = "Moby Dick"): BookApiSchema.Create =

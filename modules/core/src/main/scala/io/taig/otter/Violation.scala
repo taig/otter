@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.parse.Parser
 import cats.Show
+import cats.parse.Parser
 
 final case class Violation(constraint: Constraint, actual: Data):
   override def toString: String = Printers(this)

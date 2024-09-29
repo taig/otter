@@ -1,9 +1,9 @@
 package io.taig.otter.sample.api.endpoint
 
 import io.taig.otter.sample.api.Dsl.*
-import io.taig.otter.sample.api.schema.*
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.RoleEndpoint
+import io.taig.otter.sample.api.schema.*
 
 object books:
   val url: Url[Unit] = __ / "books"

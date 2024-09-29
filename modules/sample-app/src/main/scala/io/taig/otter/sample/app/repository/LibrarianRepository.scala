@@ -2,12 +2,14 @@ package io.taig.otter.sample.app.repository
 
 import cats.data.Chain
 import cats.effect.IO
-import cats.effect.std.{AtomicCell, UUIDGen}
+import cats.effect.std.AtomicCell
+import cats.effect.std.UUIDGen
 import cats.syntax.all.*
 import io.taig.otter.sample.Librarian
-import io.taig.otter.sample.app.repository.LibrarianRepository.Error
-import java.util.UUID
 import io.taig.otter.sample.Session
+import io.taig.otter.sample.app.repository.LibrarianRepository.Error
+
+import java.util.UUID
 
 final class LibrarianRepository(storage: AtomicCell[IO, Chain[Librarian]]):
   def create(librarian: Librarian.Create): IO[Either[Error.Create, Librarian.Summary]] = storage
