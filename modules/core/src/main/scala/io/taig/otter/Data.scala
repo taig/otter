@@ -97,16 +97,16 @@ object Data:
     def toBigDecimal: Option[JBigDecimal] = value match
       case value: Int         => JBigDecimal.valueOf(value).some
       case value: Long        => JBigDecimal.valueOf(value).some
-      case value: Float       => JBigDecimal.valueOf(value.toDouble).some
-      case value: Double      => JBigDecimal.valueOf(value).some
+      case value: Float       => new JBigDecimal(JString.valueOf(value)).some
+      case value: Double      => new JBigDecimal(JString.valueOf(value)).some
       case value: JBigDecimal => value.some
       case value: JBigInteger => new JBigDecimal(value).some
 
     def toBigInteger: Option[JBigInteger] = value match
       case value: Int         => JBigInteger.valueOf(value).some
       case value: Long        => JBigInteger.valueOf(value).some
-      case value: Float       => attempt(JBigDecimal.valueOf(value).toBigIntegerExact())
-      case value: Double      => attempt(JBigDecimal.valueOf(value).toBigIntegerExact())
+      case value: Float       => attempt(new JBigDecimal(JString.valueOf(value)).toBigIntegerExact())
+      case value: Double      => attempt(new JBigDecimal(JString.valueOf(value)).toBigIntegerExact())
       case value: JBigDecimal => attempt(value.toBigIntegerExact())
       case value: JBigInteger => value.some
 
