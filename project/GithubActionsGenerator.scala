@@ -5,7 +5,7 @@ object GithubActionsGenerator {
   object Step {
     def setupJava(version: String): Json = Json.obj(
       "name" := "Setup Java JDK",
-      "uses" := "actions/setup-java@v3",
+      "uses" := "actions/setup-java@v4",
       "with" := Json.obj(
         "distribution" := "temurin",
         "java-version" := version,
