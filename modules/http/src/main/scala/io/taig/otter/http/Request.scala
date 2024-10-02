@@ -34,7 +34,7 @@ sealed abstract class Request[A]:
 
     new Request[(A, B)]:
       export self.{bodies, method, url}
-      override def headers: Headers[?] = self.headers.zip(headers)
+      override def headers: Headers[?] = self.headers.zip(_headers)
       override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
         val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
         val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
