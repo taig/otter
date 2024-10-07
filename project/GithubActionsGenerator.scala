@@ -31,15 +31,15 @@ object GithubActionsGenerator {
         Step.setupJava(javaVersion),
         Json.obj(
           "name" := "Workflows",
-          "run" := "sbt -Dmode=ci blowoutCheck"
+          "run" := "sbt blowoutCheck"
         ),
         Json.obj(
           "name" := "Code formatting",
-          "run" := "sbt -Dmode=ci scalafmtCheckAll"
+          "run" := "sbt scalafmtCheckAll"
         ),
         Json.obj(
           "name" := "Fatal warnings",
-          "run" := "sbt -Dmode=ci +compile"
+          "run" := "sbt +compile"
         )
       )
     )
