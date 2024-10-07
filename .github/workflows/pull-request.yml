@@ -5,6 +5,8 @@ name: CI
   pull_request:
     branches:
     - main
+env:
+  SBT_TPOLECAT_CI: 'true'
 jobs:
   lint:
     name: Fatal warnings and code formatting
