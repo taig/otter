@@ -31,6 +31,7 @@ trait Merge1 extends Merge2:
   given [A <: STuple, B]: Merge.Aux[A, B, STuple.Append[A, B]] = new Merge[A, B]:
     override type Out = STuple.Append[A, B]
     override def apply(ab: (A, B)): Out = ab._1 :* ab._2
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     override def unapply(ab: Out): (A, B) = (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
 
 trait Merge2:

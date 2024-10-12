@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import munit.FunSuite
-import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
 import io.taig.otter.XPath
+import io.taig.otter.http.Dsl.*
+import munit.FunSuite
 
 final class QueriesTest extends FunSuite:
   test("encode"):

@@ -26,9 +26,8 @@ object Convert extends ConvertInstances:
     override def to(a: A): B = mirror.fromProduct(a)
     override def from(b: B): A = STuple.fromProductTyped(b)
 
-  given sum1[A <: B, B](using
-      mirror: Mirror.SumOf[B]
-      // evidence: mirror.MirroredElemTypes =:= A *: EmptyTuple
-  ): Convert[A, B] = new Convert[A, B]:
+  given sum1[A <: B, B](using mirror: Mirror.SumOf[B]): Convert[A, B] = new Convert[A, B]:
     override def to(a: A): B = a
+
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     override def from(b: B): A = b.asInstanceOf[A]

@@ -4,8 +4,6 @@ import cats.ApplicativeThrow
 import cats.Functor
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import io.taig.otter.http.Http.Request
-import io.taig.otter.http.Http.Response
 import io.taig.otter.http.Routes
 import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*

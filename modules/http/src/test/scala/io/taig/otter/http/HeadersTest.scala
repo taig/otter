@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import io.taig.otter.http.Dsl.*
 import munit.FunSuite
 import org.typelevel.ci.*
-import cats.syntax.all.*
 
 final class HeadersTest extends FunSuite:
   test("encode"):

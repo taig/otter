@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import munit.FunSuite
-import io.taig.otter.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.Dsl.*
+import munit.FunSuite
 
 final class SumUntaggedTest extends FunSuite:
   test("encode"):

@@ -1,12 +1,13 @@
 package io.taig.otter
 
-import munit.FunSuite
-import cats.syntax.all.*
-import java.util.regex.Pattern
-import munit.Location
-import munit.Compare
 import cats.Eq
 import cats.parse.Parser
+import cats.syntax.all.*
+import munit.Compare
+import munit.FunSuite
+import munit.Location
+
+import java.util.regex.Pattern
 
 final class ConstraintTest extends FunSuite:
   given Eq[Parser.Error] = Eq.fromUniversalEquals

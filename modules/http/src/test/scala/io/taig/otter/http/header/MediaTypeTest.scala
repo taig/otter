@@ -1,7 +1,7 @@
 package io.taig.otter.http.header
 
-import munit.FunSuite
 import cats.syntax.all.*
+import munit.FunSuite
 import org.typelevel.ci.*
 
 final class MediaTypeTest extends FunSuite:

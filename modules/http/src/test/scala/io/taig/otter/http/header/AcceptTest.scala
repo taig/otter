@@ -1,10 +1,10 @@
 package io.taig.otter.http.header
 
-import munit.FunSuite
+import cats.data.Ior
 import cats.data.NonEmptyList
 import cats.syntax.all.*
+import munit.FunSuite
 import org.typelevel.ci.*
-import cats.data.Ior
 
 final class AcceptTest extends FunSuite:
   test("parse"):

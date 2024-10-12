@@ -1,11 +1,12 @@
 package io.taig.otter.http
 
-import munit.FunSuite
-import io.taig.otter.http.Dsl.*
 import cats.syntax.all.*
-import org.typelevel.ci.*
-import java.nio.charset.StandardCharsets
 import io.taig.otter.XPath
+import io.taig.otter.http.Dsl.*
+import munit.FunSuite
+import org.typelevel.ci.*
+
+import java.nio.charset.StandardCharsets
 
 final class RequestTest extends FunSuite:
   test("encode"):

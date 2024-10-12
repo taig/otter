@@ -8,6 +8,7 @@ import io.taig.otter.sample.api.schema.SessionApiSchema
 import io.taig.otter.sample.api.schema.UserApiSchema
 
 abstract class EndpointImplementation[F[_]](using F: MonadThrow[F]):
+  @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   final def apply[R <: Role, I, O](endpoint: RoleEndpoint[R, I, O])(
       f: (SelfApiSchema[R], I) => F[O]
   ): RoleRoute[F, I, O] = Route(

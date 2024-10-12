@@ -5,7 +5,6 @@ import cats.Show
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Codec
-import io.taig.otter.Codec.Result
 import io.taig.otter.Constraint
 import io.taig.otter.Data
 import io.taig.otter.Metadata

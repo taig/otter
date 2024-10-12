@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.Keys.*
 
 sealed abstract class Product[
     +F[+a] <: Data.Optional[a],
