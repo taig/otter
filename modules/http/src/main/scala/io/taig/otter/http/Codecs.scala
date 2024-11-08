@@ -15,14 +15,9 @@ import java.util.regex.Pattern
 trait Codecs extends Base.Codecs, Types:
   self =>
 
-  def cistring(
-      minLength: Option[Int] = none,
-      maxLength: Option[Int] = none,
-      matches: Option[Pattern] = none
-  ): Primitive.Required[CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
-  def cistring(matches: CIString): Primitive.Required[CIString] =
-    cistring(matches = Pattern.compile(Pattern.quote(matches.toString), Pattern.CASE_INSENSITIVE).some)
-  val cistring: Primitive.Required[CIString] = cistring()
+  final val cistring: StringCodecBuilder[CIString] = new StringCodecBuilder[CIString]:
+    override def apply(minLength: Option[Int], maxLength: Option[Int], matches: Option[Pattern]): Primitive.Required[CIString] = 
+      string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
 
   val __ : Url[Unit] = Url.Empty
 

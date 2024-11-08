@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.Eq
 import cats.Order
 import cats.data.Chain
 import cats.data.NonEmptyChain
@@ -9,7 +10,6 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
-import cats.kernel.Eq
 import io.taig.enumeration.ext.EnumerationValues
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter as Base
@@ -101,14 +101,30 @@ trait Codecs extends Types:
 
   val boolean: Primitive.Required[Boolean] = Base.Primitive.boolean
 
-  def string(
-      minLength: Option[Int] = none,
-      maxLength: Option[Int] = none,
-      matches: Option[Pattern] = none
-  ): Primitive.Required[String] = Base.Primitive.string(minLength, maxLength, matches)
-  def string(matches: String): Primitive.Required[String] =
-    string(matches = Pattern.compile(Pattern.quote(matches)).some)
-  val string: Primitive.Required[String] = string()
+  abstract class StringCodecBuilder[A]:
+    def apply(minLength: Option[Int] = none, maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Required[A]
+    final def apply(minLength: Int, maxLength: Int): Primitive.Required[A] =
+      apply(minLength = minLength.some, maxLength = maxLength.some, matches = none)
+    final def matches(pattern: String, minLength: Option[Int] = none, maxLength: Option[Int] = none): Primitive.Required[A] =
+      apply(minLength = none, maxLength = none, matches = Pattern.compile(Pattern.quote(pattern)).some)
+    final def required(maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Required[A] =
+      apply(minLength = 1.some, maxLength, matches)
+    final def required(maxLength: Int, matches: Pattern): Primitive.Required[A] =
+      required(maxLength = maxLength.some, matches = matches.some)
+    final def required(maxLength: Int): Primitive.Required[A] =
+      required(maxLength = maxLength.some, matches = none)
+    final def required(matches: Pattern): Primitive.Required[A] =
+      required(maxLength = none, matches = matches.some)
+    final val required: Primitive.Required[A] = required()
+
+  object StringCodecBuilder:
+    given [A]: Conversion[StringCodecBuilder[A], Primitive.Required[A]] = _.apply()
+
+  final val string: StringCodecBuilder[String] = new StringCodecBuilder[String]:
+    override def apply(minLength: Option[Int], maxLength: Option[Int], matches: Option[Pattern]): Primitive.Required[String] =
+      Base.Primitive.string(minLength, maxLength, matches)
+  
+
   val emptyString: Primitive.Required[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
   val pattern: Primitive.Required[Pattern] = string.imap(Pattern.compile)(_.pattern)
