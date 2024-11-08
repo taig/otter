@@ -15,7 +15,7 @@ final class HeadersTest extends FunSuite:
     )
 
   test("encode (optional)"):
-    val codec = header(ci"foo", string.optional) :* header(ci"bar", int.optional)
+    val codec = header(ci"foo", string.nullable) :* header(ci"bar", int.nullable)
 
     assertEquals(
       obtained = codec.encode(("foobar".some, 42.some)),
@@ -46,7 +46,7 @@ final class HeadersTest extends FunSuite:
     )
 
   test("encode: object"):
-    val codec = header(ci"foo", record(field("foo", string) :* field("bar", int.optional))).toHeaders
+    val codec = header(ci"foo", record(field("foo", string) :* field("bar", int.nullable))).toHeaders
 
     assertEquals(
       obtained = codec.encode(("foobar", 42.some)),

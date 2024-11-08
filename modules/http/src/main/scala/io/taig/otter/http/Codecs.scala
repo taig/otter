@@ -16,7 +16,11 @@ trait Codecs extends Base.Codecs, Types:
   self =>
 
   final val cistring: StringCodecBuilder[CIString] = new StringCodecBuilder[CIString]:
-    override def apply(minLength: Option[Int], maxLength: Option[Int], matches: Option[Pattern]): Primitive.Required[CIString] = 
+    override def apply(
+        minLength: Option[Int],
+        maxLength: Option[Int],
+        matches: Option[Pattern]
+    ): Primitive.Required[CIString] =
       string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
 
   val __ : Url[Unit] = Url.Empty
@@ -84,7 +88,7 @@ trait Codecs extends Base.Codecs, Types:
       val html: MediaType = text(secondary = "html")
 
   object header:
-    private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]]
+    private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
 
     inline def apply[A](
         name: CIString,
@@ -92,7 +96,7 @@ trait Codecs extends Base.Codecs, Types:
     ): Header[A] = inline codec match
       case codec: Codec.Of[Data.Primitive, A]                             => Header.Default(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Header.Array(name, codec, Metadata.Empty)
-      case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Header.Object(name, codec, Metadata.Empty)
+      case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] => Header.Object(name, codec, Metadata.Empty)
 
     inline def accept[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Accept", codec)
     val accept: Header[Accept] = accept(Accept.codec)
@@ -109,16 +113,16 @@ trait Codecs extends Base.Codecs, Types:
   ): Segment.Parameter[A] = inline codec match
     case codec: Codec.Required.Of[Data.Primitive, A] => Segment.Parameter.Default(name, codec, Metadata.Empty)
     case codec: Codec.Required.Of[Data.Array[Data.Primitive], A] => Segment.Parameter.Array(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] =>
+    case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] =>
       Segment.Parameter.Object(name, codec, Metadata.Empty)
 
   final inline def query[A](
       name: String,
-      codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], A]
+      codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], A]
   ): Query[A] = inline codec match
     case codec: Codec.Of[Data.Primitive, A]                             => Query.Default(name, codec, Metadata.Empty)
     case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Object[Data.Optional[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
+    case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
 
   object body:
     def apply[A](
@@ -127,7 +131,7 @@ trait Codecs extends Base.Codecs, Types:
         g: (Option[Charset], A) => Array[Byte]
     ): Body.Strict[A] = Body.Strict(mediaType, of = none, f, g)
 
-    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
+    def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
         mediaType: MediaType,
         codec: Base.Codec[F, O, A],
         f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
@@ -165,7 +169,7 @@ trait Codecs extends Base.Codecs, Types:
   )
 
   object formData:
-    private type Of = Data.Object[Data.Optional[Data.Primitive]]
+    private type Of = Data.Object[Data.Nullable[Data.Primitive]]
 
     def apply[A](codec: Codec.Required.Of[Of, A], fallback: Charset = StandardCharsets.UTF_8): Body[A] = body(
       mediaType = mediaType.application.wwwFormUrlencoded,
@@ -242,7 +246,7 @@ trait Codecs extends Base.Codecs, Types:
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   object error:
-    def apply[F[+a] <: Data.Optional[a], O <: Data, A](
+    def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
         tpe: String,
         codec: Base.Codec[F, O, A]
     ): Record.Required.Of[Data.Primitive | F[O], A] = record {

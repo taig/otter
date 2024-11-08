@@ -29,7 +29,7 @@ final class RecordTest extends FunSuite:
     )
 
   test("decode: optional"):
-    val codec = record(field("foo", string) :* field("bar", int)).optional
+    val codec = record(field("foo", string) :* field("bar", int)).nullable
 
     assertEquals(
       obtained = codec.decode(Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))),
@@ -44,8 +44,8 @@ final class RecordTest extends FunSuite:
     )
 
   test("decode: optional (product)"):
-    val codec = record(field("a", string) :* field("b", int)).optional
-      .zip(record(field("c", string) :* field("d", int)).optional)
+    val codec = record(field("a", string) :* field("b", int)).nullable
+      .zip(record(field("c", string) :* field("d", int)).nullable)
 
     assertEquals(
       obtained = codec.decode(
@@ -103,7 +103,7 @@ final class RecordTest extends FunSuite:
     assertEquals(obtained = codec.decode(Data.Object.Empty), expected = (none, none).valid)
 
   test("decode: optional (nested)"):
-    val codec = record(field("foo", string.optional) :* field("bar", int.optional)).optional
+    val codec = record(field("foo", string.nullable) :* field("bar", int.nullable)).nullable
 
     assertEquals(
       obtained = codec.decode(Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))),
@@ -128,7 +128,7 @@ final class RecordTest extends FunSuite:
     )
 
   test("encode: optional"):
-    val codec = record(field("foo", string) :* field("bar", int)).optional
+    val codec = record(field("foo", string) :* field("bar", int)).nullable
 
     assertEquals(
       obtained = codec.encode(("foobar", 42).some),
@@ -138,8 +138,8 @@ final class RecordTest extends FunSuite:
     assertEquals(obtained = codec.encode(none), expected = Data.Null)
 
   test("encode: optional (product)"):
-    val codec = record(field("a", string) :* field("b", int)).optional
-      .zip(record(field("c", string) :* field("d", int)).optional)
+    val codec = record(field("a", string) :* field("b", int)).nullable
+      .zip(record(field("c", string) :* field("d", int)).nullable)
 
     assertEquals(
       obtained = codec.encode((("foobar", 42).some, ("foobar", 42).some)),
@@ -170,9 +170,9 @@ final class RecordTest extends FunSuite:
 
   test("encode: nulls"):
     val codec = record(
-      field("foo", string.optional).nulls(Null.Hide) :*
-        field("bar", int.optional).nulls(Null.Show) :*
-        field("baz", long.optional)
+      field("foo", string.nullable).nulls(Null.Hide) :*
+        field("bar", int.nullable).nulls(Null.Show) :*
+        field("baz", long.nullable)
     )
 
     assertEquals(

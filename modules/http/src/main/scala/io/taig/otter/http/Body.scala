@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import io.taig.otter.Codec
-import io.taig.otter.Data.Optional
 import io.taig.otter.http.header.MediaType
 
 import java.nio.charset.Charset

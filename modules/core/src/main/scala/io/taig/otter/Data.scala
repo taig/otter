@@ -152,7 +152,7 @@ object Data:
 
   case object Null extends Data
 
-  type Optional[A] = A | Data.Null.type
+  type Nullable[A] = A | Data.Null.type
 
   type Required[A] = A
 

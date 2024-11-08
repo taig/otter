@@ -14,9 +14,9 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def name: CIString
 
-  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Optional[Data.Primitive]], ?]
+  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], ?]
 
-  final def isOptional: Boolean = codec.isOptional
+  final def isOptional: Boolean = codec.isNullable
 
   def metadata: Metadata
 
@@ -37,39 +37,39 @@ sealed abstract class Header[A] extends Product, Serializable:
   def encode(a: A): Option[String]
 
 object Header:
-  final case class Default[A](name: CIString, codec: Codec[Data.Optional, Data.Primitive, A], metadata: Metadata)
+  final case class Default[A](name: CIString, codec: Codec[Data.Nullable, Data.Primitive, A], metadata: Metadata)
       extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.optional)
-    override def decode(header: Option[String]): Codec.Result[A] = codec.parseOptional(header)
-    override def encode(a: A): Option[String] = codec.printOptional(a)
+    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
+    override def decode(header: Option[String]): Codec.Result[A] = codec.parseNullable(header)
+    override def encode(a: A): Option[String] = codec.printNullable(a)
 
   final case class Array[A](
       name: CIString,
-      codec: Codec[Data.Optional, Data.Array[Data.Primitive], A],
+      codec: Codec[Data.Nullable, Data.Array[Data.Primitive], A],
       metadata: Metadata
   ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
     override def decode(header: Option[String]): Codec.Result[A] =
-      codec.parseOptionalArray(header.map(_.split(',').toVector))
-    override def encode(a: A): Option[String] = codec.printOptionalArray(a).map(_.mkString(","))
+      codec.parseNullableArray(header.map(_.split(',').toVector))
+    override def encode(a: A): Option[String] = codec.printNullableArray(a).map(_.mkString(","))
 
   final case class Object[A](
       name: CIString,
-      codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
+      codec: Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], A],
       metadata: Metadata
   ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.optional)
+    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
     override def decode(header: Option[String]): Codec.Result[A] = codec
-      .parseOptionalObject(
+      .parseNullableObject(
         header.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
       )
     override def encode(a: A): Option[String] = codec
-      .printOptionalObject(a)
+      .printNullableObject(a)
       .map(_.map { case (key, value) => s"$key=$value" })
       .map(_.mkString(","))

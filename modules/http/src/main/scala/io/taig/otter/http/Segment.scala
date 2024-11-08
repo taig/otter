@@ -48,7 +48,7 @@ object Segment:
     override def matches(segment: String): Boolean = true
 
     def codec: Codec[Identity, Data.Primitive | Data.Array[Data.Primitive], ?] |
-      Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], ?]
+      Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], ?]
 
     def metadata: Metadata
 
@@ -72,19 +72,19 @@ object Segment:
 
     final case class Object[A](
         name: String,
-        codec: Codec[Data.Optional, Data.Object[Data.Optional[Data.Primitive]], A],
+        codec: Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], A],
         metadata: Metadata
     ) extends Segment.Parameter[A]:
       override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
       override def encode(a: A): String = codec
-        .printOptionalObject(a)
+        .printNullableObject(a)
         .fold("")(_.map { case (key, value) => (key, value) }.mkString(","))
       override def decode(value: String): Codec.Result[A] =
         if value.isEmpty
-        then codec.parseOptionalObject(none).leftMap(name /: _)
+        then codec.parseNullableObject(none).leftMap(name /: _)
         else
           codec
-            .parseOptionalObject(
+            .parseNullableObject(
               value.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector.some
             )
             .leftMap(name /: _)

@@ -33,7 +33,7 @@ final class QueriesTest extends FunSuite:
     )
 
   test("encode: object"):
-    val queries = query("foo", record(field("bar", string.optional))).toQueries
+    val queries = query("foo", record(field("bar", string.nullable))).toQueries
 
     assertEquals(
       obtained = queries.encode("baz".some),

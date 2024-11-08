@@ -10,38 +10,38 @@ import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Ordering.Implicits.*
 
-sealed abstract class Primitive[+F[+a] <: Data.Optional[a], A] extends Codec[F, Data.Primitive, A]:
+sealed abstract class Primitive[+F[+a] <: Data.Nullable[a], A] extends Codec[F, Data.Primitive, A]:
   self =>
 
   def constraints: Vector[Constraint.Primitive]
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[F, A] = new Primitive[F, A]:
-    export self.{constraints, decode, default, encode, isOptional}
+    export self.{constraints, decode, default, encode, isNullable}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Primitive[F, A] = new Primitive[F, A]:
     export self.{constraints, encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def isOptional: Boolean = default.nonEmpty
+    override def isNullable: Boolean = default.nonEmpty
     override def decode(data: Data): Codec.Result[A] = (data, default) match
       case (Data.Null, Some(default)) => default.valid
       case _                          => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[F, B] = new Primitive[F, B]:
-    export self.{constraints, isOptional, metadata}
+    export self.{constraints, isNullable, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Primitive] = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Primitive[F, B] = imap(convert.to)(convert.from)
 
-  final override def optional: Primitive[Data.Optional, Option[A]] = new Primitive[Data.Optional, Option[A]]:
+  final override def nullable: Primitive[Data.Nullable, Option[A]] = new Primitive[Data.Nullable, Option[A]]:
     export self.{constraints, metadata}
-    override def isOptional: Boolean = true
+    override def isNullable: Boolean = true
     override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(data: Data): Codec.Result[Option[A]] =
       data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Optional[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
+    override def encode(a: Option[A]): Data.Nullable[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
 
 object Primitive:
   def number[A <: Double | Int | Float | Long | JBigDecimal | JBigInteger](
@@ -61,7 +61,7 @@ object Primitive:
       minimum.map(_.map(encode)).map(Constraint.Primitive.Minimum.apply).toVector ++
         maximum.map(_.map(encode)).map(Constraint.Primitive.Maximum.apply).toVector ++
         multiple.map(encode).map(Constraint.Primitive.Multiple.apply).toVector
-    override def isOptional: Boolean = false
+    override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = None
 
@@ -224,7 +224,7 @@ object Primitive:
       minLength.map(Constraint.Primitive.MinLength.apply).toVector ++
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
         matches.map(Constraint.Primitive.Matches.apply).toVector
-    override def isOptional: Boolean = false
+    override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[JString] = None
 
@@ -271,7 +271,7 @@ object Primitive:
     new Primitive[Data.Required, A]:
       val codec = string(minLength, maxLength, matches)
       override def constraints: Vector[Constraint.Primitive] = codec.constraints
-      override def isOptional: Boolean = false
+      override def isNullable: Boolean = false
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[A] = None
       override def decode(data: Data): Codec.Result[A] = codec
@@ -282,7 +282,7 @@ object Primitive:
 
   val boolean: Primitive[Data.Required, SBoolean] = new Primitive[Data.Required, SBoolean]:
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
-    override def isOptional: Boolean = false
+    override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[SBoolean] = None
     override def decode(data: Data): Codec.Result[SBoolean] = data.asPrimitive
@@ -291,10 +291,10 @@ object Primitive:
       .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))))
     override def encode(a: SBoolean): Data.Primitive = Data.Boolean(a)
 
-  given [F[+a] <: Data.Optional[a]]: CodecInvariant[Primitive[F, *]] with
+  given [F[+a] <: Data.Nullable[a]]: CodecInvariant[Primitive[F, *]] with
     override def imap[A, B](fa: Primitive[F, A])(f: A => B)(g: B => A): Primitive[F, B] = fa.imap(f)(g)
 
-  given [F[+a] <: Data.Optional[a], A]: Metadata.Ops[Primitive[F, A]] with
+  given [F[+a] <: Data.Nullable[a], A]: Metadata.Ops[Primitive[F, A]] with
     extension (self: Primitive[F, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive[F, A] = self.modifyMetadata(f)

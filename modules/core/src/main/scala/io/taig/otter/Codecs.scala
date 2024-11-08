@@ -102,10 +102,18 @@ trait Codecs extends Types:
   val boolean: Primitive.Required[Boolean] = Base.Primitive.boolean
 
   abstract class StringCodecBuilder[A]:
-    def apply(minLength: Option[Int] = none, maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Required[A]
+    def apply(
+        minLength: Option[Int] = none,
+        maxLength: Option[Int] = none,
+        matches: Option[Pattern] = none
+    ): Primitive.Required[A]
     final def apply(minLength: Int, maxLength: Int): Primitive.Required[A] =
       apply(minLength = minLength.some, maxLength = maxLength.some, matches = none)
-    final def matches(pattern: String, minLength: Option[Int] = none, maxLength: Option[Int] = none): Primitive.Required[A] =
+    final def matches(
+        pattern: String,
+        minLength: Option[Int] = none,
+        maxLength: Option[Int] = none
+    ): Primitive.Required[A] =
       apply(minLength = none, maxLength = none, matches = Pattern.compile(Pattern.quote(pattern)).some)
     final def required(maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Required[A] =
       apply(minLength = 1.some, maxLength, matches)
@@ -121,9 +129,12 @@ trait Codecs extends Types:
     given [A]: Conversion[StringCodecBuilder[A], Primitive.Required[A]] = _.apply()
 
   final val string: StringCodecBuilder[String] = new StringCodecBuilder[String]:
-    override def apply(minLength: Option[Int], maxLength: Option[Int], matches: Option[Pattern]): Primitive.Required[String] =
+    override def apply(
+        minLength: Option[Int],
+        maxLength: Option[Int],
+        matches: Option[Pattern]
+    ): Primitive.Required[String] =
       Base.Primitive.string(minLength, maxLength, matches)
-  
 
   val emptyString: Primitive.Required[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
@@ -143,10 +154,10 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  def branch[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Branch.Of[F[O], A] =
+  def branch[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Branch.Of[F[O], A] =
     Base.Branch(name, codec)
 
-  def field[F[+a] <: Data.Optional[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Field.Of[F[O], A] =
+  def field[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: => Base.Codec[F, O, A]): Field.Of[F[O], A] =
     Base.Field(name, codec)
 
   def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = Base.Record(fields)
@@ -171,14 +182,14 @@ trait Codecs extends Types:
     def untagged[O <: Data, A](branch: Branch.Of[O, A]): Sum.Untagged.Required.Of[O, A] = untagged(branch.toBranches)
 
   object collection:
-    def vector[F[+a] <: Data.Optional[a], O <: Data, A](
+    def vector[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Required.Of[F[O], Vector[A]] = Base.Collection(codec, minItems, maxItems, uniqueItems)
 
-    def nonEmptyVector[F[+a] <: Data.Optional[a], O <: Data, A](
+    def nonEmptyVector[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
@@ -187,14 +198,14 @@ trait Codecs extends Types:
       .nonEmpty(codec, minItems, maxItems, uniqueItems)
       .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
 
-    def seq[F[+a] <: Data.Optional[a], O <: Data, A](
+    def seq[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Required.Of[F[O], Seq[A]] = vector(codec, minItems, maxItems, uniqueItems).imap(identity)(_.toVector)
 
-    def nonEmptySeq[F[+a] <: Data.Optional[a], O <: Data, A](
+    def nonEmptySeq[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
@@ -203,14 +214,14 @@ trait Codecs extends Types:
       .nonEmpty(codec, minItems, maxItems, uniqueItems)
       .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail.toVector))
 
-    def list[F[+a] <: Data.Optional[a], O <: Data, A](
+    def list[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Required.Of[F[O], List[A]] = vector(codec, minItems, maxItems, uniqueItems).imap(_.toList)(_.toVector)
 
-    def nonEmptyList[F[+a] <: Data.Optional[a], O <: Data, A](
+    def nonEmptyList[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
@@ -219,7 +230,7 @@ trait Codecs extends Types:
       .nonEmpty(codec, minItems, maxItems, uniqueItems)
       .imap { case (head, tail) => NonEmptyList(head, tail.toList) }(fa => (fa.head, fa.tail.toVector))
 
-    def chain[F[+a] <: Data.Optional[a], O <: Data, A](
+    def chain[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
@@ -227,7 +238,7 @@ trait Codecs extends Types:
     ): Collection.Required.Of[F[O], Chain[A]] =
       vector(codec, minItems, maxItems, uniqueItems).imap(Chain.fromSeq)(_.toVector)
 
-    def nonEmptyChain[F[+a] <: Data.Optional[a], O <: Data, A](
+    def nonEmptyChain[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
@@ -236,21 +247,21 @@ trait Codecs extends Types:
       .nonEmpty(codec, minItems, maxItems, uniqueItems)
       .imap { case (head, tail) => NonEmptyChain(head, tail*) }(fa => (fa.head, fa.tail.toVector))
 
-    def set[F[+a] <: Data.Optional[a], O <: Data, A](
+    def set[F[+a] <: Data.Nullable[a], O <: Data, A](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
     ): Collection.Required.Of[F[O], Set[A]] =
       vector(codec, minItems, maxItems, uniqueItems = true).imap(_.toSet)(_.toVector)
 
-    def sortedSet[F[+a] <: Data.Optional[a], O <: Data, A: Order](
+    def sortedSet[F[+a] <: Data.Nullable[a], O <: Data, A: Order](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
     ): Collection.Required.Of[F[O], SortedSet[A]] =
       vector(codec, minItems, maxItems, uniqueItems = true).imap(SortedSet.from)(_.toVector)
 
-    def nonEmptySet[F[+a] <: Data.Optional[a], O <: Data, A: Order](
+    def nonEmptySet[F[+a] <: Data.Nullable[a], O <: Data, A: Order](
         codec: => Base.Codec[F, O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
@@ -259,14 +270,14 @@ trait Codecs extends Types:
       .imap { case (head, tail) => NonEmptySet(head, SortedSet.from(tail)) }(fa => (fa.head, fa.tail.toVector))
 
   object dictionary:
-    def vector[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def vector[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Required.Of[F[O], Vector[(A, B)]] = Base.Dictionary(key, value, minProperties, maxProperties)
 
-    def nonEmptyVector[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def nonEmptyVector[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -275,7 +286,7 @@ trait Codecs extends Types:
       .nonEmpty(key, value, minProperties, maxProperties)
       .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
 
-    def seq[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def seq[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -283,7 +294,7 @@ trait Codecs extends Types:
     ): Dictionary.Required.Of[F[O], Seq[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(identity)(_.toVector)
 
-    def nonEmptySeq[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def nonEmptySeq[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -292,7 +303,7 @@ trait Codecs extends Types:
       .nonEmpty(key, value, minProperties, maxProperties)
       .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail.toVector))
 
-    def list[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def list[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -300,7 +311,7 @@ trait Codecs extends Types:
     ): Dictionary.Required.Of[F[O], List[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(_.toList)(_.toVector)
 
-    def nonEmptyList[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def nonEmptyList[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -309,7 +320,7 @@ trait Codecs extends Types:
       .nonEmpty(key, value, minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyList(head, tail.toList) }(fa => (fa.head, fa.tail.toVector))
 
-    def chain[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def chain[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -317,7 +328,7 @@ trait Codecs extends Types:
     ): Dictionary.Required.Of[F[O], Chain[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(Chain.fromSeq)(_.toVector)
 
-    def nonEmptyChain[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def nonEmptyChain[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -326,7 +337,7 @@ trait Codecs extends Types:
       .nonEmpty(key, value, minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyChain(head, tail*) }(fa => (fa.head, fa.tail.toVector))
 
-    def map[F[+a] <: Data.Optional[a], O <: Data, A, B](
+    def map[F[+a] <: Data.Nullable[a], O <: Data, A, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -334,7 +345,7 @@ trait Codecs extends Types:
     ): Dictionary.Required.Of[F[O], Map[A, B]] =
       vector(key, value, minProperties, maxProperties).imap(_.to(Map))(_.toVector)
 
-    def sortedMap[F[+a] <: Data.Optional[a], O <: Data, A: Order, B](
+    def sortedMap[F[+a] <: Data.Nullable[a], O <: Data, A: Order, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
@@ -342,7 +353,7 @@ trait Codecs extends Types:
     ): Dictionary.Required.Of[F[O], SortedMap[A, B]] =
       vector(key, value, minProperties, maxProperties).imap(SortedMap.from)(_.toVector)
 
-    def nonEmptyMap[F[+a] <: Data.Optional[a], O <: Data, A: Order, B](
+    def nonEmptyMap[F[+a] <: Data.Nullable[a], O <: Data, A: Order, B](
         key: => Codec.Required.Of[Data.Primitive, A],
         value: => Base.Codec[F, O, B],
         minProperties: Option[Int] = none,
