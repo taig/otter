@@ -7,6 +7,6 @@ enum Null:
   case Show
 
 object Null:
-  val Default: Null = Show
+  val Default: Null = Hide
 
   given Eq[Null] = Eq.fromUniversalEquals

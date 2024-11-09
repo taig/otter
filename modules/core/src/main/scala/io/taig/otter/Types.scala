@@ -154,9 +154,9 @@ trait Types:
   object Branch:
     type Of[O <: Data, A] = Base.Branch[O, A]
 
-  final type Field[A] = Base.Field[Data, A]
+  final type Field[A] = Base.Field[?, Data, A]
 
   object Field:
-    type Of[O <: Data, A] = Base.Field[O, A]
+    type Of[O <: Data, A] = Base.Field[?, O, A]
 
 object Types extends Types

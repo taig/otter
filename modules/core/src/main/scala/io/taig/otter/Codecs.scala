@@ -161,10 +161,10 @@ trait Codecs extends Types:
     Base.Field(name, codec)
 
   def record[O <: Data, A](fields: Fields[O, A]): Record.Required.Of[O, A] = Base.Record(fields)
-  def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = record(field.toFields)
+  def record[O <: Data, A](field: Field.Of[O, A]): Record.Required.Of[O, A] = ??? // record(field.toFields)
 
   def tuple[O <: Data, A](fields: Fields[O, A]): Tuple.Required.Of[O, A] = Base.Tuple(fields)
-  def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = tuple(field.toFields)
+  def tuple[O <: Data, A](field: Field.Of[O, A]): Tuple.Required.Of[O, A] = ??? // tuple(field.toFields)
 
   object sum:
     def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Required.Of[O, A] = Base.Sum.Nested(branches)
