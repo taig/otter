@@ -5,6 +5,7 @@ import cats.Order
 import cats.Show
 import cats.parse.Parser
 import cats.syntax.all.*
+import cats.derived.*
 
 import java.lang.Math.toIntExact
 import java.lang.String as JString
@@ -13,7 +14,7 @@ import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
-sealed abstract class Data extends SProduct with Serializable:
+sealed abstract class Data extends SProduct with Serializable derives Eq:
   final def asValue: Option[Data.Value] = this match
     case data: Data.Value => Some(data)
     case _                => None
@@ -45,9 +46,9 @@ sealed abstract class Data extends SProduct with Serializable:
   final override def toString: JString = Printers(this, quoted = true)
 
 object Data:
-  sealed abstract class Value extends Data
+  sealed abstract class Value extends Data derives Eq
 
-  final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value:
+  final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value derives Eq:
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
     final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
@@ -61,7 +62,7 @@ object Data:
 
     given [A <: Data: Order]: Order[Data.Object[A]] = Order.by(_.values)
 
-  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
+  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value derives Eq:
     def length: Long = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
 
@@ -74,7 +75,7 @@ object Data:
 
     given [A <: Data: Order]: Order[Data.Array[A]] = Order.by(_.values)
 
-  sealed abstract class Primitive extends Value:
+  sealed abstract class Primitive extends Value derives Eq:
     final def asString: Option[Data.String] = this match
       case data: Data.String => data.some
       case _                 => none
@@ -89,9 +90,9 @@ object Data:
 
     final def plain: JString = Printers(this, quoted = false)
 
-  final case class String(value: JString) extends Data.Primitive
+  final case class String(value: JString) extends Data.Primitive derives Eq
 
-  final case class Boolean(value: SBoolean) extends Data.Primitive
+  final case class Boolean(value: SBoolean) extends Data.Primitive derives Eq
 
   final case class Number(value: Int | Long | Float | Double | JBigDecimal | JBigInteger) extends Data.Primitive:
     def toBigDecimal: Option[JBigDecimal] = value match
@@ -150,6 +151,9 @@ object Data:
       val target = convert(value)
       Option.when(value == target)(target)
 
+  object Number:
+    given Eq[Data.Number] = Eq.fromUniversalEquals
+
   case object Null extends Data
 
   type Nullable[A] = A | Data.Null.type
@@ -157,7 +161,5 @@ object Data:
   type Required[A] = A
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
-
-  given Eq[Data] = Eq.fromUniversalEquals
 
   given [A <: Data]: Show[A] = Show.fromToString

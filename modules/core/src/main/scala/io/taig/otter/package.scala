@@ -20,3 +20,15 @@ extension [A: Eq, B](self: Vector[(A, B)])
     }
 
     (result.result(), remainders.result())
+
+extension [A](self: Vector[A])
+  def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): Option[(B, Vector[A])] =
+    var result: Option[B] = none
+    val remainders = Vector.newBuilder[A]
+
+    self.foreach: a =>
+      if result.isEmpty && pf.isDefinedAt(a)
+      then result = pf.apply(a).some
+      else remainders += a
+
+    result.tupleRight(remainders.result())

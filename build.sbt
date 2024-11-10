@@ -12,6 +12,7 @@ val Version = new {
   val Http4s = "1.0.0-M43"
   val Java = "17"
   val JNanoId = "2.0.0"
+  val Kittens = "3.4.0"
   val Log4Cats = "2.7.0"
   val Mouse = "1.3.2"
   val Munit = "1.0.2"
@@ -91,6 +92,7 @@ lazy val core = module(identifier = Some("core"))
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
+        "org.typelevel" %%% "kittens" % Version.Kittens ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         Nil
   )

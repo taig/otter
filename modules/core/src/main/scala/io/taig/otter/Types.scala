@@ -69,16 +69,6 @@ trait Types:
   object Primitive:
     type Required[A] = Base.Primitive[Data.Required, A]
 
-  final type Product[A] = Base.Product[Data.Nullable, ?, Data, A]
-
-  object Product:
-    type Of[O <: Data, A] = Base.Product[Data.Nullable, ?, O, A]
-
-    type Required[A] = Base.Product[Data.Required, ?, Data, A]
-
-    object Required:
-      type Of[O <: Data, A] = Base.Product[Data.Required, ?, O, A]
-
   type Record[A] = Base.Record[Data.Nullable, Data, A]
 
   object Record:
@@ -139,24 +129,24 @@ trait Types:
       object Required:
         type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
 
-  type Tuple[A] = Base.Tuple[Data.Nullable, Data, A]
+  // type Tuple[A] = Base.Tuple[Data.Nullable, Data, A]
 
-  object Tuple:
-    type Of[O <: Data, A] = Base.Tuple[Data.Nullable, O, A]
+  // object Tuple:
+  //   type Of[O <: Data, A] = Base.Tuple[Data.Nullable, O, A]
 
-    type Required[A] = Base.Tuple[Data.Required, Data, A]
+  //   type Required[A] = Base.Tuple[Data.Required, Data, A]
 
-    object Required:
-      type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
+  //   object Required:
+  //     type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
 
   final type Branch[A] = Base.Branch[Data, A]
 
   object Branch:
     type Of[O <: Data, A] = Base.Branch[O, A]
 
-  final type Field[A] = Base.Field[?, Data, A]
+  final type Field[A] = Base.Field[Data, A]
 
   object Field:
-    type Of[O <: Data, A] = Base.Field[?, O, A]
+    type Of[O <: Data, A] = Base.Field[O, A]
 
 object Types extends Types
