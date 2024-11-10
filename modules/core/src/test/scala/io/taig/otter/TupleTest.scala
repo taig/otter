@@ -1,32 +1,32 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.syntax.all.*
-// import io.taig.otter.Dsl.*
-// import munit.FunSuite
+import cats.syntax.all.*
+import io.taig.otter.Dsl.*
+import munit.FunSuite
 
-// final class TupleTest extends FunSuite:
-//   test("decode"):
-//     val codec = tuple(field("foo", string) :* field("bar", int))
+final class TupleTest extends OtterSuite:
+  test("decode"):
+    val codec = string :* int :* boolean
 
-//     assertEquals(
-//       obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42))),
-//       expected = ("foobar", 42).valid
-//     )
+    assertEq(
+      obtained = codec.decode(Data.Array.of(Data.String("foobar"), Data.Number(42), Data.Boolean(true))),
+      expected = ("foobar", 42, true).valid
+    )
 
-//     assertEquals(
-//       obtained = codec.decode(Data.Null),
-//       expected = Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))).invalid
-//     )
+    // assertEquals(
+    //   obtained = codec.decode(Data.Null),
+    //   expected = Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))).invalid
+    // )
 
-//     assertEquals(
-//       obtained = codec.decode(Data.Array.of(Data.Array.Empty, Data.String("foobar"))),
-//       expected = Violations
-//         .of(
-//           Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-//           Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
-//         )
-//         .invalid
-//     )
+    // assertEquals(
+    //   obtained = codec.decode(Data.Array.of(Data.Array.Empty, Data.String("foobar"))),
+    //   expected = Violations
+    //     .of(
+    //       Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+    //       Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
+    //     )
+    //     .invalid
+    // )
 
 //   test("decode: optional"):
 //     val codec = tuple(field("foo", string) :* field("bar", int)).nullable

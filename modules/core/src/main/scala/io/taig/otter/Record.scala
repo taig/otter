@@ -75,10 +75,10 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
   final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Record[Data.Required, P | F[O], merge.Out] =
     field.toRecord.zip(this).imap(merge.apply)(merge.unapply)
 
-  final override def decode(values: Data): Codec.Result[A] = values match
+  final override def decode(data: Data): Codec.Result[A] = data match
     case Data.Object(values)     => decode(values.some)._2
     case Data.Null if isNullable => decode(none)._2
-    case _ => Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(values.name))).invalid
+    case _ => Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))).invalid
 
   final def decode(
       values: Option[Vector[(String, Data)]],

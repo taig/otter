@@ -267,18 +267,17 @@ object Primitive:
       matches: Option[Pattern],
       f: JString => Option[A],
       g: A => JString
-  ): Primitive[Data.Required, A] =
-    new Primitive[Data.Required, A]:
-      val codec = string(minLength, maxLength, matches)
-      override def constraints: Vector[Constraint.Primitive] = codec.constraints
-      override def isNullable: Boolean = false
-      override def metadata: Metadata = Metadata.Empty
-      override def default: Option[A] = None
-      override def decode(data: Data): Codec.Result[A] = codec
-        .decode(data)
-        .andThen: value =>
-          f(value).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(value))))
-      override def encode(a: A): Data.Primitive = codec.encode(g(a))
+  ): Primitive[Data.Required, A] = new Primitive[Data.Required, A]:
+    val codec = string(minLength, maxLength, matches)
+    override def constraints: Vector[Constraint.Primitive] = codec.constraints
+    override def isNullable: Boolean = false
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[A] = None
+    override def decode(data: Data): Codec.Result[A] = codec
+      .decode(data)
+      .andThen: value =>
+        f(value).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(value))))
+    override def encode(a: A): Data.Primitive = codec.encode(g(a))
 
   val boolean: Primitive[Data.Required, SBoolean] = new Primitive[Data.Required, SBoolean]:
     override def constraints: Vector[Constraint.Primitive] = Vector.empty

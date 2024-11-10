@@ -20,6 +20,14 @@ abstract class Codec[+F[+a] <: Data.Nullable[a], +O <: Data, A]:
   def decode(data: Data): Codec.Result[A]
   def encode(a: A): F[O]
 
+  def :*[G[+a] <: Data.Nullable[a], P <: Data, B](codec: Codec[G, P, B]): Tuple[Data.Required, F[O] | G[P], (A, B)] =
+    toTuple.zip(codec.toTuple)
+
+  def *:[G[+a] <: Data.Nullable[a], P <: Data, B](codec: Codec[G, P, B]): Tuple[Data.Required, G[P] | F[O], (B, A)] =
+    codec.toTuple.zip(toTuple)
+
+  final def toTuple: Tuple[Data.Required, F[O], A] = Tuple(this)
+
 object Codec:
   type Result[A] = Validated[Violations, A]
 
