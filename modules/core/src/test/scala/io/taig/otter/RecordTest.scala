@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Dsl.*
-import munit.FunSuite
 
 final class RecordTest extends OtterSuite:
   test("decode"):
@@ -13,20 +12,21 @@ final class RecordTest extends OtterSuite:
       expected = ("foobar", 42).valid
     )
 
-    // assertEquals(
-    //   obtained = codec.decode(Data.Null),
-    //   expected = Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))).invalid
-    // )
+    assertEq(
+      obtained = codec.decode(Data.Null),
+      expected = Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))).invalid
+    )
 
-    // assertEquals(
-    //   obtained = codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))),
-    //   expected = Violations
-    //     .of(
-    //       Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-    //       Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
-    //     )
-    //     .invalid
-    // )
+    println(codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))))
+    assertEq(
+      obtained = codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))),
+      expected = Violations
+        .of(
+          Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
+        )
+        .invalid
+    )
 
   // test("decode: optional"):
   //   val codec = record(field("foo", string) :* field("bar", int)).nullable

@@ -17,25 +17,24 @@ sealed abstract class Field[+O <: Data, A]:
 
   final def imap[B](f: A => B)(g: B => A): Field[O, B] = new Field[O, B]:
     export self.{codec, metadata, name}
-    override def decode(data: Vector[(String, Data)]): Codec.Result[(Vector[(String, Data)], B)] = ???
-    override def encode(a: B): Vector[(String, O)] = ???
+    override def decode(data: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[B]) =
+      self.decode(data).map(_.map(f))
+    override def encode(b: B): Vector[(String, O)] = self.encode(g(b))
 
   final def optional: Field[O, Option[A]] = new Field[O, Option[A]]:
     export self.{codec, metadata, name}
-    override def decode(data: Vector[(String, Data)]): Codec.Result[(Vector[(String, Data)], Option[A])] =
-      if data.exists { case (name, _) => name == self.name }
-      then self.decode(data).map(_.map(_.some))
-      else (data, none).valid
-    override def encode(a: Option[A]): Vector[(String, O)] = a match
-      case Some(a) => self.encode(a)
-      case None    => Vector.empty
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
+      if values.exists { case (name, _) => name == self.name }
+      then self.decode(values).map(_.map(_.some))
+      else (values, none.valid)
+    override def encode(a: Option[A]): Vector[(String, O)] = a.fold(Vector.empty)(self.encode)
 
   final def maybe(nulls: Null): Field[Data.Nullable[O], Option[A]] = new Field[Data.Nullable[O], Option[A]]:
     export self.{codec, metadata, name}
-    override def decode(data: Vector[(String, Data)]): Codec.Result[(Vector[(String, Data)], Option[A])] =
-      if data.exists { case (name, _) => name == self.name }
-      then self.decode(data).map(_.map(_.some))
-      else self.decode((name, Data.Null) +: data).map(_.map(_.some))
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
+      if values.exists { case (name, _) => name == self.name }
+      then self.decode(values).map(_.map(_.some))
+      else self.decode((name, Data.Null) +: values).map(_.map(_.some))
     override def encode(a: Option[A]): Vector[(String, Data.Nullable[O])] = a match
       case Some(a)                     => self.encode(a)
       case None if nulls === Null.Show => Vector((name, Data.Null))
@@ -53,7 +52,7 @@ sealed abstract class Field[+O <: Data, A]:
 
   final def toRecord: Record[Data.Required, O, A] = Record(this)
 
-  def decode(data: Vector[(String, Data)]): Codec.Result[(Vector[(String, Data)], A)]
+  def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A])
 
   def encode(a: A): Vector[(String, O)]
 
@@ -61,13 +60,16 @@ object Field:
   final private case class Apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: Codec[F, O, A])
       extends Field[F[O], A]:
     override def metadata: Metadata = Metadata.Empty
-    override def decode(data: Vector[(String, Data)]): Codec.Result[(Vector[(String, Data)], A)] =
-      data.collectFirstWithRemainders { case (`name`, data) => data } match
-        case Some((data, remainders)) => codec.decode(data).tupleLeft(remainders)
-        case None =>
-          Violations
-            .namespaceNec(XPath.Root / name, Violation(Constraint.Type("value"), actual = Data.String("null")))
-            .invalid
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
+      values.collectFirstWithRemainders { case (`name`, data) => data } match
+        case (values, Some(data)) => (values, codec.decode(data).leftMap(name /: _))
+        case (values, None) =>
+          (
+            values,
+            Violations
+              .namespaceNec(XPath.Root / name, Violation(Constraint.Type("value"), actual = Data.String("null")))
+              .invalid
+          )
     override def encode(a: A): Vector[(String, F[O])] = Vector((name, codec.encode(a)))
 
   def apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: Codec[F, O, A]): Field[F[O], A] =
