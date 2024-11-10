@@ -163,3 +163,9 @@ object Data:
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given [A <: Data]: Show[A] = Show.fromToString
+
+  given [A: Eq]: Eq[Data.Nullable[A]] = Eq.instance:
+    case (Data.Null, Data.Null) => true
+    case (Data.Null, _)         => false
+    case (_, Data.Null)         => false
+    case (left, right)          => left.asInstanceOf[A] === right.asInstanceOf[A]
