@@ -2,8 +2,8 @@ package io.taig.otter
 
 import cats.Eq
 import cats.Show
-import cats.parse.Parser
 import cats.derived.*
+import cats.parse.Parser
 
 final case class Violation(constraint: Constraint, actual: Data) derives Eq:
   override def toString: String = Printers(this)

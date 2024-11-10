@@ -1,10 +1,10 @@
 package io.taig.otter
 
 import cats.data.Chain
+import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
 import io.taig.otter.Data.Required
-import cats.data.Validated
 
 sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends Codec[F, Data.Object[O], A]:
   self =>

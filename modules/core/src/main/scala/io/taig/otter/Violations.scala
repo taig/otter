@@ -1,15 +1,15 @@
 package io.taig.otter
 
-import cats.Semigroup
 import cats.Eq
+import cats.Semigroup
 import cats.Show
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
+import cats.derived.*
 import cats.implicits.*
 import cats.parse.Parser
-import cats.derived.*
 
 import scala.collection.immutable.SortedMap
 

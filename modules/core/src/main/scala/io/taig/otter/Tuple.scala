@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
   self =>

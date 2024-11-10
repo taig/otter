@@ -58,7 +58,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (formData)"):
-    val codec = record(field("foo", string) :* field("bar", int))
+    val codec = field("foo", string) :* field("bar", int)
     val obtained = request(method.get, __, formData(codec)).encode(contentType = none, ("foobar", 42))
 
     assertEquals(
@@ -72,7 +72,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (text orElse formData)"):
-    val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
+    val bodies = formData(field("foo", string) :* field("bar", int)) :+ text(string)
     val codec = request(method.get, __, bodies)
 
     val obtainedFormData = codec.encode(contentType = none, Left(("foobar", 42)))
@@ -99,7 +99,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("encode: body (text or formData)"):
-    val bodies = formData(record(field("foo", string))) + text(string)
+    val bodies = formData(field("foo", string).toRecord) + text(string)
     val codec = request(method.get, __, bodies)
 
     val obtainedFormData = codec.encode(contentType = mediaType.application.wwwFormUrlencoded.some, "foobar")
@@ -152,7 +152,7 @@ final class RequestTest extends FunSuite:
     )
 
   test("decode: body (text orElse formData)"):
-    val bodies = formData(record(field("foo", string) :* field("bar", int))) :+ text(string)
+    val bodies = formData(field("foo", string) :* field("bar", int)) :+ text(string)
     val codec = request(method.get, __, bodies)
 
     assertEquals(

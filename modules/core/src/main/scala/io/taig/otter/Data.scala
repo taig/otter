@@ -3,9 +3,9 @@ package io.taig.otter
 import cats.Eq
 import cats.Order
 import cats.Show
+import cats.derived.*
 import cats.parse.Parser
 import cats.syntax.all.*
-import cats.derived.*
 
 import java.lang.Math.toIntExact
 import java.lang.String as JString
