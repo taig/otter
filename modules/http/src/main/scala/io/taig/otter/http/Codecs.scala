@@ -249,10 +249,9 @@ trait Codecs extends Base.Codecs, Types:
     def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
         tpe: String,
         codec: Base.Codec[F, O, A]
-    ): Record.Required.Of[Data.Primitive | F[O], A] = record {
-      field("error", constant(string, tpe)) :*
-        field("value", codec)
-    }.nulls(Null.Hide)
+    ): Record.Required.Of[Data.Primitive | F[O], A] =
+      // TODO this used to hide null values. how can we achieve that now?
+      field("error", constant(string, tpe)) :* field("value", codec)
 
     def apply(tpe: String): Record.Required[Unit] = error(tpe, void)
 

@@ -8,7 +8,7 @@ import java.nio.charset.StandardCharsets
 
 trait Codecs extends Http.Types, Http.Codecs:
   def csv[A](
-      codec: Product.Required.Of[Data.Primitive, A],
+      codec: Record.Required.Of[Data.Primitive, A],
       fallback: => Charset = StandardCharsets.UTF_8
   ): Body.Strict[List[A]] = body(
     mediaType = mediaType.text.csv,
@@ -23,8 +23,8 @@ trait Codecs extends Http.Types, Http.Codecs:
             headers = codec.fields.toVector.map(_.name).toList.some,
             values = as.map(codec.printObject(_).toList.map { case (_, value) => value })
           )
-        case codec: Tuple.Required.Of[Data.Primitive, A] =>
-          Csv(headers = none, values = as.map(codec.printArray(_).toList))
+        // case codec: Tuple.Required.Of[Data.Primitive, A] =>
+        //   Csv(headers = none, values = as.map(codec.printArray(_).toList))
 
       csv.show.getBytes(charset.getOrElse(fallback))
   )

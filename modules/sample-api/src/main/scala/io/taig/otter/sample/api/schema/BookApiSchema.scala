@@ -40,9 +40,8 @@ object BookApiSchema:
   )
 
   object Summary:
-    val codec: Record.Required.Of[Data.Primitive, BookApiSchema.Summary] = record {
-      field("isbn", IsbnApiSchema.codec) :* field("title", string)
-    }.to
+    val codec: Record.Required.Of[Data.Primitive, BookApiSchema.Summary] =
+      (field("isbn", IsbnApiSchema.codec) :* field("title", string)).to
 
   final case class Create(
       isbn: IsbnApiSchema,
@@ -52,16 +51,16 @@ object BookApiSchema:
   )
 
   object Create:
-    val codec: Record[BookApiSchema.Create] = record {
+    val codec: Record[BookApiSchema.Create] = (
       field("isbn", IsbnApiSchema.codec) :*
         field("title", string(minLength = 1.some, maxLength = 500.some)) :*
         field("genres", collection.sortedSet(Genre.codec).modifyDefault(_ => SortedSet.empty[Genre].some)) :*
         field("metadata", dynamic.obj.modifyDefault(_ => Data.Object.Empty.some))
-    }.to
+    ).to
 
-  val codec: Record[BookApiSchema] = record {
+  val codec: Record[BookApiSchema] = (
     field("isbn", IsbnApiSchema.codec) :*
       field("title", string) :*
       field("genres", collection.sortedSet(Genre.codec)) :*
       field("metadata", dynamic.obj)
-  }.to
+  ).to

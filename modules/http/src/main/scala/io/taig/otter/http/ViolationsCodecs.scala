@@ -7,7 +7,7 @@ object ViolationsCodecs:
   object violations:
     val structured: Sum.Untagged.Required[Violations] =
       def comparison[A](reference: Codec.Required[A]): Record.Required[Comparison[A]] =
-        record(field("reference", reference) :* field("exclusive", boolean)).to[Comparison[A]]
+        (field("reference", reference) :* field("exclusive", boolean)).to[Comparison[A]]
 
       val constraint: Sum.Keyed.Required[Constraint] = sum.keyed {
         (
@@ -37,11 +37,11 @@ object ViolationsCodecs:
       }.to
 
       val violation: Record.Required[Violation] =
-        record(field("constraint", constraint) :* field("actual", dynamic.any)).to
+        (field("constraint", constraint) :* field("actual", dynamic.any)).to
 
       val step: Primitive.Required[Step] = parser(name = "step")(Step.parse(_).toOption)(_.show)
 
-      val root: Codec.Required[Violations.Root] = record(
+      val root: Codec.Required[Violations.Root] = (
         field("values", dictionary.sortedMap(step, structured)) :*
           field("violations", collection.nonEmptyChain(violation))
       ).to

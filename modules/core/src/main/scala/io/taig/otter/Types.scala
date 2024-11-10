@@ -129,15 +129,15 @@ trait Types:
       object Required:
         type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
 
-  // type Tuple[A] = Base.Tuple[Data.Nullable, Data, A]
+  type Tuple[A] = Base.Tuple[Data.Nullable, Data, A]
 
-  // object Tuple:
-  //   type Of[O <: Data, A] = Base.Tuple[Data.Nullable, O, A]
+  object Tuple:
+    type Of[O <: Data, A] = Base.Tuple[Data.Nullable, O, A]
 
-  //   type Required[A] = Base.Tuple[Data.Required, Data, A]
+    type Required[A] = Base.Tuple[Data.Required, Data, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
 
   final type Branch[A] = Base.Branch[Data, A]
 
