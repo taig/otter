@@ -1,11 +1,11 @@
 package io.taig.otter
 
-import munit.FunSuite
-import munit.diff.Printer
 import cats.Eq
 import cats.syntax.all.*
 import munit.Compare
+import munit.FunSuite
 import munit.Location
+import munit.diff.Printer
 
 abstract class OtterSuite extends FunSuite:
   override def printer: Printer = Printer(_.toString())

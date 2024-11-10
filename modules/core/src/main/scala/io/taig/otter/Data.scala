@@ -11,6 +11,7 @@ import java.lang.Math.toIntExact
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import scala.Array as SArray
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
@@ -164,8 +165,4 @@ object Data:
 
   given [A <: Data]: Show[A] = Show.fromToString
 
-  given [A: Eq]: Eq[Data.Nullable[A]] = Eq.instance:
-    case (Data.Null, Data.Null) => true
-    case (Data.Null, _)         => false
-    case (_, Data.Null)         => false
-    case (left, right)          => left.asInstanceOf[A] === right.asInstanceOf[A]
+  given [A: Eq]: Eq[Data.Nullable[A]] = eqDataNullable

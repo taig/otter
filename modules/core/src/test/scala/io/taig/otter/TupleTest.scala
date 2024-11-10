@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Dsl.*
-import munit.FunSuite
 
 final class TupleTest extends OtterSuite:
   test("decode"):
