@@ -30,6 +30,8 @@ sealed abstract class Field[+O <: Data, A]:
       else (values, none.valid)
     override def encode(a: Option[A]): Vector[(String, O)] = a.fold(Vector.empty)(self.encode)
 
+  final def nullable: Field[O, Option[A]] = ???
+
   // TODO default (?)
   final def maybe(nulls: Null): Field[Data.Nullable[O], Option[A]] = new Field[Data.Nullable[O], Option[A]]:
     export self.{codec, metadata, name}
@@ -60,6 +62,9 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): Vector[(String, O)]
 
 object Field:
+  extension [O <: Data, A](self: Field[Data.Nullable[O], A])
+    def test: Field[Data.Nullable[O], A] = ???
+
   final private case class Apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: Codec[F, O, A])
       extends Field[F[O], A]:
     override def metadata: Metadata = Metadata.Empty
