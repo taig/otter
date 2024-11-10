@@ -13,20 +13,21 @@ final class TupleTest extends OtterSuite:
       expected = ("foobar", 42, true).valid
     )
 
-    // assertEquals(
-    //   obtained = codec.decode(Data.Null),
-    //   expected = Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))).invalid
-    // )
+    assertEquals(
+      obtained = codec.decode(Data.Null),
+      expected = Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))).invalid
+    )
 
-    // assertEquals(
-    //   obtained = codec.decode(Data.Array.of(Data.Array.Empty, Data.String("foobar"))),
-    //   expected = Violations
-    //     .of(
-    //       Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-    //       Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
-    //     )
-    //     .invalid
-    // )
+    assertEquals(
+      obtained = codec.decode(Data.Array.of(Data.Array.Empty, Data.String("foobar"), Data.Number(0))),
+      expected = Violations
+        .of(
+          Step.Index(0) -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          Step.Index(1) -> Violation(Constraint.Type("int"), actual = Data.String("string")),
+          Step.Index(2) -> Violation(Constraint.Type("boolean"), actual = Data.String("number"))
+        )
+        .invalid
+    )
 
 //   test("decode: optional"):
 //     val codec = tuple(field("foo", string) :* field("bar", int)).nullable

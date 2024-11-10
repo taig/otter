@@ -13,9 +13,9 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
     export self.{codecs, encode, encodeSequence, metadata}
     override def default: Option[A] = f(self.default)
     override def isNullable: Boolean = default.nonEmpty
-    override def decode(values: Option[Vector[Data]]): Codec.Result[A] = (values, default) match
+    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] = (values, default) match
       case (None, Some(default)) => default.valid
-      case _                     => self.decode(values)
+      case _                     => self.decode(values, index)
 
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
     export self.{codecs, decode, default, encode, encodeSequence, isNullable}
@@ -24,7 +24,8 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = new Tuple[F, O, B]:
     export self.{codecs, isNullable, metadata}
     override def default: Option[B] = self.default.map(f)
-    override def decode(values: Option[Vector[Data]]): Codec.Result[B] = self.decode(values).map(f)
+    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[B] =
+      self.decode(values, index).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
     override def encodeSequence(a: B): Data.Array[F[O]] = self.encodeSequence(g(a))
 
@@ -39,12 +40,12 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
     override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = none
-    override def decode(values: Option[Vector[Data]]): Codec.Result[(A, B)] = values match
+    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[(A, B)] = values match
       case Some(values) =>
         val left = self.codecs.length.toInt
         (
-          self.decode(values.slice(0, left).some),
-          codec.decode(values.slice(left, values.length).some)
+          self.decode(values.slice(0, left).some, index),
+          codec.decode(values.slice(left, values.length).some, index = index + left)
         ).tupled
       case None => Violations.rootNec(Violation.tpe("array", actual = "null")).invalid
     override def encode(ab: (A, B)): Data.Array[F[O] | G[P]] = encodeSequence(ab)
@@ -67,11 +68,11 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
         Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference), actual = Data.Number(actual))).invalid
       else if actual < reference then
         Violations.rootNec(Violation(Constraint.Collection.MinItems(reference), actual = Data.Number(actual))).invalid
-      else decode(values.some)
-    case Data.Null if isNullable => decode(none)
+      else decode(values.some, index = 0)
+    case Data.Null if isNullable => decode(none, index = 0)
     case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
 
-  protected def decode(values: Option[Vector[Data]]): Codec.Result[A]
+  protected def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A]
 
   override def encode(a: A): F[Data.Array[O]]
   protected def encodeSequence(a: A): Data.Array[F[O]]
@@ -82,7 +83,7 @@ object Tuple:
     override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Unit] = none
-    override def decode(values: Option[Vector[Data]]): Codec.Result[Unit] = ().valid
+    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[Unit] = ().valid
     override def encode(a: Unit): Data.Array[Nothing] = Data.Array.Empty
     override def encodeSequence(a: Unit): Data.Array[Nothing] = Data.Array.Empty
 
@@ -92,9 +93,9 @@ object Tuple:
     override def isNullable: Boolean = false
     override def default: Option[A] = none
     override def metadata: Metadata = Metadata.Empty
-    override def decode(values: Option[Vector[Data]]): Codec.Result[A] =
+    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] =
       values.toValid(Violations.rootNec(Violation.tpe("array", actual = "null"))) match
-        case Validated.Valid(values)       => codec.decode(values.head) // TODO validate again?
+        case Validated.Valid(values)       => codec.decode(values.head).leftMap(index /: _) // TODO validate again?
         case Validated.Invalid(violations) => violations.invalid
     override def encode(a: A): Data.Array[F[O]] = Data.Array.one(codec.encode(a))
     override def encodeSequence(a: A): Data.Array[F[O]] = encode(a)

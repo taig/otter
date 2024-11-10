@@ -287,7 +287,7 @@ object Primitive:
     override def decode(data: Data): Codec.Result[SBoolean] = data.asPrimitive
       .flatMap: primitive =>
         primitive.asBoolean.map(_.value).orElse(primitive.asString.flatMap(_.value.toBooleanOption))
-      .toValid(Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))))
+      .toValid(Violations.rootNec(Violation(Constraint.Type("boolean"), actual = Data.String(data.name))))
     override def encode(a: SBoolean): Data.Primitive = Data.Boolean(a)
 
   given [F[+a] <: Data.Nullable[a]]: CodecInvariant[Primitive[F, *]] with
