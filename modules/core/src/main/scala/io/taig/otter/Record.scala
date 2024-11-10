@@ -87,7 +87,7 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
     case (Some(values), true) =>
       val keys = values.map { case (key, _) => key }.toSet
       val fieldsMissing = fields.map(_.name).forall(!keys.contains(_))
-      if fieldsMissing then decode(none) else decode(values.some)
+      if fieldsMissing then decode(none).leftMap(_ => values.some) else decode(values.some)
     case _ => decode(values)
 
   def decode(values: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A])

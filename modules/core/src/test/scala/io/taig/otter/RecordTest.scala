@@ -5,10 +5,10 @@ import io.taig.otter.Dsl.*
 
 final class RecordTest extends OtterSuite:
   test("decode"):
-    val codec = field("foo", string) :* field("bar", int)
+    val codec = field("a", string) :* field("b", int)
 
     assertEq(
-      obtained = codec.decode(Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))),
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
       expected = ("foobar", 42).valid
     )
 
@@ -17,31 +17,114 @@ final class RecordTest extends OtterSuite:
       expected = Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String("null"))).invalid
     )
 
-    println(codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))))
     assertEq(
-      obtained = codec.decode(Data.Object.of("foo" -> Data.Array.Empty, "bar" -> Data.String("foobar"))),
+      obtained = codec.decode(Data.Object.of("a" -> Data.Array.Empty, "b" -> Data.String("foobar"))),
       expected = Violations
         .of(
-          Step.Field("foo") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
-          Step.Field("bar") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
+          Step.Field("a") -> Violation(Constraint.Type("string"), actual = Data.String("array")),
+          Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("string"))
         )
         .invalid
     )
 
-  // test("decode: optional"):
-  //   val codec = record(field("foo", string) :* field("bar", int)).nullable
+  test("decode: nullable"):
+    val codec = (field("a", string) :* field("b", int)).nullable
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Object.of("foo" -> Data.String("foobar"), "bar" -> Data.Number(42))),
-  //     expected = ("foobar", 42).some.valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
+      expected = ("foobar", 42).some.valid
+    )
 
-  //   assertEquals(obtained = codec.decode(Data.Null), expected = none.valid)
+    assertEquals(obtained = codec.decode(Data.Null), expected = none.valid)
 
-  //   assertEquals(
-  //     obtained = codec.decode(Data.Object.of("foo" -> Data.Null, "bar" -> Data.Null)),
-  //     expected = none.valid
-  //   )
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
+      expected = Violations
+        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.Null, "b" -> Data.Null)),
+      expected = Violations
+        .of(
+          Step.Field("a") -> Violation(Constraint.Type("string"), actual = Data.String("null")),
+          Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null"))
+        )
+        .invalid
+    )
+
+  test("decode: nullable (left)"):
+    val codec = (field("a", string) :* field("b", int)).nullable :* field("c", float)
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Number(1.0f))
+      ),
+      expected = (("foobar", 42).some, 1.0f).valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("c" -> Data.Number(1.0f))),
+      expected = (none, 1.0f).valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Null),
+      expected = Violations
+        .rootNec(Violation(Constraint.Type("object"), actual = Data.String("null")))
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.Empty),
+      expected = Violations
+        .of(Step.Field("c") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "c" -> Data.Number(1.0f))),
+      expected = Violations
+        .of(Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .invalid
+    )
+
+  test("decode: nullable (right)"):
+    val codec = field("a", string) *: (field("b", int) :* field("c", float)).nullable
+
+    assertEquals(
+      obtained = codec.decode(
+        Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42), "c" -> Data.Number(1.0f))
+      ),
+      expected = ("foobar", (42, 1.0f).some).valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
+      expected = ("foobar", none).valid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Null),
+      expected = Violations
+        .rootNec(Violation(Constraint.Type("object"), actual = Data.String("null")))
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.Empty),
+      expected = Violations
+        .of(Step.Field("a") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .invalid
+    )
+
+    assertEquals(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "c" -> Data.Number(1.0f))),
+      expected = Violations
+        .of(Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .invalid
+    )
 
   // test("decode: optional (product)"):
   //   val codec = record(field("a", string) :* field("b", int)).nullable
