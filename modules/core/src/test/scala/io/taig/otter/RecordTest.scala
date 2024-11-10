@@ -200,6 +200,44 @@ final class RecordTest extends OtterSuite:
         .invalid
     )
 
+  test("decode: optional"):
+    val codec = field("a", string) :* field("b", int).optional
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
+      expected = ("foobar", 42.some).valid
+    )
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
+      expected = ("foobar", none).valid
+    )
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
+      expected = Violations
+        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
+        .invalid
+    )
+
+  test("decode: maybe"):
+    val codec = field("a", string) :* field("b", int).maybe
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
+      expected = ("foobar", 42.some).valid
+    )
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
+      expected = ("foobar", none).valid
+    )
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
+      expected = ("foobar", none).valid
+    )
+
   test("encode"):
     val codec = field("a", string) :* field("b", int)
 

@@ -21,6 +21,7 @@ sealed abstract class Field[+O <: Data, A]:
       self.decode(data).map(_.map(f))
     override def encode(b: B): Vector[(String, O)] = self.encode(g(b))
 
+  // TODO default (?)
   final def optional: Field[O, Option[A]] = new Field[O, Option[A]]:
     export self.{codec, metadata, name}
     override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
@@ -29,12 +30,14 @@ sealed abstract class Field[+O <: Data, A]:
       else (values, none.valid)
     override def encode(a: Option[A]): Vector[(String, O)] = a.fold(Vector.empty)(self.encode)
 
+  // TODO default (?)
   final def maybe(nulls: Null): Field[Data.Nullable[O], Option[A]] = new Field[Data.Nullable[O], Option[A]]:
     export self.{codec, metadata, name}
     override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
-      if values.exists { case (name, _) => name == self.name }
-      then self.decode(values).map(_.map(_.some))
-      else self.decode((name, Data.Null) +: values).map(_.map(_.some))
+      values.collectFirstWithRemainders { case (name, data) if name == self.name => data } match
+        case (values, Some(Data.Null)) => (values, none.valid)
+        case (_, Some(data))           => self.decode(values).map(_.map(_.some))
+        case (values, None)            => (values, none.valid)
     override def encode(a: Option[A]): Vector[(String, Data.Nullable[O])] = a match
       case Some(a)                     => self.encode(a)
       case None if nulls === Null.Show => Vector((name, Data.Null))
