@@ -9,42 +9,29 @@ abstract class Enumeration[+F[+a] <: Data.Nullable[a], A] extends Codec[F, Data.
   def codec: Codec[?, ?, ?]
 
   override def modifyMetadata(f: Metadata => Metadata): Enumeration[F, A] = new Enumeration[F, A]:
-    export self.{codec, decode, default, encode, isNullable}
+    export self.{codec, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Enumeration[F, A] = new Enumeration[F, A]:
-    export self.{codec, encode, metadata}
+    export self.{codec, decode, encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def isNullable: Boolean = default.nonEmpty
-    override def decode(data: Data): Codec.Result[A] = (data, default) match
-      case (Data.Null, Some(default)) => default.valid
-      case _                          => self.decode(data)
 
   override def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = new Enumeration[F, B]:
-    export self.{codec, isNullable, metadata}
+    export self.{codec, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Primitive] = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Enumeration[F, B] = imap(convert.to)(convert.from)
 
-  final override def nullable: Enumeration[Data.Nullable, Option[A]] = new Enumeration[Data.Nullable, Option[A]]:
-    export self.{codec, metadata}
-    override def isNullable: Boolean = true
-    override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Data): Codec.Result[Option[A]] =
-      data.asValue.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Nullable[Data.Primitive] = a.map(self.encode).getOrElse(Data.Null)
-
 object Enumeration:
   def apply[A, B](
       of: => Codec[Data.Required, Data.Primitive, A],
       mapping: Mapping[B, A]
   ): Enumeration[Data.Required, B] = new Enumeration[Data.Required, B]:
-    override def isNullable: Boolean = false
     override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[B] = None
+    override def default: Option[B] = none
     override def decode(data: Data): Codec.Result[B] = of
       .decode(data)
       .andThen: a =>

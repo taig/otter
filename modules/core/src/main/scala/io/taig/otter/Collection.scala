@@ -11,32 +11,20 @@ sealed abstract class Collection[+F[+a] <: Data.Nullable[a], +O <: Data, A] exte
   def codec: Codec[?, ?, ?]
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = new Collection[F, O, A]:
-    export self.{codec, constraints, decode, default, encode, isNullable}
+    export self.{codec, constraints, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Collection[F, O, A] = new Collection[F, O, A]:
-    export self.{codec, constraints, encode, metadata}
+    export self.{codec, constraints, decode, encode, metadata}
     override def default: Option[A] = f(self.default)
-    override def isNullable: Boolean = default.nonEmpty
-    override def decode(data: Option[Vector[Data]]): Codec.Result[A] = (data, default) match
-      case (None, Some(default)) => default.valid
-      case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = new Collection[F, O, B]:
-    export self.{codec, constraints, isNullable, metadata}
+    export self.{codec, constraints, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Collection[F, O, B] = imap(convert.to)(convert.from)
-
-  override def nullable: Collection[Data.Nullable, O, Option[A]] = new Collection[Data.Nullable, O, Option[A]]:
-    export self.{codec, constraints, metadata}
-    override def isNullable: Boolean = true
-    override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(data: Option[Vector[Data]]): Codec.Result[Option[A]] =
-      data.fold(default.flatten.valid)(_ => self.decode(data).map(_.some))
-    override def encode(a: Option[A]): Data.Nullable[Data.Array[O]] = a.map(self.encode).getOrElse(Data.Null)
 
   override def decode(data: Data): Codec.Result[A] = data match
     case Data.Array(values) => decode(values.some)
@@ -56,7 +44,6 @@ object Collection:
       minItems.map(Constraint.Collection.MinItems.apply).toVector ++
         minItems.map(Constraint.Collection.MaxItems.apply).toVector ++
         Option.when(uniqueItems)(Constraint.Collection.UniqueItems).toVector
-    override def isNullable: Boolean = false
     override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Vector[A]] = None
@@ -97,7 +84,6 @@ object Collection:
   ): Collection[Data.Required, F[O], (A, Vector[A])] = new Collection[Data.Required, F[O], (A, Vector[A])]:
     val wrapped = Collection(of, minItems = minItems.max(1.some), maxItems, uniqueItems)
     override def constraints: Vector[Constraint.Collection] = wrapped.constraints
-    override def isNullable: Boolean = false
     override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, Vector[A])] = None

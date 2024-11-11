@@ -368,7 +368,7 @@ trait Codecs extends Types:
     enumeration(codec)(using Mapping.constant[A](a)).const(a)
 
   object dynamic:
-    val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
+    // val any: Dynamic.Of[Data.Value, Data] = Base.Dynamic.Any
     val value: Dynamic.Required.Of[Data.Value, Data.Value] = Base.Dynamic.Value
     val obj: Dynamic.Required.Of[Data.Object[?], Data.Object[?]] = Base.Dynamic.Object
     val array: Dynamic.Required.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array

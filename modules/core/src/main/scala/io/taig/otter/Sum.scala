@@ -9,7 +9,6 @@ sealed abstract class Sum[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends Cod
   override def modifyDefault(f: Option[A] => Option[A]): Sum[F, O, A]
   override def imap[B](f: A => B)(g: B => A): Sum[F, O, B]
   override def to[B](using convert: Convert[A, B]): Sum[F, O, B]
-  override def nullable: Sum[Data.Nullable, O, Option[A]]
 
 object Sum:
   sealed abstract class Nested[+F[+a] <: Data.Nullable[a], +O <: Data, A]
@@ -20,20 +19,19 @@ object Sum:
       Attribute(this, Keys.discriminator.nested, Discriminator.Nested.Default)
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Nested[F, O, A] = new Nested[F, O, A]:
-      export self.{branches, decode, default, encode, isNullable}
+      export self.{branches, decode, default, encode}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Nested[F, O, A] = new Nested[F, O, A]:
       export self.{branches, encode, metadata}
       override def default: Option[A] = f(self.default)
-      override def isNullable: Boolean = default.nonEmpty
       override def decode(
           data: Option[Vector[(String, Data)]],
           discriminator: Discriminator.Nested
       ): Codec.Result[Option[A]] = data.fold(default.valid)(_ => self.decode(data, discriminator))
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Nested[F, O, B] = new Sum.Nested[F, O, B]:
-      export self.{branches, isNullable, metadata}
+      export self.{branches, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decode(
           data: Option[Vector[(String, Data)]],
@@ -44,24 +42,10 @@ object Sum:
 
     final override def to[B](using convert: Convert[A, B]): Sum.Nested[F, O, B] = imap(convert.to)(convert.from)
 
-    final override def nullable: Sum.Nested[Data.Nullable, O, Option[A]] = new Nested[Data.Nullable, O, Option[A]]:
-      export self.{branches, metadata}
-      override def isNullable: Boolean = true
-      override def default: Option[Option[A]] = self.default.map(_.some)
-      override def decode(
-          data: Option[Vector[(String, Data)]],
-          discriminator: Discriminator.Nested
-      ): Codec.Result[Option[Option[A]]] = data.fold(default.valid)(_ => self.decode(data, discriminator).map(_.some))
-      override def encode(
-          a: Option[A],
-          discriminator: Discriminator.Nested
-      ): Data.Nullable[Data.Object[Data.String | O]] = a.fold(Data.Null)(self.encode)
-
     final def orElse[G[+a] >: F[a] <: Data.Nullable[a], P <: Data, B](
         codec: Sum.Nested[G, P, B]
     ): Sum.Nested[G, O | P, Either[A, B]] = new Nested[G, O | P, Either[A, B]]:
       override def branches: Branches[?, ?] = self.branches.orElse(codec.branches)
-      override def isNullable: Boolean = false
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(
@@ -113,7 +97,6 @@ object Sum:
 
       new Nested[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
-        override def isNullable: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(
@@ -154,7 +137,7 @@ object Sum:
       Attribute(this, Keys.discriminator.merged, Discriminator.Merged.Default)
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Merged[F, O, A] = new Merged[F, O, A]:
-      export self.{branches, decode, default, encode, isNullable}
+      export self.{branches, decode, default, encode}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Merged[F, O, A] = ???
@@ -162,8 +145,6 @@ object Sum:
     final override def imap[B](f: A => B)(g: B => A): Sum.Merged[F, O, B] = ???
 
     final override def to[B](using convert: Convert[A, B]): Sum.Merged[F, O, B] = imap(convert.to)(convert.from)
-
-    final override def nullable: Sum.Merged[Data.Nullable, O, Option[A]] = ???
 
     final override def decode(data: Data): Codec.Result[A] = data.asObject
       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
@@ -182,7 +163,6 @@ object Sum:
 
       new Merged[Data.Required, O, A]:
         override def branches: Branches[Data.Object[O], A] = _branches
-        override def isNullable: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Vector[(String, Data)], discriminator: Discriminator.Merged): Codec.Result[A] = ???
@@ -201,21 +181,19 @@ object Sum:
     self =>
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Keyed[F, O, A] = new Keyed[F, O, A]:
-      export self.{branches, decode, default, encode, isNullable}
+      export self.{branches, decode, default, encode}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Keyed[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Keyed[F, O, B] = new Keyed[F, O, B]:
-      export self.{branches, isNullable, metadata}
+      export self.{branches, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[B]] =
         self.decode(data).map(_.map(f))
       override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
 
     final override def to[B](using convert: Convert[A, B]): Sum.Keyed[F, O, B] = imap(convert.to)(convert.from)
-
-    final override def nullable: Sum.Keyed[Data.Nullable, O, Option[A]] = ???
 
     final override def decode(data: Data): Codec.Result[A] = data
       .match
@@ -241,7 +219,6 @@ object Sum:
 
       new Keyed[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
-        override def isNullable: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Option[Vector[(String, Data)]]): Codec.Result[Option[A]] =
@@ -260,26 +237,23 @@ object Sum:
     self =>
 
     final override def modifyMetadata(f: Metadata => Metadata): Sum.Untagged[F, O, A] = new Untagged[F, O, A]:
-      export self.{branches, decode, default, encode, isNullable}
+      export self.{branches, decode, default, encode}
       override def metadata: Metadata = f(self.metadata)
 
     final override def modifyDefault(f: Option[A] => Option[A]): Sum.Untagged[F, O, A] = ???
 
     final override def imap[B](f: A => B)(g: B => A): Sum.Untagged[F, O, B] = new Sum.Untagged[F, O, B]:
-      export self.{branches, isNullable, metadata}
+      export self.{branches, metadata}
       override def default: Option[B] = self.default.map(f)
       override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
       override def encode(b: B): F[O] = self.encode(g(b))
 
     final override def to[B](using convert: Convert[A, B]): Sum.Untagged[F, O, B] = imap(convert.to)(convert.from)
 
-    final override def nullable: Sum.Untagged[Data.Nullable, O, Option[A]] = ???
-
     final def orElse[G[+a] >: F[a] <: Data.Nullable[a], P <: Data, B](
         codec: Sum.Untagged[G, P, B]
     ): Sum.Untagged[G, O | P, Either[A, B]] = new Untagged[G, O | P, Either[A, B]]:
       override def branches: Branches[?, ?] = self.branches.orElse(codec.branches)
-      override def isNullable: Boolean = false
       override def metadata: Metadata = Metadata.Empty
       override def default: Option[Either[A, B]] = None
       override def decode(data: Data): Codec.Result[Either[A, B]] = ???
@@ -291,7 +265,6 @@ object Sum:
 
       new Untagged[Data.Required, O, A]:
         override def branches: Branches[O, A] = _branches
-        override def isNullable: Boolean = false
         override def metadata: Metadata = Metadata.Empty
         override def default: Option[A] = None
         override def decode(data: Data): Codec.Result[A] = branches.decodeUntagged(data)

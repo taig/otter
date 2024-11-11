@@ -4,8 +4,6 @@ import cats.data.Validated
 import cats.syntax.all.*
 
 abstract class Codec[+F[+a] <: Data.Nullable[a], +O <: Data, A]:
-  def isNullable: Boolean
-
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[F, O, A]
 
@@ -14,8 +12,6 @@ abstract class Codec[+F[+a] <: Data.Nullable[a], +O <: Data, A]:
 
   def imap[B](f: A => B)(g: B => A): Codec[F, O, B]
   def to[B](using Convert[A, B]): Codec[F, O, B]
-
-  def nullable: Codec[Data.Nullable, O, Option[A]]
 
   def decode(data: Data): Codec.Result[A]
   def encode(a: A): F[O]

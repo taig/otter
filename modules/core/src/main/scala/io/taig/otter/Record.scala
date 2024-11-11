@@ -12,20 +12,19 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
   def fields: Chain[Field[?, ?]]
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[F, O, A] = new Record[F, O, A]:
-    export self.{decode, default, encode, encodeSequence, fields, isNullable}
+    export self.{decode, default, encode, encodeSequence, fields}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Record[F, O, A] = new Record[F, O, A]:
     export self.{encode, encodeSequence, fields, metadata}
     override def default: Option[A] = f(self.default)
-    override def isNullable: Boolean = default.nonEmpty
     override def decode(data: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A]) =
       (data, default) match
         case (None, Some(default)) => (data, default.valid)
         case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Record[F, O, B] = new Record[F, O, B]:
-    export self.{fields, isNullable, metadata}
+    export self.{fields, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[B]) =
       self.decode(data).map(_.map(f))
@@ -34,35 +33,20 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
 
   final override def to[B](using convert: Convert[A, B]): Record[F, O, B] = imap(convert.to)(convert.from)
 
-  override def nullable: Record[Data.Nullable, O, Option[A]] = new Record[Data.Nullable, O, Option[A]]:
-    export self.{fields, metadata}
-    override def isNullable: Boolean = true
-    override def default: Option[Option[A]] = self.default.map(_.some)
-    override def decode(
-        values: Option[Vector[(String, Data)]]
-    ): (Option[Vector[(String, Data)]], Codec.Result[Option[A]]) = values match
-      case Some(values) => self.decode(values.some).map(_.map(_.some))
-      case None         => (values, default.flatten.valid)
-    override def encode(a: Option[A]): Data.Nullable[Data.Object[O]] =
-      a.map(self.encode).getOrElse(Data.Null)
-    override def encodeSequence(a: Option[A]): Data.Object[Data.Nullable[O]] =
-      a.fold(Data.Object(self.fields.toVector.map(_.name).tupleRight(Data.Null)))(self.encodeSequence(_))
-
   final def zip[G[+a] <: Data.Nullable[a], P <: Data, B](
       codec: Record[G, P, B]
   ): Record[Data.Required, F[O] | G[P], (A, B)] = new Record[Data.Required, F[O] | G[P], (A, B)]:
     override def fields: Chain[Field[?, ?]] = self.fields ++ codec.fields
-    override def isNullable: Boolean = false
     override def default: Option[(A, B)] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(
         values: Option[Vector[(String, Data)]]
     ): (Option[Vector[(String, Data)]], Codec.Result[(A, B)]) =
-      self.decode(values, treatMissingFieldsAsOptional = self.isNullable) match
+      self.decode(values, treatMissingFieldsAsOptional = ???) match
         case (values, Validated.Valid(a)) =>
-          codec.decode(values, treatMissingFieldsAsOptional = codec.isNullable).map(_.tupleLeft(a))
+          codec.decode(values, treatMissingFieldsAsOptional = ???).map(_.tupleLeft(a))
         case (values, Validated.Invalid(left)) =>
-          codec.decode(values, treatMissingFieldsAsOptional = codec.isNullable) match
+          codec.decode(values, treatMissingFieldsAsOptional = ???) match
             case (values, Validated.Valid(_))       => (values, left.invalid)
             case (values, Validated.Invalid(right)) => (values, (left |+| right).invalid)
     override def encode(ab: (A, B)): Data.Object[F[O] | G[P]] = encodeSequence(ab)
@@ -76,8 +60,8 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
     field.toRecord.zip(this).imap(merge.apply)(merge.unapply)
 
   final override def decode(data: Data): Codec.Result[A] = data match
-    case Data.Object(values)     => decode(values.some)._2
-    case Data.Null if isNullable => decode(none)._2
+    case Data.Object(values) => decode(values.some)._2
+    // case Data.Null if isNullable => decode(none)._2
     case _ => Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))).invalid
 
   final def decode(
@@ -99,7 +83,6 @@ sealed abstract class Record[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends 
 object Record:
   final private case class Apply[O <: Data, A](field: Field[O, A]) extends Record[Data.Required, O, A]:
     override def fields: Chain[Field[?, ?]] = Chain.one(field)
-    override def isNullable: Boolean = false
     override def default: Option[A] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A]) =

@@ -62,8 +62,7 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): Vector[(String, O)]
 
 object Field:
-  extension [O <: Data, A](self: Field[Data.Nullable[O], A])
-    def test: Field[Data.Nullable[O], A] = ???
+  extension [O <: Data, A](self: Field[Data.Nullable[O], A]) def test: Field[Data.Nullable[O], A] = ???
 
   final private case class Apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, codec: Codec[F, O, A])
       extends Field[F[O], A]:

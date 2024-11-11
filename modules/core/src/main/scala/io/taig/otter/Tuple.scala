@@ -12,17 +12,16 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
   final override def modifyDefault(f: Option[A] => Option[A]): Tuple[F, O, A] = new Tuple[F, O, A]:
     export self.{codecs, encode, encodeSequence, metadata}
     override def default: Option[A] = f(self.default)
-    override def isNullable: Boolean = default.nonEmpty
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] = (values, default) match
       case (None, Some(default)) => default.valid
       case _                     => self.decode(values, index)
 
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[F, O, A] = new Tuple[F, O, A]:
-    export self.{codecs, decode, default, encode, encodeSequence, isNullable}
+    export self.{codecs, decode, default, encode, encodeSequence}
     override def metadata: Metadata = f(self.metadata)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[F, O, B] = new Tuple[F, O, B]:
-    export self.{codecs, isNullable, metadata}
+    export self.{codecs, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[B] =
       self.decode(values, index).map(f)
@@ -31,13 +30,10 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
 
   final override def to[B](using convert: Convert[A, B]): Tuple[F, O, B] = imap(convert.to)(convert.from)
 
-  final override def nullable: Tuple[Data.Nullable, O, Option[A]] = ???
-
   final def zip[G[+a] <: Data.Nullable[a], P <: Data, B](
       codec: Tuple[G, P, B]
   ): Tuple[Data.Required, F[O] | G[P], (A, B)] = new Tuple[Data.Required, F[O] | G[P], (A, B)]:
     override def codecs: Chain[Codec[?, ?, ?]] = self.codecs ++ codec.codecs
-    override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, B)] = none
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[(A, B)] = values match
@@ -69,7 +65,6 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
       else if actual < reference then
         Violations.rootNec(Violation(Constraint.Collection.MinItems(reference), actual = Data.Number(actual))).invalid
       else decode(values.some, index = 0)
-    case Data.Null if isNullable => decode(none, index = 0)
     case _ => Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String(data.name))).invalid
 
   protected def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A]
@@ -80,7 +75,6 @@ sealed abstract class Tuple[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends C
 object Tuple:
   val Empty: Tuple[Data.Required, Nothing, Unit] = new Tuple[Data.Required, Nothing, Unit]:
     override def codecs: Chain[Codec[?, ?, ?]] = Chain.empty
-    override def isNullable: Boolean = false
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Unit] = none
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[Unit] = ().valid
@@ -90,7 +84,6 @@ object Tuple:
   final private case class Apply[+F[+a] <: Data.Nullable[a], +O <: Data, A](codec: Codec[F, O, A])
       extends Tuple[Data.Required, F[O], A]:
     override def codecs: Chain[Codec[?, ?, ?]] = Chain.one(codec)
-    override def isNullable: Boolean = false
     override def default: Option[A] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] =
