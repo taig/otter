@@ -32,9 +32,9 @@ object Codec:
   //     case Data.Null            => none
   //     case data: Data.Primitive => data.plain.some
 
-  // extension [A](self: Codec[Data.Required, Data.Primitive, A])
-  //   def parseRequired(value: String): Codec.Result[A] = self.decode(Data.String(value))
-  //   def printRequired(a: A): String = self.encode(a).plain
+  extension [A](self: Codec[Data.Primitive, A])
+    def parse(value: String): Codec.Result[A] = self.decode(Data.String(value))
+    def print(a: A): String = self.encode(a).plain
 
   // extension [A](self: Codec[Data.Required, Data.Array[Data.Primitive], A])
   //   def parseArray(values: Vector[String]): Codec.Result[A] =

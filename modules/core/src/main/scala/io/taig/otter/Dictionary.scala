@@ -1,90 +1,107 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.data.Validated
-// import cats.syntax.all.*
+import cats.data.Validated
+import cats.syntax.all.*
 
-// abstract class Dictionary[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends Codec[F, Data.Object[O], A]:
-//   self =>
+abstract class Dictionary[+O <: Data, A] extends Codec[Data.Object[O], A]:
+  self =>
 
-//   def constraints: Vector[Constraint.Object]
+  def constraints: Vector[Constraint.Object]
 
-//   final override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, O, A] = new Dictionary[F, O, A]:
-//     export self.{constraints, decode, default, encode}
-//     override def metadata: Metadata = f(self.metadata)
+  def key: Codec[Data.Primitive, ?]
 
-//   final override def modifyDefault(f: Option[A] => Option[A]): Dictionary[F, O, A] = new Dictionary[F, O, A]:
-//     export self.{constraints, decode, encode, metadata}
-//     override def default: Option[A] = f(self.default)
+  def codec: Codec[?, ?]
 
-//   final override def imap[B](f: A => B)(g: B => A): Dictionary[F, O, B] = new Dictionary[F, O, B]:
-//     export self.{constraints, metadata}
-//     override def default: Option[B] = self.default.map(f)
-//     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
-//     override def encode(b: B): F[Data.Object[O]] = self.encode(g(b))
+  final override def modifyMetadata(f: Metadata => Metadata): Dictionary[O, A] = new Dictionary[O, A]:
+    export self.{codec, constraints, decode, default, encode, key}
+    override def metadata: Metadata = f(self.metadata)
 
-//   final override def to[B](using convert: Convert[A, B]): Dictionary[F, O, B] = imap(convert.to)(convert.from)
+  final override def modifyDefault(f: Option[A] => Option[A]): Dictionary[O, A] = new Dictionary[O, A]:
+    export self.{codec, constraints, decode, encode, key, metadata}
+    override def default: Option[A] = f(self.default)
 
-// object Dictionary:
-//   def apply[F[+a] <: Data.Nullable[a], O <: Data, A, B](
-//       key: => Codec[Data.Required, Data.Primitive, A],
-//       of: => Codec[F, O, B],
-//       minProperties: Option[Int],
-//       maxProperties: Option[Int]
-//   ): Dictionary[Data.Required, F[O], Vector[(A, B)]] = new Dictionary[Data.Required, F[O], Vector[(A, B)]]:
-//     override def constraints: Vector[Constraint.Object] =
-//       minProperties.map(Constraint.Object.MinProperties.apply).toVector ++
-//         minProperties.map(Constraint.Object.MaxProperties.apply).toVector
-//     override def metadata: Metadata = Metadata.Empty
-//     override def default: Option[Vector[(A, B)]] = None
+  final override def imap[B](f: A => B)(g: B => A): Dictionary[O, B] = new Dictionary[O, B]:
+    export self.{codec, constraints, key, metadata}
+    override def default: Option[B] = self.default.map(f)
+    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def encode(b: B): Data.Object[O] = self.encode(g(b))
 
-//     def verifyMinProperties(values: Vector[(String, Data)]): Codec.Result[Unit] = minProperties.traverse_ { reference =>
-//       val length = values.length
-//       Validated.cond(
-//         length >= reference,
-//         (),
-//         Violations.rootNec(Violation(Constraint.Object.MinProperties(reference), actual = Data.Number(length)))
-//       )
-//     }
+  final override def to[B](using convert: Convert[A, B]): Dictionary[O, B] = imap(convert.to)(convert.from)
 
-//     def verifyMaxProperties(values: Vector[(String, Data)]): Codec.Result[Unit] = maxProperties.traverse_ { reference =>
-//       val length = values.length
-//       Validated.cond(
-//         length >= reference,
-//         (),
-//         Violations.rootNec(Violation(Constraint.Object.MaxProperties(reference), actual = Data.Number(length)))
-//       )
-//     }
+object Dictionary:
+  final private case class Apply[O <: Data, A, B](
+      key: Codec[Data.Primitive, A],
+      codec: Codec[O, B],
+      minProperties: Option[Int],
+      maxProperties: Option[Int]
+  ) extends Dictionary[O, Vector[(A, B)]]:
+    override def constraints: Vector[Constraint.Object] =
+      minProperties.map(Constraint.Object.MinProperties.apply).toVector ++
+        minProperties.map(Constraint.Object.MaxProperties.apply).toVector
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[Vector[(A, B)]] = none
 
-//     override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.asObject
-//       .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
-//       .andThen(obj => decode(obj.values))
-//     def decode(values: Vector[(String, Data)]): Codec.Result[Vector[(A, B)]] =
-//       verifyMinProperties(values) *> verifyMaxProperties(values) *> values
-//         .traverse { case (a, b) => (key.parseRequired(a), of.decode(b)).tupled }
-//     override def encode(abs: Vector[(A, B)]): Data.Object[F[O]] =
-//       Data.Object(abs.map { case (a, b) => (key.printRequired(a), of.encode(b)) })
+    def verifyMinProperties(values: Vector[(String, Data)]): Codec.Result[Unit] = minProperties.traverse_ { reference =>
+      val length = values.length
+      Validated.cond(
+        length >= reference,
+        (),
+        Violations.rootNec(Violation(Constraint.Object.MinProperties(reference), actual = Data.Number(length)))
+      )
+    }
 
-//   def nonEmpty[F[+a] <: Data.Nullable[a], O <: Data, A, B](
-//       key: => Codec[Data.Required, Data.Primitive, A],
-//       of: => Codec[F, O, B],
-//       minProperties: Option[Int],
-//       maxProperties: Option[Int]
-//   ): Dictionary[Data.Required, F[O], ((A, B), Vector[(A, B)])] =
-//     new Dictionary[Data.Required, F[O], ((A, B), Vector[(A, B)])]:
-//       val wrapped = Dictionary(key, of, minProperties.max(1.some), maxProperties)
-//       override def constraints: Vector[Constraint.Object] = wrapped.constraints
-//       override def metadata: Metadata = Metadata.Empty
-//       override def default: Option[((A, B), Vector[(A, B)])] = None
-//       override def decode(data: Data): Codec.Result[((A, B), Vector[(A, B)])] =
-//         // Safe to call .head, because `wrapped` will perform a length check
-//         wrapped.decode(data).map(values => (values.head, values.tail))
-//       override def encode(abs: ((A, B), Vector[(A, B)])): Data.Object[F[O]] = wrapped.encode(abs._1 +: abs._2)
+    def verifyMaxProperties(values: Vector[(String, Data)]): Codec.Result[Unit] = maxProperties.traverse_ { reference =>
+      val length = values.length
+      Validated.cond(
+        length >= reference,
+        (),
+        Violations.rootNec(Violation(Constraint.Object.MaxProperties(reference), actual = Data.Number(length)))
+      )
+    }
 
-//   given [F[+a] <: Data.Nullable[a], O <: Data]: CodecInvariant[Dictionary[F, O, *]] with
-//     override def imap[A, B](fa: Dictionary[F, O, A])(f: A => B)(g: B => A): Dictionary[F, O, B] =
-//       fa.imap(f)(g)
+    override def decode(data: Data): Codec.Result[Vector[(A, B)]] = data.asObject
+      .toValid(Violations.rootNec(Violation(Constraint.Type("object"), actual = Data.String(data.name))))
+      .andThen(obj => decode(obj.values))
+    def decode(values: Vector[(String, Data)]): Codec.Result[Vector[(A, B)]] =
+      verifyMinProperties(values) *> verifyMaxProperties(values) *> values
+        .traverse { case (a, b) => (key.parse(a), codec.decode(b)).tupled }
+    override def encode(abs: Vector[(A, B)]): Data.Object[O] =
+      Data.Object(abs.map { case (a, b) => (key.print(a), codec.encode(b)) })
 
-//   given [F[+a] <: Data.Nullable[a], O <: Data, A]: Metadata.Ops[Dictionary[F, O, A]] with
-//     extension (self: Dictionary[F, O, A])
-//       override def metadata: Metadata = self.metadata
-//       override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, O, A] = self.modifyMetadata(f)
+  final private case class NonEmpty[O <: Data, A, B](
+      key: Codec[Data.Primitive, A],
+      codec: Codec[O, B],
+      minProperties: Option[Int],
+      maxProperties: Option[Int]
+  ) extends Dictionary[O, ((A, B), Vector[(A, B)])]:
+    val of = Dictionary(key, codec, minProperties.max(1.some), maxProperties)
+    override def constraints: Vector[Constraint.Object] = of.constraints
+    override def metadata: Metadata = Metadata.Empty
+    override def default: Option[((A, B), Vector[(A, B)])] = None
+    override def decode(data: Data): Codec.Result[((A, B), Vector[(A, B)])] =
+      // Safe to call .head, because `wrapped` will perform a length check
+      of.decode(data).map(values => (values.head, values.tail))
+    override def encode(abs: ((A, B), Vector[(A, B)])): Data.Object[O] = of.encode(abs._1 +: abs._2)
+
+  def apply[O <: Data, A, B](
+      key: Codec[Data.Primitive, A],
+      codec: Codec[O, B],
+      minProperties: Option[Int],
+      maxProperties: Option[Int]
+  ): Dictionary[O, Vector[(A, B)]] = Apply(key, codec, minProperties, maxProperties)
+
+  def nonEmpty[O <: Data, A, B](
+      key: Codec[Data.Primitive, A],
+      codec: Codec[O, B],
+      minProperties: Option[Int],
+      maxProperties: Option[Int]
+  ): Dictionary[O, ((A, B), Vector[(A, B)])] = NonEmpty(key, codec, minProperties, maxProperties)
+
+  given [O <: Data]: CodecInvariant[Dictionary[O, *]] with
+    override def imap[A, B](fa: Dictionary[O, A])(f: A => B)(g: B => A): Dictionary[O, B] =
+      fa.imap(f)(g)
+
+  given [O <: Data, A]: Metadata.Ops[Dictionary[O, A]] with
+    extension (self: Dictionary[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Dictionary[O, A] = self.modifyMetadata(f)
