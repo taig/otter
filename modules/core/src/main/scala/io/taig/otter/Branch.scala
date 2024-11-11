@@ -1,53 +1,53 @@
-package io.taig.otter
+// package io.taig.otter
 
-import io.taig.otter.Codec.Result
+// import io.taig.otter.Codec.Result
 
-sealed abstract class Branch[+O <: Data, A]:
-  self =>
+// sealed abstract class Branch[+O <: Data, A]:
+//   self =>
 
-  def name: String
+//   def name: String
 
-  def codec: Codec[?, ?, ?]
+//   def codec: Codec[?, ?, ?]
 
-  def metadata: Metadata
+//   def metadata: Metadata
 
-  final def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
-    export self.{codec, decode, encode, name}
-    override def metadata: Metadata = f(self.metadata)
+//   final def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
+//     export self.{codec, decode, encode, name}
+//     override def metadata: Metadata = f(self.metadata)
 
-  final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
-    export self.{codec, metadata, name}
-    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
-    override def encode(b: B): O = self.encode(g(b))
+//   final def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
+//     export self.{codec, metadata, name}
+//     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+//     override def encode(b: B): O = self.encode(g(b))
 
-  final def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
+//   final def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
 
-  final def :+[P <: Data, B](branch: Branch[P, B]): Branches[O | P, Either[A, B]] = toBranches :+ branch
+//   final def :+[P <: Data, B](branch: Branch[P, B]): Branches[O | P, Either[A, B]] = toBranches :+ branch
 
-  final def +:[P <: Data, B](branch: Branch[P, B]): Branches[P | O, Either[B, A]] = branch +: toBranches
+//   final def +:[P <: Data, B](branch: Branch[P, B]): Branches[P | O, Either[B, A]] = branch +: toBranches
 
-  final def toBranches: Branches[O, A] = Branches(this)
+//   final def toBranches: Branches[O, A] = Branches(this)
 
-  def decode(data: Data): Codec.Result[A]
+//   def decode(data: Data): Codec.Result[A]
 
-  def encode(a: A): O
+//   def encode(a: A): O
 
-object Branch:
-  def apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, of: => Codec[F, O, A]): Branch[F[O], A] =
-    val _name = name
+// object Branch:
+//   def apply[F[+a] <: Data.Nullable[a], O <: Data, A](name: String, of: => Codec[F, O, A]): Branch[F[O], A] =
+//     val _name = name
 
-    new Branch[F[O], A]:
-      override def name: String = _name
-      override def codec: Codec[?, ?, ?] = of
-      override def metadata: Metadata = Metadata.Empty
-      override def decode(data: Data): Codec.Result[A] = of.decode(data)
-      override def encode(a: A): F[O] = of.encode(a)
+//     new Branch[F[O], A]:
+//       override def name: String = _name
+//       override def codec: Codec[?, ?, ?] = of
+//       override def metadata: Metadata = Metadata.Empty
+//       override def decode(data: Data): Codec.Result[A] = of.decode(data)
+//       override def encode(a: A): F[O] = of.encode(a)
 
-  extension [O <: Data, A <: Matchable](self: Branch[O, A])
-    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
-      self.toBranches | branch
+//   extension [O <: Data, A <: Matchable](self: Branch[O, A])
+//     inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
+//       self.toBranches | branch
 
-  given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
-    extension (self: Branch[O, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = self.modifyMetadata(f)
+//   given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
+//     extension (self: Branch[O, A])
+//       override def metadata: Metadata = self.metadata
+//       override def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = self.modifyMetadata(f)

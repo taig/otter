@@ -3,28 +3,28 @@ package io.taig.otter
 import cats.data.Validated
 import cats.syntax.all.*
 
-sealed abstract class Collection[+F[+a] <: Data.Nullable[a], +O <: Data, A] extends Codec[F, Data.Array[O], A]:
+sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
   self =>
 
   def constraints: Vector[Constraint.Collection]
 
-  def codec: Codec[?, ?, ?]
+  def codec: Codec[?, ?]
 
-  final override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = new Collection[F, O, A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
     export self.{codec, constraints, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Collection[F, O, A] = new Collection[F, O, A]:
+  final override def modifyDefault(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
     export self.{codec, constraints, decode, encode, metadata}
     override def default: Option[A] = f(self.default)
 
-  final override def imap[B](f: A => B)(g: B => A): Collection[F, O, B] = new Collection[F, O, B]:
+  final override def imap[B](f: A => B)(g: B => A): Collection[O, B] = new Collection[O, B]:
     export self.{codec, constraints, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
-    override def encode(b: B): F[Data.Array[O]] = self.encode(g(b))
+    override def encode(b: B): Data.Array[O] = self.encode(g(b))
 
-  final override def to[B](using convert: Convert[A, B]): Collection[F, O, B] = imap(convert.to)(convert.from)
+  final override def to[B](using convert: Convert[A, B]): Collection[O, B] = imap(convert.to)(convert.from)
 
   override def decode(data: Data): Codec.Result[A] = data match
     case Data.Array(values) => decode(values.some)
@@ -34,19 +34,18 @@ sealed abstract class Collection[+F[+a] <: Data.Nullable[a], +O <: Data, A] exte
   def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
 object Collection:
-  def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
-      of: => Codec[F, O, A],
+  final private case class Apply[O <: Data, A](
+      codec: Codec[O, A],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean
-  ): Collection[Data.Required, F[O], Vector[A]] = new Collection[Data.Required, F[O], Vector[A]]:
+  ) extends Collection[O, Vector[A]]:
     override def constraints: Vector[Constraint.Collection] =
       minItems.map(Constraint.Collection.MinItems.apply).toVector ++
         minItems.map(Constraint.Collection.MaxItems.apply).toVector ++
         Option.when(uniqueItems)(Constraint.Collection.UniqueItems).toVector
-    override def codec: Codec[?, ?, ?] = of
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Vector[A]] = None
+    override def default: Option[Vector[A]] = none
     def verifyMinItems(values: Vector[Data]): Codec.Result[Unit] = minItems.traverse_ { reference =>
       val length = values.length
       Validated.cond(
@@ -73,29 +72,42 @@ object Collection:
       .andThen(decode)
     def decode(values: Vector[Data]): Codec.Result[Vector[A]] = verifyMinItems(values) *>
       verifyMaxItems(values) *>
-      values.zipWithIndex.traverse { case (data, index) => of.decode(data).leftMap(index /: _) }
-    override def encode(as: Vector[A]): Data.Array[F[O]] = Data.Array(as.map(of.encode))
+      values.zipWithIndex.traverse { case (data, index) => codec.decode(data).leftMap(index /: _) }
+    override def encode(as: Vector[A]): Data.Array[O] = Data.Array(as.map(codec.encode))
 
-  def nonEmpty[F[+a] <: Data.Nullable[a], O <: Data, A](
-      of: => Codec[F, O, A],
+  final case class NonEmpty[O <: Data, A](
+      codec: Codec[O, A],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean
-  ): Collection[Data.Required, F[O], (A, Vector[A])] = new Collection[Data.Required, F[O], (A, Vector[A])]:
-    val wrapped = Collection(of, minItems = minItems.max(1.some), maxItems, uniqueItems)
-    override def constraints: Vector[Constraint.Collection] = wrapped.constraints
-    override def codec: Codec[?, ?, ?] = of
+  ) extends Collection[O, (A, Vector[A])]:
+    val of = Collection(codec, minItems = minItems.max(1.some), maxItems, uniqueItems)
+    override def constraints: Vector[Constraint.Collection] = of.constraints
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[(A, Vector[A])] = None
-    override def encode(aas: (A, Vector[A])): Data.Array[F[O]] = wrapped.encode(aas._1 +: aas._2)
+    override def encode(aas: (A, Vector[A])): Data.Array[O] = of.encode(aas._1 +: aas._2)
     override def decode(data: Option[Vector[Data]]): Codec.Result[(A, Vector[A])] =
       // Safe to call .head, because `wrapped` will perform a length check
-      wrapped.decode(data).map(values => (values.head, values.tail))
+      of.decode(data).map(values => (values.head, values.tail))
 
-  given [F[+a] <: Data.Nullable[a], O <: Data]: CodecInvariant[Collection[F, O, *]] with
-    override def imap[A, B](fa: Collection[F, O, A])(f: A => B)(g: B => A): Collection[F, O, B] = fa.imap(f)(g)
+  def apply[O <: Data, A](
+      codec: Codec[O, A],
+      minItems: Option[Int],
+      maxItems: Option[Int],
+      uniqueItems: Boolean
+  ): Collection[O, Vector[A]] = Apply(codec, minItems, maxItems, uniqueItems)
 
-  given [F[+a] <: Data.Nullable[a], O <: Data, A]: Metadata.Ops[Collection[F, O, A]] with
-    extension (self: Collection[F, O, A])
+  def nonEmpty[O <: Data, A](
+      codec: => Codec[O, A],
+      minItems: Option[Int],
+      maxItems: Option[Int],
+      uniqueItems: Boolean
+  ): Collection[O, (A, Vector[A])] = NonEmpty(codec, minItems, maxItems, uniqueItems)
+
+  given [O <: Data]: CodecInvariant[Collection[O, *]] with
+    override def imap[A, B](fa: Collection[O, A])(f: A => B)(g: B => A): Collection[O, B] = fa.imap(f)(g)
+
+  given [O <: Data, A]: Metadata.Ops[Collection[O, A]] with
+    extension (self: Collection[O, A])
       override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Collection[F, O, A] = self.modifyMetadata(f)
+      override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = self.modifyMetadata(f)
