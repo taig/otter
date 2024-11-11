@@ -22,6 +22,8 @@ abstract class Codec[+O <: Data, A]:
 
   final def toTuple: Tuple[O, A] = Tuple(this)
 
+  final def toUnion: Union[O, A] = ???
+
 object Codec:
   type Result[A] = Validated[Violations, A]
 

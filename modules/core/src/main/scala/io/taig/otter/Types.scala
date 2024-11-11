@@ -17,136 +17,105 @@ trait Types:
     Violations
   }
 
-  // final type Codec[A] = Base.Codec[Data.Nullable, Data, A]
+  final type Codec[A] = Base.Codec[Data, A]
 
-  // object Codec:
-  //   type Of[O <: Data, A] = Base.Codec[Data.Nullable, O, A]
+  object Codec:
+    type Of[O <: Data, A] = Base.Codec[O, A]
 
-  //   type Required[A] = Base.Codec[Data.Required, Data, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Codec[O, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Codec[Data.Required, O, A]
+    export Base.Codec.Result
 
-  //   export Base.Codec.Result
+  final type Collection[A] = Base.Collection[Data, A]
 
-  // final type Collection[A] = Base.Collection[Data.Nullable, Data, A]
+  object Collection:
+    type Of[O <: Data, A] = Base.Collection[O, A]
 
-  // object Collection:
-  //   type Of[O <: Data, A] = Base.Collection[Data.Nullable, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Collection[O, A]
 
-  //   type Required[A] = Base.Collection[Data.Required, Data, A]
+  final type Dictionary[A] = Base.Dictionary[Data, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Collection[Data.Required, O, A]
+  object Dictionary:
+    type Of[O <: Data, A] = Base.Dictionary[O, A]
 
-  // final type Dictionary[A] = Base.Dictionary[Data.Nullable, Data, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Dictionary[O, A]
 
-  // object Dictionary:
-  //   type Of[O <: Data, A] = Base.Dictionary[Data.Nullable, O, A]
+  final type Dynamic[A] = Base.Dynamic[Data, A]
 
-  //   type Required[A] = Base.Dictionary[Data.Required, Data, A]
+  object Dynamic:
+    type Of[O <: Data, A] = Base.Dynamic[O, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Dictionary[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Dynamic[O, A]
 
-  // final type Dynamic[A] = Base.Dynamic[Data.Nullable, Data, A]
+  final type Enumeration[A] = Base.Enumeration[A]
 
-  // object Dynamic:
-  //   type Of[O <: Data, A] = Base.Dynamic[Data.Nullable, O, A]
+  final type Primitive[A] = Base.Primitive[A]
 
-  //   type Required[A] = Base.Dynamic[Data.Required, Data, A]
+  type Record[A] = Base.Record[Data, A]
 
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Dynamic[Data.Required, O, A]
+  object Record:
+    type Of[O <: Data, A] = Base.Record[O, A]
 
-  // final type Enumeration[A] = Base.Enumeration[Data.Nullable, A]
-
-  // object Enumeration:
-  //   type Required[A] = Base.Enumeration[Data.Required, A]
-
-  // final type Primitive[A] = Base.Primitive[Data.Nullable, A]
-
-  // object Primitive:
-  //   type Required[A] = Base.Primitive[Data.Required, A]
-
-  // type Record[A] = Base.Record[Data.Nullable, Data, A]
-
-  // object Record:
-  //   type Of[O <: Data, A] = Base.Record[Data.Nullable, O, A]
-
-  //   type Required[A] = Base.Record[Data.Required, Data, A]
-
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Record[Data.Required, O, A]
-
-  // final type Sum[A] = Base.Sum[Data.Nullable, Data, A]
+  // final type Sum[A] = Base.Sum[Data, A]
 
   // object Sum:
-  //   type Of[O <: Data, A] = Base.Sum[Data.Nullable, O, A]
-
-  //   type Required[A] = Base.Sum[Data.Required, Data, A]
+  //   type Of[O <: Data, A] = Base.Sum[O, A]
 
   //   object Required:
-  //     type Of[O <: Data, A] = Base.Sum[Data.Required, O, A]
+  //     type Of[O <: Data, A] = Base.Sum[ O, A]
 
-  //   type Nested[A] = Base.Sum.Nested[Data.Nullable, Data, A]
+  //   type Nested[A] = Base.Sum.Nested[Data, A]
 
   //   object Nested:
-  //     type Of[O <: Data, A] = Base.Sum.Nested[Data.Nullable, O, A]
-
-  //     type Required[A] = Base.Sum.Nested[Data.Required, Data, A]
+  //     type Of[O <: Data, A] = Base.Sum.Nested[O, A]
 
   //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Nested[Data.Required, O, A]
+  //       type Of[O <: Data, A] = Base.Sum.Nested[ O, A]
 
-  //   type Merged[A] = Base.Sum.Merged[Data.Nullable, Data, A]
+  //   type Merged[A] = Base.Sum.Merged[Data, A]
 
   //   object Merged:
-  //     type Of[O <: Data, A] = Base.Sum.Merged[Data.Nullable, O, A]
-
-  //     type Required[A] = Base.Sum.Merged[Data.Required, Data, A]
+  //     type Of[O <: Data, A] = Base.Sum.Merged[O, A]
 
   //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Merged[Data.Required, O, A]
+  //       type Of[O <: Data, A] = Base.Sum.Merged[ O, A]
 
-  //   type Keyed[A] = Base.Sum.Merged[Data.Nullable, Data, A]
+  //   type Keyed[A] = Base.Sum.Merged[Data, A]
 
   //   object Keyed:
-  //     type Of[O <: Data, A] = Base.Sum.Keyed[Data.Nullable, O, A]
-
-  //     type Required[A] = Base.Sum.Keyed[Data.Required, Data, A]
+  //     type Of[O <: Data, A] = Base.Sum.Keyed[O, A]
 
   //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Keyed[Data.Required, O, A]
+  //       type Of[O <: Data, A] = Base.Sum.Keyed[ O, A]
 
-  //   type Untagged[A] = Base.Sum.Untagged[Data.Nullable, Data, A]
+  //   type Untagged[A] = Base.Sum.Untagged[Data, A]
 
   //   object Untagged:
-  //     type Of[O <: Data, A] = Base.Sum.Untagged[Data.Nullable, O, A]
-
-  //     type Required[A] = Base.Sum.Untagged[Data.Required, Data, A]
+  //     type Of[O <: Data, A] = Base.Sum.Untagged[O, A]
 
   //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Untagged[Data.Required, O, A]
+  //       type Of[O <: Data, A] = Base.Sum.Untagged[ O, A]
 
-  // type Tuple[A] = Base.Tuple[Data.Nullable, Data, A]
+  type Tuple[A] = Base.Tuple[Data, A]
 
-  // object Tuple:
-  //   type Of[O <: Data, A] = Base.Tuple[Data.Nullable, O, A]
+  object Tuple:
+    type Of[O <: Data, A] = Base.Tuple[O, A]
 
-  //   type Required[A] = Base.Tuple[Data.Required, Data, A]
-
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Tuple[Data.Required, O, A]
+    object Required:
+      type Of[O <: Data, A] = Base.Tuple[O, A]
 
   // final type Branch[A] = Base.Branch[Data, A]
 
   // object Branch:
   //   type Of[O <: Data, A] = Base.Branch[O, A]
 
-  // final type Field[A] = Base.Field[Data, A]
+  final type Field[A] = Base.Field[Data, A]
 
-  // object Field:
-  //   type Of[O <: Data, A] = Base.Field[O, A]
+  object Field:
+    type Of[O <: Data, A] = Base.Field[O, A]
 
 object Types extends Types
