@@ -1,19 +1,38 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import io.taig.otter.Codec.Result
 
-final case class Field[+O <: Data, A](name: String, codec: Codec[O, A], metadata: Metadata):
+sealed abstract class Field[+O <: Data, A]:
   self =>
 
-  final def modifyMetadata(f: Metadata => Metadata): Field[O, A] = copy(metadata = f(metadata))
+  def name: String
 
-  final def nulls: Null = metadata.get(Keys.nulls).getOrElse(Null.Default)
-  final def nulls(value: Null): Field[O, A] = self(Keys.nulls, value)
-  final def hideNulls: Field[O, A] = nulls(Null.Hide)
+  def codec: Codec[O, ?]
 
-  final def imap[B](f: A => B)(g: B => A): Field[O, B] = copy(codec = codec.imap(f)(g))
+  def metadata: Metadata
 
-  final def optional: Field[Data.Nullable[O], Option[A]] = copy(codec = codec.nullable)
+  final def modifyMetadata(f: Metadata => Metadata): Field[O, A] = new Field[O, A]:
+    export self.{codec, decode, encode, name}
+    override def metadata: Metadata = f(self.metadata)
+
+  final def imap[B](f: A => B)(g: B => A): Field[O, B] = new Field[O, B]:
+    export self.{codec, metadata, name}
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[B]) =
+      self.decode(values).map(_.map(f))
+    override def encode(b: B): Option[(String, O)] = self.encode(g(b))
+
+  final def nullable: Field[Data.Nullable[O], Option[A]] = new Field[Data.Nullable[O], Option[A]]:
+    export self.{codec, metadata, name}
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
+      self.decode(values).map(_.map(_.some))
+    override def encode(a: Option[A]): Option[(String, Data.Nullable[O])] = a.fold((name, Data.Null).some)(self.encode)
+
+  final def optional: Field[O, Option[A]] = new Field[O, Option[A]]:
+    export self.{codec, metadata, name}
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[Option[A]]) =
+      self.decode(values).map(_.map(_.some))
+    override def encode(a: Option[A]): Option[(String, O)] = a.flatMap(self.encode)
 
   final def to[B](using convert: Convert[A, B]): Field[O, B] = imap(convert.to)(convert.from)
 
@@ -25,17 +44,19 @@ final case class Field[+O <: Data, A](name: String, codec: Codec[O, A], metadata
 
   final def toRecord: Record[O, A] = Record(this)
 
-  def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
-    val (remainders, data) = values.collectFirstWithRemainders { case (`name`, data) => data }
-    (remainders, codec.decode(data.getOrElse(Data.Null)).leftMap(name /: _))
+  def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A])
 
-  def encode(a: A): Option[(String, O)] = codec.encode(a) match
-    case Data.Null if nulls === Null.Hide => none
-    case data                             => (name, data).some
+  def encode(a: A): Option[(String, O)]
 
 object Field:
-  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Field[O, A] =
-    Field(name, codec, metadata = Metadata.Empty)
+  final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A]) extends Field[O, A]:
+    override def metadata: Metadata = Metadata.Empty
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (remainders, codec.decode(value.getOrElse(Data.Null)).leftMap(name /: _))
+    override def encode(a: A): Option[(String, O)] = Some(codec.encode(a)).filter(!_.isNull).tupleLeft(name)
+
+  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Field[O, A] = Apply(name, codec)
 
   given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
     extension (self: Field[O, A])

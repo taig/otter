@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Dsl.*
+import cats.kernel.Eq
 
 final class RecordTest extends OtterSuite:
   test("decode"):
@@ -205,6 +206,16 @@ final class RecordTest extends OtterSuite:
       expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
     )
 
+  test("encode: nullable"):
+    val codec = field("a", string).nullable.toRecord
+
+    assertEq(
+      obtained = codec.encode("foobar".some),
+      expected = Data.Object.of("a" -> Data.String("foobar"))
+    )
+
+    assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
+
   test("encode: optional"):
     val codec = (field("a", string) :* field("b", int)).optional
 
@@ -214,16 +225,3 @@ final class RecordTest extends OtterSuite:
     )
 
     assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
-
-  test("encode: nulls (hide)"):
-    val codec = field("a", string.nullable).nulls(Null.Hide).toRecord
-
-    assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
-
-  test("encode: nulls (show)"):
-    val codec = field("a", string.nullable).nulls(Null.Show).toRecord
-
-    assertEq(
-      obtained = codec.encode(none),
-      expected = Data.Object.of("a" -> Data.Null)
-    )

@@ -7,7 +7,7 @@ import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
-import cats.derived.*
+import cats.derived.strict.*
 import cats.implicits.*
 import cats.parse.Parser
 

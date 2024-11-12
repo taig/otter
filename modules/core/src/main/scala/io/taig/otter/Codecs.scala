@@ -162,7 +162,7 @@ trait Codecs extends Types:
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[O, A] =
       val record = field(discriminator.identifier, constant(name)) :*
-        field(discriminator.value, codec).hideNulls
+        field(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](

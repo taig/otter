@@ -87,22 +87,17 @@ trait Codecs extends Base.Codecs, Types:
       val html: MediaType = text(secondary = "html")
 
   object header:
-    private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive]
-
-    inline def apply[A](
-        name: CIString,
-        codec: Codec.Of[Of, A]
-    ): Header[A] = inline codec match
+    inline def apply[A](name: CIString, codec: Codec.Of[Header.Of, A]): Header[A] = inline codec match
       case codec: Codec.Of[Data.Primitive, A]              => Header.Default(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Array[Data.Primitive], A]  => Header.Array(name, codec, Metadata.Empty)
       case codec: Codec.Of[Data.Object[Data.Primitive], A] => Header.Object(name, codec, Metadata.Empty)
 
-    inline def accept[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Accept", codec)
+    inline def accept[A](codec: Codec.Of[Data.Primitive, A]): Header[A] = header(ci"Accept", codec)
     val accept: Header[Accept] = accept(Accept.codec)
 
-    inline def authorization[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Authorization", codec)
+    inline def authorization[A](codec: Codec.Of[Data.Primitive, A]): Header[A] = header(ci"Authorization", codec)
 
-    inline def contentType[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Content-Type", codec)
+    inline def contentType[A](codec: Codec.Of[Data.Primitive, A]): Header[A] = header(ci"Content-Type", codec)
     val contentType: Header[MediaType] = contentType(MediaType.codec)
 
   final inline def parameter[A](

@@ -2,7 +2,7 @@ package io.taig.otter
 
 import cats.Eq
 import cats.Show
-import cats.derived.*
+import cats.derived.strict.*
 import cats.parse.Parser
 import cats.syntax.all.*
 

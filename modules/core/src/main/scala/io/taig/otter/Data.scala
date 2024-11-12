@@ -1,9 +1,7 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.Order
 import cats.Show
-import cats.derived.*
 import cats.parse.Parser
 import cats.syntax.all.*
 
@@ -15,7 +13,7 @@ import scala.Array as SArray
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
-sealed abstract class Data extends SProduct with Serializable derives Eq:
+sealed abstract class Data extends SProduct with Serializable:
   final def asValue: Option[Data.Value] = this match
     case data: Data.Value => Some(data)
     case _                => None
@@ -47,9 +45,16 @@ sealed abstract class Data extends SProduct with Serializable derives Eq:
   final override def toString: JString = Printers(this, quoted = true)
 
 object Data:
-  sealed abstract class Value extends Data derives Eq
+  sealed abstract class Value extends Data
 
-  final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value derives Eq:
+  object Value:
+    given eq: Eq[Data.Value] = Eq.instance:
+      case (x: Data.Array[Data], y: Data.Array[Data])   => Data.Array.eq.eqv(x, y)
+      case (x: Data.Object[Data], y: Data.Object[Data]) => Data.Object.eq.eqv(x, y)
+      case (x: Data.Primitive, y: Data.Primitive)       => Data.Primitive.eq.eqv(x, y)
+      case _                                            => false
+
+  final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value:
     def size: Int = values.size
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
@@ -62,9 +67,9 @@ object Data:
     def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(kv.toVector)
     def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(kv.toVector)
 
-    given [A <: Data: Order]: Order[Data.Object[A]] = Order.by(_.values)
+    given eq[A <: Data]: Eq[Data.Object[A]] = Eq.by(_.values)
 
-  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value derives Eq:
+  final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Int = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
 
@@ -75,9 +80,9 @@ object Data:
     def of[A <: Data](values: A*): Data.Array[A] = fromSeq(values)
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
-    given [A <: Data: Order]: Order[Data.Array[A]] = Order.by(_.values)
+    given eq[A <: Data]: Eq[Data.Array[A]] = Eq.by(_.values)
 
-  sealed abstract class Primitive extends Value derives Eq:
+  sealed abstract class Primitive extends Value:
     final def asString: Option[Data.String] = this match
       case data: Data.String => data.some
       case _                 => none
@@ -92,9 +97,22 @@ object Data:
 
     final def plain: JString = Printers(this, quoted = false)
 
-  final case class String(value: JString) extends Data.Primitive derives Eq
+  object Primitive:
+    given eq: Eq[Data.Primitive] = Eq.instance:
+      case (x: Data.String, y: Data.String)   => Data.String.eq.eqv(x, y)
+      case (x: Data.Boolean, y: Data.Boolean) => Data.Boolean.eq.eqv(x, y)
+      case (x: Data.Number, y: Data.Number)   => Data.Number.eq.eqv(x, y)
+      case _                                  => false
 
-  final case class Boolean(value: SBoolean) extends Data.Primitive derives Eq
+  final case class String(value: JString) extends Data.Primitive
+
+  object String:
+    given eq: Eq[Data.String] = Eq.by(_.value)
+
+  final case class Boolean(value: SBoolean) extends Data.Primitive
+
+  object Boolean:
+    given eq: Eq[Data.Boolean] = Eq.by(_.value)
 
   final case class Number(value: Int | Long | Float | Double | JBigDecimal | JBigInteger) extends Data.Primitive:
     def toBigDecimal: Option[JBigDecimal] = value match
@@ -154,7 +172,7 @@ object Data:
       Option.when(value == target)(target)
 
   object Number:
-    given Eq[Data.Number] = Eq.fromUniversalEquals
+    given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
   case object Null extends Data
 
@@ -164,10 +182,9 @@ object Data:
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
-  given [A <: Data]: Show[A] = Show.fromToString
+  given [A <: Data]: Eq[A] = Eq.instance:
+    case (Data.Null, Data.Null)         => true
+    case (x: Data.Value, y: Data.Value) => Data.Value.eq.eqv(x, y)
+    case _                              => false
 
-  given [A <: Data]: Eq[Data.Nullable[A]] = Eq.instance:
-    case (Data.Null, Data.Null) => true
-    case (Data.Null, _)         => false
-    case (_, Data.Null)         => false
-    case (left, right)          => left === right
+  given [A <: Data]: Show[A] = Show.fromToString

@@ -14,7 +14,7 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def name: CIString
 
-  def codec: Codec[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
+  def codec: Codec[Header.Of, ?]
 
   final def isOptional: Boolean = codec.isNullable
 
@@ -37,6 +37,8 @@ sealed abstract class Header[A] extends Product, Serializable:
   def encode(a: A): Option[String]
 
 object Header:
+  type Of = Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive]]
+
   final case class Default[A](name: CIString, codec: Codec[Data.Primitive, A], metadata: Metadata) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
