@@ -8,10 +8,12 @@ final case class Field[+O <: Data, A](name: String, codec: Codec[O, A], metadata
   final def modifyMetadata(f: Metadata => Metadata): Field[O, A] = copy(metadata = f(metadata))
 
   final def nulls: Null = metadata.get(Keys.nulls).getOrElse(Null.Default)
-  final def nulls(value: Null): Field[O, A] = self.apply(Keys.nulls, value)
+  final def nulls(value: Null): Field[O, A] = self(Keys.nulls, value)
   final def hideNulls: Field[O, A] = nulls(Null.Hide)
 
   final def imap[B](f: A => B)(g: B => A): Field[O, B] = copy(codec = codec.imap(f)(g))
+
+  final def optional: Field[Data.Nullable[O], Option[A]] = copy(codec = codec.nullable)
 
   final def to[B](using convert: Convert[A, B]): Field[O, B] = imap(convert.to)(convert.from)
 

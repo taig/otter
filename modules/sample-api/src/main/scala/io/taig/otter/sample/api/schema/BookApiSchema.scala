@@ -24,7 +24,7 @@ object BookApiSchema:
     case Thriller
 
   object Genre:
-    val codec: Enumeration.Required[BookApiSchema.Genre] = enumeration(string):
+    val codec: Enumeration[BookApiSchema.Genre] = enumeration(string):
       case Biography => "biography"
       case Children  => "children"
       case Fantasy   => "fantasy"
@@ -34,13 +34,10 @@ object BookApiSchema:
 
     given Order[BookApiSchema.Genre] = Order.by(_.ordinal)
 
-  final case class Summary(
-      isbn: IsbnApiSchema,
-      title: String
-  )
+  final case class Summary(isbn: IsbnApiSchema, title: String)
 
   object Summary:
-    val codec: Record.Required.Of[Data.Primitive, BookApiSchema.Summary] =
+    val codec: Record.Of[Data.Primitive, BookApiSchema.Summary] =
       (field("isbn", IsbnApiSchema.codec) :* field("title", string)).to
 
   final case class Create(
@@ -54,8 +51,8 @@ object BookApiSchema:
     val codec: Record[BookApiSchema.Create] = (
       field("isbn", IsbnApiSchema.codec) :*
         field("title", string(minLength = 1.some, maxLength = 500.some)) :*
-        field("genres", collection.sortedSet(Genre.codec).modifyDefault(_ => SortedSet.empty[Genre].some)) :*
-        field("metadata", dynamic.obj.modifyDefault(_ => Data.Object.Empty.some))
+        field("genres", collection.sortedSet(Genre.codec).nullable(SortedSet.empty[Genre])) :*
+        field("metadata", dynamic.obj.nullable(Data.Object.Empty))
     ).to
 
   val codec: Record[BookApiSchema] = (

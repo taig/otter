@@ -54,13 +54,14 @@ object Queries:
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toVector: Vector[Query[?]] = Vector(query)
     override def matches(queries: Http.Queries): Boolean =
-      query.isOptional || queries.exists { case (key, _) => key === query.name }
-    override def decode(values: Http.Queries): Codec.Result[A] =
-      val value = values
-        .collectFirst { case (key, value) if key === query.name => value }
-        .fold(Query.Value.Abscent)(_.fold(Query.Value.None)(Query.Value.Some.apply))
-      query.decode(value).leftMap(query.name /: _)
-    override def encode(a: A): Http.Queries = query.encode(a) match
-      case Query.Value.Some(value) => Vector(query.name -> value.some)
-      case Query.Value.None        => Vector(query.name -> none)
-      case Query.Value.Abscent     => Http.Queries.Empty
+      query.isNullable || queries.exists { case (key, _) => key === query.name }
+    override def decode(values: Http.Queries): Codec.Result[A] = ???
+    // val value = values
+    //   .collectFirst { case (key, value) if key === query.name => value }
+    //   .fold(Query.Value.Abscent)(_.fold(Query.Value.None)(Query.Value.Some.apply))
+    // query.decode(value).leftMap(query.name /: _)
+    override def encode(a: A): Http.Queries = ???
+    // query.encode(a) match
+    //   case Query.Value.Some(value) => Vector(query.name -> value.some)
+    //   case Query.Value.None        => Vector(query.name -> none)
+    //   case Query.Value.Abscent     => Http.Queries.Empty

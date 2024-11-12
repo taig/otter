@@ -12,7 +12,7 @@ object SessionApiSchema:
 
   def apply(value: UUID): SessionApiSchema = value
 
-  def codec(prefix: String): Primitive.Required[SessionApiSchema] = parser("session") { value =>
+  def codec(prefix: String): Primitive[SessionApiSchema] = parser("session") { value =>
     Option
       .when(value.startsWith(prefix) && value.length > prefix.length + 1)(value.substring(prefix.length))
       .flatMap: value =>
@@ -20,4 +20,4 @@ object SessionApiSchema:
         catch { case _: IllegalArgumentException => none }
   }(uuid => prefix + uuid.show)
 
-  val codec: Primitive.Required[SessionApiSchema] = codec(prefix = "")
+  val codec: Primitive[SessionApiSchema] = codec(prefix = "")
