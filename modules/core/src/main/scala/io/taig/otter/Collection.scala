@@ -28,10 +28,10 @@ sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
 
   override def decode(data: Data): Codec.Result[A] = data match
     case Data.Array(values) => decode(values.some)
-    case Data.Null          => decode(none)
+    case Data.Null          => default.toValid(Violations.rootNec(Violation.tpe("array", actual = Data.Null)))
     case _                  => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
 
-  def decode(data: Option[Vector[Data]]): Codec.Result[A]
+  protected def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
 object Collection:
   final private case class Apply[O <: Data, A](

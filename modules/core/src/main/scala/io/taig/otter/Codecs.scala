@@ -154,6 +154,8 @@ trait Codecs extends Types:
   def field[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] = Base.Field(name, codec)
 
   object branch:
+    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
+
     def nested[O <: Data, A](
         name: String,
         codec: Codec.Of[O, A],
