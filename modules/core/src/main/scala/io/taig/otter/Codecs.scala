@@ -161,7 +161,8 @@ trait Codecs extends Types:
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[O, A] =
-      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
+      val record = field(discriminator.identifier, constant(name)) :*
+        field(discriminator.value, codec).hideNulls
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
@@ -386,9 +387,9 @@ trait Codecs extends Types:
     val number: Dynamic.Of[Data.Number, Data.Number] = Base.Dynamic.Number
     val nil: Dynamic.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  val void: Dynamic.Of[Data.Null.type, Unit] = dynamic.nil.const(Data.Null)
+  val void: Codec.Of[Data.Null.type, Unit] = dynamic.nil.nullable.const(Data.Null.some)
 
-  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = void.as(a)
+  def singleton[A](a: A): Codec.Of[Data.Null.type, a.type] = void.as(a)
 
   val xpath: Primitive[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 

@@ -10,7 +10,7 @@ sealed abstract class Body[A]:
 
   def mediaType: MediaType
 
-  def codec: Option[Codec[?, ?, ?]]
+  def codec: Option[Codec[?, ?]]
 
   def imap[B](f: A => B)(g: B => A): Body[B]
 
@@ -38,7 +38,7 @@ object Body:
   object Strict:
     def apply[A](
         mediaType: MediaType,
-        of: Option[Codec[?, ?, ?]],
+        of: Option[Codec[?, ?]],
         f: (Option[Charset], Array[Byte]) => Codec.Result[A],
         g: (Option[Charset], A) => Array[Byte]
     ): Body.Strict[A] =
@@ -46,7 +46,7 @@ object Body:
 
       new Strict[A]:
         override def mediaType: MediaType = _mediaType
-        override def codec: Option[Codec[?, ?, ?]] = of
+        override def codec: Option[Codec[?, ?]] = of
         override def decode(charset: Option[Charset], payload: Array[Byte]): Codec.Result[A] =
           f(charset, payload)
         override def encode(charset: Option[Charset], a: A): Array[Byte] = g(charset, a)
@@ -70,7 +70,7 @@ object Body:
   object Streaming:
     def apply[A](
         mediaType: MediaType,
-        of: Option[Codec[?, ?, ?]],
+        of: Option[Codec[?, ?]],
         f: [F[_]] => (Option[Charset], Stream[F, Byte]) => Stream[F, A],
         g: [F[_]] => (Option[Charset], Stream[F, A]) => Stream[F, Byte]
     ): Body.Streaming[A] =
@@ -78,7 +78,7 @@ object Body:
 
       new Streaming[A]:
         override def mediaType: MediaType = _mediaType
-        override def codec: Option[Codec[?, ?, ?]] = of
+        override def codec: Option[Codec[?, ?]] = of
         override def decode(charset: Option[Charset]): [F[_]] => Stream[F, Byte] => Stream[F, A] = [F[_]] =>
           (fa: Stream[F, Byte]) => f(charset, fa)
         override def encode(charset: Option[Charset]): [F[_]] => Stream[F, A] => Stream[F, Byte] = [F[_]] =>

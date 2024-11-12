@@ -22,9 +22,6 @@ trait Types:
   object Codec:
     type Of[O <: Data, A] = Base.Codec[O, A]
 
-    object Required:
-      type Of[O <: Data, A] = Base.Codec[O, A]
-
     export Base.Codec.Result
 
   final type Collection[A] = Base.Collection[Data, A]
@@ -32,24 +29,15 @@ trait Types:
   object Collection:
     type Of[O <: Data, A] = Base.Collection[O, A]
 
-    object Required:
-      type Of[O <: Data, A] = Base.Collection[O, A]
-
   final type Dictionary[A] = Base.Dictionary[Data, A]
 
   object Dictionary:
     type Of[O <: Data, A] = Base.Dictionary[O, A]
 
-    object Required:
-      type Of[O <: Data, A] = Base.Dictionary[O, A]
-
   final type Dynamic[A] = Base.Dynamic[Data, A]
 
   object Dynamic:
     type Of[O <: Data, A] = Base.Dynamic[O, A]
-
-    object Required:
-      type Of[O <: Data, A] = Base.Dynamic[O, A]
 
   final type Enumeration[A] = Base.Enumeration[A]
 
@@ -69,9 +57,6 @@ trait Types:
 
   object Tuple:
     type Of[O <: Data, A] = Base.Tuple[O, A]
-
-    object Required:
-      type Of[O <: Data, A] = Base.Tuple[O, A]
 
   final type Branch[A] = Base.Branch[Data, A]
 

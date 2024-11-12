@@ -2,14 +2,10 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyChainImpl.Type
-import cats.syntax.all.*
-import io.taig.otter.Codec.Result
-import cats.data.ValidatedNec
 import cats.data.Validated
-import cats.data.Ior
-import cats.data.Ior.Both
-import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
+import cats.syntax.all.*
 
 sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
   self =>
@@ -51,9 +47,9 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
 
   def decodeBranches(data: Data): Either[Option[Violations], A]
 
-  final def :+[P <: Data, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = orElse(codec)
+  final def :+[P <: Data, B](branch: Branch[P, B]): Union[O | P, Either[A, B]] = orElse(branch.toUnion)
 
-  final def +:[P <: Data, B](codec: Union[P, B]): Union[P | O, Either[B, A]] = codec.toUnion.orElse(self)
+  final def +:[P <: Data, B](branch: Branch[P, B]): Union[P | O, Either[B, A]] = branch.toUnion.orElse(self)
 
 object Union:
   extension [O <: Data, A <: Matchable](self: Union[O, A])

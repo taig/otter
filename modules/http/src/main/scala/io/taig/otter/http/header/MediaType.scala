@@ -28,7 +28,7 @@ object MediaType:
 
   def parse(value: String): Either[Parser.Error, MediaType] = Parsers.mediaType.parseAll(value)
 
-  val codec: Primitive.Required[MediaType] = parser(name = "contentType")(parse(_).toOption)(_.show)
+  val codec: Primitive[MediaType] = parser(name = "contentType")(parse(_).toOption)(_.show)
 
   given Eq[MediaType] = Eq.by(mediaType => (mediaType.tpe, mediaType.parameters))
 
