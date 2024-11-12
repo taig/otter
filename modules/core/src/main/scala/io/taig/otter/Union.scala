@@ -8,20 +8,20 @@ import io.taig.otter.Codec.Result
 sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
   self =>
 
-  def codecs: NonEmptyChain[Codec[?, ?]]
+  def branches: NonEmptyChain[Branch[?, ?]]
 
   final def discriminator: Option[Discriminator] = metadata.get(???)
 
   final override def modifyMetadata(f: Metadata => Metadata): Union[O, A] = new Union[O, A]:
-    export self.{codecs, decode, default, encode}
+    export self.{branches, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Union[O, A] = new Union[O, A]:
-    export self.{codecs, decode, encode, metadata}
+    export self.{branches, decode, encode, metadata}
     override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Union[O, B] = new Union[O, B]:
-    export self.{codecs, metadata}
+    export self.{branches, metadata}
     override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
@@ -29,7 +29,7 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
   final override def to[B](using convert: Convert[A, B]): Union[O, B] = imap(convert.to)(convert.from)
 
   final def orElse[P <: Data, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = new Union[O | P, Either[A, B]]:
-    override def codecs: NonEmptyChain[Codec[?, ?]] = self.codecs ++ codec.codecs
+    override def branches: NonEmptyChain[Branch[?, ?]] = self.branches ++ codec.branches
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Either[A, B]] = none
     override def decode(data: Data): Codec.Result[Either[A, B]] =
@@ -54,11 +54,13 @@ object Union:
         case b: B => b.asRight
       }
 
-    inline def |[P <: Data, B <: Matchable](codec: Codec[P, B]): Union[O | P, A | B] = or(codec.toUnion)
+    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Union[O | P, A | B] = or(branch.toUnion)
 
-  def apply[O <: Data, A](codec: Codec[O, A]): Union[O, A] = new Union[O, A]:
-    override def codecs: NonEmptyChain[Codec[?, ?]] = NonEmptyChain.one(codec)
+  def apply[O <: Data, A](branch: Branch[O, A]): Union[O, A] = new Union[O, A]:
+    override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = none
-    override def decode(data: Data): Codec.Result[A] = codec.decode(data)
-    override def encode(a: A): O = codec.encode(a)
+    override def decode(data: Data): Codec.Result[A] =
+      branch.decode(data)
+      ???
+    override def encode(a: A): O = branch.encode(a)

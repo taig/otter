@@ -50,6 +50,7 @@ object Data:
   sealed abstract class Value extends Data derives Eq
 
   final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value derives Eq:
+    def size: Int = values.size
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
     final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
@@ -64,7 +65,7 @@ object Data:
     given [A <: Data: Order]: Order[Data.Object[A]] = Order.by(_.values)
 
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value derives Eq:
-    def length: Long = values.length
+    def length: Int = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
 
   object Array:

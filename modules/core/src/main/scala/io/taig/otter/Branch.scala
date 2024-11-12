@@ -1,5 +1,8 @@
 package io.taig.otter
 
+import cats.syntax.all.*
+import io.taig.otter.Codec.Result
+
 sealed abstract class Branch[+O <: Data, A]:
   self =>
 
@@ -9,15 +12,22 @@ sealed abstract class Branch[+O <: Data, A]:
 
   def metadata: Metadata
 
-  def modifyMetadata(f: Metadata => Metadata): Branch[O, A]
+  def modifyMetadata(f: Metadata => Metadata): Branch[O, A] = new Branch[O, A]:
+    export self.{codec, decode, encode, name}
+    override def metadata: Metadata = f(self.metadata)
 
-  def imap[B](f: A => B)(g: B => A): Branch[O, B]
+  def imap[B](f: A => B)(g: B => A): Branch[O, B] = new Branch[O, B]:
+    export self.{codec, metadata, name}
+    override def decode(data: Data): Codec.Result[Option[B]] = self.decode(data).map(_.map(f))
+    override def encode(b: B): O = self.encode(g(b))
 
-  def to[B](using convert: Convert[A, B]): Branch[O, B]
+  def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
 
   final def :+[P <: Data, B](branch: Branch[P, B]): Union[O | P, Either[A, B]] = ???
 
   final def +:[P <: Data, B](branch: Branch[P, B]): Union[P | O, Either[B, A]] = ???
+
+  final def toUnion: Union[O, A] = Union(self)
 
   def decode(data: Data): Codec.Result[Option[A]]
 
@@ -25,36 +35,67 @@ sealed abstract class Branch[+O <: Data, A]:
 
 object Branch:
   sealed abstract class Tagged[+O <: Data, A] extends Branch[O, A]:
+    self =>
+
     def discriminator: Discriminator
 
-    override def modifyMetadata(f: Metadata => Metadata): Branch.Tagged[O, A] = ???
+    final override def modifyMetadata(f: Metadata => Metadata): Branch.Tagged[O, A] = new Tagged[O, A]:
+      export self.{codec, decode, discriminator, encode, name}
+      override def metadata: Metadata = f(self.metadata)
 
-    override def imap[B](f: A => B)(g: B => A): Branch.Tagged[O, B] = ???
+    final override def imap[B](f: A => B)(g: B => A): Branch.Tagged[O, B] = new Tagged[O, B]:
+      export self.{codec, discriminator, metadata, name}
+      override def decode(data: Data.Object[?]): Codec.Result[Option[B]] = self.decode(data).map(_.map(f))
+      override def encode(b: B): O = self.encode(g(b))
 
-    override def to[B](using convert: Convert[A, B]): Branch.Tagged[O, B] = ???
+    final override def to[B](using convert: Convert[A, B]): Branch.Tagged[O, B] = imap(convert.to)(convert.from)
+
+    final override def decode(data: Data): Codec.Result[Option[A]] = data.asObject
+      .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = data.name)))
+      .andThen(decode)
+
+    def decode(data: Data.Object[?]): Codec.Result[Option[A]]
 
   object Tagged:
+    final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A], discriminator: Discriminator)
+        extends Branch.Tagged[O, A]:
+      override def metadata: Metadata = Metadata.Empty
+      override def decode(data: Data.Object[?]): Codec.Result[Option[A]] = discriminator match
+        case Discriminator.Nested(identifier, value) =>
+          data.values
+            .collectFirst { case (`identifier`, data) => data }
+            .flatMap(_.asPrimitive)
+            .map(_.plain)
+            .filter(_ === name)
+            .flatMap(_ => data.values.collectFirst { case (`value`, data) => data })
+            .traverse(codec.decode)
+        case Discriminator.Merged(identifier) =>
+          data.values.collectFirstWithRemainders { case (`identifier`, data) => data } match
+            case (values, Some(data)) =>
+              data.asPrimitive
+                .map(_.plain)
+                .filter(_ === name)
+                .traverse(_ => codec.decode(Data.Object(values)))
+            case (_, None) => none.valid
+        case Discriminator.Keyed =>
+          data.values.collectFirst { case (`name`, data) => data }.traverse(codec.decode)
+      override def encode(a: A): O = codec.encode(a)
+
     def apply[O <: Data, A](
         name: String,
-        codec: Codec[Data.Primitive | O, A],
+        codec: Codec[O, A],
         discriminator: Discriminator
-    ): Branch.Tagged[O, A] = ???
+    ): Branch.Tagged[O, A] = Apply(name, codec, discriminator)
 
-  sealed abstract class Untagged[O <: Data, A] extends Branch[O, A] {}
+  final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A]) extends Branch[O, A]:
+    override def metadata: Metadata = Metadata.Empty
+    override def decode(data: Data): Codec.Result[Option[A]] = codec.decode(data).map(_.some)
+    override def encode(a: A): O = codec.encode(a)
 
-  // def nested[O <: Data, A](name: String, codec: Codec[O, A], discriminator: Discriminator.Nested): Branch[O, A] = new Branch[O, A](name, codec) {
-  //   override def discriminator: Option[Discriminator] = discriminator.some
-  //   override def metadata: Metadata = Metadata.Empty
+  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Branch[O, A] = Apply(name, codec)
 
-  //   override def decode(data: Data): Result[A] = ???
-
-  //   override def encode(a: A): O = ???
-
-  // }
-
-  // extension [O <: Data, A <: Matchable](self: Branch[O, A])
-  //   inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Branches[O | P, A | B] =
-  //     self.toBranches | branch
+  extension [O <: Data, A <: Matchable](self: Branch[O, A])
+    inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Union[O | P, A | B] = self.toUnion | branch
 
   given [O <: Data, A]: Metadata.Ops[Branch[O, A]] with
     extension (self: Branch[O, A])

@@ -151,9 +151,6 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  // def branch[O <: Data, A](name: String, codec: => Base.Codec[O, A]): Branch.Of[O, A] =
-  // Base.Branch(name, codec)
-
   def field[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] = Base.Field(name, codec)
 
   object branch:
@@ -161,24 +158,24 @@ trait Codecs extends Types:
         name: String,
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
-    ): Branch.Tagged[Data.Object[Data.Primitive | O], A] =
+    ): Branch.Nested.Of[O, A] =
       val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
-      Branch.Tagged(name, record, discriminator)
+      Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
         name: String,
         codec: Record.Of[O, A],
         discriminator: Discriminator.Merged = Discriminator.Merged.Default
-    ): Branch.Tagged[Data.Object[Data.Primitive | O], A] =
+    ): Branch.Merged.Of[O, A] =
       val record = field(discriminator.identifier, constant(name)) *: codec
-      Branch.Tagged(name, record, discriminator)
+      Base.Branch.Tagged(name, record, discriminator)
 
     def keyed[O <: Data, A](
         name: String,
         codec: Codec.Of[O, A]
-    ): Branch.Tagged[Data.Object[O], A] =
+    ): Branch.Keyed.Of[O, A] =
       val record = field(name, codec).toRecord
-      Branch.Tagged(name, record, Discriminator.Keyed)
+      Base.Branch.Tagged(name, record, Discriminator.Keyed)
 
   object collection:
     def vector[O <: Data, A](

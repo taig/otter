@@ -60,45 +60,10 @@ trait Types:
   object Record:
     type Of[O <: Data, A] = Base.Record[O, A]
 
-  // final type Sum[A] = Base.Sum[Data, A]
+  final type Union[A] = Base.Union[Data, A]
 
-  // object Sum:
-  //   type Of[O <: Data, A] = Base.Sum[O, A]
-
-  //   object Required:
-  //     type Of[O <: Data, A] = Base.Sum[ O, A]
-
-  //   type Nested[A] = Base.Sum.Nested[Data, A]
-
-  //   object Nested:
-  //     type Of[O <: Data, A] = Base.Sum.Nested[O, A]
-
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Nested[ O, A]
-
-  //   type Merged[A] = Base.Sum.Merged[Data, A]
-
-  //   object Merged:
-  //     type Of[O <: Data, A] = Base.Sum.Merged[O, A]
-
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Merged[ O, A]
-
-  //   type Keyed[A] = Base.Sum.Merged[Data, A]
-
-  //   object Keyed:
-  //     type Of[O <: Data, A] = Base.Sum.Keyed[O, A]
-
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Keyed[ O, A]
-
-  //   type Untagged[A] = Base.Sum.Untagged[Data, A]
-
-  //   object Untagged:
-  //     type Of[O <: Data, A] = Base.Sum.Untagged[O, A]
-
-  //     object Required:
-  //       type Of[O <: Data, A] = Base.Sum.Untagged[ O, A]
+  object Union:
+    type Of[O <: Data, A] = Base.Union[O, A]
 
   type Tuple[A] = Base.Tuple[Data, A]
 
@@ -108,10 +73,30 @@ trait Types:
     object Required:
       type Of[O <: Data, A] = Base.Tuple[O, A]
 
-  // final type Branch[A] = Base.Branch[Data, A]
+  final type Branch[A] = Base.Branch[Data, A]
 
-  // object Branch:
-  //   type Of[O <: Data, A] = Base.Branch[O, A]
+  object Branch:
+    type Of[O <: Data, A] = Base.Branch[O, A]
+
+    type Tagged[A] = Base.Branch[Data.Object[?], A]
+
+    object Tagged:
+      type Of[O <: Data, A] = Base.Branch[Data.Object[O], A]
+
+    type Nested[A] = Tagged[A]
+
+    object Nested:
+      type Of[O <: Data, A] = Tagged.Of[Data.Primitive | O, A]
+
+    type Merged[A] = Tagged[A]
+
+    object Merged:
+      type Of[O <: Data, A] = Tagged.Of[Data.Primitive | O, A]
+
+    type Keyed[A] = Tagged[A]
+
+    object Keyed:
+      type Of[O <: Data, A] = Tagged.Of[O, A]
 
   final type Field[A] = Base.Field[Data, A]
 
