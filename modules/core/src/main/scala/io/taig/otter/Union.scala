@@ -4,26 +4,28 @@ import cats.data.NonEmptyChain
 import cats.data.NonEmptyChainImpl.Type
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
+import cats.data.ValidatedNec
+import cats.data.Validated
+import cats.data.Ior
+import cats.data.Ior.Both
 
 sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
   self =>
 
   def branches: NonEmptyChain[Branch[?, ?]]
 
-  final def discriminator: Option[Discriminator] = metadata.get(???)
-
   final override def modifyMetadata(f: Metadata => Metadata): Union[O, A] = new Union[O, A]:
-    export self.{branches, decode, default, encode}
+    export self.{branches, decodeBranches, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def modifyDefault(f: Option[A] => Option[A]): Union[O, A] = new Union[O, A]:
-    export self.{branches, decode, encode, metadata}
+    export self.{branches, decodeBranches, encode, metadata}
     override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Union[O, B] = new Union[O, B]:
     export self.{branches, metadata}
     override def default: Option[B] = self.default.map(f)
-    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def decodeBranches(data: Data): Either[Option[Violations], B] = self.decodeBranches(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Union[O, B] = imap(convert.to)(convert.from)
@@ -32,11 +34,26 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
     override def branches: NonEmptyChain[Branch[?, ?]] = self.branches ++ codec.branches
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[Either[A, B]] = none
-    override def decode(data: Data): Codec.Result[Either[A, B]] =
-      self.decode(data).map(_.asLeft).orElse(codec.decode(data).map(_.asRight))
-    override def encode(ab: Either[A, B]): O | P = ab match
-      case Left(a)  => self.encode(a)
-      case Right(b) => codec.encode(b)
+    override def decodeBranches(data: Data): Either[Option[Violations], Either[A, B]] = self.decodeBranches(data) match
+      case Right(a) => a.asLeft.asRight
+      case Left(left) =>
+        codec.decodeBranches(data) match
+          case Right(b) => b.asRight.asRight
+          case Left(right) =>
+            (left, right) match
+              case (Some(left), Some(right)) => (left |+| right).some.asLeft
+              case (Some(left), None)        => left.some.asLeft
+              case (None, Some(right))       => right.some.asLeft
+              case (None, None)              => none.asLeft
+    override def encode(ab: Either[A, B]): O | P = ab.fold(self.encode, codec.encode)
+
+  // TODO better error message, especially when we have discriminator information
+  final override def decode(data: Data): Codec.Result[A] = decodeBranches(data) match
+    case Right(a)               => a.valid
+    case Left(Some(violations)) => violations.invalid
+    case Left(None)             => Violations.rootNec(Violation.tpe(name = "union", actual = data.name)).invalid
+
+  def decodeBranches(data: Data): Either[Option[Violations], A]
 
   final def :+[P <: Data, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = orElse(codec)
 
@@ -60,7 +77,6 @@ object Union:
     override def branches: NonEmptyChain[Branch[?, ?]] = NonEmptyChain.one(branch)
     override def metadata: Metadata = Metadata.Empty
     override def default: Option[A] = none
-    override def decode(data: Data): Codec.Result[A] =
-      branch.decode(data)
-      ???
+    override def decodeBranches(data: Data): Either[Option[Violations], A] =
+      ??? // branch.decode(data).leftMap(branch.name /: _).toIor
     override def encode(a: A): O = branch.encode(a)
