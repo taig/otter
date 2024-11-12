@@ -9,20 +9,12 @@ sealed abstract class Tuple[+O <: Data, A] extends Codec[Data.Array[O], A]:
 
   def codecs: Chain[Codec[?, ?]]
 
-  final override def modifyDefault(f: Option[A] => Option[A]): Tuple[O, A] = new Tuple[O, A]:
-    export self.{codecs, encode, metadata}
-    override def default: Option[A] = f(self.default)
-    override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] = (values, default) match
-      case (None, Some(default)) => default.valid
-      case _                     => self.decode(values, index)
-
   final override def modifyMetadata(f: Metadata => Metadata): Tuple[O, A] = new Tuple[O, A]:
-    export self.{codecs, decode, default, encode}
+    export self.{codecs, decode, encode}
     override def metadata: Metadata = f(self.metadata)
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[O, B] = new Tuple[O, B]:
     export self.{codecs, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[B] =
       self.decode(values, index).map(f)
     override def encode(b: B): Data.Array[O] = self.encode(g(b))
@@ -32,7 +24,6 @@ sealed abstract class Tuple[+O <: Data, A] extends Codec[Data.Array[O], A]:
   final def zip[P <: Data, B](codec: Tuple[P, B]): Tuple[O | P, (A, B)] = new Tuple[O | P, (A, B)]:
     override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[(A, B)] = none
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[(A, B)] = values match
       case Some(values) =>
         val left = self.codecs.length.toInt
@@ -70,13 +61,11 @@ object Tuple:
   val Empty: Tuple[Nothing, Unit] = new Tuple[Nothing, Unit]:
     override def codecs: Chain[Codec[?, ?]] = Chain.empty
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Unit] = none
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[Unit] = ().valid
     override def encode(a: Unit): Data.Array[Nothing] = Data.Array.Empty
 
   final private case class Apply[+O <: Data, A](codec: Codec[O, A]) extends Tuple[O, A]:
     override def codecs: Chain[Codec[?, ?]] = Chain.one(codec)
-    override def default: Option[A] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Option[Vector[Data]], index: Int): Codec.Result[A] =
       values.toValid(Violations.rootNec(Violation.tpe("array", actual = "null"))) match

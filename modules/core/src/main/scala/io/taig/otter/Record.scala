@@ -11,20 +11,11 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
   def fields: Chain[Field[?, ?]]
 
   final override def modifyMetadata(f: Metadata => Metadata): Record[O, A] = new Record[O, A]:
-    export self.{decode, default, encode, fields}
+    export self.{decode, encode, fields}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Record[O, A] = new Record[O, A]:
-    export self.{encode, fields, metadata}
-    override def default: Option[A] = f(self.default)
-    override def decode(data: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A]) =
-      (data, default) match
-        case (None, Some(default)) => (data, default.valid)
-        case _                     => self.decode(data)
 
   final override def imap[B](f: A => B)(g: B => A): Record[O, B] = new Record[O, B]:
     export self.{fields, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[B]) =
       self.decode(data).map(_.map(f))
     override def encode(b: B): Data.Object[O] = self.encode(g(b))
@@ -37,7 +28,6 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
     */
   final def optional: Record[O, Option[A]] = new Record[O, Option[A]]:
     export self.{fields, metadata}
-    override def default: Option[Option[A]] = self.default.map(_.some)
     override def decode(
         values: Option[Vector[(String, Data)]]
     ): (Option[Vector[(String, Data)]], Codec.Result[Option[A]]) =
@@ -51,7 +41,6 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
 
   final def zip[P <: Data, B](codec: Record[P, B]): Record[O | P, (A, B)] = new Record[O | P, (A, B)]:
     override def fields: Chain[Field[?, ?]] = self.fields ++ codec.fields
-    override def default: Option[(A, B)] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(
         values: Option[Vector[(String, Data)]]
@@ -81,7 +70,6 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
 object Record:
   final private case class Apply[O <: Data, A](field: Field[O, A]) extends Record[O, A]:
     override def fields: Chain[Field[?, ?]] = Chain.one(field)
-    override def default: Option[A] = none
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A]) =
       values.toValid(Violations.rootNec(Violation.tpe("object", actual = "null"))) match

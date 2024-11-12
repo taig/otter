@@ -16,16 +16,11 @@ sealed abstract class Primitive[A] extends Codec[Data.Primitive, A]:
   def constraints: Vector[Constraint.Primitive]
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = new Primitive[A]:
-    export self.{constraints, decode, default, encode}
+    export self.{constraints, decode, encode}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Primitive[A] = new Primitive[A]:
-    export self.{constraints, decode, encode, metadata}
-    override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[B] = new Primitive[B]:
     export self.{constraints, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data.Primitive = self.encode(g(b))
 
@@ -50,7 +45,6 @@ object Primitive:
         maximum.map(_.map(encode)).map(Constraint.Primitive.Maximum.apply).toVector ++
         multiple.map(encode).map(Constraint.Primitive.Multiple.apply).toVector
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[A] = None
 
     def verifyMinimum(value: A): Codec.Result[Unit] = minimum.traverse_ {
       case comparison @ Comparison(reference, exclusive) =>
@@ -100,7 +94,6 @@ object Primitive:
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
         matches.map(Constraint.Primitive.Matches.apply).toVector
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[JString] = None
 
     def verifyMinLength(value: JString): Codec.Result[Unit] = minLength.traverse_ { reference =>
       val length = value.length
@@ -145,7 +138,6 @@ object Primitive:
     val codec = string(minLength, maxLength, matches)
     override def constraints: Vector[Constraint.Primitive] = codec.constraints
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[A] = None
     override def decode(data: Data): Codec.Result[A] = codec
       .decode(data)
       .andThen: value =>
@@ -155,7 +147,6 @@ object Primitive:
   case object Boolean extends Primitive[SBoolean]:
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[SBoolean] = None
     override def decode(data: Data): Codec.Result[SBoolean] = data.asPrimitive
       .flatMap: primitive =>
         primitive.asBoolean.map(_.value).orElse(primitive.asString.flatMap(_.value.toBooleanOption))

@@ -6,16 +6,11 @@ abstract class Dynamic[+O <: Data, A] extends Codec[O, A]:
   self =>
 
   final override def modifyMetadata(f: Metadata => Metadata): Dynamic[O, A] = new Dynamic[O, A]:
-    export self.{decode, default, encode}
+    export self.{decode, encode}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Dynamic[O, A] = new Dynamic[O, A]:
-    export self.{decode, encode, metadata}
-    override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Dynamic[O, B] = new Dynamic[O, B]:
     export self.metadata
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
@@ -24,7 +19,6 @@ abstract class Dynamic[+O <: Data, A] extends Codec[O, A]:
 object Dynamic:
   def apply[A <: Data](f: Data => Codec.Result[A]): Dynamic[A, A] = new Dynamic[A, A]:
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[A] = none
     override def decode(data: Data): Codec.Result[A] = f(data)
     override def encode(a: A): A = a
 

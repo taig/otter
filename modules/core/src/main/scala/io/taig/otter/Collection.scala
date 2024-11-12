@@ -11,16 +11,11 @@ sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
   def codec: Codec[?, ?]
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
-    export self.{codec, constraints, decode, default, encode}
+    export self.{codec, constraints, decode, encode}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Collection[O, A] = new Collection[O, A]:
-    export self.{codec, constraints, decode, encode, metadata}
-    override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Collection[O, B] = new Collection[O, B]:
     export self.{codec, constraints, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Option[Vector[Data]]): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data.Array[O] = self.encode(g(b))
 
@@ -28,7 +23,6 @@ sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
 
   override def decode(data: Data): Codec.Result[A] = data match
     case Data.Array(values) => decode(values.some)
-    case Data.Null          => default.toValid(Violations.rootNec(Violation.tpe("array", actual = Data.Null)))
     case _                  => Violations.rootNec(Violation.tpe("array", actual = data.name)).invalid
 
   protected def decode(data: Option[Vector[Data]]): Codec.Result[A]
@@ -45,7 +39,6 @@ object Collection:
         minItems.map(Constraint.Collection.MaxItems.apply).toVector ++
         Option.when(uniqueItems)(Constraint.Collection.UniqueItems).toVector
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Vector[A]] = none
     def verifyMinItems(values: Vector[Data]): Codec.Result[Unit] = minItems.traverse_ { reference =>
       val length = values.length
       Validated.cond(
@@ -84,7 +77,6 @@ object Collection:
     val of = Collection(codec, minItems = minItems.max(1.some), maxItems, uniqueItems)
     override def constraints: Vector[Constraint.Collection] = of.constraints
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[(A, Vector[A])] = None
     override def encode(aas: (A, Vector[A])): Data.Array[O] = of.encode(aas._1 +: aas._2)
     override def decode(data: Option[Vector[Data]]): Codec.Result[(A, Vector[A])] =
       // Safe to call .head, because `wrapped` will perform a length check

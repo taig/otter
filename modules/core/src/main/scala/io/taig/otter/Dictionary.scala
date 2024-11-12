@@ -13,16 +13,11 @@ abstract class Dictionary[+O <: Data, A] extends Codec[Data.Object[O], A]:
   def codec: Codec[?, ?]
 
   final override def modifyMetadata(f: Metadata => Metadata): Dictionary[O, A] = new Dictionary[O, A]:
-    export self.{codec, constraints, decode, default, encode, key}
+    export self.{codec, constraints, decode, encode, key}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Dictionary[O, A] = new Dictionary[O, A]:
-    export self.{codec, constraints, decode, encode, key, metadata}
-    override def default: Option[A] = f(self.default)
 
   final override def imap[B](f: A => B)(g: B => A): Dictionary[O, B] = new Dictionary[O, B]:
     export self.{codec, constraints, key, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data.Object[O] = self.encode(g(b))
 
@@ -39,7 +34,6 @@ object Dictionary:
       minProperties.map(Constraint.Object.MinProperties.apply).toVector ++
         minProperties.map(Constraint.Object.MaxProperties.apply).toVector
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[Vector[(A, B)]] = none
 
     def verifyMinProperties(values: Vector[(String, Data)]): Codec.Result[Unit] = minProperties.traverse_ { reference =>
       val length = values.length
@@ -77,7 +71,6 @@ object Dictionary:
     val of = Dictionary(key, codec, minProperties.max(1.some), maxProperties)
     override def constraints: Vector[Constraint.Object] = of.constraints
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[((A, B), Vector[(A, B)])] = None
     override def decode(data: Data): Codec.Result[((A, B), Vector[(A, B)])] =
       // Safe to call .head, because `wrapped` will perform a length check
       of.decode(data).map(values => (values.head, values.tail))

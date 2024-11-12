@@ -9,16 +9,11 @@ abstract class Enumeration[A] extends Codec[Data.Primitive, A]:
   def codec: Codec[?, ?]
 
   override def modifyMetadata(f: Metadata => Metadata): Enumeration[A] = new Enumeration[A]:
-    export self.{codec, decode, default, encode}
+    export self.{codec, decode, encode}
     override def metadata: Metadata = f(self.metadata)
-
-  final override def modifyDefault(f: Option[A] => Option[A]): Enumeration[A] = new Enumeration[A]:
-    export self.{codec, decode, encode, metadata}
-    override def default: Option[A] = f(self.default)
 
   override def imap[B](f: A => B)(g: B => A): Enumeration[B] = new Enumeration[B]:
     export self.{codec, metadata}
-    override def default: Option[B] = self.default.map(f)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data.Primitive = self.encode(g(b))
 
@@ -27,7 +22,6 @@ abstract class Enumeration[A] extends Codec[Data.Primitive, A]:
 object Enumeration:
   final private case class Apply[A, B](codec: Codec[Data.Primitive, A], mapping: Mapping[B, A]) extends Enumeration[B]:
     override def metadata: Metadata = Metadata.Empty
-    override def default: Option[B] = none
     override def decode(data: Data): Codec.Result[B] = codec
       .decode(data)
       .andThen: a =>
