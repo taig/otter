@@ -1,9 +1,14 @@
 package io.taig.otter
 
 import cats.data.Validated
-import cats.syntax.all.*
 
 abstract class Codec[+O <: Data, A]:
+  self =>
+
+  final def isNullable: Boolean = this match
+    case _: Nullable[?, ?] => true
+    case _                 => false
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
@@ -13,15 +18,15 @@ abstract class Codec[+O <: Data, A]:
   def imap[B](f: A => B)(g: B => A): Codec[O, B]
   def to[B](using Convert[A, B]): Codec[O, B]
 
+  final def :*[P <: Data, B](codec: Codec[P, B]): Tuple[O | P, (A, B)] = toTuple.zip(codec.toTuple)
+  final def *:[P <: Data, B](codec: Codec[P, B]): Tuple[P | O, (B, A)] = codec.toTuple.zip(toTuple)
+
+  final def nullable: Nullable[O, Option[A]] = Nullable(self)
+
   def decode(data: Data): Codec.Result[A]
   def encode(a: A): O
 
-  def :*[P <: Data, B](codec: Codec[P, B]): Tuple[O | P, (A, B)] = toTuple.zip(codec.toTuple)
-
-  def *:[P <: Data, B](codec: Codec[P, B]): Tuple[P | O, (B, A)] = codec.toTuple.zip(toTuple)
-
   final def toTuple: Tuple[O, A] = Tuple(this)
-
   final def toUnion: Union[O, A] = ???
 
 object Codec:

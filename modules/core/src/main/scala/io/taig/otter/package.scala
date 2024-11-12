@@ -35,10 +35,3 @@ extension [A](self: Vector[A])
     if result.isEmpty
     then (self, none)
     else (remainders.result(), result)
-
-@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-private[otter] def eqDataNullable[A: Eq]: Eq[Data.Nullable[A]] = Eq.instance:
-  case (Data.Null, Data.Null) => true
-  case (Data.Null, _)         => false
-  case (_, Data.Null)         => false
-  case (left, right)          => left.asInstanceOf[A] === right.asInstanceOf[A]

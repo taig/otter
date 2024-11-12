@@ -27,35 +27,31 @@ final class RecordTest extends OtterSuite:
         .invalid
     )
 
-  test("decode: nullable"):
-    val codec = (field("a", string) :* field("b", int)).nullable
+  test("decode: optional"):
+    val codec = (field("a", string) :* field("b", int)).optional
 
     assertEq(
       obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
       expected = ("foobar", 42).some.valid
     )
 
-    assertEq(obtained = codec.decode(Data.Null), expected = none.valid)
+    assertEq(obtained = codec.decode(Data.Object.Empty), expected = none.valid)
 
     assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
+      obtained = codec.decode(Data.Null),
+      expected = Violations.rootNec(Violation.tpe("object", actual = "null")).invalid
+    )
+
+    assertEq(
+      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
       expected = Violations
         .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
         .invalid
     )
 
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.Null, "b" -> Data.Null)),
-      expected = Violations
-        .of(
-          Step.Field("a") -> Violation(Constraint.Type("string"), actual = Data.String("null")),
-          Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null"))
-        )
-        .invalid
-    )
-
-  test("decode: nullable (left)"):
-    val codec = (field("a", string) :* field("b", int)).nullable :* field("c", float)
+  test("decode: optional (left)"):
+    val codec: Record[(Option[(String, Int)], Float)] =
+      (field("a", string) :* field("b", int)).optional :* field("c", float)
 
     assertEq(
       obtained = codec.decode(
@@ -79,19 +75,20 @@ final class RecordTest extends OtterSuite:
     assertEq(
       obtained = codec.decode(Data.Object.Empty),
       expected = Violations
-        .of(Step.Field("c") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("c") -> Violation(Constraint.Type("float"), actual = Data.String("null")))
         .invalid
     )
 
     assertEq(
       obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "c" -> Data.Number(1.0f))),
       expected = Violations
-        .of(Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
         .invalid
     )
 
-  test("decode: nullable (right)"):
-    val codec = field("a", string) *: (field("b", int) :* field("c", float)).nullable
+  test("decode: optional (right)"):
+    val codec: Record[(String, Option[(Int, Float)])] =
+      field("a", string) *: (field("b", int) :* field("c", float)).optional
 
     assertEq(
       obtained = codec.decode(
@@ -115,20 +112,20 @@ final class RecordTest extends OtterSuite:
     assertEq(
       obtained = codec.decode(Data.Object.Empty),
       expected = Violations
-        .of(Step.Field("a") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("a") -> Violation(Constraint.Type("string"), actual = Data.String("null")))
         .invalid
     )
 
     assertEq(
       obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "c" -> Data.Number(1.0f))),
       expected = Violations
-        .of(Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
         .invalid
     )
 
-  test("decode: nullable (left & right)"):
-    val codec = (field("a", string) :* field("b", int)).nullable
-      .zip((field("c", string) :* field("d", int)).nullable)
+  test("decode: optional (left & right)"):
+    val codec = (field("a", string) :* field("b", int)).optional
+      .zip((field("c", string) :* field("d", int)).optional)
 
     assertEq(
       obtained = codec.decode(
@@ -165,14 +162,14 @@ final class RecordTest extends OtterSuite:
     assertEq(
       obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
       expected = Violations
-        .of(Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
         .invalid
     )
 
     assertEq(
       obtained = codec.decode(Data.Object.of("c" -> Data.String("foobar"))),
       expected = Violations
-        .of(Step.Field("d") -> Violation(Constraint.Type("value"), actual = Data.String("null")))
+        .of(Step.Field("d") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
         .invalid
     )
 
@@ -194,48 +191,10 @@ final class RecordTest extends OtterSuite:
       ),
       expected = Violations
         .of(
-          Step.Field("b") -> Violation(Constraint.Type("value"), actual = Data.String("null")),
-          Step.Field("d") -> Violation(Constraint.Type("value"), actual = Data.String("null"))
+          Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")),
+          Step.Field("d") -> Violation(Constraint.Type("int"), actual = Data.String("null"))
         )
         .invalid
-    )
-
-  test("decode: optional"):
-    val codec = field("a", string) :* field("b", int).optional
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
-      expected = ("foobar", 42.some).valid
-    )
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
-      expected = ("foobar", none).valid
-    )
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
-      expected = Violations
-        .of(Step.Field("b") -> Violation(Constraint.Type("int"), actual = Data.String("null")))
-        .invalid
-    )
-
-  test("decode: maybe"):
-    val codec = field("a", string) :* field("b", int).maybe
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))),
-      expected = ("foobar", 42.some).valid
-    )
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"))),
-      expected = ("foobar", none).valid
-    )
-
-    assertEq(
-      obtained = codec.decode(Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)),
-      expected = ("foobar", none).valid
     )
 
   test("encode"):
@@ -246,51 +205,25 @@ final class RecordTest extends OtterSuite:
       expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
     )
 
-  test("encode: nullable"):
-    val codec = (field("a", string) :* field("b", int)).nullable
+  test("encode: optional"):
+    val codec = (field("a", string) :* field("b", int)).optional
 
     assertEq(
       obtained = codec.encode(("foobar", 42).some),
       expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
     )
 
-    assertEq(obtained = codec.encode(none), expected = Data.Null)
+    assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
 
-  test("encode: optional"):
-    val codec = field("a", string) :* field("b", int).optional
+  test("encode: nulls (hide)"):
+    val codec = field("a", string.nullable).nulls(Null.Hide).toRecord
 
-    assertEq(
-      obtained = codec.encode(("foobar", 42.some)),
-      expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
-    )
+    assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
 
-    assertEq(
-      obtained = codec.encode(("foobar", none)),
-      expected = Data.Object.of("a" -> Data.String("foobar"))
-    )
-
-  test("encode: maybe (hide null)"):
-    val codec = field("a", string) :* field("b", int).maybe(nulls = Null.Hide)
+  test("encode: maybe nulls (show)"):
+    val codec = field("a", string.nullable).nulls(Null.Show).toRecord
 
     assertEq(
-      obtained = codec.encode(("foobar", 42.some)),
-      expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
-    )
-
-    assertEq(
-      obtained = codec.encode(("foobar", none)),
-      expected = Data.Object.of("a" -> Data.String("foobar"))
-    )
-
-  test("encode: maybe (show null)"):
-    val codec = field("a", string) :* field("b", int).maybe(nulls = Null.Show)
-
-    assertEq(
-      obtained = codec.encode(("foobar", 42.some)),
-      expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Number(42))
-    )
-
-    assertEq(
-      obtained = codec.encode(("foobar", none)),
-      expected = Data.Object.of("a" -> Data.String("foobar"), "b" -> Data.Null)
+      obtained = codec.encode(none),
+      expected = Data.Object.of("a" -> Data.Null)
     )

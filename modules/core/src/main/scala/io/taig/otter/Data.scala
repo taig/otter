@@ -157,12 +157,16 @@ object Data:
 
   case object Null extends Data
 
-  type Nullable[A] = A | Data.Null.type
+  type Nullable[+A <: Data] = A | Data.Null.type
 
-  type Required[A] = A
+  type Required[+A <: Data] = A
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given [A <: Data]: Show[A] = Show.fromToString
 
-  given [A: Eq]: Eq[Data.Nullable[A]] = eqDataNullable
+  given [A <: Data]: Eq[Data.Nullable[A]] = Eq.instance:
+    case (Data.Null, Data.Null) => true
+    case (Data.Null, _)         => false
+    case (_, Data.Null)         => false
+    case (left, right)          => left === right
