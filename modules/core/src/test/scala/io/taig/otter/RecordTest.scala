@@ -214,7 +214,7 @@ final class RecordTest extends OtterSuite:
       expected = Data.Object.of("a" -> Data.String("foobar"))
     )
 
-    assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
+    assertEq(obtained = codec.encode(none), expected = Data.Object.of("a" -> Data.Null))
 
   test("encode: optional"):
     val codec = (field("a", string) :* field("b", int)).optional
