@@ -1,14 +1,16 @@
 package io.taig.otter
 
 import cats.data.NonEmptyChain
-import cats.syntax.all.*
 import cats.data.NonEmptyChainImpl.Type
+import cats.syntax.all.*
 import io.taig.otter.Codec.Result
 
 sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
   self =>
 
   def codecs: NonEmptyChain[Codec[?, ?]]
+
+  final def discriminator: Option[Discriminator] = metadata.get(???)
 
   final override def modifyMetadata(f: Metadata => Metadata): Union[O, A] = new Union[O, A]:
     export self.{codecs, decode, default, encode}

@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.Eq
 import cats.Order
 import cats.data.Chain
 import cats.data.NonEmptyChain
@@ -158,20 +156,29 @@ trait Codecs extends Types:
 
   def field[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] = Base.Field(name, codec)
 
-  // object sum:
-  //   def nested[O <: Data, A](branches: Branches[O, A]): Sum.Nested.Of[O, A] = Base.Sum.Nested(branches)
-  //   def nested[O <: Data, A](branch: Branch.Of[O, A]): Sum.Nested.Of[O, A] = nested(branch.toBranches)
+  object branch:
+    def nested[O <: Data, A](
+        name: String,
+        codec: Codec.Of[O, A],
+        discriminator: Discriminator.Nested = Discriminator.Nested.Default
+    ): Branch.Tagged[Data.Object[Data.Primitive | O], A] =
+      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
+      Branch.Tagged(name, record, discriminator)
 
-  //   def merged[O <: Data, A](branches: Branches[Data.Object[O], A]): Sum.Merged.Of[O, A] =
-  //     Base.Sum.Merged(branches)
-  //   def merged[O <: Data, A](branch: Branch.Of[Data.Object[O], A]): Sum.Merged.Of[O, A] =
-  //     merged(branch.toBranches)
+    def merged[O <: Data, A](
+        name: String,
+        codec: Record.Of[O, A],
+        discriminator: Discriminator.Merged = Discriminator.Merged.Default
+    ): Branch.Tagged[Data.Object[Data.Primitive | O], A] =
+      val record = field(discriminator.identifier, constant(name)) *: codec
+      Branch.Tagged(name, record, discriminator)
 
-  //   def keyed[O <: Data, A](branches: Branches[O, A]): Sum.Keyed.Of[O, A] = Base.Sum.Keyed(branches)
-  //   def keyed[O <: Data, A](branch: Branch.Of[O, A]): Sum.Keyed.Of[O, A] = keyed(branch.toBranches)
-
-  //   def untagged[O <: Data, A](branches: Branches[O, A]): Sum.Untagged.Of[O, A] = Base.Sum.Untagged(branches)
-  //   def untagged[O <: Data, A](branch: Branch.Of[O, A]): Sum.Untagged.Of[O, A] = untagged(branch.toBranches)
+    def keyed[O <: Data, A](
+        name: String,
+        codec: Codec.Of[O, A]
+    ): Branch.Tagged[Data.Object[O], A] =
+      val record = field(name, codec).toRecord
+      Branch.Tagged(name, record, Discriminator.Keyed)
 
   object collection:
     def vector[O <: Data, A](
@@ -362,8 +369,14 @@ trait Codecs extends Types:
       EnumerationValues.Aux[B, B]
   ): Enumeration[B] = enumeration(codec)(using Mapping.enumeration(f))
 
-  def constant[A: Eq](codec: => Codec.Of[Data.Primitive, A], a: A): Enumeration[Unit] =
-    enumeration(codec)(using Mapping.constant[A](a)).const(a)
+  object constant:
+    def apply[A](codec: Codec.Of[Data.Primitive, A], a: A): Constant[Unit] = Constant(codec, a)
+    def apply(value: String): Constant[Unit] = apply(string, value)
+    def apply(value: Int): Constant[Unit] = apply(int, value)
+    def apply(value: Long): Constant[Unit] = apply(long, value)
+    def apply(value: Float): Constant[Unit] = apply(float, value)
+    def apply(value: Double): Constant[Unit] = apply(double, value)
+    def apply(value: Boolean): Constant[Unit] = apply(boolean, value)
 
   object dynamic:
     val any: Dynamic.Of[Data, Data] = Base.Dynamic.Any

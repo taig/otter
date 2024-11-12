@@ -220,7 +220,7 @@ final class RecordTest extends OtterSuite:
 
     assertEq(obtained = codec.encode(none), expected = Data.Object.Empty)
 
-  test("encode: maybe nulls (show)"):
+  test("encode: nulls (show)"):
     val codec = field("a", string.nullable).nulls(Null.Show).toRecord
 
     assertEq(
