@@ -8,7 +8,7 @@ sealed abstract class Field[+O <: Data, A]:
 
   def name: String
 
-  def codec: Codec[O, ?]
+  def codec: Codec[?, ?]
 
   def metadata: Metadata
 
@@ -49,14 +49,22 @@ sealed abstract class Field[+O <: Data, A]:
   def encode(a: A): Option[(String, O)]
 
 object Field:
-  final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A]) extends Field[O, A]:
+  final private[otter] case class Nullable[O <: Data, A](name: String, codec: Codec[O, A]) extends Field[O, A]:
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
       (remainders, codec.decode(value.getOrElse(Data.Null)).leftMap(name /: _))
-    override def encode(a: A): Option[(String, O)] = Some(codec.encode(a)).filter(!_.isNull).tupleLeft(name)
+    override def encode(a: A): Option[(String, O)] = (name, codec.encode(a)).some
 
-  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Field[O, A] = Apply(name, codec)
+  final private[otter] case class Optional[O <: Data, A](name: String, codec: Codec[O, A])
+      extends Field[Data.ToValue[O], A]:
+    override def metadata: Metadata = Metadata.Empty
+    override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (remainders, codec.decode(value.getOrElse(Data.Null)).leftMap(name /: _))
+    override def encode(a: A): Option[(String, Data.ToValue[O])] = codec.encode(a) match
+      case Data.Null        => none
+      case data: Data.Value => (name, data.asInstanceOf[Data.ToValue[O]]).some
 
   given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
     extension (self: Field[O, A])

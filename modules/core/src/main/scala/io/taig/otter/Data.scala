@@ -180,6 +180,11 @@ object Data:
 
   type Required[+A <: Data] = A
 
+  type ToValue[A <: Data] <: Data.Value = A match
+    case Data.Null.type => Nothing
+    case Data.Primitive => Data.Primitive
+    case Data.Value     => Data.Value
+
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given [A <: Data]: Eq[A] = Eq.instance:

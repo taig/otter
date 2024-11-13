@@ -19,6 +19,7 @@ import java.util.regex.Pattern
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
+import scala.reflect.TypeTest
 
 trait Codecs extends Types:
   self =>
@@ -151,7 +152,15 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  def field[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] = Base.Field(name, codec)
+  object field:
+    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.ToValue[O], A] =
+      Base.Field.Optional(name, codec)
+
+    def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
+      Base.Field.Nullable(name, codec)
+
+    // def optional[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
+    //   Base.Field.Optional(name, codec)
 
   object branch:
     def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
@@ -160,9 +169,8 @@ trait Codecs extends Types:
         name: String,
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
-    ): Branch.Nested.Of[O, A] =
-      val record = field(discriminator.identifier, constant(name)) :*
-        field(discriminator.value, codec)
+    ): Branch.Nested.Of[Data.ToValue[O], A] =
+      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
@@ -176,7 +184,7 @@ trait Codecs extends Types:
     def keyed[O <: Data, A](
         name: String,
         codec: Codec.Of[O, A]
-    ): Branch.Keyed.Of[O, A] =
+    ): Branch.Keyed.Of[Data.ToValue[O], A] =
       val record = field(name, codec).toRecord
       Base.Branch.Tagged(name, record, Discriminator.Keyed)
 

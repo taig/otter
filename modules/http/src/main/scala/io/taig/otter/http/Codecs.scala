@@ -239,8 +239,7 @@ trait Codecs extends Base.Codecs, Types:
     def apply[O <: Data, A](
         tpe: String,
         codec: Codec.Of[O, A]
-    ): Record.Of[Data.Primitive | O, A] =
-      field("error", constant(tpe)) :* field("value", codec).hideNulls
+    ): Record.Of[Data.Primitive | O, A] = field("error", constant(tpe)) :* field("value", codec)
 
     def apply(tpe: String): Record[Unit] = error(tpe, void)
 
