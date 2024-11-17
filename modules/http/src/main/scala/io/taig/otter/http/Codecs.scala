@@ -15,12 +15,23 @@ import java.util.regex.Pattern
 trait Codecs extends Base.Codecs, Types:
   self =>
 
-  final val cistring: StringCodecBuilder[CIString] = new StringCodecBuilder[CIString]:
-    override def apply(
-        minLength: Option[Int],
-        maxLength: Option[Int],
-        matches: Option[Pattern]
-    ): Primitive[CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
+  final def cistring(
+      minLength: Option[Int] = none,
+      maxLength: Option[Int] = none,
+      matches: Option[Pattern] = none
+  ): Primitive.Of[Data.String, CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
+
+  final val cistring: Primitive.Of[Data.String, CIString] = cistring()
+
+  given Conversion[cistring.type, StringCodecBuilder[CIString]] = _ =>
+    new StringCodecBuilder[CIString]:
+      override def apply(
+          minLength: Option[Int],
+          maxLength: Option[Int],
+          matches: Option[Pattern]
+      ): Primitive.Of[Data.String, CIString] = cistring(minLength, maxLength, matches)
+      override def isEmpty(a: CIString): Boolean = a.isEmpty
+      override def empty: CIString = CIString.empty
 
   val __ : Url[Unit] = Url.Empty
 
@@ -109,10 +120,11 @@ trait Codecs extends Base.Codecs, Types:
     case codec: Codec.Of[Data.Object[Data.Primitive], A] =>
       Segment.Parameter.Object(name, codec, Metadata.Empty)
 
-  final inline def query[A](name: String, codec: Codec.Of[Query.Of, A]): Query[A] = inline codec match
-    case codec: Codec.Of[Data.Nullable[Data.Primitive], A]              => Query.primitive(name, codec)
-    case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A]  => Query.array(name, codec)
-    case codec: Codec.Of[Data.Nullable[Data.Object[Data.Primitive]], A] => Query.obj(name, codec)
+  final inline def query[A](name: String, codec: Codec.Of[Query.Of, A]): Query[A] = ???
+  // inline codec match
+  //   case codec: Codec.Of[Data.Nullable[Data.Primitive], A]              => Query.primitive(name, codec)
+  //   case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A]  => Query.array(name, codec)
+  //   case codec: Codec.Of[Data.Nullable[Data.Object[Data.Primitive]], A] => Query.obj(name, codec)
 
   object body:
     def apply[A](
@@ -239,7 +251,7 @@ trait Codecs extends Base.Codecs, Types:
     def apply[O <: Data, A](
         tpe: String,
         codec: Codec.Of[O, A]
-    ): Record.Of[Data.Primitive | O, A] = field("error", constant(tpe)) :* field("value", codec)
+    ): Record.Of[Data.String | Data.Value.Of[O], A] = field("error", constant(tpe)) :* field("value", codec)
 
     def apply(tpe: String): Record[Unit] = error(tpe, void)
 
