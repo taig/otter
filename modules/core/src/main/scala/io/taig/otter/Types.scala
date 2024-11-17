@@ -41,7 +41,10 @@ trait Types:
 
   final type Enumeration[A] = Base.Enumeration[A]
 
-  final type Primitive[A] = Base.Primitive[A]
+  final type Primitive[A] = Base.Primitive[Data.Primitive, A]
+
+  object Primitive:
+    type Of[O <: Data.Primitive, A] = Base.Primitive[O, A]
 
   type Record[A] = Base.Record[Data, A]
 

@@ -20,6 +20,7 @@ import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import scala.reflect.TypeTest
+import scala.annotation.targetName
 
 trait Codecs extends Types:
   self =>
@@ -30,163 +31,162 @@ trait Codecs extends Types:
       minimum: Option[Comparison[JBigDecimal]] = none,
       maximum: Option[Comparison[JBigDecimal]] = none,
       multiple: Option[JBigDecimal] = none
-  ): Primitive[JBigDecimal] = Base.Primitive.jBigDecimal(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, JBigDecimal] = Base.Primitive.jBigDecimal(minimum, maximum, multiple)
 
-  val jBigDecimal: Primitive[JBigDecimal] = jBigDecimal()
+  val jBigDecimal: Primitive.Of[Data.Number, JBigDecimal] = jBigDecimal()
 
   def bigDecimal(
       minimum: Option[Comparison[BigDecimal]] = none,
       maximum: Option[Comparison[BigDecimal]] = none,
       multiple: Option[BigDecimal] = none
-  ): Primitive[BigDecimal] = jBigDecimal(
+  ): Primitive.Of[Data.Number, BigDecimal] = jBigDecimal(
     minimum.map(_.map(_.bigDecimal)),
     maximum.map(_.map(_.bigDecimal)),
     multiple.map(_.bigDecimal)
   ).imap(BigDecimal.apply)(_.bigDecimal)
 
-  val bigDecimal: Primitive[BigDecimal] = bigDecimal()
+  val bigDecimal: Primitive.Of[Data.Number, BigDecimal] = bigDecimal()
 
   def jBigInteger(
       minimum: Option[Comparison[JBigInteger]] = none,
       maximum: Option[Comparison[JBigInteger]] = none,
       multiple: Option[JBigInteger] = none
-  ): Primitive[JBigInteger] = Base.Primitive.jBigInteger(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, JBigInteger] = Base.Primitive.jBigInteger(minimum, maximum, multiple)
 
-  val jBigInteger: Primitive[JBigInteger] = jBigInteger()
+  val jBigInteger: Primitive.Of[Data.Number, JBigInteger] = jBigInteger()
 
   def bigInt(
       minimum: Option[Comparison[BigInt]] = none,
       maximum: Option[Comparison[BigInt]] = none,
       multiple: Option[BigInt] = none
-  ): Primitive[BigInt] = jBigInteger(
+  ): Primitive.Of[Data.Number, BigInt] = jBigInteger(
     minimum.map(_.map(_.bigInteger)),
     maximum.map(_.map(_.bigInteger)),
     multiple.map(_.bigInteger)
   ).imap(BigInt.apply)(_.bigInteger)
 
-  val bigInt: Primitive[BigInt] = bigInt()
+  val bigInt: Primitive.Of[Data.Number, BigInt] = bigInt()
 
   def double(
       minimum: Option[Comparison[Double]] = none,
       maximum: Option[Comparison[Double]] = none,
       multiple: Option[Double] = none
-  ): Primitive[Double] = Base.Primitive.double(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, Double] = Base.Primitive.double(minimum, maximum, multiple)
 
-  val double: Primitive[Double] = double()
+  val double: Primitive.Of[Data.Number, Double] = double()
 
   def float(
       minimum: Option[Comparison[Float]] = none,
       maximum: Option[Comparison[Float]] = none,
       multiple: Option[Float] = none
-  ): Primitive[Float] = Base.Primitive.float(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, Float] = Base.Primitive.float(minimum, maximum, multiple)
 
-  val float: Primitive[Float] = float()
+  val float: Primitive.Of[Data.Number, Float] = float()
 
   def int(
       minimum: Option[Comparison[Int]] = none,
       maximum: Option[Comparison[Int]] = none,
       multiple: Option[Int] = none
-  ): Primitive[Int] = Base.Primitive.int(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, Int] = Base.Primitive.int(minimum, maximum, multiple)
 
-  val int: Primitive[Int] = int()
+  val int: Primitive.Of[Data.Number, Int] = int()
 
   def long(
       minimum: Option[Comparison[Long]] = none,
       maximum: Option[Comparison[Long]] = none,
       multiple: Option[Long] = none
-  ): Primitive[Long] = Base.Primitive.long(minimum, maximum, multiple)
+  ): Primitive.Of[Data.Number, Long] = Base.Primitive.long(minimum, maximum, multiple)
 
-  val long: Primitive[Long] = long()
+  val long: Primitive.Of[Data.Number, Long] = long()
 
-  val boolean: Primitive[Boolean] = Base.Primitive.boolean
+  val boolean: Primitive.Of[Data.Boolean, Boolean] = Base.Primitive.boolean
 
   abstract class StringCodecBuilder[A]:
     def apply(
         minLength: Option[Int] = none,
         maxLength: Option[Int] = none,
         matches: Option[Pattern] = none
-    ): Primitive[A]
-    final def apply(minLength: Int, maxLength: Int): Primitive[A] =
+    ): Primitive.Of[Data.String, A]
+    final def apply(minLength: Int, maxLength: Int): Primitive.Of[Data.String, A] =
       apply(minLength = minLength.some, maxLength = maxLength.some, matches = none)
     final def matches(
         pattern: String,
         minLength: Option[Int] = none,
         maxLength: Option[Int] = none
-    ): Primitive[A] =
+    ): Primitive.Of[Data.String, A] =
       apply(minLength = none, maxLength = none, matches = Pattern.compile(Pattern.quote(pattern)).some)
-    final def required(maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive[A] =
+    final def required(maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Of[Data.String, A] =
       apply(minLength = 1.some, maxLength, matches)
-    final def required(maxLength: Int, matches: Pattern): Primitive[A] =
+    final def required(maxLength: Int, matches: Pattern): Primitive.Of[Data.String, A] =
       required(maxLength = maxLength.some, matches = matches.some)
-    final def required(maxLength: Int): Primitive[A] =
+    final def required(maxLength: Int): Primitive.Of[Data.String, A] =
       required(maxLength = maxLength.some, matches = none)
-    final def required(matches: Pattern): Primitive[A] =
+    final def required(matches: Pattern): Primitive.Of[Data.String, A] =
       required(maxLength = none, matches = matches.some)
-    final val required: Primitive[A] = required()
+    final val required: Primitive.Of[Data.String, A] = required()
 
   object StringCodecBuilder:
-    given [A]: Conversion[StringCodecBuilder[A], Primitive[A]] = _.apply()
+    given [A]: Conversion[StringCodecBuilder[A], Primitive.Of[Data.String, A]] = _.apply()
 
   final val string: StringCodecBuilder[String] = new StringCodecBuilder[String]:
     override def apply(
         minLength: Option[Int],
         maxLength: Option[Int],
         matches: Option[Pattern]
-    ): Primitive[String] = Base.Primitive.string(minLength, maxLength, matches)
+    ): Primitive.Of[Data.String, String] = Base.Primitive.string(minLength, maxLength, matches)
 
-  val emptyString: Primitive[Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
+  val emptyString: Primitive.Of[Data.String, Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
 
-  val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+  val pattern: Primitive.Of[Data.String, Pattern] = string.imap(Pattern.compile)(_.pattern)
 
   def parser[A](
       name: String,
       minLength: Option[Int] = none,
       maxLength: Option[Int] = none,
       matches: Option[Pattern] = none
-  )(
-      f: String => Option[A]
-  )(g: A => String): Primitive[A] = Base.Primitive.parser(name, minLength, maxLength, matches, f, g)
+  )(f: String => Option[A])(g: A => String): Primitive.Of[Data.String, A] =
+    Base.Primitive.parser(name, minLength, maxLength, matches, f, g)
 
-  val uuid: Primitive[UUID] = parser(name = "uuid")(value =>
+  val uuid: Primitive.Of[Data.String, UUID] = parser(name = "uuid")(value =>
     try UUID.fromString(value).some
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  object field:
-    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.ToValue[O], A] =
-      Base.Field.Optional(name, codec)
+  // object field:
+  //   def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[codec.ToValue, A] =
+  //     optional(name, codec)
 
-    def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
-      Base.Field.Nullable(name, codec)
+  //   def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
+  //     Base.Field.Nullable(name, codec)
 
-    // def optional[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
-    //   Base.Field.Optional(name, codec)
+  //   def optional[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[codec.ToValue, A] =
+  //     Base.Field.Optional(name, codec)
 
   object branch:
     def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
 
-    def nested[O <: Data, A](
-        name: String,
-        codec: Codec.Of[O, A],
-        discriminator: Discriminator.Nested = Discriminator.Nested.Default
-    ): Branch.Nested.Of[Data.ToValue[O], A] =
-      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
-      Base.Branch.Tagged(name, record, discriminator)
+    // def nested[O <: Data, A](
+    //     name: String,
+    //     codec: Codec.Of[O, A],
+    //     discriminator: Discriminator.Nested = Discriminator.Nested.Default
+    // ): Branch.Nested.Of[codec.ToValue, A] =
+    //   val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
+    //   Base.Branch.Tagged(name, record, discriminator)
 
-    def merged[O <: Data, A](
-        name: String,
-        codec: Record.Of[O, A],
-        discriminator: Discriminator.Merged = Discriminator.Merged.Default
-    ): Branch.Merged.Of[O, A] =
-      val record = field(discriminator.identifier, constant(name)) *: codec
-      Base.Branch.Tagged(name, record, discriminator)
+    // def merged[O <: Data, A](
+    //     name: String,
+    //     codec: Record.Of[O, A],
+    //     discriminator: Discriminator.Merged = Discriminator.Merged.Default
+    // ): Branch.Merged.Of[O, A] = ???
+    // val record = field(discriminator.identifier, constant(name)) *: codec
+    // Base.Branch.Tagged(name, record, discriminator)
 
-    def keyed[O <: Data, A](
-        name: String,
-        codec: Codec.Of[O, A]
-    ): Branch.Keyed.Of[Data.ToValue[O], A] =
-      val record = field(name, codec).toRecord
-      Base.Branch.Tagged(name, record, Discriminator.Keyed)
+    // def keyed[O <: Data, A](
+    //     name: String,
+    //     codec: Codec.Of[O, A]
+    // ): Branch.Keyed.Of[Data.ToValue[O], A] =
+    //   val record = field(name, codec).toRecord
+    //   Base.Branch.Tagged(name, record, Discriminator.Keyed)
 
   object collection:
     def vector[O <: Data, A](
@@ -393,12 +393,12 @@ trait Codecs extends Types:
     val array: Dynamic.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
     val primitive: Dynamic.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
     val number: Dynamic.Of[Data.Number, Data.Number] = Base.Dynamic.Number
-    val nil: Dynamic.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
+    val nil: Dynamic.Of[Data.Nullable.None.type, Data.Nullable.None.type] = Base.Dynamic.Null
 
-  val void: Codec.Of[Data.Null.type, Unit] = dynamic.nil.nullable.const(Data.Null.some)
+  val void: Dynamic.Of[Data.Nullable.None.type, Unit] = dynamic.nil.const(Data.Nullable.None)
 
-  def singleton[A](a: A): Codec.Of[Data.Null.type, a.type] = void.as(a)
+  def singleton[A](a: A): Dynamic.Of[Data.Nullable.None.type, a.type] = void.as(a)
 
-  val xpath: Primitive[XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
+  val xpath: Primitive.Of[Data.String, XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 
 object Codecs extends Codecs

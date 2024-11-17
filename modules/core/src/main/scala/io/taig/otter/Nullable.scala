@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.Codec.Result
 
-sealed abstract class Nullable[+O <: Data, A] extends Codec[Data.Nullable[O], A]:
+sealed abstract class Nullable[+O <: Data.Value, A] extends Codec[Data.Nullable[O], A]:
   self =>
 
   def default: A
@@ -21,18 +20,18 @@ sealed abstract class Nullable[+O <: Data, A] extends Codec[Data.Nullable[O], A]
   override def to[B](using convert: Convert[A, B]): Nullable[O, B] = imap(convert.to)(convert.from)
 
 object Nullable:
-  final private case class Apply[O <: Data, A](codec: Codec[O, A]) extends Nullable[O, Option[A]]:
+  final private case class Apply[O <: Data.Value, A](codec: Codec[O, A]) extends Nullable[O, Option[A]]:
     override def metadata: Metadata = codec.metadata
     override def default: Option[A] = none
     override def decode(data: Data): Codec.Result[Option[A]] =
       if data.isNull then none.valid else codec.decode(data).map(_.some)
-    override def encode(a: Option[A]): Data.Nullable[O] = a.fold(Data.Null)(codec.encode)
+    override def encode(a: Option[A]): Data.Nullable[O] = Data.Nullable(a.map(codec.encode))
 
-  final private case class WithDefault[O <: Data, A](codec: Codec[O, A], default: A) extends Nullable[O, A]:
+  final private case class WithDefault[O <: Data.Value, A](codec: Codec[O, A], default: A) extends Nullable[O, A]:
     override def metadata: Metadata = codec.metadata
     override def decode(data: Data): Codec.Result[A] = if data.isNull then default.valid else codec.decode(data)
-    override def encode(a: A): Data.Nullable[O] = codec.encode(a)
+    override def encode(a: A): Data.Nullable[O] = Data.Nullable.Some(codec.encode(a))
 
-  def apply[O <: Data, A](codec: Codec[O, A]): Nullable[O, Option[A]] = Apply(codec)
+  def apply[O <: Data.Value, A](codec: Codec[O, A]): Nullable[O, Option[A]] = Apply(codec)
 
-  def apply[O <: Data, A](codec: Codec[O, A], default: A): Nullable[O, A] = WithDefault(codec, default)
+  def apply[O <: Data.Value, A](codec: Codec[O, A], default: A): Nullable[O, A] = WithDefault(codec, default)

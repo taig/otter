@@ -31,7 +31,8 @@ object Dynamic:
   val Array: Dynamic[Data.Array[?], Data.Array[?]] = Dynamic("array")(_.asArray)
   val Primitive: Dynamic[Data.Primitive, Data.Primitive] = Dynamic("primitive")(_.asPrimitive)
   val Number: Dynamic[Data.Number, Data.Number] = Dynamic("number")(_.asPrimitive.flatMap(_.asNumber))
-  val Null: Dynamic[Data.Null.type, Data.Null.type] = Dynamic("null")(data => Option.when(data.isNull)(Data.Null))
+  val Null: Dynamic[Data.Nullable.None.type, Data.Nullable.None.type] =
+    Dynamic("null")(data => Option.when(data.isNull)(Data.Nullable.None))
 
   given [O <: Data]: CodecInvariant[Dynamic[O, *]] with
     override def imap[A, B](fa: Dynamic[O, A])(f: A => B)(g: B => A): Dynamic[O, B] = fa.imap(f)(g)

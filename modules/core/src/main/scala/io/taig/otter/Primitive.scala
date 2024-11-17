@@ -10,21 +10,21 @@ import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Ordering.Implicits.*
 
-sealed abstract class Primitive[A] extends Codec[Data.Primitive, A]:
+sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
 
   def constraints: Vector[Constraint.Primitive]
 
-  final override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = new Primitive[A]:
+  final override def modifyMetadata(f: Metadata => Metadata): Primitive[O, A] = new Primitive[O, A]:
     export self.{constraints, decode, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  final override def imap[B](f: A => B)(g: B => A): Primitive[B] = new Primitive[B]:
+  final override def imap[B](f: A => B)(g: B => A): Primitive[O, B] = new Primitive[O, B]:
     export self.{constraints, metadata}
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
-    override def encode(b: B): Data.Primitive = self.encode(g(b))
+    override def encode(b: B): O = self.encode(g(b))
 
-  final override def to[B](using convert: Convert[A, B]): Primitive[B] = imap(convert.to)(convert.from)
+  final override def to[B](using convert: Convert[A, B]): Primitive[O, B] = imap(convert.to)(convert.from)
 
 object Primitive:
   final private case class Number[A <: Double | Int | Float | Long | JBigDecimal | JBigInteger](
@@ -39,7 +39,7 @@ object Primitive:
       modulo0: (A, A) => Boolean,
       lift: Data.Number => Option[A],
       parse: JString => Option[A]
-  ) extends Primitive[A]:
+  ) extends Primitive[Data.Number, A]:
     override def constraints: Vector[Constraint.Primitive] =
       minimum.map(_.map(encode)).map(Constraint.Primitive.Minimum.apply).toVector ++
         maximum.map(_.map(encode)).map(Constraint.Primitive.Maximum.apply).toVector ++
@@ -88,7 +88,7 @@ object Primitive:
       minLength: Option[Int],
       maxLength: Option[Int],
       matches: Option[Pattern]
-  ) extends Primitive[JString]:
+  ) extends Primitive[Data.String, JString]:
     override def constraints: Vector[Constraint.Primitive] =
       minLength.map(Constraint.Primitive.MinLength.apply).toVector ++
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
@@ -125,7 +125,7 @@ object Primitive:
       case Data.String(value) =>
         (verifyMinLength(value) *> verifyMaxLength(value) *> verifyMatches(value)).as(value)
       case _ => Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))).invalid
-    override def encode(a: JString): Data.Primitive = Data.String(a)
+    override def encode(a: JString): Data.String = Data.String(a)
 
   final private case class Parser[A](
       name: JString,
@@ -134,7 +134,7 @@ object Primitive:
       matches: Option[Pattern],
       f: JString => Option[A],
       g: A => JString
-  ) extends Primitive[A]:
+  ) extends Primitive[Data.String, A]:
     val codec = string(minLength, maxLength, matches)
     override def constraints: Vector[Constraint.Primitive] = codec.constraints
     override def metadata: Metadata = Metadata.Empty
@@ -142,22 +142,22 @@ object Primitive:
       .decode(data)
       .andThen: value =>
         f(value).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(value))))
-    override def encode(a: A): Data.Primitive = codec.encode(g(a))
+    override def encode(a: A): Data.String = codec.encode(g(a))
 
-  case object Boolean extends Primitive[SBoolean]:
+  case object Boolean extends Primitive[Data.Boolean, SBoolean]:
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data): Codec.Result[SBoolean] = data.asPrimitive
       .flatMap: primitive =>
         primitive.asBoolean.map(_.value).orElse(primitive.asString.flatMap(_.value.toBooleanOption))
       .toValid(Violations.rootNec(Violation(Constraint.Type("boolean"), actual = Data.String(data.name))))
-    override def encode(a: SBoolean): Data.Primitive = Data.Boolean(a)
+    override def encode(a: SBoolean): Data.Boolean = Data.Boolean(a)
 
   def jBigDecimal(
       minimum: Option[Comparison[JBigDecimal]],
       maximum: Option[Comparison[JBigDecimal]],
       multiple: Option[JBigDecimal]
-  ): Primitive[JBigDecimal] = Number(
+  ): Primitive[Data.Number, JBigDecimal] = Number(
     name = "bigDecimal",
     minimum,
     maximum,
@@ -177,7 +177,7 @@ object Primitive:
       minimum: Option[Comparison[JBigInteger]],
       maximum: Option[Comparison[JBigInteger]],
       multiple: Option[JBigInteger]
-  ): Primitive[JBigInteger] = Number(
+  ): Primitive[Data.Number, JBigInteger] = Number(
     name = "bigInteger",
     minimum,
     maximum,
@@ -197,7 +197,7 @@ object Primitive:
       minimum: Option[Comparison[Double]],
       maximum: Option[Comparison[Double]],
       multiple: Option[Double]
-  ): Primitive[Double] = Number(
+  ): Primitive[Data.Number, Double] = Number(
     name = "double",
     minimum,
     maximum,
@@ -215,7 +215,7 @@ object Primitive:
       minimum: Option[Comparison[Float]],
       maximum: Option[Comparison[Float]],
       multiple: Option[Float]
-  ): Primitive[Float] = Number(
+  ): Primitive[Data.Number, Float] = Number(
     name = "float",
     minimum,
     maximum,
@@ -233,7 +233,7 @@ object Primitive:
       minimum: Option[Comparison[Int]],
       maximum: Option[Comparison[Int]],
       multiple: Option[Int]
-  ): Primitive[Int] = Number(
+  ): Primitive[Data.Number, Int] = Number(
     name = "int",
     minimum,
     maximum,
@@ -251,7 +251,7 @@ object Primitive:
       minimum: Option[Comparison[Long]],
       maximum: Option[Comparison[Long]],
       multiple: Option[Long]
-  ): Primitive[Long] = Number(
+  ): Primitive[Data.Number, Long] = Number(
     name = "long",
     minimum,
     maximum,
@@ -269,7 +269,7 @@ object Primitive:
       minLength: Option[Int],
       maxLength: Option[Int],
       matches: Option[Pattern]
-  ): Primitive[JString] = String(minLength, maxLength, matches)
+  ): Primitive[Data.String, JString] = String(minLength, maxLength, matches)
 
   def parser[A](
       name: JString,
@@ -278,14 +278,14 @@ object Primitive:
       matches: Option[Pattern],
       f: JString => Option[A],
       g: A => JString
-  ): Primitive[A] = Parser(name, minLength, maxLength, matches, f, g)
+  ): Primitive[Data.String, A] = Parser(name, minLength, maxLength, matches, f, g)
 
-  val boolean: Primitive[SBoolean] = Boolean
+  val boolean: Primitive[Data.Boolean, SBoolean] = Boolean
 
-  given CodecInvariant[Primitive] with
-    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)
+  given [O <: Data.Primitive]: CodecInvariant[Primitive[O, *]] with
+    override def imap[A, B](fa: Primitive[O, A])(f: A => B)(g: B => A): Primitive[O, B] = fa.imap(f)(g)
 
-  given [A]: Metadata.Ops[Primitive[A]] with
-    extension (self: Primitive[A])
+  given [O <: Data.Primitive, A]: Metadata.Ops[Primitive[O, A]] with
+    extension (self: Primitive[O, A])
       override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)
+      override def modifyMetadata(f: Metadata => Metadata): Primitive[O, A] = self.modifyMetadata(f)

@@ -31,16 +31,17 @@ sealed abstract class Data extends SProduct with Serializable:
     case _                    => None
 
   final def isNull: Boolean = this match
-    case Data.Null => true
-    case _         => false
+    case Data.Nullable.None => true
+    case _                  => false
 
   final def name: String = this match
-    case _: Data.Array[?]  => "array"
-    case _: Data.Boolean   => "boolean"
-    case _: Data.Number    => "number"
-    case _: Data.Object[?] => "object"
-    case _: Data.String    => "string"
-    case Data.Null         => "null"
+    case _: Data.Array[?]         => "array"
+    case _: Data.Boolean          => "boolean"
+    case _: Data.Number           => "number"
+    case _: Data.Object[?]        => "object"
+    case _: Data.String           => "string"
+    case Data.Nullable.Some(data) => data.name
+    case Data.Nullable.None       => "null"
 
   final override def toString: JString = Printers(this, quoted = true)
 
@@ -72,6 +73,7 @@ object Data:
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
     def length: Int = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
+    def map[B <: Data](f: A => B): Data.Array[B] = Array(values.map(f))
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
@@ -174,22 +176,38 @@ object Data:
   object Number:
     given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
-  case object Null extends Data
+  sealed abstract class Nullable[+A <: Data.Value] extends Data:
+    final def toOption: Option[A] = this match
+      case Data.Nullable.Some(value) => scala.Some(value)
+      case Data.Nullable.None        => scala.None
 
-  type Nullable[+A <: Data] = A | Data.Null.type
+  object Nullable:
+    final case class Some[A <: Data.Value](value: A) extends Data.Nullable[A]
+    case object None extends Data.Nullable[Nothing]
 
-  type Required[+A <: Data] = A
+    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(None)(Some.apply)
+
+    given eq[A <: Data.Value]: Eq[Data.Nullable[A]] = Eq.instance:
+      case (Some(x), Some(y)) => Data.eq.eqv(x, y)
+      case (None, None)       => true
+      case _                  => false
+
+  type Required[+A <: Data.Value] = A
 
   type ToValue[A <: Data] <: Data.Value = A match
-    case Data.Null.type => Nothing
+    case Data.String    => Data.String
+    case Data.Boolean   => Data.Boolean
+    case Data.Number    => Data.Number
     case Data.Primitive => Data.Primitive
-    case Data.Value     => Data.Value
+    case Data.Array[a]  => Data.Array[a]
+    case Data.Object[a] => Data.Object[a]
+    case _              => Data.Value
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
-  given [A <: Data]: Eq[A] = Eq.instance:
-    case (Data.Null, Data.Null)         => true
-    case (x: Data.Value, y: Data.Value) => Data.Value.eq.eqv(x, y)
-    case _                              => false
+  given eq[A <: Data]: Eq[A] = Eq.instance:
+    case (x: Data.Nullable[?], y: Data.Nullable[?]) => Data.Nullable.eq.eqv(x, y)
+    case (x: Data.Value, y: Data.Value)             => Data.Value.eq.eqv(x, y)
+    case _                                          => false
 
   given [A <: Data]: Show[A] = Show.fromToString
