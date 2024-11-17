@@ -9,7 +9,6 @@ import java.lang.Math.toIntExact
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import scala.Array as SArray
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
@@ -31,17 +30,16 @@ sealed abstract class Data extends SProduct with Serializable:
     case _                    => None
 
   final def isNull: Boolean = this match
-    case Data.Nullable.None => true
-    case _                  => false
+    case Data.Null => true
+    case _         => false
 
   final def name: String = this match
-    case _: Data.Array[?]         => "array"
-    case _: Data.Boolean          => "boolean"
-    case _: Data.Number           => "number"
-    case _: Data.Object[?]        => "object"
-    case _: Data.String           => "string"
-    case Data.Nullable.Some(data) => data.name
-    case Data.Nullable.None       => "null"
+    case _: Data.Array[?]  => "array"
+    case _: Data.Boolean   => "boolean"
+    case _: Data.Number    => "number"
+    case _: Data.Object[?] => "object"
+    case _: Data.String    => "string"
+    case Data.Null         => "null"
 
   final override def toString: JString = Printers(this, quoted = true)
 
@@ -49,6 +47,20 @@ object Data:
   sealed abstract class Value extends Data
 
   object Value:
+    type Of[A <: Data] <: Data.Value = A match
+      case Data.Nullable[a] => a
+      case Data.String      => Data.String
+      case Data.Boolean     => Data.Boolean
+      case Data.Number      => Data.Number
+      case Data.Primitive   => Data.Primitive
+      case Data.Array[a]    => Data.Array[a]
+      case Data.Object[a]   => Data.Object[a]
+      case _                => Data.Value
+
+    def of[A <: Data](data: A): Option[Value.Of[A]] = data match
+      case Data.Null     => None
+      case _: Data.Value => Some(data.asInstanceOf[Value.Of[A]])
+
     given eq: Eq[Data.Value] = Eq.instance:
       case (x: Data.Array[Data], y: Data.Array[Data])   => Data.Array.eq.eqv(x, y)
       case (x: Data.Object[Data], y: Data.Object[Data]) => Data.Object.eq.eqv(x, y)
@@ -176,38 +188,17 @@ object Data:
   object Number:
     given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
-  sealed abstract class Nullable[+A <: Data.Value] extends Data:
-    final def toOption: Option[A] = this match
-      case Data.Nullable.Some(value) => scala.Some(value)
-      case Data.Nullable.None        => scala.None
+  case object Null extends Data
 
-  object Nullable:
-    final case class Some[A <: Data.Value](value: A) extends Data.Nullable[A]
-    case object None extends Data.Nullable[Nothing]
-
-    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(None)(Some.apply)
-
-    given eq[A <: Data.Value]: Eq[Data.Nullable[A]] = Eq.instance:
-      case (Some(x), Some(y)) => Data.eq.eqv(x, y)
-      case (None, None)       => true
-      case _                  => false
+  type Nullable[+A <: Data.Value] = Data.Null.type | A
 
   type Required[+A <: Data.Value] = A
-
-  type ToValue[A <: Data] <: Data.Value = A match
-    case Data.String    => Data.String
-    case Data.Boolean   => Data.Boolean
-    case Data.Number    => Data.Number
-    case Data.Primitive => Data.Primitive
-    case Data.Array[a]  => Data.Array[a]
-    case Data.Object[a] => Data.Object[a]
-    case _              => Data.Value
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given eq[A <: Data]: Eq[A] = Eq.instance:
-    case (x: Data.Nullable[?], y: Data.Nullable[?]) => Data.Nullable.eq.eqv(x, y)
-    case (x: Data.Value, y: Data.Value)             => Data.Value.eq.eqv(x, y)
-    case _                                          => false
+    case (Data.Null, Data.Null)         => true
+    case (x: Data.Value, y: Data.Value) => Data.Value.eq.eqv(x, y)
+    case _                              => false
 
   given [A <: Data]: Show[A] = Show.fromToString

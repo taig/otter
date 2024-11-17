@@ -19,8 +19,6 @@ import java.util.regex.Pattern
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
-import scala.reflect.TypeTest
-import scala.annotation.targetName
 
 trait Codecs extends Types:
   self =>
@@ -102,11 +100,15 @@ trait Codecs extends Types:
   val boolean: Primitive.Of[Data.Boolean, Boolean] = Base.Primitive.boolean
 
   abstract class StringCodecBuilder[A]:
-    def apply(
-        minLength: Option[Int] = none,
-        maxLength: Option[Int] = none,
-        matches: Option[Pattern] = none
+    protected def apply(
+        minLength: Option[Int],
+        maxLength: Option[Int],
+        matches: Option[Pattern]
     ): Primitive.Of[Data.String, A]
+
+    protected def isEmpty(a: A): Boolean
+    protected def empty: A
+
     final def apply(minLength: Int, maxLength: Int): Primitive.Of[Data.String, A] =
       apply(minLength = minLength.some, maxLength = maxLength.some, matches = none)
     final def matches(
@@ -124,18 +126,26 @@ trait Codecs extends Types:
     final def required(matches: Pattern): Primitive.Of[Data.String, A] =
       required(maxLength = none, matches = matches.some)
     final val required: Primitive.Of[Data.String, A] = required()
+    final val nonEmpty: Primitive.Of[Data.String, Option[A]] =
+      apply(minLength = none, maxLength = none, matches = none).imap(_.some.filter(!isEmpty(_)))(_.getOrElse(empty))
 
-  object StringCodecBuilder:
-    given [A]: Conversion[StringCodecBuilder[A], Primitive.Of[Data.String, A]] = _.apply()
+  final def string(
+      minLength: Option[Int] = none,
+      maxLength: Option[Int] = none,
+      matches: Option[Pattern] = none
+  ): Primitive.Of[Data.String, String] = Base.Primitive.string(minLength, maxLength, matches)
 
-  final val string: StringCodecBuilder[String] = new StringCodecBuilder[String]:
-    override def apply(
-        minLength: Option[Int],
-        maxLength: Option[Int],
-        matches: Option[Pattern]
-    ): Primitive.Of[Data.String, String] = Base.Primitive.string(minLength, maxLength, matches)
+  final val string: Primitive.Of[Data.String, String] = string()
 
-  val emptyString: Primitive.Of[Data.String, Option[String]] = string.imap(_.some.filter(_.nonEmpty))(_.orEmpty)
+  given [A]: Conversion[string.type, StringCodecBuilder[String]] = _ =>
+    new StringCodecBuilder[String]:
+      override def apply(
+          minLength: Option[Int],
+          maxLength: Option[Int],
+          matches: Option[Pattern]
+      ): Primitive.Of[Data.String, String] = string(minLength, maxLength, matches)
+      override def isEmpty(a: String): Boolean = a.isEmpty
+      override val empty: String = ""
 
   val pattern: Primitive.Of[Data.String, Pattern] = string.imap(Pattern.compile)(_.pattern)
 
@@ -152,41 +162,38 @@ trait Codecs extends Types:
     catch { case _: java.lang.IllegalArgumentException => none }
   )(_.show)
 
-  // object field:
-  //   def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[codec.ToValue, A] =
-  //     optional(name, codec)
+  object field:
+    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.Value.Of[O], A] =
+      optional(name, codec)
 
-  //   def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
-  //     Base.Field.Nullable(name, codec)
+    def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
+      Base.Field.Nullable(name, codec)
 
-  //   def optional[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[codec.ToValue, A] =
-  //     Base.Field.Optional(name, codec)
+    def optional[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.Value.Of[O], A] =
+      Base.Field.Optional(name, codec)
 
   object branch:
     def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
 
-    // def nested[O <: Data, A](
-    //     name: String,
-    //     codec: Codec.Of[O, A],
-    //     discriminator: Discriminator.Nested = Discriminator.Nested.Default
-    // ): Branch.Nested.Of[codec.ToValue, A] =
-    //   val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
-    //   Base.Branch.Tagged(name, record, discriminator)
+    def nested[O <: Data, A](
+        name: String,
+        codec: Codec.Of[O, A],
+        discriminator: Discriminator.Nested = Discriminator.Nested.Default
+    ): Branch.Nested.Of[Data.Value.Of[O], A] =
+      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
+      Base.Branch.Tagged(name, record, discriminator)
 
-    // def merged[O <: Data, A](
-    //     name: String,
-    //     codec: Record.Of[O, A],
-    //     discriminator: Discriminator.Merged = Discriminator.Merged.Default
-    // ): Branch.Merged.Of[O, A] = ???
-    // val record = field(discriminator.identifier, constant(name)) *: codec
-    // Base.Branch.Tagged(name, record, discriminator)
+    def merged[O <: Data, A](
+        name: String,
+        codec: Record.Of[O, A],
+        discriminator: Discriminator.Merged = Discriminator.Merged.Default
+    ): Branch.Merged.Of[O, A] =
+      val record = field(discriminator.identifier, constant(name)) *: codec
+      Base.Branch.Tagged(name, record, discriminator)
 
-    // def keyed[O <: Data, A](
-    //     name: String,
-    //     codec: Codec.Of[O, A]
-    // ): Branch.Keyed.Of[Data.ToValue[O], A] =
-    //   val record = field(name, codec).toRecord
-    //   Base.Branch.Tagged(name, record, Discriminator.Keyed)
+    def keyed[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Keyed.Of[Data.Value.Of[O], A] =
+      val record = field(name, codec).toRecord
+      Base.Branch.Tagged(name, record, Discriminator.Keyed)
 
   object collection:
     def vector[O <: Data, A](
@@ -378,13 +385,13 @@ trait Codecs extends Types:
   ): Enumeration[B] = enumeration(codec)(using Mapping.enumeration(f))
 
   object constant:
-    def apply[A](codec: Codec.Of[Data.Primitive, A], a: A): Constant[Unit] = Constant(codec, a)
-    def apply(value: String): Constant[Unit] = apply(string, value)
-    def apply(value: Int): Constant[Unit] = apply(int, value)
-    def apply(value: Long): Constant[Unit] = apply(long, value)
-    def apply(value: Float): Constant[Unit] = apply(float, value)
-    def apply(value: Double): Constant[Unit] = apply(double, value)
-    def apply(value: Boolean): Constant[Unit] = apply(boolean, value)
+    def apply[O <: Data.Primitive, A](codec: Codec.Of[O, A], a: A): Constant.Of[O, Unit] = Base.Constant(codec, a)
+    def apply(value: String): Constant.Of[Data.String, Unit] = apply(string, value)
+    def apply(value: Int): Constant.Of[Data.Number, Unit] = apply(int, value)
+    def apply(value: Long): Constant.Of[Data.Number, Unit] = apply(long, value)
+    def apply(value: Float): Constant.Of[Data.Number, Unit] = apply(float, value)
+    def apply(value: Double): Constant.Of[Data.Number, Unit] = apply(double, value)
+    def apply(value: Boolean): Constant.Of[Data.Boolean, Unit] = apply(boolean, value)
 
   object dynamic:
     val any: Dynamic.Of[Data, Data] = Base.Dynamic.Any
@@ -393,11 +400,11 @@ trait Codecs extends Types:
     val array: Dynamic.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
     val primitive: Dynamic.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
     val number: Dynamic.Of[Data.Number, Data.Number] = Base.Dynamic.Number
-    val nil: Dynamic.Of[Data.Nullable.None.type, Data.Nullable.None.type] = Base.Dynamic.Null
+    val nil: Dynamic.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
 
-  val void: Dynamic.Of[Data.Nullable.None.type, Unit] = dynamic.nil.const(Data.Nullable.None)
+  val void: Dynamic.Of[Data.Null.type, Unit] = dynamic.nil.const(Data.Null)
 
-  def singleton[A](a: A): Dynamic.Of[Data.Nullable.None.type, a.type] = void.as(a)
+  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = void.as(a)
 
   val xpath: Primitive.Of[Data.String, XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 

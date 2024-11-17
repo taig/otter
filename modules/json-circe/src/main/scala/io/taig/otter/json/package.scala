@@ -21,12 +21,13 @@ def fromData(data: Data.Object[?]): JsonObject =
   JsonObject.fromIterable(data.values.map { case (key, value) => (key, fromData(value)) })
 
 def fromData(data: Data): Json = data match
-  case Data.String(value)   => Json.fromString(value)
-  case Data.Boolean(value)  => Json.fromBoolean(value)
-  case data: Data.Number    => fromData(data)
-  case data: Data.Object[?] => Json.fromJsonObject(fromData(data))
-  case Data.Array(values)   => Json.fromValues(values.map(fromData))
-  case Data.Null            => Json.Null
+  case Data.String(value)       => Json.fromString(value)
+  case Data.Boolean(value)      => Json.fromBoolean(value)
+  case data: Data.Number        => fromData(data)
+  case data: Data.Object[?]     => Json.fromJsonObject(fromData(data))
+  case Data.Array(values)       => Json.fromValues(values.map(fromData))
+  case Data.Nullable.None       => Json.Null
+  case Data.Nullable.Some(data) => fromData(data)
 
 def toData(json: JsonNumber): Data = json.toInt.map(Data.Number.apply) orElse
   json.toLong.map(Data.Number.apply) orElse
@@ -46,7 +47,7 @@ def toDataObject(json: JsonObject): Data.Object[?] =
   Data.Object(json.toVector.map { case (key, value) => (key, toData(value)) })
 
 def toData(json: Json): Data = json.fold(
-  jsonNull = Data.Null,
+  jsonNull = Data.Nullable.None,
   Data.Boolean.apply,
   toData,
   Data.String.apply,

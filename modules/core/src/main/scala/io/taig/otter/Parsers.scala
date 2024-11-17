@@ -29,7 +29,7 @@ private[otter] object Parsers:
       (value >= '0' && value <= '9')
 
   object data:
-    val nil: Parser[Data.Nullable.None.type] = Parser.string("null").as(Data.Nullable.None)
+    val nil: Parser[Data.Null.type] = Parser.string("null").as(Data.Null)
 
     val boolean: Parser[Data.Boolean] =
       Parser.string("true").as(Data.Boolean(true)).orElse(Parser.string("false").as(Data.Boolean(false)))

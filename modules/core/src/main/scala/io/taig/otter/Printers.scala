@@ -32,12 +32,11 @@ private[otter] object Printers:
   def apply(data: Data, quoted: Boolean): String = data match
     case Data.Object(values) =>
       s"{${values.map { case (key, value) => s"\"$key\":${Printers(value, quoted)}" }.mkString(",")}}"
-    case Data.Array(values)       => s"[${values.map(Printers(_, quoted)).mkString(",")}]"
-    case Data.String(value)       => if quoted then s"\"$value\"" else value
-    case Data.Boolean(value)      => String.valueOf(value)
-    case Data.Number(value)       => String.valueOf(value)
-    case Data.Nullable.Some(data) => apply(data, quoted)
-    case Data.Nullable.None       => "null"
+    case Data.Array(values)  => s"[${values.map(Printers(_, quoted)).mkString(",")}]"
+    case Data.String(value)  => if quoted then s"\"$value\"" else value
+    case Data.Boolean(value) => String.valueOf(value)
+    case Data.Number(value)  => String.valueOf(value)
+    case Data.Null           => "null"
 
   def apply(violation: Violation): String = show"${violation.constraint} ! ${violation.actual}"
 

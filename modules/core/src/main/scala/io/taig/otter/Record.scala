@@ -45,8 +45,7 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
     override def decode(
         values: Option[Vector[(String, Data)]]
     ): (Option[Vector[(String, Data)]], Codec.Result[(A, B)]) = self.decode(values) match
-      case (values, Validated.Valid(a)) =>
-        codec.decode(values).map(_.tupleLeft(a))
+      case (values, Validated.Valid(a)) => codec.decode(values).map(_.tupleLeft(a))
       case (values, Validated.Invalid(left)) =>
         codec.decode(values) match
           case (values, Validated.Valid(_))       => (values, left.invalid)

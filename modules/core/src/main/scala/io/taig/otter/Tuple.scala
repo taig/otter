@@ -62,8 +62,8 @@ object Tuple:
       override def decode(values: Vector[Data], index: Int): Codec.Result[Option[A]] =
         if values.forall(_.isNull) then none.valid else self.decode(values, index).map(_.some)
       override def encode(a: Option[A]): Data.Array[Data.Nullable[O]] = a match
-        case Some(a) => self.encode(a).map(Data.Nullable.Some.apply)
-        case None    => Data.Array.fill(codecs.length.toInt)(Data.Nullable.None)
+        case Some(a) => self.encode(a)
+        case None    => Data.Array.fill(codecs.length.toInt)(Data.Null)
 
   val Empty: Tuple[Nothing, Unit] = new Tuple[Nothing, Unit]:
     override def codecs: Chain[Codec[?, ?]] = Chain.empty

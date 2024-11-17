@@ -29,6 +29,11 @@ trait Types:
   object Collection:
     type Of[O <: Data, A] = Base.Collection[O, A]
 
+  final type Constant[A] = Base.Constant[Data.Primitive, A]
+
+  object Constant:
+    type Of[O <: Data.Primitive, A] = Base.Constant[O, A]
+
   final type Dictionary[A] = Base.Dictionary[Data, A]
 
   object Dictionary:
@@ -39,14 +44,17 @@ trait Types:
   object Dynamic:
     type Of[O <: Data, A] = Base.Dynamic[O, A]
 
-  final type Enumeration[A] = Base.Enumeration[A]
+  final type Enumeration[A] = Base.Enumeration[Data.Primitive, A]
+
+  object Enumeration:
+    type Of[O <: Data.Primitive, A] = Base.Enumeration[O, A]
 
   final type Primitive[A] = Base.Primitive[Data.Primitive, A]
 
   object Primitive:
     type Of[O <: Data.Primitive, A] = Base.Primitive[O, A]
 
-  type Record[A] = Base.Record[Data, A]
+  final type Record[A] = Base.Record[Data, A]
 
   object Record:
     type Of[O <: Data, A] = Base.Record[O, A]

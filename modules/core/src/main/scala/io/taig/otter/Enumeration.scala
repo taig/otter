@@ -3,24 +3,25 @@ package io.taig.otter
 import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
 
-abstract class Enumeration[A] extends Codec[Data.Primitive, A]:
+abstract class Enumeration[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
 
   def codec: Codec[?, ?]
 
-  override def modifyMetadata(f: Metadata => Metadata): Enumeration[A] = new Enumeration[A]:
+  override def modifyMetadata(f: Metadata => Metadata): Enumeration[O, A] = new Enumeration[O, A]:
     export self.{codec, decode, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  override def imap[B](f: A => B)(g: B => A): Enumeration[B] = new Enumeration[B]:
+  override def imap[B](f: A => B)(g: B => A): Enumeration[O, B] = new Enumeration[O, B]:
     export self.{codec, metadata}
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
-    override def encode(b: B): Data.Primitive = self.encode(g(b))
+    override def encode(b: B): O = self.encode(g(b))
 
-  final override def to[B](using convert: Convert[A, B]): Enumeration[B] = imap(convert.to)(convert.from)
+  final override def to[B](using convert: Convert[A, B]): Enumeration[O, B] = imap(convert.to)(convert.from)
 
 object Enumeration:
-  final private case class Apply[A, B](codec: Codec[Data.Primitive, A], mapping: Mapping[B, A]) extends Enumeration[B]:
+  final private case class Apply[O <: Data.Primitive, A, B](codec: Codec[O, A], mapping: Mapping[B, A])
+      extends Enumeration[O, B]:
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data): Codec.Result[B] = codec
       .decode(data)
@@ -28,17 +29,17 @@ object Enumeration:
         mapping
           .unapply(a)
           .toValid(Violations.rootNec(Violation.oneOf(mapping.values.toList.map(encode), actual = data)))
-    override def encode(b: B): Data.Primitive = codec.encode(mapping(b))
+    override def encode(b: B): O = codec.encode(mapping(b))
 
-  def apply[A, B](
-      codec: Codec[Data.Primitive, A],
+  def apply[O <: Data.Primitive, A, B](
+      codec: Codec[O, A],
       mapping: Mapping[B, A]
-  ): Enumeration[B] = Apply(codec, mapping)
+  ): Enumeration[O, B] = Apply(codec, mapping)
 
-  given CodecInvariant[Enumeration] with
-    override def imap[A, B](fa: Enumeration[A])(f: A => B)(g: B => A): Enumeration[B] = fa.imap(f)(g)
+  given [O <: Data.Primitive]: CodecInvariant[Enumeration[O, *]] with
+    override def imap[A, B](fa: Enumeration[O, A])(f: A => B)(g: B => A): Enumeration[O, B] = fa.imap(f)(g)
 
-  given [A]: Metadata.Ops[Enumeration[A]] with
-    extension (self: Enumeration[A])
+  given [O <: Data.Primitive, A]: Metadata.Ops[Enumeration[O, A]] with
+    extension (self: Enumeration[O, A])
       override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Enumeration[A] = self.modifyMetadata(f)
+      override def modifyMetadata(f: Metadata => Metadata): Enumeration[O, A] = self.modifyMetadata(f)
