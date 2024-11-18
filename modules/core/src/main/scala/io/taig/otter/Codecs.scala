@@ -165,8 +165,9 @@ trait Codecs extends Types:
   object field:
     transparent inline def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[?, A] =
       inline codec match
-        case codec: Codec.Of[Data.Value, A] => required(name, codec)
-        case codec: Codec.Of[Data, A]       => optional(name, codec)
+        case codec: Codec.Of[Data.Value, A]       => required(name, codec)
+        case codec: Codec.Of[Data.Nullable[?], A] => optional(name, codec)
+        case codec: Codec.Of[Data, A]             => optional(name, codec: Codec.Of[Data, A])
 
     def required[O <: Data.Value, A](name: String, codec: Codec.Of[O, A]): Field.Required.Of[O, A] =
       Base.Field.Required(name, codec, metadata = Metadata.Empty)
@@ -174,18 +175,18 @@ trait Codecs extends Types:
     def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
       Base.Field.Nullable(name, codec, metadata = Metadata.Empty)
 
-    def optional[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.Value.Of[O], A] =
+    def optional[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
       Base.Field.Optional(name, codec, metadata = Metadata.Empty)
 
   object branch:
     def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
 
-    def nested[O <: Data, A](
+    def nested[O <: Data.Value, A](
         name: String,
-        codec: Codec.Of[O, A],
+        codec: Codec.Of[Data.Nullable[O], A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
-    ): Branch.Nested.Of[Data.Value.Of[O], A] =
-      val record: Record.Of[Data.String | Data.Value.Of[O], A] =
+    ): Branch.Nested.Of[O, A] =
+      val record: Record.Of[Data.String | O, A] =
         field.required(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
@@ -197,7 +198,7 @@ trait Codecs extends Types:
       val record = field.required(discriminator.identifier, constant(name)) *: codec
       Base.Branch.Tagged(name, record, discriminator)
 
-    def keyed[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Keyed.Of[Data.Value.Of[O], A] =
+    def keyed[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Branch.Keyed.Of[O, A] =
       val record = field.optional(name, codec).toRecord
       Base.Branch.Tagged(name, record, Discriminator.Keyed)
 
@@ -408,7 +409,7 @@ trait Codecs extends Types:
     val number: Dynamic.Of[Data.Number, Data.Number] = Base.Dynamic.Number
     val nil: Dynamic.Of[Data.Null, Data.Null] = Base.Dynamic.Null
 
-  val void: Dynamic.Of[Data.Null, Unit] = dynamic.nil.const(Data.Nullable.None)
+  val void: Dynamic.Of[Data.Null, Unit] = dynamic.nil.const(Data.Null)
 
   def singleton[A](a: A): Dynamic.Of[Data.Null, a.type] = void.as(a)
 

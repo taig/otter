@@ -39,8 +39,8 @@ object Codec:
 
   extension [A](self: Codec[Data.Nullable[Data.Primitive], A])
     def parseNullable(value: Option[String]): Codec.Result[A] =
-      self.decode(value.fold(Data.Nullable.None)(Data.String.apply))
-    def printNullable(a: A): Option[String] = self.encode(a).toOption.map(_.plain)
+      self.decode(value.fold(Data.Null)(Data.String.apply))
+    def printNullable(a: A): Option[String] = self.encode(a).asValue.map(_.plain)
 
   extension [A](self: Codec[Data.Array[Data.Primitive], A])
     def parseArray(values: Vector[String]): Codec.Result[A] =
@@ -50,13 +50,13 @@ object Codec:
   extension [A](self: Codec[Data.Nullable[Data.Array[Data.Primitive]], A])
     def parseNullableArray(value: Option[Vector[String]]): Codec.Result[A] =
       self.decode(Data.Nullable(value.map(_.map(Data.String.apply)).map(Data.Array.apply)))
-    def printNullableArray(a: A): Option[Vector[String]] = self.encode(a).toOption.map(_.values.map(_.plain))
+    def printNullableArray(a: A): Option[Vector[String]] = self.encode(a).asValue.map(_.values.map(_.plain))
 
   extension [A](self: Codec[Data.Object[Data.Nullable[Data.Primitive]], A])
     def parseObject(values: Vector[(String, Option[String])]): Codec.Result[A] =
       self.decode(Data.Object(values.map(_.map(value => Data.Nullable(value.map(Data.String.apply))))))
     def printObject(a: A): Vector[(String, Option[String])] =
-      self.encode(a).values.map(_.map(_.toOption.map(_.plain)))
+      self.encode(a).values.map(_.map(_.asValue.map(_.plain)))
 
   extension [A](self: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A])
     def parseNullableObject(value: Option[Vector[(String, Option[String])]]): Codec.Result[A] =
@@ -66,7 +66,7 @@ object Codec:
         )
       )
     def printNullableObject(a: A): Option[Vector[(String, Option[String])]] =
-      self.encode(a).toOption.map(_.values.map(_.map(_.toOption.map(_.plain))))
+      self.encode(a).asValue.map(_.values.map(_.map(_.asValue.map(_.plain))))
 
   given [O <: Data]: CodecInvariant[Codec[O, *]] =
     new CodecInvariant[Codec[O, *]]:

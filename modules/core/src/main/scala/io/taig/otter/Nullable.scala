@@ -30,7 +30,7 @@ object Nullable:
   final private case class Default[O <: Data.Value, A](codec: Codec[O, A], default: A) extends Nullable[O, A]:
     override def metadata: Metadata = codec.metadata
     override def decode(data: Data): Codec.Result[A] = if data.isNull then default.valid else codec.decode(data)
-    override def encode(a: A): Data.Nullable[O] = Data.Nullable.Some(codec.encode(a))
+    override def encode(a: A): Data.Nullable[O] = codec.encode(a)
 
   def apply[O <: Data.Value, A](codec: Codec[O, A]): Nullable[O, Option[A]] = Apply(codec)
 

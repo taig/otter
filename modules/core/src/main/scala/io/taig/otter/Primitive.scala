@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.Codec.Result
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -9,7 +10,6 @@ import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Ordering.Implicits.*
-import io.taig.otter.Codec.Result
 
 sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>

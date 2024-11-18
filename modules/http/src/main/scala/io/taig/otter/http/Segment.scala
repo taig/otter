@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.Id as Identity
 import cats.Show
 import cats.data.Validated
 import cats.syntax.all.*
@@ -13,7 +11,6 @@ import io.taig.otter.Violations
 import io.taig.otter.XPath
 
 import java.util.regex.Pattern
-import scala.Array as SArray
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String

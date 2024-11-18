@@ -274,10 +274,10 @@ trait Codecs extends Base.Codecs, Types:
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   object error:
-    def apply[O <: Data, A](
+    def apply[O <: Data.Value, A](
         tpe: String,
-        codec: Codec.Of[O, A]
-    ): Record.Of[Data.String | Data.Value.Of[O], A] = field("error", constant(tpe)) :* field.optional("value", codec)
+        codec: Codec.Of[Data.Nullable[O], A]
+    ): Record.Of[Data.String | O, A] = field("error", constant(tpe)) :* field.optional("value", codec)
 
     def apply(tpe: String): Record[Unit] = error(tpe, void)
 

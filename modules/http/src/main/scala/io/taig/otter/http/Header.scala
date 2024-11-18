@@ -1,13 +1,11 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
+import io.taig.otter.Codec
 import io.taig.otter.Data
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import io.taig.otter.Codec
 import org.typelevel.ci.CIString
-
-import scala.Array as SArray
 
 sealed abstract class Header[A] extends Product, Serializable:
   self =>

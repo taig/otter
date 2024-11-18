@@ -12,57 +12,12 @@ import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
-sealed abstract class Data extends SProduct with Serializable:
-  final def asValue: Option[Data.Value] = this match
-    case data: Data.Value => Some(data)
-    case _                => None
-
-  final def asObject: Option[Data.Object[?]] = this match
-    case data: Data.Object[?] => Some(data)
-    case _                    => None
-
-  final def asArray: Option[Data.Array[?]] = this match
-    case data: Data.Array[?] => Some(data)
-    case _                   => None
-
-  final def asPrimitive: Option[Data.Primitive] = this match
-    case data: Data.Primitive => Some(data)
-    case _                    => None
-
-  final def isNull: Boolean = this match
-    case Data.Nullable.None => true
-    case _                  => false
-
-  final def name: String = this match
-    case _: Data.Array[?]         => "array"
-    case _: Data.Boolean          => "boolean"
-    case _: Data.Number           => "number"
-    case _: Data.Object[?]        => "object"
-    case _: Data.String           => "string"
-    case Data.Nullable.Some(data) => data.name
-    case Data.Nullable.None       => "null"
-
-  final override def toString: JString = Printers(this, quoted = true)
+type Data = Data.Nullable[Data.Value]
 
 object Data:
-  sealed abstract class Value extends Data
+  sealed abstract class Value extends Product with Serializable
 
   object Value:
-    type Of[A <: Data] <: Data.Value = A match
-      case Data.Nullable[a] => a
-      case Data.String      => Data.String
-      case Data.Boolean     => Data.Boolean
-      case Data.Number      => Data.Number
-      case Data.Primitive   => Data.Primitive
-      case Data.Array[a]    => Data.Array[a]
-      case Data.Object[a]   => Data.Object[a]
-      case Data.Value       => Data.Value
-      case Data             => Data.Value
-
-    def of[A <: Data](data: A): Option[Value.Of[A]] = data match
-      case data: Data.Nullable[?] => data.toOption.asInstanceOf[Option[Data.Value.Of[A]]]
-      case _: Data.Value          => data.some.asInstanceOf[Option[Data.Value.Of[A]]]
-
     given eq: Eq[Data.Value] = Eq.instance:
       case (x: Data.Array[Data], y: Data.Array[Data])   => Data.Array.eq.eqv(x, y)
       case (x: Data.Object[Data], y: Data.Object[Data]) => Data.Object.eq.eqv(x, y)
@@ -190,32 +145,48 @@ object Data:
   object Number:
     given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
-  enum Nullable[+A <: Data.Value] extends Data:
-    case Some(data: A) extends Data.Nullable[A]
-    case None extends Data.Nullable[Nothing]
+  type Null = Data.Null.type
+  case object Null
 
-    final def toOption: Option[A] = this match
-      case Some(data) => data.some
-      case None       => none
+  type Nullable[+A <: Data.Value] = A | Data.Null.type
 
   object Nullable:
-    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(None)(Some.apply)
+    def apply[A <: Data.Value](value: Option[A]): Nullable[A] = value.fold(Null)(identity)
 
-    given eq[A <: Data.Value]: Eq[Data.Nullable[A]] = Eq.instance:
-      case (Some(x), Some(y)) => Value.eq.eqv(x, y)
-      case (None, None)       => true
-      case _                  => false
+  extension [A <: Data.Value](self: Data.Nullable[A])
+    def asValue: Option[A] = self match
+      case Data.Null => None
+      case data      => Some(data.asInstanceOf[A])
 
-  type Null = Data.Nullable[Nothing]
-  val Null: Data.Null = Nullable.None
+    def asObject: Option[Data.Object[?]] = self match
+      case data: Data.Object[?] => Some(data)
+      case _                    => None
 
-  type Required[+A <: Data.Value] = A
+    def asArray: Option[Data.Array[?]] = self match
+      case data: Data.Array[?] => Some(data)
+      case _                   => None
+
+    def asPrimitive: Option[Data.Primitive] = self match
+      case data: Data.Primitive => Some(data)
+      case _                    => None
+
+    def isNull: SBoolean = self match
+      case Data.Null => true
+      case _         => false
+
+    def name: JString = self match
+      case _: Data.Array[?]  => "array"
+      case _: Data.Boolean   => "boolean"
+      case _: Data.Number    => "number"
+      case _: Data.Object[?] => "object"
+      case _: Data.String    => "string"
+      case Data.Null         => "null"
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
   given eq[A <: Data]: Eq[A] = Eq.instance:
-    case (x: Data.Value, y: Data.Value)             => Value.eq.eqv(x, y)
-    case (x: Data.Nullable[?], y: Data.Nullable[?]) => Nullable.eq.eqv(x, y)
-    case _                                          => false
+    case (x: Data.Value, y: Data.Value) => Value.eq.eqv(x, y)
+    case (Data.Null, Data.Null)         => true
+    case _                              => false
 
-  given [A <: Data]: Show[A] = Show.fromToString
+  given [A <: Data]: Show[A] = Printers(_, quoted = true)

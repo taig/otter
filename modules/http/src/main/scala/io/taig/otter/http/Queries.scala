@@ -1,12 +1,12 @@
 package io.taig.otter.http
 
+import cats.data.Validated
+import cats.data.Validated.Valid
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.Convert
-import io.taig.otter.collectFirstWithRemainders
 import io.taig.otter.Merge
-import cats.data.Validated
-import cats.data.Validated.Valid
+import io.taig.otter.collectFirstWithRemainders
 
 sealed abstract class Queries[A]:
   self =>

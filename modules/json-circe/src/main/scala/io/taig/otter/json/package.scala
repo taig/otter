@@ -26,8 +26,7 @@ def fromData(data: Data): Json = data match
   case data: Data.Number        => fromData(data)
   case data: Data.Object[?]     => Json.fromJsonObject(fromData(data))
   case Data.Array(values)       => Json.fromValues(values.map(fromData))
-  case Data.Nullable.Some(data) => fromData(data)
-  case Data.Nullable.None       => Json.Null
+  case Data.Null       => Json.Null
 
 def toData(json: JsonNumber): Data = json.toInt.map(Data.Number.apply) orElse
   json.toLong.map(Data.Number.apply) orElse
