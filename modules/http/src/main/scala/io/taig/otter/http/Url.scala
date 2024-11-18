@@ -50,7 +50,7 @@ object Url:
     override def path: Path[?] = Path.Empty
     override def queries: Queries[?] = Queries.Empty
     override def decode(values: Http.Url): Codec.Result[Unit] =
-      Path.Empty.decode(values.path) *> Queries.Empty.decode(values.queries)
+      Path.Empty.decode(values.path) *> Queries.Empty.decode(values.queries)._2
     override def encode(a: Unit): Http.Url = Http.Url.Empty
 
   def apply[A, B](path: Path[A], queries: Queries[B]): Url[(A, B)] =
@@ -61,7 +61,7 @@ object Url:
       override def path: Path[A] = _path
       override def queries: Queries[B] = _queries
       override def decode(values: Http.Url): Codec.Result[(A, B)] =
-        (path.decode(values.path), queries.decode(values.queries)).tupled
+        (path.decode(values.path), queries.decode(values.queries)._2).tupled
       override def encode(ab: (A, B)): Http.Url = Http.Url(path = path.encode(ab._1), queries = queries.encode(ab._2))
 
   def apply[A](path: Path[A]): Url[A] = Url(path, Queries.Empty).imap { case (a, _) => a } { case a => (a, ()) }

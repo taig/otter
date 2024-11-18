@@ -12,3 +12,6 @@ final case class Delimiter(delimiterValue: String, escapeCharacter: Char):
   def decode(value: String): Vector[String] = value.split(delimiterValue).toVector.map(unescape)
 
   def encode(values: Vector[String]): String = values.map(escape).mkString(delimiterValue)
+
+object Delimiter:
+  val Default: Delimiter = Delimiter(delimiterValue = ",", escapeCharacter = '\\')

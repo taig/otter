@@ -192,9 +192,17 @@ object Data:
 
   type Nullable[+A <: Data.Value] = Data.Null.type | A
 
+  object Nullable:
+    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(Data.Null)(identity)
+
   type Required[+A <: Data.Value] = A
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
+
+  extension [A <: Data.Value](self: Data.Nullable[A])
+    inline def toOption: Option[A] = self match
+      case Data.Null => none
+      case data: A   => data.some
 
   given eq[A <: Data]: Eq[A] = Eq.instance:
     case (Data.Null, Data.Null)         => true

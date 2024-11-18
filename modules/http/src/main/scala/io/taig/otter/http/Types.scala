@@ -18,7 +18,7 @@ trait Types extends Base.Types:
     Result,
     Results,
     Routes,
-// TODO compilcation failure
+// TODO compilation failure
 // Route,
     Segment,
     Url

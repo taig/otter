@@ -10,6 +10,8 @@ abstract class Codec[+O <: Data, A]:
     case _: Nullable[?, ?] => true
     case _                 => false
 
+  final def isRequired: Boolean = !isNullable
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Codec[O, A]
 
@@ -56,18 +58,21 @@ object Codec:
 
   extension [A](self: Codec[Data.Object[Data.Nullable[Data.Primitive]], A])
     def parseObject(values: Vector[(String, Option[String])]): Codec.Result[A] =
-      val data = Data.Object(values.map {
-        case (name, Some(value)) => (name, Data.String(value))
-        case (name, None)        => (name, Data.Null)
-      })
-      self.decode(data)
+      self.decode(Data.Object(values.map(_.map(value => Data.Nullable(value.map(Data.String.apply))))))
     def printObject(a: A): Vector[(String, Option[String])] =
-      self
-        .encode(a)
-        .values
-        .map:
-          case (name, data: Data.Primitive) => (name, Some(data.plain))
-          case (name, Data.Null)            => (name, none)
+      self.encode(a).values.map(_.map(_.toOption.map(_.plain)))
+
+  extension [A](self: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A])
+    def parseNullableObject(values: Option[Vector[(String, Option[String])]]): Codec.Result[A] =
+      values match
+        case Some(values) =>
+          self.decode(Data.Object(values.map(_.map(value => Data.Nullable(value.map(Data.String.apply))))))
+        case None => self.decode(Data.Null)
+    def printNullableObject(a: A): Option[Vector[(String, Option[String])]] =
+      self.encode(a) match
+        case Data.Null => none
+        case data: Data.Object[Data.Nullable[Data.Primitive]] =>
+          data.values.map(_.map(_.toOption.map(_.plain))).some
 
   given [O <: Data]: CodecInvariant[Codec[O, *]] =
     new CodecInvariant[Codec[O, *]]:
