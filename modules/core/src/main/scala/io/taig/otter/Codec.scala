@@ -35,10 +35,24 @@ object Codec:
     def parse(value: String): Codec.Result[A] = self.decode(Data.String(value))
     def print(a: A): String = self.encode(a).plain
 
+  extension [A](self: Codec[Data.Nullable[Data.Primitive], A])
+    def parseNullable(value: Option[String]): Codec.Result[A] =
+      self.decode(value.fold(Data.Null)(Data.String.apply))
+    def printNullable(a: A): Option[String] = self.encode(a) match
+      case Data.Null            => none
+      case data: Data.Primitive => data.plain.some
+
   extension [A](self: Codec[Data.Array[Data.Primitive], A])
     def parseArray(values: Vector[String]): Codec.Result[A] =
       self.decode(Data.Array(values.map(Data.String.apply)))
     def printArray(a: A): Vector[String] = self.encode(a).values.map(_.plain)
+
+  extension [A](self: Codec[Data.Nullable[Data.Array[Data.Primitive]], A])
+    def parseNullableArray(value: Option[Vector[String]]): Codec.Result[A] =
+      self.decode(value.fold(Data.Null)(values => Data.Array(values.map(Data.String.apply))))
+    def printNullableArray(a: A): Option[Vector[String]] = self.encode(a) match
+      case Data.Null                        => none
+      case data: Data.Array[Data.Primitive] => data.values.map(_.plain).some
 
   extension [A](self: Codec[Data.Object[Data.Nullable[Data.Primitive]], A])
     def parseObject(values: Vector[(String, Option[String])]): Codec.Result[A] =

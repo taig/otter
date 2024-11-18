@@ -9,6 +9,7 @@ import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Ordering.Implicits.*
+import io.taig.otter.Codec.Result
 
 sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
@@ -21,10 +22,16 @@ sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[O, B] = new Primitive[O, B]:
     export self.{constraints, metadata}
-    override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
+    override def decode(data: Data.Primitive): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Primitive[O, B] = imap(convert.to)(convert.from)
+
+  final override def decode(data: Data): Codec.Result[A] = data.asPrimitive
+    .toValid(Violations.rootNec(Violation.tpe(name = "primitive", actual = data.name)))
+    .andThen(decode)
+
+  def decode(data: Data.Primitive): Codec.Result[A]
 
 object Primitive:
   final private case class Number[A <: Double | Int | Float | Long | JBigDecimal | JBigInteger](
@@ -76,9 +83,9 @@ object Primitive:
       )
     }
 
-    override def decode(data: Data): Codec.Result[A] = data.asPrimitive
-      .flatMap: primitive =>
-        primitive.asNumber.flatMap(lift).orElse(primitive.asString.map(_.value).flatMap(parse))
+    override def decode(data: Data.Primitive): Codec.Result[A] = data.asNumber
+      .flatMap(lift)
+      .orElse(data.asString.map(_.value).flatMap(parse))
       .toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(data.name))))
       .andThen(value => (verifyMinimum(value) *> verifyMaximum(value) *> verifyMultiple(value)).as(value))
 
@@ -121,7 +128,7 @@ object Primitive:
       )
     }
 
-    override def decode(data: Data): Codec.Result[JString] = data match
+    override def decode(data: Data.Primitive): Codec.Result[JString] = data match
       case Data.String(value) =>
         (verifyMinLength(value) *> verifyMaxLength(value) *> verifyMatches(value)).as(value)
       case _ => Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String(data.name))).invalid
@@ -138,7 +145,7 @@ object Primitive:
     val codec = string(minLength, maxLength, matches)
     override def constraints: Vector[Constraint.Primitive] = codec.constraints
     override def metadata: Metadata = Metadata.Empty
-    override def decode(data: Data): Codec.Result[A] = codec
+    override def decode(data: Data.Primitive): Codec.Result[A] = codec
       .decode(data)
       .andThen: value =>
         f(value).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(value))))
@@ -147,9 +154,9 @@ object Primitive:
   case object Boolean extends Primitive[Data.Boolean, SBoolean]:
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
-    override def decode(data: Data): Codec.Result[SBoolean] = data.asPrimitive
-      .flatMap: primitive =>
-        primitive.asBoolean.map(_.value).orElse(primitive.asString.flatMap(_.value.toBooleanOption))
+    override def decode(data: Data.Primitive): Codec.Result[SBoolean] = data.asBoolean
+      .map(_.value)
+      .orElse(data.asString.flatMap(_.value.toBooleanOption))
       .toValid(Violations.rootNec(Violation(Constraint.Type("boolean"), actual = Data.String(data.name))))
     override def encode(a: SBoolean): Data.Boolean = Data.Boolean(a)
 

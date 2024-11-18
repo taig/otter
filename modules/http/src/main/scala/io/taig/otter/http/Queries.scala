@@ -53,8 +53,8 @@ object Queries:
 
   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
     override def toVector: Vector[Query[?]] = Vector(query)
-    override def matches(queries: Http.Queries): Boolean =
-      query.isNullable || queries.exists { case (key, _) => key === query.name }
+    override def matches(queries: Http.Queries): Boolean = ???
+    // query.isNullable || queries.exists { case (key, _) => key === query.name }
     override def decode(values: Http.Queries): Codec.Result[A] = ???
     // val value = values
     //   .collectFirst { case (key, value) if key === query.name => value }

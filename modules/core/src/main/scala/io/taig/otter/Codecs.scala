@@ -163,14 +163,19 @@ trait Codecs extends Types:
   )(_.show)
 
   object field:
-    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.Value.Of[O], A] =
-      optional(name, codec)
+    transparent inline def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Any =
+      inline codec match
+        case codec: Codec.Of[Data.Value, A] => required(name, codec)
+        case codec: Codec.Of[Data, A]       => optional(name, codec)
+
+    def required[O <: Data.Value, A](name: String, codec: Codec.Of[O, A]): Field.Required.Of[O, A] =
+      Base.Field.Required(name, codec, metadata = Metadata.Empty)
 
     def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
-      Base.Field.Nullable(name, codec)
+      Base.Field.Nullable(name, codec, metadata = Metadata.Empty)
 
     def optional[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[Data.Value.Of[O], A] =
-      Base.Field.Optional(name, codec)
+      Base.Field.Optional(name, codec, metadata = Metadata.Empty)
 
   object branch:
     def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
@@ -180,7 +185,7 @@ trait Codecs extends Types:
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[Data.Value.Of[O], A] =
-      val record = field(discriminator.identifier, constant(name)) :* field(discriminator.value, codec)
+      val record = field(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
@@ -192,7 +197,7 @@ trait Codecs extends Types:
       Base.Branch.Tagged(name, record, discriminator)
 
     def keyed[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Keyed.Of[Data.Value.Of[O], A] =
-      val record = field(name, codec).toRecord
+      val record = field.optional(name, codec).toRecord
       Base.Branch.Tagged(name, record, Discriminator.Keyed)
 
   object collection:

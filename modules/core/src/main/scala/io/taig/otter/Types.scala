@@ -99,4 +99,9 @@ trait Types:
   object Field:
     type Of[O <: Data, A] = Base.Field[O, A]
 
+    type Required[A] = Base.Field.Required[Data.Value, A]
+
+    object Required:
+      type Of[O <: Data.Value, A] = Base.Field.Required[O, A]
+
 object Types extends Types

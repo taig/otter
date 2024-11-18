@@ -120,7 +120,7 @@ trait Codecs extends Base.Codecs, Types:
     case codec: Codec.Of[Data.Object[Data.Primitive], A] =>
       Segment.Parameter.Object(name, codec, Metadata.Empty)
 
-  final inline def query[A](name: String, codec: Codec.Of[Query.Of, A]): Query[A] = ???
+  // final inline def query[A](name: String, codec: Codec.Of[Query.Of, A]): Query[A] = ???
   // inline codec match
   //   case codec: Codec.Of[Data.Nullable[Data.Primitive], A]              => Query.primitive(name, codec)
   //   case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A]  => Query.array(name, codec)
@@ -251,7 +251,7 @@ trait Codecs extends Base.Codecs, Types:
     def apply[O <: Data, A](
         tpe: String,
         codec: Codec.Of[O, A]
-    ): Record.Of[Data.String | Data.Value.Of[O], A] = field("error", constant(tpe)) :* field("value", codec)
+    ): Record.Of[Data.String | Data.Value.Of[O], A] = field("error", constant(tpe)) :* field.optional("value", codec)
 
     def apply(tpe: String): Record[Unit] = error(tpe, void)
 
