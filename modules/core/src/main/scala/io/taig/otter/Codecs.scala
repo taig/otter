@@ -185,14 +185,8 @@ trait Codecs extends Types:
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[Data.Value.Of[O], A] =
-      val x = discriminator.identifier
-      val y = constant(name)
-      val f = field.apply(x, y)
-      val a = f :* field.optional(discriminator.value, codec)
-      a
-
-      val record: Record.Of[Data.String | Data.Value.Of[O], A] = ???
-      // f :* field.optional(discriminator.value, codec)
+      val record: Record.Of[Data.String | Data.Value.Of[O], A] =
+        field.required(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
@@ -200,7 +194,7 @@ trait Codecs extends Types:
         codec: Record.Of[O, A],
         discriminator: Discriminator.Merged = Discriminator.Merged.Default
     ): Branch.Merged.Of[O, A] =
-      val record = field(discriminator.identifier, constant(name)) *: codec
+      val record = field.required(discriminator.identifier, constant(name)) *: codec
       Base.Branch.Tagged(name, record, discriminator)
 
     def keyed[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Keyed.Of[Data.Value.Of[O], A] =
@@ -412,11 +406,11 @@ trait Codecs extends Types:
     val array: Dynamic.Of[Data.Array[?], Data.Array[?]] = Base.Dynamic.Array
     val primitive: Dynamic.Of[Data.Primitive, Data.Primitive] = Base.Dynamic.Primitive
     val number: Dynamic.Of[Data.Number, Data.Number] = Base.Dynamic.Number
-    val nil: Dynamic.Of[Data.Null.type, Data.Null.type] = Base.Dynamic.Null
+    val nil: Dynamic.Of[Data.Null, Data.Null] = Base.Dynamic.Null
 
-  val void: Dynamic.Of[Data.Null.type, Unit] = dynamic.nil.const(Data.Null)
+  val void: Dynamic.Of[Data.Null, Unit] = dynamic.nil.const(Data.Nullable.None)
 
-  def singleton[A](a: A): Dynamic.Of[Data.Null.type, a.type] = void.as(a)
+  def singleton[A](a: A): Dynamic.Of[Data.Null, a.type] = void.as(a)
 
   val xpath: Primitive.Of[Data.String, XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)
 

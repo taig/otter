@@ -82,12 +82,12 @@ trait Types:
     type Nested[A] = Tagged[A]
 
     object Nested:
-      type Of[O <: Data, A] = Tagged.Of[Data.Primitive | O, A]
+      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
 
     type Merged[A] = Tagged[A]
 
     object Merged:
-      type Of[O <: Data, A] = Tagged.Of[Data.Primitive | O, A]
+      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
 
     type Keyed[A] = Tagged[A]
 

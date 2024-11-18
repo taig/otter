@@ -14,21 +14,23 @@ import io.taig.otter.Codec.Result
 sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
 
+  protected def name: String
+
   def constraints: Vector[Constraint.Primitive]
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[O, A] = new Primitive[O, A]:
-    export self.{constraints, decode, encode}
+    export self.{constraints, decode, encode, name}
     override def metadata: Metadata = f(self.metadata)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[O, B] = new Primitive[O, B]:
-    export self.{constraints, metadata}
+    export self.{constraints, metadata, name}
     override def decode(data: Data.Primitive): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Primitive[O, B] = imap(convert.to)(convert.from)
 
   final override def decode(data: Data): Codec.Result[A] = data.asPrimitive
-    .toValid(Violations.rootNec(Violation.tpe(name = "primitive", actual = data.name)))
+    .toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
     .andThen(decode)
 
   def decode(data: Data.Primitive): Codec.Result[A]
@@ -96,6 +98,7 @@ object Primitive:
       maxLength: Option[Int],
       matches: Option[Pattern]
   ) extends Primitive[Data.String, JString]:
+    override protected def name: JString = "string"
     override def constraints: Vector[Constraint.Primitive] =
       minLength.map(Constraint.Primitive.MinLength.apply).toVector ++
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
@@ -152,6 +155,7 @@ object Primitive:
     override def encode(a: A): Data.String = codec.encode(g(a))
 
   case object Boolean extends Primitive[Data.Boolean, SBoolean]:
+    override protected def name: JString = "boolean"
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data.Primitive): Codec.Result[SBoolean] = data.asBoolean

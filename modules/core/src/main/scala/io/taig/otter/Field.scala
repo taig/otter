@@ -36,8 +36,7 @@ object Field:
     override def imap[B](f: A => B)(g: B => A): Field.Required[O, B] = copy(codec = codec.imap(f)(g))
     override def to[B](using convert: Convert[A, B]): Field.Required[O, B] = imap(convert.to)(convert.from)
     def nullable: Field[Data.Nullable[O], Option[A]] = Field.Nullable(name, codec = codec.nullable, metadata)
-    def optional: Field[O, Option[A]] = ???
-    // Field.Optional[Data.Nullable[O], Option[A]](name, codec = codec.nullable, metadata)
+    def optional: Field[O, Option[A]] = Field.Optional(name, codec = codec.nullable, metadata)
     override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
       (remainders, codec.decode(value.getOrElse(Data.Null)).leftMap(name /: _))
@@ -61,7 +60,8 @@ object Field:
     override def decode(values: Vector[(String, Data)]): (Vector[(String, Data)], Codec.Result[A]) =
       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
       (remainders, codec.decode(value.getOrElse(Data.Null)).leftMap(name /: _))
-    override def encode(a: A): Option[(String, Data.Value.Of[O])] = Data.Value.of(codec.encode(a)).tupleLeft(name)
+    override def encode(a: A): Option[(String, Data.Value.Of[O])] =
+      Data.Value.of(codec.encode(a)).tupleLeft(name)
 
   given [O <: Data, A]: Metadata.Ops[Field[O, A]] with
     extension (self: Field[O, A])

@@ -23,9 +23,9 @@ sealed abstract class Branch[+O <: Data, A]:
 
   def to[B](using convert: Convert[A, B]): Branch[O, B] = imap(convert.to)(convert.from)
 
-  final def :+[P <: Data, B](branch: Branch[P, B]): Union[O | P, Either[A, B]] = ???
+  final def :+[P <: Data, B](branch: Branch[P, B]): Union[O | P, Either[A, B]] = toUnion :+ branch
 
-  final def +:[P <: Data, B](branch: Branch[P, B]): Union[P | O, Either[B, A]] = ???
+  final def +:[P <: Data, B](branch: Branch[P, B]): Union[P | O, Either[B, A]] = branch +: toUnion
 
   final def toUnion: Union[O, A] = Union(self)
 

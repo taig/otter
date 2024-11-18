@@ -30,16 +30,17 @@ sealed abstract class Data extends SProduct with Serializable:
     case _                    => None
 
   final def isNull: Boolean = this match
-    case Data.Null => true
-    case _         => false
+    case Data.Nullable.None => true
+    case _                  => false
 
   final def name: String = this match
-    case _: Data.Array[?]  => "array"
-    case _: Data.Boolean   => "boolean"
-    case _: Data.Number    => "number"
-    case _: Data.Object[?] => "object"
-    case _: Data.String    => "string"
-    case Data.Null         => "null"
+    case _: Data.Array[?]         => "array"
+    case _: Data.Boolean          => "boolean"
+    case _: Data.Number           => "number"
+    case _: Data.Object[?]        => "object"
+    case _: Data.String           => "string"
+    case Data.Nullable.Some(data) => data.name
+    case Data.Nullable.None       => "null"
 
   final override def toString: JString = Printers(this, quoted = true)
 
@@ -48,18 +49,19 @@ object Data:
 
   object Value:
     type Of[A <: Data] <: Data.Value = A match
-      // case Data.Nullable[a] => a
-      case Data.String    => Data.String
-      case Data.Boolean   => Data.Boolean
-      case Data.Number    => Data.Number
-      case Data.Primitive => Data.Primitive
-      case Data.Array[a]  => Data.Array[a]
-      case Data.Object[a] => Data.Object[a]
-      case _              => Data.Value
+      case Data.Nullable[a] => a
+      case Data.String      => Data.String
+      case Data.Boolean     => Data.Boolean
+      case Data.Number      => Data.Number
+      case Data.Primitive   => Data.Primitive
+      case Data.Array[a]    => Data.Array[a]
+      case Data.Object[a]   => Data.Object[a]
+      case Data.Value       => Data.Value
+      case Data             => Data.Value
 
     def of[A <: Data](data: A): Option[Value.Of[A]] = data match
-      case Data.Null     => None
-      case _: Data.Value => Some(data.asInstanceOf[Value.Of[A]])
+      case data: Data.Nullable[?] => data.toOption.asInstanceOf[Option[Data.Value.Of[A]]]
+      case _: Data.Value          => data.some.asInstanceOf[Option[Data.Value.Of[A]]]
 
     given eq: Eq[Data.Value] = Eq.instance:
       case (x: Data.Array[Data], y: Data.Array[Data])   => Data.Array.eq.eqv(x, y)
@@ -188,25 +190,32 @@ object Data:
   object Number:
     given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
-  case object Null extends Data
+  enum Nullable[+A <: Data.Value] extends Data:
+    case Some(data: A) extends Data.Nullable[A]
+    case None extends Data.Nullable[Nothing]
 
-  type Nullable[+A <: Data.Value] = Data.Null.type | A
+    final def toOption: Option[A] = this match
+      case Some(data) => data.some
+      case None       => none
 
   object Nullable:
-    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(Data.Null)(identity)
+    def apply[A <: Data.Value](value: Option[A]): Data.Nullable[A] = value.fold(None)(Some.apply)
+
+    given eq[A <: Data.Value]: Eq[Data.Nullable[A]] = Eq.instance:
+      case (Some(x), Some(y)) => Value.eq.eqv(x, y)
+      case (None, None)       => true
+      case _                  => false
+
+  type Null = Data.Nullable[Nothing]
+  val Null: Data.Null = Nullable.None
 
   type Required[+A <: Data.Value] = A
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
-  extension [A <: Data.Value](self: Data.Nullable[A])
-    inline def toOption: Option[A] = self match
-      case Data.Null => none
-      case data: A   => data.some
-
   given eq[A <: Data]: Eq[A] = Eq.instance:
-    case (Data.Null, Data.Null)         => true
-    case (x: Data.Value, y: Data.Value) => Data.Value.eq.eqv(x, y)
-    case _                              => false
+    case (x: Data.Value, y: Data.Value)             => Value.eq.eqv(x, y)
+    case (x: Data.Nullable[?], y: Data.Nullable[?]) => Nullable.eq.eqv(x, y)
+    case _                                          => false
 
   given [A <: Data]: Show[A] = Show.fromToString
