@@ -163,7 +163,7 @@ trait Codecs extends Types:
   )(_.show)
 
   object field:
-    transparent inline def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Any =
+    transparent inline def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[?, A] =
       inline codec match
         case codec: Codec.Of[Data.Value, A] => required(name, codec)
         case codec: Codec.Of[Data, A]       => optional(name, codec)
@@ -185,7 +185,14 @@ trait Codecs extends Types:
         codec: Codec.Of[O, A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[Data.Value.Of[O], A] =
-      val record = field(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
+      val x = discriminator.identifier
+      val y = constant(name)
+      val f = field.apply(x, y)
+      val a = f :* field.optional(discriminator.value, codec)
+      a
+
+      val record: Record.Of[Data.String | Data.Value.Of[O], A] = ???
+      // f :* field.optional(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](

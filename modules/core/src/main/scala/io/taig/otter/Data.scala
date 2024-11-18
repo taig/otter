@@ -48,14 +48,14 @@ object Data:
 
   object Value:
     type Of[A <: Data] <: Data.Value = A match
-      case Data.Nullable[a] => a
-      case Data.String      => Data.String
-      case Data.Boolean     => Data.Boolean
-      case Data.Number      => Data.Number
-      case Data.Primitive   => Data.Primitive
-      case Data.Array[a]    => Data.Array[a]
-      case Data.Object[a]   => Data.Object[a]
-      case _                => Data.Value
+      // case Data.Nullable[a] => a
+      case Data.String    => Data.String
+      case Data.Boolean   => Data.Boolean
+      case Data.Number    => Data.Number
+      case Data.Primitive => Data.Primitive
+      case Data.Array[a]  => Data.Array[a]
+      case Data.Object[a] => Data.Object[a]
+      case _              => Data.Value
 
     def of[A <: Data](data: A): Option[Value.Of[A]] = data match
       case Data.Null     => None
