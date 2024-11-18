@@ -64,6 +64,26 @@ trait Types:
   object Union:
     type Of[O <: Data, A] = Base.Union[O, A]
 
+    type Tagged[A] = Base.Union[Data.Object[?], A]
+
+    object Tagged:
+      type Of[O <: Data, A] = Base.Union[Data.Object[O], A]
+
+    type Nested[A] = Tagged[A]
+
+    object Nested:
+      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+
+    type Merged[A] = Tagged[A]
+
+    object Merged:
+      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+
+    type Keyed[A] = Tagged[A]
+
+    object Keyed:
+      type Of[O <: Data, A] = Tagged.Of[O, A]
+
   type Tuple[A] = Base.Tuple[Data, A]
 
   object Tuple:
