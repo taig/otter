@@ -50,6 +50,8 @@ sealed abstract class Queries[A]:
       if isOptional then (values, none.valid) else self.decode(values).map(_.map(_.some))
     override def encode(a: Option[A]): Http.Queries = a.fold(Vector.empty)(self.encode)
 
+  final def optional(default: A): Queries[A] = optional.imap(_.getOrElse(default))(_.some)
+
   final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
     zip(query.toQueries).imap(merge.apply)(merge.unapply)
 

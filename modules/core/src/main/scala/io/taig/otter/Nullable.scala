@@ -1,23 +1,32 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import io.taig.otter.Codec.Result
 
 sealed abstract class Nullable[+O <: Data.Value, A] extends Codec[Data.Nullable[O], A]:
   self =>
 
+  def codec: Codec[O, ?]
+
   def default: A
 
-  override def modifyMetadata(f: Metadata => Metadata): Nullable[O, A] = new Nullable[O, A]:
-    export self.{decode, default, encode}
+  final def modifyDefault(f: A => A): Nullable[O, A] = new Nullable[O, A]:
+    export self.{codec, decode, encode, metadata}
+    override def default: A = f(self.default)
+
+  final override def modifyMetadata(f: Metadata => Metadata): Nullable[O, A] = new Nullable[O, A]:
+    export self.{codec, decode, default, encode}
     override def metadata: Metadata = f(self.metadata)
 
-  override def imap[B](f: A => B)(g: B => A): Nullable[O, B] = new Nullable[O, B]:
-    export self.metadata
+  final override def imap[B](f: A => B)(g: B => A): Nullable[O, B] = new Nullable[O, B]:
+    export self.{codec, metadata}
     override def default: B = f(self.default)
     override def decode(data: Data): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): Data.Nullable[O] = self.encode(g(b))
 
-  override def to[B](using convert: Convert[A, B]): Nullable[O, B] = imap(convert.to)(convert.from)
+  final override def to[B](using convert: Convert[A, B]): Nullable[O, B] = imap(convert.to)(convert.from)
+
+  final def encodedDefault: Data = encode(default)
 
 object Nullable:
   final private case class Apply[O <: Data.Value, A](codec: Codec[O, A]) extends Nullable[O, Option[A]]:

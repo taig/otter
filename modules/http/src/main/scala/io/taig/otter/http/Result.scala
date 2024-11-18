@@ -72,7 +72,7 @@ object Result:
             .andThen:
               case Some((mediaType, b)) => b.valid
               case None                 => _bodies.decodeFirst(response.body).map { case (_, b) => b }
-            .andThen(b => _headers.decode(response.headers).map((_, b).some))
+            .andThen(b => _headers.decode(response.headers)._2.map((_, b).some))
       override def encode(accept: Accept.Result, ab: (A, B)): Option[Http.Response] =
         val (blocklist, acceptlist) = accept.fold(
           left => (left.toList, List.empty),
@@ -99,7 +99,7 @@ object Result:
       override def headers: Headers[A] = _headers
       override def bodies: Option[Bodies[?]] = none
       override def decode(response: Http.Response): Codec.Result[Option[A]] =
-        if code =!= response.code then none.valid else headers.decode(response.headers).map(_.some)
+        if code =!= response.code then none.valid else headers.decode(response.headers)._2.map(_.some)
       override def encode(accept: Accept.Result, a: A): Option[Http.Response] = encode(charset = none, a).some
       override def encode(charset: Option[Charset], a: A): Http.Response =
         Http.Response(code, headers.encode(a), Array.emptyByteArray)

@@ -26,11 +26,11 @@ sealed abstract class Query[A]:
 
   def to[B](using convert: Convert[A, B]): Query[B]
 
-  final def toQueries: Queries[A] = Queries(this)
-
   final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = toQueries :* query
 
   final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] = query *: toQueries
+
+  final def toQueries: Queries[A] = Queries(this)
 
   def decode(values: Vector[(String, Option[String])]): (Vector[(String, Option[String])], Codec.Result[A])
 
@@ -41,7 +41,9 @@ object Query:
     override def modifyMetadata(f: Metadata => Metadata): Query.Required[A]
     override def imap[B](f: A => B)(g: B => A): Query.Required[B]
     override def to[B](using convert: Convert[A, B]): Query.Required[B]
+    def nullable(default: A): Query[A]
     def nullable: Query[Option[A]]
+    def optional(default: A): Query[A]
     def optional: Query[Option[A]]
 
   object Required:
@@ -53,7 +55,11 @@ object Query:
       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
+      override def nullable(default: A): Query[A] =
+        Query.Primitive(name, codec = codec.nullable(default), metadata, nullable = true)
       override def nullable: Query[Option[A]] = Query.Primitive(name, codec = codec.nullable, metadata, nullable = true)
+      override def optional(default: A): Query[A] =
+        Query.Primitive(name, codec = codec.nullable(default), metadata, nullable = false)
       override def optional: Query[Option[A]] =
         Query.Primitive(name, codec = codec.nullable, metadata, nullable = false)
       override def decode(
@@ -72,8 +78,12 @@ object Query:
       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
+      override def nullable(default: A): Query[A] =
+        Query.Array(name, codec = codec.nullable(default), metadata, delimiter, nullable = true)
       override def nullable: Query[Option[A]] =
         Query.Array(name, codec = codec.nullable, metadata, delimiter, nullable = true)
+      override def optional(default: A): Query[A] =
+        Query.Array(name, codec = codec.nullable(default), metadata, delimiter, nullable = false)
       override def optional: Query[Option[A]] =
         Query.Array(name, codec = codec.nullable, metadata, delimiter, nullable = false)
       override def decode(
@@ -98,8 +108,12 @@ object Query:
       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
-      override def nullable: Query[Option[A]] = ???
-      override def optional: Query[Option[A]] = ???
+      override def nullable(default: A): Query[A] =
+        Query.Object(name, codec = codec.nullable(default), metadata, nullable = true)
+      override def nullable: Query[Option[A]] = Query.Object(name, codec = codec.nullable, metadata, nullable = true)
+      override def optional(default: A): Query[A] =
+        Query.Object(name, codec = codec.nullable(default), metadata, nullable = false)
+      override def optional: Query[Option[A]] = Query.Object(name, codec = codec.nullable, metadata, nullable = false)
       override def decode(
           values: Vector[(String, Option[String])]
       ): (Vector[(String, Option[String])], Codec.Result[A]) =
