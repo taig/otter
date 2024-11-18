@@ -154,9 +154,7 @@ object Data:
     def apply[A <: Data.Value](value: Option[A]): Nullable[A] = value.fold(Null)(identity)
 
   extension [A <: Data.Value](self: Data.Nullable[A])
-    def asValue: Option[A] = self match
-      case Data.Null => None
-      case data      => Some(data.asInstanceOf[A])
+    def asValue: Option[A] = dataAsValue(self)
 
     def asObject: Option[Data.Object[?]] = self match
       case data: Data.Object[?] => Some(data)

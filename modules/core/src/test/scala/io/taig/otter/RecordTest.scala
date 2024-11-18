@@ -1,8 +1,8 @@
 package io.taig.otter
 
+import cats.kernel.Eq
 import cats.syntax.all.*
 import io.taig.otter.Dsl.*
-import cats.kernel.Eq
 
 final class RecordTest extends OtterSuite:
   test("decode"):

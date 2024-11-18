@@ -35,3 +35,8 @@ extension [A](self: Vector[A])
     if result.isEmpty
     then (self, none)
     else (remainders.result(), result)
+
+@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+private[otter] def dataAsValue[A <: Data.Value](data: Data.Nullable[A]): Option[A] = data match
+  case Data.Null => None
+  case data      => Some(data.asInstanceOf[A])

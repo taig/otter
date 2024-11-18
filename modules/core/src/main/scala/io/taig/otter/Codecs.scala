@@ -16,6 +16,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.UUID
 import java.util.regex.Pattern
+import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
@@ -163,13 +164,11 @@ trait Codecs extends Types:
   )(_.show)
 
   object field:
-    transparent inline def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[?, A] =
-      inline codec match
-        case codec: Codec.Of[Data.Value, A]       => required(name, codec)
-        case codec: Codec.Of[Data.Nullable[?], A] => optional(name, codec)
-        case codec: Codec.Of[Data, A]             => optional(name, codec: Codec.Of[Data, A])
+    def apply[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
+      optional(name, codec)
 
-    def required[O <: Data.Value, A](name: String, codec: Codec.Of[O, A]): Field.Required.Of[O, A] =
+    @targetName("required")
+    def apply[O <: Data.Value, A](name: String, codec: Codec.Of[O, A]): Field.Required.Of[O, A] =
       Base.Field.Required(name, codec, metadata = Metadata.Empty)
 
     def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
@@ -187,7 +186,7 @@ trait Codecs extends Types:
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[O, A] =
       val record: Record.Of[Data.String | O, A] =
-        field.required(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
+        field(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
       Base.Branch.Tagged(name, record, discriminator)
 
     def merged[O <: Data, A](
@@ -195,7 +194,7 @@ trait Codecs extends Types:
         codec: Record.Of[O, A],
         discriminator: Discriminator.Merged = Discriminator.Merged.Default
     ): Branch.Merged.Of[O, A] =
-      val record = field.required(discriminator.identifier, constant(name)) *: codec
+      val record = field(discriminator.identifier, constant(name)) *: codec
       Base.Branch.Tagged(name, record, discriminator)
 
     def keyed[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Branch.Keyed.Of[O, A] =
