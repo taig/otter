@@ -90,7 +90,7 @@ object Collection:
   ): Collection[O, Vector[A]] = Apply(codec, minItems, maxItems, uniqueItems)
 
   def nonEmpty[O <: Data, A](
-      codec: => Codec[O, A],
+      codec: Codec[O, A],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean

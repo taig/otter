@@ -3,8 +3,6 @@ package io.taig.otter
 import cats.syntax.all.*
 
 sealed abstract class Field[+O <: Data, A]:
-  self =>
-
   def name: String
 
   def codec: Codec[?, ?]
@@ -17,10 +15,10 @@ sealed abstract class Field[+O <: Data, A]:
 
   def to[B](using convert: Convert[A, B]): Field[O, B]
 
-  final def :*[P <: Data, B](field: => Field[P, B])(using merge: Merge[A, B]): Record[O | P, merge.Out] =
+  final def :*[P <: Data, B](field: Field[P, B])(using merge: Merge[A, B]): Record[O | P, merge.Out] =
     toRecord :* field
 
-  final def *:[P <: Data, B](field: => Field[P, B])(using merge: Merge[B, A]): Record[P | O, merge.Out] =
+  final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Record[P | O, merge.Out] =
     field *: toRecord
 
   final def toRecord: Record[O, A] = Record(this)
