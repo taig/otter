@@ -382,13 +382,13 @@ trait Codecs extends Types:
       .nonEmpty(key, value, minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyMap(head, SortedMap.from(tail)) }(fa => (fa.head, fa.tail.toVector))
 
-  def enumeration[A, B](codec: Codec.Of[Data.Primitive, A])(using
+  def enumeration[O <: Data.Primitive, A, B](codec: Codec.Of[O, A])(using
       mapping: Mapping[B, A]
-  ): Enumeration[B] = Base.Enumeration(codec, mapping)
+  ): Enumeration.Of[O, B] = Base.Enumeration(codec, mapping)
 
-  def enumeration[A: Order, B](codec: Codec.Of[Data.Primitive, A])(f: B => A)(using
+  def enumeration[O <: Data.Primitive, A: Order, B](codec: Codec.Of[O, A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
-  ): Enumeration[B] = enumeration(codec)(using Mapping.enumeration(f))
+  ): Enumeration.Of[O, B] = enumeration(codec)(using Mapping.enumeration(f))
 
   object constant:
     def apply[O <: Data.Primitive, A](codec: Codec.Of[O, A], a: A): Constant.Of[O, Unit] = Base.Constant(codec, a)

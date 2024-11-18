@@ -98,7 +98,10 @@ trait Codecs extends Base.Codecs, Types:
       val html: MediaType = text(secondary = "html")
 
   object header:
-    def apply[A](name: CIString, codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive]], A]): Header[A] = ???
+    def apply[A](
+        name: CIString,
+        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive]], A]
+    ): Header[A] = ???
 
     inline def accept[A](codec: Codec.Of[Data.Primitive, A]): Header[A] = header(ci"Accept", codec)
     val accept: Header[Accept] = accept(Accept.codec)
@@ -130,7 +133,9 @@ trait Codecs extends Base.Codecs, Types:
 
     final inline def apply[A](
         name: String,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
     ): Query[A] = query.optional(name, codec)
 
     final inline def nullable[A](
@@ -144,7 +149,9 @@ trait Codecs extends Base.Codecs, Types:
 
     final inline def optional[A](
         name: String,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
     ): Query[A] = inline codec match
       case codec: Codec.Of[Data.Nullable[Data.Primitive], A] =>
         Query.Primitive(name, codec, metadata = Metadata.Empty, nullable = false)

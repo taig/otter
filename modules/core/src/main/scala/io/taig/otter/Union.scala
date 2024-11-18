@@ -45,7 +45,7 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
     case Left(Some(violations)) => violations.invalid
     case Left(None)             => Violations.rootNec(Violation.tpe(name = "union", actual = data.name)).invalid
 
-  def decodeBranches(data: Data): Either[Option[Violations], A]
+  protected def decodeBranches(data: Data): Either[Option[Violations], A]
 
   final def :+[P <: Data, B](branch: Branch[P, B]): Union[O | P, Either[A, B]] = orElse(branch.toUnion)
 
