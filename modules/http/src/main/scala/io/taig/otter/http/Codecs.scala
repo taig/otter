@@ -100,24 +100,28 @@ trait Codecs extends Base.Codecs, Types:
   object header:
     inline def apply[A](
         name: CIString,
-        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive], A]
+        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], A]
     ): Header.Required[A] = inline codec match
       case codec: Codec.Of[Data.Primitive, A] => Header.Required.Primitive(name, codec, metadata = Metadata.Empty)
       case codec: Codec.Of[Data.Array[Data.Primitive], A] =>
         Header.Required.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default)
+      case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] =>
+        Header.Required.Object(name, codec, metadata = Metadata.Empty)
 
     inline def apply[A](
         name: CIString,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive]], A]
+        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
     ): Header[A] = header.optional(name, codec)
 
     inline def optional[A](
         name: CIString,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive]], A]
+        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
     ): Header[A] = inline codec match
       case codec: Codec.Of[Data.Nullable[Data.Primitive], A] => Header.Primitive(name, codec, metadata = Metadata.Empty)
       case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A] =>
         Header.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default)
+      case codec: Codec.Of[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A] =>
+        Header.Object(name, codec, metadata = Metadata.Empty)
 
     def accept[A](codec: Codec.Of[Data.Primitive, A]): Header.Required[A] = header(ci"Accept", codec)
     val accept: Header.Required[Accept] = accept(Accept.codec)
@@ -129,12 +133,8 @@ trait Codecs extends Base.Codecs, Types:
 
   final inline def parameter[A](
       name: String,
-      codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], A]
-  ): Segment.Parameter[A] = inline codec match
-    case codec: Codec.Of[Data.Primitive, A]             => Segment.Parameter.Default(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Array[Data.Primitive], A] => Segment.Parameter.Array(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Object[Data.Primitive], A] =>
-      Segment.Parameter.Object(name, codec, Metadata.Empty)
+      codec: Codec.Of[Data.Primitive, A]
+  ): Segment.Parameter[A] = Segment.Parameter.Primitive(name, codec, Metadata.Empty)
 
   object query:
     final inline def apply[A](
