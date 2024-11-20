@@ -110,12 +110,16 @@ trait Codecs extends Base.Codecs, Types:
 
     inline def apply[A](
         name: CIString,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
     ): Header[A] = header.optional(name, codec)
 
     inline def optional[A](
         name: CIString,
-        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]], A]
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
     ): Header[A] = inline codec match
       case codec: Codec.Of[Data.Nullable[Data.Primitive], A] => Header.Primitive(name, codec, metadata = Metadata.Empty)
       case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A] =>

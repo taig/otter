@@ -20,6 +20,7 @@ import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
+import cats.Eval
 
 trait Codecs extends Types:
   self =>
@@ -168,90 +169,91 @@ trait Codecs extends Types:
       optional(name, codec)
 
     @targetName("required")
-    def apply[O <: Data.Value, A](name: String, codec: Codec.Of[O, A]): Field.Required.Of[O, A] =
-      Base.Field.Required(name, codec, metadata = Metadata.Empty)
+    def apply[O <: Data.Value, A](name: String, codec: => Codec.Of[O, A]): Field.Required.Of[O, A] =
+      Base.Field.Required(name, codec = Eval.later(codec), metadata = Metadata.Empty)
 
-    def nullable[O <: Data, A](name: String, codec: Codec.Of[O, A]): Field.Of[O, A] =
-      Base.Field.Nullable(name, codec, metadata = Metadata.Empty)
+    def nullable[O <: Data, A](name: String, codec: => Codec.Of[O, A]): Field.Of[O, A] =
+      Base.Field.Nullable(name, codec = Eval.later(codec), metadata = Metadata.Empty)
 
-    def optional[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
-      Base.Field.Optional(name, codec, metadata = Metadata.Empty)
+    def optional[O <: Data.Value, A](name: String, codec: => Codec.Of[Data.Nullable[O], A]): Field.Of[O, A] =
+      Base.Field.Optional(name, codec = Eval.later(codec), metadata = Metadata.Empty)
 
   object branch:
-    def apply[O <: Data, A](name: String, codec: Codec.Of[O, A]): Branch.Of[O, A] = Base.Branch(name, codec)
+    def apply[O <: Data, A](name: String, codec: => Codec.Of[O, A]): Branch.Of[O, A] =
+      Base.Branch.Apply(name, codec = Eval.later(codec))
 
     def nested[O <: Data.Value, A](
         name: String,
-        codec: Codec.Of[Data.Nullable[O], A],
+        codec: => Codec.Of[Data.Nullable[O], A],
         discriminator: Discriminator.Nested = Discriminator.Nested.Default
     ): Branch.Nested.Of[O, A] =
       val record: Record.Of[Data.String | O, A] =
         field(discriminator.identifier, constant(name)) :* field.optional(discriminator.value, codec)
-      Base.Branch.Tagged(name, record, discriminator)
+      Base.Branch.Tagged.Apply(name, codec = Eval.now(record), discriminator)
 
     def merged[O <: Data, A](
         name: String,
-        codec: Record.Of[O, A],
+        codec: => Record.Of[O, A],
         discriminator: Discriminator.Merged = Discriminator.Merged.Default
     ): Branch.Merged.Of[O, A] =
       val record = field(discriminator.identifier, constant(name)) *: codec
-      Base.Branch.Tagged(name, record, discriminator)
+      Base.Branch.Tagged.Apply(name, codec = Eval.now(record), discriminator)
 
-    def keyed[O <: Data.Value, A](name: String, codec: Codec.Of[Data.Nullable[O], A]): Branch.Keyed.Of[O, A] =
+    def keyed[O <: Data.Value, A](name: String, codec: => Codec.Of[Data.Nullable[O], A]): Branch.Keyed.Of[O, A] =
       val record = field.optional(name, codec).toRecord
-      Base.Branch.Tagged(name, record, Discriminator.Keyed)
+      Base.Branch.Tagged.Apply(name, codec = Eval.now(record), Discriminator.Keyed)
 
   object collection:
     def vector[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
-    ): Collection.Of[O, Vector[A]] = Base.Collection(codec, minItems, maxItems, uniqueItems)
+    ): Collection.Of[O, Vector[A]] = Base.Collection.Apply(codec = Eval.later(codec), minItems, maxItems, uniqueItems)
 
     def nonEmptyVector[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, NonEmptyVector[A]] = Base.Collection
-      .nonEmpty(codec, minItems, maxItems, uniqueItems)
+      .NonEmpty(codec = Eval.later(codec), minItems, maxItems, uniqueItems)
       .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
 
     def seq[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, Seq[A]] = vector(codec, minItems, maxItems, uniqueItems).imap(identity)(_.toVector)
 
     def nonEmptySeq[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, NonEmptySeq[A]] = Base.Collection
-      .nonEmpty(codec, minItems, maxItems, uniqueItems)
+      .NonEmpty(codec = Eval.later(codec), minItems, maxItems, uniqueItems)
       .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail.toVector))
 
     def list[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, List[A]] = vector(codec, minItems, maxItems, uniqueItems).imap(_.toList)(_.toVector)
 
     def nonEmptyList[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, NonEmptyList[A]] = Base.Collection
-      .nonEmpty(codec, minItems, maxItems, uniqueItems)
+      .NonEmpty(codec = Eval.later(codec), minItems, maxItems, uniqueItems)
       .imap { case (head, tail) => NonEmptyList(head, tail.toList) }(fa => (fa.head, fa.tail.toVector))
 
     def chain[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
@@ -259,139 +261,141 @@ trait Codecs extends Types:
       vector(codec, minItems, maxItems, uniqueItems).imap(Chain.fromSeq)(_.toVector)
 
     def nonEmptyChain[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none,
         uniqueItems: Boolean = false
     ): Collection.Of[O, NonEmptyChain[A]] = Base.Collection
-      .nonEmpty(codec, minItems, maxItems, uniqueItems)
+      .NonEmpty(codec = Eval.later(codec), minItems, maxItems, uniqueItems)
       .imap { case (head, tail) => NonEmptyChain(head, tail*) }(fa => (fa.head, fa.tail.toVector))
 
     def set[O <: Data, A](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
     ): Collection.Of[O, Set[A]] =
       vector(codec, minItems, maxItems, uniqueItems = true).imap(_.toSet)(_.toVector)
 
     def sortedSet[O <: Data, A: Order](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
     ): Collection.Of[O, SortedSet[A]] =
       vector(codec, minItems, maxItems, uniqueItems = true).imap(SortedSet.from)(_.toVector)
 
     def nonEmptySet[O <: Data, A: Order](
-        codec: Codec.Of[O, A],
+        codec: => Codec.Of[O, A],
         minItems: Option[Int] = none,
         maxItems: Option[Int] = none
     ): Collection.Of[O, NonEmptySet[A]] = Base.Collection
-      .nonEmpty(codec, minItems, maxItems, uniqueItems = true)
+      .NonEmpty(codec = Eval.later(codec), minItems, maxItems, uniqueItems = true)
       .imap { case (head, tail) => NonEmptySet(head, SortedSet.from(tail)) }(fa => (fa.head, fa.tail.toVector))
 
   object dictionary:
     def vector[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
-    ): Dictionary.Of[O, Vector[(A, B)]] = Base.Dictionary(key, value, minProperties, maxProperties)
+    ): Dictionary.Of[O, Vector[(A, B)]] =
+      Base.Dictionary.Apply(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
 
     def nonEmptyVector[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, NonEmptyVector[(A, B)]] = Base.Dictionary
-      .nonEmpty(key, value, minProperties, maxProperties)
+      .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap(NonEmptyVector.apply)(fa => (fa.head, fa.tail))
 
     def seq[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, Seq[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(identity)(_.toVector)
 
     def nonEmptySeq[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, NonEmptySeq[(A, B)]] = Base.Dictionary
-      .nonEmpty(key, value, minProperties, maxProperties)
+      .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap(NonEmptySeq.apply)(fa => (fa.head, fa.tail.toVector))
 
     def list[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, List[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(_.toList)(_.toVector)
 
     def nonEmptyList[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, NonEmptyList[(A, B)]] = Base.Dictionary
-      .nonEmpty(key, value, minProperties, maxProperties)
+      .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyList(head, tail.toList) }(fa => (fa.head, fa.tail.toVector))
 
     def chain[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, Chain[(A, B)]] =
       vector(key, value, minProperties, maxProperties).imap(Chain.fromSeq)(_.toVector)
 
     def nonEmptyChain[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, NonEmptyChain[(A, B)]] = Base.Dictionary
-      .nonEmpty(key, value, minProperties, maxProperties)
+      .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyChain(head, tail*) }(fa => (fa.head, fa.tail.toVector))
 
     def map[O <: Data, A, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, Map[A, B]] =
       vector(key, value, minProperties, maxProperties).imap(_.to(Map))(_.toVector)
 
     def sortedMap[O <: Data, A: Order, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, SortedMap[A, B]] =
       vector(key, value, minProperties, maxProperties).imap(SortedMap.from)(_.toVector)
 
     def nonEmptyMap[O <: Data, A: Order, B](
-        key: Codec.Of[Data.Primitive, A],
-        value: Codec.Of[O, B],
+        key: => Codec.Of[Data.Primitive, A],
+        value: => Codec.Of[O, B],
         minProperties: Option[Int] = none,
         maxProperties: Option[Int] = none
     ): Dictionary.Of[O, NonEmptyMap[A, B]] = Base.Dictionary
-      .nonEmpty(key, value, minProperties, maxProperties)
+      .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyMap(head, SortedMap.from(tail)) }(fa => (fa.head, fa.tail.toVector))
 
-  def enumeration[O <: Data.Primitive, A, B](codec: Codec.Of[O, A])(using
+  def enumeration[O <: Data.Primitive, A, B](codec: => Codec.Of[O, A])(using
       mapping: Mapping[B, A]
-  ): Enumeration.Of[O, B] = Base.Enumeration(codec, mapping)
+  ): Enumeration.Of[O, B] = Base.Enumeration.Apply(codec = Eval.later(codec), mapping)
 
   def enumeration[O <: Data.Primitive, A: Order, B](codec: Codec.Of[O, A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
   ): Enumeration.Of[O, B] = enumeration(codec)(using Mapping.enumeration(f))
 
   object constant:
-    def apply[O <: Data.Primitive, A](codec: Codec.Of[O, A], a: A): Constant.Of[O, Unit] = Base.Constant(codec, a)
+    def apply[O <: Data.Primitive, A](codec: => Codec.Of[O, A], a: => A): Constant.Of[O, Unit] =
+      Base.Constant.Apply(codec = Eval.later(codec), value = Eval.later(a))
     def apply(value: String): Constant.Of[Data.String, Unit] = apply(string, value)
     def apply(value: Int): Constant.Of[Data.Number, Unit] = apply(int, value)
     def apply(value: Long): Constant.Of[Data.Number, Unit] = apply(long, value)

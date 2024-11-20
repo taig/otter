@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
+import cats.Eval
 
 abstract class Codec[+O <: Data, A]:
   self =>
@@ -30,8 +31,8 @@ object Codec:
   type Result[A] = Validated[Violations, A]
 
   extension [O <: Data.Value, A](self: Codec[O, A])
-    def nullable(default: A): Nullable[O, A] = Nullable(self, default)
-    def nullable: Nullable[O, Option[A]] = Nullable(self)
+    def nullable(default: => A): Nullable[O, A] = Nullable.Default(codec = Eval.now(self), default = Eval.later(default))
+    def nullable: Nullable[O, Option[A]] = Nullable.Apply(codec = Eval.now(self))
 
   extension [A](self: Codec[Data.Primitive, A])
     def parse(value: String): Codec.Result[A] = self.decode(Data.String(value))

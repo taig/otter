@@ -23,7 +23,7 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
 
   final override def to[B](using convert: Convert[A, B]): Union[O, B] = imap(convert.to)(convert.from)
 
-  final def orElse[P <: Data, B](codec: Union[P, B]): Union[O | P, Either[A, B]] = new Union[O | P, Either[A, B]]:
+  final def orElse[P <: Data, B](codec: => Union[P, B]): Union[O | P, Either[A, B]] = new Union[O | P, Either[A, B]]:
     override def branches: NonEmptyChain[Branch[?, ?]] = self.branches ++ codec.branches
     override def metadata: Metadata = Metadata.Empty
     override def decodeBranches(data: Data): Either[Option[Violations], Either[A, B]] = self.decodeBranches(data) match

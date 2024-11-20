@@ -21,7 +21,7 @@ sealed abstract class Tuple[+O <: Data, A] extends Codec[Data.Array[O], A]:
 
   final override def to[B](using convert: Convert[A, B]): Tuple[O, B] = imap(convert.to)(convert.from)
 
-  final def zip[P <: Data, B](codec: Tuple[P, B]): Tuple[O | P, (A, B)] = new Tuple[O | P, (A, B)]:
+  final def zip[P <: Data, B](codec: => Tuple[P, B]): Tuple[O | P, (A, B)] = new Tuple[O | P, (A, B)]:
     override def codecs: Chain[Codec[?, ?]] = self.codecs ++ codec.codecs
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Vector[Data], index: Int): Codec.Result[(A, B)] =
@@ -32,7 +32,7 @@ sealed abstract class Tuple[+O <: Data, A] extends Codec[Data.Array[O], A]:
       ).tupled
     override def encode(ab: (A, B)): Data.Array[O | P] = self.encode(ab._1) ++ codec.encode(ab._2)
 
-  def :*[P <: Data, B](codec: Codec[P, B])(using
+  def :*[P <: Data, B](codec: => Codec[P, B])(using
       merge: Merge[A, B]
   ): Tuple[O | P, merge.Out] = zip(codec.toTuple).imap(merge.apply)(merge.unapply)
 

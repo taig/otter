@@ -2,13 +2,14 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
+import cats.Eval
 
 sealed abstract class Branch[+O <: Data, A]:
   self =>
 
   def name: String
 
-  def codec: Codec[?, ?]
+  def codec: Eval[Codec[?, ?]]
 
   def metadata: Metadata
 
@@ -57,7 +58,7 @@ object Branch:
     def decode(data: Data.Object[?]): Codec.Result[Option[A]]
 
   object Tagged:
-    final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A], discriminator: Discriminator)
+    final private[otter] case class Apply[O <: Data, A](name: String, codec: Eval[Codec[O, A]], discriminator: Discriminator)
         extends Branch.Tagged[O, A]:
       override def metadata: Metadata = Metadata.Empty
       override def decode(data: Data.Object[?]): Codec.Result[Option[A]] = discriminator match
@@ -68,31 +69,23 @@ object Branch:
             .map(_.plain)
             .filter(_ === name)
             .flatMap(_ => data.values.collectFirst { case (`value`, data) => data })
-            .traverse(codec.decode)
+            .traverse(codec.value.decode)
         case Discriminator.Merged(identifier) =>
           data.values.collectFirstWithRemainders { case (`identifier`, data) => data } match
             case (values, Some(data)) =>
               data.asPrimitive
                 .map(_.plain)
                 .filter(_ === name)
-                .traverse(_ => codec.decode(Data.Object(values)))
+                .traverse(_ => codec.value.decode(Data.Object(values)))
             case (_, None) => none.valid
         case Discriminator.Keyed =>
-          data.values.collectFirst { case (`name`, data) => data }.traverse(codec.decode)
-      override def encode(a: A): O = codec.encode(a)
+          data.values.collectFirst { case (`name`, data) => data }.traverse(codec.value.decode)
+      override def encode(a: A): O = codec.value.encode(a)
 
-    def apply[O <: Data, A](
-        name: String,
-        codec: Codec[O, A],
-        discriminator: Discriminator
-    ): Branch.Tagged[O, A] = Apply(name, codec, discriminator)
-
-  final private case class Apply[O <: Data, A](name: String, codec: Codec[O, A]) extends Branch[O, A]:
+  final private[otter] case class Apply[O <: Data, A](name: String, codec: Eval[Codec[O, A]]) extends Branch[O, A]:
     override def metadata: Metadata = Metadata.Empty
-    override def decode(data: Data): Codec.Result[Option[A]] = codec.decode(data).map(_.some)
-    override def encode(a: A): O = codec.encode(a)
-
-  def apply[O <: Data, A](name: String, codec: Codec[O, A]): Branch[O, A] = Apply(name, codec)
+    override def decode(data: Data): Codec.Result[Option[A]] = codec.value.decode(data).map(_.some)
+    override def encode(a: A): O = codec.value.encode(a)
 
   extension [O <: Data, A <: Matchable](self: Branch[O, A])
     inline def |[P <: Data, B <: Matchable](branch: Branch[P, B]): Union[O | P, A | B] = self.toUnion | branch

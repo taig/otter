@@ -2,13 +2,14 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
+import cats.Eval
 
 sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
   self =>
 
   def constraints: Vector[Constraint.Collection]
 
-  def codec: Codec[?, ?]
+  def codec: Eval[Codec[?, ?]]
 
   final override def modifyMetadata(f: Metadata => Metadata): Collection[O, A] = new Collection[O, A]:
     export self.{codec, constraints, decode, encode}
@@ -28,8 +29,8 @@ sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
   protected def decode(data: Option[Vector[Data]]): Codec.Result[A]
 
 object Collection:
-  final private case class Apply[O <: Data, A](
-      codec: Codec[O, A],
+  final private[otter] case class Apply[O <: Data, A](
+      codec: Eval[Codec[O, A]],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean
@@ -65,36 +66,22 @@ object Collection:
       .andThen(decode)
     def decode(values: Vector[Data]): Codec.Result[Vector[A]] = verifyMinItems(values) *>
       verifyMaxItems(values) *>
-      values.zipWithIndex.traverse { case (data, index) => codec.decode(data).leftMap(index /: _) }
-    override def encode(as: Vector[A]): Data.Array[O] = Data.Array(as.map(codec.encode))
+      values.zipWithIndex.traverse { case (data, index) => codec.value.decode(data).leftMap(index /: _) }
+    override def encode(as: Vector[A]): Data.Array[O] = Data.Array(as.map(codec.value.encode))
 
-  final case class NonEmpty[O <: Data, A](
-      codec: Codec[O, A],
+  final private[otter] case class NonEmpty[O <: Data, A](
+      codec: Eval[Codec[O, A]],
       minItems: Option[Int],
       maxItems: Option[Int],
       uniqueItems: Boolean
   ) extends Collection[O, (A, Vector[A])]:
-    val of = Collection(codec, minItems = minItems.max(1.some), maxItems, uniqueItems)
+    val of = Apply(codec, minItems = minItems.max(1.some), maxItems, uniqueItems)
     override def constraints: Vector[Constraint.Collection] = of.constraints
     override def metadata: Metadata = Metadata.Empty
     override def encode(aas: (A, Vector[A])): Data.Array[O] = of.encode(aas._1 +: aas._2)
     override def decode(data: Option[Vector[Data]]): Codec.Result[(A, Vector[A])] =
       // Safe to call .head, because `wrapped` will perform a length check
       of.decode(data).map(values => (values.head, values.tail))
-
-  def apply[O <: Data, A](
-      codec: Codec[O, A],
-      minItems: Option[Int],
-      maxItems: Option[Int],
-      uniqueItems: Boolean
-  ): Collection[O, Vector[A]] = Apply(codec, minItems, maxItems, uniqueItems)
-
-  def nonEmpty[O <: Data, A](
-      codec: Codec[O, A],
-      minItems: Option[Int],
-      maxItems: Option[Int],
-      uniqueItems: Boolean
-  ): Collection[O, (A, Vector[A])] = NonEmpty(codec, minItems, maxItems, uniqueItems)
 
   given [O <: Data]: CodecInvariant[Collection[O, *]] with
     override def imap[A, B](fa: Collection[O, A])(f: A => B)(g: B => A): Collection[O, B] = fa.imap(f)(g)

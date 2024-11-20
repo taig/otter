@@ -70,11 +70,15 @@ object Header:
       override def encode(a: A): Http.Headers =
         Vector((name, delimiter.encode(codec.printArray(a))))
 
-    final case class Object[A](name: CIString, codec: Codec[Data.Object[Data.Nullable[Data.Primitive]], A], metadata: Metadata)
-        extends Header.Required[A]:
+    final case class Object[A](
+        name: CIString,
+        codec: Codec[Data.Object[Data.Nullable[Data.Primitive]], A],
+        metadata: Metadata
+    ) extends Header.Required[A]:
       override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
       override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
-      override def optional(default: A): Header[A] = ??? // Header.Object(name, codec = codec.nullable(default), metadata)
+      override def optional(default: A): Header[A] =
+        ??? // Header.Object(name, codec = codec.nullable(default), metadata)
       override def optional: Header[Option[A]] = ??? // Header.Object(name, codec = codec.nullable, metadata)
       override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
@@ -104,7 +108,11 @@ object Header:
     override def encode(a: A): Http.Headers =
       Vector.from(codec.printNullableArray(a).map(delimiter.encode)).tupleLeft(name)
 
-  final case class Object[A](name: CIString, codec: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A], metadata: Metadata) extends Header[A]:
+  final case class Object[A](
+      name: CIString,
+      codec: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A],
+      metadata: Metadata
+  ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
     override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =

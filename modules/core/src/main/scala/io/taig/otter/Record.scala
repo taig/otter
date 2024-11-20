@@ -39,7 +39,7 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
         case None => self.decode(values).map(_.map(_.some))
     override def encode(a: Option[A]): Data.Object[O] = a.fold(Data.Object.Empty)(self.encode)
 
-  final def zip[P <: Data, B](codec: Record[P, B]): Record[O | P, (A, B)] = new Record[O | P, (A, B)]:
+  final def zip[P <: Data, B](codec: => Record[P, B]): Record[O | P, (A, B)] = new Record[O | P, (A, B)]:
     override def fields: Chain[Field[?, ?]] = self.fields ++ codec.fields
     override def metadata: Metadata = Metadata.Empty
     override def decode(
@@ -52,7 +52,7 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
           case (values, Validated.Invalid(right)) => (values, (left |+| right).invalid)
     override def encode(ab: (A, B)): Data.Object[O | P] = self.encode(ab._1) ++ codec.encode(ab._2)
 
-  final def :*[P <: Data, B](field: Field[P, B])(using merge: Merge[A, B]): Record[O | P, merge.Out] =
+  final def :*[P <: Data, B](field: => Field[P, B])(using merge: Merge[A, B]): Record[O | P, merge.Out] =
     zip(field.toRecord).imap(merge.apply)(merge.unapply)
 
   final def *:[P <: Data, B](field: Field[P, B])(using merge: Merge[B, A]): Record[P | O, merge.Out] =
@@ -67,7 +67,7 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
   override def encode(a: A): Data.Object[O]
 
 object Record:
-  final private case class Apply[O <: Data, A](field: Field[O, A]) extends Record[O, A]:
+  final private[otter] case class Apply[O <: Data, A](field: Field[O, A]) extends Record[O, A]:
     override def fields: Chain[Field[?, ?]] = Chain.one(field)
     override def metadata: Metadata = Metadata.Empty
     override def decode(values: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[A]) =
@@ -75,8 +75,6 @@ object Record:
         case Validated.Valid(values)       => field.decode(values).leftMap(_.some)
         case Validated.Invalid(violations) => (values, violations.invalid)
     override def encode(a: A): Data.Object[O] = Data.Object(Vector.from(field.encode(a)))
-
-  def apply[O <: Data, A](field: Field[O, A]): Record[O, A] = Apply(field)
 
   given [O <: Data]: CodecInvariant[Record[O, *]] with
     override def imap[A, B](fa: Record[O, A])(f: A => B)(g: B => A): Record[O, B] = fa.imap(f)(g)
