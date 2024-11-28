@@ -58,8 +58,11 @@ object Branch:
     def decode(data: Data.Object[?]): Codec.Result[Option[A]]
 
   object Tagged:
-    final private[otter] case class Apply[O <: Data, A](name: String, codec: Eval[Codec[O, A]], discriminator: Discriminator)
-        extends Branch.Tagged[O, A]:
+    final private[otter] case class Apply[O <: Data, A](
+        name: String,
+        codec: Eval[Codec[O, A]],
+        discriminator: Discriminator
+    ) extends Branch.Tagged[O, A]:
       override def metadata: Metadata = Metadata.Empty
       override def decode(data: Data.Object[?]): Codec.Result[Option[A]] = discriminator match
         case Discriminator.Nested(identifier, value) =>

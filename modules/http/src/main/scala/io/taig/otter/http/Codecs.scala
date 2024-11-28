@@ -23,15 +23,14 @@ trait Codecs extends Base.Codecs, Types:
 
   final val cistring: Primitive.Of[Data.String, CIString] = cistring()
 
-  given Conversion[cistring.type, StringCodecBuilder[CIString]] = _ =>
-    new StringCodecBuilder[CIString]:
-      override def apply(
-          minLength: Option[Int],
-          maxLength: Option[Int],
-          matches: Option[Pattern]
-      ): Primitive.Of[Data.String, CIString] = cistring(minLength, maxLength, matches)
-      override def isEmpty(a: CIString): Boolean = a.isEmpty
-      override def empty: CIString = CIString.empty
+  implicit final class CIStringStringCodecBuilder(codec: cistring.type) extends StringCodecBuilder[CIString]:
+    override def apply(
+        minLength: Option[Int],
+        maxLength: Option[Int],
+        matches: Option[Pattern]
+    ): Primitive.Of[Data.String, CIString] = cistring(minLength, maxLength, matches)
+    override def isEmpty(a: CIString): Boolean = a.isEmpty
+    override def empty: CIString = CIString.empty
 
   val __ : Url[Unit] = Url.Empty
 

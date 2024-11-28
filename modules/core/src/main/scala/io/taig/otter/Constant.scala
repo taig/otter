@@ -11,7 +11,7 @@ sealed abstract class Constant[+O <: Data.Primitive, A] extends Codec[O, A]:
   def codec: Eval[Codec[?, ?]]
 
   override def modifyMetadata(f: Metadata => Metadata): Constant[O, A] = new Constant[O, A]:
-    export self.{decode, encode, codec}
+    export self.{codec, decode, encode}
     override def metadata: Metadata = f(self.metadata)
 
   override def imap[B](f: A => B)(g: B => A): Constant[O, B] = new Constant[O, B]:
@@ -22,7 +22,8 @@ sealed abstract class Constant[+O <: Data.Primitive, A] extends Codec[O, A]:
   override def to[B](using convert: Convert[A, B]): Constant[O, B] = imap(convert.to)(convert.from)
 
 object Constant:
-  final private [otter] case class Apply[O <: Data.Primitive, A](codec: Eval[Codec[O, A]], value: Eval[A]) extends Constant[O, Unit]:
+  final private[otter] case class Apply[O <: Data.Primitive, A](codec: Eval[Codec[O, A]], value: Eval[A])
+      extends Constant[O, Unit]:
     val constant = (codec, value).mapN(_.encode(_))
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data): Codec.Result[Unit] =

@@ -139,15 +139,14 @@ trait Codecs extends Types:
 
   final val string: Primitive.Of[Data.String, String] = string()
 
-  given [A]: Conversion[string.type, StringCodecBuilder[String]] = _ =>
-    new StringCodecBuilder[String]:
-      override def apply(
-          minLength: Option[Int],
-          maxLength: Option[Int],
-          matches: Option[Pattern]
-      ): Primitive.Of[Data.String, String] = string(minLength, maxLength, matches)
-      override def isEmpty(a: String): Boolean = a.isEmpty
-      override val empty: String = ""
+  implicit final class JStringStringCodecBuilder(codec: string.type) extends StringCodecBuilder[String]:
+    override def apply(
+        minLength: Option[Int],
+        maxLength: Option[Int],
+        matches: Option[Pattern]
+    ): Primitive.Of[Data.String, String] = string(minLength, maxLength, matches)
+    override def isEmpty(a: String): Boolean = a.isEmpty
+    override val empty: String = ""
 
   val pattern: Primitive.Of[Data.String, Pattern] = string.imap(Pattern.compile)(_.pattern)
 
