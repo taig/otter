@@ -28,16 +28,15 @@ sealed abstract class Queries[A]:
     override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector
     override def matchesRemainders(values: Http.Queries): Option[Http.Queries] =
       self.matchesRemainders(values).flatMap(queries.matchesRemainders)
-    override def decode(values: Http.Queries): (Http.Queries, Codec.Result[(A, B)]) =
-      self.decode(values) match
-        case (values, Validated.Valid(a)) =>
-          queries.decode(values) match
-            case (values, Validated.Valid(b))            => (values, (a, b).valid)
-            case (values, Validated.Invalid(violations)) => (values, violations.invalid)
-        case (values, Validated.Invalid(left)) =>
-          queries.decode(values) match
-            case (values, Validated.Valid(_))       => (values, left.invalid)
-            case (values, Validated.Invalid(right)) => (values, (left |+| right).invalid)
+    override def decode(values: Http.Queries): (Http.Queries, Codec.Result[(A, B)]) = self.decode(values) match
+      case (values, Validated.Valid(a)) =>
+        queries.decode(values) match
+          case (values, Validated.Valid(b))            => (values, (a, b).valid)
+          case (values, Validated.Invalid(violations)) => (values, violations.invalid)
+      case (values, Validated.Invalid(left)) =>
+        queries.decode(values) match
+          case (values, Validated.Valid(_))       => (values, left.invalid)
+          case (values, Validated.Invalid(right)) => (values, (left |+| right).invalid)
     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
 
   final def optional: Queries[Option[A]] = new Queries[Option[A]]:

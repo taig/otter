@@ -23,7 +23,8 @@ sealed abstract class Path[A]:
 
   final def imap[B](f: A => B)(g: B => A): Path[B] = new Path[B]:
     export self.{matches, toVector}
-    override def decode(values: Http.Path): Codec.Result[B] = self.decode(values).map(f)
+    override def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, B)] =
+      self.decodeWithRemainders(values).map(_.map(f))
     override def encode(b: B): Http.Path = self.encode(g(b))
 
   final def to[B](using convert: Convert[A, B]): Path[B] = imap(convert.to)(convert.from)
@@ -33,9 +34,11 @@ sealed abstract class Path[A]:
     override def matches(value: Http.Path): Boolean =
       val (left, right) = value.splitAt(self.toVector.length)
       self.matches(left) && path.matches(right)
-    override def decode(values: Http.Path): Codec.Result[(A, B)] =
-      val (left, right) = values.splitAt(self.toVector.length)
-      (self.decode(left), path.decode(right)).tupled
+    override def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, (A, B))] =
+      self
+        .decodeWithRemainders(values)
+        .andThen:
+          case (values, a) => path.decodeWithRemainders(values).map(_.tupleLeft(a))
     override def encode(ab: (A, B)): Http.Path = self.encode(ab._1) ++ path.encode(ab._2)
 
   final def /(segment: String): Path[A] = zip(Segment.Static(segment).toPath).imap { case (a, _) => a }(a => (a, ()))
@@ -45,7 +48,20 @@ sealed abstract class Path[A]:
 
   final def toUrl: Url[A] = Url(this)
 
-  def decode(values: Http.Path): Codec.Result[A]
+  final def decode(values: Http.Path): Codec.Result[A] = decodeWithRemainders(values).andThen:
+    case (values, a) =>
+      Validated.cond(
+        values.isEmpty,
+        a,
+        Violations.rootNec(
+          Violation(
+            Constraint.Primitive.Matches(Pattern.compile(Pattern.quote("/"))),
+            actual = Data.String("/" + values.mkString("/"))
+          )
+        )
+      )
+
+  protected[otter] def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, A)]
 
   def encode(a: A): Http.Path
 
@@ -53,16 +69,8 @@ object Path:
   val Empty: Path[Unit] = new Path[Unit]:
     override def toVector: Vector[Segment[?]] = Vector.empty
     override def matches(path: Http.Path): Boolean = path.isEmpty
-    override def decode(values: Http.Path): Codec.Result[Unit] = Validated.cond(
-      values.isEmpty,
-      (),
-      Violations.rootNec(
-        Violation(
-          Constraint.Primitive.Matches(Pattern.compile(Pattern.quote("/"))),
-          actual = Data.String("/" + values.mkString("/"))
-        )
-      )
-    )
+    override def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, Unit)] =
+      (values, ()).valid
     override def encode(a: Unit): Http.Path = Vector.empty
 
   def apply[A](segment: Segment[A]): Path[A] = new Path[A]:
@@ -70,26 +78,18 @@ object Path:
     override def matches(path: Http.Path): Boolean = path match
       case Vector(value) => segment.matches(value)
       case _             => false
-    override def decode(values: Http.Path): Codec.Result[A] = values match
-      case Vector(value) => segment.decode(value)
-      case Vector() =>
-        Violations
-          .rootNec(
-            Violation(
-              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
-              actual = Data.String("/")
+    override def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, A)] =
+      values.headOption match
+        case Some(value) => segment.decode(value).tupleLeft(values.tail)
+        case None =>
+          Violations
+            .rootNec(
+              Violation(
+                Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
+                actual = Data.String("/")
+              )
             )
-          )
-          .invalid
-      case _ =>
-        Violations
-          .rootNec(
-            Violation(
-              Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
-              actual = Data.String("/" + values.mkString("/"))
-            )
-          )
-          .invalid
+            .invalid
     override def encode(a: A): Http.Path = Vector(segment.encode(a))
 
   given Invariant[Path] with
