@@ -74,13 +74,13 @@ object Branch:
             .flatMap(_ => data.values.collectFirst { case (`value`, data) => data })
             .traverse(codec.value.decode)
         case Discriminator.Merged(identifier) =>
-          data.values.collectFirstWithRemainders { case (`identifier`, data) => data } match
-            case (values, Some(data)) =>
-              data.asPrimitive
+          data.values.collectFirst { case (`identifier`, data) => data } match
+            case Some(value) =>
+              value.asPrimitive
                 .map(_.plain)
                 .filter(_ === name)
-                .traverse(_ => codec.value.decode(Data.Object(values)))
-            case (_, None) => none.valid
+                .traverse(_ => codec.value.decode(data))
+            case None => none.valid
         case Discriminator.Keyed =>
           data.values.collectFirst { case (`name`, data) => data }.traverse(codec.value.decode)
       override def encode(a: A): O = codec.value.encode(a)
