@@ -413,6 +413,8 @@ trait Codecs extends Types:
 
   val void: Dynamic.Of[Data.Null, Unit] = dynamic.nil.const(Data.Null)
 
+  val empty: Record.Of[Nothing, Unit] = Base.Record.Empty
+
   def singleton[A](a: A): Dynamic.Of[Data.Null, a.type] = void.as(a)
 
   val xpath: Primitive.Of[Data.String, XPath] = parser(name = "xpath")(XPath.parse(_).toOption)(_.show)

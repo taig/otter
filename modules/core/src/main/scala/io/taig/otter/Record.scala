@@ -67,6 +67,13 @@ sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
   override def encode(a: A): Data.Object[O]
 
 object Record:
+  private[otter] case object Empty extends Record[Nothing, Unit]:
+    override def fields: Chain[Field[?, ?]] = Chain.empty
+    override def metadata: Metadata = Metadata.Empty
+    override def decode(values: Option[Vector[(String, Data)]]): (Option[Vector[(String, Data)]], Codec.Result[Unit]) =
+      (values, ().valid)
+    override def encode(a: Unit): Data.Object[Nothing] = Data.Object.Empty
+
   final private[otter] case class Apply[O <: Data, A](field: Field[O, A]) extends Record[O, A]:
     override def fields: Chain[Field[?, ?]] = Chain.one(field)
     override def metadata: Metadata = Metadata.Empty
