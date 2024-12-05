@@ -161,7 +161,12 @@ object Query:
     override def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
     override def decode(
         values: Vector[(String, Option[String])]
-    ): (Vector[(String, Option[String])], Codec.Result[A]) = ???
+    ): (Vector[(String, Option[String])], Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (
+        remainders,
+        codec.parseNullableArray(value.flatten.map(delimiter.decode)).leftMap(name /: _)
+      )
     override def encode(a: A): Vector[(String, Option[String])] = codec.printNullableArray(a) match
       case Some(values)     => Vector((name, delimiter.encode(values).some))
       case None if nullable => Vector((name, none))
