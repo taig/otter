@@ -68,7 +68,7 @@ object Header:
         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
         (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
       override def encode(a: A): Http.Headers =
-        Vector((name, delimiter.encode(codec.printArray(a))))
+        delimiter.encode(codec.printArray(a)).tupleLeft(name).toVector
 
     final case class Object[A](
         name: CIString,
@@ -106,7 +106,7 @@ object Header:
       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
       (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
     override def encode(a: A): Http.Headers =
-      Vector.from(codec.printNullableArray(a).map(delimiter.encode)).tupleLeft(name)
+      Vector.from(codec.printNullableArray(a).flatMap(delimiter.encode)).tupleLeft(name)
 
   final case class Object[A](
       name: CIString,

@@ -93,11 +93,11 @@ object Query:
         (
           remainders,
           value.flatten
-            .fold(codec.decode(Data.Null))(value => codec.parseArray(delimiter.decode(value)))
+            .fold(codec.decode(Data.Array.Empty))(value => codec.parseArray(delimiter.decode(value)))
             .leftMap(name /: _)
         )
       override def encode(a: A): Vector[(String, Option[String])] = Vector(
-        (name, delimiter.encode(codec.printArray(a)).some)
+        (name, delimiter.encode(codec.printArray(a)))
       )
 
     final private[otter] case class Object[A](
@@ -168,7 +168,7 @@ object Query:
         codec.parseNullableArray(value.flatten.map(delimiter.decode)).leftMap(name /: _)
       )
     override def encode(a: A): Vector[(String, Option[String])] = codec.printNullableArray(a) match
-      case Some(values)     => Vector((name, delimiter.encode(values).some))
+      case Some(values)     => Vector((name, delimiter.encode(values)))
       case None if nullable => Vector((name, none))
       case None             => Vector.empty
 
