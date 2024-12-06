@@ -50,7 +50,7 @@ final class HeadersTest extends FunSuite:
 
     assertEquals(
       obtained = codec.encode(("foobar", 42.some)),
-      expected = Vector(ci"foo" -> "foo=foobar,bar=42")
+      expected = Vector(ci"foo" -> "foo=foobar&bar=42")
     )
 
     assertEquals(
