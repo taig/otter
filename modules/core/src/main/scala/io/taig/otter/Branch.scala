@@ -71,7 +71,6 @@ object Branch:
             .flatMap(_.asPrimitive)
             .map(_.plain)
             .filter(_ === name)
-            .flatMap(_ => data.values.collectFirst { case (`value`, data) => data })
             .traverse(_ => codec.value.decode(data))
         case Discriminator.Merged(identifier) =>
           data.values.collectFirst { case (`identifier`, data) => data } match
@@ -83,7 +82,11 @@ object Branch:
             case None => none.valid
         case Discriminator.Keyed =>
           data.values.collectFirst { case (`name`, data) => data }.traverse(codec.value.decode)
-      override def encode(a: A): O = codec.value.encode(a)
+      override def encode(a: A): O =
+        println("encode: " + a)
+        val r = codec.value.encode(a)
+        println(r)
+        r
 
   final private[otter] case class Apply[O <: Data, A](name: String, codec: Eval[Codec[O, A]]) extends Branch[O, A]:
     override def metadata: Metadata = Metadata.Empty
