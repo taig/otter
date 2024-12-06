@@ -10,5 +10,5 @@ object IsbnApiSchema:
 
   def unsafe(value: Long): IsbnApiSchema = value
 
-  val codec: Primitive.Required[IsbnApiSchema] =
+  val codec: Primitive[IsbnApiSchema] =
     long(minimum = comparison(1L).some, maximum = comparison(9999999999999L).some)

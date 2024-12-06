@@ -3,20 +3,21 @@ import sbtcrossproject.CrossProject
 val Version = new {
   val CaseInsensitive = "1.4.2"
   val Cats = "2.12.0"
-  val CatsEffect = "3.5.5"
+  val CatsEffect = "3.5.7"
   val CatsParse = "1.0.0"
   val Circe = "0.14.10"
   val Ducktape = "0.2.6"
-  val EnumerationExt = "0.2.0"
+  val EnumerationExt = "0.3.1"
   val Fs2 = "3.11.0"
   val Http4s = "1.0.0-M43"
   val Java = "17"
   val JNanoId = "2.0.0"
+  val Kittens = "3.4.0"
   val Log4Cats = "2.7.0"
   val Mouse = "1.3.2"
-  val Munit = "1.0.2"
+  val Munit = "1.0.3"
   val MunitCatsEffect = "1.0.7"
-  val Scala3 = "3.3.4"
+  val Scala3 = "3.5.2"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.15"
 }
@@ -91,6 +92,7 @@ lazy val core = module(identifier = Some("core"))
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
+        "org.typelevel" %%% "kittens" % Version.Kittens ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         Nil
   )

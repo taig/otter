@@ -18,9 +18,16 @@ object Http:
   final case class Url(path: Http.Path, queries: Http.Queries):
     def ++(url: Http.Url): Http.Url = Url(path ++ url.path, queries ++ url.queries)
 
-    override def toString: String =
-      path.mkString_("/", "/", "") +
-        (if queries.isEmpty then "" else queries.map { case (key, value) => s"$key=$value" }.mkString_("?", "&", ""))
+    override def toString: String = path.mkString_("/", "/", "") +
+      (if queries.isEmpty then ""
+       else
+         queries
+           .map {
+             case (key, Some(value)) => s"$key=$value"
+             case (key, None)        => key
+           }
+           .mkString_("?", "&", "")
+      )
 
   object Url:
     val Empty: Http.Url = Url(Vector.empty, Vector.empty)

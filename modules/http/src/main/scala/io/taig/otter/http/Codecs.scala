@@ -15,13 +15,22 @@ import java.util.regex.Pattern
 trait Codecs extends Base.Codecs, Types:
   self =>
 
-  final val cistring: StringCodecBuilder[CIString] = new StringCodecBuilder[CIString]:
+  final def cistring(
+      minLength: Option[Int] = none,
+      maxLength: Option[Int] = none,
+      matches: Option[Pattern] = none
+  ): Primitive.Of[Data.String, CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
+
+  final val cistring: Primitive.Of[Data.String, CIString] = cistring()
+
+  implicit final class CIStringStringCodecBuilder(codec: cistring.type) extends StringCodecBuilder[CIString]:
     override def apply(
         minLength: Option[Int],
         maxLength: Option[Int],
         matches: Option[Pattern]
-    ): Primitive.Required[CIString] =
-      string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
+    ): Primitive.Of[Data.String, CIString] = cistring(minLength, maxLength, matches)
+    override def isEmpty(a: CIString): Boolean = a.isEmpty
+    override def empty: CIString = CIString.empty
 
   val __ : Url[Unit] = Url.Empty
 
@@ -88,41 +97,85 @@ trait Codecs extends Base.Codecs, Types:
       val html: MediaType = text(secondary = "html")
 
   object header:
-    private type Of = Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+    inline def apply[A](
+        name: CIString,
+        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], A]
+    ): Header.Required[A] = inline codec match
+      case codec: Codec.Of[Data.Primitive, A] => Header.Required.Primitive(name, codec, metadata = Metadata.Empty)
+      case codec: Codec.Of[Data.Array[Data.Primitive], A] =>
+        Header.Required.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default)
+      case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] =>
+        Header.Required.Object(name, codec, metadata = Metadata.Empty)
 
     inline def apply[A](
         name: CIString,
-        codec: Codec.Of[Of, A]
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
+    ): Header[A] = header.optional(name, codec)
+
+    inline def optional[A](
+        name: CIString,
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
     ): Header[A] = inline codec match
-      case codec: Codec.Of[Data.Primitive, A]                             => Header.Default(name, codec, Metadata.Empty)
-      case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Header.Array(name, codec, Metadata.Empty)
-      case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] => Header.Object(name, codec, Metadata.Empty)
+      case codec: Codec.Of[Data.Nullable[Data.Primitive], A] => Header.Primitive(name, codec, metadata = Metadata.Empty)
+      case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A] =>
+        Header.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default)
+      case codec: Codec.Of[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A] =>
+        Header.Object(name, codec, metadata = Metadata.Empty)
 
-    inline def accept[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Accept", codec)
-    val accept: Header[Accept] = accept(Accept.codec)
+    def accept[A](codec: Codec.Of[Data.Primitive, A]): Header.Required[A] = header(ci"Accept", codec)
+    val accept: Header.Required[Accept] = accept(Accept.codec)
 
-    inline def authorization[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Authorization", codec)
+    def authorization[A](codec: Codec.Of[Data.Primitive, A]): Header.Required[A] = header(ci"Authorization", codec)
 
-    inline def contentType[A](codec: Codec.Of[Of, A]): Header[A] = header(ci"Content-Type", codec)
-    val contentType: Header[MediaType] = contentType(MediaType.codec)
+    def contentType[A](codec: Codec.Of[Data.Primitive, A]): Header.Required[A] = header(ci"Content-Type", codec)
+    val contentType: Header.Required[MediaType] = contentType(MediaType.codec)
 
   final inline def parameter[A](
       name: String,
-      codec: Codec.Required.Of[Data.Primitive | Data.Array[Data.Primitive], A] |
-        Codec.Of[Data.Object[Data.Primitive], A]
-  ): Segment.Parameter[A] = inline codec match
-    case codec: Codec.Required.Of[Data.Primitive, A] => Segment.Parameter.Default(name, codec, Metadata.Empty)
-    case codec: Codec.Required.Of[Data.Array[Data.Primitive], A] => Segment.Parameter.Array(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] =>
-      Segment.Parameter.Object(name, codec, Metadata.Empty)
+      codec: Codec.Of[Data.Primitive, A]
+  ): Segment.Parameter[A] = Segment.Parameter.Primitive(name, codec, Metadata.Empty)
 
-  final inline def query[A](
-      name: String,
-      codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], A]
-  ): Query[A] = inline codec match
-    case codec: Codec.Of[Data.Primitive, A]                             => Query.Default(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Array[Data.Primitive], A]                 => Query.Array(name, codec, Metadata.Empty)
-    case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] => Query.Object(name, codec, Metadata.Empty)
+  object query:
+    final inline def apply[A](
+        name: String,
+        codec: Codec.Of[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], A]
+    ): Query.Required[A] = inline codec match
+      case codec: Codec.Of[Data.Primitive, A] => Query.Required.Primitive(name, codec, metadata = Metadata.Empty)
+      case codec: Codec.Of[Data.Array[Data.Primitive], A] =>
+        Query.Required.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default)
+      case codec: Codec.Of[Data.Object[Data.Nullable[Data.Primitive]], A] =>
+        Query.Required.Object(name, codec, metadata = Metadata.Empty)
+
+    final inline def apply[A](
+        name: String,
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
+    ): Query[A] = query.optional(name, codec)
+
+    final inline def nullable[A](
+        name: String,
+        codec: Codec.Of[Data.Nullable[Data.Primitive | Data.Array[Data.Primitive]], A]
+    ): Query[A] = inline codec match
+      case codec: Codec.Of[Data.Nullable[Data.Primitive], A] =>
+        Query.Primitive(name, codec, metadata = Metadata.Empty, nullable = true)
+      case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A] =>
+        Query.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default, nullable = true)
+
+    final inline def optional[A](
+        name: String,
+        codec: Codec.Of[Data.Nullable[
+          Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]]
+        ], A]
+    ): Query[A] = inline codec match
+      case codec: Codec.Of[Data.Nullable[Data.Primitive], A] =>
+        Query.Primitive(name, codec, metadata = Metadata.Empty, nullable = false)
+      case codec: Codec.Of[Data.Nullable[Data.Array[Data.Primitive]], A] =>
+        Query.Array(name, codec, metadata = Metadata.Empty, delimiter = Delimiter.Default, nullable = false)
 
   object body:
     def apply[A](
@@ -131,16 +184,16 @@ trait Codecs extends Base.Codecs, Types:
         g: (Option[Charset], A) => Array[Byte]
     ): Body.Strict[A] = Body.Strict(mediaType, of = none, f, g)
 
-    def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
+    def apply[O <: Data, A](
         mediaType: MediaType,
-        codec: Base.Codec[F, O, A],
+        codec: Codec.Of[O, A],
         f: (Option[Charset], Array[Byte]) => Codec.Result[Data],
-        g: (Option[Charset], F[O]) => Array[Byte]
+        g: (Option[Charset], O) => Array[Byte]
     ): Body.Strict[A] = Body.Strict(
       mediaType,
       of = codec.some,
       f(_, _).andThen(codec.decode),
-      (charset, fo) => g(charset, codec.encode(fo))
+      (charset, o) => g(charset, codec.encode(o))
     )
 
   def binary(mediaType: MediaType): Body.Strict[Array[Byte]] =
@@ -156,7 +209,7 @@ trait Codecs extends Base.Codecs, Types:
   val text: Body.Strict[String] = text(fallback = StandardCharsets.UTF_8)
 
   def text[A](
-      codec: Codec.Required.Of[Data.Primitive, A],
+      codec: Codec.Of[Data.Primitive, A],
       fallback: => Charset = StandardCharsets.UTF_8
   ): Body.Strict[A] = body(
     mediaType = mediaType.text.plain,
@@ -171,7 +224,7 @@ trait Codecs extends Base.Codecs, Types:
   object formData:
     private type Of = Data.Object[Data.Nullable[Data.Primitive]]
 
-    def apply[A](codec: Codec.Required.Of[Of, A], fallback: Charset = StandardCharsets.UTF_8): Body[A] = body(
+    def apply[A](codec: Codec.Of[Of, A], fallback: Charset = StandardCharsets.UTF_8): Body[A] = body(
       mediaType = mediaType.application.wwwFormUrlencoded,
       codec,
       (charset, bytes) =>
@@ -246,15 +299,12 @@ trait Codecs extends Base.Codecs, Types:
     Request(method, url, Headers.Empty).imap { case (a, _) => a }(a => (a, ()))
 
   object error:
-    def apply[F[+a] <: Data.Nullable[a], O <: Data, A](
+    def apply[O <: Data.Value, A](
         tpe: String,
-        codec: Base.Codec[F, O, A]
-    ): Record.Required.Of[Data.Primitive | F[O], A] = record {
-      field("error", constant(string, tpe)) :*
-        field("value", codec)
-    }.nulls(Null.Hide)
+        codec: Codec.Of[Data.Nullable[O], A]
+    ): Record.Of[Data.String | O, A] = field("error", constant(tpe)) :* field.optional("value", codec)
 
-    def apply(tpe: String): Record.Required[Unit] = error(tpe, void)
+    def apply(tpe: String): Record[Unit] = error(tpe, void)
 
     val routeNotFound = error(tpe = "routeNotFound").as(App.Error.RouteNotFound)
 
@@ -274,13 +324,13 @@ trait Codecs extends Base.Codecs, Types:
     )
 
     object text:
-      val routeNotFound: Primitive.Required[App.Error.RouteNotFound.type] =
+      val routeNotFound: Primitive[App.Error.RouteNotFound.type] =
         parser(name = "routeNotFound")(App.Error.parse)(_.show)
-      val contentNegotiationFailed: Primitive.Required[Route.Error.ContentNegotiationFailed] =
+      val contentNegotiationFailed: Primitive[Route.Error.ContentNegotiationFailed] =
         parser(name = "contentNegotiationFailed")(Route.Error.ContentNegotiationFailed.parse)(_.show)
-      val mediaTypesUnsupported: Primitive.Required[Route.Error.MediaTypesUnsupported] =
+      val mediaTypesUnsupported: Primitive[Route.Error.MediaTypesUnsupported] =
         parser(name = "mediaTypesUnsupported")(Route.Error.MediaTypesUnsupported.parse)(_.show)
-      val validationViolations: Primitive.Required[Route.Error.ValidationViolations] =
+      val validationViolations: Primitive[Route.Error.ValidationViolations] =
         parser(name = "validationViolations")(Route.Error.ValidationViolations.parse)(_.show)
 
   final def response[A](results: Results[A], error: Results[Route.Error], failure: Result[Unit]): Response[A] =

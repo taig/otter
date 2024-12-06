@@ -39,7 +39,7 @@ sealed abstract class Request[A]:
       override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
         val (left, remainders) = request.headers.filterKeys(self.headers.toVector.map(_.name))
         val (right, _) = remainders.filterKeys(_headers.toVector.map(_.name))
-        (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)) match
+        (self.decode(contentType, request.modifyHeaders(_ => left)), _headers.decode(right)._2) match
           case (Right(a), Validated.Valid(b))       => Right((a, b))
           case (Right(_), Validated.Invalid(right)) => Left(Route.Error.ValidationViolations(right))
           case (Left(Route.Error.ValidationViolations(left)), Validated.Invalid(right)) =>
@@ -90,7 +90,7 @@ object Request:
       override def decode(
           contentType: Option[MediaType],
           request: Http.Request
-      ): Either[Route.Error, (A, B, C)] = (url.decode(request.url), headers.decode(request.headers)).tupled match
+      ): Either[Route.Error, (A, B, C)] = (url.decode(request.url), headers.decode(request.headers)._2).tupled match
         case Validated.Valid((a, b)) =>
           contentType match
             case Some(contentType) =>
@@ -127,7 +127,7 @@ object Request:
       override def headers: Headers[B] = _headers
       override def bodies: Option[Bodies[?]] = none
       override def decode(contentType: Option[MediaType], request: Http.Request): Either[Route.Error, (A, B)] =
-        (url.decode(request.url), headers.decode(request.headers)).tupled.toEither
+        (url.decode(request.url), headers.decode(request.headers)._2).tupled.toEither
           .leftMap(Route.Error.ValidationViolations.apply)
       override def encode(contentType: Option[MediaType], ab: (A, B)): Http.Request =
         Http.Request(method, url.encode(ab._1), headers.encode(ab._2), Array.emptyByteArray)

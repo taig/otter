@@ -5,18 +5,18 @@ import io.taig.otter.Codec
 import io.taig.otter.Data
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import io.taig.otter.collectFirstWithRemainders
 import org.typelevel.ci.CIString
-
-import scala.Array as SArray
 
 sealed abstract class Header[A] extends Product, Serializable:
   self =>
 
   def name: CIString
 
-  def codec: Codec[?, Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Nullable[Data.Primitive]], ?]
+  def codec: Codec[?, ?]
 
-  final def isOptional: Boolean = codec.isNullable
+  final def isNullable: Boolean = codec.isNullable
+  final def isRequired: Boolean = codec.isRequired
 
   def metadata: Metadata
 
@@ -24,52 +24,99 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def imap[B](f: A => B)(g: B => A): Header[B]
 
-  def optional: Header[Option[A]]
-
   final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
 
   final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header *: toHeaders
 
   final def toHeaders: Headers[A] = Headers(this)
 
-  def decode(header: Option[String]): Codec.Result[A]
+  def decode(values: Http.Headers): (Http.Headers, Codec.Result[A])
 
-  def encode(a: A): Option[String]
+  def encode(a: A): Http.Headers
 
 object Header:
-  final case class Default[A](name: CIString, codec: Codec[Data.Nullable, Data.Primitive, A], metadata: Metadata)
+  sealed abstract class Required[A] extends Header[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Header.Required[A]
+    override def imap[B](f: A => B)(g: B => A): Header.Required[B]
+    def optional(default: A): Header[A]
+    def optional: Header[Option[A]]
+
+  object Required:
+    final case class Primitive[A](name: CIString, codec: Codec[Data.Primitive, A], metadata: Metadata)
+        extends Header.Required[A]:
+      override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
+      override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
+      override def optional(default: A): Header[A] = Header.Primitive(name, codec = codec.nullable(default), metadata)
+      override def optional: Header[Option[A]] = Header.Primitive(name, codec = codec.nullable, metadata)
+      override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+        val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+        (remainders, codec.parseNullable(value))
+      override def encode(a: A): Http.Headers = Vector((name, codec.print(a)))
+
+    final case class Array[A](
+        name: CIString,
+        codec: Codec[Data.Array[Data.Primitive], A],
+        metadata: Metadata,
+        delimiter: Delimiter
+    ) extends Header.Required[A]:
+      override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
+      override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
+      override def optional(default: A): Header[A] =
+        Header.Array(name, codec = codec.nullable(default), metadata, delimiter)
+      override def optional: Header[Option[A]] = Header.Array(name, codec = codec.nullable, metadata, delimiter)
+      override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+        val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+        (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
+      override def encode(a: A): Http.Headers =
+        delimiter.encode(codec.printArray(a)).tupleLeft(name).toVector
+
+    final case class Object[A](
+        name: CIString,
+        codec: Codec[Data.Object[Data.Nullable[Data.Primitive]], A],
+        metadata: Metadata
+    ) extends Header.Required[A]:
+      override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
+      override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
+      override def optional(default: A): Header[A] =
+        ??? // Header.Object(name, codec = codec.nullable(default), metadata)
+      override def optional: Header[Option[A]] = ??? // Header.Object(name, codec = codec.nullable, metadata)
+      override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+        val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+        (remainders, codec.parseNullableObject(value.map(FormData.parse).map(_.toVector)))
+      override def encode(a: A): Http.Headers = Vector((name, Printers(FormData(codec.printObject(a)))))
+
+  final case class Primitive[A](name: CIString, codec: Codec[Data.Nullable[Data.Primitive], A], metadata: Metadata)
       extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
-    override def decode(header: Option[String]): Codec.Result[A] = codec.parseNullable(header)
-    override def encode(a: A): Option[String] = codec.printNullable(a)
+    override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (remainders, codec.parseNullable(value))
+    override def encode(a: A): Http.Headers = Vector.from(codec.printNullable(a)).tupleLeft(name)
 
   final case class Array[A](
       name: CIString,
-      codec: Codec[Data.Nullable, Data.Array[Data.Primitive], A],
-      metadata: Metadata
+      codec: Codec[Data.Nullable[Data.Array[Data.Primitive]], A],
+      metadata: Metadata,
+      delimiter: Delimiter
   ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
-    override def decode(header: Option[String]): Codec.Result[A] =
-      codec.parseNullableArray(header.map(_.split(',').toVector))
-    override def encode(a: A): Option[String] = codec.printNullableArray(a).map(_.mkString(","))
+    override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
+    override def encode(a: A): Http.Headers =
+      Vector.from(codec.printNullableArray(a).flatMap(delimiter.encode)).tupleLeft(name)
 
   final case class Object[A](
       name: CIString,
-      codec: Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], A],
+      codec: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A],
       metadata: Metadata
   ) extends Header[A]:
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-    override def optional: Header[Option[A]] = copy(codec = codec.nullable)
-    override def decode(header: Option[String]): Codec.Result[A] = codec
-      .parseNullableObject(
-        header.map(_.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector)
-      )
-    override def encode(a: A): Option[String] = codec
-      .printNullableObject(a)
-      .map(_.map { case (key, value) => s"$key=$value" })
-      .map(_.mkString(","))
+    override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
+      val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
+      (remainders, codec.parseNullableObject(value.map(FormData.parse).map(_.toVector)))
+    override def encode(a: A): Http.Headers =
+      codec.printNullableObject(a).map(FormData.apply).map(Printers.apply).toVector.tupleLeft(name)

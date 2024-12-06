@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.Order
 import cats.Show
 import cats.parse.Parser
 import cats.syntax.all.*
@@ -13,41 +12,20 @@ import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
 import scala.Product as SProduct
 
-sealed abstract class Data extends SProduct with Serializable:
-  final def asValue: Option[Data.Value] = this match
-    case data: Data.Value => Some(data)
-    case _                => None
-
-  final def asObject: Option[Data.Object[?]] = this match
-    case data: Data.Object[?] => Some(data)
-    case _                    => None
-
-  final def asArray: Option[Data.Array[?]] = this match
-    case data: Data.Array[?] => Some(data)
-    case _                   => None
-
-  final def asPrimitive: Option[Data.Primitive] = this match
-    case data: Data.Primitive => Some(data)
-    case _                    => None
-
-  final def isNull: Boolean = this match
-    case Data.Null => true
-    case _         => false
-
-  final def name: String = this match
-    case _: Data.Array[?]  => "array"
-    case _: Data.Boolean   => "boolean"
-    case _: Data.Number    => "number"
-    case _: Data.Object[?] => "object"
-    case _: Data.String    => "string"
-    case Data.Null         => "null"
-
-  final override def toString: JString = Printers(this, quoted = true)
+type Data = Data.Nullable[Data.Value]
 
 object Data:
-  sealed abstract class Value extends Data
+  sealed abstract class Value extends Product with Serializable
+
+  object Value:
+    given eq: Eq[Data.Value] = Eq.instance:
+      case (x: Data.Array[Data], y: Data.Array[Data])   => Data.Array.eq.eqv(x, y)
+      case (x: Data.Object[Data], y: Data.Object[Data]) => Data.Object.eq.eqv(x, y)
+      case (x: Data.Primitive, y: Data.Primitive)       => Data.Primitive.eq.eqv(x, y)
+      case _                                            => false
 
   final case class Object[+A <: Data](values: Vector[(JString, A)]) extends Data.Value:
+    def size: Int = values.size
     def ++[B <: Data](obj: Data.Object[B]): Data.Object[A | B] = Object(values ++ obj.values)
     def +[B <: Data](kv: (JString, B)): Data.Object[A | B] = Object(values :+ kv)
     final def map[B <: Data](f: A => B): Data.Object[B] = Object(values.map(_.map(f)))
@@ -59,11 +37,12 @@ object Data:
     def of[A <: Data](kv: (JString, A)*): Data.Object[A] = Object(kv.toVector)
     def fromOption[A <: Data](kv: Option[(JString, A)]): Data.Object[A] = Object(kv.toVector)
 
-    given [A <: Data: Order]: Order[Data.Object[A]] = Order.by(_.values)
+    given eq[A <: Data]: Eq[Data.Object[A]] = Eq.by(_.values)
 
   final case class Array[+A <: Data](values: Vector[A]) extends Data.Value:
-    def length: Long = values.length
+    def length: Int = values.length
     def ++[B <: Data](data: Data.Array[B]): Data.Array[A | B] = Array(values ++ data.values)
+    def map[B <: Data](f: A => B): Data.Array[B] = Array(values.map(f))
 
   object Array:
     val Empty: Data.Array[Nothing] = Array(Vector.empty)
@@ -72,7 +51,7 @@ object Data:
     def of[A <: Data](values: A*): Data.Array[A] = fromSeq(values)
     def fill[A <: Data](n: Int)(value: => A): Data.Array[A] = Array(Vector.fill(n)(value))
 
-    given [A <: Data: Order]: Order[Data.Array[A]] = Order.by(_.values)
+    given eq[A <: Data]: Eq[Data.Array[A]] = Eq.by(_.values)
 
   sealed abstract class Primitive extends Value:
     final def asString: Option[Data.String] = this match
@@ -89,9 +68,22 @@ object Data:
 
     final def plain: JString = Printers(this, quoted = false)
 
+  object Primitive:
+    given eq: Eq[Data.Primitive] = Eq.instance:
+      case (x: Data.String, y: Data.String)   => Data.String.eq.eqv(x, y)
+      case (x: Data.Boolean, y: Data.Boolean) => Data.Boolean.eq.eqv(x, y)
+      case (x: Data.Number, y: Data.Number)   => Data.Number.eq.eqv(x, y)
+      case _                                  => false
+
   final case class String(value: JString) extends Data.Primitive
 
+  object String:
+    given eq: Eq[Data.String] = Eq.by(_.value)
+
   final case class Boolean(value: SBoolean) extends Data.Primitive
+
+  object Boolean:
+    given eq: Eq[Data.Boolean] = Eq.by(_.value)
 
   final case class Number(value: Int | Long | Float | Double | JBigDecimal | JBigInteger) extends Data.Primitive:
     def toBigDecimal: Option[JBigDecimal] = value match
@@ -150,14 +142,49 @@ object Data:
       val target = convert(value)
       Option.when(value == target)(target)
 
-  case object Null extends Data
+  object Number:
+    given eq: Eq[Data.Number] = Eq.fromUniversalEquals
 
-  type Nullable[A] = A | Data.Null.type
+  type Null = Data.Null.type
+  case object Null
 
-  type Required[A] = A
+  type Nullable[+A <: Data.Value] = A | Data.Null.type
+
+  object Nullable:
+    def apply[A <: Data.Value](value: Option[A]): Nullable[A] = value.fold(Null)(identity)
+
+  extension [A <: Data.Value](self: Data.Nullable[A])
+    def asValue: Option[A] = dataAsValue(self)
+
+    def asObject: Option[Data.Object[?]] = self match
+      case data: Data.Object[?] => Some(data)
+      case _                    => None
+
+    def asArray: Option[Data.Array[?]] = self match
+      case data: Data.Array[?] => Some(data)
+      case _                   => None
+
+    def asPrimitive: Option[Data.Primitive] = self match
+      case data: Data.Primitive => Some(data)
+      case _                    => None
+
+    def isNull: SBoolean = self match
+      case Data.Null => true
+      case _         => false
+
+    def name: JString = self match
+      case _: Data.Array[?]  => "array"
+      case _: Data.Boolean   => "boolean"
+      case _: Data.Number    => "number"
+      case _: Data.Object[?] => "object"
+      case _: Data.String    => "string"
+      case Data.Null         => "null"
 
   def parse(value: JString): Either[Parser.Error, Data] = Parsers.data.root.parseAll(value)
 
-  given Eq[Data] = Eq.fromUniversalEquals
+  given eq[A <: Data]: Eq[A] = Eq.instance:
+    case (x: Data.Value, y: Data.Value) => Value.eq.eqv(x, y)
+    case (Data.Null, Data.Null)         => true
+    case _                              => false
 
-  given [A <: Data]: Show[A] = Show.fromToString
+  given [A <: Data]: Show[A] = Printers(_, quoted = true)

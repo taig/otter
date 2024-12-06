@@ -20,3 +20,23 @@ extension [A: Eq, B](self: Vector[(A, B)])
     }
 
     (result.result(), remainders.result())
+
+extension [A](self: Vector[A])
+  def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (Vector[A], Option[B]) =
+    @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
+    var result: Option[B] = none
+    val remainders = Vector.newBuilder[A]
+
+    self.foreach: a =>
+      if result.isEmpty && pf.isDefinedAt(a)
+      then result = pf.apply(a).some
+      else remainders += a
+
+    if result.isEmpty
+    then (self, none)
+    else (remainders.result(), result)
+
+@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+private[otter] def dataAsValue[A <: Data.Value](data: Data.Nullable[A]): Option[A] = data match
+  case Data.Null => None
+  case data      => Some(data.asInstanceOf[A])

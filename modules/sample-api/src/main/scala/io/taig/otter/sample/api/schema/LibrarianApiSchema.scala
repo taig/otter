@@ -17,7 +17,7 @@ object LibrarianApiSchema:
   final case class Login(email: CIString, password: String)
 
   object Login:
-    val codec: Record.Required[LibrarianApiSchema.Login] = record(
+    val codec: Record[LibrarianApiSchema.Login] = (
       field("email", email) :*
         field("password", string(maxLength = 500.some))
     ).to

@@ -33,7 +33,7 @@ object Accept:
 
   def parse(value: String): Either[Parser.Error, Accept] = Parsers.accept.parseAll(value)
 
-  val codec: Primitive.Required[Accept] = parser(name = "accept")(parse(_).toOption)(_.show)
+  val codec: Primitive[Accept] = parser(name = "accept")(parse(_).toOption)(_.show)
 
   private val resultOrder: Order[Weighted[MediaRange]] =
     given Order[MediaRange.Type] =

@@ -1,17 +1,19 @@
 package io.taig.otter
 
+import cats.Eq
 import cats.Semigroup
 import cats.Show
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
+import cats.derived.strict.*
 import cats.implicits.*
 import cats.parse.Parser
 
 import scala.collection.immutable.SortedMap
 
-enum Violations:
+enum Violations derives Eq:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
   case Namespace(values: NonEmptyMap[Step, Violations])
 

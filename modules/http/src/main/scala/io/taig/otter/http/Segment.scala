@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.Id as Identity
 import cats.Show
 import cats.data.Validated
 import cats.syntax.all.*
@@ -13,7 +11,6 @@ import io.taig.otter.Violations
 import io.taig.otter.XPath
 
 import java.util.regex.Pattern
-import scala.Array as SArray
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
@@ -47,8 +44,7 @@ object Segment:
   sealed abstract class Parameter[A] extends Segment[A]:
     override def matches(segment: String): Boolean = true
 
-    def codec: Codec[Identity, Data.Primitive | Data.Array[Data.Primitive], ?] |
-      Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], ?]
+    def codec: Codec[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
 
     def metadata: Metadata
 
@@ -57,36 +53,10 @@ object Segment:
     final override def toString: String = s"{$name}"
 
   object Parameter:
-    final case class Default[A](name: String, codec: Codec[Identity, Data.Primitive, A], metadata: Metadata)
+    final case class Primitive[A](name: String, codec: Codec[Data.Primitive, A], metadata: Metadata)
         extends Segment.Parameter[A]:
       override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
-      override def encode(a: A): String = codec.printRequired(a)
-      override def decode(value: String): Codec.Result[A] = codec.parseRequired(value).leftMap(name /: _)
-
-    final case class Array[A](name: String, codec: Codec[Identity, Data.Array[Data.Primitive], A], metadata: Metadata)
-        extends Segment.Parameter[A]:
-      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
-      override def encode(a: A): String = codec.printArray(a).mkString(",")
-      override def decode(value: String): Codec.Result[A] =
-        codec.parseArray(value.split(',').toVector).leftMap(name /: _)
-
-    final case class Object[A](
-        name: String,
-        codec: Codec[Data.Nullable, Data.Object[Data.Nullable[Data.Primitive]], A],
-        metadata: Metadata
-    ) extends Segment.Parameter[A]:
-      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
-      override def encode(a: A): String = codec
-        .printNullableObject(a)
-        .fold("")(_.map { case (key, value) => (key, value) }.mkString(","))
-      override def decode(value: String): Codec.Result[A] =
-        if value.isEmpty
-        then codec.parseNullableObject(none).leftMap(name /: _)
-        else
-          codec
-            .parseNullableObject(
-              value.split(',').map(_.split("=", 2)).collect { case SArray(key, value) => (key, value) }.toVector.some
-            )
-            .leftMap(name /: _)
+      override def encode(a: A): String = codec.print(a)
+      override def decode(value: String): Codec.Result[A] = codec.parse(value).leftMap(name /: _)
 
   given Show[Segment[?]] = Show.fromToString

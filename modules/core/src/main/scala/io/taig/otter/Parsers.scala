@@ -23,14 +23,13 @@ private[otter] object Parsers:
 
   def list[A](parser: Parser[A]): Parser0[List[A]] = parser.repSep0(separator).surroundedBy(whitespace)
 
-  val token: Parser[String] = Parser.charsWhile { value =>
+  val token: Parser[String] = Parser.charsWhile: value =>
     (value >= 'a' && value <= 'z') ||
-    (value >= 'A' && value <= 'Z') ||
-    (value >= '0' && value <= '9')
-  }
+      (value >= 'A' && value <= 'Z') ||
+      (value >= '0' && value <= '9')
 
   object data:
-    val nil: Parser[Data.Null.type] = Parser.string("null").as(Data.Null)
+    val nil: Parser[Data.Null] = Parser.string("null").as(Data.Null)
 
     val boolean: Parser[Data.Boolean] =
       Parser.string("true").as(Data.Boolean(true)).orElse(Parser.string("false").as(Data.Boolean(false)))
