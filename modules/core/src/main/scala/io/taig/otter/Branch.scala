@@ -81,7 +81,7 @@ object Branch:
                 .traverse(_ => codec.value.decode(data))
             case None => none.valid
         case Discriminator.Keyed =>
-          data.values.collectFirst { case (`name`, data) => data }.traverse(codec.value.decode)
+          data.values.collectFirst { case (`name`, data) => data }.traverse(_ => codec.value.decode(data))
       override def encode(a: A): O = codec.value.encode(a)
 
   final private[otter] case class Apply[O <: Data, A](name: String, codec: Eval[Codec[O, A]]) extends Branch[O, A]:
