@@ -72,7 +72,7 @@ object Branch:
             .map(_.plain)
             .filter(_ === name)
             .flatMap(_ => data.values.collectFirst { case (`value`, data) => data })
-            .traverse(codec.value.decode)
+            .traverse(_ => codec.value.decode(data))
         case Discriminator.Merged(identifier) =>
           data.values.collectFirst { case (`identifier`, data) => data } match
             case Some(value) =>
