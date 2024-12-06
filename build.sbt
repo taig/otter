@@ -113,8 +113,8 @@ lazy val jsonCirce = module(identifier = Some("json-circe"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val typescript = module(identifier = Some("typescript"))
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val typescript = module(identifier = Some("typescript"))
+  .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(
