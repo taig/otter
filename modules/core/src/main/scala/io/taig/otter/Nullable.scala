@@ -1,8 +1,8 @@
 package io.taig.otter
 
+import cats.Eval
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
-import cats.Eval
 
 sealed abstract class Nullable[+O <: Data.Value, A] extends Codec[Data.Nullable[O], A]:
   self =>

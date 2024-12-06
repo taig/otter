@@ -1,8 +1,8 @@
 package io.taig.otter
 
+import cats.Eval
 import cats.data.Validated
 import cats.syntax.all.*
-import cats.Eval
 
 sealed abstract class Collection[+O <: Data, A] extends Codec[Data.Array[O], A]:
   self =>

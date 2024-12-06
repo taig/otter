@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.Eval
+import cats.syntax.all.*
 
 sealed abstract class Field[+O <: Data, A]:
   def name: String

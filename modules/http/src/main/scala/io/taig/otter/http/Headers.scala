@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
+import cats.data.Validated
+import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
 import cats.syntax.all.*
 import io.taig.otter.Codec
 import io.taig.otter.Merge
-import cats.data.Validated
-import cats.data.Validated.Valid
-import cats.data.Validated.Invalid
 
 sealed abstract class Headers[A]:
   self =>

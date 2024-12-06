@@ -1,9 +1,9 @@
 package io.taig.otter
 
+import cats.Eval
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Codec.Result
-import cats.Eval
 
 sealed abstract class Constant[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>

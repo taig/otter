@@ -1,4 +1,5 @@
 package io.taig.otter
+import cats.Eval
 import cats.Order
 import cats.data.Chain
 import cats.data.NonEmptyChain
@@ -20,7 +21,6 @@ import scala.annotation.targetName
 import scala.collection.immutable.Map
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
-import cats.Eval
 
 trait Codecs extends Types:
   self =>
