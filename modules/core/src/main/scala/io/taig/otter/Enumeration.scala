@@ -1,9 +1,9 @@
 package io.taig.otter
 
 import cats.Eval
+import cats.data.NonEmptyList
 import cats.syntax.all.*
 import io.taig.enumeration.ext.Mapping
-import cats.data.NonEmptyList
 
 abstract class Enumeration[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>

@@ -14,7 +14,7 @@ import scala.Ordering.Implicits.*
 sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
 
-  protected def name: String
+  def name: String
 
   def tpe: Type
 

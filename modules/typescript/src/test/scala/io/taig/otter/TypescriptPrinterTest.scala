@@ -1,10 +1,10 @@
 package io.taig.otter
 
-import io.taig.otter.Dsl.*
 import cats.syntax.all.*
+import io.taig.otter.Dsl.*
 
 final class TypescriptPrinterTest extends OtterSuite:
-  val zod = ZodCodecPrinter
+  val zod = ZodCodecPrinter()
 
   test("primitive"):
     assertEq(obtained = zod.print(bigDecimal), expected = "z.number()")
