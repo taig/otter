@@ -386,7 +386,7 @@ trait Codecs extends Types:
 
   def enumeration[O <: Data.Primitive, A, B](codec: => Codec.Of[O, A])(using
       mapping: Mapping[B, A]
-  ): Enumeration.Of[O, B] = Base.Enumeration.Apply(codec = Eval.later(codec), mapping)
+  ): Enumeration.Of[O, B] = Base.Enumeration(codec = Eval.later(codec), mapping)
 
   def enumeration[O <: Data.Primitive, A: Order, B](codec: Codec.Of[O, A])(f: B => A)(using
       EnumerationValues.Aux[B, B]

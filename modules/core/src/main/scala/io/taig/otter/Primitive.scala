@@ -16,14 +16,16 @@ sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
 
   protected def name: String
 
+  def tpe: Type
+
   def constraints: Vector[Constraint.Primitive]
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[O, A] = new Primitive[O, A]:
-    export self.{constraints, decode, encode, name}
+    export self.{constraints, decode, encode, name, tpe}
     override def metadata: Metadata = f(self.metadata)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[O, B] = new Primitive[O, B]:
-    export self.{constraints, metadata, name}
+    export self.{constraints, metadata, name, tpe}
     override def decode(data: Data.Primitive): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
@@ -49,6 +51,7 @@ object Primitive:
       lift: Data.Number => Option[A],
       parse: JString => Option[A]
   ) extends Primitive[Data.Number, A]:
+    override def tpe: Type = Type.Number
     override def constraints: Vector[Constraint.Primitive] =
       minimum.map(_.map(encode)).map(Constraint.Primitive.Minimum.apply).toVector ++
         maximum.map(_.map(encode)).map(Constraint.Primitive.Maximum.apply).toVector ++
@@ -98,7 +101,8 @@ object Primitive:
       maxLength: Option[Int],
       matches: Option[Pattern]
   ) extends Primitive[Data.String, JString]:
-    override protected def name: JString = "string"
+    override def name: JString = "string"
+    override def tpe: Type = Type.String
     override def constraints: Vector[Constraint.Primitive] =
       minLength.map(Constraint.Primitive.MinLength.apply).toVector ++
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
@@ -146,16 +150,16 @@ object Primitive:
       g: A => JString
   ) extends Primitive[Data.String, A]:
     val codec = string(minLength, maxLength, matches)
-    override def constraints: Vector[Constraint.Primitive] = codec.constraints
-    override def metadata: Metadata = Metadata.Empty
+    export codec.{constraints, metadata, tpe}
     override def decode(data: Data.Primitive): Codec.Result[A] = codec
       .decode(data)
       .andThen: value =>
         f(value).toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(value))))
     override def encode(a: A): Data.String = codec.encode(g(a))
 
-  case object Boolean extends Primitive[Data.Boolean, SBoolean]:
-    override protected def name: JString = "boolean"
+  private[otter] case object Boolean extends Primitive[Data.Boolean, SBoolean]:
+    override def name: JString = "boolean"
+    override def tpe: Type = Type.Boolean
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data.Primitive): Codec.Result[SBoolean] = data.asBoolean
