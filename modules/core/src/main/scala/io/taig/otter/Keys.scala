@@ -3,6 +3,6 @@ package io.taig.otter
 trait Keys:
   def key[A](value: String): Metadata.Key[A] = Metadata.Key(value)
 
-  val nulls: Metadata.Key[Null] = key("null")
+  val name: Metadata.Key[String] = key("name")
 
 object Keys extends Keys

@@ -384,17 +384,18 @@ trait Codecs extends Types:
       .NonEmpty(key = Eval.later(key), codec = Eval.later(value), minProperties, maxProperties)
       .imap { case (head, tail) => NonEmptyMap(head, SortedMap.from(tail)) }(fa => (fa.head, fa.tail.toVector))
 
-  def enumeration[O <: Data.Primitive, A, B](codec: => Codec.Of[O, A])(using
-      mapping: Mapping[B, A]
-  ): Enumeration.Of[O, B] = Base.Enumeration(codec = Eval.later(codec), mapping)
+  final class EnumerationCodecBuilder[A]:
+    def apply[O <: Data.Primitive, B](codec: => Codec.Of[O, B])(using mapping: Mapping[A, B]): Enumeration.Of[O, A] =
+      Base.Enumeration(codec = Eval.later(codec), mapping)
 
-  def enumeration[O <: Data.Primitive, A: Order, B](codec: Codec.Of[O, A])(f: B => A)(using
-      EnumerationValues.Aux[B, B]
-  ): Enumeration.Of[O, B] = enumeration(codec)(using Mapping.enumeration(f))
+    inline def apply[O <: Data.Primitive, B: Order](codec: => Codec.Of[O, B])(f: A => B)(using EnumerationValues.Aux[A, A]): Enumeration.Of[O, A] =
+      apply(codec)(using Mapping.enumeration(f))
+
+  def enumeration[A]: EnumerationCodecBuilder[A] = new EnumerationCodecBuilder
 
   object constant:
     def apply[O <: Data.Primitive, A](codec: => Codec.Of[O, A], a: => A): Constant.Of[O, Unit] =
-      Base.Constant.Apply(codec = Eval.later(codec), value = Eval.later(a))
+      Base.Constant(codec = Eval.later(codec), value = Eval.later(a))
     def apply(value: String): Constant.Of[Data.String, Unit] = apply(string, value)
     def apply(value: Int): Constant.Of[Data.Number, Unit] = apply(int, value)
     def apply(value: Long): Constant.Of[Data.Number, Unit] = apply(long, value)

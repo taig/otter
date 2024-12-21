@@ -19,9 +19,9 @@ object Metadata:
       def metadata: Metadata
       def modifyMetadata(f: Metadata => Metadata): A
       def apply[B](key: Metadata.Key[B]): Option[B] = metadata.get[B](key)
-      def apply[B](key: Metadata.Key[B], value: Option[B]): A =
+      def set[B](key: Metadata.Key[B], value: Option[B]): A =
         modifyMetadata(metadata => value.fold(metadata.remove(key))(metadata.put(key, _)))
-      def apply[B](key: Metadata.Key[B], value: B): A = modifyMetadata(_.put(key, value))
+      def set[B](key: Metadata.Key[B], value: B): A = modifyMetadata(_.put(key, value))
 
   val Empty: Metadata = Map.empty
 

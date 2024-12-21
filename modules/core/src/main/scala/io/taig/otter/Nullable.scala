@@ -31,7 +31,7 @@ sealed abstract class Nullable[+O <: Data.Value, A] extends Codec[Data.Nullable[
 
 object Nullable:
   final private[otter] case class Apply[O <: Data.Value, A](codec: Eval[Codec[O, A]]) extends Nullable[O, Option[A]]:
-    override def metadata: Metadata = codec.value.metadata
+    override def metadata: Metadata = Metadata.Empty
     override def default: Eval[Option[A]] = Eval.now(none)
     override def decode(data: Data): Codec.Result[Option[A]] =
       if data.isNull then none.valid else codec.value.decode(data).map(_.some)
@@ -39,7 +39,7 @@ object Nullable:
 
   final private[otter] case class Default[O <: Data.Value, A](codec: Eval[Codec[O, A]], default: Eval[A])
       extends Nullable[O, A]:
-    override def metadata: Metadata = codec.value.metadata
+    override def metadata: Metadata = Metadata.Empty
     override def decode(data: Data): Codec.Result[A] =
       if data.isNull then default.value.valid else codec.value.decode(data)
     override def encode(a: A): Data.Nullable[O] = codec.value.encode(a)

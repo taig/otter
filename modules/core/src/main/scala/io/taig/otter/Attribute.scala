@@ -14,7 +14,7 @@ object Attribute:
     def apply[S: Metadata.Ops, A](self: S, key: Metadata.Key[A]): Attribute.Optional[S, A] =
       new Optional[S, A]:
         override def value: Option[A] = self.apply(key)
-        override def apply(a: Option[A]): S = self.apply(key, a)
+        override def apply(a: Option[A]): S = self.set(key, a)
 
   abstract class Collection[+S, A] extends Attribute[S, Vector[A]]:
     final inline def apply(as: A*): S = apply(value ++ as)
@@ -24,9 +24,9 @@ object Attribute:
     def apply[S: Metadata.Ops, A](self: S, key: Metadata.Key[Vector[A]]): Attribute.Collection[S, A] =
       new Collection[S, A]:
         override def value: Vector[A] = self.apply(key).getOrElse(Vector.empty)
-        override def apply(a: Vector[A]): S = self.apply(key, a)
+        override def apply(a: Vector[A]): S = self.set(key, a)
 
   def apply[S, A](self: S, key: Metadata.Key[A], default: => A)(using Metadata.Ops[S]): Attribute[S, A] =
     new Attribute[S, A]:
       override def value: A = self.apply(key).getOrElse(default)
-      override def apply(a: A): S = self.apply(key, a)
+      override def apply(a: A): S = self.set(key, a)
