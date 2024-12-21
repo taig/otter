@@ -388,7 +388,9 @@ trait Codecs extends Types:
     def apply[O <: Data.Primitive, B](codec: => Codec.Of[O, B])(using mapping: Mapping[A, B]): Enumeration.Of[O, A] =
       Base.Enumeration(codec = Eval.later(codec), mapping)
 
-    inline def apply[O <: Data.Primitive, B: Order](codec: => Codec.Of[O, B])(f: A => B)(using EnumerationValues.Aux[A, A]): Enumeration.Of[O, A] =
+    inline def apply[O <: Data.Primitive, B: Order](codec: => Codec.Of[O, B])(f: A => B)(using
+        EnumerationValues.Aux[A, A]
+    ): Enumeration.Of[O, A] =
       apply(codec)(using Mapping.enumeration(f))
 
   def enumeration[A]: EnumerationCodecBuilder[A] = new EnumerationCodecBuilder

@@ -19,6 +19,7 @@ object ZodCodecPrinter:
     case codec: Primitive[?, ?]   => State.pure(render(codec))
     case codec: Constant[?, ?]    => State.pure(render(codec))
     case codec: Record[?, ?]      => render(codec)
+    case codec: Union[?, ?]       => render(codec)
     case codec: Nullable[?, ?]    => render(codec)
     case codec                    => State.pure(s"<Unsupported codec: ${codec.getClass.getName}>")
 
@@ -78,14 +79,19 @@ object ZodCodecPrinter:
         if uniqueItems then s"z.set($reference)" else s"z.array($reference)"
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
 
-  def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] =
-    for
-      key <- referenceOrRender(codec.key.value)
-      value <- referenceOrRender(codec.codec.value)
-    yield s"z.map($key, $value)"
+  def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] = for
+    key <- referenceOrRender(codec.key.value)
+    value <- referenceOrRender(codec.codec.value)
+  yield s"z.map($key, $value)"
 
   def render(codec: Nullable[?, ?]): State[ListMap[String, String], String] =
     referenceOrRender(codec.codec.value).map: reference =>
       s"z.optional($reference)"
+
+  def render(codec: Union[?, ?]): State[ListMap[String, String], String] =
+    codec.branches
+      .traverse(branch => referenceOrRender(branch.codec.value))
+      .map: branches =>
+        s"z.union([${branches.mkString_(", ")}])"
 
   def indent(value: String): String = value.linesIterator.map("  " + _).mkString("\n")
