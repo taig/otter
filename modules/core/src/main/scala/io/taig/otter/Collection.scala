@@ -37,7 +37,7 @@ object Collection:
   ) extends Collection[O, Vector[A]]:
     override def constraints: Vector[Constraint.Collection] =
       minItems.map(Constraint.Collection.MinItems.apply).toVector ++
-        minItems.map(Constraint.Collection.MaxItems.apply).toVector ++
+        maxItems.map(Constraint.Collection.MaxItems.apply).toVector ++
         Option.when(uniqueItems)(Constraint.Collection.UniqueItems).toVector
     override def metadata: Metadata = Metadata.Empty
     def verifyMinItems(values: Vector[Data]): Codec.Result[Unit] = minItems.traverse_ { reference =>
@@ -51,7 +51,7 @@ object Collection:
     def verifyMaxItems(values: Vector[Data]): Codec.Result[Unit] = maxItems.traverse_ { reference =>
       val length = values.length
       Validated.cond(
-        length >= reference,
+        length <= reference,
         (),
         Violations.rootNec(Violation(Constraint.Collection.MaxItems(reference), actual = Data.Number(length)))
       )
