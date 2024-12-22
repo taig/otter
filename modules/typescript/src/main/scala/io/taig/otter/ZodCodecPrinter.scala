@@ -48,12 +48,12 @@ final class ZodCodecPrinter(types: SortedMap[String, String]):
   def render(codec: Constant[?, ?]): String = s"z.literal(${render(codec.data)})"
 
   def render(codec: Primitive[?, ?]): String = types
-    .get(codec.name)
+    .get(codec.tpe.show)
     .getOrElse:
       codec.tpe match
-        case Type.Boolean => "z.boolean()"
-        case Type.Number  => "z.number()"
-        case Type.String  => "z.string()"
+        case Type.Boolean   => "z.boolean()"
+        case _: Type.Number => "z.number()"
+        case _: Type.String => "z.string()"
 
   def render(codec: Enumeration[?, ?]): String =
     val values = codec.data.map(render).mkString_(", ")

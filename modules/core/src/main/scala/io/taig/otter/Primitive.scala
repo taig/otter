@@ -14,32 +14,30 @@ import scala.Ordering.Implicits.*
 sealed abstract class Primitive[+O <: Data.Primitive, A] extends Codec[O, A]:
   self =>
 
-  def name: String
-
   def tpe: Type
 
   def constraints: Vector[Constraint.Primitive]
 
   final override def modifyMetadata(f: Metadata => Metadata): Primitive[O, A] = new Primitive[O, A]:
-    export self.{constraints, decode, encode, name, tpe}
+    export self.{constraints, decode, encode, tpe}
     override def metadata: Metadata = f(self.metadata)
 
   final override def imap[B](f: A => B)(g: B => A): Primitive[O, B] = new Primitive[O, B]:
-    export self.{constraints, metadata, name, tpe}
+    export self.{constraints, metadata, tpe}
     override def decode(data: Data.Primitive): Codec.Result[B] = self.decode(data).map(f)
     override def encode(b: B): O = self.encode(g(b))
 
   final override def to[B](using convert: Convert[A, B]): Primitive[O, B] = imap(convert.to)(convert.from)
 
   final override def decode(data: Data): Codec.Result[A] = data.asPrimitive
-    .toValid(Violations.rootNec(Violation.tpe(name, actual = data.name)))
+    .toValid(Violations.rootNec(Violation.tpe(name = tpe.show, actual = data.name)))
     .andThen(decode)
 
   def decode(data: Data.Primitive): Codec.Result[A]
 
 object Primitive:
   final private case class Number[A <: Double | Int | Float | Long | JBigDecimal | JBigInteger](
-      name: JString,
+      tpe: Type.Number,
       minimum: Option[Comparison[A]],
       maximum: Option[Comparison[A]],
       multiple: Option[A],
@@ -51,7 +49,6 @@ object Primitive:
       lift: Data.Number => Option[A],
       parse: JString => Option[A]
   ) extends Primitive[Data.Number, A]:
-    override def tpe: Type = Type.Number
     override def constraints: Vector[Constraint.Primitive] =
       minimum.map(_.map(encode)).map(Constraint.Primitive.Minimum.apply).toVector ++
         maximum.map(_.map(encode)).map(Constraint.Primitive.Maximum.apply).toVector ++
@@ -91,7 +88,7 @@ object Primitive:
     override def decode(data: Data.Primitive): Codec.Result[A] = data.asNumber
       .flatMap(lift)
       .orElse(data.asString.map(_.value).flatMap(parse))
-      .toValid(Violations.rootNec(Violation(Constraint.Type(name), actual = Data.String(data.name))))
+      .toValid(Violations.rootNec(Violation.tpe(name = tpe.show, actual = Data.String(data.name))))
       .andThen(value => (verifyMinimum(value) *> verifyMaximum(value) *> verifyMultiple(value)).as(value))
 
     override def encode(a: A): Data.Number = Data.Number(a)
@@ -101,8 +98,7 @@ object Primitive:
       maxLength: Option[Int],
       matches: Option[Pattern]
   ) extends Primitive[Data.String, JString]:
-    override def name: JString = "string"
-    override def tpe: Type = Type.String
+    override def tpe: Type = Type.String.Value
     override def constraints: Vector[Constraint.Primitive] =
       minLength.map(Constraint.Primitive.MinLength.apply).toVector ++
         maxLength.map(Constraint.Primitive.MaxLength.apply).toVector ++
@@ -150,7 +146,8 @@ object Primitive:
       g: A => JString
   ) extends Primitive[Data.String, A]:
     val codec = string(minLength, maxLength, matches)
-    export codec.{constraints, metadata, tpe}
+    export codec.{constraints, metadata}
+    override def tpe: Type = Type.String.Parser(name)
     override def decode(data: Data.Primitive): Codec.Result[A] = codec
       .decode(data)
       .andThen: value =>
@@ -158,7 +155,6 @@ object Primitive:
     override def encode(a: A): Data.String = codec.encode(g(a))
 
   private[otter] case object Boolean extends Primitive[Data.Boolean, SBoolean]:
-    override def name: JString = "boolean"
     override def tpe: Type = Type.Boolean
     override def constraints: Vector[Constraint.Primitive] = Vector.empty
     override def metadata: Metadata = Metadata.Empty
@@ -173,7 +169,7 @@ object Primitive:
       maximum: Option[Comparison[JBigDecimal]],
       multiple: Option[JBigDecimal]
   ): Primitive[Data.Number, JBigDecimal] = Number(
-    name = "bigDecimal",
+    tpe = Type.Number.BigDecimal,
     minimum,
     maximum,
     multiple,
@@ -193,7 +189,7 @@ object Primitive:
       maximum: Option[Comparison[JBigInteger]],
       multiple: Option[JBigInteger]
   ): Primitive[Data.Number, JBigInteger] = Number(
-    name = "bigInteger",
+    tpe = Type.Number.BigInteger,
     minimum,
     maximum,
     multiple,
@@ -213,7 +209,7 @@ object Primitive:
       maximum: Option[Comparison[Double]],
       multiple: Option[Double]
   ): Primitive[Data.Number, Double] = Number(
-    name = "double",
+    tpe = Type.Number.Double,
     minimum,
     maximum,
     multiple,
@@ -231,7 +227,7 @@ object Primitive:
       maximum: Option[Comparison[Float]],
       multiple: Option[Float]
   ): Primitive[Data.Number, Float] = Number(
-    name = "float",
+    tpe = Type.Number.Float,
     minimum,
     maximum,
     multiple,
@@ -249,7 +245,7 @@ object Primitive:
       maximum: Option[Comparison[Int]],
       multiple: Option[Int]
   ): Primitive[Data.Number, Int] = Number(
-    name = "int",
+    tpe = Type.Number.Int,
     minimum,
     maximum,
     multiple,
@@ -267,7 +263,7 @@ object Primitive:
       maximum: Option[Comparison[Long]],
       multiple: Option[Long]
   ): Primitive[Data.Number, Long] = Number(
-    name = "long",
+    tpe = Type.Number.Long,
     minimum,
     maximum,
     multiple,

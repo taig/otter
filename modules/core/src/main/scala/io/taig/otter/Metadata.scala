@@ -1,7 +1,8 @@
 package io.taig.otter
 
-import scala.collection.immutable.SortedMap
 import cats.syntax.all.*
+
+import scala.collection.immutable.SortedMap
 
 opaque type Metadata = SortedMap[String, Any]
 
