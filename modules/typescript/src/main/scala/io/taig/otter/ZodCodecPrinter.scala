@@ -9,7 +9,7 @@ import scala.collection.immutable.SortedMap
 
 final class ZodCodecPrinter(types: SortedMap[String, String]):
   def print(codecs: List[Codec[?, ?]]): String =
-    val references = codecs.filter(_.apply(name).isDefined).traverse(referenceOrRender).runS(ListMap.empty).value
+    val references = codecs.filter(_.metadata.contains(name)).traverse(referenceOrRender).runS(ListMap.empty).value
     references.map(render(_, _)).mkString("\n\n")
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
@@ -32,7 +32,7 @@ final class ZodCodecPrinter(types: SortedMap[String, String]):
 
   def toSymbol(name: String): String = name.replace(".", "")
 
-  def referenceOrRender(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec(name) match
+  def referenceOrRender(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.metadata.get(name) match
     case Some(name) =>
       State: references =>
         val symbol = toSymbol(name)
