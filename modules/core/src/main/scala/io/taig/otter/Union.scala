@@ -75,3 +75,8 @@ object Union:
         case Invalid(violations) => violations.some.asLeft
 
     override def encode(a: A): O = branch.encode(a)
+
+  given [O <: Data, A]: Metadata.Ops[Union[O, A]] with
+    extension (self: Union[O, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Union[O, A] = self.modifyMetadata(f)
