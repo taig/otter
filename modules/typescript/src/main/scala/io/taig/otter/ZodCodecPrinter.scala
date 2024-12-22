@@ -98,9 +98,12 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
       s"z.optional($reference)"
 
   def render(codec: Union[?, ?]): State[ListMap[String, String], String] =
-    codec.branches
-      .traverse(branch => referenceOrRender(branch.codec.value))
-      .map(branches => s"z.union([${branches.mkString_(", ")}])")
+    if codec.branches.length === 1L
+    then referenceOrRender(codec.branches.head.codec.value)
+    else
+      codec.branches
+        .traverse(branch => referenceOrRender(branch.codec.value))
+        .map(branches => s"z.union([${branches.mkString_(", ")}])")
 
   def render(codec: Dynamic[?, ?]): String = "z.any()"
 
