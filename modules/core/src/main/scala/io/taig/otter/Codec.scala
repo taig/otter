@@ -78,3 +78,6 @@ object Codec:
     extension (self: Codec[O, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Codec[O, A] = self.modifyMetadata(f)
+
+  extension [A <: Codec[?, ?]: Metadata.Ops](self: A)
+    def name: Attribute.Optional[A, String] = Attribute.Optional(self, Keys.name)

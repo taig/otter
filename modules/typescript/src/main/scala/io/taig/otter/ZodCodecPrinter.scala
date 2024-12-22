@@ -32,7 +32,7 @@ final class ZodCodecPrinter(types: SortedMap[String, String]):
 
   def toSymbol(name: String): String = name.replace(".", "")
 
-  def referenceOrRender(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.metadata.get(name) match
+  def referenceOrRender(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.name.value match
     case Some(name) =>
       State: references =>
         val symbol = toSymbol(name)
