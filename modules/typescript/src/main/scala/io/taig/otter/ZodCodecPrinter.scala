@@ -26,6 +26,7 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
     case codec: Record[?, ?]      => render(codec)
     case codec: Union[?, ?]       => render(codec)
     case codec: Nullable[?, ?]    => render(codec)
+    case codec: Dynamic[?, ?]     => State.pure(render(codec))
     case codec                    => State.pure(s"<Unsupported codec: ${codec.getClass.getName}>")
 
   def render(name: String, value: String): String =
@@ -100,6 +101,8 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
     codec.branches
       .traverse(branch => referenceOrRender(branch.codec.value))
       .map(branches => s"z.union([${branches.mkString_(", ")}])")
+
+  def render(codec: Dynamic[?, ?]): String = "z.any()"
 
   def indent(value: String): String = value.linesIterator.map("  " + _).mkString("\n")
 
