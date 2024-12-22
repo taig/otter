@@ -7,10 +7,13 @@ import io.taig.otter.Keys.*
 import scala.collection.immutable.ListMap
 import scala.collection.immutable.SortedMap
 
-final class ZodCodecPrinter(types: SortedMap[String, String]):
+final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, String]):
   def print(codecs: List[Codec[?, ?]]): String =
     val references = codecs.filter(_.metadata.contains(name)).traverse(referenceOrRender).runS(ListMap.empty).value
-    references.map(render(_, _)).mkString("\n\n")
+
+    s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
+       |
+       |${references.map(render(_, _)).mkString("\n\n")}""".stripMargin
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
 
@@ -96,10 +99,10 @@ final class ZodCodecPrinter(types: SortedMap[String, String]):
   def render(codec: Union[?, ?]): State[ListMap[String, String], String] =
     codec.branches
       .traverse(branch => referenceOrRender(branch.codec.value))
-      .map: branches =>
-        s"z.union([${branches.mkString_(", ")}])"
+      .map(branches => s"z.union([${branches.mkString_(", ")}])")
 
   def indent(value: String): String = value.linesIterator.map("  " + _).mkString("\n")
 
 object ZodCodecPrinter:
-  def apply(types: SortedMap[String, String] = SortedMap.empty): ZodCodecPrinter = new ZodCodecPrinter(types)
+  def apply(imports: List[String] = Nil, types: SortedMap[String, String] = SortedMap.empty): ZodCodecPrinter =
+    new ZodCodecPrinter(imports, types)
