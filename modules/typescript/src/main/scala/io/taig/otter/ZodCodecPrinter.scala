@@ -31,8 +31,8 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
   def render(name: String, value: String): String =
     val symbol = toSymbol(name)
-    s"""type $symbol = z.infer<typeof $symbol>
-       |const $symbol = $value""".stripMargin
+    s"""export type $symbol = z.infer<typeof $symbol>
+       |export const $symbol = $value""".stripMargin
 
   def toSymbol(name: String): String = name.replace(".", "")
 
