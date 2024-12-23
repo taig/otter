@@ -13,7 +13,7 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
     s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
        |
-       |const set = <A extends ZodTypeAny, B extends z.ArrayCardinality>(array: z.ZodArray<A, B>) =>
+       |const set = <A extends z.ZodTypeAny, B extends z.ArrayCardinality>(array: z.ZodArray<A, B>) =>
        |  array.transform((items, context) => {
        |    const set = new Set(items)
        |  
