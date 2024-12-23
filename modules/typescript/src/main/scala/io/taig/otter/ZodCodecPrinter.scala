@@ -13,6 +13,23 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
     s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
        |
+       |const uniqueArraySet = <A extends z.ZodTypeAny>(a: A) =>
+       |  z.array(a).transform((items, context) => {
+       |    const set = new Set(items)
+       |
+       |    if (set.size !== items.length) {
+       |      context.addIssue({
+       |        code: z.ZodIssueCode.custom,
+       |        message: "uniqueItems",
+       |      })
+       |
+       |      return z.NEVER
+       |    }
+       |
+       |    return set
+       |  })
+       |}
+       |
        |${references.map(render(_, _)).mkString("\n\n")}""".stripMargin
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
@@ -85,7 +102,7 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
     referenceOrRender(codec.codec.value)
       .map: reference =>
-        if uniqueItems then s"z.set($reference)" else s"z.array($reference)"
+        if uniqueItems then s"uniqueArraySet($reference)" else s"z.array($reference)"
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
 
   def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] = for
