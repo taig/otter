@@ -28,7 +28,6 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
        |
        |    return set
        |  })
-       |}
        |
        |${references.map(render(_, _)).mkString("\n\n")}""".stripMargin
 
@@ -101,9 +100,25 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
         minItems.filter(_ > 1).map(min => s".min($min)").orEmpty + maxItems.map(max => s".max($max)").orEmpty
 
     referenceOrRender(codec.codec.value)
-      .map: reference =>
-        if uniqueItems then s"uniqueArraySet($reference)" else s"z.array($reference)"
+      .map(reference => s"z.array($reference)")
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
+      .map: zod =>
+        if uniqueItems
+        then s"""$zod.transform((items, context) => {
+                |  const set = new Set(items)
+                |
+                |  if (set.size !== items.length) {
+                |    context.addIssue({
+                |      code: z.ZodIssueCode.custom,
+                |      message: "uniqueItems",
+                |    })
+                |
+                |    return z.NEVER
+                |  }
+                |
+                |  return set
+                |})""".stripMargin
+        else zod
 
   def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] = for
     key <- referenceOrRender(codec.key.value)
