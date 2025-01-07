@@ -13,22 +13,6 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
     s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
        |
-       |const set = <A extends z.ZodTypeAny, B extends z.ArrayCardinality>(array: z.ZodArray<A, B>) =>
-       |  array.transform((items, context) => {
-       |    const set = new Set(items)
-       |  
-       |    if (set.size !== items.length) {
-       |      context.addIssue({
-       |        code: z.ZodIssueCode.custom,
-       |        message: "uniqueItems",
-       |      })
-       |  
-       |      return z.NEVER
-       |    }
-       |  
-       |    return set
-       |  })
-       |
        |${references.map(render(_, _)).mkString("\n\n")}""".stripMargin
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
@@ -91,7 +75,6 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
   def render(codec: Collection[?, ?]): State[ListMap[String, String], String] =
     val minItems = codec.constraints.collectFirst { case Constraint.Collection.MinItems(value) => value }
     val maxItems = codec.constraints.collectFirst { case Constraint.Collection.MaxItems(value) => value }
-    val uniqueItems = codec.constraints.collectFirst { case Constraint.Collection.UniqueItems => true }.getOrElse(false)
     val nonEmpty = minItems.fold(false)(_ >= 1)
 
     val size = (minItems, maxItems) match
@@ -102,7 +85,6 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
     referenceOrRender(codec.codec.value)
       .map(reference => s"z.array($reference)")
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
-      .map(zod => if uniqueItems then s"set($zod)" else zod)
 
   def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] = for
     key <- referenceOrRender(codec.key.value)
