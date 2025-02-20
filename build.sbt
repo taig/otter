@@ -2,7 +2,7 @@ import sbtcrossproject.CrossProject
 
 val Version = new {
   val CaseInsensitive = "1.4.2"
-  val Cats = "2.12.0"
+  val Cats = "2.13.0"
   val CatsEffect = "3.5.7"
   val CatsParse = "1.1.0"
   val Circe = "0.14.10"
