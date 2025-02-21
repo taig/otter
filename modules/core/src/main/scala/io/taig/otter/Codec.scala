@@ -81,3 +81,5 @@ object Codec:
 
   extension [A <: Codec[?, ?]: Metadata.Ops](self: A)
     def name: Attribute.Optional[A, String] = Attribute.Optional(self, Keys.name)
+    def namespace: Attribute.Optional[A, String] = Attribute.Optional(self, Keys.namespace)
+    def typescript: Attribute.Optional[A, String] = Attribute.Optional(self, Keys.typescript)

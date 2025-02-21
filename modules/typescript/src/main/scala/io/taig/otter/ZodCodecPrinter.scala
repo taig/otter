@@ -7,7 +7,7 @@ import io.taig.otter.Keys.*
 import scala.collection.immutable.ListMap
 import scala.collection.immutable.SortedMap
 
-final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, String]):
+final class ZodCodecPrinter(imports: List[String]):
   def print(codecs: List[Codec[?, ?]]): String =
     val references = codecs.filter(_.metadata.contains(name)).traverse(referenceOrRender).runS(ListMap.empty).value
 
@@ -17,17 +17,20 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
 
-  def render(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec match
-    case codec: Collection[?, ?]  => render(codec)
-    case codec: Dictionary[?, ?]  => render(codec)
-    case codec: Enumeration[?, ?] => State.pure(render(codec))
-    case codec: Primitive[?, ?]   => State.pure(render(codec))
-    case codec: Constant[?, ?]    => State.pure(render(codec))
-    case codec: Record[?, ?]      => render(codec)
-    case codec: Union[?, ?]       => render(codec)
-    case codec: Nullable[?, ?]    => render(codec)
-    case codec: Dynamic[?, ?]     => State.pure(render(codec))
-    case codec                    => State.pure(s"<Unsupported codec: ${codec.getClass.getName}>")
+  def render(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.typescript.value match
+    case Some(typescript) => State.pure(typescript)
+    case None =>
+      codec match
+        case codec: Collection[?, ?]  => render(codec)
+        case codec: Dictionary[?, ?]  => render(codec)
+        case codec: Enumeration[?, ?] => State.pure(render(codec))
+        case codec: Primitive[?, ?]   => State.pure(render(codec))
+        case codec: Constant[?, ?]    => State.pure(render(codec))
+        case codec: Record[?, ?]      => render(codec)
+        case codec: Union[?, ?]       => render(codec)
+        case codec: Nullable[?, ?]    => render(codec)
+        case codec: Dynamic[?, ?]     => State.pure(render(codec))
+        case codec                    => State.pure(s"<Unsupported codec: ${codec.getClass.getName}>")
 
   def render(name: String, value: String): String =
     val symbol = toSymbol(name)
@@ -51,13 +54,10 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
 
   def render(codec: Constant[?, ?]): String = s"z.literal(${render(codec.data)})"
 
-  def render(codec: Primitive[?, ?]): String = types
-    .get(codec.tpe.show)
-    .getOrElse:
-      codec.tpe match
-        case Type.Boolean   => "z.boolean()"
-        case _: Type.Number => "z.number()"
-        case _: Type.String => "z.string()"
+  def render(codec: Primitive[?, ?]): String = codec.tpe match
+    case Type.Boolean   => "z.boolean()"
+    case _: Type.Number => "z.number()"
+    case _: Type.String => "z.string()"
 
   def render(codec: Enumeration[?, ?]): String =
     val values = codec.data.map(render).mkString_(", ")
@@ -108,5 +108,4 @@ final class ZodCodecPrinter(imports: List[String], types: SortedMap[String, Stri
   def indent(value: String): String = value.linesIterator.map("  " + _).mkString("\n")
 
 object ZodCodecPrinter:
-  def apply(imports: List[String] = Nil, types: SortedMap[String, String] = SortedMap.empty): ZodCodecPrinter =
-    new ZodCodecPrinter(imports, types)
+  def apply(imports: List[String] = Nil): ZodCodecPrinter = new ZodCodecPrinter(imports)
