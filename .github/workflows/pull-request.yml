@@ -23,7 +23,7 @@ jobs:
         java-version: '17'
         cache: sbt
     - name: Setup sbt
-      uses: actions/setup-sbt@v1
+      uses: sbt/setup-sbt@v1
     - run: sbt blowoutCheck
   scalafmt:
     name: Scalafmt
@@ -42,7 +42,7 @@ jobs:
         java-version: '17'
         cache: sbt
     - name: Setup sbt
-      uses: actions/setup-sbt@v1
+      uses: sbt/setup-sbt@v1
     - run: sbt scalafmtCheckAll
   scalafix:
     name: Scalafix
@@ -61,7 +61,7 @@ jobs:
         java-version: '17'
         cache: sbt
     - name: Setup sbt
-      uses: actions/setup-sbt@v1
+      uses: sbt/setup-sbt@v1
     - run: sbt scalafixCheckAll
   tests:
     name: Tests
@@ -80,5 +80,5 @@ jobs:
         java-version: '17'
         cache: sbt
     - name: Setup sbt
-      uses: actions/setup-sbt@v1
+      uses: sbt/setup-sbt@v1
     - run: sbt test
