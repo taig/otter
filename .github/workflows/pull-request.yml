@@ -5,42 +5,80 @@ name: CI
   pull_request:
     branches:
     - main
-env:
-  SBT_TPOLECAT_CI: 'true'
 jobs:
-  lint:
-    name: Fatal warnings and code formatting
+  blowout:
+    name: Blowout
     runs-on: ubuntu-latest
+    env:
+      SBT_TPOLECAT_DEV: 'true'
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Setup Java JDK
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: '17'
         cache: sbt
-    - name: Workflows
-      run: sbt blowoutCheck
-    - name: Code formatting
-      run: sbt scalafmtCheckAll
-    - name: Fatal warnings
-      run: sbt scalafixAll
-  test:
-    name: Unit tests
+    - name: Setup sbt
+      uses: actions/setup-sbt@v1
+    - run: sbt blowoutCheck
+  scalafmt:
+    name: Scalafmt
     runs-on: ubuntu-latest
+    env:
+      SBT_TPOLECAT_DEV: 'true'
     steps:
     - name: Checkout
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Setup Java JDK
+    - name: Setup Java
       uses: actions/setup-java@v4
       with:
         distribution: temurin
         java-version: '17'
         cache: sbt
-    - name: Tests
-      run: sbt +test
+    - name: Setup sbt
+      uses: actions/setup-sbt@v1
+    - run: sbt scalafmtCheckAll
+  scalafix:
+    name: Scalafix
+    runs-on: ubuntu-latest
+    env:
+      SBT_TPOLECAT_CI: 'true'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+        cache: sbt
+    - name: Setup sbt
+      uses: actions/setup-sbt@v1
+    - run: sbt scalafixCheckAll
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    env:
+      SBT_TPOLECAT_DEV: 'true'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Setup Java
+      uses: actions/setup-java@v4
+      with:
+        distribution: temurin
+        java-version: '17'
+        cache: sbt
+    - name: Setup sbt
+      uses: actions/setup-sbt@v1
+    - run: sbt test
