@@ -3,21 +3,33 @@ package io.taig.otter
 import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Keys.*
+import io.taig.otter.ZodCodecPrinter.References
 
-import scala.collection.immutable.ListMap
 import scala.collection.immutable.SortedMap
+import scala.collection.immutable.ListMap
 
 final class ZodCodecPrinter(imports: List[String]):
   def print(codecs: List[Codec[?, ?]]): String =
-    val references = codecs.filter(_.metadata.contains(name)).traverse(referenceOrRender).runS(ListMap.empty).value
+    val references = codecs
+      .filter(_.metadata.contains(name))
+      .traverse(referenceOrRender)
+      .runS(References.Empty)
+      .value
+
+    val body = references.map:
+      case ((Some(namespace), name), reference) =>
+        s"""namespace $namespace {
+           |${indent(render(name, reference))}
+           |}""".stripMargin
+      case ((None, name), reference) => render(name, reference)
 
     s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
        |
-       |${references.map(render(_, _)).mkString("\n\n")}""".stripMargin
+       |${body.mkString("\n\n")}""".stripMargin
 
   def print(codec: Codec[?, ?]): String = print(codec :: Nil)
 
-  def render(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.typescript.value match
+  def render(codec: Codec[?, ?]): State[References, String] = codec.typescript.value match
     case Some(typescript) => State.pure(typescript)
     case None =>
       codec match
@@ -39,15 +51,16 @@ final class ZodCodecPrinter(imports: List[String]):
 
   def toSymbol(name: String): String = name.replace(".", "")
 
-  def referenceOrRender(codec: Codec[?, ?]): State[ListMap[String, String], String] = codec.name.value match
+  def referenceOrRender(codec: Codec[?, ?]): State[References, String] = codec.name.value match
     case Some(name) =>
       State: references =>
+        val namespace = codec.namespace.value
         val symbol = toSymbol(name)
-        if references.contains(name)
+        if references.contains((namespace, name))
         then (references, symbol)
         else
           val (nestedReferences, value) = render(codec).run(references).value
-          (nestedReferences ++ references.updated(name, value), symbol)
+          (nestedReferences ++ references.updated((namespace, name), value), symbol)
     case None => render(codec)
 
   def render(data: Data.Primitive): String = Printers(data, quoted = true)
@@ -63,7 +76,7 @@ final class ZodCodecPrinter(imports: List[String]):
     val values = codec.data.map(render).mkString_(", ")
     s"z.enum([$values])"
 
-  def render(codec: Record[?, ?]): State[ListMap[String, String], String] = codec.fields
+  def render(codec: Record[?, ?]): State[References, String] = codec.fields
     .traverse: field =>
       referenceOrRender(field.codec.value).map: reference =>
         s""""${field.name}": $reference"""
@@ -72,7 +85,7 @@ final class ZodCodecPrinter(imports: List[String]):
          |${indent(fields.mkString_(",\n"))}
          |})""".stripMargin
 
-  def render(codec: Collection[?, ?]): State[ListMap[String, String], String] =
+  def render(codec: Collection[?, ?]): State[References, String] =
     val minItems = codec.constraints.collectFirst { case Constraint.Collection.MinItems(value) => value }
     val maxItems = codec.constraints.collectFirst { case Constraint.Collection.MaxItems(value) => value }
     val nonEmpty = minItems.fold(false)(_ >= 1)
@@ -86,16 +99,16 @@ final class ZodCodecPrinter(imports: List[String]):
       .map(reference => s"z.array($reference)")
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
 
-  def render(codec: Dictionary[?, ?]): State[ListMap[String, String], String] = for
+  def render(codec: Dictionary[?, ?]): State[References, String] = for
     key <- referenceOrRender(codec.key.value)
     value <- referenceOrRender(codec.codec.value)
   yield s"z.map($key, $value)"
 
-  def render(codec: Nullable[?, ?]): State[ListMap[String, String], String] =
+  def render(codec: Nullable[?, ?]): State[References, String] =
     referenceOrRender(codec.codec.value).map: reference =>
       s"z.optional($reference)"
 
-  def render(codec: Union[?, ?]): State[ListMap[String, String], String] =
+  def render(codec: Union[?, ?]): State[References, String] =
     if codec.branches.length === 1L
     then referenceOrRender(codec.branches.head.codec.value)
     else
@@ -109,3 +122,8 @@ final class ZodCodecPrinter(imports: List[String]):
 
 object ZodCodecPrinter:
   def apply(imports: List[String] = Nil): ZodCodecPrinter = new ZodCodecPrinter(imports)
+
+  private type References = ListMap[(Option[String], String), String]
+
+  private object References:
+    val Empty: References = ListMap.empty

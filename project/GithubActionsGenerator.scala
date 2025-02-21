@@ -23,7 +23,7 @@ object GithubActionsGenerator {
 
     val SetupSbt: Json = Json.obj(
       "name" := "Setup sbt",
-      "uses" := "actions/setup-sbt@v1"
+      "uses" := "sbt/setup-sbt@v1"
     )
   }
 
