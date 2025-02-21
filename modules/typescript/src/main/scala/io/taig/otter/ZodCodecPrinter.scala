@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import io.taig.otter.Keys.*
 import io.taig.otter.ZodCodecPrinter.References
 
-import scala.collection.immutable.SortedMap
 import scala.collection.immutable.ListMap
+import scala.collection.immutable.SortedMap
 
 final class ZodCodecPrinter(imports: List[String]):
   def print(codecs: List[Codec[?, ?]]): String =
