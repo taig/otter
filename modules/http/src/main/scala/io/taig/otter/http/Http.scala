@@ -26,8 +26,7 @@ object Http:
              case (key, Some(value)) => s"$key=$value"
              case (key, None)        => key
            }
-           .mkString_("?", "&", "")
-      )
+           .mkString_("?", "&", ""))
 
   object Url:
     val Empty: Http.Url = Url(Vector.empty, Vector.empty)

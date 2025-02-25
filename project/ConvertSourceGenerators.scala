@@ -15,7 +15,7 @@ object ConvertSourceGenerators {
         s"""  given sum$n[${types.map(tpe => s"$tpe <: B").mkString(", ")}, B](using
            |    mirror: Mirror.SumOf[B],
            |    evidence: mirror.MirroredElemTypes =:= (${types.mkString(", ")})
-           |  ): Convert[$eithers, B] = 
+           |  ): Convert[$eithers, B] =
            |    new Convert[$eithers, B]:
            |      override def to(a: $eithers): B = a match
            |        ${(0 until n).map(i => s"case ${nested(i, "b")} => b").mkString("\n        ")}
