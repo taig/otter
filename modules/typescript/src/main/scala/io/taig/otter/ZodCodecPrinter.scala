@@ -18,7 +18,7 @@ final class ZodCodecPrinter(imports: List[String]):
 
     val body = references.map:
       case ((Some(namespace), name), reference) =>
-        s"""namespace $namespace {
+        s"""export namespace $namespace {
            |${indent(render(name, reference))}
            |}""".stripMargin
       case ((None, name), reference) => render(name, reference)
