@@ -50,6 +50,8 @@ inThisBuild(
 addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
 addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
 
+noPublishSettings
+
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)
   .settings(noPublishSettings)
