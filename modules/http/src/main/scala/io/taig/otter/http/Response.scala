@@ -11,6 +11,7 @@ import io.taig.otter.http.header.Accept
 final case class Response[A](results: Results[A], errors: Results[Route.Error], failure: Result[Unit]):
   final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
 
+  @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
   def decode(response: Http.Response): Codec.Result[Either[Route.Error, A]] = results.decode(response) match
     case Ior.Both(_, Some(a)) => a.asRight.valid
     case Ior.Right(Some(a))   => a.asRight.valid
