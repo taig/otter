@@ -26,8 +26,10 @@ final case class Response[A](results: Results[A], errors: Results[Route.Error], 
         case Ior.Both(_, Some(error)) => error.asLeft.valid
         case Ior.Both(right, None)    => right.invalid
         case Ior.Right(Some(error))   => error.asLeft.valid
-        case Ior.Right(None)          => ???
-        case Ior.Left(right)          => right.invalid
+        case Ior.Right(None)          =>
+          // TODO
+          throw new IllegalStateException("Response did not match any results or errors: " + response)
+        case Ior.Left(right) => right.invalid
     case Ior.Left(violations) => violations.invalid
 
   def encode(accept: Option[Accept.Result], result: Either[Route.Error, A]): Http.Response = result match
@@ -35,13 +37,13 @@ final case class Response[A](results: Results[A], errors: Results[Route.Error], 
       accept match
         case Some(accept) => results.encode(accept, a).getOrElse(contentNegotationFailed(results, accept))
         case None         =>
-          // TODO should be try to infer the charset from the Content-Type header?
+          // TODO should we try to infer the charset from the Content-Type header?
           results.encode(charset = none, a)
     case Left(error) =>
       accept match
         case Some(accept) => errors.encode(accept, error).getOrElse(contentNegotationFailed(errors, accept))
         case None         =>
-          // TODO should be try to infer the charset from the Content-Type header?
+          // TODO should we try to infer the charset from the Content-Type header?
           errors.encode(charset = none, error)
 
   private def contentNegotationFailed(results: Results[?], accept: Accept.Result): Http.Response =
