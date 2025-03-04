@@ -1,8 +1,10 @@
 package io.taig.otter.http
 
 import cats.ApplicativeThrow
+import cats.Eq
 import cats.Show
 import cats.data.Validated
+import cats.derived.*
 import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
@@ -54,7 +56,7 @@ final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I =
   def toRoutes: Routes[F] = Routes.one(this)
 
 object Route:
-  enum Error:
+  enum Error derives Eq:
     case ContentNegotiationFailed(violations: Violations)
     case MediaTypesUnsupported(violations: Violations)
     case ValidationViolations(violations: Violations)
