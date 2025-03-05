@@ -20,7 +20,7 @@ final class SampleClient(client: Client[IO]):
       input: I,
       contentType: MediaType = mediaType.application.json
   ): IO[Validated[Violations, Either[Route.Error | AuthenticationApiSchema.Error, O]]] = client
-    .submit(endpoint.toAuthenticatedEndpoint, AuthenticationApiSchema(session, input), contentType = contentType.some)
+    .submit(endpoint.toAuthenticatedEndpoint, contentType = contentType.some, AuthenticationApiSchema(session, input))
     .map(_.map {
       case Right(Right(o))    => o.asRight
       case Right(Left(error)) => error.asLeft

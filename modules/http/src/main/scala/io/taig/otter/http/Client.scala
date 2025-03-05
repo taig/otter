@@ -11,7 +11,7 @@ import org.typelevel.ci.*
 abstract class Client[F[_]]:
   def submit(request: Http.Request): F[Http.Response]
 
-  final def submit[I, O](endpoint: Endpoint[I, O], input: I, contentType: Option[MediaType] = none)(using
+  final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
       Functor[F]
   ): F[Codec.Result[Either[Route.Error, O]]] =
     val request = endpoint.request
