@@ -22,21 +22,20 @@ sealed abstract class Results[A]:
 
   final infix def orElse[B](results: Results[B]): Results[Either[A, B]] = new Results[Either[A, B]]:
     override def toNev: NonEmptyVector[Result[?]] = self.toNev.concatNev(results.toNev)
-    override def decode(response: Http.Response): Ior[Violations, Option[Either[A, B]]] =
-      self.decode(response) match
-        case Ior.Right(Some(a)) => a.asLeft.some.rightIor
-        case Ior.Right(None)    => results.decode(response).map(_.map(_.asRight))
-        case Ior.Left(left) =>
-          results.decode(response) match
-            case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
-            case Ior.Left(right)    => Ior.Left(left.combine(right))
-            case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
-        case Ior.Both(left, Some(a)) => Ior.Both(left, a.asLeft.some)
-        case Ior.Both(left, None) =>
-          results.decode(response) match
-            case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
-            case Ior.Left(right)    => Ior.Both(left.combine(right), none)
-            case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
+    override def decode(response: Http.Response): Ior[Violations, Option[Either[A, B]]] = self.decode(response) match
+      case Ior.Right(Some(a)) => a.asLeft.some.rightIor
+      case Ior.Right(None)    => results.decode(response).map(_.map(_.asRight))
+      case Ior.Left(left) =>
+        results.decode(response) match
+          case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
+          case Ior.Left(right)    => Ior.Left(left.combine(right))
+          case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
+      case Ior.Both(left, Some(a)) => Ior.Both(left, a.asLeft.some)
+      case Ior.Both(left, None) =>
+        results.decode(response) match
+          case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
+          case Ior.Left(right)    => Ior.Both(left.combine(right), none)
+          case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
     override def encode(accept: Accept.Result, ab: Either[A, B]): Option[Http.Response] = ab match
       case Left(a)  => self.encode(accept, a)
       case Right(b) => results.encode(accept, b)
