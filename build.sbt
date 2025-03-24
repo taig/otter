@@ -17,7 +17,7 @@ val Version = new {
   val Mouse = "1.3.2"
   val Munit = "1.1.0"
   val MunitCatsEffect = "1.0.7"
-  val Scala3 = "3.3.4"
+  val Scala3 = "3.3.5"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.15"
 }
