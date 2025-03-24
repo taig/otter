@@ -13,6 +13,8 @@ import io.taig.otter.http.header.Accept
 import org.typelevel.ci.*
 
 final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
+  def modifyEndpoint(f: Endpoint[I, O] => Endpoint[I, O]): Route[F, I, O] = copy(endpoint = f(endpoint))
+
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
       F: ApplicativeThrow[F]
   ): F[Http.Response] =
