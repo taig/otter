@@ -9,7 +9,9 @@ import io.taig.otter.XPath
 import io.taig.otter.http.header.Accept
 
 final case class Response[A](results: Results[A], errors: Results[Route.Error], failure: Result[Unit]):
-  final def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
+  def modifyResults[T](f: Results[A] => Results[T]): Response[T] = copy(results = f(results))
+
+  def imap[T](f: A => T)(g: T => A): Response[T] = copy(results = results.imap(f)(g))
 
   @SuppressWarnings(Array("scalafix:DisableSyntax.throw"))
   def decode(response: Http.Response): Codec.Result[Either[Route.Error, A]] = results.decode(response) match
