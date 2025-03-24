@@ -240,7 +240,7 @@ trait Codecs extends Base.Codecs, Types:
         FormData(values).show.getBytes(charset.getOrElse(fallback))
     )
 
-  def endpoint[I, O](input: Request[I], output: Response[O]): Endpoint[I, O] = Endpoint(input, output)
+  def endpoint[A, B](request: Request[A], response: Response[B]): Endpoint[A, B] = Endpoint(request, response)
 
   def app[F[_]](routes: Routes[F]): App[F] = App(
     routes,
