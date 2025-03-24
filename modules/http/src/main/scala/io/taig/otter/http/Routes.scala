@@ -14,6 +14,8 @@ object Routes:
     def find(method: Method, url: Http.Url): Option[Route[F, ?, ?]] =
       toChain.find(_.endpoint.request.matches(method, url))
 
+    def modify(f: Route[F, ?, ?] => Route[F, ?, ?]): Routes[F] = toChain.map(f)
+
   extension [F[_]](self: Route[F, ?, ?]) def +:(routes: Routes[F]): Routes[F] = self +: routes
 
   def fromChain[F[_]](endpoints: Chain[Route[F, ?, ?]]): Routes[F] = endpoints
