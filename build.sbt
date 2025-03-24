@@ -115,7 +115,7 @@ lazy val jsonCirce = module(identifier = Some("json-circe"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val typescript = module(identifier = Some("typescript"))
+lazy val coreTypescript = module(identifier = Some("core-typescript"))
   .dependsOn(core % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
@@ -134,6 +134,9 @@ lazy val httpHttp4s = module(identifier = Some("http-http4s"))
         Nil
   )
   .dependsOn(http % "compile->compile;test->test")
+
+lazy val httpTypescript = module(identifier = Some("http-typescript"))
+  .dependsOn(http % "compile->compile;test->test", coreTypescript)
 
 lazy val openapi = module(identifier = Some("openapi"))
   .dependsOn(http % "compile->compile;test->test")

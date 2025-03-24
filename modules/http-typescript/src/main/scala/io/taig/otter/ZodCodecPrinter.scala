@@ -12,7 +12,7 @@ final class ZodCodecPrinter(imports: List[String]):
   def print(codecs: List[Codec[?, ?]]): String =
     val references = codecs
       .filter(_.metadata.contains(name))
-      .traverse(referenceOrRender)
+      .traverse(expression)
       .runS(References.Empty)
       .value
 
@@ -78,7 +78,7 @@ final class ZodCodecPrinter(imports: List[String]):
 
   def render(codec: Record[?, ?]): State[References, String] = codec.fields
     .traverse: field =>
-      referenceOrRender(field.codec.value).map: reference =>
+      expression(field.codec.value).map: reference =>
         s""""${field.name}": $reference"""
     .map: fields =>
       s"""z.object({
@@ -95,25 +95,25 @@ final class ZodCodecPrinter(imports: List[String]):
       case _ =>
         minItems.filter(_ > 1).map(min => s".min($min)").orEmpty + maxItems.map(max => s".max($max)").orEmpty
 
-    referenceOrRender(codec.codec.value)
+    expression(codec.codec.value)
       .map(reference => s"z.array($reference)")
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
 
   def render(codec: Dictionary[?, ?]): State[References, String] = for
-    key <- referenceOrRender(codec.key.value)
-    value <- referenceOrRender(codec.codec.value)
+    key <- expression(codec.key.value)
+    value <- expression(codec.codec.value)
   yield s"z.map($key, $value)"
 
   def render(codec: Nullable[?, ?]): State[References, String] =
-    referenceOrRender(codec.codec.value).map: reference =>
+    expression(codec.codec.value).map: reference =>
       s"z.optional($reference)"
 
   def render(codec: Union[?, ?]): State[References, String] =
     if codec.branches.length === 1L
-    then referenceOrRender(codec.branches.head.codec.value)
+    then expression(codec.branches.head.codec.value)
     else
       codec.branches
-        .traverse(branch => referenceOrRender(branch.codec.value))
+        .traverse(branch => expression(branch.codec.value))
         .map(branches => s"z.union([${branches.mkString_(", ")}])")
 
   def render(codec: Dynamic[?, ?]): String = "z.any()"
