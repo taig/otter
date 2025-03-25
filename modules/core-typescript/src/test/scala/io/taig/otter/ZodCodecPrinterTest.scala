@@ -8,36 +8,33 @@ import cats.syntax.all.*
 import io.taig.otter.Parsers.data.number
 
 final class ZodCodecPrinterTest extends FunSuite:
-  private val printer: CodecPrinter[State[ListMap[Expression.Reference, String], *]] =
-    ZodCodecPrinter()
-
   test("primitive"):
     assertEquals(
-      obtained = printer.print(string).runA(ListMap.empty).value,
-      expected = "z.string()"
+      obtained = ZodCodecPrinter.print(string).runA(ListMap.empty).value,
+      expected = Expression.Value("z.string()")
     )
     assertEquals(
-      obtained = printer.print(int).runA(ListMap.empty).value,
-      expected = "z.number()"
+      obtained = ZodCodecPrinter.print(int).runA(ListMap.empty).value,
+      expected = Expression.Value("z.number()")
     )
     assertEquals(
-      obtained = printer.print(float).runA(ListMap.empty).value,
-      expected = "z.number()"
+      obtained = ZodCodecPrinter.print(float).runA(ListMap.empty).value,
+      expected = Expression.Value("z.number()")
     )
     assertEquals(
-      obtained = printer.print(boolean).runA(ListMap.empty).value,
-      expected = "z.boolean()"
+      obtained = ZodCodecPrinter.print(boolean).runA(ListMap.empty).value,
+      expected = Expression.Value("z.boolean()")
     )
 
   test("record"):
     val codec = field("foo", string) :* field("bar", int)
 
     assertEquals(
-      obtained = printer.print(codec).runA(ListMap.empty).value,
-      expected = """z.object({
-                   |  "foo": z.string(),
-                   |  "bar": z.number()
-                   |})""".stripMargin
+      obtained = ZodCodecPrinter.print(codec).runA(ListMap.empty).value,
+      expected = Expression.Value("""z.object({
+                                    |  "foo": z.string(),
+                                    |  "bar": z.number()
+                                    |})""".stripMargin)
     )
 
   test("record: nested name (without namespace)"):
@@ -45,25 +42,25 @@ final class ZodCodecPrinterTest extends FunSuite:
     val codec = field("foo", foo) :* field("bar", int)
 
     assertEquals(
-      obtained = printer.print(codec).runA(ListMap.empty).value,
-      expected = """z.object({
-                   |  "foo": Foo,
-                   |  "bar": z.number()
-                   |})""".stripMargin
+      obtained = ZodCodecPrinter.print(codec).runA(ListMap.empty).value,
+      expected = Expression.Value("""z.object({
+                                    |  "foo": Foo,
+                                    |  "bar": z.number()
+                                    |})""".stripMargin)
     )
 
   test("record: nested name (with namespace)"):
     val foo = string.namespace("x").name("Foo")
     val codec = field("foo", foo) :* field("bar", int)
 
-    val (expressions, obtained) = printer.print(codec).run(ListMap.empty).value
+    val (expressions, obtained) = ZodCodecPrinter.print(codec).run(ListMap.empty).value
 
     assertEquals(
       obtained,
-      expected = """z.object({
-                   |  "foo": x.Foo,
-                   |  "bar": z.number()
-                   |})""".stripMargin
+      expected = Expression.Value("""z.object({
+                                    |  "foo": x.Foo,
+                                    |  "bar": z.number()
+                                    |})""".stripMargin)
     )
 
     assertEquals(
@@ -77,7 +74,10 @@ final class ZodCodecPrinterTest extends FunSuite:
     val value = "z.string().datetime().transform((value) => new Date(value))"
     val codec = string.typescript(value)
 
-    assertEquals(obtained = printer.print(codec).runA(ListMap.empty).value, expected = value)
+    assertEquals(
+      obtained = ZodCodecPrinter.print(codec).runA(ListMap.empty).value,
+      expected = Expression.Value(value)
+    )
 
   test("override: name"):
     val value = "z.string().datetime().transform((value) => new Date(value))"
@@ -85,8 +85,8 @@ final class ZodCodecPrinterTest extends FunSuite:
     val codec = field("foo", instant).toRecord
 
     assertEquals(
-      obtained = printer.print(codec).runA(ListMap.empty).value,
-      expected = """z.object({
-                   |  "foo": Instant
-                   |})""".stripMargin
+      obtained = ZodCodecPrinter.print(codec).runA(ListMap.empty).value,
+      expected = Expression.Value("""z.object({
+                                    |  "foo": Instant
+                                    |})""".stripMargin)
     )

@@ -277,7 +277,7 @@ trait Codecs extends Base.Codecs, Types:
   final def request[A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[C])(using
       merge1: Merge[A, B],
       merge2: Merge[merge1.Out, C]
-  ): Request[merge2.Out] = request(method, url, headers, body.toBodies)
+  ): Request[merge2.Out] = ??? // request(method, url, headers, body.toBodies)
 
   final def request[A, B](method: Method, url: Url[A], bodies: Bodies[B])(using
       merge: Merge[A, B]

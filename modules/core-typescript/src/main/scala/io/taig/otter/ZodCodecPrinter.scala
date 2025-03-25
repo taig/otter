@@ -2,38 +2,24 @@ package io.taig.otter
 
 import cats.data.State
 import cats.syntax.all.*
-import io.taig.otter.Keys.*
-import io.taig.otter.ZodCodecPrinter.References
 
 import scala.collection.immutable.ListMap
-import scala.collection.immutable.SortedMap
 
-final class ZodCodecPrinter(imports: List[String])
-    extends CodecPrinter[State[ListMap[Expression.Reference, String], *]]:
-  override def print(codec: Codec[?, ?]): State[ListMap[Expression.Reference, String], String] =
-    render(codec)
+object ZodCodecPrinter extends CodecPrinter[State[ListMap[Reference, String], *]]:
+  override def print(codec: Codec[?, ?]): State[ListMap[Reference, String], Expression] =
+    codec.name.value match
+      case Some(name) =>
+        State: references =>
+          val reference: Reference = Reference(namespace = codec.namespace.value, name = symbol(name))
 
-  // def print(codecs: List[Codec[?, ?]]): String =
-  //   val references = codecs
-  //     .filter(_.metadata.contains(name))
-  //     .traverse(referenceOrRender)
-  //     .runS(References.Empty)
-  //     .value
+          references.get(reference) match
+            case Some(value) => (references, Expression.Referenced(reference, value))
+            case None =>
+              val (nestedReferences, value) = render(codec).run(references).value
+              (nestedReferences ++ references.updated(reference, value), Expression.Referenced(reference, value))
+      case None => render(codec).map(Expression.Inline.apply)
 
-  //   val body = references.map:
-  //     case ((Some(namespace), name), reference) =>
-  //       s"""export namespace $namespace {
-  //          |${indent(render(name, reference))}
-  //          |}""".stripMargin
-  //     case ((None, name), reference) => render(name, reference)
-
-  //   s"""${("""import { z } from "zod"""" :: imports).mkString("\n")}
-  //      |
-  //      |${body.mkString("\n\n")}""".stripMargin
-
-  // def print(codec: Codec[?, ?]): String = print(codec :: Nil)
-
-  def render(codec: Codec[?, ?]): State[ListMap[Expression.Reference, String], String] = codec.typescript.value match
+  def render(codec: Codec[?, ?]): State[ListMap[Reference, String], String] = codec.typescript.value match
     case Some(typescript) => State.pure(typescript)
     case None =>
       codec match
@@ -48,26 +34,6 @@ final class ZodCodecPrinter(imports: List[String])
         case codec: Dynamic[?, ?]     => State.pure(render(codec))
         case codec                    => State.pure(s"<Unsupported codec: ${codec.getClass.getName}>")
 
-  // def render(name: String, value: String): String =
-  //   val symbol = toSymbol(name)
-  //   s"""export type $symbol = z.infer<typeof $symbol>
-  //      |export const $symbol = $value""".stripMargin
-
-  def toSymbol(name: String): String = name.replace(".", "")
-
-  def expression(codec: Codec[?, ?]): State[ListMap[Expression.Reference, String], Expression] =
-    codec.name.value match
-      case Some(name) =>
-        State: references =>
-          val reference: Expression.Reference =
-            Expression.Reference(namespace = codec.namespace.value, value = toSymbol(name))
-          if references.contains(reference)
-          then (references, reference)
-          else
-            val (nestedReferences, value) = render(codec).run(references).value
-            (nestedReferences ++ references.updated(reference, value), reference)
-      case None => render(codec).map(Expression.Value.apply)
-
   def render(data: Data.Primitive): String = Printers(data, quoted = true)
 
   def render(codec: Constant[?, ?]): String = s"z.literal(${render(codec.data)})"
@@ -81,16 +47,16 @@ final class ZodCodecPrinter(imports: List[String])
     val values = codec.data.map(render).mkString_(", ")
     s"z.enum([$values])"
 
-  def render(codec: Record[?, ?]): State[ListMap[Expression.Reference, String], String] = codec.fields
+  def render(codec: Record[?, ?]): State[ListMap[Reference, String], String] = codec.fields
     .traverse: field =>
-      expression(field.codec.value).map: reference =>
+      print(field.codec.value).map: reference =>
         show""""${field.name}": $reference"""
     .map: fields =>
       s"""z.object({
          |${indent(fields.mkString_(",\n"))}
          |})""".stripMargin
 
-  def render(codec: Collection[?, ?]): State[ListMap[Expression.Reference, String], String] =
+  def render(codec: Collection[?, ?]): State[ListMap[Reference, String], String] =
     val minItems = codec.constraints.collectFirst { case Constraint.Collection.MinItems(value) => value }
     val maxItems = codec.constraints.collectFirst { case Constraint.Collection.MaxItems(value) => value }
     val nonEmpty = minItems.fold(false)(_ >= 1)
@@ -100,34 +66,26 @@ final class ZodCodecPrinter(imports: List[String])
       case _ =>
         minItems.filter(_ > 1).map(min => s".min($min)").orEmpty + maxItems.map(max => s".max($max)").orEmpty
 
-    expression(codec.codec.value)
-      .map(reference => s"z.array($reference)")
+    print(codec.codec.value)
+      .map(reference => show"z.array($reference)")
       .map(_ + (if nonEmpty then ".nonempty()" else "") + size)
 
-  def render(codec: Dictionary[?, ?]): State[ListMap[Expression.Reference, String], String] = for
-    key <- expression(codec.key.value)
-    value <- expression(codec.codec.value)
-  yield s"z.map($key, $value)"
+  def render(codec: Dictionary[?, ?]): State[ListMap[Reference, String], String] = for
+    key <- print(codec.key.value)
+    value <- print(codec.codec.value)
+  yield show"z.map($key, $value)"
 
-  def render(codec: Nullable[?, ?]): State[ListMap[Expression.Reference, String], String] =
-    expression(codec.codec.value).map: reference =>
-      s"z.optional($reference)"
+  def render(codec: Nullable[?, ?]): State[ListMap[Reference, String], String] =
+    print(codec.codec.value).map: reference =>
+      show"z.optional($reference)"
 
-  def render(codec: Union[?, ?]): State[ListMap[Expression.Reference, String], Expression] =
+  def render(codec: Union[?, ?]): State[ListMap[Reference, String], Expression] =
     if codec.branches.length === 1L
-    then expression(codec.branches.head.codec.value)
+    then print(codec.branches.head.codec.value)
     else
       codec.branches
-        .traverse(branch => expression(branch.codec.value))
+        .traverse(branch => print(branch.codec.value))
         .map(branches => s"z.union([${branches.mkString_(", ")}])")
-        .map(Expression.Value.apply)
+        .map(Expression.Inline.apply)
 
   def render(codec: Dynamic[?, ?]): String = "z.any()"
-
-object ZodCodecPrinter:
-  def apply(imports: List[String] = Nil): ZodCodecPrinter = new ZodCodecPrinter(imports)
-
-  private type References = ListMap[(Option[String], String), String]
-
-  private object References:
-    val Empty: References = ListMap.empty

@@ -8,7 +8,7 @@ val Version = new {
   val Circe = "0.14.12"
   val Ducktape = "0.2.8"
   val EnumerationExt = "0.3.2"
-  val Fs2 = "3.11.0"
+  val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M44"
   val Java = "17"
   val JNanoId = "2.0.0"
@@ -68,19 +68,21 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(
     core,
-    javaTime,
-    jsonCirce,
+    coreTypescript,
     http,
+    httpCsv,
     httpHttp4s,
     httpJsonCirce,
+    httpTypescript,
+    javaTime,
+    jsonCirce,
     munit,
     openapi,
-    server,
-    serverHttp4s,
-    httpCsv,
     sample,
     sampleApi,
-    sampleApp
+    sampleApp,
+    server,
+    serverHttp4s
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -135,8 +137,8 @@ lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   )
   .dependsOn(http % "compile->compile;test->test")
 
-lazy val httpTypescript = module(identifier = Some("http-typescript"))
-  .dependsOn(http % "compile->compile;test->test", coreTypescript)
+lazy val httpTypescript = module(identifier = Some("http-typescript"), jvmOnly = true) // TODO remove
+  .dependsOn(http % "compile->compile;test->test", coreTypescript, httpJsonCirce)
 
 lazy val openapi = module(identifier = Some("openapi"))
   .dependsOn(http % "compile->compile;test->test")

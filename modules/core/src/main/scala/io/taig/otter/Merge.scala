@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import scala.compiletime.*
 import scala.Tuple as STuple
 
 trait Merge[A, B]:
@@ -10,17 +11,25 @@ trait Merge[A, B]:
 object Merge extends Merge1:
   type Aux[A, B, C] = Merge[A, B] { type Out = C }
 
-  inline def apply[A, B](using merge: Merge[A, B]): merge.type = merge
+  inline def apply[A, B](using merge: Merge[A, B]): Merge.Aux[A, B, merge.Out] = merge
 
-  given [A]: Merge.Aux[A, Unit, A] = new Merge[A, Unit]:
-    override type Out = A
-    override def apply(ab: (A, Unit)): Out = ab._1
-    override def unapply(a: A): (A, Unit) = (a, ())
+  inline def apply[A, B, C](using merge: Merge.Aux[A, B, C]): Merge.Aux[A, B, C] = merge
 
-  given [A]: Merge.Aux[Unit, A, A] = new Merge[Unit, A]:
-    override type Out = A
-    override def apply(ab: (Unit, A)): Out = ab._2
-    override def unapply(a: A): (Unit, A) = ((), a)
+  def instance[A, B, C](f: ((A, B)) => C)(g: C => (A, B)): Merge.Aux[A, B, C] = new Merge[A, B]:
+    override type Out = C
+    override def apply(ab: (A, B)): Out = f(ab)
+    override def unapply(out: C): (A, B) = g(out)
+
+  given [A]: Merge.Aux[A, Unit, A] = instance[A, Unit, A](_._1)((_, ()))
+
+  given [A]: Merge.Aux[Unit, A, A] = instance[Unit, A, A](_._2)(((), _))
+
+  inline given [A <: STuple, B <: STuple]: Merge.Aux[A, B, STuple.Concat[A, B]] =
+    val size = erasedValue[STuple.Size[A]]
+    instance[A, B, STuple.Concat[A, B]] { case (a, b) => a ++ b } { ab =>
+      val (a, b) = ab.splitAt(size)
+      (a.asInstanceOf[A], b.asInstanceOf[B])
+    }
 
 trait Merge1 extends Merge2:
   given [A, B <: STuple]: Merge.Aux[A, B, A *: B] = new Merge[A, B]:
