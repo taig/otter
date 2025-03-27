@@ -18,8 +18,8 @@ object XPath:
 
   def apply(steps: Chain[Step]): XPath = steps
 
-  def parse(value: String): Either[Parser.Error, XPath] = Parsers.xpath.parseAll(value)
+  def parse(value: String): Either[Parser.Error, XPath] = ??? // Parsers.xpath.parseAll(value)
 
   given (using order: Order[Chain[Step]]): Order[XPath] = order
 
-  given Show[XPath] = Printers(_)
+  given Show[XPath] = ??? // Printers(_)

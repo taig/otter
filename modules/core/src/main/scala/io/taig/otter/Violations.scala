@@ -42,7 +42,7 @@ enum Violations derives Eq:
 
   final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation]]] = toNem.toNel.map(Indexed.apply)
 
-  final override def toString: String = Printers(this).mkString_("\n")
+  final override def toString: String = ??? // Printers(this).mkString_("\n")
 
 object Violations:
   def root(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)
@@ -65,11 +65,12 @@ object Violations:
     val NonEmptyList(head, tail) = values.map(from)
     tail.foldLeft(head)(_.combine(_))
 
-  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = NonEmptyChain
-    .fromNonEmptyList(values)
-    .traverse(Parsers.indexed(Parsers.violation).parseAll)
-    .map(_.groupMapNem(_.xpath)(_.self))
-    .map(from)
+  def parse(values: NonEmptyList[String]): Either[Parser.Error, Violations] = ???
+  // NonEmptyChain
+  //   .fromNonEmptyList(values)
+  //   .traverse(Parsers.indexed(Parsers.violation).parseAll)
+  //   .map(_.groupMapNem(_.xpath)(_.self))
+  //   .map(from)
 
   // TODO parse properly
   def parse(value: String): Either[Parser.Error, Violations] =

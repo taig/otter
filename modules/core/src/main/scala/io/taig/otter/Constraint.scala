@@ -10,7 +10,7 @@ import java.util.regex.Pattern
 import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable derives Eq:
-  final override def toString: String = Printers(this)
+  final override def toString: String = ??? // Printers(this)
 
 object Constraint:
   final case class Type(name: String) extends Constraint
@@ -39,8 +39,6 @@ object Constraint:
     final case class MinLength(reference: Int) extends Constraint.Primitive
     final case class Multiple(reference: Data.Number) extends Constraint.Primitive
 
-    private given Eq[Pattern] = Eq.by(_.pattern)
+  def parse(value: String): Either[Parser.Error, Constraint] = ??? // Parsers.constraint.parseAll(value)
 
-  def parse(value: String): Either[Parser.Error, Constraint] = Parsers.constraint.parseAll(value)
-
-  given Show[Constraint] = Printers(_)
+  given Show[Constraint] = ??? // Printers(_)

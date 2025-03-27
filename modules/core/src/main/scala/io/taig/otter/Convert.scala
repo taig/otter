@@ -14,6 +14,8 @@ trait Convert[A, B]:
   def from(b: B): A
 
 object Convert extends ConvertInstances:
+  inline def apply[A, B](using convert: Convert[A, B]): Convert[A, B] = convert
+
   given product1[A, B <: SProduct](using
       mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple }
   ): Convert[A, B] = new Convert[A, B]:

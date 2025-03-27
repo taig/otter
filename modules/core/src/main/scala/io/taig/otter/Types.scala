@@ -4,124 +4,119 @@ import io.taig.otter as Base
 
 trait Types:
   export Base.{
-    Attribute,
+// Attribute,
     Comparison,
-    Constraint,
-    Data,
-    Discriminator,
-    Merge,
-    Metadata,
-    Null,
-    Step,
-    Violation,
-    Violations
+    Format,
+// Constraint,
+// Format,
+// Discriminator,
+// Merge,
+    Metadata
   }
 
-  final type Codec[A] = Base.Codec[Data, A]
+  final type Codec[A] = Base.Codec[Format.Any, A]
 
   object Codec:
-    type Of[O <: Data, A] = Base.Codec[O, A]
+    type Of[F <: Format.Any, A] = Base.Codec[F, A]
 
-    export Base.Codec.Result
-
-  final type Collection[A] = Base.Collection[Data, A]
+  final type Collection[A] = Base.Collection[Format.Any, A]
 
   object Collection:
-    type Of[O <: Data, A] = Base.Collection[O, A]
+    type Of[F <: Format.Any, A] = Base.Collection[F, A]
 
-  final type Constant[A] = Base.Constant[Data.Primitive, A]
+  final type Constant[A] = Base.Constant[Format.Primitive, A]
 
   object Constant:
-    type Of[O <: Data.Primitive, A] = Base.Constant[O, A]
+    type Of[F <: Format.Primitive, A] = Base.Constant[F, A]
 
-  final type Dictionary[A] = Base.Dictionary[Data, A]
+  final type Dictionary[A] = Base.Dictionary[Format.Any, A]
 
   object Dictionary:
-    type Of[O <: Data, A] = Base.Dictionary[O, A]
+    type Of[F <: Format.Any, A] = Base.Dictionary[F, A]
 
-  final type Dynamic[A] = Base.Dynamic[Data, A]
-
-  object Dynamic:
-    type Of[O <: Data, A] = Base.Dynamic[O, A]
-
-  final type Enumeration[A] = Base.Enumeration[Data.Primitive, A]
+  final type Enumeration[A] = Base.Enumeration[Format.Primitive, A]
 
   object Enumeration:
-    type Of[O <: Data.Primitive, A] = Base.Enumeration[O, A]
+    type Of[F <: Format.Primitive, A] = Base.Enumeration[F, A]
 
-  final type Primitive[A] = Base.Primitive[Data.Primitive, A]
+  final type Optional[A] = Base.Optional[Format.Any, A]
+
+  object Optional:
+    type Of[F <: Format.Any, A] = Base.Optional[F, A]
+
+  final type Primitive[A] = Base.Primitive[Format.Primitive, A]
 
   object Primitive:
-    type Of[O <: Data.Primitive, A] = Base.Primitive[O, A]
+    type Of[F <: Format.Primitive, A] = Base.Primitive[F, A]
 
-  final type Record[A] = Base.Record[Data, A]
+  final type Record[A] = Base.Record[Format.Any, A]
 
   object Record:
-    type Of[O <: Data, A] = Base.Record[O, A]
+    type Of[F <: Format.Any, A] = Base.Record[F, A]
 
-  final type Union[A] = Base.Union[Data, A]
+  final type Union[A] = Base.Union[Format.Any, A]
 
   object Union:
-    type Of[O <: Data, A] = Base.Union[O, A]
+    type Of[F <: Format.Any, A] = Base.Union[F, A]
 
-    type Tagged[A] = Base.Union[Data.Object[?], A]
+    type Tagged[A] = Base.Union[Format.Object[?], A]
 
     object Tagged:
-      type Of[O <: Data, A] = Base.Union[Data.Object[O], A]
+      type Of[F <: Format.Any, A] = Base.Union[Format.Object[F], A]
 
-    type Nested[A] = Tagged[A]
+//     type Nested[A] = Tagged[A]
 
-    object Nested:
-      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+//     object Nested:
+//       type Of[O <: Format, A] = Tagged.Of[Format.String | O, A]
 
-    type Merged[A] = Tagged[A]
+//     type Merged[A] = Tagged[A]
 
-    object Merged:
-      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+//     object Merged:
+//       type Of[O <: Format, A] = Tagged.Of[Format.String | O, A]
 
-    type Keyed[A] = Tagged[A]
+//     type Keyed[A] = Tagged[A]
 
-    object Keyed:
-      type Of[O <: Data, A] = Tagged.Of[O, A]
+//     object Keyed:
+//       type Of[O <: Format, A] = Tagged.Of[O, A]
 
-  type Tuple[A] = Base.Tuple[Data, A]
+  type Tuple[A] = Base.Tuple[Format.Any, A]
 
   object Tuple:
-    type Of[O <: Data, A] = Base.Tuple[O, A]
+    type Of[F <: Format.Any, A] = Base.Tuple[F, A]
 
-  final type Branch[A] = Base.Branch[Data, A]
+  final type Branch[A] = Base.Branch[Format.Any, A]
 
   object Branch:
-    type Of[O <: Data, A] = Base.Branch[O, A]
+    type Of[F <: Format.Any, A] = Base.Branch[F, A]
 
-    type Tagged[A] = Base.Branch[Data.Object[?], A]
+    type Tagged[A] = Base.Branch[Format.Object[?], A]
 
     object Tagged:
-      type Of[O <: Data, A] = Base.Branch[Data.Object[O], A]
+      type Of[F <: Format.Any, A] = Base.Branch[Format.Object[F], A]
 
     type Nested[A] = Tagged[A]
 
     object Nested:
-      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+      type Of[F <: Format.Any, A] = Tagged.Of[Format.String | F, A]
 
     type Merged[A] = Tagged[A]
 
     object Merged:
-      type Of[O <: Data, A] = Tagged.Of[Data.String | O, A]
+      type Of[F <: Format.Any, A] = Tagged.Of[Format.String | F, A]
 
     type Keyed[A] = Tagged[A]
 
     object Keyed:
-      type Of[O <: Data, A] = Tagged.Of[O, A]
+      type Of[F <: Format.Any, A] = Tagged.Of[F, A]
 
-  final type Field[A] = Base.Field[Data, A]
+  final type Field[A] = Base.Field[Format.Any, A]
 
   object Field:
-    type Of[O <: Data, A] = Base.Field[O, A]
+    type Of[F <: Format.Any, A] = Base.Field[F, A]
 
-    type Required[A] = Base.Field.Required[Data.Value, A]
+    type Required[A] = Base.Field.Required[Format.Any, A]
 
     object Required:
-      type Of[O <: Data.Value, A] = Base.Field.Required[O, A]
+      type Of[F <: Format.Any, A] = Base.Field.Required[F, A]
 
 object Types extends Types
