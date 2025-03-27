@@ -21,7 +21,7 @@ def fromData(data: Data.Object[?]): JsonObject =
   JsonObject.fromIterable(data.values.map { case (key, value) => (key, fromData(value)) })
 
 def fromData(data: Data): Json = data match
-  case Data.String(value)   => Json.fromString(value)
+  case String(value)   => Json.fromString(value)
   case Data.Boolean(value)  => Json.fromBoolean(value)
   case data: Data.Number    => fromData(data)
   case data: Data.Object[?] => Json.fromJsonObject(fromData(data))
@@ -49,7 +49,7 @@ def toData(json: Json): Data = json.fold(
   jsonNull = Data.Null,
   Data.Boolean.apply,
   toData,
-  Data.String.apply,
+  String.apply,
   toDataArray,
   toDataObject
 )

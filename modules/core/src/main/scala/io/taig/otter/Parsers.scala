@@ -34,7 +34,7 @@
 //     val boolean: Parser[Data.Boolean] =
 //       Parser.string("true").as(Data.Boolean(true)).orElse(Parser.string("false").as(Data.Boolean(false)))
 
-//     val string: Parser[Data.String] = Json.delimited.parser.map(Data.String.apply)
+//     val string: Parser[String] = Json.delimited.parser.map(String.apply)
 
 //     val number: Parser[Data.Number] = Numbers.jsonNumber.map: value =>
 //       // TODO nasty

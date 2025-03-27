@@ -121,7 +121,7 @@ object Query:
         val result = value.flatten match
           case Some(value) =>
             val obj = Data.Object(FormData.parse(value).toVector.map {
-              case (name, Some(value)) => (name, Data.String(value))
+              case (name, Some(value)) => (name, String(value))
               case (name, None)        => (name, Data.Null)
             })
             codec.decode(obj)
@@ -188,7 +188,7 @@ object Query:
       val result = value.flatten match
         case Some(value) =>
           val obj = Data.Object(FormData.parse(value).toVector.map {
-            case (name, Some(value)) => (name, Data.String(value))
+            case (name, Some(value)) => (name, String(value))
             case (name, None)        => (name, Data.Null)
           })
           codec.decode(obj)

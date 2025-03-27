@@ -33,7 +33,7 @@ object Segment:
       (),
       Violations.namespaceNec(
         XPath.Root / name,
-        Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = Data.String(value))
+        Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = String(value))
       )
     )
 

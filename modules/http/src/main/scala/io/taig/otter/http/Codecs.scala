@@ -19,16 +19,16 @@ trait Codecs extends Base.Codecs, Types:
       minLength: Option[Int] = none,
       maxLength: Option[Int] = none,
       matches: Option[Pattern] = none
-  ): Primitive.Of[Data.String, CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
+  ): Primitive.Of[String, CIString] = string(minLength, maxLength, matches).imap(CIString.apply)(_.toString)
 
-  final val cistring: Primitive.Of[Data.String, CIString] = cistring()
+  final val cistring: Primitive.Of[String, CIString] = cistring()
 
   implicit final class CIStringStringCodecBuilder(codec: cistring.type) extends StringCodecBuilder[CIString]:
     override def apply(
         minLength: Option[Int],
         maxLength: Option[Int],
         matches: Option[Pattern]
-    ): Primitive.Of[Data.String, CIString] = cistring(minLength, maxLength, matches)
+    ): Primitive.Of[String, CIString] = cistring(minLength, maxLength, matches)
     override def isEmpty(a: CIString): Boolean = a.isEmpty
     override def empty: CIString = CIString.empty
 
@@ -216,7 +216,7 @@ trait Codecs extends Base.Codecs, Types:
     codec,
     (charset, bytes) =>
       val value = new String(bytes, charset.getOrElse(fallback))
-      Data.String(value).valid
+      String(value).valid
     ,
     (charset, data) => data.plain.getBytes(charset.getOrElse(fallback))
   )
@@ -230,7 +230,7 @@ trait Codecs extends Base.Codecs, Types:
       (charset, bytes) =>
         val value = new String(bytes, charset.getOrElse(fallback))
         val formData = FormData.parse(value).toVector
-        Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(Data.String.apply)) }).valid
+        Data.Object(formData.map { case (key, value) => (key, value.fold(Data.Null)(String.apply)) }).valid
       ,
       (charset, data) =>
         val values = data.values.map:
@@ -302,7 +302,7 @@ trait Codecs extends Base.Codecs, Types:
     def apply[O <: Data.Value, A](
         tpe: String,
         codec: Codec.Of[Data.Nullable[O], A]
-    ): Record.Of[Data.String | O, A] = field("error", constant(tpe)) :* field.optional("value", codec)
+    ): Record.Of[String | O, A] = field("error", constant(tpe)) :* field.optional("value", codec)
 
     def apply(tpe: String): Record[Unit] = error(tpe, void)
 

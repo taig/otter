@@ -4,7 +4,7 @@
 // import munit.FunSuite
 
 // final class ViolationsTest extends FunSuite:
-//   val violations = Violations.rootNec(Violation(Constraint.Type("string"), actual = Data.String("null"))) |+|
+//   val violations = Violations.rootNec(Violation(Constraint.Type("string"), actual = String("null"))) |+|
 //     Violations.rootNec(Violation.oneOf(List("foo", "bar", "baz"), "foobar")) |+|
 //     Violations.namespaceNec(
 //       XPath.Root / "foo",

@@ -1,6 +1,6 @@
 package io.taig.otter
 
 object StringConstantPrinter:
-  def apply[A](codec: Constant[?, A], value: A): String = codec match
-    case Constant.Root(codec, value, _) => StringCodecPrinter(codec.value, value)
-    case Constant.Modify(self, _, g)    => StringCodecPrinter(self, g(value))
+  def apply[A](codec: Constant[?, A], a: A): String = codec match
+    case Constant.Root(codec, reference, _) => StringCodecPrinter(codec = codec.value, reference)
+    case Constant.Modify(self, _, g)        => StringCodecPrinter(codec = self, g(a))

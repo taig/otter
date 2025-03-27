@@ -7,11 +7,11 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 
 trait JavaTimeCodecs extends Codecs:
-  val duration: Primitive.Of[Format.String, Duration] = parser(name = "iso8601.duration")(value =>
+  val duration: Primitive.Of[String, Duration] = parser(name = "iso8601.duration")(value =>
     Either.catchOnly[DateTimeParseException](Duration.parse(value)).leftMap(_.getMessage)
   )(_.toString)
 
-  val instant: Primitive.Of[Format.String, Instant] =
+  val instant: Primitive.Of[String, Instant] =
     parser(name = "iso8601.instant")(value =>
       Either.catchOnly[DateTimeParseException](Instant.parse(value)).leftMap(_.getMessage)
     )(_.toString)

@@ -56,7 +56,7 @@ sealed abstract class Path[A]:
         Violations.rootNec(
           Violation(
             Constraint.Primitive.Matches(Pattern.compile(Pattern.quote("/"))),
-            actual = Data.String("/" + values.mkString("/"))
+            actual = String("/" + values.mkString("/"))
           )
         )
       )
@@ -86,7 +86,7 @@ object Path:
             .rootNec(
               Violation(
                 Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(show"/$segment"))),
-                actual = Data.String("/")
+                actual = String("/")
               )
             )
             .invalid

@@ -68,7 +68,7 @@ final class QueriesTest extends FunSuite:
       expected = (
         Vector.empty,
         Violations
-          .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("int"), actual = Data.String("string")))
+          .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("int"), actual = String("string")))
           .invalid
       )
     )
@@ -97,7 +97,7 @@ final class QueriesTest extends FunSuite:
     //   expected = (
     //     Vector.empty,
     //     Violations
-    //       .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("array"), actual = Data.String("null")))
+    //       .namespaceNec(XPath.Root / "foo", Violation(Constraint.Type("array"), actual = String("null")))
     //       .invalid
     //   )
     // )

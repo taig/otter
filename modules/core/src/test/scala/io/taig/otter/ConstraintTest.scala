@@ -26,7 +26,7 @@
 
 //     assertEquals(
 //       obtained = Constraint.parse("oneOf [\"foobar\",42,true]"),
-//       expected = Constraint.OneOf(List(Data.String("foobar"), Data.Number(42), Data.Boolean(true))).asRight
+//       expected = Constraint.OneOf(List(String("foobar"), Data.Number(42), Data.Boolean(true))).asRight
 //     )
 
 //     assertEquals(
