@@ -55,15 +55,15 @@ trait Types:
   object Record:
     type Of[F <: Data.Any, A] = Base.Record[F, A]
 
-  final type Union[A] = Base.Union[Data.Any, A]
+  // final type Union[A] = Base.Union[Data.Any, A]
 
-  object Union:
-    type Of[F <: Data.Any, A] = Base.Union[F, A]
+  // object Union:
+  //   type Of[F <: Data.Any, A] = Base.Union[F, A]
 
-    type Tagged[A] = Base.Union[Data.Object[?], A]
+  //   type Tagged[A] = Base.Union[Data.Object[?], A]
 
-    object Tagged:
-      type Of[F <: Data.Any, A] = Base.Union[Data.Object[F], A]
+  //   object Tagged:
+  //     type Of[F <: Data.Any, A] = Base.Union[Data.Object[F], A]
 
 //     type Nested[A] = Tagged[A]
 

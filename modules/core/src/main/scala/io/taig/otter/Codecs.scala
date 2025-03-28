@@ -345,31 +345,31 @@ trait Codecs extends Types:
     def apply(value: Double): Constant.Of[Data.Number, Double] = apply(double, value)
     def apply(value: Boolean): Constant.Of[Boolean, Boolean] = apply(boolean, value)
 
-  object dynamic:
-    val number: Union.Of[Data.Number, Data.Number] = branch("bigDecimal", jBigDecimal) |
-      branch("bigInteger", jBigInteger) |
-      branch("double", double) |
-      branch("float", float) |
-      branch("int", int) |
-      branch("long", long)
+  // object dynamic:
+  //   val number: Union.Of[Data.Number, Data.Number] = branch("bigDecimal", jBigDecimal) |
+  //     branch("bigInteger", jBigInteger) |
+  //     branch("double", double) |
+  //     branch("float", float) |
+  //     branch("int", int) |
+  //     branch("long", long)
 
-    val primitive: Union.Of[Data.Primitive, Data.Primitive] =
-      number | branch("boolean", boolean) | branch("string", string)
+  //   val primitive: Union.Of[Data.Primitive, Data.Primitive] =
+  //     number | branch("boolean", boolean) | branch("string", string)
 
-    val value: Union.Of[Data.Value, Data.Value] = primitive |
-      branch("object", dictionary.list(string, any).imap(Data.Object.apply)(_.values)) |
-      branch("array", collection.vector(any).imap(Data.Array.apply)(_.values))
+  //   val value: Union.Of[Data.Value, Data.Value] = primitive |
+  //     branch("object", dictionary.list(string, any).imap(Data.Object.apply)(_.values)) |
+  //     branch("array", collection.vector(any).imap(Data.Array.apply)(_.values))
 
-    // This code will trigger a warning, which might be wrong
-    // val any: Union.Of[Data.Any, Data.Any] = value | branch("null", nil.as(Data.Null))
+  //   // This code will trigger a warning, which might be wrong
+  //   // val any: Union.Of[Data.Any, Data.Any] = value | branch("null", nil.as(Data.Null))
 
-    val any: Union.Of[Data.Any, Data.Value | Data.Null] = (value :+ branch("null", nil.as(Data.Null))).imap {
-      case Left(value)  => value
-      case Right(value) => value
-    } {
-      case value: Data.Value => Left(value)
-      case a: Data.Null      => Right(a)
-    }
+  //   val any: Union.Of[Data.Any, Data.Value | Data.Null] = (value :+ branch("null", nil.as(Data.Null))).imap {
+  //     case Left(value)  => value
+  //     case Right(value) => value
+  //   } {
+  //     case value: Data.Value => Left(value)
+  //     case a: Data.Null      => Right(a)
+  //   }
 
   val void: Optional.Of[Data.Any, Unit] = Base.Optional.Void(metadata = Metadata.Empty)
 
