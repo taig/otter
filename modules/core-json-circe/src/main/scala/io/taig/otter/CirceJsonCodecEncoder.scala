@@ -12,4 +12,4 @@ object CirceJsonCodecEncoder:
     case codec: Primitive[?, A]   => CirceJsonPrimitiveEncoder(codec, a)
     case codec: Record[?, A]      => Json.fromFields(CirceJsonRecordEncoder(codec, a))
     case codec: Tuple[?, A]       => Json.fromValues(CirceJsonTupleEncoder(codec, a))
-    case codec: Union[?, A]       => CirceJsonUnionEncoder(codec, a)
+    case codec: Union[?, ?, A]    => CirceJsonUnionEncoder(codec, a)

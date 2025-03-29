@@ -330,14 +330,13 @@ object Tuple:
   given [F <: Data.Any]: CodecInvariant[Tuple[F, *]] with
     override def imap[A, B](fa: Tuple[F, A])(f: A => B)(g: B => A): Tuple[F, B] = fa.imap(f)(g)
 
-sealed abstract class Union[+F[+a <: Data.Any] <: Data.Any, +G <: Data.Any, A] extends Codec[F[G], A]:
+sealed abstract class Union[+F[+_ <: Data.Any] <: Data.Any, +G <: Data.Any, A] extends Codec[F[G], A]:
   override def modifyMetadata(f: Metadata => Metadata): Union[F, G, A]
   override def imap[B](f: A => B)(g: B => A): Union[F, G, B]
 
   def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union[F, G | H, Either[A, B]]
 
-  // final def :+[H <: Data.Any, B](branch: Branch[G, B]): Union[F, G | H, Either[A, B]] = ???
-  // orElse(codec = branch.toUnion)
+  def :+[H <: Data.Any, B](branch: Branch[H, B]): Union[F, G | H, Either[A, B]]
 
   def untagged: Union.Untagged[G, A]
   def keyed: Union.Tagged[[a <: Data.Any] =>> a, G, A]
@@ -350,12 +349,14 @@ object Union:
     final override def imap[B](f: A => B)(g: B => A): Union.Untagged[F, B] = Untagged.Modify(self = this, f, g)
     override def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union.Untagged[F | H, Either[A, B]] =
       Untagged.OrElse(left = this, right = codec.untagged, metadata = Metadata.Empty)
+    override def :+[H <: Data.Any, B](branch: Branch[H, B]): Union.Untagged[F | H, Either[A, B]] =
+      orElse(codec = branch.toUnion)
     final override def untagged: Union.Untagged[F, A] = this
     final override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Tagged.Keyed(untagged = this)
     final override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
-      Tagged.Merged(untagged = this)
+      Tagged.Merged(untagged = this, discriminator = Discriminator.Merged.Default)
     final override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
-      Tagged.Nested(untagged = this)
+      Tagged.Nested(untagged = this, discriminator = Discriminator.Nested.Default)
 
   object Untagged:
     final private[otter] case class OrElse[F <: Data.Any, A, G <: Data.Any, B](
@@ -377,8 +378,9 @@ object Union:
 
   sealed abstract class Tagged[+F[+a <: Data.Any] <: Data.Any, +G <: Data.Any, A] extends Union[F, G, A]:
     override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[F, G, A]
-    override def imap[B](f: A => B)(g: B => A): Union.Tagged[F, G, B] = ???
+    override def imap[B](f: A => B)(g: B => A): Union.Tagged[F, G, B]
     override def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union.Tagged[F, G | H, Either[A, B]]
+    override def :+[H <: Data.Any, B](branch: Branch[H, B]): Union.Tagged[F, G | H, Either[A, B]] = ???
 
   object Tagged:
     final private[otter] case class Keyed[F <: Data.Any, A](untagged: Union.Untagged[F, A])
@@ -393,11 +395,15 @@ object Union:
       ): Union.Tagged[[a <: Data.Any] =>> a, F | H, Either[A, B]] =
         Keyed(untagged = untagged.orElse(codec.untagged))
       override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = this
-      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = Merged(untagged)
-      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = Nested(untagged)
+      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+        Merged(untagged, discriminator = Discriminator.Merged.Default)
+      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+        Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Merged[F <: Data.Any, A](untagged: Union.Untagged[F, A])
-        extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
+    final private[otter] case class Merged[F <: Data.Any, A](
+        untagged: Union.Untagged[F, A],
+        discriminator: Discriminator.Merged
+    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
       export untagged.metadata
       override def modifyMetadata(
           f: Metadata => Metadata
@@ -408,13 +414,16 @@ object Union:
       override def orElse[H <: Data.Any, B](
           codec: Union[?, H, B]
       ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F | H, Either[A, B]] =
-        ???
+        copy(untagged = untagged.orElse(codec.untagged))
       override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Keyed(untagged)
       override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = this
-      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = Nested(untagged)
+      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+        Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Nested[F <: Data.Any, A](untagged: Union.Untagged[F, A])
-        extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
+    final private[otter] case class Nested[F <: Data.Any, A](
+        untagged: Union.Untagged[F, A],
+        discriminator: Discriminator.Nested
+    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
       export untagged.metadata
       override def modifyMetadata(
           f: Metadata => Metadata
@@ -425,43 +434,21 @@ object Union:
       override def orElse[H <: Data.Any, B](
           codec: Union[?, H, B]
       ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F | H, Either[A, B]] =
-        ???
+        copy(untagged = untagged.orElse(codec.untagged))
       override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Keyed(untagged)
-      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = Merged(untagged)
+      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+        Merged(untagged, discriminator = Discriminator.Merged.Default)
       override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = this
 
-  // object Tagged:
-  // private [otter] final case class Keyed[F <: Data.Any, A](untagged)
+  extension [F[+_ <: Data.Any] <: Data.Any, G <: Data.Any, A <: Matchable](self: Union[F, G, A])
+    inline def |[H <: Data.Any, B <: Matchable](branch: Branch[H, B]): Union[F, G | H, A | B] =
+      (self :+ branch).imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
 
-  // final case class Tagged[+F[+a <: Data.Any] <: Data.Any, +G <: Data.Any, A](untagged: Union.Untagged[G, A]) extends Union[F, G, A]:
-  //   export untagged.metadata
-  //   override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[F, G, A] = copy(untagged = untagged.modifyMetadata(f))
-  //   override def imap[B](f: A => B)(g: B => A): Union.Tagged[F, G, B] = copy(untagged = untagged.imap(f)(g))
-
-// extension [F <: Data.Any, A <: Matchable](self: Union[F, A])
-//   inline def |[G <: Data.Any, B <: Matchable](branch: Branch[G, B]): Union[F | G, A | B] =
-//     (self :+ branch).imap {
-//       case Left(a)  => a
-//       case Right(b) => b
-//     } {
-//       case a: A => Left(a)
-//       case b: B => Right(b)
-//     }
-
-// final private[otter] case class Modify[F <: Data.Any, A, B](self: Union[F, A], f: A => B, g: B => A)
-//     extends Union[F, B]:
-//   export self.metadata
-//   override def modifyMetadata(f: Metadata => Metadata): Union[F, B] = copy(self = self.modifyMetadata(f))
-
-// final private[otter] case class Root[F <: Data.Any, A](branch: Branch[F, A], metadata: Metadata) extends Union[F, A]:
-//   override def modifyMetadata(f: Metadata => Metadata): Union[F, A] = copy(metadata = f(metadata))
-
-// final private[otter] case class OrElse[F <: Data.Any, A, G <: Data.Any, B](
-//     left: Union[F, A],
-//     right: Union[G, B],
-//     metadata: Metadata
-// ) extends Union[F | G, Either[A, B]]:
-//   override def modifyMetadata(f: Metadata => Metadata): Union[F | G, Either[A, B]] = copy(metadata = f(metadata))
-
-// given [F <: Data.Any]: CodecInvariant[Union[F, *]] with
-//   override def imap[A, B](fa: Union[F, A])(f: A => B)(g: B => A): Union[F, B] = fa.imap(f)(g)
+  given [F[+_ <: Data.Any] <: Data.Any, G <: Data.Any]: CodecInvariant[Union[F, G, *]] with
+    override def imap[A, B](fa: Union[F, G, A])(f: A => B)(g: B => A): Union[F, G, B] = fa.imap(f)(g)
