@@ -16,26 +16,25 @@ import cats.Eval
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import cats.Eq
-import cats.Id
 
-sealed abstract class Codec[+F <: Data.Any, A] extends Product with Serializable:
+sealed abstract class Codec[+S <: Data.Any, A] extends Product with Serializable:
   def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Codec[F, A]
+  def modifyMetadata(f: Metadata => Metadata): Codec[S, A]
+  def imap[B](f: A => B)(g: B => A): Codec[S, B]
 
-  def imap[B](f: A => B)(g: B => A): Codec[F, B]
-
-  final def nullable: Optional[F, Option[A]] = Optional.Nullable(codec = this, metadata)
-  final def nullable(default: A): Optional[F, A] = Optional.Default(codec = this, value = default, metadata)
+  // final def nullable: Optional[this.type, Option[A]] = Optional.Nullable(codec = Eval.now(this), metadata)
+  // final def nullable(default: A): Optional[this.type, A] =
+  //   Optional.Default(codec = Eval.now(this), value = default, metadata)
 
 object Codec:
-  given [F <: Data.Any]: CodecInvariant[Codec[F, *]] with
-    override def imap[A, B](fa: Codec[F, A])(f: A => B)(g: B => A): Codec[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Codec[S, *]] with
+    override def imap[A, B](fa: Codec[S, A])(f: A => B)(g: B => A): Codec[S, B] = fa.imap(f)(g)
 
-sealed abstract class Collection[F <: Data.Any, A] extends Codec[Data.Array[F], A]:
-  def codec: Eval[Codec[?, ?]]
+sealed abstract class Collection[+S <: Data.Any, A] extends Codec[Data.Array[S], A]:
+  def codec: Eval[Codec[S, ?]]
   def constraints: Vector[Constraint.Collection]
-  override def modifyMetadata(f: Metadata => Metadata): Collection[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Collection[F, B] = Collection.Modify(self = this, f, g)
+  override def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
 
 object Collection:
   private def constraints(
@@ -48,139 +47,142 @@ object Collection:
     Option.when(uniqueItems)(Constraint.Collection.UniqueItems)
   ).flatten
 
-  final private[otter] case class Indexed[F <: Data.Any, A](
-      codec: Eval[Codec[F, A]],
+  final private[otter] case class Indexed[S <: Data.Any, A](
+      codec: Eval[Codec[S, A]],
       minimum: Option[Int],
       maximum: Option[Int],
       uniqueItems: Boolean,
       metadata: Metadata
-  ) extends Collection[F, Vector[A]]:
+  ) extends Collection[S, Vector[A]]:
     override def constraints: Vector[Constraint.Collection] = Collection.constraints(minimum, maximum, uniqueItems)
-    override def modifyMetadata(f: Metadata => Metadata): Collection[F, Vector[A]] = copy(metadata = f(metadata))
+    override def modifyMetadata(f: Metadata => Metadata): Collection[S, Vector[A]] = copy(metadata = f(metadata))
 
-  final private[otter] case class Linked[F <: Data.Any, A](
-      codec: Eval[Codec[F, A]],
+  final private[otter] case class Linked[S <: Data.Any, A](
+      codec: Eval[Codec[S, A]],
       minimum: Option[Int],
       maximum: Option[Int],
       uniqueItems: Boolean,
       metadata: Metadata
-  ) extends Collection[F, List[A]]:
+  ) extends Collection[S, List[A]]:
     override def constraints: Vector[Constraint.Collection] = Collection.constraints(minimum, maximum, uniqueItems)
-    override def modifyMetadata(f: Metadata => Metadata): Collection[F, List[A]] = copy(metadata = f(metadata))
+    override def modifyMetadata(f: Metadata => Metadata): Collection[S, List[A]] = copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[F <: Data.Any, A, B](self: Collection[F, A], f: A => B, g: B => A)
-      extends Collection[F, B]:
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Collection[S, A], f: A => B, g: B => A)
+      extends Collection[S, B]:
     export self.{codec, constraints, metadata}
-    override def modifyMetadata(f: Metadata => Metadata): Collection[F, B] = copy(self = self.modifyMetadata(f))
+    override def modifyMetadata(f: Metadata => Metadata): Collection[S, B] = copy(self = self.modifyMetadata(f))
 
-  given [F <: Data.Any]: CodecInvariant[Collection[F, *]] with
-    override def imap[A, B](fa: Collection[F, A])(f: A => B)(g: B => A): Collection[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Collection[S, *]] with
+    override def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)
 
-sealed abstract class Constant[+F <: Data.Primitive, A] extends Codec[F, A]:
-  def codec: Eval[Codec[?, ?]]
+sealed abstract class Constant[+S <: Data.Any, A] extends Codec[S, A]:
+  def codec: Eval[Codec[S, ?]]
   def matches(a: A): Boolean
-  override def modifyMetadata(f: Metadata => Metadata): Constant[F, A]
-  override def imap[B](f: A => B)(g: B => A): Constant[F, B] = Constant.Modify(self = this, f, g)
+  override def modifyMetadata(f: Metadata => Metadata): Constant[S, A]
+  override def imap[B](f: A => B)(g: B => A): Constant[S, B] = Constant.Modify(self = this, f, g)
 
 object Constant:
-  final private[otter] case class Modify[F <: Data.Primitive, A, B](self: Constant[F, A], f: A => B, g: B => A)
-      extends Constant[F, B]:
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Constant[S, A], f: A => B, g: B => A)
+      extends Constant[S, B]:
     export self.{codec, metadata}
-    override def matches(b: B): SBoolean = self.matches(g(b))
-    override def modifyMetadata(f: Metadata => Metadata): Constant[F, B] = copy(self = self.modifyMetadata(f))
+    override def matches(b: B): Boolean = self.matches(g(b))
+    override def modifyMetadata(f: Metadata => Metadata): Constant[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Root[F <: Data.Primitive, A: Eq](
-      codec: Eval[Codec[F, A]],
+  final private[otter] case class Root[S <: Data.Any, A: Eq](
+      codec: Eval[Codec[S, A]],
       reference: A,
       metadata: Metadata
-  ) extends Constant[F, A]:
-    override def matches(a: A): SBoolean = reference === a
-    override def modifyMetadata(f: Metadata => Metadata): Constant[F, A] = copy(metadata = f(metadata))
+  ) extends Constant[S, A]:
+    override def matches(a: A): Boolean = reference === a
+    override def modifyMetadata(f: Metadata => Metadata): Constant[S, A] = copy(metadata = f(metadata))
 
-  given [F <: Data.Primitive]: CodecInvariant[Constant[F, *]] with
-    override def imap[A, B](fa: Constant[F, A])(f: A => B)(g: B => A): Constant[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Constant[S, *]] with
+    override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)
 
-sealed abstract class Dictionary[+F <: Data.Any, A] extends Codec[Data.Object[F], A]:
+sealed abstract class Dictionary[+S <: Data.Any, A] extends Codec[S, A]:
+  def codec: Eval[Codec[S, ?]]
   def constraints: Vector[Constraint.Object]
-  override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Dictionary[F, B] = Dictionary.Modify(self = this, f, g)
+  override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Dictionary[S, B] = Dictionary.Modify(self = this, f, g)
 
 object Dictionary:
-  final private[otter] case class Root[F <: Data.Any, A, B](
-      key: Codec[Data.Primitive, A],
-      value: Codec[F, B],
+  final private[otter] case class Root[S <: Data.Any, A, B](
+      key: Eval[Codec[Data.Primitive, A]],
+      value: Eval[Codec[S, B]],
       minimum: Option[Int],
       maximum: Option[Int],
       metadata: Metadata
-  ) extends Dictionary[F, List[(A, B)]]:
+  ) extends Dictionary[S, List[(A, B)]]:
+    override def codec: Eval[Codec[S, B]] = value
     override def constraints: Vector[Constraint.Object] = Vector(
       minimum.map(Constraint.Object.MinProperties.apply),
       maximum.map(Constraint.Object.MaxProperties.apply)
     ).flatten
-    override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, List[(A, B)]] = copy(metadata = f(metadata))
+    override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, List[(A, B)]] = copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[F <: Data.Any, A, B](self: Dictionary[F, A], f: A => B, g: B => A)
-      extends Dictionary[F, B]:
-    export self.{constraints, metadata}
-    override def modifyMetadata(f: Metadata => Metadata): Dictionary[F, B] = copy(self = self.modifyMetadata(f))
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Dictionary[S, A], f: A => B, g: B => A)
+      extends Dictionary[S, B]:
+    export self.{codec, constraints, metadata}
+    override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, B] = copy(self = self.modifyMetadata(f))
 
-  given [F <: Data.Any]: CodecInvariant[Dictionary[F, *]] with
-    override def imap[A, B](fa: Dictionary[F, A])(f: A => B)(g: B => A): Dictionary[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Dictionary[S, *]] with
+    override def imap[A, B](fa: Dictionary[S, A])(f: A => B)(g: B => A): Dictionary[S, B] = fa.imap(f)(g)
 
-sealed abstract class Enumeration[+F <: Data.Primitive, A] extends Codec[F, A]:
-  def codec: Eval[Codec[?, ?]]
+sealed abstract class Enumeration[+S <: Data.Primitive, A] extends Codec[S, A]:
+  def codec: Eval[Codec[S, ?]]
   def values: NonEmptyList[A]
-  override def modifyMetadata(f: Metadata => Metadata): Enumeration[F, A]
-  override def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = Enumeration.Modify(self = this, f, g)
+  override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
+  override def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
 
 object Enumeration:
-  final private[otter] case class Modify[F <: Data.Primitive, A, B](self: Enumeration[F, A], f: A => B, g: B => A)
-      extends Enumeration[F, B]:
+  final private[otter] case class Modify[S <: Data.Primitive, A, B](self: Enumeration[S, A], f: A => B, g: B => A)
+      extends Enumeration[S, B]:
     export self.{codec, metadata}
     override def values: NonEmptyList[B] = self.values.map(f)
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[F, B] = copy(self = self.modifyMetadata(f))
+    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Root[F <: Data.Primitive, A, B](
-      codec: Eval[Codec[F, A]],
+  final private[otter] case class Root[S <: Data.Primitive, A, B](
+      codec: Eval[Codec[S, A]],
       mapping: Mapping[B, A],
       metadata: Metadata
-  ) extends Enumeration[F, B]:
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[F, B] = copy(metadata = f(metadata))
+  ) extends Enumeration[S, B]:
+    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
 
-  given [F <: Data.Primitive]: CodecInvariant[Enumeration[F, *]] with
-    override def imap[A, B](fa: Enumeration[F, A])(f: A => B)(g: B => A): Enumeration[F, B] = fa.imap(f)(g)
+  given [S <: Data.Primitive]: CodecInvariant[Enumeration[S, *]] with
+    override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] = fa.imap(f)(g)
 
-sealed abstract class Optional[+F <: Data.Any, A] extends Codec[F | Data.Null, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Optional[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Optional[F, B] = Optional.Modify(self = this, f, g)
+sealed abstract class Optional[+S <: Data.Any, A] extends Codec[S, A]:
+  def codec: Eval[Codec[S, ?]]
+  override def modifyMetadata(f: Metadata => Metadata): Optional[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Optional[S, B] = Optional.Modify(self = this, f, g)
 
 object Optional:
-  final private[otter] case class Modify[F <: Data.Any, A, B](self: Optional[F, A], f: A => B, g: B => A)
-      extends Optional[F, B]:
-    export self.metadata
-    override def modifyMetadata(f: Metadata => Metadata): Optional[F, B] = copy(self = self.modifyMetadata(f))
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Optional[S, A], f: A => B, g: B => A)
+      extends Optional[S, B]:
+    export self.{codec, metadata}
+    override def modifyMetadata(f: Metadata => Metadata): Optional[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Default[F <: Data.Any, A](codec: Codec[F, A], value: A, metadata: Metadata)
-      extends Optional[F, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Optional[F, A] = copy(metadata = f(metadata))
+  final private[otter] case class Default[S <: Data.Any, A](codec: Eval[Codec[S, A]], value: A, metadata: Metadata)
+      extends Optional[S, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Optional[S, A] = copy(metadata = f(metadata))
 
-  final private[otter] case class Null(metadata: Metadata) extends Optional[Data.Null, Unit]:
-    override def modifyMetadata(f: Metadata => Metadata): Optional[Data.Null, Unit] = copy(metadata = f(metadata))
+  // final private[otter] case class Null(metadata: Metadata) extends Optional[Nothing, Unit]:
+  //   override def modifyMetadata(f: Metadata => Metadata): Optional[Nothing, Unit] = copy(metadata = f(metadata))
 
-  final private[otter] case class Nullable[F <: Data.Any, A](codec: Codec[F, A], metadata: Metadata)
-      extends Optional[F, Option[A]]:
-    override def modifyMetadata(f: Metadata => Metadata): Optional[F, Option[A]] = copy(metadata = f(metadata))
+  final private[otter] case class Nullable[S <: Data.Any, A](codec: Eval[Codec[S, A]], metadata: Metadata)
+      extends Optional[S, Option[A]]:
+    override def modifyMetadata(f: Metadata => Metadata): Optional[S, Option[A]] = copy(metadata = f(metadata))
 
-  final private[otter] case class Void[F <: Data.Any, A](metadata: Metadata) extends Optional[F, Unit]:
-    override def modifyMetadata(f: Metadata => Metadata): Optional[F, Unit] = copy(metadata = f(metadata))
+  // final private[otter] case class Void[F , A](metadata: Metadata) extends Optional[F, Unit]:
+  //   override def modifyMetadata(f: Metadata => Metadata): Optional[F, Unit] = copy(metadata = f(metadata))
 
-  given [F <: Data.Primitive]: CodecInvariant[Optional[F, *]] with
-    override def imap[A, B](fa: Optional[F, A])(f: A => B)(g: B => A): Optional[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Optional[S, *]] with
+    override def imap[A, B](fa: Optional[S, A])(f: A => B)(g: B => A): Optional[S, B] = fa.imap(f)(g)
 
-sealed abstract class Primitive[+F <: Data.Primitive, A] extends Codec[F, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Primitive[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Primitive[F, B] =
+sealed abstract class Primitive[+S <: Data.Primitive, A] extends Codec[S, A]:
+  override def modifyMetadata(f: Metadata => Metadata): Primitive[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Primitive[S, B] =
     Primitive.Modify(self = this, f, g)
 
 object Primitive:
@@ -189,8 +191,8 @@ object Primitive:
       maximum: Option[Comparison[JBigDecimal]],
       multiple: Option[JBigDecimal],
       metadata: Metadata
-  ) extends Primitive[Data.Number, JBigDecimal]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, JBigDecimal] =
+  ) extends Primitive[JBigDecimal, JBigDecimal]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[JBigDecimal, JBigDecimal] =
       copy(metadata = f(metadata))
 
   final private[otter] case class BigInteger(
@@ -198,8 +200,8 @@ object Primitive:
       maximum: Option[Comparison[JBigInteger]],
       multiple: Option[JBigInteger],
       metadata: Metadata
-  ) extends Primitive[Data.Number, JBigInteger]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, JBigInteger] =
+  ) extends Primitive[JBigInteger, JBigInteger]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[JBigInteger, JBigInteger] =
       copy(metadata = f(metadata))
 
   final private[otter] case class Boolean(metadata: Metadata) extends Primitive[SBoolean, SBoolean]:
@@ -211,8 +213,8 @@ object Primitive:
       maximum: Option[Comparison[SDouble]],
       multiple: Option[SDouble],
       metadata: Metadata
-  ) extends Primitive[Data.Number, SDouble]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, SDouble] =
+  ) extends Primitive[SDouble, SDouble]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[SDouble, SDouble] =
       copy(metadata = f(metadata))
 
   final private[otter] case class Float(
@@ -220,8 +222,8 @@ object Primitive:
       maximum: Option[Comparison[SFloat]],
       multiple: Option[SFloat],
       metadata: Metadata
-  ) extends Primitive[Data.Number, SFloat]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, SFloat] =
+  ) extends Primitive[SFloat, SFloat]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[SFloat, SFloat] =
       copy(metadata = f(metadata))
 
   final private[otter] case class Int(
@@ -229,8 +231,8 @@ object Primitive:
       maximum: Option[Comparison[SInt]],
       multiple: Option[SInt],
       metadata: Metadata
-  ) extends Primitive[Data.Number, SInt]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, SInt] =
+  ) extends Primitive[SInt, SInt]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[SInt, SInt] =
       copy(metadata = f(metadata))
 
   final private[otter] case class Long(
@@ -238,14 +240,14 @@ object Primitive:
       maximum: Option[Comparison[SLong]],
       multiple: Option[SLong],
       metadata: Metadata
-  ) extends Primitive[Data.Number, SLong]:
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[Data.Number, SLong] =
+  ) extends Primitive[SLong, SLong]:
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[SLong, SLong] =
       copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[F <: Data.Primitive, A, B](self: Primitive[F, A], f: A => B, g: B => A)
-      extends Primitive[F, B]:
+  final private[otter] case class Modify[S <: Data.Primitive, A, B](self: Primitive[S, A], f: A => B, g: B => A)
+      extends Primitive[S, B]:
     export self.metadata
-    override def modifyMetadata(f: Metadata => Metadata): Primitive[F, B] = copy(self = self.modifyMetadata(f))
+    override def modifyMetadata(f: Metadata => Metadata): Primitive[S, B] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Parser[A](
       name: JString,
@@ -267,181 +269,201 @@ object Primitive:
     override def modifyMetadata(f: Metadata => Metadata): Primitive[JString, JString] =
       copy(metadata = f(metadata))
 
-  given [F <: Data.Primitive]: CodecInvariant[Primitive[F, *]] with
-    override def imap[A, B](fa: Primitive[F, A])(f: A => B)(g: B => A): Primitive[F, B] = fa.imap(f)(g)
+  given [S <: Data.Primitive]: CodecInvariant[Primitive[S, *]] with
+    override def imap[A, B](fa: Primitive[S, A])(f: A => B)(g: B => A): Primitive[S, B] = fa.imap(f)(g)
 
-sealed abstract class Record[+F <: Data.Any, A] extends Codec[Data.Object[F], A]:
-  override def modifyMetadata(f: Metadata => Metadata): Record[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Record[F, B] = Record.Modify(self = this, f, g)
+sealed abstract class Record[+S <: Data.Any, A] extends Codec[Data.Object[S], A]:
+  def codecs: Vector[Eval[Codec[S, ?]]]
+  override def modifyMetadata(f: Metadata => Metadata): Record[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Record[S, B] = Record.Modify(self = this, f, g)
 
 object Record:
   final private[otter] case class Empty(metadata: Metadata) extends Record[Nothing, Unit]:
+    override def codecs: Vector[Eval[Nothing]] = Vector.empty
     override def modifyMetadata(f: Metadata => Metadata): Record[Nothing, Unit] = copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[F <: Data.Any, A, B](self: Record[F, A], f: A => B, g: B => A)
-      extends Record[F, B]:
-    export self.metadata
-    override def modifyMetadata(f: Metadata => Metadata): Record[F, B] = copy(self = self.modifyMetadata(f))
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Record[S, A], f: A => B, g: B => A)
+      extends Record[S, B]:
+    export self.{codecs, metadata}
+    override def modifyMetadata(f: Metadata => Metadata): Record[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Root[F <: Data.Any, A](field: Field[F, A], metadata: Metadata) extends Record[F, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Record[F, A] = copy(metadata = f(metadata))
+  final private[otter] case class Root[S <: Data.Any, A](field: Field[S, A], metadata: Metadata) extends Record[S, A]:
+    override def codecs: Vector[Eval[Codec[S, ?]]] = Vector(field.codec)
+    override def modifyMetadata(f: Metadata => Metadata): Record[S, A] = copy(metadata = f(metadata))
 
-  final private[otter] case class Zip[F <: Data.Any, A, G <: Data.Any, B](
-      left: Record[F, A],
-      right: Record[G, B],
+  final private[otter] case class Zip[S <: Data.Any, T <: Data.Any, A, B](
+      left: Record[S, A],
+      right: Record[T, B],
       metadata: Metadata
-  ) extends Record[F | G, (A, B)]:
-    override def modifyMetadata(f: Metadata => Metadata): Record[F | G, (A, B)] = copy(metadata = f(metadata))
+  ) extends Record[S | T, (A, B)]:
+    override def codecs: Vector[Eval[Codec[S | T, ?]]] = left.codecs ++ right.codecs
+    override def modifyMetadata(f: Metadata => Metadata): Record[S | T, (A, B)] = copy(metadata = f(metadata))
 
-  given [F <: Data.Any]: CodecInvariant[Record[F, *]] with
-    override def imap[A, B](fa: Record[F, A])(f: A => B)(g: B => A): Record[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Record[S, *]] with
+    override def imap[A, B](fa: Record[S, A])(f: A => B)(g: B => A): Record[S, B] = fa.imap(f)(g)
 
-sealed abstract class Tuple[+F <: Data.Any, A] extends Codec[Data.Array[F], A]:
-  override def modifyMetadata(f: Metadata => Metadata): Tuple[F, A]
-  final override def imap[B](f: A => B)(g: B => A): Tuple[F, B] = Tuple.Modify(self = this, f, g)
+sealed abstract class Tuple[+S <: Data.Any, A] extends Codec[Data.Array[S], A]:
+  def codecs: Vector[Eval[Codec[S, ?]]]
+  override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
+  final override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
 
 object Tuple:
   final private[otter] case class Empty(metadata: Metadata) extends Tuple[Nothing, EmptyTuple]:
+    override def codecs: Vector[Eval[Nothing]] = Vector.empty
     override def modifyMetadata(f: Metadata => Metadata): Tuple[Nothing, EmptyTuple] = copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[F <: Data.Any, A, B](self: Tuple[F, A], f: A => B, g: B => A)
-      extends Tuple[F, B]:
-    export self.metadata
-    override def modifyMetadata(f: Metadata => Metadata): Tuple[F, B] = copy(self = self.modifyMetadata(f))
+  final private[otter] case class Modify[S <: Data.Any, A, B](self: Tuple[S, A], f: A => B, g: B => A)
+      extends Tuple[S, B]:
+    export self.{codecs, metadata}
+    override def modifyMetadata(f: Metadata => Metadata): Tuple[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Prepend[F <: Data.Any, A <: STuple, G <: Data.Any, B](
-      self: Tuple[F, A],
-      codec: Codec[G, B],
+  final private[otter] case class Prepend[S <: Data.Any, T <: Data.Any, A <: STuple, B](
+      self: Tuple[S, A],
+      codec: Eval[Codec[T, B]],
       metadata: Metadata
-  ) extends Tuple[F | G, B *: A]:
-    override def modifyMetadata(f: Metadata => Metadata): Tuple[F | G, B *: A] = copy(metadata = f(metadata))
+  ) extends Tuple[S | T, B *: A]:
+    override def codecs: Vector[Eval[Codec[S | T, ?]]] = codec +: self.codecs
+    override def modifyMetadata(f: Metadata => Metadata): Tuple[S | T, B *: A] = copy(metadata = f(metadata))
 
-  final private[otter] case class Root[F <: Data.Any, A](codec: Codec[F, A], metadata: Metadata) extends Tuple[F, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Tuple[F, A] = copy(metadata = f(metadata))
+  final private[otter] case class Root[S <: Data.Any, A](codec: Eval[Codec[S, A]], metadata: Metadata)
+      extends Tuple[S, A]:
+    override def codecs: Vector[Eval[Codec[S, A]]] = Vector(codec)
+    override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A] = copy(metadata = f(metadata))
 
   // Do we even need that at all?
-  final private[otter] case class Zip[F <: Data.Any, A, G <: Data.Any, B](
-      left: Codec[F, A],
-      right: Codec[G, B],
-      metadata: Metadata
-  ) extends Tuple[F | G, (A, B)]:
-    override def modifyMetadata(f: Metadata => Metadata): Tuple[F | G, (A, B)] = copy(metadata = f(metadata))
+  // final private[otter] case class Zip[F , A, G , B](
+  //     left: Tuple[F, A],
+  //     right: Tuple[G, B],
+  //     metadata: Metadata
+  // ) extends Tuple[F | G, (A, B)]:
+  //   override def modifyMetadata(f: Metadata => Metadata): Tuple[F | G, (A, B)] = copy(metadata = f(metadata))
 
-  given [F <: Data.Any]: CodecInvariant[Tuple[F, *]] with
-    override def imap[A, B](fa: Tuple[F, A])(f: A => B)(g: B => A): Tuple[F, B] = fa.imap(f)(g)
+  given [S <: Data.Any]: CodecInvariant[Tuple[S, *]] with
+    override def imap[A, B](fa: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = fa.imap(f)(g)
 
-sealed abstract class Union[+F[+_ <: Data.Any] <: Data.Any, +G <: Data.Any, A] extends Codec[F[G], A]:
-  override def modifyMetadata(f: Metadata => Metadata): Union[F, G, A]
-  override def imap[B](f: A => B)(g: B => A): Union[F, G, B]
+sealed abstract class Union[+F[+_ <: Data.Any] <: Data.Any, +S <: Data.Any, A] extends Codec[F[S], A]:
+  override def modifyMetadata(f: Metadata => Metadata): Union[F, S, A]
+  override def imap[B](f: A => B)(g: B => A): Union[F, S, B]
 
-  def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union[F, G | H, Either[A, B]]
+  def orElse[T <: Data.Any, B](codec: Union[?, T, B]): Union[F, S | T, Either[A, B]]
 
-  def :+[H <: Data.Any, B](branch: Branch[H, B]): Union[F, G | H, Either[A, B]]
+  def :+[T <: Data.Any, B](branch: Branch[T, B]): Union[F, S | T, Either[A, B]]
 
-  def untagged: Union.Untagged[G, A]
-  def keyed: Union.Tagged[[a <: Data.Any] =>> a, G, A]
-  def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], G, A]
-  def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], G, A]
+  def untagged: Union.Untagged[S, A]
+  def keyed: Union.Tagged[[a <: Data.Any] =>> a, S, A]
+  def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A]
+  def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A]
 
 object Union:
-  sealed abstract class Untagged[+F <: Data.Any, A] extends Union[[a <: Data.Any] =>> a, F, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[F, A]
-    final override def imap[B](f: A => B)(g: B => A): Union.Untagged[F, B] = Untagged.Modify(self = this, f, g)
-    override def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union.Untagged[F | H, Either[A, B]] =
+  sealed abstract class Untagged[+S <: Data.Any, A] extends Union[[a <: Data.Any] =>> a, S, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, A]
+    final override def imap[B](f: A => B)(g: B => A): Union.Untagged[S, B] = Untagged.Modify(self = this, f, g)
+    override def orElse[T <: Data.Any, B](codec: Union[?, T, B]): Union.Untagged[S | T, Either[A, B]] =
       Untagged.OrElse(left = this, right = codec.untagged, metadata = Metadata.Empty)
-    override def :+[H <: Data.Any, B](branch: Branch[H, B]): Union.Untagged[F | H, Either[A, B]] =
+    override def :+[T <: Data.Any, B](branch: Branch[T, B]): Union.Untagged[S | T, Either[A, B]] =
       orElse(codec = branch.toUnion)
-    final override def untagged: Union.Untagged[F, A] = this
-    final override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Tagged.Keyed(untagged = this)
-    final override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+    final override def untagged: Union.Untagged[S, A] = this
+    final override def keyed: Union.Tagged[[a <: Data.Any] =>> a, S, A] = Tagged.Keyed(untagged = this)
+    final override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
       Tagged.Merged(untagged = this, discriminator = Discriminator.Merged.Default)
-    final override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+    final override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
       Tagged.Nested(untagged = this, discriminator = Discriminator.Nested.Default)
 
   object Untagged:
-    final private[otter] case class OrElse[F <: Data.Any, A, G <: Data.Any, B](
-        left: Union.Untagged[F, A],
-        right: Union.Untagged[G, B],
+    final private[otter] case class OrElse[S <: Data.Any, T <: Data.Any, A, B](
+        left: Union.Untagged[S, A],
+        right: Union.Untagged[T, B],
         metadata: Metadata
-    ) extends Union.Untagged[F | G, Either[A, B]]:
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[F | G, Either[A, B]] =
+    ) extends Union.Untagged[S | T, Either[A, B]]:
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S | T, Either[A, B]] =
         copy(metadata = f(metadata))
 
-    final private[otter] case class Root[F <: Data.Any, A](branch: Branch[F, A], metadata: Metadata)
-        extends Union.Untagged[F, A]:
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[F, A] = copy(metadata = f(metadata))
+    final private[otter] case class Root[S <: Data.Any, A](branch: Branch[S, A], metadata: Metadata)
+        extends Union.Untagged[S, A]:
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, A] = copy(metadata = f(metadata))
 
-    final private[otter] case class Modify[F <: Data.Any, A, B](self: Union.Untagged[F, A], f: A => B, g: B => A)
-        extends Union.Untagged[F, B]:
+    final private[otter] case class Modify[S <: Data.Any, A, B](self: Union.Untagged[S, A], f: A => B, g: B => A)
+        extends Union.Untagged[S, B]:
       export self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[F, B] = copy(self = self.modifyMetadata(f))
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, B] = copy(self = self.modifyMetadata(f))
 
-  sealed abstract class Tagged[+F[+a <: Data.Any] <: Data.Any, +G <: Data.Any, A] extends Union[F, G, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[F, G, A]
-    override def imap[B](f: A => B)(g: B => A): Union.Tagged[F, G, B]
-    override def orElse[H <: Data.Any, B](codec: Union[?, H, B]): Union.Tagged[F, G | H, Either[A, B]]
-    override def :+[H <: Data.Any, B](branch: Branch[H, B]): Union.Tagged[F, G | H, Either[A, B]] = ???
+    extension [S <: Data.Any, A <: Matchable](self: Union.Untagged[S, A])
+      inline def |[T <: Data.Any, B <: Matchable](branch: Branch[T, B]): Union.Untagged[S | T, A | B] =
+        (self :+ branch).imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }
+
+  sealed abstract class Tagged[+F[+_ <: Data.Any] <: Data.Any, +S <: Data.Any, A] extends Union[F, S, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[F, S, A]
+    override def imap[B](f: A => B)(g: B => A): Union.Tagged[F, S, B]
+    override def orElse[T <: Data.Any, B](codec: Union[?, T, B]): Union.Tagged[F, S | T, Either[A, B]]
+    override def :+[T <: Data.Any, B](branch: Branch[T, B]): Union.Tagged[F, S | T, Either[A, B]] =
+      orElse(codec = branch.toUnion)
 
   object Tagged:
-    final private[otter] case class Keyed[F <: Data.Any, A](untagged: Union.Untagged[F, A])
-        extends Union.Tagged[[a <: Data.Any] =>> a, F, A]:
+    final private[otter] case class Keyed[S <: Data.Any, A](untagged: Union.Untagged[S, A])
+        extends Union.Tagged[[a <: Data.Any] =>> a, S, A]:
       export untagged.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[[a <: Data.Any] =>> a, F, A] =
+      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[[a <: Data.Any] =>> a, S, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> a, F, B] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> a, S, B] =
         copy(untagged = untagged.imap(f)(g))
-      override def orElse[H <: Data.Any, B](
-          codec: Union[?, H, B]
-      ): Union.Tagged[[a <: Data.Any] =>> a, F | H, Either[A, B]] =
+      override def orElse[T <: Data.Any, B](
+          codec: Union[?, T, B]
+      ): Union.Tagged[[a <: Data.Any] =>> a, S | T, Either[A, B]] =
         Keyed(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = this
-      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, S, A] = this
+      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         Merged(untagged, discriminator = Discriminator.Merged.Default)
-      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Merged[F <: Data.Any, A](
-        untagged: Union.Untagged[F, A],
+    final private[otter] case class Merged[S <: Data.Any, A](
+        untagged: Union.Untagged[S, A],
         discriminator: Discriminator.Merged
-    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
+    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A]:
       export untagged.metadata
       override def modifyMetadata(
           f: Metadata => Metadata
-      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, B] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, B] =
         copy(untagged = untagged.imap(f)(g))
-      override def orElse[H <: Data.Any, B](
-          codec: Union[?, H, B]
-      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F | H, Either[A, B]] =
+      override def orElse[T <: Data.Any, B](
+          codec: Union[?, T, B]
+      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S | T, Either[A, B]] =
         copy(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Keyed(untagged)
-      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = this
-      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, S, A] = Keyed(untagged)
+      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] = this
+      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Nested[F <: Data.Any, A](
-        untagged: Union.Untagged[F, A],
+    final private[otter] case class Nested[S <: Data.Any, A](
+        untagged: Union.Untagged[S, A],
         discriminator: Discriminator.Nested
-    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A]:
+    ) extends Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A]:
       export untagged.metadata
       override def modifyMetadata(
           f: Metadata => Metadata
-      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, B] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, B] =
         copy(untagged = untagged.imap(f)(g))
-      override def orElse[H <: Data.Any, B](
-          codec: Union[?, H, B]
-      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F | H, Either[A, B]] =
+      override def orElse[T <: Data.Any, B](
+          codec: Union[?, T, B]
+      ): Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S | T, Either[A, B]] =
         copy(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, F, A] = Keyed(untagged)
-      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] =
+      override def keyed: Union.Tagged[[a <: Data.Any] =>> a, S, A] = Keyed(untagged)
+      override def merged: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] =
         Merged(untagged, discriminator = Discriminator.Merged.Default)
-      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], F, A] = this
+      override def nested: Union.Tagged[[a <: Data.Any] =>> Data.Object[String | a], S, A] = this
 
-  extension [F[+_ <: Data.Any] <: Data.Any, G <: Data.Any, A <: Matchable](self: Union[F, G, A])
-    inline def |[H <: Data.Any, B <: Matchable](branch: Branch[H, B]): Union[F, G | H, A | B] =
+  extension [F[+_ <: Data.Any] <: Data.Any, S <: Data.Any, A <: Matchable](self: Union[F, S, A])
+    inline def |[T <: Data.Any, B <: Matchable](branch: Branch[T, B]): Union[F, S | T, A | B] =
       (self :+ branch).imap {
         case Left(a)  => a
         case Right(b) => b
@@ -450,5 +472,5 @@ object Union:
         case b: B => Right(b)
       }
 
-  given [F[+_ <: Data.Any] <: Data.Any, G <: Data.Any]: CodecInvariant[Union[F, G, *]] with
-    override def imap[A, B](fa: Union[F, G, A])(f: A => B)(g: B => A): Union[F, G, B] = fa.imap(f)(g)
+  given [F[+_ <: Data.Any] <: Data.Any, S <: Data.Any]: CodecInvariant[Union[F, S, *]] with
+    override def imap[A, B](fa: Union[F, S, A])(f: A => B)(g: B => A): Union[F, S, B] = fa.imap(f)(g)
