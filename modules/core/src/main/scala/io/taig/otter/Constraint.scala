@@ -15,6 +15,7 @@ sealed abstract class Constraint extends SProduct, Serializable derives Eq:
 object Constraint:
   final case class Type(name: String) extends Constraint
   final case class OneOf(values: List[Data.Primitive]) extends Constraint
+  final case class Equal(reference: Data.Any) extends Constraint
 
   sealed abstract class Collection extends Constraint derives Eq
 

@@ -3,26 +3,25 @@ package io.taig.otter
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 
-sealed abstract class Enumeration[+S[_], A] extends Codec[S, A]:
-  def codec: Reference[S, ?]
+sealed abstract class Enumeration[A] extends Codec[Nothing, A]:
+  def codec: Primitive[?]
   def values: NonEmptyList[A]
-  override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
-  override def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
+  override def modifyMetadata(f: Metadata => Metadata): Enumeration[A]
+  override def imap[B](f: A => B)(g: B => A): Enumeration[B] = Enumeration.Modify(self = this, f, g)
 
 object Enumeration:
-  final private[otter] case class Modify[S[_], A, B](self: Enumeration[S, A], f: A => B, g: B => A)
-      extends Enumeration[S, B]:
+  final private[otter] case class Modify[S[_], A, B](self: Enumeration[A], f: A => B, g: B => A) extends Enumeration[B]:
     export self.{codec, metadata}
     override def values: NonEmptyList[B] = self.values.map(f)
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(self = self.modifyMetadata(f))
+    override def modifyMetadata(f: Metadata => Metadata): Enumeration[B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Root[S[_], A, B](
-      codec: Reference[S, A],
+  final private[otter] case class Root[A, B](
+      codec: Primitive[A],
       mapping: Mapping[B, A],
       metadata: Metadata
-  ) extends Enumeration[S, B]:
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
+  ) extends Enumeration[B]:
+    override def modifyMetadata(f: Metadata => Metadata): Enumeration[B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
 
-  given [S[_]]: CodecInvariant[Enumeration[S, *]] with
-    override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] = fa.imap(f)(g)
+  given CodecInvariant[Enumeration] with
+    override def imap[A, B](fa: Enumeration[A])(f: A => B)(g: B => A): Enumeration[B] = fa.imap(f)(g)

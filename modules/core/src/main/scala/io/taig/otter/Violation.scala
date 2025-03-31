@@ -11,6 +11,9 @@ final case class Violation(constraint: Constraint, actual: Data.Any, hint: Optio
   override def toString: String = ??? // Printers(this)
 
 object Violation:
+  def equal(reference: Data.Any, actual: Data.Any): Violation =
+    Violation(Constraint.Equal(reference), actual, hint = none)
+
   def tpe(name: String, actual: Data.Any): Violation = Violation(Constraint.Type(name), actual, hint = none)
   def tpe(name: String, actual: Data.Any, hint: String): Violation =
     Violation(Constraint.Type(name), actual, hint = hint.some)

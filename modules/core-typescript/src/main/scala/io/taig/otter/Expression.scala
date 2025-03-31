@@ -5,7 +5,7 @@ import cats.syntax.all.*
 
 enum Expression:
   case Inline(value: String)
-  case Referenced(reference: Reference, value: String)
+  case Referenced(reference: Const, value: String)
 
 object Expression:
   given Show[Expression] =

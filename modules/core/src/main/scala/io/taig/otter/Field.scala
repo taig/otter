@@ -2,7 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 
-sealed abstract class Field[S[_], A] extends Product with Serializable:
+sealed abstract class Field[+S[_], A] extends Product with Serializable:
   def name: String
   def codec: Reference[S, ?]
   def metadata: Metadata
