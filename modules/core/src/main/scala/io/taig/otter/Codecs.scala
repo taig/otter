@@ -1,4 +1,4 @@
-// package io.taig.otter
+package io.taig.otter
 
 // import cats.Order
 // import cats.data.Chain
@@ -8,122 +8,122 @@
 // import cats.data.NonEmptySeq
 // import cats.data.NonEmptySet
 // import cats.data.NonEmptyVector
-// import cats.implicits.*
+import cats.implicits.*
 // import io.taig.otter as Base
 
-// import java.math.BigDecimal as JBigDecimal
-// import java.math.BigInteger as JBigInteger
-// import java.util.UUID
-// import java.util.regex.Pattern
-// import scala.collection.immutable.SortedMap
-// import scala.collection.immutable.SortedSet
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import java.util.UUID
+import java.util.regex.Pattern
+import scala.collection.immutable.SortedMap
+import scala.collection.immutable.SortedSet
 // import cats.Eval
 // import io.taig.enumeration.ext.Mapping
 // import io.taig.enumeration.ext.EnumerationValues
 // import cats.kernel.Eq
 
-// trait Codecs extends Types:
-//   def comparison[A](reference: A, exclusive: Boolean = false): Comparison[A] = Comparison(reference, exclusive)
+trait Codecs extends Types:
+  def comparison[A](reference: A, exclusive: Boolean = false): Comparison[A] = Comparison(reference, exclusive)
 
-//   def jBigDecimal(
-//       minimum: Option[Comparison[JBigDecimal]] = none,
-//       maximum: Option[Comparison[JBigDecimal]] = none,
-//       multiple: Option[JBigDecimal] = none
-//   ): Primitive[JBigDecimal] =
-//     Base.Primitive.BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def jBigDecimal(
+      minimum: Option[Comparison[JBigDecimal]] = none,
+      maximum: Option[Comparison[JBigDecimal]] = none,
+      multiple: Option[JBigDecimal] = none
+  ): Primitive[JBigDecimal] =
+    Primitive.BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val jBigDecimal: Primitive[JBigDecimal] = jBigDecimal()
+  val jBigDecimal: Primitive[JBigDecimal] = jBigDecimal()
 
-//   def bigDecimal(
-//       minimum: Option[Comparison[BigDecimal]] = none,
-//       maximum: Option[Comparison[BigDecimal]] = none,
-//       multiple: Option[BigDecimal] = none
-//   ): Primitive[BigDecimal] = jBigDecimal(
-//     minimum.map(_.map(_.bigDecimal)),
-//     maximum.map(_.map(_.bigDecimal)),
-//     multiple.map(_.bigDecimal)
-//   ).imap(BigDecimal.apply)(_.bigDecimal)
+  def bigDecimal(
+      minimum: Option[Comparison[BigDecimal]] = none,
+      maximum: Option[Comparison[BigDecimal]] = none,
+      multiple: Option[BigDecimal] = none
+  ): Primitive[BigDecimal] = jBigDecimal(
+    minimum.map(_.map(_.bigDecimal)),
+    maximum.map(_.map(_.bigDecimal)),
+    multiple.map(_.bigDecimal)
+  ).imap(BigDecimal.apply)(_.bigDecimal)
 
-//   val bigDecimal: Primitive[BigDecimal] = bigDecimal()
+  val bigDecimal: Primitive[BigDecimal] = bigDecimal()
 
-//   def jBigInteger(
-//       minimum: Option[Comparison[JBigInteger]] = none,
-//       maximum: Option[Comparison[JBigInteger]] = none,
-//       multiple: Option[JBigInteger] = none
-//   ): Primitive[JBigInteger] =
-//     Base.Primitive.BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def jBigInteger(
+      minimum: Option[Comparison[JBigInteger]] = none,
+      maximum: Option[Comparison[JBigInteger]] = none,
+      multiple: Option[JBigInteger] = none
+  ): Primitive[JBigInteger] =
+    Primitive.BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val jBigInteger: Primitive[JBigInteger] = jBigInteger()
+  val jBigInteger: Primitive[JBigInteger] = jBigInteger()
 
-//   def bigInt(
-//       minimum: Option[Comparison[BigInt]] = none,
-//       maximum: Option[Comparison[BigInt]] = none,
-//       multiple: Option[BigInt] = none
-//   ): Primitive[BigInt] = jBigInteger(
-//     minimum.map(_.map(_.bigInteger)),
-//     maximum.map(_.map(_.bigInteger)),
-//     multiple.map(_.bigInteger)
-//   ).imap(BigInt.apply)(_.bigInteger)
+  def bigInt(
+      minimum: Option[Comparison[BigInt]] = none,
+      maximum: Option[Comparison[BigInt]] = none,
+      multiple: Option[BigInt] = none
+  ): Primitive[BigInt] = jBigInteger(
+    minimum.map(_.map(_.bigInteger)),
+    maximum.map(_.map(_.bigInteger)),
+    multiple.map(_.bigInteger)
+  ).imap(BigInt.apply)(_.bigInteger)
 
-//   val bigInt: Primitive[BigInt] = bigInt()
+  val bigInt: Primitive[BigInt] = bigInt()
 
-//   val boolean: Primitive[Boolean] = Base.Primitive.Boolean(metadata = Metadata.Empty)
+  val boolean: Primitive[Boolean] = Primitive.Boolean(metadata = Metadata.Empty)
 
-//   def double(
-//       minimum: Option[Comparison[Double]] = none,
-//       maximum: Option[Comparison[Double]] = none,
-//       multiple: Option[Double] = none
-//   ): Primitive[Double] = Base.Primitive.Double(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def double(
+      minimum: Option[Comparison[Double]] = none,
+      maximum: Option[Comparison[Double]] = none,
+      multiple: Option[Double] = none
+  ): Primitive[Double] = Primitive.Double(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val double: Primitive[Double] = double()
+  val double: Primitive[Double] = double()
 
-//   def float(
-//       minimum: Option[Comparison[Float]] = none,
-//       maximum: Option[Comparison[Float]] = none,
-//       multiple: Option[Float] = none
-//   ): Primitive[Float] = Base.Primitive.Float(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def float(
+      minimum: Option[Comparison[Float]] = none,
+      maximum: Option[Comparison[Float]] = none,
+      multiple: Option[Float] = none
+  ): Primitive[Float] = Primitive.Float(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val float: Primitive[Float] = float()
+  val float: Primitive[Float] = float()
 
-//   def int(
-//       minimum: Option[Comparison[Int]] = none,
-//       maximum: Option[Comparison[Int]] = none,
-//       multiple: Option[Int] = none
-//   ): Primitive[Int] = Base.Primitive.Int(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def int(
+      minimum: Option[Comparison[Int]] = none,
+      maximum: Option[Comparison[Int]] = none,
+      multiple: Option[Int] = none
+  ): Primitive[Int] = Primitive.Int(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val int: Primitive[Int] = int()
+  val int: Primitive[Int] = int()
 
-//   def long(
-//       minimum: Option[Comparison[Long]] = none,
-//       maximum: Option[Comparison[Long]] = none,
-//       multiple: Option[Long] = none
-//   ): Primitive[Long] = Base.Primitive.Long(minimum, maximum, multiple, metadata = Metadata.Empty)
+  def long(
+      minimum: Option[Comparison[Long]] = none,
+      maximum: Option[Comparison[Long]] = none,
+      multiple: Option[Long] = none
+  ): Primitive[Long] = Primitive.Long(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-//   val long: Primitive[Long] = long()
+  val long: Primitive[Long] = long()
 
-//   object string extends StringCodecBuilder[String]:
-//     override protected def empty: String = ""
-//     override protected def isEmpty(a: String): Boolean = a.isEmpty
+  object string extends StringCodecBuilder[String]:
+    override protected def empty: String = ""
+    override protected def isEmpty(a: String): Boolean = a.isEmpty
 
-//     def apply(
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         matches: Option[Pattern] = none
-//     ): Primitive[String] = Base.Primitive.String(minimum, maximum, matches, metadata = Metadata.Empty)
+    def apply(
+        minimum: Option[Int] = none,
+        maximum: Option[Int] = none,
+        matches: Option[Pattern] = none
+    ): Primitive[String] = Primitive.String(minimum, maximum, matches, metadata = Metadata.Empty)
 
-//   val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
+  val pattern: Primitive[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
-//   def parser[A](
-//       name: String,
-//       minimum: Option[Int] = none,
-//       maximum: Option[Int] = none,
-//       matches: Option[Pattern] = none
-//   )(f: String => Either[String, A])(g: A => String): Primitive[A] =
-//     Base.Primitive.Parser(name, decode = f, encode = g, minimum, maximum, matches, metadata = Metadata.Empty)
+  def parser[A](
+      name: String,
+      minimum: Option[Int] = none,
+      maximum: Option[Int] = none,
+      matches: Option[Pattern] = none
+  )(f: String => Either[String, A])(g: A => String): Primitive[A] =
+    Primitive.Parser(name, decode = f, encode = g, minimum, maximum, matches, metadata = Metadata.Empty)
 
-//   val uuid: Primitive[UUID] = parser(name = "uuid") { value =>
-//     Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
-//   }(_.show)
+  val uuid: Primitive[UUID] = parser(name = "uuid") { value =>
+    Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
+  }(_.show)
 
 //   def field[F <: Codec[A], A](name: String, codec: => F): Field.Required.Of[F, A] =
 //     Base.Field.Required.Root(name, codec = Eval.later(codec), metadata = Metadata.Empty)

@@ -68,8 +68,9 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(
     core,
-    coreJavaTime,
-    coreJsonCirce
+    coreJson
+    // coreJavaTime,
+    // coreJsonCirce
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -96,13 +97,16 @@ lazy val coreJavaTime = module(identifier = Some("core-java-time"))
   )
   .dependsOn(core)
 
+lazy val coreJson = module(identifier = Some("core-json"))
+  .dependsOn(core % "compile->compile;test->test")
+
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
         Nil
   )
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(coreJson % "compile->compile;test->test")
 
 // lazy val jsonCirce = module(identifier = Some("json-circe"))
 //   .settings(
