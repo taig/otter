@@ -150,6 +150,9 @@ object Primitives:
           Primitive.String.Parser(name, decode = f, encode = g, minimum, maximum, matches, metadata = Metadata.Empty)
         )
 
+    object Plain extends Primitives.Strings.Defaults[Primitive.String]:
+      final override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec
+
   trait Booleans[S[_]: Invariant]:
     def boolean: S[Boolean]
 

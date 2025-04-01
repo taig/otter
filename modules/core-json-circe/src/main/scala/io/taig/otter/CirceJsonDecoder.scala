@@ -27,21 +27,22 @@ object CirceJsonDecoder:
         )
 
   def apply[A](codec: Primitive[A], json: CirceJson): Validated[Violations, A] = codec match
-    case _: Primitive.BigDecimal      => lift[JBigDecimal](name = "bigDecimal", json)
-    case _: Primitive.BigInteger      => lift[JBigInteger](name = "bigInteger", json)
-    case _: Primitive.Boolean         => lift[Boolean](name = "boolean", json)
-    case _: Primitive.Double          => lift[Double](name = "double", json)
-    case _: Primitive.Float           => lift[Float](name = "float", json)
-    case _: Primitive.Int             => lift[Int](name = "int", json)
-    case _: Primitive.Long            => lift[Long](name = "long", json)
-    case Primitive.Modify(self, f, _) => apply(codec = self, json).map(f)
-    case Primitive.Parser(name, decode, _, _, _, _, _) =>
+    case _: Primitive.Boolean.Root            => lift[Boolean](name = "boolean", json)
+    case _: Primitive.Number.BigDecimal       => lift[JBigDecimal](name = "bigDecimal", json)
+    case _: Primitive.Number.BigInteger       => lift[JBigInteger](name = "bigInteger", json)
+    case _: Primitive.Number.Double           => lift[Double](name = "double", json)
+    case _: Primitive.Number.Float            => lift[Float](name = "float", json)
+    case _: Primitive.Number.Int              => lift[Int](name = "int", json)
+    case _: Primitive.Number.Long             => lift[Long](name = "long", json)
+    case Primitive.Boolean.Modify(self, f, _) => apply(codec = self, json).map(f)
+    case Primitive.Number.Modify(self, f, _)  => apply(codec = self, json).map(f)
+    case Primitive.String.Modify(self, f, _)  => apply(codec = self, json).map(f)
+    case Primitive.String.Parser(name, decode, _, _, _, _, _) =>
       lift[String](name = "string", json).andThen: value =>
         decode(value)
           .leftMap(error => Violations.rootNec(Violation.tpe(name, actual = toValue(json), hint = error)))
           .toValidated
-    case _: Primitive.String =>
-      lift[String](name = "string", json)
+    case _: Primitive.String.Text => lift[String](name = "string", json)
 
   private def lift[A: Decoder](name: String, json: CirceJson): Validated[Violations, A] = json
     .as[A]

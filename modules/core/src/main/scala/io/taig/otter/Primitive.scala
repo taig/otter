@@ -15,6 +15,7 @@ import scala.Tuple as STuple
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import cats.Eq
+import cats.Invariant
 
 sealed abstract class Primitive[A] extends Codec[Nothing, A]:
   override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
@@ -133,6 +134,10 @@ object Primitive:
     ) extends Primitive.String[B]:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
+
+    given Invariant[Primitive.String] with
+      override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] =
+        fa.imap(f)(g)
 
   given CodecInvariant[Primitive] with
     override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)

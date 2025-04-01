@@ -6,7 +6,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
-abstract class JavaTimeCodecs[S[_]](codecs: Primitives.Strings[S]):
+trait JavaTimeCodecs[S[_]](codecs: Primitives.Strings[S]):
   import codecs.*
 
   val duration: S[Duration] = parser(name = "iso8601.duration")(value =>

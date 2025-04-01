@@ -8,9 +8,14 @@ import java.util.UUID
 import java.util.regex.Pattern
 import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
+import io.taig.otter.Json.Key
 
 trait JsonCodecs extends Primitives.Default[Json]:
   override protected def lift[A](value: Primitive[A]): Json[A] = Json(value)
+
+  object field extends Fields[Json.Key, Json](keys = Primitives.Strings.Plain) {
+    override def apply[A, B](name: A, key: Primitive.String[A], value: Json[B]): Field[Key, Json, B] = ???
+  }
 
 // object collection extends Collections[Json]:
 //   override protected def lift[A](codec: Collection[Json, A]): Json[A] = Json(codec)
