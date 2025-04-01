@@ -1,30 +1,34 @@
 package io.taig.otter
 
-sealed abstract class Record[+S[_], A] extends Codec[S, A]:
-  def codecs: Vector[Reference[S, ?]]
-  override def modifyMetadata(f: Metadata => Metadata): Record[S, A]
-  final override def imap[B](f: A => B)(g: B => A): Record[S, B] = Record.Modify(self = this, f, g)
+import cats.data.Chain
+
+sealed abstract class Record[+S[_], +T[_], A] extends Codec[S, A]:
+  def fields: Chain[Field[S, T, ?]]
+  override def modifyMetadata(f: Metadata => Metadata): Record[S, T, A]
+  final override def imap[B](f: A => B)(g: B => A): Record[S, T, B] = Record.Modify(self = this, f, g)
 
 object Record:
-  final private[otter] case class Empty(metadata: Metadata) extends Record[Nothing, Unit]:
-    override def codecs: Vector[Nothing] = Vector.empty
-    override def modifyMetadata(f: Metadata => Metadata): Record[Nothing, Unit] = copy(metadata = f(metadata))
+  final private[otter] case class Empty(metadata: Metadata) extends Record[Nothing, Nothing, Unit]:
+    override def fields: Chain[Nothing] = Chain.empty
+    override def modifyMetadata(f: Metadata => Metadata): Record[Nothing, Nothing, Unit] = copy(metadata = f(metadata))
 
-  final private[otter] case class Modify[S[_], A, B](self: Record[S, A], f: A => B, g: B => A) extends Record[S, B]:
-    export self.{codecs, metadata}
-    override def modifyMetadata(f: Metadata => Metadata): Record[S, B] = copy(self = self.modifyMetadata(f))
+  final private[otter] case class Modify[S[_], T[_], A, B](self: Record[S, T, A], f: A => B, g: B => A)
+      extends Record[S, T, B]:
+    export self.{fields, metadata}
+    override def modifyMetadata(f: Metadata => Metadata): Record[S, T, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Root[S[_], A](field: Field[S, A], metadata: Metadata) extends Record[S, A]:
-    override def codecs: Vector[Reference[S, ?]] = Vector(field.codec)
-    override def modifyMetadata(f: Metadata => Metadata): Record[S, A] = copy(metadata = f(metadata))
+  final private[otter] case class Root[S[_], T[_], A](field: Field[S, T, A], metadata: Metadata)
+      extends Record[S, T, A]:
+    override def fields: Chain[Field[S, T, A]] = Chain.one(field)
+    override def modifyMetadata(f: Metadata => Metadata): Record[S, T, A] = copy(metadata = f(metadata))
 
-  final private[otter] case class Zip[S[_], A, B](
-      left: Record[S, A],
-      right: Record[S, B],
+  final private[otter] case class Zip[S[_], T[_], A, B](
+      left: Record[S, T, A],
+      right: Record[S, T, B],
       metadata: Metadata
-  ) extends Record[S, (A, B)]:
-    override def codecs: Vector[Reference[S, ?]] = left.codecs ++ right.codecs
-    override def modifyMetadata(f: Metadata => Metadata): Record[S, (A, B)] = copy(metadata = f(metadata))
+  ) extends Record[S, T, (A, B)]:
+    override def fields: Chain[Field[S, T, ?]] = left.fields ++ right.fields
+    override def modifyMetadata(f: Metadata => Metadata): Record[S, T, (A, B)] = copy(metadata = f(metadata))
 
-  given [S[_]]: CodecInvariant[Record[S, *]] with
-    override def imap[A, B](fa: Record[S, A])(f: A => B)(g: B => A): Record[S, B] = fa.imap(f)(g)
+  given [S[_], T[_]]: CodecInvariant[Record[S, T, *]] with
+    override def imap[A, B](fa: Record[S, T, A])(f: A => B)(g: B => A): Record[S, T, B] = fa.imap(f)(g)

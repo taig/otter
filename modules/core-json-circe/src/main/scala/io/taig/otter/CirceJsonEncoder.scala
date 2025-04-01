@@ -13,7 +13,7 @@ object CirceJsonEncoder:
     case codec: Enumeration[A]                => apply(codec, a)
     case codec: Optional[Json, A]             => apply(codec, a)
     case codec: Primitive[A]                  => apply(codec, a)
-    case codec: Record[Json, A]               => CirceJson.fromFields(apply(codec, a))
+    case codec: Record[Json.Key, Json, A]     => CirceJson.fromFields(apply(codec, a))
     case codec: Tuple[Json, A]                => CirceJson.fromValues(apply(codec, a))
     case codec: Union[Json, A]                => apply(codec, a)
 
@@ -61,7 +61,7 @@ object CirceJsonEncoder:
     case Primitive.Modify(self, _, g)                  => apply(codec = self, g(a))
     case Primitive.Parser(name, _, encode, _, _, _, _) => CirceJson.fromString(encode(a))
 
-  def apply[A](codec: Record[Json, A], a: A): List[(String, CirceJson)] = codec match
+  def apply[A](codec: Record[Json.Key, Json, A], a: A): List[(String, CirceJson)] = codec match
     case Record.Empty(_)            => Nil
     case Record.Modify(self, _, g)  => apply(codec = self, g(a))
     case Record.Root(field, _)      => apply(field, a).toList
@@ -102,9 +102,10 @@ object CirceJsonEncoder:
         case None => apply(codec = codec.value, a)
     case Branch.Modify(self, _, g) => apply(branch = self, a = g(a), discriminator)
 
-  def apply[A](field: Field[Json, A], a: A): Option[(String, CirceJson)] = field match
-    case Field.Required.Root(name, codec, _) => (name, apply(codec = codec.value, a)).some
-    case Field.Required.Modify(self, _, g)   => apply(field = self, g(a))
-    case Field.Modify(self, _, g)            => apply(field = self, g(a))
-    case Field.Default(self, _)              => apply(field = self, a)
-    case Field.Optional(self)                => a.flatMap(apply(field = self, _))
+  def apply[A, B](field: Field[Json.Key, Json, A, B], b: B): Option[(String, CirceJson)] = field match
+    case Field.Required.Root(name, key, codec, _) =>
+      (CirceJsonKeyEncoder(codec = key.value, name), apply(codec = codec.value, b)).some
+    case Field.Required.Modify(self, _, g) => apply(field = self, g(b))
+    case Field.Modify(self, _, g)          => apply(field = self, g(b))
+    case Field.Default(self, _)            => apply(field = self, b)
+    case Field.Optional(self)              => b.flatMap(apply(field = self, _))

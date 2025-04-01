@@ -27,9 +27,6 @@ object ZodTypescriptRenderer:
       s"z.enum([$values])"
 
   def apply(codec: Primitive[?]): String = codec match
-    case _: Primitive.Boolean                         => "z.boolean()"
-    case _: Primitive.String | _: Primitive.Parser[?] => "z.string()"
-    case _: Primitive.Double | _: Primitive.Float | _: Primitive.Int | _: Primitive.Long | _: Primitive.BigDecimal |
-        _: Primitive.BigInteger =>
-      "z.number()"
-    case Primitive.Modify(self, _, _) => apply(codec = self)
+    case _: Primitive.Boolean[?] => "z.boolean()"
+    case _: Primitive.String[?]  => "z.string()"
+    case _: Primitive.Number[?]  => "z.number()"

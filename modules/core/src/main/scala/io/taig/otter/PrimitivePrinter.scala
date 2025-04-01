@@ -2,13 +2,15 @@ package io.taig.otter
 
 object PrimitivePrinter:
   def apply[A](codec: Primitive[A], a: A): String = codec match
-    case _: Primitive.BigDecimal                    => a.toPlainString
-    case _: Primitive.BigInteger                    => a.toString
-    case _: Primitive.Boolean                       => String.valueOf(a)
-    case _: Primitive.Double                        => String.valueOf(a)
-    case _: Primitive.Float                         => String.valueOf(a)
-    case _: Primitive.Int                           => String.valueOf(a)
-    case _: Primitive.Long                          => String.valueOf(a)
-    case Primitive.Modify(self, _, g)               => apply(codec = self, g(a))
-    case Primitive.Parser(_, _, encode, _, _, _, _) => s"\"${encode(a)}\""
-    case _: Primitive.String                        => s"\"$a\""
+    case _: Primitive.Boolean.Root                         => String.valueOf(a)
+    case _: Primitive.Number.BigDecimal                    => a.toPlainString
+    case _: Primitive.Number.BigInteger                    => a.toString
+    case _: Primitive.Number.Double                        => String.valueOf(a)
+    case _: Primitive.Number.Float                         => String.valueOf(a)
+    case _: Primitive.Number.Int                           => String.valueOf(a)
+    case _: Primitive.Number.Long                          => String.valueOf(a)
+    case _: Primitive.String.Text                          => s"\"$a\""
+    case Primitive.Boolean.Modify(self, _, g)              => apply(codec = self, g(a))
+    case Primitive.Number.Modify(self, _, g)               => apply(codec = self, g(a))
+    case Primitive.String.Modify(self, _, g)               => apply(codec = self, g(a))
+    case Primitive.String.Parser(_, _, encode, _, _, _, _) => s"\"${encode(a)}\""

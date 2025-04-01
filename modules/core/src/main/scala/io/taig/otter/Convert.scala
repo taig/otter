@@ -6,7 +6,7 @@ import scala.annotation.implicitNotFound
 import scala.deriving.*
 
 @implicitNotFound(
-  "Can not construct a Converter[${A}, ${B}]: Make sure that all fields or branches are covered in the correct order"
+  "Can not construct a Convert[${A}, ${B}]: Make sure that all fields or branches are covered in the correct order"
 )
 trait Convert[A, B]:
   def to(a: A): B

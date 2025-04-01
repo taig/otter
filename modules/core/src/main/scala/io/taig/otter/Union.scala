@@ -1,53 +1,64 @@
 package io.taig.otter
 
-sealed abstract class Union[+S[_], A] extends Codec[S, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Union[S, A]
-  override def imap[B](f: A => B)(g: B => A): Union[S, B]
+import cats.data.Chain
 
-  def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union[T, Either[A, B]]
+sealed abstract class Union[+S[_], +T[_], A] extends Codec[T, A]:
+  def branches: Chain[Branch[S, T, ?]]
+  override def modifyMetadata(f: Metadata => Metadata): Union[S, T, A]
+  override def imap[B](f: A => B)(g: B => A): Union[S, T, B]
 
-  def :+[T[a] >: S[a], B](branch: Branch[T, B]): Union[T, Either[A, B]]
+  def orElse[S1[a] >: S[a], T1[a] >: T[a], B](codec: Union[S1, T1, B]): Union[S1, T1, Either[A, B]]
 
-  def untagged: Union.Untagged[S, A]
-  def keyed: Union.Tagged[S, A]
-  def merged: Union.Tagged[S, A]
-  def nested: Union.Tagged[S, A]
+  def :+[S1[a] >: S[a], T1[a] >: T[a], B](branch: Branch[S1, T1, B]): Union[S1, T1, Either[A, B]]
+
+  def untagged: Union.Untagged[S, T, A]
+  def keyed: Union.Tagged[S, T, A]
+  def merged: Union.Tagged[S, T, A]
+  def nested: Union.Tagged[S, T, A]
 
 object Union:
-  sealed abstract class Untagged[+S[_], A] extends Union[S, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, A]
-    final override def imap[B](f: A => B)(g: B => A): Union.Untagged[S, B] = Untagged.Modify(self = this, f, g)
-    override def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union.Untagged[T, Either[A, B]] =
+  sealed abstract class Untagged[+S[_], +T[_], A] extends Union[S, T, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, T, A]
+    final override def imap[B](f: A => B)(g: B => A): Union.Untagged[S, T, B] = Untagged.Modify(self = this, f, g)
+
+    override def orElse[S1[a] >: S[a], T1[a] >: T[a], B](
+        codec: Union[S1, T1, B]
+    ): Union.Untagged[S1, T1, Either[A, B]] =
       Untagged.OrElse(left = this, right = codec.untagged, metadata = Metadata.Empty)
-    override def :+[T[a] >: S[a], B](branch: Branch[T, B]): Union.Untagged[T, Either[A, B]] =
+    override def :+[S1[a] >: S[a], T1[a] >: T[a], B](branch: Branch[S1, T1, B]): Union.Untagged[S1, T1, Either[A, B]] =
       orElse(codec = branch.toUnion)
-    final override def untagged: Union.Untagged[S, A] = this
-    final override def keyed: Union.Tagged[S, A] = Tagged.Keyed(untagged = this)
-    final override def merged: Union.Tagged[S, A] =
+    final override def untagged: Union.Untagged[S, T, A] = this
+    final override def keyed: Union.Tagged[S, T, A] = Tagged.Keyed(untagged = this)
+    final override def merged: Union.Tagged[S, T, A] =
       Tagged.Merged(untagged = this, discriminator = Discriminator.Merged.Default)
-    final override def nested: Union.Tagged[S, A] =
+    final override def nested: Union.Tagged[S, T, A] =
       Tagged.Nested(untagged = this, discriminator = Discriminator.Nested.Default)
 
   object Untagged:
-    final private[otter] case class OrElse[S[_], A, B](
-        left: Union.Untagged[S, A],
-        right: Union.Untagged[S, B],
+    final private[otter] case class OrElse[S[_], T[_], A, B](
+        left: Union.Untagged[S, T, A],
+        right: Union.Untagged[S, T, B],
         metadata: Metadata
-    ) extends Union.Untagged[S, Either[A, B]]:
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, Either[A, B]] =
+    ) extends Union.Untagged[S, T, Either[A, B]]:
+      override def branches: Chain[Branch[S, T, ?]] = left.branches ++ right.branches
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, T, Either[A, B]] =
         copy(metadata = f(metadata))
 
-    final private[otter] case class Root[S[_], A](branch: Branch[S, A], metadata: Metadata)
-        extends Union.Untagged[S, A]:
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, A] = copy(metadata = f(metadata))
+    final private[otter] case class Root[S[_], T[_], A](branch: Branch[S, T, A], metadata: Metadata)
+        extends Union.Untagged[S, T, A]:
+      override def branches: Chain[Branch[S, T, A]] = Chain.one(branch)
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, T, A] = copy(metadata = f(metadata))
 
-    final private[otter] case class Modify[S[_], A, B](self: Union.Untagged[S, A], f: A => B, g: B => A)
-        extends Union.Untagged[S, B]:
-      export self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, B] = copy(self = self.modifyMetadata(f))
+    final private[otter] case class Modify[S[_], T[_], A, B](self: Union.Untagged[S, T, A], f: A => B, g: B => A)
+        extends Union.Untagged[S, T, B]:
+      export self.{branches, metadata}
+      override def modifyMetadata(f: Metadata => Metadata): Union.Untagged[S, T, B] =
+        copy(self = self.modifyMetadata(f))
 
-    extension [S[_], A <: Matchable](self: Union.Untagged[S, A])
-      inline def |[B <: Matchable](branch: Branch[S, B]): Union.Untagged[S, A | B] =
+    extension [S[_], T[_], A <: Matchable](self: Union.Untagged[S, T, A])
+      inline def |[S1[a] >: S[a], T1[a] >: T[a], B <: Matchable](
+          branch: Branch[S1, T1, B]
+      ): Union.Untagged[S1, T1, A | B] =
         (self :+ branch).imap {
           case Left(a)  => a
           case Right(b) => b
@@ -56,64 +67,63 @@ object Union:
           case b: B => Right(b)
         }
 
-  sealed abstract class Tagged[+S[_], A] extends Union[S, A]:
-    override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A]
-    override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, B]
-    override def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union.Tagged[T, Either[A, B]]
-    override def :+[T[a] >: S[a], B](branch: Branch[T, B]): Union.Tagged[T, Either[A, B]] =
+  sealed abstract class Tagged[+S[_], +T[_], A] extends Union[S, T, A]:
+    override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, T, A]
+    override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, T, B]
+    override def orElse[S1[a] >: S[a], T1[a] >: T[a], B](codec: Union[S1, T1, B]): Union.Tagged[S1, T1, Either[A, B]]
+    override def :+[S1[a] >: S[a], T1[a] >: T[a], B](branch: Branch[S1, T1, B]): Union.Tagged[S1, T1, Either[A, B]] =
       orElse(codec = branch.toUnion)
 
   object Tagged:
-    final private[otter] case class Keyed[S[_], A](untagged: Union.Untagged[S, A]) extends Union.Tagged[S, A]:
-      export untagged.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A] =
+    final private[otter] case class Keyed[S[_], T[_], A](untagged: Union.Untagged[S, T, A])
+        extends Union.Tagged[S, T, A]:
+      export untagged.{branches, metadata}
+      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, T, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, B] =
-        copy(untagged = untagged.imap(f)(g))
-      override def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union.Tagged[T, Either[A, B]] =
-        Keyed(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[S, A] = this
-      override def merged: Union.Tagged[S, A] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, T, B] = copy(untagged = untagged.imap(f)(g))
+      override def orElse[S1[a] >: S[a], T1[a] >: T[a], B](codec: Union[S1, T1, B]): Tagged[S1, T1, Either[A, B]] =
+        copy(untagged = untagged.orElse(codec.untagged))
+      override def keyed: Union.Tagged[S, T, A] = this
+      override def merged: Union.Tagged[S, T, A] =
         Merged(untagged, discriminator = Discriminator.Merged.Default)
-      override def nested: Union.Tagged[S, A] =
+      override def nested: Union.Tagged[S, T, A] =
         Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Merged[S[_], A](
-        untagged: Union.Untagged[S, A],
+    final private[otter] case class Merged[S[_], T[_], A](
+        untagged: Union.Untagged[S, T, A],
         discriminator: Discriminator.Merged
-    ) extends Union.Tagged[S, A]:
-      export untagged.metadata
-      override def modifyMetadata(
-          f: Metadata => Metadata
-      ): Union.Tagged[S, A] =
+    ) extends Union.Tagged[S, T, A]:
+      export untagged.{branches, metadata}
+      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, T, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, B] =
-        copy(untagged = untagged.imap(f)(g))
-      override def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union.Tagged[T, Either[A, B]] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, T, B] = copy(untagged = untagged.imap(f)(g))
+      override def orElse[S1[a] >: S[a], T1[a] >: T[a], B](
+          codec: Union[S1, T1, B]
+      ): Union.Tagged[S1, T1, Either[A, B]] =
         copy(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[S, A] = Keyed(untagged)
-      override def merged: Union.Tagged[S, A] = this
-      override def nested: Union.Tagged[S, A] =
-        Nested(untagged, discriminator = Discriminator.Nested.Default)
+      override def keyed: Union.Tagged[S, T, A] = Keyed(untagged)
+      override def merged: Union.Tagged[S, T, A] = this
+      override def nested: Union.Tagged[S, T, A] = Nested(untagged, discriminator = Discriminator.Nested.Default)
 
-    final private[otter] case class Nested[S[_], A](
-        untagged: Union.Untagged[S, A],
+    final private[otter] case class Nested[S[_], T[_], A](
+        untagged: Union.Untagged[S, T, A],
         discriminator: Discriminator.Nested
-    ) extends Union.Tagged[S, A]:
-      export untagged.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A] =
+    ) extends Union.Tagged[S, T, A]:
+      export untagged.{branches, metadata}
+      override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, T, A] =
         copy(untagged = untagged.modifyMetadata(f))
-      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, B] =
-        copy(untagged = untagged.imap(f)(g))
-      override def orElse[T[a] >: S[a], B](codec: Union[T, B]): Union.Tagged[T, Either[A, B]] =
+      override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, T, B] = copy(untagged = untagged.imap(f)(g))
+      override def orElse[S1[a] >: S[a], T1[a] >: T[a], B](
+          codec: Union[S1, T1, B]
+      ): Union.Tagged[S1, T1, Either[A, B]] =
         copy(untagged = untagged.orElse(codec.untagged))
-      override def keyed: Union.Tagged[S, A] = Keyed(untagged)
-      override def merged: Union.Tagged[S, A] =
+      override def keyed: Union.Tagged[S, T, A] = Keyed(untagged)
+      override def merged: Union.Tagged[S, T, A] =
         Merged(untagged, discriminator = Discriminator.Merged.Default)
-      override def nested: Union.Tagged[S, A] = this
+      override def nested: Union.Tagged[S, T, A] = this
 
-  extension [S[_], A <: Matchable](self: Union[S, A])
-    inline def |[B <: Matchable](branch: Branch[S, B]): Union[S, A | B] =
+  extension [S[_], T[_], A <: Matchable](self: Union[S, T, A])
+    inline def |[B <: Matchable](branch: Branch[S, T, B]): Union[S, T, A | B] =
       (self :+ branch).imap {
         case Left(a)  => a
         case Right(b) => b
@@ -122,5 +132,5 @@ object Union:
         case b: B => Right(b)
       }
 
-  given [S[_]]: CodecInvariant[Union[S, *]] with
-    override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)
+  given [S[_], T[_]]: CodecInvariant[Union[S, T, *]] with
+    override def imap[A, B](fa: Union[S, T, A])(f: A => B)(g: B => A): Union[S, T, B] = fa.imap(f)(g)

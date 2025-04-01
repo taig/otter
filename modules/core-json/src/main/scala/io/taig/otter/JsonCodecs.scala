@@ -12,7 +12,7 @@ import scala.collection.immutable.SortedSet
 trait JsonCodecs extends Primitives.Default[Json]:
   override protected def lift[A](value: Primitive[A]): Json[A] = Json(value)
 
-  object collection extends Collections[Json]:
-    override protected def lift[A](codec: Collection[Json, A]): Json[A] = Json(codec)
+// object collection extends Collections[Json]:
+//   override protected def lift[A](codec: Collection[Json, A]): Json[A] = Json(codec)
 
 object JsonCodecs extends JsonCodecs

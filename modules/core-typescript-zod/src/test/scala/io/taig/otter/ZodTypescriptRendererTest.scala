@@ -12,18 +12,18 @@ final class ZodTypescriptRendererTest extends FunSuite:
       obtained = ZodTypescriptRenderer(string).runA(ListMap.empty).value,
       expected = Expression.Inline("z.string()")
     )
-    // assertEquals(
-    //   obtained = ZodCodecPrinter.print(int).runA(ListMap.empty).value,
-    //   expected = Expression.Value("z.number()")
-    // )
-    // assertEquals(
-    //   obtained = ZodCodecPrinter.print(float).runA(ListMap.empty).value,
-    //   expected = Expression.Value("z.number()")
-    // )
-    // assertEquals(
-    //   obtained = ZodCodecPrinter.print(boolean).runA(ListMap.empty).value,
-    //   expected = Expression.Value("z.boolean()")
-    // )
+    assertEquals(
+      obtained = ZodTypescriptRenderer(int).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.number()")
+    )
+    assertEquals(
+      obtained = ZodTypescriptRenderer(float).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.number()")
+    )
+    assertEquals(
+      obtained = ZodTypescriptRenderer(boolean).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.boolean()")
+    )
 
   // test("record"):
   //   val codec = field("foo", string) :* field("bar", int)
