@@ -4,13 +4,18 @@ import cats.syntax.all.*
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
-import cats.Invariant
+import scala.Boolean as SBoolean
 import java.util.UUID
 import java.lang.String as JString
 
 abstract class PrimitiveInvariant[Self[_]] extends CodecInvariant[Self]
 
 object PrimitiveInvariant:
+  abstract class Boolean[Self[_]] extends PrimitiveInvariant[Self]:
+    def lift[A](codec: Primitive.Boolean[A]): Self[A]
+
+    final val boolean: Self[SBoolean] = lift(Primitive.Boolean.Root(metadata = Metadata.Empty))
+
   abstract class Number[Self[_]] extends PrimitiveInvariant[Self]:
     def lift[A](codec: Primitive.Number[A]): Self[A]
 
@@ -69,4 +74,29 @@ object PrimitiveInvariant:
         matches: Option[Pattern] = none
     ): Self[JString] = lift(Primitive.String.Text(minimum, maximum, matches, metadata = Metadata.Empty))
 
-    final def pattern(pattern: Pattern): Self[JString] = ???
+    final val string: Self[JString] = string(minimum = none, maximum = none, matches = none)
+
+    final val pattern: Self[Pattern] = string.imap(Pattern.compile)(_.pattern)
+
+    final def parser[A](
+        name: JString,
+        minimum: Option[Int] = none,
+        maximum: Option[Int] = none,
+        matches: Option[Pattern] = none
+    )(f: JString => Either[JString, A])(g: A => JString): Self[A] =
+      lift(Primitive.String.Parser(name, decode = f, encode = g, minimum, maximum, matches, metadata = Metadata.Empty))
+
+    final val uuid: Self[UUID] = parser(name = "uuid") { value =>
+      Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
+    }(_.show)
+
+    implicit final class ToStringCodecOperations(self: string.type)
+        extends StringCodecOperations[Self, JString](using this):
+      override protected def empty: JString = ""
+      override protected def isEmpty(a: JString): SBoolean = a.isEmpty
+
+      def apply(
+          minimum: Option[Int] = none,
+          maximum: Option[Int] = none,
+          matches: Option[Pattern] = none
+      ): Self[JString] = string(minimum, maximum, matches)

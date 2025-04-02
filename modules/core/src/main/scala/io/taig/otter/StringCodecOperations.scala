@@ -3,9 +3,8 @@ package io.taig.otter
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
-import cats.Invariant
 
-abstract class StringCodecOperations[S[_]: Invariant, A]:
+abstract class StringCodecOperations[S[_]: CodecInvariant, A]:
   protected def isEmpty(a: A): Boolean
   protected def empty: A
 

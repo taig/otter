@@ -1,7 +1,5 @@
 package io.taig.otter
 
-import cats.Invariant
-
 sealed abstract class Collection[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]
   def constraints: Vector[Constraint.Collection]
@@ -43,6 +41,3 @@ object Collection:
       extends Collection[S, B]:
     export self.{codec, constraints, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, B] = copy(self = self.modifyMetadata(f))
-
-  given [S[_]]: Invariant[Collection[S, *]] with
-    override def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)

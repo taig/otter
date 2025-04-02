@@ -6,16 +6,28 @@ import cats.syntax.all.*
 import scala.annotation.tailrec
 
 object CirceJsonEncoder:
-  def apply[A](codec: Json[A], a: A): CirceJson = codec.value match
-    case codec: Collection[Json, A]           => apply(codec, a)
-    case codec: Constant[Json, A]             => apply(codec, a)
-    case codec: Dictionary[Json.Key, Json, A] => CirceJson.fromFields(apply(codec, a))
-    case codec: Enumeration[A]                => apply(codec, a)
-    case codec: Optional[Json, A]             => apply(codec, a)
-    case codec: Primitive[A]                  => apply(codec, a)
-    case codec: Record[Json.Key, Json, A]     => CirceJson.fromFields(apply(codec, a))
-    case codec: Tuple[Json, A]                => CirceJson.fromValues(apply(codec, a))
-    case codec: Union[Json.Key, Json, A]      => apply(codec, a)
+  def apply[A](codec: Json[A], a: A): CirceJson = codec match
+    case Json.Collection(value)        => ???
+    case Json.Constant(value)          => ???
+    case Json.Dictionary(value)        => ???
+    case Json.Enumeration(value)       => ???
+    case Json.Optional(value)          => ???
+    case Json.Primitive.Boolean(value) => ???
+    case Json.Primitive.Number(value)  => ???
+    case Json.Primitive.String(value)  => ???
+    case Json.Record(value)            => ???
+    case Json.Tuple(value)             => ???
+    case Json.Union(value)             => ???
+
+    // case codec: Collection[Json, A]           => apply(codec, a)
+    // case codec: Constant[Json, A]             => apply(codec, a)
+    // case codec: Dictionary[Json.Key, Json, A] => CirceJson.fromFields(apply(codec, a))
+    // case codec: Enumeration[A]                => apply(codec, a)
+    // case codec: Optional[Json, A]             => apply(codec, a)
+    // case codec: Primitive[A]                  => apply(codec, a)
+    // case codec: Record[Json.Key, Json, A]     => CirceJson.fromFields(apply(codec, a))
+    // case codec: Tuple[Json, A]                => CirceJson.fromValues(apply(codec, a))
+    // case codec: Union[Json.Key, Json, A]      => apply(codec, a)
 
   @tailrec
   def apply[A](codec: Collection[Json, A], a: A): CirceJson = codec match

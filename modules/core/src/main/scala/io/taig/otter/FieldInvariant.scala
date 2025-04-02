@@ -8,6 +8,5 @@ abstract class FieldInvariant[Self[_], Record[_], Key[_], Value[_]](using record
     final def toRecord: Record[A] = record.one(field = self)
     final def :*[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] =
       record.one(field = self) :* field
-    final def *:[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] =
-      record.one(field = self)
-      ???
+    final def *:[B](field: Self[B])(using merge: Merge[B, A]): Record[merge.Out] =
+      field *: record.one(field = self)

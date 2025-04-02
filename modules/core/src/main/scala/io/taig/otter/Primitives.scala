@@ -112,16 +112,6 @@ object Primitives:
 
     final val string: S[String] = string(minimum = none, maximum = none, matches = none)
 
-    implicit class ToStringCodecOperations(self: string.type) extends StringCodecOperations[S, String]:
-      override protected def empty: String = ""
-      override protected def isEmpty(a: String): Boolean = a.isEmpty
-
-      def apply(
-          minimum: Option[Int] = none,
-          maximum: Option[Int] = none,
-          matches: Option[Pattern] = none
-      ): S[String] = string(minimum, maximum, matches)
-
     final val pattern: S[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
     def parser[A](
