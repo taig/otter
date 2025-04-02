@@ -8,7 +8,7 @@ import cats.syntax.all.*
 import io.circe.Decoder
 
 object CirceJsonDecoder:
-  def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec.self match
+  def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec.value match
     case codec: Primitive[A] => apply(codec, json)
 
   def apply[A](codec: Constant[Json, A], json: CirceJson): Validated[Violations, A] = codec match

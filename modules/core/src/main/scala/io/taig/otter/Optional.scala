@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.Invariant
+import cats.Applicative
 
 sealed abstract class Optional[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]
@@ -12,7 +13,7 @@ object Optional:
     export self.{codec, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Default[S[_], A](codec: Reference[S, A], value: A, metadata: Metadata)
+  final private[otter] case class Default[S[_], A](codec: Reference[S, A], default: A, metadata: Metadata)
       extends Optional[S, A]:
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, A] = copy(metadata = f(metadata))
 
@@ -25,6 +26,3 @@ object Optional:
 
   // final private[otter] case class Void[F , A](metadata: Metadata) extends Optional[F, Unit]:
   //   override def modifyMetadata(f: Metadata => Metadata): Optional[F, Unit] = copy(metadata = f(metadata))
-
-  given [S[_]]: Invariant[Optional[S, *]] with
-    override def imap[A, B](fa: Optional[S, A])(f: A => B)(g: B => A): Optional[S, B] = fa.imap(f)(g)

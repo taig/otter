@@ -9,13 +9,15 @@ sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def modifyMetadata(f: Metadata => Metadata): Field[S, T, A]
   def imap[B](f: A => B)(g: B => A): Field[S, T, B] = Field.Modify(self = this, f, g)
 
+  final def toRecord: Record[S, T, A] = Record.Root(field = this, metadata = Metadata.Empty)
+
 object Field:
   sealed abstract class Required[S[_], T[_], A] extends Field[S, T, A]:
     override def modifyMetadata(f: Metadata => Metadata): Field.Required[S, T, A]
     final override def imap[B](f: A => B)(g: B => A): Field.Required[S, T, B] =
       Required.Modify(self = this, f, g)
-    def optional: Field[S, T, Option[A]] = Optional(self = this)
-    def optional(default: A): Field[S, T, A] = Default(self = this, default)
+    final def optional: Field[S, T, Option[A]] = Optional(self = this)
+    final def optional(default: A): Field[S, T, A] = Default(self = this, default)
 
   object Required:
     final private[otter] case class Modify[S[_], T[_], A, B](self: Field.Required[S, T, A], f: A => B, g: B => A)

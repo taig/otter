@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import scala.annotation.tailrec
 
 object CirceJsonEncoder:
-  def apply[A](codec: Json[A], a: A): CirceJson = codec.self match
+  def apply[A](codec: Json[A], a: A): CirceJson = codec.value match
     case codec: Collection[Json, A]           => apply(codec, a)
     case codec: Constant[Json, A]             => apply(codec, a)
     case codec: Dictionary[Json.Key, Json, A] => CirceJson.fromFields(apply(codec, a))
