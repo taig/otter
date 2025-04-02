@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.data.Chain
+import cats.Invariant
 
 sealed abstract class Union[+S[_], +T[_], A] extends Codec[T, A]:
   def branches: Chain[Branch[S, T, ?]]
@@ -67,6 +68,10 @@ object Union:
           case b: B => Right(b)
         }
 
+    given [S[_], T[_]]: Invariant[Union.Untagged[S, T, *]] with
+      override def imap[A, B](fa: Union.Untagged[S, T, A])(f: A => B)(g: B => A): Union.Untagged[S, T, B] =
+        fa.imap(f)(g)
+
   sealed abstract class Tagged[+S[_], +T[_], A] extends Union[S, T, A]:
     override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, T, A]
     override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, T, B]
@@ -122,6 +127,9 @@ object Union:
         Merged(untagged, discriminator = Discriminator.Merged.Default)
       override def nested: Union.Tagged[S, T, A] = this
 
+    given [S[_], T[_]]: Invariant[Union.Tagged[S, T, *]] with
+      override def imap[A, B](fa: Union.Tagged[S, T, A])(f: A => B)(g: B => A): Union.Tagged[S, T, B] = fa.imap(f)(g)
+
   extension [S[_], T[_], A <: Matchable](self: Union[S, T, A])
     inline def |[B <: Matchable](branch: Branch[S, T, B]): Union[S, T, A | B] =
       (self :+ branch).imap {
@@ -132,5 +140,5 @@ object Union:
         case b: B => Right(b)
       }
 
-  given [S[_], T[_]]: CodecInvariant[Union[S, T, *]] with
+  given [S[_], T[_]]: Invariant[Union[S, T, *]] with
     override def imap[A, B](fa: Union[S, T, A])(f: A => B)(g: B => A): Union[S, T, B] = fa.imap(f)(g)

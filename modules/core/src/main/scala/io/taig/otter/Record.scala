@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.data.Chain
+import cats.Invariant
 
 sealed abstract class Record[+S[_], +T[_], A] extends Codec[S, A]:
   def fields: Chain[Field[S, T, ?]]
@@ -30,5 +31,5 @@ object Record:
     override def fields: Chain[Field[S, T, ?]] = left.fields ++ right.fields
     override def modifyMetadata(f: Metadata => Metadata): Record[S, T, (A, B)] = copy(metadata = f(metadata))
 
-  given [S[_], T[_]]: CodecInvariant[Record[S, T, *]] with
+  given [S[_], T[_]]: Invariant[Record[S, T, *]] with
     override def imap[A, B](fa: Record[S, T, A])(f: A => B)(g: B => A): Record[S, T, B] = fa.imap(f)(g)

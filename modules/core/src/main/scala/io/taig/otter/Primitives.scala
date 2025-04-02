@@ -5,6 +5,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import cats.Invariant
+import java.util.UUID
 
 trait Primitives[S[_]: Invariant] extends Primitives.Numbers[S], Primitives.Strings[S], Primitives.Booleans[S]
 
@@ -130,6 +131,10 @@ object Primitives:
         matches: Option[Pattern] = none
     )(f: String => Either[String, A])(g: A => String): S[A]
 
+    val uuid: S[UUID] = parser(name = "uuid") { value =>
+      Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
+    }(_.show)
+
   object Strings:
     trait Defaults[S[_]] extends Primitives.Strings[S]:
       protected def lift[A](codec: Primitive.String[A]): S[A]
@@ -162,14 +167,10 @@ object Primitives:
 
       override def boolean: S[Boolean] = lift(Primitive.Boolean.Root(Metadata.Empty))
 
-  trait Defaults[S[_]: Invariant]
-      extends Primitives.Booleans.Defaults[S],
-        Primitives.Numbers.Defaults[S],
-        Primitives.Strings.Defaults[S]:
-    protected def lift[A](codec: Primitive[A]): S[A]
-    final override protected def lift[A](codec: Primitive.Boolean[A]): S[A] = lift(codec: Primitive[A])
-    final override protected def lift[A](codec: Primitive.Number[A]): S[A] = lift(codec: Primitive[A])
-    final override protected def lift[A](codec: Primitive.String[A]): S[A] = lift(codec: Primitive[A])
-
-  object Plain extends Primitives.Defaults[Primitive]:
-    final override protected inline def lift[A](codec: Primitive[A]): Primitive[A] = codec
+  object Plain
+      extends Primitives.Booleans.Defaults[Primitive.Boolean],
+        Primitives.Numbers.Defaults[Primitive.Number],
+        Primitives.Strings.Defaults[Primitive.String]:
+    override protected inline def lift[A](codec: Primitive.Number[A]): Primitive.Number[A] = codec
+    override protected inline def lift[A](codec: Primitive.Boolean[A]): Primitive.Boolean[A] = codec
+    override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec

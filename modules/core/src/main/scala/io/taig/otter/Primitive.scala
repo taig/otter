@@ -36,6 +36,9 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
+    given Invariant[Primitive.Boolean] with
+      override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] = fa.imap(f)(g)
+
   sealed abstract class Number[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[A]
     override def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
@@ -103,6 +106,9 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
+    given Invariant[Primitive.Number] with
+      override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] = fa.imap(f)(g)
+
   sealed abstract class String[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.String[A]
     override def imap[B](f: A => B)(g: B => A): Primitive.String[B] = String.Modify(self = this, f, g)
@@ -139,5 +145,5 @@ object Primitive:
       override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] =
         fa.imap(f)(g)
 
-  given CodecInvariant[Primitive] with
+  given Invariant[Primitive] with
     override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)

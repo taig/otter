@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import scala.Tuple as STuple
+import cats.Invariant
 
 sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
   def codecs: Vector[Reference[S, ?]]
@@ -28,5 +29,5 @@ object Tuple:
     override def codecs: Vector[Reference[S, ?]] = left.codecs ++ right.codecs
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, (A, B)] = copy(metadata = f(metadata))
 
-  given [S[_]]: CodecInvariant[Tuple[S, *]] with
+  given [S[_]]: Invariant[Tuple[S, *]] with
     override def imap[A, B](fa: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = fa.imap(f)(g)

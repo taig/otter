@@ -1,5 +1,7 @@
 package io.taig.otter
 
+import cats.Invariant
+
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Codec[T, A]:
   def key: Reference[S, ?]
   def value: Reference[T, ?]
@@ -26,5 +28,5 @@ object Dictionary:
     export self.{constraints, key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, B] = copy(self = self.modifyMetadata(f))
 
-  given [S[_], T[_]]: CodecInvariant[Dictionary[S, T, *]] with
+  given [S[_], T[_]]: Invariant[Dictionary[S, T, *]] with
     override def imap[A, B](fa: Dictionary[S, T, A])(f: A => B)(g: B => A): Dictionary[S, T, B] = fa.imap(f)(g)

@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
+import cats.Invariant
 
 sealed abstract class Enumeration[A] extends Codec[Nothing, A]:
   def codec: Primitive[?]
@@ -23,5 +24,5 @@ object Enumeration:
     override def modifyMetadata(f: Metadata => Metadata): Enumeration[B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
 
-  given CodecInvariant[Enumeration] with
+  given Invariant[Enumeration] with
     override def imap[A, B](fa: Enumeration[A])(f: A => B)(g: B => A): Enumeration[B] = fa.imap(f)(g)

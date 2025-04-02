@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.Eq
 import cats.syntax.all.*
+import cats.Invariant
 
 sealed abstract class Constant[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]
@@ -23,5 +24,5 @@ object Constant:
     override def matches(a: A): Boolean = reference === a
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, A] = copy(metadata = f(metadata))
 
-  given [S[_]]: CodecInvariant[Constant[S, *]] with
+  given [S[_]]: Invariant[Constant[S, *]] with
     override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)

@@ -4,31 +4,48 @@ import io.taig.otter as Self
 import cats.Invariant
 
 sealed abstract class Json[A]:
-  def self: Collection[Json, A] | Constant[Json, A] | Dictionary[Json.Key, Json, A] | Enumeration[A] |
-    Optional[Json, A] | Primitive[A] | Record[Json.Key, Json, A] | Tuple[Json, A] | Union[Json.Key, Json, A]
+  def self: Self.Collection[Json, A] | Self.Constant[Json, A] | Self.Dictionary[Json.Key, Json, A] |
+    Self.Enumeration[A] | Self.Optional[Json, A] | Self.Primitive[A] | Self.Record[Json.Key, Json, A] |
+    Self.Tuple[Json, A] | Self.Union[Json.Key, Json, A]
 
 object Json:
   final case class Collection[A](self: Self.Collection[Json, A]) extends Json[A]
   final case class Constant[A](self: Self.Constant[Json, A]) extends Json[A]
+
   final case class Dictionary[A](self: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
+
   final case class Enumeration[A](self: Self.Enumeration[A]) extends Json[A]
+
   final case class Optional[A](self: Self.Optional[Json, A]) extends Json[A]
-  final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
+
+  sealed abstract class Primitive[A] extends Json[A]
+
+  object Primitive:
+    final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Json.Primitive[A]
+
+    object Boolean:
+      given Invariant[Json.Primitive.Boolean] with
+        override def imap[A, B](fa: Json.Primitive.Boolean[A])(f: A => B)(g: B => A): Json.Primitive.Boolean[B] =
+          Json.Primitive.Boolean(fa.self.imap(f)(g))
+
+    final case class Number[A](self: Self.Primitive.Number[A]) extends Json.Primitive[A]
+
+    object Number:
+      given Invariant[Json.Primitive.Number] with
+        override def imap[A, B](fa: Json.Primitive.Number[A])(f: A => B)(g: B => A): Json.Primitive.Number[B] =
+          Json.Primitive.Number(fa.self.imap(f)(g))
+
+    final case class String[A](self: Self.Primitive.String[A]) extends Json.Primitive[A]
+
+    object String:
+      given Invariant[Json.Primitive.String] with
+        override def imap[A, B](fa: Json.Primitive.String[A])(f: A => B)(g: B => A): Json.Primitive.String[B] =
+          Json.Primitive.String(fa.self.imap(f)(g))
+
   final case class Record[A](self: Self.Record[Json.Key, Json, A]) extends Json[A]
+
   final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
+
   final case class Union[A](self: Self.Union[Json.Key, Json, A]) extends Json[A]
 
-  type Key[A] = Self.Primitive.String[A]
-
-  given Invariant[Json] = new Invariant[Json]:
-    override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = ???
-    // fa.self match
-    //   case codec: Collection[Json, A]           => codec.imap(f)(g)
-    //   case codec: Constant[Json, A]             => codec.imap(f)(g)
-    //   case codec: Dictionary[Json.Key, Json, A] => codec.imap(f)(g)
-    //   case codec: Enumeration[A]                => codec.imap(f)(g)
-    //   case codec: Optional[Json, A]             => codec.imap(f)(g)
-    //   case codec: Primitive[A]                  => codec.imap(f)(g)
-    //   case codec: Record[Json.Key, Json, A]     => codec.imap(f)(g)
-    //   case codec: Tuple[Json, A]                => codec.imap(f)(g)
-    //   case codec: Union[Json.Key, Json, A]      => codec.imap(f)(g)
+  type Key[A] = Json.Primitive.String[A]
