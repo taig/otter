@@ -70,10 +70,10 @@ object CirceJsonEncoder:
     case Record.Zip(left, right, _) => apply(codec = left, a._1) ++ apply(codec = right, a._2)
 
   def apply[A](codec: Tuple[Json, A], a: A): List[CirceJson] = codec match
-    case _: Tuple.Empty                => Nil
-    case Tuple.Modify(self, _, g)      => apply(codec = self, g(a))
-    case Tuple.Prepend(self, codec, _) => apply(codec = codec.value, a = a.head) :: apply(codec = self, a = a.tail)
-    case Tuple.Root(codec, _)          => List(apply(codec = codec.value, a))
+    case _: Tuple.Empty            => Nil
+    case Tuple.Modify(self, _, g)  => apply(codec = self, g(a))
+    case Tuple.Zip(left, right, _) => apply(codec = left, a = a._1) ++ apply(codec = right, a = a._2)
+    case Tuple.Root(codec, _)      => List(apply(codec = codec.value, a))
 
   def apply[A](codec: Union[Json.Key, Json, A], a: A): CirceJson = codec match
     case codec: Union.Untagged[Json.Key, Json, A] => apply(codec = codec, a, discriminator = none)
@@ -94,21 +94,24 @@ object CirceJsonEncoder:
 
   @tailrec
   def apply[A](branch: Branch[Json.Key, Json, A], a: A, discriminator: Option[Discriminator]): CirceJson = branch match
-    case Branch.Root(name, codec, _) =>
+    case Branch.Root(key, codec, _) =>
       discriminator match
         case Some(Discriminator.Nested(identifier, value)) =>
-          CirceJson.obj(identifier := "TODO", value := apply(codec = codec.value, a))
+          CirceJson.obj(
+            identifier := CirceJsonKeyEncoder(codec = key.self.value, key.value),
+            value := apply(codec = codec.value, a)
+          )
         case Some(Discriminator.Merged(identifier)) =>
-          apply(codec = codec.value, a).deepMerge(CirceJson.obj(identifier := "TODO"))
+          apply(codec = codec.value, a)
+            .deepMerge(CirceJson.obj(identifier := CirceJsonKeyEncoder(codec = key.self.value, key.value)))
         case Some(Discriminator.Keyed) =>
-          CirceJson.obj("TODO" := apply(codec = codec.value, a))
+          CirceJson.obj(CirceJsonKeyEncoder(codec = key.self.value, key.value) := apply(codec = codec.value, a))
         case None => apply(codec = codec.value, a)
     case Branch.Modify(self, _, g) => apply(branch = self, a = g(a), discriminator)
 
   def apply[A, B](field: Field[Json.Key, Json, A], a: A): Option[(String, CirceJson)] = field match
     case Field.Required.Root(key, value, _) =>
-      // (CirceJsonKeyEncoder(codec = key.value, name), apply(codec = codec.value, b)).some
-      ???
+      (CirceJsonKeyEncoder(codec = key.self.value, key.value), apply(codec = value.value, a)).some
     case Field.Required.Modify(self, _, g) => apply(field = self, g(a))
     case Field.Modify(self, _, g)          => apply(field = self, g(a))
     case Field.Default(self, _)            => apply(field = self, a)

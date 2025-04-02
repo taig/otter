@@ -3,6 +3,7 @@ package io.taig.otter
 import scala.annotation.tailrec
 
 object CirceJsonKeyEncoder:
+  @tailrec
   def apply[A](codec: Json.Key[A], a: A): String = codec match
     case _: Primitive.String.Text                          => a
     case Primitive.String.Modify(self, _, g)               => apply(codec = self, g(a))

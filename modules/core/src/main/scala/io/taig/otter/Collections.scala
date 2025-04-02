@@ -7,16 +7,12 @@ import cats.data.NonEmptyVector
 import cats.data.NonEmptySeq
 
 trait Collections[S[_]: Invariant]:
-  protected def lift[A](codec: Collection[S, A]): S[A]
-
-  final def list[A](
+  def list[A](
       codec: => S[A],
       minimum: Option[Int] = none,
       maximum: Option[Int] = none,
       uniqueItems: Boolean = false
-  ): S[List[A]] = lift(
-    Collection.Linked(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
-  )
+  ): S[List[A]]
 
   final def nonEmptyList[A](
       codec: => S[A],
@@ -31,8 +27,7 @@ trait Collections[S[_]: Invariant]:
       minimum: Option[Int] = none,
       maximum: Option[Int] = none,
       uniqueItems: Boolean = false
-  ): S[Vector[A]] =
-    lift(Collection.Indexed(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty))
+  ): S[Vector[A]]
 
   def nonEmptyVector[A](
       codec: => S[A],
@@ -56,3 +51,23 @@ trait Collections[S[_]: Invariant]:
       uniqueItems: Boolean = false
   ): S[NonEmptySeq[A]] = nonEmptyVector(codec, minimum, maximum, uniqueItems)
     .imap(values => NonEmptySeq(values.head, values.tail))(values => NonEmptyVector(values.head, values.tail.toVector))
+
+object Collections:
+  trait Defaults[S[_]] extends Collections[S]:
+    protected def lift[A](codec: Collection[S, A]): S[A]
+
+    final override def list[A](
+        codec: => S[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        uniqueItems: Boolean
+    ): S[List[A]] =
+      lift(Collection.Linked(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty))
+
+    final override def vector[A](
+        codec: => S[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        uniqueItems: Boolean
+    ): S[Vector[A]] =
+      lift(Collection.Indexed(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty))

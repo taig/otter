@@ -2,9 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.TypescriptCodecs.*
 import munit.FunSuite
-import cats.data.State
 import scala.collection.immutable.ListMap
-import cats.syntax.all.*
 
 final class ZodTypescriptRendererTest extends FunSuite:
   test("primitive"):

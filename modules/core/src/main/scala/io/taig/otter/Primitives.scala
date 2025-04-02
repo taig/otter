@@ -162,7 +162,7 @@ object Primitives:
 
       override def boolean: S[Boolean] = lift(Primitive.Boolean.Root(Metadata.Empty))
 
-  trait Default[S[_]: Invariant]
+  trait Defaults[S[_]: Invariant]
       extends Primitives.Booleans.Defaults[S],
         Primitives.Numbers.Defaults[S],
         Primitives.Strings.Defaults[S]:
@@ -171,5 +171,5 @@ object Primitives:
     final override protected def lift[A](codec: Primitive.Number[A]): S[A] = lift(codec: Primitive[A])
     final override protected def lift[A](codec: Primitive.String[A]): S[A] = lift(codec: Primitive[A])
 
-  object Plain extends Primitives.Default[Primitive]:
+  object Plain extends Primitives.Defaults[Primitive]:
     final override protected inline def lift[A](codec: Primitive[A]): Primitive[A] = codec

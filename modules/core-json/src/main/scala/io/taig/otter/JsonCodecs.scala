@@ -10,14 +10,20 @@ import scala.collection.immutable.SortedMap
 import scala.collection.immutable.SortedSet
 import io.taig.otter.Json.Key
 
-trait JsonCodecs extends Primitives.Default[Json]:
-  override protected def lift[A](value: Primitive[A]): Json[A] = Json(value)
+trait JsonCodecs extends Fields[Json.Key, Json], Primitives.Defaults[Json.Primitive]:
+  override protected def lift[A](codec: Primitive[A]): Json.Primitive[A] = Json.Primitive(self = codec)
 
-  object field extends Fields[Json.Key, Json](keys = Primitives.Strings.Plain) {
-    override def apply[A, B](name: A, key: Primitive.String[A], value: Json[B]): Field[Key, Json, B] = ???
-  }
+  override def field[A, B](
+      name: A,
+      key: => Primitive.String[A],
+      value: => Json[B]
+  ): Field.Required[Json.Key, Json, B] = Field.Required.Root(
+    key = Reference.Constant(self = Reference.later(key), value = name),
+    value = Reference.later(value),
+    metadata = Metadata.Empty
+  )
 
-// object collection extends Collections[Json]:
-//   override protected def lift[A](codec: Collection[Json, A]): Json[A] = Json(codec)
+  // object collection extends Collections.Defaults[Json.Collection]:
+  //   override protected def lift[A](codec: Collection[Json, A]): Json.Collection[A] = Json.Collection(self = codec)
 
-object JsonCodecs extends JsonCodecs
+// object JsonCodecs extends JsonCodecs
