@@ -86,15 +86,6 @@ object Json:
 
   type Branch[A] = Self.Branch[Json.Key, Json, A]
 
-  given field: FieldInvariant[Json.Field, Json.Record, Json.Key, Json] with
-    override def apply[A, B](name: A, key: => Json.Key[A], value: => Json[B]): Field[B] = Field.Required.Root(
-      key = Reference.Constant(self = Reference.later(key), value = name),
-      value = Reference.later(value),
-      metadata = Metadata.Empty
-    )
-
-    extension [A](self: Field[A]) override def imap[B](f: A => B)(g: B => A): Json.Field[B] = self.imap(f)(g)
-
   given CodecInvariant.Nullable[Json, Json.Optional] with
     extension [A](self: Json[A])
       override def imap[B](f: A => B)(g: B => A): Json[B] = self match

@@ -47,3 +47,17 @@ object Field:
     export self.{key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, Option[A]] =
       copy(self = self.modifyMetadata(f))
+
+  given invariant[Record[_], Key[_], Value[_]](using
+      RecordInvariant[Record, Field[Key, Value, *]]
+  ): FieldInvariant[Field[Key, Value, *], Record, Key, Value] =
+    new FieldInvariant[Field[Key, Value, *], Record, Key, Value]:
+      extension [A](self: Field[Key, Value, A])
+        override inline def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] =
+          self.imap(f)(g)
+
+      override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] = Field.Required.Root(
+        key = Reference.Constant(self = Reference.later(key), value = name),
+        value = Reference.later(value),
+        metadata = Metadata.Empty
+      )
