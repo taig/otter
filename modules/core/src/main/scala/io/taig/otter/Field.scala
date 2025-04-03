@@ -60,7 +60,3 @@ object Field:
       copy(self = self.modifyMetadata(f))
     override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Field[S, U, Option[A]] = copy(self = self.mapK(fK))
     override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Field[U, T, Option[A]] = copy(self = self.leftMapK(fK))
-
-  given invariant[Key[_], Value[_], Record[_]](using
-      RecordInvariant[Record, Key, Value]
-  ): FieldInvariant[Key, Value, Record] = new FieldInvariant[Key, Value, Record] {}
