@@ -8,6 +8,8 @@ import scala.annotation.tailrec
 import io.taig.otter.Collection.Linked
 import io.taig.otter.Collection.Modify
 import io.taig.otter.Dictionary.Root
+import io.taig.otter.Optional.Default
+import io.taig.otter.Optional.Nullable
 
 final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, String], Expression]]:
   override def apply(codec: Json[?]): State[ListMap[Const, String], Expression] = State: state =>
@@ -27,6 +29,7 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
           case codec: Json.Constant[?]    => (state, apply(codec))
           case codec: Json.Dictionary[?]  => apply(codec).run(initial = state).value
           case codec: Json.Enumeration[?] => (state, apply(codec))
+          case codec: Json.Optional[?]    => apply(codec).run(initial = state).value
           case codec: Json.Primitive[?]   => (state, apply(codec))
 
   def apply(codec: Json.Collection[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
@@ -62,6 +65,15 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
     case self @ Enumeration.Root(codec, mapping, _) =>
       val values = self.values.map(a => PrimitivePrinter(codec = codec.value.value, mapping(a))).mkString_(", ")
       s"z.enum([$values])"
+
+  def apply(codec: Json.Optional[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
+
+  def apply(codec: Optional[Json, ?]): State[ListMap[Const, String], String] = codec match
+    case Optional.Modify(self, _, _) => apply(codec = self)
+    case Optional.Default(codec, _, _) =>
+      apply(codec = codec.value).map(expression => show"z.nullable($expression)")
+    case Optional.Nullable(codec, _) =>
+      apply(codec = codec.value).map(expression => show"z.nullable($expression)")
 
   def apply(codec: Json.Primitive[?]): String = codec match
     case _: Json.Primitive.Boolean[?] => "z.boolean()"

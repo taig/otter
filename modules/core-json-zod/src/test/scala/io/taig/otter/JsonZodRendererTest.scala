@@ -67,6 +67,24 @@ final class JsonZodRendererTest extends OtterSuite:
       expected = Expression.Inline("""z.enum(["bird", "cat", "dog"])""")
     )
 
+  test("optional"):
+    assertEq(
+      obtained = renderer(string.nullable).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.nullable(z.string())""")
+    )
+    assertEq(
+      obtained = renderer(string.nullable(default = "foobar")).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.nullable(z.string())""")
+    )
+
+  test("optional: reference"):
+    val codec = string.modifyMetadata(_.put(name, "Foo"))
+
+    assertEq(
+      obtained = renderer(codec.nullable).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.nullable(Foo)""")
+    )
+
   test("primitive"):
     assertEq(
       obtained = renderer(string).runA(ListMap.empty).value,
