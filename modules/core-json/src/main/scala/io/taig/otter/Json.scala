@@ -64,7 +64,7 @@ object Json:
   final case class Record[A](value: Self.Record[Json.Field, A]) extends Json[A]
 
   object Record:
-    given RecordInvariant[Json.Record, Json.Field] with
+    given invariant: RecordInvariant[Json.Record, Json.Field] with
       override def lift[A](codec: Self.Record[Json.Field, A]): Json.Record[A] = Record(codec)
       override def extract[A](codec: Json.Record[A]): Self.Record[Json.Field, A] = codec.value
 
@@ -76,7 +76,13 @@ object Json:
       extract = [A] => (self: Json.Tuple[A]) => self.value
     )
 
-  final case class Union[A](value: Self.Union[Json.Key, Json, A]) extends Json[A]
+  final case class Union[A](value: Self.Union[Json.Branch, A]) extends Json[A]
+
+  object Union:
+    given invariant: UnionInvariant[Json.Union, Json.Branch] = UnionInvariant(
+      lift = [A] => (codec: Self.Union[Json.Branch, A]) => Union(codec),
+      extract = [A] => (self: Json.Union[A]) => self.value
+    )
 
   type Key[A] = Json.Primitive.String[A]
 
@@ -86,12 +92,25 @@ object Json:
 
   object Field:
     given FieldInvariant[Json.Field, Json.Record] with
+      override given record: RecordInvariant[Record, Field] = Json.Record.invariant
+
       extension [A](self: Json.Field[A])
         override def metadata: Metadata = self.metadata
         override def modifyMetadata(f: Metadata => Metadata): Field[A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Json.Field[B] = ???
+        override def imap[B](f: A => B)(g: B => A): Json.Field[B] = self.imap(f)(g)
 
-  type Branch[A] = Self.Branch[Json.Key, Json, A]
+  final case class Branch[A](name: String, value: Reference[Json, A], metadata: Metadata):
+    def modifyMetadata(f: Metadata => Metadata): Branch[A] = copy(metadata = f(metadata))
+    def imap[B](f: A => B)(g: B => A): Json.Branch[B] = copy(value = value.mapF(_.imap(f)(g)))
+
+  object Branch:
+    given BranchInvariant[Json.Branch, Json.Union] with
+      override given union: UnionInvariant[Union, Branch] = Json.Union.invariant
+
+      extension [A](self: Json.Branch[A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Branch[A] = self.modifyMetadata(f)
+        override def imap[B](f: A => B)(g: B => A): Json.Branch[B] = self.imap(f)(g)
 
   type Invariant = CodecInvariant.Nullable[Json, Json.Optional] & CodecInvariant.Tupleable[Json, Json.Tuple]
 

@@ -128,3 +128,69 @@ final class JsonZodRendererTest extends OtterSuite:
           |])""".stripMargin
       )
     )
+
+  test("union: untagged"):
+    val codec = branch("foo", string) :+ branch("bar", int)
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.union([
+          |  z.string(),
+          |  z.number()
+          |])""".stripMargin
+      )
+    )
+
+  test("union: taggged (keyed)"):
+    val codec = (branch("foo", string) :+ branch("bar", int)).keyed
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.union([
+          |  z.object({
+          |    "foo": z.string()
+          |  }),
+          |  z.object({
+          |    "bar": z.number()
+          |  })
+          |])""".stripMargin
+      )
+    )
+
+  test("union: taggged (merged)"):
+    val codec = (branch("foo", field("x", int).toRecord) :+ branch("bar", field("y", long).toRecord)).merged
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.union([
+          |  z.object({
+          |    "x": z.number()
+          |  }).merge(z.object({ "type": z.literal("foo") })),
+          |  z.object({
+          |    "y": z.number()
+          |  }).merge(z.object({ "type": z.literal("bar") }))
+          |])""".stripMargin
+      )
+    )
+
+  test("union: taggged (nested)"):
+    val codec = (branch("foo", string) :+ branch("bar", int))._nested
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.union([
+          |  z.object({
+          |    "type": z.literal("foo"),
+          |    "value": z.string()
+          |  }),
+          |  z.object({
+          |    "type": z.literal("bar"),
+          |    "value": z.number()
+          |  })
+          |])""".stripMargin
+      )
+    )

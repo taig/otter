@@ -1,9 +1,10 @@
 package io.taig.otter
 
 import cats.~>
+import cats.data.Chain
 
 sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
-  def codecs: Vector[Reference[S, ?]]
+  def codecs: Chain[Reference[S, ?]]
   override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
   override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A]
   final override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
@@ -12,7 +13,7 @@ sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
 
 object Tuple:
   final private[otter] case class Empty(metadata: Metadata) extends Tuple[Nothing, Unit]:
-    override def codecs: Vector[Nothing] = Vector.empty
+    override def codecs: Chain[Nothing] = Chain.empty
     override def mapK[S1[a] >: Nothing, T[_]](fK: S1 ~> T): Tuple[T, Unit] = this
     override def modifyMetadata(f: Metadata => Metadata): Tuple[Nothing, Unit] = copy(metadata = f(metadata))
 
@@ -22,7 +23,7 @@ object Tuple:
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, B] = copy(self = self.mapK(fK))
 
   final private[otter] case class Root[S[_], A](codec: Reference[S, A], metadata: Metadata) extends Tuple[S, A]:
-    override def codecs: Vector[Reference[S, A]] = Vector(codec)
+    override def codecs: Chain[Reference[S, A]] = Chain(codec)
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A] = copy(codec = codec.mapK(fK))
 
@@ -31,7 +32,7 @@ object Tuple:
       right: Tuple[S, B],
       metadata: Metadata
   ) extends Tuple[S, (A, B)]:
-    override def codecs: Vector[Reference[S, ?]] = left.codecs ++ right.codecs
+    override def codecs: Chain[Reference[S, ?]] = left.codecs ++ right.codecs
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, (A, B)] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))

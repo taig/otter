@@ -11,6 +11,9 @@ private[otter] given Eq[Data.Any] = Eq.fromUniversalEquals
 
 private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
+private[otter] def indent(value: String): String =
+  value.split("\n").map("  " + _).mkString("\n")
+
 // import cats.Eq
 // import cats.syntax.all.*
 

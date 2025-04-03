@@ -16,6 +16,9 @@ trait JsonDsl:
   def field[A](name: String, codec: => Json[A]): Json.Field[A] =
     Json.Field(name, value = Reference.later(codec), metadata = Metadata.Empty)
 
+  def branch[A](name: String, codec: => Json[A]): Json.Branch[A] =
+    Json.Branch(name, value = Reference.later(codec), metadata = Metadata.Empty)
+
   object collection:
     private val invariant = Json.Collection.invariant
     export invariant.{
