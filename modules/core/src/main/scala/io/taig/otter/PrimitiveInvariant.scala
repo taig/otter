@@ -8,16 +8,26 @@ import scala.Boolean as SBoolean
 import java.util.UUID
 import java.lang.String as JString
 
-abstract class PrimitiveInvariant[Self[_]] extends CodecInvariant[Self]
+abstract class PrimitiveInvariant[Self[_]] extends CodecInvariant[Self]:
+  def extract[A](self: Self[A]): Primitive[A]
+
+  extension [A](self: Self[A]) final override def metadata: Metadata = extract(self).metadata
 
 object PrimitiveInvariant:
   abstract class Boolean[Self[_]] extends PrimitiveInvariant[Self]:
     def lift[A](codec: Primitive.Boolean[A]): Self[A]
-
+    override def extract[A](self: Self[A]): Primitive.Boolean[A]
+    extension [A](self: Self[A])
+      final override def imap[B](f: A => B)(g: B => A): Self[B] =
+        lift(extract(self).imap(f)(g))
     final val boolean: Self[SBoolean] = lift(Primitive.Boolean.Root(metadata = Metadata.Empty))
 
   abstract class Number[Self[_]] extends PrimitiveInvariant[Self]:
     def lift[A](codec: Primitive.Number[A]): Self[A]
+    override def extract[A](self: Self[A]): Primitive.Number[A]
+    extension [A](self: Self[A])
+      final override def imap[B](f: A => B)(g: B => A): Self[B] =
+        lift(extract(self).imap(f)(g))
 
     final def jBigDecimal(
         minimum: Option[Comparison[JBigDecimal]] = none,
@@ -31,7 +41,7 @@ object PrimitiveInvariant:
         minimum: Option[Comparison[JBigInteger]] = none,
         maximum: Option[Comparison[JBigInteger]] = none,
         multiple: Option[JBigInteger] = none
-    ): Self[JBigInteger] = ???
+    ): Self[JBigInteger] = lift(Primitive.Number.BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty))
 
     final def jBigInteger: Self[JBigInteger] = jBigInteger(minimum = none, maximum = none, multiple = none)
 
@@ -39,7 +49,7 @@ object PrimitiveInvariant:
         minimum: Option[Comparison[Double]] = none,
         maximum: Option[Comparison[Double]] = none,
         multiple: Option[Double] = none
-    ): Self[Double] = ???
+    ): Self[Double] = lift(Primitive.Number.Double(minimum, maximum, multiple, metadata = Metadata.Empty))
 
     final val double: Self[Double] = double()
 
@@ -47,7 +57,7 @@ object PrimitiveInvariant:
         minimum: Option[Comparison[Float]] = none,
         maximum: Option[Comparison[Float]] = none,
         multiple: Option[Float] = none
-    ): Self[Float] = ???
+    ): Self[Float] = lift(Primitive.Number.Float(minimum, maximum, multiple, metadata = Metadata.Empty))
 
     final val float: Self[Float] = float()
 
@@ -55,7 +65,7 @@ object PrimitiveInvariant:
         minimum: Option[Comparison[Int]] = none,
         maximum: Option[Comparison[Int]] = none,
         multiple: Option[Int] = none
-    ): Self[Int] = ???
+    ): Self[Int] = lift(Primitive.Number.Int(minimum, maximum, multiple, metadata = Metadata.Empty))
 
     final val int: Self[Int] = int()
 
@@ -63,10 +73,16 @@ object PrimitiveInvariant:
         minimum: Option[Comparison[Long]] = none,
         maximum: Option[Comparison[Long]] = none,
         multiple: Option[Long] = none
-    ): Self[Long] = ???
+    ): Self[Long] = lift(Primitive.Number.Long(minimum, maximum, multiple, metadata = Metadata.Empty))
+
+    final val long: Self[Long] = long()
 
   abstract class String[Self[_]] extends PrimitiveInvariant[Self]:
     def lift[A](codec: Primitive.String[A]): Self[A]
+    override def extract[A](self: Self[A]): Primitive.String[A]
+    extension [A](self: Self[A])
+      final override def imap[B](f: A => B)(g: B => A): Self[B] =
+        lift(extract(self).imap(f)(g))
 
     final def string(
         minimum: Option[Int] = none,

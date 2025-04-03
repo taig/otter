@@ -6,13 +6,13 @@ import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
-trait JavaTimeCodecs[S[_]](codecs: Primitives.Strings[S]):
-  import codecs.*
+final class JavaTimeCodecs[Self[_]](using primitive: PrimitiveInvariant.String[Self]):
+  import primitive.*
 
-  val duration: S[Duration] = parser(name = "iso8601.duration")(value =>
+  val duration: Self[Duration] = parser(name = "iso8601.duration")(value =>
     Either.catchOnly[DateTimeParseException](Duration.parse(value)).leftMap(_.getMessage)
   )(_.toString)
 
-  val instant: S[Instant] = parser(name = "iso8601.instant")(value =>
+  val instant: Self[Instant] = parser(name = "iso8601.instant")(value =>
     Either.catchOnly[DateTimeParseException](Instant.parse(value)).leftMap(_.getMessage)
   )(_.toString)

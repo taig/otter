@@ -12,8 +12,6 @@ sealed abstract class Branch[+S[_], +T[_], A]:
   def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Branch[U, T, A]
   final def imap[B](f: A => B)(g: B => A): Branch[S, T, B] = Branch.Modify(self = this, f, g)
 
-  final def toUnion: Union.Untagged[S, T, A] = Union.Untagged.Root(branch = this, metadata = Metadata.Empty)
-
 object Branch:
   final private[otter] case class Modify[S[_], T[_], A, B](self: Branch[S, T, A], f: A => B, g: B => A)
       extends Branch[S, T, B]:

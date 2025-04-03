@@ -239,25 +239,6 @@ import scala.collection.immutable.SortedSet
 //     ): Dictionary.Of[F, NonEmptyMap[A, B]] = sortedMap(key, value, minimum = minimum.max(1.some), maximum)
 //       .imap(NonEmptyMap.fromMapUnsafe)(_.toSortedMap)
 
-//   def enumeration[A, B](codec: => Primitive[A])(using
-//       mapping: Mapping[B, A]
-//   ): Enumeration[B] =
-//     Base.Enumeration.Root(codec = Eval.later(codec), mapping, metadata = Metadata.Empty)
-
-//   def enumeration[A: Order, B](codec: => Primitive[A])(f: B => A)(using
-//       EnumerationValues.Aux[B, B]
-//   ): Enumeration[B] = enumeration(codec)(using Mapping.enumeration(f))
-
-//   object constant:
-//     def apply[F <: Codec[A], A: Eq](codec: => F, a: A): Constant.Of[F, A] =
-//       Base.Constant.Root(codec = Eval.later(codec), reference = a, metadata = Metadata.Empty)
-//     def apply(value: String): Constant.Of[Primitive[?], String] = apply(string, value)
-//     def apply(value: Int): Constant.Of[Primitive[?], Int] = apply(int, value)
-//     def apply(value: Long): Constant.Of[Primitive[?], Long] = apply(long, value)
-//     def apply(value: Float): Constant.Of[Primitive[?], Float] = apply(float, value)
-//     def apply(value: Double): Constant.Of[Primitive[?], Double] = apply(double, value)
-//     def apply(value: Boolean): Constant.Of[Primitive[?], Boolean] = apply(boolean, value)
-
 //   // object dynamic:
 //   //   val number: Union[Data.Number] = branch("bigDecimal", jBigDecimal) |
 //   //     branch("bigInteger", jBigInteger) |

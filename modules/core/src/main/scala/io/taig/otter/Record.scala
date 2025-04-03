@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import cats.~>
-import cats.arrow.FunctionK
 
 sealed abstract class Record[+S[_], +T[_], A] extends Codec[T, A]:
   def fields: Chain[Field[S, T, ?]]

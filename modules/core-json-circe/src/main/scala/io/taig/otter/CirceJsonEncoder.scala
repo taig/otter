@@ -50,9 +50,9 @@ object CirceJsonEncoder:
     case Dictionary.Modify(self, _, g) => apply(codec = self, g(a))
 
   @tailrec
-  def apply[A](codec: Enumeration[A], a: A): CirceJson = codec match
+  def apply[A](codec: Enumeration[Json.Primitive, A], a: A): CirceJson = codec match
     case Enumeration.Modify(self, _, g)      => apply(codec = self, g(a))
-    case Enumeration.Root(codec, mapping, _) => apply(codec, mapping(a))
+    case Enumeration.Root(codec, mapping, _) => apply(codec = codec.value, mapping(a))
 
   @tailrec
   def apply[A](codec: Optional[Json, A], a: A): CirceJson = codec match

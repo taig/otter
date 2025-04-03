@@ -3,9 +3,6 @@ package io.taig.otter
 import io.taig.otter as Self
 
 sealed abstract class Json[A] extends Product with Serializable
-// def value: Self.Collection[Json, A] | Self.Constant[Json, A] | Self.Dictionary[Json.Key, Json, A] |
-//   Self.Enumeration[A] | Self.Optional[Json, A] | Self.Primitive[A] | Self.Record[Json.Key, Json, A] |
-//   Self.Tuple[Json, A] | Self.Union[Json.Key, Json, A]
 
 object Json:
   final case class Collection[A](value: Self.Collection[Json, A]) extends Json[A]
@@ -19,7 +16,12 @@ object Json:
 
   final case class Dictionary[A](value: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
-  final case class Enumeration[A](value: Self.Enumeration[A]) extends Json[A]
+  final case class Enumeration[A](value: Self.Enumeration[Json.Primitive, A]) extends Json[A]
+
+  object Enumeration:
+    given invariant: EnumerationInvariant[Json.Enumeration, Json.Primitive] with
+      override def lift[A](codec: Self.Enumeration[Primitive, A]): Json.Enumeration[A] = Enumeration(codec)
+      override def extract[A](codec: Json.Enumeration[A]): Self.Enumeration[Primitive, A] = codec.value
 
   final case class Optional[A](value: Self.Optional[Json, A]) extends Json[A]
 
@@ -28,7 +30,8 @@ object Json:
       override def lift[A](codec: Self.Optional[Json, A]): Json.Optional[A] = Optional(value = codec)
       override def extract[A](self: Json.Optional[A]): Self.Optional[Json, A] = self.value
 
-  sealed abstract class Primitive[A] extends Json[A]
+  sealed abstract class Primitive[A] extends Json[A]:
+    def value: Self.Primitive.Boolean[A] | Self.Primitive.Number[A] | Self.Primitive.String[A]
 
   object Primitive:
     final case class Boolean[A](value: Self.Primitive.Boolean[A]) extends Json.Primitive[A]
@@ -37,48 +40,28 @@ object Json:
       given invariant: PrimitiveInvariant.Boolean[Json.Primitive.Boolean] with
         override def lift[A](codec: Self.Primitive.Boolean[A]): Json.Primitive.Boolean[A] =
           Json.Primitive.Boolean(codec)
-        extension [A](self: Boolean[A])
-          override def metadata: Metadata = self.value.metadata
-          override def imap[B](f: A => B)(g: B => A): Json.Primitive.Boolean[B] =
-            Json.Primitive.Boolean(self.value.imap(f)(g))
+        override def extract[A](self: Json.Primitive.Boolean[A]): Self.Primitive.Boolean[A] = self.value
 
     final case class Number[A](value: Self.Primitive.Number[A]) extends Json.Primitive[A]
 
     object Number:
       given invariant: PrimitiveInvariant.Number[Json.Primitive.Number] with
         override def lift[A](codec: Self.Primitive.Number[A]): Json.Primitive.Number[A] = Number(codec)
-        extension [A](self: Number[A])
-          override def metadata: Metadata = self.value.metadata
-          override def imap[B](f: A => B)(g: B => A): Json.Primitive.Number[B] =
-            Json.Primitive.Number(self.value.imap(f)(g))
+        override def extract[A](self: Json.Primitive.Number[A]): Self.Primitive.Number[A] = self.value
 
     final case class String[A](value: Self.Primitive.String[A]) extends Json.Primitive[A]
 
     object String:
       given invariant: PrimitiveInvariant.String[Json.Primitive.String] with
         override def lift[A](codec: Self.Primitive.String[A]): Json.Primitive.String[A] = String(codec)
-        extension [A](self: String[A])
-          override def metadata: Metadata = self.value.metadata
-          override def imap[B](f: A => B)(g: B => A): Json.Primitive.String[B] =
-            Json.Primitive.String(self.value.imap(f)(g))
+        override def extract[A](self: Json.Primitive.String[A]): Self.Primitive.String[A] = self.value
 
   final case class Record[A](value: Self.Record[Json.Key, Json, A]) extends Json[A]
 
   object Record:
-    given RecordInvariant[Json.Record, Json.Field] with
-      override def empty: Json.Record[Unit] = Json.Record(Self.Record.Empty(metadata = Metadata.Empty))
-
-      override def one[A](field: Field[A]): Json.Record[A] =
-        Json.Record(Self.Record.Root(field, metadata = Metadata.Empty))
-
-      extension [A](self: Json.Record[A])
-        override def metadata: Metadata = self.value.metadata
-        override def imap[B](f: A => B)(g: B => A): Json.Record[B] =
-          Json.Record(self.value.imap(f)(g))
-
-      extension [A](self: Json.Record[A])
-        override def zip[B](codec: Json.Record[B]): Json.Record[(A, B)] =
-          Record(self.value.zip(codec.value))
+    given RecordInvariant[Json.Record, Json.Key, Json] with
+      override def lift[A](codec: Self.Record[Key, Json, A]): Json.Record[A] = Record(codec)
+      override def extract[A](codec: Json.Record[A]): Self.Record[Key, Json, A] = codec.value
 
   final case class Tuple[A](value: Self.Tuple[Json, A]) extends Json[A]
 
@@ -90,7 +73,7 @@ object Json:
 
   type Branch[A] = Self.Branch[Json.Key, Json, A]
 
-  given CodecInvariant.Nullable[Json, Json.Optional] with
+  given CodecInvariant.Nullable[Json, Json.Optional] = new CodecInvariant.Nullable[Json, Json.Optional]:
     extension [A](self: Json[A])
       override def metadata: Metadata = self match
         case Json.Collection(a)        => a.metadata
@@ -104,6 +87,7 @@ object Json:
         case Json.Record(a)            => a.metadata
         case Json.Tuple(a)             => a.metadata
         case Json.Union(a)             => a.metadata
+
       override def imap[B](f: A => B)(g: B => A): Json[B] = self match
         case Json.Collection(a)        => Json.Collection(a.imap(f)(g))
         case Json.Constant(a)          => Json.Constant(a.imap(f)(g))

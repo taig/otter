@@ -12,24 +12,26 @@ object JsonZodRenderer:
       case Some(typescript) => State.pure(Expression.Inline(typescript))
       case None =>
         codec match
-          case Json.Collection(codec)   => ???
-          case Json.Constant(codec)     => State.pure(Expression.Inline(apply(codec)))
+          case codec: Json.Constant[?]     => State.pure(Expression.Inline(apply(codec)))
+          case codec: Json.Enumeration[?]  => State.pure(Expression.Inline(apply(codec)))
           case codec: Json.Primitive[?] => State.pure(Expression.Inline(apply(codec)))
-        // codec.self match
-        //   case codec: Collection[Typescript, ?] => ???
-        //   case codec: Constant[Primitive, ?]    => State.pure(Expression.Inline(apply(codec)))
-        //   case codec: Enumeration[?]            => State.pure(Expression.Inline(apply(codec)))
-        //   case codec: Primitive[?]              => State.pure(Expression.Inline(apply(codec)))
 
-  def apply(codec: Constant[Json.Primitive, ?]): String = s"z.literal(${apply(codec.codec.value)})"
+  def apply(codec: Json.Constant[?]): String = apply(codec = codec.value)
+
+  def apply(codec: Constant[Json.Primitive, ?]): String = codec match
+    case Constant.Modify(self, f, g) => apply(codec = self)
+    case Constant.Root(codec, reference, _) =>
+      val value = PrimitivePrinter(codec = codec.value.value, reference)
+      s"z.literal($value)"
+  
 
   def apply(codec: Json.Enumeration[?]): String = apply(codec = codec.value)
 
   @tailrec
-  def apply(codec: Enumeration[?]): String = codec match
+  def apply(codec: Enumeration[Json.Primitive, ?]): String = codec match
     case Enumeration.Modify(self, _, _) => apply(codec = self)
     case self @ Enumeration.Root(codec, mapping, _) =>
-      val values = self.values.map(a => PrimitivePrinter(codec, mapping(a))).mkString_(" | ")
+      val values = self.values.map(a => PrimitivePrinter(codec = codec.value.value, mapping(a))).mkString_(", ")
       s"z.enum([$values])"
 
   def apply(codec: Json.Primitive[?]): String = codec match
