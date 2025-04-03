@@ -88,6 +88,19 @@ object Json:
         case Json.Tuple(a)             => a.metadata
         case Json.Union(a)             => a.metadata
 
+      override def modifyMetadata(f: Metadata => Metadata): Json[A] = self match
+        case Json.Collection(a)        => Json.Collection(a.modifyMetadata(f))
+        case Json.Constant(a)          => Json.Constant(a.modifyMetadata(f))
+        case Json.Dictionary(a)        => Json.Dictionary(a.modifyMetadata(f))
+        case Json.Enumeration(a)       => Json.Enumeration(a.modifyMetadata(f))
+        case Json.Optional(a)          => Json.Optional(a.modifyMetadata(f))
+        case Json.Primitive.Boolean(a) => Json.Primitive.Boolean(a.modifyMetadata(f))
+        case Json.Primitive.Number(a)  => Json.Primitive.Number(a.modifyMetadata(f))
+        case Json.Primitive.String(a)  => Json.Primitive.String(a.modifyMetadata(f))
+        case Json.Record(a)            => Json.Record(a.modifyMetadata(f))
+        case Json.Tuple(a)             => Json.Tuple(a.modifyMetadata(f))
+        case Json.Union(a)             => Json.Union(a.modifyMetadata(f))
+
       override def imap[B](f: A => B)(g: B => A): Json[B] = self match
         case Json.Collection(a)        => Json.Collection(a.imap(f)(g))
         case Json.Constant(a)          => Json.Constant(a.imap(f)(g))

@@ -6,6 +6,7 @@ abstract class OptionalInvariant[Self[_], Value[_]] extends CodecInvariant[Self]
 
   extension [A](self: Self[A])
     final override def metadata: Metadata = extract(self).metadata
+    final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
     final override def imap[B](f: A => B)(g: B => A): Self[B] =
       lift(extract(self).imap(f)(g))
 

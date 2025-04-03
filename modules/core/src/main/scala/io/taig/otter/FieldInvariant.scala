@@ -12,6 +12,7 @@ abstract class FieldInvariant[Key[_], Value[_], Record[_]](using record: RecordI
   extension [A](self: Field[Key, Value, A])
     final override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = self.imap(f)(g)
     final override def metadata: Metadata = self.metadata
+    final override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = self.modifyMetadata(f)
     final def toRecord: Record[A] = record.one(field = self)
     final def :*[B](field: Field[Key, Value, B])(using merge: Merge[A, B]): Record[merge.Out] =
       record.one(field = self) :* field

@@ -18,6 +18,7 @@ object PrimitiveInvariant:
     def lift[A](codec: Primitive.Boolean[A]): Self[A]
     override def extract[A](self: Self[A]): Primitive.Boolean[A]
     extension [A](self: Self[A])
+      final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
       final override def imap[B](f: A => B)(g: B => A): Self[B] =
         lift(extract(self).imap(f)(g))
     final val boolean: Self[SBoolean] = lift(Primitive.Boolean.Root(metadata = Metadata.Empty))
@@ -26,6 +27,7 @@ object PrimitiveInvariant:
     def lift[A](codec: Primitive.Number[A]): Self[A]
     override def extract[A](self: Self[A]): Primitive.Number[A]
     extension [A](self: Self[A])
+      final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
       final override def imap[B](f: A => B)(g: B => A): Self[B] =
         lift(extract(self).imap(f)(g))
 
@@ -81,6 +83,7 @@ object PrimitiveInvariant:
     def lift[A](codec: Primitive.String[A]): Self[A]
     override def extract[A](self: Self[A]): Primitive.String[A]
     extension [A](self: Self[A])
+      final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
       final override def imap[B](f: A => B)(g: B => A): Self[B] =
         lift(extract(self).imap(f)(g))
 

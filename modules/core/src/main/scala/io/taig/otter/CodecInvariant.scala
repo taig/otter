@@ -8,6 +8,7 @@ abstract class CodecInvariant[Self[_]]:
   extension [A](self: Self[A])
     def imap[B](f: A => B)(g: B => A): Self[B]
     def metadata: Metadata
+    def modifyMetadata(f: Metadata => Metadata): Self[A]
 
   final def invariant: Invariant[Self] = new Invariant[Self]:
     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)

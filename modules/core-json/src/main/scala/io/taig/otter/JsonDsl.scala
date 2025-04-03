@@ -15,6 +15,22 @@ trait JsonDsl:
 
   object field extends FieldDsl[Json.Key, Json, Json.Record](key = string)
 
+  object collection:
+    private val invariant = Json.Collection.invariant
+    export invariant.{
+      chain,
+      list,
+      nonEmptyChain,
+      nonEmptyList,
+      nonEmptySeq,
+      nonEmptySet,
+      nonEmptyVector,
+      seq,
+      set,
+      sortedSet,
+      vector
+    }
+
   object constant:
     def apply[A: Eq](codec: => Json.Primitive[A], a: A): Json.Constant[A] =
       Json.Constant(Constant.Root(codec = Reference.later(codec), reference = a, metadata = Metadata.Empty))

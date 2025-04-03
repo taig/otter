@@ -111,45 +111,6 @@ import scala.collection.immutable.SortedSet
 //   def branch[F <: Codec[A], A](name: String, codec: => F): Branch.Of[F, A] =
 //     Base.Branch.Root(name, codec = Eval.later(codec), metadata = Metadata.Empty)
 
-//   object collection:
-//     def chain[F <: Codec[A], A](
-//         codec: => F,
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         uniqueItems: Boolean = false
-//     ): Collection.Of[F, Chain[A]] =
-//       vector(codec, minimum, maximum, uniqueItems).imap(Chain.fromSeq)(_.toVector)
-
-//     def nonEmptyChain[F <: Codec[A], A](
-//         codec: => F,
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         uniqueItems: Boolean = false
-//     ): Collection.Of[F, NonEmptyChain[A]] =
-//       nonEmptyVector(codec, minimum, maximum, uniqueItems).imap(NonEmptyChain.fromNonEmptyVector)(_.toNonEmptyVector)
-
-//     def set[F <: Codec[A], A](
-//         codec: => F,
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         uniqueItems: Boolean = false
-//     ): Collection.Of[F, Set[A]] = vector(codec, minimum, maximum, uniqueItems).imap(_.toSet)(_.toVector)
-
-//     def sortedSet[F <: Codec[A], A: Order](
-//         codec: => F,
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         uniqueItems: Boolean = false
-//     ): Collection.Of[F, SortedSet[A]] = list(codec, minimum, maximum, uniqueItems).imap(SortedSet.from)(_.toList)
-
-//     def nonEmptySet[F <: Codec[A], A: Order](
-//         codec: => F,
-//         minimum: Option[Int] = none,
-//         maximum: Option[Int] = none,
-//         uniqueItems: Boolean = false
-//     ): Collection.Of[F, NonEmptySet[A]] = nonEmptyList(codec, minimum, maximum, uniqueItems)
-//       .imap(values => NonEmptySet(values.head, SortedSet.from(values.tail)))(_.toNonEmptyList)
-
 //   object dictionary:
 //     def list[F <: Codec[B], A, B](
 //         key: => Primitive[A],

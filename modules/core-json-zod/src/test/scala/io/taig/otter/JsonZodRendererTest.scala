@@ -1,13 +1,48 @@
 package io.taig.otter
 
-import munit.FunSuite
+import io.taig.otter.Keys.*
 import io.taig.otter.JsonDsl.*
+import scala.collection.immutable.ListMap
+import cats.data.State
+import cats.syntax.all.*
 
 final class JsonZodRendererTest extends OtterSuite:
+  val renderer: Renderer[Json[?], State[ListMap[Const, String], Expression]] = JsonZodRenderer()
+
+  test("override"):
+    assertEq(
+      obtained = renderer(string.modifyMetadata(_.put(typescript, "z.foobar()"))).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.foobar()""")
+    )
+
+  test("override: reference"):
+    assertEq(
+      obtained =
+        renderer(string.modifyMetadata(_.put(typescript, "z.foobar()").put(name, "Foo"))).runA(ListMap.empty).value,
+      expected = Expression.Referenced(reference = Const(namespace = none, name = "Foo"), value = """z.foobar()""")
+    )
+
+  test("collection"):
+    assertEq(
+      obtained = renderer(collection.list(string)).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.array(z.string())""")
+    )
+
+  test("collection: reference"):
+    val codec = string.modifyMetadata(_.put(name, "Foo"))
+
+    assertEq(
+      obtained = renderer(collection.list(codec)).run(ListMap.empty).value,
+      expected = (
+        ListMap((Const(namespace = none, name = "Foo"), "z.string()")),
+        Expression.Inline("""z.array(Foo)""")
+      )
+    )
+
   test("constant"):
     assertEq(
-      obtained = JsonZodRenderer(constant("foobar")),
-      expected = """z.literal("foobar")"""
+      obtained = renderer(constant("foobar")).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.literal("foobar")""")
     )
 
   test("enumeration"):
@@ -18,16 +53,28 @@ final class JsonZodRendererTest extends OtterSuite:
 
     val codec: Json.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
-      case Animal.Cat => "cat"
-      case Animal.Dog => "dog"
-      
+      case Animal.Cat  => "cat"
+      case Animal.Dog  => "dog"
+
     assertEq(
-      obtained = JsonZodRenderer(codec),
-      expected = """z.enum(["bird", "cat", "dog"])"""
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.enum(["bird", "cat", "dog"])""")
     )
 
   test("primitive"):
-    assertEq(obtained = JsonZodRenderer(codec = string), expected = "z.string()")
-    assertEq(obtained = JsonZodRenderer(codec = int), expected = "z.number()")
-    assertEq(obtained = JsonZodRenderer(codec = long), expected = "z.number()")
-    assertEq(obtained = JsonZodRenderer(codec = boolean), expected = "z.boolean()")
+    assertEq(
+      obtained = renderer(string).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.string()")
+    )
+    assertEq(
+      obtained = renderer(int).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.number()")
+    )
+    assertEq(
+      obtained = renderer(long).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.number()")
+    )
+    assertEq(
+      obtained = renderer(boolean).runA(ListMap.empty).value,
+      expected = Expression.Inline("z.boolean()")
+    )
