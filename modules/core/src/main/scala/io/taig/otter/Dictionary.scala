@@ -1,12 +1,15 @@
 package io.taig.otter
 
-import cats.Invariant
+import cats.~>
+import cats.arrow.FunctionK
 
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Codec[T, A]:
   def key: Reference[S, ?]
   def value: Reference[T, ?]
   def constraints: Vector[Constraint.Object]
   override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
+  override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A]
+  def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, A]
   final override def imap[B](f: A => B)(g: B => A): Dictionary[S, T, B] = Dictionary.Modify(self = this, f, g)
 
 object Dictionary:
@@ -22,11 +25,12 @@ object Dictionary:
       maximum.map(Constraint.Object.MaxProperties.apply)
     ).flatten
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, List[(A, B)]] = copy(metadata = f(metadata))
+    override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, List[(A, B)]] = copy(value = value.mapK(fK))
+    override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, List[(A, B)]] = copy(key = key.mapK(fK))
 
   final private[otter] case class Modify[S[_], T[_], A, B](self: Dictionary[S, T, A], f: A => B, g: B => A)
       extends Dictionary[S, T, B]:
     export self.{constraints, key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, B] = copy(self = self.modifyMetadata(f))
-
-  given [S[_], T[_]]: Invariant[Dictionary[S, T, *]] with
-    override def imap[A, B](fa: Dictionary[S, T, A])(f: A => B)(g: B => A): Dictionary[S, T, B] = fa.imap(f)(g)
+    override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, B] = copy(self = self.mapK(fK))
+    override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, B] = copy(self = self.leftMapK(fK))

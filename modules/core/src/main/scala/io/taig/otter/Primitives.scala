@@ -145,8 +145,8 @@ object Primitives:
           Primitive.String.Parser(name, decode = f, encode = g, minimum, maximum, matches, metadata = Metadata.Empty)
         )
 
-    object Plain extends Primitives.Strings.Defaults[Primitive.String]:
-      final override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec
+    // object Plain extends Primitives.Strings.Defaults[Primitive.String]:
+    //   final override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec
 
   trait Booleans[S[_]: Invariant]:
     def boolean: S[Boolean]
@@ -157,10 +157,10 @@ object Primitives:
 
       override def boolean: S[Boolean] = lift(Primitive.Boolean.Root(Metadata.Empty))
 
-  object Plain
-      extends Primitives.Booleans.Defaults[Primitive.Boolean],
-        Primitives.Numbers.Defaults[Primitive.Number],
-        Primitives.Strings.Defaults[Primitive.String]:
-    override protected inline def lift[A](codec: Primitive.Number[A]): Primitive.Number[A] = codec
-    override protected inline def lift[A](codec: Primitive.Boolean[A]): Primitive.Boolean[A] = codec
-    override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec
+  // object Plain
+  //     extends Primitives.Booleans.Defaults[Primitive.Boolean],
+  //       Primitives.Numbers.Defaults[Primitive.Number],
+  //       Primitives.Strings.Defaults[Primitive.String]:
+  //   override protected inline def lift[A](codec: Primitive.Number[A]): Primitive.Number[A] = codec
+  //   override protected inline def lift[A](codec: Primitive.Boolean[A]): Primitive.Boolean[A] = codec
+  //   override protected inline def lift[A](codec: Primitive.String[A]): Primitive.String[A] = codec

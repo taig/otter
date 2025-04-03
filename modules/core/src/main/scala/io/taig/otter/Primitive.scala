@@ -15,15 +15,17 @@ import scala.Tuple as STuple
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import cats.Eq
-import cats.Invariant
+import cats.~>
 
 sealed abstract class Primitive[A] extends Codec[Nothing, A]:
   override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
+  override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive[A]
   override def imap[B](f: A => B)(g: B => A): Primitive[B]
 
 object Primitive:
   sealed abstract class Boolean[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[A]
+    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.Boolean[A] = this
     override def imap[B](f: A => B)(g: B => A): Primitive.Boolean[B] = Boolean.Modify(self = this, f, g)
 
   object Boolean:
@@ -36,12 +38,10 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    given Invariant[Primitive.Boolean] with
-      override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] = fa.imap(f)(g)
-
   sealed abstract class Number[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[A]
-    override def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
+    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.Number[A] = this
+    final override def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
 
   object Number:
     final private[otter] case class BigDecimal(
@@ -106,12 +106,10 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    given Invariant[Primitive.Number] with
-      override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] = fa.imap(f)(g)
-
   sealed abstract class String[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.String[A]
-    override def imap[B](f: A => B)(g: B => A): Primitive.String[B] = String.Modify(self = this, f, g)
+    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.String[A] = this
+    final override def imap[B](f: A => B)(g: B => A): Primitive.String[B] = String.Modify(self = this, f, g)
 
   object String:
     final private[otter] case class Parser[A](
@@ -140,10 +138,3 @@ object Primitive:
     ) extends Primitive.String[B]:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
-
-    given Invariant[Primitive.String] with
-      override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] =
-        fa.imap(f)(g)
-
-  given Invariant[Primitive] with
-    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)

@@ -1,3 +1,4 @@
+import org.checkerframework.checker.units.qual.m
 import sbtcrossproject.CrossProject
 
 val Version = new {
@@ -71,7 +72,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJavaTime,
     coreJson,
     coreJsonCirce,
-    coreTypescript
+    coreJsonZod
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -109,11 +110,11 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   )
   .dependsOn(coreJson % "compile->compile;test->test")
 
-lazy val coreTypescript = module(identifier = Some("core-typescript"))
-  .dependsOn(core % "compile->compile;test->test")
+lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
+  .dependsOn(coreJson % "compile->compile;test->test")
 
-lazy val coreTypescriptZod = module(identifier = Some("core-typescript-zod"))
-  .dependsOn(coreTypescript % "compile->compile;test->test")
+// lazy val coreTypescript = module(identifier = Some("core-typescript"))
+//   .dependsOn(core % "compile->compile;test->test")
 
 // lazy val http = module(identifier = Some("http"))
 //   .settings(

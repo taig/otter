@@ -15,7 +15,7 @@ object Json:
       override def lift[A](codec: Self.Collection[Json, A]): Collection[A] = Collection(codec)
       override def extract[A](self: Collection[A]): Self.Collection[Json, A] = self.value
 
-  final case class Constant[A](value: Self.Constant[Json, A]) extends Json[A]
+  final case class Constant[A](value: Self.Constant[Json.Primitive, A]) extends Json[A]
 
   final case class Dictionary[A](value: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
@@ -38,6 +38,7 @@ object Json:
         override def lift[A](codec: Self.Primitive.Boolean[A]): Json.Primitive.Boolean[A] =
           Json.Primitive.Boolean(codec)
         extension [A](self: Boolean[A])
+          override def metadata: Metadata = self.value.metadata
           override def imap[B](f: A => B)(g: B => A): Json.Primitive.Boolean[B] =
             Json.Primitive.Boolean(self.value.imap(f)(g))
 
@@ -47,6 +48,7 @@ object Json:
       given invariant: PrimitiveInvariant.Number[Json.Primitive.Number] with
         override def lift[A](codec: Self.Primitive.Number[A]): Json.Primitive.Number[A] = Number(codec)
         extension [A](self: Number[A])
+          override def metadata: Metadata = self.value.metadata
           override def imap[B](f: A => B)(g: B => A): Json.Primitive.Number[B] =
             Json.Primitive.Number(self.value.imap(f)(g))
 
@@ -56,6 +58,7 @@ object Json:
       given invariant: PrimitiveInvariant.String[Json.Primitive.String] with
         override def lift[A](codec: Self.Primitive.String[A]): Json.Primitive.String[A] = String(codec)
         extension [A](self: String[A])
+          override def metadata: Metadata = self.value.metadata
           override def imap[B](f: A => B)(g: B => A): Json.Primitive.String[B] =
             Json.Primitive.String(self.value.imap(f)(g))
 
@@ -69,6 +72,7 @@ object Json:
         Json.Record(Self.Record.Root(field, metadata = Metadata.Empty))
 
       extension [A](self: Json.Record[A])
+        override def metadata: Metadata = self.value.metadata
         override def imap[B](f: A => B)(g: B => A): Json.Record[B] =
           Json.Record(self.value.imap(f)(g))
 
@@ -88,6 +92,18 @@ object Json:
 
   given CodecInvariant.Nullable[Json, Json.Optional] with
     extension [A](self: Json[A])
+      override def metadata: Metadata = self match
+        case Json.Collection(a)        => a.metadata
+        case Json.Constant(a)          => a.metadata
+        case Json.Dictionary(a)        => a.metadata
+        case Json.Enumeration(a)       => a.metadata
+        case Json.Optional(a)          => a.metadata
+        case Json.Primitive.Boolean(a) => a.metadata
+        case Json.Primitive.Number(a)  => a.metadata
+        case Json.Primitive.String(a)  => a.metadata
+        case Json.Record(a)            => a.metadata
+        case Json.Tuple(a)             => a.metadata
+        case Json.Union(a)             => a.metadata
       override def imap[B](f: A => B)(g: B => A): Json[B] = self match
         case Json.Collection(a)        => Json.Collection(a.imap(f)(g))
         case Json.Constant(a)          => Json.Constant(a.imap(f)(g))

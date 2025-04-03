@@ -10,6 +10,7 @@ abstract class CollectionInvariant[Self[_], Value[_]] extends CodecInvariant[Sel
   def extract[A](self: Self[A]): Collection[Value, A]
 
   extension [A](self: Self[A])
+    final override def metadata: Metadata = extract(self).metadata
     final override def imap[B](f: A => B)(g: B => A): Self[B] =
       lift(extract(self).imap(f)(g))
 
