@@ -10,6 +10,7 @@ import io.taig.otter.Collection.Modify
 import io.taig.otter.Dictionary.Root
 import io.taig.otter.Optional.Default
 import io.taig.otter.Optional.Nullable
+import cats.data.Chain
 
 final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, String], Expression]]:
   override def apply(codec: Json[?]): State[ListMap[Const, String], Expression] = State: state =>
@@ -31,6 +32,8 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
           case codec: Json.Enumeration[?] => (state, apply(codec))
           case codec: Json.Optional[?]    => apply(codec).run(initial = state).value
           case codec: Json.Primitive[?]   => (state, apply(codec))
+          case codec: Json.Record[?]      => apply(codec).run(initial = state).value
+          case codec: Json.Tuple[?]       => apply(codec).run(initial = state).value
 
   def apply(codec: Json.Collection[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
 
@@ -79,6 +82,32 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
     case _: Json.Primitive.Boolean[?] => "z.boolean()"
     case _: Json.Primitive.String[?]  => "z.string()"
     case _: Json.Primitive.Number[?]  => "z.number()"
+
+  def apply(codec: Json.Record[?]): State[ListMap[Const, String], String] = apply(codec = codec.value).map: values =>
+    s"""z.object({
+       |${values.map((key, value) => show"  \"$key\": $value").mkString_(",\n")}
+       |})""".stripMargin
+
+  def apply(codec: Record[Json.Field, ?]): State[ListMap[Const, String], Chain[(String, Expression)]] = codec match
+    case Record.Empty(_)            => State.pure(Chain.empty)
+    case Record.Modify(self, _, _)  => apply(codec = self)
+    case Record.Root(field, _)      => apply(field = field.value).map(Chain.one)
+    case Record.Zip(left, right, _) => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
+
+  def apply(codec: Json.Tuple[?]): State[ListMap[Const, String], String] =
+    apply(codec = codec.value).map: values =>
+      s"""z.tuple([
+         |${values.map(value => show"  $value").mkString_(",\n")}
+         |])""".stripMargin
+
+  def apply(codec: Tuple[Json, ?]): State[ListMap[Const, String], Chain[Expression]] = codec match
+    case Tuple.Empty(_)            => State.pure(Chain.empty)
+    case Tuple.Modify(self, _, _)  => apply(codec = self)
+    case Tuple.Root(codec, _)      => apply(codec = codec.value).map(Chain.one)
+    case Tuple.Zip(left, right, _) => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
+
+  def apply(field: Json.Field[?]): State[ListMap[Const, String], (String, Expression)] =
+    apply(codec = field.value.value).tupleLeft(field.name)
 
 object JsonZodRenderer:
   def apply(): Renderer[Json[?], State[ListMap[Const, String], Expression]] = new JsonZodRenderer()

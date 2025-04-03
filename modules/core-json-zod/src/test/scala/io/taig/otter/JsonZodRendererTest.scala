@@ -2,7 +2,6 @@ package io.taig.otter
 
 import io.taig.otter.Keys.*
 import io.taig.otter.JsonDsl.*
-import io.taig.otter.JsonDsl.given
 import scala.collection.immutable.ListMap
 import cats.data.State
 import cats.syntax.all.*
@@ -104,5 +103,28 @@ final class JsonZodRendererTest extends OtterSuite:
       expected = Expression.Inline("z.boolean()")
     )
 
-  // test("record"):
-  //   val codec = field("foo", string).toRecord // summon[FieldInvariant[Json.Key, Json, Json.Record]].:*(field("foo", string))(field("bar", int))
+  test("record"):
+    val codec = field("foo", string) :* field("bar", int)
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.object({
+          |  "foo": z.string(),
+          |  "bar": z.number()
+          |})""".stripMargin
+      )
+    )
+
+  test("tuple"):
+    val codec = string :* int
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.tuple([
+          |  z.string(),
+          |  z.number()
+          |])""".stripMargin
+      )
+    )

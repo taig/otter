@@ -61,24 +61,45 @@ object Json:
         override def lift[A](codec: Self.Primitive.String[A]): Json.Primitive.String[A] = String(codec)
         override def extract[A](self: Json.Primitive.String[A]): Self.Primitive.String[A] = self.value
 
-  final case class Record[A](value: Self.Record[Json.Key, Json, A]) extends Json[A]
+  final case class Record[A](value: Self.Record[Json.Field, A]) extends Json[A]
 
   object Record:
-    given RecordInvariant[Json.Record, Json.Key, Json] with
-      override def lift[A](codec: Self.Record[Key, Json, A]): Json.Record[A] = Record(codec)
-      override def extract[A](codec: Json.Record[A]): Self.Record[Key, Json, A] = codec.value
+    given RecordInvariant[Json.Record, Json.Field] with
+      override def lift[A](codec: Self.Record[Json.Field, A]): Json.Record[A] = Record(codec)
+      override def extract[A](codec: Json.Record[A]): Self.Record[Json.Field, A] = codec.value
 
   final case class Tuple[A](value: Self.Tuple[Json, A]) extends Json[A]
+
+  object Tuple:
+    given invariant: TupleInvariant[Json.Tuple, Json] = TupleInvariant(
+      lift = [A] => (codec: Self.Tuple[Json, A]) => Tuple(codec),
+      extract = [A] => (self: Json.Tuple[A]) => self.value
+    )
 
   final case class Union[A](value: Self.Union[Json.Key, Json, A]) extends Json[A]
 
   type Key[A] = Json.Primitive.String[A]
 
-  type Field[A] = Self.Field[Json.Key, Json, A]
+  final case class Field[A](name: String, value: Reference[Json, A], metadata: Metadata):
+    def modifyMetadata(f: Metadata => Metadata): Field[A] = copy(metadata = f(metadata))
+    def imap[B](f: A => B)(g: B => A): Json.Field[B] = copy(value = value.mapF(_.imap(f)(g)))
+
+  object Field:
+    given FieldInvariant[Json.Field, Json.Record] with
+      extension [A](self: Json.Field[A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Field[A] = self.modifyMetadata(f)
+        override def imap[B](f: A => B)(g: B => A): Json.Field[B] = ???
 
   type Branch[A] = Self.Branch[Json.Key, Json, A]
 
-  given CodecInvariant.Nullable[Json, Json.Optional] = new CodecInvariant.Nullable[Json, Json.Optional]:
+  type Invariant = CodecInvariant.Nullable[Json, Json.Optional] & CodecInvariant.Tupleable[Json, Json.Tuple]
+
+  given invariant: Json.Invariant = new CodecInvariant.Nullable[Json, Json.Optional]
+    with CodecInvariant.Tupleable[Json, Json.Tuple]:
+    override def optional: OptionalInvariant[Optional, Json] = Optional.invariant
+    override def tuple: TupleInvariant[Tuple, Json] = Tuple.invariant
+
     extension [A](self: Json[A])
       override def metadata: Metadata = self match
         case Json.Collection(a)        => a.metadata

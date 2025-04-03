@@ -14,8 +14,19 @@ abstract class CodecInvariant[Self[_]]:
     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
 
 object CodecInvariant:
-  abstract class Nullable[Self[_], Optional[_]](using optional: OptionalInvariant[Optional, Self])
-      extends CodecInvariant[Self]:
+  trait Nullable[Self[_], Optional[_]] extends CodecInvariant[Self]:
+    given optional: OptionalInvariant[Optional, Self]
+
     extension [A](self: Self[A])
       final def nullable: Optional[Option[A]] = optional.nullable(codec = self)
       final def nullable(default: A): Optional[A] = optional.nullable(codec = self, default)
+
+  trait Tupleable[Self[_], Tuple[_]]:
+    given tuple: TupleInvariant[Tuple, Self]
+
+    extension [A](self: Self[A])
+      final def :*[B](codec: Self[B])(using merge: Merge[A, B]): Tuple[merge.Out] =
+        self.toTuple.zip(codec.toTuple).imap(merge.apply)(merge.unapply)
+      final def *:[B](codec: Self[B])(using merge: Merge[B, A]): Tuple[merge.Out] =
+        codec.toTuple.zip(self.toTuple).imap(merge.apply)(merge.unapply)
+      final def toTuple: Tuple[A] = tuple.one(self)

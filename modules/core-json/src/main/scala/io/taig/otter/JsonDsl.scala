@@ -13,11 +13,8 @@ trait JsonDsl:
   val double: Json.Primitive.Number[Double] = Json.Primitive.Number.invariant.double
   val boolean: Json.Primitive.Boolean[Boolean] = Json.Primitive.Boolean.invariant.boolean
 
-  given fieldInvariant[Key[_], Value[_], Record[_]](using
-      RecordInvariant[Record, Key, Value]
-  ): FieldInvariant[Key, Value, Record] = new FieldInvariant[Key, Value, Record] {}
-
-  object field extends FieldDsl[Json.Key, Json, Json.Record](key = string)
+  def field[A](name: String, codec: => Json[A]): Json.Field[A] =
+    Json.Field(name, value = Reference.later(codec), metadata = Metadata.Empty)
 
   object collection:
     private val invariant = Json.Collection.invariant

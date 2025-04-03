@@ -6,6 +6,8 @@ import cats.~>
 final case class Reference[+S[_], A](self: Eval[S[A]]) extends AnyVal:
   def value: S[A] = self.value
 
+  def mapF[S1[a] >: S[a], B](f: S1[A] => S1[B]): Reference[S1, B] = copy(self = self.map(f))
+
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Reference[T, A] = copy(self = self.map(fK.apply))
 
 object Reference:
