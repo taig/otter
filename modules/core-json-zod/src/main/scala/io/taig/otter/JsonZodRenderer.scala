@@ -7,6 +7,7 @@ import cats.syntax.all.*
 import scala.annotation.tailrec
 import io.taig.otter.Collection.Linked
 import io.taig.otter.Collection.Modify
+import io.taig.otter.Dictionary.Root
 
 final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, String], Expression]]:
   override def apply(codec: Json[?]): State[ListMap[Const, String], Expression] = State: state =>
@@ -24,6 +25,7 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
         codec match
           case codec: Json.Collection[?]  => apply(codec).run(initial = state).value
           case codec: Json.Constant[?]    => (state, apply(codec))
+          case codec: Json.Dictionary[?]  => apply(codec).run(initial = state).value
           case codec: Json.Enumeration[?] => (state, apply(codec))
           case codec: Json.Primitive[?]   => (state, apply(codec))
 
@@ -43,6 +45,14 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
     case Constant.Root(codec, reference, _) =>
       val value = PrimitivePrinter(codec = codec.value.value, reference)
       s"z.literal($value)"
+
+  def apply(codec: Json.Dictionary[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
+
+  def apply(codec: Dictionary[Json.Key, Json, ?]): State[ListMap[Const, String], String] = codec match
+    case Dictionary.Root(key, value, _, _, _) =>
+      (apply(codec = key.value: Json[?]), apply(codec = value.value)).mapN: (key, value) =>
+        show"""z.record($key, $value)"""
+    case Dictionary.Modify(self, _, _) => apply(codec = self)
 
   def apply(codec: Json.Enumeration[?]): String = apply(codec = codec.value)
 

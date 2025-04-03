@@ -41,6 +41,21 @@ trait JsonDsl:
     def apply(value: Double): Json.Constant[Double] = apply(double, value)
     def apply(value: Boolean): Json.Constant[Boolean] = apply(boolean, value)
 
+  object dictionary:
+    private val invariant = Json.Dictionary.invariant
+    export invariant.{
+      chain,
+      list,
+      nonEmptyChain,
+      nonEmptyList,
+      nonEmptyMap,
+      nonEmptySeq,
+      nonEmptyVector,
+      seq,
+      sortedMap,
+      vector
+    }
+
   def enumeration[A, B](codec: => Json.Primitive[A])(using
       mapping: Mapping[B, A]
   ): Json.Enumeration[B] =

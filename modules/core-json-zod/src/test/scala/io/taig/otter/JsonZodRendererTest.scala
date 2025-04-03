@@ -45,6 +45,12 @@ final class JsonZodRendererTest extends OtterSuite:
       expected = Expression.Inline("""z.literal("foobar")""")
     )
 
+  test("dictionary"):
+    assertEq(
+      obtained = renderer(dictionary.list(key = string, value = long)).runA(ListMap.empty).value,
+      expected = Expression.Inline("""z.record(z.string(), z.number())""")
+    )
+
   test("enumeration"):
     enum Animal:
       case Bird

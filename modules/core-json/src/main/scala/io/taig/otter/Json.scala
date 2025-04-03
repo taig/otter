@@ -16,6 +16,11 @@ object Json:
 
   final case class Dictionary[A](value: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
+  object Dictionary:
+    given invariant: DictionaryInvariant[Json.Dictionary, Json.Key, Json] with
+      override def lift[A](codec: Self.Dictionary[Key, Json, A]): Json.Dictionary[A] = Json.Dictionary(codec)
+      override def extract[A](codec: Json.Dictionary[A]): Self.Dictionary[Key, Json, A] = codec.value
+
   final case class Enumeration[A](value: Self.Enumeration[Json.Primitive, A]) extends Json[A]
 
   object Enumeration:
