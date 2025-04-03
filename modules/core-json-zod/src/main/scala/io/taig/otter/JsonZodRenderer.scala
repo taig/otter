@@ -37,20 +37,13 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
 
   def apply(codec: Json.Collection[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
 
-  def apply(codec: Collection[Json, ?]): State[ListMap[Const, String], String] = codec match
-    case Collection.Indexed(codec, _, _, _, _) =>
-      apply(codec = codec.value).map(expression => show"z.array($expression)")
-    case Collection.Linked(codec, _, _, _, _) =>
-      apply(codec = codec.value).map(expression => show"z.array($expression)")
-    case Collection.Modify(self, _, _) => apply(codec = self)
+  def apply(codec: Collection[Json, ?]): State[ListMap[Const, String], String] =
+    apply(codec = codec.codec.value).map(expression => show"z.array($expression)")
 
   def apply(codec: Json.Constant[?]): String = apply(codec = codec.value)
 
-  def apply(codec: Constant[Json.Primitive, ?]): String = codec match
-    case Constant.Modify(self, f, g) => apply(codec = self)
-    case Constant.Root(codec, reference, _) =>
-      val value = PrimitivePrinter(codec = codec.value.value, reference)
-      s"z.literal($value)"
+  def apply(codec: Constant[Json.Primitive, ?]): String =
+    s"z.literal(${apply(constant = codec.codec)})"
 
   def apply(codec: Json.Dictionary[?]): State[ListMap[Const, String], String] = apply(codec = codec.value)
 
@@ -108,6 +101,9 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
 
   def apply(field: Json.Field[?]): State[ListMap[Const, String], (String, Expression)] =
     apply(codec = field.value.value).tupleLeft(field.name)
+
+  def apply[A](constant: Reference.Constant[Json.Primitive, A]): String =
+    PrimitivePrinter(codec = constant.self.value.value, constant.value)
 
 object JsonZodRenderer:
   def apply(): Renderer[Json[?], State[ListMap[Const, String], Expression]] = new JsonZodRenderer()

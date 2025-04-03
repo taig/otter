@@ -6,7 +6,7 @@ import cats.Invariant
 import cats.~>
 
 sealed abstract class Constant[+S[_], A] extends Codec[S, A]:
-  def codec: Reference[S, ?]
+  def codec: Reference.Constant[S, ?]
   def matches(a: A): Boolean
   override def modifyMetadata(f: Metadata => Metadata): Constant[S, A]
   override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A]
@@ -21,11 +21,10 @@ object Constant:
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, B] = copy(self = self.mapK(fK))
 
   final private[otter] case class Root[S[_], A: Eq](
-      codec: Reference[S, A],
-      reference: A,
+      codec: Reference.Constant[S, A],
       metadata: Metadata
   ) extends Constant[S, A]:
-    override def matches(a: A): Boolean = reference === a
+    override def matches(a: A): Boolean = codec.value === a
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A] = copy(codec = codec.mapK(fK))
 

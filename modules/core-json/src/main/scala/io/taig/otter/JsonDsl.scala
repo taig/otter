@@ -34,7 +34,9 @@ trait JsonDsl:
 
   object constant:
     def apply[A: Eq](codec: => Json.Primitive[A], a: A): Json.Constant[A] =
-      Json.Constant(Constant.Root(codec = Reference.later(codec), reference = a, metadata = Metadata.Empty))
+      Json.Constant(
+        Constant.Root(codec = Reference.Constant(self = Reference.later(codec), a), metadata = Metadata.Empty)
+      )
     def apply(value: String): Json.Constant[String] = apply(string, value)
     def apply(value: Int): Json.Constant[Int] = apply(int, value)
     def apply(value: Long): Json.Constant[Long] = apply(long, value)
