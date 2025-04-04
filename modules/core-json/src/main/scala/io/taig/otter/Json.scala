@@ -8,37 +8,45 @@ object Json:
   final case class Collection[A](value: Self.Collection[Json, A]) extends Json[A]
 
   object Collection:
-    given invariant: CollectionInvariant[Json.Collection, Json] with
-      override def lift[A](codec: Self.Collection[Json, A]): Collection[A] = Collection(codec)
-      override def extract[A](self: Collection[A]): Self.Collection[Json, A] = self.value
+    given invariant: CollectionInvariant[Json.Collection, Json] =
+      CollectionInvariant[Json.Collection, Json](
+        lift = [A] => (codec: Self.Collection[Json, A]) => Collection(value = codec),
+        extract = [A] => (codec: Json.Collection[A]) => codec.value
+      )
 
   final case class Constant[A](value: Self.Constant[Json.Primitive, A]) extends Json[A]
 
   object Constant:
-    given invariant: ConstantInvariant[Json.Constant, Json.Primitive] with
-      override def lift[A](codec: Self.Constant[Primitive, A]): Json.Constant[A] = Constant(codec)
-      override def extract[A](codec: Json.Constant[A]): Self.Constant[Primitive, A] = codec.value
+    given invariant: ConstantInvariant[Json.Constant, Json.Primitive] =
+      ConstantInvariant(
+        lift = [A] => (codec: Self.Constant[Json.Primitive, A]) => Constant(value = codec),
+        extract = [A] => (codec: Json.Constant[A]) => codec.value
+      )
 
   final case class Dictionary[A](value: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
   object Dictionary:
-    given invariant: DictionaryInvariant[Json.Dictionary, Json.Key, Json] with
-      override def lift[A](codec: Self.Dictionary[Key, Json, A]): Json.Dictionary[A] = Json.Dictionary(codec)
-      override def extract[A](codec: Json.Dictionary[A]): Self.Dictionary[Key, Json, A] = codec.value
+    given invariant: DictionaryInvariant[Json.Dictionary, Json.Key, Json] =
+      DictionaryInvariant(
+        lift = [A] => (codec: Self.Dictionary[Json.Key, Json, A]) => Dictionary(value = codec),
+        extract = [A] => (codec: Json.Dictionary[A]) => codec.value
+      )
 
   final case class Enumeration[A](value: Self.Enumeration[Json.Primitive, A]) extends Json[A]
 
   object Enumeration:
-    given invariant: EnumerationInvariant[Json.Enumeration, Json.Primitive] with
-      override def lift[A](codec: Self.Enumeration[Primitive, A]): Json.Enumeration[A] = Enumeration(codec)
-      override def extract[A](codec: Json.Enumeration[A]): Self.Enumeration[Primitive, A] = codec.value
+    given invariant: EnumerationInvariant[Json.Enumeration, Json.Primitive] = EnumerationInvariant(
+      lift = [A] => (codec: Self.Enumeration[Json.Primitive, A]) => Enumeration(value = codec),
+      extract = [A] => (codec: Json.Enumeration[A]) => codec.value
+    )
 
   final case class Optional[A](value: Self.Optional[Json, A]) extends Json[A]
 
   object Optional:
-    given invariant: OptionalInvariant[Json.Optional, Json] with
-      override def lift[A](codec: Self.Optional[Json, A]): Json.Optional[A] = Optional(value = codec)
-      override def extract[A](self: Json.Optional[A]): Self.Optional[Json, A] = self.value
+    given invariant: OptionalInvariant[Json.Optional, Json] = OptionalInvariant[Json.Optional, Json](
+      lift = [A] => (codec: Self.Optional[Json, A]) => Optional(value = codec),
+      extract = [A] => (codec: Json.Optional[A]) => codec.value
+    )
 
   sealed abstract class Primitive[A] extends Json[A]:
     def value: Self.Primitive.Boolean[A] | Self.Primitive.Number[A] | Self.Primitive.String[A]
@@ -47,31 +55,37 @@ object Json:
     final case class Boolean[A](value: Self.Primitive.Boolean[A]) extends Json.Primitive[A]
 
     object Boolean:
-      given invariant: PrimitiveInvariant.Boolean[Json.Primitive.Boolean] with
-        override def lift[A](codec: Self.Primitive.Boolean[A]): Json.Primitive.Boolean[A] =
-          Json.Primitive.Boolean(codec)
-        override def extract[A](self: Json.Primitive.Boolean[A]): Self.Primitive.Boolean[A] = self.value
+      given invariant: PrimitiveInvariant.Boolean[Json.Primitive.Boolean] =
+        PrimitiveInvariant.Boolean[Json.Primitive.Boolean](
+          lift = [A] => (codec: Self.Primitive.Boolean[A]) => Boolean(codec),
+          extract = [A] => (self: Json.Primitive.Boolean[A]) => self.value
+        )
 
     final case class Number[A](value: Self.Primitive.Number[A]) extends Json.Primitive[A]
 
     object Number:
-      given invariant: PrimitiveInvariant.Number[Json.Primitive.Number] with
-        override def lift[A](codec: Self.Primitive.Number[A]): Json.Primitive.Number[A] = Number(codec)
-        override def extract[A](self: Json.Primitive.Number[A]): Self.Primitive.Number[A] = self.value
+      given invariant: PrimitiveInvariant.Number[Json.Primitive.Number] =
+        PrimitiveInvariant.Number[Json.Primitive.Number](
+          lift = [A] => (codec: Self.Primitive.Number[A]) => Number(codec),
+          extract = [A] => (self: Json.Primitive.Number[A]) => self.value
+        )
 
     final case class String[A](value: Self.Primitive.String[A]) extends Json.Primitive[A]
 
     object String:
-      given invariant: PrimitiveInvariant.String[Json.Primitive.String] with
-        override def lift[A](codec: Self.Primitive.String[A]): Json.Primitive.String[A] = String(codec)
-        override def extract[A](self: Json.Primitive.String[A]): Self.Primitive.String[A] = self.value
+      given invariant: PrimitiveInvariant.String[Json.Primitive.String] =
+        PrimitiveInvariant.String[Json.Primitive.String](
+          lift = [A] => (codec: Self.Primitive.String[A]) => String(codec),
+          extract = [A] => (self: Json.Primitive.String[A]) => self.value
+        )
 
   final case class Record[A](value: Self.Record[Json, A]) extends Json[A]
 
   object Record:
-    given invariant: RecordInvariant[Json.Record, Json] with
-      override def lift[A](codec: Self.Record[Json, A]): Json.Record[A] = Record(codec)
-      override def extract[A](codec: Json.Record[A]): Self.Record[Json, A] = codec.value
+    given invariant: RecordInvariant[Json.Record, Json] = RecordInvariant(
+      lift = [A] => (codec: Self.Record[Json, A]) => Record(codec),
+      extract = [A] => (self: Json.Record[A]) => self.value
+    )
 
   final case class Tuple[A](value: Self.Tuple[Json, A]) extends Json[A]
 

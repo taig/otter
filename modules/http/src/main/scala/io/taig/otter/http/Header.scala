@@ -1,28 +1,24 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.syntax.all.*
-// import io.taig.otter.Codec
-// import io.taig.otter.Data
-// import io.taig.otter.Merge
-// import io.taig.otter.Metadata
-// import io.taig.otter.collectFirstWithRemainders
-// import org.typelevel.ci.CIString
+import cats.syntax.all.*
+import io.taig.otter.Codec
+import io.taig.otter.Metadata
+import org.typelevel.ci.CIString
+import io.taig.otter.*
 
-// sealed abstract class Header[A] extends Product, Serializable:
-//   self =>
+sealed abstract class Header[A] extends Product, Serializable:
+  def name: CIString
 
-//   def name: CIString
-
-//   def codec: Codec[?, ?]
+  def codec: Http.Header[?]
 
 //   final def isNullable: Boolean = codec.isNullable
 //   final def isRequired: Boolean = codec.isRequired
 
-//   def metadata: Metadata
+  def metadata: Metadata
 
-//   def modifyMetadata(f: Metadata => Metadata): Header[A]
+  def modifyMetadata(f: Metadata => Metadata): Header[A]
 
-//   def imap[B](f: A => B)(g: B => A): Header[B]
+  def imap[B](f: A => B)(g: B => A): Header[B]
 
 //   final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
 

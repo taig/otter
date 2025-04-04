@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.~>
-import cats.arrow.FunctionK
 
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Codec[T, A]:
   def key: Reference[S, ?]

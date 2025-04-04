@@ -10,24 +10,13 @@ import cats.data.Chain
 import cats.Order
 import scala.collection.immutable.SortedSet
 
-abstract class CollectionInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
-  def lift[A](codec: Collection[Value, A]): Self[A]
-  def extract[A](self: Self[A]): Collection[Value, A]
-
-  extension [A](self: Self[A])
-    final override def metadata: Metadata = extract(self).metadata
-    final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-    final override def imap[B](f: A => B)(g: B => A): Self[B] =
-      lift(extract(self).imap(f)(g))
-
-  final def list[A](
+trait CollectionInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
+  def list[A](
       codec: => Value[A],
       minimum: Option[Int] = none,
       maximum: Option[Int] = none,
       uniqueItems: Boolean = false
-  ): Self[List[A]] = lift(
-    Collection.Linked(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
-  )
+  ): Self[List[A]]
 
   final def nonEmptyList[A](
       codec: => Value[A],
@@ -37,14 +26,12 @@ abstract class CollectionInvariant[Self[_], Value[_]] extends CodecInvariant[Sel
   ): Self[NonEmptyList[A]] = list(codec, minimum = minimum.max(1.some), maximum, uniqueItems)
     .imap(NonEmptyList.fromListUnsafe)(_.toList)
 
-  final def vector[A](
+  def vector[A](
       codec: => Value[A],
       minimum: Option[Int] = none,
       maximum: Option[Int] = none,
       uniqueItems: Boolean = false
-  ): Self[Vector[A]] = lift(
-    Collection.Indexed(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
-  )
+  ): Self[Vector[A]]
 
   final def nonEmptyVector[A](
       codec: => Value[A],
@@ -106,3 +93,28 @@ abstract class CollectionInvariant[Self[_], Value[_]] extends CodecInvariant[Sel
       uniqueItems: Boolean = false
   ): Self[NonEmptySet[A]] = nonEmptyList(codec, minimum, maximum, uniqueItems)
     .imap(values => NonEmptySet(values.head, SortedSet.from(values.tail)))(_.toNonEmptyList)
+
+object CollectionInvariant:
+  def apply[Self[_], Value[_]](
+      lift: [A] => (codec: Collection[Value, A]) => Self[A],
+      extract: [A] => (codec: Self[A]) => Collection[Value, A]
+  ): CollectionInvariant[Self, Value] = new CollectionInvariant[Self, Value]:
+    override def list[A](
+        codec: => Value[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        uniqueItems: Boolean
+    ): Self[List[A]] =
+      lift(Collection.Linked(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty))
+    override def vector[A](
+        codec: => Value[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        uniqueItems: Boolean
+    ): Self[Vector[A]] =
+      lift(Collection.Indexed(codec = Reference.later(codec), minimum, maximum, uniqueItems, metadata = Metadata.Empty))
+
+    extension [A](self: Self[A])
+      override def metadata: Metadata = extract(self).metadata
+      override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+      override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))

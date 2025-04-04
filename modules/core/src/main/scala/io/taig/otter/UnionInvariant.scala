@@ -10,9 +10,12 @@ trait UnionInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
     def orElse[B](codec: Self[B]): Self[Either[A, B]]
     final def :+[B](codec: Self[B]): Self[Either[A, B]] = orElse(codec)
     final def +:[B](codec: Self[B]): Self[Either[B, A]] = codec.orElse(self)
+
     def keyed: Self[A]
+
     def merged(discriminator: Discriminator.Merged): Self[A]
     final def merged: Self[A] = merged(discriminator = Discriminator.Merged.Default)
+
     def explicit(discriminator: Discriminator.Explicit): Self[A]
     final def explicit: Self[A] = explicit(discriminator = Discriminator.Explicit.Default)
 
