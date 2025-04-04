@@ -1,62 +1,62 @@
-package io.taig.otter.http
-import cats.Show
-import cats.data.Validated
-import cats.syntax.all.*
-import io.taig.otter.Codec
-import io.taig.otter.Constraint
-import io.taig.otter.Data
-import io.taig.otter.Metadata
-import io.taig.otter.Violation
-import io.taig.otter.Violations
-import io.taig.otter.XPath
+// package io.taig.otter.http
+// import cats.Show
+// import cats.data.Validated
+// import cats.syntax.all.*
+// import io.taig.otter.Codec
+// import io.taig.otter.Constraint
+// import io.taig.otter.Data
+// import io.taig.otter.Metadata
+// import io.taig.otter.Violation
+// import io.taig.otter.Violations
+// import io.taig.otter.XPath
 
-import java.util.regex.Pattern
+// import java.util.regex.Pattern
 
-sealed abstract class Segment[A] extends Product, Serializable:
-  def name: String
+// sealed abstract class Segment[A] extends Product, Serializable:
+//   def name: String
 
-  def matches(segment: String): Boolean
+//   def matches(segment: String): Boolean
 
-  final def toPath: Path[A] = Path(this)
+//   final def toPath: Path[A] = Path(this)
 
-  def encode(a: A): String
+//   def encode(a: A): String
 
-  def decode(value: String): Codec.Result[A]
+//   def decode(value: String): Codec.Result[A]
 
-  override def toString: String
+//   override def toString: String
 
-object Segment:
-  final case class Static(name: String) extends Segment[Unit]:
-    override def matches(segment: String): Boolean = segment === name
-    override def decode(value: String): Codec.Result[Unit] = Validated.cond(
-      name === value,
-      (),
-      Violations.namespaceNec(
-        XPath.Root / name,
-        Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = String(value))
-      )
-    )
+// object Segment:
+//   final case class Static(name: String) extends Segment[Unit]:
+//     override def matches(segment: String): Boolean = segment === name
+//     override def decode(value: String): Codec.Result[Unit] = Validated.cond(
+//       name === value,
+//       (),
+//       Violations.namespaceNec(
+//         XPath.Root / name,
+//         Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = String(value))
+//       )
+//     )
 
-    override def encode(a: Unit): String = name
+//     override def encode(a: Unit): String = name
 
-    override def toString: String = name
+//     override def toString: String = name
 
-  sealed abstract class Parameter[A] extends Segment[A]:
-    override def matches(segment: String): Boolean = true
+//   sealed abstract class Parameter[A] extends Segment[A]:
+//     override def matches(segment: String): Boolean = true
 
-    def codec: Codec[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
+//     def codec: Codec[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
 
-    def metadata: Metadata
+//     def metadata: Metadata
 
-    def imap[B](f: A => B)(g: B => A): Segment[B]
+//     def imap[B](f: A => B)(g: B => A): Segment[B]
 
-    final override def toString: String = s"{$name}"
+//     final override def toString: String = s"{$name}"
 
-  object Parameter:
-    final case class Primitive[A](name: String, codec: Codec[Data.Primitive, A], metadata: Metadata)
-        extends Segment.Parameter[A]:
-      override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
-      override def encode(a: A): String = codec.print(a)
-      override def decode(value: String): Codec.Result[A] = codec.parse(value).leftMap(name /: _)
+//   object Parameter:
+//     final case class Primitive[A](name: String, codec: Codec[Data.Primitive, A], metadata: Metadata)
+//         extends Segment.Parameter[A]:
+//       override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
+//       override def encode(a: A): String = codec.print(a)
+//       override def decode(value: String): Codec.Result[A] = codec.parse(value).leftMap(name /: _)
 
-  given Show[Segment[?]] = Show.fromToString
+//   given Show[Segment[?]] = Show.fromToString

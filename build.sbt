@@ -113,17 +113,14 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
   .dependsOn(coreJson % "compile->compile;test->test")
 
-// lazy val coreTypescript = module(identifier = Some("core-typescript"))
-//   .dependsOn(core % "compile->compile;test->test")
-
-// lazy val http = module(identifier = Some("http"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val http = module(identifier = Some("http"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val httpHttp4s = module(identifier = Some("http-http4s"))
 //   .settings(

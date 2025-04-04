@@ -1,19 +1,19 @@
-package io.taig.otter.http.header
+// package io.taig.otter.http.header
 
-import cats.Eq
-import cats.Show
-import cats.parse.Parser
-import io.taig.otter.http.Parsers
-import io.taig.otter.http.Printers
-import org.typelevel.ci.CIString
+// import cats.Eq
+// import cats.Show
+// import cats.parse.Parser
+// import io.taig.otter.http.Parsers
+// import io.taig.otter.http.Printers
+// import org.typelevel.ci.CIString
 
-final case class Parameter(name: CIString, value: String):
-  override def toString: String = Printers(this)
+// final case class Parameter(name: CIString, value: String):
+//   override def toString: String = Printers(this)
 
-object Parameter:
-  def parse(value: String): Either[Parser.Error, Parameter] =
-    Parsers.parameter.parseAll(value)
+// object Parameter:
+//   def parse(value: String): Either[Parser.Error, Parameter] =
+//     Parsers.parameter.parseAll(value)
 
-  given Eq[Parameter] = Eq.by(parameter => (parameter.name, parameter.value))
+//   given Eq[Parameter] = Eq.by(parameter => (parameter.name, parameter.value))
 
-  given Show[Parameter] = Show.fromToString
+//   given Show[Parameter] = Show.fromToString
