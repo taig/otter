@@ -160,7 +160,7 @@ final class JsonZodRendererTest extends OtterSuite:
     )
 
   test("union: taggged (merged)"):
-    val codec = (branch("foo", field("x", int).toRecord) :+ branch("bar", field("y", long).toRecord)).merged
+    val codec = (branch("foo", field("x", int)) :+ branch("bar", field("y", long))).merged
 
     assertEq(
       obtained = renderer(codec).runA(ListMap.empty).value,

@@ -13,8 +13,7 @@ trait JsonDsl:
   val double: Json.Primitive.Number[Double] = Json.Primitive.Number.invariant.double
   val boolean: Json.Primitive.Boolean[Boolean] = Json.Primitive.Boolean.invariant.boolean
 
-  def field[A](name: String, codec: => Json[A]): Json.Field[A] =
-    Json.Field(name, value = Reference.later(codec), metadata = Metadata.Empty)
+  export Json.Record.invariant.field
 
   def branch[A](name: String, codec: => Json[A]): Json.Branch[A] =
     Json.Branch(name, value = Reference.later(codec), metadata = Metadata.Empty)

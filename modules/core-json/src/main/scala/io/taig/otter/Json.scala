@@ -66,12 +66,12 @@ object Json:
         override def lift[A](codec: Self.Primitive.String[A]): Json.Primitive.String[A] = String(codec)
         override def extract[A](self: Json.Primitive.String[A]): Self.Primitive.String[A] = self.value
 
-  final case class Record[A](value: Self.Record[Json.Field, A]) extends Json[A]
+  final case class Record[A](value: Self.Record[Json, A]) extends Json[A]
 
   object Record:
-    given invariant: RecordInvariant[Json.Record, Json.Field] with
-      override def lift[A](codec: Self.Record[Json.Field, A]): Json.Record[A] = Record(codec)
-      override def extract[A](codec: Json.Record[A]): Self.Record[Json.Field, A] = codec.value
+    given invariant: RecordInvariant[Json.Record, Json] with
+      override def lift[A](codec: Self.Record[Json, A]): Json.Record[A] = Record(codec)
+      override def extract[A](codec: Json.Record[A]): Self.Record[Json, A] = codec.value
 
   final case class Tuple[A](value: Self.Tuple[Json, A]) extends Json[A]
 
@@ -90,20 +90,6 @@ object Json:
     )
 
   type Key[A] = Json.Primitive.String[A]
-
-  final case class Field[A](name: String, value: Reference[Json, A], metadata: Metadata):
-    def modifyMetadata(f: Metadata => Metadata): Field[A] = copy(metadata = f(metadata))
-    def imap[B](f: A => B)(g: B => A): Json.Field[B] = copy(value = value.mapF(_.imap(f)(g)))
-    def optional: Json.Field[Option[A]] = copy(value = value.mapF(_.nullable))
-
-  object Field:
-    given FieldInvariant[Json.Field, Json.Record] with
-      override given record: RecordInvariant[Record, Field] = Json.Record.invariant
-
-      extension [A](self: Json.Field[A])
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Field[A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Json.Field[B] = self.imap(f)(g)
 
   final case class Branch[A](name: String, value: Reference[Json, A], metadata: Metadata):
     def modifyMetadata(f: Metadata => Metadata): Branch[A] = copy(metadata = f(metadata))

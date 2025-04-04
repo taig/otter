@@ -70,8 +70,7 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
 
   def apply(codec: Json.Record[?]): State[ListMap[Const, String], String] =
     codec.value.fields
-      .map(_.value)
-      .traverse(apply)
+      .traverse((name, codec) => apply(codec.value).tupleLeft(name))
       .map: values =>
         s"""z.object({
            |${values.map((key, value) => indent(show"\"$key\": $value")).mkString_(",\n")}
@@ -94,9 +93,6 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
         s"""z.union([
            |${indent(values.map(value => show"$value").mkString_(",\n"))}
            |])""".stripMargin
-
-  def apply(field: Json.Field[?]): State[ListMap[Const, String], (String, Expression)] =
-    apply(codec = field.value.value).tupleLeft(field.name)
 
   def apply(branch: Json.Branch[?], discriminator: Option[Discriminator]): State[ListMap[Const, String], Expression] =
     discriminator match
