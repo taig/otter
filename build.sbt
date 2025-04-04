@@ -124,13 +124,13 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val httpHttp4s = module(identifier = Some("http-http4s"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
-//         Nil
-//   )
-//   .dependsOn(http % "compile->compile;test->test")
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
 lazy val httpZod = module(identifier = Some("http-zod"))
   .dependsOn(http % "compile->compile;test->test", coreJsonZod % "compile->compile;test->test")

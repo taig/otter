@@ -1,114 +1,38 @@
 package io.taig.otter.http
 import io.taig.otter.*
 import org.typelevel.ci.CIString
+import cats.data.Chain
 
 sealed abstract class Header[A] extends Product, Serializable:
   def name: CIString
 
-  def codec: Http.Header[?]
-
-//   final def isNullable: Boolean = codec.isNullable
-//   final def isRequired: Boolean = codec.isRequired
+  def codec: Reference[Header.Codec, ?]
 
   def metadata: Metadata
 
-  def modifyMetadata(f: Metadata => Metadata): Header[A]
+object Header:
+  final case class Value[A](name: CIString, codec: Reference[Header.Codec.Value, A], metadata: Metadata)
+      extends Header[A]
 
-  def imap[B](f: A => B)(g: B => A): Header[B]
+  final case class Array[A](self: Header[A], delimiter: Delimiter) extends Header[Chain[A]]:
+    export self.{codec, metadata, name}
 
-//   final def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
+  final private[otter] case class Optional[A](self: Header[A]) extends Header[Option[A]]:
+    export self.{codec, metadata, name}
 
-//   final def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header *: toHeaders
+  final private[otter] case class Modify[A, B](self: Header[A], f: A => B, g: B => A) extends Header[B]:
+    export self.{codec, metadata, name}
 
-//   final def toHeaders: Headers[A] = Headers(this)
+  sealed abstract class Codec[A]:
+    def value: Enumeration[Header.Codec.Value, A] | Primitive[A] | Union.Untagged[Header.Codec.Value, A] |
+      Collection[Header.Codec.Value, A] | Tuple[Header.Codec.Value, A] | Record[Header.Codec.Value, A]
 
-//   def decode(values: Http.Headers): (Http.Headers, Codec.Result[A])
+  object Codec:
+    final case class Value[A](
+        value: Enumeration[Header.Codec.Value, A] | Primitive[A] | Union.Untagged[Header.Codec.Value, A]
+    ) extends Header.Codec[A]
 
-//   def encode(a: A): Http.Headers
+    final case class Array[A](value: Collection[Header.Codec.Value, A] | Tuple[Header.Codec.Value, A])
+        extends Header.Codec[A]
 
-// object Header:
-//   sealed abstract class Required[A] extends Header[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Header.Required[A]
-//     override def imap[B](f: A => B)(g: B => A): Header.Required[B]
-//     def optional(default: A): Header[A]
-//     def optional: Header[Option[A]]
-
-//   object Required:
-//     final case class Primitive[A](name: CIString, codec: Codec[Data.Primitive, A], metadata: Metadata)
-//         extends Header.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def optional(default: A): Header[A] = Header.Primitive(name, codec = codec.nullable(default), metadata)
-//       override def optional: Header[Option[A]] = Header.Primitive(name, codec = codec.nullable, metadata)
-//       override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         (remainders, codec.parseNullable(value))
-//       override def encode(a: A): Http.Headers = Vector((name, codec.print(a)))
-
-//     final case class Array[A](
-//         name: CIString,
-//         codec: Codec[Data.Array[Data.Primitive], A],
-//         metadata: Metadata,
-//         delimiter: Delimiter
-//     ) extends Header.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def optional(default: A): Header[A] =
-//         Header.Array(name, codec = codec.nullable(default), metadata, delimiter)
-//       override def optional: Header[Option[A]] = Header.Array(name, codec = codec.nullable, metadata, delimiter)
-//       override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
-//       override def encode(a: A): Http.Headers =
-//         delimiter.encode(codec.printArray(a)).tupleLeft(name).toVector
-
-//     final case class Object[A](
-//         name: CIString,
-//         codec: Codec[Data.Object[Data.Nullable[Data.Primitive]], A],
-//         metadata: Metadata
-//     ) extends Header.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Header.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Header.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def optional(default: A): Header[A] =
-//         ??? // Header.Object(name, codec = codec.nullable(default), metadata)
-//       override def optional: Header[Option[A]] = ??? // Header.Object(name, codec = codec.nullable, metadata)
-//       override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         (remainders, codec.parseNullableObject(value.map(FormData.parse).map(_.toVector)))
-//       override def encode(a: A): Http.Headers = Vector((name, Printers(FormData(codec.printObject(a)))))
-
-//   final case class Primitive[A](name: CIString, codec: Codec[Data.Nullable[Data.Primitive], A], metadata: Metadata)
-//       extends Header[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-//     override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       (remainders, codec.parseNullable(value))
-//     override def encode(a: A): Http.Headers = Vector.from(codec.printNullable(a)).tupleLeft(name)
-
-//   final case class Array[A](
-//       name: CIString,
-//       codec: Codec[Data.Nullable[Data.Array[Data.Primitive]], A],
-//       metadata: Metadata,
-//       delimiter: Delimiter
-//   ) extends Header[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-//     override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       (remainders, codec.parseNullableArray(value.map(delimiter.decode)))
-//     override def encode(a: A): Http.Headers =
-//       Vector.from(codec.printNullableArray(a).flatMap(delimiter.encode)).tupleLeft(name)
-
-//   final case class Object[A](
-//       name: CIString,
-//       codec: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A],
-//       metadata: Metadata
-//   ) extends Header[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Header[B] = copy(codec = codec.imap(f)(g))
-//     override def decode(values: Http.Headers): (Http.Headers, Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       (remainders, codec.parseNullableObject(value.map(FormData.parse).map(_.toVector)))
-//     override def encode(a: A): Http.Headers =
-//       codec.printNullableObject(a).map(FormData.apply).map(Printers.apply).toVector.tupleLeft(name)
+    final case class Object[A](value: Record[Header.Codec.Value, A]) extends Header.Codec[A]
