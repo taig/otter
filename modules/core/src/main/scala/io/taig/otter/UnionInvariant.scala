@@ -16,6 +16,17 @@ trait UnionInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
     def explicit(discriminator: Discriminator.Explicit): Self[A]
     final def explicit: Self[A] = explicit(discriminator = Discriminator.Explicit.Default)
 
+  extension [A <: Matchable](self: Self[A])
+    inline def |[B <: Matchable](codec: Self[B]): Self[A | B] = self
+      .orElse(codec)
+      .imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
+
 object UnionInvariant:
   def apply[Self[_], Branch[_]](
       lift: [A] => (codec: Union[Branch, A]) => Self[A],
