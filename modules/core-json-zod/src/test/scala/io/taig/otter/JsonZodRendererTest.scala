@@ -116,6 +116,19 @@ final class JsonZodRendererTest extends OtterSuite:
       )
     )
 
+  test("record: optional"):
+    val codec = field("foo", string) :* field("bar", int).optional
+
+    assertEq(
+      obtained = renderer(codec).runA(ListMap.empty).value,
+      expected = Expression.Inline(
+        """z.object({
+          |  "foo": z.string(),
+          |  "bar": z.optional(z.number())
+          |})""".stripMargin
+      )
+    )
+
   test("tuple"):
     val codec = string :* int
 

@@ -15,6 +15,8 @@ abstract class RecordInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
     final override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
     final override def metadata: Metadata = extract(self).metadata
     final override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+    final def isOptional: Boolean = extract(self).isOptional
+    final def optional: Self[Option[A]] = lift(extract(self).optional)
     final def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
     final def :*[B](codec: Self[B])(using merge: Merge[A, B]): Self[merge.Out] =
       zip(codec).imap(merge.apply)(merge.unapply)

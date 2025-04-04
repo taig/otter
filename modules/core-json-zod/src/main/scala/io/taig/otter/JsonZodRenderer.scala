@@ -6,6 +6,10 @@ import scala.collection.immutable.ListMap
 import cats.syntax.all.*
 import scala.annotation.tailrec
 import cats.data.Chain
+import io.taig.otter.Record.Empty
+import io.taig.otter.Record.Field
+import io.taig.otter.Record.Modify
+import io.taig.otter.Record.Zip
 
 final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, String], Expression]]:
   override def apply(codec: Json[?]): State[ListMap[Const, String], Expression] = State: state =>
@@ -69,30 +73,35 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
     case _: Json.Primitive.Number[?]  => "z.number()"
 
   def apply(codec: Json.Record[?]): State[ListMap[Const, String], String] =
-    codec.value.fields
-      .traverse((name, codec) => apply(codec.value).tupleLeft(name))
-      .map: values =>
-        s"""z.object({
-           |${values.map((key, value) => indent(show"\"$key\": $value")).mkString_(",\n")}
-           |})""".stripMargin
+    apply(codec = codec.value).map: values =>
+      s"""z.object({
+         |${values.map((key, value) => indent(show"\"$key\": $value")).mkString_(",\n")}
+         |})""".stripMargin
 
-  def apply(codec: Json.Tuple[?]): State[ListMap[Const, String], String] =
-    codec.value.codecs
-      .map(_.value)
-      .traverse(apply)
-      .map: values =>
-        s"""z.tuple([
-           |${values.map(value => show"  $value").mkString_(",\n")}
-           |])""".stripMargin
+  // TODO figure out a proper way to encode partially optional objects
+  def apply(codec: Record[Json, ?]): State[ListMap[Const, String], Chain[(String, Expression)]] = codec match
+    case Record.Empty(_)              => State.pure(Chain.empty)
+    case Record.Field(name, codec, _) => apply(codec = codec.value).map(value => Chain.one((name, value)))
+    case Record.Modify(self, _, _)    => apply(codec = self)
+    case Record.Optional(self)        => apply(codec = self).map: values =>
+      values.map((key, value) => (key, Expression.Inline(show"z.optional($value)")))
+    case Record.Zip(left, right, _)   => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
 
-  def apply(codec: Json.Union[?]): State[ListMap[Const, String], String] =
-    codec.value.branches
-      .map(_.value)
-      .traverse(apply(_, discriminator = codec.discriminator))
-      .map: values =>
-        s"""z.union([
-           |${indent(values.map(value => show"$value").mkString_(",\n"))}
-           |])""".stripMargin
+  def apply(codec: Json.Tuple[?]): State[ListMap[Const, String], String] = codec.value.codecs
+    .map(_.value)
+    .traverse(apply)
+    .map: values =>
+      s"""z.tuple([
+         |${values.map(value => show"  $value").mkString_(",\n")}
+         |])""".stripMargin
+
+  def apply(codec: Json.Union[?]): State[ListMap[Const, String], String] = codec.value.branches
+    .map(_.value)
+    .traverse(apply(_, discriminator = codec.discriminator))
+    .map: values =>
+      s"""z.union([
+         |${indent(values.map(value => show"$value").mkString_(",\n"))}
+         |])""".stripMargin
 
   def apply(branch: Json.Branch[?], discriminator: Option[Discriminator]): State[ListMap[Const, String], Expression] =
     discriminator match
