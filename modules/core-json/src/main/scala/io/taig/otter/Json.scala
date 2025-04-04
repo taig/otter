@@ -14,6 +14,11 @@ object Json:
 
   final case class Constant[A](value: Self.Constant[Json.Primitive, A]) extends Json[A]
 
+  object Constant:
+    given invariant: ConstantInvariant[Json.Constant, Json.Primitive] with
+      override def lift[A](codec: Self.Constant[Primitive, A]): Json.Constant[A] = Constant(codec)
+      override def extract[A](codec: Json.Constant[A]): Self.Constant[Primitive, A] = codec.value
+
   final case class Dictionary[A](value: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
   object Dictionary:
@@ -89,6 +94,7 @@ object Json:
   final case class Field[A](name: String, value: Reference[Json, A], metadata: Metadata):
     def modifyMetadata(f: Metadata => Metadata): Field[A] = copy(metadata = f(metadata))
     def imap[B](f: A => B)(g: B => A): Json.Field[B] = copy(value = value.mapF(_.imap(f)(g)))
+    def optional: Json.Field[Option[A]] = copy(value = value.mapF(_.nullable))
 
   object Field:
     given FieldInvariant[Json.Field, Json.Record] with
