@@ -14,9 +14,7 @@ trait JsonDsl:
   val boolean: Json.Primitive.Boolean[Boolean] = Json.Primitive.Boolean.invariant.boolean
 
   export Json.Record.invariant.field
-
-  def branch[A](name: String, codec: => Json[A]): Json.Branch[A] =
-    Json.Branch(name, value = Reference.later(codec), metadata = Metadata.Empty)
+  export Json.Union.invariant.branch
 
   object collection:
     private val invariant = Json.Collection.invariant

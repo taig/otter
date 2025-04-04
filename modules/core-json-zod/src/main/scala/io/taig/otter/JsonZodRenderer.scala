@@ -83,9 +83,10 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
     case Record.Empty(_)              => State.pure(Chain.empty)
     case Record.Field(name, codec, _) => apply(codec = codec.value).map(value => Chain.one((name, value)))
     case Record.Modify(self, _, _)    => apply(codec = self)
-    case Record.Optional(self)        => apply(codec = self).map: values =>
-      values.map((key, value) => (key, Expression.Inline(show"z.optional($value)")))
-    case Record.Zip(left, right, _)   => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
+    case Record.Optional(self) =>
+      apply(codec = self).map: values =>
+        values.map((key, value) => (key, Expression.Inline(show"z.optional($value)")))
+    case Record.Zip(left, right, _) => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
 
   def apply(codec: Json.Tuple[?]): State[ListMap[Const, String], String] = codec.value.codecs
     .map(_.value)
@@ -96,33 +97,36 @@ final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, Strin
          |])""".stripMargin
 
   def apply(codec: Json.Union[?]): State[ListMap[Const, String], String] = codec.value.branches
-    .map(_.value)
-    .traverse(apply(_, discriminator = codec.discriminator))
+    .traverse((name, reference) => apply(name, reference, discriminator = codec.discriminator))
     .map: values =>
       s"""z.union([
          |${indent(values.map(value => show"$value").mkString_(",\n"))}
          |])""".stripMargin
 
-  def apply(branch: Json.Branch[?], discriminator: Option[Discriminator]): State[ListMap[Const, String], Expression] =
+  def apply(
+      name: String,
+      codec: Reference[Json, ?],
+      discriminator: Option[Discriminator]
+  ): State[ListMap[Const, String], Expression] =
     discriminator match
       case Some(Discriminator.Keyed) =>
-        apply(codec = branch.value.value).map: expression =>
+        apply(codec = codec.value).map: expression =>
           Expression.Inline:
             show"""z.object({
-                  |${indent(show""""${branch.name}": $expression""")}
+                  |${indent(show""""$name": $expression""")}
                   |})""".stripMargin
       case Some(Discriminator.Merged(identifier)) =>
-        apply(codec = branch.value.value).map: expression =>
+        apply(codec = codec.value).map: expression =>
           Expression.Inline:
-            show"""$expression.merge(z.object({ "$identifier": z.literal("${branch.name}") }))"""
-      case Some(Discriminator.Nested(identifier, value)) =>
-        apply(codec = branch.value.value).map: expression =>
+            show"""$expression.merge(z.object({ "$identifier": z.literal("$name") }))"""
+      case Some(Discriminator.Explicit(identifier, value)) =>
+        apply(codec = codec.value).map: expression =>
           Expression.Inline:
             show"""z.object({
-                  |  "$identifier": z.literal("${branch.name}"),
+                  |  "$identifier": z.literal("$name"),
                   |  "$value": $expression
                   |})""".stripMargin
-      case None => apply(codec = branch.value.value)
+      case None => apply(codec = codec.value)
 
   def apply[A](constant: Reference.Constant[Json.Primitive, A]): String =
     PrimitivePrinter(codec = constant.self.value.value, constant.value)

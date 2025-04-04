@@ -81,28 +81,15 @@ object Json:
       extract = [A] => (self: Json.Tuple[A]) => self.value
     )
 
-  final case class Union[A](value: Self.Union[Json.Branch, A]) extends Json[A]
+  final case class Union[A](value: Self.Union[Json, A]) extends Json[A]
 
   object Union:
-    given invariant: UnionInvariant[Json.Union, Json.Branch] = UnionInvariant(
-      lift = [A] => (codec: Self.Union[Json.Branch, A]) => Union(codec),
+    given invariant: UnionInvariant[Json.Union, Json] = UnionInvariant(
+      lift = [A] => (codec: Self.Union[Json, A]) => Union(codec),
       extract = [A] => (self: Json.Union[A]) => self.value
     )
 
   type Key[A] = Json.Primitive.String[A]
-
-  final case class Branch[A](name: String, value: Reference[Json, A], metadata: Metadata):
-    def modifyMetadata(f: Metadata => Metadata): Branch[A] = copy(metadata = f(metadata))
-    def imap[B](f: A => B)(g: B => A): Json.Branch[B] = copy(value = value.mapF(_.imap(f)(g)))
-
-  object Branch:
-    given BranchInvariant[Json.Branch, Json.Union] with
-      override given union: UnionInvariant[Union, Branch] = Json.Union.invariant
-
-      extension [A](self: Json.Branch[A])
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Branch[A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Json.Branch[B] = self.imap(f)(g)
 
   type Invariant = CodecInvariant.Nullable[Json, Json.Optional] & CodecInvariant.Tupleable[Json, Json.Tuple]
 

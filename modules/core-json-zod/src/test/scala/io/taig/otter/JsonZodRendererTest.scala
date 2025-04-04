@@ -189,8 +189,8 @@ final class JsonZodRendererTest extends OtterSuite:
       )
     )
 
-  test("union: taggged (nested)"):
-    val codec = (branch("foo", string) :+ branch("bar", int))._nested
+  test("union: taggged (explicit)"):
+    val codec = (branch("foo", string) :+ branch("bar", int)).explicit
 
     assertEq(
       obtained = renderer(codec).runA(ListMap.empty).value,
