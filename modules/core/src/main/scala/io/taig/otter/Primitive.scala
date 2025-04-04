@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import cats.~>
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -11,11 +12,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import scala.Tuple as STuple
-import cats.data.NonEmptyList
-import io.taig.enumeration.ext.Mapping
-import cats.Eq
-import cats.~>
 
 sealed abstract class Primitive[A] extends Codec[Nothing, A]:
   override def modifyMetadata(f: Metadata => Metadata): Primitive[A]

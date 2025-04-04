@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.syntax.all.*
 import cats.~>
 
 abstract class Codec[+S[_], A] extends Product with Serializable:

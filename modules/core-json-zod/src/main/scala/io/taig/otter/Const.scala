@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.Show
 import cats.Eq
+import cats.Show
 import cats.derived.*
 
 final case class Const(namespace: Option[String], name: String) derives Eq

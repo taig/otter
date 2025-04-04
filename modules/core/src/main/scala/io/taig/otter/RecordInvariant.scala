@@ -1,7 +1,5 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-
 trait RecordInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
   def empty: Self[Unit]
 

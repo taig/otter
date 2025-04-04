@@ -1,14 +1,15 @@
 package io.taig.otter
 
-import cats.implicits.*
-import cats.data.NonEmptyList
-import cats.data.NonEmptyVector
+import cats.data.Chain
 import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
 import cats.data.NonEmptySeq
-import cats.data.Chain
-import scala.collection.immutable.SortedMap
+import cats.data.NonEmptyVector
+import cats.implicits.*
 import cats.kernel.Order
+
+import scala.collection.immutable.SortedMap
 
 abstract class DictionaryInvariant[Self[_], Key[_], Value[_]] extends CodecInvariant[Self]:
   def list[A, B](

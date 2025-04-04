@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import scala.compiletime.*
 import scala.Tuple as STuple
+import scala.compiletime.*
 
 trait Merge[A, B]:
   type Out

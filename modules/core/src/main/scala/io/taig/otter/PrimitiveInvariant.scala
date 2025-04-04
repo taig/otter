@@ -1,12 +1,13 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+
+import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.UUID
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
-import java.util.UUID
-import java.lang.String as JString
 
 trait PrimitiveInvariant[Self[_]] extends CodecInvariant[Self]
 

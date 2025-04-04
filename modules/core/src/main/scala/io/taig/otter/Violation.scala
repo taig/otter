@@ -2,9 +2,10 @@ package io.taig.otter
 
 import cats.Eq
 import cats.Show
-import cats.syntax.all.*
 import cats.derived.strict.*
 import cats.parse.Parser
+import cats.syntax.all.*
+
 import java.util.regex.Pattern
 
 final case class Violation(constraint: Constraint, actual: Data.Any, hint: Option[String]) derives Eq:

@@ -1,10 +1,6 @@
 package io.taig.otter.http
-
-import cats.syntax.all.*
-import io.taig.otter.Codec
-import io.taig.otter.Metadata
-import org.typelevel.ci.CIString
 import io.taig.otter.*
+import org.typelevel.ci.CIString
 
 sealed abstract class Header[A] extends Product, Serializable:
   def name: CIString

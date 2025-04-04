@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.~>
-import cats.arrow.FunctionK
 
 sealed abstract class Collection[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]

@@ -1,11 +1,7 @@
 package io.taig.otter
-
-import io.taig.otter.Keys.*
-import io.taig.otter.JsonDsl.*
-import scala.collection.immutable.ListMap
-import cats.data.State
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
+import io.taig.otter.JsonDsl.*
 
 final class CirceJsonEncoderTest extends OtterSuite:
   val encoder: Encoder[Json, CirceJson] = CirceJsonEncoder

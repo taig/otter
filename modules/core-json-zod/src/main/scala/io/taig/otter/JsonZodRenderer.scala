@@ -1,15 +1,16 @@
 package io.taig.otter
 
-import cats.data.State
-import io.taig.otter.Keys.*
-import scala.collection.immutable.ListMap
-import cats.syntax.all.*
-import scala.annotation.tailrec
 import cats.data.Chain
+import cats.data.State
+import cats.syntax.all.*
+import io.taig.otter.Keys.*
 import io.taig.otter.Record.Empty
 import io.taig.otter.Record.Field
 import io.taig.otter.Record.Modify
 import io.taig.otter.Record.Zip
+
+import scala.annotation.tailrec
+import scala.collection.immutable.ListMap
 
 final class JsonZodRenderer extends Renderer[Json[?], State[ListMap[Const, String], Expression]]:
   override def apply(codec: Json[?]): State[ListMap[Const, String], Expression] = State: state =>

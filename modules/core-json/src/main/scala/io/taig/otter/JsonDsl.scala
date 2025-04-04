@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import io.taig.enumeration.ext.Mapping
 import cats.Order
-import io.taig.enumeration.ext.EnumerationValues
 import cats.kernel.Eq
+import io.taig.enumeration.ext.EnumerationValues
+import io.taig.enumeration.ext.Mapping
 
 trait JsonDsl:
   val string: Json.Primitive.String[String] = Json.Primitive.String.invariant.string

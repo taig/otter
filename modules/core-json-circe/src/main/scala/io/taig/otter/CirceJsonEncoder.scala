@@ -1,8 +1,9 @@
 package io.taig.otter
 
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
-import cats.syntax.all.*
+
 import scala.annotation.tailrec
 
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:

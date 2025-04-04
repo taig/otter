@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.~>
 import cats.data.Chain
+import cats.~>
 
 sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
   def codecs: Chain[Reference[S, ?]]

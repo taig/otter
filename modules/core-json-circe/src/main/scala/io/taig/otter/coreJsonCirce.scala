@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.circe.Json
 import cats.syntax.all.*
+import io.circe.Json
 
 private[otter] def toValue(json: Json): Data.Any = json.fold(
   jsonNull = Data.Null,

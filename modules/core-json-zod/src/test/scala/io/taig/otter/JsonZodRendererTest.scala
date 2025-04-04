@@ -1,10 +1,11 @@
 package io.taig.otter
 
-import io.taig.otter.Keys.*
-import io.taig.otter.JsonDsl.*
-import scala.collection.immutable.ListMap
 import cats.data.State
 import cats.syntax.all.*
+import io.taig.otter.JsonDsl.*
+import io.taig.otter.Keys.*
+
+import scala.collection.immutable.ListMap
 
 final class JsonZodRendererTest extends OtterSuite:
   val renderer: Renderer[Json[?], State[ListMap[Const, String], Expression]] = JsonZodRenderer()

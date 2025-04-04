@@ -1,11 +1,12 @@
 package io.taig.otter
 
 import cats.data.Validated
-import io.circe.Json as CirceJson
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
 import cats.syntax.all.*
 import io.circe.Decoder as CirceDecoder
+import io.circe.Json as CirceJson
+
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match

@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.Show
-import cats.syntax.all.*
 import cats.Eq
+import cats.Show
 import cats.derived.*
+import cats.syntax.all.*
 
 enum Expression derives Eq:
   case Inline(value: String)

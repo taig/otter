@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.syntax.all.*
 import cats.Invariant
+import cats.syntax.all.*
 import cats.~>
 
 sealed abstract class Constant[+S[_], A] extends Codec[S, A]:

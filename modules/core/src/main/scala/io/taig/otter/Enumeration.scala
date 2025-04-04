@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.NonEmptyList
-import io.taig.enumeration.ext.Mapping
 import cats.~>
+import io.taig.enumeration.ext.Mapping
 
 sealed abstract class Enumeration[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]
