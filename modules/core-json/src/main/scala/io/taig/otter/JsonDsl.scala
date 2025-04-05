@@ -6,12 +6,12 @@ import io.taig.enumeration.ext.EnumerationValues
 import io.taig.enumeration.ext.Mapping
 
 trait JsonDsl:
-  val string: Json.Primitive.String[String] = Json.Primitive.String.invariant.string
-  val int: Json.Primitive.Number[Int] = Json.Primitive.Number.invariant.int
-  val long: Json.Primitive.Number[Long] = Json.Primitive.Number.invariant.long
-  val float: Json.Primitive.Number[Float] = Json.Primitive.Number.invariant.float
-  val double: Json.Primitive.Number[Double] = Json.Primitive.Number.invariant.double
-  val boolean: Json.Primitive.Boolean[Boolean] = Json.Primitive.Boolean.invariant.boolean
+  val string: Json.Primitive[String] = Json.Primitive.invariant.string
+  val int: Json.Primitive[Int] = Json.Primitive.invariant.int
+  val long: Json.Primitive[Long] = Json.Primitive.invariant.long
+  val float: Json.Primitive[Float] = Json.Primitive.invariant.float
+  val double: Json.Primitive[Double] = Json.Primitive.invariant.double
+  val boolean: Json.Primitive[Boolean] = Json.Primitive.invariant.boolean
 
   object key:
     val string: Json.Key[String] = Json.Key.Primitive.invariant.string

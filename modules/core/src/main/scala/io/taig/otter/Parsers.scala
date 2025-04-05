@@ -1,27 +1,27 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.data.Chain
-// import cats.parse.Numbers
-// import cats.parse.Parser
-// import cats.parse.Parser0
-// import cats.parse.strings.Json
+import cats.data.Chain
+import cats.parse.Numbers
+import cats.parse.Parser
+import cats.parse.Parser0
+import cats.parse.strings.Json
 
-// import java.math.BigDecimal as JBigDecimal
-// import java.math.BigInteger as JBigInteger
-// import java.util.regex.Pattern
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import java.util.regex.Pattern
 
-// private[otter] object Parsers:
-//   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
+private[otter] object Parsers:
+  val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
 
-//   val colon: Parser[Unit] = Parser.char(':')
+  val colon: Parser[Unit] = Parser.char(':')
 
-//   val int: Parser[Int] = Numbers.signedIntString.mapFilter(_.toIntOption)
+  val int: Parser[Int] = Numbers.signedIntString.mapFilter(_.toIntOption)
 
-//   def brackets[A](parser: Parser.With1[A]) = parser.between(Parser.char('['), Parser.char(']'))
+  def brackets[A](parser: Parser.With1[A]) = parser.between(Parser.char('['), Parser.char(']'))
 
-//   val separator: Parser[Unit] = Parser.char(',').soft.surroundedBy(whitespace).void
+  val separator: Parser[Unit] = Parser.char(',').soft.surroundedBy(whitespace).void
 
-//   def list[A](parser: Parser[A]): Parser0[List[A]] = parser.repSep0(separator).surroundedBy(whitespace)
+  def list[A](parser: Parser[A]): Parser0[List[A]] = parser.repSep0(separator).surroundedBy(whitespace)
 
 //   val token: Parser[String] = Parser.charsWhile: value =>
 //     (value >= 'a' && value <= 'z') ||
