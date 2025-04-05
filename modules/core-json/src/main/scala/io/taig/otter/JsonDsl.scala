@@ -13,7 +13,19 @@ trait JsonDsl:
   val double: Json.Primitive.Number[Double] = Json.Primitive.Number.invariant.double
   val boolean: Json.Primitive.Boolean[Boolean] = Json.Primitive.Boolean.invariant.boolean
 
+  object key:
+    val string: Json.Key[String] = Json.Key.Primitive.invariant.string
+
+    object constant:
+      export Json.Key.Constant.invariant.constant as apply
+      def apply(value: String): Json.Key.Constant[String] = apply(string, value)
+
+    export Json.Key.Union.invariant.branch
+
   export Json.Record.invariant.field
+
+  def field[A](name: String, codec: => Json[A]): Json.Record[A] = field(name, key = key.string, value = codec)
+
   export Json.Union.invariant.branch
 
   object collection:
@@ -33,7 +45,7 @@ trait JsonDsl:
     }
 
   object constant:
-    export Json.Constant.invariant.apply
+    export Json.Constant.invariant.constant as apply
     def apply(value: String): Json.Constant[String] = apply(string, value)
     def apply(value: Int): Json.Constant[Int] = apply(int, value)
     def apply(value: Long): Json.Constant[Long] = apply(long, value)
@@ -58,11 +70,11 @@ trait JsonDsl:
 
   def enumeration[A, B](codec: => Json.Primitive[A])(using
       mapping: Mapping[B, A]
-  ): Json.Enumeration[B] =
-    Json.Enumeration(Enumeration.Root(codec = Reference.later(codec), mapping, metadata = Metadata.Empty))
+  ): Json.Union[B] = ???
+  // Json.Enumeration(Enumeration.Root(codec = Reference.later(codec), mapping, metadata = Metadata.Empty))
 
   def enumeration[A: Order, B](codec: => Json.Primitive[A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
-  ): Json.Enumeration[B] = enumeration(codec)(using Mapping.enumeration(f))
+  ): Json.Union[B] = ??? // enumeration(codec)(using Mapping.enumeration(f))
 
 object JsonDsl extends JsonDsl

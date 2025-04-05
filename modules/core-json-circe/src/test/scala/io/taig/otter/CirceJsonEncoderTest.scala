@@ -1,4 +1,5 @@
 package io.taig.otter
+
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter.JsonDsl.*
@@ -24,7 +25,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
 
   test("dictionary"):
     assertEq(
-      obtained = encoder(dictionary.list(key = string, value = long), List(("foo", 1L), ("bar", 2L))),
+      obtained = encoder(dictionary.list(key = key.string, value = long), List(("foo", 1L), ("bar", 2L))),
       expected = CirceJson.fromFields(List(("foo", CirceJson.fromLong(1)), ("bar", CirceJson.fromLong(2))))
     )
 

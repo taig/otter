@@ -1,9 +1,9 @@
 package io.taig.otter
 
-trait RecordInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
+trait RecordInvariant[Self[_], Key[_], Value[_]] extends CodecInvariant[Self]:
   def empty: Self[Unit]
 
-  def field[A](name: String, codec: => Value[A]): Self[A]
+  def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
 
   extension [A](self: Self[A])
     def isOptional: Boolean
@@ -15,13 +15,19 @@ trait RecordInvariant[Self[_], Value[_]] extends CodecInvariant[Self]:
       self.zip(codec).imap(merge.apply)(merge.unapply)
 
 object RecordInvariant:
-  def apply[Self[_], Value[_]](
-      lift: [A] => (codec: Record[Value, A]) => Self[A],
-      extract: [A] => (codec: Self[A]) => Record[Value, A]
-  ): RecordInvariant[Self, Value] = new RecordInvariant[Self, Value]:
+  def apply[Self[_], Key[_], Value[_]](
+      lift: [A] => (codec: Record[Key, Value, A]) => Self[A],
+      extract: [A] => (codec: Self[A]) => Record[Key, Value, A]
+  ): RecordInvariant[Self, Key, Value] = new RecordInvariant[Self, Key, Value]:
     override val empty: Self[Unit] = lift(Record.Empty(metadata = Metadata.Empty))
-    override def field[A](name: String, codec: => Value[A]): Self[A] =
-      lift(Record.Field(name, codec = Reference.later(codec), metadata = Metadata.Empty))
+    override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+      lift(
+        Record.Field(
+          key = Reference.Constant(self = Reference.later(key), value = name),
+          value = Reference.later(value),
+          metadata = Metadata.Empty
+        )
+      )
 
     extension [A](self: Self[A])
       override def isOptional: Boolean = extract(self).isOptional

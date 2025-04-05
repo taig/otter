@@ -64,12 +64,12 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Primitive.Number.Modify(self, _, g)                  => apply(codec = self, g(a))
     case Primitive.String.Parser(name, _, encode, _, _, _, _) => CirceJson.fromString(encode(a))
 
-  def apply[A](codec: Record[Json, A], a: A): List[(String, CirceJson)] = codec match
-    case Record.Empty(_)              => Nil
-    case Record.Field(name, codec, _) => List((name, apply(codec = codec.value, a)))
-    case Record.Modify(self, _, g)    => apply(codec = self, g(a))
-    case Record.Optional(self)        => a.fold(Nil)(apply(codec = self, _))
-    case Record.Zip(left, right, _)   => apply(codec = left, a._1) ++ apply(codec = right, a._2)
+  def apply[A](codec: Record[Json.Key, Json, A], a: A): List[(String, CirceJson)] = codec match
+    case Record.Empty(_)             => Nil
+    case Record.Field(key, value, _) => List((CirceJsonKeyEncoder(codec = key), apply(codec = value.value, a)))
+    case Record.Modify(self, _, g)   => apply(codec = self, g(a))
+    case Record.Optional(self)       => a.fold(Nil)(apply(codec = self, _))
+    case Record.Zip(left, right, _)  => apply(codec = left, a._1) ++ apply(codec = right, a._2)
 
   def apply[A](codec: Tuple[Json, A], a: A): List[CirceJson] = codec match
     case _: Tuple.Empty            => Nil

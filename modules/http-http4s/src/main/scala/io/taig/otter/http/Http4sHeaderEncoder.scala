@@ -10,4 +10,3 @@ object Http4sHeaderEncoder extends Encoder[Header, Option[Http4sHeader]]:
     // case Header.Root(name, codec, metadata) => ???
     // case Header.Collection(self, delimiter) => ???
     case Header.Modify(self, _, g) => apply(codec = self, g(a))
-  

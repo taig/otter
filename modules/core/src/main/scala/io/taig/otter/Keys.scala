@@ -1,10 +1,8 @@
 package io.taig.otter
 
 trait Keys:
-  def key[A](value: String): Metadata.Key[A] = Metadata.Key(value)
-
-  val name: Metadata.Key[String] = key("name")
-  val namespace: Metadata.Key[String] = key("namespace")
-  val typescript: Metadata.Key[String] = key("typescript")
+  val name: Metadata.Key[String] = Metadata.Key("name")
+  val namespace: Metadata.Key[String] = Metadata.Key("namespace")
+  val typescript: Metadata.Key[String] = Metadata.Key("typescript")
 
 object Keys extends Keys

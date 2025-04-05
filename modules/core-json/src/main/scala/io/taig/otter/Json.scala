@@ -1,6 +1,10 @@
 package io.taig.otter
 
 import io.taig.otter as Self
+import cats.kernel.Eq
+import java.util.regex.Pattern
+import Self.Discriminator.Explicit
+import Self.Discriminator.Merged
 
 sealed abstract class Json[A] extends Product with Serializable
 
@@ -14,12 +18,12 @@ object Json:
         extract = [A] => (codec: Json.Collection[A]) => codec.value
       )
 
-  final case class Constant[A](value: Self.Constant[Json.Primitive, A]) extends Json[A]
+  final case class Constant[A](value: Self.Constant[Json, A]) extends Json[A]
 
   object Constant:
-    given invariant: ConstantInvariant[Json.Constant, Json.Primitive] =
+    given invariant: ConstantInvariant[Json.Constant, Json] =
       ConstantInvariant(
-        lift = [A] => (codec: Self.Constant[Json.Primitive, A]) => Constant(value = codec),
+        lift = [A] => (codec: Self.Constant[Json, A]) => Constant(value = codec),
         extract = [A] => (codec: Json.Constant[A]) => codec.value
       )
 
@@ -31,14 +35,6 @@ object Json:
         lift = [A] => (codec: Self.Dictionary[Json.Key, Json, A]) => Dictionary(value = codec),
         extract = [A] => (codec: Json.Dictionary[A]) => codec.value
       )
-
-  final case class Enumeration[A](value: Self.Enumeration[Json.Primitive, A]) extends Json[A]
-
-  object Enumeration:
-    given invariant: EnumerationInvariant[Json.Enumeration, Json.Primitive] = EnumerationInvariant(
-      lift = [A] => (codec: Self.Enumeration[Json.Primitive, A]) => Enumeration(value = codec),
-      extract = [A] => (codec: Json.Enumeration[A]) => codec.value
-    )
 
   final case class Optional[A](value: Self.Optional[Json, A]) extends Json[A]
 
@@ -79,11 +75,11 @@ object Json:
           extract = [A] => (self: Json.Primitive.String[A]) => self.value
         )
 
-  final case class Record[A](value: Self.Record[Json, A]) extends Json[A]
+  final case class Record[A](value: Self.Record[Json.Key, Json, A]) extends Json[A]
 
   object Record:
-    given invariant: RecordInvariant[Json.Record, Json] = RecordInvariant(
-      lift = [A] => (codec: Self.Record[Json, A]) => Record(codec),
+    given invariant: RecordInvariant[Json.Record, Json.Key, Json] = RecordInvariant(
+      lift = [A] => (codec: Self.Record[Json.Key, Json, A]) => Record(codec),
       extract = [A] => (self: Json.Record[A]) => self.value
     )
 
@@ -103,7 +99,33 @@ object Json:
       extract = [A] => (self: Json.Union[A]) => self.value
     )
 
-  type Key[A] = Json.Primitive.String[A]
+  sealed abstract class Key[A] extends Product with Serializable
+
+  object Key:
+    final case class Constant[A](value: Self.Constant[Json.Key, A]) extends Json.Key[A]
+
+    object Constant:
+      given invariant: ConstantInvariant[Json.Key.Constant, Json.Key] = ConstantInvariant(
+        lift = [A] => (codec: Self.Constant[Json.Key, A]) => Constant(codec),
+        extract = [A] => (self: Json.Key.Constant[A]) => self.value
+      )
+
+    final case class Primitive[A](value: Self.Primitive.String[A]) extends Json.Key[A]
+
+    object Primitive:
+      given invariant: PrimitiveInvariant.String[Json.Key.Primitive] =
+        PrimitiveInvariant.String[Json.Key.Primitive](
+          lift = [A] => (codec: Self.Primitive.String[A]) => Primitive(codec),
+          extract = [A] => (self: Json.Key.Primitive[A]) => self.value
+        )
+
+    final case class Union[A](value: Self.Union.Untagged[Json.Key, A]) extends Json.Key[A]
+
+    object Union:
+      given invariant: UnionInvariant.Untagged[Json.Key.Union, Json.Key] = UnionInvariant.Untagged(
+        lift = [A] => (codec: Self.Union.Untagged[Json.Key, A]) => Union(codec),
+        extract = [A] => (self: Json.Key.Union[A]) => self.value
+      )
 
   type Invariant = CodecInvariant.Nullable[Json, Json.Optional] & CodecInvariant.Tupleable[Json, Json.Tuple]
 
@@ -117,7 +139,6 @@ object Json:
         case Json.Collection(a)        => a.metadata
         case Json.Constant(a)          => a.metadata
         case Json.Dictionary(a)        => a.metadata
-        case Json.Enumeration(a)       => a.metadata
         case Json.Optional(a)          => a.metadata
         case Json.Primitive.Boolean(a) => a.metadata
         case Json.Primitive.Number(a)  => a.metadata
@@ -130,7 +151,6 @@ object Json:
         case Json.Collection(a)        => Json.Collection(a.modifyMetadata(f))
         case Json.Constant(a)          => Json.Constant(a.modifyMetadata(f))
         case Json.Dictionary(a)        => Json.Dictionary(a.modifyMetadata(f))
-        case Json.Enumeration(a)       => Json.Enumeration(a.modifyMetadata(f))
         case Json.Optional(a)          => Json.Optional(a.modifyMetadata(f))
         case Json.Primitive.Boolean(a) => Json.Primitive.Boolean(a.modifyMetadata(f))
         case Json.Primitive.Number(a)  => Json.Primitive.Number(a.modifyMetadata(f))
@@ -143,7 +163,6 @@ object Json:
         case Json.Collection(a)        => Json.Collection(a.imap(f)(g))
         case Json.Constant(a)          => Json.Constant(a.imap(f)(g))
         case Json.Dictionary(a)        => Json.Dictionary(a.imap(f)(g))
-        case Json.Enumeration(a)       => Json.Enumeration(a.imap(f)(g))
         case Json.Optional(a)          => Json.Optional(a.imap(f)(g))
         case Json.Primitive.Boolean(a) => Json.Primitive.Boolean(a.imap(f)(g))
         case Json.Primitive.Number(a)  => Json.Primitive.Number(a.imap(f)(g))
