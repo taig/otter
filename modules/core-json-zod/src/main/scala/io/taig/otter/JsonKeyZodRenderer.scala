@@ -13,12 +13,7 @@ object JsonKeyZodRenderer extends Renderer[Json.Key, ZodState[Expression]]:
       case Json.Key.Enumeration(self) => State.pure(apply(codec = self))
       case Json.Key.Primitive(self)   => State.pure(PrimitiveZodRenderer(codec = self))
       case Json.Key.Union(self) =>
-        self.branches
-          .traverse((_, codec) => JsonKeyZodRenderer(codec.value))
-          .map: expressions =>
-            s"""z.union([
-               |${indent(expressions.map(_.show).mkString_(",\n"))}
-               |])""".stripMargin
+        UnionZodRenderer[Json.Key](render = [A] => (_: String, codec: Json.Key[A]) => JsonKeyZodRenderer(codec))(self)
 
     def apply(codec: Constant[Json.Key.Primitive, ?]): String =
       s"z.literal(${apply(reference = codec.codec)})"

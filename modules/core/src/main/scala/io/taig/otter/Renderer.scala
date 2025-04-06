@@ -1,4 +1,4 @@
 package io.taig.otter
 
-abstract class Renderer[S[_], A]:
-  def apply[T](codec: S[T]): A
+abstract class Renderer[S[_], T]:
+  def apply[A](codec: S[A]): T

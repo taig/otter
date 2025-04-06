@@ -3,12 +3,6 @@ package io.taig.otter
 import cats.data.Chain
 import cats.data.State
 import cats.syntax.all.*
-import io.taig.otter.Keys.*
-
-import io.taig.otter.Record.Empty
-import io.taig.otter.Record.Field
-import io.taig.otter.Record.Modify
-import io.taig.otter.Record.Zip
 
 final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
   self =>
@@ -79,23 +73,19 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
         case codec: Union.Untagged[Json, ?] => none
         case codec: Union.Tagged[Json, ?]   => codec.discriminator.some
 
-      codec.branches
-        .traverse((name, reference) => apply(name, reference, discriminator))
-        .map: values =>
-          s"""z.union([
-             |${indent(values.map(value => show"$value").mkString_(",\n"))}
-             |])""".stripMargin
+      UnionZodRenderer[Json](
+        render = [A] => (name: String, codec: Json[A]) => Raw(name, codec, discriminator)
+      )(codec)
 
-    def apply[A](reference: Reference.Constant[Json, A]): Option[String] =
-      reference.self.value match
-        case Json.Primitive(self) => PrimitivePrinter.Quoted(codec = self, reference.value).some
-        case _                    => none
+    def apply[A](reference: Reference.Constant[Json, A]): Option[String] = reference.self.value match
+      case Json.Primitive(self) => PrimitivePrinter.Quoted(codec = self, reference.value).some
+      case _                    => none
 
-    def apply(name: String, codec: Reference[Json, ?], discriminator: Option[Discriminator]): ZodState[Expression] =
+    def apply(name: String, codec: Json[?], discriminator: Option[Discriminator]): ZodState[Expression] =
       discriminator match
         case Some(Discriminator.Keyed) =>
           self
-            .apply(codec = codec.value)
+            .apply(codec)
             .map: expression =>
               Expression.Inline:
                 show"""z.object({
@@ -103,20 +93,20 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
                       |})""".stripMargin
         case Some(Discriminator.Merged(identifier)) =>
           self
-            .apply(codec = codec.value)
+            .apply(codec)
             .map: expression =>
               Expression.Inline:
                 show"""$expression.merge(z.object({ "$identifier": z.literal("$name") }))"""
         case Some(Discriminator.Explicit(identifier, value)) =>
           self
-            .apply(codec = codec.value)
+            .apply(codec)
             .map: expression =>
               Expression.Inline:
                 show"""z.object({
                       |  "$identifier": z.literal("$name"),
                       |  "$value": $expression
                       |})""".stripMargin
-        case None => self.apply(codec = codec.value)
+        case None => self.apply(codec)
 
 object JsonZodRenderer:
   def apply(): Renderer[Json, ZodState[Expression]] = new JsonZodRenderer()
