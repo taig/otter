@@ -20,3 +20,12 @@ private[otter] def toValue(json: Json): Data = json.fold(
   jsonArray = values => Data.Array(values.map(toValue)),
   jsonObject = values => Data.Object(values.toList.map(_.map(toValue)))
 )
+
+private[otter] def toType(json: Json): String = json.fold(
+  jsonNull = "null",
+  jsonBoolean = _ => "boolean",
+  jsonNumber = _ => "number",
+  jsonString = _ => "string",
+  jsonArray = _ => "array",
+  jsonObject = _ => "object"
+)

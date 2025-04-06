@@ -7,11 +7,62 @@ import io.circe.Json as CirceJson
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import cats.data.NonEmptyChain
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
-    case Json.Constant(self)  => apply(codec = self, json)
-    case Json.Primitive(self) => apply(codec = self, json)
+    case Json.Collection(self)  => apply(codec = self, json)
+    case Json.Constant(self)    => apply(codec = self, json)
+    case Json.Dictionary(self)  => apply(codec = self, json)
+    case Json.Enumeration(self) => apply(codec = self, json)
+    case Json.Optional(self)    => apply(codec = self, json)
+    case Json.Primitive(self)   => apply(codec = self, json)
+    case Json.Record(self)      => apply(codec = self, json)
+    case Json.Tuple(self)       => apply(codec = self, json)
+
+  def apply[A](codec: Collection[Json, A], json: CirceJson): Validated[Violations, A] = codec match
+    case Collection.Indexed(codec, minimum, maximum, uniqueItems, _) =>
+      apply(minimum, maximum, uniqueItems)(json).andThen: values =>
+        values.zipWithIndex.traverse: (json, index) =>
+          apply(codec = codec.value, json).leftMap(index /: _)
+    case Collection.Linked(codec, minimum, maximum, uniqueItems, _) =>
+      apply(minimum, maximum, uniqueItems)(json).andThen: values =>
+        values.toList.zipWithIndex.traverse: (json, index) =>
+          apply(codec = codec.value, json).leftMap(index /: _)
+    case Collection.Modify(self, f, g) => apply(codec = self, json).map(f)
+
+  def apply(minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean)(
+      json: CirceJson
+  ): Validated[Violations, Vector[CirceJson]] = json.asArray
+    .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))
+    .andThen: values =>
+      val size = values.size
+
+      minimum.traverse(minimum =>
+        Validated.cond(
+          test = size >= minimum,
+          (),
+          Violations.rootNec(
+            Violation(constraint = Constraint.Collection.MinItems(reference = minimum), actual = size, hint = none)
+          )
+        )
+      ) *> maximum.traverse(maximum =>
+        Validated.cond(
+          test = size <= maximum,
+          (),
+          Violations.rootNec(
+            Violation(constraint = Constraint.Collection.MaxItems(reference = maximum), actual = size, hint = none)
+          )
+        )
+      ) *> Validated
+        .cond(
+          test = uniqueItems && values.distinct.size == size,
+          (),
+          Violations.rootNec(
+            Violation(constraint = Constraint.Collection.UniqueItems, actual = toValue(json), hint = none)
+          )
+        )
+        .as(values)
 
   def apply[A](codec: Constant[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, json).map(f)
@@ -27,6 +78,60 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
             )
           )
           .leftMap(Violations.rootNec)
+
+  def apply[A](codec: Dictionary[Json.Key, Json, A], json: CirceJson): Validated[Violations, A] = codec match
+    case Dictionary.Modify(self, f, _) => apply(codec = self, json).map(f)
+    case Dictionary.Root(key, codec, minimum, maximum, _) =>
+      json.asObject
+        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
+        .andThen: json =>
+          val size = json.size
+
+          minimum.traverse(minimum =>
+            Validated.cond(
+              test = size >= minimum,
+              (),
+              Violations.rootNec(
+                Violation(constraint = Constraint.Object.MinProperties(reference = minimum), actual = size, hint = none)
+              )
+            )
+          ) *> maximum.traverse(maximum =>
+            Validated.cond(
+              test = size <= maximum,
+              (),
+              Violations.rootNec(
+                Violation(constraint = Constraint.Object.MaxProperties(reference = maximum), actual = size, hint = none)
+              )
+            )
+          ) *> json.toList.traverse: (name, value) =>
+            (
+              JsonKeyParser(codec = key.value, value = name).leftMap(name /: _),
+              apply(codec = codec.value, value).leftMap(name /: _)
+            ).tupled
+
+  def apply[A](codec: Enumeration[Json.Primitive, A], json: CirceJson): Validated[Violations, A] = codec match
+    case Enumeration.Modify(self, f, _) => apply(codec = self, json).map(f)
+    case codec @ Enumeration.Root(reference, mapping, _) =>
+      apply(codec = reference.value, json).andThen: value =>
+        mapping
+          .unapply(value)
+          .toValid(
+            Violations.rootNec(
+              Violation.oneOf(
+                values = codec.values.toList.map(mapping.apply).map(JsonPrimitivePrinter(codec = reference.value, _)),
+                actual = toValue(json)
+              )
+            )
+          )
+
+  def apply[A](codec: Optional[Json, A], json: CirceJson): Validated[Violations, A] = codec match
+    case Optional.Modify(self, f, _) => apply(codec = self, json).map(f)
+    case Optional.Nullable(reference, _) =>
+      if json.isNull then none.valid[Violations]
+      else apply(codec = reference.value, json).map(_.some)
+    case Optional.Default(reference, default, _) =>
+      if json.isNull then default.valid[Violations]
+      else apply(codec = reference.value, json)
 
   def apply[A](codec: Primitive[A], json: CirceJson): Validated[Violations, A] = codec match
     case _: Primitive.Boolean.Root            => apply[Boolean](name = "boolean", json)
@@ -50,3 +155,74 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     .as[A]
     .leftMap(failure => Violations.rootNec(Violation.tpe(name, actual = toValue(json), hint = failure.show)))
     .toValidated
+
+  // TODO support for rejecting additional properties
+  def apply[A](codec: Record[Json.Key, Json, A], json: CirceJson): Validated[Violations, A] =
+    json.asObject
+      .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
+      .andThen(json => apply(codec, json = json.toVector).map((_, a) => a))
+
+  def apply[A](
+      codec: Record[Json.Key, Json, A],
+      json: Vector[(String, CirceJson)]
+  ): Validated[Violations, (Vector[(String, CirceJson)], A)] = codec match
+    case Record.Empty(_) => (json, ()).valid
+    case Record.Field(key, codec, _) =>
+      val name = JsonKeyReferenceConstantPrinter(reference = key)
+      val (remainders, result) = json.collectFirstWithRemainders { case (`name`, json) => json }
+      result
+        .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
+        .andThen(apply(codec = codec.value, _))
+        .leftMap(name /: _)
+        .tupleLeft(remainders)
+    case Record.Modify(self, f, _) => apply(codec = self, json).map(_.map(f))
+    case Record.Optional(self) =>
+      val lookup = json.map((key, _) => key).toSet
+
+      val allKeysAbsent = codec.fields
+        .map((key, _) => JsonKeyReferenceConstantPrinter(reference = key))
+        .forall(lookup.contains_)
+
+      if allKeysAbsent then (json, none).valid[Violations]
+      else apply(codec = self, json).map(_.map(_.some))
+    case Record.Zip(left, right, _) =>
+      apply(codec = left, json) match
+        case Validated.Valid((json, a)) => apply(codec = right, json).map(_.tupleLeft(a))
+        case Validated.Invalid(left) =>
+          apply(codec = right, json) match
+            case Validated.Valid(_)       => left.invalid
+            case Validated.Invalid(right) => (left |+| right).invalid
+
+  def apply[A](codec: Tuple[Json, A], json: CirceJson): Validated[Violations, A] =
+    json.asArray
+      .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))
+      .andThen: values =>
+        val reference = codec.codecs.size.toInt
+        val size = values.size
+
+        Validated.cond(
+          test = size >= reference,
+          (),
+          Violations.rootNec(
+            Violation(constraint = Constraint.Collection.MinItems(reference), actual = size, hint = none)
+          )
+        ) *> Validated.cond(
+          test = size <= reference,
+          (),
+          Violations.rootNec(
+            Violation(constraint = Constraint.Collection.MaxItems(reference), actual = size, hint = none)
+          )
+        ) *> apply(codec, json = values, index = 0)
+
+  def apply[A](codec: Tuple[Json, A], json: Vector[CirceJson], index: Int): Validated[Violations, A] = codec match
+    case Tuple.Empty(_)           => ().valid
+    case Tuple.Modify(self, f, _) => apply(codec = self, json, index).map(f)
+    case Tuple.Root(codec, _) =>
+      json.headOption
+        .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
+        .andThen(apply(codec = codec.value, _))
+        .leftMap(index /: _)
+    case Tuple.Zip(left, right, _) =>
+      val size = left.codecs.size.toInt
+      val (x, y) = json.splitAt(size)
+      (apply(codec = left, json = x, index), apply(codec = right, json = y, index = size)).tupled
