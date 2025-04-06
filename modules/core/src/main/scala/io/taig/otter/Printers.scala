@@ -32,7 +32,9 @@ private[otter] object Printers:
     case Constraint.Primitive.MinLength(reference)                  => show"minLength $reference"
     case Constraint.Primitive.Multiple(reference)                   => show"multiple $reference"
 
-  def apply(violation: Violation): String = show"${violation.constraint} ! ${violation.actual}"
+  def apply(violation: Violation): String = violation.hint match
+    case Some(hint) => show"${violation.constraint} ! ${violation.actual} [$hint]"
+    case None       => show"${violation.constraint} ! ${violation.actual}"
 
   def apply(violations: Indexed[NonEmptyChain[Violation]]): String =
     val path = violations.xpath.show

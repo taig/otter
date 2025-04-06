@@ -12,6 +12,30 @@ final class JsonKeyPrinterTest extends OtterSuite:
       expected = "foo"
     )
 
+  test("enumeration"):
+    enum Animal:
+      case Bird
+      case Cat
+      case Dog
+
+    val codec: Json.Key.Enumeration[Animal] = enumeration(string):
+      case Animal.Bird => "bird"
+      case Animal.Cat  => "cat"
+      case Animal.Dog  => "dog"
+
+    assertEq(
+      obtained = print(codec, Animal.Bird),
+      expected = "bird"
+    )
+    assertEq(
+      obtained = print(codec, Animal.Cat),
+      expected = "cat"
+    )
+    assertEq(
+      obtained = print(codec, Animal.Dog),
+      expected = "dog"
+    )
+
   test("primitive"):
     assertEq(
       obtained = print(string, "foobar"),

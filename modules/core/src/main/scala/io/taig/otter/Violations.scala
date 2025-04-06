@@ -17,6 +17,11 @@ enum Violations derives Eq:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
   case Namespace(values: NonEmptyMap[Step, Violations])
 
+  final def modifyViolations(f: Violation => Violation): Violations = this match
+    case Root(values, violations) =>
+      Root(values = values.fmap(_.modifyViolations(f)), violations = violations.map(f))
+    case Namespace(values) => Namespace(values = values.fmap(_.modifyViolations(f)))
+
   final def /:(step: Step): Violations = Namespace(NonEmptyMap.one(step, this))
   final def /:(index: Int): Violations = /:(Step.Index(index))
   final def /:(field: String): Violations = /:(Step.Field(field))

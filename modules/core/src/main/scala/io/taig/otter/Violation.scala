@@ -9,6 +9,11 @@ import cats.syntax.all.*
 import java.util.regex.Pattern
 
 final case class Violation(constraint: Constraint, actual: Data, hint: Option[String]) derives Eq:
+  def modifyHint(f: Option[String] => Option[String]): Violation = copy(hint = f(hint))
+  def withHint(hint: Option[String]): Violation = modifyHint(_ => hint)
+  def withHint(hint: String): Violation = withHint(hint = hint.some)
+  def withoutHint: Violation = withHint(hint = none)
+
   override def toString: String = Printers(this)
 
 object Violation:

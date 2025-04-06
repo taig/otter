@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import cats.~>
+import cats.syntax.all.*
 
 sealed abstract class Union[+S[_], A] extends Codec[S, A]:
   def branches: Chain[(String, Reference[S, ?])]
@@ -57,6 +58,7 @@ object Union:
       override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union.Untagged[T, B] = copy(self = self.mapK(fK))
 
   sealed abstract class Tagged[+S[_], A] extends Union[S, A]:
+    def discriminator: Discriminator
     override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A]
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union.Tagged[T, A]
     override def imap[B](f: A => B)(g: B => A): Union.Tagged[S, B]
@@ -65,6 +67,7 @@ object Union:
   object Tagged:
     final private[otter] case class Keyed[S[_], A](untagged: Union.Untagged[S, A]) extends Union.Tagged[S, A]:
       export untagged.{branches, metadata}
+      override def discriminator: Discriminator = Discriminator.Keyed
       override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A] =
         copy(untagged = untagged.modifyMetadata(f))
       override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union.Tagged[T, A] = copy(untagged = untagged.mapK(fK))

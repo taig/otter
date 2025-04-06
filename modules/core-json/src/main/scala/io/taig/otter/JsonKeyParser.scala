@@ -10,9 +10,10 @@ import java.util.regex.Pattern
 
 object JsonKeyParser extends Parser[Json.Key]:
   override def apply[A](codec: Json.Key[A], value: String): Validated[Violations, A] = codec match
-    case Json.Key.Constant(self)  => apply(codec = self, value)
-    case Json.Key.Primitive(self) => apply(codec = self, value)
-    case Json.Key.Union(self)     => apply(codec = self, value)
+    case Json.Key.Constant(self)    => apply(codec = self, value)
+    case Json.Key.Enumeration(self) => apply(codec = self, value)
+    case Json.Key.Primitive(self)   => apply(codec = self, value)
+    case Json.Key.Union(self)       => apply(codec = self, value)
 
   def apply[A](codec: Constant[Json.Key, A], value: String): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
@@ -24,6 +25,17 @@ object JsonKeyParser extends Parser[Json.Key]:
             a,
             Violation.equal(reference = ReferenceConstantPrinter(printer = JsonKeyPrinter)(codec), value)
           )
+          .leftMap(Violations.rootNec)
+
+  def apply[A](codec: Enumeration[Json.Key.Primitive, A], value: String): Validated[Violations, A] = codec match
+    case Enumeration.Modify(self, f, _) => apply(codec = self, value).map(f)
+    case Enumeration.Root(reference, mapping, _) =>
+      apply(codec = reference.value, value).andThen: a =>
+        mapping
+          .unapply(a)
+          .toValid:
+            val values = codec.values.map(mapping.apply).map(JsonKeyPrinter(reference.value, _))
+            Violation.oneOf(values = values.toList, actual = value)
           .leftMap(Violations.rootNec)
 
   def apply[A](codec: Primitive.String[A], value: String): Validated[Violations, A] = codec match

@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.JsonDsl.key.*
+import cats.derived.*
+import cats.Eq
 
 final class JsonKeyParserTest extends OtterSuite:
   val parser = JsonKeyParser
@@ -14,6 +16,32 @@ final class JsonKeyParserTest extends OtterSuite:
     assertEq(
       obtained = parser(constant("foo"), "bar"),
       expected = Violations.rootNec(Violation.equal(reference = "foo", actual = "bar")).invalid
+    )
+
+  test("enumeration"):
+    enum Animal derives Eq:
+      case Bird
+      case Cat
+      case Dog
+
+    val codec: Json.Key.Enumeration[Animal] = enumeration(string):
+      case Animal.Bird => "bird"
+      case Animal.Cat  => "cat"
+      case Animal.Dog  => "dog"
+
+    assertEq(obtained = parser(codec, "bird"), expected = Animal.Bird.valid)
+    assertEq(obtained = parser(codec, "cat"), expected = Animal.Cat.valid)
+    assertEq(obtained = parser(codec, "dog"), expected = Animal.Dog.valid)
+    assertEq(
+      obtained = parser(codec, "foobar"),
+      expected = Violations
+        .rootNec(
+          Violation.oneOf(
+            values = List("bird", "cat", "dog"),
+            actual = "foobar"
+          )
+        )
+        .invalid
     )
 
   test("primitive"):
