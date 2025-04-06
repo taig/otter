@@ -1,9 +1,10 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.State
-import scala.collection.immutable.ListMap
+import cats.syntax.all.*
 import io.taig.otter.Keys.*
+
+import scala.collection.immutable.ListMap
 
 final class NamespaceZodRenderer[S[_]: CodecInvariant](renderer: Renderer[S, ZodState[String]])
     extends Renderer[S, ZodState[Expression]]:

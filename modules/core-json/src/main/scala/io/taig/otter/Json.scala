@@ -1,10 +1,6 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import cats.kernel.Eq
-import java.util.regex.Pattern
-import Self.Discriminator.Explicit
-import Self.Discriminator.Merged
 
 sealed abstract class Json[A] extends Product with Serializable
 

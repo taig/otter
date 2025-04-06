@@ -10,12 +10,12 @@ import java.util.regex.Pattern
 import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable derives Eq:
-  final override def toString: String = ??? // Printers(this)
+  final override def toString: String = Printers(this)
 
 object Constraint:
   final case class Type(name: String) extends Constraint
   final case class OneOf(values: List[Data.Primitive]) extends Constraint
-  final case class Equal(reference: Data.Any) extends Constraint
+  final case class Equal(reference: Data) extends Constraint
 
   sealed abstract class Collection extends Constraint derives Eq
 
@@ -42,4 +42,4 @@ object Constraint:
 
   def parse(value: String): Either[Parser.Error, Constraint] = ??? // Parsers.constraint.parseAll(value)
 
-  given Show[Constraint] = ??? // Printers(_)
+  given Show[Constraint] = Printers(_)

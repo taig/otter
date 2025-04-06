@@ -1,14 +1,8 @@
 package io.taig.otter
-
-import cats.data.Chain
 import cats.parse.Numbers
 import cats.parse.Parser
 import cats.parse.Parser0
 import cats.parse.strings.Json
-
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
-import java.util.regex.Pattern
 
 private[otter] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
@@ -23,6 +17,8 @@ private[otter] object Parsers:
 
   def list[A](parser: Parser[A]): Parser0[List[A]] = parser.repSep0(separator).surroundedBy(whitespace)
 
+  val text: Parser[String] = Json.delimited.parser
+
 //   val token: Parser[String] = Parser.charsWhile: value =>
 //     (value >= 'a' && value <= 'z') ||
 //       (value >= 'A' && value <= 'Z') ||
@@ -33,8 +29,6 @@ private[otter] object Parsers:
 
 //     val boolean: Parser[Data.Boolean] =
 //       Parser.string("true").as(Data.Boolean(true)).orElse(Parser.string("false").as(Data.Boolean(false)))
-
-//     val string: Parser[String] = Json.delimited.parser.map(String.apply)
 
 //     val number: Parser[Data.Number] = Numbers.jsonNumber.map: value =>
 //       // TODO nasty

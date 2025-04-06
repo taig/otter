@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.taig.otter.JsonDsl.key.*
 import cats.syntax.all.*
+import io.taig.otter.JsonDsl.key.*
 
 final class JsonKeyPrinterTest extends OtterSuite:
   val print = JsonKeyPrinter
@@ -9,23 +9,17 @@ final class JsonKeyPrinterTest extends OtterSuite:
   test("constant"):
     assertEq(
       obtained = print(constant("foo"), "bar"),
-      expected = "\"foo\""
+      expected = "foo"
     )
 
   test("primitive"):
     assertEq(
       obtained = print(string, "foobar"),
-      expected = "\"foobar\""
+      expected = "foobar"
     )
     assertEq(
       obtained = print(string, ""),
-      expected = "\"\""
-    )
-
-  test("primitive: escape quotes"):
-    assertEq(
-      obtained = print(string, "foo\"bar"),
-      expected = "\"foo\\\"bar\""
+      expected = ""
     )
 
   test("union"):
@@ -33,9 +27,9 @@ final class JsonKeyPrinterTest extends OtterSuite:
 
     assertEq(
       obtained = print(codec, "foobar".asLeft),
-      expected = "\"foo\""
+      expected = "foo"
     )
     assertEq(
       obtained = print(codec, "foobar".asRight),
-      expected = "\"bar\""
+      expected = "bar"
     )

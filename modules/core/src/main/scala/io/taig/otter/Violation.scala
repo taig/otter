@@ -8,23 +8,23 @@ import cats.syntax.all.*
 
 import java.util.regex.Pattern
 
-final case class Violation(constraint: Constraint, actual: Data.Any, hint: Option[String]) derives Eq:
-  override def toString: String = ??? // Printers(this)
+final case class Violation(constraint: Constraint, actual: Data, hint: Option[String]) derives Eq:
+  override def toString: String = Printers(this)
 
 object Violation:
-  def equal(reference: Data.Any, actual: Data.Any): Violation =
+  def equal(reference: Data, actual: Data): Violation =
     Violation(Constraint.Equal(reference), actual, hint = none)
 
-  def tpe(name: String, actual: Data.Any): Violation = Violation(Constraint.Type(name), actual, hint = none)
-  def tpe(name: String, actual: Data.Any, hint: String): Violation =
+  def tpe(name: String, actual: Data): Violation = Violation(Constraint.Type(name), actual, hint = none)
+  def tpe(name: String, actual: Data, hint: String): Violation =
     Violation(Constraint.Type(name), actual, hint = hint.some)
 
-  def oneOf(values: List[Data.Primitive], actual: Data.Any): Violation =
+  def oneOf(values: List[Data.Primitive], actual: Data): Violation =
     Violation(Constraint.OneOf(values), actual, hint = none)
 
-  def matches(pattern: Pattern, actual: Data.Any): Violation =
+  def matches(pattern: Pattern, actual: Data): Violation =
     Violation(Constraint.Primitive.Matches(pattern), actual, hint = none)
-  def matches(expected: String, actual: Data.Any): Violation =
+  def matches(expected: String, actual: Data): Violation =
     matches(pattern = Pattern.compile(Pattern.quote(expected)), actual)
 
   def parse(value: String): Either[Parser.Error, Violation] = ??? // Parsers.violation.parseAll(value)

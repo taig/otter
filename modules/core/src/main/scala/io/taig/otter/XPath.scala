@@ -22,4 +22,4 @@ object XPath:
 
   given (using order: Order[Chain[Step]]): Order[XPath] = order
 
-  given Show[XPath] = ??? // Printers(_)
+  given Show[XPath] = Printers(_)

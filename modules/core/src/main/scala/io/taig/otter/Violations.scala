@@ -42,7 +42,7 @@ enum Violations derives Eq:
 
   final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation]]] = toNem.toNel.map(Indexed.apply)
 
-  final override def toString: String = ??? // Printers(this).mkString_("\n")
+  final override def toString: String = Printers(this).mkString_("\n")
 
 object Violations:
   def root(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)

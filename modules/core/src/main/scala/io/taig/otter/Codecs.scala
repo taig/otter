@@ -26,9 +26,9 @@ package io.taig.otter
 //   //     branch("array", collection.vector(any).imap(Data.Array.apply)(_.values))
 
 //   //   // This code will trigger a warning, which might be wrong
-//   //   // val any: Union.Of[Data.Any, Data.Any] = value | branch("null", nil.as(Data.Null))
+//   //   // val any: Union.Of[Data, Data] = value | branch("null", nil.as(Data.Null))
 
-//   //   val any: Union.Of[Data.Any, Data.Value | Data.Null] = (value :+ branch("null", nil.as(Data.Null))).imap {
+//   //   val any: Union.Of[Data, Data.Value | Data.Null] = (value :+ branch("null", nil.as(Data.Null))).imap {
 //   //     case Left(value)  => value
 //   //     case Right(value) => value
 //   //   } {
@@ -36,7 +36,7 @@ package io.taig.otter
 //   //     case a: Data.Null      => Right(a)
 //   //   }
 
-//   // val void: Optional.Of[Data.Any, Unit] = Base.Optional.Void(metadata = Metadata.Empty)
+//   // val void: Optional.Of[Data, Unit] = Base.Optional.Void(metadata = Metadata.Empty)
 
 //   // val nil: Optional.Of[Data.Null, Unit] = Base.Optional.Null(metadata = Metadata.Empty)
 
