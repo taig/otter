@@ -20,13 +20,7 @@ object Optional:
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, A] = copy(codec = codec.mapK(fK))
 
-  // final private[otter] case class Null(metadata: Metadata) extends Optional[Nothing, Unit]:
-  //   override def modifyMetadata(f: Metadata => Metadata): Optional[Nothing, Unit] = copy(metadata = f(metadata))
-
   final private[otter] case class Nullable[S[_], A](codec: Reference[S, A], metadata: Metadata)
       extends Optional[S, Option[A]]:
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, Option[A]] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, Option[A]] = copy(codec = codec.mapK(fK))
-
-  // final private[otter] case class Void[F , A](metadata: Metadata) extends Optional[F, Unit]:
-  //   override def modifyMetadata(f: Metadata => Metadata): Optional[F, Unit] = copy(metadata = f(metadata))

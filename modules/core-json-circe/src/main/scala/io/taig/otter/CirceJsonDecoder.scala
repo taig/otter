@@ -7,7 +7,6 @@ import io.circe.Json as CirceJson
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.NonEmptyChain
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match

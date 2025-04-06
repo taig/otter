@@ -13,8 +13,7 @@ sealed abstract class Constant[+S[_], A] extends Codec[S, A]:
   final override def imap[B](f: A => B)(g: B => A): Constant[S, B] = Constant.Modify(self = this, f, g)
 
 object Constant:
-  final private[otter] case class Modify[+S[_], A, B](self: Constant[S, A], f: A => B, g: B => A)
-      extends Constant[S, B]:
+  final private[otter] case class Modify[S[_], A, B](self: Constant[S, A], f: A => B, g: B => A) extends Constant[S, B]:
     export self.{codec, metadata}
     override def matches(b: B): Boolean = self.matches(g(b))
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, B] = copy(self = self.modifyMetadata(f))

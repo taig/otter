@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.Chain
 import cats.~>
 
+// TODO support for optional
 sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
   def codecs: Chain[Reference[S, ?]]
   override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]

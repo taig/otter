@@ -66,7 +66,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Record.Empty(_) => Nil
     case Record.Field(key, value, _) =>
       (
-        ReferenceConstantPrinter(printer = JsonKeyPrinter)(codec = key),
+        ReferenceConstantPrinter(printer = JsonKeyPrinter)(reference = key),
         apply(codec = value.value, a)
       ) :: Nil
     case Record.Modify(self, _, g)  => apply(codec = self, g(a))
