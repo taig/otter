@@ -1,43 +1,43 @@
-package io.taig.otter
+// package io.taig.otter
 
-import cats.Invariant as CatsInvariant
+// import cats.Invariant as CatsInvariant
 
-trait Invariant[Self[_]]:
-  self =>
+// trait Invariant[Self[_]]:
+//   self =>
 
-  extension [A](self: Self[A])
-    def imap[B](f: A => B)(g: B => A): Self[B]
-    final def to[B](using convert: Convert[A, B]): Self[B] = imap(convert.to)(convert.from)
+//   extension [A](self: Self[A])
+//     def imap[B](f: A => B)(g: B => A): Self[B]
+//     final def to[B](using convert: Convert[A, B]): Self[B] = imap(convert.to)(convert.from)
 
-  final def invariant: CatsInvariant[Self] = new CatsInvariant[Self]:
-    override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
+//   final def invariant: CatsInvariant[Self] = new CatsInvariant[Self]:
+//     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
 
-object Invariant:
-  trait Coproduct[Self[_], Result[_]] extends Invariant[Self]:
-    given result: Invariant[Result]
+// object Invariant:
+//   trait Coproduct[Self[_], Result[_]] extends Invariant[Self]:
+//     given coproduct: Invariant[Result]
 
-    extension [A](self: Self[A])
-      def orElse[B](codec: Self[B]): Result[Either[A, B]]
-      final def :+[B](codec: Self[B]): Result[Either[A, B]] = orElse(codec)
-      final def +:[B](codec: Self[B]): Result[Either[B, A]] = codec.orElse(self)
+//     extension [A](self: Self[A])
+//       def orElse[B](codec: Self[B]): Result[Either[A, B]]
+//       final def :+[B](codec: Self[B]): Result[Either[A, B]] = orElse(codec)
+//       final def +:[B](codec: Self[B]): Result[Either[B, A]] = codec.orElse(self)
 
-    extension [A <: Matchable](self: Self[A])
-      final inline def |[B <: Matchable](codec: Self[B]): Result[A | B] = self
-        .orElse(codec)
-        .imap {
-          case Left(a)  => a
-          case Right(b) => b
-        } {
-          case a: A => Left(a)
-          case b: B => Right(b)
-        }
+//     extension [A <: Matchable](self: Self[A])
+//       final inline def |[B <: Matchable](codec: Self[B]): Result[A | B] = self
+//         .orElse(codec)
+//         .imap {
+//           case Left(a)  => a
+//           case Right(b) => b
+//         } {
+//           case a: A => Left(a)
+//           case b: B => Right(b)
+//         }
 
-  trait Product[Self[_], Result[_]] extends Invariant[Self]:
-    given product: Invariant[Result]
+//   trait Product[Self[_], Result[_]] extends Invariant[Self]:
+//     given product: Invariant[Result]
 
-    extension [A](self: Self[A])
-      def zip[B](codec: Self[B]): Result[(A, B)]
-      final def :*[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        zip(codec).imap(merge.apply)(merge.unapply)
-      final def *:[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        self.zip(codec).imap(merge.apply)(merge.unapply)
+//     extension [A](self: Self[A])
+//       def zip[B](codec: Self[B]): Result[(A, B)]
+//       final def :*[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
+//         zip(codec).imap(merge.apply)(merge.unapply)
+//       final def *:[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
+//         self.zip(codec).imap(merge.apply)(merge.unapply)

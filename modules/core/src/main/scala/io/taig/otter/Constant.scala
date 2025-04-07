@@ -27,21 +27,5 @@ object Constant:
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A] = copy(codec = codec.mapK(fK))
 
-  trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self]:
-    def constant[A: Eq](codec: => Value[A], value: A): Self[A]
-
-  object Sytanx:
-    trait Default[Self[_], Value[_]] extends Syntax[Self, Value]:
-      def fromConstant[A](constant: Constant[Value, A]): Self[A]
-      def toConstant[A](self: Self[A]): Constant[Value, A]
-
-      final override def constant[A: Eq](codec: => Value[A], value: A): Self[A] = fromConstant(
-        Constant.Root(codec = Reference.Constant(self = Reference.later(codec), value), metadata = Metadata.Empty)
-      )
-
-      extension [A](self: Self[A])
-        final override def imap[B](f: A => B)(g: B => A): Self[B] = fromConstant(toConstant(self).imap(f)(g))
-        final override def metadata: Metadata = toConstant(self).metadata
-        final override def modifyMetadata(f: Metadata => Metadata): Self[A] = fromConstant(
-          toConstant(self).modifyMetadata(f)
-        )
+  given [S[_]]: Invariant[Constant[S, *]] with
+    override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)

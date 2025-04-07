@@ -3,6 +3,13 @@ package io.taig.otter
 import cats.data.Chain
 import cats.~>
 import cats.syntax.all.*
+import io.taig.otter.Union.Untagged.OrElse
+import io.taig.otter.Union.Untagged.Branch
+import io.taig.otter.Union.Untagged.Modify
+import io.taig.otter.Union.Tagged.Keyed
+import io.taig.otter.Union.Tagged.Merged
+import io.taig.otter.Union.Tagged.Explicit
+import cats.Invariant
 
 sealed abstract class Union[+S[_], A] extends Codec[S, A]:
   def branches: Chain[(String, Reference[S, ?])]
@@ -57,17 +64,9 @@ object Union:
         copy(self = self.modifyMetadata(f))
       override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union.Untagged[T, B] = copy(self = self.mapK(fK))
 
-    trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self], Invariant.Coproduct[Self, Self]:
-      def branch[A](name: String, codec: => Value[A]): Self[A]
-
-    object Syntax:
-      trait Default[Self[_], Value[_]] extends Union.Untagged.Syntax[Self, Value]:
-        def fromUnionUntagged[A](union: Union.Untagged[Value, A]): Self[A]
-        def toUnionUntagged[A](self: Self[A]): Union.Untagged[Value, A]
-        
-        final override def branch[A](name: String, codec: => Value[A]): Self[A] = fromUnionUntagged(
-            Union.Untagged.Branch(name, codec = Reference.later(codec), metadata = Metadata.Empty)
-          )
+    given [S[_]]: Invariant[Union.Untagged[S, *]] with
+      override def imap[A, B](fa: Union.Untagged[S, A])(f: A => B)(g: B => A): Union.Untagged[S, B] =
+        fa.imap(f)(g)
 
   sealed abstract class Tagged[+S[_], A] extends Union[S, A]:
     def discriminator: Discriminator
@@ -123,48 +122,9 @@ object Union:
       override def explicit(discriminator: Discriminator.Explicit): Union.Tagged[S, A] =
         copy(discriminator = discriminator)
 
-    trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self], Invariant.Coproduct[Self, Self]:
-      def branch[A](name: String, codec: => Value[A]): Self[A]
+    given [S[_]]: Invariant[Union.Tagged[S, *]] with
+      override def imap[A, B](fa: Union.Tagged[S, A])(f: A => B)(g: B => A): Union.Tagged[S, B] =
+        fa.imap(f)(g)
 
-      extension [A](self: Self[A])
-        def discriminator: Discriminator
-        def keyed: Self[A]
-        def merged(discriminator: Discriminator.Merged): Self[A]
-        final def merged: Self[A] = merged(discriminator = Discriminator.Merged.Default)
-        def explicit(discriminator: Discriminator.Explicit): Self[A]
-        final def explicit: Self[A] = explicit(discriminator = Discriminator.Explicit.Default)
-
-    object Syntax:
-      trait Default[Self[_], Value[_]] extends Union.Tagged.Syntax[Self, Value]:
-        def fromUnionTagged[A](union: Union.Tagged[Value, A]): Self[A]
-        def toUnionTagged[A](self: Self[A]): Union.Tagged[Value, A]
-
-        override final def branch[A](name: String, codec: => Value[A]): Self[A] = fromUnionTagged(
-            Union.Untagged.Branch(name, codec = Reference.later(codec), metadata = Metadata.Empty)
-              .explicit(discriminator = Discriminator.Explicit.Default)
-          )
-
-        extension [A](self: Self[A])
-          final override def discriminator: Discriminator = toUnionTagged(self).discriminator
-          final override def keyed: Self[A] = fromUnionTagged(toUnionTagged(self).keyed)
-          final override def merged(discriminator: Discriminator.Merged): Self[A] =
-            fromUnionTagged(toUnionTagged(self).merged(discriminator))
-          final override def explicit(discriminator: Discriminator.Explicit): Self[A] =
-            fromUnionTagged(toUnionTagged(self).explicit(discriminator))
-          final override def metadata: Metadata = toUnionTagged(self).metadata
-          final override def modifyMetadata(f: Metadata => Metadata): Self[A] =
-            fromUnionTagged(toUnionTagged(self).modifyMetadata(f))
-          final override def imap[B](f: A => B)(g: B => A): Self[B] = 
-            fromUnionTagged(toUnionTagged(self).imap(f)(g))
-
-  trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self], Invariant.Coproduct[Self, Self]:
-    def branch[A](name: String, codec: => Value[A]): Self[A]
-
-    extension [A](self: Self[A])
-      def discriminator: Option[Discriminator]
-      def untagged: Self[A]
-      def keyed: Self[A]
-      def merged(discriminator: Discriminator.Merged): Self[A]
-      final def merged: Self[A] = merged(discriminator = Discriminator.Merged.Default)
-      def explicit(discriminator: Discriminator.Explicit): Self[A]
-      final def explicit: Self[A] = explicit(discriminator = Discriminator.Explicit.Default)
+  given [S[_]]: Invariant[Union[S, *]] with
+    override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)

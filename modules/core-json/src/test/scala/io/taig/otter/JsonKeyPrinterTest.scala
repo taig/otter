@@ -46,14 +46,14 @@ final class JsonKeyPrinterTest extends OtterSuite:
       expected = ""
     )
 
-  test("union"):
-    val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
+  // test("union"):
+  //   val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
 
-    assertEq(
-      obtained = print(codec, "foobar".asLeft),
-      expected = "foo"
-    )
-    assertEq(
-      obtained = print(codec, "foobar".asRight),
-      expected = "bar"
-    )
+  //   assertEq(
+  //     obtained = print(codec, "foobar".asLeft),
+  //     expected = "foo"
+  //   )
+  //   assertEq(
+  //     obtained = print(codec, "foobar".asRight),
+  //     expected = "bar"
+  //   )

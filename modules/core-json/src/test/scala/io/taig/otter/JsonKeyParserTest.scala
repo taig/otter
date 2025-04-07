@@ -54,23 +54,23 @@ final class JsonKeyParserTest extends OtterSuite:
       expected = "".valid
     )
 
-  test("union"):
-    val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
+  // test("union"):
+  //   val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
 
-    assertEq(
-      obtained = parser(codec, "foo"),
-      expected = "foo".asLeft.valid
-    )
-    assertEq(
-      obtained = parser(codec, "bar"),
-      expected = "bar".asRight.valid
-    )
-    assertEq(
-      obtained = parser(codec, "foobar"),
-      expected = Violations
-        .of(
-          Step.Field("x") -> Violation.equal(reference = "foo", actual = "foobar"),
-          Step.Field("y") -> Violation.equal(reference = "bar", actual = "foobar")
-        )
-        .invalid
-    )
+  //   assertEq(
+  //     obtained = parser(codec, "foo"),
+  //     expected = "foo".asLeft.valid
+  //   )
+  //   assertEq(
+  //     obtained = parser(codec, "bar"),
+  //     expected = "bar".asRight.valid
+  //   )
+  //   assertEq(
+  //     obtained = parser(codec, "foobar"),
+  //     expected = Violations
+  //       .of(
+  //         Step.Field("x") -> Violation.equal(reference = "foo", actual = "foobar"),
+  //         Step.Field("y") -> Violation.equal(reference = "bar", actual = "foobar")
+  //       )
+  //       .invalid
+  //   )

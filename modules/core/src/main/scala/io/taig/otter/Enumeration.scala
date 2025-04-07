@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import cats.~>
+import cats.Invariant
 
 sealed abstract class Enumeration[+S[_], A] extends Codec[S, A]:
   def codec: Reference[S, ?]
@@ -28,21 +29,6 @@ object Enumeration:
     override def values: NonEmptyList[B] = mapping.values
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(codec = codec.mapK(fK))
 
-  trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self]:
-    def enumeration[A, B](codec: => Value[A], mapping: Mapping[B, A]): Self[B]
-
-    extension [A](self: Self[A]) def values: NonEmptyList[A]
-
-  object Syntax:
-    trait Default[Self[_], Value[_]] extends Enumeration.Syntax[Self, Value]:
-      def fromEnumeration[A](codec: Enumeration[Value, A]): Self[A]
-      def toEnumeration[A](self: Self[A]): Enumeration[Value, A]
-
-      final override def enumeration[A, B](codec: => Value[A], mapping: Mapping[B, A]): Self[B] =
-        fromEnumeration(Enumeration.Root(codec = Reference.later(codec), mapping, metadata = Metadata.Empty))
-
-      extension [A](self: Self[A])
-        final override def imap[B](f: A => B)(g: B => A): Self[B] = fromEnumeration(toEnumeration(self).imap(f)(g))
-        final override def metadata: Metadata = toEnumeration(self).metadata
-        final override def modifyMetadata(f: Metadata => Metadata): Self[A] =
-          fromEnumeration(toEnumeration(self).modifyMetadata(f))
+  given [S[_]]: Invariant[Enumeration[S, *]] with
+    override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] =
+      fa.imap(f)(g)
