@@ -52,3 +52,32 @@ object Record:
     override def modifyMetadata(f: Metadata => Metadata): Record[S, T, (A, B)] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Record[S, U, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
+
+  trait Syntax[Self[_], Key[_], Value[_]] extends Codec.Syntax[Self], Invariant.Product[Self, Self]:
+    def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+    def empty: Self[Unit]
+
+    extension [A](self: Self[A])
+      def isOptional: Boolean
+      def optional: Self[Option[A]]
+      def fields: Chain[(Reference.Constant[Key, ?], Reference[Value, ?])]
+
+  object Syntax:
+    trait Default[Self[_], Key[_], Value[_]] extends Syntax[Self, Key, Value]:
+      def fromRecord[A](record: Record[Key, Value, A]): Self[A]
+      def toRecord[A](self: Self[A]): Record[Key, Value, A]
+
+      final override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = fromRecord(
+        Record.Field(
+          key = Reference.Constant(self = Reference.later(key), value = name),
+          value = Reference.later(value),
+          metadata = Metadata.Empty
+        )
+      )
+      final override val empty: Self[Unit] = fromRecord(Record.Empty(metadata = Metadata.Empty))
+
+      extension [A](self: Self[A])
+        final override def isOptional: Boolean = toRecord(self).isOptional
+        final override def optional: Self[Option[A]] = fromRecord(toRecord(self).optional)
+        final override def fields: Chain[(Reference.Constant[Key, ?], Reference[Value, ?])] =
+          toRecord(self).fields

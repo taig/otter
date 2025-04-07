@@ -37,3 +37,23 @@ object Tuple:
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, (A, B)] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
+
+  trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self], Invariant.Product[Self, Self]:
+    def empty: Self[Unit]
+    def one[A](codec: => Value[A]): Self[A]
+
+  object Syntax:
+    trait Default[Self[_], Value[_]] extends Syntax[Self, Value]:
+      def fromTuple[A](tuple: Tuple[Value, A]): Self[A]
+      def toTuple[A](self: Self[A]): Tuple[Value, A]
+
+      final override val empty: Self[Unit] = fromTuple(Tuple.Empty(Metadata.Empty))
+      final override def one[A](codec: => Value[A]): Self[A] =
+        fromTuple(Tuple.Root(codec = Reference.later(codec), Metadata.Empty))
+
+      extension [A](self: Self[A])
+        final def zip[B](codec: Self[B]): Self[(A, B)] = fromTuple(toTuple(self).zip(toTuple(codec)))
+        final override def imap[B](f: A => B)(g: B => A): Self[B] = fromTuple(toTuple(self).imap(f)(g))
+        final def modifyMetadata(f: Metadata => Metadata): Self[A] =
+          fromTuple(toTuple(self).modifyMetadata(f))
+        final override def metadata: Metadata = toTuple(self).metadata

@@ -1,62 +1,79 @@
-// package io.taig.otter.http
-// import cats.Show
-// import cats.data.Validated
-// import cats.syntax.all.*
-// import io.taig.otter.Codec
-// import io.taig.otter.Constraint
-// import io.taig.otter.Data
-// import io.taig.otter.Metadata
-// import io.taig.otter.Violation
-// import io.taig.otter.Violations
-// import io.taig.otter.XPath
+package io.taig.otter.http
 
-// import java.util.regex.Pattern
+import io.taig.otter as Self
+import Self.Reference
+import Self.CodecInvariant
+import Self.PrimitiveInvariant
+import Self.Metadata
 
-// sealed abstract class Segment[A] extends Product, Serializable:
-//   def name: String
+sealed abstract class Segment[A] extends Product, Serializable:
+  def name: String
 
-//   def matches(segment: String): Boolean
+  final def toPath: Path[A] = Path.Root(segment = this)
 
-//   final def toPath: Path[A] = Path(this)
+object Segment:
+  final case class Static(name: String) extends Segment[Unit]
 
-//   def encode(a: A): String
+  sealed abstract class Parameter[A] extends Segment[A]
 
-//   def decode(value: String): Codec.Result[A]
+  object Parameter:
+    final private[otter] case class Array[A](
+        name: String,
+        codec: Reference[Segment.Codec.Array, A],
+        explode: Boolean,
+        style: Segment.Style
+    ) extends Segment.Parameter[A]
 
-//   override def toString: String
+    final private[otter] case class Modify[A, B](self: Segment.Parameter[A], f: A => B, g: B => A)
+        extends Segment.Parameter[B]:
+      export self.name
+    final private[otter] case class Object[A](
+        name: String,
+        codec: Reference[Segment.Codec.Object, A],
+        explode: Boolean,
+        style: Segment.Style
+    ) extends Segment.Parameter[A]
+    final private[otter] case class Value[A](name: String, codec: Reference[Segment.Codec, A], style: Segment.Style)
+        extends Segment.Parameter[A]
 
-// object Segment:
-//   final case class Static(name: String) extends Segment[Unit]:
-//     override def matches(segment: String): Boolean = segment === name
-//     override def decode(value: String): Codec.Result[Unit] = Validated.cond(
-//       name === value,
-//       (),
-//       Violations.namespaceNec(
-//         XPath.Root / name,
-//         Violation(Constraint.Primitive.Matches(Pattern.compile(Pattern.quote(name))), actual = String(value))
-//       )
-//     )
+  enum Style:
+    case Label
+    case Matrix
+    case Simple
 
-//     override def encode(a: Unit): String = name
+  sealed abstract class Codec[A] extends Product with Serializable
 
-//     override def toString: String = name
+  object Codec:
+    final case class Constant[A](self: Self.Constant[Segment.Codec.Primitive, A]) extends Codec[A]
 
-//   sealed abstract class Parameter[A] extends Segment[A]:
-//     override def matches(segment: String): Boolean = true
+    final case class Enumeration[A](self: Self.Enumeration[Segment.Codec.Primitive, A]) extends Codec[A]
 
-//     def codec: Codec[Data.Primitive | Data.Array[Data.Primitive] | Data.Object[Data.Primitive], ?]
+    final case class Primitive[A](self: Self.Primitive[A]) extends Codec[A]
 
-//     def metadata: Metadata
+    object Primitive:
+      given invariant: PrimitiveInvariant.String[Segment.Codec.Primitive] =
+        new PrimitiveInvariant.String.Lift[Segment.Codec.Primitive]:
+          override def lift[A](codec: Self.Primitive.String[A]): Segment.Codec.Primitive[A] = Primitive(self = codec)
+          extension [A](self: Primitive[A])
+            override def imap[B](f: A => B)(g: B => A): Segment.Codec.Primitive[B] =
+              Primitive(self = self.self.imap(f)(g))
+            override def metadata: Metadata = self.self.metadata
+            override def modifyMetadata(f: Metadata => Metadata): Segment.Codec.Primitive[A] =
+              Primitive(self = self.self.modifyMetadata(f))
 
-//     def imap[B](f: A => B)(g: B => A): Segment[B]
+    final case class Union[A](self: Self.Union.Untagged[Segment.Codec, A]) extends Codec[A]
 
-//     final override def toString: String = s"{$name}"
+    sealed abstract class Array[A] extends Product with Serializable
 
-//   object Parameter:
-//     final case class Primitive[A](name: String, codec: Codec[Data.Primitive, A], metadata: Metadata)
-//         extends Segment.Parameter[A]:
-//       override def imap[B](f: A => B)(g: B => A): Segment.Parameter[B] = copy(codec = codec.imap(f)(g))
-//       override def encode(a: A): String = codec.print(a)
-//       override def decode(value: String): Codec.Result[A] = codec.parse(value).leftMap(name /: _)
+    object Array:
+      final case class Collection[A](self: Self.Collection[Segment.Codec, A]) extends Segment.Codec.Array[A]
 
-//   given Show[Segment[?]] = Show.fromToString
+      final case class Tuple[A](self: Self.Tuple[Segment.Codec, A]) extends Segment.Codec.Array[A]
+
+    sealed abstract class Object[A] extends Product with Serializable
+
+    object Object:
+      final case class Dictionary[A](self: Self.Dictionary[Segment.Codec, Segment.Codec, A])
+          extends Segment.Codec.Object[A]
+
+      final case class Record[A](self: Self.Record[Segment.Codec, Segment.Codec, A]) extends Segment.Codec.Object[A]

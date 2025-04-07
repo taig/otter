@@ -24,3 +24,24 @@ object Optional:
       extends Optional[S, Option[A]]:
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, Option[A]] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, Option[A]] = copy(codec = codec.mapK(fK))
+
+  trait Syntax[Self[_], Value[_]] extends Codec.Syntax[Self]:
+    def nullable[A](codec: Value[A]): Self[Option[A]]
+    def nullable[A](codec: Value[A], default: A): Self[A]
+
+  object Syntax:
+    trait Default[Self[_], Value[_]] extends Syntax[Self, Value]:
+      def fromOptional[A](optional: Optional[Value, A]): Self[A]
+      def toOptional[A](self: Self[A]): Optional[Value, A]
+
+      final override def nullable[A](codec: Value[A]): Self[Option[A]] =
+        fromOptional(Optional.Nullable(codec = Reference.later(codec), metadata = Metadata.Empty))
+
+      final override def nullable[A](codec: Value[A], default: A): Self[A] =
+        fromOptional(Optional.Default(codec = Reference.later(codec), default, metadata = Metadata.Empty))
+
+      extension [A](self: Self[A])
+        final override def imap[B](f: A => B)(g: B => A): Self[B] = fromOptional(toOptional(self).imap(f)(g))
+        final override def metadata: Metadata = toOptional(self).metadata
+        final override def modifyMetadata(f: Metadata => Metadata): Self[A] =
+          fromOptional(toOptional(self).modifyMetadata(f))

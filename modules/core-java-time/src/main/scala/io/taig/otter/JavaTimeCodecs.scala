@@ -7,7 +7,7 @@ import java.time.Instant
 import java.time.format.DateTimeParseException
 
 trait JavaTimeCodecs[Self[_]]:
-  given primitive: PrimitiveInvariant.String[Self]
+  given primitive: Primitive.String.Syntax[Self]
 
   val duration: Self[Duration] = primitive.parser(name = "iso8601.duration")(value =>
     Either.catchOnly[DateTimeParseException](Duration.parse(value)).leftMap(_.getMessage)
