@@ -39,6 +39,3 @@ object Tuple:
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, (A, B)] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
-
-  given [S[_]]: Invariant[Tuple[S, *]] with
-    override def imap[A, B](fa: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = fa.imap(f)(g)

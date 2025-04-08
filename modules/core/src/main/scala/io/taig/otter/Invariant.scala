@@ -13,7 +13,9 @@ trait Invariant[Self[_]]:
     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
 
 object Invariant:
-  trait Coproduct[Self[_], Result[_]: Invariant] extends Invariant[Self]:
+  trait Coproduct[Self[_], Result[_]] extends Invariant[Self]:
+    given result: Invariant[Result]
+
     extension [A](self: Self[A])
       def orElse[B](codec: Self[B]): Result[Either[A, B]]
       final def :+[B](codec: Self[B]): Result[Either[A, B]] = orElse(codec)
@@ -30,12 +32,14 @@ object Invariant:
           case b: B => Right(b)
         }
 
-  trait Product[Self[_], Result[_]] extends Invariant[Self]:
+  trait Product[Self[_], Element[_], Result[_]] extends Invariant[Self]:
     given result: Invariant[Result]
+
+    def fromElement[A](codec: Element[A]): Self[A]
 
     extension [A](self: Self[A])
       def zip[B](codec: Self[B]): Result[(A, B)]
-      final def :*[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        zip(codec).imap(merge.apply)(merge.unapply)
-      final def *:[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        self.zip(codec).imap(merge.apply)(merge.unapply)
+      final def :*[B](codec: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =
+        zip(fromElement(codec)).imap(merge.apply)(merge.unapply)
+      final def *:[B](codec: Element[B])(using merge: Merge[B, A]): Result[merge.Out] =
+        fromElement(codec).zip(self).imap(merge.apply)(merge.unapply)
