@@ -18,6 +18,8 @@ trait Codec[Self[_]] extends Invariant[Self]:
   extension [A](self: Self[A])
     def metadata: Metadata
     def modifyMetadata(f: Metadata => Metadata): Self[A]
+    final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
+    final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
 
 object Codec:
   trait Nullable[Self[_], Optional[_]](using optional: Codec.Optional[Optional, Self]) extends Codec[Self]:
@@ -383,6 +385,8 @@ object Codec:
 
     def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
 
+    extension [A](self: Self[A]) def optional: Self[Option[A]]
+
   object Record:
     def apply[Self[_], Key[_], Value[_]](
         lift: [A] => (self: Self.Record[Key, Value, A]) => Self[A],
@@ -401,6 +405,7 @@ object Codec:
       extension [A](self: Self[A])
         override def metadata: Metadata = extract(self).metadata
         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+        override def optional: Self[Option[A]] = lift(extract(self).optional)
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
 

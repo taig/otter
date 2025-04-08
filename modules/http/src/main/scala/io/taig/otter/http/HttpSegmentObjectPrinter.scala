@@ -10,23 +10,23 @@ import io.taig.otter.Record.Zip
 import cats.data.Chain
 
 // TODO escape
-object SegmentCodecObjectPrinter:
-  def apply[A](codec: Segment.Codec.Object[A], a: A): Chain[(String, String)] = codec match
-    case Segment.Codec.Object.Dictionary(self) => Chain.fromSeq(apply(codec = self, a))
-    case Segment.Codec.Object.Record(self)     => apply(codec = self, a)
+object HttpSegmentObjectPrinter:
+  def apply[A](codec: Http.Segment.Object[A], a: A): Chain[(String, String)] = codec match
+    case Http.Segment.Object.Dictionary(self) => Chain.fromSeq(apply(codec = self, a))
+    case Http.Segment.Object.Record(self)     => apply(codec = self, a)
 
   @tailrec
-  def apply[A](codec: Dictionary[Segment.Codec, Segment.Codec, A], a: A): List[(String, String)] = codec match
+  def apply[A](codec: Dictionary[Http.Segment.Value, Http.Segment.Value, A], a: A): List[(String, String)] = codec match
     case Dictionary.Root(key, codec, _, _, _) =>
       a.map: (name, value) =>
-        (SegmentCodecPrinter(codec = key.value, name), SegmentCodecPrinter(codec = codec.value, value))
+        (HttpSegmentValuePrinter(codec = key.value, name), HttpSegmentValuePrinter(codec = codec.value, value))
     case Dictionary.Modify(self, f, g) => apply(codec = self, g(a))
 
-  def apply[A](codec: Record[Segment.Codec, Segment.Codec, A], a: A): Chain[(String, String)] = codec match
+  def apply[A](codec: Record[Http.Segment.Value, Http.Segment.Value, A], a: A): Chain[(String, String)] = codec match
     case Record.Empty(_) => Chain.empty
     case Record.Field(key, codec, _) =>
-      val name = SegmentCodecPrinter(codec = key.self.value, key.value)
-      val value = SegmentCodecPrinter(codec = codec.value, a)
+      val name = HttpSegmentValuePrinter(codec = key.self.value, key.value)
+      val value = HttpSegmentValuePrinter(codec = codec.value, a)
       Chain.one((name, value))
     case Record.Modify(self, f, g)         => apply(codec = self, g(a))
     case Record.Optional(self)             => a.fold(Chain.empty)(apply(codec = self, _))

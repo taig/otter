@@ -18,17 +18,17 @@ object RecordDsl:
       extends RecordDsl.Primitive.Boolean[Self, Key, Value],
         RecordDsl.Primitive.Number[Self, Key, Value],
         RecordDsl.Primitive.String[Self, Key, Value]:
-    override def key: PrimitiveDsl[Key]
+    override protected def key: PrimitiveDsl[Key]
 
   object Primitive:
     trait Boolean[+Self[_], Key[_], Value[_]] extends RecordDsl[Self, Key, Value]:
-      def key: PrimitiveDsl.Boolean[Key]
+      protected def key: PrimitiveDsl.Boolean[Key]
 
       final def field[A](name: SBoolean, codec: => Value[A]): Self[A] =
         field(name, key = key.boolean, value = codec)
 
     trait Number[+Self[_], Key[_], Value[_]] extends RecordDsl[Self, Key, Value]:
-      def key: PrimitiveDsl.Number[Key]
+      protected def key: PrimitiveDsl.Number[Key]
 
       final def field[A](name: BigDecimal, codec: => Value[A]): Self[A] =
         field(name, key = key.bigDecimal, value = codec)
@@ -43,7 +43,7 @@ object RecordDsl:
       final def field[A](name: SLong, codec: => Value[A]): Self[A] = field(name, key = key.long, value = codec)
 
     trait String[+Self[_], Key[_], Value[_]] extends RecordDsl[Self, Key, Value]:
-      def key: PrimitiveDsl.String[Key]
+      protected def key: PrimitiveDsl.String[Key]
 
       final def field[A](name: JString, codec: => Value[A]): Self[A] =
         field(name, key = key.string, value = codec)
