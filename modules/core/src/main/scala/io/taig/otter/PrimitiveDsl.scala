@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import cats.Invariant
 import cats.syntax.all.*
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -13,34 +12,18 @@ import scala.Int as SInt
 import scala.Long as SLong
 import java.util.UUID
 
-trait PrimitiveDsl[+Self[_]] extends PrimitiveDsl.Boolean[Self], PrimitiveDsl.Number[Self], PrimitiveDsl.String[Self]:
-  protected def fromPrimitive[A](self: Primitive[A]): Self[A]
-
-  final override protected def fromPrimitiveBoolean[A](self: Primitive.Boolean[A]): Self[A] = fromPrimitive(self)
-  final override protected def fromPrimitiveNumber[A](self: Primitive.Number[A]): Self[A] = fromPrimitive(self)
-  final override protected def fromPrimitiveString[A](self: Primitive.String[A]): Self[A] = fromPrimitive(self)
+trait PrimitiveDsl[+Self[_]] extends PrimitiveDsl.Boolean[Self], PrimitiveDsl.Number[Self], PrimitiveDsl.String[Self]
 
 object PrimitiveDsl:
-  trait Boolean[+Self[_]]:
-    protected def fromPrimitiveBoolean[A](self: Primitive.Boolean[A]): Self[A]
+  trait Boolean[+Self[_]](using codec: Codec.Primitive.Boolean[Self]):
+    final val boolean: Self[SBoolean] = codec.boolean
 
-    final val boolean: Self[SBoolean] = fromPrimitiveBoolean(Primitive.Boolean.Root(metadata = Metadata.Empty))
-
-  trait Number[+Self[_]: Invariant]:
-    protected def fromPrimitiveNumber[A](self: Primitive.Number[A]): Self[A]
-
+  trait Number[+Self[_]](using codec: Codec.Primitive.Number[Self]):
     final def jBigDecimal(
         minimum: Option[Comparison[JBigDecimal]] = none,
         maximum: Option[Comparison[JBigDecimal]] = none,
         multiple: Option[JBigDecimal] = none
-    ): Self[JBigDecimal] = fromPrimitiveNumber(
-      Primitive.Number.BigDecimal(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[JBigDecimal] = codec.jBigDecimal(minimum, maximum, multiple)
 
     final val jBigDecimal: Self[JBigDecimal] = jBigDecimal()
 
@@ -60,14 +43,7 @@ object PrimitiveDsl:
         minimum: Option[Comparison[JBigInteger]] = none,
         maximum: Option[Comparison[JBigInteger]] = none,
         multiple: Option[JBigInteger] = none
-    ): Self[JBigInteger] = fromPrimitiveNumber(
-      Primitive.Number.BigInteger(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[JBigInteger] = codec.jBigInteger(minimum, maximum, multiple)
 
     final val jBigInteger: Self[JBigInteger] = jBigInteger()
 
@@ -87,14 +63,7 @@ object PrimitiveDsl:
         minimum: Option[Comparison[SDouble]] = none,
         maximum: Option[Comparison[SDouble]] = none,
         multiple: Option[SDouble] = none
-    ): Self[SDouble] = fromPrimitiveNumber(
-      Primitive.Number.Double(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[SDouble] = codec.double(minimum, maximum, multiple)
 
     final val double: Self[SDouble] = double()
 
@@ -102,14 +71,7 @@ object PrimitiveDsl:
         minimum: Option[Comparison[SFloat]] = none,
         maximum: Option[Comparison[SFloat]] = none,
         multiple: Option[SFloat] = none
-    ): Self[SFloat] = fromPrimitiveNumber(
-      Primitive.Number.Float(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[SFloat] = codec.float(minimum, maximum, multiple)
 
     final val float: Self[SFloat] = float()
 
@@ -117,14 +79,7 @@ object PrimitiveDsl:
         minimum: Option[Comparison[SInt]] = none,
         maximum: Option[Comparison[SInt]] = none,
         multiple: Option[SInt] = none
-    ): Self[SInt] = fromPrimitiveNumber(
-      Primitive.Number.Int(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[SInt] = codec.int(minimum, maximum, multiple)
 
     final val int: Self[SInt] = int()
 
@@ -132,37 +87,21 @@ object PrimitiveDsl:
         minimum: Option[Comparison[SLong]] = none,
         maximum: Option[Comparison[SLong]] = none,
         multiple: Option[SLong] = none
-    ): Self[SLong] = fromPrimitiveNumber(
-      Primitive.Number.Long(
-        minimum = minimum,
-        maximum = maximum,
-        multiple = multiple,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[SLong] = codec.long(minimum, maximum, multiple)
 
     final val long: Self[SLong] = long()
 
-  trait String[+Self[_]](using invariant: Invariant[Self]):
-    protected def fromPrimitiveString[A](self: Primitive.String[A]): Self[A]
-
+  trait String[+Self[_]](using codec: Codec.Primitive.String[Self]):
     final def string(
         minimum: Option[SInt] = none,
         maximum: Option[SInt] = none,
         matches: Option[Pattern] = none
-    ): Self[JString] = fromPrimitiveString(
-      Primitive.String.Text(
-        minimum = minimum,
-        maximum = maximum,
-        matches = matches,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[JString] = codec.string(minimum, maximum, matches)
 
     final val string: Self[JString] = string()
 
     implicit final class ToStringCodecOperations(self: string.type)
-        extends StringCodecOperations[Self, JString](using invariant):
+        extends StringCodecOperations[Self, JString](using codec):
       override protected def empty: JString = ""
       override protected def isEmpty(a: JString): SBoolean = a.isEmpty
 
@@ -177,17 +116,8 @@ object PrimitiveDsl:
         minimum: Option[SInt] = none,
         maximum: Option[SInt] = none,
         matches: Option[Pattern] = none
-    )(f: JString => Either[JString, A])(g: A => JString): Self[A] = fromPrimitiveString(
-      Primitive.String.Parser(
-        name = name,
-        decode = f,
-        encode = g,
-        minimum = minimum,
-        maximum = maximum,
-        matches = matches,
-        metadata = Metadata.Empty
-      )
-    )
+    )(f: JString => Either[JString, A])(g: A => JString): Self[A] =
+      codec.parser(name, decode = f, encode = g, minimum, maximum, matches)
 
     final val uuid: Self[UUID] = parser(name = "uuid") { value =>
       Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)

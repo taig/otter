@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.syntax.all.*
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -12,28 +11,25 @@ import scala.Int as SInt
 import scala.Long as SLong
 import java.util.UUID
 
-trait ConstantDsl[Self[_], -Value[_]]:
-  protected def fromConstant[A](self: Constant[Value, A]): Self[A]
+trait ConstantDsl[+Self[_], -Value[_]](using codec: Codec.Constant[Self, Value]):
+  self =>
 
-  final def constant[A: Eq](codec: => Value[A], value: A): Self[A] =
-    fromConstant(
-      Constant.Root(codec = Reference.Constant(self = Reference.later(codec), value), metadata = Metadata.Empty)
-    )
+  final def constant[A: Eq](codec: => Value[A], value: A): Self[A] = self.codec.constant(codec, value)
 
 object ConstantDsl:
-  trait Primitive[Self[_], -Value[_]]
+  trait Primitive[+Self[_], -Value[_]]
       extends ConstantDsl.Primitive.Boolean[Self, Value],
         ConstantDsl.Primitive.Number[Self, Value],
         ConstantDsl.Primitive.String[Self, Value]:
     this: PrimitiveDsl[Value] =>
 
   object Primitive:
-    trait Boolean[Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
+    trait Boolean[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.Boolean[Value] =>
 
       final def constant(value: SBoolean): Self[SBoolean] = constant(codec = boolean, value)
 
-    trait Number[Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
+    trait Number[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.Number[Value] =>
 
       final def constant(value: JBigDecimal): Self[JBigDecimal] =
@@ -47,7 +43,7 @@ object ConstantDsl:
       final def constant(value: SFloat): Self[SFloat] = constant(codec = float, value)
       final def constant(value: SInt): Self[SInt] = constant(codec = int, value)
 
-    trait String[Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
+    trait String[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.String[Value] =>
 
       final def constant(value: JString): Self[JString] = constant(codec = string, value)

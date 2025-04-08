@@ -1,12 +1,7 @@
 package io.taig.otter
 
-trait OptionalDsl[+Self[_], -Value[_]]:
-  protected def fromOptional[A](self: Optional[Value, A]): Self[A]
+trait OptionalDsl[+Self[_], -Value[_]](using codec: Codec.Optional[Self, Value]):
+  self =>
 
-  extension [A](self: Value[A])
-    final def nullable: Self[Option[A]] = fromOptional(
-      Optional.Nullable(codec = Reference.now(self), metadata = Metadata.Empty)
-    )
-    final def nullable(default: A): Self[A] = fromOptional(
-      Optional.Default(codec = Reference.now(self), default, metadata = Metadata.Empty)
-    )
+  final def nullable[A](codec: => Value[A]): Self[Option[A]] = self.codec.nullable(codec)
+  final def nullable[A](codec: => Value[A], default: A): Self[A] = self.codec.nullable(codec, default)

@@ -5,12 +5,13 @@ import io.taig.enumeration.ext.Mapping
 import cats.~>
 import cats.Invariant
 
-sealed abstract class Enumeration[+S[_], A] extends Codec[S, A]:
+sealed abstract class Enumeration[+S[_], A]:
+  def metadata: Metadata
   def codec: Reference[S, ?]
   def values: NonEmptyList[A]
-  override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
-  override def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A] = ???
+  def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
+  final def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A] = ???
 
 object Enumeration:
   final private[otter] case class Modify[S[_], A, B](self: Enumeration[S, A], f: A => B, g: B => A)

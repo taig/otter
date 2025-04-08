@@ -9,16 +9,9 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait RecordDsl[Self[_], Key[_], Value[_]]:
-  protected def fromRecord[A](self: Record[Key, Value, A]): Self[A]
-
-  final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = fromRecord(
-    Record.Field(
-      key = Reference.Constant(self = Reference.later(key), name),
-      value = Reference.later(value),
-      metadata = Metadata.Empty
-    )
-  )
+trait RecordDsl[Self[_], Key[_], Value[_]](using codec: Codec.Record[Self, Key, Value]):
+  final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+    codec.field(name, key, value)
 
 object RecordDsl:
   trait Primitive[Self[_], Key[_], Value[_]]
@@ -37,10 +30,13 @@ object RecordDsl:
     trait Number[Self[_], Key[_], Value[_]] extends RecordDsl[Self, Key, Value]:
       def key: PrimitiveDsl.Number[Key]
 
-      final def field[A](name: BigDecimal, codec: => Value[A]): Self[A] = field(name, key = key.bigDecimal, value = codec)
+      final def field[A](name: BigDecimal, codec: => Value[A]): Self[A] =
+        field(name, key = key.bigDecimal, value = codec)
       final def field[A](name: BigInt, codec: => Value[A]): Self[A] = field(name, key = key.bigInteger, value = codec)
-      final def field[A](name: JBigDecimal, codec: => Value[A]): Self[A] = field(name, key = key.jBigDecimal, value = codec)
-      final def field[A](name: JBigInteger, codec: => Value[A]): Self[A] = field(name, key = key.jBigInteger, value = codec)
+      final def field[A](name: JBigDecimal, codec: => Value[A]): Self[A] =
+        field(name, key = key.jBigDecimal, value = codec)
+      final def field[A](name: JBigInteger, codec: => Value[A]): Self[A] =
+        field(name, key = key.jBigInteger, value = codec)
       final def field[A](name: SDouble, codec: => Value[A]): Self[A] = field(name, key = key.double, value = codec)
       final def field[A](name: SFloat, codec: => Value[A]): Self[A] = field(name, key = key.float, value = codec)
       final def field[A](name: SInt, codec: => Value[A]): Self[A] = field(name, key = key.int, value = codec)
@@ -48,6 +44,6 @@ object RecordDsl:
 
     trait String[Self[_], Key[_], Value[_]] extends RecordDsl[Self, Key, Value]:
       def key: PrimitiveDsl.String[Key]
-      
+
       final def field[A](name: JString, codec: => Value[A]): Self[A] =
         field(name, key = key.string, value = codec)

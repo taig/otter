@@ -14,10 +14,11 @@ import scala.Int as SInt
 import scala.Long as SLong
 import cats.Invariant
 
-sealed abstract class Primitive[A] extends Codec[Nothing, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
-  override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive[A]
-  override def imap[B](f: A => B)(g: B => A): Primitive[B]
+sealed abstract class Primitive[A]:
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Primitive[A]
+  def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive[A]
+  def imap[B](f: A => B)(g: B => A): Primitive[B]
 
 object Primitive:
   sealed abstract class Boolean[A] extends Primitive[A]:

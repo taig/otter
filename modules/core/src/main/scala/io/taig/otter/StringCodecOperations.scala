@@ -1,11 +1,10 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.Invariant
 
 import java.util.regex.Pattern
 
-abstract class StringCodecOperations[+S[_]: Invariant, A]:
+abstract class StringCodecOperations[+S[_]: Codec, A]:
   protected def isEmpty(a: A): Boolean
   protected def empty: A
 

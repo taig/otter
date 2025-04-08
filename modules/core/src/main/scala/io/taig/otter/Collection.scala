@@ -1,23 +1,16 @@
 package io.taig.otter
 
 import cats.~>
-import cats.Order
-import cats.data.Chain
-import cats.data.NonEmptyChain
-import cats.data.NonEmptyList
-import cats.data.NonEmptySeq
-import cats.data.NonEmptySet
-import cats.data.NonEmptyVector
 import cats.implicits.*
-import scala.collection.immutable.SortedSet
 import cats.Invariant
 
-sealed abstract class Collection[+S[_], A] extends Codec[S, A]:
+sealed abstract class Collection[+S[_], A]:
+  def metadata: Metadata
   def codec: Reference[S, ?]
   def constraints: Vector[Constraint.Collection]
-  override def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, A]
-  final override def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
+  def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, A]
+  final def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
 
 object Collection:
   private def constraints(

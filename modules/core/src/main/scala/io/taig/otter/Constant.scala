@@ -5,12 +5,13 @@ import cats.Invariant
 import cats.syntax.all.*
 import cats.~>
 
-sealed abstract class Constant[+S[_], A] extends Codec[S, A]:
+sealed abstract class Constant[+S[_], A]:
+  def metadata: Metadata
   def codec: Reference.Constant[S, ?]
   def matches(a: A): Boolean
-  override def modifyMetadata(f: Metadata => Metadata): Constant[S, A]
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A]
-  final override def imap[B](f: A => B)(g: B => A): Constant[S, B] = Constant.Modify(self = this, f, g)
+  def modifyMetadata(f: Metadata => Metadata): Constant[S, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A]
+  final def imap[B](f: A => B)(g: B => A): Constant[S, B] = Constant.Modify(self = this, f, g)
 
 object Constant:
   final private[otter] case class Modify[S[_], A, B](self: Constant[S, A], f: A => B, g: B => A) extends Constant[S, B]:

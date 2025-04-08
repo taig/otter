@@ -3,12 +3,12 @@ package io.taig.otter
 import cats.~>
 import cats.Invariant
 
-sealed abstract class Optional[+S[_], A] extends Codec[S, A]:
-  def codec: Reference[S, ?]
+sealed abstract class Optional[+S[_], A]:
   def metadata: Metadata
+  def codec: Reference[S, ?]
   def modifyMetadata(f: Metadata => Metadata): Optional[S, A]
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, A]
-  final override def imap[B](f: A => B)(g: B => A): Optional[S, B] = Optional.Modify(self = this, f, g)
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, A]
+  final def imap[B](f: A => B)(g: B => A): Optional[S, B] = Optional.Modify(self = this, f, g)
 
 object Optional:
   final private[otter] case class Modify[S[_], A, B](self: Optional[S, A], f: A => B, g: B => A) extends Optional[S, B]:

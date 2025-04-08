@@ -11,11 +11,12 @@ import io.taig.otter.Union.Tagged.Merged
 import io.taig.otter.Union.Tagged.Explicit
 import cats.Invariant
 
-sealed abstract class Union[+S[_], A] extends Codec[S, A]:
+sealed abstract class Union[+S[_], A]:
+  def metadata: Metadata
   def branches: Chain[(String, Reference[S, ?])]
-  override def modifyMetadata(f: Metadata => Metadata): Union[S, A]
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A]
-  override def imap[B](f: A => B)(g: B => A): Union[S, B]
+  def modifyMetadata(f: Metadata => Metadata): Union[S, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A]
+  def imap[B](f: A => B)(g: B => A): Union[S, B]
 
   def orElse[S1[a] >: S[a], B](codec: Union[S1, B]): Union[S1, Either[A, B]]
 

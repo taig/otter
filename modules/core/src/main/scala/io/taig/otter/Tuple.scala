@@ -5,11 +5,12 @@ import cats.~>
 import cats.Invariant
 
 // TODO support for optional
-sealed abstract class Tuple[+S[_], A] extends Codec[S, A]:
+sealed abstract class Tuple[+S[_], A]:
+  def metadata: Metadata
   def codecs: Chain[Reference[S, ?]]
-  override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A]
-  final override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
+  def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A]
+  final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
   final def zip[S1[a] >: S[a], B](codec: Tuple[S1, B]): Tuple[S1, (A, B)] =
     Tuple.Zip(left = this, right = codec, metadata = Metadata.Empty)
 

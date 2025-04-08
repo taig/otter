@@ -2,24 +2,17 @@ package io.taig.otter
 
 import cats.~>
 import cats.implicits.*
-import cats.data.Chain
-import cats.data.NonEmptyChain
-import cats.data.NonEmptyList
-import cats.data.NonEmptyMap
-import cats.data.NonEmptySeq
-import cats.data.NonEmptyVector
-import cats.Order
-import scala.collection.immutable.SortedMap
 import cats.Invariant
 
-sealed abstract class Dictionary[+S[_], +T[_], A] extends Codec[T, A]:
+sealed abstract class Dictionary[+S[_], +T[_], A]:
+  def metadata: Metadata
   def key: Reference[S, ?]
   def value: Reference[T, ?]
   def constraints: Vector[Constraint.Object]
-  override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
-  override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A]
+  def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
+  def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A]
   def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, A]
-  final override def imap[B](f: A => B)(g: B => A): Dictionary[S, T, B] = Dictionary.Modify(self = this, f, g)
+  final def imap[B](f: A => B)(g: B => A): Dictionary[S, T, B] = Dictionary.Modify(self = this, f, g)
 
 object Dictionary:
   final private[otter] case class Root[S[_], T[_], A, B](

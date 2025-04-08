@@ -4,12 +4,13 @@ import cats.data.Chain
 import cats.~>
 import cats.Invariant
 
-sealed abstract class Record[+S[_], +T[_], A] extends Codec[T, A]:
+sealed abstract class Record[+S[_], +T[_], A]:
+  def metadata: Metadata
   def isOptional: Boolean
   def fields: Chain[(Reference.Constant[S, ?], Reference[T, ?])]
-  override def modifyMetadata(f: Metadata => Metadata): Record[S, T, A]
-  override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Record[S, U, A]
-  final override def imap[B](f: A => B)(g: B => A): Record[S, T, B] = Record.Modify(self = this, f, g)
+  def modifyMetadata(f: Metadata => Metadata): Record[S, T, A]
+  def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Record[S, U, A]
+  final def imap[B](f: A => B)(g: B => A): Record[S, T, B] = Record.Modify(self = this, f, g)
   final def optional: Record[S, T, Option[A]] = Record.Optional(self = this)
   final def zip[S1[a] >: S[a], T1[a] >: T[a], B](codec: Record[S1, T1, B]): Record[S1, T1, (A, B)] =
     Record.Zip(left = this, right = codec, metadata = Metadata.Empty)

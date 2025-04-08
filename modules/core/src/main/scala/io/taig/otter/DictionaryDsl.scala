@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.implicits.*
-import cats.Invariant
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
@@ -11,8 +10,8 @@ import cats.data.NonEmptyVector
 import cats.Order
 import scala.collection.immutable.SortedMap
 
-trait DictionaryDsl[Self[_]: Invariant, Key[_], Value[_]]:
-  protected def fromDictionary[A](self: Dictionary[Key, Value, A]): Self[A]
+trait DictionaryDsl[Self[_], Key[_], Value[_]](using codec: Codec.Dictionary[Self, Key, Value]):
+  self =>
 
   object dictionary:
     final def list[A, B](
@@ -20,15 +19,7 @@ trait DictionaryDsl[Self[_]: Invariant, Key[_], Value[_]]:
         value: => Value[B],
         minimum: Option[Int] = none,
         maximum: Option[Int] = none
-    ): Self[List[(A, B)]] = fromDictionary(
-      Dictionary.Root(
-        key = Reference.later(key),
-        value = Reference.later(value),
-        minimum,
-        maximum,
-        metadata = Metadata.Empty
-      )
-    )
+    ): Self[List[(A, B)]] = self.codec.dictionary(key, value, minimum, maximum)
 
     final def nonEmptyList[A, B](
         key: => Key[A],
