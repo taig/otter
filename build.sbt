@@ -2,7 +2,7 @@ import org.checkerframework.checker.units.qual.m
 import sbtcrossproject.CrossProject
 
 val Version = new {
-  val CaseInsensitive = "1.4.2"
+  val CaseInsensitive = "1.5.0"
   val Cats = "2.13.0"
   val CatsEffect = "3.6.0"
   val CatsParse = "1.1.0"
