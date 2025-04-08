@@ -6,9 +6,3 @@ abstract class Codec[+S[_], A] extends Product with Serializable:
   def modifyMetadata(f: Metadata => Metadata): Codec[S, A]
   def imap[B](f: A => B)(g: B => A): Codec[S, B]
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Codec[T, A]
-
-// object Codec:
-//   trait Syntax[Self[_]] extends Invariant[Self]:
-//     extension [A](self: Self[A])
-//       def metadata: Metadata
-//       def modifyMetadata(f: Metadata => Metadata): Self[A]
