@@ -113,23 +113,24 @@ object Json:
       )
 
     given codec: Codec[Json.Key] with
-
       extension [A](self: Key[A])
         override def metadata: Metadata = self match
-          case Key.Constant(self)    => self.metadata
+          case Key.Constant(self) => self.metadata
           case Key.Enumeration(self) => self.metadata
-          case Key.Primitive(self)   => self.metadata
-          case Key.Union(self)       => self.metadata
+          case Key.Primitive(self) => self.metadata
+          case Key.Union(self) => self.metadata
+
         override def modifyMetadata(f: Metadata => Metadata): Key[A] = self match
-          case Key.Constant(self)    => Constant(self.modifyMetadata(f))
+          case Key.Constant(self) => Constant(self.modifyMetadata(f))
           case Key.Enumeration(self) => Enumeration(self.modifyMetadata(f))
-          case Key.Primitive(self)   => Primitive(self.modifyMetadata(f))
-          case Key.Union(self)       => Union(self.modifyMetadata(f))
+          case Key.Primitive(self) => Primitive(self.modifyMetadata(f))
+          case Key.Union(self) => Union(self.modifyMetadata(f))
+
         override def imap[B](f: A => B)(g: B => A): Key[B] = self match
-          case Key.Constant(self)    => Constant(self.imap(f)(g))
+          case Key.Constant(self) => Constant(self.imap(f)(g))
           case Key.Enumeration(self) => Enumeration(self.imap(f)(g))
-          case Key.Primitive(self)   => Primitive(self.imap(f)(g))
-          case Key.Union(self)       => Union(self.imap(f)(g))
+          case Key.Primitive(self) => Primitive(self.imap(f)(g))
+          case Key.Union(self) => Union(self.imap(f)(g))
 
   given (Codec.Nullable[Json, Json.Optional] & Codec.Tupleable[Json, Json.Tuple]) =
     new Codec.Nullable[Json, Json.Optional] with Codec.Tupleable[Json, Json.Tuple]:
@@ -138,34 +139,34 @@ object Json:
 
       extension [A](self: Json[A])
         override def metadata: Metadata = self match
-          case Json.Collection(self)  => self.metadata
-          case Json.Constant(self)    => self.metadata
-          case Json.Dictionary(self)  => self.metadata
+          case Json.Collection(self) =>  self.metadata
+          case Json.Constant(self) => self.metadata
+          case Json.Dictionary(self) => self.metadata
           case Json.Enumeration(self) => self.metadata
-          case Json.Optional(self)    => self.metadata
-          case Json.Primitive(self)   => self.metadata
-          case Json.Record(self)      => self.metadata
-          case Json.Tuple(self)       => self.metadata
-          case Json.Union(self)       => self.metadata
-
+          case Json.Optional(self) => self.metadata
+          case Json.Primitive(self) => self.metadata
+          case Json.Record(self) => self.metadata
+          case Json.Tuple(self) => self.metadata
+          case Json.Union(self) => self.metadata
+        
         override def modifyMetadata(f: Metadata => Metadata): Json[A] = self match
-          case Json.Collection(self)  => Collection(self.modifyMetadata(f))
-          case Json.Constant(self)    => Constant(self.modifyMetadata(f))
-          case Json.Dictionary(self)  => Dictionary(self.modifyMetadata(f))
+          case Json.Collection(self) => Collection(self.modifyMetadata(f))
+          case Json.Constant(self) => Constant(self.modifyMetadata(f))
+          case Json.Dictionary(self) => Dictionary(self.modifyMetadata(f))
           case Json.Enumeration(self) => Enumeration(self.modifyMetadata(f))
-          case Json.Optional(self)    => Optional(self.modifyMetadata(f))
-          case Json.Primitive(self)   => Primitive(self.modifyMetadata(f))
-          case Json.Record(self)      => Record(self.modifyMetadata(f))
-          case Json.Tuple(self)       => Tuple(self.modifyMetadata(f))
-          case Json.Union(self)       => Union(self.modifyMetadata(f))
+          case Json.Optional(self) => Optional(self.modifyMetadata(f))
+          case Json.Primitive(self) => Primitive(self.modifyMetadata(f))
+          case Json.Record(self) => Record(self.modifyMetadata(f))
+          case Json.Tuple(self) => Tuple(self.modifyMetadata(f))
+          case Json.Union(self) => Union(self.modifyMetadata(f))
 
         override def imap[B](f: A => B)(g: B => A): Json[B] = self match
-          case Json.Collection(self)  => Collection(self.imap(f)(g))
-          case Json.Constant(self)    => Constant(self.imap(f)(g))
-          case Json.Dictionary(self)  => Dictionary(self.imap(f)(g))
+          case Json.Collection(self) => Collection(self.imap(f)(g))
+          case Json.Constant(self) => Constant(self.imap(f)(g))
+          case Json.Dictionary(self) => Dictionary(self.imap(f)(g))
           case Json.Enumeration(self) => Enumeration(self.imap(f)(g))
-          case Json.Optional(self)    => Optional(self.imap(f)(g))
-          case Json.Primitive(self)   => Primitive(self.imap(f)(g))
-          case Json.Record(self)      => Record(self.imap(f)(g))
-          case Json.Tuple(self)       => Tuple(self.imap(f)(g))
-          case Json.Union(self)       => Union(self.imap(f)(g))
+          case Json.Optional(self) => Optional(self.imap(f)(g))
+          case Json.Primitive(self) => Primitive(self.imap(f)(g))
+          case Json.Record(self) => Record(self.imap(f)(g))
+          case Json.Tuple(self) => Tuple(self.imap(f)(g))
+          case Json.Union(self) => Union(self.imap(f)(g))
