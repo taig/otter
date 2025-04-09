@@ -3,13 +3,6 @@ package io.taig.otter
 import cats.data.Chain
 import cats.~>
 import cats.syntax.all.*
-import io.taig.otter.Union.Untagged.OrElse
-import io.taig.otter.Union.Untagged.Branch
-import io.taig.otter.Union.Untagged.Modify
-import io.taig.otter.Union.Tagged.Keyed
-import io.taig.otter.Union.Tagged.Merged
-import io.taig.otter.Union.Tagged.Explicit
-import cats.Invariant
 
 sealed abstract class Union[+S[_], A]:
   def metadata: Metadata
@@ -65,10 +58,6 @@ object Union:
         copy(self = self.modifyMetadata(f))
       override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union.Untagged[T, B] = copy(self = self.mapK(fK))
 
-    given [S[_]]: Invariant[Union.Untagged[S, *]] with
-      override def imap[A, B](fa: Union.Untagged[S, A])(f: A => B)(g: B => A): Union.Untagged[S, B] =
-        fa.imap(f)(g)
-
   sealed abstract class Tagged[+S[_], A] extends Union[S, A]:
     def discriminator: Discriminator
     override def modifyMetadata(f: Metadata => Metadata): Union.Tagged[S, A]
@@ -122,10 +111,3 @@ object Union:
       override def merged(discriminator: Discriminator.Merged): Union.Tagged[S, A] = Merged(untagged, discriminator)
       override def explicit(discriminator: Discriminator.Explicit): Union.Tagged[S, A] =
         copy(discriminator = discriminator)
-
-    given [S[_]]: Invariant[Union.Tagged[S, *]] with
-      override def imap[A, B](fa: Union.Tagged[S, A])(f: A => B)(g: B => A): Union.Tagged[S, B] =
-        fa.imap(f)(g)
-
-  given [S[_]]: Invariant[Union[S, *]] with
-    override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)

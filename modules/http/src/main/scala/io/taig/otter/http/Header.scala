@@ -30,6 +30,11 @@ object Header:
     export self.{codec, metadata, name}
     override def modifyMetadata(f: Metadata => Metadata): Header[B] = copy(self = self.modifyMetadata(f))
 
+  enum Style:
+    case Label
+    case Matrix
+    case Simple
+
   given (Codec[Header] & Invariant.Product[Header, Header, Headers]) =
     new Codec[Header] with Invariant.Product[Header, Header, Headers]:
       override def result: Invariant[Headers] = Headers.invariant

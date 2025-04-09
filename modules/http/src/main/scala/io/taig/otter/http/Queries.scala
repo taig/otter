@@ -1,81 +1,30 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.data.Validated
-// import cats.data.Validated.Valid
-// import cats.syntax.all.*
-// import io.taig.otter.Codec
-// import io.taig.otter.Convert
-// import io.taig.otter.Merge
-// import io.taig.otter.collectFirstWithRemainders
+import io.taig.otter.*
 
-// sealed abstract class Queries[A]:
-//   self =>
+sealed abstract class Queries[A] extends Product with Serializable:
+  final def imap[B](f: A => B)(g: B => A): Queries[B] = Queries.Modify(self = this, f, g)
 
-//   def toVector: Vector[Query[?]]
+  final def zip[B](queries: Queries[B]): Queries[(A, B)] = Queries.Zip(left = this, right = queries)
 
-//   final def matches(queries: Http.Queries): Boolean = matchesRemainders(queries).isDefined
+  final def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
+    zip(queries = query.toQueries).imap(merge.apply)(merge.unapply)
 
-//   protected def matchesRemainders(queries: Http.Queries): Option[Http.Queries]
+object Queries:
+  private[otter] case object Empty extends Queries[Unit]
 
-//   final def imap[B](f: A => B)(g: B => A): Queries[B] = new Queries[B]:
-//     export self.{matchesRemainders, toVector}
-//     override def decode(values: Http.Queries): (Http.Queries, Codec.Result[B]) = self.decode(values).map(_.map(f))
-//     override def encode(b: B): Http.Queries = self.encode(g(b))
+  final private[otter] case class Root[A](query: Query[A]) extends Queries[A]
 
-//   final def to[B](using convert: Convert[A, B]): Queries[B] = imap(convert.to)(convert.from)
+  final private[otter] case class Modify[A, B](self: Queries[A], f: A => B, g: B => A) extends Queries[B]
 
-//   final def zip[B](queries: Queries[B]): Queries[(A, B)] = new Queries[(A, B)]:
-//     override def toVector: Vector[Query[?]] = self.toVector ++ queries.toVector
-//     override def matchesRemainders(values: Http.Queries): Option[Http.Queries] =
-//       self.matchesRemainders(values).flatMap(queries.matchesRemainders)
-//     override def decode(values: Http.Queries): (Http.Queries, Codec.Result[(A, B)]) = self.decode(values) match
-//       case (values, Validated.Valid(a)) =>
-//         queries.decode(values) match
-//           case (values, Validated.Valid(b))            => (values, (a, b).valid)
-//           case (values, Validated.Invalid(violations)) => (values, violations.invalid)
-//       case (values, Validated.Invalid(left)) =>
-//         queries.decode(values) match
-//           case (values, Validated.Valid(_))       => (values, left.invalid)
-//           case (values, Validated.Invalid(right)) => (values, (left |+| right).invalid)
-//     override def encode(ab: (A, B)): Http.Queries = self.encode(ab._1) ++ queries.encode(ab._2)
+  final private[otter] case class Optional[A](self: Queries[A]) extends Queries[Option[A]]
 
-//   final def optional: Queries[Option[A]] = new Queries[Option[A]]:
-//     export self.toVector
-//     override def matchesRemainders(queries: Http.Queries): Option[Http.Queries] = queries.some
-//     override def decode(values: Http.Queries): (Http.Queries, Codec.Result[Option[A]]) =
-//       val availableNames = values.map { case (name, _) => name }
-//       val requiredNames = toVector.filter(_.isRequired).map(_.name)
-//       val isOptional = requiredNames.forall(name => !availableNames.contains(name))
-//       if isOptional then (values, none.valid) else self.decode(values).map(_.map(_.some))
-//     override def encode(a: Option[A]): Http.Queries = a.fold(Vector.empty)(self.encode)
+  final private[otter] case class Zip[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]
 
-//   final def optional(default: A): Queries[A] = optional.imap(_.getOrElse(default))(_.some)
+  given invariant: Invariant.Product[Queries, Query, Queries] with
+    override def fromElement[A](query: Query[A]): Queries[A] = query.toQueries
+    override def result: Invariant[Queries] = this
 
-//   final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
-//     zip(query.toQueries).imap(merge.apply)(merge.unapply)
-
-//   final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] =
-//     query.toQueries.zip(this).imap(merge.apply)(merge.unapply)
-
-//   final def toUrl: Url[A] = Url(this)
-
-//   def decode(values: Http.Queries): (Http.Queries, Codec.Result[A])
-
-//   def encode(a: A): Http.Queries
-
-// object Queries:
-//   val Empty: Queries[Unit] = new Queries[Unit]:
-//     override def toVector: Vector[Query[?]] = Vector.empty
-//     override def matchesRemainders(queries: Http.Queries): Option[Http.Queries] = queries.some
-//     override def decode(values: Http.Queries): (Http.Queries, Codec.Result[Unit]) = (values, ().valid)
-//     override def encode(a: Unit): Http.Queries = Vector.empty
-
-//   def apply[A](query: Query[A]): Queries[A] = new Queries[A]:
-//     override def toVector: Vector[Query[?]] = Vector(query)
-//     override def matchesRemainders(queries: Http.Queries): Option[Http.Queries] =
-//       if query.isNullable then queries.some
-//       else
-//         val (remainders, result) = queries.collectFirstWithRemainders { case (name, _) if name === query.name => () }
-//         result.as(remainders)
-//     override def decode(values: Http.Queries): (Http.Queries, Codec.Result[A]) = query.decode(values)
-//     override def encode(a: A): Http.Queries = query.encode(a)
+    extension [A](self: Queries[A])
+      override def imap[B](f: A => B)(g: B => A): Queries[B] = self.imap(f)(g)
+      override def zip[B](queries: Queries[B]): Queries[(A, B)] = self.zip(queries)

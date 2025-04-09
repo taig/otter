@@ -3,10 +3,9 @@ package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter.*
 import io.taig.otter as Self
-import org.typelevel.ci.CIString
 
 sealed abstract class Headers[A]:
-  def names: Chain[CIString]
+  def toChain: Chain[Header[?]]
 
   final def imap[B](f: A => B)(g: B => A): Headers[B] = Headers.Modify(self = this, f, g)
 
@@ -14,19 +13,19 @@ sealed abstract class Headers[A]:
 
 object Headers:
   private[otter] object Empty extends Headers[Unit]:
-    override def names: Chain[CIString] = Chain.empty
+    override def toChain: Chain[Nothing] = Chain.empty
 
   final private[otter] case class Modify[A, B](self: Headers[A], f: A => B, g: B => A) extends Headers[B]:
-    export self.names
+    export self.toChain
 
   final private[otter] case class Optional[A](self: Headers[A]) extends Headers[Option[A]]:
-    export self.names
+    export self.toChain
 
   final private[otter] case class Root[A](header: Header[A]) extends Headers[A]:
-    override def names: Chain[CIString] = Chain.one(header.name)
+    override def toChain: Chain[Header[A]] = Chain.one(header)
 
   final private[otter] case class Zip[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
-    override def names: Chain[CIString] = left.names ++ right.names
+    override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
 
   given invariant: Invariant.Product[Headers, Headers, Headers] with
     override def result: Invariant[Headers] = this

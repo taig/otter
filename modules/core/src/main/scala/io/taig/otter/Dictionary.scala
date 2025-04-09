@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.~>
 import cats.implicits.*
-import cats.Invariant
 
 sealed abstract class Dictionary[+S[_], +T[_], A]:
   def metadata: Metadata
@@ -36,6 +35,3 @@ object Dictionary:
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, B] = copy(self = self.modifyMetadata(f))
     override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, B] = copy(self = self.mapK(fK))
     override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, B] = copy(self = self.leftMapK(fK))
-
-  given [S[_], T[_]]: Invariant[Dictionary[S, T, *]] with
-    override def imap[A, B](fa: Dictionary[S, T, A])(f: A => B)(g: B => A): Dictionary[S, T, B] = fa.imap(f)(g)

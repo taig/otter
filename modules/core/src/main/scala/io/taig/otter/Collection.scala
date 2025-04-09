@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.~>
 import cats.implicits.*
-import cats.Invariant
 
 sealed abstract class Collection[+S[_], A]:
   def metadata: Metadata
@@ -50,6 +49,3 @@ object Collection:
     export self.{codec, constraints, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, B] = copy(self = self.modifyMetadata(f))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, B] = copy(self = self.mapK(fK))
-
-  given [S[_]]: Invariant[Collection[S, *]] with
-    def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)

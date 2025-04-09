@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.Invariant
 import cats.syntax.all.*
 import cats.~>
 
@@ -27,6 +26,3 @@ object Constant:
     override def matches(a: A): Boolean = codec.value === a
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, A] = copy(codec = codec.mapK(fK))
-
-  given [S[_]]: Invariant[Constant[S, *]] with
-    override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)

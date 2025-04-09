@@ -12,7 +12,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.Invariant
 
 sealed abstract class Primitive[A]:
   def metadata: Metadata
@@ -136,6 +135,3 @@ object Primitive:
     ) extends Primitive.String[B]:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
-
-  given Invariant[Primitive] = new Invariant[Primitive]:
-    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)

@@ -1,206 +1,48 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.syntax.all.*
-// import io.taig.otter.Codec
-// import io.taig.otter.Convert
-// import io.taig.otter.Data
-// import io.taig.otter.Merge
-// import io.taig.otter.Metadata
-// import io.taig.otter.collectFirstWithRemainders
+import io.taig.otter.*
+import cats.syntax.all.*
 
-// sealed abstract class Query[A]:
-//   self =>
+sealed abstract class Query[A]:
+  def name: String
 
-//   def name: String
+  def codec: Reference[Http.Query, ?]
 
-//   def codec: Codec[?, ?]
+  def metadata: Metadata
 
-//   def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Query[A]
 
-//   final def isNullable: Boolean = codec.isNullable
-//   final def isRequired: Boolean = codec.isRequired
+  final def imap[B](f: A => B)(g: B => A): Query[B] = Query.Modify(self = this, f, g)
 
-//   def modifyMetadata(f: Metadata => Metadata): Query[A]
+  final def zip[B](query: Query[B]): Queries[(A, B)] = toQueries.zip(query.toQueries)
 
-//   def imap[B](f: A => B)(g: B => A): Query[B]
+  final def toQueries: Queries[A] = Queries.Root(query = this)
 
-//   def to[B](using convert: Convert[A, B]): Query[B]
+object Query:
+  final private[otter] case class Modify[A, B](self: Query[A], f: A => B, g: B => A) extends Query[B]:
+    export self.{codec, metadata, name}
+    override def modifyMetadata(f: Metadata => Metadata): Query[B] = copy(self = self.modifyMetadata(f))
 
-//   final def :*[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = toQueries :* query
+  final private[otter] case class Optional[A](self: Query[A]) extends Query[Option[A]]:
+    export self.{codec, metadata, name}
+    override def modifyMetadata(f: Metadata => Metadata): Query[Option[A]] = copy(self = self.modifyMetadata(f))
 
-//   final def *:[B](query: Query[B])(using merge: Merge[B, A]): Queries[merge.Out] = query *: toQueries
+  final private[otter] case class Root[A](name: String, codec: Reference[Http.Query, A], metadata: Metadata)
+      extends Query[A]:
+    override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
 
-//   final def toQueries: Queries[A] = Queries(this)
+  enum Style:
+    case Form
+    case SpaceDelimited
+    case PipeDelimited
 
-//   def decode(values: Vector[(String, Option[String])]): (Vector[(String, Option[String])], Codec.Result[A])
+  given (Codec[Query] & Invariant.Product[Query, Query, Queries]) =
+    new Codec[Query] with Invariant.Product[Query, Query, Queries]:
+      override def result: Invariant[Queries] = Queries.invariant
+      override def fromElement[A](codec: Query[A]): Query[A] = codec
 
-//   def encode(a: A): Vector[(String, Option[String])]
-
-// object Query:
-//   sealed abstract class Required[A] extends Query[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Query.Required[A]
-//     override def imap[B](f: A => B)(g: B => A): Query.Required[B]
-//     override def to[B](using convert: Convert[A, B]): Query.Required[B]
-//     def nullable(default: A): Query[A]
-//     def nullable: Query[Option[A]]
-//     def optional(default: A): Query[A]
-//     def optional: Query[Option[A]]
-
-//   object Required:
-//     final private[otter] case class Primitive[A](
-//         name: String,
-//         codec: Codec[Data.Primitive, A],
-//         metadata: Metadata
-//     ) extends Query.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
-//       override def nullable(default: A): Query[A] =
-//         Query.Primitive(name, codec = codec.nullable(default), metadata, nullable = true)
-//       override def nullable: Query[Option[A]] = Query.Primitive(name, codec = codec.nullable, metadata, nullable = true)
-//       override def optional(default: A): Query[A] =
-//         Query.Primitive(name, codec = codec.nullable(default), metadata, nullable = false)
-//       override def optional: Query[Option[A]] =
-//         Query.Primitive(name, codec = codec.nullable, metadata, nullable = false)
-//       override def decode(
-//           values: Vector[(String, Option[String])]
-//       ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         (remainders, value.flatten.fold(codec.decode(Data.Null))(codec.parse).leftMap(name /: _))
-//       override def encode(a: A): Vector[(String, Option[String])] = Vector((name, codec.print(a).some))
-
-//     final private[otter] case class Array[A](
-//         name: String,
-//         codec: Codec[Data.Array[Data.Primitive], A],
-//         metadata: Metadata,
-//         delimiter: Delimiter
-//     ) extends Query.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
-//       override def nullable(default: A): Query[A] =
-//         Query.Array(name, codec = codec.nullable(default), metadata, delimiter, nullable = true)
-//       override def nullable: Query[Option[A]] =
-//         Query.Array(name, codec = codec.nullable, metadata, delimiter, nullable = true)
-//       override def optional(default: A): Query[A] =
-//         Query.Array(name, codec = codec.nullable(default), metadata, delimiter, nullable = false)
-//       override def optional: Query[Option[A]] =
-//         Query.Array(name, codec = codec.nullable, metadata, delimiter, nullable = false)
-//       override def decode(
-//           values: Vector[(String, Option[String])]
-//       ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         (
-//           remainders,
-//           value.flatten
-//             .fold(codec.decode(Data.Array.Empty))(value => codec.parseArray(delimiter.decode(value)))
-//             .leftMap(name /: _)
-//         )
-//       override def encode(a: A): Vector[(String, Option[String])] = Vector(
-//         (name, delimiter.encode(codec.printArray(a)))
-//       )
-
-//     final private[otter] case class Object[A](
-//         name: String,
-//         codec: Codec[Data.Object[Data.Nullable[Data.Primitive]], A],
-//         metadata: Metadata
-//     ) extends Query.Required[A]:
-//       override def modifyMetadata(f: Metadata => Metadata): Query.Required[A] = copy(metadata = f(metadata))
-//       override def imap[B](f: A => B)(g: B => A): Query.Required[B] = copy(codec = codec.imap(f)(g))
-//       override def to[B](using convert: Convert[A, B]): Query.Required[B] = imap(convert.to)(convert.from)
-//       override def nullable(default: A): Query[A] =
-//         Query.Object(name, codec = codec.nullable(default), metadata, nullable = true)
-//       override def nullable: Query[Option[A]] = Query.Object(name, codec = codec.nullable, metadata, nullable = true)
-//       override def optional(default: A): Query[A] =
-//         Query.Object(name, codec = codec.nullable(default), metadata, nullable = false)
-//       override def optional: Query[Option[A]] = Query.Object(name, codec = codec.nullable, metadata, nullable = false)
-//       override def decode(
-//           values: Vector[(String, Option[String])]
-//       ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//         val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//         val result = value.flatten match
-//           case Some(value) =>
-//             val obj = Data.Object(FormData.parse(value).toVector.map {
-//               case (name, Some(value)) => (name, String(value))
-//               case (name, None)        => (name, Data.Null)
-//             })
-//             codec.decode(obj)
-//           case None => codec.decode(Data.Null)
-//         (remainders, result.leftMap(name /: _))
-//       override def encode(a: A): Vector[(String, Option[String])] =
-//         Vector((name, Printers(FormData(codec.printObject(a))).some))
-
-//   final private[otter] case class Primitive[A](
-//       name: String,
-//       codec: Codec[Data.Nullable[Data.Primitive], A],
-//       metadata: Metadata,
-//       nullable: Boolean
-//   ) extends Query[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
-//     override def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
-//     override def decode(
-//         values: Vector[(String, Option[String])]
-//     ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       (remainders, codec.parseNullable(value.flatten).leftMap(name /: _))
-//     override def encode(a: A): Vector[(String, Option[String])] = codec.printNullable(a) match
-//       case Some(value)      => Vector((name, value.some))
-//       case None if nullable => Vector((name, none))
-//       case None             => Vector.empty
-
-//   final private[otter] case class Array[A](
-//       name: String,
-//       codec: Codec[Data.Nullable[Data.Array[Data.Primitive]], A],
-//       metadata: Metadata,
-//       delimiter: Delimiter,
-//       nullable: Boolean
-//   ) extends Query[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
-//     override def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
-//     override def decode(
-//         values: Vector[(String, Option[String])]
-//     ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       (
-//         remainders,
-//         codec.parseNullableArray(value.flatten.map(delimiter.decode)).leftMap(name /: _)
-//       )
-//     override def encode(a: A): Vector[(String, Option[String])] = codec.printNullableArray(a) match
-//       case Some(values)     => Vector((name, delimiter.encode(values)))
-//       case None if nullable => Vector((name, none))
-//       case None             => Vector.empty
-
-//   final private[otter] case class Object[A](
-//       name: String,
-//       codec: Codec[Data.Nullable[Data.Object[Data.Nullable[Data.Primitive]]], A],
-//       metadata: Metadata,
-//       nullable: Boolean
-//   ) extends Query[A]:
-//     override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
-//     override def imap[B](f: A => B)(g: B => A): Query[B] = copy(codec = codec.imap(f)(g))
-//     override def to[B](using convert: Convert[A, B]): Query[B] = imap(convert.to)(convert.from)
-//     override def decode(
-//         values: Vector[(String, Option[String])]
-//     ): (Vector[(String, Option[String])], Codec.Result[A]) =
-//       val (remainders, value) = values.collectFirstWithRemainders { case (`name`, value) => value }
-//       val result = value.flatten match
-//         case Some(value) =>
-//           val obj = Data.Object(FormData.parse(value).toVector.map {
-//             case (name, Some(value)) => (name, String(value))
-//             case (name, None)        => (name, Data.Null)
-//           })
-//           codec.decode(obj)
-//         case None => codec.decode(Data.Null)
-//       (remainders, result.leftMap(name /: _))
-//     override def encode(a: A): Vector[(String, Option[String])] =
-//       codec.printNullableObject(a) match
-//         case Some(values)     => Vector((name, Printers(FormData(values)).some))
-//         case None if nullable => Vector((name, none))
-//         case None             => Vector.empty
-
-//   given [A]: Metadata.Ops[Query[A]] with
-//     extension (self: Query[A])
-//       override def metadata: Metadata = self.metadata
-//       override def modifyMetadata(f: Metadata => Metadata): Query[A] = self.modifyMetadata(f)
+      extension [A](self: Query[A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Query[A] = self.modifyMetadata(f)
+        override def imap[B](f: A => B)(g: B => A): Query[B] = self.imap(f)(g)
+        override def zip[B](query: Query[B]): Queries[(A, B)] = self.zip(query)

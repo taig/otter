@@ -25,6 +25,3 @@ object Optional:
       extends Optional[S, Option[A]]:
     override def modifyMetadata(f: Metadata => Metadata): Optional[S, Option[A]] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Optional[T, Option[A]] = copy(codec = codec.mapK(fK))
-
-  given [S[_]]: Invariant[Optional[S, *]] with
-    override def imap[A, B](self: Optional[S, A])(f: A => B)(g: B => A): Optional[S, B] = self.imap(f)(g)

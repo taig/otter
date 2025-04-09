@@ -29,7 +29,3 @@ object Enumeration:
     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(codec = codec.mapK(fK))
-
-  given [S[_]]: Invariant[Enumeration[S, *]] with
-    override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] =
-      fa.imap(f)(g)

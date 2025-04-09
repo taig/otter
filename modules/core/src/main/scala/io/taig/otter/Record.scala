@@ -54,6 +54,3 @@ object Record:
     override def modifyMetadata(f: Metadata => Metadata): Record[S, T, (A, B)] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Record[S, U, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
-
-  given [S[_], T[_]]: Invariant[Record[S, T, *]] with
-    override def imap[A, B](self: Record[S, T, A])(f: A => B)(g: B => A): Record[S, T, B] = self.imap(f)(g)

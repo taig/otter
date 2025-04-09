@@ -4,6 +4,6 @@ import io.taig.otter.Metadata
 
 trait HttpKeys:
   val explode: Metadata.Key[Boolean] = Metadata.Key("explode")
-  val serialization: Metadata.Key[Serialization] = Metadata.Key("serialization")
+  val style: Metadata.Key[Header.Style | Query.Style] = Metadata.Key("style")
 
 object HttpKeys extends HttpKeys

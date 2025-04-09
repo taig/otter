@@ -13,6 +13,6 @@ object SegmentPrinter extends Printer[Segment]:
         codec = codec.value,
         a,
         explode = metadata.get(explode).getOrElse(false),
-        serialization = metadata.get(serialization).getOrElse(Serialization.Simple)
+        style = metadata.get(style).collect { case style: Header.Style => style }.getOrElse(Header.Style.Simple)
       )
     case Segment.Modify(self, _, g) => apply(self, g(a))
