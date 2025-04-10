@@ -1,11 +1,11 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
 // import io.taig.otter.Codec
 // import io.taig.otter.http.header.MediaType
 
-// import java.nio.charset.Charset
+import java.nio.charset.Charset
 
-// sealed abstract class Body[A]:
+sealed abstract class Body[A] extends Product with Serializable
 //   self =>
 
 //   def mediaType: MediaType

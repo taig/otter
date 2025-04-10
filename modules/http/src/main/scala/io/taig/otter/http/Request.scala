@@ -1,4 +1,12 @@
-// package io.taig.otter.http
+package io.taig.otter.http
+
+sealed abstract class Request[A] extends Product with Serializable:
+  def method: Method
+  def url: Url[?]
+  def headers: Headers[?]
+  // def bodies: Option[Bodies[?]]
+
+object Request
 
 // import cats.data.Validated
 // import cats.syntax.all.*
@@ -12,13 +20,6 @@
 // import org.typelevel.ci.*
 
 // sealed abstract class Request[A]:
-//   self =>
-
-//   def method: Method
-//   def url: Url[?]
-//   def headers: Headers[?]
-//   def bodies: Option[Bodies[?]]
-
 //   final def matches(method: Method, url: Http.Url): Boolean = self.method === method && self.url.matches(url)
 
 //   final def imap[B](f: A => B)(g: B => A): Request[B] = new Request[B]:
