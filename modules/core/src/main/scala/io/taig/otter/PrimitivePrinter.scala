@@ -15,7 +15,7 @@ final class PrimitivePrinter(quotes: Boolean) extends Printer[Primitive]:
     case Primitive.String.Parser(_, _, encode, _, _, _, _) => apply(encode(a))
     case Primitive.String.Text(_, _, _, _)                 => apply(a)
 
-  def apply(value: String): String = if quotes then s""""$value"""" else value
+  def apply(value: String): String = if quotes then s""""${{ escape(value, "\"") }}"""" else value
 
 object PrimitivePrinter:
   val Quoted: Printer[Primitive] = PrimitivePrinter(quotes = true)

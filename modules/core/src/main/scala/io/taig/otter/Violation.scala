@@ -20,9 +20,9 @@ object Violation:
   def equal(reference: Data, actual: Data): Violation =
     Violation(Constraint.Equal(reference), actual, hint = none)
 
-  def tpe(name: String, actual: Data): Violation = Violation(Constraint.Type(name), actual, hint = none)
-  def tpe(name: String, actual: Data, hint: String): Violation =
-    Violation(Constraint.Type(name), actual, hint = hint.some)
+  def tpe(name: String, actual: Data, hint: Option[String]): Violation = Violation(Constraint.Type(name), actual, hint)
+  def tpe(name: String, actual: Data): Violation = tpe(name, actual, hint = none)
+  def tpe(name: String, actual: Data, hint: String): Violation = tpe(name, actual, hint = hint.some)
 
   def oneOf(values: List[Data.Primitive], actual: Data): Violation =
     Violation(Constraint.OneOf(values), actual, hint = none)

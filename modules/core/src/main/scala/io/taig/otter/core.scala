@@ -49,3 +49,18 @@ extension [A](self: Vector[A])
     if result.isEmpty
     then (self, none)
     else (remainders.result(), result)
+
+private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
+  characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (character, value) =>
+    value.replace(character, s"$escape$character")
+
+private[otter] def escape(value: String, character: String): String = escape(value, characters = List(character))
+
+private[otter] def unescape(value: String, characters: List[String], escape: Char = '\\'): String =
+  characters
+    .foldLeft(value): (character, value) =>
+      value.replace(s"$escape$character", character).replace(s"$escape$escape", s"$escape")
+    .replace(s"$escape$escape", s"$escape")
+
+private[otter] def unescape(value: String, character: String): String =
+  unescape(value, characters = List(character))
