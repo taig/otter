@@ -1,8 +1,5 @@
 package io.taig.otter.http
 
-import cats.Show
-import cats.syntax.all.*
-
 sealed abstract class FormData[A] extends Product with Serializable
 
 // opaque type FormData = Vector[(String, Option[String])]

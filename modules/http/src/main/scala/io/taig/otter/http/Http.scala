@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import io.taig.otter as Self
-import Self.Codec
-import Self.Metadata
-import Self.Invariant
+import io.taig.otter.Codec
+import io.taig.otter.Invariant
+import io.taig.otter.Metadata
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable

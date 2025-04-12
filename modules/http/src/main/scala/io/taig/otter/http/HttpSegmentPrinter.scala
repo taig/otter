@@ -1,9 +1,10 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
-import scala.annotation.tailrec
-import io.taig.otter.*
 import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.otter.*
+
+import scala.annotation.tailrec
 
 final class HttpSegmentPrinter(explode: Boolean, style: Header.Style):
   def apply[A](name: String, codec: Http.Segment[A], a: A): String = codec match

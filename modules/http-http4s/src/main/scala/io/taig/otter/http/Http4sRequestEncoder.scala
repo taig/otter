@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
-import org.http4s.Method as Http4sMethod
-import org.http4s.Headers as Http4sHeaders
-import org.http4s.Uri as Http4sUri
 import org.http4s.Entity as Http4sBody
+import org.http4s.Headers as Http4sHeaders
+import org.http4s.Method as Http4sMethod
 import org.http4s.Request as Http4sRequest
+import org.http4s.Uri as Http4sUri
 
 final class Http4sRequestEncoder[F[_], S](encode: S => String):
   val body = Http4sBodyEncoder(encode)

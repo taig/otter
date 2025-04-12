@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.OtterSuite
-import io.taig.otter.http.HttpHeaderDsl.*
 import cats.syntax.all.*
+import io.taig.otter.OtterSuite
 import io.taig.otter.Violations
+import io.taig.otter.http.HttpHeaderDsl.*
 
 final class HttpHeaderParserTest extends OtterSuite:
   test("dictionary: explode = false"):

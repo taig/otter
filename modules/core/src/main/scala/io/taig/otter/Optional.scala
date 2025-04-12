@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.~>
-import cats.Invariant
 
 sealed abstract class Optional[+S[_], A]:
   def metadata: Metadata

@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.Reference
 import io.taig.otter as Self
-import Self.Metadata
-import Self.Codec
+import io.taig.otter.Codec
+import io.taig.otter.Metadata
+import io.taig.otter.Reference
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String

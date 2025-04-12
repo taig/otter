@@ -3,8 +3,8 @@ package io.taig.otter.http.header
 import cats.Eq
 import cats.Show
 import cats.parse.Parser
-import io.taig.otter.http.Parsers
 import cats.syntax.all.*
+import io.taig.otter.http.Parsers
 import org.typelevel.ci.CIString
 
 final case class Parameter(name: CIString, value: String):

@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import org.http4s.syntax.all.*
-import org.http4s.Uri as Http4sUri
-import org.http4s.Query as Http4sQuery
 import io.taig.otter.Encoder
+import org.http4s.Query as Http4sQuery
+import org.http4s.Uri as Http4sUri
+import org.http4s.syntax.all.*
 
 object Http4sUrlEncoder extends Encoder[Url, Http4sUri]:
   override def apply[A](url: Url[A], a: A): Http4sUri =

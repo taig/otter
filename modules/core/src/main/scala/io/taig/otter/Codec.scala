@@ -1,7 +1,10 @@
 package io.taig.otter
 
-import io.taig.otter as Self
 import cats.Eq
+import cats.syntax.all.*
+import io.taig.enumeration.ext.Mapping
+import io.taig.otter as Self
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -11,8 +14,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.syntax.all.*
-import io.taig.enumeration.ext.Mapping
 
 trait Codec[Self[_]] extends Invariant[Self]:
   extension [A](self: Self[A])

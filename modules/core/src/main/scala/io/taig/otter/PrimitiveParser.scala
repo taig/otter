@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 

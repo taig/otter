@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
-import cats.~>
 import cats.syntax.all.*
+import cats.~>
 
 sealed abstract class Union[+S[_], A]:
   def metadata: Metadata

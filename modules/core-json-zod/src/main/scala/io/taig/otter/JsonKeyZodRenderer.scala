@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.syntax.all.*
 import cats.data.State
 
 object JsonKeyZodRenderer extends Renderer[Json.Key, ZodState[Expression]]:

@@ -1,9 +1,7 @@
 package io.taig.otter.http
-
-import io.taig.otter.http.HttpKeys.*
 import io.taig.otter.Encoder
+import io.taig.otter.http.HttpKeys.*
 import org.http4s.Query as Http4sQuery
-import cats.syntax.all.*
 
 object Http4sQueryEncoder extends Encoder[Query, Http4sQuery]:
   override def apply[A](query: Query[A], a: A): Http4sQuery = query match

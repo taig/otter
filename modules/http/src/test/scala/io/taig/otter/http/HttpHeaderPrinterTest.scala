@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.HttpHeaderDsl.*
 import io.taig.otter.OtterSuite
+import io.taig.otter.http.HttpHeaderDsl.*
 
 final class HttpHeaderPrinterTest extends OtterSuite:
   test("collection"):

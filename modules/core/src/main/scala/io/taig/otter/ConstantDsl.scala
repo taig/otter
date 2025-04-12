@@ -1,15 +1,16 @@
 package io.taig.otter
 
 import cats.Eq
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.UUID
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import java.util.UUID
 
 trait ConstantDsl[+Self[_], -Value[_]](using codec: Codec.Constant[Self, Value]):
   self =>

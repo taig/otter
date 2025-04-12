@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
 import io.taig.otter as Self
+import io.taig.otter.*
 import org.typelevel.ci.CIString
 
 sealed abstract class Header[A] extends Product, Serializable:

@@ -1,8 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.*
+
 import scala.annotation.tailrec
 
 object HttpQueryPrinter:

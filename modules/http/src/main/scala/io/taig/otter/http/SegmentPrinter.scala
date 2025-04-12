@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.http.HttpKeys.*
 

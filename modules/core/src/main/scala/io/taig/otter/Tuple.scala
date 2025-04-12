@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import cats.~>
-import cats.Invariant
 
 // TODO support for optional
 sealed abstract class Tuple[+S[_], A]:

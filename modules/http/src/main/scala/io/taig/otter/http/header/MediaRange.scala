@@ -1,7 +1,7 @@
 package io.taig.otter.http.header
 
-import cats.syntax.all.*
 import cats.Show
+import cats.syntax.all.*
 
 final case class MediaRange(tpe: MediaRange.Type, parameters: Parameters):
   override def toString: String = show"$tpe$parameters"

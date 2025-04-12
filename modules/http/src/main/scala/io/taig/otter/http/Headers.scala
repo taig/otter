@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
 import cats.data.Chain
-import io.taig.otter.*
 import io.taig.otter as Self
+import io.taig.otter.*
 
 sealed abstract class Headers[A]:
   def toChain: Chain[Header[?]]

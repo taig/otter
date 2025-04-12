@@ -1,17 +1,17 @@
 package io.taig.otter.http
 
-import io.taig.otter.ConstantDsl
-import io.taig.otter.EnumerationDsl
-import io.taig.otter.PrimitiveDsl
-import io.taig.otter.UnionDsl
-import io.taig.otter.DictionaryDsl
 import io.taig.otter.CollectionDsl
-import io.taig.otter.TupleDsl
+import io.taig.otter.ConstantDsl
+import io.taig.otter.DictionaryDsl
+import io.taig.otter.EnumerationDsl
+import io.taig.otter.Metadata
+import io.taig.otter.PrimitiveDsl
 import io.taig.otter.RecordDsl
+import io.taig.otter.Reference
+import io.taig.otter.TupleDsl
+import io.taig.otter.UnionDsl
 import io.taig.otter.http.Http.Header.Value
 import org.typelevel.ci.CIString
-import io.taig.otter.Metadata
-import io.taig.otter.Reference
 
 trait HttpHeaderDsl
     extends CollectionDsl[Http.Header.Array.Collection, Http.Header.Value],

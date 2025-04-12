@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import io.taig.otter.JsonDsl.*
-import io.circe.Json as CirceJson
 import cats.syntax.all.*
+import io.circe.Json as CirceJson
+import io.taig.otter.JsonDsl.*
 
 final class CirceJsonDecoderTest extends OtterSuite:
   val decoder: Decoder[Json, CirceJson] = CirceJsonDecoder.leftMap(_.modifyViolations(_.withoutHint))

@@ -1,8 +1,8 @@
 package io.taig.otter.http.header
 
-import cats.syntax.all.*
-import cats.Show
 import cats.Eq
+import cats.Show
+import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
 opaque type Parameters = List[Parameter]

@@ -1,13 +1,14 @@
 package io.taig.otter
 
-import cats.implicits.*
+import cats.Order
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
 import cats.data.NonEmptySeq
 import cats.data.NonEmptyVector
-import cats.Order
+import cats.implicits.*
+
 import scala.collection.immutable.SortedMap
 
 trait DictionaryDsl[Self[_], Key[_], Value[_]](using codec: Codec.Dictionary[Self, Key, Value]):

@@ -8,6 +8,7 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
+
 import scala.collection.immutable.SortedSet
 
 trait CollectionDsl[Self[_], Value[_]](using codec: Codec.Collection[Self, Value]):

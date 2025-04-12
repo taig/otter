@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.JsonDsl.*
 import io.taig.otter.Keys.*

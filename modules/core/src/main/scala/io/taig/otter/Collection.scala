@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.~>
 import cats.implicits.*
+import cats.~>
 
 sealed abstract class Collection[+S[_], A]:
   def metadata: Metadata

@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.Encoder
 import cats.syntax.all.*
-import org.http4s.Header.Raw as Http4sHeader
+import io.taig.otter.Encoder
 import io.taig.otter.http.HttpKeys.*
+import org.http4s.Header.Raw as Http4sHeader
 
 object Http4sHeaderEncoder extends Encoder[Header, Option[Http4sHeader]]:
   override def apply[A](codec: Header[A], a: A): Option[Http4sHeader] = codec match

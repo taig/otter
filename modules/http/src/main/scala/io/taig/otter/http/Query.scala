@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
 import cats.syntax.all.*
+import io.taig.otter.*
 
 sealed abstract class Query[A]:
   def name: String

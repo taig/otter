@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.data.NonEmptyList
-import io.taig.enumeration.ext.Mapping
 import cats.~>
-import cats.Invariant
+import io.taig.enumeration.ext.Mapping
 
 sealed abstract class Enumeration[+S[_], A]:
   def metadata: Metadata

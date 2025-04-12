@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import cats.~>
-import cats.Invariant
 
 sealed abstract class Record[+S[_], +T[_], A]:
   def metadata: Metadata

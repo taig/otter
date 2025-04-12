@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import io.taig.enumeration.ext.Mapping
 import cats.Order
 import io.taig.enumeration.ext.EnumerationValues
+import io.taig.enumeration.ext.Mapping
 
 trait EnumerationDsl[Self[_], -Value[_]](using codec: Codec.Enumeration[Self, Value]):
   self =>

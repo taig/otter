@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import org.http4s.Uri.Path as Http4sPath
 import io.taig.otter.Encoder
+import org.http4s.Uri.Path as Http4sPath
 
 object Http4sPathEncoder extends Encoder[Path, Http4sPath]:
   override def apply[A](path: Path[A], a: A): Http4sPath = path match

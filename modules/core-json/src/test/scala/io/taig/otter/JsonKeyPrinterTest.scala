@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.syntax.all.*
 import io.taig.otter.JsonDsl.key.*
 
 final class JsonKeyPrinterTest extends OtterSuite:

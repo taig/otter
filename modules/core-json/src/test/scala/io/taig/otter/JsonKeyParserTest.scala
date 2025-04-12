@@ -1,9 +1,9 @@
 package io.taig.otter
 
+import cats.Eq
+import cats.derived.*
 import cats.syntax.all.*
 import io.taig.otter.JsonDsl.key.*
-import cats.derived.*
-import cats.Eq
 
 final class JsonKeyParserTest extends OtterSuite:
   val parser = JsonKeyParser

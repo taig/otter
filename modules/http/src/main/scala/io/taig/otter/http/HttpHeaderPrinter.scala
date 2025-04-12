@@ -1,9 +1,10 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
-import scala.annotation.tailrec
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.*
+
+import scala.annotation.tailrec
 
 final class HttpHeaderPrinter(explode: Boolean) extends Printer[Http.Header]:
   override def apply[A](codec: Http.Header[A], a: A): String = codec match
