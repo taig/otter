@@ -29,9 +29,6 @@ private[otter] def unescape(value: String, characters: List[String], escape: Cha
 private[otter] def unescape(value: String, character: String): String =
   unescape(value, characters = List(character))
 
-private[otter] def split(value: String, separator: String): Array[String] =
-  value.split(s"(?<!\\\\)$separator").map(unescape(_, separator))
-
 extension [A: Eq, B](self: Vector[(A, B)])
   private[otter] def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
     val remainingKeys = keys.toBuffer

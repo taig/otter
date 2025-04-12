@@ -27,32 +27,6 @@ private[otter] object Parsers:
       (value >= 'A' && value <= 'Z') ||
       (value >= '0' && value <= '9')
 
-//   object data:
-//     val nil: Parser[Data.Null] = Parser.string("null").as(Data.Null)
-
-//     val boolean: Parser[Data.Boolean] =
-//       Parser.string("true").as(Data.Boolean(true)).orElse(Parser.string("false").as(Data.Boolean(false)))
-
-//     val number: Parser[Data.Number] = Numbers.jsonNumber.map: value =>
-//       // TODO nasty
-//       if value.contains(".")
-//       then Data.Number(value.toFloatOption.orElse(value.toDoubleOption).getOrElse(JBigDecimal(value)))
-//       else Data.Number(value.toIntOption.orElse(value.toLongOption).getOrElse(JBigInteger(value)))
-
-//     val primitive: Parser[Data.Primitive] = Parser.oneOf(string :: number :: boolean :: Nil)
-
-//     val root: Parser[Data] = Parser.recursive[Data]: recurse =>
-//       val array = brackets(list(recurse).with1).map(values => Data.Array(values.toVector))
-
-//       val keyValue: Parser[(String, Data)] =
-//         Json.delimited.parser ~ (colon.surroundedBy(whitespace) *> recurse)
-
-//       val obj = list(keyValue).with1
-//         .between(Parser.char('{'), Parser.char('}'))
-//         .map(values => Data.Object(values.toVector))
-
-//       Parser.oneOf(primitive :: array :: obj :: nil :: Nil)
-
 //   val step: Parser[Step] =
 //     val field: Parser[Step.Field] =
 //       Parser.char('.') *> token.map(Step.Field.apply)
