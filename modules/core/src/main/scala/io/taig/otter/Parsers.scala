@@ -1,4 +1,5 @@
 package io.taig.otter
+
 import cats.parse.Numbers
 import cats.parse.Parser
 import cats.parse.Parser0
@@ -8,6 +9,8 @@ private[otter] object Parsers:
   val whitespace: Parser0[Unit] = Parser.charIn(" \t\r\n").void.rep0.void
 
   val colon: Parser[Unit] = Parser.char(':')
+
+  val equals: Parser[Unit] = Parser.char('=')
 
   val int: Parser[Int] = Numbers.signedIntString.mapFilter(_.toIntOption)
 
@@ -19,10 +22,10 @@ private[otter] object Parsers:
 
   val text: Parser[String] = Json.delimited.parser
 
-//   val token: Parser[String] = Parser.charsWhile: value =>
-//     (value >= 'a' && value <= 'z') ||
-//       (value >= 'A' && value <= 'Z') ||
-//       (value >= '0' && value <= '9')
+  val token: Parser[String] = Parser.charsWhile: value =>
+    (value >= 'a' && value <= 'z') ||
+      (value >= 'A' && value <= 'Z') ||
+      (value >= '0' && value <= '9')
 
 //   object data:
 //     val nil: Parser[Data.Null] = Parser.string("null").as(Data.Null)

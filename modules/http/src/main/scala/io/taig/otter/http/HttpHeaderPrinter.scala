@@ -5,15 +5,15 @@ import scala.annotation.tailrec
 import cats.data.Chain
 import cats.syntax.all.*
 
-object HttpHeaderPrinter:
-  def apply[A](codec: Http.Header[A], a: A, explode: Boolean): String = codec match
-    case codec: Http.Header.Array[A]  => apply(codec, a)
-    case codec: Http.Header.Object[A] => obj(values = apply(codec, a), explode)
+final class HttpHeaderPrinter(explode: Boolean) extends Printer[Http.Header]:
+  override def apply[A](codec: Http.Header[A], a: A): String = codec match
+    case codec: Http.Header.Array[A]  => array(apply(codec, a))
+    case codec: Http.Header.Object[A] => obj(values = apply(codec, a))
     case codec: Http.Header.Value[A]  => apply(codec, a)
 
-  def apply[A](codec: Http.Header.Array[A], a: A): String = codec match
-    case Http.Header.Array.Collection(self) => apply(codec = self, a).mkString_(",")
-    case Http.Header.Array.Tuple(self)      => apply(codec = self, a).mkString_(",")
+  def apply[A](codec: Http.Header.Array[A], a: A): Chain[String] = codec match
+    case Http.Header.Array.Collection(self) => Chain.fromSeq(apply(codec = self, a))
+    case Http.Header.Array.Tuple(self)      => apply(codec = self, a)
 
   @tailrec
   def apply[A](codec: Collection[Http.Header.Value, A], a: A): Seq[String] = codec match
@@ -48,12 +48,6 @@ object HttpHeaderPrinter:
     case Record.Optional(self)      => a.fold(Chain.empty)(apply(codec = self, _))
     case Record.Zip(left, right, _) => apply(codec = left, a._1) ++ apply(codec = right, a._2)
 
-  def obj(values: Chain[(String, String)], explode: Boolean): String =
-    if explode then
-      val characters = List("=", ",")
-      values.map((name, value) => s"${escape(name, characters)}=${escape(value, characters)}").mkString_(",")
-    else values.map((name, value) => s"${escape(name, ",")},${{ escape(value, ",") }}").mkString_(",")
-
   def apply[A](codec: Http.Header.Value[A], a: A): String = codec match
     case Http.Header.Value.Constant(self)    => apply(codec = self, a)
     case Http.Header.Value.Enumeration(self) => apply(codec = self, a)
@@ -74,3 +68,14 @@ object HttpHeaderPrinter:
     case Union.Untagged.Branch(_, codec, _)    => apply(codec = codec.value, a)
     case Union.Untagged.Modify(self, _, g)     => apply(codec = self, g(a))
     case Union.Untagged.OrElse(left, right, _) => a.fold(apply(codec = left, _), apply(codec = right, _))
+
+  def array(values: Chain[String]): String = values.map(escape(_, ",")).mkString_(",")
+
+  def obj(values: Chain[(String, String)]): String =
+    if explode then
+      val characters = List("=", ",")
+      values.map((name, value) => s"${escape(name, characters)}=${escape(value, characters)}").mkString_(",")
+    else values.map((name, value) => s"${escape(name, ",")},${escape(value, ",")}").mkString_(",")
+
+object HttpHeaderPrinter:
+  def apply(explode: Boolean): Printer[Http.Header] = new HttpHeaderPrinter(explode)

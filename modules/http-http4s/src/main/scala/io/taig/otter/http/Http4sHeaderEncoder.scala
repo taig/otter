@@ -10,7 +10,7 @@ object Http4sHeaderEncoder extends Encoder[Header, Option[Http4sHeader]]:
     case Header.Root(name, codec, metadata) =>
       Http4sHeader(
         name,
-        value = HttpHeaderPrinter(codec = codec.value, a, explode = metadata.get(explode).getOrElse(false))
+        value = HttpHeaderPrinter(explode = metadata.get(explode).getOrElse(false))(codec = codec.value, a)
       ).some
     case Header.Modify(self, _, g) => apply(codec = self, g(a))
     case Header.Optional(self)     => a.flatMap(apply(codec = self, _))

@@ -24,6 +24,10 @@ object Violation:
   def tpe(name: String, actual: Data): Violation = tpe(name, actual, hint = none)
   def tpe(name: String, actual: Data, hint: String): Violation = tpe(name, actual, hint = hint.some)
 
+  def required(hint: Option[String]): Violation = Violation(Constraint.Required, actual = Data.Null, hint)
+  def required(hint: String): Violation = required(hint = hint.some)
+  val required: Violation = required(hint = none)
+
   def oneOf(values: List[Data.Primitive], actual: Data): Violation =
     Violation(Constraint.OneOf(values), actual, hint = none)
 

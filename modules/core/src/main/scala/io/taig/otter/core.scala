@@ -14,32 +14,45 @@ private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
 private[otter] def indent(value: String): String = value.split("\n").map("  " + _).mkString("\n")
 
-// import cats.Eq
-// import cats.syntax.all.*
+private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
+  characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (value, character) =>
+    value.replace(character, s"$escape$character")
 
-// import scala.collection.immutable.Iterable
+private[otter] def escape(value: String, character: String): String = escape(value, characters = List(character))
 
-// extension [A: Eq, B](self: Vector[(A, B)])
-//   def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
-//     val remainingKeys = keys.toBuffer
-//     val result = Vector.newBuilder[(A, B)]
-//     val remainders = Vector.newBuilder[(A, B)]
+private[otter] def unescape(value: String, characters: List[String], escape: Char = '\\'): String =
+  characters
+    .foldLeft(value): (value, character) =>
+      value.replace(s"$escape$character", character).replace(s"$escape$escape", s"$escape")
+    .replace(s"$escape$escape", s"$escape")
 
-//     self.foreach { case value @ (key, _) =>
-//       if remainingKeys.exists(_ === key)
-//       then
-//         remainingKeys -= key
-//         result += value
-//       else remainders += value
-//     }
+private[otter] def unescape(value: String, character: String): String =
+  unescape(value, characters = List(character))
 
-//     (result.result(), remainders.result())
+private[otter] def split(value: String, separator: String): Array[String] =
+  value.split(s"(?<!\\\\)$separator").map(unescape(_, separator))
 
-extension [A](self: Vector[A])
-  def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (Vector[A], Option[B]) =
+extension [A: Eq, B](self: Vector[(A, B)])
+  private[otter] def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
+    val remainingKeys = keys.toBuffer
+    val result = Vector.newBuilder[(A, B)]
+    val remainders = Vector.newBuilder[(A, B)]
+
+    self.foreach { case value @ (key, _) =>
+      if remainingKeys.exists(_ === key)
+      then
+        remainingKeys -= key
+        result += value
+      else remainders += value
+    }
+
+    (result.result(), remainders.result())
+
+extension [A](self: List[A])
+  private[otter] def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (List[A], Option[B]) =
     @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
     var result: Option[B] = none
-    val remainders = Vector.newBuilder[A]
+    val remainders = List.newBuilder[A]
 
     self.foreach: a =>
       if result.isEmpty && pf.isDefinedAt(a)
@@ -49,18 +62,3 @@ extension [A](self: Vector[A])
     if result.isEmpty
     then (self, none)
     else (remainders.result(), result)
-
-private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
-  characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (character, value) =>
-    value.replace(character, s"$escape$character")
-
-private[otter] def escape(value: String, character: String): String = escape(value, characters = List(character))
-
-private[otter] def unescape(value: String, characters: List[String], escape: Char = '\\'): String =
-  characters
-    .foldLeft(value): (character, value) =>
-      value.replace(s"$escape$character", character).replace(s"$escape$escape", s"$escape")
-    .replace(s"$escape$escape", s"$escape")
-
-private[otter] def unescape(value: String, character: String): String =
-  unescape(value, characters = List(character))

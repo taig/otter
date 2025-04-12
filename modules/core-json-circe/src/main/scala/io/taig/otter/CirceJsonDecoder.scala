@@ -162,12 +162,12 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   def apply[A](codec: Record[Json.Key, Json, A], json: CirceJson): Validated[Violations, A] =
     json.asObject
       .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
-      .andThen(json => apply(codec, json = json.toVector).map((_, a) => a))
+      .andThen(json => apply(codec, json = json.toList).map((_, a) => a))
 
   def apply[A](
       codec: Record[Json.Key, Json, A],
-      json: Vector[(String, CirceJson)]
-  ): Validated[Violations, (Vector[(String, CirceJson)], A)] = codec match
+      json: List[(String, CirceJson)]
+  ): Validated[Violations, (List[(String, CirceJson)], A)] = codec match
     case Record.Empty(_) => (json, ()).valid
     case Record.Field(key, codec, _) =>
       val name = JsonKeyReferenceConstantPrinter(reference = key)
