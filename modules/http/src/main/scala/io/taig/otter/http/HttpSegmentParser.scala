@@ -41,8 +41,33 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
     case Http.Segment.Array.Collection(self) => CollectionParser(parser = HttpSegmentValueParser)(codec = self, values)
     case Http.Segment.Array.Tuple(self)      => TupleParser(parser = HttpSegmentValueParser)(codec = self, values)
 
-  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] =
-    ???
+  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] = (explode, style)
+    .match
+      case (false, Header.Style.Simple) =>
+        HttpSegmentParser.parser.obj.simple.unexploded(value).toValidatedViolations(tpe = "object", value)
+      case (true, Header.Style.Simple) =>
+        HttpSegmentParser.parser.obj.simple.exploded(value).toValidatedViolations(tpe = "object", value)
+      case (false, Header.Style.Label) =>
+        HttpSegmentParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
+      case (true, Header.Style.Label) =>
+        HttpSegmentParser.parser.obj.label.exploded(value).toValidatedViolations(tpe = "object", value)
+      case (false, Header.Style.Matrix) =>
+        HttpSegmentParser.parser.obj.matrix
+          .unexploded(value)
+          .toValidatedViolations(tpe = "object", value)
+          .andThen: (key, values) =>
+            if key === name
+            then values.valid
+            else Violations.rootNec(Violation.equal(name, actual = key)).invalid
+      case (true, Header.Style.Matrix) =>
+        HttpSegmentParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
+    .andThen: values =>
+      codec match
+        case Http.Segment.Object.Dictionary(self) =>
+          DictionaryParser(parser = HttpSegmentValueParser)(codec = self, values)
+        case Http.Segment.Object.Record(self) =>
+          RecordParser(parser = HttpSegmentValueParser, printer = HttpSegmentValuePrinter)(codec = self, values)
+            .map((_, a) => a)
 
   def apply[A](name: String, codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = style
     .match
