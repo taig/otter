@@ -41,7 +41,8 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
     case Http.Segment.Array.Collection(self) => CollectionParser(parser = HttpSegmentValueParser)(codec = self, values)
     case Http.Segment.Array.Tuple(self)      => TupleParser(parser = HttpSegmentValueParser)(codec = self, values)
 
-  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] = ???
+  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] =
+    ???
 
   def apply[A](name: String, codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = style
     .match
@@ -89,6 +90,39 @@ object HttpSegmentParser:
           val parser =
             char(';') *> ((token(';', '=').rep.string <* char('=')) ~ token(',').rep.string).repSep0(char(';'))
           (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, List(";", "=")), unescape(_, ";"))))
+
+    object obj:
+      object simple:
+        val unexploded: String => Either[Error, List[(String, String)]] =
+          val parser = ((token(',').rep.string <* char(',')) ~ token(',').rep.string).repSep0(char(','))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, ","), unescape(_, ","))))
+
+        val exploded: String => Either[Error, List[(String, String)]] =
+          val parser = ((token(',', '=').rep.string <* char('=')) ~ token(',').rep.string).repSep0(char(','))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, List(",", "=")), unescape(_, ","))))
+
+      object label:
+        val unexploded: String => Either[Error, List[(String, String)]] =
+          val parser = ((char('.') *> token(',').rep.string <* char(',')) ~ token(',').rep.string).repSep0(char(','))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, ","), unescape(_, ","))))
+
+        val exploded: String => Either[Error, List[(String, String)]] =
+          val parser =
+            ((char('.') *> token('.', '=').rep.string <* char('=')) ~ token('.').rep.string).repSep0(char('.'))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, List(".", "=")), unescape(_, "."))))
+
+      object matrix:
+        val unexploded: String => Either[Error, (String, List[(String, String)])] =
+          val parser =
+            (char(';') *> token('=').rep.string <* char('=')) ~ ((token(',').rep.string <* char(',')) ~ token(
+              ','
+            ).rep.string).repSep0(char(','))
+          (value: String) =>
+            parser.parseAll(value).map(_.bimap(unescape(_, "="), _.map(_.bimap(unescape(_, ","), unescape(_, ",")))))
+
+        val exploded: String => Either[Error, List[(String, String)]] =
+          val parser = char(';') *> ((token('=').rep.string <* char('=')) ~ (token(';').rep.string)).repSep0(char(';'))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, "="), unescape(_, ";"))))
 
     val value: String => Either[Error, (String, String)] =
       val parser = (char(';') *> token('=').rep0.string <* char('=')) ~ anyChar.rep0.string
