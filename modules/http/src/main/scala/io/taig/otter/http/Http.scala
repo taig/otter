@@ -3,7 +3,12 @@ package io.taig.otter.http
 import io.taig.otter as Self
 import io.taig.otter.Codec
 import io.taig.otter.Invariant
+import io.taig.otter.Violations
+import io.taig.otter.Violation
 import io.taig.otter.Metadata
+import cats.syntax.all.*
+import cats.parse.Parser
+import cats.data.Validated
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable
@@ -420,3 +425,8 @@ object Http:
           override def imap[B](f: A => B)(g: B => A): Object[B] = self match
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
+
+extension [A](self: Either[Parser.Error, A])
+  private[otter] def toValidatedViolations(tpe: String, value: String): Validated[Violations, A] =
+    self.toValidated.leftMap: error =>
+      Violations.rootNec(Violation.tpe(name = tpe, actual = value, hint = error.show))

@@ -6,9 +6,42 @@ import io.taig.otter.*
 
 final class HttpSegmentParser(explode: Boolean, style: Header.Style):
   def apply[A](name: String, codec: Http.Segment[A], value: String): Validated[Violations, A] = codec match
-    case codec: Http.Segment.Array[A]  => ???
-    case codec: Http.Segment.Object[A] => ???
+    case codec: Http.Segment.Array[A]  => apply(name, codec, value)
+    case codec: Http.Segment.Object[A] => apply(name, codec, value)
     case codec: Http.Segment.Value[A]  => apply(name, codec, value)
+
+  def apply[A](name: String, codec: Http.Segment.Array[A], value: String): Validated[Violations, A] = (explode, style)
+    .match
+      case (_, Header.Style.Simple) =>
+        HttpSegmentParser.parser.array.simple(value).toValidatedViolations(tpe = "array", value)
+      case (false, Header.Style.Label) =>
+        HttpSegmentParser.parser.array.label.unexploded(value).toValidatedViolations(tpe = "array", value)
+      case (true, Header.Style.Label) =>
+        HttpSegmentParser.parser.array.label.exploded(value).toValidatedViolations(tpe = "array", value)
+      case (false, Header.Style.Matrix) =>
+        HttpSegmentParser.parser.array.matrix
+          .unexploded(value)
+          .toValidatedViolations(tpe = "array", value)
+          .andThen: (key, values) =>
+            if key === name
+            then values.valid
+            else Violations.rootNec(Violation.equal(name, actual = key)).invalid
+      case (true, Header.Style.Matrix) =>
+        HttpSegmentParser.parser.array.matrix
+          .exploded(value)
+          .toValidatedViolations(tpe = "array", value)
+          .andThen: values =>
+            values.traverse: (key, value) =>
+              if key === name
+              then value.valid
+              else Violations.rootNec(Violation.equal(name, actual = key)).invalid
+    .andThen(apply(codec, _))
+
+  def apply[A](codec: Http.Segment.Array[A], values: List[String]): Validated[Violations, A] = codec match
+    case Http.Segment.Array.Collection(self) => CollectionParser(parser = HttpSegmentValueParser)(codec = self, values)
+    case Http.Segment.Array.Tuple(self)      => TupleParser(parser = HttpSegmentValueParser)(codec = self, values)
+
+  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] = ???
 
   def apply[A](name: String, codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = style
     .match
@@ -20,56 +53,43 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
       case Header.Style.Matrix =>
         HttpSegmentParser.parser
           .value(value)
-          .toValidated
-          .leftMap: error =>
-            Violations.rootNec(Violation.tpe(name = "value", actual = value, hint = error.show))
+          .toValidatedViolations(tpe = "value", value)
           .andThen: (key, value) =>
             if key === name
             then value.valid
-            else Violations.rootNec(Violation.tpe(name = "value", actual = value)).invalid
-    .andThen(apply(codec, _))
-
-  def apply[A](codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = codec match
-    case Http.Segment.Value.Constant(self)    => apply(codec = self, value)
-    case Http.Segment.Value.Enumeration(self) => apply(codec = self, value)
-    case Http.Segment.Value.Primitive(self)   => PrimitiveParser.Unquoted(codec = self, value)
-    case Http.Segment.Value.Union(self)       => apply(codec = self, value)
-
-  def apply[A](codec: Constant[Http.Segment.Value.Primitive, A], value: String): Validated[Violations, A] = codec match
-    case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
-    case Constant.Root(codec, _) =>
-      val reference = PrimitivePrinter.Unquoted(codec = codec.self.value.self, codec.value)
-      Validated.cond(
-        test = value === reference,
-        codec.value,
-        Violations.rootNec(Violation.equal(reference, actual = value))
-      )
-
-  def apply[A](codec: Enumeration[Http.Segment.Value.Primitive, A], value: String): Validated[Violations, A] =
-    codec match
-      case Enumeration.Modify(self, f, _) => apply(codec = self, value).map(f)
-      case self @ Enumeration.Root(codec, mapping, _) =>
-        apply(codec = codec.value, value).andThen: a =>
-          mapping
-            .unapply(a)
-            .toValid:
-              val values = self.values.map(mapping.apply).map(HttpSegmentPrinter(explode, style)(codec.value, _))
-              Violations.rootNec(Violation.oneOf(values = values.toList, actual = value))
-
-  def apply[A](codec: Union.Untagged[Http.Segment.Value, A], value: String): Validated[Violations, A] = codec match
-    case Union.Untagged.Branch(_, codec, _) => apply(codec = codec.value, value)
-    case Union.Untagged.Modify(self, f, _)  => apply(codec = self, value).map(f)
-    case Union.Untagged.OrElse(left, right, _) =>
-      apply(codec = left, value).map(Left(_)).findValid(apply(codec = right, value).map(Right(_)))
+            else Violations.rootNec(Violation.equal(reference = name, actual = key)).invalid
+    .andThen(HttpSegmentValueParser(codec, _))
 
 object HttpSegmentParser:
   private object parser:
     import cats.parse.Parser
     import cats.parse.Parser.*
 
-    val escaped = (character: Char) =>
-      charWhere(value => value != '\\' && value != character).orElse(char('\\') *> anyChar)
+    def token(escape: Char*): Parser[Char] =
+      charWhere(value => value != '\\' && !escape.contains(value)).orElse(char('\\') *> anyChar)
 
-    val value =
-      val parser = (char(';') *> escaped('=').rep0.string <* char('=')) ~ anyChar.rep0.string
+    object array:
+      val simple: String => Either[Error, List[String]] =
+        val parser = token(',').rep.string.repSep0(char(','))
+        (value: String) => parser.parseAll(value).map(_.map(unescape(_, ",")))
+
+      object label:
+        val unexploded: String => Either[Error, List[String]] = simple
+
+        val exploded: String => Either[Error, List[String]] =
+          val parser = token('.').rep.string.repSep0(char('.'))
+          (value: String) => parser.parseAll(value).map(_.map(unescape(_, ".")))
+
+      object matrix:
+        val unexploded: String => Either[Error, (String, List[String])] =
+          val parser = (char(';') *> token('=').rep.string <* char('=')) ~ token(',').rep.string.repSep0(char(','))
+          (value: String) => parser.parseAll(value).map(_.bimap(unescape(_, "="), _.map(unescape(_, ","))))
+
+        val exploded: String => Either[Error, List[(String, String)]] =
+          val parser =
+            char(';') *> ((token(';', '=').rep.string <* char('=')) ~ token(',').rep.string).repSep0(char(';'))
+          (value: String) => parser.parseAll(value).map(_.map(_.bimap(unescape(_, List(";", "=")), unescape(_, ";"))))
+
+    val value: String => Either[Error, (String, String)] =
+      val parser = (char(';') *> token('=').rep0.string <* char('=')) ~ anyChar.rep0.string
       (value: String) => parser.parseAll(value).map(_.leftMap(unescape(_, "=")))
