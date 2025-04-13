@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.Reference
 
 // TODO strict vs streaming (?)
 sealed abstract class Body[+S, A] extends Product with Serializable:
@@ -18,4 +19,4 @@ object Body:
   final private[otter] case class OrElse[S, T, A, B](left: Body[S, A], right: Body[T, B])
       extends Body[S | T, Either[A, B]]
 
-  final private[otter] case class Root[S, A](mediaType: MediaType, codec: S) extends Body[S, A]
+  final private[otter] case class Root[S[_], A](mediaType: MediaType, codec: Reference[S, A]) extends Body[S[A], A]

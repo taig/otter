@@ -1,4 +1,8 @@
-// package io.taig.otter.http
+package io.taig.otter.http
+
+import io.taig.otter.Violations
+import cats.derived.*
+import cats.Eq
 
 // import cats.ApplicativeThrow
 // import cats.Eq
@@ -57,11 +61,11 @@
 
 //   def toRoutes: Routes[F] = Routes.one(this)
 
-// object Route:
-//   enum Error derives Eq:
-//     case ContentNegotiationFailed(violations: Violations)
-//     case MediaTypesUnsupported(violations: Violations)
-//     case ValidationViolations(violations: Violations)
+object Route:
+  enum Error derives Eq:
+    case ContentNegotiationFailed(violations: Violations)
+    case MediaTypesUnsupported(violations: Violations)
+    case ValidationViolations(violations: Violations)
 
 //   object Error:
 //     object ContentNegotiationFailed:

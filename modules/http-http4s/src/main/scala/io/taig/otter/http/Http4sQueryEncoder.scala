@@ -9,11 +9,8 @@ object Http4sQueryEncoder extends Encoder[Query, Http4sQuery]:
     case Query.Optional(self)     => a.fold(Http4sQuery.empty)(apply(query = self, _))
     case Query.Root(name, codec, metadata) =>
       val values = HttpQueryPrinter(
-        name,
-        codec = codec.value,
-        a,
         explode = metadata.get(explode).getOrElse(true),
         style = metadata.get(style).collect { case style: Query.Style => style }.getOrElse(Query.Style.Form)
-      )
+      )(name, codec = codec.value, a)
 
       Http4sQuery.fromVector(values.toVector)

@@ -13,5 +13,5 @@ final class Http4sBodyEncoder[F[_], S](encode: S => String):
     case Body.Or(left, right)     => ???
     case Body.OrElse(left, right) => a.fold(apply(charset, body = left, _), apply(charset, body = right, _))
     case Body.Root(mediaType, codec) =>
-      val bytes = ByteVector(encode(codec).getBytes(charset.getOrElse(StandardCharsets.UTF_8)))
+      val bytes = ByteVector(encode(codec.value).getBytes(charset.getOrElse(StandardCharsets.UTF_8)))
       Http4sBody.strict(bytes)
