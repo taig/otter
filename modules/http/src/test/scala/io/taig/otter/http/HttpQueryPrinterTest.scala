@@ -26,6 +26,16 @@ final class HttpQueryPrinterTest extends OtterSuite:
       expected = Chain.one(("foo", "bar,baz".some))
     )
 
+  test("collection: style = form, explode = false (escape)"):
+    assertEq(
+      obtained = HttpQueryPrinter(explode = false, style = Query.Style.Form)(
+        name = "foo",
+        codec = collection.list(string),
+        List("foo,bar", "baz")
+      ),
+      expected = Chain.one(("foo", "foo\\,bar,baz".some))
+    )
+
   test("collection: style = spaceDelimited, explode = true"):
     assertEq(
       obtained = HttpQueryPrinter(explode = true, style = Query.Style.SpaceDelimited)(
@@ -44,6 +54,16 @@ final class HttpQueryPrinterTest extends OtterSuite:
         List("bar", "baz")
       ),
       expected = Chain.one(("foo", "bar baz".some))
+    )
+
+  test("collection: style = spaceDelimited, explode = false (escape)"):
+    assertEq(
+      obtained = HttpQueryPrinter(explode = false, style = Query.Style.SpaceDelimited)(
+        name = "foo",
+        codec = collection.list(string),
+        List("foo bar", "baz")
+      ),
+      expected = Chain.one(("foo", "foo\\ bar baz".some))
     )
 
   test("collection: style = pipeDelimited, explode = true"):
@@ -66,6 +86,16 @@ final class HttpQueryPrinterTest extends OtterSuite:
       expected = Chain.one(("foo", "bar|baz".some))
     )
 
+  test("collection: style = pipeDelimited, explode = false (escape)"):
+    assertEq(
+      obtained = HttpQueryPrinter(explode = false, style = Query.Style.PipeDelimited)(
+        name = "foo",
+        codec = collection.list(string),
+        List("foo|bar", "baz")
+      ),
+      expected = Chain.one(("foo", "foo\\|bar|baz".some))
+    )
+
   test("dictionary: style = form, explode = true"):
     assertEq(
       obtained = HttpQueryPrinter(explode = true, style = Query.Style.Form)(
@@ -81,9 +111,9 @@ final class HttpQueryPrinterTest extends OtterSuite:
       obtained = HttpQueryPrinter(explode = false, style = Query.Style.Form)(
         name = "foo",
         codec = dictionary.list(string, string),
-        List(("a", "b"), ("x", "y"))
+        List(("a,b", "c"), ("x", "y,z"))
       ),
-      expected = Chain.one(("foo", "a,b,x,y".some))
+      expected = Chain.one(("foo", "a\\,b,c,x,y\\,z".some))
     )
 
   test("primitive"):

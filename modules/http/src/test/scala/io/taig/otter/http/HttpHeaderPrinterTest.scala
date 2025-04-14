@@ -37,7 +37,7 @@ final class HttpHeaderPrinterTest extends OtterSuite:
       expected = "foo,x,bar,y"
     )
 
-  test("object: escape (explode = false)"):
+  test("object: explode = false (escape)"):
     val codec = field("foo", string) :* field("bar", string)
 
     assertEq(
@@ -53,7 +53,7 @@ final class HttpHeaderPrinterTest extends OtterSuite:
       expected = "foo=x,bar=y"
     )
 
-  test("object: escape (explode = true)"):
+  test("object: explode = true (escape)"):
     val codec = field("foo", string) :* field("bar", string)
 
     assertEq(
