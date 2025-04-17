@@ -4,6 +4,7 @@ import cats.Eq
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
+import cats.data.Chain
 
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals
@@ -59,3 +60,7 @@ extension [A](self: List[A])
     if result.isEmpty
     then (self, none)
     else (remainders.result(), result)
+
+extension [A](self: Chain[A])
+  private[otter] def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (Chain[A], Option[B]) =
+    self.toList.collectFirstWithRemainders(pf).leftMap(Chain.fromSeq)
