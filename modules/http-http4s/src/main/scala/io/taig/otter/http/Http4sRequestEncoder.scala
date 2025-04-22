@@ -20,7 +20,7 @@ final class Http4sRequestEncoder[F[_], S](encode: S => String):
     case Request.Root(method, _, _, body) =>
       (
         toHttp4sMethod(method),
-        body.map(Http4sBodyEncoder(encode)(charset = ???, _, a._4)).getOrElse(Http4sBody.empty)
+        Http4sBodyEncoder(encode)(charset = ???, body, a._4)
       )
     case Request.ZipHeaders(self, _) => root(request = self, a._1)
     case Request.ZipUrl(self, _)     => root(request = self, a._1)

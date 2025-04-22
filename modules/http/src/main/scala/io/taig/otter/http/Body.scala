@@ -12,6 +12,8 @@ sealed abstract class Body[+S, A] extends Product with Serializable:
   final def or[T](body: Body[T, A]): Body[S | T, A] = Body.Or(left = this, right = body)
 
 object Body:
+  private[otter] case object Empty extends Body[Nothing, Unit]
+
   final private[otter] case class Modify[S, A, B](self: Body[S, A], f: A => B, g: B => A) extends Body[S, B]
 
   final private[otter] case class Or[S, T, A, B](left: Body[S, A], right: Body[T, A]) extends Body[S | T, A]

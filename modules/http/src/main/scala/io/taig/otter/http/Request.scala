@@ -4,7 +4,7 @@ sealed abstract class Request[+S, A] extends Product with Serializable:
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
-  def body: Option[Body[S, ?]]
+  def body: Body[S, ?]
 
   final def imap[B](f: A => B)(g: B => A): Request[S, B] = Request.Modify(self = this, f, g)
 
@@ -20,7 +20,7 @@ object Request:
       method: Method,
       url: Url[A],
       headers: Headers[B],
-      body: Option[Body[S, D]]
+      body: Body[S, D]
   ) extends Request[S, (A, B, C, D)]
 
   final private[otter] case class ZipHeaders[S, A, B](self: Request[S, A], headers: Headers[B])

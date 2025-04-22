@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.Eq
 import cats.Show
+import io.taig.enumeration.ext.Mapping
 
 enum Method:
   case Delete
@@ -13,7 +14,10 @@ enum Method:
   case Put
   case Trace
 
-  override def toString(): String = this match
+  final override def toString: String = Method.mapping(this)
+
+object Method:
+  given mapping: Mapping[Method, String] = Mapping.enumeration:
     case Delete  => "DELETE"
     case Get     => "GET"
     case Head    => "HEAD"
@@ -23,7 +27,6 @@ enum Method:
     case Put     => "PUT"
     case Trace   => "TRACE"
 
-object Method:
   given Eq[Method] = Eq.fromUniversalEquals
 
-  given Show[Method] = Show.fromToString
+  given Show[Method] = mapping.apply(_)
