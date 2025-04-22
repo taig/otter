@@ -1,13 +1,13 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import io.taig.otter.Metadata
+import io.taig.otter.Metadata
 
-// final case class Endpoint[A, B](request: Request[A], response: Response[B], metadata: Metadata):
-//   def modifyRequest[T](f: Request[A] => Request[T]): Endpoint[T, B] = copy(request = f(request))
+final case class Endpoint[+S, +T, A, B](request: Request[S, A], response: Response[T, B], metadata: Metadata):
+  def modifyRequest[U, C](f: Request[S, A] => Request[U, C]): Endpoint[U, T, C, B] = copy(request = f(request))
 
-//   def modifyResponse[T](f: Response[B] => Response[T]): Endpoint[A, T] = copy(response = f(response))
+  def modifyResponse[U, C](f: Response[T, B] => Response[U, C]): Endpoint[S, U, A, C] = copy(response = f(response))
 
-//   def modifyMetadata(f: Metadata => Metadata): Endpoint[A, B] = copy(metadata = f(metadata))
+  def modifyMetadata(f: Metadata => Metadata): Endpoint[S, T, A, B] = copy(metadata = f(metadata))
 
 // object Endpoint:
 //   def apply[I, O](request: Request[I], response: Response[O]): Endpoint[I, O] =

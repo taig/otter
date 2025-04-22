@@ -4,20 +4,21 @@ import io.taig.otter.Violations
 import cats.derived.*
 import cats.Eq
 
-// import cats.ApplicativeThrow
-// import cats.Eq
-// import cats.Show
-// import cats.data.Validated
-// import cats.derived.*
-// import cats.syntax.all.*
-// import io.taig.otter.Violation
-// import io.taig.otter.Violations
-// import io.taig.otter.XPath
-// import io.taig.otter.http.header.Accept
-// import org.typelevel.ci.*
+import cats.ApplicativeThrow
+import cats.Eq
+import cats.Show
+import cats.data.Validated
+import cats.derived.*
+import cats.syntax.all.*
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.XPath
+import io.taig.otter.http.header.Accept
+import org.typelevel.ci.*
 
-// final case class Route[F[_], I, O](endpoint: Endpoint[I, O], implementation: I => F[O]):
-//   def modifyEndpoint(f: Endpoint[I, O] => Endpoint[I, O]): Route[F, I, O] = copy(endpoint = f(endpoint))
+final case class Route[F[_], +S, +T, A, B](endpoint: Endpoint[S, T, A, B], implementation: A => F[B]):
+  def modifyEndpoint[S1 >: S, T1 >: T](f: Endpoint[S, T, A, B] => Endpoint[S1, T1, A, B]): Route[F, S1, T1, A, B] =
+    copy(endpoint = f(endpoint))
 
 //   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
 //       F: ApplicativeThrow[F]
