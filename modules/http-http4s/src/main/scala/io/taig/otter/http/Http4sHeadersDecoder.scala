@@ -5,16 +5,11 @@ import org.http4s.Header as Http4sHeader
 import io.taig.otter.*
 import cats.data.Validated
 import io.taig.otter.Violations
-import scala.annotation.targetName
 import cats.syntax.all.*
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 
-object Http4sHeadersDecoder extends Decoder[Headers, Http4sHeaders]:
-  override def apply[A](headers: Headers[A], values: Http4sHeaders): Validated[Violations, A] =
-    apply(headers, values = values.headers).map((_, a) => a)
-
-  @targetName("applyWithRemainders")
+object Http4sHeadersDecoder:
   def apply[A](
       headers: Headers[A],
       values: List[Http4sHeader.Raw]

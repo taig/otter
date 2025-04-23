@@ -8,4 +8,8 @@ import cats.data.Validated
 import io.taig.otter.Violations
 
 object Http4sUrlDecoder:
-  def apply[A](url: Url[A], value: Http4sUri): Validated[Violations, A] = ???
+  def apply[A](
+      url: Url[A],
+      path: Vector[Http4sUri.Path.Segment],
+      queries: Vector[Http4sQuery.KeyValue]
+  ): Validated[Violations, (Vector[Http4sUri.Path.Segment], Vector[Http4sQuery.KeyValue], A)] = ???

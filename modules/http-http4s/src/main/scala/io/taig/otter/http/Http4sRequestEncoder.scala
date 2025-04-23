@@ -20,10 +20,9 @@ final class Http4sRequestEncoder[F[_], S](encode: S => String):
     case Request.Root(method, _, _, body) =>
       (
         toHttp4sMethod(method),
-        Http4sBodyEncoder(encode)(charset = ???, body, a._4)
+        Http4sBodyEncoder(encode)(charset = ???, body, a._3)
       )
     case Request.ZipHeaders(self, _) => root(request = self, a._1)
-    case Request.ZipUrl(self, _)     => root(request = self, a._1)
 
   def toHttp4sMethod(method: Method): Http4sMethod = method match
     case Method.Delete  => Http4sMethod.DELETE
@@ -40,13 +39,8 @@ final class Http4sRequestEncoder[F[_], S](encode: S => String):
     case Request.Root(method, url, headers, body) => Http4sHeadersEncoder(codec = headers, a._2)
     case Request.ZipHeaders(self, headers) =>
       this.headers(request = self, a._1) ++ Http4sHeadersEncoder(codec = headers, a._2)
-    case Request.ZipUrl(self, _) => headers(request = self, a._1)
 
   def url[A](request: Request[S, A], a: A): Http4sUri = request match
     case Request.Modify(self, _, g)  => url(request = self, g(a))
     case Request.Root(_, url, _, _)  => Http4sUrlEncoder(url, a._1)
     case Request.ZipHeaders(self, _) => url(request = self, a._1)
-    case Request.ZipUrl(self, zip) =>
-      val (path, queries) = Http4sUrlEncoder.Raw(zip, a._2)
-      val url = this.url(request = self, a._1)
-      url.copy(path = url.path.concat(path), query = url.query ++ queries.toVector)

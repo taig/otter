@@ -10,22 +10,17 @@ sealed abstract class Request[+S, A] extends Product with Serializable:
 
   final def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request.ZipHeaders(self = this, headers)
 
-  final def zip[B](url: Url[B]): Request[S, (A, B)] = Request.ZipUrl(self = this, url)
-
 object Request:
   final private[otter] case class Modify[S, A, B](self: Request[S, A], f: A => B, g: B => A) extends Request[S, B]:
     export self.{body, headers, method, url}
 
-  final private[otter] case class Root[S, A, B, C, D](
+  final private[otter] case class Root[S, A, B, C](
       method: Method,
       url: Url[A],
       headers: Headers[B],
-      body: Body[S, D]
-  ) extends Request[S, (A, B, C, D)]
+      body: Body[S, C]
+  ) extends Request[S, (A, B, C)]
 
   final private[otter] case class ZipHeaders[S, A, B](self: Request[S, A], headers: Headers[B])
       extends Request[S, (A, B)]:
     export self.{body, method, url}
-
-  final private[otter] case class ZipUrl[S, A, B](self: Request[S, A], url: Url[B]) extends Request[S, (A, B)]:
-    export self.{body, headers, method}
