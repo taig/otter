@@ -1,10 +1,10 @@
-package io.taig.otter.sample.api.schema
+// package io.taig.otter.sample.api.schema
 
-import org.typelevel.ci.CIString
+// import org.typelevel.ci.CIString
 
-final case class MemberApiSchema(
-    reference: CIString,
-    email: CIString,
-    password: String,
-    session: Option[SessionApiSchema]
-)
+// final case class MemberApiSchema(
+//     reference: CIString,
+//     email: CIString,
+//     password: String,
+//     session: Option[SessionApiSchema]
+// )

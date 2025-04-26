@@ -1,3 +1,3 @@
-package io.taig.otter.sample.api.schema
+// package io.taig.otter.sample.api.schema
 
-type UserApiSchema = LibrarianApiSchema | MemberApiSchema
+// type UserApiSchema = LibrarianApiSchema | MemberApiSchema

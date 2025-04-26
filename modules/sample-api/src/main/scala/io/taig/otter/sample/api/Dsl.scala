@@ -1,18 +1,18 @@
-package io.taig.otter.sample.api
+// package io.taig.otter.sample.api
 
-import cats.syntax.all.*
-import io.taig.otter.http.csv as Csv
-import io.taig.otter.http.json as Json
-import io.taig.otter.openapi as Openapi
-import io.taig.otter.sample.api as Api
+// import cats.syntax.all.*
+// import io.taig.otter.http.csv as Csv
+// import io.taig.otter.http.json as Json
+// import io.taig.otter.openapi as Openapi
+// import io.taig.otter.sample.api as Api
 
-object Dsl extends Csv.Dsl, Json.Dsl, Openapi.Dsl, Codecs:
-  given Conversion[header.type, Api.Headers] = _ => Api.Headers
+// object Dsl extends Csv.Dsl, Json.Dsl, Openapi.Dsl, Codecs:
+//   given Conversion[header.type, Api.Headers] = _ => Api.Headers
 
-  extension [I, O](self: Endpoint[I, O])
-    def role[R <: Role](role: R): RoleEndpoint[R, I, O] = RoleEndpoint(
-      role,
-      self
-        .modifyRequest(request => (header.session.optional *: request).to[AuthenticationApiSchema[I]])
-        .modifyResponse(_.modifyResults(AuthenticationApiSchema.results.orElse))
-    )
+//   extension [I, O](self: Endpoint[I, O])
+//     def role[R <: Role](role: R): RoleEndpoint[R, I, O] = RoleEndpoint(
+//       role,
+//       self
+//         .modifyRequest(request => (header.session.optional *: request).to[AuthenticationApiSchema[I]])
+//         .modifyResponse(_.modifyResults(AuthenticationApiSchema.results.orElse))
+//     )

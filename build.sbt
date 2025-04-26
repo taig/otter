@@ -7,7 +7,6 @@ val Version = new {
   val CatsEffect = "3.6.0"
   val CatsParse = "1.1.0"
   val Circe = "0.14.13"
-  val Ducktape = "0.2.8"
   val EnumerationExt = "0.3.2"
   val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M44"
@@ -75,7 +74,9 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJsonCirce,
     coreJsonZod,
     http,
-    httpZod
+    httpZod,
+    sample,
+    sampleApi,
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -188,22 +189,22 @@ lazy val httpZod = module(identifier = Some("http-zod"))
 //   )
 //   .dependsOn(http)
 
-// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %% "circe-parser" % Version.Circe ::
-//         "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
-//         Nil
-//   )
+lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %% "circe-parser" % Version.Circe ::
+        "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
 
-// lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     libraryDependencies ++=
-//       Nil
-//   )
-//   .dependsOn(httpJsonCirce, httpCsv, httpHttp4s, openapi)
+lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      Nil
+  )
+  .dependsOn(coreJsonCirce, httpHttp4s)
 
 // lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
 //   .settings(noPublishSettings)

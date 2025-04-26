@@ -1,7 +1,9 @@
 package io.taig.otter.sample.api.schema
 
 import cats.syntax.all.*
-import io.taig.otter.sample.api.Dsl.*
+import io.taig.otter.*
+import io.taig.otter.Syntax.*
+import io.taig.otter.JsonDsl.*
 
 opaque type IsbnApiSchema = Long
 
@@ -10,5 +12,5 @@ object IsbnApiSchema:
 
   def unsafe(value: Long): IsbnApiSchema = value
 
-  val codec: Primitive[IsbnApiSchema] =
+  val codec: Json.Primitive[IsbnApiSchema] =
     long(minimum = comparison(1L).some, maximum = comparison(9999999999999L).some)
