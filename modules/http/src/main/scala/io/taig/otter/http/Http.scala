@@ -1,14 +1,14 @@
 package io.taig.otter.http
 
+import cats.data.Validated
+import cats.parse.Parser
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.Codec
 import io.taig.otter.Invariant
-import io.taig.otter.Violations
-import io.taig.otter.Violation
 import io.taig.otter.Metadata
-import cats.syntax.all.*
-import cats.parse.Parser
-import cats.data.Validated
+import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable

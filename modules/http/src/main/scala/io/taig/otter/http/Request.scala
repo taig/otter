@@ -1,5 +1,7 @@
 package io.taig.otter.http
 
+import io.taig.otter.Invariant
+
 sealed abstract class Request[+S, A] extends Product with Serializable:
   def method: Method
   def url: Url[?]
@@ -24,3 +26,6 @@ object Request:
   final private[otter] case class ZipHeaders[S, A, B](self: Request[S, A], headers: Headers[B])
       extends Request[S, (A, B)]:
     export self.{body, method, url}
+
+  given [S]: Invariant[Request[S, *]] = new Invariant[Request[S, *]]:
+    extension [A](self: Request[S, A]) override def imap[B](f: A => B)(g: B => A): Request[S, B] = self.imap(f)(g)

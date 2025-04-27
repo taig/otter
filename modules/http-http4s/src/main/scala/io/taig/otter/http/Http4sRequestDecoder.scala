@@ -1,25 +1,16 @@
 package io.taig.otter.http
-
-import org.http4s.Entity as Http4sBody
+import cats.data.Validated
+import cats.effect.Concurrent
+import cats.syntax.all.*
+import fs2.Collector
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.http.Http4sRequestDecoder.Data
 import org.http4s.Header as Http4sHeader
-import org.http4s.Headers as Http4sHeaders
 import org.http4s.Method as Http4sMethod
+import org.http4s.Query as Http4sQuery
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
-import org.http4s.Query as Http4sQuery
-import org.http4s.Uri as Http4sUri
-import io.taig.otter.http.Http4sRequestDecoder.Data
-import io.taig.otter.Violations
-import cats.data.Validated
-import cats.syntax.all.*
-import io.taig.otter.Step
-import io.taig.otter.Violation
-import cats.Applicative
-import cats.Apply
-import cats.effect.Concurrent
-import cats.Monad
-import cats.data.Nested
-import fs2.Collector
 
 final class Http4sRequestDecoder[F[_]: Concurrent, S](decode: Array[Byte] => Validated[Violations, S]):
   def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Violations, A]] = value.body.compile

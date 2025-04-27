@@ -1,8 +1,9 @@
 package io.taig.otter
 
-import org.typelevel.ci.CIString
-import java.util.regex.Pattern
 import cats.syntax.all.*
+import org.typelevel.ci.CIString
+
+import java.util.regex.Pattern
 
 trait CaseInsensitiveDsl[Self[_]: Codec]:
   this: PrimitiveDsl.String[Self] =>

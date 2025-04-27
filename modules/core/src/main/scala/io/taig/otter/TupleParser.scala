@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 final class TupleParser[S[_]](parser: Parser[S]):
   def apply[A](codec: Tuple[S, A], values: List[String]): Validated[Violations, A] =

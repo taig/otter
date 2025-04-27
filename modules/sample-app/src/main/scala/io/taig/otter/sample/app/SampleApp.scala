@@ -4,7 +4,7 @@ import cats.effect.IO
 import cats.effect.ResourceApp
 import cats.effect.kernel.Resource
 import io.taig.otter.sample.Librarian
-import io.taig.otter.sample.api.Dsl.*
+import io.taig.otter.dsl.*
 import io.taig.otter.server.Http4sServer
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.LoggerFactory

@@ -44,35 +44,6 @@
 //     val post: Method = method("POST")
 //     val put: Method = method("PUT")
 
-//   object code:
-//     inline def apply(value: Int): Code = Code(value)
-
-//     val ok: Code = code(200)
-//     val created: Code = code(201)
-//     val accepted: Code = code(202)
-//     val noContent: Code = code(204)
-//     val partialContent: Code = code(206)
-//     val movedPermanently: Code = code(301)
-//     val found: Code = code(302)
-//     val seeOther: Code = code(303)
-//     val notModified: Code = code(304)
-//     val temporaryRedirect: Code = code(307)
-//     val permanentRedirect: Code = code(308)
-//     val badRequest: Code = code(400)
-//     val unauthorized: Code = code(401)
-//     val forbidden: Code = code(403)
-//     val notFound: Code = code(404)
-//     val methodNotAllowed: Code = code(405)
-//     val notAcceptable: Code = code(406)
-//     val conflict: Code = code(409)
-//     val gone: Code = code(410)
-//     val payloadTooLarge: Code = code(413)
-//     val unsupportedMediaTypes: Code = code(415)
-//     val unprocessableEntity: Code = code(422)
-//     val tooManyRequests: Code = code(429)
-//     val internalServerError: Code = code(500)
-//     val serviceUnavailable: Code = code(503)
-
 //   object mediaType:
 //     def apply(primary: String, secondary: String): MediaType =
 //       MediaType(tpe = MediaType.Type(primary, secondary), parameters = Parameters.Empty)

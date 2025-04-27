@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.*
 import cats.syntax.all.*
+import io.taig.otter.*
 
 object HttpQueryValueParser extends Parser[Http.Query.Value]:
   override def apply[A](codec: Http.Query.Value[A], value: String): Validated[Violations, A] =

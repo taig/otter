@@ -1,6 +1,6 @@
 package io.taig.otter
 
-trait Syntax:
+trait ComparisonDsl:
   def comparison[A](reference: A, exclusive: Boolean = false): Comparison[A] = Comparison(reference, exclusive)
 
-object Syntax extends Syntax
+object ComparisonDsl extends ComparisonDsl

@@ -1,7 +1,5 @@
 package io.taig.otter.http
-
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.Reference
+import io.taig.otter.Invariant
 
 sealed abstract class Result[+S, A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Result[S, B] = Result.Modify(self = this, f, g)
@@ -16,7 +14,14 @@ object Result:
 
   final private[otter] case class Root[S[_], A, B](
       code: Code,
-      mediaType: MediaType,
       headers: Headers[A],
-      codec: Reference[S, B]
-  ) extends Result[S[A], (A, B)]
+      codec: Body[S[B], B]
+  ) extends Result[S[B], (A, B)]
+
+  given [S]: Invariant.Coproduct[Result[S, *], Result[S, *]] with
+    override def result: Invariant[Result[S, *]] = this
+
+    extension [A](self: Result[S, A])
+      override def orElse[B](codec: Result[S, B]): Result[S, Either[A, B]] =
+        self.orElse(codec)
+      override def imap[B](f: A => B)(g: B => A): Result[S, B] = self.imap(f)(g)

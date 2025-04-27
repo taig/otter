@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import cats.data.Validated
-import io.taig.otter.*
-import cats.syntax.all.*
 import cats.data.Chain
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.*
 
 final class HttpQueryParser(explode: Boolean, style: Query.Style):
   def apply[A](

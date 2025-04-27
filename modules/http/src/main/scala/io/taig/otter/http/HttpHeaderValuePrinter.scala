@@ -1,6 +1,7 @@
 package io.taig.otter.http
 
 import io.taig.otter.*
+
 import scala.annotation.tailrec
 
 object HttpHeaderValuePrinter extends Printer[Http.Header.Value]:

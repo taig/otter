@@ -8,7 +8,7 @@ import io.taig.otter.http.Client
 import io.taig.otter.http.Route
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.sample.api.AuthenticationApiSchema
-import io.taig.otter.sample.api.Dsl.*
+import io.taig.otter.dsl.*
 import io.taig.otter.sample.api.Role
 import io.taig.otter.sample.api.RoleEndpoint
 import io.taig.otter.sample.api.schema.SessionApiSchema

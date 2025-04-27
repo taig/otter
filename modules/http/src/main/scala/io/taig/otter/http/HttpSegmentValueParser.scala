@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.data.Validated
-import io.taig.otter.http.Http.Segment.Value
+import cats.syntax.all.*
 import io.taig.otter.*
+import io.taig.otter.http.Http.Segment.Value
 
 object HttpSegmentValueParser extends Parser[Http.Segment.Value]:
   override def apply[A](codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = codec match

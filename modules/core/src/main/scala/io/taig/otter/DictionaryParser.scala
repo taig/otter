@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 final class DictionaryParser[S[_]](parser: Parser[S]):
   def apply[A](codec: Dictionary[S, S, A], values: List[(String, String)]): Validated[Violations, A] = codec match

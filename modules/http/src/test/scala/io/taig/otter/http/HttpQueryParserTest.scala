@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.HttpQueryDsl.*
-import io.taig.otter.OtterSuite
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.OtterSuite
+import io.taig.otter.http.HttpQueryDsl.*
 
 final class HttpQueryParserTest extends OtterSuite:
   test("primitive"):

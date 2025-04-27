@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
-import org.http4s.Header as Http4sHeader
-import io.taig.otter.*
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
+import io.taig.otter.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import org.http4s.Header as Http4sHeader
 
 object Http4sHeaderDecoder:
   def apply[A](header: Header[A], values: List[Http4sHeader.Raw]): Validated[Violations, (List[Http4sHeader.Raw], A)] =

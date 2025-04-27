@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 
 final class RecordParser[S[_]](parser: Parser[S], printer: Printer[S]):
   def apply[A](

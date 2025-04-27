@@ -1,11 +1,8 @@
 package io.taig.otter.http
-
-import io.taig.otter.Encoder
-import org.http4s.Query as Http4sQuery
-import org.http4s.Uri as Http4sUri
-import org.http4s.syntax.all.*
 import cats.data.Validated
 import io.taig.otter.Violations
+import org.http4s.Query as Http4sQuery
+import org.http4s.Uri as Http4sUri
 
 object Http4sUrlDecoder:
   def apply[A](

@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.*
 
 object HttpHeaderValueParser extends Parser[Http.Header.Value]:
   override def apply[A](codec: Http.Header.Value[A], value: String): Validated[Violations, A] = codec match

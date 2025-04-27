@@ -1,15 +1,15 @@
 package io.taig.otter.sample.api.schema.librarian
 
-import cats.derived.*
 import cats.Eq
 import cats.Order
+import cats.derived.*
 import cats.implicits.*
 import io.taig.otter.Json
-import io.taig.otter.sample.api.dsl.*
-import io.taig.otter.sample.api.dsl.json.*
-import scala.collection.immutable.SortedSet
-
+import io.taig.otter.dsl.*
+import io.taig.otter.dsl.json.*
 import io.taig.otter.sample.api.schema.IsbnApiSchema
+
+import scala.collection.immutable.SortedSet
 
 final case class BookApiSchema(
     isbn: IsbnApiSchema,

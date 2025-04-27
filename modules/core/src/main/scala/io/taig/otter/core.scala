@@ -1,10 +1,10 @@
 package io.taig.otter
 
 import cats.Eq
+import cats.data.Chain
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
-import cats.data.Chain
 
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals

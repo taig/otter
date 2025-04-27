@@ -1,7 +1,8 @@
 package io.taig.otter
 
-import scala.compiletime.*
 import cats.Invariant as CatsInvariant
+
+import scala.compiletime.*
 
 trait Invariant[Self[_]]:
   self =>
@@ -12,7 +13,11 @@ trait Invariant[Self[_]]:
     // final def to[B](using convert: Convert[A, B]): Self[B] = imap(convert.to)(convert.from)
     final inline def to[B]: Self[B] =
       val convert = summonInline[Convert[A, B]]
-      imap(convert.to)(convert.from)
+      self.imap(convert.to)(convert.from)
+
+  extension [A, B](self: Self[(A, B)])
+    final def merge(using merge: Merge[A, B]): Self[merge.Out] =
+      self.imap(merge.apply)(merge.unapply)
 
   final def invariant: CatsInvariant[Self] = new CatsInvariant[Self]:
     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)

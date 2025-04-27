@@ -1,22 +1,30 @@
 package io.taig.otter.sample.api.schema.librarian
 
 import cats.syntax.all.*
-import io.taig.otter.sample.api.dsl.*
-import io.taig.otter.sample.api.dsl.json.*
+import io.taig.otter.Json
+import io.taig.otter.dsl.*
+import io.taig.otter.dsl.json.*
 import org.typelevel.ci.*
 
 import java.util.UUID
-import io.taig.otter.Json
 
 final case class LibrarianApiSchema(email: CIString, reference: UUID)
 
 object LibrarianApiSchema:
+  final case class Create(email: CIString, password: String)
+
+  object Create:
+    val codec: Json.Record[LibrarianApiSchema.Create] = (
+      field("email", cistring) :*
+        field("password", string(maximum = 250.some))
+    ).to
+
   final case class Login(email: CIString, password: String)
 
   object Login:
     val codec: Json.Record[LibrarianApiSchema.Login] = (
       field("email", cistring) :*
-        field("password", string(maximum = 500.some))
+        field("password", string(maximum = 250.some))
     ).to
 
   val codec: Json.Record[LibrarianApiSchema] = (

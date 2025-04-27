@@ -74,7 +74,9 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJsonCirce,
     coreJsonZod,
     http,
+    httpJson,
     httpZod,
+    dsl,
     sample,
     sampleApi
   )
@@ -137,6 +139,9 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
+val httpJson = module(identifier = Some("http-json"))
+  .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+
 lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   .settings(
     libraryDependencies ++=
@@ -197,6 +202,9 @@ lazy val httpZod = module(identifier = Some("http-zod"))
 //   )
 //   .dependsOn(http)
 
+lazy val dsl = module(identifier = Some("dsl"))
+  .dependsOn(coreCaseInsensitive, coreJavaTime, httpJson)
+
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(
@@ -212,7 +220,7 @@ lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
     libraryDependencies ++=
       Nil
   )
-  .dependsOn(coreCaseInsensitive, coreJavaTime, coreJsonCirce, httpHttp4s)
+  .dependsOn(coreJsonCirce, httpHttp4s, dsl)
 
 // lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
 //   .settings(noPublishSettings)
