@@ -43,7 +43,7 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
     def apply(codec: Enumeration[Json.Primitive, ?]): String =
       EnumerationZodRenderer(printer = JsonPrimitivePrinter)(codec)
 
-    def apply(codec: Optional[Json, ?]): ZodState[String] =
+    def apply(codec: Nullable[Json, ?]): ZodState[String] =
       self.apply(codec.codec.value).map(expression => show"z.nullable(${expression})")
 
     // TODO figure out a proper way to encode partially optional objects

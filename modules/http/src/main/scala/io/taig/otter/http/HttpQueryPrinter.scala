@@ -26,10 +26,10 @@ final class HttpQueryPrinter(explode: Boolean, style: Query.Style):
   def apply[A](name: String, codec: Http.Query.Optional[A], a: A): Chain[(String, Option[String])] =
     apply(name, codec = codec.self, a)
 
-  def apply[A](name: String, codec: Optional[Http.Query, A], a: A): Chain[(String, Option[String])] = codec match
-    case Optional.Default(codec, _, _) => apply(name, codec = codec.value, a)
-    case Optional.Modify(self, _, g)   => apply(name, codec = self, g(a))
-    case Optional.Nullable(codec, _)   => a.fold(Chain.one((name, none)))(apply(name, codec = codec.value, _))
+  def apply[A](name: String, codec: Nullable[Http.Query, A], a: A): Chain[(String, Option[String])] = codec match
+    case Nullable.Default(codec, _, _) => apply(name, codec = codec.value, a)
+    case Nullable.Modify(self, _, g)   => apply(name, codec = self, g(a))
+    case Nullable.Root(codec, _)       => a.fold(Chain.one((name, none)))(apply(name, codec = codec.value, _))
 
   def array[A](name: String, values: Chain[String]): Chain[(String, String)] = (explode, style) match
     case (true, _)                       => values.tupleLeft(name)

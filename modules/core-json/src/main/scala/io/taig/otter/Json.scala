@@ -37,11 +37,11 @@ object Json:
       extract = [A] => (codec: Json.Enumeration[A]) => codec.self
     )
 
-  final case class Optional[A](self: Self.Optional[Json, A]) extends Json[A]
+  final case class Optional[A](self: Self.Nullable[Json, A]) extends Json[A]
 
   object Optional:
-    given codec: Codec.Optional[Json.Optional, Json] = Codec.Optional(
-      lift = [A] => (self: Self.Optional[Json, A]) => Optional(self),
+    given codec: Codec.Nullable[Json.Optional, Json] = Codec.Nullable(
+      lift = [A] => (self: Self.Nullable[Json, A]) => Optional(self),
       extract = [A] => (codec: Json.Optional[A]) => codec.self
     )
 
@@ -132,8 +132,8 @@ object Json:
           case Key.Primitive(self)   => Primitive(self.imap(f)(g))
           case Key.Union(self)       => Union(self.imap(f)(g))
 
-  given (Codec.Nullable[Json, Json.Optional] & Codec.Tupleable[Json, Json.Tuple]) =
-    new Codec.Nullable[Json, Json.Optional] with Codec.Tupleable[Json, Json.Tuple]:
+  given (Codec.Extension.Nullable[Json, Json.Optional] & Codec.Extension.Tupleable[Json, Json.Tuple]) =
+    new Codec.Extension.Nullable[Json, Json.Optional] with Codec.Extension.Tupleable[Json, Json.Tuple]:
       override def result: Invariant[Tuple] = Json.Tuple.codec
       override inline def fromElement[A](codec: Json[A]): Json[A] = codec
 

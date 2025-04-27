@@ -24,11 +24,11 @@ final class HttpQueryParser(explode: Boolean, style: Query.Style):
 
   def apply[A](
       name: String,
-      codec: Optional[Http.Query, A],
+      codec: Nullable[Http.Query, A],
       values: Chain[(String, Option[String])]
   ): Validated[Violations, (Chain[(String, Option[String])], A)] = codec match
-    case Optional.Modify(self, f, _) => apply(name, codec = self, values).map(_.map(f))
-    case Optional.Default(codec, default, _) =>
+    case Nullable.Modify(self, f, _) => apply(name, codec = self, values).map(_.map(f))
+    case Nullable.Default(codec, default, _) =>
       val (remainders, result) = values.collectFirstWithRemainders { case (`name`, value) => value }
 
       result
@@ -36,7 +36,7 @@ final class HttpQueryParser(explode: Boolean, style: Query.Style):
         .andThen:
           case Some(_) => apply(name, codec = codec.value, values)
           case None    => (remainders, default).valid
-    case Optional.Nullable(codec, _) =>
+    case Nullable.Root(codec, _) =>
       val (remainders, result) = values.collectFirstWithRemainders { case (`name`, value) => value }
 
       result

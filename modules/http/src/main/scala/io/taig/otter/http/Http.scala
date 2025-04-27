@@ -52,7 +52,7 @@ object Http:
             extract = [A] => (codec: Http.Header.Value.Union[A]) => codec.self
           )
 
-      given codec: Codec.Tupleable[Http.Header.Value, Http.Header.Array.Tuple] with
+      given codec: Codec.Extension.Tupleable[Http.Header.Value, Http.Header.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Header.Array.Tuple.codec
         override def fromElement[A](codec: Http.Header.Value[A]): Http.Header.Value[A] = codec
 
@@ -188,7 +188,7 @@ object Http:
             extract = [A] => (codec: Http.Query.Value.Union[A]) => codec.self
           )
 
-      given codec: Codec.Tupleable[Http.Query.Value, Http.Query.Array.Tuple] with
+      given codec: Codec.Extension.Tupleable[Http.Query.Value, Http.Query.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Query.Array.Tuple.codec
         override def fromElement[A](codec: Http.Query.Value[A]): Http.Query.Value[A] = codec
 
@@ -282,11 +282,11 @@ object Http:
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
 
-    final case class Optional[A](self: Self.Optional[Http.Query, A]) extends Http.Query[A]
+    final case class Optional[A](self: Self.Nullable[Http.Query, A]) extends Http.Query[A]
 
     object Optional:
-      given codec: Codec.Optional[Http.Query.Optional, Http.Query] = Codec.Optional(
-        lift = [A] => (self: Self.Optional[Http.Query, A]) => Optional(self),
+      given codec: Codec.Nullable[Http.Query.Optional, Http.Query] = Codec.Nullable(
+        lift = [A] => (self: Self.Nullable[Http.Query, A]) => Optional(self),
         extract = [A] => (codec: Http.Query.Optional[A]) => codec.self
       )
 
@@ -331,7 +331,7 @@ object Http:
             extract = [A] => (codec: Http.Segment.Value.Union[A]) => codec.self
           )
 
-      given codec: Codec.Tupleable[Http.Segment.Value, Http.Segment.Array.Tuple] with
+      given codec: Codec.Extension.Tupleable[Http.Segment.Value, Http.Segment.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Segment.Array.Tuple.codec
         override def fromElement[A](codec: Http.Segment.Value[A]): Http.Segment.Value[A] = codec
 

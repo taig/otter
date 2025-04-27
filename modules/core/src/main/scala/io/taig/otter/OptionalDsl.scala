@@ -1,6 +1,6 @@
 package io.taig.otter
 
-trait OptionalDsl[+Self[_], -Value[_]](using codec: Codec.Optional[Self, Value]):
+trait OptionalDsl[+Self[_], -Value[_]](using codec: Codec.Nullable[Self, Value]):
   self =>
 
   final def nullable[A](codec: => Value[A]): Self[Option[A]] = self.codec.nullable(codec)

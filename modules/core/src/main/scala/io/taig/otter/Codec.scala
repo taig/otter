@@ -23,17 +23,18 @@ trait Codec[Self[_]] extends Invariant[Self]:
     final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
 
 object Codec:
-  trait Nullable[Self[_], Optional[_]](using optional: Codec.Optional[Optional, Self]) extends Codec[Self]:
-    extension [A](self: Self[A])
-      final def nullable: Optional[Option[A]] = optional.nullable(self)
-      final def nullable(default: A): Optional[A] = optional.nullable(self, default)
+  object Extension:
+    trait Nullable[Self[_], Optional[_]](using optional: Codec.Nullable[Optional, Self]) extends Codec[Self]:
+      extension [A](self: Self[A])
+        final def nullable: Optional[Option[A]] = optional.nullable(self)
+        final def nullable(default: A): Optional[A] = optional.nullable(self, default)
 
-  trait Tupleable[Self[_], Tuple[_]](using tuple: Codec.Tuple[Tuple, Self])
-      extends Codec[Self],
-        Invariant.Product[Self, Self, Tuple]:
-    extension [A](self: Self[A])
-      final override def zip[B](codec: Self[B]): Tuple[(A, B)] =
-        tuple.one(self).zip(tuple.one(codec))
+    trait Tupleable[Self[_], Tuple[_]](using tuple: Codec.Tuple[Tuple, Self])
+        extends Codec[Self],
+          Invariant.Product[Self, Self, Tuple]:
+      extension [A](self: Self[A])
+        final override def zip[B](codec: Self[B]): Tuple[(A, B)] =
+          tuple.one(self).zip(tuple.one(codec))
 
   trait Collection[Self[_], Value[_]] extends Codec[Self]:
     def linked[A](codec: => Value[A], minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean): Self[List[A]]
@@ -139,20 +140,20 @@ object Codec:
         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
 
-  trait Optional[Self[_], Value[_]] extends Codec[Self]:
+  trait Nullable[Self[_], Value[_]] extends Codec[Self]:
     def nullable[A](codec: => Value[A]): Self[Option[A]]
     def nullable[A](codec: => Value[A], default: A): Self[A]
 
-  object Optional:
+  object Nullable:
     def apply[Self[_], Value[_]](
-        lift: [A] => (self: Self.Optional[Value, A]) => Self[A],
-        extract: [A] => (self: Self[A]) => Self.Optional[Value, A]
-    ): Codec.Optional[Self, Value] = new Codec.Optional[Self, Value]:
+        lift: [A] => (self: Self.Nullable[Value, A]) => Self[A],
+        extract: [A] => (self: Self[A]) => Self.Nullable[Value, A]
+    ): Codec.Nullable[Self, Value] = new Codec.Nullable[Self, Value]:
       override def nullable[A](codec: => Value[A]): Self[Option[A]] = lift(
-        Self.Optional.Nullable(codec = Reference.later(codec), metadata = Metadata.Empty)
+        Self.Nullable.Root(codec = Reference.later(codec), metadata = Metadata.Empty)
       )
       override def nullable[A](codec: => Value[A], default: A): Self[A] = lift(
-        Self.Optional.Default(codec = Reference.later(codec), default = default, metadata = Metadata.Empty)
+        Self.Nullable.Default(codec = Reference.later(codec), default = default, metadata = Metadata.Empty)
       )
 
       extension [A](self: Self[A])

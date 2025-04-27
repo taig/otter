@@ -42,10 +42,10 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Enumeration.Root(codec, mapping, _) => apply(codec = codec.value, mapping(a))
 
   @tailrec
-  def apply[A](codec: Optional[Json, A], a: A): CirceJson = codec match
-    case Optional.Default(codec, _, _) => apply(codec = codec.value, a)
-    case Optional.Modify(self, _, g)   => apply(codec = self, g(a))
-    case Optional.Nullable(codec, _)   => a.fold(CirceJson.Null)(apply(codec = codec.value, _))
+  def apply[A](codec: Nullable[Json, A], a: A): CirceJson = codec match
+    case Nullable.Default(codec, _, _) => apply(codec = codec.value, a)
+    case Nullable.Modify(self, _, g)   => apply(codec = self, g(a))
+    case Nullable.Root(codec, _)       => a.fold(CirceJson.Null)(apply(codec = codec.value, _))
 
   @tailrec
   def apply[A](codec: Primitive[A], a: A): CirceJson = codec match
