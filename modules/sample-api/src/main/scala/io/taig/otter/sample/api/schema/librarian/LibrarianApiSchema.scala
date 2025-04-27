@@ -1,4 +1,4 @@
-package io.taig.otter.sample.api.schema
+package io.taig.otter.sample.api.schema.librarian
 
 import cats.syntax.all.*
 import io.taig.otter.sample.api.Dsl.*
@@ -8,12 +8,7 @@ import org.typelevel.ci.*
 import java.util.UUID
 import io.taig.otter.Json
 
-final case class LibrarianApiSchema(
-    reference: UUID,
-    email: CIString,
-    password: String
-    // session: Option[SessionApiSchema]
-)
+final case class LibrarianApiSchema(email: CIString, reference: UUID)
 
 object LibrarianApiSchema:
   final case class Login(email: CIString, password: String)
@@ -23,3 +18,8 @@ object LibrarianApiSchema:
       field("email", cistring) :*
         field("password", string(maximum = 500.some))
     ).to
+
+  val codec: Json.Record[LibrarianApiSchema] = (
+    field("email", cistring) :*
+      field("reference", uuid)
+  ).to

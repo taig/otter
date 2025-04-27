@@ -1,5 +1,6 @@
 package io.taig.otter.sample.api.schema
 
+import cats.Order
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.sample.api.Dsl.*
@@ -14,3 +15,5 @@ object IsbnApiSchema:
 
   val codec: Json.Primitive[IsbnApiSchema] =
     long(minimum = comparison(1L).some, maximum = comparison(9999999999999L).some)
+
+  given (using order: Order[Long]): Order[IsbnApiSchema] = order

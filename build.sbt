@@ -76,7 +76,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     http,
     httpZod,
     sample,
-    sampleApi,
+    sampleApi
   )
 
 lazy val core = module(identifier = Some("core"))
