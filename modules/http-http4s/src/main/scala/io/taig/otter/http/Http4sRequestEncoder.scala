@@ -6,8 +6,10 @@ import org.http4s.Method as Http4sMethod
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
 
-final class Http4sRequestEncoder[F[_], S](encode: S => String):
-  val body = Http4sBodyEncoder(encode)
+final class Http4sRequestEncoder[F[_], S[_]](encode: [A] => S[A] => String):
+  self =>
+
+  val body: Http4sBodyEncoder[F, S] = Http4sBodyEncoder(???)
 
   def apply[A](request: Request[S, A], a: A): Http4sRequest[F] =
     val (method, body) = root(request, a)
@@ -20,7 +22,7 @@ final class Http4sRequestEncoder[F[_], S](encode: S => String):
     case Request.Root(method, _, _, body) =>
       (
         toHttp4sMethod(method),
-        Http4sBodyEncoder(encode)(charset = ???, body, a._3)
+        self.body(charset = ???, body, a._3)
       )
     case Request.ZipHeaders(self, _) => root(request = self, a._1)
 

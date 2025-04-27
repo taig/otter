@@ -12,7 +12,7 @@ import org.http4s.Query as Http4sQuery
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
 
-final class Http4sRequestDecoder[F[_]: Concurrent, S](decode: Array[Byte] => Validated[Violations, S]):
+final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decode: [A] => Array[Byte] => Validated[Violations, S[A]]):
   def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Violations, A]] = value.body.compile
     .to(Array)
     .map: body =>

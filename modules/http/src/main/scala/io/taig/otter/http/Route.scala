@@ -4,8 +4,10 @@ import cats.derived.*
 import cats.syntax.all.*
 import io.taig.otter.Violations
 
-final case class Route[F[_], +S, +T, A, B](endpoint: Endpoint[S, T, A, B], implementation: A => F[B]):
-  def modifyEndpoint[S1 >: S, T1 >: T](f: Endpoint[S, T, A, B] => Endpoint[S1, T1, A, B]): Route[F, S1, T1, A, B] =
+final case class Route[F[_], +S[_], +T[_], A, B](endpoint: Endpoint[S, T, A, B], implementation: A => F[B]):
+  def modifyEndpoint[S1[a] >: S[a], T1[a] >: T[a]](
+      f: Endpoint[S, T, A, B] => Endpoint[S1, T1, A, B]
+  ): Route[F, S1, T1, A, B] =
     copy(endpoint = f(endpoint))
 
 //   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
