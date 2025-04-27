@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import io.taig.otter.Invariant
 import io.taig.otter.Merge
+import io.taig.otter.Metadata
 
 sealed abstract class Path[A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(self = this, f, g)
@@ -10,8 +11,9 @@ sealed abstract class Path[A] extends Product with Serializable:
 
   final def /[B](segment: Segment[B])(using merge: Merge[A, B]): Path[merge.Out] =
     zip(segment.toPath).imap(merge.apply)(merge.unapply)
-  final def /:[B](segment: Segment[B])(using merge: Merge[B, A]): Path[merge.Out] =
-    segment.toPath.zip(this).imap(merge.apply)(merge.unapply)
+  final def /[B](name: String): Path[A] = /(Segment.Static(name, metadata = Metadata.Empty))
+
+  final def toUrl: Url[A] = Url.Root(path = this, queries = Queries.Empty).imap((a, _) => a)((_, ()))
 
 object Path:
   private[otter] case object Empty extends Path[Unit]
@@ -28,4 +30,4 @@ object Path:
 
     extension [A](self: Path[A])
       override def imap[B](f: A => B)(g: B => A): Path[B] = self.imap(f)(g)
-      override def zip[B](codec: Path[B]): Path[(A, B)] = ???
+      override def zip[B](codec: Path[B]): Path[(A, B)] = self.zip(codec)

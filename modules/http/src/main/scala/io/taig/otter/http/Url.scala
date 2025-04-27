@@ -1,5 +1,8 @@
 package io.taig.otter.http
 
+import io.taig.otter.Merge
+import io.taig.otter.Metadata
+
 sealed abstract class Url[A] extends Product with Serializable:
   def path: Path[?]
 
@@ -8,6 +11,10 @@ sealed abstract class Url[A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Url[B] = Url.Modify(self = this, f, g)
 
   final def zip[B](url: Url[B]): Url[(A, B)] = Url.Zip(left = this, right = url)
+
+  final def /[B](segment: Segment[B])(using merge: Merge[A, B]): Url[merge.Out] =
+    zip(segment.toPath.toUrl).imap(merge.apply)(merge.unapply)
+  final def /[B](name: String): Url[A] = /(Segment.Static(name, metadata = Metadata.Empty))
 
 object Url:
   private[otter] case object Empty extends Url[Unit]:

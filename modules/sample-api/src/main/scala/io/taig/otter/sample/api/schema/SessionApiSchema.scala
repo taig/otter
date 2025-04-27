@@ -23,6 +23,6 @@ object SessionApiSchema:
       )
       .flatMap: value =>
         Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
-  }(uuid => prefix + uuid.show)
+  }(uuid => show"$prefix$uuid")
 
   val codec: Json.Primitive[SessionApiSchema] = codec(prefix = "")
