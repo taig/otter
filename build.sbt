@@ -95,6 +95,14 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
+lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
+  .dependsOn(core)
+
 lazy val coreJavaTime = module(identifier = Some("core-java-time"))
   .settings(
     libraryDependencies ++=
@@ -204,7 +212,7 @@ lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
     libraryDependencies ++=
       Nil
   )
-  .dependsOn(coreJsonCirce, httpHttp4s)
+  .dependsOn(coreCaseInsensitive, coreJavaTime, coreJsonCirce, httpHttp4s)
 
 // lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
 //   .settings(noPublishSettings)

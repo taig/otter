@@ -2,8 +2,8 @@ package io.taig.otter.sample.api.schema
 
 import cats.syntax.all.*
 import io.taig.otter.*
-import io.taig.otter.Syntax.*
-import io.taig.otter.JsonDsl.*
+import io.taig.otter.sample.api.Dsl.*
+import io.taig.otter.sample.api.Dsl.json.*
 
 opaque type IsbnApiSchema = Long
 
