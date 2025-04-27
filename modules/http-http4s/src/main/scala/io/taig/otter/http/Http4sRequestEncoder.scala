@@ -20,10 +20,7 @@ final class Http4sRequestEncoder[F[_], S[_]](encode: [A] => S[A] => String):
   def root[A](request: Request[S, A], a: A): (Http4sMethod, Http4sBody[F]) = request match
     case Request.Modify(self, _, g) => root(request = self, g(a))
     case Request.Root(method, _, _, body) =>
-      (
-        toHttp4sMethod(method),
-        self.body(charset = ???, body, a._3)
-      )
+      (toHttp4sMethod(method), self.body(charset = ???, body, a._3))
     case Request.ZipHeaders(self, _) => root(request = self, a._1)
 
   def toHttp4sMethod(method: Method): Http4sMethod = method match
