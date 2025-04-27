@@ -7,5 +7,5 @@ import io.taig.otter.CaseInsensitiveDsl
 import io.taig.otter.Json
 import io.taig.otter.Syntax
 
-object Dsl extends HttpDsl, Syntax:
+object dsl extends HttpDsl, Syntax:
   object json extends JsonDsl, CaseInsensitiveDsl[Json.Primitive]

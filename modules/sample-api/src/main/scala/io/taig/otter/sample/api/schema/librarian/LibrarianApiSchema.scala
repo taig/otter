@@ -1,8 +1,8 @@
 package io.taig.otter.sample.api.schema.librarian
 
 import cats.syntax.all.*
-import io.taig.otter.sample.api.Dsl.*
-import io.taig.otter.sample.api.Dsl.json.*
+import io.taig.otter.sample.api.dsl.*
+import io.taig.otter.sample.api.dsl.json.*
 import org.typelevel.ci.*
 
 import java.util.UUID

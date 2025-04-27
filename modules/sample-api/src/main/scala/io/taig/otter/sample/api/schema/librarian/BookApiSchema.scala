@@ -5,8 +5,8 @@ import cats.Eq
 import cats.Order
 import cats.implicits.*
 import io.taig.otter.Json
-import io.taig.otter.sample.api.Dsl.*
-import io.taig.otter.sample.api.Dsl.json.*
+import io.taig.otter.sample.api.dsl.*
+import io.taig.otter.sample.api.dsl.json.*
 import scala.collection.immutable.SortedSet
 
 import io.taig.otter.sample.api.schema.IsbnApiSchema
