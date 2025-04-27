@@ -13,7 +13,7 @@ val post =
   )
 
   response(
-    result(code.created, headers = ???, body = json(LibrarianApiSchema.codec))
+    result(code.created, body = json(LibrarianApiSchema.codec))
   )
 
   ???

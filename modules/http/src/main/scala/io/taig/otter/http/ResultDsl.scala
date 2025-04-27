@@ -11,4 +11,7 @@ trait ResultDsl:
   def result[S[_], A](code: Code, body: Body[S[A], A]): Result[S[A], A] =
     Result.Root(code, headers = Headers.Empty, body).imap((_, a) => a)(a => ((), a))
 
+  def result[S[_], A](code: Code): Result[Nothing, Unit] =
+    Result.Root(code, headers = Headers.Empty, body = Body.Empty).imap(_ => ())(_ => ((), ()))
+
 object ResultDsl extends ResultDsl

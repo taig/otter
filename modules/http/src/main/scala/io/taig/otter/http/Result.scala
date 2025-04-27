@@ -15,7 +15,7 @@ object Result:
   final private[otter] case class Root[S[_], A, B](
       code: Code,
       headers: Headers[A],
-      codec: Body[S[B], B]
+      body: Body[S[B], B]
   ) extends Result[S[B], (A, B)]
 
   given [S]: Invariant.Coproduct[Result[S, *], Result[S, *]] with
