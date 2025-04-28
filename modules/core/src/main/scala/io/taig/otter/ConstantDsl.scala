@@ -47,5 +47,6 @@ object ConstantDsl:
     trait String[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.String[Value] =>
 
-      final def constant(value: JString): Self[JString] = constant(codec = string, value)
+      // final def constant(value: JString): Self[JString] = constant(codec = string, value)
+      final def constant(value: JString): Self[Unit] = ??? // constant(codec = string, value)
       final def constant(value: UUID): Self[UUID] = constant(codec = uuid, value)

@@ -13,7 +13,8 @@ trait JsonDsl
       RecordDsl[Json.Record, Json.Key, Json],
       RecordDsl.Primitive.String[Json.Record, Json.Key.Primitive, Json],
       TupleDsl[Json.Tuple, Json],
-      UnionDsl[Json.Union, Json]:
+      UnionDsl[Json.Union, Json],
+      ErrorDsl[Json.Constant, Json.Record, Json.Key.Primitive, Json]:
   final val key: JsonKeyDsl = JsonKeyDsl
 
 object JsonDsl extends JsonDsl

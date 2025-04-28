@@ -382,7 +382,7 @@ object Codec:
         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
 
-  trait Record[Self[_], Key[_], Value[_]] extends Codec[Self], Invariant.Product[Self, Self, Self]:
+  trait Record[Self[_], -Key[_], -Value[_]] extends Codec[Self], Invariant.Product[Self, Self, Self]:
     final override def result: Invariant[Self] = this
 
     def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
