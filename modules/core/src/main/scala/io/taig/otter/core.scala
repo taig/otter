@@ -10,7 +10,7 @@ import cats.Functor
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Value] = Eq.fromUniversalEquals
-private[otter] given Eq[Data] = Eq.fromUniversalEquals
+private[otter] given Eq[Data.Any] = Eq.fromUniversalEquals
 
 private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
@@ -31,15 +31,19 @@ private[otter] def unescape(value: String, characters: List[String], escape: Cha
 private[otter] def unescape(value: String, character: String): String =
   unescape(value, characters = List(character))
 
-extension [A](self: Value[A])
-  inline def toOption: Option[A] = self match
-    case Value.Default => None
-    case a             => Some(a.asInstanceOf[A])
+extension [A](self: Argument[A])
+  def toOption: Option[A] = self match
+    case Argument.Default => None
+    case a                => Some(a.asInstanceOf[A])
 
-given Functor[Value] with
-  inline def map[A, B](fa: Value[A])(f: A => B): Value[B] = fa match
-    case Value.Default => Value.Default
-    case a             => f(a.asInstanceOf[A])
+  def getOrElse[B >: A](b: => B): B = self match
+    case Argument.Default => b
+    case a                => a.asInstanceOf[B]
+
+given Functor[Argument] with
+  def map[A, B](fa: Argument[A])(f: A => B): Argument[B] = fa match
+    case Argument.Default => Argument.Default
+    case a                => f(a.asInstanceOf[A])
 
 extension [A: Eq, B](self: Vector[(A, B)])
   private[otter] def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =

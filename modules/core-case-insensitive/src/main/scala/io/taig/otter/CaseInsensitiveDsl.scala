@@ -9,9 +9,9 @@ trait CaseInsensitiveDsl[Self[_]: Codec]:
   this: PrimitiveDsl.String[Self] =>
 
   def cistring(
-      minimum: Value[Int] = Value.Default,
-      maximum: Value[Int] = Value.Default,
-      matches: Value[Pattern] = Value.Default
+      minimum: Argument[Int] = Argument.Default,
+      maximum: Argument[Int] = Argument.Default,
+      matches: Argument[Pattern] = Argument.Default
   ): Self[CIString] = string(minimum, maximum, matches).imap(CIString.apply)(_.toString)
 
   val cistring: Self[CIString] = cistring()
@@ -20,5 +20,5 @@ trait CaseInsensitiveDsl[Self[_]: Codec]:
     override protected def empty: CIString = CIString.empty
     override protected def isEmpty(a: CIString): Boolean = a.isEmpty
 
-    override def apply(minimum: Value[Int], maximum: Value[Int], matches: Value[Pattern]): Self[CIString] =
+    override def apply(minimum: Argument[Int], maximum: Argument[Int], matches: Argument[Pattern]): Self[CIString] =
       cistring(minimum, maximum, matches)

@@ -21,9 +21,9 @@ object PrimitiveDsl:
 
   trait Number[+Self[_]](using codec: Codec.Primitive.Number[Self]):
     final def jBigDecimal(
-        minimum: Value[Comparison[JBigDecimal]] = Value.Default,
-        maximum: Value[Comparison[JBigDecimal]] = Value.Default,
-        multiple: Value[JBigDecimal] = Value.Default
+        minimum: Argument[Comparison[JBigDecimal]] = Argument.Default,
+        maximum: Argument[Comparison[JBigDecimal]] = Argument.Default,
+        multiple: Argument[JBigDecimal] = Argument.Default
     ): Self[JBigDecimal] = codec.jBigDecimal(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -33,9 +33,9 @@ object PrimitiveDsl:
     final val jBigDecimal: Self[JBigDecimal] = jBigDecimal()
 
     final def bigDecimal(
-        minimum: Value[Comparison[BigDecimal]] = Value.Default,
-        maximum: Value[Comparison[BigDecimal]] = Value.Default,
-        multiple: Value[BigDecimal] = Value.Default
+        minimum: Argument[Comparison[BigDecimal]] = Argument.Default,
+        maximum: Argument[Comparison[BigDecimal]] = Argument.Default,
+        multiple: Argument[BigDecimal] = Argument.Default
     ): Self[BigDecimal] = jBigDecimal(
       minimum = minimum.map(_.map(_.bigDecimal)),
       maximum = maximum.map(_.map(_.bigDecimal)),
@@ -45,9 +45,9 @@ object PrimitiveDsl:
     final val bigDecimal: Self[BigDecimal] = bigDecimal()
 
     final def jBigInteger(
-        minimum: Value[Comparison[JBigInteger]] = Value.Default,
-        maximum: Value[Comparison[JBigInteger]] = Value.Default,
-        multiple: Value[JBigInteger] = Value.Default
+        minimum: Argument[Comparison[JBigInteger]] = Argument.Default,
+        maximum: Argument[Comparison[JBigInteger]] = Argument.Default,
+        multiple: Argument[JBigInteger] = Argument.Default
     ): Self[JBigInteger] = codec.jBigInteger(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -57,9 +57,9 @@ object PrimitiveDsl:
     final val jBigInteger: Self[JBigInteger] = jBigInteger()
 
     final def bigInteger(
-        minimum: Value[Comparison[BigInt]] = Value.Default,
-        maximum: Value[Comparison[BigInt]] = Value.Default,
-        multiple: Value[BigInt] = Value.Default
+        minimum: Argument[Comparison[BigInt]] = Argument.Default,
+        maximum: Argument[Comparison[BigInt]] = Argument.Default,
+        multiple: Argument[BigInt] = Argument.Default
     ): Self[BigInt] = jBigInteger(
       minimum = minimum.map(_.map(_.bigInteger)),
       maximum = maximum.map(_.map(_.bigInteger)),
@@ -69,9 +69,9 @@ object PrimitiveDsl:
     final val bigInteger: Self[BigInt] = bigInteger()
 
     final def double(
-        minimum: Value[Comparison[SDouble]] = Value.Default,
-        maximum: Value[Comparison[SDouble]] = Value.Default,
-        multiple: Value[SDouble] = Value.Default
+        minimum: Argument[Comparison[SDouble]] = Argument.Default,
+        maximum: Argument[Comparison[SDouble]] = Argument.Default,
+        multiple: Argument[SDouble] = Argument.Default
     ): Self[SDouble] = codec.double(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -81,9 +81,9 @@ object PrimitiveDsl:
     final val double: Self[SDouble] = double()
 
     final def float(
-        minimum: Value[Comparison[SFloat]] = Value.Default,
-        maximum: Value[Comparison[SFloat]] = Value.Default,
-        multiple: Value[SFloat] = Value.Default
+        minimum: Argument[Comparison[SFloat]] = Argument.Default,
+        maximum: Argument[Comparison[SFloat]] = Argument.Default,
+        multiple: Argument[SFloat] = Argument.Default
     ): Self[SFloat] = codec.float(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -93,9 +93,9 @@ object PrimitiveDsl:
     final val float: Self[SFloat] = float()
 
     final def int(
-        minimum: Value[Comparison[SInt]] = Value.Default,
-        maximum: Value[Comparison[SInt]] = Value.Default,
-        multiple: Value[SInt] = Value.Default
+        minimum: Argument[Comparison[SInt]] = Argument.Default,
+        maximum: Argument[Comparison[SInt]] = Argument.Default,
+        multiple: Argument[SInt] = Argument.Default
     ): Self[SInt] = codec.int(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -105,9 +105,9 @@ object PrimitiveDsl:
     final val int: Self[SInt] = int()
 
     final def long(
-        minimum: Value[Comparison[SLong]] = Value.Default,
-        maximum: Value[Comparison[SLong]] = Value.Default,
-        multiple: Value[SLong] = Value.Default
+        minimum: Argument[Comparison[SLong]] = Argument.Default,
+        maximum: Argument[Comparison[SLong]] = Argument.Default,
+        multiple: Argument[SLong] = Argument.Default
     ): Self[SLong] = codec.long(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -118,9 +118,9 @@ object PrimitiveDsl:
 
   trait String[+Self[_]](using codec: Codec.Primitive.String[Self]):
     final def string(
-        minimum: Value[SInt] = Value.Default,
-        maximum: Value[SInt] = Value.Default,
-        matches: Value[Pattern] = Value.Default
+        minimum: Argument[SInt] = Argument.Default,
+        maximum: Argument[SInt] = Argument.Default,
+        matches: Argument[Pattern] = Argument.Default
     ): Self[JString] = codec.string(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -135,16 +135,16 @@ object PrimitiveDsl:
       override protected def isEmpty(a: JString): SBoolean = a.isEmpty
 
       def apply(
-          minimum: Value[Int] = Value.Default,
-          maximum: Value[Int] = Value.Default,
-          matches: Value[Pattern] = Value.Default
+          minimum: Argument[Int] = Argument.Default,
+          maximum: Argument[Int] = Argument.Default,
+          matches: Argument[Pattern] = Argument.Default
       ): Self[JString] = string(minimum, maximum, matches)
 
     final def parser[A](
         name: JString,
-        minimum: Value[SInt] = Value.Default,
-        maximum: Value[SInt] = Value.Default,
-        matches: Value[Pattern] = Value.Default
+        minimum: Argument[SInt] = Argument.Default,
+        maximum: Argument[SInt] = Argument.Default,
+        matches: Argument[Pattern] = Argument.Default
     )(f: JString => Either[JString, A])(g: A => JString): Self[A] = codec.parser(
       name,
       decode = f,
