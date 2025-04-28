@@ -8,9 +8,14 @@ trait ViolationDsl[
     +Record[a] <: Value[a],
     +Union[a] <: Value[a],
     Key[_],
-    -Value[_]
+    Value[_]
 ](using Codec.Record[Record, Key, Value])
-    extends ConstraintDsl[Collection, Dictionary, Nullable, Primitive, Record, Union, Key, Value]:
+    extends DataDsl[Collection, Dictionary, Nullable, Primitive, Union, Key, Value],
+      ConstraintDsl[Collection, Dictionary, Nullable, Primitive, Record, Union, Key, Value],
+      NullableDsl[Nullable, Value],
+      PrimitiveDsl[Primitive],
+      RecordDsl.Primitive.String[Record, Key, Value]:
+
   val violation: Record[Violation] = (
     field("constraint", constraint) :*
       field("actual", data.any) :*

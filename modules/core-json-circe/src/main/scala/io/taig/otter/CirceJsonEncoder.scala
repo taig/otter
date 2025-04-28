@@ -12,7 +12,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Json.Constant(value)   => apply(codec = value, a)
     case Json.Dictionary(value) => CirceJson.fromFields(apply(codec = value, a))
     case Json.Enumeration(self) => apply(codec = self, a)
-    case Json.Optional(value)   => apply(codec = value, a)
+    case Json.Nullable(value)   => apply(codec = value, a)
     case Json.Primitive(value)  => apply(codec = value, a)
     case Json.Record(value)     => CirceJson.fromFields(apply(codec = value, a))
     case Json.Tuple(value)      => CirceJson.fromValues(apply(codec = value, a))

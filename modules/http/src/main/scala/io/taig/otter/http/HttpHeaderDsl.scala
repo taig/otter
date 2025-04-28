@@ -12,7 +12,7 @@ trait HttpHeaderDsl
       RecordDsl.Primitive.String[Http.Header.Object.Record, Http.Header.Value, Http.Header.Value],
       TupleDsl[Http.Header.Array.Tuple, Http.Header.Value],
       UnionDsl.Untagged[Http.Header.Value.Union, Http.Header.Value]:
-  override protected def key: PrimitiveDsl.String[Http.Header.Value] = this
+  override def key: PrimitiveDsl.String[Http.Header.Value] = this
 
   def header[A](name: CIString, codec: => Http.Header[A]): Header[A] =
     Header.Root(name, codec = Reference.later(codec), metadata = Metadata.Empty)

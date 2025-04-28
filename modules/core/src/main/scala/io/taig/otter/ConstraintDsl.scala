@@ -8,10 +8,14 @@ trait ConstraintDsl[
     +Record[a] <: Value[a],
     +Union[a] <: Value[a],
     Key[_],
-    -Value[_]
+    Value[_]
 ](using Codec.Union[Union, Value])
     extends ComparisonDsl[Record, Key, Value],
+      CollectionDsl[Collection, Value],
       DataDsl[Collection, Dictionary, Nullable, Primitive, Union, Key, Value],
+      NullableDsl[Nullable, Value],
+      UnionDsl[Union, Value],
+      PrimitiveDsl[Primitive],
       RecordDsl.Primitive.String[Record, Key, Value]:
 
   val constraint: Union[Constraint] =

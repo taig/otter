@@ -37,12 +37,12 @@ object Json:
       extract = [A] => (codec: Json.Enumeration[A]) => codec.self
     )
 
-  final case class Optional[A](self: Self.Nullable[Json, A]) extends Json[A]
+  final case class Nullable[A](self: Self.Nullable[Json, A]) extends Json[A]
 
-  object Optional:
-    given codec: Codec.Nullable[Json.Optional, Json] = Codec.Nullable(
-      lift = [A] => (self: Self.Nullable[Json, A]) => Optional(self),
-      extract = [A] => (codec: Json.Optional[A]) => codec.self
+  object Nullable:
+    given codec: Codec.Nullable[Json.Nullable, Json] = Codec.Nullable(
+      lift = [A] => (self: Self.Nullable[Json, A]) => Nullable(self),
+      extract = [A] => (codec: Json.Nullable[A]) => codec.self
     )
 
   final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
@@ -132,8 +132,8 @@ object Json:
           case Key.Primitive(self)   => Primitive(self.imap(f)(g))
           case Key.Union(self)       => Union(self.imap(f)(g))
 
-  given (Codec.Extension.Nullable[Json, Json.Optional] & Codec.Extension.Tupleable[Json, Json.Tuple]) =
-    new Codec.Extension.Nullable[Json, Json.Optional] with Codec.Extension.Tupleable[Json, Json.Tuple]:
+  given (Codec.Extension.Nullable[Json, Json.Nullable] & Codec.Extension.Tupleable[Json, Json.Tuple]) =
+    new Codec.Extension.Nullable[Json, Json.Nullable] with Codec.Extension.Tupleable[Json, Json.Tuple]:
       override def result: Invariant[Tuple] = Json.Tuple.codec
       override inline def fromElement[A](codec: Json[A]): Json[A] = codec
 
@@ -143,7 +143,7 @@ object Json:
           case Json.Constant(self)    => self.metadata
           case Json.Dictionary(self)  => self.metadata
           case Json.Enumeration(self) => self.metadata
-          case Json.Optional(self)    => self.metadata
+          case Json.Nullable(self)    => self.metadata
           case Json.Primitive(self)   => self.metadata
           case Json.Record(self)      => self.metadata
           case Json.Tuple(self)       => self.metadata
@@ -154,7 +154,7 @@ object Json:
           case Json.Constant(self)    => Constant(self.modifyMetadata(f))
           case Json.Dictionary(self)  => Dictionary(self.modifyMetadata(f))
           case Json.Enumeration(self) => Enumeration(self.modifyMetadata(f))
-          case Json.Optional(self)    => Optional(self.modifyMetadata(f))
+          case Json.Nullable(self)    => Nullable(self.modifyMetadata(f))
           case Json.Primitive(self)   => Primitive(self.modifyMetadata(f))
           case Json.Record(self)      => Record(self.modifyMetadata(f))
           case Json.Tuple(self)       => Tuple(self.modifyMetadata(f))
@@ -165,7 +165,7 @@ object Json:
           case Json.Constant(self)    => Constant(self.imap(f)(g))
           case Json.Dictionary(self)  => Dictionary(self.imap(f)(g))
           case Json.Enumeration(self) => Enumeration(self.imap(f)(g))
-          case Json.Optional(self)    => Optional(self.imap(f)(g))
+          case Json.Nullable(self)    => Nullable(self.imap(f)(g))
           case Json.Primitive(self)   => Primitive(self.imap(f)(g))
           case Json.Record(self)      => Record(self.imap(f)(g))
           case Json.Tuple(self)       => Tuple(self.imap(f)(g))

@@ -12,7 +12,7 @@ trait HttpQueryDsl
       RecordDsl.Primitive.String[Http.Query.Object.Record, Http.Query.Value, Http.Query.Value],
       TupleDsl[Http.Query.Array.Tuple, Http.Query.Value],
       UnionDsl.Untagged[Http.Query.Value.Union, Http.Query.Value]:
-  override protected def key: PrimitiveDsl.String[Http.Query.Value] = this
+  override def key: PrimitiveDsl.String[Http.Query.Value] = this
 
   def query[A](name: String, codec: => Http.Query[A]): Query[A] =
     Query.Root(name, codec = Reference.later(codec), metadata = Metadata.Empty)

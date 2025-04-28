@@ -32,7 +32,6 @@ object ConstantDsl:
 
     trait Number[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.Number[Value] =>
-
       final def constant(value: JBigDecimal): Self[Unit] =
         constant(codec = jBigDecimal, value)(using Eq.fromUniversalEquals)
       final def constant(value: BigDecimal): Self[Unit] = constant(codec = bigDecimal, value)
@@ -46,6 +45,5 @@ object ConstantDsl:
 
     trait String[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.String[Value] =>
-
       final def constant(value: JString): Self[Unit] = constant(codec = string, value)
       final def constant(value: UUID): Self[Unit] = constant(codec = uuid, value)

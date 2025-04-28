@@ -17,7 +17,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Constant(self)    => apply(codec = self, json)
     case Json.Dictionary(self)  => apply(codec = self, json)
     case Json.Enumeration(self) => apply(codec = self, json)
-    case Json.Optional(self)    => apply(codec = self, json)
+    case Json.Nullable(self)    => apply(codec = self, json)
     case Json.Primitive(self)   => apply(codec = self, json)
     case Json.Record(self)      => apply(codec = self, json)
     case Json.Tuple(self)       => apply(codec = self, json)

@@ -10,9 +10,14 @@ trait ViolationsDsl[
     +Record[a] <: Value[a],
     +Union[a] <: Value[a],
     Key[_],
-    -Value[_]
+    Value[_]
 ](using Codec.Dictionary[Dictionary, Key, Value], Codec.Record[Record, Key, Value], Codec.Union[Union, Value])
-    extends ViolationDsl[Collection, Dictionary, Nullable, Primitive, Record, Union, Key, Value]:
+    extends CollectionDsl[Collection, Value],
+      DictionaryDsl[Dictionary, Key, Value],
+      UnionDsl[Union, Value],
+      RecordDsl.Primitive.String[Record, Key, Value],
+      ViolationDsl[Collection, Dictionary, Nullable, Primitive, Record, Union, Key, Value]:
+
   val violations: Union[Violations] =
     val step: Key[Step] = key.parser(name = "step")(Step.parse(_).leftMap(_.show))(_.show)
 

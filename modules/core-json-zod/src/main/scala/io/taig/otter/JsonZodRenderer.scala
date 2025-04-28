@@ -15,7 +15,7 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
       case Json.Collection(self)  => apply(codec = self)
       case Json.Dictionary(self)  => apply(codec = self)
       case Json.Enumeration(self) => State.pure(apply(codec = self))
-      case Json.Optional(self)    => apply(codec = self)
+      case Json.Nullable(self)    => apply(codec = self)
       case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer(codec = self))
       case Json.Record(self) =>
         apply(codec = self).map: fields =>
