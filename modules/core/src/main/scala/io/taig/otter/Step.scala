@@ -9,10 +9,12 @@ enum Step:
   case Field(name: String)
   case Index(value: Int)
 
-  final override def toString: String = ??? // Printers(this)
+  final override def toString: String = this match
+    case Step.Field(field) => s".$field"
+    case Step.Index(index) => s"[$index]"
 
 object Step:
-  def parse(value: String): Either[Parser.Error, Step] = ??? // Parsers.step.parseAll(value)
+  def parse(value: String): Either[Parser.Error, Step] = Parsers.step.parseAll(value)
 
   given Order[Step] =
     case (Field(x), Field(y)) => x.compare(y)

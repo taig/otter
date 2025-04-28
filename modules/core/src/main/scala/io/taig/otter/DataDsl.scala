@@ -18,7 +18,7 @@ trait DataDsl[
       NullableDsl[Nullable, Value],
       PrimitiveDsl[Primitive],
       UnionDsl[Union, Value]:
-  def key: PrimitiveDsl.String[Key]
+  protected def key: PrimitiveDsl.String[Key]
 
   object data:
     val any: Nullable[Data.Any] = nullable(value).imap(_.getOrElse(Data.Null)) {

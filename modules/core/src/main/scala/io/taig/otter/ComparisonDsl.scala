@@ -1,6 +1,7 @@
 package io.taig.otter
 
-trait ComparisonDsl:
-  def comparison[A](reference: A, exclusive: Boolean = false): Comparison[A] = Comparison(reference, exclusive)
-
-object ComparisonDsl extends ComparisonDsl
+trait ComparisonDsl[Record[_], Key[_], Value[_]](using Codec.Record[Record, Key, Value])
+    extends RecordDsl.Primitive.String[Record, Key, Value],
+      PrimitiveDsl.Boolean[Value]:
+  def comparison[A](codec: => Value[A]): Record[Comparison[A]] =
+    (field("reference", codec) :* field("exclusive", boolean)).to

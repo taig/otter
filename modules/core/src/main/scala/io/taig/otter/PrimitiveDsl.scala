@@ -157,3 +157,5 @@ object PrimitiveDsl:
     final val uuid: Self[UUID] = parser(name = "uuid") { value =>
       Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
     }(_.show)
+
+    final val pattern: Self[Pattern] = string.imap(Pattern.compile)(_.pattern)

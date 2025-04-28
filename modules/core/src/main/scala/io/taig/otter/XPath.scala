@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.syntax.all.*
 import cats.Order
 import cats.Show
 import cats.data.Chain
@@ -22,4 +23,4 @@ object XPath:
 
   given (using order: Order[Chain[Step]]): Order[XPath] = order
 
-  given Show[XPath] = Printers(_)
+  given Show[XPath] = xpath => "$" + xpath.toChain.mkString_("")

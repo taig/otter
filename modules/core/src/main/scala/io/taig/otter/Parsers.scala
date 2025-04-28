@@ -27,13 +27,13 @@ private[otter] object Parsers:
       (value >= 'A' && value <= 'Z') ||
       (value >= '0' && value <= '9')
 
-//   val step: Parser[Step] =
-//     val field: Parser[Step.Field] =
-//       Parser.char('.') *> token.map(Step.Field.apply)
+  val step: Parser[Step] =
+    val field: Parser[Step.Field] =
+      Parser.char('.') *> token.map(Step.Field.apply)
 
-//     val index: Parser[Step.Index] = brackets(int.with1).map(Step.Index.apply)
+    val index: Parser[Step.Index] = brackets(int.with1).map(Step.Index.apply)
 
-//     Parser.oneOf(field :: index :: Nil)
+    Parser.oneOf(field :: index :: Nil)
 
 //   val xpath: Parser[XPath] = Parser.char('$') *> step.rep0.map(values => XPath(Chain.fromSeq(values)))
 
