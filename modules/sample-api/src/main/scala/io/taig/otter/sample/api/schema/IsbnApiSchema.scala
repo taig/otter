@@ -13,7 +13,6 @@ object IsbnApiSchema:
 
   def apply(value: Long): IsbnApiSchema = value
 
-  val codec: Json.Primitive[IsbnApiSchema] =
-    long(minimum = comparison(1L).some, maximum = comparison(9999999999999L).some)
+  val codec: Json.Primitive[IsbnApiSchema] = long(minimum = comparison(1L), maximum = comparison(9999999999999L))
 
   given (using order: Order[Long]): Order[IsbnApiSchema] = order

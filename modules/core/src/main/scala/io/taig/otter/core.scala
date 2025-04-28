@@ -5,6 +5,7 @@ import cats.data.Chain
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
+import cats.Functor
 
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals
@@ -29,6 +30,16 @@ private[otter] def unescape(value: String, characters: List[String], escape: Cha
 
 private[otter] def unescape(value: String, character: String): String =
   unescape(value, characters = List(character))
+
+extension [A](self: Value[A])
+  inline def toOption: Option[A] = self match
+    case Value.Default => None
+    case a             => Some(a.asInstanceOf[A])
+
+given Functor[Value] with
+  inline def map[A, B](fa: Value[A])(f: A => B): Value[B] = fa match
+    case Value.Default => Value.Default
+    case a             => f(a.asInstanceOf[A])
 
 extension [A: Eq, B](self: Vector[(A, B)])
   private[otter] def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =

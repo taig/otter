@@ -14,7 +14,7 @@ object HttpQueryValuePrinter extends Printer[Http.Query.Value]:
   @tailrec
   def apply[A](codec: Constant[Http.Query.Value, A], a: A): String = codec match
     case Constant.Modify(self, _, g) => apply(codec = self, g(a))
-    case Constant.Root(codec, _, _)     => apply(codec = codec.self.value, codec.value)
+    case Constant.Root(codec, _, _)  => apply(codec = codec.self.value, codec.value)
 
   @tailrec
   def apply[A](codec: Enumeration[Http.Query.Value, A], a: A): String = codec match

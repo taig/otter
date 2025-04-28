@@ -15,12 +15,19 @@ object HttpSegmentValueParser extends Parser[Http.Segment.Value]:
   def apply[A](codec: Constant[Http.Segment.Value.Primitive, A], value: String): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
     case Constant.Root(codec, eq, _) =>
-      PrimitiveParser.Unquoted(codec = codec.self.value.self, value).andThen: a =>
-        Validated.cond(
-          test = eq.eqv(a, codec.value),
-          (),
-          Violations.rootNec(Violation.equal(reference = PrimitivePrinter.Unquoted(codec = codec.self.value.self, codec.value), actual = value))
-        )
+      PrimitiveParser
+        .Unquoted(codec = codec.self.value.self, value)
+        .andThen: a =>
+          Validated.cond(
+            test = eq.eqv(a, codec.value),
+            (),
+            Violations.rootNec(
+              Violation.equal(
+                reference = PrimitivePrinter.Unquoted(codec = codec.self.value.self, codec.value),
+                actual = value
+              )
+            )
+          )
 
   def apply[A](codec: Enumeration[Http.Segment.Value.Primitive, A], value: String): Validated[Violations, A] =
     codec match
