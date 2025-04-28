@@ -1,18 +1,19 @@
 package io.taig.otter
 
 trait ConstraintDsl[
-    Collection[a] <: Value[a],
-    Dictionary[a] <: Value[a],
-    Nullable[a] <: Value[a],
-    Primitive[a] <: Value[a],
-    Record[a] <: Value[a],
-    Union[a] <: Value[a],
+    +Collection[a] <: Value[a],
+    +Dictionary[a] <: Value[a],
+    +Nullable[a] <: Value[a],
+    +Primitive[a] <: Value[a],
+    +Record[a] <: Value[a],
+    +Union[a] <: Value[a],
     Key[_],
-    Value[_]
+    -Value[_]
 ](using Codec.Union[Union, Value])
     extends ComparisonDsl[Record, Key, Value],
       DataDsl[Collection, Dictionary, Nullable, Primitive, Union, Key, Value],
       RecordDsl.Primitive.String[Record, Key, Value]:
+
   val constraint: Union[Constraint] =
     val col: Union[Constraint.Collection] = (
       branch("maxItems", field("reference", int)).to[Constraint.Collection.MaxItems] :+

@@ -1,13 +1,13 @@
 package io.taig.otter
 
 trait DataDsl[
-    Collection[a] <: Value[a],
-    Dictionary[a] <: Value[a],
-    Nullable[a] <: Value[a],
-    Primitive[a] <: Value[a],
-    Union[a] <: Value[a],
+    +Collection[a] <: Value[a],
+    +Dictionary[a] <: Value[a],
+    +Nullable[a] <: Value[a],
+    +Primitive[a] <: Value[a],
+    +Union[a] <: Value[a],
     Key[_],
-    Value[_]
+    -Value[_]
 ](using
     Codec.Collection[Collection, Value],
     Codec.Dictionary[Dictionary, Key, Value],

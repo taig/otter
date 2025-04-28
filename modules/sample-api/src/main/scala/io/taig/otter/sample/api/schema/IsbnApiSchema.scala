@@ -1,10 +1,9 @@
 package io.taig.otter.sample.api.schema
 
 import cats.Order
-import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.dsl.*
-import io.taig.otter.dsl.json.*
+import io.taig.otter.dsl.json.{comparison as _, *}
 
 opaque type IsbnApiSchema = Long
 

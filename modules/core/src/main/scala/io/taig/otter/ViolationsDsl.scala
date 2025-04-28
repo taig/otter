@@ -3,14 +3,14 @@ package io.taig.otter
 import cats.syntax.all.*
 
 trait ViolationsDsl[
-    Collection[a] <: Value[a],
-    Dictionary[a] <: Value[a],
-    Nullable[a] <: Value[a],
-    Primitive[a] <: Value[a],
-    Record[a] <: Value[a],
-    Union[a] <: Value[a],
+    +Collection[a] <: Value[a],
+    +Dictionary[a] <: Value[a],
+    +Nullable[a] <: Value[a],
+    +Primitive[a] <: Value[a],
+    +Record[a] <: Value[a],
+    +Union[a] <: Value[a],
     Key[_],
-    Value[_]
+    -Value[_]
 ](using Codec.Dictionary[Dictionary, Key, Value], Codec.Record[Record, Key, Value], Codec.Union[Union, Value])
     extends ViolationDsl[Collection, Dictionary, Nullable, Primitive, Record, Union, Key, Value]:
   val violations: Union[Violations] =

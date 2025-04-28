@@ -11,7 +11,7 @@ import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
 
-trait DictionaryDsl[Self[_], Key[_], Value[_]](using codec: Codec.Dictionary[Self, Key, Value]):
+trait DictionaryDsl[+Self[_], -Key[_], -Value[_]](using codec: Codec.Dictionary[Self, Key, Value]):
   self =>
 
   object dictionary:
