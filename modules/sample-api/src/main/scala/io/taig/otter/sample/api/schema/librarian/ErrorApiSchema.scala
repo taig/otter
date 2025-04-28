@@ -8,4 +8,4 @@ object ErrorApiSchema:
   type LibrarianInitializationConflict = LibrarianInitializationConflict.type
   case object LibrarianInitializationConflict:
     val codec: Json.Record[LibrarianInitializationConflict] =
-      error(tpe = "LibrarianInitializationConflict", codec = ???) // TODO void
+      error("LibrarianInitializationConflict").as(LibrarianInitializationConflict)

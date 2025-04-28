@@ -144,6 +144,7 @@ object Codec:
   trait Nullable[Self[_], Value[_]] extends Codec[Self]:
     def nullable[A](codec: => Value[A]): Self[Option[A]]
     def nullable[A](codec: => Value[A], default: A): Self[A]
+    def void: Self[Unit]
 
   object Nullable:
     def apply[Self[_], Value[_]](
@@ -151,11 +152,12 @@ object Codec:
         extract: [A] => (self: Self[A]) => Self.Nullable[Value, A]
     ): Codec.Nullable[Self, Value] = new Codec.Nullable[Self, Value]:
       override def nullable[A](codec: => Value[A]): Self[Option[A]] = lift(
-        Self.Nullable.Root(codec = Reference.later(codec), metadata = Metadata.Empty)
+        Self.Nullable.Root(reference = Reference.later(codec), metadata = Metadata.Empty)
       )
       override def nullable[A](codec: => Value[A], default: A): Self[A] = lift(
-        Self.Nullable.Default(codec = Reference.later(codec), default = default, metadata = Metadata.Empty)
+        Self.Nullable.Default(reference = Reference.later(codec), default = default, metadata = Metadata.Empty)
       )
+      override def void: Self[Unit] = lift(Self.Nullable.Void(metadata = Metadata.Empty))
 
       extension [A](self: Self[A])
         override def metadata: Metadata = extract(self).metadata

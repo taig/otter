@@ -8,7 +8,7 @@ trait JsonDsl
       ConstantDsl.Primitive[Json.Constant, Json.Primitive],
       DictionaryDsl[Json.Dictionary, Json.Key, Json],
       EnumerationDsl[Json.Enumeration, Json.Primitive],
-      OptionalDsl[Json.Optional, Json],
+      NullableDsl[Json.Optional, Json],
       PrimitiveDsl[Json.Primitive],
       RecordDsl[Json.Record, Json.Key, Json],
       RecordDsl.Primitive.String[Json.Record, Json.Key.Primitive, Json],

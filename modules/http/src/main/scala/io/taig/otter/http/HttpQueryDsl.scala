@@ -7,7 +7,7 @@ trait HttpQueryDsl
       ConstantDsl[Http.Query.Value.Constant, Http.Query.Value.Primitive],
       DictionaryDsl[Http.Query.Object.Dictionary, Http.Query.Value, Http.Query.Value],
       EnumerationDsl[Http.Query.Value.Enumeration, Http.Query.Value.Primitive],
-      OptionalDsl[Http.Query.Optional, Http.Query],
+      NullableDsl[Http.Query.Optional, Http.Query],
       PrimitiveDsl.String[Http.Query.Value.Primitive],
       RecordDsl.Primitive.String[Http.Query.Object.Record, Http.Query.Value, Http.Query.Value],
       TupleDsl[Http.Query.Array.Tuple, Http.Query.Value],

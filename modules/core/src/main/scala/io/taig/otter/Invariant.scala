@@ -15,6 +15,8 @@ trait Invariant[Self[_]]:
       val convert = summonInline[Convert[A, B]]
       self.imap(convert.to)(convert.from)
 
+  extension (self: Self[Unit]) def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+
   extension [A, B](self: Self[(A, B)])
     final def merge(using merge: Merge[A, B]): Self[merge.Out] =
       self.imap(merge.apply)(merge.unapply)
