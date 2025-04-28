@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.data.Chain
 
-opaque type Routes[F[_], +S[_], +T[_]] = Chain[Route[F, S, T, ?, ?]]
+opaque type Routes[F[_], +S[_], +T[_], +U[_]] = Chain[Route[F, S, T, U, ?, ?]]
 
 // object Routes:
 //   extension [F[_]](self: Routes[F])

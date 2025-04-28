@@ -1,14 +1,11 @@
 package io.taig.otter.http
-import cats.Eq
-import cats.derived.*
-import cats.syntax.all.*
-import io.taig.otter.Violations
 
-final case class Route[F[_], +S[_], +T[_], A, B](endpoint: Endpoint[S, T, A, B], implementation: A => F[B]):
-  def modifyEndpoint[S1[a] >: S[a], T1[a] >: T[a]](
-      f: Endpoint[S, T, A, B] => Endpoint[S1, T1, A, B]
-  ): Route[F, S1, T1, A, B] =
-    copy(endpoint = f(endpoint))
+import cats.syntax.all.*
+
+final case class Route[F[_], +S[_], +T[_], +U[_], A, B](endpoint: Endpoint[S, T, U, A, B], implementation: A => F[B]):
+  def modifyEndpoint[S1[a] >: S[a], T1[a] >: T[a], U1[a] >: U[a]](
+      f: Endpoint[S, T, U, A, B] => Endpoint[S1, T1, U1, A, B]
+  ): Route[F, S1, T1, U1, A, B] = copy(endpoint = f(endpoint))
 
 //   def apply(request: Http.Request, onError: Throwable => F[Unit])(using
 //       F: ApplicativeThrow[F]
@@ -52,12 +49,7 @@ final case class Route[F[_], +S[_], +T[_], A, B](endpoint: Endpoint[S, T, A, B],
 
 //   def toRoutes: Routes[F] = Routes.one(this)
 
-object Route:
-  enum Error derives Eq:
-    case ContentNegotiationFailed(violations: Violations)
-    case MediaTypesUnsupported(violations: Violations)
-    case ValidationViolations(violations: Violations)
-
+// object Route:
 //   object Error:
 //     object ContentNegotiationFailed:
 //       val Type: String = "contentNegotiationFailed"
