@@ -68,12 +68,12 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
 
   def apply[A](codec: Constant[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, json).map(f)
-    case self @ Constant.Root(codec, _) =>
+    case Constant.Root(codec, eq, _) =>
       apply(codec = codec.self.value, json).andThen: a =>
         Validated
           .cond(
-            test = self.matches(a),
-            a,
+            test = eq.eqv(a, codec.value),
+            (),
             Violation.equal(
               reference = toValue(CirceJsonEncoder(codec = codec.self.value, codec.value)),
               actual = toValue(json)

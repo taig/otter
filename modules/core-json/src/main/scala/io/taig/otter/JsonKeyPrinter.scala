@@ -12,7 +12,7 @@ object JsonKeyPrinter extends Printer[Json.Key]:
   @tailrec
   def apply[A](codec: Constant[Json.Key.Primitive, A], a: A): String = codec match
     case Constant.Modify(self, _, g) => apply(codec = self, g(a))
-    case Constant.Root(codec, _)     => apply(codec = codec.self.value, codec.value)
+    case Constant.Root(codec, _, _)  => apply(codec = codec.self.value, codec.value)
 
   @tailrec
   def apply[A](codec: Enumeration[Json.Key.Primitive, A], a: A): String = codec match

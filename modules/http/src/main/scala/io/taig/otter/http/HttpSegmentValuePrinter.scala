@@ -14,7 +14,7 @@ object HttpSegmentValuePrinter extends Printer[Http.Segment.Value]:
   @tailrec
   def apply[A](codec: Constant[Http.Segment.Value.Primitive, A], a: A): String = codec match
     case Constant.Modify(self, _, g) => apply(codec = self, g(a))
-    case Constant.Root(reference, _) => apply(codec = reference.self.value, reference.value)
+    case Constant.Root(reference, _, _) => apply(codec = reference.self.value, reference.value)
 
   @tailrec
   def apply[A](codec: Enumeration[Http.Segment.Value.Primitive, A], a: A): String = codec match

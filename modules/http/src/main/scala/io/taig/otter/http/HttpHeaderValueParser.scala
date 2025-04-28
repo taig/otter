@@ -14,13 +14,17 @@ object HttpHeaderValueParser extends Parser[Http.Header.Value]:
   def apply[A](codec: Constant[Http.Header.Value.Primitive, A], value: String): Validated[Violations, A] =
     codec match
       case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
-      case Constant.Root(codec, _) =>
-        val reference = PrimitivePrinter.Unquoted(codec = codec.self.value.self, codec.value)
-        Validated.cond(
-          test = value === reference,
-          codec.value,
-          Violations.rootNec(Violation.equal(reference, actual = value))
-        )
+      case Constant.Root(codec, eq, _) =>
+        PrimitiveParser
+          .Unquoted(codec = codec.self.value.self, value)
+          .andThen: a =>
+            Validated.cond(
+              test = eq.eqv(a, codec.value),
+              (),
+              Violations.rootNec(
+                Violation.equal(PrimitivePrinter.Unquoted(codec = codec.self.value.self, codec.value), actual = value)
+              )
+            )
 
   def apply[A](codec: Enumeration[Http.Header.Value.Primitive, A], value: String): Validated[Violations, A] =
     codec match

@@ -14,7 +14,7 @@ object HttpHeaderValuePrinter extends Printer[Http.Header.Value]:
   @tailrec
   def apply[A](codec: Constant[Http.Header.Value.Primitive, A], a: A): String = codec match
     case Constant.Modify(self, _, g) => apply(codec = self, g(a))
-    case Constant.Root(codec, _)     => apply(codec = codec.self.value, codec.value)
+    case Constant.Root(codec, _, _)  => apply(codec = codec.self.value, codec.value)
 
   @tailrec
   def apply[A](codec: Enumeration[Http.Header.Value.Primitive, A], a: A): String = codec match

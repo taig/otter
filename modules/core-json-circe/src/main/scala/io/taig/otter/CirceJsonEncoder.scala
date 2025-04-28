@@ -28,7 +28,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
 
   @tailrec
   def apply[A](codec: Constant[Json, A], a: A): CirceJson = codec match
-    case Constant.Root(reference, _) => apply(codec = reference.self.value, reference.value)
+    case Constant.Root(reference, _, _) => apply(codec = reference.self.value, reference.value)
     case Constant.Modify(self, _, g) => apply(codec = self, g(a))
 
   def apply[A](codec: Dictionary[Json.Key, Json, A], a: A): List[(String, CirceJson)] = codec match

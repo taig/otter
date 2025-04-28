@@ -17,12 +17,12 @@ object JsonKeyParser extends Parser[Json.Key]:
 
   def apply[A](codec: Constant[Json.Key, A], value: String): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
-    case self @ Constant.Root(codec, _) =>
+    case Constant.Root(codec, eq, _) =>
       JsonKeyParser(codec = codec.self.value, value).andThen: a =>
         Validated
           .cond(
-            test = self.matches(a),
-            a,
+            test = eq.eqv(a, codec.value),
+            (),
             Violation.equal(reference = ReferenceConstantPrinter(printer = JsonKeyPrinter)(codec), value)
           )
           .leftMap(Violations.rootNec)

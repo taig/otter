@@ -15,7 +15,7 @@ import scala.Long as SLong
 trait ConstantDsl[+Self[_], -Value[_]](using codec: Codec.Constant[Self, Value]):
   self =>
 
-  final def constant[A: Eq](codec: => Value[A], value: A): Self[A] = self.codec.constant(codec, value)
+  final def constant[A: Eq](codec: => Value[A], value: A): Self[Unit] = self.codec.constant(codec, value)
 
 object ConstantDsl:
   trait Primitive[+Self[_], -Value[_]]
@@ -28,25 +28,24 @@ object ConstantDsl:
     trait Boolean[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.Boolean[Value] =>
 
-      final def constant(value: SBoolean): Self[SBoolean] = constant(codec = boolean, value)
+      final def constant(value: SBoolean): Self[Unit] = constant(codec = boolean, value)
 
     trait Number[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.Number[Value] =>
 
-      final def constant(value: JBigDecimal): Self[JBigDecimal] =
+      final def constant(value: JBigDecimal): Self[Unit] =
         constant(codec = jBigDecimal, value)(using Eq.fromUniversalEquals)
-      final def constant(value: BigDecimal): Self[BigDecimal] = constant(codec = bigDecimal, value)
-      final def constant(value: JBigInteger): Self[JBigInteger] =
+      final def constant(value: BigDecimal): Self[Unit] = constant(codec = bigDecimal, value)
+      final def constant(value: JBigInteger): Self[Unit] =
         constant(codec = jBigInteger, value)(using Eq.fromUniversalEquals)
-      final def constant(value: BigInt): Self[BigInt] = constant(codec = bigInteger, value)
-      final def constant(value: SLong): Self[SLong] = constant(codec = long, value)
-      final def constant(value: SDouble): Self[SDouble] = constant(codec = double, value)
-      final def constant(value: SFloat): Self[SFloat] = constant(codec = float, value)
-      final def constant(value: SInt): Self[SInt] = constant(codec = int, value)
+      final def constant(value: BigInt): Self[Unit] = constant(codec = bigInteger, value)
+      final def constant(value: SLong): Self[Unit] = constant(codec = long, value)
+      final def constant(value: SDouble): Self[Unit] = constant(codec = double, value)
+      final def constant(value: SFloat): Self[Unit] = constant(codec = float, value)
+      final def constant(value: SInt): Self[Unit] = constant(codec = int, value)
 
     trait String[+Self[_], -Value[_]] extends ConstantDsl[Self, Value]:
       this: PrimitiveDsl.String[Value] =>
 
-      // final def constant(value: JString): Self[JString] = constant(codec = string, value)
-      final def constant(value: JString): Self[Unit] = ??? // constant(codec = string, value)
-      final def constant(value: UUID): Self[UUID] = constant(codec = uuid, value)
+      final def constant(value: JString): Self[Unit] = constant(codec = string, value)
+      final def constant(value: UUID): Self[Unit] = constant(codec = uuid, value)
