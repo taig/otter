@@ -13,7 +13,7 @@ import org.http4s.Query as Http4sQuery
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
 
-final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decode: [A] => Array[Byte] => Validated[Violations, S[A]]):
+final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: BodyDecoder[S]):
   def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Violations, A]] = value.body.compile
     .to(Array)
     .map: body =>
@@ -40,10 +40,8 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decode: [A] => Array[By
         .leftMap("method" /: _) *> (
         Http4sUrlDecoder(url, path = data.path, queries = data.queries).leftMap("url" /: _),
         Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _),
-        Http4sBodyDecoder(decode)(body, value = data.body).leftMap("body" /: _)
-      ).tupled.map { case ((_, _, a), (headers, b), c) =>
-        (headers, (a, b, c))
-      }
+        Http4sBodyDecoder(decoder)(body, bytes = data.body).leftMap("body" /: _)
+      ).tupled.map { case ((_, _, a), (headers, b), c) => (headers, (a, b, c)) }
     case Request.ZipHeaders(self, headers) =>
       Http4sHeadersDecoder(headers, values = data.headers) match
         case Validated.Valid((headers, b)) =>
