@@ -222,15 +222,14 @@ lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
   )
   .dependsOn(coreJsonCirce, httpHttp4s, dsl)
 
-// lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     Compile / run / fork := true,
-//     libraryDependencies ++=
-//       "io.github.arainko" %% "ducktape" % Version.Ducktape ::
-//         "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-//         "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
-//         "org.typelevel" %% "mouse" % Version.Mouse ::
-//         Nil
-//   )
-//   .dependsOn(serverHttp4s, sample, sampleApi, munit % "compile->compile;test->test")
+lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    Compile / run / fork := true,
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
+        "org.typelevel" %% "mouse" % Version.Mouse ::
+        Nil
+  )
+  .dependsOn(sampleApi)

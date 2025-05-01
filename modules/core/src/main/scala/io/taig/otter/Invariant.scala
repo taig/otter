@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.Invariant as CatsInvariant
 
 import scala.compiletime.*
-import scala.annotation.targetName
 
 trait Invariant[Self[_]]:
   self =>
