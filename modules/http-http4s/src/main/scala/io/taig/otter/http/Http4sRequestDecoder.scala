@@ -1,4 +1,5 @@
 package io.taig.otter.http
+
 import cats.data.Validated
 import cats.effect.Concurrent
 import cats.syntax.all.*
@@ -29,7 +30,7 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decode: [A] => Array[By
   def apply[A](request: Request[S, A], data: Data): Validated[Violations, (List[Http4sHeader.Raw], A)] = request match
     case Request.Modify(self, f, _) => apply(request = self, data).map(_.map(f))
     case Request.Root(method, url, headers, body) =>
-      apply(method = data.method)
+      Http4sMethodDecoder(method = data.method)
         .andThen: actual =>
           Validated.cond(
             test = actual === method,
@@ -49,19 +50,6 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decode: [A] => Array[By
           apply(request = self, data = data.copy(headers = headers)).map(_.tupleRight(b))
         case Validated.Invalid(url) =>
           apply(request = self, data).fold(_ |+| url, _ => url).invalid
-
-  def apply(method: Http4sMethod): Validated[Violations, Method] = method match
-    case Http4sMethod.DELETE  => Method.Delete.valid
-    case Http4sMethod.GET     => Method.Get.valid
-    case Http4sMethod.HEAD    => Method.Head.valid
-    case Http4sMethod.OPTIONS => Method.Options.valid
-    case Http4sMethod.PATCH   => Method.Patch.valid
-    case Http4sMethod.POST    => Method.Post.valid
-    case Http4sMethod.PUT     => Method.Put.valid
-    case Http4sMethod.TRACE   => Method.Trace.valid
-    case _ =>
-      val values = Method.mapping.values.toList.map(Method.mapping.apply)
-      Violations.rootNec(Violation.oneOf(values, actual = method.name)).invalid
 
 object Http4sRequestDecoder:
   final case class Data(

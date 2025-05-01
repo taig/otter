@@ -4,21 +4,20 @@ import cats.data.Chain
 
 opaque type Routes[F[_], +S[_], +T[_], +U[_]] = Chain[Route[F, S, T, U, ?, ?]]
 
-// object Routes:
-//   extension [F[_]](self: Routes[F])
-//     inline def toChain: Chain[Route[F, ?, ?]] = self
-//     def toSeq: Seq[Route[F, ?, ?]] = self.toList
-//     def :+(endpoint: Route[F, ?, ?]): Routes[F] = self :+ endpoint
-//     def ++(routes: Routes[F]): Routes[F] = self ++ routes.toChain
+object Routes:
+  extension [F[_], S[_], T[_], U[_]](self: Routes[F, S, T, U])
+    inline def toChain: Chain[Route[F, S, T, U, ?, ?]] = self
+    def toSeq: Seq[Route[F, S, T, U, ?, ?]] = self.toList
+    def :+(endpoint: Route[F, S, T, U, ?, ?]): Routes[F, S, T, U] = self :+ endpoint
+    def ++(routes: Routes[F, S, T, U]): Routes[F, S, T, U] = self ++ routes.toChain
 
-//     def find(method: Method, url: Http.Url): Option[Route[F, ?, ?]] =
-//       toChain.find(_.endpoint.request.matches(method, url))
+  extension [F[_], S[_], T[_], U[_]](self: Route[F, S, T, U, ?, ?])
+    def +:(routes: Routes[F, S, T, U]): Routes[F, S, T, U] = self +: routes
 
-//     def modify(f: Route[F, ?, ?] => Route[F, ?, ?]): Routes[F] = toChain.map(f)
-
-//   extension [F[_]](self: Route[F, ?, ?]) def +:(routes: Routes[F]): Routes[F] = self +: routes
-
-//   def fromChain[F[_]](endpoints: Chain[Route[F, ?, ?]]): Routes[F] = endpoints
-//   def fromSeq[F[_]](endpoints: Seq[Route[F, ?, ?]]): Routes[F] = fromChain(Chain.fromSeq(endpoints))
-//   def apply[F[_]](endpoints: Route[F, ?, ?]*): Routes[F] = fromSeq(endpoints)
-//   def one[F[_]](endpoint: Route[F, ?, ?]): Routes[F] = fromChain(Chain.one(endpoint))
+  def fromChain[F[_], S[_], T[_], U[_]](endpoints: Chain[Route[F, S, T, U, ?, ?]]): Routes[F, S, T, U] = endpoints
+  def fromSeq[F[_], S[_], T[_], U[_]](endpoints: Seq[Route[F, S, T, U, ?, ?]]): Routes[F, S, T, U] =
+    fromChain(Chain.fromSeq(endpoints))
+  def apply[F[_], S[_], T[_], U[_]](endpoints: Route[F, S, T, U, ?, ?]*): Routes[F, S, T, U] =
+    fromSeq(endpoints)
+  def one[F[_], S[_], T[_], U[_]](endpoint: Route[F, S, T, U, ?, ?]): Routes[F, S, T, U] =
+    fromChain(Chain.one(endpoint))

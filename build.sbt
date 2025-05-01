@@ -19,7 +19,7 @@ val Version = new {
   val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.5"
   val ScalaJavaTime = "2.6.0"
-  val Slf4j = "2.0.15"
+  val Slf4j = "2.0.17"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -47,8 +47,8 @@ inThisBuild(
   )
 )
 
-// addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
-// addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
+addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
+addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
 
 noPublishSettings
 
@@ -139,8 +139,11 @@ lazy val http = module(identifier = Some("http"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-val httpJson = module(identifier = Some("http-json"))
+lazy val httpJson = module(identifier = Some("http-json"))
   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+
+lazy val httpJsonCirce = module(identifier = Some("http-json-circe"))
+  .dependsOn(httpJson % "compile->compile;test->test", coreJsonCirce % "compile->compile;test->test")
 
 lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   .settings(
@@ -228,8 +231,10 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
     Compile / run / fork := true,
     libraryDependencies ++=
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
         "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
+        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sampleApi)
+  .dependsOn(sampleApi, httpJsonCirce)

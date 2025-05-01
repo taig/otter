@@ -1,4 +1,4 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
 // import cats.MonadThrow
 // import cats.Show
@@ -6,7 +6,7 @@
 // import io.taig.otter.http.header.Accept
 // import org.typelevel.ci.*
 
-// final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
+final case class App[F[_], S[_], T[_], U[_]](routes: Routes[F, S, T, U], error: Result[U, App.Error])
 //   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =
 //     routes.find(request.method, request.url) match
 //       case Some(route) => route(request, onError)
@@ -22,13 +22,10 @@
 //           .getOrElse(error.encode(charset = none, App.Error.RouteNotFound))
 //           .pure[F]
 
-// object App:
-//   enum Error:
-//     case RouteNotFound
+object App:
+  enum Error:
+    case RouteNotFound
 
 //   object Error:
 //     def parse(value: String): Option[App.Error.RouteNotFound.type] =
 //       Parsers.error.parseAll(value).toOption.filter(_ === "routeNotFound").as(RouteNotFound)
-
-//     given Show[App.Error] =
-//       case RouteNotFound => Printers.error(name = "routeNotFound")
