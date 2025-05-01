@@ -31,6 +31,9 @@ def toHttp4sRoutes[F[_]: MonadThrow, S[_], T[_], U[_]](
       case None =>
         println("No match found")
         OptionT.none
+    .onError: throwable =>
+      throwable.printStackTrace()
+      MonadThrow[OptionT[F, *]].raiseError(throwable)
 
 def toHttp4sApp[F[_]: MonadThrow, S[_], T[_], U[_]](
     app: App[F, S, T, U],
