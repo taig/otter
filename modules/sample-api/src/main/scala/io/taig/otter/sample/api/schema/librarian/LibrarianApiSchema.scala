@@ -7,6 +7,7 @@ import io.taig.otter.dsl.json.*
 import org.typelevel.ci.*
 
 import java.util.UUID
+import io.taig.otter.http.FormData
 
 final case class LibrarianApiSchema(email: CIString, reference: UUID)
 
@@ -17,6 +18,11 @@ object LibrarianApiSchema:
     val codec: Json.Record[LibrarianApiSchema.Create] = (
       field("email", cistring) :*
         field("password", string(maximum = 250))
+    ).to
+
+    val formData: FormData[LibrarianApiSchema.Create] = (
+      form.field("email", form.cistring) :*
+        form.field("password", form.string(minimum = 250))
     ).to
 
   final case class Login(email: CIString, password: String)
