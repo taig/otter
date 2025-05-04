@@ -15,6 +15,6 @@ final case class Response[+S[_], +T[_], A](
 
 object Response:
   enum Error derives Eq:
-    case ContentNegotiationFailed(violations: Violations)
-    case MediaTypesUnsupported(violations: Violations)
+    case ContentNegotiationFailed // (violations: Violations)
+    // case MediaTypesUnsupported(violations: Violations)
     case ValidationViolations(violations: Violations)

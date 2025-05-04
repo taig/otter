@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Invariant as CatsInvariant
 
 import scala.compiletime.*
+import scala.annotation.targetName
 
 trait Invariant[Self[_]]:
   self =>
@@ -15,7 +16,10 @@ trait Invariant[Self[_]]:
       val convert = summonInline[Convert[A, B]]
       self.imap(convert.to)(convert.from)
 
-  extension (self: Self[Unit]) def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+  extension (self: Self[Unit])
+    @targetName("asSingleton")
+    def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+    def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
 
   extension [A, B](self: Self[(A, B)])
     final def merge(using merge: Merge[A, B]): Self[merge.Out] =

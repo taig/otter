@@ -8,15 +8,17 @@ import io.taig.otter.http.Parsers
 
 final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
   // TODO respect parameters (?)
-  def satisfies(mediaRange: MediaRange): Boolean = mediaRange.tpe match
-    case MediaRange.Type.Secondary(primary, secondary) => primary === tpe.primary && secondary === tpe.secondary
-    case MediaRange.Type.Primary(primary)              => primary === tpe.primary
-    case MediaRange.Type.Any                           => true
+  def satisfies(mediaRange: MediaRange): Boolean = tpe.satisfies(mediaRange = mediaRange.tpe)
 
   override def toString: String = tpe.show + parameters.show
 
 object MediaType:
   final case class Type(primary: String, secondary: String):
+    def satisfies(mediaRange: MediaRange.Type): Boolean = mediaRange match
+      case MediaRange.Type.Secondary(primary, secondary) => primary === primary && secondary === secondary
+      case MediaRange.Type.Primary(primary)              => primary === primary
+      case MediaRange.Type.Any                           => true
+
     override def toString: String = show"${primary}/${secondary}"
 
   object Type:

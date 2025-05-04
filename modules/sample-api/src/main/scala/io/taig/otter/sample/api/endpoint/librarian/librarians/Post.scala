@@ -13,12 +13,12 @@ import io.taig.otter.http.Response
 private val errors: Result[Json, Response.Error] = (
   result(
     code.notAcceptable,
-    json(error("contentNegotationFailed", field("violations", violations)))
-  ).to[Response.Error.ContentNegotiationFailed] :+
-    result(
-      code.unsupportedMediaTypes,
-      json(error("mediaTypesUnsupported", field("violations", violations)))
-    ).to[Response.Error.MediaTypesUnsupported] :+
+    json(error("contentNegotationFailed"))
+  ).as(Response.Error.ContentNegotiationFailed) :+
+    // result(
+    //   code.unsupportedMediaTypes,
+    //   json(error("mediaTypesUnsupported", field("violations", violations)))
+    // ).to[Response.Error.MediaTypesUnsupported] :+
     result(
       code.unprocessableEntity,
       json(error("validationViolations", field("violations", violations)))
@@ -33,7 +33,7 @@ val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, L
   request(
     method.post,
     url,
-    json(LibrarianApiSchema.Create.codec)
+    json(LibrarianApiSchema.Create.codec).or(formData.formData(LibrarianApiSchema.Create.formData))
   ),
   response(
     result(code.conflict, json(LibrarianInitializationConflict.codec)) :+

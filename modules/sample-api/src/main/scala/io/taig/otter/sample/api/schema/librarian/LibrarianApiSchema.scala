@@ -20,10 +20,13 @@ object LibrarianApiSchema:
         field("password", string(maximum = 250))
     ).to
 
-    val formData: FormData[LibrarianApiSchema.Create] = (
-      form.field("email", form.cistring) :*
-        form.field("password", form.string(minimum = 250))
-    ).to
+    val formData: FormData[LibrarianApiSchema.Create] =
+      import io.taig.otter.dsl.formData.*
+
+      (
+        field("email", cistring) :*
+          field("password", string(minimum = 250))
+      ).to
 
   final case class Login(email: CIString, password: String)
 

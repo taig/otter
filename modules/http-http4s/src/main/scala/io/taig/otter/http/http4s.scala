@@ -1,18 +1,18 @@
 package io.taig.otter.http
 
-import cats.Monad
 import cats.syntax.all.*
-import io.taig.otter.http.header.MediaType
+import io.taig.otter.+
 import org.http4s.HttpRoutes as Http4sRoutes
 import org.http4s.HttpApp as Http4sApp
 import cats.effect.Concurrent
 import cats.MonadThrow
 import cats.data.OptionT
+import io.taig.otter.http.header.MediaType
 
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
-    decoder: BodyDecoder[S],
-    encoder: BodyEncoder[[a] =>> S[a] | T[a] | U[a]]
+    decoder: PayloadDecoder[S],
+    encoder: BodyEncoder[S + T + U]
 ): Http4sRoutes[F] = Http4sRoutes: request =>
   OptionT
     .liftF:
@@ -20,13 +20,11 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
         .leftMap(violations => new IllegalStateException("Illegal method: " + violations))
         .liftTo[F]
     .subflatMap: method =>
-      println("Find matching route")
       routes.toChain.find: route =>
         if route.endpoint.request.method === method
         then Http4sUrlMatcher(reference = route.endpoint.request.url, actual = request.uri)
         else false
     .semiflatMap: route =>
-      println("Run the endpoint")
       Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
         .flatMap(_.traverse(route.implementation))
         .map { result =>
@@ -39,7 +37,7 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
 
 def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
     app: App[F, S, T, U],
-    encoder: BodyEncoder[[a] =>> S[a] | T[a] | U[a]]
+    encoder: BodyEncoder[S + T + U]
 ): Http4sApp[F] =
   val routes = toHttp4sRoutes(app.routes, decoder = ???, encoder)
 
