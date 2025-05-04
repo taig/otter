@@ -10,6 +10,7 @@ import cats.derived.strict.*
 import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
+import cats.Show
 
 enum Violations derives Eq:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
@@ -45,6 +46,11 @@ enum Violations derives Eq:
 
   final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation]]] = toNem.toNel.map(Indexed.apply)
 
+  final override def toString: String = toNel
+    .map: value =>
+      show"${value.xpath}:\n" + value.self.map(violation => show"  - $violation").mkString_("\n")
+    .mkString_("\n")
+
 object Violations:
   def root(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)
   def rootNec(violation: Violation): Violations = root(NonEmptyChain.one(violation))
@@ -68,3 +74,5 @@ object Violations:
 
   given Semigroup[Violations] with
     override def combine(x: Violations, y: Violations): Violations = x.combine(y)
+
+  given Show[Violations] = Show.fromToString
