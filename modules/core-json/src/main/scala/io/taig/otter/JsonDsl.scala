@@ -17,7 +17,7 @@ trait JsonDsl extends
       UnionDsl[Json.Union, Json],
       ErrorDsl[Json.Constant, Json.Record, Json.Key, Json],
       ViolationsDsl[ Json.Collection, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Record, Json.Union, Json.Key, Json]:
-  override val key: JsonKeyDsl = JsonKeyDsl
+  override def key: JsonKeyDsl = JsonKeyDsl
 
 object JsonDsl extends JsonDsl
 // format: on

@@ -19,8 +19,7 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: BodyDecoder[S]
     .map: body =>
       val data = Data(
         method = value.method,
-        path = value.uri.path.segments,
-        queries = value.uri.query.toVector,
+        url = value.uri,
         headers = value.headers.headers,
         body
       )
@@ -38,10 +37,10 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: BodyDecoder[S]
             Violations.rootNec(Violation.equal(reference = method.show, actual = actual.show))
           )
         .leftMap("method" /: _) *> (
-        Http4sUrlDecoder(url, path = data.path, queries = data.queries).leftMap("url" /: _),
+        Http4sUrlDecoder(url, value = data.url).leftMap("url" /: _),
         Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _),
         Http4sBodyDecoder(decoder)(body, bytes = data.body).leftMap("body" /: _)
-      ).tupled.map { case ((_, _, a), (headers, b), c) => (headers, (a, b, c)) }
+      ).tupled.map { case (a, (headers, b), c) => (headers, (a, b, c)) }
     case Request.ZipHeaders(self, headers) =>
       Http4sHeadersDecoder(headers, values = data.headers) match
         case Validated.Valid((headers, b)) =>
@@ -52,8 +51,7 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: BodyDecoder[S]
 object Http4sRequestDecoder:
   final case class Data(
       method: Http4sMethod,
-      path: Vector[Http4sUri.Path.Segment],
-      queries: Vector[Http4sQuery.KeyValue],
+      url: Http4sUri,
       headers: List[Http4sHeader.Raw],
       body: Array[Byte]
   )
