@@ -7,9 +7,9 @@ import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameters
 
 trait FormDataDsl
-    extends PrimitiveDsl.String[FormData.Primitive],
-      RecordDsl[FormData.Record, FormData.Key, FormData],
-      RecordDsl.Primitive.String[FormData.Record, FormData.Key, FormData]:
+    extends PrimitiveDsl.String[FormData.Value.Primitive],
+      RecordDsl[FormData.Record, FormData.Key, FormData.Value],
+      RecordDsl.Primitive.String[FormData.Record, FormData.Key, FormData.Value]:
   final override def key: PrimitiveDsl.String[Key] = FormDataKeyDsl
 
   final def formData[A](codec: => FormData[A]): Body[FormData, A] = BodyDsl.body(

@@ -28,7 +28,7 @@ object Nullable:
     override def modifyMetadata(f: Metadata => Metadata): Nullable[S, Option[A]] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Nullable[T, Option[A]] = copy(reference = reference.mapK(fK))
 
-  final private[otter] case class Void[A](metadata: Metadata) extends Nullable[Nothing, A]:
+  final private[otter] case class Void(metadata: Metadata) extends Nullable[Nothing, Unit]:
     override def codec: Option[Reference[Nothing, ?]] = none
-    override def modifyMetadata(f: Metadata => Metadata): Nullable[Nothing, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: Nothing, T[_]](fK: S1 ~> T): Nullable[T, A] = this
+    override def modifyMetadata(f: Metadata => Metadata): Nullable[Nothing, Unit] = copy(metadata = f(metadata))
+    override def mapK[S1[a] >: Nothing, T[_]](fK: S1 ~> T): Nullable[T, Unit] = this

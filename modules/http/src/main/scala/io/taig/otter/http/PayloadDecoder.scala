@@ -12,11 +12,6 @@ object PayloadDecoder:
   extension [S[_] <: Matchable](self: PayloadDecoder[S])
     inline def or[T[_] <: Matchable](decoder: PayloadDecoder[T]): PayloadDecoder[S + T] = new PayloadDecoder[S + T]:
       override def apply[A](contentType: MediaType, codec: (S + T)[A], bytes: Array[Byte]): Validated[Violations, A] =
-        println("decode: " + contentType)
         codec match
-          case codec: S[A] =>
-            println("left")
-            self(contentType, codec, bytes)
-          case codec: T[A] =>
-            println("right")
-            decoder(contentType, codec, bytes)
+          case codec: S[A] => self(contentType, codec, bytes)
+          case codec: T[A] => decoder(contentType, codec, bytes)

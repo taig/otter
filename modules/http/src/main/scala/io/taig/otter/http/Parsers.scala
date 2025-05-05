@@ -47,7 +47,6 @@ private[http] object Parsers:
   val mediaType: Parser[MediaType] =
     val tpe = ((token <* slash) ~ token).map(MediaType.Type.apply)
     (tpe ~ parameters).map(MediaType.apply)
-    // (tpe <* Parser.anyChar.rep0).map(MediaType(_, Parameters.Empty))
 
   val mediaRange: Parser[MediaRange] =
     val tpe: Parser[MediaRange.Type] =

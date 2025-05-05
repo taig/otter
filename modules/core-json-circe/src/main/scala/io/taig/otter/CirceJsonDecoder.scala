@@ -129,11 +129,12 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   def apply[A](codec: Nullable[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Nullable.Modify(self, f, _) => apply(codec = self, json).map(f)
     case Nullable.Root(reference, _) =>
-      if json.isNull then none.valid[Violations]
+      if json.isNull then None.valid
       else apply(codec = reference.value, json).map(_.some)
     case Nullable.Default(reference, default, _) =>
-      if json.isNull then default.valid[Violations]
+      if json.isNull then default.valid
       else apply(codec = reference.value, json)
+    case Nullable.Void(_) => ().valid
 
   def apply[A](codec: Primitive[A], json: CirceJson): Validated[Violations, A] = codec match
     case _: Primitive.Boolean.Root            => apply[Boolean](name = "boolean", json)

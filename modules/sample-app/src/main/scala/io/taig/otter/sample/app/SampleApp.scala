@@ -18,12 +18,8 @@ object SampleApp extends ResourceApp.Forever:
 
   override def run(args: List[String]): Resource[IO, Unit] = for
     routes <- Resource.pure(SampleRoutes())
-    // decoder = CirceJsonBodyDecoder().or(FormDataBodyDecoder.Default)
+    decoder = CirceJsonPayloadDecoder.Default.or(FormDataPayloadDecoder.Default)
     encoder = CirceJsonBodyEncoder(printer = Printer.noSpaces).or(FormDataBodyEncoder.Default)
-    http4s = toHttp4sRoutes(
-      routes,
-      decoder = CirceJsonPayloadDecoder.Default.or(FormDataPayloadDecoder.Default),
-      encoder
-    )
+    http4s = toHttp4sRoutes(routes, decoder, encoder)
     server <- EmberServerBuilder.default[IO].withHttpApp(http4s.orNotFound).build
   yield ()
