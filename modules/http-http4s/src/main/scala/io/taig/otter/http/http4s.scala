@@ -7,7 +7,6 @@ import org.http4s.HttpApp as Http4sApp
 import cats.effect.Concurrent
 import cats.MonadThrow
 import cats.data.OptionT
-import io.taig.otter.http.header.MediaType
 
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
@@ -27,10 +26,7 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     .semiflatMap: route =>
       Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
         .flatMap(_.traverse(route.implementation))
-        .map { result =>
-          println("obtained a result here, time to come up with a response: " + result)
-          ???
-        }
+        .flatMap(Http4sResponseEncoder[F, T, U]()(response = route.endpoint.response, _))
     .onError: throwable =>
       throwable.printStackTrace()
       MonadThrow[OptionT[F, *]].raiseError(throwable)

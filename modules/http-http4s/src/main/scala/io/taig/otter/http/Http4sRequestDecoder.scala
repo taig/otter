@@ -9,10 +9,8 @@ import io.taig.otter.Violations
 import io.taig.otter.http.Http4sRequestDecoder.Data
 import org.http4s.Header as Http4sHeader
 import org.http4s.Method as Http4sMethod
-import org.http4s.Query as Http4sQuery
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
-import io.taig.otter.http.header.MediaType
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
 
