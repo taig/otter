@@ -8,6 +8,8 @@ import cats.data.Validated.Invalid
 import io.taig.otter.Nullable.Modify
 import io.taig.otter.Nullable.Default
 import io.taig.otter.Nullable.Root
+import io.taig.otter.Primitive.Number.BigInteger
+import io.taig.otter.Primitive.String.Text
 
 object FormDataDecoder:
   def apply[A](codec: FormData[A], data: List[(String, Option[String])]): Validated[Violations, A] = codec match
@@ -28,7 +30,9 @@ object FormDataDecoder:
       else apply(codec = reference.value, data).map(_.some)
     case Nullable.Void(_) => ().valid
 
-  def apply[A](codec: Primitive[A], data: Option[String]): Validated[Violations, A] = ???
+  def apply[A](codec: Primitive.String[A], data: Option[String]): Validated[Violations, A] = data
+      .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = Data.Null)))
+      .andThen(PrimitiveParser(quotes = false)(codec, _))
 
   def apply[A](
       codec: Dictionary[FormData.Key, FormData.Value, A],
