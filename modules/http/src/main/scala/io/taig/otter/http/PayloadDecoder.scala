@@ -5,7 +5,7 @@ import io.taig.otter.Violations
 import io.taig.otter.+
 import io.taig.otter.http.header.MediaType
 
-abstract class PayloadDecoder[S[_]]:
+abstract class PayloadDecoder[-S[_]]:
   def apply[A](contentType: MediaType, codec: S[A], bytes: Array[Byte]): Validated[Violations, A]
 
 object PayloadDecoder:
