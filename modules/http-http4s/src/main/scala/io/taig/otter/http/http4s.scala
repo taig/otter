@@ -26,7 +26,8 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     .semiflatMap: route =>
       Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
         .flatMap(_.traverse(route.implementation))
-        .flatMap(Http4sResponseEncoder[F, T, U]()(response = route.endpoint.response, _))
+        .attempt
+        .flatMap(Http4sResponseEncoder()(response = route.endpoint.response, _))
     .onError: throwable =>
       throwable.printStackTrace()
       MonadThrow[OptionT[F, *]].raiseError(throwable)

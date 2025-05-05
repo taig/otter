@@ -3,13 +3,6 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.otter.*
-import cats.data.Validated.Valid
-import cats.data.Validated.Invalid
-import io.taig.otter.Nullable.Modify
-import io.taig.otter.Nullable.Default
-import io.taig.otter.Nullable.Root
-import io.taig.otter.Primitive.Number.BigInteger
-import io.taig.otter.Primitive.String.Text
 
 object FormDataDecoder:
   def apply[A](codec: FormData[A], data: List[(String, Option[String])]): Validated[Violations, A] = codec match
@@ -31,8 +24,8 @@ object FormDataDecoder:
     case Nullable.Void(_) => ().valid
 
   def apply[A](codec: Primitive.String[A], data: Option[String]): Validated[Violations, A] = data
-      .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = Data.Null)))
-      .andThen(PrimitiveParser(quotes = false)(codec, _))
+    .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = Data.Null)))
+    .andThen(PrimitiveParser(quotes = false)(codec, _))
 
   def apply[A](
       codec: Dictionary[FormData.Key, FormData.Value, A],
