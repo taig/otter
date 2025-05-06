@@ -11,7 +11,8 @@ import cats.data.OptionT
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
     decoder: PayloadDecoder[S],
-    encoder: BodyEncoder[S + T + U]
+    encoder: BodyEncoder[S + T + U],
+    debug: Boolean = false
 ): Http4sRoutes[F] = Http4sRoutes: request =>
   OptionT
     .liftF:
@@ -27,16 +28,17 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
       Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
         .flatMap(_.traverse(route.implementation))
         .attempt
-        .flatMap(Http4sResponseEncoder(encoder)(response = route.endpoint.response, _))
+        .flatMap(Http4sResponseEncoder(encoder, debug)(response = route.endpoint.response, _))
     .onError: throwable =>
       throwable.printStackTrace()
       MonadThrow[OptionT[F, *]].raiseError(throwable)
 
 def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
     app: App[F, S, T, U],
-    encoder: BodyEncoder[S + T + U]
+    encoder: BodyEncoder[S + T + U],
+    debug: Boolean = false
 ): Http4sApp[F] =
-  val routes = toHttp4sRoutes(app.routes, decoder = ???, encoder)
+  val routes = toHttp4sRoutes(app.routes, decoder = ???, encoder, debug)
 
   Http4sApp: request =>
     // encode(???, app.error)
