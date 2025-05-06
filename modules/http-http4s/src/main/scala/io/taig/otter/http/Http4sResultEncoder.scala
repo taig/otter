@@ -6,7 +6,7 @@ import cats.MonadThrow
 import cats.syntax.all.*
 import java.nio.charset.StandardCharsets
 
-final class Http4sResultEncoder[F[_], S[_]](encoder: BodyEncoder[S])(using F: MonadThrow[F]):
+final class Http4sResultEncoder[F[_], S[_]](encoder: PayloadEncoder[S])(using F: MonadThrow[F]):
   def apply[A](result: Result[S, A], a: A): F[Http4sResponse[F]] = result match
     case Result.Modify(self, _, g)  => apply(result = self, g(a))
     case Result.OrElse(left, right) => a.fold(apply(result = left, _), apply(result = right, _))

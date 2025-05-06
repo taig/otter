@@ -6,7 +6,7 @@ import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.MonadThrow
 
-final class Http4sResponseEncoder[F[_]: MonadThrow, S[_], T[_]](encoder: BodyEncoder[S + T], debug: Boolean):
+final class Http4sResponseEncoder[F[_]: MonadThrow, S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
   val results = Http4sResultEncoder(encoder)
 
   def apply[A](
@@ -16,4 +16,4 @@ final class Http4sResponseEncoder[F[_]: MonadThrow, S[_], T[_]](encoder: BodyEnc
     case Left(throwable) =>
       results(result = response.failure, Option.when(debug)(StacktracePrinter(throwable)))
     case Right(Validated.Invalid(error)) => results(result = response.error, error)
-    case Right(Validated.Valid(a)) => results(result = response.result, a)
+    case Right(Validated.Valid(a))       => results(result = response.result, a)

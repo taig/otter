@@ -5,7 +5,7 @@ import scodec.bits.ByteVector
 
 import java.nio.charset.Charset
 
-final class Http4sBodyEncoder[F[_], S[_]](encoder: BodyEncoder[S]):
+final class Http4sBodyEncoder[F[_], S[_]](encoder: PayloadEncoder[S]):
   // TODO what should I actually pass here rather than charset?
   def apply[A](charset: Option[Charset], body: Body[S, A], a: A): Http4sBody[F] = body match
     case Body.Empty                  => Http4sBody.empty
