@@ -10,17 +10,27 @@ import cats.syntax.all.*
 import java.nio.charset.StandardCharsets
 import cats.parse.Parser0
 import io.taig.otter.Violation
+import org.typelevel.ci.*
+import java.nio.charset.Charset
 
 final class FormDataPayloadDecoder extends PayloadDecoder[FormData]:
-  override def apply[A](contentType: MediaType, codec: FormData[A], bytes: Array[Byte]): Validated[Violations, A] =
-    // TODO infer proper charset
-    val value = new String(bytes, StandardCharsets.UTF_8)
+  override def apply[A](codec: FormData[A], contentType: MediaType, bytes: Array[Byte]): Validated[Violations, A] =
+    val charset = contentType.parameters
+      .get(ci"charset")
+      .headOption
+      .flatMap(value =>
+        try Charset.forName(value).some
+        catch { case _: IllegalArgumentException => none }
+      )
+      .getOrElse(StandardCharsets.UTF_8)
+
+    val value = new String(bytes, charset)
+
     FormDataPayloadDecoder.parser
       .parseAll(value)
       .toValidated
-      .leftMap(error =>
+      .leftMap: error =>
         Violations.rootNec(Violation.tpe(name = "x-www-url-formencoded", actual = value, hint = error.show))
-      )
       .andThen(data => FormDataDecoder(codec, data))
 
 object FormDataPayloadDecoder:

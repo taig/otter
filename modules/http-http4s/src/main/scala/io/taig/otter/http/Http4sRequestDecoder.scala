@@ -30,7 +30,7 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
   def apply[A](request: Request[S, A], data: Data): Validated[Response.Error, (List[Http4sHeader.Raw], A)] =
     request match
       case Request.Modify(self, f, _) => apply(request = self, data).map(_.map(f))
-      case Request.Root(method, url, headers, bodies) =>
+      case Request.Root(method, url, headers) =>
         Http4sMethodDecoder(method = data.method)
           .andThen: actual =>
             Validated.cond(
@@ -41,19 +41,17 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
           .leftMap("method" /: _) *> (
           Http4sUrlDecoder(url, value = data.url).leftMap("url" /: _),
           Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _)
-        ).tupled.map { case (a, (headers, b)) => (headers, (a, b)) } match
-          case Validated.Valid((headers, (a, b))) =>
-            bodies match
-              case None => (headers, (a, b, ???)).valid
-            // BodiesDecoder(decoder)(codec = bodies, contentType = ???, bytes = data.body)
-            // // Http4sBodyDecoder(decoder)(headers = data.headers, body, bytes = data.body)
-            //   .leftMap("body" /: _)
-            //   .leftMap(Response.Error.ValidationViolations.apply)
-            //   .andThen:
-            //     case Some(c) => (headers, (a, b, c)).valid
-            //     case None    => Response.Error.ContentNegotiationFailed.invalid
-          case Validated.Invalid(violations) =>
-            Response.Error.ValidationViolations(violations).invalid
+        ).tupled match
+          case Valid((a, (headers, b))) => (headers, (a, b)).valid
+          case Invalid(violations)      => Response.Error.ValidationViolations(violations).invalid
+      case Request.Payload(self, bodies) =>
+        apply(request = self, data).andThen:
+          case (headers, (a, b)) =>
+            Http4sBodiesDecoder(decoder)(bodies, headers, bytes = data.body)
+              .leftMap("body" /: _)
+              .leftMap(Response.Error.ValidationViolations.apply)
+              .andThen(_.toValid(Response.Error.ContentNegotiationFailed))
+              .map(c => (headers, (a, b, c)))
       case Request.ZipHeaders(self, headers) =>
         Http4sHeadersDecoder(headers, values = data.headers) match
           case Validated.Valid((headers, b)) =>
