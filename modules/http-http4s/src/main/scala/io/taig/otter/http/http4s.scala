@@ -7,6 +7,11 @@ import org.http4s.HttpApp as Http4sApp
 import cats.effect.Concurrent
 import cats.MonadThrow
 import cats.data.OptionT
+import org.typelevel.ci.*
+import io.taig.otter.http.header.Accept
+import io.taig.otter.Violations
+import io.taig.otter.Step
+import io.taig.otter.Violation
 
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
@@ -28,7 +33,23 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
       Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
         .flatMap(_.traverse(route.implementation))
         .attempt
-        .flatMap(Http4sResponseEncoder(encoder, debug)(response = route.endpoint.response, _))
+        .flatMap: value =>
+          val accept = request.headers
+            .get(ci"Accept")
+            .map(_.head.value)
+            .traverse: value =>
+              Accept
+                .parse(value)
+                .leftMap: error =>
+                  Violations.of((Step.Field("headers"), Violation.tpe(name = "Accept", actual = value)))
+                .leftMap(Response.Error.ValidationViolations.apply)
+            .toValidated
+
+          Http4sResponseEncoder(encoder, debug)(
+            response = route.endpoint.response,
+            accept = accept.getOrElse(none),
+            result = accept.fold(_.invalid.asRight, _ => value)
+          )
     .onError: throwable =>
       throwable.printStackTrace()
       MonadThrow[OptionT[F, *]].raiseError(throwable)

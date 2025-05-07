@@ -13,16 +13,15 @@ final class Http4sBodyDecoder[S[_]](decoder: PayloadDecoder[S]):
       headers: List[Http4sHeader.Raw],
       body: Body[S, A],
       bytes: Array[Byte]
-  ): Validated[Violations, Option[A]] =
-    headers
-      .find(_.name === ci"Content-Type")
-      .map(_.value)
-      .traverse: value =>
-        MediaType
-          .parse(value)
-          .toValidated
-          .leftMap: error =>
-            println(error)
-            Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
-      .andThen: contentType =>
-        new BodyDecoder(decoder).apply(contentType, codec = body, bytes)
+  ): Validated[Violations, Option[A]] = headers
+    .find(_.name === ci"Content-Type")
+    .map(_.value)
+    .traverse: value =>
+      MediaType
+        .parse(value)
+        .toValidated
+        .leftMap: error =>
+          println(error)
+          Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
+    .andThen: contentType =>
+      new BodyDecoder(decoder).apply(codec = body, contentType, bytes)

@@ -8,4 +8,4 @@ import io.taig.otter.sample.app.route.librarian.LibrarianRoutes
 import io.taig.otter.http.FormData
 
 object SampleRoutes:
-  def apply(): Routes[IO, Json + FormData, Json, Json] = LibrarianRoutes()
+  def apply(): Routes[IO, Json + FormData, Json + FormData, Json] = LibrarianRoutes()

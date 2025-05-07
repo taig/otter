@@ -1,6 +1,7 @@
 package io.taig.otter.sample.api.endpoint.librarian.librarians
 
 import cats.syntax.all.*
+import io.taig.otter.+
 import io.taig.otter.Json
 import io.taig.otter.http.Result
 import io.taig.otter.dsl.*
@@ -9,6 +10,7 @@ import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 import io.taig.otter.sample.api.Endpoint
 import io.taig.otter.sample.api.schema.librarian.ErrorApiSchema.*
 import io.taig.otter.http.Response
+import io.taig.otter.http.FormData
 
 private val errors: Result[Json, Response.Error] = (
   result(
@@ -27,7 +29,7 @@ private val errors: Result[Json, Response.Error] = (
 
 val failure = result(code.internalServerError, json(string.nullable))
 
-def response[A](value: Result[Json, A]): Response[Json, Json, A] = Response(result = value, errors, failure)
+def response[S[_], A](value: Result[S, A]): Response[S, Json, A] = Response(result = value, errors, failure)
 
 val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, LibrarianApiSchema] = endpoint(
   request(
@@ -37,6 +39,6 @@ val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, L
   ),
   response(
     result(code.conflict, json(LibrarianInitializationConflict.codec)) :+
-      result(code.created, json(LibrarianApiSchema.codec))
+      result(code.created, json(LibrarianApiSchema.codec).or(formData.formData(LibrarianApiSchema.formData)))
   )
 )

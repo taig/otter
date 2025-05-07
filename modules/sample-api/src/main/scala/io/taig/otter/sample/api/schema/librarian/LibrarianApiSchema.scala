@@ -40,3 +40,11 @@ object LibrarianApiSchema:
     field("email", cistring) :*
       field("reference", uuid)
   ).to
+
+  val formData: FormData[LibrarianApiSchema] =
+    import io.taig.otter.dsl.formData.*
+
+    (
+      field("email", cistring) :*
+        field("reference", uuid)
+    ).to
