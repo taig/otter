@@ -3,8 +3,9 @@ package io.taig.otter
 import io.taig.otter.http.HttpDsl
 import io.taig.otter.http.FormDataDsl
 import io.taig.otter.http.FormData
+import io.taig.otter.http.HttpFormDataDsl
 
-object dsl extends CoreSyntax, HttpDsl, HttpJsonDsl:
+object dsl extends CoreSyntax, HttpDsl, HttpFormDataDsl, HttpJsonDsl:
   object formData
       extends FormDataDsl,
         CaseInsensitiveDsl[FormData.Value.Primitive],

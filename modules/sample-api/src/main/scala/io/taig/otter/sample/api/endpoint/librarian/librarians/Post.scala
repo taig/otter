@@ -35,10 +35,10 @@ val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, L
   request(
     method.post,
     url,
-    json(LibrarianApiSchema.Create.codec).or(formData.formData(LibrarianApiSchema.Create.formData))
+    json(LibrarianApiSchema.Create.codec).or(formData(LibrarianApiSchema.Create.formData))
   ),
   response(
     result(code.conflict, json(LibrarianInitializationConflict.codec)) :+
-      result(code.created, json(LibrarianApiSchema.codec).or(formData.formData(LibrarianApiSchema.formData)))
+      result(code.created, json(LibrarianApiSchema.codec).or(formData(LibrarianApiSchema.formData)))
   )
 )
