@@ -15,9 +15,9 @@ final case class MediaType(tpe: MediaType.Type, parameters: Parameters):
 object MediaType:
   final case class Type(primary: String, secondary: String):
     def satisfies(mediaRange: MediaRange.Type): Boolean = mediaRange match
-      case MediaRange.Type.Secondary(primary, secondary) => primary === primary && secondary === secondary
-      case MediaRange.Type.Primary(primary)              => primary === primary
-      case MediaRange.Type.Any                           => true
+      case reference: MediaRange.Type.Secondary => primary === reference.primary && secondary === reference.secondary
+      case reference: MediaRange.Type.Primary   => primary === reference.primary
+      case MediaRange.Type.Any                  => true
 
     override def toString: String = show"${primary}/${secondary}"
 
