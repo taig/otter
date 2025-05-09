@@ -1,33 +1,30 @@
 package io.taig.otter.http
 
 import cats.Functor
-import cats.data.Validated
-import io.taig.otter.Violations
-import io.taig.otter.http.header.MediaType
+import cats.syntax.all.*
+import cats.ApplicativeThrow
+import cats.MonadThrow
+import io.taig.otter.+
 
-final class LocalClient[F[_]: Functor, S[_], T[_], U[_]](routes: Routes[F, S, T, U]) extends Client[F, S, T, U]:
-  override def submit[A, B](
-      endpoint: Endpoint[S, T, U, A, B],
-      contentType: Option[MediaType],
-      a: A
-  ): F[Validated[Violations, B]] =
-    // val route = routes.find(route => matcher(route, method = endpoint.request.method, url = endpoint.request.url))
-
-    // val bytes = HttpRequestEncoder[S].apply(endpoint.request, a)
-
-    // route.map: route =>
-    //   HttpRequestDecoder[S]
-    //     .apply(request = route.endpoint.request, bytes)
-    //     .andThen: a =>
-    //       route
-    //         .implementation(a)
-    //         .map: b =>
-    //           val bytes = HttpResponseEncoder[T, U].apply(route.endpoint.response, b)
-    //           HttpResponseDecoder[T, U].apply(endpoint.response, bytes)
-    //       ???
-
-    ???
+final class LocalClient[F[_]: MonadThrow, S[_], T[_], U[_]](
+    decoder: PayloadDecoder[S],
+    encoder: PayloadEncoder[T + U],
+    debug: Boolean
+)(routes: Routes[F, S, T, U])
+    extends Client[F, S, T, U]:
+  override def submit[A, B](request: Request.Data): F[Response.Data] = routes
+    .find(route => RequestMatcher(request = route.endpoint.request, data = request))
+    .liftTo[F](new IllegalArgumentException("No route for request"))
+    .flatMap: route =>
+      RequestDataDecoder(decoder)(request = route.endpoint.request, data = request)
+        .traverse(route.implementation)
+        .attempt
+        .map: result =>
+          ResponseDataEncoder(encoder, debug)(response = route.endpoint.response, headers = request.headers, result)
 
 object LocalClient:
-  def apply[F[_]: Functor, S[_], T[_], U[_]](routes: Routes[F, S, T, U]): Client[F, S, T, U] =
-    new LocalClient(routes)
+  def apply[F[_]: MonadThrow, S[_], T[_], U[_]](
+      decoder: PayloadDecoder[S],
+      encoder: PayloadEncoder[T + U],
+      debug: Boolean
+  )(routes: Routes[F, S, T, U]): Client[F, S, T, U] = new LocalClient(decoder, encoder, debug)(routes)

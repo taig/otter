@@ -53,6 +53,16 @@ def fromResponseData[F[_]: MonadThrow](response: Response.Data): F[Http4sRespons
         else Http4sEntity.strict(ByteVector(response.body))
     )
 
+def toResponseData[F[_]: Concurrent](response: Http4sResponse[F]): F[Response.Data] =
+  response.body.compile
+    .to(Array)
+    .map: body =>
+      Response.Data(
+        code = Code(response.status.code),
+        headers = toHeadersData(headers = response.headers),
+        body
+      )
+
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
     decoder: PayloadDecoder[S],

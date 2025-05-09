@@ -4,7 +4,13 @@ import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
-  def submit[A, B](endpoint: Endpoint[S, T, U, A, B], contentType: Option[MediaType], a: A): F[Validated[Violations, B]]
+  def submit[A, B](request: Request.Data): F[Response.Data]
+
+  final def submit[A, B](
+      endpoint: Endpoint[S, T, U, A, B],
+      contentType: Option[MediaType],
+      a: A
+  ): F[Validated[Violations, B]] = ???
 
 //   final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
 //       Functor[F]
