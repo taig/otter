@@ -8,7 +8,7 @@ import io.taig.otter.Violation
 
 object HeaderDataDecoder:
   object Remainders:
-    def apply[A](header : Header[A], data: Headers.Data): Validated[Violations, (Headers.Data, A)] =
+    def apply[A](header: Header[A], data: Headers.Data): Validated[Violations, (Headers.Data, A)] =
       header match
         case Header.Root(name, codec, metadata) =>
           val (remainders, value) = data.collectFirstWithRemainders { case (`name`, value) => value }

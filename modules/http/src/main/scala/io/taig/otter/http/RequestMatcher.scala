@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 
-final class RequestMatcher[A](matcher: (Url[?], A) => Boolean):
-  def apply(route: Route[?, ?, ?, ?, ?, ?], method: Method, url: A): Boolean =
-    route.endpoint.request.method === method &&
-      matcher(route.endpoint.request.url, url)
+object RequestMatcher:
+  def apply(request: Request[?, ?], data: Request.Data): Boolean =
+    request.method === data.method && UrlMatcher(url = request.url, data = data.url)
