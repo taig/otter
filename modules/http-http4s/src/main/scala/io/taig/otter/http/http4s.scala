@@ -18,49 +18,47 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     decoder: PayloadDecoder[S],
     encoder: PayloadEncoder[S + T + U],
     debug: Boolean = false
-): Http4sRoutes[F] = Http4sRoutes: request =>
-  OptionT
-    .liftF:
-      Http4sMethodDecoder(method = request.method)
-        .leftMap(violations => new IllegalStateException("Illegal method: " + violations))
-        .liftTo[F]
-    .subflatMap: method =>
-      routes.toChain.find: route =>
-        if route.endpoint.request.method === method
-        then Http4sUrlMatcher(reference = route.endpoint.request.url, actual = request.uri)
-        else false
-    .semiflatMap: route =>
-      Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
-        .flatMap(_.traverse(route.implementation))
-        .attempt
-        .flatMap: value =>
-          val accept = request.headers
-            .get(ci"Accept")
-            .map(_.head.value)
-            .traverse: value =>
-              Accept
-                .parse(value)
-                .leftMap: error =>
-                  Violations.of((Step.Field("headers"), Violation.tpe(name = "Accept", actual = value)))
-                .leftMap(Request.Error.ValidationViolations.apply)
-            .toValidated
+): Http4sRoutes[F] =
+  val matcher = RequestMatcher(matcher = Http4sUrlMatcher.apply)
+  Http4sRoutes: request =>
+    OptionT
+      .liftF:
+        Http4sMethodDecoder(method = request.method)
+          .leftMap(violations => new IllegalStateException("Illegal method: " + violations))
+          .liftTo[F]
+      .subflatMap(method => routes.find(matcher(_, method, url = request.uri)))
+      .semiflatMap: route =>
+        Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
+          .flatMap(_.traverse(route.implementation))
+          .attempt
+          .flatMap: value =>
+            val accept = request.headers
+              .get(ci"Accept")
+              .map(_.head.value)
+              .traverse: value =>
+                Accept
+                  .parse(value)
+                  .leftMap: error =>
+                    Violations.of((Step.Field("headers"), Violation.tpe(name = "Accept", actual = value)))
+                  .leftMap(Request.Error.ValidationViolations.apply)
+              .toValidated
 
-          Http4sResponseEncoder(encoder, debug)(
-            response = route.endpoint.response,
-            accept = accept.getOrElse(none),
-            result = accept.fold(_ => ???, _ => value)
-          )
-    .onError: throwable =>
-      throwable.printStackTrace()
-      MonadThrow[OptionT[F, *]].raiseError(throwable)
+            Http4sResponseEncoder(encoder, debug)(
+              response = route.endpoint.response,
+              accept = accept.getOrElse(none),
+              result = accept.fold(_ => ???, _ => value)
+            )
+      .onError: throwable =>
+        throwable.printStackTrace()
+        MonadThrow[OptionT[F, *]].raiseError(throwable)
 
 def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
-    app: App[F, S, T, U],
+    routes: Routes[F, S, T, U],
     encoder: PayloadEncoder[S + T + U],
     debug: Boolean = false
 ): Http4sApp[F] =
-  val routes = toHttp4sRoutes(app.routes, decoder = ???, encoder, debug)
+  val http4s = toHttp4sRoutes(routes, decoder = ???, encoder, debug)
 
   Http4sApp: request =>
     // encode(???, app.error)
-    routes(request).getOrElse(???)
+    http4s(request).getOrElse(???)

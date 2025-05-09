@@ -1,15 +1,10 @@
-// package io.taig.otter.http
+package io.taig.otter.http
+import cats.data.Validated
+import io.taig.otter.Violations
+import io.taig.otter.http.header.MediaType
 
-// import cats.ApplicativeThrow
-// import cats.Functor
-// import cats.syntax.all.*
-// import io.taig.otter.Codec
-// import io.taig.otter.http.Routes
-// import io.taig.otter.http.header.MediaType
-// import org.typelevel.ci.*
-
-// abstract class Client[F[_]]:
-//   def submit(request: Http.Request): F[Http.Response]
+abstract class Client[F[_], S[_], T[_], U[_]]:
+  def submit[A, B](endpoint: Endpoint[S, T, U, A, B], contentType: Option[MediaType], a: A): F[Validated[Violations, B]]
 
 //   final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
 //       Functor[F]
