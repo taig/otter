@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import io.taig.otter.Invariant
 import cats.syntax.all.*
+import io.taig.otter.Violations
 
 sealed abstract class Request[+S[_], A] extends Product with Serializable:
   def method: Method
@@ -32,6 +33,10 @@ object Request:
   final private[otter] case class ZipHeaders[S[_], A, B](self: Request[S, A], headers: Headers[B])
       extends Request[S, (A, B)]:
     export self.{body, method, url}
+
+  enum Error:
+    case MediaTypeUnsupported
+    case ValidationViolations(violations: Violations)
 
   given [S[_]]: Invariant[Request[S, *]] = new Invariant[Request[S, *]]:
     extension [A](self: Request[S, A]) override def imap[B](f: A => B)(g: B => A): Request[S, B] = self.imap(f)(g)

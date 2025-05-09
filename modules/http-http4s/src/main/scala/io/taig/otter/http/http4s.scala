@@ -42,13 +42,13 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
                 .parse(value)
                 .leftMap: error =>
                   Violations.of((Step.Field("headers"), Violation.tpe(name = "Accept", actual = value)))
-                .leftMap(Response.Error.ValidationViolations.apply)
+                .leftMap(Request.Error.ValidationViolations.apply)
             .toValidated
 
           Http4sResponseEncoder(encoder, debug)(
             response = route.endpoint.response,
             accept = accept.getOrElse(none),
-            result = accept.fold(_.invalid.asRight, _ => value)
+            result = accept.fold(_ => ???, _ => value)
           )
     .onError: throwable =>
       throwable.printStackTrace()

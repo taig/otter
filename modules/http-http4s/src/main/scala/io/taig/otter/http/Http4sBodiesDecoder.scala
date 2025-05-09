@@ -11,16 +11,7 @@ import io.taig.otter.Violation
 final class Http4sBodiesDecoder[S[_]](decoder: PayloadDecoder[S]):
   def apply[A](
       bodies: Bodies[S, A],
-      headers: List[Http4sHeader.Raw],
+      contentType: Option[MediaType],
       bytes: Array[Byte]
-  ): Validated[Violations, Option[A]] = headers
-    .find(_.name === ci"Content-Type")
-    .map(_.value)
-    .traverse: value =>
-      MediaType
-        .parse(value)
-        .toValidated
-        .leftMap: error =>
-          println(error)
-          Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
-    .andThen(new BodiesDecoder(decoder)(codec = bodies, _, bytes))
+  ): Validated[Violations, Option[A]] =
+    new BodiesDecoder(decoder)(codec = bodies, contentType, bytes)

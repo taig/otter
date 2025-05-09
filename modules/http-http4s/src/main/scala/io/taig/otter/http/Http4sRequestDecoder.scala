@@ -13,9 +13,12 @@ import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
 import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
+import io.taig.otter.http.header.MediaType
+import org.typelevel.ci.*
+import io.taig.otter.Step
 
 final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder[S]):
-  def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Response.Error, A]] = value.body.compile
+  def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Request.Error, A]] = value.body.compile
     .to(Array)
     .map: body =>
       val data = Data(
@@ -25,12 +28,27 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
         body
       )
 
-      apply(request, data).map((_, a) => a)
+      value.headers
+        .get(ci"Content-Type")
+        .map(_.head.value)
+        .traverse: value =>
+          MediaType
+            .parse(value)
+            .leftMap: error =>
+              Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
+            .leftMap("header" /: _)
+            .leftMap(Request.Error.ValidationViolations.apply)
+        .flatMap(apply(request, _, data).map((_, a) => a).toEither)
+        .toValidated
 
-  def apply[A](request: Request[S, A], data: Data): Validated[Response.Error, (List[Http4sHeader.Raw], A)] =
-    request match
-      case Request.Modify(self, f, _) => apply(request = self, data).map(_.map(f))
-      case Request.Root(method, url, headers) =>
+  def apply[A](
+      request: Request[S, A],
+      contentType: Option[MediaType],
+      data: Data
+  ): Validated[Request.Error, (List[Http4sHeader.Raw], A)] = request match
+    case Request.Modify(self, f, _) => apply(request = self, contentType, data).map(_.map(f))
+    case Request.Root(method, url, headers) =>
+      (
         Http4sMethodDecoder(method = data.method)
           .andThen: actual =>
             Validated.cond(
@@ -41,23 +59,29 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
           .leftMap("method" /: _) *> (
           Http4sUrlDecoder(url, value = data.url).leftMap("url" /: _),
           Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _)
-        ).tupled match
-          case Valid((a, (headers, b))) => (headers, (a, b)).valid
-          case Invalid(violations)      => Response.Error.ValidationViolations(violations).invalid
-      case Request.Payload(self, bodies) =>
-        apply(request = self, data).andThen:
-          case (headers, (a, b)) =>
-            Http4sBodiesDecoder(decoder)(bodies, headers, bytes = data.body)
-              .leftMap("body" /: _)
-              .leftMap(Response.Error.ValidationViolations.apply)
-              .andThen(_.toValid(Response.Error.ContentNegotiationFailed))
-              .map(c => (headers, (a, b, c)))
-      case Request.ZipHeaders(self, headers) =>
-        Http4sHeadersDecoder(headers, values = data.headers) match
-          case Validated.Valid((headers, b)) =>
-            apply(request = self, data = data.copy(headers = headers)).map(_.tupleRight(b))
-          case Validated.Invalid(url) =>
-            ??? // apply(request = self, data).fold(_ |+| url, _ => url).invalid
+        ).tupled
+      )
+        .map { case (a, (headers, b)) => (headers, (a, b)) }
+        .leftMap(Request.Error.ValidationViolations.apply)
+    case Request.Payload(self, bodies) =>
+      apply(request = self, contentType, data).andThen:
+        case (headers, (a, b)) =>
+          BodiesDecoder(decoder)(codec = bodies, contentType, bytes = data.body)
+            .leftMap("body" /: _)
+            .leftMap(Request.Error.ValidationViolations.apply)
+            .andThen:
+              case Some(c) => (headers, (a, b, c)).valid
+              case None    => Request.Error.MediaTypeUnsupported.invalid
+    case Request.ZipHeaders(self, headers) =>
+      Http4sHeadersDecoder(headers, values = data.headers) match
+        case Validated.Valid((headers, b)) =>
+          apply(request = self, contentType, data = data.copy(headers = headers)).map(_.tupleRight(b))
+        case Validated.Invalid(left) =>
+          apply(request = self, contentType, data) match
+            case Validated.Valid(_) => Request.Error.ValidationViolations(left).invalid
+            case result@Validated.Invalid(Request.Error.MediaTypeUnsupported) => result
+            case result@Validated.Invalid(Request.Error.ValidationViolations(right)) => 
+              Request.Error.ValidationViolations(left |+| right).invalid
 
 object Http4sRequestDecoder:
   final case class Data(

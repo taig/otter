@@ -15,12 +15,14 @@ final class Http4sResponseEncoder[F[_]: MonadThrow, S[_], T[_]](encoder: Payload
   def apply[A](
       response: Response[S, T, A],
       accept: Option[Accept],
-      result: Either[Throwable, Validated[Response.Error, A]]
+      result: Either[Throwable, Validated[Request.Error, A]]
   ): F[Http4sResponse[F]] = result
     .match
       case Left(throwable) =>
-        println(StacktracePrinter(throwable))
         results(result = response.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
-      case Right(Validated.Invalid(error)) => results(result = response.error, accept, error)
-      case Right(Validated.Valid(a))       => results(result = response.result, accept, a)
+      case Right(Validated.Invalid(Request.Error.MediaTypeUnsupported)) =>
+        Http4sResponse(status = Http4sStatus.UnsupportedMediaType).some.pure
+      case Right(Validated.Invalid(Request.Error.ValidationViolations(violations))) =>
+        results(result = response.validation, accept, violations)
+      case Right(Validated.Valid(a)) => results(result = response.result, accept, a)
     .map(_.getOrElse(Http4sResponse(status = Http4sStatus.NotAcceptable)))
