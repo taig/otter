@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
-import io.taig.otter.Violation
 import io.taig.otter.Data
+import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object Http4sSegmentDecoder:
   def apply[A](segment: Segment[A], value: Option[String]): Validated[Violations, A] =

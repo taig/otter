@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.*
 import cats.data.Chain
+import io.taig.otter.*
 
 sealed abstract class Queries[A] extends Product with Serializable:
   def toChain: Chain[Query[?]]

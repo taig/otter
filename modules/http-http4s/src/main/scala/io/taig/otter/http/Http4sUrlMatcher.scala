@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import org.http4s.Uri as Http4sUri
-import org.http4s.Query as Http4sQuery
 import io.taig.otter.collectFirstWithRemainders
+import org.http4s.Query as Http4sQuery
+import org.http4s.Uri as Http4sUri
 
 object Http4sUrlMatcher:
   def apply(reference: Url[?], actual: Http4sUri): Boolean =

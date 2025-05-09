@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.header.MediaType
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
+import io.taig.otter.Violations
+import io.taig.otter.http.header.MediaType
 
 final class BodiesDecoder[S[_]](decoder: PayloadDecoder[S]):
   def apply[A](

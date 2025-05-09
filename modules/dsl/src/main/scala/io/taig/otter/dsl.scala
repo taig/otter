@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import io.taig.otter.http.HttpDsl
-import io.taig.otter.http.FormDataDsl
 import io.taig.otter.http.FormData
+import io.taig.otter.http.FormDataDsl
+import io.taig.otter.http.HttpDsl
 import io.taig.otter.http.HttpFormDataDsl
 import io.taig.otter.http.HttpJsonDsl
 

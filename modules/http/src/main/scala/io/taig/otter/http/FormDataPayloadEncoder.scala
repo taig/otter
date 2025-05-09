@@ -1,15 +1,16 @@
 package io.taig.otter.http
 
+import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.otter.*
+import io.taig.otter.Dictionary.Root
 import io.taig.otter.Record.Empty
 import io.taig.otter.Record.Field
 import io.taig.otter.Record.Modify
 import io.taig.otter.Record.Optional
 import io.taig.otter.Record.Zip
-import cats.data.Chain
-import cats.syntax.all.*
+
 import java.nio.charset.StandardCharsets
-import io.taig.otter.Dictionary.Root
 
 final class FormDataPayloadEncoder extends PayloadEncoder[FormData]:
   override def apply[A](codec: FormData[A], a: A): Array[Byte] =

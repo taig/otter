@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import io.taig.otter.+
-import io.taig.otter.http.header.MediaType
 
 abstract class PayloadEncoder[-S[_]]:
   def apply[A](codec: S[A], a: A): Array[Byte]

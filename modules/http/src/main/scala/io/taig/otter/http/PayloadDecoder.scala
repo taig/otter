@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.Violations
 import io.taig.otter.+
+import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
 
 abstract class PayloadDecoder[-S[_]]:

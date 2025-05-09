@@ -1,8 +1,4 @@
 package io.taig.otter.http
-
-import io.taig.otter.http.ResultDsl.*
-import io.taig.otter.http.CodeDsl.*
-import cats.syntax.all.*
 import io.taig.otter.Violations
 
 trait ResponseDsl:

@@ -1,17 +1,17 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-
-import io.taig.otter.Violations
-import io.taig.otter.http.header.MediaType
 import cats.parse.Parser
 import cats.parse.Parser.*
-import cats.syntax.all.*
-import java.nio.charset.StandardCharsets
 import cats.parse.Parser0
+import cats.syntax.all.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
+
 import java.nio.charset.Charset
+import java.nio.charset.StandardCharsets
 
 final class FormDataPayloadDecoder extends PayloadDecoder[FormData]:
   override def apply[A](codec: FormData[A], contentType: MediaType, bytes: Array[Byte]): Validated[Violations, A] =

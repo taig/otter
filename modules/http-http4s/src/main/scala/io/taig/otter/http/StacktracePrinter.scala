@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import java.io.StringWriter
 import java.io.PrintWriter
+import java.io.StringWriter
 
 private[otter] object StacktracePrinter:
   def apply(throwable: Throwable): String =

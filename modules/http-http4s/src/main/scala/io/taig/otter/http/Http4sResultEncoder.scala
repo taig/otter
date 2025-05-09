@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
-import org.http4s.Status as Http4sStatus
-import org.http4s.Response as Http4sResponse
 import cats.MonadThrow
 import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
 import org.http4s.Entity as Http4sBody
+import org.http4s.Response as Http4sResponse
+import org.http4s.Status as Http4sStatus
 
 final class Http4sResultEncoder[F[_], S[_]](encoder: PayloadEncoder[S])(using F: MonadThrow[F]):
   def apply[A](result: Result[S, A], accept: Option[Accept], a: A): F[Option[Http4sResponse[F]]] = result match

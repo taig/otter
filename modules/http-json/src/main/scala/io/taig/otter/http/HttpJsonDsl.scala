@@ -1,13 +1,10 @@
 package io.taig.otter.http
-
-import io.taig.otter.http.Body
-import io.taig.otter.http.BodyDsl
+import io.taig.otter.Json
+import io.taig.otter.JsonDsl.*
+import io.taig.otter.http.CodeDsl.*
+import io.taig.otter.http.ResultDsl.*
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameters
-import io.taig.otter.Json
-import io.taig.otter.http.ResultDsl.*
-import io.taig.otter.http.CodeDsl.*
-import io.taig.otter.JsonDsl.*
 
 trait HttpJsonDsl:
   def json[A](codec: => Json[A]): Body[Json, A] = BodyDsl.body(

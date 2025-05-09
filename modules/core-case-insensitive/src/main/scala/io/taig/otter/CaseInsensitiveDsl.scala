@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.syntax.all.*
 import org.typelevel.ci.CIString
 
 import java.util.regex.Pattern

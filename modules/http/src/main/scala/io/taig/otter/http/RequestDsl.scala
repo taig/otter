@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.syntax.all.*
 import io.taig.otter.Merge
 
 trait RequestDsl:
@@ -28,5 +26,9 @@ trait RequestDsl:
       val (a, b) = merge.unapply(ab)
       (a, (), b)
     }
+
+  def request[S[_], A, B](method: Method, url: Url[A], body: Body[S, B])(using
+      merge: Merge[A, B]
+  ): Request[S, merge.Out] = request(method, url, bodies = body.toBodies)
 
 object RequestDsl extends RequestDsl

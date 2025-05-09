@@ -1,8 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.Json
-import io.taig.otter.CirceJsonEncoder
 import io.circe.Printer
+import io.taig.otter.CirceJsonEncoder
+import io.taig.otter.Json
+
 import java.nio.charset.StandardCharsets
 
 final class CirceJsonPayloadEncoder(printer: Printer) extends PayloadEncoder[Json]:

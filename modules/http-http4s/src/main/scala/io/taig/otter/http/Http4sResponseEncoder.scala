@@ -1,13 +1,13 @@
 package io.taig.otter.http
 
-import io.taig.otter.+
-import org.http4s.Status as Http4sStatus
-import org.http4s.Response as Http4sResponse
+import cats.MonadThrow
 import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.syntax.all.*
-import cats.MonadThrow
+import io.taig.otter.+
 import io.taig.otter.http.header.Accept
+import org.http4s.Response as Http4sResponse
+import org.http4s.Status as Http4sStatus
 
 final class Http4sResponseEncoder[F[_]: MonadThrow, S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
   val results = Http4sResultEncoder(encoder)

@@ -1,13 +1,7 @@
 package io.taig.otter.http
 
-import org.http4s.Entity as Http4sBody
-import scodec.bits.ByteVector
-import org.http4s.Header as Http4sHeader
-import cats.syntax.all.*
-
-import java.nio.charset.Charset
 import io.taig.otter.http.header.Accept
-import io.taig.otter.http.Parsers.mediaRange
+import org.http4s.Entity as Http4sBody
 
 final class Http4sBodyEncoder[F[_], S[_]](encoder: PayloadEncoder[S]):
   // TODO what should I actually pass here rather than charset?

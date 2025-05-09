@@ -1,21 +1,20 @@
 package io.taig.otter.http
 
 import cats.data.Validated
+import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import fs2.Collector
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.http.Http4sRequestDecoder.Data
+import io.taig.otter.http.header.MediaType
 import org.http4s.Header as Http4sHeader
 import org.http4s.Method as Http4sMethod
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri as Http4sUri
-import cats.data.Validated.Valid
-import cats.data.Validated.Invalid
-import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
-import io.taig.otter.Step
 
 final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder[S]):
   def apply[A](request: Request[S, A], value: Http4sRequest[F]): F[Validated[Request.Error, A]] = value.body.compile
@@ -79,8 +78,8 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
         case Validated.Invalid(left) =>
           apply(request = self, contentType, data) match
             case Validated.Valid(_) => Request.Error.ValidationViolations(left).invalid
-            case result@Validated.Invalid(Request.Error.MediaTypeUnsupported) => result
-            case result@Validated.Invalid(Request.Error.ValidationViolations(right)) => 
+            case result @ Validated.Invalid(Request.Error.MediaTypeUnsupported) => result
+            case result @ Validated.Invalid(Request.Error.ValidationViolations(right)) =>
               Request.Error.ValidationViolations(left |+| right).invalid
 
 object Http4sRequestDecoder:

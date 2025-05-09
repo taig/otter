@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
 import io.taig.otter.+
-import io.taig.otter.Reference
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.header.MediaRange
 import io.taig.otter.Invariant
+import io.taig.otter.Reference
+import io.taig.otter.http.header.MediaRange
+import io.taig.otter.http.header.MediaType
 
 // TODO strict vs streaming (?)
 sealed abstract class Body[+S[_], A] extends Product with Serializable:

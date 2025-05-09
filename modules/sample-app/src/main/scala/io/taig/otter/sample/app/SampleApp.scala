@@ -1,17 +1,16 @@
 package io.taig.otter.sample.app
 
-import cats.effect.Resource
-
 import cats.effect.IO
+import cats.effect.Resource
 import cats.effect.ResourceApp
-import org.http4s.ember.server.EmberServerBuilder
-import org.typelevel.log4cats.LoggerFactory
-import io.taig.otter.http.*
 import io.circe.Printer
-import org.typelevel.log4cats.slf4j.Slf4jFactory
-import io.taig.otter.http.header.MediaType
 import io.taig.otter.+
 import io.taig.otter.Json
+import io.taig.otter.http.*
+import io.taig.otter.http.header.MediaType
+import org.http4s.ember.server.EmberServerBuilder
+import org.typelevel.log4cats.LoggerFactory
+import org.typelevel.log4cats.slf4j.Slf4jFactory
 
 object SampleApp extends ResourceApp.Forever:
   given LoggerFactory[IO] = Slf4jFactory.create[IO]

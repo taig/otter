@@ -1,12 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.Violations
-import org.http4s.Query as Http4sQuery
-import org.http4s.Uri as Http4sUri
-import scala.annotation.targetName
-import io.taig.otter.Violation
 import cats.syntax.all.*
+import io.taig.otter.Violations
+import org.http4s.Uri as Http4sUri
 
 object Http4sPathDecoder:
   // def apply[A](path: Path[A], value: Http4sUri.Path): Validated[Violations, A] =

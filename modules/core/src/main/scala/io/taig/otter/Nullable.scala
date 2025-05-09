@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.~>
 import cats.syntax.all.*
+import cats.~>
 
 sealed abstract class Nullable[+S[_], A]:
   def metadata: Metadata

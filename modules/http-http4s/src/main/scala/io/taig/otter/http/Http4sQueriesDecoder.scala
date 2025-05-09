@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.Violations
 import org.http4s.Query as Http4sQuery
-import cats.syntax.all.*
 
 object Http4sQueriesDecoder:
   def apply[A](

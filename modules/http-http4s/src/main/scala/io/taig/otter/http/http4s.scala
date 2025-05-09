@@ -1,17 +1,17 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
-import io.taig.otter.+
-import org.http4s.HttpRoutes as Http4sRoutes
-import org.http4s.HttpApp as Http4sApp
-import cats.effect.Concurrent
 import cats.MonadThrow
 import cats.data.OptionT
-import org.typelevel.ci.*
-import io.taig.otter.http.header.Accept
-import io.taig.otter.Violations
+import cats.effect.Concurrent
+import cats.syntax.all.*
+import io.taig.otter.+
 import io.taig.otter.Step
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.http.header.Accept
+import org.http4s.HttpApp as Http4sApp
+import org.http4s.HttpRoutes as Http4sRoutes
+import org.typelevel.ci.*
 
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],

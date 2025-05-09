@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaRange
-import cats.syntax.all.*
 
 final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
   def apply[A](bodies: Bodies[S, A], accept: Option[Accept], a: A): Option[Array[Byte]] =

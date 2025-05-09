@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter.+
 import io.taig.otter.Invariant
-import cats.data.Chain
 import io.taig.otter.http.header.MediaRange
 
 sealed abstract class Bodies[+S[_], A] extends Product with Serializable:

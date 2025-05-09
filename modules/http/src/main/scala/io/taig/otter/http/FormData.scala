@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
 import io.taig.otter as Self
-import Self.Codec
+import io.taig.otter.Codec
 
 sealed abstract class FormData[A] extends Product with Serializable
 

@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.*
 
 object FormDataDecoder:

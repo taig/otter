@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.Eq
 import cats.Semigroup
+import cats.Show
 import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
@@ -10,7 +11,6 @@ import cats.derived.strict.*
 import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
-import cats.Show
 
 enum Violations derives Eq:
   case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
