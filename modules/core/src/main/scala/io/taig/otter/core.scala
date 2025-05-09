@@ -6,6 +6,8 @@ import cats.data.Chain
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
+import java.io.PrintWriter
+import java.io.StringWriter
 
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals
@@ -30,6 +32,12 @@ private[otter] def unescape(value: String, characters: List[String], escape: Cha
 
 private[otter] def unescape(value: String, character: String): String =
   unescape(value, characters = List(character))
+
+private[otter] object StacktracePrinter:
+  def apply(throwable: Throwable): String =
+    val writer = new StringWriter
+    throwable.printStackTrace(new PrintWriter(writer))
+    writer.toString
 
 extension [A](self: Argument[A])
   def toOption: Option[A] = self match

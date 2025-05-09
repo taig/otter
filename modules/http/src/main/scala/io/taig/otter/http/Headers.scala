@@ -3,7 +3,10 @@ package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.*
-import org.typelevel.ci.CIString
+import org.typelevel.ci.*
+import cats.syntax.all.*
+import Self.http.header.Accept
+import Self.http.header.MediaType
 
 sealed abstract class Headers[A]:
   def toChain: Chain[Header[?]]
@@ -29,6 +32,22 @@ object Headers:
     override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
 
   type Data = Chain[Header.Data]
+
+  object Data:
+    extension (self: Headers.Data)
+      def apply(name: CIString): Option[String] = self.collectFirst { case (`name`, value) => value }
+
+      def accept: Either[Violations, Option[Accept]] = self(ci"Accept").traverse: value =>
+        Accept
+          .parse(value)
+          .leftMap: error =>
+            Violations.rootNec(Violation.tpe(name = "Accept", actual = value, hint = error.show))
+
+      def contentType: Either[Violations, Option[MediaType]] = self(ci"Content-Type").traverse: value =>
+        MediaType
+          .parse(value)
+          .leftMap: error =>
+            Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
 
   given invariant: Invariant.Product[Headers, Headers, Headers] with
     override def result: Invariant[Headers] = this

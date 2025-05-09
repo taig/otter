@@ -6,21 +6,17 @@ import cats.syntax.all.*
 import io.taig.otter.Violation
 import org.typelevel.ci.*
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.Headers.Data.contentType
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
   val body = BodiesDecoder(decoder)
 
-  def apply[A](request: Request[S, A], data: Request.Data): Validated[Request.Error, A] = data.headers
-    .collectFirst { case (ci"Content-Type", value) => value }
-    .traverse: value =>
-      MediaType
-        .parse(value)
-        .leftMap: error =>
-          Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
-        .leftMap("header" /: _)
-        .leftMap(Request.Error.ValidationViolations.apply)
-    .flatMap(apply(request, _, data).map((_, a) => a).toEither)
-    .toValidated
+  def apply[A](request: Request[S, A], data: Request.Data): Validated[Request.Error, A] =
+    data.headers.contentType
+      .leftMap("header" /: _)
+      .leftMap(Request.Error.ValidationViolations.apply)
+      .flatMap(apply(request, _, data).map((_, a) => a).toEither)
+      .toValidated
 
   def apply[A](
       request: Request[S, A],

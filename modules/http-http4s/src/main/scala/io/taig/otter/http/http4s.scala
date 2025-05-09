@@ -7,15 +7,22 @@ import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Step
 import io.taig.otter.Violation
+import io.taig.otter.http.CodeDsl.*
 import io.taig.otter.Violations
 import io.taig.otter.http.header.Accept
 import org.http4s.Request as Http4sRequest
+import org.http4s.Response as Http4sResponse
+import org.http4s.Header as Http4sHeader
 import org.http4s.Headers as Http4sHeaders
 import org.http4s.HttpApp as Http4sApp
 import org.http4s.HttpRoutes as Http4sRoutes
 import org.typelevel.ci.*
 import org.http4s.Uri as Http4sUri
 import cats.data.Chain
+import org.http4s.Status as Http4sStatus
+import org.http4s.Entity as Http4sEntity
+import scodec.bits.ByteVector
+import io.taig.otter.http.Headers.Data.accept
 
 def toUrlData(uri: Http4sUri): Url.Data = Url.Data(
   path = Chain.fromSeq(uri.path.segments).map(_.encoded),
@@ -36,66 +43,53 @@ def toRequestData[F[_]: Concurrent](request: Http4sRequest[F]): F[Request.Data] 
         body
       )
 
+def fromHeadersData(headers: Headers.Data): Http4sHeaders = Http4sHeaders(headers.map(Http4sHeader.Raw.apply))
+
+def fromResponseData[F[_]: MonadThrow](response: Response.Data): F[Http4sResponse[F]] = Http4sStatus
+  .fromInt(response.code.toInt)
+  .liftTo[F]
+  .map: status =>
+    Http4sResponse(
+      status,
+      headers = fromHeadersData(headers = response.headers),
+      entity =
+        if response.body.isEmpty then Http4sEntity.Empty
+        else Http4sEntity.strict(ByteVector(response.body))
+    )
+
 def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     routes: Routes[F, S, T, U],
     decoder: PayloadDecoder[S],
     encoder: PayloadEncoder[S + T + U],
     debug: Boolean = false
-): Http4sRoutes[F] = Http4sRoutes:
-  request =>
-    toRequestData(request).map:
-      request =>
+): Http4sRoutes[F] =
+  val read = RequestDataDecoder(decoder)
+  val write = ResponseDataEncoder(encoder, debug)
+
+  Http4sRoutes: request =>
+    OptionT:
+      toRequestData(request).flatMap: request =>
         routes
           .find(route => RequestMatcher(request = route.endpoint.request, data = request))
-          .map: route =>
-            RequestDataDecoder(decoder)(request = route.endpoint.request, data = request)
+          .traverse: route =>
+            read(request = route.endpoint.request, data = request)
               .traverse(route.implementation)
               .attempt
-              .flatMap: value =>
-                ResponseEncoder[T, U].apply(response = route.endpoint.response, value)
-                ???
-            ???
-        ???
-        //   RequestDataDecoder[F].apply()
-    ???
-    // OptionT
-    //   .liftF:
-    //     Http4sMethodDecoder(method = request.method)
-    //       .leftMap(violations => new IllegalStateException("Illegal method: " + violations))
-    //       .liftTo[F]
-    //   .subflatMap(method => routes.find(matcher(_, method, url = request.uri)))
-    //   .semiflatMap: route =>
-    //     Http4sRequestDecoder(decoder)(request = route.endpoint.request, value = request)
-    //       .flatMap(_.traverse(route.implementation))
-    //       .attempt
-    //       .flatMap: value =>
-    //         val accept = request.headers
-    //           .get(ci"Accept")
-    //           .map(_.head.value)
-    //           .traverse: value =>
-    //             Accept
-    //               .parse(value)
-    //               .leftMap: error =>
-    //                 Violations.of((Step.Field("headers"), Violation.tpe(name = "Accept", actual = value)))
-    //               .leftMap(Request.Error.ValidationViolations.apply)
-    //           .toValidated
-
-    //         Http4sResponseEncoder(encoder, debug)(
-    //           response = route.endpoint.response,
-    //           accept = accept.getOrElse(none),
-    //           result = accept.fold(_ => ???, _ => value)
-    //         )
-    //   .onError: throwable =>
-    //     throwable.printStackTrace()
-    //     MonadThrow[OptionT[F, *]].raiseError(throwable)
+              .map(write(response = route.endpoint.response, headers = request.headers, _))
+              .flatMap(fromResponseData)
 
 def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
-    routes: Routes[F, S, T, U],
+    app: App[F, S, T, U],
+    decoder: PayloadDecoder[S],
     encoder: PayloadEncoder[S + T + U],
     debug: Boolean = false
 ): Http4sApp[F] =
-  val http4s = toHttp4sRoutes(routes, decoder = ???, encoder, debug)
+  val routes = toHttp4sRoutes(routes = app.routes, decoder, encoder, debug)
 
   Http4sApp: request =>
-    // encode(???, app.error)
-    http4s(request).getOrElse(???)
+    routes(request).getOrElseF:
+      toRequestData(request).flatMap: request =>
+        val accept = request.headers.accept.getOrElse(none)
+        val response = ResultDataEncoder(encoder)(app.notFound, accept, ())
+          .getOrElse(Response.Data(code = notFound, headers = Chain.empty, body = Array.emptyByteArray))
+        fromResponseData(response)
