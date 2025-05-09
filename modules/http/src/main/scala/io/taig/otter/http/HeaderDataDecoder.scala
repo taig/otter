@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.data.Validated
-import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.Violations
+import cats.syntax.all.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.collectFirstWithRemainders
 
 object HeaderDataDecoder:
   object Remainders:

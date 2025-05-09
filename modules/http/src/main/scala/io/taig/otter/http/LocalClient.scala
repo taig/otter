@@ -1,10 +1,9 @@
 package io.taig.otter.http
 
+import cats.Functor
 import cats.data.Validated
 import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
-import cats.syntax.all.*
-import cats.Functor
 
 final class LocalClient[F[_]: Functor, S[_], T[_], U[_]](routes: Routes[F, S, T, U]) extends Client[F, S, T, U]:
   override def submit[A, B](

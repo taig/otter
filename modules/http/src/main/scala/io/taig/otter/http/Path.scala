@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter.Invariant
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import cats.data.Chain
 
 sealed abstract class Path[A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(self = this, f, g)

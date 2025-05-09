@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.header.Accept
 import cats.syntax.all.*
+import io.taig.otter.http.header.Accept
 
 final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val payload = BodiesEncoder(encoder)

@@ -1,16 +1,14 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import cats.data.Validated
-import io.taig.otter.StacktracePrinter
-import io.taig.otter.+
-import io.taig.otter.http.header.Accept
-import org.typelevel.ci.*
 import cats.syntax.all.*
+import io.taig.otter.+
+import io.taig.otter.StacktracePrinter
 import io.taig.otter.Violations
 import io.taig.otter.http.CodeDsl.*
-import io.taig.otter.Violation
-import cats.data.Chain
 import io.taig.otter.http.Headers.Data.accept
+import io.taig.otter.http.header.Accept
 
 final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
   val payload = ResultDataEncoder(encoder)

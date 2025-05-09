@@ -1,12 +1,11 @@
 package io.taig.otter.http
 
-import io.taig.otter.Violations
-import cats.syntax.all.*
-import cats.data.Validated
-import cats.data.Chain.==:
 import cats.data.Chain
-import io.taig.otter.Violation
+import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.Data
+import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object PathDataDecoder:
   object Remainders:

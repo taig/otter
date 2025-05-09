@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.HttpKeys.*
 import cats.syntax.all.*
+import io.taig.otter.http.HttpKeys.*
 
 object HeaderDataEncoder:
   def apply[A](header: Header[A], a: A): Option[Header.Data] = header match

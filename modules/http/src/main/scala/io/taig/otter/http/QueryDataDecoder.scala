@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
-import io.taig.otter.Violations
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.Violations
 
 object QueryDataDecoder:
   object Remainders:

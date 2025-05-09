@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object UrlDataDecoder:
   def apply[A](url: Url[A], data: Url.Data): Validated[Violations, A] =

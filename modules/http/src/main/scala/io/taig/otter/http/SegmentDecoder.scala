@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object SegmentDecoder:
   def apply[A](segment: Segment[A], value: String): Validated[Violations, A] = segment match

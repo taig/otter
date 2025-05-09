@@ -5,9 +5,9 @@ import cats.Functor
 import cats.data.Chain
 import cats.syntax.all.*
 
-import java.util.regex.Pattern
 import java.io.PrintWriter
 import java.io.StringWriter
+import java.util.regex.Pattern
 
 private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
 private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals

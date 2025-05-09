@@ -1,12 +1,11 @@
 package io.taig.otter.http
 
-import io.taig.otter.Violations
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violation
-import org.typelevel.ci.*
-import io.taig.otter.http.header.MediaType
+import io.taig.otter.Violations
 import io.taig.otter.http.Headers.Data.contentType
+import io.taig.otter.http.header.MediaType
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
   val body = BodiesDecoder(decoder)

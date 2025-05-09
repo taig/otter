@@ -1,12 +1,12 @@
 package io.taig.otter.http
 
 import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
+import io.taig.otter.http.header.Accept
+import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
-import cats.syntax.all.*
-import Self.http.header.Accept
-import Self.http.header.MediaType
 
 sealed abstract class Headers[A]:
   def toChain: Chain[Header[?]]

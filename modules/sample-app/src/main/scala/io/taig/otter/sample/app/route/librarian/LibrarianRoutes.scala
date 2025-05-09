@@ -1,9 +1,7 @@
 package io.taig.otter.sample.app.route.librarian
 
 import cats.effect.IO
-import io.taig.otter.+
 import io.taig.otter.Json
-import io.taig.otter.http.FormData
 import io.taig.otter.http.Routes
 
 object LibrarianRoutes:
