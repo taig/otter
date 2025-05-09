@@ -45,23 +45,24 @@ final class Http4sRequestDecoder[F[_]: Concurrent, S[_]](decoder: PayloadDecoder
       contentType: Option[MediaType],
       data: Data
   ): Validated[Request.Error, (List[Http4sHeader.Raw], A)] = request match
-    case Request.Modify(self, f, _) => apply(request = self, contentType, data).map(_.map(f))
+    case Request.Modify(self, f, _)         => apply(request = self, contentType, data).map(_.map(f))
     case Request.Root(method, url, headers) =>
-      (
-        Http4sMethodDecoder(method = data.method)
-          .andThen: actual =>
-            Validated.cond(
-              test = actual === method,
-              (),
-              Violations.rootNec(Violation.equal(reference = method.show, actual = actual.show))
-            )
-          .leftMap("method" /: _) *> (
-          Http4sUrlDecoder(url, value = data.url).leftMap("url" /: _),
-          Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _)
-        ).tupled
-      )
-        .map { case (a, (headers, b)) => (headers, (a, b)) }
-        .leftMap(Request.Error.ValidationViolations.apply)
+      // (
+      //   Http4sMethodDecoder(method = data.method)
+      //     .andThen: actual =>
+      //       Validated.cond(
+      //         test = actual === method,
+      //         (),
+      //         Violations.rootNec(Violation.equal(reference = method.show, actual = actual.show))
+      //       )
+      //     .leftMap("method" /: _) *> (
+      //     Http4sUrlDecoder(url, value = data.url).leftMap("url" /: _),
+      //     Http4sHeadersDecoder(headers, values = data.headers).leftMap("header" /: _)
+      //   ).tupled
+      // )
+      //   .map { case (a, (headers, b)) => (headers, (a, b)) }
+      //   .leftMap(Request.Error.ValidationViolations.apply)
+      ???
     case Request.Payload(self, bodies) =>
       apply(request = self, contentType, data).andThen:
         case (headers, (a, b)) =>

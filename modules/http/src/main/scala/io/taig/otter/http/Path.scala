@@ -3,6 +3,7 @@ package io.taig.otter.http
 import io.taig.otter.Invariant
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import cats.data.Chain
 
 sealed abstract class Path[A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(self = this, f, g)
@@ -23,6 +24,8 @@ object Path:
   final private[otter] case class Root[A](segment: Segment[A]) extends Path[A]
 
   final private[otter] case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]
+
+  type Data = Chain[String]
 
   given Invariant.Product[Path, Segment, Path] with
     override def result: Invariant[Path] = this

@@ -7,6 +7,6 @@ import io.taig.otter.http.FormData
 import io.taig.otter.http.Routes
 
 object LibrarianRoutes:
-  def apply(): Routes[IO, Json + FormData, Json + FormData, Json] = Routes(
+  def apply(): Routes[IO, Json, Json, Json] = Routes(
     librarians.post
   )

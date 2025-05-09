@@ -36,6 +36,8 @@ object Query:
     case SpaceDelimited
     case PipeDelimited
 
+  type Data = (String, Option[String])
+
   given (Codec[Query] & Invariant.Product[Query, Query, Queries]) =
     new Codec[Query] with Invariant.Product[Query, Query, Queries]:
       override def result: Invariant[Queries] = Queries.invariant

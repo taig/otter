@@ -30,3 +30,7 @@ final class LocalClient[F[_]: Functor, S[_], T[_], U[_]](routes: Routes[F, S, T,
           ???
 
     ???
+
+object LocalClient:
+  def apply[F[_]: Functor, S[_], T[_], U[_]](routes: Routes[F, S, T, U]): Client[F, S, T, U] =
+    new LocalClient(routes)

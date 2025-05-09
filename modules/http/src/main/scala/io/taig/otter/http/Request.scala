@@ -34,6 +34,8 @@ object Request:
       extends Request[S, (A, B)]:
     export self.{body, method, url}
 
+  final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte])
+
   enum Error:
     case MediaTypeUnsupported
     case ValidationViolations(violations: Violations)

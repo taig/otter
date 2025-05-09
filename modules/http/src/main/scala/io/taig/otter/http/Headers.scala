@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.*
+import org.typelevel.ci.CIString
 
 sealed abstract class Headers[A]:
   def toChain: Chain[Header[?]]
@@ -26,6 +27,8 @@ object Headers:
 
   final private[otter] case class Zip[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
     override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
+
+  type Data = Chain[Header.Data]
 
   given invariant: Invariant.Product[Headers, Headers, Headers] with
     override def result: Invariant[Headers] = this

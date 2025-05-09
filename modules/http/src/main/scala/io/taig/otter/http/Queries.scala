@@ -29,6 +29,8 @@ object Queries:
   final private[otter] case class Zip[A, B](left: Queries[A], right: Queries[B]) extends Queries[(A, B)]:
     override def toChain: Chain[Query[?]] = left.toChain ++ right.toChain
 
+  type Data = Chain[Query.Data]
+
   given invariant: Invariant.Product[Queries, Query, Queries] with
     override def fromElement[A](query: Query[A]): Queries[A] = query.toQueries
     override def result: Invariant[Queries] = this

@@ -201,14 +201,14 @@ lazy val httpZod = module(identifier = Some("http-zod"))
 //   )
 //   .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
-// lazy val munit = module(identifier = Some("munit"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.scalameta" %%% "munit" % Version.Munit ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(http)
+lazy val munit = module(identifier = Some("munit"))
+  .settings(
+    libraryDependencies ++=
+      "org.scalameta" %%% "munit" % Version.Munit ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
+        Nil
+  )
+  .dependsOn(http)
 
 lazy val dsl = module(identifier = Some("dsl"))
   .dependsOn(coreCaseInsensitive, coreJavaTime, httpJson)
@@ -242,4 +242,4 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sampleApi, httpJsonCirce)
+  .dependsOn(sampleApi, httpJsonCirce, munit % "compile->test")

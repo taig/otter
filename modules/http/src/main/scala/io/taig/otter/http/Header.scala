@@ -35,6 +35,8 @@ object Header:
     case Matrix
     case Simple
 
+  type Data = (CIString, String)
+
   given (Codec[Header] & Invariant.Product[Header, Header, Headers]) =
     new Codec[Header] with Invariant.Product[Header, Header, Headers]:
       override def result: Invariant[Headers] = Headers.invariant
