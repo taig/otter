@@ -1,15 +1,15 @@
 package io.taig.otter.http
 
-import io.taig.otter.http.header.Accept
+import io.taig.otter.http.header.MediaType
 
 final class RequestDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val write = BodiesEncoder(encoder)
 
-  def apply[A](request: Request[S, A], accept: Option[Accept], a: A): Request.Data = request match
-    case Request.Modify(self, _, g) => apply(request = self, accept, g(a))
+  def apply[A](request: Request[S, A], contentType: Option[MediaType], a: A): Request.Data = request match
+    case Request.Modify(self, _, g) => apply(request = self, contentType, g(a))
     case Request.Payload(self, bodies) =>
-      val body = write(bodies, accept, a._3)
-      apply(request = self, accept, a.init).withBody(???)
+      apply(request = self, contentType, a.init)
+        .withBody(write(bodies, contentType, a._3).getOrElse(Array.emptyByteArray))
     case Request.Root(method, url, headers) =>
       Request.Data(
         method,
@@ -18,4 +18,4 @@ final class RequestDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
         body = Array.emptyByteArray
       )
     case Request.ZipHeaders(self, headers) =>
-      apply(request = self, accept, a._1).modifyHeaders(_ ++ HeadersDataEncoder(headers, a._2))
+      apply(request = self, contentType, a._1).modifyHeaders(_ ++ HeadersDataEncoder(headers, a._2))

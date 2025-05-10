@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Invariant
 import io.taig.otter.Reference
@@ -11,6 +12,8 @@ sealed abstract class Body[+S[_], A] extends Product with Serializable:
   def mediaType: MediaType
 
   final def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
+
+  final def matches(contentType: MediaType): Boolean = mediaType === contentType
 
   final def orElse[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] = toBodies.orElse(body.toBodies)
 

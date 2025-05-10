@@ -36,7 +36,7 @@ object Request:
 
   final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
     def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))
-    
+
     def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
 

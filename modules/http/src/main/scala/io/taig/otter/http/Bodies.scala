@@ -4,11 +4,14 @@ import cats.data.Chain
 import io.taig.otter.+
 import io.taig.otter.Invariant
 import io.taig.otter.http.header.MediaRange
+import io.taig.otter.http.header.MediaType
 
 sealed abstract class Bodies[+S[_], A] extends Product with Serializable:
   def toChain: Chain[Body[S, ?]]
 
   final def satisfies(mediaRange: MediaRange): Boolean = toChain.exists(_.satisfies(mediaRange))
+
+  final def matches(contentType: MediaType): Boolean = toChain.exists(_.matches(contentType))
 
   final def imap[B](f: A => B)(g: B => A): Bodies[S, B] = Bodies.Modify(self = this, f, g)
 

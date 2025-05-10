@@ -14,10 +14,10 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
       contentType: Option[MediaType],
       a: A
   )(using Functor[F]): F[Validated[Violations, B]] =
-    val request = RequestDataEncoder[S](encoder = ???).apply(request = endpoint.request, accept = ???, a)
+    val request = RequestDataEncoder[S](encoder = ???).apply(request = endpoint.request, contentType, a)
     submit(request).map: response =>
       ResponseDataDecoder[T, U](decoder = ???).apply(response = endpoint.response, response)
-    
+
     ???
 
 //   final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
