@@ -1,7 +1,10 @@
 package io.taig.otter.http
+
+import cats.syntax.all.*
 import cats.data.Validated
 import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
+import cats.Functor
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
   def submit[A, B](request: Request.Data): F[Response.Data]
@@ -10,7 +13,12 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
       endpoint: Endpoint[S, T, U, A, B],
       contentType: Option[MediaType],
       a: A
-  ): F[Validated[Violations, B]] = ???
+  )(using Functor[F]): F[Validated[Violations, B]] =
+    val request = RequestDataEncoder[S](encoder = ???).apply(request = endpoint.request, accept = ???, a)
+    submit(request).map: response =>
+      ResponseDataDecoder[T, U](decoder = ???).apply(response = endpoint.response, response)
+    
+    ???
 
 //   final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
 //       Functor[F]
