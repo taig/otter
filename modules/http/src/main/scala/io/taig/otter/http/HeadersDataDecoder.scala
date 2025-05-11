@@ -5,6 +5,9 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 
 object HeadersDataDecoder:
+  def apply[A](headers: Headers[A], data: Headers.Data): Validated[Violations, A] =
+    Remainders(headers, data).map((_, a) => a)
+
   object Remainders:
     def apply[A](headers: Headers[A], data: Headers.Data): Validated[Violations, (Headers.Data, A)] = headers match
       case Headers.Empty              => (data, ()).valid

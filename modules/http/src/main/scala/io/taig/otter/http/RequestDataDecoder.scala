@@ -4,54 +4,59 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Headers.Data.contentType
 import io.taig.otter.http.header.MediaType
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
-  val body = BodiesDecoder(decoder)
+  val reader = BodiesDecoder(decoder)
 
-  def apply[A](request: Request[S, A], data: Request.Data): Validated[Request.Error, A] =
+  def apply[A](request: Request[S, A], data: Request.Data): Either[MediaTypeUnsupported | ValidationViolations, A] =
     data.headers.contentType
       .leftMap("header" /: _)
-      .leftMap(Request.Error.ValidationViolations.apply)
-      .flatMap(apply(request, _, data).map((_, a) => a).toEither)
-      .toValidated
+      .leftMap(ValidationViolations.apply)
+      .flatMap(apply(request, _, data).map((_, a) => a))
 
   def apply[A](
       request: Request[S, A],
       contentType: Option[MediaType],
       data: Request.Data
-  ): Validated[Request.Error, (Headers.Data, A)] = request match
+  ): Either[MediaTypeUnsupported | ValidationViolations, (Headers.Data, A)] = request match
     case Request.Modify(self, f, _) => apply(request = self, contentType, data).map(_.map(f))
-    case Request.Root(method, url, headers) =>
-      (Validated
-        .cond(
-          test = data.method === request.method,
-          (),
-          Violations.rootNec(Violation.equal(reference = request.method.show, actual = data.method.show))
-        )
-        .leftMap("method" /: _) *> (
-        UrlDataDecoder(url, data = data.url).leftMap("url" /: _),
-        HeadersDataDecoder.Remainders(headers, data = data.headers).leftMap("header" /: _)
-      ).tupled)
-        .map { case (a, (headers, b)) => (headers, (a, b)) }
-        .leftMap(Request.Error.ValidationViolations.apply)
+    case request @ Request.Root(_, _, _) =>
+      apply(request, contentType, data).toEither.leftMap(ValidationViolations.apply)
     case Request.Payload(self, bodies) =>
-      apply(request = self, contentType, data).andThen:
-        case (headers, (a, b)) =>
-          body(codec = bodies, contentType, bytes = data.body)
-            .leftMap("body" /: _)
-            .leftMap(Request.Error.ValidationViolations.apply)
-            .andThen:
-              case Some(c) => (headers, (a, b, c)).valid
-              case None    => Request.Error.MediaTypeUnsupported.invalid
+      apply(request = self, contentType, data)
+        .leftMap(ValidationViolations.apply)
+        .toEither
+        .flatMap:
+          case (headers, (a, b)) =>
+            reader(codec = bodies, contentType, bytes = data.body) match
+              case Right(c)            => (headers, (a, b, c)).asRight
+              case Left(MediaTypeUnsupported) => MediaTypeUnsupported.asLeft
+              case Left(ValidationViolations(violations)) => ValidationViolations("body" /: violations).asLeft
     case Request.ZipHeaders(self, headers) =>
       HeadersDataDecoder.Remainders(headers, data = data.headers) match
         case Validated.Valid((headers, b)) =>
           apply(request = self, contentType, data = data.copy(headers = headers)).map(_.tupleRight(b))
         case Validated.Invalid(left) =>
           apply(request = self, contentType, data) match
-            case Validated.Valid(_) => Request.Error.ValidationViolations(left).invalid
-            case result @ Validated.Invalid(Request.Error.MediaTypeUnsupported) => result
-            case result @ Validated.Invalid(Request.Error.ValidationViolations(right)) =>
-              Request.Error.ValidationViolations(left |+| right).invalid
+            case Right(_)                   => ValidationViolations(left).asLeft
+            case Left(MediaTypeUnsupported) => MediaTypeUnsupported.asLeft
+            case result @ Left(ValidationViolations(right)) =>
+              ValidationViolations(left |+| right).asLeft
+
+  def apply[A, B](
+      request: Request.Root[A, B],
+      contentType: Option[MediaType],
+      data: Request.Data
+  ): Validated[Violations, (Headers.Data, (A, B))] = Validated
+    .cond(
+      test = data.method === request.method,
+      (),
+      Violations.rootNec(Violation.equal(reference = request.method.show, actual = data.method.show))
+    )
+    .leftMap("method" /: _) *> (
+    UrlDataDecoder(url = request.url, data = data.url).leftMap("url" /: _),
+    HeadersDataDecoder.Remainders(headers = request.headers, data = data.headers).leftMap("header" /: _)
+  ).tupled.map { case (a, (headers, b)) => (headers, (a, b)) }

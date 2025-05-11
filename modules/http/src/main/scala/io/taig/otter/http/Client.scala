@@ -2,32 +2,28 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import cats.data.Validated
+import io.taig.otter.+
 import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
-import cats.Functor
+import cats.MonadThrow
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
+  def decoder: PayloadDecoder[S + T + U]
+  def encoder: PayloadEncoder[S + T + U]
+
   def submit[A, B](request: Request.Data): F[Response.Data]
 
   final def submit[A, B](
       endpoint: Endpoint[S, T, U, A, B],
       contentType: Option[MediaType],
       a: A
-  )(using Functor[F]): F[Validated[Violations, B]] =
-    val request = RequestDataEncoder[S](encoder = ???).apply(request = endpoint.request, contentType, a)
-    submit(request).map: response =>
-      ResponseDataDecoder[T, U](decoder = ???).apply(response = endpoint.response, response)
-
-    ???
-
-//   final def submit[I, O](endpoint: Endpoint[I, O], contentType: Option[MediaType], input: I)(using
-//       Functor[F]
-//   ): F[Codec.Result[Either[Route.Error, O]]] =
-//     val request = endpoint.request
-//       .encode(contentType, input)
-//       // TODO the content type of the request should server as a media type fallback if no accept header is present
-//       .modifyHeaders(_ ++ contentType.map(mediaType => (ci"Accept", mediaType.show)))
-//     submit(request).map(endpoint.response.decode)
+  )(using MonadThrow[F]): F[Validated[Violations, B]] =
+    val request = RequestDataEncoder[S](encoder)(request = endpoint.request, contentType, a)
+    submit(request)
+      .map: response =>
+        ResponseDataDecoder[T, U](decoder)(response = endpoint.response, response)
+      .rethrow
+      .map(_ => ???)
 
 // object Client:
 //   def apply[F[_]](app: App[F])(using F: ApplicativeThrow[F]): Client[F] = new Client[F]:

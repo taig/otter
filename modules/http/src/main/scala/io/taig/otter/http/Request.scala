@@ -40,9 +40,5 @@ object Request:
     def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
 
-  enum Error:
-    case MediaTypeUnsupported
-    case ValidationViolations(violations: Violations)
-
   given [S[_]]: Invariant[Request[S, *]] = new Invariant[Request[S, *]]:
     extension [A](self: Request[S, A]) override def imap[B](f: A => B)(g: B => A): Request[S, B] = self.imap(f)(g)

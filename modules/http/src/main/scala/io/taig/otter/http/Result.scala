@@ -15,11 +15,10 @@ object Result:
   final private[otter] case class OrElse[S[_], T[_], A, B](left: Result[S, A], right: Result[T, B])
       extends Result[S + T, Either[A, B]]
 
-  final private[otter] case class Root[S[_], A, B](
-      code: Code,
-      headers: Headers[A],
-      bodies: Option[Bodies[S, B]]
-  ) extends Result[S, (A, B)]
+  final private[otter] case class Payload[S[_], A, B](self: Result.Root[A], bodies: Bodies[S, B])
+      extends Result[S, (A, B)]
+
+  final private[otter] case class Root[A](code: Code, headers: Headers[A]) extends Result[Nothing, A]
 
   given [S[_]]: Invariant.Coproduct[Result[S, *], Result[S, *]] with
     override def result: Invariant[Result[S, *]] = this

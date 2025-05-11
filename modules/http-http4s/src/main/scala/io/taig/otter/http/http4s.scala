@@ -6,6 +6,7 @@ import cats.data.OptionT
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.+
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.CodeDsl.*
 import io.taig.otter.http.Headers.Data.accept
 import org.http4s.Entity as Http4sEntity
@@ -80,7 +81,7 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
           .traverse: route =>
             read(request = route.endpoint.request, data = request)
               .traverse(route.implementation)
-              .attempt
+              .handleError(Failure(_).asLeft)
               .map(write(response = route.endpoint.response, headers = request.headers, _))
               .flatMap(fromResponseData)
 

@@ -14,7 +14,7 @@ object PathDataDecoder:
       case Path.Modify(self, f, _) => apply(path = self, data).map(_.map(f))
       case Path.Root(segment) =>
         data.uncons match
-          case Some((head, tail)) => SegmentDecoder(segment, value = head).tupleLeft(tail)
+          case Some((head, tail)) => SegmentParser(segment, value = head).tupleLeft(tail)
           case None               => Violations.rootNec(Violation.tpe(name = "segment", actual = Data.Null)).invalid
       case Path.Zip(left, right) =>
         apply(path = left, data).andThen: (data, a) =>

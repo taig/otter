@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 
-object SegmentDecoder:
+object SegmentParser:
   def apply[A](segment: Segment[A], value: String): Validated[Violations, A] = segment match
     case Segment.Static(name, _) =>
       Validated.cond(

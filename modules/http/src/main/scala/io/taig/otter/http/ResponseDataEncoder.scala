@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
 import cats.data.Chain
-import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.StacktracePrinter
 import io.taig.otter.Violations
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.CodeDsl.*
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.header.Accept
@@ -16,26 +16,26 @@ final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debu
   def apply[A](
       response: Response[S, T, A],
       headers: Headers.Data,
-      result: Either[Throwable, Validated[Request.Error, A]]
+      result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
   ): Response.Data = headers.accept
     .leftMap("header" /: _)
-    .leftMap(Request.Error.ValidationViolations.apply)
+    .leftMap(ValidationViolations.apply)
     .fold(
-      error => apply(response, accept = none, result = error.invalid.asRight),
+      error => apply(response, accept = none, result = error.asLeft),
       apply(response, _, result)
     )
 
   def apply[A](
       response: Response[S, T, A],
       accept: Option[Accept],
-      result: Either[Throwable, Validated[Request.Error, A]]
+      result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
   ): Response.Data = result
     .match
-      case Left(throwable) =>
+      case Right(a) => payload(result = response.result, accept, a)
+      case Left(Failure(throwable)) =>
         payload(result = response.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
-      case Right(Validated.Invalid(Request.Error.MediaTypeUnsupported)) =>
-        Response.Data(code = unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).some
-      case Right(Validated.Invalid(Request.Error.ValidationViolations(violations))) =>
+      case Left(MediaTypeUnsupported) =>
+        Response.Data(code = unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
+      case Left(ValidationViolations(violations)) =>
         payload(result = response.validation, accept, violations)
-      case Right(Validated.Valid(a)) => payload(result = response.result, accept, a)
     .getOrElse(Response.Data(code = notAcceptable, headers = Chain.empty, body = Array.emptyByteArray))
