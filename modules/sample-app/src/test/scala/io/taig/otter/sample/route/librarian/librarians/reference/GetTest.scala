@@ -25,12 +25,7 @@ final class GetTest extends SampleSuite:
     for
       reference <- IO.randomUUID
       obtained <- client
-        .submit(
-          endpoint.librarian.librarians.reference.get,
-          contentType = none,
-          reference
-        )
-        .rethrow
+        .submit(endpoint.librarian.librarians.reference.get)(input = reference)
         .assertError
     yield {
       assertEq(obtained, expected = LibrarianReferenceUnknown(reference))

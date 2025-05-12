@@ -7,6 +7,7 @@ import cats.syntax.all.*
 import io.circe.Printer as CircePrinter
 import io.taig.otter.dsl.*
 import io.taig.otter.http.AppClient
+import io.taig.otter.http.HttpError
 import io.taig.otter.http.CirceJsonPayloadDecoder
 import io.taig.otter.http.CirceJsonPayloadEncoder
 import io.taig.otter.munit.OtterEffectSuite
@@ -17,6 +18,7 @@ import munit.Location
 import munit.diff.Printer
 
 import scala.collection.immutable.ListMap
+import cats.effect.SyncIO
 
 abstract class SampleSuite extends OtterEffectSuite:
   override def printer: Printer = Printer(_.toString())
@@ -30,16 +32,18 @@ abstract class SampleSuite extends OtterEffectSuite:
       location: Location
   ): Unit = assertEquals(obtained, expected, clue)(using location, compare[A])
 
-  extension [F[_]: MonadThrow, A, B](self: F[Either[A, B]])
+  extension [F[_]: MonadThrow, A, B](self: F[Either[HttpError, Either[A, B]]])
     def assertSuccess(using Location): F[B] = self.flatMap:
-      case Right(b) => b.pure
-      case Left(a)  => new IllegalStateException(s"Expected Right, but got Left: $a").raiseError
+      case Right(Right(b)) => b.pure
+      case Right(Left(a))  => new IllegalStateException(s"Expected success, but got error: $a").raiseError
+      case Left(error)     => new IllegalStateException(s"Expected success, but got HttpError: $error").raiseError
 
     def assertError(using Location): F[A] = self.flatMap:
-      case Left(a)  => a.pure
-      case Right(b) => new IllegalStateException(s"Expected Left, but got Right: $b").raiseError
+      case Right(Left(a))  => a.pure
+      case Right(Right(b)) => new IllegalStateException(s"Expected error, but got success: $b").raiseError
+      case Left(error)     => new IllegalStateException(s"Expected error, but got HttpError: $error").raiseError
 
-  val client = ResourceFixture:
+  val client: SyncIO[FunFixture[TestClient]] = ResourceFixture:
     Resource
       .eval(SampleApp.routes)
       .map: routes =>
@@ -48,3 +52,4 @@ abstract class SampleSuite extends OtterEffectSuite:
           encoder = CirceJsonPayloadEncoder(printer = CircePrinter.noSpaces),
           debug = true
         )(app(routes))
+      .map(TestClient.apply)

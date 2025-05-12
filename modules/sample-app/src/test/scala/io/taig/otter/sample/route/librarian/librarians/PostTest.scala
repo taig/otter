@@ -24,20 +24,12 @@ final class PostTest extends SampleSuite:
   client.test(endpoint.librarian.librarians.post): client =>
     for
       obtained <- client
-        .submit(
-          endpoint.librarian.librarians.post,
-          contentType = none,
-          LibrarianApiSchema.Create(email = ci"foobar@acme.com", password = "password")
+        .submit(endpoint.librarian.librarians.post)(
+          input = LibrarianApiSchema.Create(email = ci"foobar@acme.com", password = "password")
         )
-        .rethrow
         .assertSuccess
       expected <- client
-        .submit(
-          endpoint.librarian.librarians.reference.get,
-          contentType = none,
-          obtained.reference
-        )
-        .rethrow
+        .submit(endpoint.librarian.librarians.reference.get)(input = obtained.reference)
         .assertSuccess
     yield {
       assertEq(obtained, expected)
