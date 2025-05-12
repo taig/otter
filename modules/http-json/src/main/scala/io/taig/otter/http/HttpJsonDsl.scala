@@ -17,7 +17,7 @@ trait HttpJsonDsl:
   )
 
   def response[S[_], A](value: Results[S, A]): Response[S, Json, A] = Response(
-    result = value,
+    results = value,
     validation = result(
       unprocessableEntity,
       json(error("validation", field("violations", violations)))

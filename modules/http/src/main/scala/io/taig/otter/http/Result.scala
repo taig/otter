@@ -5,6 +5,8 @@ import io.taig.otter.+
 import io.taig.otter.Invariant
 
 sealed abstract class Result[+S[_], A] extends Product with Serializable:
+  def code: Code
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Result[S, A]
 
@@ -17,12 +19,12 @@ sealed abstract class Result[+S[_], A] extends Product with Serializable:
 
 object Result:
   final private[otter] case class Modify[S[_], A, B](self: Result[S, A], f: A => B, g: B => A) extends Result[S, B]:
-    export self.metadata
+    export self.{code, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Result[S, B] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Payload[S[_], A, B](self: Result.Root[A], bodies: Bodies[S, B])
       extends Result[S, (A, B)]:
-    export self.metadata
+    export self.{code, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Result[S, (A, B)] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Root[A](code: Code, headers: Headers[A], metadata: Metadata)

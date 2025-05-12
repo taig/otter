@@ -70,8 +70,8 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
     encoder: PayloadEncoder[S + T + U],
     debug: Boolean = false
 ): Http4sRoutes[F] =
-  val read = RequestDataDecoder(decoder)
-  val write = ResponseDataEncoder(encoder, debug)
+  val reader = RequestDataDecoder(decoder)
+  val writer = ResponseDataEncoder(encoder, debug)
 
   Http4sRoutes: request =>
     OptionT:
@@ -79,10 +79,14 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
         routes
           .find(route => RequestMatcher(request = route.endpoint.request, data = request))
           .traverse: route =>
-            read(request = route.endpoint.request, data = request)
+            reader(request = route.endpoint.request, data = request)
               .traverse(route.implementation)
               .handleError(Failure(_).asLeft)
-              .map(write(response = route.endpoint.response, headers = request.headers, _))
+              .map(writer(response = route.endpoint.response, headers = request.headers, _))
+              .onError: t =>
+                // TODO remove
+                t.printStackTrace()
+                Concurrent[F].unit
               .flatMap(fromResponseData)
 
 def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](

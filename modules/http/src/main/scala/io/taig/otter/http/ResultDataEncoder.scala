@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.http.header.Accept
+import io.taig.otter.http.HttpError.ContentNegotiationFailed
 
 final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val writer = BodiesEncoder(encoder)
@@ -10,12 +11,12 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
       result: Result[S, A],
       accept: Option[Accept],
       a: A
-  ): Either[Response.Error.ContentNegotiationFailed, Response.Data] = result match
+  ): Either[ContentNegotiationFailed, Response.Data] = result match
     case Result.Modify(self, _, g) => apply(result = self, accept, g(a))
     case Result.Payload(self, bodies) =>
       val mediaRanges = accept.flatMap(_.toResult.right).fold(Nil)(_.toList)
       writer(bodies, accept = mediaRanges, a._2)
-        .toRight(Response.Error.ContentNegotiationFailed)
+        .toRight(ContentNegotiationFailed)
         .map(apply(result = self, accept, a._1).withBody(_))
     case result: Result.Root[?] => apply(result, accept, a).asRight
 
