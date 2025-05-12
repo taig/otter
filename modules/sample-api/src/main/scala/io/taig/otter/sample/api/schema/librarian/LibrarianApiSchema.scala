@@ -1,4 +1,7 @@
 package io.taig.otter.sample.api.schema.librarian
+
+import cats.Eq
+import cats.derived.*
 import io.taig.otter.Json
 import io.taig.otter.dsl.*
 import io.taig.otter.dsl.json.*
@@ -6,7 +9,7 @@ import org.typelevel.ci.*
 
 import java.util.UUID
 
-final case class LibrarianApiSchema(email: CIString, reference: UUID)
+final case class LibrarianApiSchema(email: CIString, reference: UUID) derives Eq
 
 object LibrarianApiSchema:
   final case class Create(email: CIString, password: String)

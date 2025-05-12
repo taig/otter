@@ -1,18 +1,13 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import cats.Applicative
-// import cats.syntax.all.*
+import cats.ApplicativeThrow
+import io.taig.otter.+
 
-// final class AppClient[F[_]: Applicative](app: App[F]) extends Client[F]:
-//   override def submit(request: Http.Request): F[Http.Response] = app.routes
-//     .find(request.method, request.url)
-//     .traverse { route =>
-//       route.endpoint.request
-//         .decode(request)
-//         .traverse(route.implementation.apply)
-//         .map(route.endpoint.response.encode)
-//     }
-//     .map(_.getOrElse(app.notFound.encode(().valid)))
-
-// object AppClient:
-//   def apply[F[_]: Applicative](app: App[F]): Client[F] = new AppClient[F](app)
+object AppClient:
+  def apply[F[_]: ApplicativeThrow, S[_], T[_], U[_]](
+      decoder: PayloadDecoder[S + T + U],
+      encoder: PayloadEncoder[S + T + U],
+      debug: Boolean
+  )(app: App[F, S, T, U]): Client[F, S, T, U] =
+    val http = AppHttpClient(decoder, encoder, debug)(app)
+    Client(http, decoder, encoder)

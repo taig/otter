@@ -1,5 +1,7 @@
 package io.taig.otter.http
 
+import cats.Show
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.Codec
 import io.taig.otter.Metadata
@@ -16,11 +18,16 @@ sealed abstract class Segment[A] extends Product, Serializable:
 
   final def toPath: Path[A] = Path.Root(segment = this)
 
+  override def toString: String = this match
+    case Segment.Static(name, _)       => name
+    case Segment.Parameter(name, _, _) => s"{$name}"
+    case Segment.Modify(self, _, _)    => self.toString
+
 object Segment:
   final private[otter] case class Static(name: String, metadata: Metadata) extends Segment[Unit]:
     override def modifyMetadata(f: Metadata => Metadata): Segment[Unit] = copy(metadata = f(metadata))
 
-  final private[otter] case class Parameter[A](name: String, codec: Reference[Http.Segment, A], metadata: Metadata)
+  final private[otter] case class Parameter[A](name: String, codec: Reference[Http.Parameter, A], metadata: Metadata)
       extends Segment[A]:
     override def modifyMetadata(f: Metadata => Metadata): Segment[A] = copy(metadata = f(metadata))
 
@@ -33,3 +40,5 @@ object Segment:
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Segment[A] = self.modifyMetadata(f)
       override def imap[B](f: A => B)(g: B => A): Segment[B] = self.imap(f)(g)
+
+  given Show[Segment[?]] = Show.fromToString

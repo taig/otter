@@ -20,5 +20,5 @@ object SegmentParser:
         .collect { case style: Header.Style => style }
         .getOrElse(Header.Style.Simple)
 
-      HttpSegmentParser(explode, style)(name, codec = codec.value, value)
+      HttpParameterParser(explode, style)(name, codec = codec.value, value)
     case Segment.Modify(self, f, _) => apply(segment = self, value).map(f)

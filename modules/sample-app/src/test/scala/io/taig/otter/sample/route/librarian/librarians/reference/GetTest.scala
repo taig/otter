@@ -1,4 +1,4 @@
-package io.taig.otter.sample.route.librarian.librarians
+package io.taig.otter.sample.route.librarian.librarians.reference
 
 import cats.effect.IO
 import cats.effect.kernel.Resource
@@ -20,25 +20,18 @@ import org.typelevel.ci.*
 
 import java.util.UUID
 
-final class PostTest extends SampleSuite:
-  client.test(endpoint.librarian.librarians.post): client =>
+final class GetTest extends SampleSuite:
+  client.test(endpoint.librarian.librarians.reference.get, "librarian reference unknown"): client =>
     for
+      reference <- IO.randomUUID
       obtained <- client
-        .submit(
-          endpoint.librarian.librarians.post,
-          contentType = none,
-          LibrarianApiSchema.Create(email = ci"foobar@acme.com", password = "password")
-        )
-        .rethrow
-        .assertSuccess
-      expected <- client
         .submit(
           endpoint.librarian.librarians.reference.get,
           contentType = none,
-          obtained.reference
+          reference
         )
         .rethrow
-        .assertSuccess
+        .assertError
     yield {
-      assertEq(obtained, expected)
+      assertEq(obtained, expected = LibrarianReferenceUnknown(reference))
     }

@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.HttpError.*
 
 final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
   def apply[A](

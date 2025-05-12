@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
-import io.taig.otter.Violations
 import cats.syntax.all.*
+import io.taig.otter.Violations
 
 sealed abstract class HttpError extends Throwable
 

@@ -16,13 +16,16 @@ trait HttpJsonDsl:
     codec
   )
 
-  def response[S[_], A](value: Results[S, A]): Response[S, Json, A] = Response(
-    results = value,
+  def response[S[_], A](results: Results[S, A]): Response[S, Json, A] = Response(
+    results,
     validation = result(
       unprocessableEntity,
       json(error("validation", field("violations", violations)))
     ).toResults,
     failure = result(internalServerError, json(string.nullable)).toResults
   )
+
+  def response[S[_], A](result: Result[S, A]): Response[S, Json, A] =
+    response(results = result.toResults)
 
 object HttpJsonDsl extends HttpJsonDsl

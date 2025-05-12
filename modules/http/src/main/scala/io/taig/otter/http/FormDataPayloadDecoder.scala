@@ -7,8 +7,6 @@ import cats.parse.Parser0
 import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.http.header.MediaType
-import org.typelevel.ci.*
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets

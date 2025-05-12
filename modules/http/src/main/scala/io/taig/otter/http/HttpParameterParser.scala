@@ -4,22 +4,22 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.*
 
-final class HttpSegmentParser(explode: Boolean, style: Header.Style):
-  def apply[A](name: String, codec: Http.Segment[A], value: String): Validated[Violations, A] = codec match
-    case codec: Http.Segment.Array[A]  => apply(name, codec, value)
-    case codec: Http.Segment.Object[A] => apply(name, codec, value)
-    case codec: Http.Segment.Value[A]  => apply(name, codec, value)
+final class HttpParameterParser(explode: Boolean, style: Header.Style):
+  def apply[A](name: String, codec: Http.Parameter[A], value: String): Validated[Violations, A] = codec match
+    case codec: Http.Parameter.Array[A]  => apply(name, codec, value)
+    case codec: Http.Parameter.Object[A] => apply(name, codec, value)
+    case codec: Http.Parameter.Value[A]  => apply(name, codec, value)
 
-  def apply[A](name: String, codec: Http.Segment.Array[A], value: String): Validated[Violations, A] = (explode, style)
+  def apply[A](name: String, codec: Http.Parameter.Array[A], value: String): Validated[Violations, A] = (explode, style)
     .match
       case (_, Header.Style.Simple) =>
-        HttpSegmentParser.parser.array.simple(value).toValidatedViolations(tpe = "array", value)
+        HttpParameterParser.parser.array.simple(value).toValidatedViolations(tpe = "array", value)
       case (false, Header.Style.Label) =>
-        HttpSegmentParser.parser.array.label.unexploded(value).toValidatedViolations(tpe = "array", value)
+        HttpParameterParser.parser.array.label.unexploded(value).toValidatedViolations(tpe = "array", value)
       case (true, Header.Style.Label) =>
-        HttpSegmentParser.parser.array.label.exploded(value).toValidatedViolations(tpe = "array", value)
+        HttpParameterParser.parser.array.label.exploded(value).toValidatedViolations(tpe = "array", value)
       case (false, Header.Style.Matrix) =>
-        HttpSegmentParser.parser.array.matrix
+        HttpParameterParser.parser.array.matrix
           .unexploded(value)
           .toValidatedViolations(tpe = "array", value)
           .andThen: (key, values) =>
@@ -27,7 +27,7 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
             then values.valid
             else Violations.rootNec(Violation.equal(name, actual = key)).invalid
       case (true, Header.Style.Matrix) =>
-        HttpSegmentParser.parser.array.matrix
+        HttpParameterParser.parser.array.matrix
           .exploded(value)
           .toValidatedViolations(tpe = "array", value)
           .andThen: values =>
@@ -37,39 +37,41 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
               else Violations.rootNec(Violation.equal(name, actual = key)).invalid
     .andThen(apply(codec, _))
 
-  def apply[A](codec: Http.Segment.Array[A], values: List[String]): Validated[Violations, A] = codec match
-    case Http.Segment.Array.Collection(self) => CollectionParser(parser = HttpSegmentValueParser)(codec = self, values)
-    case Http.Segment.Array.Tuple(self)      => TupleParser(parser = HttpSegmentValueParser)(codec = self, values)
+  def apply[A](codec: Http.Parameter.Array[A], values: List[String]): Validated[Violations, A] = codec match
+    case Http.Parameter.Array.Collection(self) =>
+      CollectionParser(parser = HttpParameterValueParser)(codec = self, values)
+    case Http.Parameter.Array.Tuple(self) => TupleParser(parser = HttpParameterValueParser)(codec = self, values)
 
-  def apply[A](name: String, codec: Http.Segment.Object[A], value: String): Validated[Violations, A] = (explode, style)
-    .match
-      case (false, Header.Style.Simple) =>
-        HttpSegmentParser.parser.obj.simple.unexploded(value).toValidatedViolations(tpe = "object", value)
-      case (true, Header.Style.Simple) =>
-        HttpSegmentParser.parser.obj.simple.exploded(value).toValidatedViolations(tpe = "object", value)
-      case (false, Header.Style.Label) =>
-        HttpSegmentParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
-      case (true, Header.Style.Label) =>
-        HttpSegmentParser.parser.obj.label.exploded(value).toValidatedViolations(tpe = "object", value)
-      case (false, Header.Style.Matrix) =>
-        HttpSegmentParser.parser.obj.matrix
-          .unexploded(value)
-          .toValidatedViolations(tpe = "object", value)
-          .andThen: (key, values) =>
-            if key === name
-            then values.valid
-            else Violations.rootNec(Violation.equal(name, actual = key)).invalid
-      case (true, Header.Style.Matrix) =>
-        HttpSegmentParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
-    .andThen: values =>
-      codec match
-        case Http.Segment.Object.Dictionary(self) =>
-          DictionaryParser(parser = HttpSegmentValueParser)(codec = self, values)
-        case Http.Segment.Object.Record(self) =>
-          RecordParser(parser = HttpSegmentValueParser, printer = HttpSegmentValuePrinter)(codec = self, values)
-            .map((_, a) => a)
+  def apply[A](name: String, codec: Http.Parameter.Object[A], value: String): Validated[Violations, A] =
+    (explode, style)
+      .match
+        case (false, Header.Style.Simple) =>
+          HttpParameterParser.parser.obj.simple.unexploded(value).toValidatedViolations(tpe = "object", value)
+        case (true, Header.Style.Simple) =>
+          HttpParameterParser.parser.obj.simple.exploded(value).toValidatedViolations(tpe = "object", value)
+        case (false, Header.Style.Label) =>
+          HttpParameterParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
+        case (true, Header.Style.Label) =>
+          HttpParameterParser.parser.obj.label.exploded(value).toValidatedViolations(tpe = "object", value)
+        case (false, Header.Style.Matrix) =>
+          HttpParameterParser.parser.obj.matrix
+            .unexploded(value)
+            .toValidatedViolations(tpe = "object", value)
+            .andThen: (key, values) =>
+              if key === name
+              then values.valid
+              else Violations.rootNec(Violation.equal(name, actual = key)).invalid
+        case (true, Header.Style.Matrix) =>
+          HttpParameterParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
+      .andThen: values =>
+        codec match
+          case Http.Parameter.Object.Dictionary(self) =>
+            DictionaryParser(parser = HttpParameterValueParser)(codec = self, values)
+          case Http.Parameter.Object.Record(self) =>
+            RecordParser(parser = HttpParameterValueParser, printer = HttpParameterValuePrinter)(codec = self, values)
+              .map((_, a) => a)
 
-  def apply[A](name: String, codec: Http.Segment.Value[A], value: String): Validated[Violations, A] = style
+  def apply[A](name: String, codec: Http.Parameter.Value[A], value: String): Validated[Violations, A] = style
     .match
       case Header.Style.Simple => value.valid
       case Header.Style.Label =>
@@ -77,16 +79,16 @@ final class HttpSegmentParser(explode: Boolean, style: Header.Style):
         then value.drop(1).valid
         else Violations.rootNec(Violation.tpe(name = "value", actual = value)).invalid
       case Header.Style.Matrix =>
-        HttpSegmentParser.parser
+        HttpParameterParser.parser
           .value(value)
           .toValidatedViolations(tpe = "value", value)
           .andThen: (key, value) =>
             if key === name
             then value.valid
             else Violations.rootNec(Violation.equal(reference = name, actual = key)).invalid
-    .andThen(HttpSegmentValueParser(codec, _))
+    .andThen(HttpParameterValueParser(codec, _))
 
-object HttpSegmentParser:
+object HttpParameterParser:
   private object parser:
     import cats.parse.Parser
     import cats.parse.Parser.*

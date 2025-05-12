@@ -1,13 +1,19 @@
 package io.taig.otter.sample.app.route.librarian.librarians
 
 import cats.effect.IO
+import cats.effect.Ref
 import cats.effect.std.UUIDGen
 import cats.syntax.all.*
 import io.taig.otter.http.Route
 import io.taig.otter.sample.api.endpoint
 import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 
-val post = Route(
+def post(librarians: Ref[IO, List[LibrarianApiSchema]]) = Route(
   endpoint.librarian.librarians.post,
-  implementation = librarian => UUIDGen.randomUUID[IO].map(LibrarianApiSchema(email = librarian.email, _).asRight)
+  implementation = librarian =>
+    UUIDGen
+      .randomUUID[IO]
+      .map(LibrarianApiSchema(email = librarian.email, _))
+      .flatTap(librarian => librarians.update(librarian :: _))
+      .map(_.asRight)
 )

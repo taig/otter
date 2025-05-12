@@ -1,11 +1,15 @@
 package io.taig.otter.http
 
+import cats.Show
 import cats.data.Chain
+import cats.syntax.all.*
 import io.taig.otter.Invariant
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
 
 sealed abstract class Path[A] extends Product with Serializable:
+  def toSegments: Chain[Segment[?]]
+
   final def imap[B](f: A => B)(g: B => A): Path[B] = Path.Modify(self = this, f, g)
 
   final def zip[B](path: Path[B]): Path[(A, B)] = Path.Zip(left = this, right = path)
@@ -17,13 +21,17 @@ sealed abstract class Path[A] extends Product with Serializable:
   final def toUrl: Url[A] = Url.Root(path = this, queries = Queries.Empty).imap((a, _) => a)((_, ()))
 
 object Path:
-  private[otter] case object Empty extends Path[Unit]
+  private[otter] case object Empty extends Path[Unit]:
+    override def toSegments: Chain[Segment[?]] = Chain.empty
 
-  final private[otter] case class Modify[A, B](self: Path[A], f: A => B, g: B => A) extends Path[B]
+  final private[otter] case class Modify[A, B](self: Path[A], f: A => B, g: B => A) extends Path[B]:
+    export self.toSegments
 
-  final private[otter] case class Root[A](segment: Segment[A]) extends Path[A]
+  final private[otter] case class Root[A](segment: Segment[A]) extends Path[A]:
+    override def toSegments: Chain[Segment[?]] = Chain.one(segment)
 
-  final private[otter] case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]
+  final private[otter] case class Zip[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
+    override def toSegments: Chain[Segment[?]] = left.toSegments ++ right.toSegments
 
   type Data = Chain[String]
 
@@ -34,3 +42,5 @@ object Path:
     extension [A](self: Path[A])
       override def imap[B](f: A => B)(g: B => A): Path[B] = self.imap(f)(g)
       override def zip[B](codec: Path[B]): Path[(A, B)] = self.zip(codec)
+
+  given Show[Path[?]] = _.toSegments.mkString_("/", "/", "")

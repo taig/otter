@@ -1,30 +1,23 @@
-// package io.taig.otter.munit
+package io.taig.otter.munit
 
-// import cats.MonadThrow
-// import cats.data.Validated
-// import cats.syntax.all.*
-// import io.taig.otter.Violations
-// import munit.Assertions as MunitAssertions
-// import munit.Location
+import cats.MonadThrow
+import cats.syntax.all.*
+import munit.Assertions as MunitAssertions
+import munit.Location
 
-// trait Assertions extends MunitAssertions:
-//   extension [F[_]: MonadThrow, E, O](self: F[Validated[Violations, Either[E, O]]])
-//     def assertValid(using Location): F[Either[E, O]] = self.flatMap:
-//       case Validated.Valid(o) => o.pure
-//       case Validated.Invalid(violations) =>
-//         new IllegalArgumentException(s"Expected Valid, but got Violations: $violations").raiseError
+trait OtterAssertions extends MunitAssertions:
+  extension [A, B](self: Either[A, B])
+    def assertRight(using Location): B = self match
+      case Right(b) => b
+      case Left(a)  => fail(s"Expected Right, but got Left: $a")
 
-//     def assertSuccess(using Location): F[O] = assertValid.flatMap:
-//       case Right(o)    => o.pure
-//       case Left(error) => new IllegalArgumentException(s"Expected Success, but got Error: $error").raiseError
+  extension [F[_]: MonadThrow, A, B](self: F[Either[A, B]])
+    def assertSuccess(using Location): F[B] = self.flatMap:
+      case Right(b) => b.pure
+      case Left(a)  => new IllegalStateException(s"Expected Right, but got Left: $a").raiseError
 
-//     def assertError(using Location): F[E] = assertValid.flatMap:
-//       case Right(o)    => new IllegalArgumentException(s"Expected Error, but got Success: $o").raiseError
-//       case Left(error) => error.pure
+    def assertError(using Location): F[A] = self.flatMap:
+      case Left(a)  => a.pure
+      case Right(b) => new IllegalStateException(s"Expected Left, but got Right: $b").raiseError
 
-//     def assertViolations(using Location): F[Violations] = self.flatMap:
-//       case Validated.Valid(o) =>
-//         new IllegalArgumentException(s"Expected Violations, but got Valid: $o").raiseError
-//       case Validated.Invalid(violations) => violations.pure
-
-// object Assertions extends Assertions
+object OtterAssertions extends OtterAssertions

@@ -290,50 +290,50 @@ object Http:
         extract = [A] => (codec: Http.Query.Optional[A]) => codec.self
       )
 
-  sealed abstract class Segment[A] extends Product with Serializable
+  sealed abstract class Parameter[A] extends Product with Serializable
 
-  object Segment:
-    sealed abstract class Value[A] extends Http.Segment[A]
+  object Parameter:
+    sealed abstract class Value[A] extends Http.Parameter[A]
 
     object Value:
-      final case class Constant[A](self: Self.Constant[Http.Segment.Value.Primitive, A]) extends Value[A]
+      final case class Constant[A](self: Self.Constant[Http.Parameter.Value.Primitive, A]) extends Value[A]
 
       object Constant:
-        given codec: Codec.Constant[Http.Segment.Value.Constant, Http.Segment.Value.Primitive] =
+        given codec: Codec.Constant[Http.Parameter.Value.Constant, Http.Parameter.Value.Primitive] =
           Codec.Constant(
-            lift = [A] => (self: Self.Constant[Http.Segment.Value.Primitive, A]) => Constant(self),
-            extract = [A] => (codec: Http.Segment.Value.Constant[A]) => codec.self
+            lift = [A] => (self: Self.Constant[Http.Parameter.Value.Primitive, A]) => Constant(self),
+            extract = [A] => (codec: Http.Parameter.Value.Constant[A]) => codec.self
           )
 
-      final case class Enumeration[A](self: Self.Enumeration[Http.Segment.Value.Primitive, A]) extends Value[A]
+      final case class Enumeration[A](self: Self.Enumeration[Http.Parameter.Value.Primitive, A]) extends Value[A]
 
       object Enumeration:
-        given codec: Codec.Enumeration[Http.Segment.Value.Enumeration, Http.Segment.Value.Primitive] =
+        given codec: Codec.Enumeration[Http.Parameter.Value.Enumeration, Http.Parameter.Value.Primitive] =
           Codec.Enumeration(
-            lift = [A] => (self: Self.Enumeration[Http.Segment.Value.Primitive, A]) => Enumeration(self),
-            extract = [A] => (codec: Http.Segment.Value.Enumeration[A]) => codec.self
+            lift = [A] => (self: Self.Enumeration[Http.Parameter.Value.Primitive, A]) => Enumeration(self),
+            extract = [A] => (codec: Http.Parameter.Value.Enumeration[A]) => codec.self
           )
 
       final case class Primitive[A](self: Self.Primitive.String[A]) extends Value[A]
 
       object Primitive:
-        given codec: Codec.Primitive.String[Http.Segment.Value.Primitive] = Codec.Primitive.String(
+        given codec: Codec.Primitive.String[Http.Parameter.Value.Primitive] = Codec.Primitive.String(
           lift = [A] => (self: Self.Primitive.String[A]) => Primitive(self),
-          extract = [A] => (codec: Http.Segment.Value.Primitive[A]) => codec.self
+          extract = [A] => (codec: Http.Parameter.Value.Primitive[A]) => codec.self
         )
 
-      final case class Union[A](self: Self.Union.Untagged[Http.Segment.Value, A]) extends Value[A]
+      final case class Union[A](self: Self.Union.Untagged[Http.Parameter.Value, A]) extends Value[A]
 
       object Union:
-        given codec: Codec.Union.Untagged[Http.Segment.Value.Union, Http.Segment.Value] =
+        given codec: Codec.Union.Untagged[Http.Parameter.Value.Union, Http.Parameter.Value] =
           Codec.Union.Untagged(
-            lift = [A] => (self: Self.Union.Untagged[Http.Segment.Value, A]) => Union(self),
-            extract = [A] => (codec: Http.Segment.Value.Union[A]) => codec.self
+            lift = [A] => (self: Self.Union.Untagged[Http.Parameter.Value, A]) => Union(self),
+            extract = [A] => (codec: Http.Parameter.Value.Union[A]) => codec.self
           )
 
-      given codec: Codec.Extension.Tupleable[Http.Segment.Value, Http.Segment.Array.Tuple] with
-        override def result: Invariant[Array.Tuple] = Http.Segment.Array.Tuple.codec
-        override def fromElement[A](codec: Http.Segment.Value[A]): Http.Segment.Value[A] = codec
+      given codec: Codec.Extension.Tupleable[Http.Parameter.Value, Http.Parameter.Array.Tuple] with
+        override def result: Invariant[Array.Tuple] = Http.Parameter.Array.Tuple.codec
+        override def fromElement[A](codec: Http.Parameter.Value[A]): Http.Parameter.Value[A] = codec
 
         extension [A](self: Value[A])
           override def metadata: Metadata = self match
@@ -354,28 +354,28 @@ object Http:
             case Primitive(self)   => Primitive(self.imap(f)(g))
             case Union(self)       => Union(self.imap(f)(g))
 
-    sealed abstract class Array[A] extends Http.Segment[A]
+    sealed abstract class Array[A] extends Http.Parameter[A]
 
     object Array:
-      final case class Collection[A](self: Self.Collection[Http.Segment.Value, A]) extends Http.Segment.Array[A]
+      final case class Collection[A](self: Self.Collection[Http.Parameter.Value, A]) extends Http.Parameter.Array[A]
 
       object Collection:
-        given codec: Codec.Collection[Http.Segment.Array.Collection, Http.Segment.Value] =
+        given codec: Codec.Collection[Http.Parameter.Array.Collection, Http.Parameter.Value] =
           Codec.Collection(
-            lift = [A] => (self: Self.Collection[Http.Segment.Value, A]) => Collection(self),
-            extract = [A] => (codec: Http.Segment.Array.Collection[A]) => codec.self
+            lift = [A] => (self: Self.Collection[Http.Parameter.Value, A]) => Collection(self),
+            extract = [A] => (codec: Http.Parameter.Array.Collection[A]) => codec.self
           )
 
-      final case class Tuple[A](self: Self.Tuple[Http.Segment.Value, A]) extends Http.Segment.Array[A]
+      final case class Tuple[A](self: Self.Tuple[Http.Parameter.Value, A]) extends Http.Parameter.Array[A]
 
       object Tuple:
-        given codec: Codec.Tuple[Http.Segment.Array.Tuple, Http.Segment.Value] =
+        given codec: Codec.Tuple[Http.Parameter.Array.Tuple, Http.Parameter.Value] =
           Codec.Tuple(
-            lift = [A] => (self: Self.Tuple[Http.Segment.Value, A]) => Tuple(self),
-            extract = [A] => (codec: Http.Segment.Array.Tuple[A]) => codec.self
+            lift = [A] => (self: Self.Tuple[Http.Parameter.Value, A]) => Tuple(self),
+            extract = [A] => (codec: Http.Parameter.Array.Tuple[A]) => codec.self
           )
 
-      given codec: Codec[Http.Segment.Array] with
+      given codec: Codec[Http.Parameter.Array] with
         extension [A](self: Array[A])
           override def metadata: Metadata = self match
             case Collection(self) => self.metadata
@@ -389,30 +389,30 @@ object Http:
             case Collection(self) => Collection(self.imap(f)(g))
             case Tuple(self)      => Tuple(self.imap(f)(g))
 
-    sealed abstract class Object[A] extends Http.Segment[A]
+    sealed abstract class Object[A] extends Http.Parameter[A]
 
     object Object:
-      final case class Dictionary[A](self: Self.Dictionary[Http.Segment.Value, Http.Segment.Value, A])
-          extends Http.Segment.Object[A]
+      final case class Dictionary[A](self: Self.Dictionary[Http.Parameter.Value, Http.Parameter.Value, A])
+          extends Http.Parameter.Object[A]
 
       object Dictionary:
-        given codec: Codec.Dictionary[Http.Segment.Object.Dictionary, Http.Segment.Value, Http.Segment.Value] =
+        given codec: Codec.Dictionary[Http.Parameter.Object.Dictionary, Http.Parameter.Value, Http.Parameter.Value] =
           Codec.Dictionary(
-            lift = [A] => (self: Self.Dictionary[Http.Segment.Value, Http.Segment.Value, A]) => Dictionary(self),
-            extract = [A] => (codec: Http.Segment.Object.Dictionary[A]) => codec.self
+            lift = [A] => (self: Self.Dictionary[Http.Parameter.Value, Http.Parameter.Value, A]) => Dictionary(self),
+            extract = [A] => (codec: Http.Parameter.Object.Dictionary[A]) => codec.self
           )
 
-      final case class Record[A](self: Self.Record[Http.Segment.Value, Http.Segment.Value, A])
-          extends Http.Segment.Object[A]
+      final case class Record[A](self: Self.Record[Http.Parameter.Value, Http.Parameter.Value, A])
+          extends Http.Parameter.Object[A]
 
       object Record:
-        given codec: Codec.Record[Http.Segment.Object.Record, Http.Segment.Value, Http.Segment.Value] =
+        given codec: Codec.Record[Http.Parameter.Object.Record, Http.Parameter.Value, Http.Parameter.Value] =
           Codec.Record(
-            lift = [A] => (self: Self.Record[Http.Segment.Value, Http.Segment.Value, A]) => Record(self),
-            extract = [A] => (codec: Http.Segment.Object.Record[A]) => codec.self
+            lift = [A] => (self: Self.Record[Http.Parameter.Value, Http.Parameter.Value, A]) => Record(self),
+            extract = [A] => (codec: Http.Parameter.Object.Record[A]) => codec.self
           )
 
-      given codec: Codec[Http.Segment.Object] with
+      given codec: Codec[Http.Parameter.Object] with
         extension [A](self: Object[A])
           override def metadata: Metadata = self match
             case Dictionary(self) => self.metadata

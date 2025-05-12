@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
-import io.taig.otter.+
-import io.taig.otter.http.HttpError.*
-import io.taig.otter.http.Headers.Data.contentType
 import cats.syntax.all.*
+import io.taig.otter.+
+import io.taig.otter.http.Headers.Data.contentType
+import io.taig.otter.http.HttpError.*
 
 final class ResponseDataDecoder[-S[_], -T[_]](decoder: PayloadDecoder[S + T]):
   val reader = ResultsDataDecoder(decoder)
