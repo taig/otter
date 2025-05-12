@@ -10,27 +10,25 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       body: Body[S, A],
       accept: List[MediaRange],
       a: A
-  ): Either[ContentNegotiationFailed, (MediaType, Array[Byte])] =
-    body match
-      case Body.Modify(self, f, g) => apply(body = self, accept, g(a))
-      case Body.Root(contentType, codec) =>
-        if (accept.isEmpty) then (contentType, encoder(codec = codec.value, a)).asRight
-        else
-          Either.cond(
-            test = accept.exists(contentType.satisfies),
-            right = (contentType, encoder(codec = codec.value, a)),
-            left = ContentNegotiationFailed
-          )
+  ): Either[ContentNegotiationFailed, Array[Byte]] =
+    if (accept.isEmpty) then apply(body, a).asRight
+    else
+      Either.cond(
+        test = accept.exists(body.mediaType.satisfies),
+        right = apply(body, a),
+        left = ContentNegotiationFailed
+      )
 
   def apply[A](body: Body[S, A], contentType: Option[MediaType], a: A): Either[MediaTypeUnsupported, Array[Byte]] =
-    body match
-      case Body.Modify(self, f, g) => apply(body = self, contentType, g(a))
-      case Body.Root(mediaType, codec) =>
-        contentType match
-          case Some(contentType) =>
-            Either.cond(
-              test = mediaType === contentType,
-              right = encoder(codec = codec.value, a),
-              left = MediaTypeUnsupported
-            )
-          case None => encoder(codec = codec.value, a).asRight
+    contentType match
+      case Some(contentType) =>
+        Either.cond(
+          test = body.mediaType === contentType,
+          right = apply(body, a),
+          left = MediaTypeUnsupported
+        )
+      case None => apply(body, a).asRight
+
+  def apply[A](body: Body[S, A], a: A): Array[Byte] = body match
+    case Body.Modify(self, f, g)       => apply(body = self, g(a))
+    case Body.Root(contentType, codec) => encoder(codec = codec.value, a)

@@ -15,5 +15,8 @@ object HttpError:
   type MediaTypeUnsupported = MediaTypeUnsupported.type
   case object MediaTypeUnsupported extends HttpError
 
+  type UrlUnknown = UrlUnknown.type
+  case object UrlUnknown extends HttpError
+
   final case class ValidationViolations(violations: Violations) extends HttpError:
     override def getMessage: String = violations.show

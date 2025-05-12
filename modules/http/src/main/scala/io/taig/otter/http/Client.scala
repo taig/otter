@@ -6,6 +6,7 @@ import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.HttpError.*
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
   def decoder: PayloadDecoder[S + T + U]
@@ -17,15 +18,16 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
       endpoint: Endpoint[S, T, U, A, B],
       contentType: Option[MediaType],
       a: A
-  )(using MonadThrow[F]): F[Validated[Violations, B]] =
+  )(using MonadThrow[F]): F[Either[HttpError, B]] =
     val request = RequestDataEncoder[S](encoder)(request = endpoint.request, contentType, a)
 
-    submit(request)
-      .map: response =>
-        val reader = ResponseDataDecoder(decoder)
-        reader(response = endpoint.response, response)
-      .rethrow
-      .map(_ => ???)
+    ???
+    // submit(request)
+    //   .map: response =>
+    //     val reader = ResponseDataDecoder(decoder)
+    //     reader(response = endpoint.response, response)
+    //   .rethrow
+    //   .map(_ => ???)
 
 // object Client:
 //   def apply[F[_]](app: App[F])(using F: ApplicativeThrow[F]): Client[F] = new Client[F]:

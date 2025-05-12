@@ -25,7 +25,7 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
           .flatMap(apply(_, accept, a))
       case Bodies.OrElse(left, right) =>
         a.fold(apply(bodies = left, accept, _), apply(bodies = right, accept, _))
-      case Bodies.Root(body) => writer(body, accept, a)
+      case Bodies.Root(body) => writer(body, accept, a).tupleLeft(body.mediaType)
 
   def apply[A](bodies: Bodies[S, A], contentType: Option[MediaType], a: A): Either[MediaTypeUnsupported, Array[Byte]] =
     bodies match
@@ -41,3 +41,10 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
       case Bodies.OrElse(left, right) =>
         a.fold(apply(bodies = left, contentType, _), apply(bodies = right, contentType, _))
       case Bodies.Root(body) => writer(body, contentType, a)
+
+  def apply[A](bodies: Bodies[S, A], a: A): (MediaType, Array[Byte]) = bodies match
+    case Bodies.Modify(self, _, g) => apply(bodies = self, g(a))
+    case Bodies.Or(left, _)        => apply(bodies = left, a)
+    case Bodies.OrElse(left, right) =>
+      a.fold(apply(bodies = left, _), apply(bodies = right, _))
+    case Bodies.Root(body) => (body.mediaType, writer(body, a))
