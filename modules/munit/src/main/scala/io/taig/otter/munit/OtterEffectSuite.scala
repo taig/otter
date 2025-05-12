@@ -9,7 +9,7 @@ import munit.TestOptions
 
 import scala.language.adhocExtensions
 
-abstract class OtterEffectSuite extends CatsEffectSuite, OtterAssertions:
+abstract class OtterEffectSuite extends CatsEffectSuite:
   def test(endpoint: Endpoint[?, ?, ?, ?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
 
