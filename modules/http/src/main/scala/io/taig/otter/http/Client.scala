@@ -20,14 +20,7 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
       a: A
   )(using MonadThrow[F]): F[Either[HttpError, B]] =
     val request = RequestDataEncoder[S](encoder)(request = endpoint.request, contentType, a)
-
-    ???
-    // submit(request)
-    //   .map: response =>
-    //     val reader = ResponseDataDecoder(decoder)
-    //     reader(response = endpoint.response, response)
-    //   .rethrow
-    //   .map(_ => ???)
+    submit(request).map(ResponseDataDecoder(decoder)(response = endpoint.response, _))
 
 // object Client:
 //   def apply[F[_]](app: App[F])(using F: ApplicativeThrow[F]): Client[F] = new Client[F]:
