@@ -1,11 +1,11 @@
 import sbtcrossproject.CrossProject
 
 val Version = new {
-  val CaseInsensitive = "1.4.2"
+  val CaseInsensitive = "1.5.0"
   val Cats = "2.13.0"
-  val CatsEffect = "3.6.0"
+  val CatsEffect = "3.6.1"
   val CatsParse = "1.1.0"
-  val Circe = "0.14.12"
+  val Circe = "0.14.13"
   val Ducktape = "0.2.8"
   val EnumerationExt = "0.3.2"
   val Fs2 = "3.12.0"
@@ -15,9 +15,9 @@ val Version = new {
   val Kittens = "3.5.0"
   val Log4Cats = "2.7.0"
   val Mouse = "1.3.2"
-  val Munit = "1.1.0"
+  val Munit = "1.1.1"
   val MunitCatsEffect = "1.0.7"
-  val Scala3 = "3.3.5"
+  val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.15"
 }
