@@ -1,9 +1,7 @@
 package io.taig.otter.http
 
-import cats.Functor
-import cats.syntax.all.*
-import cats.ApplicativeThrow
 import cats.MonadThrow
+import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.http.HttpError.*
 

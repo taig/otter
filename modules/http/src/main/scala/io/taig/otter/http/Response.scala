@@ -13,5 +13,7 @@ final case class Response[+S[_], +T[_], A](
 
 object Response:
   final case class Data(code: Code, headers: Headers.Data, body: Array[Byte]):
+    def modifyHeaders(f: Headers.Data => Headers.Data): Response.Data = copy(headers = f(headers))
+
     def modifyBody(f: Array[Byte] => Array[Byte]): Response.Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Response.Data = modifyBody(_ => body)

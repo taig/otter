@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.Invariant
-import io.taig.otter.Violations
 
 sealed abstract class Request[+S[_], A] extends Product with Serializable:
   def method: Method

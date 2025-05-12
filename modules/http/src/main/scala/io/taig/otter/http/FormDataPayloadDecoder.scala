@@ -14,17 +14,8 @@ import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
 
 final class FormDataPayloadDecoder extends PayloadDecoder[FormData]:
-  override def apply[A](codec: FormData[A], contentType: MediaType, bytes: Array[Byte]): Validated[Violations, A] =
-    val charset = contentType.parameters
-      .get(ci"charset")
-      .headOption
-      .flatMap(value =>
-        try Charset.forName(value).some
-        catch { case _: IllegalArgumentException => none }
-      )
-      .getOrElse(StandardCharsets.UTF_8)
-
-    val value = new String(bytes, charset)
+  override def apply[A](codec: FormData[A], charset: Option[Charset], bytes: Array[Byte]): Validated[Violations, A] =
+    val value = new String(bytes, charset.getOrElse(StandardCharsets.UTF_8))
 
     FormDataPayloadDecoder.parser
       .parseAll(value)

@@ -21,6 +21,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Primitive(self)   => apply(codec = self, json)
     case Json.Record(self)      => apply(codec = self, json)
     case Json.Tuple(self)       => apply(codec = self, json)
+    case Json.Union(self)       => apply(codec = self, json)
 
   def apply[A](codec: Collection[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Collection.Indexed(codec, minimum, maximum, uniqueItems, _) =>

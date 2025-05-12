@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import cats.data.Chain
 
 sealed abstract class Url[A] extends Product with Serializable:
   def path: Path[?]

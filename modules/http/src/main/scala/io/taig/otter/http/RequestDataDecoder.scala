@@ -4,8 +4,8 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Headers.Data.contentType
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.header.MediaType
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
@@ -22,19 +22,15 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
       contentType: Option[MediaType],
       data: Request.Data
   ): Either[MediaTypeUnsupported | ValidationViolations, (Headers.Data, A)] = request match
-    case Request.Modify(self, f, _) => apply(request = self, contentType, data).map(_.map(f))
-    case request @ Request.Root(_, _, _) =>
-      apply(request, contentType, data).toEither.leftMap(ValidationViolations.apply)
+    case Request.Modify(self, f, _)  => apply(request = self, contentType, data).map(_.map(f))
+    case request: Request.Root[?, ?] => apply(request, contentType, data)
     case Request.Payload(self, bodies) =>
-      apply(request = self, contentType, data)
-        .leftMap(ValidationViolations.apply)
-        .toEither
-        .flatMap:
-          case (headers, (a, b)) =>
-            reader(codec = bodies, contentType, bytes = data.body) match
-              case Right(c)                               => (headers, (a, b, c)).asRight
-              case Left(MediaTypeUnsupported)             => MediaTypeUnsupported.asLeft
-              case Left(ValidationViolations(violations)) => ValidationViolations("body" /: violations).asLeft
+      apply(request = self, contentType, data).flatMap:
+        case (headers, (a, b)) =>
+          reader(codec = bodies, contentType, bytes = data.body) match
+            case Right(c)                               => (headers, (a, b, c)).asRight
+            case Left(MediaTypeUnsupported)             => MediaTypeUnsupported.asLeft
+            case Left(ValidationViolations(violations)) => ValidationViolations("body" /: violations).asLeft
     case Request.ZipHeaders(self, headers) =>
       HeadersDataDecoder.Remainders(headers, data = data.headers) match
         case Validated.Valid((headers, b)) =>
@@ -50,7 +46,7 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
       request: Request.Root[A, B],
       contentType: Option[MediaType],
       data: Request.Data
-  ): Validated[Violations, (Headers.Data, (A, B))] = Validated
+  ): Either[ValidationViolations, (Headers.Data, (A, B))] = (Validated
     .cond(
       test = data.method === request.method,
       (),
@@ -59,4 +55,4 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
     .leftMap("method" /: _) *> (
     UrlDataDecoder(url = request.url, data = data.url).leftMap("url" /: _),
     HeadersDataDecoder.Remainders(headers = request.headers, data = data.headers).leftMap("header" /: _)
-  ).tupled.map { case (a, (headers, b)) => (headers, (a, b)) }
+  ).tupled.map { case (a, (headers, b)) => (headers, (a, b)) }).toEither.leftMap(ValidationViolations.apply)

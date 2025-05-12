@@ -46,6 +46,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Nullable.Default(codec, _, _) => apply(codec = codec.value, a)
     case Nullable.Modify(self, _, g)   => apply(codec = self, g(a))
     case Nullable.Root(codec, _)       => a.fold(CirceJson.Null)(apply(codec = codec.value, _))
+    case Nullable.Void(_)              => CirceJson.Null
 
   @tailrec
   def apply[A](codec: Primitive[A], a: A): CirceJson = codec match

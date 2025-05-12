@@ -6,9 +6,9 @@ import cats.data.OptionT
 import cats.effect.Concurrent
 import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.CodeDsl.*
 import io.taig.otter.http.Headers.Data.accept
+import io.taig.otter.http.HttpError.*
 import org.http4s.Entity as Http4sEntity
 import org.http4s.Header as Http4sHeader
 import org.http4s.Headers as Http4sHeaders

@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
+import cats.MonadThrow
 import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Violations
 import io.taig.otter.http.header.MediaType
-import cats.MonadThrow
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
   def decoder: PayloadDecoder[S + T + U]
@@ -22,7 +22,8 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
 
     submit(request)
       .map: response =>
-        ResponseDataDecoder[T, U](decoder)(response = endpoint.response, response)
+        val reader = ResponseDataDecoder(decoder)
+        reader(response = endpoint.response, response)
       .rethrow
       .map(_ => ???)
 
