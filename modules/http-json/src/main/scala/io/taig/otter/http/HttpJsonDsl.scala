@@ -1,4 +1,5 @@
 package io.taig.otter.http
+
 import io.taig.otter.Json
 import io.taig.otter.JsonDsl.*
 import io.taig.otter.http.CodeDsl.*
@@ -15,13 +16,13 @@ trait HttpJsonDsl:
     codec
   )
 
-  def response[S[_], A](value: Result[S, A]): Response[S, Json, A] = Response(
+  def response[S[_], A](value: Results[S, A]): Response[S, Json, A] = Response(
     result = value,
     validation = result(
       unprocessableEntity,
       json(error("validation", field("violations", violations)))
-    ),
-    failure = result(internalServerError, json(string.nullable))
+    ).toResults,
+    failure = result(internalServerError, json(string.nullable)).toResults
   )
 
 object HttpJsonDsl extends HttpJsonDsl

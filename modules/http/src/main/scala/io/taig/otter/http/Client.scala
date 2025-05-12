@@ -19,6 +19,7 @@ abstract class Client[F[_], S[_], T[_], U[_]]:
       a: A
   )(using MonadThrow[F]): F[Validated[Violations, B]] =
     val request = RequestDataEncoder[S](encoder)(request = endpoint.request, contentType, a)
+
     submit(request)
       .map: response =>
         ResponseDataDecoder[T, U](decoder)(response = endpoint.response, response)

@@ -11,7 +11,7 @@ import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.header.Accept
 
 final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
-  val payload = ResultDataEncoder(encoder)
+  val writer = ResultsDataEncoder(encoder)
 
   def apply[A](
       response: Response[S, T, A],
@@ -29,13 +29,14 @@ final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debu
       response: Response[S, T, A],
       accept: Option[Accept],
       result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
-  ): Response.Data = result
-    .match
-      case Right(a) => payload(result = response.result, accept, a)
-      case Left(Failure(throwable)) =>
-        payload(result = response.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
-      case Left(MediaTypeUnsupported) =>
-        Response.Data(code = unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
-      case Left(ValidationViolations(violations)) =>
-        payload(result = response.validation, accept, violations)
-    .getOrElse(Response.Data(code = notAcceptable, headers = Chain.empty, body = Array.emptyByteArray))
+  ): Response.Data = ???
+  // result
+  //   .match
+  //     case Right(a) => writer(result = response.result, accept, a)
+  //     case Left(Failure(throwable)) =>
+  //       writer(result = response.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
+  //     case Left(MediaTypeUnsupported) =>
+  //       Response.Data(code = unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
+  //     case Left(ValidationViolations(violations)) =>
+  //       writer(result = response.validation, accept, violations)
+  //   .getOrElse(Response.Data(code = notAcceptable, headers = Chain.empty, body = Array.emptyByteArray))

@@ -32,8 +32,8 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
         .flatMap:
           case (headers, (a, b)) =>
             reader(codec = bodies, contentType, bytes = data.body) match
-              case Right(c)            => (headers, (a, b, c)).asRight
-              case Left(MediaTypeUnsupported) => MediaTypeUnsupported.asLeft
+              case Right(c)                               => (headers, (a, b, c)).asRight
+              case Left(MediaTypeUnsupported)             => MediaTypeUnsupported.asLeft
               case Left(ValidationViolations(violations)) => ValidationViolations("body" /: violations).asLeft
     case Request.ZipHeaders(self, headers) =>
       HeadersDataDecoder.Remainders(headers, data = data.headers) match

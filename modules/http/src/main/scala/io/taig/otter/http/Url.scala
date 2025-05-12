@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import cats.data.Chain
 
 sealed abstract class Url[A] extends Product with Serializable:
   def path: Path[?]
@@ -30,4 +31,9 @@ object Url:
     override def path: Path[?] = left.path.zip(right.path)
     override def queries: Queries[?] = left.queries.zip(right.queries)
 
-  final case class Data(path: Path.Data, queries: Queries.Data)
+  final case class Data(path: Path.Data, queries: Queries.Data):
+    def combine(url: Url.Data): Url.Data =
+      Url.Data(path = path ++ url.path, queries = queries ++ url.queries)
+
+  object Data:
+    val Empty: Url.Data = Data(path = Chain.empty, queries = Chain.empty)

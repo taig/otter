@@ -18,8 +18,8 @@ trait Invariant[Self[_]]:
 
   extension (self: Self[Unit])
     @targetName("asSingleton")
-    def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
-    def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
+    final def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+    final def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
 
   extension [A, B](self: Self[(A, B)])
     final def merge(using merge: Merge[A, B]): Self[merge.Out] =

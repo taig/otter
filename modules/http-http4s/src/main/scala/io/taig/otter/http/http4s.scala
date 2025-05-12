@@ -97,6 +97,6 @@ def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
     routes(request).getOrElseF:
       toRequestData(request).flatMap: request =>
         val accept = request.headers.accept.getOrElse(none)
-        val response = ResultDataEncoder(encoder)(app.notFound, accept, ())
+        val response = ResultsDataEncoder(encoder)(app.notFound, accept, ())
           .getOrElse(Response.Data(code = notFound, headers = Chain.empty, body = Array.emptyByteArray))
         fromResponseData(response)
