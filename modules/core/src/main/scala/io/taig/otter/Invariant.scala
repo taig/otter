@@ -17,8 +17,9 @@ trait Invariant[Self[_]]:
       self.imap(convert.to)(convert.from)
 
   extension (self: Self[Unit])
-    @targetName("asSingleton")
     final def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+
+    @targetName("asSingleton")
     final def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
 
   extension [A, B](self: Self[(A, B)])
@@ -29,16 +30,20 @@ trait Invariant[Self[_]]:
     override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
 
 object Invariant:
-  trait Coproduct[Self[_], Result[_]] extends Invariant[Self]:
+  trait Coproduct[Self[_], Element[_], Result[_]] extends Invariant[Self]:
     given result: Invariant[Result]
+
+    def fromElement[A](codec: Element[A]): Self[A]
 
     extension [A](self: Self[A])
       def orElse[B](codec: Self[B]): Result[Either[A, B]]
-      final def :+[B](codec: Self[B]): Result[Either[A, B]] = orElse(codec)
-      final def +:[B](codec: Self[B]): Result[Either[B, A]] = codec.orElse(self)
+
+      final def :+[B](codec: Element[B]): Result[Either[A, B]] = orElse(fromElement(codec))
+
+      final def +:[B](codec: Element[B]): Result[Either[B, A]] = fromElement(codec).orElse(self)
 
     extension [A <: Matchable](self: Self[A])
-      final inline def |[B <: Matchable](codec: Self[B]): Result[A | B] = self
+      final inline def or[B <: Matchable](codec: Self[B]): Result[A | B] = self
         .orElse(codec)
         .imap {
           case Left(a)  => a
@@ -47,6 +52,8 @@ object Invariant:
           case a: A => Left(a)
           case b: B => Right(b)
         }
+
+      final inline def |[B <: Matchable](codec: Element[B]): Result[A | B] = self.or(fromElement(codec))
 
   trait Product[Self[_], Element[_], Result[_]] extends Invariant[Self]:
     given result: Invariant[Result]

@@ -29,6 +29,13 @@ object Codec:
         final def nullable: Optional[Option[A]] = optional.nullable(self)
         final def nullable(default: A): Optional[A] = optional.nullable(self, default)
 
+    trait Unionable[Self[_], Union[_]](using union: Codec.Union[Union, Self])
+        extends Codec[Self],
+          Invariant.Coproduct[Self, Self, Union]:
+      extension [A](self: Self[A])
+        final override def orElse[B](codec: Self[B]): Union[Either[A, B]] =
+          union.one(self).orElse(union.one(codec))
+
     trait Tupleable[Self[_], Tuple[_]](using tuple: Codec.Tuple[Tuple, Self])
         extends Codec[Self],
           Invariant.Product[Self, Self, Tuple]:
@@ -409,6 +416,8 @@ object Codec:
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
 
+  trait Sum[Self[_], Branch[_]] extends Codec[Self], Invariant.Coproduct[Self, Branch, Self] {}
+
   trait Tuple[Self[_], Value[_]] extends Codec[Self], Invariant.Product[Self, Value, Self]:
     final override def result: Invariant[Self] = this
     final override def fromElement[A](codec: Value[A]): Self[A] = one(codec)
@@ -432,59 +441,8 @@ object Codec:
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
 
-  trait Union[Self[_], Value[_]] extends Union.Untagged[Self, Value]:
-    extension [A](self: Self[A])
-      def discriminator: Option[Discriminator]
-      def untagged: Self[A]
-      def keyed: Self[A]
-      def merged(discriminator: Discriminator.Merged): Self[A]
-      def merged: Self[A] = merged(Discriminator.Merged.Default)
-      def explicit(discriminator: Discriminator.Explicit): Self[A]
-      final def explicit: Self[A] = explicit(Discriminator.Explicit.Default)
-
-  object Union:
-    trait Untagged[Self[_], Value[_]] extends Codec[Self], Invariant.Coproduct[Self, Self]:
-      final override def result: Invariant[Self] = this
-
-      def branch[A](name: String, codec: => Value[A]): Self[A]
-
-  //   object Untagged:
-  //     def apply[Self[_], Value[_]](
-  //         lift: [A] => (self: Self.Union.Untagged[Value, A]) => Self[A],
-  //         extract: [A] => (self: Self[A]) => Self.Union.Untagged[Value, A]
-  //     ): Codec.Union.Untagged[Self, Value] = new Untagged[Self, Value]:
-  //       override def branch[A](name: String, codec: => Value[A]): Self[A] = lift(
-  //         Self.Union.Untagged.Branch(codec = Reference.later(codec), name = name, metadata = Metadata.Empty)
-  //       )
-
-  //       extension [A](self: Self[A])
-  //         override def metadata: Metadata = extract(self).metadata
-  //         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-  //         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-  //         override def orElse[B](codec: Self[B]): Self[Either[A, B]] = lift(extract(self).orElse(extract(codec)))
-
-  //   def apply[Self[_], Value[_]](
-  //       lift: [A] => (self: Self.Union[Value, A]) => Self[A],
-  //       extract: [A] => (self: Self[A]) => Self.Union[Value, A]
-  //   ): Codec.Union[Self, Value] = new Union[Self, Value]:
-  //     override def branch[A](name: String, codec: => Value[A]): Self[A] = lift(
-  //       Self.Union.Untagged.Branch(codec = Reference.later(codec), name = name, metadata = Metadata.Empty)
-  //     )
-
-  //     extension [A](self: Self[A])
-  //       override def metadata: Metadata = extract(self).metadata
-  //       override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-  //       override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-  //       override def orElse[B](codec: Self[B]): Self[Either[A, B]] = lift(extract(self).orElse(extract(codec)))
-  //       override def discriminator: Option[Discriminator] = extract(self) match
-  //         case _: Self.Union.Untagged[?, ?]   => none
-  //         case codec: Self.Union.Tagged[?, ?] => codec.discriminator.some
-  //       override def untagged: Self[A] = lift(extract(self).untagged)
-  //       override def keyed: Self[A] = lift(extract(self).keyed)
-  //       override def merged(discriminator: Discriminator.Merged): Self[A] =
-  //         lift(extract(self).merged(discriminator))
-  //       override def explicit(discriminator: Discriminator.Explicit): Self[A] =
-  //         lift(extract(self).explicit(discriminator))
+  trait Union[Self[_], -Value[_]] extends Codec[Self], Invariant.Coproduct[Self, Value, Self]:
+    def one[A](codec: => Value[A]): Self[A]
 
   trait Field[Self[_], -Key[_], -Value[_], Record[_]](using record: Invariant[Record])
       extends Codec[Self],
@@ -518,3 +476,12 @@ object Codec:
           override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
           override def zip[B](codec: Self[B]): Record[(A, B)] = toRecord.zip(codec.toRecord)
           override def toRecord: Record[A] = codec.record(self)
+
+  trait Branch[Self[_], -Key[_], -Value[_], Sum[_]](using sum: Invariant[Sum])
+      extends Codec[Self],
+        Invariant.Coproduct[Self, Self, Sum]:
+    override def result: Invariant[Sum] = sum
+
+    def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+
+    extension [A](self: Self[A]) def toSum: Sum[A]

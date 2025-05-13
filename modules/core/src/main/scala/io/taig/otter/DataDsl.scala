@@ -1,23 +1,27 @@
 package io.taig.otter
 
 trait DataDsl[
-    +Collection[a] <: Value[a],
-    +Dictionary[a] <: Value[a],
-    +Nullable[a] <: Value[a],
-    +Primitive[a] <: Value[a],
-    +Union[a] <: Value[a],
+    Collection[a] <: Value[a],
+    Dictionary[a] <: Value[a],
+    Nullable[a] <: Value[a],
+    Primitive[a] <: Value[a],
+    Sum[a] <: Value[a],
+    Union[a] <: Value[a],
+    Branch[_],
     Key[_],
     -Value[_]
 ](using
+    Codec.Branch[Branch, Key, Value, Sum],
     Codec.Collection[Collection, Value],
     Codec.Dictionary[Dictionary, Key, Value],
     Codec.Nullable[Nullable, Value],
+    Codec.Sum[Sum, Branch],
     Codec.Union[Union, Value]
-) extends CollectionDsl[Collection, Value],
+) extends BranchDsl.Primitive.String[Branch, Key, Value, Sum],
+      CollectionDsl[Collection, Value],
       DictionaryDsl[Dictionary, Key, Value],
       NullableDsl[Nullable, Value],
-      PrimitiveDsl[Primitive],
-      UnionDsl[Union, Value]:
+      PrimitiveDsl[Primitive]:
 
   def key: PrimitiveDsl.String[Key]
 
@@ -27,7 +31,7 @@ trait DataDsl[
       case data: Data.Value => Some(data)
     }
 
-    val number: Union[Data.Number] =
+    val number: Sum[Data.Number] =
       branch("bigDecimal", jBigDecimal) |
         branch("bigInterger", jBigInteger) |
         branch("long", long) |
@@ -35,9 +39,9 @@ trait DataDsl[
         branch("float", float) |
         branch("double", double)
 
-    val primitive: Union[Data.Primitive] = number | branch("boolean", boolean) | branch("string", string)
+    val primitive: Sum[Data.Primitive] = number | branch("boolean", boolean) | branch("string", string)
 
-    val value: Union[Data.Value] = primitive | branch("object", obj) | branch("array", array)
+    val value: Sum[Data.Value] = primitive | branch("object", obj) | branch("array", array)
 
     def obj[A <: Data.Any](codec: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, codec).imap(Data.Object[A])(_.values)

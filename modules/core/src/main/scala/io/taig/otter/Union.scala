@@ -6,7 +6,7 @@ import cats.data.NonEmptyChain
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def codecs: NonEmptyChain[Reference[S, ?]]
-  
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Union[S, A]
 
@@ -18,8 +18,7 @@ sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A]
 
 object Union:
-  final private[otter] case class Modify[S[_], A, B](self: Union[S, A], f: A => B, g: B => A)
-      extends Union[S, B]:
+  final private[otter] case class Modify[S[_], A, B](self: Union[S, A], f: A => B, g: B => A) extends Union[S, B]:
     export self.{codecs, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Union[S, B] = copy(self = self.modifyMetadata(f))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, B] = copy(self = self.mapK(fK))
@@ -35,8 +34,7 @@ object Union:
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, Either[A, B]] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
 
-  final private[otter] case class Root[S[_], A](codec: Reference[S, A], metadata: Metadata)
-      extends Union[S, A]:
+  final private[otter] case class Root[S[_], A](codec: Reference[S, A], metadata: Metadata) extends Union[S, A]:
     override def codecs: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(codec)
     override def modifyMetadata(f: Metadata => Metadata): Union[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A] = copy(codec = codec.mapK(fK))
