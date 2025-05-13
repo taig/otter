@@ -77,10 +77,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Modify(self, f, g) => apply(codec = self, g(a))
     case Root(key, value, _) =>
       (
-        JsonKeyPrinter(
-          codec = key.self.value,
-          key.value
-        ), // ReferenceConstantPrinter(printer = JsonKeyPrinter)(reference = key),
+        JsonKeyPrinter(codec = key.self.value, key.value),
         apply(codec = value.value, a)
       ) :: Nil
     case Optional(self) => a.fold(Nil)(apply(codec = self, _))

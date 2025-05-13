@@ -250,7 +250,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
 
   def apply[A](codec: Union[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case codec: Union.Untagged[Json, A] => apply(codec, json)
-    case codec: Union.Tagged[Json, A]   => ??? // apply(codec, json)
+    case codec: Union.Tagged[Json, A]   => apply(codec, json)
 
   def apply[A](codec: Union.Untagged[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Union.Untagged.OrElse(left, right, _) => union(left, right, json)
@@ -265,4 +265,4 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   ): Validated[Violations, Either[A, B]] =
     apply(codec = left, json).map(_.asLeft).findValid(apply(codec = right, json).map(_.asRight))
 
-  def apply[A](codec: Union.Tagged[Json, A], json: CirceJson): Validated[Violations, A] = ???
+  def apply[A](codec: Union.Tagged[Json, A], json: CirceJson): Validated[Violations, A] = ??? // TODO ugh

@@ -3,14 +3,16 @@ package io.taig.otter.http
 import io.taig.otter.http.header.MediaTypeDsl
 
 trait HttpDsl extends AppDsl, BodyDsl, EndpointDsl, RequestDsl, ResponseDsl, ResultsDsl, ResultDsl, SegmentDsl, UrlDsl:
-  object code extends CodeDsl
-  object header extends HttpHeaderDsl
-  object method extends MethodDsl
+  lazy val code: CodeDsl = CodeDsl
 
-  def formData: FormDataDsl = FormDataDsl
+  lazy val header: HttpHeaderDsl = HttpHeaderDsl
 
-  val parameter: HttpParameterDsl = HttpParameterDsl
+  lazy val method: MethodDsl = MethodDsl
 
-  val mediaType: MediaTypeDsl = MediaTypeDsl
+  lazy val formData: FormDataDsl = FormDataDsl
+
+  lazy val parameter: HttpParameterDsl = HttpParameterDsl
+
+  lazy val mediaType: MediaTypeDsl = MediaTypeDsl
 
 object HttpDsl extends HttpDsl

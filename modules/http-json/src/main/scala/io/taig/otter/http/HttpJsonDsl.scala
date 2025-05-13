@@ -4,11 +4,12 @@ import io.taig.otter.Json
 import io.taig.otter.JsonDsl.*
 import io.taig.otter.http.CodeDsl.*
 import io.taig.otter.http.ResultDsl.*
+import io.taig.otter.http.BodyDsl.*
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameters
 
 trait HttpJsonDsl:
-  def json[A](codec: => Json[A]): Body[Json, A] = BodyDsl.body(
+  def json[A](codec: => Json[A]): Body[Json, A] = body(
     mediaType = MediaType(
       tpe = MediaType.Type(primary = "application", secondary = "json"),
       parameters = Parameters.Empty
