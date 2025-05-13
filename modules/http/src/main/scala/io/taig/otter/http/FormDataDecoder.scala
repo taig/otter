@@ -58,29 +58,30 @@ object FormDataDecoder:
     case Dictionary.Modify(self, f, _) => apply(codec = self, data).map(f)
 
   def apply[A](
-      codec: Record[FormData.Key, FormData.Value, A],
+      codec: Record[FormData.Field, A],
       data: List[(String, Option[String])]
-  ): Validated[Violations, (List[(String, Option[String])], A)] = codec match
-    case Record.Empty(_) => (data, ()).valid
-    case Record.Field(key, codec, _) =>
-      val name = FormDataKeyPrinter(codec = key.self.value, key.value)
-      val (remainders, result) = data.collectFirstWithRemainders { case (`name`, json) => json }
-      result
-        .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
-        .andThen(apply(codec = codec.value, _))
-        .leftMap(name /: _)
-        .tupleLeft(remainders)
-    case Record.Modify(self, f, g) => apply(codec = self, data).map(_.map(f))
-    case Record.Optional(self) =>
-      val lookup = data.map((key, _) => key).toSet
+  ): Validated[Violations, (List[(String, Option[String])], A)] = ???
+  // codec match
+  //   case Record.Empty(_) => (data, ()).valid
+  //   case Record.Field(key, codec, _) =>
+  //     val name = FormDataKeyPrinter(codec = key.self.value, key.value)
+  //     val (remainders, result) = data.collectFirstWithRemainders { case (`name`, json) => json }
+  //     result
+  //       .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
+  //       .andThen(apply(codec = codec.value, _))
+  //       .leftMap(name /: _)
+  //       .tupleLeft(remainders)
+  //   case Record.Modify(self, f, g) => apply(codec = self, data).map(_.map(f))
+  //   case Record.Optional(self) =>
+  //     val lookup = data.map((key, _) => key).toSet
 
-      val allKeysAbsent = codec.fields
-        .map((key, _) => FormDataKeyPrinter(codec = key.self.value, key.value))
-        .forall(lookup.contains_)
+  //     val allKeysAbsent = codec.fields
+  //       .map((key, _) => FormDataKeyPrinter(codec = key.self.value, key.value))
+  //       .forall(lookup.contains_)
 
-      if allKeysAbsent then (data, none).valid else apply(codec = self, data).map(_.map(_.some))
-    case Record.Zip(left, right, _) =>
-      apply(codec = left, data) match
-        case Validated.Valid((data, a)) => apply(codec = right, data).map(_.tupleLeft(a))
-        case Validated.Invalid(violations) =>
-          apply(codec = right, data).fold(violations |+| _, _ => violations).invalid
+  //     if allKeysAbsent then (data, none).valid else apply(codec = self, data).map(_.map(_.some))
+  //   case Record.Zip(left, right, _) =>
+  //     apply(codec = left, data) match
+  //       case Validated.Valid((data, a)) => apply(codec = right, data).map(_.tupleLeft(a))
+  //       case Validated.Invalid(violations) =>
+  //         apply(codec = right, data).fold(violations |+| _, _ => violations).invalid

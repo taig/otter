@@ -14,13 +14,14 @@ object FormData:
       extract = [A] => (codec: FormData.Dictionary[A]) => codec.self
     )
 
-  final case class Record[A](self: Self.Record[FormData.Key, FormData.Value, A]) extends FormData[A]
+  final case class Record[A](self: Self.Record[FormData.Field, A]) extends FormData[A]
 
   object Record:
-    given codec: Codec.Record[FormData.Record, FormData.Key, FormData.Value] = Codec.Record(
-      lift = [A] => (self: Self.Record[FormData.Key, FormData.Value, A]) => Record(self),
-      extract = [A] => (codec: FormData.Record[A]) => codec.self
-    )
+    given codec: Codec.Record[FormData.Record, FormData.Field] =
+      Codec.Record(
+        lift = [A] => (self: Self.Record[FormData.Field, A]) => Record(self),
+        extract = [A] => (codec: FormData.Record[A]) => codec.self
+      )
 
   sealed abstract class Key[A] extends Product with Serializable
 
@@ -51,3 +52,11 @@ object FormData:
         lift = [A] => (self: Self.Primitive.String[A]) => Primitive(self),
         extract = [A] => (codec: FormData.Value.Primitive[A]) => codec.self
       )
+
+  type Field[A] = Self.Field[FormData.Key, FormData.Value, A]
+
+  given codec: Codec.Field[FormData.Field, FormData.Key, FormData.Value, FormData.Record] =
+    Codec.Field(
+      lift = [A] => (self: Self.Field[FormData.Key, FormData.Value, A]) => self,
+      extract = [A] => (codec: FormData.Field[A]) => codec
+    )

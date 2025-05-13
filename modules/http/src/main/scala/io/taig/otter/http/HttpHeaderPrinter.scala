@@ -19,7 +19,7 @@ final class HttpHeaderPrinter(explode: Boolean) extends Printer[Http.Header]:
   def apply[A](codec: Http.Header.Object[A], a: A): Chain[(String, String)] = codec match
     case Http.Header.Object.Dictionary(self) =>
       Chain.fromSeq(DictionaryPrinter(printer = HttpHeaderValuePrinter)(codec = self, a))
-    case Http.Header.Object.Record(self) => RecordPrinter(printer = HttpHeaderValuePrinter)(codec = self, a)
+    case Http.Header.Object.Record(self) => ??? // RecordPrinter(printer = HttpHeaderValuePrinter)(codec = self, a)
 
   def array(values: Chain[String]): String = values.map(escape(_, ",")).mkString_(",")
 

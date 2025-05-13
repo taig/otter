@@ -1,0 +1,29 @@
+package io.taig.otter
+
+sealed abstract class Field[+S[_], +T[_], A]:
+  def key: Reference.Constant[S, ?]
+  def value: Reference[T, ?]
+
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Field[S, T, A]
+
+  final def imap[B](f: A => B)(g: B => A): Field[S, T, B] = Field.Modify(self = this, f, g)
+  final def optional: Field[S, T, Option[A]] = Field.Optional(self = this)
+
+object Field:
+  final private[otter] case class Modify[+S[_], +T[_], A, B](self: Field[S, T, A], f: A => B, g: B => A)
+      extends Field[S, T, B]:
+    override def modifyMetadata(f: Metadata => Metadata): Field[S, T, B] = copy(self = self.modifyMetadata(f))
+    export self.{key, metadata, value}
+
+  final private[otter] case class Root[+S[_], +T[_], A, B](
+      key: Reference.Constant[S, A],
+      value: Reference[T, B],
+      metadata: Metadata
+  ) extends Field[S, T, B]:
+    override def modifyMetadata(f: Metadata => Metadata): Field[S, T, B] = copy(metadata = f(metadata))
+
+  final private[otter] case class Optional[+S[_], +T[_], A](self: Field[S, T, A]) extends Field[S, T, Option[A]]:
+    export self.{key, metadata, value}
+    override def modifyMetadata(f: Metadata => Metadata): Field[S, T, Option[A]] =
+      copy(self = self.modifyMetadata(f))

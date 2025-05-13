@@ -123,13 +123,12 @@ object Http:
             extract = [A] => (codec: Http.Header.Object.Dictionary[A]) => codec.self
           )
 
-      final case class Record[A](self: Self.Record[Http.Header.Value, Http.Header.Value, A])
-          extends Http.Header.Object[A]
+      final case class Record[A](self: Self.Record[Http.Header.Field, A]) extends Http.Header.Object[A]
 
       object Record:
-        given codec: Codec.Record[Http.Header.Object.Record, Http.Header.Value, Http.Header.Value] =
+        given codec: Codec.Record[Http.Header.Object.Record, Http.Header.Field] =
           Codec.Record(
-            lift = [A] => (self: Self.Record[Http.Header.Value, Http.Header.Value, A]) => Record(self),
+            lift = [A] => (self: Self.Record[Http.Header.Field, A]) => Record(self),
             extract = [A] => (codec: Http.Header.Object.Record[A]) => codec.self
           )
 
@@ -146,6 +145,14 @@ object Http:
           override def imap[B](f: A => B)(g: B => A): Object[B] = self match
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
+
+    type Field[A] = Self.Field[Http.Header.Value, Http.Header.Value, A]
+
+    given codec: Codec.Field[Http.Header.Field, Http.Header.Value, Http.Header.Value, Http.Header.Object.Record] =
+      Codec.Field(
+        lift = [A] => (self: Self.Field[Http.Header.Value, Http.Header.Value, A]) => self,
+        extract = [A] => (codec: Http.Header.Field[A]) => codec
+      )
 
   sealed abstract class Query[A] extends Product with Serializable
 
@@ -259,12 +266,12 @@ object Http:
             extract = [A] => (codec: Http.Query.Object.Dictionary[A]) => codec.self
           )
 
-      final case class Record[A](self: Self.Record[Http.Query.Value, Http.Query.Value, A]) extends Http.Query.Object[A]
+      final case class Record[A](self: Self.Record[Http.Query.Field, A]) extends Http.Query.Object[A]
 
       object Record:
-        given codec: Codec.Record[Http.Query.Object.Record, Http.Query.Value, Http.Query.Value] =
+        given codec: Codec.Record[Http.Query.Object.Record, Http.Query.Field] =
           Codec.Record(
-            lift = [A] => (self: Self.Record[Http.Query.Value, Http.Query.Value, A]) => Record(self),
+            lift = [A] => (self: Self.Record[Http.Query.Field, A]) => Record(self),
             extract = [A] => (codec: Http.Query.Object.Record[A]) => codec.self
           )
 
@@ -288,6 +295,14 @@ object Http:
       given codec: Codec.Nullable[Http.Query.Optional, Http.Query] = Codec.Nullable(
         lift = [A] => (self: Self.Nullable[Http.Query, A]) => Optional(self),
         extract = [A] => (codec: Http.Query.Optional[A]) => codec.self
+      )
+
+    type Field[A] = Self.Field[Http.Query.Value, Http.Query.Value, A]
+
+    given codec: Codec.Field[Http.Query.Field, Http.Query.Value, Http.Query.Value, Http.Query.Object.Record] =
+      Codec.Field(
+        lift = [A] => (self: Self.Field[Http.Query.Value, Http.Query.Value, A]) => self,
+        extract = [A] => (codec: Http.Query.Field[A]) => codec
       )
 
   sealed abstract class Parameter[A] extends Product with Serializable
@@ -402,13 +417,12 @@ object Http:
             extract = [A] => (codec: Http.Parameter.Object.Dictionary[A]) => codec.self
           )
 
-      final case class Record[A](self: Self.Record[Http.Parameter.Value, Http.Parameter.Value, A])
-          extends Http.Parameter.Object[A]
+      final case class Record[A](self: Self.Record[Http.Parameter.Field, A]) extends Http.Parameter.Object[A]
 
       object Record:
-        given codec: Codec.Record[Http.Parameter.Object.Record, Http.Parameter.Value, Http.Parameter.Value] =
+        given codec: Codec.Record[Http.Parameter.Object.Record, Http.Parameter.Field] =
           Codec.Record(
-            lift = [A] => (self: Self.Record[Http.Parameter.Value, Http.Parameter.Value, A]) => Record(self),
+            lift = [A] => (self: Self.Record[Http.Parameter.Field, A]) => Record(self),
             extract = [A] => (codec: Http.Parameter.Object.Record[A]) => codec.self
           )
 
@@ -425,6 +439,15 @@ object Http:
           override def imap[B](f: A => B)(g: B => A): Object[B] = self match
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
+
+    type Field[A] = Self.Field[Http.Parameter.Value, Http.Parameter.Value, A]
+
+    given codec
+        : Codec.Field[Http.Parameter.Field, Http.Parameter.Value, Http.Parameter.Value, Http.Parameter.Object.Record] =
+      Codec.Field(
+        lift = [A] => (self: Self.Field[Http.Parameter.Value, Http.Parameter.Value, A]) => self,
+        extract = [A] => (codec: Http.Parameter.Field[A]) => codec
+      )
 
 extension [A](self: Either[Parser.Error, A])
   private[otter] def toValidatedViolations(tpe: String, value: String): Validated[Violations, A] =

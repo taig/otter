@@ -46,7 +46,8 @@ final class HttpParameterPrinter(explode: Boolean, style: Header.Style):
   def apply[A](codec: Http.Parameter.Object[A], a: A): Chain[(String, String)] = codec match
     case Http.Parameter.Object.Dictionary(self) =>
       Chain.fromSeq(DictionaryPrinter(printer = HttpParameterValuePrinter)(codec = self, a))
-    case Http.Parameter.Object.Record(self) => RecordPrinter(printer = HttpParameterValuePrinter)(codec = self, a)
+    case Http.Parameter.Object.Record(self) =>
+      ??? // RecordPrinter(printer = HttpParameterValuePrinter)(codec = self, a)
 
   def apply[A](name: String, codec: Http.Parameter.Value[A], a: A): String =
     val value = HttpParameterValuePrinter(codec, a)

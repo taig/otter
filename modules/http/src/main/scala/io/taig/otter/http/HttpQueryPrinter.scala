@@ -21,7 +21,7 @@ final class HttpQueryPrinter(explode: Boolean, style: Query.Style):
   def apply[A](codec: Http.Query.Object[A], a: A): Chain[(String, String)] = codec match
     case Http.Query.Object.Dictionary(self) =>
       Chain.fromSeq(DictionaryPrinter(printer = HttpQueryValuePrinter)(codec = self, a))
-    case Http.Query.Object.Record(self) => RecordPrinter(printer = HttpQueryValuePrinter)(codec = self, a)
+    case Http.Query.Object.Record(self) => ??? // RecordPrinter(printer = HttpQueryValuePrinter)(codec = self, a)
 
   def apply[A](name: String, codec: Http.Query.Optional[A], a: A): Chain[(String, Option[String])] =
     apply(name, codec = codec.self, a)

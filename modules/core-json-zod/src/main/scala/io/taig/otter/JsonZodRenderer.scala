@@ -49,13 +49,13 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
         .fold(State.pure("z.void()"))(self.apply(_).map(expression => show"z.nullable(${expression})"))
 
     // TODO figure out a proper way to encode partially optional objects
-    def apply(codec: Record[Json.Key, Json, ?]): ZodState[Chain[(String, Expression)]] = codec match
+    def apply(codec: Record[Json.Field, ?]): ZodState[Chain[(String, Expression)]] = codec match
       case Record.Empty(_) => State.pure(Chain.empty)
-      case Record.Field(key, value, _) =>
-        self
-          .apply(codec = value.value)
-          .map: value =>
-            Chain.one(ReferenceConstantPrinter(printer = JsonKeyPrinter)(key), value)
+      // case Record.Field(key, value, _) =>
+      //   self
+      //     .apply(codec = value.value)
+      //     .map: value =>
+      //       Chain.one(ReferenceConstantPrinter(printer = JsonKeyPrinter)(key), value)
       case Record.Modify(self, _, _) => apply(codec = self)
       case Record.Optional(self) =>
         apply(codec = self).map: values =>

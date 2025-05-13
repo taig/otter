@@ -53,11 +53,11 @@ object Json:
       extract = [A] => (codec: Json.Primitive[A]) => codec.self
     )
 
-  final case class Record[A](self: Self.Record[Json.Key, Json, A]) extends Json[A]
+  final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
 
   object Record:
-    given codec: Codec.Record[Json.Record, Json.Key, Json] = Codec.Record(
-      lift = [A] => (self: Self.Record[Json.Key, Json, A]) => Record(self),
+    given codec: Codec.Record[Json.Record, Json.Field] = Codec.Record(
+      lift = [A] => (self: Self.Record[Json.Field, A]) => Record(self),
       extract = [A] => (codec: Json.Record[A]) => codec.self
     )
 
@@ -131,6 +131,13 @@ object Json:
           case Key.Enumeration(self) => Enumeration(self.imap(f)(g))
           case Key.Primitive(self)   => Primitive(self.imap(f)(g))
           case Key.Union(self)       => Union(self.imap(f)(g))
+
+  type Field[A] = Self.Field[Json.Key, Json, A]
+
+  given codec: Codec.Field[Json.Field, Json.Key, Json, Json.Record] = Codec.Field(
+    lift = [A] => (self: Self.Field[Json.Key, Json, A]) => self,
+    extract = [A] => (codec: Json.Field[A]) => codec
+  )
 
   given (Codec.Extension.Nullable[Json, Json.Nullable] & Codec.Extension.Tupleable[Json, Json.Tuple]) =
     new Codec.Extension.Nullable[Json, Json.Nullable] with Codec.Extension.Tupleable[Json, Json.Tuple]:

@@ -28,10 +28,10 @@ final class HttpHeaderParser(explode: Boolean) extends Parser[Http.Header]:
   def apply[A](codec: Dictionary[Http.Header.Value, Http.Header.Value, A], value: String): Validated[Violations, A] =
     obj(value).andThen(DictionaryParser(parser = HttpHeaderValueParser)(codec, _))
 
-  def apply[A](codec: Record[Http.Header.Value, Http.Header.Value, A], value: String): Validated[Violations, A] =
-    obj(value).andThen(
-      RecordParser(parser = HttpHeaderValueParser, printer = HttpHeaderValuePrinter)(codec, _).map((_, a) => a)
-    )
+  def apply[A](codec: Record[Http.Header.Field, A], value: String): Validated[Violations, A] = ???
+  // obj(value).andThen(
+  //   RecordParser(parser = HttpHeaderValueParser, printer = HttpHeaderValuePrinter)(codec, _).map((_, a) => a)
+  // )
 
   def obj(value: String): Validated[Violations, List[(String, String)]] =
     val values =

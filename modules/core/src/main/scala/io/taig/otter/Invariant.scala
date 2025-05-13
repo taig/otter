@@ -56,7 +56,7 @@ object Invariant:
     extension [A](self: Self[A])
       def zip[B](codec: Self[B]): Result[(A, B)]
 
-      def merge[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
+      final def merge[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
         zip(codec).imap(merge.apply)(merge.unapply)
 
       final def :*[B](codec: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =

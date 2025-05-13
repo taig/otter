@@ -1,12 +1,12 @@
 package io.taig.otter.http
 
 import io.taig.otter.PrimitiveDsl
-import io.taig.otter.RecordDsl
+import io.taig.otter.FieldDsl
 
 trait FormDataDsl
     extends PrimitiveDsl.String[FormData.Value.Primitive],
-      RecordDsl[FormData.Record, FormData.Key, FormData.Value],
-      RecordDsl.Primitive.String[FormData.Record, FormData.Key, FormData.Value]:
+      FieldDsl[FormData.Field, FormData.Key, FormData.Value, FormData.Record],
+      FieldDsl.Primitive.String[FormData.Field, FormData.Key, FormData.Value, FormData.Record]:
   final override def key: PrimitiveDsl.String[FormData.Key] = FormDataKeyDsl
 
 object FormDataDsl extends FormDataDsl

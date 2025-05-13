@@ -9,7 +9,7 @@ trait HttpHeaderDsl
       DictionaryDsl[Http.Header.Object.Dictionary, Http.Header.Value, Http.Header.Value],
       EnumerationDsl[Http.Header.Value.Enumeration, Http.Header.Value.Primitive],
       PrimitiveDsl.String[Http.Header.Value.Primitive],
-      RecordDsl.Primitive.String[Http.Header.Object.Record, Http.Header.Value, Http.Header.Value],
+      FieldDsl.Primitive.String[Http.Header.Field, Http.Header.Value, Http.Header.Value, Http.Header.Object.Record],
       TupleDsl[Http.Header.Array.Tuple, Http.Header.Value],
       UnionDsl.Untagged[Http.Header.Value.Union, Http.Header.Value]:
   override def key: PrimitiveDsl.String[Http.Header.Value] = this

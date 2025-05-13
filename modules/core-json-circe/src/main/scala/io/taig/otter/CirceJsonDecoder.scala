@@ -161,34 +161,34 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     .toValidated
 
   // TODO support for rejecting additional properties
-  def apply[A](codec: Record[Json.Key, Json, A], json: CirceJson): Validated[Violations, A] =
+  def apply[A](codec: Record[Json.Field, A], json: CirceJson): Validated[Violations, A] =
     json.asObject
       .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
       .andThen(json => apply(codec, json = json.toList).map((_, a) => a))
 
   def apply[A](
-      codec: Record[Json.Key, Json, A],
+      codec: Record[Json.Field, A],
       json: List[(String, CirceJson)]
   ): Validated[Violations, (List[(String, CirceJson)], A)] = codec match
     case Record.Empty(_) => (json, ()).valid
-    case Record.Field(key, codec, _) =>
-      val name = JsonKeyReferenceConstantPrinter(reference = key)
-      val (remainders, result) = json.collectFirstWithRemainders { case (`name`, json) => json }
-      result
-        .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
-        .andThen(apply(codec = codec.value, _))
-        .leftMap(name /: _)
-        .tupleLeft(remainders)
+    // case Record.Field(key, codec, _) =>
+    //   val name = JsonKeyReferenceConstantPrinter(reference = key)
+    //   val (remainders, result) = json.collectFirstWithRemainders { case (`name`, json) => json }
+    //   result
+    //     .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
+    //     .andThen(apply(codec = codec.value, _))
+    //     .leftMap(name /: _)
+    //     .tupleLeft(remainders)
     case Record.Modify(self, f, _) => apply(codec = self, json).map(_.map(f))
-    case Record.Optional(self) =>
-      val lookup = json.map((key, _) => key).toSet
+    // case Record.Optional(self) =>
+    //   val lookup = json.map((key, _) => key).toSet
 
-      val allKeysAbsent = codec.fields
-        .map((key, _) => JsonKeyReferenceConstantPrinter(reference = key))
-        .forall(lookup.contains_)
+    //   val allKeysAbsent = codec.fields
+    //     .map((key, _) => JsonKeyReferenceConstantPrinter(reference = key))
+    //     .forall(lookup.contains_)
 
-      if allKeysAbsent then (json, none).valid[Violations]
-      else apply(codec = self, json).map(_.map(_.some))
+    //   if allKeysAbsent then (json, none).valid[Violations]
+    //   else apply(codec = self, json).map(_.map(_.some))
     case Record.Zip(left, right, _) =>
       apply(codec = left, json) match
         case Validated.Valid((json, a)) => apply(codec = right, json).map(_.tupleLeft(a))

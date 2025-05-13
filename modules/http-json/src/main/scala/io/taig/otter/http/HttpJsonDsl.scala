@@ -20,7 +20,7 @@ trait HttpJsonDsl:
     results,
     validation = result(
       unprocessableEntity,
-      json(error("validation", field("violations", violations)))
+      json(error("validation", field("violations", violations).toRecord))
     ).toResults,
     failure = result(internalServerError, json(string.nullable)).toResults
   )

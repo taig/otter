@@ -385,27 +385,22 @@ object Codec:
         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
 
-  trait Record[Self[_], -Key[_], -Value[_]] extends Codec[Self], Invariant.Product[Self, Self, Self]:
+  trait Record[Self[_], Field[_]] extends Codec[Self], Invariant.Product[Self, Field, Self]:
     final override def result: Invariant[Self] = this
 
-    def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+    def record[A](field: => Field[A]): Self[A]
 
     extension [A](self: Self[A]) def optional: Self[Option[A]]
 
   object Record:
-    def apply[Self[_], Key[_], Value[_]](
-        lift: [A] => (self: Self.Record[Key, Value, A]) => Self[A],
-        extract: [A] => (self: Self[A]) => Self.Record[Key, Value, A]
-    ): Codec.Record[Self, Key, Value] = new Codec.Record[Self, Key, Value]:
-      final override inline def fromElement[A](codec: Self[A]): Self[A] = codec
+    def apply[Self[_], Field[_]](
+        lift: [A] => (self: Self.Record[Field, A]) => Self[A],
+        extract: [A] => (self: Self[A]) => Self.Record[Field, A]
+    ): Codec.Record[Self, Field] = new Codec.Record[Self, Field]:
+      override def fromElement[A](codec: Field[A]): Self[A] = record(codec)
 
-      override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = lift(
-        Self.Record.Field(
-          key = Reference.Constant(self = Reference.later(key), value = name),
-          value = Reference.later(value),
-          metadata = Metadata.Empty
-        )
-      )
+      final override def record[A](field: => Field[A]): Self[A] =
+        lift(Self.Record.Root(field = Reference.later(field), metadata = Metadata.Empty))
 
       extension [A](self: Self[A])
         override def metadata: Metadata = extract(self).metadata
@@ -490,3 +485,36 @@ object Codec:
           lift(extract(self).merged(discriminator))
         override def explicit(discriminator: Discriminator.Explicit): Self[A] =
           lift(extract(self).explicit(discriminator))
+
+  trait Field[Self[_], -Key[_], -Value[_], Record[_]](using record: Invariant[Record])
+      extends Codec[Self],
+        Invariant.Product[Self, Self, Record]:
+    final override def result: Invariant[Record] = record
+
+    def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+
+    extension [A](self: Self[A])
+      def optional: Self[Option[A]]
+      def toRecord: Record[A]
+
+  object Field:
+    def apply[Self[_], Key[_], Value[_], Record[_]: Invariant](
+        lift: [A] => (self: Self.Field[Key, Value, A]) => Self[A],
+        extract: [A] => (self: Self[A]) => Self.Field[Key, Value, A]
+    )(using codec: Codec.Record[Record, Self]): Codec.Field[Self, Key, Value, Record] =
+      new Codec.Field[Self, Key, Value, Record]:
+        final override inline def fromElement[A](codec: Self[A]): Self[A] = codec
+        override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = lift:
+          Self.Field.Root(
+            key = Reference.Constant(self = Reference.later(key), value = name),
+            value = Reference.later(value),
+            metadata = Metadata.Empty
+          )
+
+        extension [A](self: Self[A])
+          override def metadata: Metadata = extract(self).metadata
+          override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+          override def optional: Self[Option[A]] = lift(extract(self).optional)
+          override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
+          override def zip[B](codec: Self[B]): Record[(A, B)] = toRecord.zip(codec.toRecord)
+          override def toRecord: Record[A] = codec.record(self)

@@ -4,11 +4,6 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.Dictionary.Root
-import io.taig.otter.Record.Empty
-import io.taig.otter.Record.Field
-import io.taig.otter.Record.Modify
-import io.taig.otter.Record.Optional
-import io.taig.otter.Record.Zip
 
 import java.nio.charset.StandardCharsets
 
@@ -30,13 +25,14 @@ final class FormDataPayloadEncoder extends PayloadEncoder[FormData]:
       a.map((name, value) => (FormDataKeyPrinter(codec = key.value, name), apply(codec = codec.value, value)))
     case Dictionary.Modify(self, _, g) => apply(codec = self, g(a))
 
-  def apply[A](codec: Record[FormData.Key, FormData.Value, A], a: A): Chain[(String, Option[String])] = codec match
-    case Record.Empty(_) => Chain.empty
-    case Record.Field(key, value, metadata) =>
-      Chain.one(FormDataKeyPrinter(codec = key.self.value, key.value) -> apply(codec = value.value, a))
-    case Record.Modify(self, _, g)  => apply(codec = self, g(a))
-    case Record.Optional(self)      => a.fold(Chain.empty)(apply(codec = self, _))
-    case Record.Zip(left, right, _) => apply(codec = left, a._1) ++ apply(codec = right, a._2)
+  def apply[A](codec: Record[FormData.Field, A], a: A): Chain[(String, Option[String])] = ???
+  // codec match
+  //   case Record.Empty(_) => Chain.empty
+  //   case Record.Field(key, value, metadata) =>
+  //     Chain.one(FormDataKeyPrinter(codec = key.self.value, key.value) -> apply(codec = value.value, a))
+  //   case Record.Modify(self, _, g)  => apply(codec = self, g(a))
+  //   case Record.Optional(self)      => a.fold(Chain.empty)(apply(codec = self, _))
+  //   case Record.Zip(left, right, _) => apply(codec = left, a._1) ++ apply(codec = right, a._2)
 
   def apply[A](codec: FormData.Value[A], a: A): Option[String] = codec match
     case FormData.Value.Nullable(self)  => apply(codec = self, a)

@@ -9,7 +9,7 @@ trait HttpQueryDsl
       EnumerationDsl[Http.Query.Value.Enumeration, Http.Query.Value.Primitive],
       NullableDsl[Http.Query.Optional, Http.Query],
       PrimitiveDsl.String[Http.Query.Value.Primitive],
-      RecordDsl.Primitive.String[Http.Query.Object.Record, Http.Query.Value, Http.Query.Value],
+      FieldDsl.Primitive.String[Http.Query.Field, Http.Query.Value, Http.Query.Value, Http.Query.Object.Record],
       TupleDsl[Http.Query.Array.Tuple, Http.Query.Value],
       UnionDsl.Untagged[Http.Query.Value.Union, Http.Query.Value]:
   override def key: PrimitiveDsl.String[Http.Query.Value] = this

@@ -63,13 +63,14 @@ final class HttpParameterParser(explode: Boolean, style: Header.Style):
               else Violations.rootNec(Violation.equal(name, actual = key)).invalid
         case (true, Header.Style.Matrix) =>
           HttpParameterParser.parser.obj.label.unexploded(value).toValidatedViolations(tpe = "object", value)
-      .andThen: values =>
-        codec match
-          case Http.Parameter.Object.Dictionary(self) =>
-            DictionaryParser(parser = HttpParameterValueParser)(codec = self, values)
-          case Http.Parameter.Object.Record(self) =>
-            RecordParser(parser = HttpParameterValueParser, printer = HttpParameterValuePrinter)(codec = self, values)
-              .map((_, a) => a)
+      .andThen:
+        values =>
+          codec match
+            case Http.Parameter.Object.Dictionary(self) =>
+              DictionaryParser(parser = HttpParameterValueParser)(codec = self, values)
+            case Http.Parameter.Object.Record(self) => ???
+            // RecordParser(parser = HttpParameterValueParser, printer = HttpParameterValuePrinter)(codec = self, values)
+            //   .map((_, a) => a)
 
   def apply[A](name: String, codec: Http.Parameter.Value[A], value: String): Validated[Violations, A] = style
     .match
