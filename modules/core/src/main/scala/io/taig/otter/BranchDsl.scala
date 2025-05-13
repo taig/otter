@@ -9,7 +9,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait BranchDsl[Self[_], -Key[_], -Value[_], Sum[_]](using codec: Codec.Branch[Self, Key, Value, Sum]):
+trait BranchDsl[+Self[_], -Key[_], -Value[_], Sum[_]](using codec: Codec.Branch[Self, Key, Value, Sum]):
   final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = codec.branch(name, key, value)
 
 object BranchDsl:

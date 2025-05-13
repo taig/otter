@@ -441,7 +441,7 @@ object Codec:
         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
 
-  trait Union[Self[_], -Value[_]] extends Codec[Self], Invariant.Coproduct[Self, Value, Self]:
+  trait Union[Self[_], Value[_]] extends Codec[Self], Invariant.Coproduct[Self, Value, Self]:
     def one[A](codec: => Value[A]): Self[A]
 
   trait Field[Self[_], -Key[_], -Value[_], Record[_]](using record: Invariant[Record])
