@@ -3,6 +3,7 @@ package io.taig.otter.http
 import io.taig.otter as Self
 import io.taig.otter.Codec
 import Self.http.FormData.Dictionary
+import io.taig.otter.schema.Field
 
 sealed abstract class FormData[A] extends Product with Serializable
 

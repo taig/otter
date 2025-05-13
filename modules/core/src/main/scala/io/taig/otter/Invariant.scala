@@ -5,48 +5,45 @@ import cats.Invariant as CatsInvariant
 import scala.annotation.targetName
 import scala.compiletime.*
 
-trait Invariant[Self[_]]:
+trait Invariant[F[_]]:
   self =>
 
-  extension [A](self: Self[A])
-    def imap[B](f: A => B)(g: B => A): Self[B]
+  extension [A](fa: F[A])
+    def imap[B](f: A => B)(g: B => A): F[B]
 
     // Breaks type inference (https://github.com/typelevel/twiddles/issues/19)
-    // final def to[B](using convert: Convert[A, B]): Self[B] = imap(convert.to)(convert.from)
-    final inline def to[B]: Self[B] =
+    // final def to[B](using convert: Convert[A, B]): F[B] = imap(convert.to)(convert.from)
+    final inline def to[B]: F[B] =
       val convert = summonInline[Convert[A, B]]
-      self.imap(convert.to)(convert.from)
+      fa.imap(convert.to)(convert.from)
 
-  extension (self: Self[Unit])
-    final def as[A](a: A): Self[A] = self.imap(_ => a)(_ => ())
+  extension (fa: F[Unit])
+    final def as[A](a: A): F[A] = fa.imap(_ => a)(_ => ())
 
     @targetName("asSingleton")
-    final def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
+    final def as[A <: Singleton](a: A): F[A] = fa.imap(_ => a)(_ => ())
 
-  extension [A, B](self: Self[(A, B)])
-    final def merge(using merge: Merge[A, B]): Self[merge.Out] =
-      self.imap(merge.apply)(merge.unapply)
+  extension [A, B](fa: F[(A, B)])
+    final def merge(using merge: Merge[A, B]): F[merge.Out] =
+      fa.imap(merge.apply)(merge.unapply)
 
-  final def invariant: CatsInvariant[Self] = new CatsInvariant[Self]:
-    override def imap[A, B](fa: Self[A])(f: A => B)(g: B => A): Self[B] = self.imap(fa)(f)(g)
+  final def invariant: CatsInvariant[F] = new CatsInvariant[F]:
+    override def imap[A, B](fa: F[A])(f: A => B)(g: B => A): F[B] = self.imap(fa)(f)(g)
 
 object Invariant:
-  trait Coproduct[Self[_], Element[_], Result[_]] extends Invariant[Self]:
-    given result: Invariant[Result]
+  trait Coproduct[F[_]] extends Invariant[F]:
+    extension [A](self: F[A]) def orElse[B](codec: F[B]): F[Either[A, B]]
 
-    def fromElement[A](codec: Element[A]): Self[A]
+  object Coproduct:
+    trait Lift[F[_], G[_]] extends Coproduct[G]:
+      def lift[A](fa: F[A]): G[A]
 
-    extension [A](self: Self[A])
-      def orElse[B](codec: Self[B]): Result[Either[A, B]]
+      extension [A](self: F[A])
+        final def :+[B](codec: F[B]): G[Either[A, B]] = lift(self).orElse(lift(codec))
+        final def +:[B](codec: F[B]): G[Either[B, A]] = lift(codec).orElse(lift(self))
 
-      final def :+[B](codec: Element[B]): Result[Either[A, B]] = orElse(fromElement(codec))
-
-      final def +:[B](codec: Element[B]): Result[Either[B, A]] = fromElement(codec).orElse(self)
-
-    extension [A <: Matchable](self: Self[A])
-      final inline def or[B <: Matchable](codec: Self[B]): Result[A | B] = self
-        .orElse(codec)
-        .imap {
+      extension [A <: Matchable](self: F[A])
+        final inline def |[B <: Matchable](codec: F[B]): G[A | B] = (self :+ codec).imap {
           case Left(a)  => a
           case Right(b) => b
         } {
@@ -54,21 +51,19 @@ object Invariant:
           case b: B => Right(b)
         }
 
-      final inline def |[B <: Matchable](codec: Element[B]): Result[A | B] = self.or(fromElement(codec))
+  trait Product[F[_]] extends Invariant[F]:
+    // given result: Invariant[Result]
 
-  trait Product[Self[_], Element[_], Result[_]] extends Invariant[Self]:
-    given result: Invariant[Result]
+    // def fromElement[A](codec: Element[A]): F[A]
 
-    def fromElement[A](codec: Element[A]): Self[A]
+    extension [A](self: F[A])
+      def zip[B](codec: F[B]): F[(A, B)]
 
-    extension [A](self: Self[A])
-      def zip[B](codec: Self[B]): Result[(A, B)]
+      final def merge[B](codec: F[B])(using merge: Merge[A, B]): F[merge.Out] =
+        self.zip(codec).imap(merge.apply)(merge.unapply)
 
-      final def merge[B](codec: Self[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        zip(codec).imap(merge.apply)(merge.unapply)
+      // final def :*[B](codec: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =
+      //   self.merge(fromElement(codec))
 
-      final def :*[B](codec: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =
-        self.merge(fromElement(codec))
-
-      final def *:[B](codec: Element[B])(using merge: Merge[B, A]): Result[merge.Out] =
-        fromElement(codec).merge(self)
+      // final def *:[B](codec: Element[B])(using merge: Merge[B, A]): Result[merge.Out] =
+      //   fromElement(codec).merge(self)

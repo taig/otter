@@ -4,7 +4,7 @@ import cats.syntax.all.*
 
 import java.util.regex.Pattern
 
-abstract class StringCodecOperations[+Self[_]: Codec, A]:
+abstract class StringComponentExtension[+Self[_]: Invariant, A]:
   protected def isEmpty(a: A): Boolean
   protected def empty: A
 

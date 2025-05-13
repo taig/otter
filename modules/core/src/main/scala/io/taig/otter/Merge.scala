@@ -8,6 +8,7 @@ trait Merge[A, B]:
   def apply(ab: (A, B)): Out
   def unapply(out: Out): (A, B)
 
+@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 object Merge extends Merge1:
   type Aux[A, B, C] = Merge[A, B] { type Out = C }
 
@@ -15,18 +16,18 @@ object Merge extends Merge1:
 
   inline def apply[A, B, C](using merge: Merge.Aux[A, B, C]): Merge.Aux[A, B, C] = merge
 
-  def instance[A, B, C](f: ((A, B)) => C)(g: C => (A, B)): Merge.Aux[A, B, C] = new Merge[A, B]:
+  def apply[A, B, C](f: ((A, B)) => C)(g: C => (A, B)): Merge.Aux[A, B, C] = new Merge[A, B]:
     override type Out = C
     override def apply(ab: (A, B)): Out = f(ab)
     override def unapply(out: C): (A, B) = g(out)
 
-  given [A]: Merge.Aux[A, Unit, A] = instance[A, Unit, A](_._1)((_, ()))
+  given [A]: Merge.Aux[A, Unit, A] = Merge[A, Unit, A](_._1)((_, ()))
 
-  given [A]: Merge.Aux[Unit, A, A] = instance[Unit, A, A](_._2)(((), _))
+  given [A]: Merge.Aux[Unit, A, A] = Merge[Unit, A, A](_._2)(((), _))
 
   inline given [A <: STuple, B <: STuple]: Merge.Aux[A, B, STuple.Concat[A, B]] =
     val size = erasedValue[STuple.Size[A]]
-    instance[A, B, STuple.Concat[A, B]] { case (a, b) => a ++ b } { ab =>
+    Merge[A, B, STuple.Concat[A, B]] { case (a, b) => a ++ b } { ab =>
       val (a, b) = ab.splitAt(size)
       (a.asInstanceOf[A], b.asInstanceOf[B])
     }

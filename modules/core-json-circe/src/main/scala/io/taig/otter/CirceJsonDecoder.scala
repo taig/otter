@@ -9,6 +9,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.Field.Root
 import io.taig.otter.Field.Optional
+import codec.Collection
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
@@ -23,15 +24,15 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     // case Json.Union(self)       => apply(codec = self, json)
 
   def apply[A](codec: Collection[Json, A], json: CirceJson): Validated[Violations, A] = codec match
-    case Collection.Indexed(codec, minimum, maximum, uniqueItems, _) =>
+    case codec.Collection.Indexed(codec, minimum, maximum, uniqueItems, _) =>
       apply(minimum, maximum, uniqueItems)(json).andThen: values =>
         values.zipWithIndex.traverse: (json, index) =>
           apply(codec = codec.value, json).leftMap(index /: _)
-    case Collection.Linked(codec, minimum, maximum, uniqueItems, _) =>
+    case codec.Collection.Linked(codec, minimum, maximum, uniqueItems, _) =>
       apply(minimum, maximum, uniqueItems)(json).andThen: values =>
         values.toList.zipWithIndex.traverse: (json, index) =>
           apply(codec = codec.value, json).leftMap(index /: _)
-    case Collection.Modify(self, f, g) => apply(codec = self, json).map(f)
+    case codec.Collection.Modify(self, f, g) => apply(codec = self, json).map(f)
 
   def apply(minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean)(
       json: CirceJson

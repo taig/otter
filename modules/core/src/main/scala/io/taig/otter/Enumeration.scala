@@ -1,30 +1,30 @@
-package io.taig.otter
+// package io.taig.otter
 
-import cats.data.NonEmptyList
-import cats.~>
-import io.taig.enumeration.ext.Mapping
+// import cats.data.NonEmptyList
+// import cats.~>
+// import io.taig.enumeration.ext.Mapping
 
-sealed abstract class Enumeration[+S[_], A]:
-  def metadata: Metadata
-  def codec: Reference[S, ?]
-  def values: NonEmptyList[A]
-  def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
-  final def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
-  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A] = ???
+// sealed abstract class Enumeration[+S[_], A]:
+//   def metadata: Metadata
+//   def codec: Reference[S, ?]
+//   def values: NonEmptyList[A]
+//   def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
+//   final def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
+//   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A] = ???
 
-object Enumeration:
-  final private[otter] case class Modify[S[_], A, B](self: Enumeration[S, A], f: A => B, g: B => A)
-      extends Enumeration[S, B]:
-    export self.{codec, metadata}
-    override def values: NonEmptyList[B] = self.values.map(f)
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(self = self.mapK(fK))
+// object Enumeration:
+//   final private[otter] case class Modify[S[_], A, B](self: Enumeration[S, A], f: A => B, g: B => A)
+//       extends Enumeration[S, B]:
+//     export self.{codec, metadata}
+//     override def values: NonEmptyList[B] = self.values.map(f)
+//     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(self = self.modifyMetadata(f))
+//     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(self = self.mapK(fK))
 
-  final private[otter] case class Root[S[_], A, B](
-      codec: Reference[S, A],
-      mapping: Mapping[B, A],
-      metadata: Metadata
-  ) extends Enumeration[S, B]:
-    override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
-    override def values: NonEmptyList[B] = mapping.values
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(codec = codec.mapK(fK))
+//   final private[otter] case class Root[S[_], A, B](
+//       codec: Reference[S, A],
+//       mapping: Mapping[B, A],
+//       metadata: Metadata
+//   ) extends Enumeration[S, B]:
+//     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
+//     override def values: NonEmptyList[B] = mapping.values
+//     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(codec = codec.mapK(fK))

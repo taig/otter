@@ -6,7 +6,7 @@ import io.taig.otter.http.HttpDsl
 import io.taig.otter.http.HttpFormDataDsl
 import io.taig.otter.http.HttpJsonDsl
 
-object dsl extends CoreSyntax, HttpDsl, HttpFormDataDsl, HttpJsonDsl:
+object dsl extends Syntax, HttpDsl, HttpFormDataDsl, HttpJsonDsl:
   override lazy val formData
       : FormDataDsl & CaseInsensitiveDsl[FormData.Value.Primitive] & JavaTimeDsl[FormData.Value.Primitive] =
     new FormDataDsl with CaseInsensitiveDsl[FormData.Value.Primitive] with JavaTimeDsl[FormData.Value.Primitive]

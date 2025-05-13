@@ -14,7 +14,7 @@ trait CaseInsensitiveDsl[Self[_]: Codec]:
 
   val cistring: Self[CIString] = cistring()
 
-  implicit final class ToCIStringCodecOperations(self: cistring.type) extends StringCodecOperations[Self, CIString]:
+  implicit final class ToCIStringCodecOperations(self: cistring.type) extends StringComponentExtension[Self, CIString]:
     override protected def empty: CIString = CIString.empty
     override protected def isEmpty(a: CIString): Boolean = a.isEmpty
 

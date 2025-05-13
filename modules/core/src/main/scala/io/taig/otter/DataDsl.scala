@@ -1,54 +1,54 @@
-package io.taig.otter
+// package io.taig.otter
 
-trait DataDsl[
-    Collection[a] <: Value[a],
-    Dictionary[a] <: Value[a],
-    Nullable[a] <: Value[a],
-    Primitive[a] <: Value[a],
-    Sum[a] <: Value[a],
-    Union[a] <: Value[a],
-    Branch[_],
-    Key[_],
-    -Value[_]
-](using
-    Codec.Branch[Branch, Key, Value, Sum],
-    Codec.Collection[Collection, Value],
-    Codec.Dictionary[Dictionary, Key, Value],
-    Codec.Nullable[Nullable, Value],
-    Codec.Sum[Sum, Branch],
-    Codec.Union[Union, Value]
-) extends BranchDsl.Primitive.String[Branch, Key, Value, Sum],
-      CollectionDsl[Collection, Value],
-      DictionaryDsl[Dictionary, Key, Value],
-      NullableDsl[Nullable, Value],
-      PrimitiveDsl[Primitive]:
+// trait DataDsl[
+//     Collection[a] <: Value[a],
+//     Dictionary[a] <: Value[a],
+//     Nullable[a] <: Value[a],
+//     Primitive[a] <: Value[a],
+//     Sum[a] <: Value[a],
+//     Union[a] <: Value[a],
+//     Branch[_],
+//     Key[_],
+//     -Value[_]
+// ](using
+//     Codec.Branch[Branch, Key, Value, Sum],
+//     Codec.Collection[Collection, Value],
+//     Codec.Dictionary[Dictionary, Key, Value],
+//     Codec.Nullable[Nullable, Value],
+//     Codec.Sum[Sum, Branch],
+//     Codec.Union[Union, Value]
+// ) extends BranchDsl.Primitive.String[Branch, Key, Value, Sum],
+//       CollectionDsl[Collection, Value],
+//       DictionaryDsl[Dictionary, Key, Value],
+//       NullableDsl[Nullable, Value],
+//       PrimitiveDsl[Primitive]:
 
-  def key: PrimitiveDsl.String[Key]
+//   def key: PrimitiveDsl.String[Key]
 
-  object data:
-    val any: Nullable[Data.Any] = nullable(value).imap(_.getOrElse(Data.Null)) {
-      case Data.Null        => None
-      case data: Data.Value => Some(data)
-    }
+//   object data:
+//     val any: Nullable[Data.Any] = nullable(value).imap(_.getOrElse(Data.Null)) {
+//       case Data.Null        => None
+//       case data: Data.Value => Some(data)
+//     }
 
-    val number: Sum[Data.Number] =
-      branch("bigDecimal", jBigDecimal) |
-        branch("bigInterger", jBigInteger) |
-        branch("long", long) |
-        branch("int", int) |
-        branch("float", float) |
-        branch("double", double)
+//     val number: Sum[Data.Number] =
+//       branch("bigDecimal", jBigDecimal) |
+//         branch("bigInterger", jBigInteger) |
+//         branch("long", long) |
+//         branch("int", int) |
+//         branch("float", float) |
+//         branch("double", double)
 
-    val primitive: Sum[Data.Primitive] = number | branch("boolean", boolean) | branch("string", string)
+//     val primitive: Sum[Data.Primitive] = number | branch("boolean", boolean) | branch("string", string)
 
-    val value: Sum[Data.Value] = primitive | branch("object", obj) | branch("array", array)
+//     val value: Sum[Data.Value] = primitive | branch("object", obj) | branch("array", array)
 
-    def obj[A <: Data.Any](codec: => Value[A]): Dictionary[Data.Object[A]] =
-      dictionary.list(key.string, codec).imap(Data.Object[A])(_.values)
+//     def obj[A <: Data.Any](codec: => Value[A]): Dictionary[Data.Object[A]] =
+//       dictionary.list(key.string, codec).imap(Data.Object[A])(_.values)
 
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any)
+//     val obj: Dictionary[Data.Object[Data.Any]] = obj(any)
 
-    def array[A <: Data.Any](codec: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(codec).imap(Data.Array[A])(_.values)
+//     def array[A <: Data.Any](codec: => Value[A]): Collection[Data.Array[A]] =
+//       collection.vector(codec).imap(Data.Array[A])(_.values)
 
-    val array: Collection[Data.Array[Data.Any]] = array(any)
+//     val array: Collection[Data.Array[Data.Any]] = array(any)

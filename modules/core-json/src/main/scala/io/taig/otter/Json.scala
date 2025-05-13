@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter as Self
+import codec.Collection
 
 sealed abstract class Json[A] extends Product with Serializable
 

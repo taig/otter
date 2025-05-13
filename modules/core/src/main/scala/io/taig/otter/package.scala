@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eq
-import cats.Functor
 import cats.data.Chain
 import cats.syntax.all.*
 
@@ -38,20 +37,6 @@ private[otter] object StacktracePrinter:
     val writer = new StringWriter
     throwable.printStackTrace(new PrintWriter(writer))
     writer.toString
-
-extension [A](self: Argument[A])
-  def toOption: Option[A] = self match
-    case Argument.Default => None
-    case a                => Some(a.asInstanceOf[A])
-
-  def getOrElse[B >: A](b: => B): B = self match
-    case Argument.Default => b
-    case a                => a.asInstanceOf[B]
-
-given Functor[Argument] with
-  def map[A, B](fa: Argument[A])(f: A => B): Argument[B] = fa match
-    case Argument.Default => Argument.Default
-    case a                => f(a.asInstanceOf[A])
 
 extension [A: Eq, B](self: Vector[(A, B)])
   private[otter] def filterKeys(keys: Iterable[A]): (Vector[(A, B)], Vector[(A, B)]) =
