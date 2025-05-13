@@ -7,7 +7,8 @@ import io.taig.otter.http.HttpFormDataDsl
 import io.taig.otter.http.HttpJsonDsl
 
 object dsl extends CoreSyntax, HttpDsl, HttpFormDataDsl, HttpJsonDsl:
-  val formData: FormDataDsl & CaseInsensitiveDsl[FormData.Value.Primitive] & JavaTimeDsl[FormData.Value.Primitive] =
+  override val formData
+      : FormDataDsl & CaseInsensitiveDsl[FormData.Value.Primitive] & JavaTimeDsl[FormData.Value.Primitive] =
     new FormDataDsl with CaseInsensitiveDsl[FormData.Value.Primitive] with JavaTimeDsl[FormData.Value.Primitive]
 
   object json extends JsonDsl, CaseInsensitiveDsl[Json.Primitive], JavaTimeDsl[Json.Primitive]

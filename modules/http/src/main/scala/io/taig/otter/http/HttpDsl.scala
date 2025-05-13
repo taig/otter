@@ -7,7 +7,7 @@ trait HttpDsl extends AppDsl, BodyDsl, EndpointDsl, RequestDsl, ResponseDsl, Res
   object header extends HttpHeaderDsl
   object method extends MethodDsl
 
-  // val formData: FormDataDsl = FormDataDsl
+  def formData: FormDataDsl = FormDataDsl
 
   val parameter: HttpParameterDsl = HttpParameterDsl
 

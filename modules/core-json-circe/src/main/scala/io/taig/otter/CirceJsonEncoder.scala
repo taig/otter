@@ -5,6 +5,9 @@ import io.circe.Json as CirceJson
 import io.circe.syntax.*
 
 import scala.annotation.tailrec
+import io.taig.otter.Field.Modify
+import io.taig.otter.Field.Root
+import io.taig.otter.Field.Optional
 
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], a: A): CirceJson = codec match
@@ -64,15 +67,23 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Primitive.String.Parser(name, _, encode, _, _, _, _) => CirceJson.fromString(encode(a))
 
   def apply[A](codec: Record[Json.Field, A], a: A): List[(String, CirceJson)] = codec match
-    case Record.Empty(_) => Nil
-    // case Record.Field(key, value, _) =>
-    //   (
-    //     ReferenceConstantPrinter(printer = JsonKeyPrinter)(reference = key),
-    //     apply(codec = value.value, a)
-    //   ) :: Nil
+    case Record.Empty(_)            => Nil
+    case Record.Root(field, _)      => apply(codec = field.value, a)
     case Record.Modify(self, _, g)  => apply(codec = self, g(a))
     case Record.Optional(self)      => a.fold(Nil)(apply(codec = self, _))
     case Record.Zip(left, right, _) => apply(codec = left, a._1) ++ apply(codec = right, a._2)
+
+  def apply[A](codec: Field[Json.Key, Json, A], a: A): List[(String, CirceJson)] = codec match
+    case Modify(self, f, g) => apply(codec = self, g(a))
+    case Root(key, value, _) =>
+      (
+        JsonKeyPrinter(
+          codec = key.self.value,
+          key.value
+        ), // ReferenceConstantPrinter(printer = JsonKeyPrinter)(reference = key),
+        apply(codec = value.value, a)
+      ) :: Nil
+    case Optional(self) => a.fold(Nil)(apply(codec = self, _))
 
   def apply[A](codec: Tuple[Json, A], a: A): List[CirceJson] = codec match
     case _: Tuple.Empty            => Nil

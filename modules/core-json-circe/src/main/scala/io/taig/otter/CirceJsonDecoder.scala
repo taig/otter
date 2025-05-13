@@ -10,6 +10,8 @@ import io.taig.otter.Union.Untagged.OrElse
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import io.taig.otter.Field.Root
+import io.taig.otter.Field.Optional
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
@@ -170,25 +172,19 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
       codec: Record[Json.Field, A],
       json: List[(String, CirceJson)]
   ): Validated[Violations, (List[(String, CirceJson)], A)] = codec match
-    case Record.Empty(_) => (json, ()).valid
-    // case Record.Field(key, codec, _) =>
-    //   val name = JsonKeyReferenceConstantPrinter(reference = key)
-    //   val (remainders, result) = json.collectFirstWithRemainders { case (`name`, json) => json }
-    //   result
-    //     .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
-    //     .andThen(apply(codec = codec.value, _))
-    //     .leftMap(name /: _)
-    //     .tupleLeft(remainders)
+    case Record.Empty(_)           => (json, ()).valid
+    case Record.Root(field, _)     => apply(codec = field.value, json)
     case Record.Modify(self, f, _) => apply(codec = self, json).map(_.map(f))
-    // case Record.Optional(self) =>
-    //   val lookup = json.map((key, _) => key).toSet
+    case Record.Optional(self) =>
+      val lookup = json.map((key, _) => key).toSet
 
-    //   val allKeysAbsent = codec.fields
-    //     .map((key, _) => JsonKeyReferenceConstantPrinter(reference = key))
-    //     .forall(lookup.contains_)
+      val allKeysAbsent = codec.fields
+        .map(_.value.key)
+        .map(key => JsonKeyPrinter(codec = key.self.value, key.value))
+        .forall(lookup.contains_)
 
-    //   if allKeysAbsent then (json, none).valid[Violations]
-    //   else apply(codec = self, json).map(_.map(_.some))
+      if allKeysAbsent then (json, none).valid[Violations]
+      else apply(codec = self, json).map(_.map(_.some))
     case Record.Zip(left, right, _) =>
       apply(codec = left, json) match
         case Validated.Valid((json, a)) => apply(codec = right, json).map(_.tupleLeft(a))
@@ -196,6 +192,27 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
           apply(codec = right, json) match
             case Validated.Valid(_)       => left.invalid
             case Validated.Invalid(right) => (left |+| right).invalid
+
+  def apply[A](
+      codec: Field[Json.Key, Json, A],
+      json: List[(String, CirceJson)]
+  ): Validated[Violations, (List[(String, CirceJson)], A)] = codec match
+    case Field.Modify(self, f, g) => apply(codec = self, json).map(_.map(f))
+    case Field.Root(key, codec, _) =>
+      val name = JsonKeyPrinter(codec = key.self.value, key.value)
+      val (remainders, result) = json.collectFirstWithRemainders { case (`name`, json) => json }
+      result
+        .toValid(Violations.rootNec(Violation.tpe(name = "value", actual = "null")))
+        .andThen(apply(codec = codec.value, _))
+        .leftMap(name /: _)
+        .tupleLeft(remainders)
+    case Field.Optional(self) =>
+      val key = self.key
+      val name = JsonKeyPrinter(codec = key.self.value, key.value)
+
+      if json.exists((key, _) => key === name)
+      then apply(codec = self, json).map(_.map(_.some))
+      else (json, none).valid
 
   def apply[A](codec: Tuple[Json, A], json: CirceJson): Validated[Violations, A] =
     json.asArray

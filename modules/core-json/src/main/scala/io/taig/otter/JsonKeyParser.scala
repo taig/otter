@@ -23,7 +23,7 @@ object JsonKeyParser extends Parser[Json.Key]:
           .cond(
             test = eq.eqv(a, codec.value),
             (),
-            Violation.equal(reference = ReferenceConstantPrinter(printer = JsonKeyPrinter)(codec), value)
+            Violation.equal(reference = JsonKeyPrinter(codec = codec.self.value, codec.value), value)
           )
           .leftMap(Violations.rootNec)
 
