@@ -35,9 +35,10 @@ object Bodies:
   final private[otter] case class Root[S[_], A](body: Body[S, A]) extends Bodies[S, A]:
     override def toChain: Chain[Body[S, ?]] = Chain.one(body)
 
-  given invariant[S[_]]: Invariant.Coproduct[Bodies[S, *], Bodies[S, *]] =
-    new Invariant.Coproduct[Bodies[S, *], Bodies[S, *]]:
+  given invariant[S[_]]: Invariant.Coproduct[Bodies[S, *], Body[S, *], Bodies[S, *]] =
+    new Invariant.Coproduct[Bodies[S, *], Body[S, *], Bodies[S, *]]:
       override def result: Invariant[Bodies[S, *]] = this
+      override def fromElement[A](codec: Body[S, A]): Bodies[S, A] = codec.toBodies
 
       extension [A](self: Bodies[S, A])
         override def orElse[B](codec: Bodies[S, B]): Bodies[S, Either[A, B]] = self.orElse(codec)

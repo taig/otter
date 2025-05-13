@@ -5,9 +5,9 @@ import cats.~>
 
 sealed abstract class Collection[+S[_], A]:
   def metadata: Metadata
-  def codec: Reference[S, ?]
-  def constraints: Vector[Constraint.Collection]
   def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
+  def constraints: Vector[Constraint.Collection]
+  def codec: Reference[S, ?]
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, A]
   final def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
 

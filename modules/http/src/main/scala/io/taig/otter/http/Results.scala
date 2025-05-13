@@ -26,8 +26,9 @@ object Results:
   final private[otter] case class Root[S[_], A](result: Result[S, A]) extends Results[S, A]:
     override def toChain: Chain[Result[S, ?]] = Chain.one(result)
 
-  given invariant[S[_]]: Invariant.Coproduct[Results[S, *], Results[S, *]] with
+  given invariant[S[_]]: Invariant.Coproduct[Results[S, *], Result[S, *], Results[S, *]] with
     override def result: Invariant[Results[S, *]] = this
+    override def fromElement[A](codec: Result[S, A]): Results[S, A] = codec.toResults
 
     extension [A](self: Results[S, A])
       override def orElse[B](codec: Results[S, B]): Results[S, Either[A, B]] =

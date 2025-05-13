@@ -29,8 +29,9 @@ object Body:
 
   final private[otter] case class Root[S[_], A](mediaType: MediaType, codec: Reference[S, A]) extends Body[S, A]
 
-  given [S[_]]: Invariant.Coproduct[Body[S, *], Bodies[S, *]] with
+  given [S[_]]: Invariant.Coproduct[Body[S, *], Body[S, *], Bodies[S, *]] with
     override def result: Invariant[Bodies[S, *]] = Bodies.invariant
+    override def fromElement[A](codec: Body[S, A]): Body[S, A] = codec
 
     extension [A](self: Body[S, A])
       override def imap[B](f: A => B)(g: B => A): Body[S, B] = self.imap(f)(g)

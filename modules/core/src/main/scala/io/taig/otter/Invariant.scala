@@ -10,6 +10,7 @@ trait Invariant[Self[_]]:
 
   extension [A](self: Self[A])
     def imap[B](f: A => B)(g: B => A): Self[B]
+
     // Breaks type inference (https://github.com/typelevel/twiddles/issues/19)
     // final def to[B](using convert: Convert[A, B]): Self[B] = imap(convert.to)(convert.from)
     final inline def to[B]: Self[B] =

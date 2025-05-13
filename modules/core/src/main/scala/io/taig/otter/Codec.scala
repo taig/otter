@@ -29,19 +29,19 @@ object Codec:
         final def nullable: Optional[Option[A]] = optional.nullable(self)
         final def nullable(default: A): Optional[A] = optional.nullable(self, default)
 
-    trait Unionable[Self[_], Union[_]](using union: Codec.Union[Union, Self])
-        extends Codec[Self],
-          Invariant.Coproduct[Self, Self, Union]:
-      extension [A](self: Self[A])
-        final override def orElse[B](codec: Self[B]): Union[Either[A, B]] =
-          union.one(self).orElse(union.one(codec))
-
     trait Tupleable[Self[_], Tuple[_]](using tuple: Codec.Tuple[Tuple, Self])
         extends Codec[Self],
           Invariant.Product[Self, Self, Tuple]:
       extension [A](self: Self[A])
         final override def zip[B](codec: Self[B]): Tuple[(A, B)] =
           tuple.one(self).zip(tuple.one(codec))
+
+    trait Unionable[Self[_], Union[_]](using union: Codec.Union[Union, Self])
+        extends Codec[Self],
+          Invariant.Coproduct[Self, Self, Union]:
+      extension [A](self: Self[A])
+        final override def orElse[B](codec: Self[B]): Union[Either[A, B]] =
+          union.one(self).orElse(union.one(codec))
 
   trait Collection[Self[_], Value[_]] extends Codec[Self]:
     def linked[A](codec: => Value[A], minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean): Self[List[A]]
@@ -418,6 +418,23 @@ object Codec:
 
   trait Sum[Self[_], Branch[_]] extends Codec[Self], Invariant.Coproduct[Self, Branch, Self] {}
 
+  object Sum:
+    def apply[Self[_], Branch[_]](
+        lift: [A] => (self: Self.Sum[Branch, A]) => Self[A],
+        extract: [A] => (self: Self[A]) => Self.Sum[Branch, A]
+    ): Codec.Sum[Self, Branch] = new Codec.Sum[Self, Branch]:
+      override def result: Invariant[Self] = this
+      override def fromElement[A](codec: Branch[A]): Self[A] = ???
+
+      // final override def one[A](codec: => Branch[A]): Self[A] =
+      //   lift(Self.Sum.Root(branch = Reference.later(codec), discriminator = ???, metadata = Metadata.Empty))
+
+      extension [A](self: Self[A])
+        override def metadata: Metadata = extract(self).metadata
+        override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+        override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
+        override def orElse[B](codec: Self[B]): Self[Either[A, B]] = lift(extract(self).orElse(extract(codec)))
+
   trait Tuple[Self[_], Value[_]] extends Codec[Self], Invariant.Product[Self, Value, Self]:
     final override def result: Invariant[Self] = this
     final override def fromElement[A](codec: Value[A]): Self[A] = one(codec)
@@ -442,7 +459,24 @@ object Codec:
         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
 
   trait Union[Self[_], Value[_]] extends Codec[Self], Invariant.Coproduct[Self, Value, Self]:
+    final override def result: Invariant[Self] = this
+    final override def fromElement[A](codec: Value[A]): Self[A] = one(codec)
+
     def one[A](codec: => Value[A]): Self[A]
+
+  object Union:
+    def apply[Self[_], Value[_]](
+        lift: [A] => (self: Self.Union[Value, A]) => Self[A],
+        extract: [A] => (self: Self[A]) => Self.Union[Value, A]
+    ): Codec.Union[Self, Value] = new Codec.Union[Self, Value]:
+      override def one[A](codec: => Value[A]): Self[A] =
+        lift(Self.Union.Root(codec = Reference.later(codec), metadata = Metadata.Empty))
+
+      extension [A](self: Self[A])
+        override def metadata: Metadata = extract(self).metadata
+        override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
+        override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
+        override def orElse[B](codec: Self[B]): Self[Either[A, B]] = lift(extract(self).orElse(extract(codec)))
 
   trait Field[Self[_], -Key[_], -Value[_], Record[_]](using record: Invariant[Record])
       extends Codec[Self],

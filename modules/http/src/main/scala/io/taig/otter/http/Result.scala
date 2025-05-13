@@ -31,8 +31,9 @@ object Result:
       extends Result[Nothing, A]:
     override def modifyMetadata(f: Metadata => Metadata): Result.Root[A] = copy(metadata = f(metadata))
 
-  given [S[_]]: Invariant.Coproduct[Result[S, *], Results[S, *]] with
+  given [S[_]]: Invariant.Coproduct[Result[S, *], Result[S, *], Results[S, *]] with
     override def result: Invariant[Results[S, *]] = Results.invariant
+    override def fromElement[A](codec: Result[S, A]): Result[S, A] = codec
     extension [A](self: Result[S, A])
       override def imap[B](f: A => B)(g: B => A): Result[S, B] = self.imap(f)(g)
       override def orElse[B](codec: Result[S, B]): Results[S, Either[A, B]] = self.orElse(codec)
