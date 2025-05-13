@@ -13,7 +13,7 @@ object JsonKeyParser extends Parser[Json.Key]:
     case Json.Key.Constant(self)    => apply(codec = self, value)
     case Json.Key.Enumeration(self) => apply(codec = self, value)
     case Json.Key.Primitive(self)   => apply(codec = self, value)
-    case Json.Key.Union(self)       => apply(codec = self, value)
+    // case Json.Key.Union(self)       => apply(codec = self, value)
 
   def apply[A](codec: Constant[Json.Key, A], value: String): Validated[Violations, A] = codec match
     case Constant.Modify(self, f, _) => apply(codec = self, value).map(f)
@@ -78,15 +78,15 @@ object JsonKeyParser extends Parser[Json.Key]:
       )
       .as(value)
 
-  def apply[A](codec: Union.Untagged[Json.Key, A], value: String): Validated[Violations, A] = codec match
-    case Union.Untagged.OrElse(left, right, _) => apply(left, right, value)
-    case Union.Untagged.Branch(name, codec, _) => apply(codec = codec.value, value).leftMap(name /: _)
-    case Union.Untagged.Modify(self, f, _)     => apply(codec = self, value).map(f)
+  // def apply[A](codec: Union.Untagged[Json.Key, A], value: String): Validated[Violations, A] = codec match
+  //   case Union.Untagged.OrElse(left, right, _) => apply(left, right, value)
+  //   case Union.Untagged.Branch(name, codec, _) => apply(codec = codec.value, value).leftMap(name /: _)
+  //   case Union.Untagged.Modify(self, f, _)     => apply(codec = self, value).map(f)
 
-  def apply[A, B](
-      left: Union.Untagged[Json.Key, A],
-      right: Union.Untagged[Json.Key, B],
-      value: String
-  ): Validated[Violations, Either[A, B]] = apply(codec = left, value)
-    .map(_.asLeft)
-    .findValid(apply(codec = right, value).map(_.asRight))
+  // def apply[A, B](
+  //     left: Union.Untagged[Json.Key, A],
+  //     right: Union.Untagged[Json.Key, B],
+  //     value: String
+  // ): Validated[Violations, Either[A, B]] = apply(codec = left, value)
+  //   .map(_.asLeft)
+  //   .findValid(apply(codec = right, value).map(_.asRight))

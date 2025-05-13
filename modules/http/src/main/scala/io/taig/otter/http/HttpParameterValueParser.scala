@@ -10,7 +10,7 @@ object HttpParameterValueParser extends Parser[Http.Parameter.Value]:
     case Http.Parameter.Value.Constant(self)    => apply(codec = self, value)
     case Http.Parameter.Value.Enumeration(self) => apply(codec = self, value)
     case Http.Parameter.Value.Primitive(self)   => PrimitiveParser.Unquoted(codec = self, value)
-    case Http.Parameter.Value.Union(self)       => apply(codec = self, value)
+    // case Http.Parameter.Value.Union(self)       => apply(codec = self, value)
 
   def apply[A](codec: Constant[Http.Parameter.Value.Primitive, A], value: String): Validated[Violations, A] =
     codec match
@@ -41,8 +41,8 @@ object HttpParameterValueParser extends Parser[Http.Parameter.Value]:
               val values = self.values.map(mapping.apply).map(HttpParameterValuePrinter(codec.value, _))
               Violations.rootNec(Violation.oneOf(values = values.toList, actual = value))
 
-  def apply[A](codec: Union.Untagged[Http.Parameter.Value, A], value: String): Validated[Violations, A] = codec match
-    case Union.Untagged.Branch(_, codec, _) => apply(codec = codec.value, value)
-    case Union.Untagged.Modify(self, f, _)  => apply(codec = self, value).map(f)
-    case Union.Untagged.OrElse(left, right, _) =>
-      apply(codec = left, value).map(Left(_)).findValid(apply(codec = right, value).map(Right(_)))
+  // def apply[A](codec: Union.Untagged[Http.Parameter.Value, A], value: String): Validated[Violations, A] = codec match
+  //   case Union.Untagged.Branch(_, codec, _) => apply(codec = codec.value, value)
+  //   case Union.Untagged.Modify(self, f, _)  => apply(codec = self, value).map(f)
+  //   case Union.Untagged.OrElse(left, right, _) =>
+  //     apply(codec = left, value).map(Left(_)).findValid(apply(codec = right, value).map(Right(_)))

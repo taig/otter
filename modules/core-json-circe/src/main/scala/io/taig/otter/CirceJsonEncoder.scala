@@ -19,7 +19,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Json.Primitive(value)  => apply(codec = value, a)
     case Json.Record(value)     => CirceJson.fromFields(apply(codec = value, a))
     case Json.Tuple(value)      => CirceJson.fromValues(apply(codec = value, a))
-    case Json.Union(self)       => apply(codec = self, a)
+    // case Json.Union(self)       => apply(codec = self, a)
 
   @tailrec
   def apply[A](codec: Collection[Json, A], a: A): CirceJson = codec match
@@ -88,15 +88,15 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Tuple.Zip(left, right, _) => apply(codec = left, a = a._1) ++ apply(codec = right, a = a._2)
     case Tuple.Root(codec, _)      => List(apply(codec = codec.value, a))
 
-  def apply[A](codec: Union[Json, A], a: A): CirceJson = codec match
-    case codec: Union.Untagged[Json, A] => apply(codec, a, discriminator = none)
-    case codec: Union.Tagged[Json, A]   => apply(codec = codec.untagged, a, discriminator = codec.discriminator.some)
+  // def apply[A](codec: Union[Json, A], a: A): CirceJson = codec match
+  //   case codec: Union.Untagged[Json, A] => apply(codec, a, discriminator = none)
+  //   case codec: Union.Tagged[Json, A]   => apply(codec = codec.untagged, a, discriminator = codec.discriminator.some)
 
-  def apply[A](codec: Union.Untagged[Json, A], a: A, discriminator: Option[Discriminator]): CirceJson = codec match
-    case Union.Untagged.Modify(self, _, g)     => apply(codec = self, g(a), discriminator)
-    case Union.Untagged.Branch(name, codec, _) => apply(name, codec = codec.value, a, discriminator)
-    case Union.Untagged.OrElse(left, right, _) =>
-      a.fold(apply(codec = left, _, discriminator), apply(codec = right, _, discriminator))
+  // def apply[A](codec: Union.Untagged[Json, A], a: A, discriminator: Option[Discriminator]): CirceJson = codec match
+  //   case Union.Untagged.Modify(self, _, g)     => apply(codec = self, g(a), discriminator)
+  //   case Union.Untagged.Branch(name, codec, _) => apply(name, codec = codec.value, a, discriminator)
+  //   case Union.Untagged.OrElse(left, right, _) =>
+  //     a.fold(apply(codec = left, _, discriminator), apply(codec = right, _, discriminator))
 
   def apply[A](name: String, codec: Json[A], a: A, discriminator: Option[Discriminator]): CirceJson =
     discriminator match

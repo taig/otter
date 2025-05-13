@@ -43,14 +43,14 @@ object Http:
           extract = [A] => (codec: Http.Header.Value.Primitive[A]) => codec.self
         )
 
-      final case class Union[A](self: Self.Union.Untagged[Http.Header.Value, A]) extends Value[A]
+      // final case class Union[A](self: Self.Union.Untagged[Http.Header.Value, A]) extends Value[A]
 
-      object Union:
-        given codec: Codec.Union.Untagged[Http.Header.Value.Union, Http.Header.Value] =
-          Codec.Union.Untagged(
-            lift = [A] => (self: Self.Union.Untagged[Http.Header.Value, A]) => Union(self),
-            extract = [A] => (codec: Http.Header.Value.Union[A]) => codec.self
-          )
+      // object Union:
+      //   given codec: Codec.Union.Untagged[Http.Header.Value.Union, Http.Header.Value] =
+      //     Codec.Union.Untagged(
+      //       lift = [A] => (self: Self.Union.Untagged[Http.Header.Value, A]) => Union(self),
+      //       extract = [A] => (codec: Http.Header.Value.Union[A]) => codec.self
+      //     )
 
       given codec: Codec.Extension.Tupleable[Http.Header.Value, Http.Header.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Header.Array.Tuple.codec
@@ -61,19 +61,19 @@ object Http:
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
-            case Union(self)       => self.metadata
+            // case Union(self)       => self.metadata
 
           override def modifyMetadata(f: Metadata => Metadata): Value[A] = self match
             case Constant(self)    => Constant(self.modifyMetadata(f))
             case Enumeration(self) => Enumeration(self.modifyMetadata(f))
             case Primitive(self)   => Primitive(self.modifyMetadata(f))
-            case Union(self)       => Union(self.modifyMetadata(f))
+            // case Union(self)       => Union(self.modifyMetadata(f))
 
           override def imap[B](f: A => B)(g: B => A): Value[B] = self match
             case Constant(self)    => Constant(self.imap(f)(g))
             case Enumeration(self) => Enumeration(self.imap(f)(g))
             case Primitive(self)   => Primitive(self.imap(f)(g))
-            case Union(self)       => Union(self.imap(f)(g))
+            // case Union(self)       => Union(self.imap(f)(g))
 
     sealed abstract class Array[A] extends Http.Header[A]
 
@@ -186,14 +186,14 @@ object Http:
           extract = [A] => (codec: Http.Query.Value.Primitive[A]) => codec.self
         )
 
-      final case class Union[A](self: Self.Union.Untagged[Http.Query.Value, A]) extends Value[A]
+      // final case class Union[A](self: Self.Union.Untagged[Http.Query.Value, A]) extends Value[A]
 
-      object Union:
-        given codec: Codec.Union.Untagged[Http.Query.Value.Union, Http.Query.Value] =
-          Codec.Union.Untagged(
-            lift = [A] => (self: Self.Union.Untagged[Http.Query.Value, A]) => Union(self),
-            extract = [A] => (codec: Http.Query.Value.Union[A]) => codec.self
-          )
+      // object Union:
+      //   given codec: Codec.Union.Untagged[Http.Query.Value.Union, Http.Query.Value] =
+      //     Codec.Union.Untagged(
+      //       lift = [A] => (self: Self.Union.Untagged[Http.Query.Value, A]) => Union(self),
+      //       extract = [A] => (codec: Http.Query.Value.Union[A]) => codec.self
+      //     )
 
       given codec: Codec.Extension.Tupleable[Http.Query.Value, Http.Query.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Query.Array.Tuple.codec
@@ -204,19 +204,19 @@ object Http:
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
-            case Union(self)       => self.metadata
+            // case Union(self)       => self.metadata
 
           override def modifyMetadata(f: Metadata => Metadata): Value[A] = self match
             case Constant(self)    => Constant(self.modifyMetadata(f))
             case Enumeration(self) => Enumeration(self.modifyMetadata(f))
             case Primitive(self)   => Primitive(self.modifyMetadata(f))
-            case Union(self)       => Union(self.modifyMetadata(f))
+            // case Union(self)       => Union(self.modifyMetadata(f))
 
           override def imap[B](f: A => B)(g: B => A): Value[B] = self match
             case Constant(self)    => Constant(self.imap(f)(g))
             case Enumeration(self) => Enumeration(self.imap(f)(g))
             case Primitive(self)   => Primitive(self.imap(f)(g))
-            case Union(self)       => Union(self.imap(f)(g))
+            // case Union(self)       => Union(self.imap(f)(g))
 
     sealed abstract class Array[A] extends Http.Query[A]
 
@@ -337,14 +337,14 @@ object Http:
           extract = [A] => (codec: Http.Parameter.Value.Primitive[A]) => codec.self
         )
 
-      final case class Union[A](self: Self.Union.Untagged[Http.Parameter.Value, A]) extends Value[A]
+      // final case class Union[A](self: Self.Union.Untagged[Http.Parameter.Value, A]) extends Value[A]
 
-      object Union:
-        given codec: Codec.Union.Untagged[Http.Parameter.Value.Union, Http.Parameter.Value] =
-          Codec.Union.Untagged(
-            lift = [A] => (self: Self.Union.Untagged[Http.Parameter.Value, A]) => Union(self),
-            extract = [A] => (codec: Http.Parameter.Value.Union[A]) => codec.self
-          )
+      // object Union:
+      //   given codec: Codec.Union.Untagged[Http.Parameter.Value.Union, Http.Parameter.Value] =
+      //     Codec.Union.Untagged(
+      //       lift = [A] => (self: Self.Union.Untagged[Http.Parameter.Value, A]) => Union(self),
+      //       extract = [A] => (codec: Http.Parameter.Value.Union[A]) => codec.self
+      //     )
 
       given codec: Codec.Extension.Tupleable[Http.Parameter.Value, Http.Parameter.Array.Tuple] with
         override def result: Invariant[Array.Tuple] = Http.Parameter.Array.Tuple.codec
@@ -355,19 +355,19 @@ object Http:
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
-            case Union(self)       => self.metadata
+            // case Union(self)       => self.metadata
 
           override def modifyMetadata(f: Metadata => Metadata): Value[A] = self match
             case Constant(self)    => Constant(self.modifyMetadata(f))
             case Enumeration(self) => Enumeration(self.modifyMetadata(f))
             case Primitive(self)   => Primitive(self.modifyMetadata(f))
-            case Union(self)       => Union(self.modifyMetadata(f))
+            // case Union(self)       => Union(self.modifyMetadata(f))
 
           override def imap[B](f: A => B)(g: B => A): Value[B] = self match
             case Constant(self)    => Constant(self.imap(f)(g))
             case Enumeration(self) => Enumeration(self.imap(f)(g))
             case Primitive(self)   => Primitive(self.imap(f)(g))
-            case Union(self)       => Union(self.imap(f)(g))
+            // case Union(self)       => Union(self.imap(f)(g))
 
     sealed abstract class Array[A] extends Http.Parameter[A]
 

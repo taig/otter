@@ -10,8 +10,8 @@ object JsonKeyZodRenderer extends Renderer[Json.Key, ZodState[Expression]]:
       case Json.Key.Constant(self)    => State.pure(apply(codec = self))
       case Json.Key.Enumeration(self) => State.pure(apply(codec = self))
       case Json.Key.Primitive(self)   => State.pure(PrimitiveZodRenderer(codec = self))
-      case Json.Key.Union(self) =>
-        UnionZodRenderer[Json.Key](render = [A] => (_: String, codec: Json.Key[A]) => JsonKeyZodRenderer(codec))(self)
+      // case Json.Key.Union(self) =>
+      //   UnionZodRenderer[Json.Key](render = [A] => (_: String, codec: Json.Key[A]) => JsonKeyZodRenderer(codec))(self)
 
     def apply(codec: Constant[Json.Key.Primitive, ?]): String =
       s"z.literal(${apply(reference = codec.codec)})"

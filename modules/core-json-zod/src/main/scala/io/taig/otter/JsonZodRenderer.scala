@@ -23,7 +23,7 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
                 |${fields.map((key, value) => indent(show"\"$key\": $value")).mkString_(",\n")}
                 |})""".stripMargin
       case Json.Tuple(self) => apply(codec = self)
-      case Json.Union(self) => apply(codec = self)
+      // case Json.Union(self) => apply(codec = self)
 
     def apply(codec: Collection[Json, ?]): ZodState[String] =
       self.apply(codec = codec.codec.value).map(expression => show"z.array($expression)")
@@ -70,14 +70,14 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
            |${values.map(value => show"  $value").mkString_(",\n")}
            |])""".stripMargin
 
-    def apply(codec: Union[Json, ?]): ZodState[String] =
-      val discriminator = codec match
-        case codec: Union.Untagged[Json, ?] => none
-        case codec: Union.Tagged[Json, ?]   => codec.discriminator.some
+    // def apply(codec: Union[Json, ?]): ZodState[String] =
+    //   val discriminator = codec match
+    //     case codec: Union.Untagged[Json, ?] => none
+    //     case codec: Union.Tagged[Json, ?]   => codec.discriminator.some
 
-      UnionZodRenderer[Json](
-        render = [A] => (name: String, codec: Json[A]) => Raw(name, codec, discriminator)
-      )(codec)
+    //   UnionZodRenderer[Json](
+    //     render = [A] => (name: String, codec: Json[A]) => Raw(name, codec, discriminator)
+    //   )(codec)
 
     def apply[A](reference: Reference.Constant[Json, A]): Option[String] = reference.self.value match
       case Json.Primitive(self) => PrimitivePrinter.Quoted(codec = self, reference.value).some

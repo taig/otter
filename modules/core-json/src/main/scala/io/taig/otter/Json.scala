@@ -69,13 +69,13 @@ object Json:
       extract = [A] => (codec: Json.Tuple[A]) => codec.self
     )
 
-  final case class Union[A](self: Self.Union[Json, A]) extends Json[A]
+  // final case class Union[A](self: Self.Union[Json, A]) extends Json[A]
 
-  object Union:
-    given codec: Codec.Union[Json.Union, Json] = Codec.Union(
-      lift = [A] => (self: Self.Union[Json, A]) => Union(self),
-      extract = [A] => (codec: Json.Union[A]) => codec.self
-    )
+  // object Union:
+  //   given codec: Codec.Union[Json.Union, Json] = Codec.Union(
+  //     lift = [A] => (self: Self.Union[Json, A]) => Union(self),
+  //     extract = [A] => (codec: Json.Union[A]) => codec.self
+  //   )
 
   sealed abstract class Key[A] extends Product with Serializable
 
@@ -104,13 +104,13 @@ object Json:
         extract = [A] => (codec: Json.Key.Primitive[A]) => codec.self
       )
 
-    final case class Union[A](self: Self.Union.Untagged[Json.Key, A]) extends Json.Key[A]
+    // final case class Union[A](self: Self.Union.Untagged[Json.Key, A]) extends Json.Key[A]
 
-    object Union:
-      given codec: Codec.Union.Untagged[Json.Key.Union, Json.Key] = Codec.Union.Untagged(
-        lift = [A] => (self: Self.Union.Untagged[Json.Key, A]) => Union(self),
-        extract = [A] => (codec: Json.Key.Union[A]) => codec.self
-      )
+    // object Union:
+    //   given codec: Codec.Union.Untagged[Json.Key.Union, Json.Key] = Codec.Union.Untagged(
+    //     lift = [A] => (self: Self.Union.Untagged[Json.Key, A]) => Union(self),
+    //     extract = [A] => (codec: Json.Key.Union[A]) => codec.self
+    //   )
 
     given codec: Codec[Json.Key] with
       extension [A](self: Key[A])
@@ -118,19 +118,19 @@ object Json:
           case Key.Constant(self)    => self.metadata
           case Key.Enumeration(self) => self.metadata
           case Key.Primitive(self)   => self.metadata
-          case Key.Union(self)       => self.metadata
+          // case Key.Union(self)       => self.metadata
 
         override def modifyMetadata(f: Metadata => Metadata): Key[A] = self match
           case Key.Constant(self)    => Constant(self.modifyMetadata(f))
           case Key.Enumeration(self) => Enumeration(self.modifyMetadata(f))
           case Key.Primitive(self)   => Primitive(self.modifyMetadata(f))
-          case Key.Union(self)       => Union(self.modifyMetadata(f))
+          // case Key.Union(self)       => Union(self.modifyMetadata(f))
 
         override def imap[B](f: A => B)(g: B => A): Key[B] = self match
           case Key.Constant(self)    => Constant(self.imap(f)(g))
           case Key.Enumeration(self) => Enumeration(self.imap(f)(g))
           case Key.Primitive(self)   => Primitive(self.imap(f)(g))
-          case Key.Union(self)       => Union(self.imap(f)(g))
+          // case Key.Union(self)       => Union(self.imap(f)(g))
 
   type Field[A] = Self.Field[Json.Key, Json, A]
 
@@ -154,7 +154,7 @@ object Json:
           case Json.Primitive(self)   => self.metadata
           case Json.Record(self)      => self.metadata
           case Json.Tuple(self)       => self.metadata
-          case Json.Union(self)       => self.metadata
+          // case Json.Union(self)       => self.metadata
 
         override def modifyMetadata(f: Metadata => Metadata): Json[A] = self match
           case Json.Collection(self)  => Collection(self.modifyMetadata(f))
@@ -165,7 +165,7 @@ object Json:
           case Json.Primitive(self)   => Primitive(self.modifyMetadata(f))
           case Json.Record(self)      => Record(self.modifyMetadata(f))
           case Json.Tuple(self)       => Tuple(self.modifyMetadata(f))
-          case Json.Union(self)       => Union(self.modifyMetadata(f))
+          // case Json.Union(self)       => Union(self.modifyMetadata(f))
 
         override def imap[B](f: A => B)(g: B => A): Json[B] = self match
           case Json.Collection(self)  => Collection(self.imap(f)(g))
@@ -176,4 +176,4 @@ object Json:
           case Json.Primitive(self)   => Primitive(self.imap(f)(g))
           case Json.Record(self)      => Record(self.imap(f)(g))
           case Json.Tuple(self)       => Tuple(self.imap(f)(g))
-          case Json.Union(self)       => Union(self.imap(f)(g))
+          // case Json.Union(self)       => Union(self.imap(f)(g))

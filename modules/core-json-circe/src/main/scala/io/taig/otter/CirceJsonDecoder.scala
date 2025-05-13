@@ -4,9 +4,6 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Decoder as CirceDecoder
 import io.circe.Json as CirceJson
-import io.taig.otter.Union.Untagged.Branch
-import io.taig.otter.Union.Untagged.Modify
-import io.taig.otter.Union.Untagged.OrElse
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -23,7 +20,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Primitive(self)   => apply(codec = self, json)
     case Json.Record(self)      => apply(codec = self, json)
     case Json.Tuple(self)       => apply(codec = self, json)
-    case Json.Union(self)       => apply(codec = self, json)
+    // case Json.Union(self)       => apply(codec = self, json)
 
   def apply[A](codec: Collection[Json, A], json: CirceJson): Validated[Violations, A] = codec match
     case Collection.Indexed(codec, minimum, maximum, uniqueItems, _) =>
@@ -248,21 +245,21 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
       val (x, y) = json.splitAt(size)
       (apply(codec = left, json = x, index), apply(codec = right, json = y, index = size)).tupled
 
-  def apply[A](codec: Union[Json, A], json: CirceJson): Validated[Violations, A] = codec match
-    case codec: Union.Untagged[Json, A] => apply(codec, json)
-    case codec: Union.Tagged[Json, A]   => apply(codec, json)
+  // def apply[A](codec: Union[Json, A], json: CirceJson): Validated[Violations, A] = codec match
+  //   case codec: Union.Untagged[Json, A] => apply(codec, json)
+  //   case codec: Union.Tagged[Json, A]   => apply(codec, json)
 
-  def apply[A](codec: Union.Untagged[Json, A], json: CirceJson): Validated[Violations, A] = codec match
-    case Union.Untagged.OrElse(left, right, _) => union(left, right, json)
-    case Union.Untagged.Branch(name, codec, _) =>
-      apply(codec = codec.value, json).leftMap(name /: _)
-    case Union.Untagged.Modify(self, f, _) => apply(codec = self, json).map(f)
+  // def apply[A](codec: Union.Untagged[Json, A], json: CirceJson): Validated[Violations, A] = codec match
+  //   case Union.Untagged.OrElse(left, right, _) => union(left, right, json)
+  //   case Union.Untagged.Branch(name, codec, _) =>
+  //     apply(codec = codec.value, json).leftMap(name /: _)
+  //   case Union.Untagged.Modify(self, f, _) => apply(codec = self, json).map(f)
 
-  def union[A, B](
-      left: Union.Untagged[Json, A],
-      right: Union.Untagged[Json, B],
-      json: CirceJson
-  ): Validated[Violations, Either[A, B]] =
-    apply(codec = left, json).map(_.asLeft).findValid(apply(codec = right, json).map(_.asRight))
+  // def union[A, B](
+  //     left: Union.Untagged[Json, A],
+  //     right: Union.Untagged[Json, B],
+  //     json: CirceJson
+  // ): Validated[Violations, Either[A, B]] =
+  //   apply(codec = left, json).map(_.asLeft).findValid(apply(codec = right, json).map(_.asRight))
 
-  def apply[A](codec: Union.Tagged[Json, A], json: CirceJson): Validated[Violations, A] = ??? // TODO ugh
+  // def apply[A](codec: Union.Tagged[Json, A], json: CirceJson): Validated[Violations, A] = ??? // TODO ugh

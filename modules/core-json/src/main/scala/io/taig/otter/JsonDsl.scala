@@ -14,9 +14,9 @@ trait JsonDsl extends
       FieldDsl[Json.Field, Json.Key, Json , Json.Record],
       FieldDsl.Primitive.String[Json.Field, Json.Key, Json, Json.Record],
       TupleDsl[Json.Tuple, Json],
-      UnionDsl[Json.Union, Json],
-      ErrorDsl[Json.Constant, Json.Record, Json.Field, Json.Key, Json],
-      ViolationsDsl[Json.Collection, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Record, Json.Union, Json.Field, Json.Key, Json]:
+      // UnionDsl[Json.Union, Json],
+      ErrorDsl[Json.Constant, Json.Record, Json.Field, Json.Key, Json]:
+      // ViolationsDsl[Json.Collection, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Record, Json.Union, Json.Field, Json.Key, Json]:
   override def key: JsonKeyDsl = JsonKeyDsl
 
 object JsonDsl extends JsonDsl

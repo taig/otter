@@ -9,7 +9,7 @@ object HttpHeaderValuePrinter extends Printer[Http.Header.Value]:
     case Http.Header.Value.Constant(self)    => apply(codec = self, a)
     case Http.Header.Value.Enumeration(self) => apply(codec = self, a)
     case Http.Header.Value.Primitive(self)   => PrimitivePrinter.Unquoted(codec = self, a)
-    case Http.Header.Value.Union(self)       => apply(codec = self, a)
+    // case Http.Header.Value.Union(self)       => apply(codec = self, a)
 
   @tailrec
   def apply[A](codec: Constant[Http.Header.Value.Primitive, A], a: A): String = codec match
@@ -21,7 +21,7 @@ object HttpHeaderValuePrinter extends Printer[Http.Header.Value]:
     case Enumeration.Modify(self, _, g)      => apply(codec = self, g(a))
     case Enumeration.Root(codec, mapping, _) => apply(codec = codec.value, mapping(a))
 
-  def apply[A](codec: Union.Untagged[Http.Header.Value, A], a: A): String = codec match
-    case Union.Untagged.Branch(_, codec, _)    => apply(codec = codec.value, a)
-    case Union.Untagged.Modify(self, _, g)     => apply(codec = self, g(a))
-    case Union.Untagged.OrElse(left, right, _) => a.fold(apply(codec = left, _), apply(codec = right, _))
+  // def apply[A](codec: Union.Untagged[Http.Header.Value, A], a: A): String = codec match
+  //   case Union.Untagged.Branch(_, codec, _)    => apply(codec = codec.value, a)
+  //   case Union.Untagged.Modify(self, _, g)     => apply(codec = self, g(a))
+  //   case Union.Untagged.OrElse(left, right, _) => a.fold(apply(codec = left, _), apply(codec = right, _))
