@@ -32,18 +32,18 @@ trait Invariant[F[_]]:
 
 object Invariant:
   trait Coproduct[F[_]] extends Invariant[F]:
-    extension [A](self: F[A]) def orElse[B](codec: F[B]): F[Either[A, B]]
+    extension [A](self: F[A]) def orElse[B](schema: F[B]): F[Either[A, B]]
 
   object Coproduct:
     trait Lift[F[_], G[_]] extends Coproduct[G]:
       def lift[A](fa: F[A]): G[A]
 
       extension [A](self: F[A])
-        final def :+[B](codec: F[B]): G[Either[A, B]] = lift(self).orElse(lift(codec))
-        final def +:[B](codec: F[B]): G[Either[B, A]] = lift(codec).orElse(lift(self))
+        final def :+[B](schema: F[B]): G[Either[A, B]] = lift(self).orElse(lift(schema))
+        final def +:[B](schema: F[B]): G[Either[B, A]] = lift(schema).orElse(lift(self))
 
       extension [A <: Matchable](self: F[A])
-        final inline def |[B <: Matchable](codec: F[B]): G[A | B] = (self :+ codec).imap {
+        final inline def |[B <: Matchable](schema: F[B]): G[A | B] = (self :+ schema).imap {
           case Left(a)  => a
           case Right(b) => b
         } {
@@ -54,16 +54,16 @@ object Invariant:
   trait Product[F[_]] extends Invariant[F]:
     // given result: Invariant[Result]
 
-    // def fromElement[A](codec: Element[A]): F[A]
+    // def fromElement[A](schema: Element[A]): F[A]
 
     extension [A](self: F[A])
-      def zip[B](codec: F[B]): F[(A, B)]
+      def zip[B](schema: F[B]): F[(A, B)]
 
-      final def merge[B](codec: F[B])(using merge: Merge[A, B]): F[merge.Out] =
-        self.zip(codec).imap(merge.apply)(merge.unapply)
+      final def merge[B](schema: F[B])(using merge: Merge[A, B]): F[merge.Out] =
+        self.zip(schema).imap(merge.apply)(merge.unapply)
 
-      // final def :*[B](codec: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =
-      //   self.merge(fromElement(codec))
+      // final def :*[B](schema: Element[B])(using merge: Merge[A, B]): Result[merge.Out] =
+      //   self.merge(fromElement(schema))
 
-      // final def *:[B](codec: Element[B])(using merge: Merge[B, A]): Result[merge.Out] =
-      //   fromElement(codec).merge(self)
+      // final def *:[B](schema: Element[B])(using merge: Merge[B, A]): Result[merge.Out] =
+      //   fromElement(schema).merge(self)

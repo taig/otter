@@ -19,6 +19,8 @@ import io.taig.otter.Comparison
 import io.taig.otter.Argument
 import io.taig.otter.StringComponentExtension
 import java.util.UUID
+import cats.arrow.FunctionK
+import io.taig.otter.Shape
 
 sealed abstract class Primitive[A] extends Schema[Nothing, A]:
   override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
@@ -41,23 +43,13 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    trait Shape[Self[_]] extends Schema.Shape[Self]:
-      def boolean: Self[SBoolean]
+    given Shape.Primitive.Boolean[Primitive.Boolean] with
+      override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
 
-    object Shape:
-      def apply[Self[_]](
-          lift: [A] => (self: Primitive.Boolean[A]) => Self[A],
-          extract: [A] => (self: Self[A]) => Primitive.Boolean[A]
-      ): Primitive.Boolean.Shape[Self] = new Shape[Self]:
-        override val boolean: Self[SBoolean] = lift(Root(metadata = Metadata.Empty))
-
-        extension [A](self: Self[A])
-          override def metadata: Metadata = extract(self).metadata
-          override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-          override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-
-    trait Component[+Self[_]](using shape: Primitive.Boolean.Shape[Self]):
-      final val boolean: Self[SBoolean] = shape.boolean
+      extension [A](fa: Boolean[A])
+        override def imap[B](f: A => B)(g: B => A): Boolean[B] = fa.imap(f)(g)
+        override def metadata: Metadata = fa.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Boolean[A] = fa.modifyMetadata(f)
 
   sealed abstract class Number[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[A]
@@ -127,185 +119,47 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    trait Shape[Self[_]] extends Schema.Shape[Self]:
-      def jBigDecimal(
+    given Shape.Primitive.Number[Primitive.Number] with
+      override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
           multiple: Option[JBigDecimal]
-      ): Self[JBigDecimal]
+      ): Number[JBigDecimal] = BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      def jBigInteger(
+      override def jBigInteger(
           minimum: Option[Comparison[JBigInteger]],
           maximum: Option[Comparison[JBigInteger]],
           multiple: Option[JBigInteger]
-      ): Self[JBigInteger]
+      ): Number[JBigInteger] = BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      def double(
+      override def double(
           minimum: Option[Comparison[SDouble]],
           maximum: Option[Comparison[SDouble]],
           multiple: Option[SDouble]
-      ): Self[SDouble]
+      ): Number[SDouble] = Double(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      def float(
+      override def float(
           minimum: Option[Comparison[SFloat]],
           maximum: Option[Comparison[SFloat]],
           multiple: Option[SFloat]
-      ): Self[SFloat]
+      ): Number[SFloat] = Float(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      def int(
+      override def int(
           minimum: Option[Comparison[SInt]],
           maximum: Option[Comparison[SInt]],
           multiple: Option[SInt]
-      ): Self[SInt]
+      ): Number[SInt] = Int(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      def long(
+      override def long(
           minimum: Option[Comparison[SLong]],
           maximum: Option[Comparison[SLong]],
           multiple: Option[SLong]
-      ): Self[SLong]
+      ): Number[SLong] = Long(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-    object Shape:
-      def apply[Self[_]](
-          lift: [A] => (self: Primitive.Number[A]) => Self[A],
-          extract: [A] => (self: Self[A]) => Primitive.Number[A]
-      ): Primitive.Number.Shape[Self] = new Shape[Self]:
-        override def jBigDecimal(
-            minimum: Option[Comparison[JBigDecimal]],
-            maximum: Option[Comparison[JBigDecimal]],
-            multiple: Option[JBigDecimal]
-        ): Self[JBigDecimal] = lift(BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        override def jBigInteger(
-            minimum: Option[Comparison[JBigInteger]],
-            maximum: Option[Comparison[JBigInteger]],
-            multiple: Option[JBigInteger]
-        ): Self[JBigInteger] = lift(BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        override def double(
-            minimum: Option[Comparison[SDouble]],
-            maximum: Option[Comparison[SDouble]],
-            multiple: Option[SDouble]
-        ): Self[SDouble] = lift(Double(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        override def float(
-            minimum: Option[Comparison[SFloat]],
-            maximum: Option[Comparison[SFloat]],
-            multiple: Option[SFloat]
-        ): Self[SFloat] = lift(Float(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        override def int(
-            minimum: Option[Comparison[SInt]],
-            maximum: Option[Comparison[SInt]],
-            multiple: Option[SInt]
-        ): Self[SInt] = lift(Int(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        override def long(
-            minimum: Option[Comparison[SLong]],
-            maximum: Option[Comparison[SLong]],
-            multiple: Option[SLong]
-        ): Self[SLong] = lift(Long(minimum, maximum, multiple, metadata = Metadata.Empty))
-
-        extension [A](self: Self[A])
-          override def metadata: Metadata = extract(self).metadata
-          override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-          override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-
-    trait Component[+Self[_]](using shape: Primitive.Number.Shape[Self]):
-      final def jBigDecimal(
-          minimum: Argument[Comparison[JBigDecimal]] = Argument.Default,
-          maximum: Argument[Comparison[JBigDecimal]] = Argument.Default,
-          multiple: Argument[JBigDecimal] = Argument.Default
-      ): Self[JBigDecimal] = shape.jBigDecimal(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val jBigDecimal: Self[JBigDecimal] = jBigDecimal()
-
-      final def bigDecimal(
-          minimum: Argument[Comparison[SBigDecimal]] = Argument.Default,
-          maximum: Argument[Comparison[SBigDecimal]] = Argument.Default,
-          multiple: Argument[SBigDecimal] = Argument.Default
-      ): Self[SBigDecimal] = jBigDecimal(
-        minimum = minimum.map(_.map(_.bigDecimal)),
-        maximum = maximum.map(_.map(_.bigDecimal)),
-        multiple = multiple.map(_.bigDecimal)
-      ).imap(SBigDecimal.apply)(_.bigDecimal)
-
-      final val bigDecimal: Self[SBigDecimal] = bigDecimal()
-
-      final def jBigInteger(
-          minimum: Argument[Comparison[JBigInteger]] = Argument.Default,
-          maximum: Argument[Comparison[JBigInteger]] = Argument.Default,
-          multiple: Argument[JBigInteger] = Argument.Default
-      ): Self[JBigInteger] = shape.jBigInteger(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val jBigInteger: Self[JBigInteger] = jBigInteger()
-
-      final def bigInteger(
-          minimum: Argument[Comparison[SBigInt]] = Argument.Default,
-          maximum: Argument[Comparison[SBigInt]] = Argument.Default,
-          multiple: Argument[SBigInt] = Argument.Default
-      ): Self[SBigInt] = jBigInteger(
-        minimum = minimum.map(_.map(_.bigInteger)),
-        maximum = maximum.map(_.map(_.bigInteger)),
-        multiple = multiple.map(_.bigInteger)
-      ).imap(SBigInt.apply)(_.bigInteger)
-
-      final val bigInteger: Self[SBigInt] = bigInteger()
-
-      final def double(
-          minimum: Argument[Comparison[SDouble]] = Argument.Default,
-          maximum: Argument[Comparison[SDouble]] = Argument.Default,
-          multiple: Argument[SDouble] = Argument.Default
-      ): Self[SDouble] = shape.double(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val double: Self[SDouble] = double()
-
-      final def float(
-          minimum: Argument[Comparison[SFloat]] = Argument.Default,
-          maximum: Argument[Comparison[SFloat]] = Argument.Default,
-          multiple: Argument[SFloat] = Argument.Default
-      ): Self[SFloat] = shape.float(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val float: Self[SFloat] = float()
-
-      final def int(
-          minimum: Argument[Comparison[SInt]] = Argument.Default,
-          maximum: Argument[Comparison[SInt]] = Argument.Default,
-          multiple: Argument[SInt] = Argument.Default
-      ): Self[SInt] = shape.int(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val int: Self[SInt] = int()
-
-      final def long(
-          minimum: Argument[Comparison[SLong]] = Argument.Default,
-          maximum: Argument[Comparison[SLong]] = Argument.Default,
-          multiple: Argument[SLong] = Argument.Default
-      ): Self[SLong] = shape.long(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        multiple = multiple.toOption
-      )
-
-      final val long: Self[SLong] = long()
+      extension [A](self: Number[A])
+        override def imap[B](f: A => B)(g: B => A): Number[B] = self.imap(f)(g)
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Number[A] = self.modifyMetadata(f)
 
   sealed abstract class String[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.String[A]
@@ -340,90 +194,23 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
 
-    trait Shape[Self[_]] extends Schema.Shape[Self]:
-      def string(minimum: Option[SInt], maximum: Option[SInt], matches: Option[Pattern]): Self[JString]
+    given Shape.Primitive.String[Primitive.String] with
+      override def string(
+          minimum: Option[SInt],
+          maximum: Option[SInt],
+          matches: Option[Pattern]
+      ): String[JString] = Text(minimum, maximum, matches, metadata = Metadata.Empty)
 
-      def parser[A](
+      override def parser[A](
           name: JString,
           decode: JString => Either[JString, A],
           encode: A => JString,
           minimum: Option[SInt],
           maximum: Option[SInt],
           matches: Option[Pattern]
-      ): Self[A]
+      ): String[A] = Parser(name, decode, encode, minimum, maximum, matches, metadata = Metadata.Empty)
 
-    object Shape:
-      def apply[Self[_]](
-          lift: [A] => (self: Primitive.String[A]) => Self[A],
-          extract: [A] => (self: Self[A]) => Primitive.String[A]
-      ): Primitive.String.Shape[Self] = new Shape[Self]:
-        override def string(
-            minimum: Option[SInt],
-            maximum: Option[SInt],
-            matches: Option[Pattern]
-        ): Self[JString] = lift(Text(minimum, maximum, matches, metadata = Metadata.Empty))
-
-        override def parser[A](
-            name: JString,
-            decode: JString => Either[JString, A],
-            encode: A => JString,
-            minimum: Option[SInt],
-            maximum: Option[SInt],
-            matches: Option[Pattern]
-        ): Self[A] = lift(Parser(name, decode, encode, minimum, maximum, matches, metadata = Metadata.Empty))
-
-        extension [A](self: Self[A])
-          override def metadata: Metadata = extract(self).metadata
-          override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-          override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-
-    trait Component[+Self[_]](using shape: Primitive.String.Shape[Self]):
-      final def string(
-          minimum: Argument[SInt] = Argument.Default,
-          maximum: Argument[SInt] = Argument.Default,
-          matches: Argument[Pattern] = Argument.Default
-      ): Self[JString] = shape.string(
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        matches = matches.toOption
-      )
-
-      final val string: Self[JString] = string()
-
-      implicit final class ToStringComponentExtension(self: string.type)
-          extends StringComponentExtension[Self, JString]:
-        override protected def empty: JString = ""
-        override protected def isEmpty(a: JString): SBoolean = a.isEmpty
-
-        def apply(
-            minimum: Argument[Int] = Argument.Default,
-            maximum: Argument[Int] = Argument.Default,
-            matches: Argument[Pattern] = Argument.Default
-        ): Self[JString] = string(minimum, maximum, matches)
-
-      final def parser[A](
-          name: JString,
-          minimum: Argument[SInt] = Argument.Default,
-          maximum: Argument[SInt] = Argument.Default,
-          matches: Argument[Pattern] = Argument.Default
-      )(f: JString => Either[JString, A])(g: A => JString): Self[A] = shape.parser(
-        name,
-        decode = f,
-        encode = g,
-        minimum = minimum.toOption,
-        maximum = maximum.toOption,
-        matches = matches.toOption
-      )
-
-      final val uuid: Self[UUID] = parser(name = "uuid") { value =>
-        Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
-      }(_.show)
-
-      final val pattern: Self[Pattern] = string.imap(Pattern.compile)(_.pattern)
-
-  trait Shape[Self[_]] extends Primitive.Boolean.Shape[Self], Primitive.Number.Shape[Self], Primitive.String.Shape[Self]
-
-  trait Component[+Self[_]]
-      extends Primitive.Boolean.Component[Self],
-        Primitive.Number.Component[Self],
-        Primitive.String.Component[Self]
+      extension [A](self: String[A])
+        override def imap[B](f: A => B)(g: B => A): String[B] = self.imap(f)(g)
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)

@@ -1,0 +1,323 @@
+package io.taig.otter
+
+import java.lang.String as JString
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import java.util.regex.Pattern
+import scala.Boolean as SBoolean
+import scala.Double as SDouble
+import scala.Float as SFloat
+import scala.BigDecimal as SBigDecimal
+import scala.BigInt as SBigInt
+import scala.Int as SInt
+import scala.Long as SLong
+import io.taig.otter.Metadata
+import io.taig.otter.Comparison
+import io.taig.otter.Argument
+import io.taig.otter.StringComponentExtension
+import java.util.UUID
+import cats.arrow.FunctionK
+
+trait Shape[Self[_]] extends Invariant[Self]:
+  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T]
+
+  extension [A](self: Self[A])
+    def metadata: Metadata
+    def modifyMetadata(f: Metadata => Metadata): Self[A]
+
+    final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
+    final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
+
+object Shape:
+  trait Collection[Self[_], -Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Collection[T, Value] =
+      new Collection[T, Value]:
+        override def linked[A](
+            schema: => Value[A],
+            minimum: Option[Int],
+            maximum: Option[Int],
+            uniqueItems: Boolean
+        ): T[List[A]] = fK(self.linked(schema, minimum, maximum, uniqueItems))
+
+        override def indexed[A](
+            schema: => Value[A],
+            minimum: Option[Int],
+            maximum: Option[Int],
+            uniqueItems: Boolean
+        ): T[Vector[A]] = fK(self.indexed(schema, minimum, maximum, uniqueItems))
+
+        extension [A](ta: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+    def linked[A](schema: => Value[A], minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean): Self[List[A]]
+
+    def indexed[A](
+        schema: => Value[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        uniqueItems: Boolean
+    ): Self[Vector[A]]
+
+  object Collection:
+    inline def apply[Self[_], Value[_]](using self: Shape.Collection[Self, Value]): Shape.Collection[Self, Value] = self
+
+  trait Field[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Field[T, Key, Value] =
+      new Field[T, Key, Value]:
+        extension [A](ta: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
+
+        override def field[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
+          fK(self.field(name, key, value))
+
+    def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+
+    extension [A](self: Self[A]) def optional: Self[Option[A]]
+
+  object Field:
+    inline def apply[Self[_], Key[_], Value[_]](using
+        self: Shape.Field[Self, Key, Value]
+    ): Shape.Field[Self, Key, Value] = self
+
+  trait Primitive[Self[_]]
+      extends Shape.Primitive.Boolean[Self],
+        Shape.Primitive.Number[Self],
+        Shape.Primitive.String[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Primitive[T] =
+      new Primitive[T]:
+        extension [A](fa: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(fa))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
+
+        override def boolean: T[SBoolean] = fK(self.boolean)
+
+        override def jBigDecimal(
+            minimum: Option[Comparison[JBigDecimal]],
+            maximum: Option[Comparison[JBigDecimal]],
+            multiple: Option[JBigDecimal]
+        ): T[JBigDecimal] = fK(self.jBigDecimal(minimum, maximum, multiple))
+
+        override def jBigInteger(
+            minimum: Option[Comparison[JBigInteger]],
+            maximum: Option[Comparison[JBigInteger]],
+            multiple: Option[JBigInteger]
+        ): T[JBigInteger] = fK(self.jBigInteger(minimum, maximum, multiple))
+
+        override def double(
+            minimum: Option[Comparison[SDouble]],
+            maximum: Option[Comparison[SDouble]],
+            multiple: Option[SDouble]
+        ): T[SDouble] = fK(self.double(minimum, maximum, multiple))
+
+        override def float(
+            minimum: Option[Comparison[SFloat]],
+            maximum: Option[Comparison[SFloat]],
+            multiple: Option[SFloat]
+        ): T[SFloat] = fK(self.float(minimum, maximum, multiple))
+
+        override def int(
+            minimum: Option[Comparison[SInt]],
+            maximum: Option[Comparison[SInt]],
+            multiple: Option[SInt]
+        ): T[SInt] = fK(self.int(minimum, maximum, multiple))
+
+        override def long(
+            minimum: Option[Comparison[SLong]],
+            maximum: Option[Comparison[SLong]],
+            multiple: Option[SLong]
+        ): T[SLong] = fK(self.long(minimum, maximum, multiple))
+
+        override def string(minimum: Option[SInt], maximum: Option[SInt], matches: Option[Pattern]): T[JString] =
+          fK(self.string(minimum, maximum, matches))
+
+        override def parser[A](
+            name: JString,
+            decode: JString => Either[JString, A],
+            encode: A => JString,
+            minimum: Option[SInt],
+            maximum: Option[SInt],
+            matches: Option[Pattern]
+        ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
+
+  object Primitive:
+    trait Boolean[Self[_]] extends Shape[Self]:
+      self =>
+
+      override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+          gK: [A] => T[A] => Self[A]
+      ): Shape.Primitive.Boolean[T] = new Boolean[T]:
+        override def boolean: T[SBoolean] = fK(self.boolean)
+
+        extension [A](fa: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(fa))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
+
+      def boolean: Self[SBoolean]
+
+    object Boolean:
+      inline def apply[Self[_]](using self: Shape.Primitive.Boolean[Self]): Shape.Primitive.Boolean[Self] = self
+
+    trait Number[Self[_]] extends Shape[Self]:
+      self =>
+
+      override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+          gK: [A] => T[A] => Self[A]
+      ): Shape.Primitive.Number[T] = new Number[T]:
+        extension [A](ta: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+        override def jBigDecimal(
+            minimum: Option[Comparison[JBigDecimal]],
+            maximum: Option[Comparison[JBigDecimal]],
+            multiple: Option[JBigDecimal]
+        ): T[JBigDecimal] =
+          fK(self.jBigDecimal(minimum, maximum, multiple))
+
+        override def jBigInteger(
+            minimum: Option[Comparison[JBigInteger]],
+            maximum: Option[Comparison[JBigInteger]],
+            multiple: Option[JBigInteger]
+        ): T[JBigInteger] =
+          fK(self.jBigInteger(minimum, maximum, multiple))
+
+        override def double(
+            minimum: Option[Comparison[SDouble]],
+            maximum: Option[Comparison[SDouble]],
+            multiple: Option[SDouble]
+        ): T[SDouble] =
+          fK(self.double(minimum, maximum, multiple))
+
+        override def float(
+            minimum: Option[Comparison[SFloat]],
+            maximum: Option[Comparison[SFloat]],
+            multiple: Option[SFloat]
+        ): T[SFloat] =
+          fK(self.float(minimum, maximum, multiple))
+
+        override def int(
+            minimum: Option[Comparison[SInt]],
+            maximum: Option[Comparison[SInt]],
+            multiple: Option[SInt]
+        ): T[SInt] =
+          fK(self.int(minimum, maximum, multiple))
+
+        override def long(
+            minimum: Option[Comparison[SLong]],
+            maximum: Option[Comparison[SLong]],
+            multiple: Option[SLong]
+        ): T[SLong] =
+          fK(self.long(minimum, maximum, multiple))
+
+      def jBigDecimal(
+          minimum: Option[Comparison[JBigDecimal]],
+          maximum: Option[Comparison[JBigDecimal]],
+          multiple: Option[JBigDecimal]
+      ): Self[JBigDecimal]
+
+      def jBigInteger(
+          minimum: Option[Comparison[JBigInteger]],
+          maximum: Option[Comparison[JBigInteger]],
+          multiple: Option[JBigInteger]
+      ): Self[JBigInteger]
+
+      def double(
+          minimum: Option[Comparison[SDouble]],
+          maximum: Option[Comparison[SDouble]],
+          multiple: Option[SDouble]
+      ): Self[SDouble]
+
+      def float(
+          minimum: Option[Comparison[SFloat]],
+          maximum: Option[Comparison[SFloat]],
+          multiple: Option[SFloat]
+      ): Self[SFloat]
+
+      def int(
+          minimum: Option[Comparison[SInt]],
+          maximum: Option[Comparison[SInt]],
+          multiple: Option[SInt]
+      ): Self[SInt]
+
+      def long(
+          minimum: Option[Comparison[SLong]],
+          maximum: Option[Comparison[SLong]],
+          multiple: Option[SLong]
+      ): Self[SLong]
+
+    object Number:
+      inline def apply[Self[_]](using self: Shape.Primitive.Number[Self]): Shape.Primitive.Number[Self] = self
+
+    trait String[Self[_]] extends Shape[Self]:
+      self =>
+
+      override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+          gK: [A] => T[A] => Self[A]
+      ): Shape.Primitive.String[T] =
+        new String[T]:
+          override def string(
+              minimum: Option[SInt],
+              maximum: Option[SInt],
+              matches: Option[Pattern]
+          ): T[JString] = fK(self.string(minimum, maximum, matches))
+
+          override def parser[A](
+              name: JString,
+              decode: JString => Either[JString, A],
+              encode: A => JString,
+              minimum: Option[SInt],
+              maximum: Option[SInt],
+              matches: Option[Pattern]
+          ): T[A] =
+            fK(self.parser(name, decode, encode, minimum, maximum, matches))
+
+          extension [A](ta: T[A])
+            override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+            override def metadata: Metadata = self.metadata(gK(ta))
+            override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+      def string(minimum: Option[SInt], maximum: Option[SInt], matches: Option[Pattern]): Self[JString]
+
+      def parser[A](
+          name: JString,
+          decode: JString => Either[JString, A],
+          encode: A => JString,
+          minimum: Option[SInt],
+          maximum: Option[SInt],
+          matches: Option[Pattern]
+      ): Self[A]
+
+    object String:
+      inline def apply[Self[_]](using self: Shape.Primitive.String[Self]): Shape.Primitive.String[Self] = self
+
+  trait Record[Self[_], Field[_]] extends Shape[Self], Invariant.Product[Self]:
+    self =>
+
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Record[T, Field] = 
+      new Shape.Record[T, Field]:
+        override def record[A](field: => Field[A]): T[A] = fK(self.record(field))
+
+        extension [A](fa: T[A])
+          override def metadata: Metadata = self.metadata(gK(fa))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+          override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(fa))(gK(schema)))
+          override def optional: T[Option[A]] = fK(self.optional(gK(fa)))
+
+    def record[A](field: => Field[A]): Self[A]
+
+    extension [A](self: Self[A]) def optional: Self[Option[A]]

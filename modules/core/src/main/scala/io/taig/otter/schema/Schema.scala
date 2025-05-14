@@ -11,10 +11,12 @@ abstract class Schema[+S[_], A]:
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Schema[T, A]
 
 object Schema:
-  trait Shape[Self[_]] extends Invariant[Self]:
-    extension [A](self: Self[A])
+  trait Shape[S[_]] extends Invariant[S]:
+    def imapK[T[_]](fK: [A] => S[A] => T[A])(gK: [A] => T[A] => S[A]): Shape[T]
+
+    extension [A](self: S[A])
       def metadata: Metadata
-      def modifyMetadata(f: Metadata => Metadata): Self[A]
+      def modifyMetadata(f: Metadata => Metadata): S[A]
 
       final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
-      final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
+      final def metadata[B](key: Metadata.Key[B], value: B): S[A] = modifyMetadata(_.put(key, value))
