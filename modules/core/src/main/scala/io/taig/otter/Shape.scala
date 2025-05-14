@@ -14,7 +14,13 @@ import cats.Eq
 import io.taig.enumeration.ext.Mapping
 
 trait Shape[Self[_]] extends Invariant[Self]:
-  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T]
+  self =>
+
+  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T] = new Shape[T]:
+    extension [A](ta: T[A])
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+      override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   extension [A](self: Self[A])
     def metadata: Metadata
@@ -29,17 +35,16 @@ object Shape:
 
     final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): Shape.Branch[T, Key, Value] =
-      new Branch[T, Key, Value]:
-        override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
-          fK(self.branch(name, key, value))
+    ): Shape.Branch[T, Key, Value] = new Branch[T, Key, Value]:
+      override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
+        fK(self.branch(name, key, value))
 
-        extension [A](fa: T[A])
-          override def key: Reference.Constant[Key, ?] = self.key(gK(fa))
-          override def value: Reference[Value, ?] = self.value(gK(fa))
-          override def metadata: Metadata = self.metadata(gK(fa))
-          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
-          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+      extension [A](ta: T[A])
+        override def key: Reference.Constant[Key, ?] = self.key(gK(ta))
+        override def value: Reference[Value, ?] = self.value(gK(ta))
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
     def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
 
@@ -440,6 +445,20 @@ object Shape:
 
   object Record:
     inline def apply[Self[_], Field[_]](using self: Shape.Record[Self, Field]): Shape.Record[Self, Field] = self
+
+  trait Sum[Self[_], Branch[_]] extends Shape[Self], Invariant.Coproduct[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Sum[T, Branch] =
+      new Sum[T, Branch]:
+        extension [A](ta: T[A])
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+  object Sum:
+    inline def apply[Self[_], Branch[_]](using self: Shape.Sum[Self, Branch]): Shape.Sum[Self, Branch] = self
 
   trait Tuple[Self[_], Value[_]] extends Shape[Self], Invariant.Product[Self]:
     self =>

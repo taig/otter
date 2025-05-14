@@ -9,7 +9,7 @@ import io.taig.otter.Shape
 import cats.Order
 import io.taig.enumeration.ext.EnumerationValues
 
-sealed abstract class Enumeration[+S[_], A]:
+sealed abstract class Enumeration[+S[_], A] extends Schema[S, A]:
   def metadata: Metadata
   def schema: Reference[S, ?]
   def values: NonEmptyList[A]
