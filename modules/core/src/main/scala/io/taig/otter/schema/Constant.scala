@@ -28,12 +28,13 @@ object Constant:
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, Unit] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Constant[T, Unit] = copy(schema = schema.mapK(fK))
 
-  given [Value[_]]: Shape.Constant[Constant[Value, *], Value] = new Shape.Constant[Constant[Value, *], Value]:
+  given [Value[_]]: Shape.Constant[Constant[Value, *], Value] with
     override def constant[A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, Unit] = Root(
       schema = Reference.Constant(self = Reference.later(schema), value),
       eq,
       metadata = Metadata.Empty
     )
+
     extension [A](fa: Constant[Value, A])
       override def imap[B](f: A => B)(g: B => A): Constant[Value, B] = fa.imap(f)(g)
       override def modifyMetadata(f: Metadata => Metadata): Constant[Value, A] = fa.modifyMetadata(f)

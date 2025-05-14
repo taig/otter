@@ -43,7 +43,7 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    given Shape.Primitive.Boolean[Primitive.Boolean] with
+    given shape: Shape.Primitive.Boolean[Primitive.Boolean] with
       override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
 
       extension [A](fa: Boolean[A])
@@ -119,7 +119,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    given Shape.Primitive.Number[Primitive.Number] with
+    given shape: Shape.Primitive.Number[Primitive.Number] with
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -194,7 +194,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
 
-    given Shape.Primitive.String[Primitive.String] with
+    given shape: Shape.Primitive.String[Primitive.String] with
       override def string(
           minimum: Option[SInt],
           maximum: Option[SInt],
@@ -214,3 +214,13 @@ object Primitive:
         override def imap[B](f: A => B)(g: B => A): String[B] = self.imap(f)(g)
         override def metadata: Metadata = self.metadata
         override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)
+
+  given Shape.Primitive[Primitive] = new Shape.Primitive[Primitive]:
+    extension [A](self: Primitive[A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)
+      override def imap[B](f: A => B)(g: B => A): Primitive[B] = self.imap(f)(g)
+
+    export Primitive.Boolean.shape.boolean
+    export Primitive.Number.shape.{double, float, int, jBigDecimal, jBigInteger, long}
+    export Primitive.String.shape.{parser, string}

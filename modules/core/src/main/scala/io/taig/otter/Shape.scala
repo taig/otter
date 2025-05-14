@@ -10,8 +10,8 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 import io.taig.otter.Metadata
-import io.taig.otter.Reference.Constant
-import cats.kernel.Eq
+import cats.Eq
+import io.taig.enumeration.ext.Mapping
 
 trait Shape[Self[_]] extends Invariant[Self]:
   def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T]
@@ -105,6 +105,59 @@ object Shape:
   object Constant:
     inline def apply[Self[_], Value[_]](using self: Shape.Constant[Self, Value]): Shape.Constant[Self, Value] = self
 
+  trait Dictionary[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): Shape.Dictionary[T, Key, Value] = new Dictionary[T, Key, Value]:
+      override def dictionary[A, B](
+          key: => Key[A],
+          value: => Value[B],
+          minimum: Option[SInt],
+          maximum: Option[SInt]
+      ): T[List[(A, B)]] =
+        fK(self.dictionary(key, value, minimum, maximum))
+
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+    def dictionary[A, B](
+        key: => Key[A],
+        value: => Value[B],
+        minimum: Option[Int],
+        maximum: Option[Int]
+    ): Self[List[(A, B)]]
+
+  object Dictionary:
+    inline def apply[Self[_], Key[_], Value[_]](using
+        self: Shape.Dictionary[Self, Key, Value]
+    ): Shape.Dictionary[Self, Key, Value] = self
+
+  trait Enumeration[Self[_], Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): Shape.Enumeration[T, Value] =
+      new Enumeration[T, Value]:
+        override def enumeration[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] = fK(
+          self.enumeration(schema, mapping)
+        )
+
+        extension [A](ta: T[A])
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+    def enumeration[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
+
+  object Enumeration:
+    inline def apply[Self[_], Value[_]](using self: Shape.Enumeration[Self, Value]): Shape.Enumeration[Self, Value] =
+      self
+
   trait Field[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
     self =>
 
@@ -190,6 +243,27 @@ object Shape:
             maximum: Option[SInt],
             matches: Option[Pattern]
         ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
+
+  trait Nullable[Self[_], Value[_]] extends Shape[Self]:
+    self =>
+
+    def nullable[A](schema: => Value[A]): Self[Option[A]]
+    def nullable[A](schema: => Value[A], default: A): Self[A]
+    def void: Self[Unit]
+
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Nullable[T, Value] =
+      new Nullable[T, Value]:
+        override def nullable[A](schema: => Value[A]): T[Option[A]] = fK(self.nullable(schema))
+        override def nullable[A](schema: => Value[A], default: A): T[A] = fK(self.nullable(schema, default))
+        override def void: T[Unit] = fK(self.void)
+
+        extension [A](ta: T[A])
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+  object Nullable:
+    inline def apply[Self[_], Value[_]](using self: Shape.Nullable[Self, Value]): Shape.Nullable[Self, Value] = self
 
   object Primitive:
     trait Boolean[Self[_]] extends Shape[Self]:
@@ -343,6 +417,8 @@ object Shape:
 
     object String:
       inline def apply[Self[_]](using self: Shape.Primitive.String[Self]): Shape.Primitive.String[Self] = self
+
+    inline def apply[Self[_]](using self: Shape.Primitive[Self]): Shape.Primitive[Self] = self
 
   trait Record[Self[_], Field[_]] extends Shape[Self], Invariant.Product[Self]:
     self =>

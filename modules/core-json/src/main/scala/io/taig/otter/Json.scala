@@ -17,39 +17,47 @@ object Json:
   final case class Constant[A](self: Schema.Constant[Json, A]) extends Json[A]
 
   object Constant:
-    given Shape.Constant[Json.Constant, Json] = Shape.Constant[Schema.Constant, Json]
+    given Shape.Constant[Json.Constant, Json] = Shape
+      .Constant[Schema.Constant[Json, *], Json]
+      .imapK(
+        [A] => (schema: Schema.Constant[Json, A]) => Constant(schema)
+      )([A] => (json: Json.Constant[A]) => json.self)
 
-  // final case class Dictionary[A](self: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
+  final case class Dictionary[A](self: Schema.Dictionary[Json.Key, Json, A]) extends Json[A]
 
-  // object Dictionary:
-  //   given codec: Codec.Dictionary[Json.Dictionary, Json.Key, Json] = Codec.Dictionary(
-  //     lift = [A] => (self: Self.Dictionary[Json.Key, Json, A]) => Dictionary(self),
-  //     extract = [A] => (codec: Json.Dictionary[A]) => codec.self
-  //   )
+  object Dictionary:
+    given Shape.Dictionary[Json.Dictionary, Json.Key, Json] = Shape
+      .Dictionary[Schema.Dictionary[Json.Key, Json, *], Json.Key, Json]
+      .imapK(
+        [A] => (schema: Schema.Dictionary[Json.Key, Json, A]) => Dictionary(schema)
+      )([A] => (json: Json.Dictionary[A]) => json.self)
 
-  // final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[A]
+  final case class Enumeration[A](self: Schema.Enumeration[Json.Primitive, A]) extends Json[A]
 
-  // object Enumeration:
-  //   given codec: Codec.Enumeration[Json.Enumeration, Json.Primitive] = Codec.Enumeration(
-  //     lift = [A] => (self: Self.Enumeration[Json.Primitive, A]) => Enumeration(self),
-  //     extract = [A] => (codec: Json.Enumeration[A]) => codec.self
-  //   )
+  object Enumeration:
+    given Shape.Enumeration[Json.Enumeration, Json.Primitive] = Shape
+      .Enumeration[Schema.Enumeration[Json.Primitive, *], Json.Primitive]
+      .imapK(
+        [A] => (schema: Schema.Enumeration[Json.Primitive, A]) => Enumeration(schema)
+      )([A] => (json: Json.Enumeration[A]) => json.self)
 
-  // final case class Nullable[A](self: Self.Nullable[Json, A]) extends Json[A]
+  final case class Nullable[A](self: Schema.Nullable[Json, A]) extends Json[A]
 
-  // object Nullable:
-  //   given codec: Codec.Nullable[Json.Nullable, Json] = Codec.Nullable(
-  //     lift = [A] => (self: Self.Nullable[Json, A]) => Nullable(self),
-  //     extract = [A] => (codec: Json.Nullable[A]) => codec.self
-  //   )
+  object Nullable:
+    given Shape.Nullable[Json.Nullable, Json] = Shape
+      .Nullable[Schema.Nullable[Json, *], Json]
+      .imapK(
+        [A] => (schema: Schema.Nullable[Json, A]) => Nullable(schema)
+      )([A] => (json: Json.Nullable[A]) => json.self)
 
-  // final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
+  final case class Primitive[A](self: Schema.Primitive[A]) extends Json[A]
 
-  // object Primitive:
-  //   given codec: Codec.Primitive[Json.Primitive] = Codec.Primitive(
-  //     lift = [A] => (self: Self.Primitive[A]) => Primitive(self),
-  //     extract = [A] => (codec: Json.Primitive[A]) => codec.self
-  //   )
+  object Primitive:
+    given Shape.Primitive[Json.Primitive] = Shape
+      .Primitive[Schema.Primitive]
+      .imapK(
+        [A] => (schema: Schema.Primitive[A]) => Primitive(schema)
+      )([A] => (json: Json.Primitive[A]) => json.self)
 
   // final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
 
@@ -78,13 +86,14 @@ object Json:
   sealed abstract class Key[A] extends Product with Serializable
 
   object Key:
-    //   final case class Constant[A](self: Self.Constant[Json.Key.Primitive, A]) extends Json.Key[A]
+    final case class Constant[A](self: Schema.Constant[Json.Key.Primitive, A]) extends Json.Key[A]
 
-    //   object Constant:
-    //     given codec: Codec.Constant[Json.Key.Constant, Json.Key.Primitive] = Codec.Constant(
-    //       lift = [A] => (self: Self.Constant[Json.Key.Primitive, A]) => Constant(self),
-    //       extract = [A] => (codec: Json.Key.Constant[A]) => codec.self
-    //     )
+    object Constant:
+      given Shape.Constant[Json.Key.Constant, Json.Key.Primitive] = Shape
+        .Constant[Schema.Constant[Json.Key.Primitive, *], Json.Key.Primitive]
+        .imapK(
+          [A] => (schema: Schema.Constant[Json.Key.Primitive, A]) => Constant(schema)
+        )([A] => (json: Json.Key.Constant[A]) => json.self)
 
     //   final case class Enumeration[A](self: Self.Enumeration[Json.Key.Primitive, A]) extends Json.Key[A]
 
