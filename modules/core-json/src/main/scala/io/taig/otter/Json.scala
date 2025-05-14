@@ -59,29 +59,32 @@ object Json:
         [A] => (schema: Schema.Primitive[A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 
-  // final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
+  final case class Record[A](self: Schema.Record[Json.Field, A]) extends Json[A]
 
-  // object Record:
-  //   given codec: Codec.Record[Json.Record, Json.Field] = Codec.Record(
-  //     lift = [A] => (self: Self.Record[Json.Field, A]) => Record(self),
-  //     extract = [A] => (codec: Json.Record[A]) => codec.self
-  //   )
+  object Record:
+    given Shape.Record[Json.Record, Json.Field] = Shape
+      .Record[Schema.Record[Json.Field, *], Json.Field]
+      .imapK(
+        [A] => (schema: Schema.Record[Json.Field, A]) => Record(schema)
+      )([A] => (json: Json.Record[A]) => json.self)
 
-  // final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
+  final case class Tuple[A](self: Schema.Tuple[Json, A]) extends Json[A]
 
-  // object Tuple:
-  //   given codec: Codec.Tuple[Json.Tuple, Json] = Codec.Tuple(
-  //     lift = [A] => (self: Self.Tuple[Json, A]) => Tuple(self),
-  //     extract = [A] => (codec: Json.Tuple[A]) => codec.self
-  //   )
+  object Tuple:
+    given Shape.Tuple[Json.Tuple, Json] = Shape
+      .Tuple[Schema.Tuple[Json, *], Json]
+      .imapK(
+        [A] => (schema: Schema.Tuple[Json, A]) => Tuple(schema)
+      )([A] => (json: Json.Tuple[A]) => json.self)
 
-  // // final case class Union[A](self: Self.Union[Json, A]) extends Json[A]
+  final case class Union[A](self: Schema.Union[Json, A]) extends Json[A]
 
-  // // object Union:
-  // //   given codec: Codec.Union[Json.Union, Json] = Codec.Union(
-  // //     lift = [A] => (self: Self.Union[Json, A]) => Union(self),
-  // //     extract = [A] => (codec: Json.Union[A]) => codec.self
-  // //   )
+  object Union:
+    given Shape.Union[Json.Union, Json] = Shape
+      .Union[Schema.Union[Json, *], Json]
+      .imapK(
+        [A] => (schema: Schema.Union[Json, A]) => Union(schema)
+      )([A] => (json: Json.Union[A]) => json.self)
 
   sealed abstract class Key[A] extends Product with Serializable
 
@@ -95,13 +98,14 @@ object Json:
           [A] => (schema: Schema.Constant[Json.Key.Primitive, A]) => Constant(schema)
         )([A] => (json: Json.Key.Constant[A]) => json.self)
 
-    //   final case class Enumeration[A](self: Self.Enumeration[Json.Key.Primitive, A]) extends Json.Key[A]
+    final case class Enumeration[A](self: Schema.Enumeration[Json.Key.Primitive, A]) extends Json.Key[A]
 
-    //   object Enumeration:
-    //     given codec: Codec.Enumeration[Json.Key.Enumeration, Json.Key.Primitive] = Codec.Enumeration(
-    //       lift = [A] => (self: Self.Enumeration[Json.Key.Primitive, A]) => Enumeration(self),
-    //       extract = [A] => (codec: Json.Key.Enumeration[A]) => codec.self
-    //     )
+    object Enumeration:
+      given Shape.Enumeration[Json.Key.Enumeration, Json.Key.Primitive] = Shape
+        .Enumeration[Schema.Enumeration[Json.Key.Primitive, *], Json.Key.Primitive]
+        .imapK(
+          [A] => (schema: Schema.Enumeration[Json.Key.Primitive, A]) => Enumeration(schema)
+        )([A] => (json: Json.Key.Enumeration[A]) => json.self)
 
     final case class Primitive[A](self: Schema.Primitive.String[A]) extends Json.Key[A]
 
@@ -112,13 +116,14 @@ object Json:
           [A] => (schema: Schema.Primitive.String[A]) => Primitive(schema)
         )([A] => (json: Json.Key.Primitive[A]) => json.self)
 
-  //   // final case class Union[A](self: Self.Union.Untagged[Json.Key, A]) extends Json.Key[A]
+    final case class Union[A](self: Schema.Union[Json.Key, A]) extends Json.Key[A]
 
-  //   // object Union:
-  //   //   given codec: Codec.Union.Untagged[Json.Key.Union, Json.Key] = Codec.Union.Untagged(
-  //   //     lift = [A] => (self: Self.Union.Untagged[Json.Key, A]) => Union(self),
-  //   //     extract = [A] => (codec: Json.Key.Union[A]) => codec.self
-  //   //   )
+    object Union:
+      given Shape.Union[Json.Key.Union, Json.Key] = Shape
+        .Union[Schema.Union[Json.Key, *], Json.Key]
+        .imapK(
+          [A] => (schema: Schema.Union[Json.Key, A]) => Union(schema)
+        )([A] => (json: Json.Key.Union[A]) => json.self)
 
   //   given codec: Codec[Json.Key] with
   //     extension [A](self: Key[A])
@@ -142,10 +147,12 @@ object Json:
 
   final case class Field[A](self: Schema.Field[Json.Key, Json, A]) extends Json[A]
 
-  // given codec: Codec.Field[Json.Field, Json.Key, Json, Json.Record] = Codec.Field(
-  //   lift = [A] => (self: Self.Field[Json.Key, Json, A]) => self,
-  //   extract = [A] => (codec: Json.Field[A]) => codec
-  // )
+  object Field:
+    given Shape.Field[Json.Field, Json.Key, Json] = Shape
+      .Field[Schema.Field[Json.Key, Json, *], Json.Key, Json]
+      .imapK(
+        [A] => (schema: Schema.Field[Json.Key, Json, A]) => Field(schema)
+      )([A] => (json: Json.Field[A]) => json.self)
 
   // given (Codec.Extension.Nullable[Json, Json.Nullable] & Codec.Extension.Tupleable[Json, Json.Tuple]) =
   //   new Codec.Extension.Nullable[Json, Json.Nullable] with Codec.Extension.Tupleable[Json, Json.Tuple]:

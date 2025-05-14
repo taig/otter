@@ -6,6 +6,8 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.Shape
+import cats.Order
+import io.taig.enumeration.ext.EnumerationValues
 
 sealed abstract class Enumeration[+S[_], A]:
   def metadata: Metadata
@@ -31,6 +33,13 @@ object Enumeration:
     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
     override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(schema = schema.mapK(fK))
+
+  trait Component[+Self[_], -Value[_]](using self: Shape.Enumeration[Self, Value]):
+    final def enumeration[A, B](codec: => Value[B])(using mapping: Mapping[A, B]): Self[A] =
+      self.enumeration(codec, mapping)
+
+    final def enumeration[A, B: Order](codec: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
+      enumeration(codec)(using Mapping.enumeration(f))
 
   given [Value[_]]: Shape.Enumeration[Enumeration[Value, *], Value] with
     override def enumeration[A, B](

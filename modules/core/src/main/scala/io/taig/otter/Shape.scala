@@ -437,3 +437,43 @@ object Shape:
     def record[A](field: => Field[A]): Self[A]
 
     extension [A](self: Self[A]) def optional: Self[Option[A]]
+
+  object Record:
+    inline def apply[Self[_], Field[_]](using self: Shape.Record[Self, Field]): Shape.Record[Self, Field] = self
+
+  trait Tuple[Self[_], Value[_]] extends Shape[Self], Invariant.Product[Self]:
+    self =>
+
+    def empty: Self[Unit]
+    def one[A](codec: => Value[A]): Self[A]
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Tuple[T, Value] =
+      new Tuple[T, Value]:
+        override def empty: T[Unit] = fK(self.empty)
+        override def one[A](codec: => Value[A]): T[A] = fK(self.one(codec))
+
+        extension [A](ta: T[A])
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+          override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
+
+  object Tuple:
+    inline def apply[Self[_], Field[_]](using self: Shape.Tuple[Self, Field]): Shape.Tuple[Self, Field] = self
+
+  trait Union[Self[_], Value[_]] extends Shape[Self]:
+    self =>
+
+    def one[A](codec: => Value[A]): Self[A]
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Union[T, Value] =
+      new Union[T, Value]:
+        extension [A](ta: T[A])
+          override def metadata: Metadata = self.metadata(gK(ta))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+        override def one[A](codec: => Value[A]): T[A] = fK(self.one(codec))
+
+  object Union:
+    inline def apply[Self[_], Value[_]](using self: Shape.Union[Self, Value]): Shape.Union[Self, Value] = self
