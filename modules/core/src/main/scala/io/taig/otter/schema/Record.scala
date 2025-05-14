@@ -6,6 +6,7 @@ import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.Invariant
 import cats.arrow.FunctionK
+import io.taig.otter.Shape
 
 sealed abstract class Record[+S[_], A] extends Schema[S, A]:
   override def modifyMetadata(f: Metadata => Metadata): Record[S, A]
@@ -57,3 +58,16 @@ object Record:
     override def modifyMetadata(f: Metadata => Metadata): Record[S, (A, B)] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
+
+  given [Value[_]]: Shape.Record[Record[Value, *], Value] = new Shape.Record[Record[Value, *], Value]:
+    override def record[A](field: => Value[A]): Record[Value, A] = Root(
+      field = Reference.later(field),
+      metadata = Metadata.Empty
+    )
+
+    extension [A](self: Record[Value, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Record[Value, A] = self.modifyMetadata(f)
+      override def imap[B](f: A => B)(g: B => A): Record[Value, B] = self.imap(f)(g)
+      override def zip[B](schema: Record[Value, B]): Record[Value, (A, B)] = self.zip(schema)
+      override def optional: Record[Value, Option[A]] = self.optional

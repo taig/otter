@@ -3,6 +3,7 @@ package io.taig.otter.schema
 import cats.arrow.FunctionK
 import cats.~>
 import io.taig.otter.Metadata
+import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
 import io.taig.otter.Shape
 import io.taig.otter.Reference
 import java.lang.String as JString
@@ -46,6 +47,51 @@ object Field:
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, Option[A]] =
       copy(self = self.modifyMetadata(f))
     override def mapK[T1[a] >: T[a], U[_]](fK: FunctionK[T1, U]): Field[S, U, Option[A]] = copy(self = self.mapK(fK))
+
+  trait Component[Self[_], -Key[_], -Value[_], Record[_]](using
+      shape: Shape.Field[Self, Key, Value],
+      record: Shape.Record[Record, Self]
+  ):
+    final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+      shape.field(name, key, value)
+
+    extension [A](self: Self[A]) def toRecord: Record[A] = record.record(self)
+
+  object Component:
+    trait Primitive[Self[_], Key[_], -Value[_], Record[_]]
+        extends Field.Component.Primitive.Boolean[Self, Key, Value, Record],
+          Field.Component.Primitive.Number[Self, Key, Value, Record],
+          Field.Component.Primitive.String[Self, Key, Value, Record]:
+      override def key: PrimitiveComponent[Key]
+
+    object Primitive:
+      trait Boolean[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
+        def key: PrimitiveComponent.Boolean[Key]
+
+        final def field[A](name: SBoolean, schema: => Value[A]): Self[A] =
+          field(name, key = key.boolean, value = schema)
+
+      trait Number[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
+        def key: PrimitiveComponent.Number[Key]
+
+        final def field[A](name: BigDecimal, schema: => Value[A]): Self[A] =
+          field(name, key = key.bigDecimal, value = schema)
+        final def field[A](name: BigInt, schema: => Value[A]): Self[A] =
+          field(name, key = key.bigInteger, value = schema)
+        final def field[A](name: JBigDecimal, schema: => Value[A]): Self[A] =
+          field(name, key = key.jBigDecimal, value = schema)
+        final def field[A](name: JBigInteger, schema: => Value[A]): Self[A] =
+          field(name, key = key.jBigInteger, value = schema)
+        final def field[A](name: SDouble, schema: => Value[A]): Self[A] = field(name, key = key.double, value = schema)
+        final def field[A](name: SFloat, schema: => Value[A]): Self[A] = field(name, key = key.float, value = schema)
+        final def field[A](name: SInt, schema: => Value[A]): Self[A] = field(name, key = key.int, value = schema)
+        final def field[A](name: SLong, schema: => Value[A]): Self[A] = field(name, key = key.long, value = schema)
+
+      trait String[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
+        def key: PrimitiveComponent.String[Key]
+
+        final def field[A](name: JString, schema: => Value[A]): Self[A] =
+          field(name, key = key.string, value = schema)
 
   given [Key[_], Value[_]]: Shape.Field[Field[Key, Value, *], Key, Value] =
     new Shape.Field[Field[Key, Value, *], Key, Value]:
