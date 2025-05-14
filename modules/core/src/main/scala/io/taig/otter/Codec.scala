@@ -134,30 +134,6 @@ import cats.Invariant
 //         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
 //         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
 
-//   trait Record[Self[_], Field[_]] extends Codec[Self], Invariant.Product[Self, Field, Self]:
-//     final override def result: Invariant[Self] = this
-
-//     def record[A](field: => Field[A]): Self[A]
-
-//     extension [A](self: Self[A]) def optional: Self[Option[A]]
-
-//   object Record:
-//     def apply[Self[_], Field[_]](
-//         lift: [A] => (self: Self.Record[Field, A]) => Self[A],
-//         extract: [A] => (self: Self[A]) => Self.Record[Field, A]
-//     ): Codec.Record[Self, Field] = new Codec.Record[Self, Field]:
-//       override def fromElement[A](codec: Field[A]): Self[A] = record(codec)
-
-//       final override def record[A](field: => Field[A]): Self[A] =
-//         lift(Self.Record.Root(field = Reference.later(field), metadata = Metadata.Empty))
-
-//       extension [A](self: Self[A])
-//         override def metadata: Metadata = extract(self).metadata
-//         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-//         override def optional: Self[Option[A]] = lift(extract(self).optional)
-//         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-//         override def zip[B](codec: Self[B]): Self[(A, B)] = lift(extract(self).zip(extract(codec)))
-
 //   trait Sum[Self[_], Branch[_]] extends Codec[Self], Invariant.Coproduct[Self, Branch, Self] {}
 
 //   object Sum:
