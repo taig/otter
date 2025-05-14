@@ -4,6 +4,7 @@ import cats.data.Chain
 import cats.data.State
 import cats.syntax.all.*
 import codec.Collection
+import schema.Constant
 
 final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
   self =>

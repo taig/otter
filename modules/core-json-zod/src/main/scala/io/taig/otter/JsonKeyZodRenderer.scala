@@ -1,5 +1,6 @@
 package io.taig.otter
 import cats.data.State
+import schema.Constant
 
 object JsonKeyZodRenderer extends Renderer[Json.Key, ZodState[Expression]]:
   override def apply[A](codec: Json.Key[A]): ZodState[Expression] =

@@ -47,13 +47,18 @@ object Field:
       copy(self = self.modifyMetadata(f))
     override def mapK[T1[a] >: T[a], U[_]](fK: FunctionK[T1, U]): Field[S, U, Option[A]] = copy(self = self.mapK(fK))
 
-  given [Key[_], Value[_]]: Shape.Field[Field[Key, Value, *], Key, Value] = new Shape.Field[Field[Key, Value, *], Key, Value]:
+  given [Key[_], Value[_]]: Shape.Field[Field[Key, Value, *], Key, Value] =
+    new Shape.Field[Field[Key, Value, *], Key, Value]:
 
-    override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] = 
-      Root(key = Reference.Constant(self = Reference.later(key), value = name), value = Reference.later(value), metadata = Metadata.Empty)
+      override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] =
+        Root(
+          key = Reference.Constant(self = Reference.later(key), value = name),
+          value = Reference.later(value),
+          metadata = Metadata.Empty
+        )
 
-    extension [A](fa: Field[Key, Value, A])
-      override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
-      override def optional: Field[Key, Value, Option[A]] = fa.optional
-      override def metadata: Metadata = fa.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = fa.modifyMetadata(f)
+      extension [A](fa: Field[Key, Value, A])
+        override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
+        override def optional: Field[Key, Value, Option[A]] = fa.optional
+        override def metadata: Metadata = fa.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = fa.modifyMetadata(f)

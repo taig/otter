@@ -3,6 +3,7 @@ package io.taig.otter.http
 import io.taig.otter.*
 
 import scala.annotation.tailrec
+import io.taig.otter.schema.Constant
 
 object HttpQueryValuePrinter extends Printer[Http.Query.Value]:
   override def apply[A](codec: Http.Query.Value[A], a: A): String = codec match

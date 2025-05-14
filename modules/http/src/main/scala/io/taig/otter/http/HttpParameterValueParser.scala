@@ -4,6 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.http.Http.Parameter.Value
+import io.taig.otter.schema.Constant
 
 object HttpParameterValueParser extends Parser[Http.Parameter.Value]:
   override def apply[A](codec: Http.Parameter.Value[A], value: String): Validated[Violations, A] = codec match

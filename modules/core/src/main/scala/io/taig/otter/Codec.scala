@@ -43,24 +43,6 @@ import cats.Invariant
 //         final override def orElse[B](codec: Self[B]): Union[Either[A, B]] =
 //           union.one(self).orElse(union.one(codec))
 
-//   trait Constant[Self[_], Value[_]] extends Codec[Self]:
-//     def constant[A: Eq](codec: => Value[A], value: A): Self[Unit]
-
-//   object Constant:
-//     def apply[Self[_], Value[_]](
-//         lift: [A] => (self: Self.Constant[Value, A]) => Self[A],
-//         extract: [A] => (self: Self[A]) => Self.Constant[Value, A]
-//     ): Codec.Constant[Self, Value] = new Constant[Self, Value]:
-//       override def constant[A](codec: => Value[A], value: A)(using eq: Eq[A]): Self[Unit] = lift(
-//         Self.Constant
-//           .Root(codec = Reference.Constant(self = Reference.later(codec), value), eq, metadata = Metadata.Empty)
-//       )
-
-//       extension [A](self: Self[A])
-//         override def metadata: Metadata = extract(self).metadata
-//         override def modifyMetadata(f: Metadata => Metadata): Self[A] = lift(extract(self).modifyMetadata(f))
-//         override def imap[B](f: A => B)(g: B => A): Self[B] = lift(extract(self).imap(f)(g))
-
 //   trait Dictionary[Self[_], Key[_], Value[_]] extends Codec[Self]:
 //     def dictionary[A, B](
 //         key: => Key[A],

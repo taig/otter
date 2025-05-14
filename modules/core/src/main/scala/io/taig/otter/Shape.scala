@@ -7,16 +7,11 @@ import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
-import scala.BigDecimal as SBigDecimal
-import scala.BigInt as SBigInt
 import scala.Int as SInt
 import scala.Long as SLong
 import io.taig.otter.Metadata
-import io.taig.otter.Comparison
-import io.taig.otter.Argument
-import io.taig.otter.StringComponentExtension
-import java.util.UUID
-import cats.arrow.FunctionK
+import io.taig.otter.Reference.Constant
+import cats.kernel.Eq
 
 trait Shape[Self[_]] extends Invariant[Self]:
   def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T]
@@ -29,6 +24,34 @@ trait Shape[Self[_]] extends Invariant[Self]:
     final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
 
 object Shape:
+  trait Branch[Self[_], Key[_], Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): Shape.Branch[T, Key, Value] =
+      new Branch[T, Key, Value]:
+        override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
+          fK(self.branch(name, key, value))
+
+        extension [A](fa: T[A])
+          override def key: Reference.Constant[Key, ?] = self.key(gK(fa))
+          override def value: Reference[Value, ?] = self.value(gK(fa))
+          override def metadata: Metadata = self.metadata(gK(fa))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+
+    def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+
+    extension [A](self: Self[A])
+      def key: Reference.Constant[Key, ?]
+      def value: Reference[Value, ?]
+
+  object Branch:
+    inline def apply[Self[_], Key[_], Value[_]](using
+        self: Shape.Branch[Self, Key, Value]
+    ): Shape.Branch[Self, Key, Value] = self
+
   trait Collection[Self[_], -Value[_]] extends Shape[Self]:
     self =>
 
@@ -64,6 +87,23 @@ object Shape:
 
   object Collection:
     inline def apply[Self[_], Value[_]](using self: Shape.Collection[Self, Value]): Shape.Collection[Self, Value] = self
+
+  trait Constant[Self[_], Value[_]] extends Shape[Self]:
+    self =>
+
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Constant[T, Value] =
+      new Constant[T, Value]:
+        override def constant[A](schema: => Value[A], value: A)(using Eq[A]): T[Unit] = fK(self.constant(schema, value))
+
+        extension [A](fa: T[A])
+          override def metadata: Metadata = self.metadata(gK(fa))
+          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+
+    def constant[A: Eq](schema: => Value[A], value: A): Self[Unit]
+
+  object Constant:
+    inline def apply[Self[_], Value[_]](using self: Shape.Constant[Self, Value]): Shape.Constant[Self, Value] = self
 
   trait Field[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
     self =>
@@ -307,7 +347,7 @@ object Shape:
   trait Record[Self[_], Field[_]] extends Shape[Self], Invariant.Product[Self]:
     self =>
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Record[T, Field] = 
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Record[T, Field] =
       new Shape.Record[T, Field]:
         override def record[A](field: => Field[A]): T[A] = fK(self.record(field))
 

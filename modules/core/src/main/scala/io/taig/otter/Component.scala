@@ -10,9 +10,6 @@ import cats.data.NonEmptyVector
 import cats.implicits.*
 import cats.~>
 import io.taig.otter.Argument
-import io.taig.otter.Constraint
-import io.taig.otter.Metadata
-import io.taig.otter.Reference
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -26,11 +23,52 @@ import scala.Int as SInt
 import scala.Long as SLong
 
 import scala.collection.immutable.SortedSet
-import cats.arrow.FunctionK
-import io.taig.otter.Shape
 import java.util.UUID
+import cats.kernel.Eq
 
 object Component:
+  trait Branch[Self[_], -Key[_], -Value[_], Sum[_]](using shape: Shape.Branch[Self, Key, Value]):
+    final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = shape.branch(name, key, value)
+
+    extension [A](self: Self[A]) def toSum: Sum[A] = ???
+
+  object Branch:
+    trait Primitive[Self[_], Key[_], -Value[_], Record[_]]
+        extends Component.Branch.Primitive.Boolean[Self, Key, Value, Record],
+          Component.Branch.Primitive.Number[Self, Key, Value, Record],
+          Component.Branch.Primitive.String[Self, Key, Value, Record]:
+      override def key: Component.Primitive[Key]
+
+    object Primitive:
+      trait Boolean[Self[_], Key[_], -Value[_], Sum[_]] extends Component.Branch[Self, Key, Value, Sum]:
+        def key: Component.Primitive.Boolean[Key]
+
+        final def branch[A](name: SBoolean, schema: => Value[A]): Self[A] =
+          branch(name, key = key.boolean, value = schema)
+
+      trait Number[Self[_], Key[_], -Value[_], Sum[_]] extends Component.Branch[Self, Key, Value, Sum]:
+        def key: Component.Primitive.Number[Key]
+
+        final def branch[A](name: BigDecimal, schema: => Value[A]): Self[A] =
+          branch(name, key = key.bigDecimal, value = schema)
+        final def branch[A](name: BigInt, schema: => Value[A]): Self[A] =
+          branch(name, key = key.bigInteger, value = schema)
+        final def branch[A](name: JBigDecimal, schema: => Value[A]): Self[A] =
+          branch(name, key = key.jBigDecimal, value = schema)
+        final def branch[A](name: JBigInteger, schema: => Value[A]): Self[A] =
+          branch(name, key = key.jBigInteger, value = schema)
+        final def branch[A](name: SDouble, schema: => Value[A]): Self[A] =
+          branch(name, key = key.double, value = schema)
+        final def branch[A](name: SFloat, schema: => Value[A]): Self[A] = branch(name, key = key.float, value = schema)
+        final def branch[A](name: SInt, schema: => Value[A]): Self[A] = branch(name, key = key.int, value = schema)
+        final def branch[A](name: SLong, schema: => Value[A]): Self[A] = branch(name, key = key.long, value = schema)
+
+      trait String[Self[_], Key[_], -Value[_], Sum[_]] extends Component.Branch[Self, Key, Value, Sum]:
+        def key: Component.Primitive.String[Key]
+
+        final def branch[A](name: JString, schema: => Value[A]): Self[A] =
+          branch(name, key = key.string, value = schema)
+
   trait Collection[+Self[_], -Value[_]](using self: Shape.Collection[Self, Value]):
     final def list[A](
         schema: => Value[A],
@@ -116,14 +154,48 @@ object Component:
     ): Self[NonEmptySet[A]] = nonEmptyList(schema, minimum, maximum, uniqueItems)
       .imap(values => NonEmptySet(values.head, SortedSet.from(values.tail)))(_.toNonEmptyList)
 
+  trait Constant[+Self[_], -Value[_]](using self: Shape.Constant[Self, Value]):
+    final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self.constant(schema, value)
+
+  object Constant:
+    trait Primitive[+Self[_], -Value[_]]
+        extends Constant.Primitive.Boolean[Self, Value],
+          Constant.Primitive.Number[Self, Value],
+          Constant.Primitive.String[Self, Value]:
+      this: Component.Primitive[Value] =>
+
+    object Primitive:
+      trait Boolean[+Self[_], -Value[_]] extends Constant[Self, Value]:
+        this: Component.Primitive.Boolean[Value] =>
+
+        final def constant(value: SBoolean): Self[Unit] = constant(schema = boolean, value)
+
+      trait Number[+Self[_], -Value[_]] extends Constant[Self, Value]:
+        this: Component.Primitive.Number[Value] =>
+        final def constant(value: JBigDecimal): Self[Unit] =
+          constant(schema = jBigDecimal, value)(using Eq.fromUniversalEquals)
+        final def constant(value: BigDecimal): Self[Unit] = constant(schema = bigDecimal, value)
+        final def constant(value: JBigInteger): Self[Unit] =
+          constant(schema = jBigInteger, value)(using Eq.fromUniversalEquals)
+        final def constant(value: BigInt): Self[Unit] = constant(schema = bigInteger, value)
+        final def constant(value: SLong): Self[Unit] = constant(schema = long, value)
+        final def constant(value: SDouble): Self[Unit] = constant(schema = double, value)
+        final def constant(value: SFloat): Self[Unit] = constant(schema = float, value)
+        final def constant(value: SInt): Self[Unit] = constant(schema = int, value)
+
+      trait String[+Self[_], -Value[_]] extends Constant[Self, Value]:
+        this: Component.Primitive.String[Value] =>
+        final def constant(value: JString): Self[Unit] = constant(schema = string, value)
+        final def constant(value: UUID): Self[Unit] = constant(schema = uuid, value)
+
   trait Field[Self[_], -Key[_], -Value[_], Record[_]](using
-      shape: Shape.Field[Self, Key, Value]
-      // record: Shape.Record[Record, Self]
+      shape: Shape.Field[Self, Key, Value],
+      record: Shape.Record[Record, Self]
   ):
     final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
       shape.field(name, key, value)
 
-    extension [A](self: Self[A]) def toRecord: Record[A] = ??? // record(self)
+    extension [A](self: Self[A]) def toRecord: Record[A] = record.record(self)
 
   object Field:
     trait Primitive[Self[_], Key[_], -Value[_], Record[_]]
@@ -136,29 +208,30 @@ object Component:
       trait Boolean[Self[_], Key[_], -Value[_], Record[_]] extends Component.Field[Self, Key, Value, Record]:
         def key: Component.Primitive.Boolean[Key]
 
-        final def field[A](name: SBoolean, codec: => Value[A]): Self[A] =
-          field(name, key = key.boolean, value = codec)
+        final def field[A](name: SBoolean, schema: => Value[A]): Self[A] =
+          field(name, key = key.boolean, value = schema)
 
       trait Number[Self[_], Key[_], -Value[_], Record[_]] extends Component.Field[Self, Key, Value, Record]:
         def key: Component.Primitive.Number[Key]
 
-        final def field[A](name: BigDecimal, codec: => Value[A]): Self[A] =
-          field(name, key = key.bigDecimal, value = codec)
-        final def field[A](name: BigInt, codec: => Value[A]): Self[A] = field(name, key = key.bigInteger, value = codec)
-        final def field[A](name: JBigDecimal, codec: => Value[A]): Self[A] =
-          field(name, key = key.jBigDecimal, value = codec)
-        final def field[A](name: JBigInteger, codec: => Value[A]): Self[A] =
-          field(name, key = key.jBigInteger, value = codec)
-        final def field[A](name: SDouble, codec: => Value[A]): Self[A] = field(name, key = key.double, value = codec)
-        final def field[A](name: SFloat, codec: => Value[A]): Self[A] = field(name, key = key.float, value = codec)
-        final def field[A](name: SInt, codec: => Value[A]): Self[A] = field(name, key = key.int, value = codec)
-        final def field[A](name: SLong, codec: => Value[A]): Self[A] = field(name, key = key.long, value = codec)
+        final def field[A](name: BigDecimal, schema: => Value[A]): Self[A] =
+          field(name, key = key.bigDecimal, value = schema)
+        final def field[A](name: BigInt, schema: => Value[A]): Self[A] =
+          field(name, key = key.bigInteger, value = schema)
+        final def field[A](name: JBigDecimal, schema: => Value[A]): Self[A] =
+          field(name, key = key.jBigDecimal, value = schema)
+        final def field[A](name: JBigInteger, schema: => Value[A]): Self[A] =
+          field(name, key = key.jBigInteger, value = schema)
+        final def field[A](name: SDouble, schema: => Value[A]): Self[A] = field(name, key = key.double, value = schema)
+        final def field[A](name: SFloat, schema: => Value[A]): Self[A] = field(name, key = key.float, value = schema)
+        final def field[A](name: SInt, schema: => Value[A]): Self[A] = field(name, key = key.int, value = schema)
+        final def field[A](name: SLong, schema: => Value[A]): Self[A] = field(name, key = key.long, value = schema)
 
       trait String[Self[_], Key[_], -Value[_], Record[_]] extends Component.Field[Self, Key, Value, Record]:
         def key: Component.Primitive.String[Key]
 
-        final def field[A](name: JString, codec: => Value[A]): Self[A] =
-          field(name, key = key.string, value = codec)
+        final def field[A](name: JString, schema: => Value[A]): Self[A] =
+          field(name, key = key.string, value = schema)
 
   trait Primitive[+Self[_]]
       extends Component.Primitive.Boolean[Self],

@@ -10,6 +10,7 @@ import java.math.BigInteger as JBigInteger
 import io.taig.otter.Field.Root
 import io.taig.otter.Field.Optional
 import codec.Collection
+import schema.Constant
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def apply[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
@@ -68,8 +69,8 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .as(values)
 
   def apply[A](codec: Constant[Json, A], json: CirceJson): Validated[Violations, A] = codec match
-    case Constant.Modify(self, f, _) => apply(codec = self, json).map(f)
-    case Constant.Root(codec, eq, _) =>
+    case schema.Constant.Modify(self, f, _) => apply(codec = self, json).map(f)
+    case schema.Constant.Root(codec, eq, _) =>
       apply(codec = codec.self.value, json).andThen: a =>
         Validated
           .cond(

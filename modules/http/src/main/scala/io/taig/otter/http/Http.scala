@@ -10,6 +10,7 @@ import io.taig.otter.Metadata
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Collection
+import io.taig.otter.schema.Constant
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable
