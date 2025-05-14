@@ -5,7 +5,7 @@ import cats.data.Validated
 abstract class Decoder[S[_], T]:
   self =>
 
-  def apply[A](codec: S[A], value: T): Validated[Violations, A]
+  def apply[A](schema: S[A], value: T): Validated[Violations, A]
 
   final def leftMap[B](f: Violations => Violations) = new Decoder[S, T]:
     override def apply[A](codec: S[A], value: T): Validated[Violations, A] =
