@@ -11,8 +11,8 @@ import io.taig.otter.Violation
 import io.taig.otter.Parsers
 
 final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
-  override def apply[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match
-    case Primitive.Boolean.Modify(self, f, _) => apply(codec = self, value).map(f)
+  override def decode[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match
+    case Primitive.Boolean.Modify(self, f, _) => decode(codec = self, value).map(f)
     case Primitive.Boolean.Root(_) =>
       value.toBooleanOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Number.BigDecimal(_, _, _, _) =>
@@ -33,8 +33,8 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
       value.toIntOption.toValid(Violations.rootNec(Violation.tpe(name = "int", actual = value)))
     case Primitive.Number.Long(_, _, _, _) =>
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
-    case Primitive.Number.Modify(self, f, _) => apply(codec = self, value).map(f)
-    case Primitive.String.Modify(self, f, _) => apply(codec = self, value).map(f)
+    case Primitive.Number.Modify(self, f, _) => decode(codec = self, value).map(f)
+    case Primitive.String.Modify(self, f, _) => decode(codec = self, value).map(f)
     case Primitive.String.Parser(_, decode, _, _, _, _, _) =>
       val input =
         if quotes then

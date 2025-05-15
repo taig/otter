@@ -6,8 +6,9 @@ import io.taig.otter.Field.Modify
 import io.taig.otter.Field.Root
 import io.taig.otter.Field.Optional
 
-final class FieldEncoder[S[_], T[_], U](key: Encoder[S, String], value: Encoder[T, U]):
-  def apply[A](schema: Field[S, T, A], a: A): Chain[(String, U)] = schema match
+final class FieldEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T, V])
+    extends Encoder[Field[S, T, *], Chain[(U, V)]]:
+  override def apply[A](schema: Field[S, T, A], a: A): Chain[(U, V)] = schema match
     case Field.Modify(self, f, g) => apply(schema = self, g(a))
     case Field.Root(key, value, _) =>
       Chain.one(

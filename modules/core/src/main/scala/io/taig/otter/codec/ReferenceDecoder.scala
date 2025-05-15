@@ -6,4 +6,4 @@ import io.taig.otter.Reference
 
 final class ReferenceDecoder[S[_], T](decoder: Decoder[S, T]):
   def apply[A](reference: Reference[S, A], value: T): Validated[Violations, A] =
-    decoder(schema = reference.value, value)
+    decoder.decode(schema = reference.value, value)
