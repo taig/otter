@@ -7,7 +7,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.schema.Primitive
 
-final class PrimitiveParser(quotes: Boolean) extends Parser[Primitive]:
+final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
   override def apply[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match
     case Primitive.Boolean.Modify(self, f, _) => apply(codec = self, value).map(f)
     case Primitive.Boolean.Root(_) =>
@@ -52,5 +52,5 @@ final class PrimitiveParser(quotes: Boolean) extends Parser[Primitive]:
       else value.valid
 
 object PrimitiveParser:
-  val Quoted: Parser[Primitive] = PrimitiveParser(quotes = true)
-  val Unquoted: Parser[Primitive] = PrimitiveParser(quotes = false)
+  val Quoted: Decoder[Primitive, String] = PrimitiveParser(quotes = true)
+  val Unquoted: Decoder[Primitive, String] = PrimitiveParser(quotes = false)

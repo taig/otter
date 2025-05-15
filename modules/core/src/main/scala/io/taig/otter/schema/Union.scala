@@ -17,13 +17,13 @@ sealed abstract class Union[+S[_], A] extends Schema[S, A]:
   final def orElse[S1[a] >: S[a], B](codec: Union[S1, B]): Union[S1, Either[A, B]] =
     Union.OrElse(left = this, right = codec, metadata = Metadata.Empty)
 
-  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A]
 
 object Union:
   final private[otter] case class Modify[S[_], A, B](self: Union[S, A], f: A => B, g: B => A) extends Union[S, B]:
     export self.{metadata, schemas}
     override def modifyMetadata(f: Metadata => Metadata): Union[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, B] = copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class OrElse[S[_], A, B](
       left: Union[S, A],
@@ -33,13 +33,13 @@ object Union:
     override def schemas: NonEmptyChain[Reference[S, ?]] = left.schemas ++ right.schemas
     override def modifyMetadata(f: Metadata => Metadata): Union[S, Either[A, B]] =
       copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, Either[A, B]] =
-      copy(left = left.mapK(fK), right = right.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, Either[A, B]] =
+      copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A](codec: Reference[S, A], metadata: Metadata) extends Union[S, A]:
     override def schemas: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(codec)
     override def modifyMetadata(f: Metadata => Metadata): Union[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A] = copy(codec = codec.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] = copy(codec = codec.mapK[S1, T](fK))
 
   given [Value[_]]: Shape.Union[Union[Value, *], Value] = new Shape.Union[Union[Value, *], Value]:
     override def one[A](schema: => Value[A]): Union[Value, A] = Union.Root(

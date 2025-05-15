@@ -24,13 +24,13 @@ import io.taig.otter.Shape
 
 sealed abstract class Primitive[A] extends Schema[Nothing, A]:
   override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
-  override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive[A]
+  override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive[A]
   override def imap[B](f: A => B)(g: B => A): Primitive[B]
 
 object Primitive:
   sealed abstract class Boolean[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[A]
-    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.Boolean[A] = this
+    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Boolean[A] = this
     override def imap[B](f: A => B)(g: B => A): Primitive.Boolean[B] = Boolean.Modify(self = this, f, g)
 
   object Boolean:
@@ -53,7 +53,7 @@ object Primitive:
 
   sealed abstract class Number[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[A]
-    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.Number[A] = this
+    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Number[A] = this
     final override def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
 
   object Number:
@@ -163,7 +163,7 @@ object Primitive:
 
   sealed abstract class String[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.String[A]
-    final override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): Primitive.String[A] = this
+    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.String[A] = this
     final override def imap[B](f: A => B)(g: B => A): Primitive.String[B] = String.Modify(self = this, f, g)
 
   object String:

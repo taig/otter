@@ -19,7 +19,7 @@ sealed abstract class Sum[+S[_], A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Sum[S, B] = Sum.Modify(self = this, f, g)
   final def orElse[S1[a] >: S[a], B](codec: Sum[S1, B]): Sum[S1, Either[A, B]] =
     Sum.OrElse(left = this, right = codec, discriminator, metadata = Metadata.Empty)
-  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Sum[T, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, A]
 
 object Sum:
   final private[otter] case class Modify[S[_], A, B](self: Sum[S, A], f: A => B, g: B => A) extends Sum[S, B]:
@@ -27,7 +27,7 @@ object Sum:
     override def modifyDiscriminator(f: Discriminator => Discriminator): Sum[S, B] =
       copy(self = self.modifyDiscriminator(f))
     override def modifyMetadata(f: Metadata => Metadata): Sum[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Sum[T, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, B] = copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class OrElse[S[_], A, B](
       left: Sum[S, A],
@@ -40,8 +40,8 @@ object Sum:
       copy(discriminator = f(discriminator))
     override def modifyMetadata(f: Metadata => Metadata): Sum[S, Either[A, B]] =
       copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Sum[T, Either[A, B]] =
-      copy(left = left.mapK(fK), right = right.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, Either[A, B]] =
+      copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A](
       branch: Reference[S, A],
@@ -52,7 +52,7 @@ object Sum:
     override def modifyDiscriminator(f: Discriminator => Discriminator): Sum[S, A] =
       copy(discriminator = f(discriminator))
     override def modifyMetadata(f: Metadata => Metadata): Sum[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Sum[T, A] = copy(branch = branch.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, A] = copy(branch = branch.mapK[S1, T](fK))
 
   given [Value[_]]: Shape.Sum[Sum[Value, *], Value] = new Shape.Sum[Sum[Value, *], Value]:
     extension [A](self: Sum[Value, A])

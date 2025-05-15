@@ -31,7 +31,7 @@ sealed abstract class Collection[+S[_], A] extends Schema[S, A]:
 
   override def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
   final override def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, A]
+  override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, A]
 
 object Collection:
   private def constraints(
@@ -53,7 +53,7 @@ object Collection:
   ) extends Collection[S, Vector[A]]:
     override def constraints: Vector[Constraint.Collection] = Collection.constraints(minimum, maximum, uniqueItems)
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, Vector[A]] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, Vector[A]] = copy(schema = schema.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, Vector[A]] = copy(schema = schema.mapK[S1, T](fK))
 
   final private[otter] case class Linked[S[_], A](
       schema: Reference[S, A],
@@ -64,13 +64,14 @@ object Collection:
   ) extends Collection[S, List[A]]:
     override def constraints: Vector[Constraint.Collection] = Collection.constraints(minimum, maximum, uniqueItems)
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, List[A]] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, List[A]] = copy(schema = schema.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, List[A]] =
+      copy(schema = schema.mapK[S1, T](fK))
 
   final private[otter] case class Modify[S[_], A, B](self: Collection[S, A], f: A => B, g: B => A)
       extends Collection[S, B]:
     export self.{constraints, metadata, schema}
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Collection[T, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] = copy(self = self.mapK[S1, T](fK))
 
   given [Value[_]]: Shape.Collection[Collection[Value, *], Value] with
     extension [A](self: Collection[Value, A])

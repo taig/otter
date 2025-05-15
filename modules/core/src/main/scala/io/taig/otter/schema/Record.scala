@@ -15,7 +15,7 @@ sealed abstract class Record[+S[_], A] extends Schema[S, A]:
 
   def fields: Chain[Reference[S, ?]]
 
-  def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, A]
+  def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, A]
 
   final def imap[B](f: A => B)(g: B => A): Record[S, B] = Record.Modify(self = this, f, g)
 
@@ -29,24 +29,24 @@ object Record:
     override def isOptional: Boolean = false
     override def fields: Chain[Nothing] = Chain.empty
     override def modifyMetadata(f: Metadata => Metadata): Record[Nothing, Unit] = copy(metadata = f(metadata))
-    override def mapK[S1[_] >: Nothing, U[_]](fK: S1 ~> U): Record[U, Unit] = this
+    override def mapK[S1[_] >: Nothing, U[_]](fK: [A] => S1[A] => U[A]): Record[U, Unit] = this
 
   final private[otter] case class Modify[S[_], A, B](self: Record[S, A], f: A => B, g: B => A) extends Record[S, B]:
     export self.{fields, isOptional, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Record[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, B] = copy(self = self.mapK[S1, U](fK))
 
   final private[otter] case class Optional[S[_], A](self: Record[S, A]) extends Record[S, Option[A]]:
     export self.{fields, metadata}
     override def isOptional: Boolean = true
     override def modifyMetadata(f: Metadata => Metadata): Record[S, Option[A]] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, Option[A]] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, Option[A]] = copy(self = self.mapK[S1, U](fK))
 
   final private[otter] case class Root[S[_], A](field: Reference[S, A], metadata: Metadata) extends Record[S, A]:
     override def isOptional: Boolean = false
     override def fields: Chain[Reference[S, ?]] = Chain.one(field)
     override def modifyMetadata(f: Metadata => Metadata): Record[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, A] = copy(field = field.mapK(fK))
+    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, A] = copy(field = field.mapK[S1, U](fK))
 
   final private[otter] case class Zip[S[_], A, B](
       left: Record[S, A],
@@ -56,8 +56,8 @@ object Record:
     override def isOptional: Boolean = left.isOptional && right.isOptional
     override def fields: Chain[Reference[S, ?]] = left.fields ++ right.fields
     override def modifyMetadata(f: Metadata => Metadata): Record[S, (A, B)] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Record[U, (A, B)] =
-      copy(left = left.mapK(fK), right = right.mapK(fK))
+    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, (A, B)] =
+      copy(left = left.mapK[S1, U](fK), right = right.mapK[S1, U](fK))
 
   given [Value[_]]: Shape.Record[Record[Value, *], Value] = new Shape.Record[Record[Value, *], Value]:
     override def record[A](field: => Value[A]): Record[Value, A] = Root(

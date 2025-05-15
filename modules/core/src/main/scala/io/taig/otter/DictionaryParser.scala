@@ -1,11 +1,16 @@
-// package io.taig.otter
+package io.taig.otter
 
-// import cats.data.Validated
-// import cats.syntax.all.*
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.schema.Dictionary
 
-// final class DictionaryParser[S[_]](parser: Parser[S]):
-//   def apply[A](codec: Dictionary[S, S, A], values: List[(String, String)]): Validated[Violations, A] = codec match
-//     case Dictionary.Root(key, codec, _, _, _) =>
-//       values.traverse: (name, value) =>
-//         (parser(codec = key.value, name), parser(codec = codec.value, value)).tupled.leftMap(name /: _)
-//     case Dictionary.Modify(self, f, _) => apply(codec = self, values).map(f)
+final class DictionaryDecoder[S[_], T[_], U](key: Decoder[S, String], value: Decoder[T, U])
+    extends Decoder[Dictionary[S, T, *], List[(String, U)]]:
+  def apply[A](schema: Dictionary[S, T, A], values: List[(String, U)]): Validated[Violations, A] = schema match
+    case Dictionary.Root(key, schema, _, _, _) =>
+      values.traverse: (name, value) =>
+        (
+          this.key(schema = key.value, name),
+          this.value(schema = schema.value, value)
+        ).tupled.leftMap(name /: _)
+    case Dictionary.Modify(self, f, _) => apply(schema = self, values).map(f)

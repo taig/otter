@@ -27,14 +27,14 @@ sealed abstract class Branch[+S[_], +T[_], A] extends Schema[T, A]:
 
   final def imap[B](f: A => B)(g: B => A): Branch[S, T, B] = Branch.Modify(self = this, f, g)
 
-  override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Branch[S, U, A]
+  override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, A]
 
 object Branch:
   final private[otter] case class Modify[S[_], T[_], A, B](self: Branch[S, T, A], f: A => B, g: B => A)
       extends Branch[S, T, B]:
     export self.{key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Branch[S, T, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Branch[S, U, B] = copy(self = self.mapK(fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] = copy(self = self.mapK[T1, U](fK))
 
   final private[otter] case class Root[S[_], T[_], A, B](
       key: Reference.Constant[S, A],
@@ -42,7 +42,7 @@ object Branch:
       metadata: Metadata
   ) extends Branch[S, T, B]:
     override def modifyMetadata(f: Metadata => Metadata): Branch[S, T, B] = copy(metadata = f(metadata))
-    override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Branch[S, U, B] = copy(value = value.mapK(fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] = copy(value = value.mapK[T1, U](fK))
 
   trait Component[Self[_], -Key[_], -Value[_], Sum[_]](using shape: Shape.Branch[Self, Key, Value]):
     final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = shape.branch(name, key, value)

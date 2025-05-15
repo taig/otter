@@ -2,7 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.schema.Primitive
 
-final class PrimitivePrinter(quotes: Boolean) extends Printer[Primitive]:
+final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive, String]:
   override def apply[A](codec: Primitive[A], a: A): String = codec match
     case Primitive.Boolean.Modify(self, _, g)              => apply(codec = self, g(a))
     case Primitive.Boolean.Root(_)                         => String.valueOf(a)
@@ -20,5 +20,5 @@ final class PrimitivePrinter(quotes: Boolean) extends Printer[Primitive]:
   def apply(value: String): String = if quotes then s""""${{ escape(value, "\"") }}"""" else value
 
 object PrimitivePrinter:
-  val Quoted: Printer[Primitive] = PrimitivePrinter(quotes = true)
-  val Unquoted: Printer[Primitive] = PrimitivePrinter(quotes = false)
+  val Quoted: Encoder[Primitive, String] = PrimitivePrinter(quotes = true)
+  val Unquoted: Encoder[Primitive, String] = PrimitivePrinter(quotes = false)

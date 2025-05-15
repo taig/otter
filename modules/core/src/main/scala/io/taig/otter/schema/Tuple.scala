@@ -1,6 +1,5 @@
 package io.taig.otter.schema
 
-import cats.~>
 import cats.data.Chain
 import io.taig.otter.Reference
 import io.taig.otter.Metadata
@@ -12,7 +11,7 @@ sealed abstract class Tuple[+S[_], A] extends Schema[S, A]:
 
   override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
 
-  override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A]
+  override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A]
 
   final override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
 
@@ -22,18 +21,18 @@ sealed abstract class Tuple[+S[_], A] extends Schema[S, A]:
 object Tuple:
   final private[otter] case class Empty(metadata: Metadata) extends Tuple[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
-    override def mapK[S1[a] >: Nothing, T[_]](fK: S1 ~> T): Tuple[T, Unit] = this
+    override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, Unit] = this
     override def modifyMetadata(f: Metadata => Metadata): Tuple[Nothing, Unit] = copy(metadata = f(metadata))
 
   final private[otter] case class Modify[S[_], A, B](self: Tuple[S, A], f: A => B, g: B => A) extends Tuple[S, B]:
     export self.{metadata, schemas}
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, B] = copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A](schema: Reference[S, A], metadata: Metadata) extends Tuple[S, A]:
     override def schemas: Chain[Reference[S, A]] = Chain(schema)
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, A] = copy(schema = schema.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A] = copy(schema = schema.mapK[S1, T](fK))
 
   final private[otter] case class Zip[S[_], A, B](
       left: Tuple[S, A],
@@ -42,8 +41,8 @@ object Tuple:
   ) extends Tuple[S, (A, B)]:
     override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, (A, B)] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Tuple[T, (A, B)] =
-      copy(left = left.mapK(fK), right = right.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, (A, B)] =
+      copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   trait Component[+Self[_], -Value[_]](using self: Shape.Tuple[Self, Value]):
     final def TNil: Self[Unit] = self.empty

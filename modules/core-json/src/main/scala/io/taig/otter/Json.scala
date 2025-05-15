@@ -2,8 +2,7 @@ package io.taig.otter
 
 import io.taig.otter.schema as Schema
 
-sealed abstract class Json[A] extends Product with Serializable:
-  def self: Schema.Schema[Json, A]
+sealed abstract class Json[A] extends Product with Serializable
 
 object Json:
   final case class Collection[A](self: Schema.Collection[Json, A]) extends Json[A]
@@ -126,13 +125,11 @@ object Json:
           [A] => (schema: Schema.Union[Json.Key, A]) => Union(schema)
         )([A] => (json: Json.Key.Union[A]) => json.self)
 
-    given Shape[Json] with
-      override def imapK[T[_$2]](fK: [A] => Json[A] => T[A])(gK: [A] => T[A] => Json[A]): Shape[T] = ???
-
-      extension [A](self: Json[A])
-        override def metadata: Metadata = self.self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Json[A] = ???
-        override def imap[B](f: A => B)(g: B => A): Json[B] = ???
+    given Shape[Json.Key] with
+      extension [A](self: Key[A])
+        override def metadata: Metadata = ???
+        override def modifyMetadata(f: Metadata => Metadata): Key[A] = ???
+        override def imap[B](f: A => B)(g: B => A): Key[B] = ???
 
   final case class Branch[A](self: Schema.Branch[Json.Key, Json, A]) extends Json[A]
 

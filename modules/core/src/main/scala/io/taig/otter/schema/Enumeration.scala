@@ -15,7 +15,7 @@ sealed abstract class Enumeration[+S[_], A] extends Schema[S, A]:
   def values: NonEmptyList[A]
   def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
   final def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
-  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, A]
 
 object Enumeration:
   final private[otter] case class Modify[S[_], A, B](self: Enumeration[S, A], f: A => B, g: B => A)
@@ -23,7 +23,7 @@ object Enumeration:
     export self.{metadata, schema}
     override def values: NonEmptyList[B] = self.values.map(f)
     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(self = self.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] = copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A, B](
       schema: Reference[S, A],
@@ -32,7 +32,7 @@ object Enumeration:
   ) extends Enumeration[S, B]:
     override def modifyMetadata(f: Metadata => Metadata): Enumeration[S, B] = copy(metadata = f(metadata))
     override def values: NonEmptyList[B] = mapping.values
-    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, B] = copy(schema = schema.mapK(fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] = copy(schema = schema.mapK[S1, T](fK))
 
   trait Component[+Self[_], -Value[_]](using self: Shape.Enumeration[Self, Value]):
     final def enumeration[A, B](codec: => Value[B])(using mapping: Mapping[A, B]): Self[A] =

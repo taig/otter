@@ -1,15 +1,13 @@
 package io.taig.otter.schema
 
-import cats.~>
 import io.taig.otter.Metadata
-import io.taig.otter.Invariant
 import io.taig.otter.Shape
 
 abstract class Schema[+S[_], A]:
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Schema[S, A]
   def imap[B](f: A => B)(g: B => A): Schema[S, B]
-  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Schema[T, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Schema[T, A]
 
 object Schema:
   given [Value[_]]: Shape[Schema[Value, *]] with
