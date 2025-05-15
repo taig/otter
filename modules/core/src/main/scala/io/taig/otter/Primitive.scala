@@ -16,6 +16,7 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.schema.PrimitiveSchema
 
 sealed abstract class Primitive[A] extends Product with Serializable:
   def metadata: Metadata
@@ -39,7 +40,7 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    given schema: Schema.Primitive.Boolean[Primitive.Boolean] with
+    given schema: PrimitiveSchema.Boolean[Primitive.Boolean] with
       override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
 
       extension [A](fa: Boolean[A])
@@ -115,7 +116,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    given schema: Schema.Primitive.Number[Primitive.Number] with
+    given schema: PrimitiveSchema.Number[Primitive.Number] with
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -190,7 +191,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
 
-    given schema: Schema.Primitive.String[Primitive.String] with
+    given schema: PrimitiveSchema.String[Primitive.String] with
       override def string(
           minimum: Option[SInt],
           maximum: Option[SInt],
@@ -211,7 +212,7 @@ object Primitive:
         override def metadata: Metadata = self.metadata
         override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)
 
-  given Schema.Primitive[Primitive] = new Schema.Primitive[Primitive]:
+  given PrimitiveSchema[Primitive] = new PrimitiveSchema[Primitive]:
     extension [A](self: Primitive[A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)

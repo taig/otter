@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.Metadata
+import io.taig.otter.schema.UnionSchema
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]
@@ -39,7 +40,7 @@ object Union:
     override def modifyMetadata(f: Metadata => Metadata): Union[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] = copy(codec = codec.mapK[S1, T](fK))
 
-  given [Value[_]]: Schema.Union[Union[Value, *], Value] = new Schema.Union[Union[Value, *], Value]:
+  given [Value[_]]: UnionSchema[Union[Value, *], Value] with
     override def one[A](schema: => Value[A]): Union[Value, A] = Union.Root(
       codec = Reference.later(schema),
       metadata = Metadata.Empty

@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import io.taig.otter.Metadata
+import io.taig.otter.schema.SumSchema
 
 sealed abstract class Sum[+S[_], A] extends Product with Serializable:
   def branches: NonEmptyChain[Reference[S, ?]]
@@ -50,7 +51,7 @@ object Sum:
     override def modifyMetadata(f: Metadata => Metadata): Sum[S, A] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, A] = copy(branch = branch.mapK[S1, T](fK))
 
-  given [Value[_]]: Schema.Sum[Sum[Value, *], Value] = new Schema.Sum[Sum[Value, *], Value]:
+  given [Value[_]]: SumSchema[Sum[Value, *], Value] with
     extension [A](self: Sum[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Sum[Value, A] = self.modifyMetadata(f)

@@ -1,6 +1,5 @@
 package io.taig.otter.component
 
-import io.taig.otter.Schema
 import io.taig.otter.Argument
 import cats.implicits.*
 import cats.Order
@@ -11,8 +10,9 @@ import cats.data.NonEmptyMap
 import cats.data.NonEmptySeq
 import cats.data.NonEmptyVector
 import scala.collection.immutable.SortedMap
+import io.taig.otter.schema.DictionarySchema
 
-trait DictionaryComponent[+Self[_], -Key[_], -Value[_]](using self: Schema.Dictionary[Self, Key, Value]):
+trait DictionaryComponent[+Self[_], -Key[_], -Value[_]](using self: DictionarySchema[Self, Key, Value]):
   final def list[A, B](
       key: => Key[A],
       value: => Value[B],

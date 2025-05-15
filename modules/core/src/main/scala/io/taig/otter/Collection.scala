@@ -12,6 +12,7 @@ import io.taig.otter.Argument
 import io.taig.otter.Metadata
 
 import scala.collection.immutable.SortedSet
+import io.taig.otter.schema.CollectionSchema
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   def constraints: Vector[Constraint.Collection]
@@ -64,7 +65,7 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  given [Value[_]]: Schema.Collection[Collection[Value, *], Value] with
+  given [Value[_]]: CollectionSchema[Collection[Value, *], Value] with
     extension [A](self: Collection[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Collection[Value, A] = self.modifyMetadata(f)

@@ -1,6 +1,5 @@
 package io.taig.otter.component
 
-import io.taig.otter.Schema
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -17,8 +16,9 @@ import io.taig.otter.Argument
 import cats.syntax.all.*
 import io.taig.otter.Comparison
 import cats.Eq
+import io.taig.otter.schema.ConstantSchema
 
-trait ConstantComponent[+Self[_], -Value[_]](using self: Schema.Constant[Self, Value]):
+trait ConstantComponent[+Self[_], -Value[_]](using self: ConstantSchema[Self, Value]):
   final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self.constant(schema, value)
 
 object ConstantComponent:

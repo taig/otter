@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.Metadata
+import io.taig.otter.schema.RecordSchema
 
 sealed abstract class Record[+S[_], +T[_], A] extends Product with Serializable:
   def fields: Chain[Field[S, T, ?]]
@@ -60,14 +61,13 @@ object Record:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Record[S, U, (A, B)] =
       copy(left = left.mapK[T1, U](fK), right = right.mapK[T1, U](fK))
 
-  given [Key[_], Value[_]]: Schema.Record[Record[Key, Value, *], Key, Value] =
-    new Schema.Record[Record[Key, Value, *], Key, Value]:
-      override def record[A](field: Field[Key, Value, A]): Record[Key, Value, A] =
-        Root(field, metadata = Metadata.Empty)
+  given [Key[_], Value[_]]: RecordSchema[Record[Key, Value, *], Key, Value] with
+    override def record[A](field: Field[Key, Value, A]): Record[Key, Value, A] =
+      Root(field, metadata = Metadata.Empty)
 
-      extension [A](self: Record[Key, Value, A])
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Record[Key, Value, A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Record[Key, Value, B] = self.imap(f)(g)
-        override def zip[B](schema: Record[Key, Value, B]): Record[Key, Value, (A, B)] = self.zip(schema)
-        override def optional: Record[Key, Value, Option[A]] = self.optional
+    extension [A](self: Record[Key, Value, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Record[Key, Value, A] = self.modifyMetadata(f)
+      override def imap[B](f: A => B)(g: B => A): Record[Key, Value, B] = self.imap(f)(g)
+      override def zip[B](schema: Record[Key, Value, B]): Record[Key, Value, (A, B)] = self.zip(schema)
+      override def optional: Record[Key, Value, Option[A]] = self.optional

@@ -1,7 +1,5 @@
 package io.taig.otter.component
 
-import io.taig.otter.Schema
-import io.taig.otter.Schema
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -15,8 +13,8 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait BranchComponent[Self[_], -Key[_], -Value[_], Sum[_]](using self: Schema.Branch[Self, Key, Value]):
-  final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self.branch(name, key, value)
+trait BranchComponent[Self[_], -Key[_], -Value[_], Sum[_]]:
+  final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = ??? // self.branch(name, key, value)
 
   extension [A](self: Self[A]) def toSum: Sum[A] = ???
 

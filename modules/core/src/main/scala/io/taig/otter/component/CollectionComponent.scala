@@ -12,9 +12,9 @@ import io.taig.otter.Argument
 import io.taig.otter.Metadata
 
 import scala.collection.immutable.SortedSet
-import io.taig.otter.Schema
+import io.taig.otter.schema.CollectionSchema
 
-trait CollectionComponent[+Self[_], -Value[_]](using self: Schema.Collection[Self, Value]):
+trait CollectionComponent[+Self[_], -Value[_]](using self: CollectionSchema[Self, Value]):
   final def list[A](
       schema: => Value[A],
       minimum: Argument[Int] = Argument.Default,

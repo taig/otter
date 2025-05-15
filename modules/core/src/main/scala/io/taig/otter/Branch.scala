@@ -37,18 +37,3 @@ object Branch:
     override def modifyMetadata(f: Metadata => Metadata): Branch[S, T, B] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
-
-  given [Key[_], Value[_]]: Schema.Branch[Branch[Key, Value, *], Key, Value] with
-    override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Branch[Key, Value, B] =
-      Root(
-        key = Reference.Constant(self = Reference.later(key), value = name),
-        value = Reference.later(value),
-        metadata = Metadata.Empty
-      )
-
-    extension [A](self: Branch[Key, Value, A])
-      override def key: Reference.Constant[Key, ?] = self.key
-      override def value: Reference[Value, ?] = self.value
-      override def imap[B](f: A => B)(g: B => A): Branch[Key, Value, B] = self.imap(f)(g)
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Branch[Key, Value, A] = self.modifyMetadata(f)

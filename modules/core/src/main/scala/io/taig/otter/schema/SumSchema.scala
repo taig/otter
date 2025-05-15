@@ -1,0 +1,18 @@
+package io.taig.otter.schema
+
+import io.taig.otter.Metadata
+import io.taig.otter.Invariant
+
+trait SumSchema[Self[_], Branch[_]] extends Schema[Self], Invariant.Coproduct[Self]:
+  self =>
+
+  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): SumSchema[T, Branch] =
+    new SumSchema[T, Branch]:
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+object SumSchema:
+  inline def apply[Self[_], Branch[_]](using self: SumSchema[Self, Branch]): SumSchema[Self, Branch] = self

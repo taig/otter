@@ -5,6 +5,7 @@ import cats.data.NonEmptyList
 import io.taig.enumeration.ext.EnumerationValues
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Metadata
+import io.taig.otter.schema.EnumerationSchema
 
 sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]
@@ -35,7 +36,7 @@ object Enumeration:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  given [Value[_]]: Schema.Enumeration[Enumeration[Value, *], Value] with
+  given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
     override def enumeration[A, B](
         schema: => Value[A],
         mapping: Mapping[B, A]

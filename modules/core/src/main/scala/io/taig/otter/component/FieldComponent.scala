@@ -8,13 +8,13 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Schema
 import io.taig.otter.Field
 import io.taig.otter.Reference
+import io.taig.otter.schema.RecordSchema
 
 trait FieldComponent[Self[_], -Key[_], -Value[_], Record[_]](using
     // self: Schema.Field[Self, Key, Value],
-    record: Schema.Record[Record, Key, Value]
+    record: RecordSchema[Record, Key, Value]
 ):
   final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = ???
   // Field.Root(key = Reference.Constant(self = Reference.later(key), value = name), value = Reference.later(value))
