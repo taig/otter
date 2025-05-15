@@ -1,9 +1,7 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]
@@ -58,7 +56,7 @@ object Record:
     override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, (A, B)] =
       copy(left = left.mapK[S1, U](fK), right = right.mapK[S1, U](fK))
 
-  given [Value[_]]: Shape.Record[Record[Value, *], Value] = new Shape.Record[Record[Value, *], Value]:
+  given [Value[_]]: Schema.Record[Record[Value, *], Value] = new Schema.Record[Record[Value, *], Value]:
     override def record[A](field: => Value[A]): Record[Value, A] = Root(
       field = Reference.later(field),
       metadata = Metadata.Empty

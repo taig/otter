@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.schema.Dictionary
 
 final class DictionaryDecoder[S[_], T[_], U](key: Decoder[S, String], value: Decoder[T, U])
     extends Decoder[Dictionary[S, T, *], List[(String, U)]]:

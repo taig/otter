@@ -1,12 +1,10 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.Order
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.EnumerationValues
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]
@@ -37,14 +35,14 @@ object Enumeration:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  trait Component[+Self[_], -Value[_]](using self: Shape.Enumeration[Self, Value]):
+  trait Component[+Self[_], -Value[_]](using self: Schema.Enumeration[Self, Value]):
     final def enumeration[A, B](codec: => Value[B])(using mapping: Mapping[A, B]): Self[A] =
       self.enumeration(codec, mapping)
 
     final def enumeration[A, B: Order](codec: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
       enumeration(codec)(using Mapping.enumeration(f))
 
-  given [Value[_]]: Shape.Enumeration[Enumeration[Value, *], Value] with
+  given [Value[_]]: Schema.Enumeration[Enumeration[Value, *], Value] with
     override def enumeration[A, B](
         schema: => Value[A],
         mapping: Mapping[B, A]

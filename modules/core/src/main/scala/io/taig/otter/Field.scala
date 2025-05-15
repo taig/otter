@@ -1,8 +1,6 @@
-package io.taig.otter.schema
+package io.taig.otter
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
-import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
+import io.taig.otter.Primitive.Component as PrimitiveComponent
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -50,11 +48,11 @@ object Field:
       copy(self = self.mapK[T1, U](fK))
 
   trait Component[Self[_], -Key[_], -Value[_], Record[_]](using
-      shape: Shape.Field[Self, Key, Value],
-      record: Shape.Record[Record, Self]
+      self: Schema.Field[Self, Key, Value],
+      record: Schema.Record[Record, Self]
   ):
     final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
-      shape.field(name, key, value)
+      self.field(name, key, value)
 
     extension [A](self: Self[A]) def toRecord: Record[A] = record.record(self)
 
@@ -94,8 +92,8 @@ object Field:
         final def field[A](name: JString, schema: => Value[A]): Self[A] =
           field(name, key = key.string, value = schema)
 
-  given [Key[_], Value[_]]: Shape.Field[Field[Key, Value, *], Key, Value] =
-    new Shape.Field[Field[Key, Value, *], Key, Value]:
+  given [Key[_], Value[_]]: Schema.Field[Field[Key, Value, *], Key, Value] =
+    new Schema.Field[Field[Key, Value, *], Key, Value]:
 
       override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] =
         Root(

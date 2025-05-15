@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.Order
 import cats.data.Chain
@@ -9,10 +9,7 @@ import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
 import io.taig.otter.Argument
-import io.taig.otter.Constraint
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 import scala.collection.immutable.SortedSet
 
@@ -67,7 +64,7 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  given [Value[_]]: Shape.Collection[Collection[Value, *], Value] with
+  given [Value[_]]: Schema.Collection[Collection[Value, *], Value] with
     extension [A](self: Collection[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Collection[Value, A] = self.modifyMetadata(f)
@@ -89,7 +86,7 @@ object Collection:
     ): Collection[Value, Vector[A]] =
       Indexed(schema = Reference.later(schema), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
 
-  trait Component[+Self[_], -Value[_]](using self: Shape.Collection[Self, Value]):
+  trait Component[+Self[_], -Value[_]](using self: Schema.Collection[Self, Value]):
     final def list[A](
         schema: => Value[A],
         minimum: Argument[Int] = Argument.Default,

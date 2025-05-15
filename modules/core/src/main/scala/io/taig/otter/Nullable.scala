@@ -1,9 +1,7 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 sealed abstract class Nullable[+S[_], A] extends Product with Serializable:
   def schema: Option[Reference[S, ?]]
@@ -38,12 +36,12 @@ object Nullable:
     override def modifyMetadata(f: Metadata => Metadata): Nullable[Nothing, Unit] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Nullable[T, Unit] = this
 
-  trait Component[+Self[_], -Value[_]](using self: Shape.Nullable[Self, Value]):
+  trait Component[+Self[_], -Value[_]](using self: Schema.Nullable[Self, Value]):
     final def nullable[A](schema: => Value[A]): Self[Option[A]] = self.nullable(schema)
     final def nullable[A](schema: => Value[A], default: A): Self[A] = self.nullable(schema, default)
     final def void: Self[Unit] = self.void
 
-  given [Value[_]]: Shape.Nullable[Nullable[Value, *], Value] with
+  given [Value[_]]: Schema.Nullable[Nullable[Value, *], Value] with
     extension [A](self: Nullable[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Nullable[Value, A] = self.modifyMetadata(f)

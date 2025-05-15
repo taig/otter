@@ -1,9 +1,7 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 // TODO support for optional
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
@@ -46,12 +44,12 @@ object Tuple:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, (A, B)] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  trait Component[+Self[_], -Value[_]](using self: Shape.Tuple[Self, Value]):
+  trait Component[+Self[_], -Value[_]](using self: Schema.Tuple[Self, Value]):
     final def TNil: Self[Unit] = self.empty
 
     extension [A](value: Value[A]) final def toTuple: Self[A] = self.one(value)
 
-  given [Value[_]]: Shape.Tuple[Tuple[Value, *], Value] = new Shape.Tuple[Tuple[Value, *], Value]:
+  given [Value[_]]: Schema.Tuple[Tuple[Value, *], Value] = new Schema.Tuple[Tuple[Value, *], Value]:
     override def empty: Tuple[Value, Unit] = Tuple.Empty(Metadata.Empty)
     override def one[A](schema: => Value[A]): Tuple[Value, A] = Tuple.Root(
       schema = Reference.later(schema),

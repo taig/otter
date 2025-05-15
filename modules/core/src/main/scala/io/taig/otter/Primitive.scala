@@ -1,11 +1,8 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.Argument
-import io.taig.otter.Comparison
 import io.taig.otter.Metadata
-import io.taig.otter.Shape
-import io.taig.otter.StringComponentExtension
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -42,7 +39,7 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    given shape: Shape.Primitive.Boolean[Primitive.Boolean] with
+    given schema: Schema.Primitive.Boolean[Primitive.Boolean] with
       override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
 
       extension [A](fa: Boolean[A])
@@ -118,7 +115,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    given shape: Shape.Primitive.Number[Primitive.Number] with
+    given schema: Schema.Primitive.Number[Primitive.Number] with
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -193,7 +190,7 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
 
-    given shape: Shape.Primitive.String[Primitive.String] with
+    given schema: Schema.Primitive.String[Primitive.String] with
       override def string(
           minimum: Option[SInt],
           maximum: Option[SInt],
@@ -220,10 +217,10 @@ object Primitive:
         Primitive.Component.String[Self]
 
   object Component:
-    trait Boolean[+Self[_]](using self: Shape.Primitive.Boolean[Self]):
+    trait Boolean[+Self[_]](using self: Schema.Primitive.Boolean[Self]):
       final val boolean: Self[SBoolean] = self.boolean
 
-    trait Number[+Self[_]](using self: Shape.Primitive.Number[Self]):
+    trait Number[+Self[_]](using self: Schema.Primitive.Number[Self]):
       final def jBigDecimal(
           minimum: Argument[Comparison[JBigDecimal]] = Argument.Default,
           maximum: Argument[Comparison[JBigDecimal]] = Argument.Default,
@@ -320,7 +317,7 @@ object Primitive:
 
       final val long: Self[SLong] = long()
 
-    trait String[+Self[_]](using self: Shape.Primitive.String[Self]):
+    trait String[+Self[_]](using self: Schema.Primitive.String[Self]):
       final def string(
           minimum: Argument[SInt] = Argument.Default,
           maximum: Argument[SInt] = Argument.Default,
@@ -364,12 +361,12 @@ object Primitive:
 
       final val pattern: Self[Pattern] = string.imap(Pattern.compile)(_.pattern)
 
-  given Shape.Primitive[Primitive] = new Shape.Primitive[Primitive]:
+  given Schema.Primitive[Primitive] = new Schema.Primitive[Primitive]:
     extension [A](self: Primitive[A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)
       override def imap[B](f: A => B)(g: B => A): Primitive[B] = self.imap(f)(g)
 
-    export Primitive.Boolean.shape.boolean
-    export Primitive.Number.shape.{double, float, int, jBigDecimal, jBigInteger, long}
-    export Primitive.String.shape.{parser, string}
+    export Primitive.Boolean.schema.boolean
+    export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
+    export Primitive.String.schema.{parser, string}

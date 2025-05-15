@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.Order
 import cats.data.Chain
@@ -9,10 +9,7 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptyVector
 import cats.implicits.*
 import io.taig.otter.Argument
-import io.taig.otter.Constraint
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
 
 import scala.collection.immutable.SortedMap
 
@@ -57,7 +54,7 @@ object Dictionary:
     override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] =
       copy(self = self.leftMapK[S1, U](fK))
 
-  trait Component[+Self[_], -Key[_], -Value[_]](using self: Shape.Dictionary[Self, Key, Value]):
+  trait Component[+Self[_], -Key[_], -Value[_]](using self: Schema.Dictionary[Self, Key, Value]):
     final def list[A, B](
         key: => Key[A],
         value: => Value[B],
@@ -140,7 +137,7 @@ object Dictionary:
     ): Self[NonEmptyMap[A, B]] = sortedMap(key, value, minimum = minimum.getOrElse(1).max(1), maximum)
       .imap(NonEmptyMap.fromMapUnsafe)(_.toSortedMap)
 
-  given [Key[_], Value[_]]: Shape.Dictionary[Dictionary[Key, Value, *], Key, Value] with
+  given [Key[_], Value[_]]: Schema.Dictionary[Dictionary[Key, Value, *], Key, Value] with
     override def dictionary[A, B](
         key: => Key[A],
         value: => Value[B],

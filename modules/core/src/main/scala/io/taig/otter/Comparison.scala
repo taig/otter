@@ -3,9 +3,6 @@ package io.taig.otter
 import cats.Eq
 import cats.Functor
 import cats.derived.*
-import io.taig.otter.schema.Field
-import io.taig.otter.schema.Nullable
-import io.taig.otter.schema.Primitive
 
 final case class Comparison[A](reference: A, exclusive: Boolean) derives Eq, Functor:
   def map[B](f: A => B): Comparison[B] = copy(reference = f(reference))
@@ -17,8 +14,8 @@ object Comparison:
   object Syntax extends Syntax
 
   trait Component[Nullable[a] <: Value[a], Record[_], Field[_], Key[_], Value[_]](using
-      Shape.Field[Field, Key, Value],
-      Shape.Record[Record, Field]
+      Schema.Field[Field, Key, Value],
+      Schema.Record[Record, Field]
   ) extends Nullable.Component[Nullable, Value],
         Primitive.Component.Boolean[Value],
         Field.Component.Primitive.String[Field, Key, Value, Record]:

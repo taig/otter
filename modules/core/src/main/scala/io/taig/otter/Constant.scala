@@ -1,11 +1,9 @@
-package io.taig.otter.schema
+package io.taig.otter
 
 import cats.Eq
 import cats.syntax.all.*
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
-import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
+import io.taig.otter.Primitive.Component as PrimitiveComponent
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -39,7 +37,7 @@ object Constant:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, Unit] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  trait Component[+Self[_], -Value[_]](using self: Shape.Constant[Self, Value]):
+  trait Component[+Self[_], -Value[_]](using self: Schema.Constant[Self, Value]):
     final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self.constant(schema, value)
 
   object Component:
@@ -73,7 +71,7 @@ object Constant:
         final def constant(value: JString): Self[Unit] = constant(schema = string, value)
         final def constant(value: UUID): Self[Unit] = constant(schema = uuid, value)
 
-  given [Value[_]]: Shape.Constant[Constant[Value, *], Value] with
+  given [Value[_]]: Schema.Constant[Constant[Value, *], Value] with
     override def constant[A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, Unit] = Root(
       schema = Reference.Constant(self = Reference.later(schema), value),
       eq,

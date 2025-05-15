@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.schema.Collection
 
 final class CollectionDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Collection[S, *], Seq[T]]:
   override def apply[A](schema: Collection[S, A], values: Seq[T]): Validated[Violations, A] = schema match

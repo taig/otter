@@ -1,7 +1,5 @@
 package io.taig.otter
 
-import io.taig.otter.schema.Primitive
-
 final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive, String]:
   override def apply[A](codec: Primitive[A], a: A): String = codec match
     case Primitive.Boolean.Modify(self, _, g)              => apply(codec = self, g(a))

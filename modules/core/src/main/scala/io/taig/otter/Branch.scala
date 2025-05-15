@@ -1,8 +1,6 @@
-package io.taig.otter.schema
+package io.taig.otter
 import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
-import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
+import io.taig.otter.Primitive.Component as PrimitiveComponent
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -41,8 +39,8 @@ object Branch:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
 
-  trait Component[Self[_], -Key[_], -Value[_], Sum[_]](using shape: Shape.Branch[Self, Key, Value]):
-    final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = shape.branch(name, key, value)
+  trait Component[Self[_], -Key[_], -Value[_], Sum[_]](using self: Schema.Branch[Self, Key, Value]):
+    final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self.branch(name, key, value)
 
     extension [A](self: Self[A]) def toSum: Sum[A] = ???
 
@@ -83,7 +81,7 @@ object Branch:
         final def branch[A](name: JString, schema: => Value[A]): Self[A] =
           branch(name, key = key.string, value = schema)
 
-  given [Key[_], Value[_]]: Shape.Branch[Branch[Key, Value, *], Key, Value] with
+  given [Key[_], Value[_]]: Schema.Branch[Branch[Key, Value, *], Key, Value] with
     override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Branch[Key, Value, B] =
       Root(
         key = Reference.Constant(self = Reference.later(key), value = name),

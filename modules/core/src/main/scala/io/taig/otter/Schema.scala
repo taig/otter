@@ -14,10 +14,10 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait Shape[Self[_]] extends Invariant[Self]:
+trait Schema[Self[_]] extends Invariant[Self]:
   self =>
 
-  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape[T] = new Shape[T]:
+  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema[T] = new Schema[T]:
     extension [A](ta: T[A])
       override def metadata: Metadata = self.metadata(gK(ta))
       override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
@@ -30,13 +30,13 @@ trait Shape[Self[_]] extends Invariant[Self]:
     final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
     final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
 
-object Shape:
-  trait Branch[Self[_], Key[_], Value[_]] extends Shape[Self]:
+object Schema:
+  trait Branch[Self[_], Key[_], Value[_]] extends Schema[Self]:
     self =>
 
     final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): Shape.Branch[T, Key, Value] = new Branch[T, Key, Value]:
+    ): Schema.Branch[T, Key, Value] = new Branch[T, Key, Value]:
       override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
         fK(self.branch(name, key, value))
 
@@ -55,13 +55,15 @@ object Shape:
 
   object Branch:
     inline def apply[Self[_], Key[_], Value[_]](using
-        self: Shape.Branch[Self, Key, Value]
-    ): Shape.Branch[Self, Key, Value] = self
+        self: Schema.Branch[Self, Key, Value]
+    ): Schema.Branch[Self, Key, Value] = self
 
-  trait Collection[Self[_], -Value[_]] extends Shape[Self]:
+  trait Collection[Self[_], -Value[_]] extends Schema[Self]:
     self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Collection[T, Value] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): Schema.Collection[T, Value] =
       new Collection[T, Value]:
         override def linked[A](
             schema: => Value[A],
@@ -92,12 +94,13 @@ object Shape:
     ): Self[Vector[A]]
 
   object Collection:
-    inline def apply[Self[_], Value[_]](using self: Shape.Collection[Self, Value]): Shape.Collection[Self, Value] = self
+    inline def apply[Self[_], Value[_]](using self: Schema.Collection[Self, Value]): Schema.Collection[Self, Value] =
+      self
 
-  trait Constant[Self[_], Value[_]] extends Shape[Self]:
+  trait Constant[Self[_], Value[_]] extends Schema[Self]:
     self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Constant[T, Value] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Constant[T, Value] =
       new Constant[T, Value]:
         override def constant[A](schema: => Value[A], value: A)(using Eq[A]): T[Unit] = fK(self.constant(schema, value))
 
@@ -109,14 +112,14 @@ object Shape:
     def constant[A: Eq](schema: => Value[A], value: A): Self[Unit]
 
   object Constant:
-    inline def apply[Self[_], Value[_]](using self: Shape.Constant[Self, Value]): Shape.Constant[Self, Value] = self
+    inline def apply[Self[_], Value[_]](using self: Schema.Constant[Self, Value]): Schema.Constant[Self, Value] = self
 
-  trait Dictionary[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
+  trait Dictionary[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
     self =>
 
     final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): Shape.Dictionary[T, Key, Value] = new Dictionary[T, Key, Value]:
+    ): Schema.Dictionary[T, Key, Value] = new Dictionary[T, Key, Value]:
       override def dictionary[A, B](
           key: => Key[A],
           value: => Value[B],
@@ -139,15 +142,15 @@ object Shape:
 
   object Dictionary:
     inline def apply[Self[_], Key[_], Value[_]](using
-        self: Shape.Dictionary[Self, Key, Value]
-    ): Shape.Dictionary[Self, Key, Value] = self
+        self: Schema.Dictionary[Self, Key, Value]
+    ): Schema.Dictionary[Self, Key, Value] = self
 
-  trait Enumeration[Self[_], Value[_]] extends Shape[Self]:
+  trait Enumeration[Self[_], Value[_]] extends Schema[Self]:
     self =>
 
     final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): Shape.Enumeration[T, Value] =
+    ): Schema.Enumeration[T, Value] =
       new Enumeration[T, Value]:
         override def enumeration[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] = fK(
           self.enumeration(schema, mapping)
@@ -161,13 +164,15 @@ object Shape:
     def enumeration[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
 
   object Enumeration:
-    inline def apply[Self[_], Value[_]](using self: Shape.Enumeration[Self, Value]): Shape.Enumeration[Self, Value] =
+    inline def apply[Self[_], Value[_]](using self: Schema.Enumeration[Self, Value]): Schema.Enumeration[Self, Value] =
       self
 
-  trait Field[Self[_], -Key[_], -Value[_]] extends Shape[Self]:
+  trait Field[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
     self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Field[T, Key, Value] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): Schema.Field[T, Key, Value] =
       new Field[T, Key, Value]:
         extension [A](ta: T[A])
           override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
@@ -184,16 +189,16 @@ object Shape:
 
   object Field:
     inline def apply[Self[_], Key[_], Value[_]](using
-        self: Shape.Field[Self, Key, Value]
-    ): Shape.Field[Self, Key, Value] = self
+        self: Schema.Field[Self, Key, Value]
+    ): Schema.Field[Self, Key, Value] = self
 
   trait Primitive[Self[_]]
-      extends Shape.Primitive.Boolean[Self],
-        Shape.Primitive.Number[Self],
-        Shape.Primitive.String[Self]:
+      extends Schema.Primitive.Boolean[Self],
+        Schema.Primitive.Number[Self],
+        Schema.Primitive.String[Self]:
     self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Primitive[T] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Primitive[T] =
       new Primitive[T]:
         extension [A](fa: T[A])
           override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
@@ -250,14 +255,14 @@ object Shape:
             matches: Option[Pattern]
         ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
-  trait Nullable[Self[_], Value[_]] extends Shape[Self]:
+  trait Nullable[Self[_], Value[_]] extends Schema[Self]:
     self =>
 
     def nullable[A](schema: => Value[A]): Self[Option[A]]
     def nullable[A](schema: => Value[A], default: A): Self[A]
     def void: Self[Unit]
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Nullable[T, Value] =
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Nullable[T, Value] =
       new Nullable[T, Value]:
         override def nullable[A](schema: => Value[A]): T[Option[A]] = fK(self.nullable(schema))
         override def nullable[A](schema: => Value[A], default: A): T[A] = fK(self.nullable(schema, default))
@@ -269,15 +274,15 @@ object Shape:
           override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
   object Nullable:
-    inline def apply[Self[_], Value[_]](using self: Shape.Nullable[Self, Value]): Shape.Nullable[Self, Value] = self
+    inline def apply[Self[_], Value[_]](using self: Schema.Nullable[Self, Value]): Schema.Nullable[Self, Value] = self
 
   object Primitive:
-    trait Boolean[Self[_]] extends Shape[Self]:
+    trait Boolean[Self[_]] extends Schema[Self]:
       self =>
 
       override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
           gK: [A] => T[A] => Self[A]
-      ): Shape.Primitive.Boolean[T] = new Boolean[T]:
+      ): Schema.Primitive.Boolean[T] = new Boolean[T]:
         override def boolean: T[SBoolean] = fK(self.boolean)
 
         extension [A](fa: T[A])
@@ -288,14 +293,14 @@ object Shape:
       def boolean: Self[SBoolean]
 
     object Boolean:
-      inline def apply[Self[_]](using self: Shape.Primitive.Boolean[Self]): Shape.Primitive.Boolean[Self] = self
+      inline def apply[Self[_]](using self: Schema.Primitive.Boolean[Self]): Schema.Primitive.Boolean[Self] = self
 
-    trait Number[Self[_]] extends Shape[Self]:
+    trait Number[Self[_]] extends Schema[Self]:
       self =>
 
       override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
           gK: [A] => T[A] => Self[A]
-      ): Shape.Primitive.Number[T] = new Number[T]:
+      ): Schema.Primitive.Number[T] = new Number[T]:
         extension [A](ta: T[A])
           override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
           override def metadata: Metadata = self.metadata(gK(ta))
@@ -380,14 +385,14 @@ object Shape:
       ): Self[SLong]
 
     object Number:
-      inline def apply[Self[_]](using self: Shape.Primitive.Number[Self]): Shape.Primitive.Number[Self] = self
+      inline def apply[Self[_]](using self: Schema.Primitive.Number[Self]): Schema.Primitive.Number[Self] = self
 
-    trait String[Self[_]] extends Shape[Self]:
+    trait String[Self[_]] extends Schema[Self]:
       self =>
 
       override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
           gK: [A] => T[A] => Self[A]
-      ): Shape.Primitive.String[T] =
+      ): Schema.Primitive.String[T] =
         new String[T]:
           override def string(
               minimum: Option[SInt],
@@ -422,15 +427,15 @@ object Shape:
       ): Self[A]
 
     object String:
-      inline def apply[Self[_]](using self: Shape.Primitive.String[Self]): Shape.Primitive.String[Self] = self
+      inline def apply[Self[_]](using self: Schema.Primitive.String[Self]): Schema.Primitive.String[Self] = self
 
-    inline def apply[Self[_]](using self: Shape.Primitive[Self]): Shape.Primitive[Self] = self
+    inline def apply[Self[_]](using self: Schema.Primitive[Self]): Schema.Primitive[Self] = self
 
-  trait Record[Self[_], Field[_]] extends Shape[Self], Invariant.Product[Self]:
+  trait Record[Self[_], Field[_]] extends Schema[Self], Invariant.Product[Self]:
     self =>
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Record[T, Field] =
-      new Shape.Record[T, Field]:
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Record[T, Field] =
+      new Schema.Record[T, Field]:
         override def record[A](field: => Field[A]): T[A] = fK(self.record(field))
 
         extension [A](fa: T[A])
@@ -445,12 +450,12 @@ object Shape:
     extension [A](self: Self[A]) def optional: Self[Option[A]]
 
   object Record:
-    inline def apply[Self[_], Field[_]](using self: Shape.Record[Self, Field]): Shape.Record[Self, Field] = self
+    inline def apply[Self[_], Field[_]](using self: Schema.Record[Self, Field]): Schema.Record[Self, Field] = self
 
-  trait Sum[Self[_], Branch[_]] extends Shape[Self], Invariant.Coproduct[Self]:
+  trait Sum[Self[_], Branch[_]] extends Schema[Self], Invariant.Coproduct[Self]:
     self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Sum[T, Branch] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Sum[T, Branch] =
       new Sum[T, Branch]:
         extension [A](ta: T[A])
           override def metadata: Metadata = self.metadata(gK(ta))
@@ -459,15 +464,15 @@ object Shape:
           override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   object Sum:
-    inline def apply[Self[_], Branch[_]](using self: Shape.Sum[Self, Branch]): Shape.Sum[Self, Branch] = self
+    inline def apply[Self[_], Branch[_]](using self: Schema.Sum[Self, Branch]): Schema.Sum[Self, Branch] = self
 
-  trait Tuple[Self[_], Value[_]] extends Shape[Self], Invariant.Product[Self]:
+  trait Tuple[Self[_], Value[_]] extends Schema[Self], Invariant.Product[Self]:
     self =>
 
     def empty: Self[Unit]
     def one[A](codec: => Value[A]): Self[A]
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Tuple[T, Value] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Tuple[T, Value] =
       new Tuple[T, Value]:
         override def empty: T[Unit] = fK(self.empty)
         override def one[A](codec: => Value[A]): T[A] = fK(self.one(codec))
@@ -479,14 +484,14 @@ object Shape:
           override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
 
   object Tuple:
-    inline def apply[Self[_], Field[_]](using self: Shape.Tuple[Self, Field]): Shape.Tuple[Self, Field] = self
+    inline def apply[Self[_], Field[_]](using self: Schema.Tuple[Self, Field]): Schema.Tuple[Self, Field] = self
 
-  trait Union[Self[_], Value[_]] extends Shape[Self]:
+  trait Union[Self[_], Value[_]] extends Schema[Self]:
     self =>
 
     def one[A](codec: => Value[A]): Self[A]
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Shape.Union[T, Value] =
+    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Union[T, Value] =
       new Union[T, Value]:
         extension [A](ta: T[A])
           override def metadata: Metadata = self.metadata(gK(ta))
@@ -496,4 +501,4 @@ object Shape:
         override def one[A](codec: => Value[A]): T[A] = fK(self.one(codec))
 
   object Union:
-    inline def apply[Self[_], Value[_]](using self: Shape.Union[Self, Value]): Shape.Union[Self, Value] = self
+    inline def apply[Self[_], Value[_]](using self: Schema.Union[Self, Value]): Schema.Union[Self, Value] = self
