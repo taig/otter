@@ -2,25 +2,22 @@ package io.taig.otter.schema
 
 import cats.Eq
 import cats.syntax.all.*
-import cats.~>
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.Shape
 import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import java.util.regex.Pattern
+import java.util.UUID
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
-import scala.BigDecimal as SBigDecimal
-import scala.BigInt as SBigInt
 import scala.Int as SInt
 import scala.Long as SLong
-import java.util.UUID
 
-sealed abstract class Constant[+S[_], A] extends Schema[S, A]:
+sealed abstract class Constant[+S[_], A] extends Product with Serializable:
   def metadata: Metadata
   def schema: Reference.Constant[S, ?]
   def modifyMetadata(f: Metadata => Metadata): Constant[S, A]
@@ -39,7 +36,8 @@ object Constant:
       metadata: Metadata
   ) extends Constant[S, Unit]:
     override def modifyMetadata(f: Metadata => Metadata): Constant[S, Unit] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, Unit] = copy(schema = schema.mapK[S1, T](fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, Unit] =
+      copy(schema = schema.mapK[S1, T](fK))
 
   trait Component[+Self[_], -Value[_]](using self: Shape.Constant[Self, Value]):
     final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self.constant(schema, value)

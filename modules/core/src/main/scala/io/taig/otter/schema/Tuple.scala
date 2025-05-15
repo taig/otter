@@ -1,19 +1,20 @@
 package io.taig.otter.schema
 
 import cats.data.Chain
-import io.taig.otter.Reference
 import io.taig.otter.Metadata
+import io.taig.otter.Reference
 import io.taig.otter.Shape
 
 // TODO support for optional
-sealed abstract class Tuple[+S[_], A] extends Schema[S, A]:
+sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
   def schemas: Chain[Reference[S, ?]]
 
-  override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Tuple[S, A]
 
-  override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A]
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A]
 
-  final override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
+  final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
 
   final def zip[S1[a] >: S[a], B](schema: Tuple[S1, B]): Tuple[S1, (A, B)] =
     Tuple.Zip(left = this, right = schema, metadata = Metadata.Empty)
@@ -32,7 +33,8 @@ object Tuple:
   final private[otter] case class Root[S[_], A](schema: Reference[S, A], metadata: Metadata) extends Tuple[S, A]:
     override def schemas: Chain[Reference[S, A]] = Chain(schema)
     override def modifyMetadata(f: Metadata => Metadata): Tuple[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A] = copy(schema = schema.mapK[S1, T](fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A] =
+      copy(schema = schema.mapK[S1, T](fK))
 
   final private[otter] case class Zip[S[_], A, B](
       left: Tuple[S, A],

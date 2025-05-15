@@ -1,31 +1,30 @@
 package io.taig.otter.schema
 
 import cats.syntax.all.*
-import cats.~>
+import io.taig.otter.Argument
+import io.taig.otter.Comparison
+import io.taig.otter.Metadata
+import io.taig.otter.Shape
+import io.taig.otter.StringComponentExtension
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.UUID
 import java.util.regex.Pattern
+import scala.BigDecimal as SBigDecimal
+import scala.BigInt as SBigInt
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
-import scala.BigDecimal as SBigDecimal
-import scala.BigInt as SBigInt
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Metadata
-import io.taig.otter.Comparison
-import io.taig.otter.Argument
-import io.taig.otter.StringComponentExtension
-import java.util.UUID
-import cats.arrow.FunctionK
-import io.taig.otter.Shape
 
-sealed abstract class Primitive[A] extends Schema[Nothing, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Primitive[A]
-  override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive[A]
-  override def imap[B](f: A => B)(g: B => A): Primitive[B]
+sealed abstract class Primitive[A] extends Product with Serializable:
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Primitive[A]
+  def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive[A]
+  def imap[B](f: A => B)(g: B => A): Primitive[B]
 
 object Primitive:
   sealed abstract class Boolean[A] extends Primitive[A]:

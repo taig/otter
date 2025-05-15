@@ -1,19 +1,17 @@
 package io.taig.otter.schema
 
 import cats.data.Chain
-import cats.~>
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
-import io.taig.otter.Invariant
-import cats.arrow.FunctionK
 import io.taig.otter.Shape
 
-sealed abstract class Record[+S[_], A] extends Schema[S, A]:
-  override def modifyMetadata(f: Metadata => Metadata): Record[S, A]
+sealed abstract class Record[+S[_], A] extends Product with Serializable:
+  def fields: Chain[Reference[S, ?]]
+
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Record[S, A]
 
   def isOptional: Boolean
-
-  def fields: Chain[Reference[S, ?]]
 
   def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, A]
 
@@ -40,7 +38,8 @@ object Record:
     export self.{fields, metadata}
     override def isOptional: Boolean = true
     override def modifyMetadata(f: Metadata => Metadata): Record[S, Option[A]] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, Option[A]] = copy(self = self.mapK[S1, U](fK))
+    override def mapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Record[U, Option[A]] =
+      copy(self = self.mapK[S1, U](fK))
 
   final private[otter] case class Root[S[_], A](field: Reference[S, A], metadata: Metadata) extends Record[S, A]:
     override def isOptional: Boolean = false

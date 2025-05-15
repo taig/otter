@@ -1,7 +1,8 @@
 package io.taig.otter
 
-import scala.annotation.tailrec
 import io.taig.otter.schema.Dictionary
+
+import scala.annotation.tailrec
 
 final class DictionaryEncoder[S[_], T[_], U](key: Encoder[S, String], value: Encoder[T, U])
     extends Encoder[Dictionary[S, T, *], List[(String, U)]]:

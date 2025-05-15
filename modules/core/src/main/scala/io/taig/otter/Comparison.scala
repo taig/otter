@@ -3,9 +3,9 @@ package io.taig.otter
 import cats.Eq
 import cats.Functor
 import cats.derived.*
+import io.taig.otter.schema.Field
 import io.taig.otter.schema.Nullable
 import io.taig.otter.schema.Primitive
-import io.taig.otter.schema.Field
 
 final case class Comparison[A](reference: A, exclusive: Boolean) derives Eq, Functor:
   def map[B](f: A => B): Comparison[B] = copy(reference = f(reference))

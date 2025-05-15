@@ -1,37 +1,29 @@
 package io.taig.otter.schema
 
-import cats.implicits.*
-import cats.~>
-import io.taig.otter.Constraint
-import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Shape
-import io.taig.otter.Argument
 import cats.Order
 import cats.data.Chain
-import cats.data.NonEmptyMap
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
 import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
-import cats.~>
 import io.taig.otter.Argument
-import scala.collection.immutable.SortedSet
-import java.util.UUID
-import cats.kernel.Eq
-import io.taig.enumeration.ext.Mapping
-import io.taig.enumeration.ext.EnumerationValues
-import scala.collection.immutable.SortedMap
+import io.taig.otter.Constraint
+import io.taig.otter.Metadata
+import io.taig.otter.Reference
+import io.taig.otter.Shape
 
-sealed abstract class Collection[+S[_], A] extends Schema[S, A]:
+import scala.collection.immutable.SortedSet
+
+sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   def constraints: Vector[Constraint.Collection]
   def schema: Reference[S, ?]
 
-  override def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
-  final override def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
-  override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, A]
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Collection[S, A]
+  final def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
+  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, A]
 
 object Collection:
   private def constraints(
@@ -53,7 +45,8 @@ object Collection:
   ) extends Collection[S, Vector[A]]:
     override def constraints: Vector[Constraint.Collection] = Collection.constraints(minimum, maximum, uniqueItems)
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, Vector[A]] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, Vector[A]] = copy(schema = schema.mapK[S1, T](fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, Vector[A]] =
+      copy(schema = schema.mapK[S1, T](fK))
 
   final private[otter] case class Linked[S[_], A](
       schema: Reference[S, A],
@@ -71,7 +64,8 @@ object Collection:
       extends Collection[S, B]:
     export self.{constraints, metadata, schema}
     override def modifyMetadata(f: Metadata => Metadata): Collection[S, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] = copy(self = self.mapK[S1, T](fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
+      copy(self = self.mapK[S1, T](fK))
 
   given [Value[_]]: Shape.Collection[Collection[Value, *], Value] with
     extension [A](self: Collection[Value, A])

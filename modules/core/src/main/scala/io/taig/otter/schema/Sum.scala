@@ -1,9 +1,8 @@
 package io.taig.otter.schema
 
+import cats.data.NonEmptyChain
 import io.taig.otter.Discriminator
 import io.taig.otter.Metadata
-import cats.~>
-import cats.data.NonEmptyChain
 import io.taig.otter.Reference
 import io.taig.otter.Shape
 

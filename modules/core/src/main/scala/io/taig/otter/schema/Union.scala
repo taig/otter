@@ -1,18 +1,18 @@
 package io.taig.otter.schema
 
-import cats.syntax.all.*
-import cats.~>
 import cats.data.NonEmptyChain
-import io.taig.otter.Reference
+import cats.syntax.all.*
 import io.taig.otter.Metadata
+import io.taig.otter.Reference
 import io.taig.otter.Shape
 
-sealed abstract class Union[+S[_], A] extends Schema[S, A]:
+sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]
 
-  override def modifyMetadata(f: Metadata => Metadata): Union[S, A]
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Union[S, A]
 
-  final override def imap[B](f: A => B)(g: B => A): Union[S, B] = Union.Modify(self = this, f, g)
+  final def imap[B](f: A => B)(g: B => A): Union[S, B] = Union.Modify(self = this, f, g)
 
   final def orElse[S1[a] >: S[a], B](codec: Union[S1, B]): Union[S1, Either[A, B]] =
     Union.OrElse(left = this, right = codec, metadata = Metadata.Empty)

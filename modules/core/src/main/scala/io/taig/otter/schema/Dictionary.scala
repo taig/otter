@@ -1,40 +1,34 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
-import io.taig.otter.Reference
-import io.taig.otter.Constraint
-import cats.~>
-import io.taig.otter.Shape
 import cats.Order
 import cats.data.Chain
-import cats.data.NonEmptyMap
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
+import cats.data.NonEmptyMap
 import cats.data.NonEmptySeq
-import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
-import cats.~>
 import io.taig.otter.Argument
-import scala.collection.immutable.SortedSet
-import java.util.UUID
-import cats.kernel.Eq
-import io.taig.enumeration.ext.Mapping
-import io.taig.enumeration.ext.EnumerationValues
+import io.taig.otter.Constraint
+import io.taig.otter.Metadata
+import io.taig.otter.Reference
+import io.taig.otter.Shape
+
 import scala.collection.immutable.SortedMap
 
-sealed abstract class Dictionary[+S[_], +T[_], A] extends Schema[T, A]:
+sealed abstract class Dictionary[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference[S, ?]
   def value: Reference[T, ?]
 
   def constraints: Vector[Constraint.Object]
 
-  override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
 
-  override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, A]
+  def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, A]
 
   def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, A]
-  final override def imap[B](f: A => B)(g: B => A): Dictionary[S, T, B] = Dictionary.Modify(self = this, f, g)
+  final def imap[B](f: A => B)(g: B => A): Dictionary[S, T, B] = Dictionary.Modify(self = this, f, g)
 
 object Dictionary:
   final private[otter] case class Root[S[_], T[_], A, B](
@@ -49,15 +43,19 @@ object Dictionary:
       maximum.map(Constraint.Object.MaxProperties.apply)
     ).flatten
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, List[(A, B)]] = copy(metadata = f(metadata))
-    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, List[(A, B)]] = copy(value = value.mapK[T1, U](fK))
-    override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, List[(A, B)]] = copy(key = key.mapK[S1, U](fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, List[(A, B)]] =
+      copy(value = value.mapK[T1, U](fK))
+    override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, List[(A, B)]] =
+      copy(key = key.mapK[S1, U](fK))
 
   final private[otter] case class Modify[S[_], T[_], A, B](self: Dictionary[S, T, A], f: A => B, g: B => A)
       extends Dictionary[S, T, B]:
     export self.{constraints, key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, B] = copy(self = self.modifyMetadata(f))
-    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, B] = copy(self = self.mapK[T1, U](fK))
-    override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] = copy(self = self.leftMapK[S1, U](fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, B] =
+      copy(self = self.mapK[T1, U](fK))
+    override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] =
+      copy(self = self.leftMapK[S1, U](fK))
 
   trait Component[+Self[_], -Key[_], -Value[_]](using self: Shape.Dictionary[Self, Key, Value]):
     final def list[A, B](

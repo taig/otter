@@ -2,10 +2,10 @@ package io.taig.otter
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.schema.Primitive
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.schema.Primitive
 
 final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
   override def apply[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match

@@ -1,11 +1,9 @@
 package io.taig.otter.schema
-
-import cats.arrow.FunctionK
-import cats.~>
 import io.taig.otter.Metadata
-import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
-import io.taig.otter.Shape
 import io.taig.otter.Reference
+import io.taig.otter.Shape
+import io.taig.otter.schema.Primitive.Component as PrimitiveComponent
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -15,15 +13,16 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-sealed abstract class Field[+S[_], +T[_], A] extends Schema[T, A]:
+sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]
   def value: Reference[T, ?]
 
-  override def modifyMetadata(f: Metadata => Metadata): Field[S, T, A]
+  def metadata: Metadata
+  def modifyMetadata(f: Metadata => Metadata): Field[S, T, A]
 
-  final override def imap[B](f: A => B)(g: B => A): Field[S, T, B] = Field.Modify(self = this, f, g)
+  final def imap[B](f: A => B)(g: B => A): Field[S, T, B] = Field.Modify(self = this, f, g)
 
-  override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, A]
+  def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, A]
 
   final def optional: Field[S, T, Option[A]] = Field.Optional(self = this)
 
@@ -40,13 +39,15 @@ object Field:
       metadata: Metadata
   ) extends Field[S, T, B]:
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, B] = copy(metadata = f(metadata))
-    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] = copy(value = value.mapK[T1, U](fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] =
+      copy(value = value.mapK[T1, U](fK))
 
   final private[otter] case class Optional[+S[_], +T[_], A](self: Field[S, T, A]) extends Field[S, T, Option[A]]:
     export self.{key, metadata, value}
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, Option[A]] =
       copy(self = self.modifyMetadata(f))
-    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, Option[A]] = copy(self = self.mapK[T1, U](fK))
+    override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, Option[A]] =
+      copy(self = self.mapK[T1, U](fK))
 
   trait Component[Self[_], -Key[_], -Value[_], Record[_]](using
       shape: Shape.Field[Self, Key, Value],
