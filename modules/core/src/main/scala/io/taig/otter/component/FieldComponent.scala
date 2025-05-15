@@ -8,21 +8,22 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Reference
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.Metadata
 import io.taig.otter.Merge
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.FieldSchema
 
-trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using record: RecordSchema[Record, Self]):
-  final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = ???
+trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using
+    self: FieldSchema[Self, Key, Value]
+):
+  object field:
+    def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+      nullish(name, key, value)
 
-  extension [A](self: Self[A])
-    def :*[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] =
-      self.toRecord.merge(field.toRecord)
-    def *:[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] =
-      self.toRecord.merge(field.toRecord)
+    def nullish[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+      self.nullish(required(name, key, value))
 
-    def toRecord: Record[A] = record.record(self)
+    def required[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
+      self(name, key, value)
 
 object FieldComponent:
   trait Primitive[Self[_], Key[_], Value[_], Record[_]]

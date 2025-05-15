@@ -37,7 +37,7 @@ object Enumeration:
       copy(schema = schema.mapK[S1, T](fK))
 
   given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
-    override def enumeration[A, B](
+    override def apply[A, B](
         schema: => Value[A],
         mapping: Mapping[B, A]
     ): Enumeration[Value, B] = Root(

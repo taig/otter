@@ -54,7 +54,7 @@ object Record:
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   given [Field[_]]: RecordSchema[Record[Field, *], Field] with
-    override def record[A](field: => Field[A]): Record[Field, A] =
+    override def lift[A](field: => Field[A]): Record[Field, A] =
       Root(field = Reference.later(field), metadata = Metadata.Empty)
 
     extension [A](self: Record[Field, A])

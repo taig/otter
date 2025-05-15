@@ -41,11 +41,13 @@ object Union:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] = copy(codec = codec.mapK[S1, T](fK))
 
   given [Value[_]]: UnionSchema[Union[Value, *], Value] with
-    override def one[A](schema: => Value[A]): Union[Value, A] = Union.Root(
+    override def lift[A](schema: => Value[A]): Union[Value, A] = Union.Root(
       codec = Reference.later(schema),
       metadata = Metadata.Empty
     )
+
     extension [A](self: Union[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Union[Value, A] = self.modifyMetadata(f)
       override def imap[B](f: A => B)(g: B => A): Union[Value, B] = self.imap(f)(g)
+      override def orElse[B](codec: Union[Value, B]): Union[Value, Either[A, B]] = self.orElse(codec)

@@ -47,10 +47,12 @@ object Tuple:
 
   given [Value[_]]: TupleSchema[Tuple[Value, *], Value] with
     override def empty: Tuple[Value, Unit] = Tuple.Empty(Metadata.Empty)
-    override def one[A](schema: => Value[A]): Tuple[Value, A] = Tuple.Root(
+
+    override def lift[A](schema: => Value[A]): Tuple[Value, A] = Tuple.Root(
       schema = Reference.later(schema),
       metadata = Metadata.Empty
     )
+
     extension [A](self: Tuple[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Tuple[Value, A] = self.modifyMetadata(f)

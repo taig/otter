@@ -19,7 +19,7 @@ import cats.Eq
 import io.taig.otter.schema.ConstantSchema
 
 trait ConstantComponent[+Self[_], -Value[_]](using self: ConstantSchema[Self, Value]):
-  final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self.constant(schema, value)
+  final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self(schema, value)
 
 object ConstantComponent:
   trait Primitive[+Self[_], -Value[_]]

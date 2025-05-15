@@ -54,7 +54,7 @@ object Sum:
       copy(branch = branch.mapK[T1, U](fK))
 
   given [Key[_], Value[_]]: SumSchema[Sum[Key, Value, *], Key, Value] with
-    override def sum[A](branch: Branch[Key, Value, A]): Sum[Key, Value, A] =
+    override def lift[A](branch: Branch[Key, Value, A]): Sum[Key, Value, A] =
       Root(branch, discriminator = Discriminator.Keyed, metadata = Metadata.Empty)
 
     extension [A](self: Sum[Key, Value, A])

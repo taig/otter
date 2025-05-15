@@ -16,11 +16,6 @@ trait PrimitiveSchema[Self[_]]
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema[T] =
     new PrimitiveSchema[T]:
-      extension [A](fa: T[A])
-        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
-        override def metadata: Metadata = self.metadata(gK(fa))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
-
       override def boolean: T[Boolean] = fK(self.boolean)
 
       override def jBigDecimal(
@@ -71,21 +66,26 @@ trait PrimitiveSchema[Self[_]]
           matches: Option[Pattern]
       ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
 object PrimitiveSchema:
   trait Boolean[Self[_]] extends Schema[Self]:
     self =>
+
+    def boolean: Self[SBoolean]
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
     ): PrimitiveSchema.Boolean[T] = new Boolean[T]:
       override def boolean: T[SBoolean] = fK(self.boolean)
 
-      extension [A](fa: T[A])
-        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
-        override def metadata: Metadata = self.metadata(gK(fa))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(fa))(f))
-
-    def boolean: Self[SBoolean]
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   object Boolean:
     inline def apply[Self[_]](using self: PrimitiveSchema.Boolean[Self]): PrimitiveSchema.Boolean[Self] = self
@@ -93,14 +93,45 @@ object PrimitiveSchema:
   trait Number[Self[_]] extends Schema[Self]:
     self =>
 
+    def jBigDecimal(
+        minimum: Option[Comparison[JBigDecimal]],
+        maximum: Option[Comparison[JBigDecimal]],
+        multiple: Option[JBigDecimal]
+    ): Self[JBigDecimal]
+
+    def jBigInteger(
+        minimum: Option[Comparison[JBigInteger]],
+        maximum: Option[Comparison[JBigInteger]],
+        multiple: Option[JBigInteger]
+    ): Self[JBigInteger]
+
+    def double(
+        minimum: Option[Comparison[Double]],
+        maximum: Option[Comparison[Double]],
+        multiple: Option[Double]
+    ): Self[Double]
+
+    def float(
+        minimum: Option[Comparison[Float]],
+        maximum: Option[Comparison[Float]],
+        multiple: Option[Float]
+    ): Self[Float]
+
+    def int(
+        minimum: Option[Comparison[Int]],
+        maximum: Option[Comparison[Int]],
+        multiple: Option[Int]
+    ): Self[Int]
+
+    def long(
+        minimum: Option[Comparison[Long]],
+        maximum: Option[Comparison[Long]],
+        multiple: Option[Long]
+    ): Self[Long]
+
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
     ): PrimitiveSchema.Number[T] = new Number[T]:
-      extension [A](ta: T[A])
-        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -143,41 +174,10 @@ object PrimitiveSchema:
       ): T[Long] =
         fK(self.long(minimum, maximum, multiple))
 
-    def jBigDecimal(
-        minimum: Option[Comparison[JBigDecimal]],
-        maximum: Option[Comparison[JBigDecimal]],
-        multiple: Option[JBigDecimal]
-    ): Self[JBigDecimal]
-
-    def jBigInteger(
-        minimum: Option[Comparison[JBigInteger]],
-        maximum: Option[Comparison[JBigInteger]],
-        multiple: Option[JBigInteger]
-    ): Self[JBigInteger]
-
-    def double(
-        minimum: Option[Comparison[Double]],
-        maximum: Option[Comparison[Double]],
-        multiple: Option[Double]
-    ): Self[Double]
-
-    def float(
-        minimum: Option[Comparison[Float]],
-        maximum: Option[Comparison[Float]],
-        multiple: Option[Float]
-    ): Self[Float]
-
-    def int(
-        minimum: Option[Comparison[Int]],
-        maximum: Option[Comparison[Int]],
-        multiple: Option[Int]
-    ): Self[Int]
-
-    def long(
-        minimum: Option[Comparison[Long]],
-        maximum: Option[Comparison[Long]],
-        multiple: Option[Long]
-    ): Self[Long]
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   object Number:
     inline def apply[Self[_]](using self: PrimitiveSchema.Number[Self]): PrimitiveSchema.Number[Self] = self
@@ -185,9 +185,7 @@ object PrimitiveSchema:
   trait String[Self[_]] extends Schema[Self]:
     self =>
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-        gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchema.String[T] =
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema.String[T] =
       new String[T]:
         override def string(
             minimum: Option[Int],
@@ -202,13 +200,12 @@ object PrimitiveSchema:
             minimum: Option[Int],
             maximum: Option[Int],
             matches: Option[Pattern]
-        ): T[A] =
-          fK(self.parser(name, decode, encode, minimum, maximum, matches))
+        ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
         extension [A](ta: T[A])
-          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
           override def metadata: Metadata = self.metadata(gK(ta))
           override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
     def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
 

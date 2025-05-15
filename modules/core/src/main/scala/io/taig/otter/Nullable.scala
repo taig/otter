@@ -43,8 +43,8 @@ object Nullable:
       override def modifyMetadata(f: Metadata => Metadata): Nullable[Value, A] = self.modifyMetadata(f)
       override def imap[B](f: A => B)(g: B => A): Nullable[Value, B] = self.imap(f)(g)
 
-    override def nullable[A](schema: => Value[A]): Nullable[Value, Option[A]] =
+    override def apply[A](schema: => Value[A]): Nullable[Value, Option[A]] =
       Root(reference = Reference.later(schema), metadata = Metadata.Empty)
-    override def nullable[A](schema: => Value[A], default: A): Nullable[Value, A] =
+    override def apply[A](schema: => Value[A], default: A): Nullable[Value, A] =
       Default(reference = Reference.later(schema), default, metadata = Metadata.Empty)
     override def void: Nullable[Nothing, Unit] = Nullable.Void(Metadata.Empty)

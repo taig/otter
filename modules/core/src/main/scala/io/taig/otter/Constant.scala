@@ -28,7 +28,7 @@ object Constant:
       copy(schema = schema.mapK[S1, T](fK))
 
   given [Value[_]]: ConstantSchema[Constant[Value, *], Value] with
-    override def constant[A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, Unit] = Root(
+    override def apply[A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, Unit] = Root(
       schema = Reference.Constant(self = Reference.later(schema), value),
       eq,
       metadata = Metadata.Empty

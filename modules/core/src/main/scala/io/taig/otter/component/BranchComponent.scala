@@ -20,7 +20,7 @@ trait BranchComponent[Key[_], Value[_], Sum[_]](using sum: SumSchema[Sum, Key, V
     metadata = Metadata.Empty
   )
 
-  extension [A](self: Branch[Key, Value, A]) def toSum: Sum[A] = sum.sum(self)
+  extension [A](self: Branch[Key, Value, A]) def toSum: Sum[A] = sum.lift(self)
 
 object BranchComponent:
   trait Primitive[Key[_], Value[_], Record[_]]

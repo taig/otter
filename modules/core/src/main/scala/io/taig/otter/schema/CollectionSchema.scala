@@ -23,9 +23,9 @@ trait CollectionSchema[Self[_], -Value[_]] extends Schema[Self]:
     ): T[Vector[A]] = fK(self.indexed(schema, minimum, maximum, uniqueItems))
 
     extension [A](ta: T[A])
-      override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
       override def metadata: Metadata = self.metadata(gK(ta))
       override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+      override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   def linked[A](schema: => Value[A], minimum: Option[Int], maximum: Option[Int], uniqueItems: Boolean): Self[List[A]]
 

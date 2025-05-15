@@ -1,7 +1,8 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Invariant
 import io.taig.otter.Metadata
+import scala.annotation.targetName
+import io.taig.otter.Invariant
 
 trait Schema[Self[_]] extends Invariant[Self]:
   self =>
@@ -15,6 +16,7 @@ trait Schema[Self[_]] extends Invariant[Self]:
   extension [A](self: Self[A])
     def metadata: Metadata
     def modifyMetadata(f: Metadata => Metadata): Self[A]
+    def imap[B](f: A => B)(g: B => A): Self[B]
 
     final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
     final def metadata[B](key: Metadata.Key[B], value: B): Self[A] = modifyMetadata(_.put(key, value))
