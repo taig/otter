@@ -18,8 +18,7 @@ object Json:
   final case class Collection[A](self: Self.Collection[Json, A]) extends Json[A]
 
   object Collection:
-    given CollectionSchema[Json.Collection, Json] = CollectionSchema
-      [Self.Collection[Json, *], Json]
+    given CollectionSchema[Json.Collection, Json] = CollectionSchema[Self.Collection[Json, *], Json]
       .imapK(
         [A] => (schema: Self.Collection[Json, A]) => Collection(schema)
       )([A] => (json: Json.Collection[A]) => json.self)
@@ -35,18 +34,20 @@ object Json:
   final case class Dictionary[A](self: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
 
   object Dictionary:
-    given DictionarySchema[Json.Dictionary, Json.Key, Json] = DictionarySchema[Self.Dictionary[Json.Key, Json, *], Json.Key, Json]
-      .imapK(
-        [A] => (schema: Self.Dictionary[Json.Key, Json, A]) => Dictionary(schema)
-      )([A] => (json: Json.Dictionary[A]) => json.self)
+    given DictionarySchema[Json.Dictionary, Json.Key, Json] =
+      DictionarySchema[Self.Dictionary[Json.Key, Json, *], Json.Key, Json]
+        .imapK(
+          [A] => (schema: Self.Dictionary[Json.Key, Json, A]) => Dictionary(schema)
+        )([A] => (json: Json.Dictionary[A]) => json.self)
 
   final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[A]
 
   object Enumeration:
-    given EnumerationSchema[Json.Enumeration, Json.Primitive] = EnumerationSchema[Self.Enumeration[Json.Primitive, *], Json.Primitive]
-      .imapK(
-        [A] => (schema: Self.Enumeration[Json.Primitive, A]) => Enumeration(schema)
-      )([A] => (json: Json.Enumeration[A]) => json.self)
+    given EnumerationSchema[Json.Enumeration, Json.Primitive] =
+      EnumerationSchema[Self.Enumeration[Json.Primitive, *], Json.Primitive]
+        .imapK(
+          [A] => (schema: Self.Enumeration[Json.Primitive, A]) => Enumeration(schema)
+        )([A] => (json: Json.Enumeration[A]) => json.self)
 
   final case class Nullable[A](self: Self.Nullable[Json, A]) extends Json[A]
 
@@ -94,18 +95,20 @@ object Json:
     final case class Constant[A](self: Self.Constant[Json.Key.Primitive, A]) extends Json.Key[A]
 
     object Constant:
-      given ConstantSchema[Json.Key.Constant, Json.Key.Primitive] = ConstantSchema[Self.Constant[Json.Key.Primitive, *], Json.Key.Primitive]
-        .imapK(
-          [A] => (schema: Self.Constant[Json.Key.Primitive, A]) => Constant(schema)
-        )([A] => (json: Json.Key.Constant[A]) => json.self)
+      given ConstantSchema[Json.Key.Constant, Json.Key.Primitive] =
+        ConstantSchema[Self.Constant[Json.Key.Primitive, *], Json.Key.Primitive]
+          .imapK(
+            [A] => (schema: Self.Constant[Json.Key.Primitive, A]) => Constant(schema)
+          )([A] => (json: Json.Key.Constant[A]) => json.self)
 
     final case class Enumeration[A](self: Self.Enumeration[Json.Key.Primitive, A]) extends Json.Key[A]
 
     object Enumeration:
-      given EnumerationSchema[Json.Key.Enumeration, Json.Key.Primitive] = EnumerationSchema[Self.Enumeration[Json.Key.Primitive, *], Json.Key.Primitive]
-        .imapK(
-          [A] => (schema: Self.Enumeration[Json.Key.Primitive, A]) => Enumeration(schema)
-        )([A] => (json: Json.Key.Enumeration[A]) => json.self)
+      given EnumerationSchema[Json.Key.Enumeration, Json.Key.Primitive] =
+        EnumerationSchema[Self.Enumeration[Json.Key.Primitive, *], Json.Key.Primitive]
+          .imapK(
+            [A] => (schema: Self.Enumeration[Json.Key.Primitive, A]) => Enumeration(schema)
+          )([A] => (json: Json.Key.Enumeration[A]) => json.self)
 
     final case class Primitive[A](self: Self.Primitive.String[A]) extends Json.Key[A]
 

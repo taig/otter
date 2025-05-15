@@ -9,6 +9,7 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.schema.Schema
 
 sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]
@@ -46,18 +47,9 @@ object Field:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, Option[A]] =
       copy(self = self.mapK[T1, U](fK))
 
-  // given [Key[_], Value[_]]: Schema.Field[Field[Key, Value, *], Key, Value] =
-  //   new Schema.Field[Field[Key, Value, *], Key, Value]:
-
-  //     override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] =
-  //       Root(
-  //         key = Reference.Constant(self = Reference.later(key), value = name),
-  //         value = Reference.later(value),
-  //         metadata = Metadata.Empty
-  //       )
-
-  //     extension [A](fa: Field[Key, Value, A])
-  //       override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
-  //       override def optional: Field[Key, Value, Option[A]] = fa.optional
-  //       override def metadata: Metadata = fa.metadata
-  //       override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = fa.modifyMetadata(f)
+  given [Key[_], Value[_]]: Schema[Field[Key, Value, *]] =
+    new Schema[Field[Key, Value, *]]:
+      extension [A](self: Field[Key, Value, A])
+        override def metadata: Metadata = self.metadata
+        override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = self.modifyMetadata(f)
+        override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = self.imap(f)(g)
