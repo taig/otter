@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.*
+import io.taig.otter.codec.PrimitiveParser
 
 object FormDataDecoder:
   def apply[A](codec: FormData[A], data: List[(String, Option[String])]): Validated[Violations, A] = codec match

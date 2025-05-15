@@ -1,7 +1,6 @@
 package io.taig.otter
-import io.taig.otter.Metadata
-import io.taig.otter.Primitive.Component as PrimitiveComponent
 
+import io.taig.otter.Metadata
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -38,48 +37,6 @@ object Branch:
     override def modifyMetadata(f: Metadata => Metadata): Branch[S, T, B] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
-
-  trait Component[Self[_], -Key[_], -Value[_], Sum[_]](using self: Schema.Branch[Self, Key, Value]):
-    final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self.branch(name, key, value)
-
-    extension [A](self: Self[A]) def toSum: Sum[A] = ???
-
-  object Component:
-    trait Primitive[Self[_], Key[_], -Value[_], Record[_]]
-        extends Branch.Component.Primitive.Boolean[Self, Key, Value, Record],
-          Branch.Component.Primitive.Number[Self, Key, Value, Record],
-          Branch.Component.Primitive.String[Self, Key, Value, Record]:
-      override def key: PrimitiveComponent[Key]
-
-    object Primitive:
-      trait Boolean[Self[_], Key[_], -Value[_], Sum[_]] extends Branch.Component[Self, Key, Value, Sum]:
-        def key: PrimitiveComponent.Boolean[Key]
-
-        final def branch[A](name: SBoolean, schema: => Value[A]): Self[A] =
-          branch(name, key = key.boolean, value = schema)
-
-      trait Number[Self[_], Key[_], -Value[_], Sum[_]] extends Branch.Component[Self, Key, Value, Sum]:
-        def key: PrimitiveComponent.Number[Key]
-
-        final def branch[A](name: BigDecimal, schema: => Value[A]): Self[A] =
-          branch(name, key = key.bigDecimal, value = schema)
-        final def branch[A](name: BigInt, schema: => Value[A]): Self[A] =
-          branch(name, key = key.bigInteger, value = schema)
-        final def branch[A](name: JBigDecimal, schema: => Value[A]): Self[A] =
-          branch(name, key = key.jBigDecimal, value = schema)
-        final def branch[A](name: JBigInteger, schema: => Value[A]): Self[A] =
-          branch(name, key = key.jBigInteger, value = schema)
-        final def branch[A](name: SDouble, schema: => Value[A]): Self[A] =
-          branch(name, key = key.double, value = schema)
-        final def branch[A](name: SFloat, schema: => Value[A]): Self[A] = branch(name, key = key.float, value = schema)
-        final def branch[A](name: SInt, schema: => Value[A]): Self[A] = branch(name, key = key.int, value = schema)
-        final def branch[A](name: SLong, schema: => Value[A]): Self[A] = branch(name, key = key.long, value = schema)
-
-      trait String[Self[_], Key[_], -Value[_], Sum[_]] extends Branch.Component[Self, Key, Value, Sum]:
-        def key: PrimitiveComponent.String[Key]
-
-        final def branch[A](name: JString, schema: => Value[A]): Self[A] =
-          branch(name, key = key.string, value = schema)
 
   given [Key[_], Value[_]]: Schema.Branch[Branch[Key, Value, *], Key, Value] with
     override def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Branch[Key, Value, B] =

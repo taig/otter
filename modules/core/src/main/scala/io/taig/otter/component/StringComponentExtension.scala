@@ -1,8 +1,10 @@
-package io.taig.otter
+package io.taig.otter.component
 
 import cats.syntax.all.*
 
 import java.util.regex.Pattern
+import io.taig.otter.Invariant
+import io.taig.otter.Argument
 
 abstract class StringComponentExtension[+Self[_]: Invariant, A]:
   protected def isEmpty(a: A): Boolean

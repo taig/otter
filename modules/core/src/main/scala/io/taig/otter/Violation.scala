@@ -34,7 +34,7 @@ object Violation:
     Violation(Constraint.OneOf(values), actual, hint = none)
 
   def matches(pattern: Pattern, actual: Data.Any): Violation =
-    Violation(Constraint.Primitive.Matches(pattern), actual, hint = none)
+    Violation(Constraint.Primitive.String.Matches(pattern), actual, hint = none)
   def matches(expected: String, actual: Data.Any): Violation =
     matches(pattern = Pattern.compile(Pattern.quote(expected)), actual)
 

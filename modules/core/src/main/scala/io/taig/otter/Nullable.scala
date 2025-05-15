@@ -36,11 +36,6 @@ object Nullable:
     override def modifyMetadata(f: Metadata => Metadata): Nullable[Nothing, Unit] = copy(metadata = f(metadata))
     override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Nullable[T, Unit] = this
 
-  trait Component[+Self[_], -Value[_]](using self: Schema.Nullable[Self, Value]):
-    final def nullable[A](schema: => Value[A]): Self[Option[A]] = self.nullable(schema)
-    final def nullable[A](schema: => Value[A], default: A): Self[A] = self.nullable(schema, default)
-    final def void: Self[Unit] = self.void
-
   given [Value[_]]: Schema.Nullable[Nullable[Value, *], Value] with
     extension [A](self: Nullable[Value, A])
       override def metadata: Metadata = self.metadata

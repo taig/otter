@@ -1,7 +1,6 @@
 package io.taig.otter
-import io.taig.otter.Metadata
-import io.taig.otter.Primitive.Component as PrimitiveComponent
 
+import io.taig.otter.Metadata
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -47,63 +46,18 @@ object Field:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, Option[A]] =
       copy(self = self.mapK[T1, U](fK))
 
-  trait Component[Self[_], -Key[_], -Value[_], Record[_]](using
-      self: Schema.Field[Self, Key, Value],
-      record: Schema.Record[Record, Self]
-  ):
-    final def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
-      self.field(name, key, value)
+  // given [Key[_], Value[_]]: Schema.Field[Field[Key, Value, *], Key, Value] =
+  //   new Schema.Field[Field[Key, Value, *], Key, Value]:
 
-    extension [A](self: Self[A]) def toRecord: Record[A] = record.record(self)
+  //     override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] =
+  //       Root(
+  //         key = Reference.Constant(self = Reference.later(key), value = name),
+  //         value = Reference.later(value),
+  //         metadata = Metadata.Empty
+  //       )
 
-  object Component:
-    trait Primitive[Self[_], Key[_], -Value[_], Record[_]]
-        extends Field.Component.Primitive.Boolean[Self, Key, Value, Record],
-          Field.Component.Primitive.Number[Self, Key, Value, Record],
-          Field.Component.Primitive.String[Self, Key, Value, Record]:
-      override def key: PrimitiveComponent[Key]
-
-    object Primitive:
-      trait Boolean[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
-        def key: PrimitiveComponent.Boolean[Key]
-
-        final def field[A](name: SBoolean, schema: => Value[A]): Self[A] =
-          field(name, key = key.boolean, value = schema)
-
-      trait Number[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
-        def key: PrimitiveComponent.Number[Key]
-
-        final def field[A](name: BigDecimal, schema: => Value[A]): Self[A] =
-          field(name, key = key.bigDecimal, value = schema)
-        final def field[A](name: BigInt, schema: => Value[A]): Self[A] =
-          field(name, key = key.bigInteger, value = schema)
-        final def field[A](name: JBigDecimal, schema: => Value[A]): Self[A] =
-          field(name, key = key.jBigDecimal, value = schema)
-        final def field[A](name: JBigInteger, schema: => Value[A]): Self[A] =
-          field(name, key = key.jBigInteger, value = schema)
-        final def field[A](name: SDouble, schema: => Value[A]): Self[A] = field(name, key = key.double, value = schema)
-        final def field[A](name: SFloat, schema: => Value[A]): Self[A] = field(name, key = key.float, value = schema)
-        final def field[A](name: SInt, schema: => Value[A]): Self[A] = field(name, key = key.int, value = schema)
-        final def field[A](name: SLong, schema: => Value[A]): Self[A] = field(name, key = key.long, value = schema)
-
-      trait String[Self[_], Key[_], -Value[_], Record[_]] extends Field.Component[Self, Key, Value, Record]:
-        def key: PrimitiveComponent.String[Key]
-
-        final def field[A](name: JString, schema: => Value[A]): Self[A] =
-          field(name, key = key.string, value = schema)
-
-  given [Key[_], Value[_]]: Schema.Field[Field[Key, Value, *], Key, Value] =
-    new Schema.Field[Field[Key, Value, *], Key, Value]:
-
-      override def field[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] =
-        Root(
-          key = Reference.Constant(self = Reference.later(key), value = name),
-          value = Reference.later(value),
-          metadata = Metadata.Empty
-        )
-
-      extension [A](fa: Field[Key, Value, A])
-        override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
-        override def optional: Field[Key, Value, Option[A]] = fa.optional
-        override def metadata: Metadata = fa.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = fa.modifyMetadata(f)
+  //     extension [A](fa: Field[Key, Value, A])
+  //       override def imap[B](f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
+  //       override def optional: Field[Key, Value, Option[A]] = fa.optional
+  //       override def metadata: Metadata = fa.metadata
+  //       override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = fa.modifyMetadata(f)

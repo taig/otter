@@ -167,30 +167,29 @@ object Schema:
     inline def apply[Self[_], Value[_]](using self: Schema.Enumeration[Self, Value]): Schema.Enumeration[Self, Value] =
       self
 
-  trait Field[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
-    self =>
+  // trait Field[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
+  //   self =>
 
-    final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-        gK: [A] => T[A] => Self[A]
-    ): Schema.Field[T, Key, Value] =
-      new Field[T, Key, Value]:
-        extension [A](ta: T[A])
-          override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-          override def metadata: Metadata = self.metadata(gK(ta))
-          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-          override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
+  //   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+  //       gK: [A] => T[A] => Self[A]
+  //   ): Schema.Field[T, Key, Value] = new Field[T, Key, Value]:
+  //       extension [A](ta: T[A])
+  //         override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+  //         override def metadata: Metadata = self.metadata(gK(ta))
+  //         override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+  //         override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
 
-        override def field[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
-          fK(self.field(name, key, value))
+  //       override def field[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
+  //         fK(self.field(name, key, value))
 
-    def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
+  //   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
 
-    extension [A](self: Self[A]) def optional: Self[Option[A]]
+  //   extension [A](self: Self[A]) def optional: Self[Option[A]]
 
-  object Field:
-    inline def apply[Self[_], Key[_], Value[_]](using
-        self: Schema.Field[Self, Key, Value]
-    ): Schema.Field[Self, Key, Value] = self
+  // object Field:
+  //   inline def apply[Self[_], Key[_], Value[_]](using
+  //       self: Schema.Field[Self, Key, Value]
+  //   ): Schema.Field[Self, Key, Value] = self
 
   trait Primitive[Self[_]]
       extends Schema.Primitive.Boolean[Self],
@@ -431,12 +430,12 @@ object Schema:
 
     inline def apply[Self[_]](using self: Schema.Primitive[Self]): Schema.Primitive[Self] = self
 
-  trait Record[Self[_], Field[_]] extends Schema[Self], Invariant.Product[Self]:
+  trait Record[Self[_], Key[_], Value[_]] extends Schema[Self], Invariant.Product[Self]:
     self =>
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Record[T, Field] =
-      new Schema.Record[T, Field]:
-        override def record[A](field: => Field[A]): T[A] = fK(self.record(field))
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema.Record[T, Key, Value] =
+      new Schema.Record[T, Key, Value]:
+        override def record[A](field: Field[Key, Value, A]): T[A] = fK(self.record(field))
 
         extension [A](fa: T[A])
           override def metadata: Metadata = self.metadata(gK(fa))
@@ -445,12 +444,14 @@ object Schema:
           override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(fa))(gK(schema)))
           override def optional: T[Option[A]] = fK(self.optional(gK(fa)))
 
-    def record[A](field: => Field[A]): Self[A]
+    def record[A](field: Field[Key, Value, A]): Self[A]
 
     extension [A](self: Self[A]) def optional: Self[Option[A]]
 
   object Record:
-    inline def apply[Self[_], Field[_]](using self: Schema.Record[Self, Field]): Schema.Record[Self, Field] = self
+    inline def apply[Self[_], Key[_], Value[_]](using
+        self: Schema.Record[Self, Key, Value]
+    ): Schema.Record[Self, Key, Value] = self
 
   trait Sum[Self[_], Branch[_]] extends Schema[Self], Invariant.Coproduct[Self]:
     self =>

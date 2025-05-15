@@ -1,6 +1,7 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import scala.annotation.tailrec
+import io.taig.otter.Collection
 
 final class CollectionEncoder[S[_], T](encoder: Encoder[S, T]) extends Encoder[Collection[S, *], Seq[T]]:
   @tailrec

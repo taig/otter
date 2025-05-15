@@ -59,13 +59,13 @@ object Json:
         [A] => (schema: Self.Primitive[A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 
-  final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
+  final case class Record[A](self: Self.Record[Json.Key, Json, A]) extends Json[A]
 
   object Record:
-    given Schema.Record[Json.Record, Json.Field] = Schema
-      .Record[Self.Record[Json.Field, *], Json.Field]
+    given Schema.Record[Json.Record, Json.Key, Json] = Schema
+      .Record[Self.Record[Json.Key, Json, *], Json.Key, Json]
       .imapK(
-        [A] => (schema: Self.Record[Json.Field, A]) => Record(schema)
+        [A] => (schema: Self.Record[Json.Key, Json, A]) => Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
   final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
@@ -140,11 +140,4 @@ object Json:
         [A] => (schema: Self.Branch[Json.Key, Json, A]) => Branch(schema)
       )([A] => (json: Json.Branch[A]) => json.self)
 
-  final case class Field[A](self: Self.Field[Json.Key, Json, A]) extends Json[A]
-
-  object Field:
-    given Schema.Field[Json.Field, Json.Key, Json] = Schema
-      .Field[Self.Field[Json.Key, Json, *], Json.Key, Json]
-      .imapK(
-        [A] => (schema: Self.Field[Json.Key, Json, A]) => Field(schema)
-      )([A] => (json: Json.Field[A]) => json.self)
+  type Field = Self.Field[Json.Key, Json, *]

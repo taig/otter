@@ -35,13 +35,6 @@ object Enumeration:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  trait Component[+Self[_], -Value[_]](using self: Schema.Enumeration[Self, Value]):
-    final def enumeration[A, B](codec: => Value[B])(using mapping: Mapping[A, B]): Self[A] =
-      self.enumeration(codec, mapping)
-
-    final def enumeration[A, B: Order](codec: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
-      enumeration(codec)(using Mapping.enumeration(f))
-
   given [Value[_]]: Schema.Enumeration[Enumeration[Value, *], Value] with
     override def enumeration[A, B](
         schema: => Value[A],

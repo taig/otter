@@ -6,6 +6,7 @@ import io.taig.otter.*
 import io.taig.otter.Dictionary.Root
 
 import java.nio.charset.StandardCharsets
+import io.taig.otter.codec.PrimitivePrinter
 
 final class FormDataPayloadEncoder extends PayloadEncoder[FormData]:
   override def apply[A](codec: FormData[A], a: A): Array[Byte] =

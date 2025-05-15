@@ -1,4 +1,8 @@
-package io.taig.otter
+package io.taig.otter.codec
+
+import io.taig.otter.codec.Encoder
+import io.taig.otter.escape
+import io.taig.otter.Primitive
 
 final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive, String]:
   override def apply[A](codec: Primitive[A], a: A): String = codec match

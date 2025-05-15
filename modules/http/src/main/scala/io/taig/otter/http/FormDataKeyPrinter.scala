@@ -1,6 +1,6 @@
 package io.taig.otter.http
 
-import io.taig.otter.PrimitivePrinter
+import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.http.FormData.Key.Primitive
 
 object FormDataKeyPrinter:
