@@ -3,18 +3,19 @@ package io.taig.otter
 import cats.Eq
 import cats.derived.*
 import cats.syntax.all.*
-import io.taig.otter.JsonDsl.key.*
+import io.taig.otter.component.JsonKeyComponent.*
+import io.taig.otter.codec.JsonKeyParser
 
 final class JsonKeyParserTest extends OtterSuite:
-  val parser = JsonKeyParser
+  val decoder = JsonKeyParser
 
   test("constant"):
     assertEq(
-      obtained = parser(constant("foo"), "foo"),
-      expected = "foo".valid
+      obtained = decoder.decode(constant("foo"), "foo"),
+      expected = ().valid
     )
     assertEq(
-      obtained = parser(constant("foo"), "bar"),
+      obtained = decoder.decode(constant("foo"), "bar"),
       expected = Violations.rootNec(Violation.equal(reference = "foo", actual = "bar")).invalid
     )
 
@@ -24,16 +25,16 @@ final class JsonKeyParserTest extends OtterSuite:
       case Cat
       case Dog
 
-    val codec: Json.Key.Enumeration[Animal] = enumeration(string):
+    val schema: Json.Key.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
       case Animal.Cat  => "cat"
       case Animal.Dog  => "dog"
 
-    assertEq(obtained = parser(codec, "bird"), expected = Animal.Bird.valid)
-    assertEq(obtained = parser(codec, "cat"), expected = Animal.Cat.valid)
-    assertEq(obtained = parser(codec, "dog"), expected = Animal.Dog.valid)
+    assertEq(obtained = decoder.decode(schema, "bird"), expected = Animal.Bird.valid)
+    assertEq(obtained = decoder.decode(schema, "cat"), expected = Animal.Cat.valid)
+    assertEq(obtained = decoder.decode(schema, "dog"), expected = Animal.Dog.valid)
     assertEq(
-      obtained = parser(codec, "foobar"),
+      obtained = decoder.decode(schema, "foobar"),
       expected = Violations
         .rootNec(
           Violation.oneOf(
@@ -46,31 +47,31 @@ final class JsonKeyParserTest extends OtterSuite:
 
   test("primitive"):
     assertEq(
-      obtained = parser(string, "foobar"),
+      obtained = decoder.decode(string, "foobar"),
       expected = "foobar".valid
     )
     assertEq(
-      obtained = parser(string, ""),
+      obtained = decoder.decode(string, ""),
       expected = "".valid
     )
 
-  // test("union"):
-  //   val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
+  test("union"):
+    val schema = constant("foo") :+ constant("bar")
 
-  //   assertEq(
-  //     obtained = parser(codec, "foo"),
-  //     expected = "foo".asLeft.valid
-  //   )
-  //   assertEq(
-  //     obtained = parser(codec, "bar"),
-  //     expected = "bar".asRight.valid
-  //   )
-  //   assertEq(
-  //     obtained = parser(codec, "foobar"),
-  //     expected = Violations
-  //       .of(
-  //         Step.Field("x") -> Violation.equal(reference = "foo", actual = "foobar"),
-  //         Step.Field("y") -> Violation.equal(reference = "bar", actual = "foobar")
-  //       )
-  //       .invalid
-  //   )
+    assertEq(
+      obtained = decoder.decode(schema, "foo"),
+      expected = ().asLeft.valid
+    )
+    assertEq(
+      obtained = decoder.decode(schema, "bar"),
+      expected = ().asRight.valid
+    )
+    assertEq(
+      obtained = decoder.decode(schema, "foobar"),
+      expected = Violations
+        .of(
+          Step.Index(0) -> Violation.equal(reference = "foo", actual = "foobar"),
+          Step.Index(1) -> Violation.equal(reference = "bar", actual = "foobar")
+        )
+        .invalid
+    )

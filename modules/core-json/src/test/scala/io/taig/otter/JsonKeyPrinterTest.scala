@@ -1,12 +1,15 @@
 package io.taig.otter
-import io.taig.otter.JsonDsl.key.*
+
+import io.taig.otter.component.JsonKeyComponent.*
+import io.taig.otter.codec.JsonKeyPrinter
+import cats.syntax.all.*
 
 final class JsonKeyPrinterTest extends OtterSuite:
-  val print = JsonKeyPrinter
+  val encoder = JsonKeyPrinter
 
   test("constant"):
     assertEq(
-      obtained = print(constant("foo"), "bar"),
+      obtained = encoder.encode(constant("foo"), ()),
       expected = "foo"
     )
 
@@ -16,42 +19,42 @@ final class JsonKeyPrinterTest extends OtterSuite:
       case Cat
       case Dog
 
-    val codec: Json.Key.Enumeration[Animal] = enumeration(string):
+    val schema: Json.Key.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
       case Animal.Cat  => "cat"
       case Animal.Dog  => "dog"
 
     assertEq(
-      obtained = print(codec, Animal.Bird),
+      obtained = encoder.encode(schema, Animal.Bird),
       expected = "bird"
     )
     assertEq(
-      obtained = print(codec, Animal.Cat),
+      obtained = encoder.encode(schema, Animal.Cat),
       expected = "cat"
     )
     assertEq(
-      obtained = print(codec, Animal.Dog),
+      obtained = encoder.encode(schema, Animal.Dog),
       expected = "dog"
     )
 
   test("primitive"):
     assertEq(
-      obtained = print(string, "foobar"),
+      obtained = encoder.encode(string, "foobar"),
       expected = "foobar"
     )
     assertEq(
-      obtained = print(string, ""),
+      obtained = encoder.encode(string, ""),
       expected = ""
     )
 
-  // test("union"):
-  //   val codec = branch("x", constant("foo")) :+ branch("y", constant("bar"))
+  test("union"):
+    val schema = constant("foo") :+ constant("bar")
 
-  //   assertEq(
-  //     obtained = print(codec, "foobar".asLeft),
-  //     expected = "foo"
-  //   )
-  //   assertEq(
-  //     obtained = print(codec, "foobar".asRight),
-  //     expected = "bar"
-  //   )
+    assertEq(
+      obtained = encoder.encode(schema, ().asLeft),
+      expected = "foo"
+    )
+    assertEq(
+      obtained = encoder.encode(schema, ().asRight),
+      expected = "bar"
+    )
