@@ -1,8 +1,6 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import cats.derived.*
-import cats.Eq
 
 final class ConvertTest extends OtterSuite:
   enum Animal:

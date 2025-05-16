@@ -13,8 +13,8 @@ sealed abstract class Union[+S[_], A] extends Product with Serializable:
 
   final def imap[B](f: A => B)(g: B => A): Union[S, B] = Union.Modify(self = this, f, g)
 
-  final def orElse[S1[a] >: S[a], B](codec: Union[S1, B]): Union[S1, Either[A, B]] =
-    Union.OrElse(left = this, right = codec, metadata = Metadata.Empty)
+  final def orElse[S1[a] >: S[a], B](schema: Union[S1, B]): Union[S1, Either[A, B]] =
+    Union.OrElse(left = this, right = schema, metadata = Metadata.Empty)
 
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A]
 
@@ -35,14 +35,15 @@ object Union:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, Either[A, B]] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  final private[otter] case class Root[S[_], A](codec: Reference[S, A], metadata: Metadata) extends Union[S, A]:
-    override def schemas: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(codec)
+  final private[otter] case class Root[S[_], A](schema: Reference[S, A], metadata: Metadata) extends Union[S, A]:
+    override def schemas: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(schema)
     override def modifyMetadata(f: Metadata => Metadata): Union[S, A] = copy(metadata = f(metadata))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] = copy(codec = codec.mapK[S1, T](fK))
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] =
+      copy(schema = schema.mapK[S1, T](fK))
 
   given [Value[_]]: UnionSchema[Union[Value, *], Value] with
     override def lift[A](schema: => Value[A]): Union[Value, A] = Union.Root(
-      codec = Reference.later(schema),
+      schema = Reference.later(schema),
       metadata = Metadata.Empty
     )
 
@@ -51,4 +52,4 @@ object Union:
     extension [A](self: Union[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Union[Value, A] = self.modifyMetadata(f)
-      override def orElse[B](codec: Union[Value, B]): Union[Value, Either[A, B]] = self.orElse(codec)
+      override def orElse[B](schema: Union[Value, B]): Union[Value, Either[A, B]] = self.orElse(schema)
