@@ -2,7 +2,6 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.codec.Decoder
 import io.taig.otter.Dictionary
 import io.taig.otter.Violations
 

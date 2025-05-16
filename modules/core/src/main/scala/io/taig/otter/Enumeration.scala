@@ -1,8 +1,5 @@
 package io.taig.otter
-
-import cats.Order
 import cats.data.NonEmptyList
-import io.taig.enumeration.ext.EnumerationValues
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Metadata
 import io.taig.otter.schema.EnumerationSchema

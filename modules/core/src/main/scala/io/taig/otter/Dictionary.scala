@@ -1,18 +1,6 @@
 package io.taig.otter
-
-import cats.Order
-import cats.data.Chain
-import cats.data.NonEmptyChain
-import cats.data.NonEmptyList
-import cats.data.NonEmptyMap
-import cats.data.NonEmptySeq
-import cats.data.NonEmptyVector
 import cats.implicits.*
-import io.taig.otter.Argument
 import io.taig.otter.Metadata
-
-import scala.collection.immutable.SortedMap
-import io.taig.otter.schema.DictionarySchema
 
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference[S, ?]

@@ -1,8 +1,8 @@
 package io.taig.otter.component
 
+import cats.Invariant
 import io.taig.otter.Comparison
 import io.taig.otter.syntax.InvariantSyntax.*
-import cats.Invariant
 
 trait ComparisonComponent[Nullable[a] <: Value[a], Record[_]: Invariant, Field[_], Key[_], Value[_]]
     extends FieldComponent.Primitive.String[Field, Key, Value, Record],

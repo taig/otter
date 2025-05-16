@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.Metadata
-import io.taig.otter.schema.RecordSchema
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]

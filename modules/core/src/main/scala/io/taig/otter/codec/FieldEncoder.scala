@@ -1,11 +1,10 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Field
-import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.Field
 import io.taig.otter.Field.Modify
-import io.taig.otter.Field.Root
 import io.taig.otter.Field.Optional
+import io.taig.otter.Field.Root
 
 final class FieldEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T, V])
     extends Encoder[Field[S, T, *], Option[(U, V)]]:

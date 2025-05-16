@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.Metadata
-import io.taig.otter.schema.TupleSchema
 
 // TODO support for optional
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:

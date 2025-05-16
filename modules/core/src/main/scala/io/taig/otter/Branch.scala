@@ -1,14 +1,6 @@
 package io.taig.otter
 
 import io.taig.otter.Metadata
-import java.lang.String as JString
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
-import scala.Boolean as SBoolean
-import scala.Double as SDouble
-import scala.Float as SFloat
-import scala.Int as SInt
-import scala.Long as SLong
 import io.taig.otter.schema.BranchSchema
 
 sealed abstract class Branch[+S[_], +T[_], A] extends Product with Serializable:

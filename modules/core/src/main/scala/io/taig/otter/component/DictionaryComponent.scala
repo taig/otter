@@ -1,7 +1,5 @@
 package io.taig.otter.component
 
-import io.taig.otter.Argument
-import cats.implicits.*
 import cats.Order
 import cats.data.Chain
 import cats.data.NonEmptyChain
@@ -9,8 +7,11 @@ import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
 import cats.data.NonEmptySeq
 import cats.data.NonEmptyVector
-import scala.collection.immutable.SortedMap
+import cats.implicits.*
+import io.taig.otter.Argument
 import io.taig.otter.schema.DictionarySchema
+
+import scala.collection.immutable.SortedMap
 
 trait DictionaryComponent[+Self[_], -Key[_], -Value[_]](using self: DictionarySchema[Self, Key, Value]):
   object dictionary:

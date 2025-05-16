@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import io.taig.otter.Metadata
-import io.taig.otter.schema.SumSchema
 
 sealed abstract class Sum[+S[_], A] extends Product with Serializable:
   def branches: NonEmptyChain[Reference[S, ?]]

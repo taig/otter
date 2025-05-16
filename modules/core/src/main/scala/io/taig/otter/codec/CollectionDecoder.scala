@@ -2,10 +2,8 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.codec.Decoder
 import io.taig.otter.Collection
 import io.taig.otter.Violations
-import scala.annotation.tailrec
 
 final class CollectionDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Collection[S, *], Seq[T]]:
   override def decode[A](schema: Collection[S, A], values: Seq[T]): Validated[Violations, A] = schema match

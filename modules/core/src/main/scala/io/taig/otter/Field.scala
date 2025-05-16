@@ -1,9 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter.Metadata
-import io.taig.otter.schema.Schema
 import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.RecordSchema
 
 sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]

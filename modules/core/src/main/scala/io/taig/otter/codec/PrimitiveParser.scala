@@ -2,13 +2,13 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.Parsers
+import io.taig.otter.Primitive
+import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Primitive
-import io.taig.otter.Violations
-import io.taig.otter.Violation
-import io.taig.otter.Parsers
 
 final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
   override def decode[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match

@@ -2,11 +2,12 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.implicits.*
+import cats.kernel.Order
 import io.taig.otter.Record
 import io.taig.otter.Violations
-import scala.collection.immutable.SortedSet
-import cats.kernel.Order
 import io.taig.otter.schema.FieldSchema
+
+import scala.collection.immutable.SortedSet
 
 // final class RecordDecoder[S[_], Key[_], Value[_], T: Order, U](
 //     field: Decoder.Remainding[S, List[(T, U)]],

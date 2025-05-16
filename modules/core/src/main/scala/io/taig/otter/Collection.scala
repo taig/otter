@@ -1,18 +1,6 @@
 package io.taig.otter
-
-import cats.Order
-import cats.data.Chain
-import cats.data.NonEmptyChain
-import cats.data.NonEmptyList
-import cats.data.NonEmptySeq
-import cats.data.NonEmptySet
-import cats.data.NonEmptyVector
 import cats.implicits.*
-import io.taig.otter.Argument
 import io.taig.otter.Metadata
-
-import scala.collection.immutable.SortedSet
-import io.taig.otter.schema.CollectionSchema
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   def constraints: Vector[Constraint.Collection]

@@ -1,8 +1,8 @@
 package io.taig.otter.component
 
-import io.taig.otter.Data
-import cats.syntax.all.*
 import cats.Invariant
+import cats.syntax.all.*
+import io.taig.otter.Data
 
 trait DataComponent[
     Collection[a] <: Value[a]: Invariant,

@@ -1,27 +1,23 @@
 package io.taig.otter.schema
 
 import io.taig.otter.Metadata
-import io.taig.otter.Merge
 
 trait RecordSchema[Self[_], Field[_]] extends Schema[Self]:
   self =>
 
   def lift[A](field: => Field[A]): Self[A]
 
-  extension [A](self: Self[A])
-    def zip[B](schema: Self[B]): Self[(A, B)]
-    def optional: Self[Option[A]]
+  def zip[A, B](self: Self[A])(schema: Self[B]): Self[(A, B)]
+  def optional[A](self: Self[A]): Self[Option[A]]
 
-  // final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): RecordSchema[T, Field] =
-  //   new RecordSchema[T, Field]:
-  //     override def lift[A](field: => Field[A]): T[A] = fK(self.lift(field))
-
-  //     extension [A](ta: T[A])
-  //       override def metadata: Metadata = self.metadata(gK(ta))
-  //       override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-  //       override def imap[B](f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-  //       override def zip[B](tb: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(tb)))
-  //       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
+  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): RecordSchema[T, Field] =
+    new RecordSchema[T, Field]:
+      override def lift[A](field: => Field[A]): T[A] = fK(self.lift(field))
+      override def zip[A, B](ta: T[A])(schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
+      override def optional[A](ta: T[A]): T[Option[A]] = fK(self.optional(gK(ta)))
+      override def metadata[A](ta: T[A]): Metadata = self.metadata(gK(ta))
+      override def modifyMetadata[A](ta: T[A])(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+      override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
 object RecordSchema:
   inline def apply[Self[_], Field[_]](using self: RecordSchema[Self, Field]): RecordSchema[Self, Field] = self

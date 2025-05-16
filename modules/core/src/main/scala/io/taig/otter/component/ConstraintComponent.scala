@@ -1,8 +1,8 @@
 package io.taig.otter.component
 
+import cats.Invariant
 import io.taig.otter.Constraint
 import io.taig.otter.syntax.InvariantSyntax.*
-import cats.Invariant
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],

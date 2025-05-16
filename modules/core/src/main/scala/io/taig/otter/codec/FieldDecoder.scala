@@ -1,11 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Field
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Field
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.Violation
 
 final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T, U], empty: U)
     extends Decoder.Remainding[Field[S, T, *], List[(String, U)]]:

@@ -1,11 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Tuple
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.Violations
-import io.taig.otter.Violation
 import io.taig.otter.Constraint
+import io.taig.otter.Tuple
+import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[S, *], Vector[T]]:
   override def decode[A](schema: Tuple[S, A], values: Vector[T]): Validated[Violations, A] =

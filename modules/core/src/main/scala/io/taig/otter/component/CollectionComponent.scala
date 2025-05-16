@@ -9,10 +9,9 @@ import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
 import io.taig.otter.Argument
-import io.taig.otter.Metadata
+import io.taig.otter.schema.CollectionSchema
 
 import scala.collection.immutable.SortedSet
-import io.taig.otter.schema.CollectionSchema
 
 trait CollectionComponent[+Self[_], -Value[_]](using self: CollectionSchema[Self, Value]):
   object collection:

@@ -1,22 +1,17 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.Argument
 import io.taig.otter.Metadata
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import java.util.UUID
 import java.util.regex.Pattern
-import scala.BigDecimal as SBigDecimal
-import scala.BigInt as SBigInt
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.schema.PrimitiveSchema
 
 sealed abstract class Primitive[A] extends Product with Serializable:
   def metadata: Metadata

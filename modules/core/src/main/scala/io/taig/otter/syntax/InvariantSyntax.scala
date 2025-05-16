@@ -1,11 +1,12 @@
 package io.taig.otter.syntax
 
-import scala.compiletime.*
 import cats.Invariant
-import io.taig.otter.Convert
-import scala.annotation.targetName
-import io.taig.otter.Merge
 import cats.syntax.all.*
+import io.taig.otter.Convert
+import io.taig.otter.Merge
+
+import scala.annotation.targetName
+import scala.compiletime.*
 
 trait InvariantSyntax:
   extension [F[_]: Invariant, A](fa: F[A])
