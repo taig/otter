@@ -54,13 +54,13 @@ object Field:
       metadata = Metadata.Empty
     )
 
-    override def key[A](self: Field[Key, Value, A]): Reference.Constant[Key, ?] = self.key
-    override def value[A](self: Field[Key, Value, A]): Reference[Value, ?] = self.value
-    override def nullish[A](self: Field[Key, Value, A]): Boolean = self.nullish
-    override def modifyNullish[A](self: Field[Key, Value, A])(f: Boolean => Boolean): Field[Key, Value, A] =
-      self.modifyNullish(f)
-    override def metadata[A](self: Field[Key, Value, A]): Metadata = self.metadata
-    override def modifyMetadata[A](self: Field[Key, Value, A])(f: Metadata => Metadata): Field[Key, Value, A] =
-      self.modifyMetadata(f)
-    override def optional[A](self: Field[Key, Value, A]): Field[Key, Value, Option[A]] = self.optional
     override def imap[A, B](fa: Field[Key, Value, A])(f: A => B)(g: B => A): Field[Key, Value, B] = fa.imap(f)(g)
+
+    extension [A](self: Field[Key, Value, A])
+      override def key: Reference.Constant[Key, ?] = self.key
+      override def value: Reference[Value, ?] = self.value
+      override def nullish: Boolean = self.nullish
+      override def modifyNullish(f: Boolean => Boolean): Field[Key, Value, A] = self.modifyNullish(f)
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = self.modifyMetadata(f)
+      override def optional: Field[Key, Value, Option[A]] = self.optional

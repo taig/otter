@@ -14,9 +14,11 @@ trait NullableSchema[Self[_], Value[_]] extends Schema[Self]:
       override def apply[A](schema: => Value[A]): T[Option[A]] = fK(self.apply(schema))
       override def apply[A](schema: => Value[A], default: A): T[A] = fK(self.apply(schema, default))
       override def void: T[Unit] = fK(self.void)
-      override def metadata[A](ta: T[A]): Metadata = self.metadata(gK(ta))
-      override def modifyMetadata[A](ta: T[A])(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+      extension [A](ta: T[A])
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
 object NullableSchema:
   inline def apply[Self[_], Value[_]](using self: NullableSchema[Self, Value]): NullableSchema[Self, Value] = self

@@ -22,9 +22,11 @@ trait DictionarySchema[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
         maximum: Option[Int]
     ): T[List[(A, B)]] = fK(self.dictionary(key, value, minimum, maximum))
 
-    override def metadata[A](ta: T[A]): Metadata = self.metadata(gK(ta))
-    override def modifyMetadata[A](ta: T[A])(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+    extension [A](ta: T[A])
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
 object DictionarySchema:
   inline def apply[Self[_], Key[_], Value[_]](using

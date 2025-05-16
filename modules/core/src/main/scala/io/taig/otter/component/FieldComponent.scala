@@ -19,7 +19,7 @@ trait FieldComponent[Self[_], Key[_], -Value[_], +Record[_]](using
   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
   extension [A](self: Self[A])
-    final def nullish(value: Boolean): Self[A] = this.self.modifyNullish(self)(_ => value)
+    final def nullish(value: Boolean): Self[A] = self.modifyNullish(_ => value)
     final def nullish: Self[A] = nullish(true)
     final def required: Self[A] = nullish(false)
     final def toRecord: Record[A] = record.lift(self)
