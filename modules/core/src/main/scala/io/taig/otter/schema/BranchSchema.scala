@@ -24,3 +24,8 @@ trait BranchSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
         override def value: Reference[Value, ?] = self.value(gK(ta))
         override def metadata: Metadata = self.metadata(gK(ta))
         override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+object BranchSchema:
+  inline def apply[Self[_], Key[_], Value[_]](using
+      self: BranchSchema[Self, Key, Value]
+  ): BranchSchema[Self, Key, Value] = self

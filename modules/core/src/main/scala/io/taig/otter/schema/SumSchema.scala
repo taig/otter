@@ -5,13 +5,13 @@ import io.taig.otter.Metadata
 trait SumSchema[Self[_], Branch[_]] extends Schema[Self]:
   self =>
 
-  def lift[A](branch: Branch[A]): Self[A]
+  def lift[A](branch: => Branch[A]): Self[A]
 
   extension [A](self: Self[A]) def orElse[B](schema: Self[B]): Self[Either[A, B]]
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): SumSchema[T, Branch] =
     new SumSchema[T, Branch]:
-      override def lift[A](branch: Branch[A]): T[A] = fK(self.lift(branch))
+      override def lift[A](branch: => Branch[A]): T[A] = fK(self.lift(branch))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
       extension [A](ta: T[A])

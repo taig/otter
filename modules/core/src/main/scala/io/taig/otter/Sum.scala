@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import io.taig.otter.Metadata
+import io.taig.otter.schema.SumSchema
 
 sealed abstract class Sum[+S[_], A] extends Product with Serializable:
   def branches: NonEmptyChain[Reference[S, ?]]
@@ -51,12 +52,13 @@ object Sum:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Sum[T, A] =
       copy(branch = branch.mapK[S1, T](fK))
 
-  // given [Key[_], Value[_]]: SumSchema[Sum[Key, Value, *], Key, Value] with
-  //   override def lift[A](branch: Branch[Key, Value, A]): Sum[Key, Value, A] =
-  //     Root(branch, discriminator = Discriminator.Keyed, metadata = Metadata.Empty)
+  given [Branch[_]]: SumSchema[Sum[Branch, *], Branch] with
+    override def lift[A](branch: => Branch[A]): Sum[Branch, A] =
+      Root(branch = Reference.later(branch), discriminator = Discriminator.Keyed, metadata = Metadata.Empty)
 
-  //   extension [A](self: Sum[Key, Value, A])
-  //     override def metadata: Metadata = self.metadata
-  //     override def modifyMetadata(f: Metadata => Metadata): Sum[Key, Value, A] = self.modifyMetadata(f)
-  //     override def imap[B](f: A => B)(g: B => A): Sum[Key, Value, B] = self.imap(f)(g)
-  //     override def orElse[B](schema: Sum[Key, Value, B]): Sum[Key, Value, Either[A, B]] = self.orElse(schema)
+    override def imap[A, B](fa: Sum[Branch, A])(f: A => B)(g: B => A): Sum[Branch, B] = fa.imap(f)(g)
+
+    extension [A](self: Sum[Branch, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Sum[Branch, A] = self.modifyMetadata(f)
+      override def orElse[B](schema: Sum[Branch, B]): Sum[Branch, Either[A, B]] = self.orElse(schema)

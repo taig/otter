@@ -44,9 +44,11 @@ object Enumeration:
       metadata = Metadata.Empty
     )
 
-    override def schema[A](self: Enumeration[Value, A]): Reference[Value, ?] = self.schema
-    override def values[A](self: Enumeration[Value, A]): NonEmptyList[A] = self.values
-    override def metadata[A](self: Enumeration[Value, A]): Metadata = self.metadata
-    override def modifyMetadata[A](self: Enumeration[Value, A])(f: Metadata => Metadata): Enumeration[Value, A] =
-      self.modifyMetadata(f)
     override def imap[A, B](fa: Enumeration[Value, A])(f: A => B)(g: B => A): Enumeration[Value, B] = fa.imap(f)(g)
+
+    extension [A](self: Enumeration[Value, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Enumeration[Value, A] =
+        self.modifyMetadata(f)
+      override def schema: Reference[Value, ?] = self.schema
+      override def values: NonEmptyList[A] = self.values

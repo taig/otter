@@ -32,3 +32,8 @@ trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
       override def metadata: Metadata = self.metadata(gK(ta))
       override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+object FieldSchema:
+  inline def apply[Self[_], Key[_], Value[_]](using
+      self: FieldSchema[Self, Key, Value]
+  ): FieldSchema[Self, Key, Value] = self

@@ -37,10 +37,11 @@ object Branch:
       value = Reference.later(value),
       metadata = Metadata.Empty
     )
-    override def key[A](self: Branch[Key, Value, A]): Reference.Constant[Key, ?] = self.key
-    override def value[A](self: Branch[Key, Value, A]): Reference[Value, ?] = self.value
-    override def metadata[A](self: Branch[Key, Value, A]): Metadata = self.metadata
-    override def modifyMetadata[A](self: Branch[Key, Value, A])(f: Metadata => Metadata): Branch[Key, Value, A] =
-      self.modifyMetadata(f)
-    override def imap[A, B](fa: Branch[Key, Value, A])(f: A => B)(g: B => A): Branch[Key, Value, B] =
-      fa.imap(f)(g)
+
+    override def imap[A, B](fa: Branch[Key, Value, A])(f: A => B)(g: B => A): Branch[Key, Value, B] = fa.imap(f)(g)
+
+    extension [A](self: Branch[Key, Value, A])
+      override def key: Reference.Constant[Key, ?] = self.key
+      override def value: Reference[Value, ?] = self.value
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Branch[Key, Value, A] = self.modifyMetadata(f)

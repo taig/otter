@@ -11,6 +11,8 @@ import Self.schema.RecordSchema
 import Self.schema.TupleSchema
 import Self.schema.UnionSchema
 import Self.schema.Schema
+import Self.schema.BranchSchema
+import Self.schema.FieldSchema
 
 sealed abstract class Json[A] extends Product with Serializable
 
@@ -128,11 +130,24 @@ object Json:
         )([A] => (json: Json.Key.Union[A]) => json.self)
 
     given Schema[Json.Key] with
-      extension [A](self: Key[A])
+      override def imap[A, B](fa: Json.Key[A])(f: A => B)(g: B => A): Json.Key[B] = ???
+
+      extension [A](self: Json.Key[A])
         override def metadata: Metadata = ???
         override def modifyMetadata(f: Metadata => Metadata): Key[A] = ???
-        override def imap[B](f: A => B)(g: B => A): Key[B] = ???
 
-  type Branch = Self.Branch[Json.Key, Json, *]
+  final case class Branch[A](self: Self.Branch[Json.Key, Json, A]) extends Json[A]
+
+  object Branch:
+    given BranchSchema[Json.Branch, Json.Key, Json] = BranchSchema[Self.Branch[Json.Key, Json, *], Json.Key, Json]
+      .imapK(
+        [A] => (schema: Self.Branch[Json.Key, Json, A]) => Branch(schema)
+      )([A] => (json: Json.Branch[A]) => json.self)
 
   final case class Field[A](self: Self.Field[Json.Key, Json, A]) extends Json[A]
+
+  object Field:
+    given FieldSchema[Json.Field, Json.Key, Json] = FieldSchema[Self.Field[Json.Key, Json, *], Json.Key, Json]
+      .imapK(
+        [A] => (schema: Self.Field[Json.Key, Json, A]) => Field(schema)
+      )([A] => (json: Json.Field[A]) => json.self)

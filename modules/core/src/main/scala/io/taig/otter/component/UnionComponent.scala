@@ -4,7 +4,7 @@ import io.taig.otter.schema.UnionSchema
 
 import scala.annotation.targetName
 
-trait UnionComponent[Self[_], Value[_]](self: UnionSchema[Self, Value]):
+trait UnionComponent[Self[_], Value[_]](using self: UnionSchema[Self, Value]):
   extension [A](self: Self[A])
     @targetName("unionOrElse")
     def orElse[B](schema: Self[B]): Self[Either[A, B]] = this.self.orElse(self)(schema)

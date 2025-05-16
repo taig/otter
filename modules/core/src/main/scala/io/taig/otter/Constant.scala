@@ -34,9 +34,9 @@ object Constant:
       metadata = Metadata.Empty
     )
 
-    override def metadata[A](self: Constant[Value, A]): Metadata = self.metadata
-
-    override def modifyMetadata[A](self: Constant[Value, A])(f: Metadata => Metadata): Constant[Value, A] =
-      self.modifyMetadata(f)
-
     override def imap[A, B](fa: Constant[Value, A])(f: A => B)(g: B => A): Constant[Value, B] = fa.imap(f)(g)
+
+    extension [A](self: Constant[Value, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Constant[Value, A] =
+        self.modifyMetadata(f)
