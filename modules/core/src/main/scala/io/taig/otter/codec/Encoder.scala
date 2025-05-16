@@ -7,3 +7,5 @@ trait Encoder[S[_], T]:
 
   final def map[B](f: T => B): Encoder[S, B] = new Encoder[S, B]:
     override def encode[A](codec: S[A], a: A): B = f(self.encode(codec, a))
+
+  final def toCodec(decoder: Decoder[S, T]): Codec[S, T] = Codec(decoder, encoder = this)

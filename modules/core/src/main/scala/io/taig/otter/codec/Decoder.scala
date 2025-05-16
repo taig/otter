@@ -16,6 +16,8 @@ trait Decoder[S[_], T]:
     override def decode[A](codec: S[A], value: T): Validated[Violations, A] =
       self.decode(codec, value).leftMap(f)
 
+  final def toCodec(encoder: Encoder[S, T]): Codec[S, T] = Codec(decoder = this, encoder)
+
 object Decoder:
   trait Remainding[S[_], T] extends Decoder[S, T]:
     final override def decode[A](schema: S[A], value: T): Validated[Violations, A] =
