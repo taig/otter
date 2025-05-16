@@ -66,18 +66,4 @@ object Constraint:
       final case class Maximum(reference: Int) extends Constraint.Primitive.String
       final case class Minimum(reference: Int) extends Constraint.Primitive.String
 
-  // trait Component[Primitive[_], Record[_], Sum[_], Branch[_], Field[_], Key[_], Value[_]]
-  //     extends Branch.Component[Branch, Key, Value, Sum],
-  //       Field.Component[Field,Key,Value,Record],
-  //       Primitive.Component[Primitive]:
-  //         // (using branch: Schema.Branch[Branch, Key, Value], field: Schema.Field[Field, Key, Value]):
-  //   val constraint: Sum[Constraint] =
-  //     val col: Sum[Constraint.Collection] = (
-  //       branch("maxItems", field("reference", int).toRecord).to[Constraint.Collection.MaxItems] :+
-  //         branch("minItems", field("reference", int).toRecord).to[Constraint.Collection.MinItems] :+
-  //         branch("uniqueItems", void).as(Constraint.Collection.UniqueItems)
-  //     ).to
-
-  //     ???
-
   given Show[Constraint] = Show.fromToString

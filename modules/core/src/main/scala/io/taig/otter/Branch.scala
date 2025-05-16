@@ -9,6 +9,7 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.schema.BranchSchema
 
 sealed abstract class Branch[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]
@@ -37,3 +38,17 @@ object Branch:
     override def modifyMetadata(f: Metadata => Metadata): Branch[S, T, B] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Branch[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
+
+  given [Key[_], Value[_]]: BranchSchema[Branch[Key, Value, *], Key, Value] with
+    override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Branch[Key, Value, B] = Root(
+      key = Reference.Constant(self = Reference.later(key), value = name),
+      value = Reference.later(value),
+      metadata = Metadata.Empty
+    )
+    override def key[A](self: Branch[Key, Value, A]): Reference.Constant[Key, ?] = self.key
+    override def value[A](self: Branch[Key, Value, A]): Reference[Value, ?] = self.value
+    override def metadata[A](self: Branch[Key, Value, A]): Metadata = self.metadata
+    override def modifyMetadata[A](self: Branch[Key, Value, A])(f: Metadata => Metadata): Branch[Key, Value, A] =
+      self.modifyMetadata(f)
+    override def imap[A, B](fa: Branch[Key, Value, A])(f: A => B)(g: B => A): Branch[Key, Value, B] =
+      fa.imap(f)(g)

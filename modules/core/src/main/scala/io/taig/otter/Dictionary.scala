@@ -55,21 +55,21 @@ object Dictionary:
     override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] =
       copy(self = self.leftMapK[S1, U](fK))
 
-  given [Key[_], Value[_]]: DictionarySchema[Dictionary[Key, Value, *], Key, Value] with
-    override def dictionary[A, B](
-        key: => Key[A],
-        value: => Value[B],
-        minimum: Option[Int],
-        maximum: Option[Int]
-    ): Dictionary[Key, Value, List[(A, B)]] = Root(
-      key = Reference.later(key),
-      value = Reference.later(value),
-      minimum,
-      maximum,
-      metadata = Metadata.Empty
-    )
+  // given [Key[_], Value[_]]: DictionarySchema[Dictionary[Key, Value, *], Key, Value] with
+  //   override def dictionary[A, B](
+  //       key: => Key[A],
+  //       value: => Value[B],
+  //       minimum: Option[Int],
+  //       maximum: Option[Int]
+  //   ): Dictionary[Key, Value, List[(A, B)]] = Root(
+  //     key = Reference.later(key),
+  //     value = Reference.later(value),
+  //     minimum,
+  //     maximum,
+  //     metadata = Metadata.Empty
+  //   )
 
-    extension [A](fa: Dictionary[Key, Value, A])
-      override def imap[B](f: A => B)(g: B => A): Dictionary[Key, Value, B] = fa.imap(f)(g)
-      override def modifyMetadata(f: Metadata => Metadata): Dictionary[Key, Value, A] = fa.modifyMetadata(f)
-      override def metadata: Metadata = fa.metadata
+  //   extension [A](fa: Dictionary[Key, Value, A])
+  //     override def imap[B](f: A => B)(g: B => A): Dictionary[Key, Value, B] = fa.imap(f)(g)
+  //     override def modifyMetadata(f: Metadata => Metadata): Dictionary[Key, Value, A] = fa.modifyMetadata(f)
+  //     override def metadata: Metadata = fa.metadata

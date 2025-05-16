@@ -36,17 +36,17 @@ object Enumeration:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
-    override def apply[A, B](
-        schema: => Value[A],
-        mapping: Mapping[B, A]
-    ): Enumeration[Value, B] = Root(
-      schema = Reference.later(schema),
-      mapping,
-      metadata = Metadata.Empty
-    )
+  // given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
+  //   override def apply[A, B](
+  //       schema: => Value[A],
+  //       mapping: Mapping[B, A]
+  //   ): Enumeration[Value, B] = Root(
+  //     schema = Reference.later(schema),
+  //     mapping,
+  //     metadata = Metadata.Empty
+  //   )
 
-    extension [A](fa: Enumeration[Value, A])
-      override def imap[B](f: A => B)(g: B => A): Enumeration[Value, B] = fa.imap(f)(g)
-      override def modifyMetadata(f: Metadata => Metadata): Enumeration[Value, A] = fa.modifyMetadata(f)
-      override def metadata: Metadata = fa.metadata
+  //   extension [A](fa: Enumeration[Value, A])
+  //     override def imap[B](f: A => B)(g: B => A): Enumeration[Value, B] = fa.imap(f)(g)
+  //     override def modifyMetadata(f: Metadata => Metadata): Enumeration[Value, A] = fa.modifyMetadata(f)
+  //     override def metadata: Metadata = fa.metadata

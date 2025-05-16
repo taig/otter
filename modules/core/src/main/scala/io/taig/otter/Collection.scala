@@ -65,24 +65,24 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  given [Value[_]]: CollectionSchema[Collection[Value, *], Value] with
-    extension [A](self: Collection[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Collection[Value, A] = self.modifyMetadata(f)
-      override def imap[B](f: A => B)(g: B => A): Collection[Value, B] = self.imap(f)(g)
+  // given [Value[_]]: CollectionSchema[Collection[Value, *], Value] with
+  //   extension [A](self: Collection[Value, A])
+  //     override def metadata: Metadata = self.metadata
+  //     override def modifyMetadata(f: Metadata => Metadata): Collection[Value, A] = self.modifyMetadata(f)
+  //     override def imap[B](f: A => B)(g: B => A): Collection[Value, B] = self.imap(f)(g)
 
-    override def linked[A](
-        schema: => Value[A],
-        minimum: Option[Int],
-        maximum: Option[Int],
-        uniqueItems: Boolean
-    ): Collection[Value, List[A]] =
-      Linked(schema = Reference.later(schema), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
+  //   override def linked[A](
+  //       schema: => Value[A],
+  //       minimum: Option[Int],
+  //       maximum: Option[Int],
+  //       uniqueItems: Boolean
+  //   ): Collection[Value, List[A]] =
+  //     Linked(schema = Reference.later(schema), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
 
-    override def indexed[A](
-        schema: => Value[A],
-        minimum: Option[Int],
-        maximum: Option[Int],
-        uniqueItems: Boolean
-    ): Collection[Value, Vector[A]] =
-      Indexed(schema = Reference.later(schema), minimum, maximum, uniqueItems, metadata = Metadata.Empty)
+  //   override def indexed[A](
+  //       schema: => Value[A],
+  //       minimum: Option[Int],
+  //       maximum: Option[Int],
+  //       uniqueItems: Boolean
+  //   ): Collection[Value, Vector[A]] =
+  //     Indexed(schema = Reference.later(schema), minimum, maximum, uniqueItems, metadata = Metadata.Empty)

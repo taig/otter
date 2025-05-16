@@ -8,38 +8,38 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Merge
-import io.taig.otter.schema.RecordSchema
 import io.taig.otter.schema.FieldSchema
+import io.taig.otter.schema.RecordSchema
 
-trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using
-    self: FieldSchema[Self, Key, Value]
+trait FieldComponent[Self[_], Key[_], -Value[_], +Record[_]](using
+    self: FieldSchema[Self, Key, Value],
+    record: RecordSchema[Record, Self]
 ):
-  object field:
-    def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
-      nullish(name, key, value)
+  def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
-    def nullish[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
-      self.nullish(required(name, key, value))
+  extension [A](self: Self[A])
+    final def nullish(value: Boolean): Self[A] = this.self.modifyNullish(self)(_ => value)
+    final def nullish: Self[A] = nullish(true)
+    final def required: Self[A] = nullish(false)
+    final def toRecord: Record[A] = record.lift(self)
 
-    def required[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
-      self(name, key, value)
+  given [A]: Conversion[Self[A], Record[A]] = record.lift
 
 object FieldComponent:
-  trait Primitive[Self[_], Key[_], Value[_], Record[_]]
+  trait Primitive[Self[_], Key[_], -Value[_], +Record[_]]
       extends FieldComponent.Primitive.Boolean[Self, Key, Value, Record],
         FieldComponent.Primitive.Number[Self, Key, Value, Record],
         FieldComponent.Primitive.String[Self, Key, Value, Record]:
     override def key: PrimitiveComponent[Key]
 
   object Primitive:
-    trait Boolean[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
+    trait Boolean[Self[_], Key[_], -Value[_], +Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.Boolean[Key]
 
       final def field[A](name: SBoolean, schema: => Value[A]): Self[A] =
         field(name, key = key.boolean, value = schema)
 
-    trait Number[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
+    trait Number[Self[_], Key[_], -Value[_], +Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.Number[Key]
 
       final def field[A](name: BigDecimal, schema: => Value[A]): Self[A] =
@@ -59,7 +59,7 @@ object FieldComponent:
       final def field[A](name: SLong, schema: => Value[A]): Self[A] =
         field(name, key = key.long, value = schema)
 
-    trait String[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
+    trait String[Self[_], Key[_], -Value[_], +Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.String[Key]
 
       final def field[A](name: JString, schema: => Value[A]): Self[A] =

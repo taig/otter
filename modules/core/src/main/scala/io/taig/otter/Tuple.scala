@@ -45,16 +45,16 @@ object Tuple:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, (A, B)] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  given [Value[_]]: TupleSchema[Tuple[Value, *], Value] with
-    override def empty: Tuple[Value, Unit] = Tuple.Empty(Metadata.Empty)
+  // given [Value[_]]: TupleSchema[Tuple[Value, *], Value] with
+  //   override def empty: Tuple[Value, Unit] = Tuple.Empty(Metadata.Empty)
 
-    override def lift[A](schema: => Value[A]): Tuple[Value, A] = Tuple.Root(
-      schema = Reference.later(schema),
-      metadata = Metadata.Empty
-    )
+  //   override def lift[A](schema: => Value[A]): Tuple[Value, A] = Tuple.Root(
+  //     schema = Reference.later(schema),
+  //     metadata = Metadata.Empty
+  //   )
 
-    extension [A](self: Tuple[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Tuple[Value, A] = self.modifyMetadata(f)
-      override def imap[B](f: A => B)(g: B => A): Tuple[Value, B] = self.imap(f)(g)
-      override def zip[B](schema: Tuple[Value, B]): Tuple[Value, (A, B)] = self.zip(schema)
+  //   extension [A](self: Tuple[Value, A])
+  //     override def metadata: Metadata = self.metadata
+  //     override def modifyMetadata(f: Metadata => Metadata): Tuple[Value, A] = self.modifyMetadata(f)
+  //     override def imap[B](f: A => B)(g: B => A): Tuple[Value, B] = self.imap(f)(g)
+  //     override def zip[B](schema: Tuple[Value, B]): Tuple[Value, (A, B)] = self.zip(schema)

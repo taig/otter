@@ -40,13 +40,13 @@ object Primitive:
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Boolean[SBoolean] =
         copy(metadata = f(metadata))
 
-    given schema: PrimitiveSchema.Boolean[Primitive.Boolean] with
-      override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
+    // given schema: PrimitiveSchema.Boolean[Primitive.Boolean] with
+    //   override def boolean: Boolean[SBoolean] = Root(metadata = Metadata.Empty)
 
-      extension [A](fa: Boolean[A])
-        override def imap[B](f: A => B)(g: B => A): Boolean[B] = fa.imap(f)(g)
-        override def metadata: Metadata = fa.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Boolean[A] = fa.modifyMetadata(f)
+    //   extension [A](fa: Boolean[A])
+    //     override def imap[B](f: A => B)(g: B => A): Boolean[B] = fa.imap(f)(g)
+    //     override def metadata: Metadata = fa.metadata
+    //     override def modifyMetadata(f: Metadata => Metadata): Boolean[A] = fa.modifyMetadata(f)
 
   sealed abstract class Number[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[A]
@@ -116,47 +116,47 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.Number[B] = copy(self = self.modifyMetadata(f))
 
-    given schema: PrimitiveSchema.Number[Primitive.Number] with
-      override def jBigDecimal(
-          minimum: Option[Comparison[JBigDecimal]],
-          maximum: Option[Comparison[JBigDecimal]],
-          multiple: Option[JBigDecimal]
-      ): Number[JBigDecimal] = BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty)
+    // given schema: PrimitiveSchema.Number[Primitive.Number] with
+    //   override def jBigDecimal(
+    //       minimum: Option[Comparison[JBigDecimal]],
+    //       maximum: Option[Comparison[JBigDecimal]],
+    //       multiple: Option[JBigDecimal]
+    //   ): Number[JBigDecimal] = BigDecimal(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      override def jBigInteger(
-          minimum: Option[Comparison[JBigInteger]],
-          maximum: Option[Comparison[JBigInteger]],
-          multiple: Option[JBigInteger]
-      ): Number[JBigInteger] = BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty)
+    //   override def jBigInteger(
+    //       minimum: Option[Comparison[JBigInteger]],
+    //       maximum: Option[Comparison[JBigInteger]],
+    //       multiple: Option[JBigInteger]
+    //   ): Number[JBigInteger] = BigInteger(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      override def double(
-          minimum: Option[Comparison[SDouble]],
-          maximum: Option[Comparison[SDouble]],
-          multiple: Option[SDouble]
-      ): Number[SDouble] = Double(minimum, maximum, multiple, metadata = Metadata.Empty)
+    //   override def double(
+    //       minimum: Option[Comparison[SDouble]],
+    //       maximum: Option[Comparison[SDouble]],
+    //       multiple: Option[SDouble]
+    //   ): Number[SDouble] = Double(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      override def float(
-          minimum: Option[Comparison[SFloat]],
-          maximum: Option[Comparison[SFloat]],
-          multiple: Option[SFloat]
-      ): Number[SFloat] = Float(minimum, maximum, multiple, metadata = Metadata.Empty)
+    //   override def float(
+    //       minimum: Option[Comparison[SFloat]],
+    //       maximum: Option[Comparison[SFloat]],
+    //       multiple: Option[SFloat]
+    //   ): Number[SFloat] = Float(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      override def int(
-          minimum: Option[Comparison[SInt]],
-          maximum: Option[Comparison[SInt]],
-          multiple: Option[SInt]
-      ): Number[SInt] = Int(minimum, maximum, multiple, metadata = Metadata.Empty)
+    //   override def int(
+    //       minimum: Option[Comparison[SInt]],
+    //       maximum: Option[Comparison[SInt]],
+    //       multiple: Option[SInt]
+    //   ): Number[SInt] = Int(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      override def long(
-          minimum: Option[Comparison[SLong]],
-          maximum: Option[Comparison[SLong]],
-          multiple: Option[SLong]
-      ): Number[SLong] = Long(minimum, maximum, multiple, metadata = Metadata.Empty)
+    //   override def long(
+    //       minimum: Option[Comparison[SLong]],
+    //       maximum: Option[Comparison[SLong]],
+    //       multiple: Option[SLong]
+    //   ): Number[SLong] = Long(minimum, maximum, multiple, metadata = Metadata.Empty)
 
-      extension [A](self: Number[A])
-        override def imap[B](f: A => B)(g: B => A): Number[B] = self.imap(f)(g)
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Number[A] = self.modifyMetadata(f)
+    //   extension [A](self: Number[A])
+    //     override def imap[B](f: A => B)(g: B => A): Number[B] = self.imap(f)(g)
+    //     override def metadata: Metadata = self.metadata
+    //     override def modifyMetadata(f: Metadata => Metadata): Number[A] = self.modifyMetadata(f)
 
   sealed abstract class String[A] extends Primitive[A]:
     override def modifyMetadata(f: Metadata => Metadata): Primitive.String[A]
@@ -191,33 +191,33 @@ object Primitive:
       export self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Primitive.String[B] = copy(self = self.modifyMetadata(f))
 
-    given schema: PrimitiveSchema.String[Primitive.String] with
-      override def string(
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
-      ): String[JString] = Text(minimum, maximum, matches, metadata = Metadata.Empty)
+    // given schema: PrimitiveSchema.String[Primitive.String] with
+    //   override def string(
+    //       minimum: Option[SInt],
+    //       maximum: Option[SInt],
+    //       matches: Option[Pattern]
+    //   ): String[JString] = Text(minimum, maximum, matches, metadata = Metadata.Empty)
 
-      override def parser[A](
-          name: JString,
-          decode: JString => Either[JString, A],
-          encode: A => JString,
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
-      ): String[A] = Parser(name, decode, encode, minimum, maximum, matches, metadata = Metadata.Empty)
+    //   override def parser[A](
+    //       name: JString,
+    //       decode: JString => Either[JString, A],
+    //       encode: A => JString,
+    //       minimum: Option[SInt],
+    //       maximum: Option[SInt],
+    //       matches: Option[Pattern]
+    //   ): String[A] = Parser(name, decode, encode, minimum, maximum, matches, metadata = Metadata.Empty)
 
-      extension [A](self: String[A])
-        override def imap[B](f: A => B)(g: B => A): String[B] = self.imap(f)(g)
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)
+    //   extension [A](self: String[A])
+    //     override def imap[B](f: A => B)(g: B => A): String[B] = self.imap(f)(g)
+    //     override def metadata: Metadata = self.metadata
+    //     override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)
 
-  given PrimitiveSchema[Primitive] = new PrimitiveSchema[Primitive]:
-    extension [A](self: Primitive[A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)
-      override def imap[B](f: A => B)(g: B => A): Primitive[B] = self.imap(f)(g)
+  // given PrimitiveSchema[Primitive] = new PrimitiveSchema[Primitive]:
+  //   extension [A](self: Primitive[A])
+  //     override def metadata: Metadata = self.metadata
+  //     override def modifyMetadata(f: Metadata => Metadata): Primitive[A] = self.modifyMetadata(f)
+  //     override def imap[B](f: A => B)(g: B => A): Primitive[B] = self.imap(f)(g)
 
-    export Primitive.Boolean.schema.boolean
-    export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
-    export Primitive.String.schema.{parser, string}
+  //   export Primitive.Boolean.schema.boolean
+  //   export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
+  //   export Primitive.String.schema.{parser, string}

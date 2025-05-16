@@ -53,13 +53,13 @@ object Record:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, (A, B)] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  given [Field[_]]: RecordSchema[Record[Field, *], Field] with
-    override def lift[A](field: => Field[A]): Record[Field, A] =
-      Root(field = Reference.later(field), metadata = Metadata.Empty)
+  // given [Field[_]]: RecordSchema[Record[Field, *], Field] with
+  //   override def lift[A](field: => Field[A]): Record[Field, A] =
+  //     Root(field = Reference.later(field), metadata = Metadata.Empty)
 
-    extension [A](self: Record[Field, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Record[Field, A] = self.modifyMetadata(f)
-      override def imap[B](f: A => B)(g: B => A): Record[Field, B] = self.imap(f)(g)
-      override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)
-      override def optional: Record[Field, Option[A]] = self.optional
+  //   extension [A](self: Record[Field, A])
+  //     override def metadata: Metadata = self.metadata
+  //     override def modifyMetadata(f: Metadata => Metadata): Record[Field, A] = self.modifyMetadata(f)
+  //     override def imap[B](f: A => B)(g: B => A): Record[Field, B] = self.imap(f)(g)
+  //     override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)
+  //     override def optional: Record[Field, Option[A]] = self.optional

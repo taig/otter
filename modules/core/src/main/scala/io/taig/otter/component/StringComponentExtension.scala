@@ -4,7 +4,7 @@ import cats.syntax.all.*
 
 import java.util.regex.Pattern
 import io.taig.otter.Argument
-import io.taig.otter.Invariant
+import cats.Invariant
 
 abstract class StringComponentExtension[+Self[_]: Invariant, A]:
   protected def isEmpty(a: A): Boolean
