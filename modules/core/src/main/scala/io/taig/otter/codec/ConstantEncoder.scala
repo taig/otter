@@ -7,7 +7,6 @@ import scala.annotation.tailrec
 
 final class ConstantEncoder[S[_], T](encoder: Encoder[S, T]) extends Encoder[Constant[S, *], T]:
   @tailrec
-  override def apply[A](schema: Constant[S, A], a: A): T = schema match
-    case Constant.Modify(self, _, g) =>  apply(schema = self, g(a))
+  override def encode[A](schema: Constant[S, A], a: A): T = schema match
+    case Constant.Modify(self, _, g) => encode(schema = self, g(a))
     case Constant.Root(schema, _, _) => ReferenceConstantEncoder(encoder)(reference = schema)
-  

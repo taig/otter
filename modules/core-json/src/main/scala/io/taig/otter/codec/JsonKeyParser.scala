@@ -23,7 +23,7 @@ object JsonKeyParser extends Decoder[Json.Key, String]:
           .cond(
             test = eq.eqv(a, schema.value),
             (),
-            Violation.equal(reference = JsonKeyPrinter(schema = schema.self.value, schema.value), value)
+            Violation.equal(reference = JsonKeyPrinter.encode(schema = schema.self.value, schema.value), value)
           )
           .leftMap(Violations.rootNec)
 
@@ -34,7 +34,7 @@ object JsonKeyParser extends Decoder[Json.Key, String]:
         mapping
           .unapply(a)
           .toValid:
-            val values = schema.values.map(mapping.apply).map(JsonKeyPrinter(reference.value, _))
+            val values = schema.values.map(mapping.apply).map(JsonKeyPrinter.encode(reference.value, _))
             Violation.oneOf(values = values.toList, actual = value)
           .leftMap(Violations.rootNec)
 
