@@ -14,6 +14,7 @@ sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
 
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Enumeration[S, A]
+
   final def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = Enumeration.Modify(self = this, f, g)
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, A]
 
@@ -36,17 +37,19 @@ object Enumeration:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Enumeration[T, B] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  // given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
-  //   override def apply[A, B](
-  //       schema: => Value[A],
-  //       mapping: Mapping[B, A]
-  //   ): Enumeration[Value, B] = Root(
-  //     schema = Reference.later(schema),
-  //     mapping,
-  //     metadata = Metadata.Empty
-  //   )
+  given [Value[_]]: EnumerationSchema[Enumeration[Value, *], Value] with
+    override def apply[A, B](
+        schema: => Value[A],
+        mapping: Mapping[B, A]
+    ): Enumeration[Value, B] = Root(
+      schema = Reference.later(schema),
+      mapping,
+      metadata = Metadata.Empty
+    )
 
-  //   extension [A](fa: Enumeration[Value, A])
-  //     override def imap[B](f: A => B)(g: B => A): Enumeration[Value, B] = fa.imap(f)(g)
-  //     override def modifyMetadata(f: Metadata => Metadata): Enumeration[Value, A] = fa.modifyMetadata(f)
-  //     override def metadata: Metadata = fa.metadata
+    override def schema[A](self: Enumeration[Value, A]): Reference[Value, ?] = self.schema
+    override def values[A](self: Enumeration[Value, A]): NonEmptyList[A] = self.values
+    override def metadata[A](self: Enumeration[Value, A]): Metadata = self.metadata
+    override def modifyMetadata[A](self: Enumeration[Value, A])(f: Metadata => Metadata): Enumeration[Value, A] =
+      self.modifyMetadata(f)
+    override def imap[A, B](fa: Enumeration[Value, A])(f: A => B)(g: B => A): Enumeration[Value, B] = fa.imap(f)(g)

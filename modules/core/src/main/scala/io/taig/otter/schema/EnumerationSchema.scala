@@ -2,11 +2,17 @@ package io.taig.otter.schema
 
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Metadata
+import cats.data.NonEmptyList
+import io.taig.otter.Reference
 
 trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
   self =>
 
   def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
+
+  def schema[A](self: Self[A]): Reference[Value, ?]
+
+  def values[A](self: Self[A]): NonEmptyList[A]
 
   // final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
   //     gK: [A] => T[A] => Self[A]
