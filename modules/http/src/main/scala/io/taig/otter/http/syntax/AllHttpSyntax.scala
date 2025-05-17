@@ -1,5 +1,5 @@
 package io.taig.otter.http.syntax
 
-trait AllHttpSyntax extends QuerySyntax
+trait AllHttpSyntax extends BodySyntax, EndpointSyntax, QuerySyntax
 
 object AllHttpSyntax extends AllHttpSyntax
