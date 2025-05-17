@@ -7,6 +7,9 @@ import Self.schema.RecordSchema
 import Self.schema.FieldSchema
 import Self.schema.PrimitiveSchema
 import Self.schema.NullableSchema
+import Self.schema.ConstantSchema
+import Self.schema.EnumerationSchema
+import Self.schema.UnionSchema
 
 sealed abstract class FormData[A] extends Product with Serializable
 
@@ -32,6 +35,24 @@ object FormData:
   sealed abstract class Key[A] extends Product with Serializable
 
   object Key:
+    final case class Constant[A](self: Self.Constant[FormData.Key, A]) extends FormData.Key[A]
+
+    object Constant:
+      given ConstantSchema[FormData.Key.Constant, FormData.Key] =
+        ConstantSchema[Self.Constant[FormData.Key, *], FormData.Key]
+          .imapK(
+            [A] => (schema: Self.Constant[FormData.Key, A]) => Constant(schema)
+          )([A] => (formData: FormData.Key.Constant[A]) => formData.self)
+
+    final case class Enumeration[A](self: Self.Enumeration[FormData.Key, A]) extends FormData.Key[A]
+
+    object Enumeration:
+      given EnumerationSchema[FormData.Key.Enumeration, FormData.Key] =
+        EnumerationSchema[Self.Enumeration[FormData.Key, *], FormData.Key]
+          .imapK(
+            [A] => (schema: Self.Enumeration[FormData.Key, A]) => Enumeration(schema)
+          )([A] => (formData: FormData.Key.Enumeration[A]) => formData.self)
+
     final case class Primitive[A](self: Self.Primitive.String[A]) extends FormData.Key[A]
 
     object Primitive:
@@ -40,6 +61,15 @@ object FormData:
         .imapK(
           [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
         )([A] => (formData: FormData.Key.Primitive[A]) => formData.self)
+
+    final case class Union[A](self: Self.Union[FormData.Key, A]) extends FormData.Key[A]
+
+    object Union:
+      given UnionSchema[FormData.Key.Union, FormData.Key] =
+        UnionSchema[Self.Union[FormData.Key, *], FormData.Key]
+          .imapK(
+            [A] => (schema: Self.Union[FormData.Key, A]) => Union(schema)
+          )([A] => (formData: FormData.Key.Union[A]) => formData.self)
 
   sealed abstract class Value[A] extends Product with Serializable
 

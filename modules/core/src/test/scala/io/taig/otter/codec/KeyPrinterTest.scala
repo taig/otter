@@ -1,11 +1,13 @@
-package io.taig.otter
+package io.taig.otter.codec
 
-import io.taig.otter.component.JsonKeyComponent.*
-import io.taig.otter.codec.JsonKeyPrinter
+import io.taig.otter.component.KeyComponent.*
+import io.taig.otter.codec.KeyPrinter
 import cats.syntax.all.*
+import io.taig.otter.OtterSuite
+import io.taig.otter.Key
 
 final class JsonKeyPrinterTest extends OtterSuite:
-  val encoder = JsonKeyPrinter
+  val encoder = KeyPrinter
 
   test("constant"):
     assertEq(
@@ -19,7 +21,7 @@ final class JsonKeyPrinterTest extends OtterSuite:
       case Cat
       case Dog
 
-    val schema: Json.Key.Enumeration[Animal] = enumeration(string):
+    val schema: Key.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
       case Animal.Cat  => "cat"
       case Animal.Dog  => "dog"

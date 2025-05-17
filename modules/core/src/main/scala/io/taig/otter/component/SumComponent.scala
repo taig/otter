@@ -6,7 +6,7 @@ import io.taig.otter.schema.SumSchema
 
 import scala.annotation.targetName
 
-trait SumComponent[Self[_]: Invariant, -Branch[_]](self: SumSchema[Self, Branch]):
+trait SumComponent[Self[_]: Invariant, -Branch[_]](using self: SumSchema[Self, Branch]):
   extension [A](self: Self[A])
     @targetName("sumOrElse")
     final def orElse[B](schema: Self[B]): Self[Either[A, B]] = this.self.orElse(self)(schema)

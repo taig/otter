@@ -7,7 +7,6 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.CollectionEncoder
 import io.taig.otter.codec.ConstantEncoder
 import io.taig.otter.codec.DictionaryEncoder
-import io.taig.otter.codec.JsonKeyPrinter
 import io.taig.otter.codec.EnumerationEncoder
 import io.taig.otter.codec.NullableEncoder
 import io.taig.otter.codec.RecordEncoder
@@ -16,20 +15,21 @@ import io.taig.otter.codec.TupleEncoder
 import io.taig.otter.codec.UnionEncoder
 import io.taig.otter.codec.SumEncoder
 import io.taig.otter.codec.BranchEncoder
+import io.taig.otter.codec.KeyPrinter
 
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:
   val collection = CollectionEncoder(encoder = this)
   val constant = ConstantEncoder(encoder = this)
-  val dictionary = DictionaryEncoder(key = JsonKeyPrinter, value = this)
+  val dictionary = DictionaryEncoder(key = KeyPrinter, value = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val nullable = NullableEncoder(encoder = this, empty = CirceJson.Null)
   val record = RecordEncoder(
-    field = FieldEncoder(key = JsonKeyPrinter, value = this)
+    field = FieldEncoder(key = KeyPrinter, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
   val sum = SumEncoder(branch =
     discriminator =>
-      BranchEncoder(key = JsonKeyPrinter, value = this)(discriminator)
+      BranchEncoder(key = KeyPrinter, value = this)(discriminator)
         .mapK[Json.Branch]([A] => (branch: Json.Branch[A]) => branch.self)
   )
   val tuple = TupleEncoder(encoder = this)

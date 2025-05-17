@@ -1,13 +1,18 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import cats.Eq
 import cats.derived.*
 import cats.syntax.all.*
-import io.taig.otter.component.JsonKeyComponent.*
-import io.taig.otter.codec.JsonKeyParser
+import io.taig.otter.component.KeyComponent.*
+import io.taig.otter.codec.KeyParser
+import io.taig.otter.OtterSuite
+import io.taig.otter.Violations
+import io.taig.otter.Key
+import io.taig.otter.Violation
+import io.taig.otter.Step
 
 final class JsonKeyParserTest extends OtterSuite:
-  val decoder = JsonKeyParser
+  val decoder = KeyParser
 
   test("constant"):
     assertEq(
@@ -25,7 +30,7 @@ final class JsonKeyParserTest extends OtterSuite:
       case Cat
       case Dog
 
-    val schema: Json.Key.Enumeration[Animal] = enumeration(string):
+    val schema: Key.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
       case Animal.Cat  => "cat"
       case Animal.Dog  => "dog"

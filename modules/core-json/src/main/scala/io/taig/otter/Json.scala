@@ -34,13 +34,13 @@ object Json:
         [A] => (schema: Self.Constant[Json, A]) => Constant(schema)
       )([A] => (json: Json.Constant[A]) => json.self)
 
-  final case class Dictionary[A](self: Self.Dictionary[Json.Key, Json, A]) extends Json[A]
+  final case class Dictionary[A](self: Self.Dictionary[Key, Json, A]) extends Json[A]
 
   object Dictionary:
-    given DictionarySchema[Json.Dictionary, Json.Key, Json] =
-      DictionarySchema[Self.Dictionary[Json.Key, Json, *], Json.Key, Json]
+    given DictionarySchema[Json.Dictionary, Key, Json] =
+      DictionarySchema[Self.Dictionary[Key, Json, *], Key, Json]
         .imapK(
-          [A] => (schema: Self.Dictionary[Json.Key, Json, A]) => Dictionary(schema)
+          [A] => (schema: Self.Dictionary[Key, Json, A]) => Dictionary(schema)
         )([A] => (json: Json.Dictionary[A]) => json.self)
 
   final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[A]
@@ -100,63 +100,18 @@ object Json:
         [A] => (schema: Self.Union[Json, A]) => Union(schema)
       )([A] => (json: Json.Union[A]) => json.self)
 
-  sealed abstract class Key[A] extends Product with Serializable
-
-  object Key:
-    final case class Constant[A](self: Self.Constant[Json.Key.Primitive, A]) extends Json.Key[A]
-
-    object Constant:
-      given ConstantSchema[Json.Key.Constant, Json.Key.Primitive] =
-        ConstantSchema[Self.Constant[Json.Key.Primitive, *], Json.Key.Primitive]
-          .imapK(
-            [A] => (schema: Self.Constant[Json.Key.Primitive, A]) => Constant(schema)
-          )([A] => (json: Json.Key.Constant[A]) => json.self)
-
-    final case class Enumeration[A](self: Self.Enumeration[Json.Key.Primitive, A]) extends Json.Key[A]
-
-    object Enumeration:
-      given EnumerationSchema[Json.Key.Enumeration, Json.Key.Primitive] =
-        EnumerationSchema[Self.Enumeration[Json.Key.Primitive, *], Json.Key.Primitive]
-          .imapK(
-            [A] => (schema: Self.Enumeration[Json.Key.Primitive, A]) => Enumeration(schema)
-          )([A] => (json: Json.Key.Enumeration[A]) => json.self)
-
-    final case class Primitive[A](self: Self.Primitive.String[A]) extends Json.Key[A]
-
-    object Primitive:
-      given PrimitiveSchema.String[Json.Key.Primitive] = PrimitiveSchema
-        .String[Self.Primitive.String]
-        .imapK(
-          [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
-        )([A] => (json: Json.Key.Primitive[A]) => json.self)
-
-    final case class Union[A](self: Self.Union[Json.Key, A]) extends Json.Key[A]
-
-    object Union:
-      given UnionSchema[Json.Key.Union, Json.Key] = UnionSchema[Self.Union[Json.Key, *], Json.Key]
-        .imapK(
-          [A] => (schema: Self.Union[Json.Key, A]) => Union(schema)
-        )([A] => (json: Json.Key.Union[A]) => json.self)
-
-    given Schema[Json.Key] with
-      override def imap[A, B](fa: Json.Key[A])(f: A => B)(g: B => A): Json.Key[B] = ???
-
-      extension [A](self: Json.Key[A])
-        override def metadata: Metadata = ???
-        override def modifyMetadata(f: Metadata => Metadata): Key[A] = ???
-
-  final case class Branch[A](self: Self.Branch[Json.Key, Json, A])
+  final case class Branch[A](self: Self.Branch[Key, Json, A])
 
   object Branch:
-    given BranchSchema[Json.Branch, Json.Key, Json] = BranchSchema[Self.Branch[Json.Key, Json, *], Json.Key, Json]
+    given BranchSchema[Json.Branch, Key, Json] = BranchSchema[Self.Branch[Key, Json, *], Key, Json]
       .imapK(
-        [A] => (schema: Self.Branch[Json.Key, Json, A]) => Branch(schema)
+        [A] => (schema: Self.Branch[Key, Json, A]) => Branch(schema)
       )([A] => (json: Json.Branch[A]) => json.self)
 
-  final case class Field[A](self: Self.Field[Json.Key, Json, A])
+  final case class Field[A](self: Self.Field[Key, Json, A])
 
   object Field:
-    given FieldSchema[Json.Field, Json.Key, Json] = FieldSchema[Self.Field[Json.Key, Json, *], Json.Key, Json]
+    given FieldSchema[Json.Field, Key, Json] = FieldSchema[Self.Field[Key, Json, *], Key, Json]
       .imapK(
-        [A] => (schema: Self.Field[Json.Key, Json, A]) => Field(schema)
+        [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
