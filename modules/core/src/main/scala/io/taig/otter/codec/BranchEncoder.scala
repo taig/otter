@@ -12,7 +12,14 @@ final class BranchEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T
     case Branch.Modify(self, _, g) => encode(schema = self, g(a))
     case Branch.Root(key, value, _) =>
       discriminator match
-        case Discriminator.Explicit(identifier, value) => ???
-        case Discriminator.Merged(identifier)          => ???
+        case Discriminator.Explicit(identifier, value) =>
+          // Chain(
+          //   (???, ReferenceConstantEncoder(encoder = this.key)(key)),
+          //   (value, ???)
+          // )
+          ???
+        case Discriminator.Merged(identifier) =>
+          val x = this.value.encode(schema = value.value, a)
+          ???
         case Discriminator.Keyed =>
           Chain.one((ReferenceConstantEncoder(encoder = this.key)(key), this.value.encode(schema = value.value, a)))

@@ -14,8 +14,6 @@ sealed abstract class Record[+S[_], A] extends Product with Serializable:
 
   final def imap[B](f: A => B)(g: B => A): Record[S, B] = Record.Modify(self = this, f, g)
 
-  final def optional: Record[S, Option[A]] = Record.Optional(self = this)
-
   final def zip[S1[a] >: S[a], B](schema: Record[S1, B]): Record[S1, (A, B)] =
     Record.Zip(left = this, right = schema, metadata = Metadata.Empty)
 
@@ -29,12 +27,6 @@ object Record:
     export self.{fields, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Record[S, B] = copy(self = self.modifyMetadata(f))
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, B] =
-      copy(self = self.mapK[S1, T](fK))
-
-  final private[otter] case class Optional[S[_], A](self: Record[S, A]) extends Record[S, Option[A]]:
-    export self.{fields, metadata}
-    override def modifyMetadata(f: Metadata => Metadata): Record[S, Option[A]] = copy(self = self.modifyMetadata(f))
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, Option[A]] =
       copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A](field: Reference[S, A], metadata: Metadata) extends Record[S, A]:
@@ -63,4 +55,3 @@ object Record:
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Record[Field, A] = self.modifyMetadata(f)
       override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)
-      override def optional: Record[Field, Option[A]] = self.optional

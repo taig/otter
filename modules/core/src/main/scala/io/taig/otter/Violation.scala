@@ -30,7 +30,7 @@ object Violation:
   def required(hint: String): Violation = required(hint = hint.some)
   val required: Violation = required(hint = none)
 
-  def oneOf(values: List[Data.Primitive], actual: Data.Any): Violation =
+  def oneOf(values: List[Data.Any], actual: Data.Any): Violation =
     Violation(Constraint.OneOf(values), actual, hint = none)
 
   def matches(pattern: Pattern, actual: Data.Any): Violation =

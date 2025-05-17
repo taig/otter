@@ -11,9 +11,8 @@ import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable derives Eq:
   final override def toString: String = this match
-    case Constraint.Equal(reference) => show"equal \"$reference\""
-    case Constraint.OneOf(values) =>
-      show"oneOf [${values.map(Data.Primitive.show.show).mkString_(",")}]"
+    case Constraint.Equal(reference)                  => show"equal \"$reference\""
+    case Constraint.OneOf(values)                     => show"oneOf [${values.map(_.show).mkString_(",")}]"
     case Constraint.Required                          => "required"
     case Constraint.Type(name)                        => show"type \"$name\""
     case Constraint.Collection.Maximum(reference)     => show"collection.maximum $reference"
@@ -32,7 +31,7 @@ sealed abstract class Constraint extends SProduct, Serializable derives Eq:
 
 object Constraint:
   final case class Equal(reference: Data.Any) extends Constraint
-  final case class OneOf(values: List[Data.Primitive]) extends Constraint
+  final case class OneOf(values: List[Data.Any]) extends Constraint
   case object Required extends Constraint
   final case class Type(name: String) extends Constraint
 
