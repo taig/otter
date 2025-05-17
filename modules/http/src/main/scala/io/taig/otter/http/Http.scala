@@ -6,47 +6,31 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.Metadata
 import io.taig.otter.Violation
+import io.taig.otter.schema.Schema
 import io.taig.otter.Violations
-import Self.schema.ConstantSchema
-import Self.schema.EnumerationSchema
-import Self.schema.PrimitiveSchema
-import Self.schema.UnionSchema
-import Self.schema.Schema
-import Self.schema.CollectionSchema
-import Self.schema.TupleSchema
-import Self.schema.DictionarySchema
-import Self.schema.RecordSchema
-import Self.schema.FieldSchema
-import Self.schema.NullableSchema
+import io.taig.otter.schema.ConstantSchema
+import io.taig.otter.schema.EnumerationSchema
+import io.taig.otter.schema.PrimitiveSchema
+import io.taig.otter.schema.UnionSchema
+import io.taig.otter.schema.Schema
+import io.taig.otter.schema.CollectionSchema
+import io.taig.otter.schema.TupleSchema
+import io.taig.otter.schema.DictionarySchema
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.FieldSchema
+import io.taig.otter.schema.NullableSchema
+import Self.Key
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable
 
   object Header:
-    sealed abstract class Value[A] extends Http.Header[A]
+    final case class Value[A](self: Self.Key[A]) extends Http.Header[A]
 
     object Value:
-      final case class Constant[A](self: Self.Constant[Http.Header.Value.Primitive, A]) extends Value[A]
-
-      object Constant:
-        given ConstantSchema[Http.Header.Value.Constant, Http.Header.Value.Primitive] = ???
-
-      final case class Enumeration[A](self: Self.Enumeration[Http.Header.Value.Primitive, A]) extends Value[A]
-
-      object Enumeration:
-        given EnumerationSchema[Http.Header.Value.Enumeration, Http.Header.Value.Primitive] = ???
-
-      final case class Primitive[A](self: Self.Primitive.String[A]) extends Value[A]
-
-      object Primitive:
-        given PrimitiveSchema.String[Http.Header.Value.Primitive] = ???
-
-      final case class Union[A](self: Self.Union[Http.Header.Value, A]) extends Value[A]
-
-      object Union:
-        given UnionSchema[Http.Header.Value.Union, Http.Header.Value] = ???
-
-      given Schema[Http.Header.Value] = ???
+      given Schema[Http.Header.Value] = Schema[Self.Key].imapK([A] => (self: Self.Key[A]) => Value(self))(
+        [A] => (value: Http.Header.Value[A]) => value.self
+      )
 
     sealed abstract class Array[A] extends Http.Header[A]
 
@@ -66,23 +50,25 @@ object Http:
     sealed abstract class Object[A] extends Http.Header[A]
 
     object Object:
-      final case class Dictionary[A](self: Self.Dictionary[Http.Header.Value, Http.Header.Value, A])
+      final case class Dictionary[A](self: Self.Dictionary[Key, Http.Header.Object.Value, A])
           extends Http.Header.Object[A]
 
       object Dictionary:
-        given DictionarySchema[Http.Header.Object.Dictionary, Http.Header.Value, Http.Header.Value] = ???
+        given DictionarySchema[Http.Header.Object.Dictionary, Key, Http.Header.Value] = ???
 
       final case class Record[A](self: Self.Record[Http.Header.Field, A]) extends Http.Header.Object[A]
 
       object Record:
         given RecordSchema[Http.Header.Object.Record, Http.Header.Field] = ???
 
+      type Value[A] = Self.Nullable[Http.Header.Value, A] | Http.Header.Value[A]
+
       given Schema[Http.Header.Object] = ???
 
-    final case class Field[A](self: Self.Field[Http.Header.Value, Http.Header.Value, A])
+    final case class Field[A](self: Self.Field[Key, Http.Header.Object.Value, A])
 
     object Field:
-      given FieldSchema[Http.Header.Field, Http.Header.Value, Http.Header.Value] = ???
+      given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value] = ???
 
   sealed abstract class Query[A] extends Product with Serializable
 

@@ -10,22 +10,22 @@ import Self.schema.Schema
 sealed abstract class Key[A] extends Product with Serializable
 
 object Key:
-  final case class Constant[A](self: Self.Constant[Key, A]) extends Key[A]
+  final case class Constant[A](self: Self.Constant[Key.Primitive, A]) extends Key[A]
 
   object Constant:
-    given ConstantSchema[Key.Constant, Key] =
-      ConstantSchema[Self.Constant[Key, *], Key]
+    given ConstantSchema[Key.Constant, Key.Primitive] =
+      ConstantSchema[Self.Constant[Key.Primitive, *], Key.Primitive]
         .imapK(
-          [A] => (schema: Self.Constant[Key, A]) => Constant(schema)
+          [A] => (schema: Self.Constant[Key.Primitive, A]) => Constant(schema)
         )([A] => (key: Key.Constant[A]) => key.self)
 
-  final case class Enumeration[A](self: Self.Enumeration[Key, A]) extends Key[A]
+  final case class Enumeration[A](self: Self.Enumeration[Key.Primitive, A]) extends Key[A]
 
   object Enumeration:
-    given EnumerationSchema[Key.Enumeration, Key] =
-      EnumerationSchema[Self.Enumeration[Key, *], Key]
+    given EnumerationSchema[Key.Enumeration, Key.Primitive] =
+      EnumerationSchema[Self.Enumeration[Key.Primitive, *], Key.Primitive]
         .imapK(
-          [A] => (schema: Self.Enumeration[Key, A]) => Enumeration(schema)
+          [A] => (schema: Self.Enumeration[Key.Primitive, A]) => Enumeration(schema)
         )([A] => (key: Key.Enumeration[A]) => key.self)
 
   final case class Primitive[A](self: Self.Primitive.String[A]) extends Key[A]

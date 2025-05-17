@@ -16,3 +16,6 @@ trait Schema[Self[_]] extends Invariant[Self]:
     extension [A](ta: T[A])
       override def metadata: Metadata = self.metadata(gK(ta))
       override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+
+object Schema:
+  inline def apply[Self[_]](using schema: Schema[Self]): Schema[Self] = schema
