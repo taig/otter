@@ -13,6 +13,7 @@ import Self.schema.UnionSchema
 import Self.schema.Schema
 import Self.schema.BranchSchema
 import Self.schema.FieldSchema
+import Self.schema.SumSchema
 
 sealed abstract class Json[A] extends Product with Serializable
 
@@ -75,6 +76,14 @@ object Json:
         [A] => (schema: Self.Record[Json.Field, A]) => Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
+  final case class Sum[A](self: Self.Sum[Json.Branch, A]) extends Json[A]
+
+  object Sum:
+    given SumSchema[Json.Sum, Json.Branch] = SumSchema[Self.Sum[Json.Branch, *], Json.Branch]
+      .imapK(
+        [A] => (schema: Self.Sum[Json.Branch, A]) => Sum(schema)
+      )([A] => (json: Json.Sum[A]) => json.self)
+
   final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
 
   object Tuple:
@@ -136,7 +145,7 @@ object Json:
         override def metadata: Metadata = ???
         override def modifyMetadata(f: Metadata => Metadata): Key[A] = ???
 
-  final case class Branch[A](self: Self.Branch[Json.Key, Json, A]) extends Json[A]
+  final case class Branch[A](self: Self.Branch[Json.Key, Json, A])
 
   object Branch:
     given BranchSchema[Json.Branch, Json.Key, Json] = BranchSchema[Self.Branch[Json.Key, Json, *], Json.Key, Json]
@@ -144,7 +153,7 @@ object Json:
         [A] => (schema: Self.Branch[Json.Key, Json, A]) => Branch(schema)
       )([A] => (json: Json.Branch[A]) => json.self)
 
-  final case class Field[A](self: Self.Field[Json.Key, Json, A]) extends Json[A]
+  final case class Field[A](self: Self.Field[Json.Key, Json, A])
 
   object Field:
     given FieldSchema[Json.Field, Json.Key, Json] = FieldSchema[Self.Field[Json.Key, Json, *], Json.Key, Json]

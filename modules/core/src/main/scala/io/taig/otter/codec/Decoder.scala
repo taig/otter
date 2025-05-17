@@ -16,6 +16,10 @@ trait Decoder[S[_], T]:
     override def decode[A](codec: S[A], value: T): Validated[Violations, A] =
       self.decode(codec, value).leftMap(f)
 
+  def mapK[U[_]](fK: [A] => U[A] => S[A]): Decoder[U, T] = new Decoder[U, T]:
+    override def decode[A](schema: U[A], value: T): Validated[Violations, A] =
+      self.decode(schema = fK(schema), value)
+
   final def toCodec(encoder: Encoder[S, T]): Codec[S, T] = Codec(decoder = this, encoder)
 
 object Decoder:

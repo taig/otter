@@ -1,13 +1,14 @@
-package io.taig.otter
+package io.taig.otter.component
 
 import cats.syntax.all.*
 
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
+import io.taig.otter.component.PrimitiveComponent
 
-trait JavaTimeDsl[Self[_]]:
-  this: PrimitiveDsl.String[Self] =>
+trait JavaTimeComponent[Self[_]]:
+  this: PrimitiveComponent.String[Self] =>
 
   val duration: Self[Duration] = parser(name = "iso8601.duration")(value =>
     Either.catchOnly[DateTimeParseException](Duration.parse(value)).leftMap(_.getMessage)

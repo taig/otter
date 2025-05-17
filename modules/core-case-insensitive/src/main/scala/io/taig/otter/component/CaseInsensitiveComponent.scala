@@ -1,10 +1,13 @@
-package io.taig.otter
+package io.taig.otter.component
+
 import org.typelevel.ci.CIString
-
 import java.util.regex.Pattern
+import cats.Invariant
+import cats.syntax.all.*
+import io.taig.otter.Argument
 
-trait CaseInsensitiveDsl[Self[_]: Codec]:
-  this: PrimitiveDsl.String[Self] =>
+trait CaseInsensitiveComponent[Self[_]: Invariant]:
+  this: PrimitiveComponent.String[Self] =>
 
   def cistring(
       minimum: Argument[Int] = Argument.Default,
