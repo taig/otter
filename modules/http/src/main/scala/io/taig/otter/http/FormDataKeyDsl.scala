@@ -1,7 +1,7 @@
-package io.taig.otter.http
+// package io.taig.otter.http
 
-import io.taig.otter.PrimitiveDsl
+// import io.taig.otter.PrimitiveDsl
 
-trait FormDataKeyDsl extends PrimitiveDsl.String[FormData.Key.Primitive]
+// trait FormDataKeyDsl extends PrimitiveDsl.String[FormData.Key.Primitive]
 
-object FormDataKeyDsl extends FormDataKeyDsl
+// object FormDataKeyDsl extends FormDataKeyDsl

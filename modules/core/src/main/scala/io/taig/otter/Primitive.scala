@@ -211,7 +211,7 @@ object Primitive:
         override def metadata: Metadata = self.metadata
         override def modifyMetadata(f: Metadata => Metadata): String[A] = self.modifyMetadata(f)
 
-  given PrimitiveSchema[Primitive] = new PrimitiveSchema[Primitive]:
+  given PrimitiveSchema[Primitive] with
     export Primitive.Boolean.schema.boolean
     export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
     export Primitive.String.schema.{parser, string}

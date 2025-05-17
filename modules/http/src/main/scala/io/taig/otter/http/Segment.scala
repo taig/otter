@@ -3,9 +3,9 @@ package io.taig.otter.http
 import cats.Show
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.Codec
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
+import Self.schema.Schema
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String
@@ -35,10 +35,11 @@ object Segment:
     export self.{metadata, name}
     override def modifyMetadata(f: Metadata => Metadata): Segment[B] = copy(self = self.modifyMetadata(f))
 
-  given Codec[Segment] with
+  given Schema[Segment] with
+    override def imap[A, B](fa: Segment[A])(f: A => B)(g: B => A): Segment[B] = fa.imap(f)(g)
+
     extension [A](self: Segment[A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Segment[A] = self.modifyMetadata(f)
-      override def imap[B](f: A => B)(g: B => A): Segment[B] = self.imap(f)(g)
 
   given Show[Segment[?]] = Show.fromToString

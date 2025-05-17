@@ -1,7 +1,7 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Invariant
+import cats.Invariant
 
 sealed abstract class Request[+S[_], A] extends Product with Serializable:
   def method: Method
@@ -39,5 +39,5 @@ object Request:
     def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
 
-  given [S[_]]: Invariant[Request[S, *]] = new Invariant[Request[S, *]]:
-    extension [A](self: Request[S, A]) override def imap[B](f: A => B)(g: B => A): Request[S, B] = self.imap(f)(g)
+  given [S[_]]: Invariant[Request[S, *]] with
+    override def imap[A, B](fa: Request[S, A])(f: A => B)(g: B => A): Request[S, B] = fa.imap(f)(g)

@@ -2,10 +2,10 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.Invariant
 import io.taig.otter.Reference
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
+import cats.Invariant
 
 // TODO strict vs streaming (?)
 sealed abstract class Body[+S[_], A] extends Product with Serializable:
@@ -29,10 +29,5 @@ object Body:
 
   final private[otter] case class Root[S[_], A](mediaType: MediaType, codec: Reference[S, A]) extends Body[S, A]
 
-  given [S[_]]: Invariant.Coproduct[Body[S, *], Body[S, *], Bodies[S, *]] with
-    override def result: Invariant[Bodies[S, *]] = Bodies.invariant
-    override def fromElement[A](codec: Body[S, A]): Body[S, A] = codec
-
-    extension [A](self: Body[S, A])
-      override def imap[B](f: A => B)(g: B => A): Body[S, B] = self.imap(f)(g)
-      override def orElse[B](codec: Body[S, B]): Bodies[S, Either[A, B]] = self.orElse(codec)
+  given [S[_]]: Invariant[Body[S, *]] with
+    override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)

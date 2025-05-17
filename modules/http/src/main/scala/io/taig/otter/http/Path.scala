@@ -3,9 +3,9 @@ package io.taig.otter.http
 import cats.Show
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.Invariant
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import cats.Invariant
 
 sealed abstract class Path[A] extends Product with Serializable:
   def toSegments: Chain[Segment[?]]
@@ -35,12 +35,7 @@ object Path:
 
   type Data = Chain[String]
 
-  given Invariant.Product[Path, Segment, Path] with
-    override def result: Invariant[Path] = this
-    override def fromElement[A](segment: Segment[A]): Path[A] = Root(segment)
-
-    extension [A](self: Path[A])
-      override def imap[B](f: A => B)(g: B => A): Path[B] = self.imap(f)(g)
-      override def zip[B](codec: Path[B]): Path[(A, B)] = self.zip(codec)
+  given Invariant[Path] with
+    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.imap(f)(g)
 
   given Show[Path[?]] = _.toSegments.mkString_("/", "/", "")

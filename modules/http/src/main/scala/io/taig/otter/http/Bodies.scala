@@ -2,9 +2,9 @@ package io.taig.otter.http
 
 import cats.data.Chain
 import io.taig.otter.+
-import io.taig.otter.Invariant
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
+import cats.Invariant
 
 sealed abstract class Bodies[+S[_], A] extends Product with Serializable:
   def toChain: Chain[Body[S, ?]]
@@ -35,11 +35,6 @@ object Bodies:
   final private[otter] case class Root[S[_], A](body: Body[S, A]) extends Bodies[S, A]:
     override def toChain: Chain[Body[S, ?]] = Chain.one(body)
 
-  given invariant[S[_]]: Invariant.Coproduct[Bodies[S, *], Body[S, *], Bodies[S, *]] =
-    new Invariant.Coproduct[Bodies[S, *], Body[S, *], Bodies[S, *]]:
-      override def result: Invariant[Bodies[S, *]] = this
-      override def fromElement[A](codec: Body[S, A]): Bodies[S, A] = codec.toBodies
-
-      extension [A](self: Bodies[S, A])
-        override def orElse[B](codec: Bodies[S, B]): Bodies[S, Either[A, B]] = self.orElse(codec)
-        override def imap[B](f: A => B)(g: B => A): Bodies[S, B] = self.imap(f)(g)
+  given invariant[S[_]]: Invariant[Bodies[S, *]] with
+    override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] =
+      fa.imap(f)(g)

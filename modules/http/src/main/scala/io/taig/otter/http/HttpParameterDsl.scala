@@ -1,10 +1,10 @@
-package io.taig.otter.http
+// package io.taig.otter.http
 
-import io.taig.otter.ConstantDsl
-import io.taig.otter.PrimitiveDsl
+// import io.taig.otter.ConstantDsl
+// import io.taig.otter.PrimitiveDsl
 
-trait HttpParameterDsl
-    extends ConstantDsl[Http.Parameter.Value.Constant, Http.Parameter.Value.Primitive],
-      PrimitiveDsl.String[Http.Parameter.Value.Primitive]
+// trait HttpParameterDsl
+//     extends ConstantDsl[Http.Parameter.Value.Constant, Http.Parameter.Value.Primitive],
+//       PrimitiveDsl.String[Http.Parameter.Value.Primitive]
 
-object HttpParameterDsl extends HttpParameterDsl
+// object HttpParameterDsl extends HttpParameterDsl

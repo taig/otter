@@ -1,9 +1,12 @@
 package io.taig.otter.http
 
 import io.taig.otter as Self
-import io.taig.otter.Codec
 import Self.http.FormData.Dictionary
-import io.taig.otter.schema.Field
+import Self.schema.DictionarySchema
+import Self.schema.RecordSchema
+import Self.schema.FieldSchema
+import Self.schema.PrimitiveSchema
+import Self.schema.NullableSchema
 
 sealed abstract class FormData[A] extends Product with Serializable
 
@@ -11,19 +14,20 @@ object FormData:
   final case class Dictionary[A](self: Self.Dictionary[FormData.Key, FormData.Value, A]) extends FormData[A]
 
   object Dictionary:
-    given codec: Codec.Dictionary[FormData.Dictionary, FormData.Key, FormData.Value] = Codec.Dictionary(
-      lift = [A] => (self: Self.Dictionary[FormData.Key, FormData.Value, A]) => Dictionary(self),
-      extract = [A] => (codec: FormData.Dictionary[A]) => codec.self
-    )
+    given DictionarySchema[FormData.Dictionary, FormData.Key, FormData.Value] =
+      DictionarySchema[Self.Dictionary[FormData.Key, FormData.Value, *], FormData.Key, FormData.Value]
+        .imapK(
+          [A] => (schema: Self.Dictionary[FormData.Key, FormData.Value, A]) => Dictionary(schema)
+        )([A] => (formData: FormData.Dictionary[A]) => formData.self)
 
   final case class Record[A](self: Self.Record[FormData.Field, A]) extends FormData[A]
 
   object Record:
-    given codec: Codec.Record[FormData.Record, FormData.Field] =
-      Codec.Record(
-        lift = [A] => (self: Self.Record[FormData.Field, A]) => Record(self),
-        extract = [A] => (codec: FormData.Record[A]) => codec.self
-      )
+    given RecordSchema[FormData.Record, FormData.Field] =
+      RecordSchema[Self.Record[FormData.Field, *], FormData.Field]
+        .imapK(
+          [A] => (schema: Self.Record[FormData.Field, A]) => Record(schema)
+        )([A] => (formData: FormData.Record[A]) => formData.self)
 
   sealed abstract class Key[A] extends Product with Serializable
 
@@ -31,10 +35,11 @@ object FormData:
     final case class Primitive[A](self: Self.Primitive.String[A]) extends FormData.Key[A]
 
     object Primitive:
-      given codec: Codec.Primitive.String[FormData.Key.Primitive] = Codec.Primitive.String(
-        lift = [A] => (self: Self.Primitive.String[A]) => Primitive(self),
-        extract = [A] => (codec: FormData.Key.Primitive[A]) => codec.self
-      )
+      given PrimitiveSchema.String[FormData.Key.Primitive] = PrimitiveSchema
+        .String[Self.Primitive.String]
+        .imapK(
+          [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
+        )([A] => (formData: FormData.Key.Primitive[A]) => formData.self)
 
   sealed abstract class Value[A] extends Product with Serializable
 
@@ -42,23 +47,26 @@ object FormData:
     final case class Nullable[A](self: Self.Nullable[FormData.Value, A]) extends Value[A]
 
     object Nullable:
-      given codec: Codec.Nullable[FormData.Value.Nullable, FormData.Value] = Codec.Nullable(
-        lift = [A] => (self: Self.Nullable[FormData.Value, A]) => Nullable(self),
-        extract = [A] => (codec: FormData.Value.Nullable[A]) => codec.self
-      )
+      given NullableSchema[FormData.Value.Nullable, FormData.Value] =
+        NullableSchema[Self.Nullable[FormData.Value, *], FormData.Value]
+          .imapK(
+            [A] => (schema: Self.Nullable[FormData.Value, A]) => Nullable(schema)
+          )([A] => (formData: FormData.Value.Nullable[A]) => formData.self)
 
     final case class Primitive[A](self: Self.Primitive.String[A]) extends Value[A]
 
     object Primitive:
-      given codec: Codec.Primitive.String[FormData.Value.Primitive] = Codec.Primitive.String(
-        lift = [A] => (self: Self.Primitive.String[A]) => Primitive(self),
-        extract = [A] => (codec: FormData.Value.Primitive[A]) => codec.self
-      )
+      given PrimitiveSchema.String[FormData.Value.Primitive] = PrimitiveSchema
+        .String[Self.Primitive.String]
+        .imapK(
+          [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
+        )([A] => (formData: FormData.Value.Primitive[A]) => formData.self)
 
-  type Field[A] = Self.Field[FormData.Key, FormData.Value, A]
+  final case class Field[A](self: Self.Field[FormData.Key, FormData.Value, A])
 
-  given codec: Codec.Field[FormData.Field, FormData.Key, FormData.Value, FormData.Record] =
-    Codec.Field(
-      lift = [A] => (self: Self.Field[FormData.Key, FormData.Value, A]) => self,
-      extract = [A] => (codec: FormData.Field[A]) => codec
-    )
+  object Field:
+    given FieldSchema[FormData.Field, FormData.Key, FormData.Value] =
+      FieldSchema[Self.Field[FormData.Key, FormData.Value, *], FormData.Key, FormData.Value]
+        .imapK(
+          [A] => (schema: Self.Field[FormData.Key, FormData.Value, A]) => Field(schema)
+        )([A] => (formData: FormData.Field[A]) => formData.self)

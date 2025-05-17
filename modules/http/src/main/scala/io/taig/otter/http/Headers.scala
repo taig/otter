@@ -49,10 +49,10 @@ object Headers:
           .leftMap: error =>
             Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
 
-  given invariant: Invariant.Product[Headers, Headers, Headers] with
-    override def result: Invariant[Headers] = this
-    override def fromElement[A](codec: Headers[A]): Headers[A] = codec
+  // given invariant: Invariant.Product[Headers, Headers, Headers] with
+  //   override def result: Invariant[Headers] = this
+  //   override def fromElement[A](codec: Headers[A]): Headers[A] = codec
 
-    extension [A](self: Headers[A])
-      override def imap[B](f: A => B)(g: B => A): Headers[B] = self.imap(f)(g)
-      override def zip[B](codec: Headers[B]): Headers[(A, B)] = self.zip(codec)
+  //   extension [A](self: Headers[A])
+  //     override def imap[B](f: A => B)(g: B => A): Headers[B] = self.imap(f)(g)
+  //     override def zip[B](codec: Headers[B]): Headers[(A, B)] = self.zip(codec)

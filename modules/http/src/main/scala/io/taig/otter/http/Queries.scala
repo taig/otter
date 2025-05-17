@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.data.Chain
 import io.taig.otter.*
+import cats.Invariant
 
 sealed abstract class Queries[A] extends Product with Serializable:
   def toChain: Chain[Query[?]]
@@ -31,10 +32,5 @@ object Queries:
 
   type Data = Chain[Query.Data]
 
-  given invariant: Invariant.Product[Queries, Query, Queries] with
-    override def fromElement[A](query: Query[A]): Queries[A] = query.toQueries
-    override def result: Invariant[Queries] = this
-
-    extension [A](self: Queries[A])
-      override def imap[B](f: A => B)(g: B => A): Queries[B] = self.imap(f)(g)
-      override def zip[B](queries: Queries[B]): Queries[(A, B)] = self.zip(queries)
+  given Invariant[Queries] with
+    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.imap(f)(g)

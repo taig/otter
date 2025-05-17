@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.*
+import cats.Invariant
 
 sealed abstract class Query[A]:
   def name: String
@@ -38,13 +39,5 @@ object Query:
 
   type Data = (String, Option[String])
 
-  given (Codec[Query] & Invariant.Product[Query, Query, Queries]) =
-    new Codec[Query] with Invariant.Product[Query, Query, Queries]:
-      override def result: Invariant[Queries] = Queries.invariant
-      override def fromElement[A](codec: Query[A]): Query[A] = codec
-
-      extension [A](self: Query[A])
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Query[A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Query[B] = self.imap(f)(g)
-        override def zip[B](query: Query[B]): Queries[(A, B)] = self.zip(query)
+  given Invariant[Query] with
+    override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)

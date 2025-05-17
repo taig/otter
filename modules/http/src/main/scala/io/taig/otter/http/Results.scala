@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.data.Chain
 import io.taig.otter.+
-import io.taig.otter.Invariant
+import cats.Invariant
 
 sealed abstract class Results[+S[_], A] extends Product with Serializable:
   def toChain: Chain[Result[S, ?]]
@@ -26,11 +26,5 @@ object Results:
   final private[otter] case class Root[S[_], A](result: Result[S, A]) extends Results[S, A]:
     override def toChain: Chain[Result[S, ?]] = Chain.one(result)
 
-  given invariant[S[_]]: Invariant.Coproduct[Results[S, *], Result[S, *], Results[S, *]] with
-    override def result: Invariant[Results[S, *]] = this
-    override def fromElement[A](codec: Result[S, A]): Results[S, A] = codec.toResults
-
-    extension [A](self: Results[S, A])
-      override def orElse[B](codec: Results[S, B]): Results[S, Either[A, B]] =
-        self.orElse(codec)
-      override def imap[B](f: A => B)(g: B => A): Results[S, B] = self.imap(f)(g)
+  given [S[_]]: Invariant[Results[S, *]] with
+    override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] = fa.imap(f)(g)

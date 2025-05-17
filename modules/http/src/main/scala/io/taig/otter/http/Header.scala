@@ -3,6 +3,7 @@ package io.taig.otter.http
 import io.taig.otter as Self
 import io.taig.otter.*
 import org.typelevel.ci.CIString
+import Self.schema.Schema
 
 sealed abstract class Header[A] extends Product, Serializable:
   def name: CIString
@@ -37,13 +38,9 @@ object Header:
 
   type Data = (CIString, String)
 
-  given (Codec[Header] & Invariant.Product[Header, Header, Headers]) =
-    new Codec[Header] with Invariant.Product[Header, Header, Headers]:
-      override def result: Invariant[Headers] = Headers.invariant
-      override def fromElement[A](codec: Header[A]): Header[A] = codec
+  given Schema[Header] with
+    override def imap[A, B](fa: Header[A])(f: A => B)(g: B => A): Header[B] = fa.imap(f)(g)
 
-      extension [A](self: Header[A])
-        override def metadata: Metadata = self.metadata
-        override def modifyMetadata(f: Metadata => Metadata): Header[A] = self.modifyMetadata(f)
-        override def imap[B](f: A => B)(g: B => A): Header[B] = self.imap(f)(g)
-        override def zip[B](codec: Header[B]): Headers[(A, B)] = self.toHeaders.zip(codec.toHeaders)
+    extension [A](self: Header[A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Header[A] = self.modifyMetadata(f)
