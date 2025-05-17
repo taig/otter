@@ -7,8 +7,8 @@ import io.taig.otter.Tuple
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 
-final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[S, *], Vector[T]]:
-  override def decode[A](schema: Tuple[S, A], values: Vector[T]): Validated[Violations, A] =
+final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[S, *], Seq[T]]:
+  override def decode[A](schema: Tuple[S, A], values: Seq[T]): Validated[Violations, A] =
     val reference = schema.schemas.size.toInt
     val actual = values.size
 
@@ -22,7 +22,7 @@ final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[
       Violations.rootNec(Violation(Constraint.Collection.Minimum(reference), actual, hint = none))
     ) *> decode(schema, values, index = 0)
 
-  def decode[A](schema: Tuple[S, A], values: Vector[T], index: Int): Validated[Violations, A] = schema match
+  def decode[A](schema: Tuple[S, A], values: Seq[T], index: Int): Validated[Violations, A] = schema match
     case Tuple.Empty(_)           => ().valid
     case Tuple.Modify(self, f, _) => decode(schema = self, values, index).map(f)
     case Tuple.Root(schema, _) =>

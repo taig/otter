@@ -127,34 +127,6 @@ object Http:
 
       given Schema[Http.Query.Array] = ???
 
-    sealed abstract class Object[A] extends Http.Query[A]
-
-    object Object:
-      final case class Dictionary[A](self: Self.Dictionary[Http.Query.Value, Http.Query.Value, A])
-          extends Http.Query.Object[A]
-
-      object Dictionary:
-        given DictionarySchema[Http.Query.Object.Dictionary, Http.Query.Value, Http.Query.Value] = ???
-
-      final case class Record[A](self: Self.Record[Http.Query.Field, A]) extends Http.Query.Object[A]
-
-      object Record:
-        given RecordSchema[Http.Query.Object.Record, Http.Query.Field] = ???
-
-      given Schema[Http.Query.Object] with
-        override def imap[A, B](fa: Object[A])(f: A => B)(g: B => A): Object[B] = fa match
-          case Dictionary(self) => Dictionary(self.imap(f)(g))
-          case Record(self)     => Record(self.imap(f)(g))
-
-        extension [A](self: Object[A])
-          override def metadata: Metadata = self match
-            case Dictionary(self) => self.metadata
-            case Record(self)     => self.metadata
-
-          override def modifyMetadata(f: Metadata => Metadata): Object[A] = self match
-            case Dictionary(self) => Dictionary(self.modifyMetadata(f))
-            case Record(self)     => Record(self.modifyMetadata(f))
-
     final case class Nullable[A](self: Self.Nullable[Http.Query, A]) extends Http.Query[A]
 
     object Nullable:

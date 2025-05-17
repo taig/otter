@@ -72,3 +72,5 @@ extension [A](self: List[A])
 extension [A](self: Chain[A])
   private[otter] def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (Chain[A], Option[B]) =
     self.toList.collectFirstWithRemainders(pf).leftMap(Chain.fromSeq)
+  private[otter] def partitionMap[A1, A2](f: A => Either[A1, A2]): (Chain[A1], Chain[A2]) =
+    self.toList.partitionMap(f).bimap(Chain.fromSeq, Chain.fromSeq)
