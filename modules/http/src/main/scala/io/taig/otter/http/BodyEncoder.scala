@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.codec.PayloadEncoder
 
 final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
   def apply[A](
@@ -30,5 +31,5 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       case None => apply(body, a).asRight
 
   def apply[A](body: Body[S, A], a: A): Array[Byte] = body match
-    case Body.Modify(self, f, g)       => apply(body = self, g(a))
-    case Body.Root(contentType, codec) => encoder(codec = codec.value, a)
+    case Body.Modify(self, f, g)        => apply(body = self, g(a))
+    case Body.Root(contentType, schema) => encoder.encode(schema = schema.value, a)
