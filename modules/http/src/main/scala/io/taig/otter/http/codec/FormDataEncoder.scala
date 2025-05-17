@@ -2,6 +2,19 @@ package io.taig.otter.http.codec
 
 import io.taig.otter.codec.Encoder
 import io.taig.otter.http.FormData
+import io.taig.otter.http.FormData.Dictionary
+import io.taig.otter.codec.RecordEncoder
+import io.taig.otter.codec.DictionaryEncoder
+import io.taig.otter.codec.KeyPrinter
+import io.taig.otter.codec.FieldEncoder
 
 object FormDataEncoder extends Encoder[FormData, List[(String, Option[String])]]:
-  override def encode[A](schema: FormData[A], a: A): List[(String, Option[String])] = ???
+  val dictionary = DictionaryEncoder(key = KeyPrinter, value = FormDataValuePrinter)
+  val record = RecordEncoder(
+    field = FieldEncoder(key = KeyPrinter, value = FormDataValuePrinter)
+      .mapK[FormData.Field]([A] => (field: FormData.Field[A]) => field.self)
+  )
+
+  override def encode[A](schema: FormData[A], a: A): List[(String, Option[String])] = schema match
+    case FormData.Dictionary(self) => dictionary.encode(schema = self, a)
+    case FormData.Record(self)     => record.encode(schema = self, a).toList

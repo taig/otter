@@ -1,7 +1,6 @@
 package io.taig.otter.codec
 
 import io.taig.otter.component.KeyComponent.*
-import io.taig.otter.codec.KeyPrinter
 import cats.syntax.all.*
 import io.taig.otter.OtterSuite
 import io.taig.otter.Key
