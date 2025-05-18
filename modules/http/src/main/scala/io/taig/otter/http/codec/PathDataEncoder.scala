@@ -1,7 +1,8 @@
-package io.taig.otter.http
+package io.taig.otter.http.codec
 
 import cats.data.Chain
 import io.taig.otter.codec.Encoder
+import io.taig.otter.http.Path
 
 object PathDataEncoder extends Encoder[Path, Path.Data]:
   override def encode[A](path: Path[A], a: A): Path.Data = path match

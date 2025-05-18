@@ -7,7 +7,6 @@ import io.taig.otter.http.Http.Parameter
 import io.taig.otter.http.Http.Parameter.Array.Collection
 import io.taig.otter.codec.CollectionEncoder
 import io.taig.otter.codec.TupleEncoder
-import io.taig.otter.http.HttpParameterValuePrinter
 
 object HttpParameterArrayEncoder extends Encoder[Http.Parameter.Array, Chain[String]]:
   val collection = CollectionEncoder(encoder = HttpParameterValuePrinter)

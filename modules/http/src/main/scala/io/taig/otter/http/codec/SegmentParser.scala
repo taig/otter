@@ -1,4 +1,4 @@
-// package io.taig.otter.http
+// package io.taig.otter.http.codec
 
 // import cats.data.Validated
 // import cats.syntax.all.*

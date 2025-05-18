@@ -1,12 +1,12 @@
-package io.taig.otter.http
+package io.taig.otter.http.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
-import io.taig.otter.http.codec.QueryDataDecoder
 
 import scala.collection.immutable.SortedSet
+import io.taig.otter.http.Queries
 
 object QueriesDataDecoder extends Decoder.Remainding[Queries, Queries.Data]:
   override def decodeRemainding[A](schema: Queries[A], value: Queries.Data): Validated[Violations, (Queries.Data, A)] =

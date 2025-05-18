@@ -2,8 +2,6 @@ package io.taig.otter.http.codec
 
 import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Http
-import io.taig.otter.Nullable
-import io.taig.otter.http.HttpParameterValuePrinter
 import cats.syntax.all.*
 import io.taig.otter.codec.NullableEncoder
 

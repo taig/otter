@@ -1,9 +1,10 @@
-package io.taig.otter.http
+package io.taig.otter.http.codec
 
 import io.taig.otter.*
 
 import scala.annotation.tailrec
 import io.taig.otter.codec.*
+import io.taig.otter.http.Http
 
 object HttpParameterValuePrinter extends Encoder[Http.Parameter.Value, String]:
   val constant = ConstantEncoder(encoder = this)

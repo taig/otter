@@ -15,7 +15,7 @@ import io.taig.otter.http.FormData.Dictionary
 object FormDataDecoder extends Decoder[FormData, List[(String, Option[String])]]:
   val dictionary = DictionaryDecoder(key = KeyParser, value = FormDataValueParser)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec, value = FormDataValueParser, empty = none)
+    field = FieldDecoder(key = KeyCodec, value = FormDataValueParser, empty = none[String])
       .mapK[FormData.Field]([A] => (field: FormData.Field[A]) => field.self)
   )
 
