@@ -15,9 +15,9 @@ sealed abstract class Result[+S[_], A] extends Product with Serializable:
   final def orElse[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] =
     toResults.orElse(result)
 
-  final def :+[T[_], B](result: Result[T, B]): Results[S +T, Either[A, B]] = orElse(result)
-  
-  final def +:[T[_], B](result: Result[T, B]): Results[S +T, Either[B, A]] = result.orElse(this)
+  final def :+[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] = orElse(result)
+
+  final def +:[T[_], B](result: Result[T, B]): Results[S + T, Either[B, A]] = result.orElse(this)
 
   final def toResults: Results[S, A] = Results.Root(result = this)
 

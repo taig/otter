@@ -29,7 +29,7 @@ trait FieldComponent[Self[_], Key[_], -Value[_], +Record[_]](using
 
     @targetName("appendField")
     final def :*[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] = toRecord.zip(field.toRecord).merge
-    
+
     @targetName("prependField")
     final def *:[B](field: Self[B])(using merge: Merge[B, A]): Record[merge.Out] = field.toRecord.zip(toRecord).merge
 

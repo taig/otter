@@ -8,8 +8,8 @@ import io.circe.Printer as CircePrinter
 import io.taig.otter.dsl.*
 import io.taig.otter.http.AppClient
 import io.taig.otter.http.HttpError
-import io.taig.otter.http.CirceJsonPayloadDecoder
-import io.taig.otter.http.CirceJsonPayloadEncoder
+import io.taig.otter.http.codec.CirceJsonPayloadDecoder
+import io.taig.otter.http.codec.CirceJsonPayloadEncoder
 import io.taig.otter.munit.OtterEffectSuite
 import io.taig.otter.sample.app.SampleApp
 import munit.Compare
@@ -48,7 +48,7 @@ abstract class SampleSuite extends OtterEffectSuite:
       .eval(SampleApp.routes)
       .map: routes =>
         AppClient(
-          decoder = CirceJsonPayloadDecoder.Default,
+          decoder = CirceJsonPayloadDecoder,
           encoder = CirceJsonPayloadEncoder(printer = CircePrinter.noSpaces),
           debug = true
         )(app(routes))

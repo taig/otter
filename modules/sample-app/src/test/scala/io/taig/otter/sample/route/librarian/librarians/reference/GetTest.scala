@@ -6,8 +6,6 @@ import cats.syntax.all.*
 import io.circe.Printer
 import io.taig.otter.dsl.*
 import io.taig.otter.http.AppClient
-import io.taig.otter.http.CirceJsonPayloadDecoder
-import io.taig.otter.http.CirceJsonPayloadEncoder
 import io.taig.otter.munit.OtterEffectSuite
 import io.taig.otter.sample.SampleSuite
 import io.taig.otter.sample.api.endpoint

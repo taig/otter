@@ -87,7 +87,7 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
               .decode(schema = route.endpoint.request, value = request)
               .traverse(route.implementation)
               .handleError(Failure(_).asLeft)
-              .map(writer.encode(response = route.endpoint.response, headers = request.headers, _))
+              .map(writer.encode(schema = route.endpoint.response, headers = request.headers, _))
               .onError: t =>
                 // TODO remove
                 t.printStackTrace()

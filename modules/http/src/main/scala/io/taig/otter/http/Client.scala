@@ -1,10 +1,13 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import cats.Functor
 import io.taig.otter.+
 import io.taig.otter.http.codec.PayloadDecoder
 import io.taig.otter.http.codec.PayloadEncoder
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.codec.RequestDataEncoder
+import io.taig.otter.http.codec.ResponseDataDecoder
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
   def submit[A, B](endpoint: Endpoint[S, T, U, A, B], contentType: Option[MediaType], a: A): F[Either[HttpError, B]]
@@ -19,6 +22,6 @@ object Client:
         endpoint: Endpoint[S, T, U, A, B],
         contentType: Option[MediaType],
         a: A
-    ): F[Either[HttpError, B]] = ???
-    // val request = RequestDataEncoder[S](encoder)(request = endpoint.request, contentType, a)
-    // http.submit(request).map(ResponseDataDecoder(decoder)(response = endpoint.response, _))
+    ): F[Either[HttpError, B]] = 
+      val request = RequestDataEncoder[S](encoder).encode(schema = endpoint.request, contentType, a)
+      http.submit(request).map(ResponseDataDecoder(decoder).decode(schema = endpoint.response, _))

@@ -286,17 +286,17 @@ object Http:
 
     given Schema[Http.Parameter] with
       override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] = fa match
-        case schema: Http.Parameter.Value[A] => schema.imap(f)(g)
-        case schema: Http.Parameter.Array[A] => schema.imap(f)(g)
+        case schema: Http.Parameter.Value[A]  => schema.imap(f)(g)
+        case schema: Http.Parameter.Array[A]  => schema.imap(f)(g)
         case schema: Http.Parameter.Object[A] => schema.imap(f)(g)
 
       extension [A](self: Parameter[A])
         override def metadata: Metadata = self match
-          case schema: Http.Parameter.Value[A] => schema.metadata
-          case schema: Http.Parameter.Array[A] => schema.metadata
+          case schema: Http.Parameter.Value[A]  => schema.metadata
+          case schema: Http.Parameter.Array[A]  => schema.metadata
           case schema: Http.Parameter.Object[A] => schema.metadata
-        
+
         override def modifyMetadata(f: Metadata => Metadata): Parameter[A] = self match
-          case schema: Http.Parameter.Value[A] => schema.modifyMetadata(f)
-          case schema: Http.Parameter.Array[A] => schema.modifyMetadata(f)
+          case schema: Http.Parameter.Value[A]  => schema.modifyMetadata(f)
+          case schema: Http.Parameter.Array[A]  => schema.modifyMetadata(f)
           case schema: Http.Parameter.Object[A] => schema.modifyMetadata(f)

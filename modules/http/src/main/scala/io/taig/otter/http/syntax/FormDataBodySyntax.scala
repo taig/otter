@@ -7,4 +7,4 @@ import io.taig.otter.http.syntax.MediaTypeSyntax.*
 
 trait FormDataBodySyntax:
   final def formData[A](codec: => FormData[A]): Body[FormData, A] =
-    body(mediaType = mediaType.application.xWwwFormUrlencoded, codec)
+    body(mediaType = mediaType.application.wwwFormUrlencoded, codec)

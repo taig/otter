@@ -12,11 +12,15 @@ import io.taig.otter.http.Http
 import io.taig.otter.http.component.FormDataComponent
 
 object dsl extends AllSyntax, AllHttpSyntax, AllHttpJsonSyntax:
-  lazy val formData
-      : FormDataComponent & CaseInsensitiveComponent[FormData.Value.Primitive] & JavaTimeComponent[FormData.Value.Primitive] =
-    new FormDataComponent with CaseInsensitiveComponent[FormData.Value.Primitive] with JavaTimeComponent[FormData.Value.Primitive]
+  lazy val formData: FormDataComponent & CaseInsensitiveComponent[FormData.Value.Primitive] & JavaTimeComponent[
+    FormData.Value.Primitive
+  ] =
+    new FormDataComponent
+      with CaseInsensitiveComponent[FormData.Value.Primitive]
+      with JavaTimeComponent[FormData.Value.Primitive]
 
-  lazy val parameter: HttpParameterComponent & CaseInsensitiveComponent[Http.Parameter] & JavaTimeComponent[Http.Parameter] =
+  lazy val parameter
+      : HttpParameterComponent & CaseInsensitiveComponent[Http.Parameter] & JavaTimeComponent[Http.Parameter] =
     new HttpParameterComponent with CaseInsensitiveComponent[Http.Parameter] with JavaTimeComponent[Http.Parameter]
 
   lazy val json: JsonComponent & CaseInsensitiveComponent[Json.Primitive] & JavaTimeComponent[Json.Primitive] =
