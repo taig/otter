@@ -43,13 +43,13 @@ object BookApiSchema:
 
   object Create:
     val codec: Json.Record[BookApiSchema.Create] = (
-      field("isbn", IsbnApiSchema.codec) :*
+      field("isbn", IsbnApiSchema.codec).toRecord :*
         field("title", string(minimum = 1, maximum = 500)) :*
         field("genres", collection.sortedSet(Genre.codec).nullable(SortedSet.empty[Genre]))
     ).to
 
   val codec: Json.Record[BookApiSchema] = (
-    field("isbn", IsbnApiSchema.codec) :*
+    field("isbn", IsbnApiSchema.codec).toRecord :*
       field("title", string) :*
       field("genres", collection.sortedSet(Genre.codec))
   ).to

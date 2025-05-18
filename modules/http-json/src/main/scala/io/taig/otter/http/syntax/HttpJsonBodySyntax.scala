@@ -7,6 +7,6 @@ import io.taig.otter.Json
 
 trait HttpJsonBodySyntax:
   def json[A](codec: => Json[A]): Body[Json, A] =
-    body(mediaType = application.json, codec)
+    body(mediaType = mediaType.application.json, codec)
 
 object HttpJsonBodySyntax extends HttpJsonBodySyntax

@@ -11,6 +11,6 @@ trait AppSyntax:
     App(routes, notFound)
 
   def app[F[_], S[_], T[_], U[_]](routes: Routes[F, S, T, U]): App[F, S, T, U] =
-    app(routes, notFound = result(notFound))
+    app(routes, notFound = result(code.notFound))
 
 object AppSyntax extends AppSyntax

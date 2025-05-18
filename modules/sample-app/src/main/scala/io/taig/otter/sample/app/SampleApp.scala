@@ -12,14 +12,18 @@ import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
+import io.taig.otter.http.codec.FormDataPayloadDecoder
+import io.taig.otter.http.codec.CirceJsonPayloadEncoder
+import io.taig.otter.http.codec.CirceJsonPayloadDecoder
+import io.taig.otter.http.codec.FormDataPayloadEncoder
 
 object SampleApp extends ResourceApp.Forever:
   given LoggerFactory[IO] = Slf4jFactory.create[IO]
 
   override def run(args: List[String]): Resource[IO, Unit] = for
     routes <- Resource.eval(routes)
-    decoder = CirceJsonPayloadDecoder.Default.or(FormDataPayloadDecoder.Default)
-    encoder = CirceJsonPayloadEncoder(printer = Printer.noSpaces).or(FormDataPayloadEncoder.Default)
+    decoder = CirceJsonPayloadDecoder.or(FormDataPayloadDecoder)
+    encoder = CirceJsonPayloadEncoder(printer = Printer.noSpaces).or(FormDataPayloadEncoder)
     http4s = toHttp4sRoutes(routes, decoder, encoder)
     _ <- EmberServerBuilder.default[IO].withHttpApp(http4s.orNotFound).build
   yield ()

@@ -13,10 +13,10 @@ trait HttpJsonResponseSyntax:
   def response[S[_], A](results: Results[S, A]): Response[S, Json, A] = ResponseSyntax.response(
     results,
     validation = result(
-      unprocessableEntity,
+      code.unprocessableEntity,
       json(error("validation", field("violations", violations).toRecord))
     ),
-    failure = result(internalServerError, json(string.nullable))
+    failure = result(code.internalServerError, json(string.nullable))
   )
 
   def response[S[_], A](result: Result[S, A]): Response[S, Json, A] =

@@ -25,7 +25,7 @@ trait ConstraintComponent[
   val constraint: Sum[Constraint] =
     val col: Sum[Constraint.Collection] = (
       branch("collection.maximum", field("reference", int).toRecord).to[Constraint.Collection.Maximum] :+
-        branch("collection.minimum", field("reference", int)).to[Constraint.Collection.Minimum] :+
+        branch("collection.minimum", field("reference", int).toRecord).to[Constraint.Collection.Minimum] :+
         branch("collection.unique", void).as(Constraint.Collection.Unique)
     ).to
 

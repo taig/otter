@@ -37,7 +37,7 @@ final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debu
       case Left(Failure(throwable)) =>
         results.result.encode(schema = response.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
       case Left(MediaTypeUnsupported) =>
-        Response.Data(code = unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
+        Response.Data(code = code.unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
       case Left(ValidationViolations(violations)) =>
         results.result.encode(schema = response.validation, accept, violations)
-    .getOrElse(Response.Data(code = notAcceptable, headers = Chain.empty, body = Array.emptyByteArray))
+    .getOrElse(Response.Data(code = code.notAcceptable, headers = Chain.empty, body = Array.emptyByteArray))

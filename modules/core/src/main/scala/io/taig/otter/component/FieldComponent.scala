@@ -2,6 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
+import io.taig.otter.syntax.InvariantSyntax.*
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -11,6 +12,8 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.Merge
+import scala.annotation.targetName
 
 trait FieldComponent[Self[_], Key[_], -Value[_], +Record[_]](using
     self: FieldSchema[Self, Key, Value],
@@ -24,7 +27,11 @@ trait FieldComponent[Self[_], Key[_], -Value[_], +Record[_]](using
     final def required: Self[A] = nullish(false)
     final def toRecord: Record[A] = record.lift(self)
 
-  given [A]: Conversion[Self[A], Record[A]] = record.lift
+    @targetName("appendField")
+    final def :*[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] = toRecord.zip(field.toRecord).merge
+    
+    @targetName("prependField")
+    final def *:[B](field: Self[B])(using merge: Merge[B, A]): Record[merge.Out] = field.toRecord.zip(toRecord).merge
 
 object FieldComponent:
   trait Primitive[Self[_], Key[_], -Value[_], +Record[_]]
