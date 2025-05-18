@@ -9,6 +9,7 @@ trait Schema[Self[_]] extends Invariant[Self]:
   extension [A](self: Self[A])
     def metadata: Metadata
     def modifyMetadata(f: Metadata => Metadata): Self[A]
+    final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
 
   def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema[T] = new Schema[T]:
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))

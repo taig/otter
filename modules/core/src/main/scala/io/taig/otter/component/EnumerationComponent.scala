@@ -13,7 +13,3 @@ trait EnumerationComponent[Self[_], Value[_]](using self: EnumerationSchema[Self
 
   final def enumeration[A, B: Order](codec: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
     enumeration(codec)(using Mapping.enumeration(f))
-
-  extension [A](self: Self[A])
-    def schema: Reference[Value, ?] = this.self.schema(self)
-    def values: NonEmptyList[A] = this.self.values(self)

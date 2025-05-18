@@ -5,19 +5,17 @@ import cats.syntax.all.*
 import io.taig.otter.Keys.*
 
 import scala.collection.immutable.ListMap
+import io.taig.otter.codec.Encoder
+import io.taig.otter.schema.Schema
 
-final class NamespaceZodRenderer[S[_]: Codec](renderer: Renderer[S, ZodState[String]])
+final class NamespaceZodRenderer[S[_]: Schema](renderer: Renderer[S, ZodState[String]])
     extends Renderer[S, ZodState[Expression]]:
   val force = ZodRenderer[S](renderer)
 
-  override def apply[A](codec: S[A]): ZodState[Expression] = State: state =>
-    codec.metadata(name) match
+  override def render[A](schema: S[A]): ZodState[Expression] = State: state =>
+    schema.metadata(name) match
       case Some(name) =>
-        val reference = Const(namespace = codec.metadata(namespace), name)
-        val (update, result) = force(codec).run(initial = state).value
+        val reference = Const(namespace = schema.metadata(namespace), name)
+        val (update, result) = force.render(schema).run(initial = state).value
         (update.updatedWith(reference)(_ => Some(result)), Expression.Referenced(reference, result))
-      case None => force(codec).run(initial = state).value.map(Expression.Inline.apply)
-
-object NamespaceZodRenderer:
-  def apply[S[_]: Codec](renderer: Renderer[S, ZodState[String]]): Renderer[S, ZodState[Expression]] =
-    new NamespaceZodRenderer(renderer)
+      case None => force.render(schema).run(initial = state).value.map(Expression.Inline.apply)

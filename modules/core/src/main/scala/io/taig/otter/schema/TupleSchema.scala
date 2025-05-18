@@ -1,6 +1,8 @@
 package io.taig.otter.schema
 
 import io.taig.otter.Metadata
+import io.taig.otter.Merge
+import io.taig.otter.syntax.InvariantSyntax.*
 
 trait TupleSchema[Self[_], Value[_]] extends Schema[Self]:
   self =>
@@ -8,7 +10,10 @@ trait TupleSchema[Self[_], Value[_]] extends Schema[Self]:
   def empty: Self[Unit]
   def lift[A](schema: => Value[A]): Self[A]
 
-  extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
+  extension [A](self: Self[A])
+    def zip[B](schema: Self[B]): Self[(A, B)]
+    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] =
+      ???
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): TupleSchema[T, Value] =
     new TupleSchema[T, Value]:

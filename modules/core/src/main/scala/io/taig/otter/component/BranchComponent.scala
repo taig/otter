@@ -12,32 +12,27 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait BranchComponent[Self[_], Key[_], -Value[_], +Sum[_]](using
-    self: BranchSchema[Self, Key, Value],
-    sum: SumSchema[Sum, Self]
+trait BranchComponent[Self[_], Key[_], -Value[_]](using
+    self: BranchSchema[Self, Key, Value]
 ):
   final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
     self(name, key, value)
 
-  extension [A](self: Self[A]) def toSum: Sum[A] = sum.lift(self)
-
-  given [A]: Conversion[Self[A], Sum[A]] = sum.lift
-
 object BranchComponent:
-  trait Primitive[Self[_], Key[_], -Value[_], +Sum[_]]
-      extends BranchComponent.Primitive.Boolean[Self, Key, Value, Sum],
-        BranchComponent.Primitive.Number[Self, Key, Value, Sum],
-        BranchComponent.Primitive.String[Self, Key, Value, Sum]:
+  trait Primitive[Self[_], Key[_], -Value[_]]
+      extends BranchComponent.Primitive.Boolean[Self, Key, Value],
+        BranchComponent.Primitive.Number[Self, Key, Value],
+        BranchComponent.Primitive.String[Self, Key, Value]:
     override def key: PrimitiveComponent[Key]
 
   object Primitive:
-    trait Boolean[Self[_], Key[_], -Value[_], +Sum[_]] extends BranchComponent[Self, Key, Value, Sum]:
+    trait Boolean[Self[_], Key[_], -Value[_]] extends BranchComponent[Self, Key, Value]:
       def key: PrimitiveComponent.Boolean[Key]
 
       final def branch[A](name: SBoolean, schema: => Value[A]): Self[A] =
         branch(name, key = key.boolean, value = schema)
 
-    trait Number[Self[_], Key[_], -Value[_], +Sum[_]] extends BranchComponent[Self, Key, Value, Sum]:
+    trait Number[Self[_], Key[_], -Value[_]] extends BranchComponent[Self, Key, Value]:
       def key: PrimitiveComponent.Number[Key]
 
       final def branch[A](name: BigDecimal, schema: => Value[A]): Self[A] =
@@ -57,7 +52,7 @@ object BranchComponent:
       final def branch[A](name: SLong, schema: => Value[A]): Self[A] =
         branch(name, key = key.long, value = schema)
 
-    trait String[Self[_], Key[_], -Value[_], +Sum[_]] extends BranchComponent[Self, Key, Value, Sum]:
+    trait String[Self[_], Key[_], -Value[_]] extends BranchComponent[Self, Key, Value]:
       def key: PrimitiveComponent.String[Key]
 
       final def branch[A](name: JString, schema: => Value[A]): Self[A] =

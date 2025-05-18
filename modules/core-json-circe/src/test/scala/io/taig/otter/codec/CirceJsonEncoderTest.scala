@@ -1,15 +1,22 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
-import io.taig.otter.JsonDsl.*
+import io.taig.otter.codec.CirceJsonDecoder
+import io.taig.otter.codec.Decoder
+import io.taig.otter
+import io.taig.otter.OtterSuite
+import io.taig.otter.Json
+import io.taig.otter.component.JsonComponent.*
+import io.taig.otter.Violations
+import io.taig.otter.Violation
 
 final class CirceJsonEncoderTest extends OtterSuite:
   val encoder: Encoder[Json, CirceJson] = CirceJsonEncoder
 
   test("collection"):
     assertEq(
-      obtained = encoder(collection.list(int), List(1, 2, 3)),
+      obtained = encoder.encode(collection.list(int), List(1, 2, 3)),
       expected = CirceJson.arr(
         CirceJson.fromInt(1),
         CirceJson.fromInt(2),
@@ -19,13 +26,13 @@ final class CirceJsonEncoderTest extends OtterSuite:
 
   test("constant"):
     assertEq(
-      obtained = encoder(constant("foobar"), ""),
+      obtained = encoder.encode(constant("foobar"), ""),
       expected = CirceJson.fromString("foobar")
     )
 
   test("dictionary"):
     assertEq(
-      obtained = encoder(dictionary.list(key = key.string, value = long), List(("foo", 1L), ("bar", 2L))),
+      obtained = encoder.encode(dictionary.list(key = key.string, value = long), List(("foo", 1L), ("bar", 2L))),
       expected = CirceJson.fromFields(List(("foo", CirceJson.fromLong(1)), ("bar", CirceJson.fromLong(2))))
     )
 
@@ -41,47 +48,47 @@ final class CirceJsonEncoderTest extends OtterSuite:
       case Animal.Dog  => "dog"
 
     assertEq(
-      obtained = encoder(codec, Animal.Bird),
+      obtained = encoder.encode(codec, Animal.Bird),
       expected = CirceJson.fromString("bird")
     )
     assertEq(
-      obtained = encoder(codec, Animal.Cat),
+      obtained = encoder.encode(codec, Animal.Cat),
       expected = CirceJson.fromString("cat")
     )
     assertEq(
-      obtained = encoder(codec, Animal.Dog),
+      obtained = encoder.encode(codec, Animal.Dog),
       expected = CirceJson.fromString("dog")
     )
 
   test("optional"):
     assertEq(
-      obtained = encoder(string.nullable, "foobar".some),
+      obtained = encoder.encode(string.nullable, "foobar".some),
       expected = CirceJson.fromString("foobar")
     )
     assertEq(
-      obtained = encoder(string.nullable, none),
+      obtained = encoder.encode(string.nullable, none),
       expected = CirceJson.Null
     )
     assertEq(
-      obtained = encoder(string.nullable("fallback"), "foobar"),
+      obtained = encoder.encode(string.nullable("fallback"), "foobar"),
       expected = CirceJson.fromString("foobar")
     )
 
   test("primitive"):
     assertEq(
-      obtained = encoder(string, "foobar"),
+      obtained = encoder.encode(string, "foobar"),
       expected = CirceJson.fromString("foobar")
     )
     assertEq(
-      obtained = encoder(int, 1),
+      obtained = encoder.encode(int, 1),
       expected = CirceJson.fromInt(1)
     )
     assertEq(
-      obtained = encoder(long, 1L),
+      obtained = encoder.encode(long, 1L),
       expected = CirceJson.fromLong(1L)
     )
     assertEq(
-      obtained = encoder(boolean, true),
+      obtained = encoder.encode(boolean, true),
       expected = CirceJson.fromBoolean(true)
     )
 
@@ -89,7 +96,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = field("foo", string) :* field("bar", int)
 
     assertEq(
-      obtained = encoder(codec, ("foobar", 1)),
+      obtained = encoder.encode(codec, ("foobar", 1)),
       expected = CirceJson.fromFields(
         List(("foo", CirceJson.fromString("foobar")), ("bar", CirceJson.fromInt(1)))
       )
@@ -99,14 +106,14 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = field("foo", string) :* field("bar", int).optional
 
     assertEq(
-      obtained = encoder(codec, ("foobar", 1.some)),
+      obtained = encoder.encode(codec, ("foobar", 1.some)),
       expected = CirceJson.fromFields(
         List(("foo", CirceJson.fromString("foobar")), ("bar", CirceJson.fromInt(1)))
       )
     )
 
     assertEq(
-      obtained = encoder(codec, ("foobar", none)),
+      obtained = encoder.encode(codec, ("foobar", none)),
       expected = CirceJson.fromFields(List(("foo", CirceJson.fromString("foobar"))))
     )
 
@@ -114,7 +121,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = string :* int
 
     assertEq(
-      obtained = encoder(codec, ("foobar", 42)),
+      obtained = encoder.encode(codec, ("foobar", 42)),
       expected = CirceJson.fromValues(
         List(CirceJson.fromString("foobar"), CirceJson.fromInt(42))
       )
@@ -124,11 +131,11 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = branch("foo", string) | branch("bar", int)
 
     assertEq(
-      obtained = encoder(codec, "foobar"),
+      obtained = encoder.encode(codec, "foobar"),
       expected = CirceJson.fromString("foobar")
     )
     assertEq(
-      obtained = encoder(codec, 1),
+      obtained = encoder.encode(codec, 1),
       expected = CirceJson.fromInt(1)
     )
 
@@ -136,11 +143,11 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = (branch("foo", string) | branch("bar", int)).keyed
 
     assertEq(
-      obtained = encoder(codec, "foobar"),
+      obtained = encoder.encode(codec, "foobar"),
       expected = CirceJson.fromFields(List(("foo", CirceJson.fromString("foobar"))))
     )
     assertEq(
-      obtained = encoder(codec, 1),
+      obtained = encoder.encode(codec, 1),
       expected = CirceJson.fromFields(List(("bar", CirceJson.fromInt(1))))
     )
 
@@ -148,13 +155,13 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = (branch("foo", field("x", string)) | branch("bar", field("y", int))).merged
 
     assertEq(
-      obtained = encoder(codec, "foobar"),
+      obtained = encoder.encode(codec, "foobar"),
       expected = CirceJson.fromFields(
         List(("type", CirceJson.fromString("foo")), ("x", CirceJson.fromString("foobar")))
       )
     )
     assertEq(
-      obtained = encoder(codec, 1),
+      obtained = encoder.encode(codec, 1),
       expected = CirceJson.fromFields(
         List(("type", CirceJson.fromString("bar")), ("y", CirceJson.fromInt(1)))
       )

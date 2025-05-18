@@ -7,7 +7,8 @@ trait SumSchema[Self[_], Branch[_]] extends Schema[Self]:
 
   def lift[A](branch: => Branch[A]): Self[A]
 
-  extension [A](self: Self[A]) def orElse[B](schema: Self[B]): Self[Either[A, B]]
+  extension [A](self: Self[A])
+    def orElse[B](schema: Self[B]): Self[Either[A, B]]
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): SumSchema[T, Branch] =
     new SumSchema[T, Branch]:

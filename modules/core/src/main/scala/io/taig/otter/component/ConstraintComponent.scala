@@ -15,10 +15,10 @@ trait ConstraintComponent[
     Field[_],
     Key[_],
     Value[_]
-] extends BranchComponent.Primitive.String[Branch, Key, Value, Sum],
+] extends BranchComponent.Primitive.String[Branch, Key, Value],
       ComparisonComponent[Nullable, Record, Field, Key, Value],
       DataComponent[Collection, Dictionary, Nullable, Primitive, Sum, Branch, Key, Value],
-      FieldComponent.Primitive.String[Field, Key, Value, Record],
+      FieldComponent.Primitive.String[Field, Key, Value],
       PrimitiveComponent[Primitive],
       NullableComponent[Nullable, Value],
       SumComponent[Sum, Branch]:
