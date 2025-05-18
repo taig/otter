@@ -11,12 +11,11 @@ object UrlMatcher:
   def apply(path: Path[?], data: Path.Data): Option[Path.Data] = path match
     case Path.Empty              => data.some
     case Path.Modify(self, _, _) => apply(path = self, data)
-    case Path.Root(Segment.Parameter(_, _, _)) =>
+    case Path.Root(_) =>
       data.uncons.map((_, tail) => tail)
-    case Path.Root(Segment.Static(name, _)) =>
+    case Path.Static(name) =>
       data.uncons.flatMap((head, tail) => Option.when(head === name)(tail))
-    case Path.Root(Segment.Modify(self, _, _)) => apply(path = Path.Root(self), data)
-    case Path.Zip(left, right)                 => apply(path = left, data).flatMap(apply(path = right, _))
+    case Path.Zip(left, right) => apply(path = left, data).flatMap(apply(path = right, _))
 
   def apply(queries: Queries[?], data: Queries.Data): Option[Queries.Data] = queries match
     case Queries.Empty              => data.some

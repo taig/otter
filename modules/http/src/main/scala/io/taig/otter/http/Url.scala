@@ -13,9 +13,10 @@ sealed abstract class Url[A] extends Product with Serializable:
 
   final def zip[B](url: Url[B]): Url[(A, B)] = Url.Zip(left = this, right = url)
 
-  final def /[B](segment: Segment[B])(using merge: Merge[A, B]): Url[merge.Out] =
-    zip(segment.toPath.toUrl).imap(merge.apply)(merge.unapply)
-  final def /[B](name: String): Url[A] = /(Segment.Static(name, metadata = Metadata.Empty))
+  final def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] =
+    zip(parameter.toPath.toUrl).imap(merge.apply)(merge.unapply)
+
+  final def /[B](name: String): Url[A] = zip(Path.Static(name).toUrl).imap(((a, _) => a))(a => (a, ()))
 
 object Url:
   private[otter] case object Empty extends Url[Unit]:

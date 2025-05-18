@@ -10,7 +10,7 @@ object HttpHeaderValueParser extends Decoder[Http.Header.Value, String]:
   val constant = ConstantDecoder(codec = toCodec(encoder = HttpHeaderValuePrinter), render = identity)
   val enumeration = EnumerationDecoder(codec = toCodec(encoder = HttpHeaderValuePrinter), render = identity)
   val union = UnionDecoder(decoder = this)
-  
+
   override def decode[A](schema: Value[A], value: String): Validated[Violations, A] = schema match
     case Http.Header.Value.Constant(self)    => constant.decode(schema = self, value)
     case Http.Header.Value.Enumeration(self) => enumeration.decode(schema = self, value)

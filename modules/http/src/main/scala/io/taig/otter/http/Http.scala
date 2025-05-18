@@ -9,13 +9,12 @@ import io.taig.otter.Metadata
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.schema.*
-import io.taig.otter.schema.Schema
 
 object Http:
-  sealed abstract class Header[A] extends Product with Serializable
+  sealed trait Header[A] extends Product with Serializable
 
   object Header:
-    sealed abstract class Value[A] extends Http.Header[A]
+    sealed trait Value[A] extends Http.Header[A], Http.Header.Object.Value[A]
 
     object Value:
       final case class Constant[A](self: Self.Constant[Http.Header.Value.Primitive, A]) extends Http.Header.Value[A]
@@ -27,7 +26,8 @@ object Http:
               [A] => (schema: Self.Constant[Http.Header.Value.Primitive, A]) => Constant(schema)
             )([A] => (value: Http.Header.Value.Constant[A]) => value.self)
 
-      final case class Enumeration[A](self: Self.Enumeration[Http.Header.Value.Primitive, A]) extends Http.Header.Value[A]
+      final case class Enumeration[A](self: Self.Enumeration[Http.Header.Value.Primitive, A])
+          extends Http.Header.Value[A]
 
       object Enumeration:
         given EnumerationSchema[Http.Header.Value.Enumeration, Http.Header.Value.Primitive] =
@@ -48,10 +48,11 @@ object Http:
       final case class Union[A](self: Self.Union[Http.Header.Value, A]) extends Http.Header.Value[A]
 
       object Union:
-        given UnionSchema[Http.Header.Value.Union, Http.Header.Value] = UnionSchema[Self.Union[Http.Header.Value, *], Http.Header.Value]
-          .imapK(
-            [A] => (schema: Self.Union[Http.Header.Value, A]) => Union(schema)
-          )([A] => (value: Http.Header.Value.Union[A]) => value.self)
+        given UnionSchema[Http.Header.Value.Union, Http.Header.Value] =
+          UnionSchema[Self.Union[Http.Header.Value, *], Http.Header.Value]
+            .imapK(
+              [A] => (schema: Self.Union[Http.Header.Value, A]) => Union(schema)
+            )([A] => (value: Http.Header.Value.Union[A]) => value.self)
 
       given Schema[Http.Header.Value] with
         override def imap[A, B](fa: Http.Header.Value[A])(f: A => B)(g: B => A): Http.Header.Value[B] = fa match
@@ -73,9 +74,7 @@ object Http:
             case Primitive(self)   => Primitive(self.modifyMetadata(f))
             case Union(self)       => Union(self.modifyMetadata(f))
 
-        //
-
-    sealed abstract class Array[A] extends Http.Header[A]
+    sealed trait Array[A] extends Http.Header[A]
 
     object Array:
       final case class Collection[A](self: Self.Collection[Http.Header.Value, A]) extends Http.Header.Array[A]
@@ -90,7 +89,7 @@ object Http:
 
       given Schema[Http.Header.Array] = ???
 
-    sealed abstract class Object[A] extends Http.Header[A]
+    sealed trait Object[A] extends Http.Header[A]
 
     object Object:
       final case class Dictionary[A](self: Self.Dictionary[Key, Http.Header.Object.Value, A])
@@ -104,7 +103,11 @@ object Http:
       object Record:
         given RecordSchema[Http.Header.Object.Record, Http.Header.Field] = ???
 
-      type Value[A] = Self.Nullable[Http.Header.Value, A] | Http.Header.Value[A]
+      sealed trait Value[A] extends Product with Serializable
+
+      object Value:
+        final case class Nullable[A](self: Self.Nullable[Http.Header.Object.Value, A])
+            extends Http.Header.Object.Value[A]
 
       given Schema[Http.Header.Object] = ???
 
@@ -113,10 +116,10 @@ object Http:
     object Field:
       given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value] = ???
 
-  sealed abstract class Query[A] extends Product with Serializable
+  sealed trait Query[A] extends Product with Serializable
 
   object Query:
-    sealed abstract class Value[A] extends Http.Query[A]
+    sealed trait Value[A] extends Http.Query[A]
 
     object Value:
       final case class Constant[A](self: Self.Constant[Http.Query.Value.Primitive, A]) extends Value[A]
@@ -141,7 +144,7 @@ object Http:
 
       given Schema[Http.Query.Value] = ???
 
-    sealed abstract class Array[A] extends Http.Query[A]
+    sealed trait Array[A] extends Http.Query[A]
 
     object Array:
       final case class Collection[A](self: Self.Collection[Http.Query.Value, A]) extends Http.Query.Array[A]
@@ -166,28 +169,30 @@ object Http:
     object Field:
       given FieldSchema[Http.Query.Field, Http.Query.Value, Http.Query.Value] = ???
 
-  sealed abstract class Parameter[A] extends Product with Serializable
+  sealed trait Parameter[A] extends Product with Serializable
 
   object Parameter:
-    sealed abstract class Value[A] extends Http.Parameter[A]
+    sealed trait Value[A] extends Http.Parameter[A], Http.Parameter.Object.Value[A]
 
     object Value:
-      final case class Constant[A](self: Self.Constant[Http.Parameter.Value.Primitive, A]) extends Value[A]
+      final case class Constant[A](self: Self.Constant[Http.Parameter.Value.Primitive, A])
+          extends Http.Parameter.Value[A]
 
       object Constant:
         given ConstantSchema[Http.Parameter.Value.Constant, Http.Parameter.Value.Primitive] = ???
 
-      final case class Enumeration[A](self: Self.Enumeration[Http.Parameter.Value.Primitive, A]) extends Value[A]
+      final case class Enumeration[A](self: Self.Enumeration[Http.Parameter.Value.Primitive, A])
+          extends Http.Parameter.Value[A]
 
       object Enumeration:
         given EnumerationSchema[Http.Parameter.Value.Enumeration, Http.Parameter.Value.Primitive] = ???
 
-      final case class Primitive[A](self: Self.Primitive.String[A]) extends Value[A]
+      final case class Primitive[A](self: Self.Primitive.String[A]) extends Http.Parameter.Value[A]
 
       object Primitive:
         given PrimitiveSchema.String[Http.Parameter.Value.Primitive] = ???
 
-      final case class Union[A](self: Self.Union[Http.Parameter.Value, A]) extends Value[A]
+      final case class Union[A](self: Self.Union[Http.Parameter.Value, A]) extends Http.Parameter.Value[A]
 
       object Union:
         given UnionSchema[Http.Parameter.Value.Union, Http.Parameter.Value] = ???
@@ -212,7 +217,7 @@ object Http:
             case Primitive(self)   => Primitive(self.modifyMetadata(f))
             case Union(self)       => Union(self.modifyMetadata(f))
 
-    sealed abstract class Array[A] extends Http.Parameter[A]
+    sealed trait Array[A] extends Http.Parameter[A]
 
     object Array:
       final case class Collection[A](self: Self.Collection[Http.Parameter.Value, A]) extends Http.Parameter.Array[A]
@@ -239,19 +244,25 @@ object Http:
             case Collection(self) => Collection(self.modifyMetadata(f))
             case Tuple(self)      => Tuple(self.modifyMetadata(f))
 
-    sealed abstract class Object[A] extends Http.Parameter[A]
+    sealed trait Object[A] extends Http.Parameter[A]
 
     object Object:
-      final case class Dictionary[A](self: Self.Dictionary[Http.Parameter.Value, Http.Parameter.Value, A])
+      final case class Dictionary[A](self: Self.Dictionary[Key, Http.Parameter.Value, A])
           extends Http.Parameter.Object[A]
 
       object Dictionary:
-        given DictionarySchema[Http.Parameter.Object.Dictionary, Http.Parameter.Value, Http.Parameter.Value] = ???
+        given DictionarySchema[Http.Parameter.Object.Dictionary, Key, Http.Parameter.Value] = ???
 
       final case class Record[A](self: Self.Record[Http.Parameter.Field, A]) extends Http.Parameter.Object[A]
 
       object Record:
         given RecordSchema[Http.Parameter.Object.Record, Http.Parameter.Field] = ???
+
+      sealed trait Value[A] extends Product with Serializable
+
+      object Value:
+        final case class Nullable[A](self: Self.Nullable[Http.Parameter.Object.Value, A])
+            extends Http.Parameter.Object.Value[A]
 
       given Schema[Http.Parameter.Object] with
         override def imap[A, B](fa: Http.Parameter.Object[A])(f: A => B)(g: B => A): Object[B] =
@@ -268,10 +279,10 @@ object Http:
             case Dictionary(self) => Dictionary(self.modifyMetadata(f))
             case Record(self)     => Record(self.modifyMetadata(f))
 
-    final case class Field[A](self: Self.Field[Http.Parameter.Value, Http.Parameter.Value, A])
+    final case class Field[A](self: Self.Field[Key, Http.Parameter.Object.Value, A])
 
     object Field:
-      given FieldSchema[Http.Parameter.Field, Http.Parameter.Value, Http.Parameter.Value] = ???
+      given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value] = ???
 
 extension [A](self: Either[Parser.Error, A])
   private[otter] def toValidatedViolations(tpe: String, value: String): Validated[Violations, A] =

@@ -3,7 +3,7 @@ package io.taig.otter.http.syntax
 import io.taig.otter.http.Code
 
 trait CodeSyntax:
-  def apply(value: Int): Code = Code(value)
+  inline def apply(value: Int): Code = Code(value)
 
   val ok: Code = apply(200)
   val created: Code = apply(201)
