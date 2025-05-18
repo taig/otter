@@ -19,6 +19,11 @@ import org.http4s.Status as Http4sStatus
 import org.http4s.Uri as Http4sUri
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
+import io.taig.otter.http.codec.PayloadDecoder
+import io.taig.otter.http.codec.PayloadEncoder
+import io.taig.otter.http.codec.RequestDataDecoder
+import io.taig.otter.http.codec.ResponseDataEncoder
+import io.taig.otter.http.codec.ResultDataEncoder
 
 def toUrlData(uri: Http4sUri): Url.Data = Url.Data(
   path = Chain.fromSeq(uri.path.segments).map(_.encoded),
@@ -78,10 +83,11 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
         routes
           .find(route => RequestMatcher(request = route.endpoint.request, data = request))
           .traverse: route =>
-            reader(request = route.endpoint.request, data = request)
+            reader
+              .decode(schema = route.endpoint.request, value = request)
               .traverse(route.implementation)
               .handleError(Failure(_).asLeft)
-              .map(writer(response = route.endpoint.response, headers = request.headers, _))
+              .map(writer.encode(response = route.endpoint.response, headers = request.headers, _))
               .onError: t =>
                 // TODO remove
                 t.printStackTrace()
@@ -95,12 +101,14 @@ def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
     debug: Boolean = false
 ): Http4sApp[F] =
   val routes = toHttp4sRoutes(routes = app.routes, decoder, encoder, debug)
+  val writer = ResultDataEncoder(encoder)
 
   Http4sApp: request =>
     routes(request).getOrElseF:
       toRequestData(request).flatMap: request =>
         val response =
-          ResultDataEncoder(encoder)(result = app.notFound, accept = request.headers.accept.getOrElse(none), ())
-            .getOrElse(ResultDataEncoder(encoder)(result = app.notFound, ()))
+          writer
+            .encode(schema = app.notFound, accept = request.headers.accept.getOrElse(none), ())
+            .getOrElse(writer.encode(schema = app.notFound, ()))
 
         fromResponseData(response)

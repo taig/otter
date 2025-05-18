@@ -15,7 +15,7 @@ import io.taig.otter.http.Headers
 final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
   val results = ResultsDataEncoder(encoder)
 
-  def apply[A](
+  def encode[A](
       response: Response[S, T, A],
       headers: Headers.Data,
       result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
@@ -23,11 +23,11 @@ final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debu
     .leftMap("header" /: _)
     .leftMap(ValidationViolations.apply)
     .fold(
-      error => apply(response, accept = none, result = error.asLeft),
-      apply(response, _, result)
+      error => encode(response, accept = none, result = error.asLeft),
+      encode(response, _, result)
     )
 
-  def apply[A](
+  def encode[A](
       response: Response[S, T, A],
       accept: Option[Accept],
       result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
