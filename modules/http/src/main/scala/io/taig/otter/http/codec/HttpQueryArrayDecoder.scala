@@ -1,12 +1,12 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Http
+import cats.data.Chain
 import cats.data.Validated
 import io.taig.otter.Violations
 import io.taig.otter.codec.CollectionDecoder
+import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.TupleDecoder
-import cats.data.Chain
+import io.taig.otter.http.Http
 
 object HttpQueryArrayDecoder extends Decoder[Http.Query.Array, Chain[String]]:
   val collection = CollectionDecoder(decoder = HttpQueryValueParser)

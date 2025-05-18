@@ -1,10 +1,10 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Query
-import io.taig.otter.http.Queries
-import cats.syntax.all.*
 import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.otter.codec.Encoder
+import io.taig.otter.http.Queries
+import io.taig.otter.http.Query
 
 object QueryDataEncoder extends Encoder[Query, Queries.Data]:
   override def encode[A](schema: Query[A], a: A): Queries.Data = schema match

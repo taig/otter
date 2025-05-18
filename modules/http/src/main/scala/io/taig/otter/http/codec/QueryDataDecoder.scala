@@ -1,13 +1,13 @@
 package io.taig.otter.http.codec
 
+import cats.data.Chain
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Queries
-import cats.data.Validated
-import io.taig.otter.partitionMap
-import io.taig.otter.Violations
 import io.taig.otter.http.Query
-import cats.syntax.all.*
-import cats.data.Chain
+import io.taig.otter.partitionMap
 
 object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
   override def decodeRemainding[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =

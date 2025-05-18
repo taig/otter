@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
+import cats.Invariant
 import cats.Show
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import cats.Invariant
 
 sealed abstract class Path[A] extends Product with Serializable:
   def toSegments: Chain[Segment[?]]

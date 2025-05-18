@@ -1,16 +1,16 @@
 package io.taig.otter.http
 
 import io.taig.otter as Self
+import io.taig.otter.Key
 import io.taig.otter.http.FormData.Dictionary
+import io.taig.otter.schema.ConstantSchema
 import io.taig.otter.schema.DictionarySchema
-import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.EnumerationSchema
 import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.PrimitiveSchema
 import io.taig.otter.schema.NullableSchema
-import Self.Key
-import Self.schema.ConstantSchema
-import Self.schema.EnumerationSchema
-import Self.schema.UnionSchema
+import io.taig.otter.schema.PrimitiveSchema
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.UnionSchema
 
 sealed abstract class FormData[A] extends Product with Serializable
 

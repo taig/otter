@@ -1,12 +1,12 @@
 package io.taig.otter.http.component
 
 import io.taig.otter.component.CollectionComponent
-import io.taig.otter.http.Http
 import io.taig.otter.component.ConstantComponent
 import io.taig.otter.component.EnumerationComponent
 import io.taig.otter.component.NullableComponent
 import io.taig.otter.component.PrimitiveComponent
 import io.taig.otter.component.TupleComponent
+import io.taig.otter.http.Http
 
 trait HttpQueryComponent
     extends CollectionComponent[Http.Query.Array.Collection, Http.Query.Value],

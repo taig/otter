@@ -4,33 +4,76 @@ import cats.data.Validated
 import cats.parse.Parser
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.Key
 import io.taig.otter.Metadata
 import io.taig.otter.Violation
-import io.taig.otter.schema.Schema
 import io.taig.otter.Violations
-import io.taig.otter.schema.ConstantSchema
-import io.taig.otter.schema.EnumerationSchema
-import io.taig.otter.schema.PrimitiveSchema
-import io.taig.otter.schema.UnionSchema
+import io.taig.otter.schema.*
 import io.taig.otter.schema.Schema
-import io.taig.otter.schema.CollectionSchema
-import io.taig.otter.schema.TupleSchema
-import io.taig.otter.schema.DictionarySchema
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.NullableSchema
-import Self.Key
 
 object Http:
   sealed abstract class Header[A] extends Product with Serializable
 
   object Header:
-    final case class Value[A](self: Self.Key[A]) extends Http.Header[A]
+    sealed abstract class Value[A] extends Http.Header[A]
 
     object Value:
-      given Schema[Http.Header.Value] = Schema[Self.Key].imapK([A] => (self: Self.Key[A]) => Value(self))(
-        [A] => (value: Http.Header.Value[A]) => value.self
-      )
+      final case class Constant[A](self: Self.Constant[Http.Header.Value.Primitive, A]) extends Http.Header.Value[A]
+
+      object Constant:
+        given ConstantSchema[Http.Header.Value.Constant, Http.Header.Value.Primitive] =
+          ConstantSchema[Self.Constant[Http.Header.Value.Primitive, *], Http.Header.Value.Primitive]
+            .imapK(
+              [A] => (schema: Self.Constant[Http.Header.Value.Primitive, A]) => Constant(schema)
+            )([A] => (value: Http.Header.Value.Constant[A]) => value.self)
+
+      final case class Enumeration[A](self: Self.Enumeration[Http.Header.Value.Primitive, A]) extends Http.Header.Value[A]
+
+      object Enumeration:
+        given EnumerationSchema[Http.Header.Value.Enumeration, Http.Header.Value.Primitive] =
+          EnumerationSchema[Self.Enumeration[Http.Header.Value.Primitive, *], Http.Header.Value.Primitive]
+            .imapK(
+              [A] => (schema: Self.Enumeration[Http.Header.Value.Primitive, A]) => Enumeration(schema)
+            )([A] => (value: Http.Header.Value.Enumeration[A]) => value.self)
+
+      final case class Primitive[A](self: Self.Primitive.String[A]) extends Http.Header.Value[A]
+
+      object Primitive:
+        given PrimitiveSchema.String[Http.Header.Value.Primitive] = PrimitiveSchema
+          .String[Self.Primitive.String]
+          .imapK(
+            [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
+          )([A] => (value: Http.Header.Value.Primitive[A]) => value.self)
+
+      final case class Union[A](self: Self.Union[Http.Header.Value, A]) extends Http.Header.Value[A]
+
+      object Union:
+        given UnionSchema[Http.Header.Value.Union, Http.Header.Value] = UnionSchema[Self.Union[Http.Header.Value, *], Http.Header.Value]
+          .imapK(
+            [A] => (schema: Self.Union[Http.Header.Value, A]) => Union(schema)
+          )([A] => (value: Http.Header.Value.Union[A]) => value.self)
+
+      given Schema[Http.Header.Value] with
+        override def imap[A, B](fa: Http.Header.Value[A])(f: A => B)(g: B => A): Http.Header.Value[B] = fa match
+          case Constant(self)    => Constant(self.imap(f)(g))
+          case Enumeration(self) => Enumeration(self.imap(f)(g))
+          case Primitive(self)   => Primitive(self.imap(f)(g))
+          case Union(self)       => Union(self.imap(f)(g))
+
+        extension [A](self: Http.Header.Value[A])
+          override def metadata: Metadata = self match
+            case Constant(self)    => self.metadata
+            case Enumeration(self) => self.metadata
+            case Primitive(self)   => self.metadata
+            case Union(self)       => self.metadata
+
+          override def modifyMetadata(f: Metadata => Metadata): Http.Header.Value[A] = self match
+            case Constant(self)    => Constant(self.modifyMetadata(f))
+            case Enumeration(self) => Enumeration(self.modifyMetadata(f))
+            case Primitive(self)   => Primitive(self.modifyMetadata(f))
+            case Union(self)       => Union(self.modifyMetadata(f))
+
+        //
 
     sealed abstract class Array[A] extends Http.Header[A]
 

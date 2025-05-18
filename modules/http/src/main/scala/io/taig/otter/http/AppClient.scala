@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import cats.ApplicativeThrow
 import io.taig.otter.+
-import codec.PayloadDecoder
-import codec.PayloadEncoder
+import io.taig.otter.http.codec.PayloadDecoder
+import io.taig.otter.http.codec.PayloadEncoder
 
 object AppClient:
   def apply[F[_]: ApplicativeThrow, S[_], T[_], U[_]](

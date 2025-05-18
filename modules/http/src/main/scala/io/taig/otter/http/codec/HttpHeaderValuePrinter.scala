@@ -1,9 +1,16 @@
 package io.taig.otter.http.codec
 
+import io.taig.otter.codec.*
 import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Http
-import io.taig.otter.http.Http.Header.Value
-import io.taig.otter.codec.KeyPrinter
 
 object HttpHeaderValuePrinter extends Encoder[Http.Header.Value, String]:
-  override def encode[A](schema: Value[A], a: A): String = KeyPrinter.encode(schema = schema.self, a)
+  val constant = ConstantEncoder(encoder = this)
+  val enumeration = EnumerationEncoder(encoder = this)
+  val union = UnionEncoder(encoder = this)
+  
+  override def encode[A](schema: Http.Header.Value[A], a: A): String = schema match
+    case Http.Header.Value.Constant(self)    => constant.encode(schema = self, a)
+    case Http.Header.Value.Enumeration(self) => enumeration.encode(schema = self, a)
+    case Http.Header.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self, a)
+    case Http.Header.Value.Union(self)       => union.encode(schema = self, a)

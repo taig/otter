@@ -1,22 +1,17 @@
 package io.taig.otter.http.codec
-
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
-import io.taig.otter.codec.KeyPrinter
-import cats.syntax.all.*
-import io.taig.otter.escape
-import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Http.Header
-import cats.data.Validated
-import io.taig.otter.Violations
-import io.taig.otter.codec.KeyParser
-import io.taig.otter.unescape
 import cats.data.Chain
+import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.codec.Decoder
+import io.taig.otter.http.Http
+import io.taig.otter.http.Http.Header
+import io.taig.otter.unescape
 
 object HttpHeaderParser extends Decoder[Http.Header, String]:
   override def decode[A](schema: Header[A], value: String): Validated[Violations, A] = schema match
-    case Http.Header.Value(self) => KeyParser.decode(schema = self, value)
+    case schema: Http.Header.Value[A] => HttpHeaderValueParser.decode(schema, value)
     case schema: Http.Header.Array[A] =>
       val values = value.split(",").map(unescape(_, ","))
       HttpHeaderArrayDecoder.decode(schema, Chain.fromIterableOnce(values))

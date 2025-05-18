@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.+
-import cats.Invariant
 
 sealed abstract class Results[+S[_], A] extends Product with Serializable:
   def toChain: Chain[Result[S, ?]]

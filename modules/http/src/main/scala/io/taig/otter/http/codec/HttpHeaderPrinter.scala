@@ -1,14 +1,13 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
-import io.taig.otter.codec.KeyPrinter
 import cats.syntax.all.*
+import io.taig.otter.codec.Encoder
 import io.taig.otter.escape
+import io.taig.otter.http.Http
 
 object HttpHeaderPrinter extends Encoder[Http.Header, String]:
   override def encode[A](schema: Http.Header[A], a: A): String = schema match
-    case Http.Header.Value(self) => KeyPrinter.encode(schema = self, a)
+    case schema: Http.Header.Value[A] => HttpHeaderValuePrinter.encode(schema, a)
     case schema: Http.Header.Array[A] =>
       HttpHeaderArrayEncoder
         .encode(schema, a)

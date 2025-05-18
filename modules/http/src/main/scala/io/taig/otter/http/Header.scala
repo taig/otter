@@ -2,8 +2,8 @@ package io.taig.otter.http
 
 import io.taig.otter as Self
 import io.taig.otter.*
+import io.taig.otter.schema.Schema
 import org.typelevel.ci.CIString
-import Self.schema.Schema
 
 sealed abstract class Header[A] extends Product, Serializable:
   def name: CIString

@@ -1,6 +1,8 @@
-package io.taig.otter.http
+package io.taig.otter.http.syntax
 
-trait CodeDsl:
+import io.taig.otter.http.Code
+
+trait CodeSyntax:
   def apply(value: Int): Code = Code(value)
 
   val ok: Code = apply(200)
@@ -29,4 +31,4 @@ trait CodeDsl:
   val internalServerError: Code = apply(500)
   val serviceUnavailable: Code = apply(503)
 
-object CodeDsl extends CodeDsl
+object CodeSyntax extends CodeSyntax

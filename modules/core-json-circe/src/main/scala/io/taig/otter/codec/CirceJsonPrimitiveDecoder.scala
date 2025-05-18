@@ -1,5 +1,6 @@
-package io.taig.otter
+package io.taig.otter.codec
 
+import io.taig.otter.toValue
 import io.taig.otter.codec.Decoder
 import io.circe.Json as CirceJson
 import io.circe.Decoder as CirceDecoder
@@ -7,6 +8,9 @@ import cats.data.Validated
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import cats.syntax.all.*
+import io.taig.otter.Primitive
+import io.taig.otter.Violations
+import io.taig.otter.Violation
 
 object CirceJsonPrimitiveDecoder extends Decoder[Primitive, CirceJson]:
   override def decode[A](schema: Primitive[A], json: CirceJson): Validated[Violations, A] = schema match

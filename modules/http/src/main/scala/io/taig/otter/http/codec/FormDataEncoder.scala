@@ -1,12 +1,12 @@
 package io.taig.otter.http.codec
 
+import io.taig.otter.codec.DictionaryEncoder
 import io.taig.otter.codec.Encoder
+import io.taig.otter.codec.FieldEncoder
+import io.taig.otter.codec.KeyPrinter
+import io.taig.otter.codec.RecordEncoder
 import io.taig.otter.http.FormData
 import io.taig.otter.http.FormData.Dictionary
-import io.taig.otter.codec.RecordEncoder
-import io.taig.otter.codec.DictionaryEncoder
-import io.taig.otter.codec.KeyPrinter
-import io.taig.otter.codec.FieldEncoder
 
 object FormDataEncoder extends Encoder[FormData, List[(String, Option[String])]]:
   val dictionary = DictionaryEncoder(key = KeyPrinter, value = FormDataValuePrinter)

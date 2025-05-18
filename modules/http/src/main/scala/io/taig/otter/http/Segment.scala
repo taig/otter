@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
-import Self.schema.Schema
+import io.taig.otter.schema.Schema
 
 sealed abstract class Segment[A] extends Product, Serializable:
   def name: String

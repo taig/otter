@@ -1,8 +1,8 @@
-package io.taig.otter.http
+package io.taig.otter.http.codec
 
 import cats.syntax.all.*
 import io.taig.otter.codec.Encoder
-import io.taig.otter.http.codec.HttpHeaderPrinter
+import io.taig.otter.http.Header
 
 object HeaderDataEncoder extends Encoder[Header, Option[Header.Data]]:
   override def encode[A](header: Header[A], a: A): Option[Header.Data] = header match

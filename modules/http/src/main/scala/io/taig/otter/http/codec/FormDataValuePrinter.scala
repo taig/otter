@@ -1,13 +1,13 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.FormData
-import io.taig.otter.codec.NullableEncoder
 import cats.syntax.all.*
-import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.codec.ConstantEncoder
+import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.EnumerationEncoder
+import io.taig.otter.codec.NullableEncoder
+import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.codec.UnionEncoder
+import io.taig.otter.http.FormData
 
 object FormDataValuePrinter extends Encoder[FormData.Value, Option[String]]:
   val constant = ConstantEncoder(encoder = this)

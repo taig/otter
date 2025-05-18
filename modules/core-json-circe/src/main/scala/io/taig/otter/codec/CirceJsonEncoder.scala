@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
@@ -16,6 +16,7 @@ import io.taig.otter.codec.UnionEncoder
 import io.taig.otter.codec.SumEncoder
 import io.taig.otter.codec.BranchEncoder
 import io.taig.otter.codec.KeyPrinter
+import io.taig.otter.Json
 
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:
   val collection = CollectionEncoder(encoder = this)

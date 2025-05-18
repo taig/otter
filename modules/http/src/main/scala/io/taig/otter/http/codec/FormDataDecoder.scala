@@ -1,16 +1,16 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Decoder
-import io.taig.otter.http.FormData
 import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.otter.Violations
-import io.taig.otter.http.FormData.Dictionary
+import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.DictionaryDecoder
-import io.taig.otter.codec.KeyParser
-import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.codec.FieldDecoder
 import io.taig.otter.codec.KeyCodec
-import cats.syntax.all.*
+import io.taig.otter.codec.KeyParser
+import io.taig.otter.codec.RecordDecoder
+import io.taig.otter.http.FormData
+import io.taig.otter.http.FormData.Dictionary
 
 object FormDataDecoder extends Decoder[FormData, List[(String, Option[String])]]:
   val dictionary = DictionaryDecoder(key = KeyParser, value = FormDataValueParser)

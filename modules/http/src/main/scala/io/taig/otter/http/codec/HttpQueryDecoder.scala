@@ -1,18 +1,18 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.http.Query
-import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Http
+import cats.data.Chain
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
-import io.taig.otter.http.Http.Query.Nullable
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.Violation
+import io.taig.otter.http.Http
+import io.taig.otter.http.Http.Query.Nullable
+import io.taig.otter.http.Query
 import io.taig.otter.http.Query.Style
 import io.taig.otter.unescape
-import cats.data.Chain
 
 final class HttpQueryDecoder(explode: Boolean, style: Query.Style)
     extends Decoder.Remainding[Http.Query, Chain[Option[String]]]:

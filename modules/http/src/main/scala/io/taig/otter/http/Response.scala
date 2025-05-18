@@ -4,8 +4,8 @@ import io.taig.otter.Violations
 
 final case class Response[+S[_], +T[_], A](
     results: Results[S, A],
-    validation: Results[T, Violations],
-    failure: Results[T, Option[String]]
+    validation: Result[T, Violations],
+    failure: Result[T, Option[String]]
 ):
   def modifyResult[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] = copy(results = f(results))
 

@@ -1,16 +1,16 @@
 package io.taig.otter.http.component
 
-import io.taig.otter.http.FormData
 import io.taig.otter.Key
+import io.taig.otter.component.ConstantComponent
+import io.taig.otter.component.DictionaryComponent
+import io.taig.otter.component.EnumerationComponent
+import io.taig.otter.component.FieldComponent
+import io.taig.otter.component.KeyComponent
+import io.taig.otter.component.NullableComponent
 import io.taig.otter.component.PrimitiveComponent
 import io.taig.otter.component.RecordComponent
 import io.taig.otter.component.UnionComponent
-import io.taig.otter.component.NullableComponent
-import io.taig.otter.component.EnumerationComponent
-import io.taig.otter.component.DictionaryComponent
-import io.taig.otter.component.ConstantComponent
-import io.taig.otter.component.FieldComponent
-import io.taig.otter.component.KeyComponent
+import io.taig.otter.http.FormData
 
 trait FormDataComponent
     extends ConstantComponent[FormData.Value.Constant, FormData.Value],

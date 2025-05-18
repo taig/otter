@@ -1,8 +1,8 @@
 package io.taig.otter.http.codec
 
 import cats.data.Chain
-import io.taig.otter.http.Queries
 import io.taig.otter.codec.Encoder
+import io.taig.otter.http.Queries
 
 object QueriesDataEncoder extends Encoder[Queries, Queries.Data]:
   override def encode[A](queries: Queries[A], a: A): Queries.Data = queries match

@@ -4,11 +4,11 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.http.HttpError.MediaTypeUnsupported
 import io.taig.otter.http.HttpError.ValidationViolations
+import io.taig.otter.http.codec.PayloadDecoder
 import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
 
 import java.nio.charset.Charset
-import io.taig.otter.http.codec.PayloadDecoder
 
 final class BodyDecoder[S[_]](decoder: PayloadDecoder[S]):
   def apply[A](

@@ -2,9 +2,9 @@ package io.taig.otter.http.codec
 
 import cats.syntax.all.*
 import io.taig.otter.*
+import io.taig.otter.http.FormData
 
 import java.nio.charset.StandardCharsets
-import io.taig.otter.http.FormData
 
 object FormDataPayloadEncoder extends PayloadEncoder[FormData]:
   override def encode[A](schema: FormData[A], a: A): Array[Byte] =

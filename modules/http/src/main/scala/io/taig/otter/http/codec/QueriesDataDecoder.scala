@@ -5,6 +5,7 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.codec.QueryDataDecoder
+
 import scala.collection.immutable.SortedSet
 
 object QueriesDataDecoder extends Decoder.Remainding[Queries, Queries.Data]:

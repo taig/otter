@@ -1,11 +1,11 @@
 package io.taig.otter.http.codec
 
+import io.taig.otter.codec.ConstantEncoder
 import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
+import io.taig.otter.codec.EnumerationEncoder
 import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.codec.UnionEncoder
-import io.taig.otter.codec.ConstantEncoder
-import io.taig.otter.codec.EnumerationEncoder
+import io.taig.otter.http.Http
 
 object HttpQueryValuePrinter extends Encoder[Http.Query.Value, String]:
   val constant = ConstantEncoder(encoder = this)

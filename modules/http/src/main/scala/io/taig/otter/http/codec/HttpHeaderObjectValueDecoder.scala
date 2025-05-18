@@ -1,15 +1,12 @@
 package io.taig.otter.http.codec
-
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
-import io.taig.otter.codec.Decoder
 import cats.data.Validated
-import io.taig.otter.Violations
-import io.taig.otter as Self
-import io.taig.otter.codec.NullableEncoder
 import cats.syntax.all.*
-import Self.codec.NullableDecoder
-import Self.Violation
+import io.taig.otter as Self
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.codec.Decoder
+import io.taig.otter.codec.NullableDecoder
+import io.taig.otter.http.Http
 
 object HttpHeaderObjectValueDecoder extends Decoder[Http.Header.Object.Value, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)

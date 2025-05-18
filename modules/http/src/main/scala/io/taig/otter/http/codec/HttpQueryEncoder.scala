@@ -1,11 +1,11 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
 import cats.syntax.all.*
+import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.NullableEncoder
-import io.taig.otter.http.Query
 import io.taig.otter.escape
+import io.taig.otter.http.Http
+import io.taig.otter.http.Query
 
 final class HttpQueryEncoder(explode: Boolean, style: Query.Style) extends Encoder[Http.Query, Option[Seq[String]]]:
   override def encode[A](schema: Http.Query[A], a: A): Option[Seq[String]] = schema match

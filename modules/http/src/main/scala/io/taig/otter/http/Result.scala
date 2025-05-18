@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
+import cats.Invariant
 import io.taig.otter.+
 import io.taig.otter.Metadata
-import cats.Invariant
 
 sealed abstract class Result[+S[_], A] extends Product with Serializable:
   def code: Code
