@@ -22,6 +22,6 @@ object Client:
         endpoint: Endpoint[S, T, U, A, B],
         contentType: Option[MediaType],
         a: A
-    ): F[Either[HttpError, B]] = 
+    ): F[Either[HttpError, B]] =
       val request = RequestDataEncoder[S](encoder).encode(schema = endpoint.request, contentType, a)
       http.submit(request).map(ResponseDataDecoder(decoder).decode(schema = endpoint.response, _))

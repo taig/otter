@@ -9,6 +9,7 @@ import io.taig.otter.codec.*
 import io.taig.otter.Json
 import io.taig.otter.Violations
 import io.taig.otter.Violation
+import io.taig.otter.Discriminator
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)
@@ -20,9 +21,11 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     field = FieldDecoder(key = KeyCodec, value = this, empty = CirceJson.Null)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
-  val sum = SumDecoder[Json.Branch, String, CirceJson](
-    branch = ???
-  )
+  val sum = (discriminator: Discriminator) =>
+    SumDecoder(
+      branch = BranchDecoder(key = KeyCodec, value = this)(discriminator)
+        .mapK[Json.Branch]([A] => (branch: Json.Branch[A]) => branch.self)
+    )
   val tuple = TupleDecoder(decoder = this)
   val union = UnionDecoder(decoder = this)
 
@@ -49,7 +52,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
       json.asObject
         .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
         .map(_.toList)
-        .andThen(sum.decode(schema = self, _))
+        .andThen(sum(self.discriminator).decode(schema = self, _))
     case Json.Tuple(self) =>
       json.asArray
         .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))

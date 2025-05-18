@@ -20,13 +20,19 @@ object AppHttpClient:
     override def submit[A, B](request: Request.Data): F[Response.Data] = app.routes
       .find(route => RequestMatcher(request = route.endpoint.request, data = request))
       .map: route =>
-        RequestDataDecoder(decoder).decode(schema = route.endpoint.request, value = request)
+        RequestDataDecoder(decoder)
+          .decode(schema = route.endpoint.request, value = request)
           .leftWiden[Failure | MediaTypeUnsupported | ValidationViolations]
           .flatTraverse(route.implementation(_).attempt.map(_.leftMap(Failure.apply)))
-          .map(ResponseDataEncoder(encoder, debug).encode(schema = route.endpoint.response, headers = request.headers, _))
+          .map(
+            ResponseDataEncoder(encoder, debug).encode(schema = route.endpoint.response, headers = request.headers, _)
+          )
       .getOrElse:
-        ResultDataEncoder[U](encoder).encode(
-          schema = app.notFound,
-          accept = request.headers.accept.getOrElse(none),
-          ()
-        ).getOrElse(ResultDataEncoder[U](encoder).encode(schema = app.notFound, ())).pure[F]
+        ResultDataEncoder[U](encoder)
+          .encode(
+            schema = app.notFound,
+            accept = request.headers.accept.getOrElse(none),
+            ()
+          )
+          .getOrElse(ResultDataEncoder[U](encoder).encode(schema = app.notFound, ()))
+          .pure[F]
