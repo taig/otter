@@ -1,4 +1,4 @@
-package io.taig.otter.http
+package io.taig.otter.http.codec
 
 import cats.syntax.all.*
 import io.taig.otter.Violations
@@ -9,14 +9,15 @@ import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
 
 import java.nio.charset.Charset
+import io.taig.otter.http.Body
 
-final class BodyDecoder[S[_]](decoder: PayloadDecoder[S]):
-  def apply[A](
+final class BodyDecoder[-S[_]](decoder: PayloadDecoder[S]):
+  def decode[A](
       schema: Body[S, A],
       contentType: Option[MediaType],
       bytes: Array[Byte]
   ): Either[MediaTypeUnsupported | ValidationViolations, A] = schema match
-    case Body.Modify(self, f, _) => apply(schema = self, contentType, bytes).map(f)
+    case Body.Modify(self, f, _) => decode(schema = self, contentType, bytes).map(f)
     case Body.Root(mediaType, schema) =>
       contentType match
         case Some(contentType) if contentType === mediaType =>
