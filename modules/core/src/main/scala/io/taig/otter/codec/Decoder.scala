@@ -26,7 +26,7 @@ object Decoder:
   trait Remainding[S[_], T] extends Decoder[S, T]:
     self =>
 
-    final override def decode[A](schema: S[A], value: T): Validated[Violations, A] =
+    override def decode[A](schema: S[A], value: T): Validated[Violations, A] =
       decodeRemainding(schema, value).map((_, a) => a)
 
     def decodeRemainding[A](schema: S[A], value: T): Validated[Violations, (T, A)]

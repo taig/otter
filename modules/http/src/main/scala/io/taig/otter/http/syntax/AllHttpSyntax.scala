@@ -11,7 +11,9 @@ trait AllHttpSyntax
       MethodSyntax,
       ParameterSyntax,
       QuerySyntax,
+      RequestSyntax,
       ResponseSyntax,
-      ResultSyntax
+      ResultSyntax,
+      UrlSyntax
 
 object AllHttpSyntax extends AllHttpSyntax
