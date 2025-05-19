@@ -6,7 +6,6 @@ import io.taig.otter.Keys.*
 import io.taig.otter.ZodConst
 import io.taig.otter.ZodExpression
 import io.taig.otter.ZodState
-import io.taig.otter.schema.Schema
 
 import scala.collection.immutable.ListMap
 import io.taig.otter.schema.EnrichedSchema
