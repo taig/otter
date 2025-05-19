@@ -1,4 +1,5 @@
 package io.taig.otter.codec
+
 import io.circe.Json as CirceJson
 import io.taig.otter.Json
 
@@ -12,11 +13,7 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     field = FieldEncoder(key = KeyPrinter.Unquoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
-  val sum = SumEncoder(branch =
-    discriminator =>
-      BranchEncoder(key = KeyPrinter.Unquoted, value = this)(discriminator)
-        .mapK[Json.Branch]([A] => (branch: Json.Branch[A]) => branch.self)
-  )
+  val sum = SumEncoder(branch = CirceJsonBranchEncoder.apply)
   val tuple = TupleEncoder(encoder = this)
   val union = UnionEncoder(encoder = this)
 
@@ -28,6 +25,6 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Json.Nullable(self)    => nullable.encode(schema = self, a)
     case Json.Primitive(self)   => CirceJsonPrimitiveEncoder.encode(schema = self, a)
     case Json.Record(self)      => CirceJson.fromFields(record.encode(schema = self, a).toList)
-    case Json.Sum(self)         => CirceJson.fromFields(sum.encode(schema = self, a).toList)
+    case Json.Sum(self)         => sum.encode(schema = self, a)
     case Json.Tuple(self)       => CirceJson.fromValues(tuple.encode(schema = self, a))
     case Json.Union(self)       => union.encode(schema = self, a)

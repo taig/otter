@@ -1,9 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Constant
-import io.taig.otter.ZodExpression
-import io.taig.otter.ZodState
 import cats.data.State
+import io.taig.otter.Constant
+import io.taig.otter.ZodState
 
 final class ConstantZodRenderer[S[_]](
     printer: Encoder[S, Option[String]],

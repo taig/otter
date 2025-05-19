@@ -3,9 +3,9 @@ package io.taig.otter.codec
 import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.ZodState
-import io.taig.otter.ZodExpression
 import io.taig.otter.Json.Primitive
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 
 object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
   val renderer = NamespaceZodRenderer(renderer = ZodRenderer(renderer = Expression))

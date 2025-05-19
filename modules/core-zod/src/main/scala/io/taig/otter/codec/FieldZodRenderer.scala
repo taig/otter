@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.ZodState
-import io.taig.otter.ZodExpression
-import io.taig.otter.Field
 import cats.syntax.all.*
+import io.taig.otter.Field
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 
 final class FieldZodRenderer[S[_], T[_]](key: Encoder[S, String], value: Renderer[T, ZodState[ZodExpression]])
     extends Renderer[Field[S, T, *], ZodState[(String, ZodExpression)]]:

@@ -1,15 +1,13 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import io.taig.otter.Discriminator
 import io.taig.otter.Sum
 
-final class SumEncoder[S[_], T, U](branch: Discriminator => Encoder[S, Chain[(T, U)]])
-    extends Encoder[Sum[S, *], Chain[(T, U)]]:
-  override def encode[A](schema: Sum[S, A], a: A): Chain[(T, U)] =
+final class SumEncoder[S[_], T](branch: Discriminator => Encoder[S, T]) extends Encoder[Sum[S, *], T]:
+  override def encode[A](schema: Sum[S, A], a: A): T =
     encode(schema, discriminator = schema.discriminator, a)
 
-  def encode[A](schema: Sum[S, A], discriminator: Discriminator, a: A): Chain[(T, U)] = schema match
+  def encode[A](schema: Sum[S, A], discriminator: Discriminator, a: A): T = schema match
     case Sum.Modify(self, _, g) => encode(schema = self, discriminator, g(a))
     case Sum.OrElse(left, right, _, _) =>
       a.fold(encode(schema = left, discriminator, _), encode(schema = right, discriminator, _))

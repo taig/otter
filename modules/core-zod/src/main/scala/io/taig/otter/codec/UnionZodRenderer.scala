@@ -2,9 +2,9 @@ package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.taig.otter.Union
-import io.taig.otter.indent
-import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
+import io.taig.otter.indent
 
 final class UnionZodRenderer[S[_]](renderer: Renderer[S, ZodState[ZodExpression]])
     extends Renderer[Union[S, *], ZodState[String]]:

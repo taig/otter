@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.ZodState
-import io.taig.otter.ZodExpression
-import io.taig.otter.Dictionary
 import cats.syntax.all.*
+import io.taig.otter.Dictionary
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 
 final class DictionaryZodRenderer[S[_], T[_]](
     key: Renderer[S, ZodState[ZodExpression]],

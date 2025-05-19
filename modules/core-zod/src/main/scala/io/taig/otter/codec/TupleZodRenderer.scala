@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
-import io.taig.otter.ZodState
-import io.taig.otter.ZodExpression
-import io.taig.otter.Tuple
-import cats.syntax.all.*
 import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.otter.Tuple
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 import io.taig.otter.indent
 
 final class TupleZodRenderer[S[_]](renderer: Renderer[S, ZodState[ZodExpression]])

@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.data.State
+import cats.syntax.all.*
+import io.taig.otter.Nullable
 import io.taig.otter.ZodExpression
 import io.taig.otter.ZodState
-import io.taig.otter.Nullable
-import cats.syntax.all.*
-import cats.data.State
 
 final class NullableZodRenderer[S[_]](renderer: Renderer[S, ZodState[ZodExpression]])
     extends Renderer[Nullable[S, *], ZodState[String]]:

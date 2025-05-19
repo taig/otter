@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.ZodState
-import io.taig.otter.ZodExpression
-import io.taig.otter.Collection
 import cats.syntax.all.*
+import io.taig.otter.Collection
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 
 final class CollectionZodRenderer[S[_]](renderer: Renderer[S, ZodState[ZodExpression]])
     extends Renderer[Collection[S, *], ZodState[String]]:

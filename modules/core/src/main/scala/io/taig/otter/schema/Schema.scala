@@ -1,8 +1,8 @@
 package io.taig.otter.schema
 
 import cats.Invariant
-import io.taig.otter.Metadata
 import cats.syntax.all.*
+import io.taig.otter.Metadata
 
 trait Schema[Self[_]] extends Invariant[Self]:
   self =>

@@ -1,13 +1,13 @@
 package io.taig.otter.codec
 
+import cats.data.State
+import cats.syntax.all.*
 import io.taig.otter.Key
 import io.taig.otter.Key.Constant
 import io.taig.otter.Key.Primitive
 import io.taig.otter.Key.Union
-import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
-import cats.data.State
-import cats.syntax.all.*
+import io.taig.otter.ZodState
 
 object KeyZodRenderer extends Renderer[Key, ZodState[ZodExpression]]:
   val renderer = NamespaceZodRenderer(renderer = ZodRenderer(renderer = Expression))
