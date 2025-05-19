@@ -14,9 +14,9 @@ import io.taig.otter.http.Http.Header
 import io.taig.otter.http.Http.Header.Object.Dictionary
 
 object HttpHeaderObjectDecoder extends Decoder[Http.Header.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryDecoder(key = KeyParser, value = HttpHeaderObjectValueDecoder)
+  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HttpHeaderObjectValueDecoder)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec, value = HttpHeaderObjectValueDecoder, empty = none[String])
+    field = FieldDecoder(key = KeyCodec.Unquoted, value = HttpHeaderObjectValueDecoder, empty = none[String])
       .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self)
   )
 

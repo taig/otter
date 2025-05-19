@@ -12,9 +12,9 @@ import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Http
 
 object HttpParameterObjectDecoder extends Decoder[Http.Parameter.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryDecoder(key = KeyParser, value = HttpParameterObjectValueDecoder)
+  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HttpParameterObjectValueDecoder)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec, value = HttpParameterObjectValueDecoder, empty = none[String])
+    field = FieldDecoder(key = KeyCodec.Unquoted, value = HttpParameterObjectValueDecoder, empty = none[String])
       .mapK[Http.Parameter.Field]([A] => (field: Http.Parameter.Field[A]) => field.self)
   )
 

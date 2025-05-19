@@ -10,9 +10,9 @@ import io.taig.otter.http.Http
 import io.taig.otter.http.Http.Header.Object.Dictionary
 
 object HttpHeaderObjectEncoder extends Encoder[Http.Header.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryEncoder(key = KeyPrinter, value = HttpHeaderObjectValueEncoder)
+  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HttpHeaderObjectValueEncoder)
   val record = RecordEncoder(
-    field = FieldEncoder(key = KeyPrinter, value = HttpHeaderObjectValueEncoder)
+    field = FieldEncoder(key = KeyPrinter.Unquoted, value = HttpHeaderObjectValueEncoder)
       .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self)
   )
 

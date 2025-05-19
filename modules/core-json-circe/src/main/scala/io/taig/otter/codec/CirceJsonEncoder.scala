@@ -5,16 +5,16 @@ import io.taig.otter.Json
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:
   val collection = CollectionEncoder(encoder = this)
   val constant = ConstantEncoder(encoder = this)
-  val dictionary = DictionaryEncoder(key = KeyPrinter, value = this)
+  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val nullable = NullableEncoder(encoder = this, empty = CirceJson.Null)
   val record = RecordEncoder(
-    field = FieldEncoder(key = KeyPrinter, value = this)
+    field = FieldEncoder(key = KeyPrinter.Unquoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
   val sum = SumEncoder(branch =
     discriminator =>
-      BranchEncoder(key = KeyPrinter, value = this)(discriminator)
+      BranchEncoder(key = KeyPrinter.Unquoted, value = this)(discriminator)
         .mapK[Json.Branch]([A] => (branch: Json.Branch[A]) => branch.self)
   )
   val tuple = TupleEncoder(encoder = this)

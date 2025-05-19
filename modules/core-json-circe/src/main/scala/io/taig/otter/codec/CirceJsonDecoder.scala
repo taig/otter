@@ -14,16 +14,16 @@ import io.taig.otter.toValue
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)
   val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = toValue)
-  val dictionary = DictionaryDecoder(key = KeyParser, value = this)
+  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = this)
   val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = toValue)
   val nullable = NullableDecoder(decoder = this, empty = _.isNull)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec, value = this, empty = CirceJson.Null)
+    field = FieldDecoder(key = KeyCodec.Unquoted, value = this, empty = CirceJson.Null)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
   val sum = (discriminator: Discriminator) =>
     SumDecoder(
-      branch = BranchDecoder(key = KeyCodec, value = this)(discriminator)
+      branch = BranchDecoder(key = KeyCodec.Unquoted, value = this)(discriminator)
         .mapK[Json.Branch]([A] => (branch: Json.Branch[A]) => branch.self)
     )
   val tuple = TupleDecoder(decoder = this)

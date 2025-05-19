@@ -10,8 +10,8 @@ import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.component.KeyComponent.*
 
-final class JsonKeyParserTest extends OtterSuite:
-  val decoder = KeyParser
+final class KeyParserTest extends OtterSuite:
+  val decoder = KeyParser.Unquoted
 
   test("constant"):
     assertEq(

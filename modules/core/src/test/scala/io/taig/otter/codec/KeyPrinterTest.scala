@@ -5,8 +5,8 @@ import io.taig.otter.Key
 import io.taig.otter.OtterSuite
 import io.taig.otter.component.KeyComponent.*
 
-final class JsonKeyPrinterTest extends OtterSuite:
-  val encoder = KeyPrinter
+final class KeyPrinterTest extends OtterSuite:
+  val encoder = KeyPrinter.Unquoted
 
   test("constant"):
     assertEq(
