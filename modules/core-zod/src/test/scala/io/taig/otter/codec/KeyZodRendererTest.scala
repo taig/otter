@@ -39,11 +39,10 @@ final class KeyZodRendererTest extends OtterSuite:
     )
 
   test("union"):
-    println(KeyZodRenderer.render(constant("foobar") :+ string))
     assertEq(
       obtained = KeyZodRenderer.render(constant("foobar") :+ string),
       expected = """z.union([
-          |  z.literal("foobar"),
-          |  z.string()
-          |])""".stripMargin
+                   |  z.literal("foobar"),
+                   |  z.string()
+                   |])""".stripMargin
     )
