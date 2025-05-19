@@ -22,4 +22,6 @@ final class BranchEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T
           this.value.encode(schema = value.value, a)
           ???
         case Discriminator.Keyed =>
-          Chain.one((ReferenceConstantEncoder(encoder = this.key)(key), this.value.encode(schema = value.value, a)))
+          Chain.one(
+            (ReferenceConstantRenderer(encoder = this.key).render(key), this.value.encode(schema = value.value, a))
+          )

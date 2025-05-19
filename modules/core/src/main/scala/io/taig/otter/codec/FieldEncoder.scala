@@ -13,6 +13,6 @@ final class FieldEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T,
     case Field.Optional(self)     => a.flatMap(encode(schema = self, _))
     case Field.Root(key, value, _, _) =>
       (
-        ReferenceConstantEncoder(encoder = this.key)(key),
+        ReferenceConstantRenderer(encoder = this.key).render(key),
         ReferenceEncoder(encoder = this.value)(value, a)
       ).some

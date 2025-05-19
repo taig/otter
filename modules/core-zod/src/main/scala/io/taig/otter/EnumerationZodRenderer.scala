@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.codec.Encoder
+import codec.Renderer
 
 final class EnumerationZodRenderer[S[_]](printer: Encoder[S, String]) extends Renderer[Enumeration[S, *], String]:
   override def render[T](schema: Enumeration[S, T]): String = schema match

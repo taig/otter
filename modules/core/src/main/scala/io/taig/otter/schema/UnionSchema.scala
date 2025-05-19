@@ -16,10 +16,14 @@ trait UnionSchema[Self[_], Value[_]] extends Schema[Self]:
 
     def orElse[B](schema: Self[B]): Self[Either[A, B]]
 
-  extension [A](self: Value[A])
-    @targetName("unionOrElse")
-    final def :+[B](schema: Value[B]): Self[Either[A, B]] = ???
+    @targetName("union :+ value")
+    final def :+[B](schema: Value[B]): Self[Either[A, B]] = orElse(schema.toUnion)
 
+  extension [A](self: Value[A])
+    @targetName("value :+ value")
+    final def :+[B](schema: Value[B]): Self[Either[A, B]] = self.toUnion :+ schema
+
+    @targetName("value +: value")
     final def +:[B](schema: Value[B]): Self[Either[A, B]] = ???
 
     final def toUnion: Self[A] = lift(self)

@@ -6,6 +6,7 @@ import io.taig.otter.Keys.*
 import io.taig.otter.schema.Schema
 
 import scala.collection.immutable.ListMap
+import codec.Renderer
 
 final class NamespaceZodRenderer[S[_]: Schema](renderer: Renderer[S, ZodState[String]])
     extends Renderer[S, ZodState[Expression]]:

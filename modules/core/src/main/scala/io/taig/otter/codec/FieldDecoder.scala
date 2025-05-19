@@ -15,12 +15,12 @@ final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T,
   ): Validated[Violations, (List[(String, U)], A)] = schema match
     case Field.Modify(self, f, g) => decodeRemainding(schema = self, values).map(_.map(f))
     case Field.Optional(self) =>
-      val reference = ReferenceConstantEncoder(encoder = key)(self.key)
+      val reference = ReferenceConstantRenderer(encoder = key).render(self.key)
       if values.exists((key, _) => key === reference)
       then decodeRemainding(schema = self, values).map(_.map(_.some))
       else (values, none).valid
     case Field.Root(key, value, nullish, _) =>
-      val name = ReferenceConstantEncoder(this.key)(key)
+      val name = ReferenceConstantRenderer(encoder = this.key).render(key)
 
       val adjustedValued =
         if nullish && !values.exists((key, _) => key === name)

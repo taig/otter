@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 trait Renderer[S[_], T]:
   self =>
