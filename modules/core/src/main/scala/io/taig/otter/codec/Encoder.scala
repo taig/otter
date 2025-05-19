@@ -12,3 +12,7 @@ trait Encoder[S[_], T]:
     override def encode[A](schema: U[A], a: A): T = self.encode(schema = fK(schema), a)
 
   final def toCodec(decoder: Decoder[S, T]): Codec[S, T] = Codec(decoder, encoder = this)
+
+object Encoder:
+  def apply[S[_], T](f: [A] => (S[A], A) => T): Encoder[S, T] = new Encoder[S, T]:
+    override def encode[A](schema: S[A], a: A): T = f(schema, a)

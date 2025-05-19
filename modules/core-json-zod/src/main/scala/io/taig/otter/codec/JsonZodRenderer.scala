@@ -6,54 +6,42 @@ import io.taig.otter.codec.Renderer
 import io.taig.otter.Json
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
-import cats.data.Chain
-import io.taig.otter.indent
+import io.taig.otter.Json.Primitive
 
 object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
+  val renderer = NamespaceZodRenderer(renderer = ZodRenderer(renderer = Expression))
+
   val collection = CollectionZodRenderer(renderer = this)
+  val constant = ConstantZodRenderer[Json](
+    printer = Encoder:
+      [A] =>
+        (schema: Json[A], a: A) =>
+          schema match
+            case Json.Primitive(self) => PrimitivePrinter.Quoted.encode(schema = self, a).some
+            case _                    => none,
+    renderer = Expression
+  )
+  val dictionary = DictionaryZodRenderer(key = KeyZodRenderer, value = this)
+  val enumeration = EnumerationZodRenderer(printer =
+    PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self)
+  )
+  val nullable = NullableZodRenderer(renderer = this)
   val record = RecordZodRenderer(
     renderer = FieldZodRenderer(key = KeyPrinter.Quoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
 
-  override def render[A](schema: Json[A]): ZodState[ZodExpression] =
-    NamespaceZodRenderer(renderer = ZodRenderer(renderer = Raw)).render(schema)
+  override def render[A](schema: Json[A]): ZodState[ZodExpression] = renderer.render(schema)
 
-  object Raw extends Renderer[Json, ZodState[String]]:
+  object Expression extends Renderer[Json, ZodState[String]]:
     override def render[A](schema: Json[A]): ZodState[String] = schema match
-      case Json.Collection(self) => collection.render(schema = self)
-      case Json.Primitive(self)  => State.pure(PrimitiveZodRenderer.render(schema = self))
-      case Json.Record(self)     => record.render(schema = self)
-
-//   override def apply[A](codec: Json[A]): ZodState[ZodExpression] = NamespaceZodRenderer(renderer = Raw)(codec)
-
-//   object Raw extends Renderer[Json, ZodState[String]]:
-//     override def apply[T](codec: Json[T]): ZodState[String] = codec match
-//       case Json.Constant(self)    => apply(codec = self)
-//       case Json.Collection(self)  => apply(codec = self)
-//       case Json.Dictionary(self)  => apply(codec = self)
-//       case Json.Enumeration(self) => State.pure(apply(codec = self))
-//       case Json.Nullable(self)    => apply(codec = self)
-//       case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer(codec = self))
-//       case Json.Record(self) =>
-//         apply(codec = self).map: fields =>
-//           show"""z.object({
-//                 |${fields.map((key, value) => indent(show"\"$key\": $value")).mkString_(",\n")}
-//                 |})""".stripMargin
-//       case Json.Tuple(self) => apply(codec = self)
-//       // case Json.Union(self) => apply(codec = self)
-
-//     def apply(codec: Constant[Json, ?]): ZodState[String] =
-//       apply(reference = codec.codec)
-//         .map(value => State.pure(s"z.literal($value)"))
-//         // TODO how to handle this unrepresentable edge case?
-//         .getOrElse(self.apply(codec = codec.codec.self.value).map(_.show))
-
-//     def apply(codec: Dictionary[Json.Key, Json, ?]): ZodState[String] = codec match
-//       case Dictionary.Root(key, value, _, _, _) =>
-//         (JsonKeyZodRenderer(codec = key.value), apply(codec = value.value))
-//           .mapN((key, value) => show"""z.record($key, $value)""")
-//       case Dictionary.Modify(self, _, _) => apply(codec = self)
+      case Json.Collection(self)  => collection.render(schema = self)
+      case Json.Constant(self)    => constant.render(schema = self)
+      case Json.Dictionary(self)  => dictionary.render(schema = self)
+      case Json.Enumeration(self) => State.pure(enumeration.render(schema = self))
+      case Json.Nullable(self)    => nullable.render(schema = self)
+      case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer.render(schema = self))
+      case Json.Record(self)      => record.render(schema = self)
 
 //     def apply(codec: Enumeration[Json.Primitive, ?]): String =
 //       EnumerationZodRenderer(printer = JsonPrimitivePrinter)(codec)

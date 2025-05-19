@@ -62,53 +62,49 @@ final class JsonZodRendererTest extends OtterSuite:
       )
     )
 
-  // test("constant"):
-  //   assertEq(
-  //     obtained = renderer(constant("foobar")).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.literal("foobar")""")
-  //   )
+  test("constant"):
+    assertEq(
+      obtained = renderer.render(constant("foobar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.literal("foobar")""")
+    )
 
-  // test("constant: unrepresentable"):
-  //   assertEq(
-  //     obtained = renderer(field("foo", string)).runA(ListMap.empty).value,
-  //     expected = Expression.Inline(
-  //       """z.object({
-  //         |  "foo": z.string()
-  //         |})""".stripMargin
-  //     )
-  //   )
+  test("constant: unrepresentable"):
+    assertEq(
+      obtained = renderer.render(field("foo", string).toRecord).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.object({ "foo": z.string() })""")
+    )
 
-  // test("dictionary"):
-  //   assertEq(
-  //     obtained = renderer(dictionary.list(key = key.string, value = long)).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.record(z.string(), z.number())""")
-  //   )
+  test("dictionary"):
+    assertEq(
+      obtained = renderer.render(dictionary.list(key = key.string, value = long)).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.record(z.string(), z.number())""")
+    )
 
-  // test("enumeration"):
-  //   enum Animal:
-  //     case Bird
-  //     case Cat
-  //     case Dog
+  test("enumeration"):
+    enum Animal:
+      case Bird
+      case Cat
+      case Dog
 
-  //   val codec: Json.Enumeration[Animal] = enumeration(string):
-  //     case Animal.Bird => "bird"
-  //     case Animal.Cat  => "cat"
-  //     case Animal.Dog  => "dog"
+    val codec: Json.Enumeration[Animal] = enumeration(string):
+      case Animal.Bird => "bird"
+      case Animal.Cat  => "cat"
+      case Animal.Dog  => "dog"
 
-  //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.enum(["bird", "cat", "dog"])""")
-  //   )
+    assertEq(
+      obtained = renderer.render(codec).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.enum(["bird", "cat", "dog"])""")
+    )
 
-  // test("optional"):
-  //   assertEq(
-  //     obtained = renderer(string.nullable).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.nullable(z.string())""")
-  //   )
-  //   assertEq(
-  //     obtained = renderer(string.nullable(default = "foobar")).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.nullable(z.string())""")
-  //   )
+  test("nullable"):
+    assertEq(
+      obtained = renderer.render(string.nullable).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.nullable(z.string())""")
+    )
+    assertEq(
+      obtained = renderer.render(string.nullable(default = "foobar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.nullable(z.string())""")
+    )
 
   // test("optional: reference"):
   //   val codec = string.modifyMetadata(_.put(name, "Foo"))
