@@ -1,9 +1,9 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import cats.data.State
 import io.taig.otter.ZodKeys.*
 import io.taig.otter.schema.Schema
-import codec.Renderer
+import io.taig.otter.ZodState
 
 /** Render the given codec to an inline value, or use the `zod` metadata if present */
 final class ZodRenderer[S[_]: Schema](renderer: Renderer[S, ZodState[String]]) extends Renderer[S, ZodState[String]]:

@@ -6,10 +6,10 @@ import cats.syntax.all.*
 import codec.Collection
 import schema.Constant
 
-final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
+final class JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
   self =>
 
-  override def apply[A](codec: Json[A]): ZodState[Expression] = NamespaceZodRenderer(renderer = Raw)(codec)
+  override def apply[A](codec: Json[A]): ZodState[ZodExpression] = NamespaceZodRenderer(renderer = Raw)(codec)
 
   object Raw extends Renderer[Json, ZodState[String]]:
     override def apply[T](codec: Json[T]): ZodState[String] = codec match
@@ -51,7 +51,7 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
         .fold(State.pure("z.void()"))(self.apply(_).map(expression => show"z.nullable(${expression})"))
 
     // TODO figure out a proper way to encode partially optional objects
-    def apply(codec: Record[Json.Field, ?]): ZodState[Chain[(String, Expression)]] = codec match
+    def apply(codec: Record[Json.Field, ?]): ZodState[Chain[(String, ZodExpression)]] = codec match
       case Record.Empty(_) => State.pure(Chain.empty)
       // case Record.Field(key, value, _) =>
       //   self
@@ -85,13 +85,13 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
       case Json.Primitive(self) => PrimitivePrinter.Quoted(codec = self, reference.value).some
       case _                    => none
 
-    def apply(name: String, codec: Json[?], discriminator: Option[Discriminator]): ZodState[Expression] =
+    def apply(name: String, codec: Json[?], discriminator: Option[Discriminator]): ZodState[ZodExpression] =
       discriminator match
         case Some(Discriminator.Keyed) =>
           self
             .apply(codec)
             .map: expression =>
-              Expression.Inline:
+              ZodExpression.Inline:
                 show"""z.object({
                       |${indent(show""""$name": $expression""")}
                       |})""".stripMargin
@@ -99,13 +99,13 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
           self
             .apply(codec)
             .map: expression =>
-              Expression.Inline:
+              ZodExpression.Inline:
                 show"""$expression.merge(z.object({ "$identifier": z.literal("$name") }))"""
         case Some(Discriminator.Explicit(identifier, value)) =>
           self
             .apply(codec)
             .map: expression =>
-              Expression.Inline:
+              ZodExpression.Inline:
                 show"""z.object({
                       |  "$identifier": z.literal("$name"),
                       |  "$value": $expression
@@ -113,4 +113,4 @@ final class JsonZodRenderer extends Renderer[Json, ZodState[Expression]]:
         case None => self.apply(codec)
 
 object JsonZodRenderer:
-  def apply(): Renderer[Json, ZodState[Expression]] = new JsonZodRenderer()
+  def apply(): Renderer[Json, ZodState[ZodExpression]] = new JsonZodRenderer()

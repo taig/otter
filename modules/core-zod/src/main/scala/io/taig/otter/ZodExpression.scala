@@ -5,11 +5,11 @@ import cats.Show
 import cats.derived.*
 import cats.syntax.all.*
 
-enum Expression derives Eq:
+enum ZodExpression derives Eq:
   case Inline(value: String)
-  case Referenced(reference: Const, value: String)
+  case Referenced(reference: ZodConst, value: String)
 
-object Expression:
-  given Show[Expression] =
+object ZodExpression:
+  given Show[ZodExpression] =
     case Inline(value)            => value
     case Referenced(reference, _) => reference.show

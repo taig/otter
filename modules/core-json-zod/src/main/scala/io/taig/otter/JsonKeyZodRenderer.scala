@@ -3,8 +3,8 @@ package io.taig.otter
 import cats.data.State
 import io.taig.otter.codec.PrimitivePrinter
 
-object JsonKeyZodRenderer extends Renderer[Key, ZodState[Expression]]:
-  override def apply[A](schema: Key[A]): ZodState[Expression] =
+object JsonKeyZodRenderer extends Renderer[Key, ZodState[ZodExpression]]:
+  override def apply[A](schema: Key[A]): ZodState[ZodExpression] =
     NamespaceZodRenderer(renderer = Raw).render(schema)
 
   object Raw extends Renderer[Key, ZodState[String]]:

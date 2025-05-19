@@ -1,5 +1,6 @@
-package io.taig.otter
-import codec.Renderer
+package io.taig.otter.codec
+
+import io.taig.otter.Primitive
 
 object PrimitiveZodRenderer extends Renderer[Primitive, String]:
   override def render[A](schema: Primitive[A]): String = schema match
