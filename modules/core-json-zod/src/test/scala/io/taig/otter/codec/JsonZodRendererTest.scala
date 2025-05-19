@@ -11,9 +11,22 @@ import io.taig.otter.Json
 import io.taig.otter.ZodKeys.*
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
+import io.taig.otter.ZodConst
 
 final class JsonZodRendererTest extends OtterSuite:
   val renderer = JsonZodRenderer
+
+  test("name"):
+    assertEq(
+      obtained = renderer.render(string.metadata(name, "foobar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Referenced(ZodConst(namespace = none, name = "foobar"), value = """z.string()""")
+    )
+
+  test("namespace"):
+    assertEq(
+      obtained = renderer.render(string.metadata(name, "foo").metadata(namespace, "bar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Referenced(ZodConst(namespace = "bar".some, name = "foo"), value = """z.string()""")
+    )
 
   test("override"):
     assertEq(
@@ -21,11 +34,14 @@ final class JsonZodRendererTest extends OtterSuite:
       expected = ZodExpression.Inline("""z.foobar()""")
     )
 
-  // test("override: reference"):
-  //   assertEq(
-  //     obtained = renderer(string.modifyMetadata(_.put(zod, "z.foobar()").put(name, "Foo"))).runA(ListMap.empty).value,
-  //     expected = Expression.Referenced(reference = Const(namespace = none, name = "Foo"), value = """z.foobar()""")
-  //   )
+  test("override: reference"):
+    assertEq(
+      obtained = renderer.render(string.metadata(zod, "z.foobar()").metadata(name, "Foo")).runA(ListMap.empty).value,
+      expected = ZodExpression.Referenced(
+        reference = ZodConst(namespace = none, name = "Foo"),
+        value = """z.foobar()"""
+      )
+    )
 
   test("collection"):
     assertEq(

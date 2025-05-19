@@ -11,12 +11,12 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
   val collection = CollectionZodRenderer(renderer = this)
 
   override def render[A](schema: Json[A]): ZodState[ZodExpression] =
-    ZodRenderer(renderer = Raw).render(schema)
+    NamespaceZodRenderer(renderer = ZodRenderer(renderer = Raw)).render(schema)
 
-  object Raw extends Renderer[Json, ZodState[ZodExpression]]:
-    override def render[A](schema: Json[A]): ZodState[ZodExpression] = schema match
+  object Raw extends Renderer[Json, ZodState[String]]:
+    override def render[A](schema: Json[A]): ZodState[String] = schema match
       case Json.Collection(self) => collection.render(schema = self)
-      case Json.Primitive(self) => State.pure(ZodExpression.Inline(PrimitiveZodRenderer.render(schema = self)))
+      case Json.Primitive(self)  => State.pure(PrimitiveZodRenderer.render(schema = self))
 
 //   override def apply[A](codec: Json[A]): ZodState[ZodExpression] = NamespaceZodRenderer(renderer = Raw)(codec)
 
