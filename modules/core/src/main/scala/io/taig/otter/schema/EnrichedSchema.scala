@@ -1,6 +1,7 @@
 package io.taig.otter.schema
 
 import io.taig.otter.Metadata
+import io.taig.otter.Metadata.*
 
 trait EnrichedSchema[Self[_]]:
   self =>

@@ -88,10 +88,10 @@ object Http:
             case Primitive(self)   => self.metadata
             case Union(self)       => self.metadata
           override def metadata(f: Metadata => Metadata): Value[A] = self match
-            case Constant(self)    => Constant(self.metadata(f))
-            case Enumeration(self) => Enumeration(self.metadata(f))
-            case Primitive(self)   => Primitive(self.metadata(f))
-            case Union(self)       => Union(self.metadata(f))
+            case Constant(self)    => Constant(self.copy(metadata = f(self.metadata)))
+            case Enumeration(self) => Enumeration(self.copy(metadata = f(self.metadata)))
+            case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
+            case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
 
     sealed trait Array[A] extends Http.Header[A]
 
@@ -139,8 +139,8 @@ object Http:
             case Tuple(self)      => self.metadata
 
           override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.metadata(f))
-            case Tuple(self)      => Tuple(self.metadata(f))
+            case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
+            case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
 
     sealed trait Object[A] extends Http.Header[A]
 
@@ -208,8 +208,8 @@ object Http:
             case Record(self)     => self.metadata
 
           override def metadata(f: Metadata => Metadata): Object[A] = self match
-            case Dictionary(self) => Dictionary(self.metadata(f))
-            case Record(self)     => Record(self.metadata(f))
+            case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
+            case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
 
     final case class Field[A](self: Enriched[Self.Field[Key, Http.Header.Object.Value, *], A])
 
@@ -315,10 +315,10 @@ object Http:
             case Union(self)       => self.metadata
 
           override def metadata(f: Metadata => Metadata): Value[A] = self match
-            case Constant(self)    => Constant(self.metadata(f))
-            case Enumeration(self) => Enumeration(self.metadata(f))
-            case Primitive(self)   => Primitive(self.metadata(f))
-            case Union(self)       => Union(self.metadata(f))
+            case Constant(self)    => Constant(self.copy(metadata = f(self.metadata)))
+            case Enumeration(self) => Enumeration(self.copy(metadata = f(self.metadata)))
+            case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
+            case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
 
     sealed trait Array[A] extends Http.Query[A]
 
@@ -366,8 +366,8 @@ object Http:
             case Tuple(self)      => self.metadata
 
           override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.metadata(f))
-            case Tuple(self)      => Tuple(self.metadata(f))
+            case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
+            case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
 
     final case class Nullable[A](self: Enriched[Self.Nullable[Http.Query, *], A]) extends Http.Query[A]
 
@@ -469,10 +469,10 @@ object Http:
             case Union(self)       => self.metadata
 
           override def metadata(f: Metadata => Metadata): Value[A] = self match
-            case Constant(self)    => Constant(self.metadata(f))
-            case Enumeration(self) => Enumeration(self.metadata(f))
-            case Primitive(self)   => Primitive(self.metadata(f))
-            case Union(self)       => Union(self.metadata(f))
+            case Constant(self)    => Constant(self.copy(metadata = f(self.metadata)))
+            case Enumeration(self) => Enumeration(self.copy(metadata = f(self.metadata)))
+            case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
+            case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
 
     sealed trait Array[A] extends Http.Parameter[A]
 
@@ -520,8 +520,8 @@ object Http:
             case Tuple(self)      => self.metadata
 
           override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.metadata(f))
-            case Tuple(self)      => Tuple(self.metadata(f))
+            case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
+            case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
 
     sealed trait Object[A] extends Http.Parameter[A]
 
@@ -590,8 +590,8 @@ object Http:
             case Record(self)     => self.metadata
 
           override def metadata(f: Metadata => Metadata): Object[A] = self match
-            case Dictionary(self) => Dictionary(self.metadata(f))
-            case Record(self)     => Record(self.metadata(f))
+            case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
+            case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
 
     final case class Field[A](self: Enriched[Self.Field[Key, Http.Parameter.Object.Value, *], A])
 

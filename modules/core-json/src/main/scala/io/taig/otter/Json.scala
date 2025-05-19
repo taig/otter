@@ -128,7 +128,7 @@ object Json:
   final case class Field[A](self: Enriched[Self.Field[Key, Json, *], A])
 
   object Field:
-    given FieldSchema[Json.Field, Key, Json, Json.Record] =
+    given schema: FieldSchema[Json.Field, Key, Json, Json.Record] =
       FieldSchema[Self.Field[Key, Json, *], Key, Json, Json.Record]
         .imapK(
           [A] => (schema: Self.Field[Key, Json, A]) => Field(Enriched(schema))
@@ -165,12 +165,12 @@ object Json:
         case Union(schema)       => schema.metadata
 
       override def metadata(f: Metadata => Metadata): Json[A] = self match
-        case Collection(schema)  => Collection(schema.metadata(f))
-        case Constant(schema)    => Constant(schema.metadata(f))
-        case Dictionary(schema)  => Dictionary(schema.metadata(f))
-        case Enumeration(schema) => Enumeration(schema.metadata(f))
-        case Nullable(schema)    => Nullable(schema.metadata(f))
-        case Primitive(schema)   => Primitive(schema.metadata(f))
-        case Record(schema)      => Record(schema.metadata(f))
-        case Tuple(schema)       => Tuple(schema.metadata(f))
-        case Union(schema)       => Union(schema.metadata(f))
+        case Collection(schema)  => Collection(schema.copy(metadata = f(schema.metadata)))
+        case Constant(schema)    => Constant(schema.copy(metadata = f(schema.metadata)))
+        case Dictionary(schema)  => Dictionary(schema.copy(metadata = f(schema.metadata)))
+        case Enumeration(schema) => Enumeration(schema.copy(metadata = f(schema.metadata)))
+        case Nullable(schema)    => Nullable(schema.copy(metadata = f(schema.metadata)))
+        case Primitive(schema)   => Primitive(schema.copy(metadata = f(schema.metadata)))
+        case Record(schema)      => Record(schema.copy(metadata = f(schema.metadata)))
+        case Tuple(schema)       => Tuple(schema.copy(metadata = f(schema.metadata)))
+        case Union(schema)       => Union(schema.copy(metadata = f(schema.metadata)))
