@@ -1,15 +1,22 @@
 package io.taig.otter.codec
 
+import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.codec.Renderer
 import io.taig.otter.Json
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
 
-final class JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
-  self =>
+object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
+  val collection = CollectionZodRenderer(renderer = this)
 
-  override def render[A](schema: Json[A]): ZodState[ZodExpression] = ???
+  override def render[A](schema: Json[A]): ZodState[ZodExpression] =
+    ZodRenderer(renderer = Raw).render(schema)
+
+  object Raw extends Renderer[Json, ZodState[ZodExpression]]:
+    override def render[A](schema: Json[A]): ZodState[ZodExpression] = schema match
+      case Json.Collection(self) => collection.render(schema = self)
+      case Json.Primitive(self) => State.pure(ZodExpression.Inline(PrimitiveZodRenderer.render(schema = self)))
 
 //   override def apply[A](codec: Json[A]): ZodState[ZodExpression] = NamespaceZodRenderer(renderer = Raw)(codec)
 

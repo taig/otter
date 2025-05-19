@@ -2,6 +2,7 @@ package io.taig.otter.schema
 
 import cats.Invariant
 import io.taig.otter.Metadata
+import cats.syntax.all.*
 
 trait Schema[Self[_]] extends Invariant[Self]:
   self =>
@@ -14,6 +15,8 @@ trait Schema[Self[_]] extends Invariant[Self]:
     final def metadata[B](key: Metadata.Key[B]): Option[B] = metadata.get(key)
     final def metadata[B](key: Metadata.Key[B], value: Option[B]): Self[A] =
       modifyMetadata(metadata => value.fold(metadata.remove(key))(metadata.put(key, _)))
+    final def metadata[B](key: Metadata.Key[B], value: B): Self[A] =
+      metadata(key, value = value.some)
 
   def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema[T] = new Schema[T]:
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))

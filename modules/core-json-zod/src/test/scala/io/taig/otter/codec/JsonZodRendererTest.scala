@@ -8,17 +8,18 @@ import io.taig.otter.ZodKeys.*
 import scala.collection.immutable.ListMap
 import io.taig.otter.OtterSuite
 import io.taig.otter.Json
+import io.taig.otter.ZodKeys.*
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
 
 final class JsonZodRendererTest extends OtterSuite:
-  val renderer: Renderer[Json, ZodState[ZodExpression]] = JsonZodRenderer()
+  val renderer = JsonZodRenderer
 
-  // test("override"):
-  //   assertEq(
-  //     obtained = renderer(string.modifyMetadata(_.put(zod, "z.foobar()"))).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.foobar()""")
-  //   )
+  test("override"):
+    assertEq(
+      obtained = renderer.render(string.metadata(zod, "z.foobar()")).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.foobar()""")
+    )
 
   // test("override: reference"):
   //   assertEq(
@@ -26,11 +27,11 @@ final class JsonZodRendererTest extends OtterSuite:
   //     expected = Expression.Referenced(reference = Const(namespace = none, name = "Foo"), value = """z.foobar()""")
   //   )
 
-  // test("collection"):
-  //   assertEq(
-  //     obtained = renderer(collection.list(string)).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.array(z.string())""")
-  //   )
+  test("collection"):
+    assertEq(
+      obtained = renderer.render(collection.list(string)).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.array(z.string())""")
+    )
 
   // test("collection: reference"):
   //   val codec = string.modifyMetadata(_.put(name, "Foo"))

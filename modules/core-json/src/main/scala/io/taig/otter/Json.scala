@@ -103,3 +103,41 @@ object Json:
       .imapK(
         [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
+
+  given Schema[Json] with
+    override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
+      case Collection(self) => Collection(self.imap(f)(g))
+      case Constant(self)   => Constant(self.imap(f)(g))
+      case Dictionary(self) => Dictionary(self.imap(f)(g))
+      case Enumeration(self) => Enumeration(self.imap(f)(g))
+      case Nullable(self)   => Nullable(self.imap(f)(g))
+      case Primitive(self)  => Primitive(self.imap(f)(g))
+      case Record(self)     => Record(self.imap(f)(g))
+      case Sum(self)        => Sum(self.imap(f)(g))
+      case Tuple(self)      => Tuple(self.imap(f)(g))
+      case Union(self)      => Union(self.imap(f)(g))
+    
+    extension [A](self: Json[A])
+      override def metadata: Metadata = self match
+        case Collection(self) => self.metadata
+        case Constant(self)   => self.metadata
+        case Dictionary(self) => self.metadata
+        case Enumeration(self) => self.metadata
+        case Nullable(self)   => self.metadata
+        case Primitive(self)  => self.metadata
+        case Record(self)     => self.metadata
+        case Sum(self)        => self.metadata
+        case Tuple(self)      => self.metadata
+        case Union(self)      => self.metadata
+
+      override def modifyMetadata(f: Metadata => Metadata): Json[A] = self match
+        case Collection(self) => Collection(self.modifyMetadata(f))
+        case Constant(self)   => Constant(self.modifyMetadata(f))
+        case Dictionary(self) => Dictionary(self.modifyMetadata(f))
+        case Enumeration(self) => Enumeration(self.modifyMetadata(f))
+        case Nullable(self)   => Nullable(self.modifyMetadata(f))
+        case Primitive(self)  => Primitive(self.modifyMetadata(f))
+        case Record(self)     => Record(self.modifyMetadata(f))
+        case Sum(self)        => Sum(self.modifyMetadata(f))
+        case Tuple(self)      => Tuple(self.modifyMetadata(f))
+        case Union(self)      => Union(self.modifyMetadata(f))
