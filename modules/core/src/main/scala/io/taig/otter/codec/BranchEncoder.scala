@@ -14,7 +14,7 @@ final class BranchEncoder[S[_], T[_], U, V](key: Encoder[S, U], value: Encoder[T
       discriminator match
         case Discriminator.Explicit(identifier, value) =>
           // Chain(
-          //   (???, ReferenceConstantEncoder(encoder = this.key)(key)),
+          //   (identifier, ReferenceConstantRenderer(encoder = this.key).render(key)),
           //   (value, ???)
           // )
           ???
