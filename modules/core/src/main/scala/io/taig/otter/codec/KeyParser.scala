@@ -1,7 +1,6 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
-import cats.syntax.all.*
 import io.taig.otter.*
 
 object KeyParser extends Decoder[Key, String]:

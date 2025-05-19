@@ -1,8 +1,9 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
 import io.taig.otter.Merge
+import io.taig.otter.Metadata
 import io.taig.otter.syntax.InvariantSyntax.*
+
 import scala.annotation.targetName
 
 trait RecordSchema[Self[_], -Field[_]] extends Schema[Self]:
@@ -12,11 +13,22 @@ trait RecordSchema[Self[_], -Field[_]] extends Schema[Self]:
 
   extension [A](self: Self[A])
     def zip[B](schema: Self[B]): Self[(A, B)]
-    final def :*[B](field: Field[B])(using merge: Merge[A, B]): Self[merge.Out] = ???
+
+    @targetName("record :* field")
+    final def :*[B](field: Field[B])(using merge: Merge[A, B]): Self[merge.Out] =
+      zip(field.toRecord).merge
+
+    @targetName("field *: record")
+    final def *:[B](field: Field[B])(using merge: Merge[B, A]): Self[merge.Out] =
+      field.toRecord.zip(self).merge
 
   extension [A](self: Field[A])
-    @targetName("append")
-    final def :*[B](field: Field[B])(using merge: Merge[A, B]): Self[merge.Out] = ???
+    @targetName("field :* field")
+    final def :*[B](field: Field[B])(using merge: Merge[A, B]): Self[merge.Out] = self.toRecord :* field
+
+    @targetName("field *: field")
+    final def *:[B](field: Field[B])(using merge: Merge[B, A]): Self[merge.Out] =
+      field.toRecord.zip(self.toRecord).merge
 
     final def toRecord: Self[A] = lift(self)
 

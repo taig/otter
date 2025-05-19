@@ -2,14 +2,12 @@ package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
-import io.taig.otter.codec.CirceJsonDecoder
-import io.taig.otter.codec.Decoder
 import io.taig.otter
-import io.taig.otter.OtterSuite
 import io.taig.otter.Json
-import io.taig.otter.component.JsonComponent.*
-import io.taig.otter.Violations
+import io.taig.otter.OtterSuite
 import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.component.JsonComponent.*
 
 final class CirceJsonDecoderTest extends OtterSuite:
   val decoder: Decoder[Json, CirceJson] = CirceJsonDecoder.leftMap(_.modifyViolations(_.withoutHint))

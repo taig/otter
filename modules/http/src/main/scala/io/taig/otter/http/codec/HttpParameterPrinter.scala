@@ -4,8 +4,8 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Parameter
 import io.taig.otter.http.Http
+import io.taig.otter.http.Parameter
 
 final class HttpParameterPrinter(name: String, style: Parameter.Style) extends Encoder[Http.Parameter, String]:
   override def encode[A](schema: Http.Parameter[A], a: A): String = schema match

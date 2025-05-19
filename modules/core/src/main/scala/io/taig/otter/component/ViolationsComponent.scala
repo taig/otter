@@ -5,8 +5,6 @@ import cats.syntax.all.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.syntax.InvariantSyntax.*
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.UnionSchema
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],

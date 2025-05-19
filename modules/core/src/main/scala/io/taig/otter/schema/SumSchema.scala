@@ -1,8 +1,10 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
-import scala.annotation.targetName
+import cats.syntax.all.*
 import io.taig.otter.Discriminator
+import io.taig.otter.Metadata
+
+import scala.annotation.targetName
 
 trait SumSchema[Self[_], -Branch[_]] extends Schema[Self]:
   self =>
@@ -11,10 +13,12 @@ trait SumSchema[Self[_], -Branch[_]] extends Schema[Self]:
 
   extension [A](self: Self[A])
     def orElse[B](schema: Self[B]): Self[Either[A, B]]
-    final def or[B](schema: Self[B]): Self[Either[A, B]] = ???
-    final def :+[B](branch: Branch[B]): Self[Either[A, B]] = ???
-    final def +:[B](branch: Branch[B]): Self[Either[A, B]] = ???
-    final def |[B](branch: Branch[B]): Self[A | B] = ???
+
+    @targetName("sum :+ branch")
+    final def :+[B](branch: Branch[B]): Self[Either[A, B]] = orElse(branch.toSum)
+
+    @targetName("sum +: branch")
+    final def +:[B](branch: Branch[B]): Self[Either[B, A]] = branch.toSum.orElse(self)
 
     def discriminator: Discriminator
     def modifyDiscriminator(f: Discriminator => Discriminator): Self[A]
@@ -23,14 +27,32 @@ trait SumSchema[Self[_], -Branch[_]] extends Schema[Self]:
     final def keyed: Self[A] = modifyDiscriminator(_ => Discriminator.Keyed)
     final def merged: Self[A] = modifyDiscriminator(_ => Discriminator.Merged.Default)
 
-  extension [A](self: Branch[A])
-    @targetName("append")
-    final def :+[B](branch: Branch[B]): Self[Either[A, B]] = ???
+  extension [A <: Matchable](self: Self[A])
+    final inline def or[B <: Matchable](schema: Self[B]): Self[A | B] = self
+      .orElse(schema)
+      .imap {
+        case Left(a)  => a
+        case Right(b) => b
+      } {
+        case a: A => Left(a)
+        case b: B => Right(b)
+      }
 
-    @targetName("union")
-    final def |[B](branch: Branch[B]): Self[A | B] = ???
+    @targetName("sum | branch")
+    final inline def |[B <: Matchable](branch: Branch[B]): Self[A | B] = self.or(branch.toSum)
+
+  extension [A](self: Branch[A])
+    @targetName("branch :+ branch")
+    final def :+[B](branch: Branch[B]): Self[Either[A, B]] = self.toSum :+ branch
+
+    @targetName("branch +: branch")
+    final def +:[B](branch: Branch[B]): Self[Either[B, A]] = branch.toSum.orElse(self.toSum)
 
     final def toSum: Self[A] = lift(self)
+
+  extension [A <: Matchable](self: Branch[A])
+    @targetName("branch | branch")
+    final inline def |[B <: Matchable](branch: Branch[B]): Self[A | B] = self.toSum.or(branch.toSum)
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): SumSchema[T, Branch] =
     new SumSchema[T, Branch]:

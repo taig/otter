@@ -1,12 +1,12 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.http.Method
-import io.taig.otter.http.Url
-import io.taig.otter.http.Request
-import io.taig.otter.http.Headers
 import io.taig.otter.Merge
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
+import io.taig.otter.http.Headers
+import io.taig.otter.http.Method
+import io.taig.otter.http.Request
+import io.taig.otter.http.Url
 
 trait RequestSyntax:
   def request[A](method: Method, url: Url[A]): Request[Nothing, A] =

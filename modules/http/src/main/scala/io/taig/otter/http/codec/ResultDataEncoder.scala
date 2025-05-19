@@ -2,11 +2,10 @@ package io.taig.otter.http.codec
 
 import cats.syntax.all.*
 import io.taig.otter.http.HttpError.ContentNegotiationFailed
+import io.taig.otter.http.Response
+import io.taig.otter.http.Result
 import io.taig.otter.http.header.Accept
 import org.typelevel.ci.*
-import io.taig.otter.http.codec.PayloadEncoder
-import io.taig.otter.http.Result
-import io.taig.otter.http.Response
 
 final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val bodies = BodiesEncoder(encoder)

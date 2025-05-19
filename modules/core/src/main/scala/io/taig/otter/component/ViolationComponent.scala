@@ -3,8 +3,6 @@ package io.taig.otter.component
 import cats.Invariant
 import io.taig.otter.Violation
 import io.taig.otter.syntax.InvariantSyntax.*
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.NullableSchema
 
 trait ViolationComponent[
     Collection[a] <: Value[a],

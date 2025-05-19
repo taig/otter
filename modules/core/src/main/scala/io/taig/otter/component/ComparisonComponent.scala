@@ -1,10 +1,8 @@
 package io.taig.otter.component
-
-import cats.Invariant
 import io.taig.otter.Comparison
-import io.taig.otter.syntax.InvariantSyntax.*
-import io.taig.otter.schema.RecordSchema
 import io.taig.otter.schema.NullableSchema
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.syntax.InvariantSyntax.*
 
 trait ComparisonComponent[Nullable[a] <: Value[a], Record[_], Field[_], Key[_], Value[_]](using
     RecordSchema[Record, Field],

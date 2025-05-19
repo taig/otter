@@ -5,7 +5,6 @@ import cats.Show
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Merge
-import io.taig.otter.Metadata
 
 sealed abstract class Path[A] extends Product with Serializable:
   def toSegments: Chain[String | Parameter[?]]

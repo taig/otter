@@ -1,8 +1,6 @@
 package io.taig.otter.http.codec
 
 import io.taig.otter.*
-
-import scala.annotation.tailrec
 import io.taig.otter.codec.*
 import io.taig.otter.http.Http
 

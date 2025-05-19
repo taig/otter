@@ -1,11 +1,10 @@
 package io.taig.otter.http.codec
 
 import cats.syntax.all.*
+import io.taig.otter.http.Bodies
 import io.taig.otter.http.HttpError.*
-import io.taig.otter.http.codec.PayloadEncoder
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.Bodies
 
 final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val body = BodyEncoder(encoder)

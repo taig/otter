@@ -1,7 +1,7 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Sum
 import cats.data.Validated
+import io.taig.otter.Sum
 import io.taig.otter.Violations
 
 final class SumDecoder[S[_], T, U](branch: Decoder[S, List[(T, U)]]) extends Decoder[Sum[S, *], List[(T, U)]]:

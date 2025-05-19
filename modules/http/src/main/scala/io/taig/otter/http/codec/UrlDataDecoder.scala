@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Url.Data
 import io.taig.otter.http.Url
+import io.taig.otter.http.Url.Data
 
 object UrlDataDecoder extends Decoder.Remainding[Url, Url.Data]:
   override def decode[A](schema: Url[A], value: Data): Validated[Violations, A] =

@@ -1,7 +1,8 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
 import io.taig.otter.Merge
+import io.taig.otter.Metadata
+
 import scala.annotation.targetName
 
 trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:

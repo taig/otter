@@ -2,7 +2,6 @@ package io.taig.otter.http.codec
 import cats.data.Validated
 import io.taig.otter.Violations
 import io.taig.otter.codec.*
-import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Http
 import io.taig.otter.http.Http.Header.Value
 

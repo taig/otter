@@ -3,8 +3,6 @@ package io.taig.otter.component
 import cats.Invariant
 import io.taig.otter.Constraint
 import io.taig.otter.syntax.InvariantSyntax.*
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.SumSchema
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],

@@ -6,11 +6,10 @@ import io.circe.jawn.JawnParser
 import io.taig.otter.Json
 import io.taig.otter.Violation
 import io.taig.otter.Violations
+import io.taig.otter.codec.CirceJsonDecoder
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import io.taig.otter.http.codec.PayloadDecoder
-import io.taig.otter.codec.CirceJsonDecoder
 
 object CirceJsonPayloadDecoder extends PayloadDecoder[Json]:
   val parser = new JawnParser()

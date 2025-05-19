@@ -1,12 +1,12 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
 import cats.data.Chain
+import io.taig.otter.codec.CollectionEncoder
+import io.taig.otter.codec.Encoder
+import io.taig.otter.codec.TupleEncoder
+import io.taig.otter.http.Http
 import io.taig.otter.http.Http.Parameter
 import io.taig.otter.http.Http.Parameter.Array.Collection
-import io.taig.otter.codec.CollectionEncoder
-import io.taig.otter.codec.TupleEncoder
 
 object HttpParameterArrayEncoder extends Encoder[Http.Parameter.Array, Chain[String]]:
   val collection = CollectionEncoder(encoder = HttpParameterValuePrinter)

@@ -3,13 +3,13 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
-import io.taig.otter.toValue
-import io.taig.otter.toType
-import io.taig.otter.codec.*
-import io.taig.otter.Json
-import io.taig.otter.Violations
-import io.taig.otter.Violation
 import io.taig.otter.Discriminator
+import io.taig.otter.Json
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+import io.taig.otter.codec.*
+import io.taig.otter.toType
+import io.taig.otter.toValue
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)

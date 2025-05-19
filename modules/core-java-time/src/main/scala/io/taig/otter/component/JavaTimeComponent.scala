@@ -5,7 +5,6 @@ import cats.syntax.all.*
 import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
-import io.taig.otter.component.PrimitiveComponent
 
 trait JavaTimeComponent[Self[_]]:
   this: PrimitiveComponent.String[Self] =>

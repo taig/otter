@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Nullable
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
+import io.taig.otter.Nullable
+import io.taig.otter.Violations
 
 final class NullableDecoder[S[_], T](decoder: Decoder[S, T], empty: T => Boolean) extends Decoder[Nullable[S, *], T]:
   override def decode[A](schema: Nullable[S, A], value: T): Validated[Violations, A] = schema match

@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Sum
-import io.taig.otter.Discriminator
 import cats.data.Chain
+import io.taig.otter.Discriminator
+import io.taig.otter.Sum
 
 final class SumEncoder[S[_], T, U](branch: Discriminator => Encoder[S, Chain[(T, U)]])
     extends Encoder[Sum[S, *], Chain[(T, U)]]:

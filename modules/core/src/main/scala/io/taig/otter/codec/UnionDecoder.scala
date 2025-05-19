@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Union
 import cats.data.Validated
-import io.taig.otter.Violations
 import cats.syntax.all.*
+import io.taig.otter.Union
+import io.taig.otter.Violations
 
 final class UnionDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Union[S, *], T]:
   override def decode[A](schema: Union[S, A], value: T): Validated[Violations, A] =

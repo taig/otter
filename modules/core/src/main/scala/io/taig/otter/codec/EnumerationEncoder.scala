@@ -1,6 +1,7 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Enumeration
+
 import scala.annotation.tailrec
 
 final class EnumerationEncoder[S[_], T](encoder: Encoder[S, T]) extends Encoder[Enumeration[S, *], T]:

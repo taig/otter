@@ -1,13 +1,13 @@
 package io.taig.otter.http
 
 import cats.ApplicativeThrow
-import io.taig.otter.+
 import cats.syntax.all.*
+import io.taig.otter.+
+import io.taig.otter.http.Headers.Data.accept
+import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.codec.PayloadDecoder
 import io.taig.otter.http.codec.PayloadEncoder
 import io.taig.otter.http.codec.RequestDataDecoder
-import io.taig.otter.http.Headers.Data.accept
-import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.codec.ResponseDataEncoder
 import io.taig.otter.http.codec.ResultDataEncoder
 

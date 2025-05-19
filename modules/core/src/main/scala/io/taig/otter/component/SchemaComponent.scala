@@ -1,7 +1,8 @@
 package io.taig.otter.component
 
-import io.taig.otter.schema.Schema
 import cats.syntax.all.*
+import io.taig.otter.schema.Schema
+
 import scala.annotation.targetName
 
 trait SchemaComponent[Self[_]](using self: Schema[Self]):

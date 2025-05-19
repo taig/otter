@@ -8,6 +8,11 @@ import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.HttpError.*
+import io.taig.otter.http.codec.PayloadDecoder
+import io.taig.otter.http.codec.PayloadEncoder
+import io.taig.otter.http.codec.RequestDataDecoder
+import io.taig.otter.http.codec.ResponseDataEncoder
+import io.taig.otter.http.codec.ResultDataEncoder
 import org.http4s.Entity as Http4sEntity
 import org.http4s.Header as Http4sHeader
 import org.http4s.Headers as Http4sHeaders
@@ -19,11 +24,6 @@ import org.http4s.Status as Http4sStatus
 import org.http4s.Uri as Http4sUri
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
-import io.taig.otter.http.codec.PayloadDecoder
-import io.taig.otter.http.codec.PayloadEncoder
-import io.taig.otter.http.codec.RequestDataDecoder
-import io.taig.otter.http.codec.ResponseDataEncoder
-import io.taig.otter.http.codec.ResultDataEncoder
 
 def toUrlData(uri: Http4sUri): Url.Data = Url.Data(
   path = Chain.fromSeq(uri.path.segments).map(_.encoded),

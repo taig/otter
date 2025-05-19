@@ -1,7 +1,7 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.Request
+import io.taig.otter.http.header.MediaType
 
 final class RequestDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val bodies = BodiesEncoder(encoder)

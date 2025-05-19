@@ -5,12 +5,12 @@ import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.StacktracePrinter
 import io.taig.otter.Violations
+import io.taig.otter.http.Headers
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.HttpError.*
+import io.taig.otter.http.Response
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.syntax.CodeSyntax.*
-import io.taig.otter.http.Response
-import io.taig.otter.http.Headers
 
 final class ResponseDataEncoder[S[_], T[_]](encoder: PayloadEncoder[S + T], debug: Boolean):
   val results = ResultsDataEncoder(encoder)

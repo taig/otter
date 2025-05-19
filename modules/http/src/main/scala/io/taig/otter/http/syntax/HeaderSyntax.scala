@@ -1,9 +1,9 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.http.Http
-import io.taig.otter.http.Header
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
+import io.taig.otter.http.Header
+import io.taig.otter.http.Http
 import org.typelevel.ci.CIString
 
 trait HeaderSyntax:

@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.component.KeyComponent.*
 import cats.syntax.all.*
-import io.taig.otter.OtterSuite
 import io.taig.otter.Key
+import io.taig.otter.OtterSuite
+import io.taig.otter.component.KeyComponent.*
 
 final class JsonKeyPrinterTest extends OtterSuite:
   val encoder = KeyPrinter

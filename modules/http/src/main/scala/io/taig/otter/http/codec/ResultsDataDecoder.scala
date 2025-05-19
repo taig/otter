@@ -2,9 +2,9 @@ package io.taig.otter.http.codec
 
 import cats.syntax.all.*
 import io.taig.otter.http.HttpError.*
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.Results
 import io.taig.otter.http.Response
+import io.taig.otter.http.Results
+import io.taig.otter.http.header.MediaType
 
 final class ResultsDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
   val result = ResultDataDecoder(decoder)

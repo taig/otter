@@ -1,13 +1,13 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.Functor
+import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.http.codec.PayloadDecoder
 import io.taig.otter.http.codec.PayloadEncoder
-import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.codec.RequestDataEncoder
 import io.taig.otter.http.codec.ResponseDataDecoder
+import io.taig.otter.http.header.MediaType
 
 abstract class Client[F[_], S[_], T[_], U[_]]:
   def submit[A, B](endpoint: Endpoint[S, T, U, A, B], contentType: Option[MediaType], a: A): F[Either[HttpError, B]]

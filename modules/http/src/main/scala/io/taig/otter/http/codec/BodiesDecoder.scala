@@ -1,9 +1,8 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.http.HttpError.*
-import io.taig.otter.http.codec.PayloadDecoder
-import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.Bodies
+import io.taig.otter.http.HttpError.*
+import io.taig.otter.http.header.MediaType
 
 final class BodiesDecoder[-S[_]](decoder: PayloadDecoder[S]):
   val body = BodyDecoder(decoder)

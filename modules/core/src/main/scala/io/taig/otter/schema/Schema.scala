@@ -6,6 +6,8 @@ import io.taig.otter.Metadata
 trait Schema[Self[_]] extends Invariant[Self]:
   self =>
 
+  final protected given Invariant[Self] = this
+
   extension [A](self: Self[A])
     def metadata: Metadata
     def modifyMetadata(f: Metadata => Metadata): Self[A]

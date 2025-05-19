@@ -3,9 +3,9 @@ package io.taig.otter.http.codec
 import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.http.HttpError.*
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.Result
 import io.taig.otter.http.Response
+import io.taig.otter.http.Result
+import io.taig.otter.http.header.MediaType
 
 final class ResultDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
   val bodies = BodiesDecoder(decoder)

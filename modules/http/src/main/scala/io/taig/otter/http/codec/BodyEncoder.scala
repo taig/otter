@@ -1,10 +1,10 @@
 package io.taig.otter.http.codec
 
 import cats.syntax.all.*
+import io.taig.otter.http.Body
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.Body
 
 final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
   def encode[A](

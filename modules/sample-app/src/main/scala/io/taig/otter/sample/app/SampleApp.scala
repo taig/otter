@@ -8,14 +8,14 @@ import io.circe.Printer
 import io.taig.otter.+
 import io.taig.otter.Json
 import io.taig.otter.http.*
+import io.taig.otter.http.codec.CirceJsonPayloadDecoder
+import io.taig.otter.http.codec.CirceJsonPayloadEncoder
+import io.taig.otter.http.codec.FormDataPayloadDecoder
+import io.taig.otter.http.codec.FormDataPayloadEncoder
 import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 import org.http4s.ember.server.EmberServerBuilder
 import org.typelevel.log4cats.LoggerFactory
 import org.typelevel.log4cats.slf4j.Slf4jFactory
-import io.taig.otter.http.codec.FormDataPayloadDecoder
-import io.taig.otter.http.codec.CirceJsonPayloadEncoder
-import io.taig.otter.http.codec.CirceJsonPayloadDecoder
-import io.taig.otter.http.codec.FormDataPayloadEncoder
 
 object SampleApp extends ResourceApp.Forever:
   given LoggerFactory[IO] = Slf4jFactory.create[IO]

@@ -6,6 +6,7 @@ import munit.Compare
 import munit.FunSuite
 import munit.Location
 import munit.diff.Printer
+
 import scala.collection.immutable.ListMap
 
 abstract class OtterSuite extends FunSuite:

@@ -1,9 +1,9 @@
 package io.taig.otter.http.codec
 
-import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Parameter
 import cats.data.Validated
 import io.taig.otter.Violations
+import io.taig.otter.codec.Decoder
+import io.taig.otter.http.Parameter
 
 object ParameterParser extends Decoder[Parameter, String]:
   override def decode[A](schema: Parameter[A], value: String): Validated[Violations, A] = schema match

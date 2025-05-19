@@ -1,8 +1,9 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
 import cats.data.NonEmptyChain
+import io.taig.otter.Metadata
 import io.taig.otter.Reference
+
 import scala.annotation.targetName
 
 trait UnionSchema[Self[_], Value[_]] extends Schema[Self]:

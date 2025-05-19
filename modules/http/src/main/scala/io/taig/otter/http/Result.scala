@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.Invariant
 import io.taig.otter.+
 import io.taig.otter.Metadata
 import io.taig.otter.schema.Schema

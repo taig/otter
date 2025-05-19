@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.State
 import io.taig.otter.ZodKeys.*
-import io.taig.otter.codec.Encoder
 import io.taig.otter.schema.Schema
 
 /** Render the given codec to an inline value, or use the `zod` metadata if present */

@@ -1,6 +1,4 @@
 package io.taig.otter.codec
-
-import io.taig.otter.codec.Encoder
 import io.circe.Json as CirceJson
 import io.taig.otter.Primitive
 

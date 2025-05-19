@@ -1,11 +1,11 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import Self.schema.PrimitiveSchema
-import Self.schema.ConstantSchema
-import Self.schema.EnumerationSchema
-import Self.schema.UnionSchema
-import Self.schema.Schema
+import io.taig.otter.schema.ConstantSchema
+import io.taig.otter.schema.EnumerationSchema
+import io.taig.otter.schema.PrimitiveSchema
+import io.taig.otter.schema.Schema
+import io.taig.otter.schema.UnionSchema
 
 sealed abstract class Key[A] extends Product with Serializable
 

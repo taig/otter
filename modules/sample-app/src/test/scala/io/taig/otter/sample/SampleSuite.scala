@@ -3,6 +3,7 @@ package io.taig.otter.sample
 import cats.Eq
 import cats.MonadThrow
 import cats.effect.Resource
+import cats.effect.SyncIO
 import cats.syntax.all.*
 import io.circe.Printer as CircePrinter
 import io.taig.otter.dsl.*
@@ -13,12 +14,10 @@ import io.taig.otter.http.codec.CirceJsonPayloadEncoder
 import io.taig.otter.munit.OtterEffectSuite
 import io.taig.otter.sample.app.SampleApp
 import munit.Compare
-import munit.FunSuite
 import munit.Location
 import munit.diff.Printer
 
 import scala.collection.immutable.ListMap
-import cats.effect.SyncIO
 
 abstract class SampleSuite extends OtterEffectSuite:
   override def printer: Printer = Printer(_.toString())

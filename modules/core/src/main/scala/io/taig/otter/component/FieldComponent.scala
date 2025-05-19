@@ -1,7 +1,6 @@
 package io.taig.otter.component
 
 import io.taig.otter.schema.FieldSchema
-import io.taig.otter.syntax.InvariantSyntax.*
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal

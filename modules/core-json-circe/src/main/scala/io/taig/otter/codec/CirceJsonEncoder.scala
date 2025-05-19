@@ -1,21 +1,5 @@
 package io.taig.otter.codec
-
-import cats.syntax.all.*
 import io.circe.Json as CirceJson
-import io.circe.syntax.*
-import io.taig.otter.codec.Encoder
-import io.taig.otter.codec.CollectionEncoder
-import io.taig.otter.codec.ConstantEncoder
-import io.taig.otter.codec.DictionaryEncoder
-import io.taig.otter.codec.EnumerationEncoder
-import io.taig.otter.codec.NullableEncoder
-import io.taig.otter.codec.RecordEncoder
-import io.taig.otter.codec.FieldEncoder
-import io.taig.otter.codec.TupleEncoder
-import io.taig.otter.codec.UnionEncoder
-import io.taig.otter.codec.SumEncoder
-import io.taig.otter.codec.BranchEncoder
-import io.taig.otter.codec.KeyPrinter
 import io.taig.otter.Json
 
 object CirceJsonEncoder extends Encoder[Json, CirceJson]:

@@ -1,13 +1,8 @@
 package io.taig.otter.http
-
-import cats.data.Validated
-import cats.parse.Parser
 import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.Key
 import io.taig.otter.Metadata
-import io.taig.otter.Violation
-import io.taig.otter.Violations
 import io.taig.otter.schema.*
 
 object Http:

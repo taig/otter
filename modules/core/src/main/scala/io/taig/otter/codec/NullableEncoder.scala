@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Nullable
-import io.taig.otter.Nullable.Modify
 import io.taig.otter.Nullable.Default
+import io.taig.otter.Nullable.Modify
 import io.taig.otter.Nullable.Root
 
 final class NullableEncoder[S[_], T](encoder: Encoder[S, T], empty: T) extends Encoder[Nullable[S, *], T]:

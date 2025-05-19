@@ -1,10 +1,11 @@
 package io.taig.otter.component
 
-import org.typelevel.ci.CIString
-import java.util.regex.Pattern
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Argument
+import org.typelevel.ci.CIString
+
+import java.util.regex.Pattern
 
 trait CaseInsensitiveComponent[Self[_]: Invariant]:
   this: PrimitiveComponent.String[Self] =>

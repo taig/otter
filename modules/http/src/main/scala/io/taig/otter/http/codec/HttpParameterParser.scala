@@ -1,12 +1,12 @@
 package io.taig.otter.http.codec
 
+import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.*
-import io.taig.otter.http.Parameter
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Http
-import cats.data.Chain
+import io.taig.otter.http.Parameter
 
 final class HttpParameterParser(name: String, style: Parameter.Style) extends Decoder[Http.Parameter, String]:
   override def decode[A](schema: Http.Parameter[A], value: String): Validated[Violations, A] = schema match
