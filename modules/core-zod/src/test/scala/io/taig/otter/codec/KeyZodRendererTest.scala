@@ -2,19 +2,13 @@ package io.taig.otter.codec
 
 import io.taig.otter.OtterSuite
 import io.taig.otter.component.KeyComponent.*
-import scala.collection.immutable.ListMap
 import io.taig.otter.Key
 
 final class KeyZodRendererTest extends OtterSuite:
-  test("primitive"):
+  test("constant"):
     assertEq(
-      obtained = KeyZodRenderer.render(string),
-      expected = "z.string()"
-    )
-
-    assertEq(
-      obtained = KeyZodRenderer.render(uuid),
-      expected = "z.string()"
+      obtained = KeyZodRenderer.render(constant("foobar")),
+      expected = """z.literal("foobar")"""
     )
 
   test("enumeration"):
@@ -31,4 +25,25 @@ final class KeyZodRendererTest extends OtterSuite:
     assertEq(
       obtained = KeyZodRenderer.render(schema),
       expected = """z.enum(["bird", "cat", "dog"])"""
+    )
+
+  test("primitive"):
+    assertEq(
+      obtained = KeyZodRenderer.render(string),
+      expected = "z.string()"
+    )
+
+    assertEq(
+      obtained = KeyZodRenderer.render(uuid),
+      expected = "z.string()"
+    )
+
+  test("union"):
+    println(KeyZodRenderer.render(constant("foobar") :+ string))
+    assertEq(
+      obtained = KeyZodRenderer.render(constant("foobar") :+ string),
+      expected = """z.union([
+          |  z.literal("foobar"),
+          |  z.string()
+          |])""".stripMargin
     )
