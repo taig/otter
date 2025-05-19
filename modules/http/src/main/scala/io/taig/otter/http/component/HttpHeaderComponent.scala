@@ -10,7 +10,7 @@ trait HttpHeaderComponent
       DictionaryComponent[Http.Header.Object.Dictionary, Key, Http.Header.Value],
       EnumerationComponent[Http.Header.Value.Enumeration, Http.Header.Value.Primitive],
       PrimitiveComponent.String[Http.Header.Value.Primitive],
-      FieldComponent.Primitive.String[Http.Header.Field, Key, Http.Header.Object.Value, Http.Header.Object.Record],
+      FieldComponent.Primitive.String[Http.Header.Field, Key, Http.Header.Object.Value],
       TupleComponent[Http.Header.Array.Tuple, Http.Header.Value]:
   override def key: KeyComponent = KeyComponent
 

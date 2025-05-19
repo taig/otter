@@ -59,6 +59,8 @@ object Sum:
     override def imap[A, B](fa: Sum[Branch, A])(f: A => B)(g: B => A): Sum[Branch, B] = fa.imap(f)(g)
 
     extension [A](self: Sum[Branch, A])
+      override def discriminator: Discriminator = self.discriminator
+      override def modifyDiscriminator(f: Discriminator => Discriminator): Sum[Branch, A] = self.modifyDiscriminator(f)
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Sum[Branch, A] = self.modifyMetadata(f)
       override def orElse[B](schema: Sum[Branch, B]): Sum[Branch, Either[A, B]] = self.orElse(schema)

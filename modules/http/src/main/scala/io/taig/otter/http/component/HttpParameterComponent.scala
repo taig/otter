@@ -10,12 +10,7 @@ trait HttpParameterComponent
       DictionaryComponent[Http.Parameter.Object.Dictionary, Key, Http.Parameter.Value],
       EnumerationComponent[Http.Parameter.Value.Enumeration, Http.Parameter.Value.Primitive],
       PrimitiveComponent.String[Http.Parameter.Value.Primitive],
-      FieldComponent.Primitive.String[
-        Http.Parameter.Field,
-        Key,
-        Http.Parameter.Object.Value,
-        Http.Parameter.Object.Record
-      ],
+      FieldComponent.Primitive.String[Http.Parameter.Field, Key, Http.Parameter.Object.Value],
       TupleComponent[Http.Parameter.Array.Tuple, Http.Parameter.Value]:
   override def key: KeyComponent = KeyComponent
 

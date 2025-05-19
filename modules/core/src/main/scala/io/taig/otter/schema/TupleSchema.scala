@@ -2,18 +2,21 @@ package io.taig.otter.schema
 
 import io.taig.otter.Metadata
 import io.taig.otter.Merge
-import io.taig.otter.syntax.InvariantSyntax.*
+import scala.annotation.targetName
 
-trait TupleSchema[Self[_], Value[_]] extends Schema[Self]:
+trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
   self =>
 
   def empty: Self[Unit]
   def lift[A](schema: => Value[A]): Self[A]
 
-  extension [A](self: Self[A])
-    def zip[B](schema: Self[B]): Self[(A, B)]
-    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] =
-      ???
+  extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
+
+  extension [A](self: Value[A])
+    @targetName("tupleZip")
+    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] = ???
+
+    def toTuple: Self[A] = lift(self)
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): TupleSchema[T, Value] =
     new TupleSchema[T, Value]:

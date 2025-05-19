@@ -6,4 +6,5 @@ import io.taig.otter.schema.SumSchema
 
 import scala.annotation.targetName
 
-trait SumComponent[Self[_], -Branch[_]](using SumSchema[Self, Branch])
+trait SumComponent[Self[_], -Branch[_]](using self: SumSchema[Self, Branch]):
+  export self.{:+, |, orElse, toSum}

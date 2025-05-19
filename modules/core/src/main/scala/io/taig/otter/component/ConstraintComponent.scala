@@ -3,6 +3,8 @@ package io.taig.otter.component
 import cats.Invariant
 import io.taig.otter.Constraint
 import io.taig.otter.syntax.InvariantSyntax.*
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.SumSchema
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],
@@ -21,6 +23,7 @@ trait ConstraintComponent[
       FieldComponent.Primitive.String[Field, Key, Value],
       PrimitiveComponent[Primitive],
       NullableComponent[Nullable, Value],
+      RecordComponent[Record, Field],
       SumComponent[Sum, Branch]:
   val constraint: Sum[Constraint] =
     val col: Sum[Constraint.Collection] = (

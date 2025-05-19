@@ -49,7 +49,7 @@ final class JsonKeyPrinterTest extends OtterSuite:
     )
 
   test("union"):
-    val schema = constant("foo") :+ constant("bar")
+    val schema = constant("foo") +: constant("bar")
 
     assertEq(
       obtained = encoder.encode(schema, ().asLeft),

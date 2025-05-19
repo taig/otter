@@ -11,8 +11,11 @@ trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
   extension [A](self: Self[A])
     def key: Reference.Constant[Key, ?]
     def value: Reference[Value, ?]
+
     def nullish: Boolean
     def modifyNullish(f: Boolean => Boolean): Self[A]
+    final def nullish(value: Boolean): Self[A] = modifyNullish(_ => value)
+
     def optional: Self[Option[A]]
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(

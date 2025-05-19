@@ -5,6 +5,8 @@ import cats.syntax.all.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.syntax.InvariantSyntax.*
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.UnionSchema
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],
@@ -20,7 +22,7 @@ trait ViolationsComponent[
     Value[_]
 ] extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
-      FieldComponent.Primitive.String[Field, Key, Value, Record],
+      FieldComponent.Primitive.String[Field, Key, Value],
       UnionComponent[Union, Value],
       ViolationComponent[Collection, Dictionary, Nullable, Primitive, Record, Sum, Union, Branch, Field, Key, Value]:
 

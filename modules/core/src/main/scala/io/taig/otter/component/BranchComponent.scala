@@ -12,9 +12,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait BranchComponent[Self[_], Key[_], -Value[_]](using
-    self: BranchSchema[Self, Key, Value]
-):
+trait BranchComponent[Self[_], Key[_], -Value[_]](using self: BranchSchema[Self, Key, Value]):
   final def branch[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] =
     self(name, key, value)
 

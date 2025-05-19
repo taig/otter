@@ -1,13 +1,27 @@
 package io.taig.otter.schema
 
 import io.taig.otter.Metadata
+import cats.data.NonEmptyChain
+import io.taig.otter.Reference
+import scala.annotation.targetName
 
 trait UnionSchema[Self[_], Value[_]] extends Schema[Self]:
   self =>
 
   def lift[A](schema: => Value[A]): Self[A]
 
-  extension [A](self: Self[A]) def orElse[B](schema: Self[B]): Self[Either[A, B]]
+  extension [A](self: Self[A])
+    def schemas: NonEmptyChain[Reference[Value, ?]]
+
+    def orElse[B](schema: Self[B]): Self[Either[A, B]]
+
+  extension [A](self: Value[A])
+    @targetName("unionOrElse")
+    final def :+[B](schema: Value[B]): Self[Either[A, B]] = ???
+
+    final def +:[B](schema: Value[B]): Self[Either[A, B]] = ???
+
+    final def toUnion: Self[A] = lift(self)
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): UnionSchema[T, Value] =
     new UnionSchema[T, Value]:
@@ -17,6 +31,7 @@ trait UnionSchema[Self[_], Value[_]] extends Schema[Self]:
       extension [A](ta: T[A])
         override def metadata: Metadata = self.metadata(gK(ta))
         override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
+        override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas(gK(ta))
         override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
 
 object UnionSchema:

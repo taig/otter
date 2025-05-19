@@ -10,6 +10,7 @@ import io.taig.otter.Violations
 import io.taig.otter.Key
 import io.taig.otter.Violation
 import io.taig.otter.Step
+import io.taig.otter.schema.UnionSchema
 
 final class JsonKeyParserTest extends OtterSuite:
   val decoder = KeyParser

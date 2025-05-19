@@ -52,4 +52,5 @@ object Union:
     extension [A](self: Union[Value, A])
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Union[Value, A] = self.modifyMetadata(f)
+      override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas
       override def orElse[B](schema: Union[Value, B]): Union[Value, Either[A, B]] = self.orElse(schema)

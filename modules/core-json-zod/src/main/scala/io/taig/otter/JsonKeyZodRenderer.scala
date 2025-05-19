@@ -1,24 +1,25 @@
 package io.taig.otter
+
 import cats.data.State
-import schema.Constant
+import io.taig.otter.codec.PrimitivePrinter
 
-object JsonKeyZodRenderer extends Renderer[Json.Key, ZodState[Expression]]:
-  override def apply[A](codec: Json.Key[A]): ZodState[Expression] =
-    NamespaceZodRenderer(renderer = Raw)(codec)
+object JsonKeyZodRenderer extends Renderer[Key, ZodState[Expression]]:
+  override def apply[A](schema: Key[A]): ZodState[Expression] =
+    NamespaceZodRenderer(renderer = Raw).render(schema)
 
-  object Raw extends Renderer[Json.Key, ZodState[String]]:
-    override def apply[A](codec: Json.Key[A]): ZodState[String] = codec match
-      case Json.Key.Constant(self)    => State.pure(apply(codec = self))
-      case Json.Key.Enumeration(self) => State.pure(apply(codec = self))
-      case Json.Key.Primitive(self)   => State.pure(PrimitiveZodRenderer(codec = self))
-      // case Json.Key.Union(self) =>
-      //   UnionZodRenderer[Json.Key](render = [A] => (_: String, codec: Json.Key[A]) => JsonKeyZodRenderer(codec))(self)
+  object Raw extends Renderer[Key, ZodState[String]]:
+    override def apply[A](schema: Key[A]): ZodState[String] = schema match
+      case Key.Constant(self)    => State.pure(apply(schema = self))
+      case Key.Enumeration(self) => State.pure(apply(schema = self))
+      case Key.Primitive(self)   => State.pure(PrimitiveZodRenderer.render(schema = self))
+      // case Key.Union(self) =>
+      //   UnionZodRenderer[Key](render = [A] => (_: String, schema: Key[A]) => JsonKeyZodRenderer(schema))(self)
 
-    def apply(codec: Constant[Json.Key.Primitive, ?]): String =
-      s"z.literal(${apply(reference = codec.codec)})"
+    def apply(schema: Constant[Key.Primitive, ?]): String =
+      s"z.literal(${apply(reference = schema.schema)})"
 
-    def apply(codec: Enumeration[Json.Key.Primitive, ?]): String =
-      EnumerationZodRenderer(printer = JsonKeyPrimitivePrinter)(codec)
+    def apply(schema: Enumeration[Key.Primitive, ?]): String =
+      EnumerationZodRenderer(printer = JsonKeyPrimitivePrinter)(schema)
 
-    def apply[A](reference: Reference.Constant[Json.Key.Primitive, A]): String =
-      PrimitivePrinter.Quoted(codec = reference.self.value.self, reference.value)
+    def apply[A](reference: Reference.Constant[Key.Primitive, A]): String =
+      PrimitivePrinter.Quoted.encode(schema = reference.self.value.self, reference.value)

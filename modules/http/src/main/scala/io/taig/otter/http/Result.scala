@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.Invariant
 import io.taig.otter.+
 import io.taig.otter.Metadata
+import io.taig.otter.schema.Schema
 
 sealed abstract class Result[+S[_], A] extends Product with Serializable:
   def code: Code
@@ -35,5 +36,9 @@ object Result:
       extends Result[Nothing, A]:
     override def modifyMetadata(f: Metadata => Metadata): Result.Root[A] = copy(metadata = f(metadata))
 
-  given [S[_]]: Invariant[Result[S, *]] with
+  given [S[_]]: Schema[Result[S, *]] with
     override def imap[A, B](fa: Result[S, A])(f: A => B)(g: B => A): Result[S, B] = fa.imap(f)(g)
+
+    extension [A](self: Result[S, A])
+      override def metadata: Metadata = self.metadata
+      override def modifyMetadata(f: Metadata => Metadata): Result[S, A] = self.modifyMetadata(f)

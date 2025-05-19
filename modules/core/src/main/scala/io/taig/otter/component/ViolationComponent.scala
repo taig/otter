@@ -3,6 +3,8 @@ package io.taig.otter.component
 import cats.Invariant
 import io.taig.otter.Violation
 import io.taig.otter.syntax.InvariantSyntax.*
+import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.NullableSchema
 
 trait ViolationComponent[
     Collection[a] <: Value[a],
@@ -20,10 +22,10 @@ trait ViolationComponent[
       ConstraintComponent[Collection, Dictionary, Nullable, Primitive, Record, Sum, Branch, Field, Key, Value],
       NullableComponent[Nullable, Value],
       PrimitiveComponent[Primitive],
-      FieldComponent.Primitive.String[Field, Key, Value, Record]:
-
+      FieldComponent.Primitive.String[Field, Key, Value],
+      RecordComponent[Record, Field]:
   val violation: Record[Violation] = (
     field("constraint", constraint) :*
       field("actual", data.any) :*
-      field("hint", nullable(string))
+      field("hint", string.nullable)
   ).to

@@ -3,7 +3,7 @@ package io.taig.otter.schema
 import cats.Eq
 import io.taig.otter.Metadata
 
-trait ConstantSchema[Self[_], Value[_]] extends Schema[Self]:
+trait ConstantSchema[Self[_], -Value[_]] extends Schema[Self]:
   self =>
 
   def apply[A: Eq](schema: => Value[A], value: A): Self[Unit]

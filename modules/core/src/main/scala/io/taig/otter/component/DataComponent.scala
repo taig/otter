@@ -3,6 +3,8 @@ package io.taig.otter.component
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Data
+import io.taig.otter.schema.NullableSchema
+import io.taig.otter.schema.SumSchema
 
 trait DataComponent[
     Collection[a] <: Value[a]: Invariant,
@@ -13,7 +15,8 @@ trait DataComponent[
     Branch[_],
     Key[_],
     Value[_]
-] extends BranchComponent.Primitive.String[Branch, Key, Value, Sum],
+](using NullableSchema[Nullable, Value], SumSchema[Sum, Branch])
+    extends BranchComponent.Primitive.String[Branch, Key, Value],
       CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],

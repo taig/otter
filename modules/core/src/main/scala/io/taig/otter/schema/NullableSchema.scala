@@ -2,14 +2,14 @@ package io.taig.otter.schema
 
 import io.taig.otter.Metadata
 
-trait NullableSchema[Self[_], Value[_]] extends Schema[Self]:
+trait NullableSchema[Self[_], -Value[_]] extends Schema[Self]:
   self =>
 
   def apply[A](schema: => Value[A]): Self[Option[A]]
   def apply[A](schema: => Value[A], default: A): Self[A]
   def void: Self[Unit]
 
-  extension[A](value: Value[A])
+  extension [A](value: Value[A])
     final def nullable: Self[Option[A]] = apply(value)
     final def nullable(default: A): Self[A] = apply(value, default)
 

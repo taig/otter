@@ -1,7 +1,6 @@
 package io.taig.otter.component
 
 import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.RecordSchema
 import io.taig.otter.syntax.InvariantSyntax.*
 
 import java.lang.String as JString
@@ -12,12 +11,8 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Merge
-import scala.annotation.targetName
 
-trait FieldComponent[Self[_], Key[_], -Value[_]](using
-    self: FieldSchema[Self, Key, Value]
-):
+trait FieldComponent[Self[_], Key[_], -Value[_]](using self: FieldSchema[Self, Key, Value]):
   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
 object FieldComponent:

@@ -152,7 +152,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     )
 
   test("union: taggged (merged)"):
-    val codec = (branch("foo", field("x", string)) | branch("bar", field("y", int))).merged
+    val codec = (branch("foo", field("x", string).toRecord) | branch("bar", field("y", int).toRecord)).merged
 
     assertEq(
       obtained = encoder.encode(codec, "foobar"),
@@ -171,13 +171,13 @@ final class CirceJsonEncoderTest extends OtterSuite:
     val codec = (branch("foo", string) | branch("bar", int)).explicit
 
     assertEq(
-      obtained = encoder(codec, "foobar"),
+      obtained = encoder.encode(codec, "foobar"),
       expected = CirceJson.fromFields(
         List(("type", CirceJson.fromString("foo")), ("value", CirceJson.fromString("foobar")))
       )
     )
     assertEq(
-      obtained = encoder(codec, 1),
+      obtained = encoder.encode(codec, 1),
       expected = CirceJson.fromFields(
         List(("type", CirceJson.fromString("bar")), ("value", CirceJson.fromInt(1)))
       )
