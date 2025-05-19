@@ -4,7 +4,6 @@ import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Convert
 import io.taig.otter.Merge
-import io.taig.otter.Metadata
 
 import scala.annotation.targetName
 import scala.compiletime.*

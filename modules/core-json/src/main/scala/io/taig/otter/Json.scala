@@ -11,8 +11,13 @@ object Json:
   object Collection:
     given CollectionSchema[Json.Collection, Json] = CollectionSchema[Self.Collection[Json, *], Json]
       .imapK(
-        [A] => (schema: Self.Collection[Json, A]) => Collection(Enriched(schema, metadata = Metadata.Empty))
+        [A] => (schema: Self.Collection[Json, A]) => Collection(Enriched(schema))
       )([A] => (json: Json.Collection[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Collection] = EnrichedSchema[Enriched[Self.Collection[Json, *], *]]
+      .imapK[Json.Collection](
+        [A] => (schema: Enriched[Self.Collection[Json, *], A]) => Json.Collection(schema)
+      )([A] => (json: Json.Collection[A]) => json.self)
 
   final case class Constant[A](self: Enriched[Self.Constant[Json, *], A]) extends Json[A]
 
@@ -21,6 +26,11 @@ object Json:
       .imapK(
         [A] => (schema: Self.Constant[Json, A]) => Constant(Enriched(schema))
       )([A] => (json: Json.Constant[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Constant] = EnrichedSchema[Enriched[Self.Constant[Json, *], *]]
+      .imapK[Json.Constant](
+        [A] => (schema: Enriched[Self.Constant[Json, *], A]) => Json.Constant(schema)
+      )([A] => (json: Json.Constant[A]) => json.self)
 
   final case class Dictionary[A](self: Enriched[Self.Dictionary[Key, Json, *], A]) extends Json[A]
 
@@ -31,6 +41,11 @@ object Json:
           [A] => (schema: Self.Dictionary[Key, Json, A]) => Dictionary(Enriched(schema))
         )([A] => (json: Json.Dictionary[A]) => json.self.self)
 
+    given EnrichedSchema[Json.Dictionary] = EnrichedSchema[Enriched[Self.Dictionary[Key, Json, *], *]]
+      .imapK[Json.Dictionary](
+        [A] => (schema: Enriched[Self.Dictionary[Key, Json, *], A]) => Json.Dictionary(schema)
+      )([A] => (json: Json.Dictionary[A]) => json.self)
+
   final case class Enumeration[A](self: Enriched[Self.Enumeration[Json.Primitive, *], A]) extends Json[A]
 
   object Enumeration:
@@ -40,6 +55,11 @@ object Json:
           [A] => (schema: Self.Enumeration[Json.Primitive, A]) => Enumeration(Enriched(schema))
         )([A] => (json: Json.Enumeration[A]) => json.self.self)
 
+    given EnrichedSchema[Json.Enumeration] = EnrichedSchema[Enriched[Self.Enumeration[Json.Primitive, *], *]]
+      .imapK[Json.Enumeration](
+        [A] => (schema: Enriched[Self.Enumeration[Json.Primitive, *], A]) => Json.Enumeration(schema)
+      )([A] => (json: Json.Enumeration[A]) => json.self)
+
   final case class Nullable[A](self: Enriched[Self.Nullable[Json, *], A]) extends Json[A]
 
   object Nullable:
@@ -47,6 +67,11 @@ object Json:
       .imapK(
         [A] => (schema: Self.Nullable[Json, A]) => Nullable(Enriched(schema))
       )([A] => (json: Json.Nullable[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Nullable] = EnrichedSchema[Enriched[Self.Nullable[Json, *], *]]
+      .imapK[Json.Nullable](
+        [A] => (schema: Enriched[Self.Nullable[Json, *], A]) => Json.Nullable(schema)
+      )([A] => (json: Json.Nullable[A]) => json.self)
 
   final case class Primitive[A](self: Enriched[Self.Primitive, A]) extends Json[A]
 
@@ -56,6 +81,11 @@ object Json:
         [A] => (schema: Self.Primitive[A]) => Primitive(Enriched(schema))
       )([A] => (json: Json.Primitive[A]) => json.self.self)
 
+    given EnrichedSchema[Json.Primitive] = EnrichedSchema[Enriched[Self.Primitive, *]]
+      .imapK[Json.Primitive](
+        [A] => (schema: Enriched[Self.Primitive, A]) => Json.Primitive(schema)
+      )([A] => (json: Json.Primitive[A]) => json.self)
+
   final case class Record[A](self: Enriched[Self.Record[Json.Field, *], A]) extends Json[A]
 
   object Record:
@@ -63,6 +93,11 @@ object Json:
       .imapK(
         [A] => (schema: Self.Record[Json.Field, A]) => Record(Enriched(schema))
       )([A] => (json: Json.Record[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Record] = EnrichedSchema[Enriched[Self.Record[Json.Field, *], *]]
+      .imapK[Json.Record](
+        [A] => (schema: Enriched[Self.Record[Json.Field, *], A]) => Json.Record(schema)
+      )([A] => (json: Json.Record[A]) => json.self)
 
   final case class Tuple[A](self: Enriched[Self.Tuple[Json, *], A]) extends Json[A]
 
@@ -72,6 +107,11 @@ object Json:
         [A] => (schema: Self.Tuple[Json, A]) => Tuple(Enriched(schema))
       )([A] => (json: Json.Tuple[A]) => json.self.self)
 
+    given EnrichedSchema[Json.Tuple] = EnrichedSchema[Enriched[Self.Tuple[Json, *], *]]
+      .imapK[Json.Tuple](
+        [A] => (schema: Enriched[Self.Tuple[Json, *], A]) => Json.Tuple(schema)
+      )([A] => (json: Json.Tuple[A]) => json.self)
+
   final case class Union[A](self: Enriched[Self.Union[Json, *], A]) extends Json[A]
 
   object Union:
@@ -79,6 +119,11 @@ object Json:
       .imapK(
         [A] => (schema: Self.Union[Json, A]) => Union(Enriched(schema))
       )([A] => (json: Json.Union[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Union] = EnrichedSchema[Enriched[Self.Union[Json, *], *]]
+      .imapK[Json.Union](
+        [A] => (schema: Enriched[Self.Union[Json, *], A]) => Json.Union(schema)
+      )([A] => (json: Json.Union[A]) => json.self)
 
   final case class Field[A](self: Enriched[Self.Field[Key, Json, *], A])
 
@@ -88,6 +133,11 @@ object Json:
         .imapK(
           [A] => (schema: Self.Field[Key, Json, A]) => Field(Enriched(schema))
         )([A] => (json: Json.Field[A]) => json.self.self)
+
+    given EnrichedSchema[Json.Field] = EnrichedSchema[Enriched[Self.Field[Key, Json, *], *]]
+      .imapK[Json.Field](
+        [A] => (schema: Enriched[Self.Field[Key, Json, *], A]) => Json.Field(schema)
+      )([A] => (json: Json.Field[A]) => json.self)
 
   given Schema[Json] with
     override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
@@ -100,3 +150,27 @@ object Json:
       case Record(self)      => Record(self.mapF(_.imap(f)(g)))
       case Tuple(self)       => Tuple(self.mapF(_.imap(f)(g)))
       case Union(self)       => Union(self.mapF(_.imap(f)(g)))
+
+  given EnrichedSchema[Json] with
+    extension [A](self: Json[A])
+      override def metadata: Metadata = self match
+        case Collection(schema)  => schema.metadata
+        case Constant(schema)    => schema.metadata
+        case Dictionary(schema)  => schema.metadata
+        case Enumeration(schema) => schema.metadata
+        case Nullable(schema)    => schema.metadata
+        case Primitive(schema)   => schema.metadata
+        case Record(schema)      => schema.metadata
+        case Tuple(schema)       => schema.metadata
+        case Union(schema)       => schema.metadata
+
+      override def metadata(f: Metadata => Metadata): Json[A] = self match
+        case Collection(schema)  => Collection(schema.metadata(f))
+        case Constant(schema)    => Constant(schema.metadata(f))
+        case Dictionary(schema)  => Dictionary(schema.metadata(f))
+        case Enumeration(schema) => Enumeration(schema.metadata(f))
+        case Nullable(schema)    => Nullable(schema.metadata(f))
+        case Primitive(schema)   => Primitive(schema.metadata(f))
+        case Record(schema)      => Record(schema.metadata(f))
+        case Tuple(schema)       => Tuple(schema.metadata(f))
+        case Union(schema)       => Union(schema.metadata(f))
