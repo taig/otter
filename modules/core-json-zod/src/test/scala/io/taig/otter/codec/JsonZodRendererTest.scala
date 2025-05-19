@@ -18,14 +18,14 @@ final class JsonZodRendererTest extends OtterSuite:
 
   test("name"):
     assertEq(
-      obtained = renderer.render(string.metadata(name, "foobar")).runA(ListMap.empty).value,
-      expected = ZodExpression.Referenced(ZodConst(namespace = none, name = "foobar"), value = """z.string()""")
+      obtained = renderer.render(string.metadata(name, "Foobar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Referenced(ZodConst(namespace = none, name = "Foobar"), value = """z.string()""")
     )
 
   test("namespace"):
     assertEq(
-      obtained = renderer.render(string.metadata(name, "foo").metadata(namespace, "bar")).runA(ListMap.empty).value,
-      expected = ZodExpression.Referenced(ZodConst(namespace = "bar".some, name = "foo"), value = """z.string()""")
+      obtained = renderer.render(string.metadata(name, "Foo").metadata(namespace, "Bar")).runA(ListMap.empty).value,
+      expected = ZodExpression.Referenced(ZodConst(namespace = "Bar".some, name = "Foo"), value = """z.string()""")
     )
 
   test("override"):
@@ -49,16 +49,18 @@ final class JsonZodRendererTest extends OtterSuite:
       expected = ZodExpression.Inline("""z.array(z.string())""")
     )
 
-  // test("collection: reference"):
-  //   val codec = string.modifyMetadata(_.put(name, "Foo"))
+  test("collection: reference"):
+    val codec = string.metadata(name, "Foo")
 
-  //   assertEq(
-  //     obtained = renderer(collection.list(codec)).run(ListMap.empty).value,
-  //     expected = (
-  //       ListMap((Const(namespace = none, name = "Foo"), "z.string()")),
-  //       Expression.Inline("""z.array(Foo)""")
-  //     )
-  //   )
+    assertEq(
+      obtained = renderer.render(collection.list(codec)).run(ListMap.empty).value,
+      expected = (
+        ListMap(
+          (ZodConst(namespace = none, name = "Foo"), "z.string()")
+        ),
+        ZodExpression.Inline("""z.array(Foo)""")
+      )
+    )
 
   // test("constant"):
   //   assertEq(
