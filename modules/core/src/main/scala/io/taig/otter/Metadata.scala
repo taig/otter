@@ -1,7 +1,7 @@
 package io.taig.otter
 import scala.collection.immutable.SortedMap
 
-type Metadata = SortedMap[String, Any]
+final class Metadata(val toMap: SortedMap[String, Any]) extends AnyVal
 
 object Metadata:
   opaque type Key[A] = String
@@ -10,13 +10,12 @@ object Metadata:
     inline def apply[A](value: String): Metadata.Key[A] = value
 
   extension (self: Metadata)
-    inline def toMap: SortedMap[String, Any] = self
-    inline def contains[A](key: Metadata.Key[A]): Boolean = toMap.contains(key)
+    inline def contains[A](key: Metadata.Key[A]): Boolean = self.toMap.contains(key)
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    inline def get[A](key: Metadata.Key[A]): Option[A] = self.get(key).asInstanceOf[Option[A]]
-    inline def put[A](key: Metadata.Key[A], value: A): Metadata = self.updated(key, value)
-    inline def remove[A](key: Metadata.Key[A]): Metadata = self.removed(key)
+    inline def get[A](key: Metadata.Key[A]): Option[A] = self.toMap.get(key).asInstanceOf[Option[A]]
+    inline def put[A](key: Metadata.Key[A], value: A): Metadata = Metadata(self.toMap.updated(key, value))
+    inline def remove[A](key: Metadata.Key[A]): Metadata = Metadata(self.toMap.removed(key))
 
-  val Empty: Metadata = SortedMap.empty
+  val Empty: Metadata = Metadata(SortedMap.empty)
 
-  def one[A](key: Metadata.Key[A], value: A): Metadata = SortedMap(key -> value)
+  def one[A](key: Metadata.Key[A], value: A): Metadata = Metadata(SortedMap(key -> value))
