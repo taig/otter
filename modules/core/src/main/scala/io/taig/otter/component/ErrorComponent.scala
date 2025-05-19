@@ -11,7 +11,7 @@ trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], K
       RecordComponent[Record, Field]:
   this: PrimitiveComponent.String[Value] =>
 
-  def error[A](tpe: String, schema: => Value[A]): Record[A] = 
+  def error[A](tpe: String, schema: => Value[A]): Record[A] =
     field(name = "error", schema = constant(tpe)) :* field(name = "value", schema)
 
   def error[A](tpe: String): Record[Unit] = field(name = "error", schema = constant(tpe)).toRecord

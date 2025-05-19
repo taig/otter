@@ -25,10 +25,7 @@ trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
       override def lift[A](schema: => Value[A]): T[A] = fK(self.lift(schema))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-        override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
+      extension [A](ta: T[A]) override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
 
 object TupleSchema:
   inline def apply[Self[_], Field[_]](using self: TupleSchema[Self, Field]): TupleSchema[Self, Field] = self

@@ -26,8 +26,6 @@ trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
     extension [A](ta: T[A])
       override def schema: Reference[Value, ?] = self.schema(gK(ta))
       override def values: NonEmptyList[A] = self.values(gK(ta))
-      override def metadata: Metadata = self.metadata(gK(ta))
-      override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
 object EnumerationSchema:
   inline def apply[Self[_], Value[_]](using self: EnumerationSchema[Self, Value]): EnumerationSchema[Self, Value] =

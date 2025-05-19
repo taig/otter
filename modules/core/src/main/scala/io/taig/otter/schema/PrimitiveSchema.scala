@@ -69,10 +69,6 @@ trait PrimitiveSchema[Self[_]]
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-
 object PrimitiveSchema:
   trait Boolean[Self[_]] extends Schema[Self]:
     self =>
@@ -84,10 +80,6 @@ object PrimitiveSchema:
     ): PrimitiveSchema.Boolean[T] = new Boolean[T]:
       override def boolean: T[SBoolean] = fK(self.boolean)
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
   object Boolean:
     inline def apply[Self[_]](using self: PrimitiveSchema.Boolean[Self]): PrimitiveSchema.Boolean[Self] = self
@@ -172,10 +164,6 @@ object PrimitiveSchema:
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-
   object Number:
     inline def apply[Self[_]](using self: PrimitiveSchema.Number[Self]): PrimitiveSchema.Number[Self] = self
 
@@ -200,10 +188,6 @@ object PrimitiveSchema:
         ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
         override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-        extension [A](ta: T[A])
-          override def metadata: Metadata = self.metadata(gK(ta))
-          override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
 
     def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
 

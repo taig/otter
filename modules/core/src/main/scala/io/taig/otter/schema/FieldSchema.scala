@@ -16,8 +16,7 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
     def isOptional: Boolean
 
     def nullish: Boolean
-    def modifyNullish(f: Boolean => Boolean): Self[A]
-    final def nullish(value: Boolean): Self[A] = modifyNullish(_ => value)
+    def nullish(f: Boolean => Boolean): Self[A]
 
     def optional: Self[Option[A]]
 
@@ -42,11 +41,9 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
     extension [A](ta: T[A])
       override def key: Reference.Constant[Key, ?] = self.key(gK(ta))
       override def value: Reference[Value, ?] = self.value(gK(ta))
-      override def metadata: Metadata = self.metadata(gK(ta))
-      override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
       override def isOptional: Boolean = self.isOptional(gK(ta))
       override def nullish: Boolean = self.nullish(gK(ta))
-      override def modifyNullish(f: Boolean => Boolean): T[A] = fK(self.modifyNullish(gK(ta))(f))
+      override def nullish(f: Boolean => Boolean): T[A] = fK(self.nullish(gK(ta))(f))
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
       override def toRecord: Record[A] = self.toRecord(gK(ta))
 

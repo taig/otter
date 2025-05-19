@@ -151,7 +151,12 @@ object Http:
 
     object Field:
       given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value, Http.Header.Object.Record] =
-        FieldSchema[Self.Field[Key, Http.Header.Object.Value, *], Key, Http.Header.Object.Value, Http.Header.Object.Record]
+        FieldSchema[
+          Self.Field[Key, Http.Header.Object.Value, *],
+          Key,
+          Http.Header.Object.Value,
+          Http.Header.Object.Record
+        ]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Header.Object.Value, A]) => Field(schema)
           )([A] => (value: Http.Header.Field[A]) => value.self)
@@ -410,7 +415,12 @@ object Http:
 
     object Field:
       given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value, Http.Parameter.Object.Record] =
-        FieldSchema[Self.Field[Key, Http.Parameter.Object.Value, *], Key, Http.Parameter.Object.Value, Http.Parameter.Object.Record]
+        FieldSchema[
+          Self.Field[Key, Http.Parameter.Object.Value, *],
+          Key,
+          Http.Parameter.Object.Value,
+          Http.Parameter.Object.Record
+        ]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Parameter.Object.Value, A]) => Field(schema)
           )([A] => (value: Http.Parameter.Field[A]) => value.self)

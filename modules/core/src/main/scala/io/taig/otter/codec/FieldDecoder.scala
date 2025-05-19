@@ -19,7 +19,7 @@ final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T,
       if values.exists((key, _) => key === reference)
       then decodeRemainding(schema = self, values).map(_.map(_.some))
       else (values, none).valid
-    case Field.Root(key, value, nullish, _) =>
+    case Field.Root(key, value, nullish) =>
       val name = ReferenceConstantRenderer(encoder = this.key).render(key)
 
       val adjustedValued =

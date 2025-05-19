@@ -9,9 +9,6 @@ sealed abstract class Dictionary[+S[_], +T[_], A] extends Product with Serializa
 
   def constraints: Vector[Constraint.Object]
 
-  def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, A]
-
   def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, A]
 
   def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, A]
@@ -22,14 +19,12 @@ object Dictionary:
       key: Reference[S, A],
       value: Reference[T, B],
       minimum: Option[Int],
-      maximum: Option[Int],
-      metadata: Metadata
+      maximum: Option[Int]
   ) extends Dictionary[S, T, List[(A, B)]]:
     override def constraints: Vector[Constraint.Object] = Vector(
       minimum.map(Constraint.Object.Minimum.apply),
       maximum.map(Constraint.Object.Maximum.apply)
     ).flatten
-    override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, List[(A, B)]] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, List[(A, B)]] =
       copy(value = value.mapK[T1, U](fK))
     override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, List[(A, B)]] =
@@ -37,8 +32,7 @@ object Dictionary:
 
   final private[otter] case class Modify[S[_], T[_], A, B](self: Dictionary[S, T, A], f: A => B, g: B => A)
       extends Dictionary[S, T, B]:
-    export self.{constraints, key, metadata, value}
-    override def modifyMetadata(f: Metadata => Metadata): Dictionary[S, T, B] = copy(self = self.modifyMetadata(f))
+    export self.{constraints, key, value}
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Dictionary[S, U, B] =
       copy(self = self.mapK[T1, U](fK))
     override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] =
@@ -54,14 +48,8 @@ object Dictionary:
       key = Reference.later(key),
       value = Reference.later(value),
       minimum,
-      maximum,
-      metadata = Metadata.Empty
+      maximum
     )
 
     override def imap[A, B](fa: Dictionary[Key, Value, A])(f: A => B)(g: B => A): Dictionary[Key, Value, B] =
       fa.imap(f)(g)
-
-    extension [A](self: Dictionary[Key, Value, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Dictionary[Key, Value, A] =
-        self.modifyMetadata(f)

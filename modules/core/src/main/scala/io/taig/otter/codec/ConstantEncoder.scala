@@ -10,4 +10,4 @@ final class ConstantEncoder[S[_], T](encoder: Encoder[S, T]) extends Encoder[Con
   @tailrec
   override def encode[A](schema: Constant[S, A], a: A): T = schema match
     case Constant.Modify(self, _, g) => encode(schema = self, g(a))
-    case Constant.Root(schema, _, _) => ReferenceConstantRenderer(encoder).render(reference = schema)
+    case Constant.Root(schema, _)    => ReferenceConstantRenderer(encoder).render(reference = schema)

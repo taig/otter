@@ -9,10 +9,10 @@ final class RecordDecoder[S[_], T, U](field: Decoder.Remainding[S, List[(T, U)]]
     extends Decoder.Remainding[Record[S, *], List[(T, U)]]:
   def decodeRemainding[A](schema: Record[S, A], values: List[(T, U)]): Validated[Violations, (List[(T, U)], A)] =
     schema match
-      case Record.Empty(_)           => (values, ()).valid
-      case Record.Root(field, _)     => this.field.decodeRemainding(schema = field.value, values)
+      case Record.Empty              => (values, ()).valid
+      case Record.Root(field)        => this.field.decodeRemainding(schema = field.value, values)
       case Record.Modify(self, f, _) => decodeRemainding(schema = self, values).map(_.map(f))
-      case Record.Zip(left, right, _) =>
+      case Record.Zip(left, right) =>
         decodeRemainding(schema = left, values) match
           case Validated.Valid((values, a)) =>
             decodeRemainding(schema = right, values) match

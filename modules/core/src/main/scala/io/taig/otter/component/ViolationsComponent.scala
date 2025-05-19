@@ -17,7 +17,8 @@ trait ViolationsComponent[
     Field[_],
     Key[_],
     Value[_]
-](using DictionarySchema[Dictionary, Key, Value], FieldSchema[Field, Key, Value, Record], RecordSchema[Record, Field]) extends CollectionComponent[Collection, Value],
+](using DictionarySchema[Dictionary, Key, Value], FieldSchema[Field, Key, Value, Record], RecordSchema[Record, Field])
+    extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       UnionComponent[Union, Value],

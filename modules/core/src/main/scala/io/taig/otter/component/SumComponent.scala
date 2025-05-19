@@ -2,8 +2,10 @@ package io.taig.otter.component
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
 
-trait SumComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using FieldSchema[Field, Key, Value, Record], RecordSchema[Record, Field])
-    extends ConstantComponent.Primitive.String[Constant, Value],
+trait SumComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
+    FieldSchema[Field, Key, Value, Record],
+    RecordSchema[Record, Field]
+) extends ConstantComponent.Primitive.String[Constant, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       RecordComponent[Record, Field]:
   this: PrimitiveComponent.String[Value] =>

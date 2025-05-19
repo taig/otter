@@ -11,7 +11,7 @@ final class EnumerationDecoder[S[_], T](codec: Codec[S, T], render: T => Data.An
     extends Decoder[Enumeration[S, *], T]:
   override def decode[A](schema: Enumeration[S, A], value: T): Validated[Violations, A] = schema match
     case Enumeration.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Enumeration.Root(reference, mapping, _) =>
+    case Enumeration.Root(reference, mapping) =>
       codec
         .decode(schema = reference.value, value)
         .andThen: a =>

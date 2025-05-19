@@ -15,7 +15,8 @@ trait ViolationComponent[
     Field[_],
     Key[_],
     Value[_]
-](using FieldSchema[Field, Key, Value, Record], NullableSchema[Nullable, Value], RecordSchema[Record, Field]) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
+](using FieldSchema[Field, Key, Value, Record], NullableSchema[Nullable, Value], RecordSchema[Record, Field])
+    extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],
       PrimitiveComponent[Primitive],

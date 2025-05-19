@@ -137,8 +137,7 @@ object PrimitiveComponent:
 
     final val string: Self[JString] = string()
 
-    implicit final class ToStringComponentExtension(dummy: string.type)
-        extends StringComponentExtension[Self, JString]:
+    implicit final class ToStringComponentExtension(dummy: string.type) extends StringComponentExtension[Self, JString]:
       override protected def empty: JString = ""
       override protected def isEmpty(a: JString): SBoolean = a.isEmpty
 

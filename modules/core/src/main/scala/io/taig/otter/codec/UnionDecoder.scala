@@ -10,9 +10,9 @@ final class UnionDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Union[
     decode(schema, value, index = schema.schemas.length - 1)
 
   def decode[A](schema: Union[S, A], value: T, index: Long): Validated[Violations, A] = schema match
-    case Union.OrElse(left, right, _) =>
+    case Union.OrElse(left, right) =>
       decode(schema = left, value, index = index - 1)
         .map(Left(_))
         .findValid(decode(schema = right, value, index).map(Right(_)))
-    case Union.Root(schema, _)    => decoder.decode(schema = schema.value, value).leftMap(index.toInt /: _)
+    case Union.Root(schema)       => decoder.decode(schema = schema.value, value).leftMap(index.toInt /: _)
     case Union.Modify(self, f, _) => decode(schema = self, value).map(f)

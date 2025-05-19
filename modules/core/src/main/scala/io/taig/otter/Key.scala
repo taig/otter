@@ -51,16 +51,3 @@ object Key:
       case Enumeration(self) => Enumeration(self.imap(f)(g))
       case Primitive(self)   => Primitive(self.imap(f)(g))
       case Union(self)       => Union(self.imap(f)(g))
-
-    extension [A](self: Key[A])
-      override def metadata: Metadata = self match
-        case Constant(self)    => self.metadata
-        case Enumeration(self) => self.metadata
-        case Primitive(self)   => self.metadata
-        case Union(self)       => self.metadata
-
-      override def modifyMetadata(f: Metadata => Metadata): Key[A] = self match
-        case Constant(self)    => Constant(self.modifyMetadata(f))
-        case Enumeration(self) => Enumeration(self.modifyMetadata(f))
-        case Primitive(self)   => Primitive(self.modifyMetadata(f))
-        case Union(self)       => Union(self.modifyMetadata(f))

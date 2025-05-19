@@ -16,7 +16,8 @@ trait DataComponent[
     Field[_],
     Key[_],
     Value[_]
-](using CollectionSchema[Collection, Value], DictionarySchema[Dictionary, Key, Value], NullableSchema[Nullable, Value]) extends CollectionComponent[Collection, Value],
+](using CollectionSchema[Collection, Value], DictionarySchema[Dictionary, Key, Value], NullableSchema[Nullable, Value])
+    extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
       PrimitiveComponent[Primitive],

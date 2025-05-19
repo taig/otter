@@ -9,7 +9,7 @@ import io.taig.otter.Violations
 final class ConstantDecoder[S[_], T](codec: Codec[S, T], render: T => Data.Any) extends Decoder[Constant[S, *], T]:
   override def decode[A](schema: Constant[S, A], value: T): Validated[Violations, A] = schema match
     case Constant.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Constant.Root(schema, eq, _) =>
+    case Constant.Root(schema, eq) =>
       codec
         .decode(schema = schema.self.value, value)
         .andThen: a =>

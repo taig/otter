@@ -9,8 +9,9 @@ import io.taig.otter.ZodState
 import io.taig.otter.schema.Schema
 
 import scala.collection.immutable.ListMap
+import io.taig.otter.schema.EnrichedSchema
 
-final class NamespaceZodRenderer[S[_]: Schema](renderer: Renderer[S, ZodState[String]])
+final class NamespaceZodRenderer[S[_]: EnrichedSchema](renderer: Renderer[S, ZodState[String]])
     extends Renderer[S, ZodState[ZodExpression]]:
   val expression = ZodRenderer[S](renderer)
 

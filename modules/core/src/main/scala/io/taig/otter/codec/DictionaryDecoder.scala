@@ -8,7 +8,7 @@ import io.taig.otter.Violations
 final class DictionaryDecoder[S[_], T[_], U](key: Decoder[S, String], value: Decoder[T, U])
     extends Decoder[Dictionary[S, T, *], List[(String, U)]]:
   def decode[A](schema: Dictionary[S, T, A], values: List[(String, U)]): Validated[Violations, A] = schema match
-    case Dictionary.Root(key, schema, _, _, _) =>
+    case Dictionary.Root(key, schema, _, _) =>
       values.traverse: (name, value) =>
         (
           this.key.decode(schema = key.value, name),

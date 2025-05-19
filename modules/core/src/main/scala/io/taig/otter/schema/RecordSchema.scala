@@ -4,6 +4,7 @@ import io.taig.otter.Merge
 import io.taig.otter.Metadata
 
 import scala.annotation.targetName
+import io.taig.otter.Field
 
 trait RecordSchema[Self[_], -Field[_]] extends Schema[Self]:
   self =>
@@ -22,10 +23,7 @@ trait RecordSchema[Self[_], -Field[_]] extends Schema[Self]:
       override def lift[A](field: => Field[A]): T[A] = fK(self.lift(field))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def modifyMetadata(f: Metadata => Metadata): T[A] = fK(self.modifyMetadata(gK(ta))(f))
-        override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
+      extension [A](ta: T[A]) override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
 
 object RecordSchema:
   inline def apply[Self[_], Field[_]](using self: RecordSchema[Self, Field]): RecordSchema[Self, Field] = self
