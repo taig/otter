@@ -50,10 +50,10 @@ final class JsonZodRendererTest extends OtterSuite:
     )
 
   test("collection: reference"):
-    val codec = string.metadata(name, "Foo")
+    val schema = string.metadata(name, "Foo")
 
     assertEq(
-      obtained = renderer.render(collection.list(codec)).run(ListMap.empty).value,
+      obtained = renderer.render(collection.list(schema)).run(ListMap.empty).value,
       expected = (
         ListMap(
           (ZodConst(namespace = none, name = "Foo"), "z.string()")
@@ -86,13 +86,13 @@ final class JsonZodRendererTest extends OtterSuite:
       case Cat
       case Dog
 
-    val codec: Json.Enumeration[Animal] = enumeration(string):
+    val schema: Json.Enumeration[Animal] = enumeration(string):
       case Animal.Bird => "bird"
       case Animal.Cat  => "cat"
       case Animal.Dog  => "dog"
 
     assertEq(
-      obtained = renderer.render(codec).runA(ListMap.empty).value,
+      obtained = renderer.render(schema).runA(ListMap.empty).value,
       expected = ZodExpression.Inline("""z.enum(["bird", "cat", "dog"])""")
     )
 
@@ -101,36 +101,37 @@ final class JsonZodRendererTest extends OtterSuite:
       obtained = renderer.render(string.nullable).runA(ListMap.empty).value,
       expected = ZodExpression.Inline("""z.nullable(z.string())""")
     )
+
     assertEq(
       obtained = renderer.render(string.nullable(default = "foobar")).runA(ListMap.empty).value,
       expected = ZodExpression.Inline("""z.nullable(z.string())""")
     )
 
-  // test("optional: reference"):
-  //   val codec = string.modifyMetadata(_.put(name, "Foo"))
+  test("nullable: reference"):
+    val schema = string.metadata(name, "Foo")
 
-  //   assertEq(
-  //     obtained = renderer(codec.nullable).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("""z.nullable(Foo)""")
-  //   )
+    assertEq(
+      obtained = renderer.render(schema.nullable).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("""z.nullable(Foo)""")
+    )
 
-  // test("primitive"):
-  //   assertEq(
-  //     obtained = renderer(string).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("z.string()")
-  //   )
-  //   assertEq(
-  //     obtained = renderer(int).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("z.number()")
-  //   )
-  //   assertEq(
-  //     obtained = renderer(long).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("z.number()")
-  //   )
-  //   assertEq(
-  //     obtained = renderer(boolean).runA(ListMap.empty).value,
-  //     expected = Expression.Inline("z.boolean()")
-  //   )
+  test("primitive"):
+    assertEq(
+      obtained = renderer.render(string).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("z.string()")
+    )
+    assertEq(
+      obtained = renderer.render(int).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("z.number()")
+    )
+    assertEq(
+      obtained = renderer.render(long).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("z.number()")
+    )
+    assertEq(
+      obtained = renderer.render(boolean).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline("z.boolean()")
+    )
 
   test("record"):
     val schema = field("foo", string) :* field("bar", int)
@@ -145,67 +146,80 @@ final class JsonZodRendererTest extends OtterSuite:
       )
     )
 
-  // test("record: reference"):
-  //   val foo = string.modifyMetadata(_.put(name, "Foo"))
-  //   val codec = field("foo", foo) :* field("bar", int)
+  test("record: reference"):
+    val foo = string.metadata(name, "Foo")
+    val schema = field("foo", foo) :* field("bar", int)
 
-  //   assertEq(
-  //     obtained = renderer(codec).run(ListMap.empty).value,
-  //     expected = (
-  //       ListMap((Const(namespace = none, name = "Foo"), "z.string()")),
-  //       Expression.Inline(
-  //         """z.object({
-  //           |  "foo": Foo,
-  //           |  "bar": z.number()
-  //           |})""".stripMargin
-  //       )
-  //     )
-  //   )
+    assertEq(
+      obtained = renderer.render(schema).run(ListMap.empty).value,
+      expected = (
+        ListMap((ZodConst(namespace = none, name = "Foo"), "z.string()")),
+        ZodExpression.Inline(
+          """z.object({
+            |  "foo": Foo,
+            |  "bar": z.number()
+            |})""".stripMargin
+        )
+      )
+    )
 
-  // test("record: optional"):
-  //   val codec = field("foo", string) :* field("bar", int).optional
+  test("record: optional"):
+    val schema = field("foo", string) :* field("bar", int).optional
 
-  //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
-  //     expected = Expression.Inline(
-  //       """z.object({
-  //         |  "foo": z.string(),
-  //         |  "bar": z.optional(z.number())
-  //         |})""".stripMargin
-  //     )
-  //   )
+    assertEq(
+      obtained = renderer.render(schema).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline(
+        """z.object({
+          |  "foo": z.string(),
+          |  "bar": z.optional(z.number())
+          |})""".stripMargin
+      )
+    )
 
-  // test("tuple"):
-  //   val codec = string :* int
+  test("tuple"):
+    assertEq(
+      obtained = renderer.render(string :* int).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline(
+        """z.tuple([
+          |  z.string(),
+          |  z.number()
+          |])""".stripMargin
+      )
+    )
 
-  //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
-  //     expected = Expression.Inline(
-  //       """z.tuple([
-  //         |  z.string(),
-  //         |  z.number()
-  //         |])""".stripMargin
-  //     )
-  //   )
+  test("tuple: reference"):
+    val foo = string.metadata(name, "Foo")
+    val schema = foo :* int
 
-  // test("union: untagged"):
-  //   val codec = branch("foo", string) :+ branch("bar", int)
+    assertEq(
+      obtained = renderer.render(schema).run(ListMap.empty).value,
+      expected = (
+        ListMap((ZodConst(namespace = none, name = "Foo"), "z.string()")),
+        ZodExpression.Inline(
+          """z.tuple([
+            |  Foo,
+            |  z.number()
+            |])""".stripMargin
+        )
+      )
+    )
 
-  //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
-  //     expected = Expression.Inline(
-  //       """z.union([
-  //         |  z.string(),
-  //         |  z.number()
-  //         |])""".stripMargin
-  //     )
-  //   )
+  test("union"):
+    assertEq(
+      obtained = renderer.render(string :+ int).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline(
+        """z.union([
+          |  z.string(),
+          |  z.number()
+          |])""".stripMargin
+      )
+    )
 
   // test("union: taggged (keyed)"):
-  //   val codec = (branch("foo", string) :+ branch("bar", int)).keyed
+  //   val schema = (branch("foo", string) :+ branch("bar", int)).keyed
 
   //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
+  //     obtained = renderer(schema).runA(ListMap.empty).value,
   //     expected = Expression.Inline(
   //       """z.union([
   //         |  z.object({
@@ -219,10 +233,10 @@ final class JsonZodRendererTest extends OtterSuite:
   //   )
 
   // test("union: taggged (merged)"):
-  //   val codec = (branch("foo", field("x", int)) :+ branch("bar", field("y", long))).merged
+  //   val schema = (branch("foo", field("x", int)) :+ branch("bar", field("y", long))).merged
 
   //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
+  //     obtained = renderer(schema).runA(ListMap.empty).value,
   //     expected = Expression.Inline(
   //       """z.union([
   //         |  z.object({
@@ -236,10 +250,10 @@ final class JsonZodRendererTest extends OtterSuite:
   //   )
 
   // test("union: taggged (explicit)"):
-  //   val codec = (branch("foo", string) :+ branch("bar", int)).explicit
+  //   val schema = (branch("foo", string) :+ branch("bar", int)).explicit
 
   //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
+  //     obtained = renderer(schema).runA(ListMap.empty).value,
   //     expected = Expression.Inline(
   //       """z.union([
   //         |  z.object({

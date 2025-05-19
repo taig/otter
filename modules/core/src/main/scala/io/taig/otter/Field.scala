@@ -7,6 +7,8 @@ sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]
   def value: Reference[T, ?]
 
+  def isOptional: Boolean
+
   def nullish: Boolean
   def modifyNullish(f: Boolean => Boolean): Field[S, T, A]
 
@@ -22,13 +24,14 @@ sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
 object Field:
   final private[otter] case class Modify[+S[_], +T[_], A, B](self: Field[S, T, A], f: A => B, g: B => A)
       extends Field[S, T, B]:
-    export self.{key, metadata, nullish, value}
+    export self.{isOptional, key, metadata, nullish, value}
     override def modifyNullish(f: Boolean => Boolean): Field[S, T, B] = copy(self = self.modifyNullish(f))
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, B] = copy(self = self.modifyMetadata(f))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] = copy(self = self.mapK[T1, U](fK))
 
   final private[otter] case class Optional[S[_], T[_], A](self: Field[S, T, A]) extends Field[S, T, Option[A]]:
     export self.{key, metadata, nullish, value}
+    override def isOptional: Boolean = true
     override def modifyNullish(f: Boolean => Boolean): Field[S, T, Option[A]] = copy(self = self.modifyNullish(f))
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, Option[A]] =
       copy(self = self.modifyMetadata(f))
@@ -41,6 +44,7 @@ object Field:
       nullish: Boolean,
       metadata: Metadata
   ) extends Field[S, T, B]:
+    override def isOptional: Boolean = false
     override def modifyNullish(f: Boolean => Boolean): Field[S, T, B] = copy(nullish = f(nullish))
     override def modifyMetadata(f: Metadata => Metadata): Field[S, T, B] = copy(metadata = f(metadata))
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] =
@@ -59,6 +63,7 @@ object Field:
     extension [A](self: Field[Key, Value, A])
       override def key: Reference.Constant[Key, ?] = self.key
       override def value: Reference[Value, ?] = self.value
+      override def isOptional: Boolean = self.isOptional
       override def nullish: Boolean = self.nullish
       override def modifyNullish(f: Boolean => Boolean): Field[Key, Value, A] = self.modifyNullish(f)
       override def metadata: Metadata = self.metadata

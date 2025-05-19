@@ -2,6 +2,7 @@ package io.taig.otter.schema
 
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import io.taig.otter.syntax.InvariantSyntax.*
 
 import scala.annotation.targetName
 
@@ -14,8 +15,8 @@ trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
   extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
 
   extension [A](self: Value[A])
-    @targetName("tupleZip")
-    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] = ???
+    @targetName("tuple :* value")
+    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] = self.toTuple.zip(schema.toTuple).merge
 
     def toTuple: Self[A] = lift(self)
 

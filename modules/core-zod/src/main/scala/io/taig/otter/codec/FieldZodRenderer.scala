@@ -9,4 +9,7 @@ final class FieldZodRenderer[S[_], T[_]](key: Encoder[S, String], value: Rendere
     extends Renderer[Field[S, T, *], ZodState[(String, ZodExpression)]]:
   override def render[A](schema: Field[S, T, A]): ZodState[(String, ZodExpression)] = value
     .render(schema = schema.value.value)
+    .map:
+      case expression if schema.isOptional => ZodExpression.Inline(show"z.optional($expression)")
+      case expression                      => expression
     .tupleLeft(ReferenceConstantRenderer(encoder = key).render(reference = schema.key))

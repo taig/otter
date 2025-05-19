@@ -13,7 +13,7 @@ final class RecordZodRenderer[S[_]](renderer: Renderer[S, ZodState[(String, ZodE
     schema.fields
       .traverse(field => renderer.render(schema = field.value))
       .map:
-        case Chain.nil           => "z.object()"
+        case Chain.nil           => "z.object({})"
         case Chain((key, value)) => show"z.object({ $key: $value })"
         case values =>
           val fields = values.map((key, value) => show"$key: $value").mkString_(",\n")

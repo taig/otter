@@ -2,7 +2,6 @@ package io.taig.otter.codec
 
 import cats.data.State
 import cats.syntax.all.*
-import io.taig.otter.codec.Renderer
 import io.taig.otter.Json
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
@@ -30,6 +29,8 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
     renderer = FieldZodRenderer(key = KeyPrinter.Quoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
   )
+  val tuple = TupleZodRenderer(renderer = this)
+  val union = UnionZodRenderer(renderer = this)
 
   override def render[A](schema: Json[A]): ZodState[ZodExpression] = renderer.render(schema)
 
@@ -42,35 +43,9 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
       case Json.Nullable(self)    => nullable.render(schema = self)
       case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer.render(schema = self))
       case Json.Record(self)      => record.render(schema = self)
-
-//     def apply(codec: Enumeration[Json.Primitive, ?]): String =
-//       EnumerationZodRenderer(printer = JsonPrimitivePrinter)(codec)
-
-//     def apply(codec: Nullable[Json, ?]): ZodState[String] =
-//       codec.codec
-//         .map(_.value)
-//         .fold(State.pure("z.void()"))(self.apply(_).map(expression => show"z.nullable(${expression})"))
-
-//     def apply(codec: Tuple[Json, ?]): ZodState[String] = codec.codecs
-//       .map(_.value)
-//       .traverse(self.apply)
-//       .map: values =>
-//         s"""z.tuple([
-//            |${values.map(value => show"  $value").mkString_(",\n")}
-//            |])""".stripMargin
-
-//     // def apply(codec: Union[Json, ?]): ZodState[String] =
-//     //   val discriminator = codec match
-//     //     case codec: Union.Untagged[Json, ?] => none
-//     //     case codec: Union.Tagged[Json, ?]   => codec.discriminator.some
-
-//     //   UnionZodRenderer[Json](
-//     //     render = [A] => (name: String, codec: Json[A]) => Raw(name, codec, discriminator)
-//     //   )(codec)
-
-//     def apply[A](reference: Reference.Constant[Json, A]): Option[String] = reference.self.value match
-//       case Json.Primitive(self) => PrimitivePrinter.Quoted(codec = self, reference.value).some
-//       case _                    => none
+      case Json.Sum(self)         => ???
+      case Json.Tuple(self)       => tuple.render(schema = self)
+      case Json.Union(self)       => union.render(schema = self)
 
 //     def apply(name: String, codec: Json[?], discriminator: Option[Discriminator]): ZodState[ZodExpression] =
 //       discriminator match
@@ -98,6 +73,3 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
 //                       |  "$value": $expression
 //                       |})""".stripMargin
 //         case None => self.apply(codec)
-
-// object JsonZodRenderer:
-//   def apply(): Renderer[Json, ZodState[ZodExpression]] = new JsonZodRenderer()
