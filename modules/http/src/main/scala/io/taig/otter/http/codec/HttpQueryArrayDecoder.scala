@@ -13,5 +13,5 @@ object HttpQueryArrayDecoder extends Decoder[Http.Query.Array, Chain[String]]:
   val tuple = TupleDecoder(decoder = HttpQueryValueParser)
 
   override def decode[A](schema: Http.Query.Array[A], values: Chain[String]): Validated[Violations, A] = schema match
-    case Http.Query.Array.Collection(self) => collection.decode(schema = self, values = values.toList)
-    case Http.Query.Array.Tuple(self)      => tuple.decode(schema = self, values = values.toList)
+    case Http.Query.Array.Collection(self) => collection.decode(schema = self.self, values = values.toList)
+    case Http.Query.Array.Tuple(self)      => tuple.decode(schema = self.self, values = values.toList)

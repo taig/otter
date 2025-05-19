@@ -13,5 +13,5 @@ object HttpHeaderArrayDecoder extends Decoder[Http.Header.Array, Chain[String]]:
   val tuple = TupleDecoder(decoder = HttpHeaderValueParser)
 
   override def decode[A](schema: Header.Array[A], value: Chain[String]): Validated[Violations, A] = schema match
-    case Http.Header.Array.Collection(self) => collection.decode(schema = self, value.toList)
-    case Http.Header.Array.Tuple(self)      => tuple.decode(schema = self, value.toVector)
+    case Http.Header.Array.Collection(self) => collection.decode(schema = self.self, value.toList)
+    case Http.Header.Array.Tuple(self)      => tuple.decode(schema = self.self, value.toVector)

@@ -13,7 +13,7 @@ object HttpParameterObjectValueDecoder extends Decoder[Http.Parameter.Object.Val
 
   override def decode[A](schema: Http.Parameter.Object.Value[A], value: Option[String]): Validated[Violations, A] =
     schema match
-      case Http.Parameter.Object.Value.Nullable(self) => nullable.decode(schema = self, value)
+      case Http.Parameter.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
       case schema: Http.Parameter.Value[A] =>
         value
           .toValid(Violations.rootNec(Violation.required))

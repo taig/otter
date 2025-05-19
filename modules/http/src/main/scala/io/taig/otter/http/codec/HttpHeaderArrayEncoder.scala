@@ -11,5 +11,5 @@ object HttpHeaderArrayEncoder extends Encoder[Http.Header.Array, Chain[String]]:
   val tuple = TupleEncoder(encoder = HttpHeaderValuePrinter)
 
   override def encode[A](schema: Http.Header.Array[A], a: A): Chain[String] = schema match
-    case Http.Header.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self, a))
-    case Http.Header.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self, a))
+    case Http.Header.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
+    case Http.Header.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))

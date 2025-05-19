@@ -10,5 +10,5 @@ object HttpHeaderObjectValueEncoder extends Encoder[Http.Header.Object.Value, Op
   val nullable = NullableEncoder(encoder = this, empty = none)
 
   override def encode[A](schema: Http.Header.Object.Value[A], a: A): Option[String] = schema match
-    case Http.Header.Object.Value.Nullable(self) => nullable.encode(schema = self, a)
+    case Http.Header.Object.Value.Nullable(self) => nullable.encode(schema = self.self, a)
     case schema: Http.Header.Value[A]            => HttpHeaderValuePrinter.encode(schema, a).some

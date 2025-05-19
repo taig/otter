@@ -59,7 +59,3 @@ object Query:
 
   given Schema[Query] with
     override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)
-
-    extension [A](self: Query[A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Query[A] = self.modifyMetadata(f)

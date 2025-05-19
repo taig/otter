@@ -45,8 +45,4 @@ object Parameter:
   given Schema[Parameter] with
     override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] = fa.imap(f)(g)
 
-    extension [A](self: Parameter[A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Parameter[A] = self.modifyMetadata(f)
-
   given [A]: Show[Parameter[A]] = Show.fromToString

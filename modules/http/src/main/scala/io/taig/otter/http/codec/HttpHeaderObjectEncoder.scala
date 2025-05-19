@@ -13,9 +13,9 @@ object HttpHeaderObjectEncoder extends Encoder[Http.Header.Object, Chain[(String
   val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HttpHeaderObjectValueEncoder)
   val record = RecordEncoder(
     field = FieldEncoder(key = KeyPrinter.Unquoted, value = HttpHeaderObjectValueEncoder)
-      .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self)
+      .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self.self)
   )
 
   override def encode[A](schema: Http.Header.Object[A], a: A): Chain[(String, Option[String])] = schema match
-    case Http.Header.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self, a))
-    case Http.Header.Object.Record(self)     => record.encode(schema = self, a)
+    case Http.Header.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self.self, a))
+    case Http.Header.Object.Record(self)     => record.encode(schema = self.self, a)

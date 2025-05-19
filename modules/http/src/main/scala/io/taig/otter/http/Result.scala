@@ -36,7 +36,3 @@ object Result:
 
   given [S[_]]: Schema[Result[S, *]] with
     override def imap[A, B](fa: Result[S, A])(f: A => B)(g: B => A): Result[S, B] = fa.imap(f)(g)
-
-    extension [A](self: Result[S, A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Result[S, A] = self.modifyMetadata(f)

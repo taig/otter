@@ -60,7 +60,7 @@ final class KeyParserTest extends OtterSuite:
     )
 
   test("union"):
-    val schema = constant("foo") :+ constant("bar")
+    val schema = constant("foo") :c+ constant("bar")
 
     assertEq(
       obtained = decoder.decode(schema, "foo"),

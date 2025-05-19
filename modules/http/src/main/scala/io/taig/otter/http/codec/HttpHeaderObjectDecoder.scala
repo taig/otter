@@ -17,10 +17,10 @@ object HttpHeaderObjectDecoder extends Decoder[Http.Header.Object, Chain[(String
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HttpHeaderObjectValueDecoder)
   val record = RecordDecoder(
     field = FieldDecoder(key = KeyCodec.Unquoted, value = HttpHeaderObjectValueDecoder, empty = none[String])
-      .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self)
+      .mapK[Http.Header.Field]([A] => (field: Http.Header.Field[A]) => field.self.self)
   )
 
   override def decode[A](schema: Header.Object[A], value: Chain[(String, Option[String])]): Validated[Violations, A] =
     schema match
-      case Http.Header.Object.Dictionary(self) => dictionary.decode(schema = self, value.toList)
-      case Http.Header.Object.Record(self)     => record.decode(schema = self, value.toList)
+      case Http.Header.Object.Dictionary(self) => dictionary.decode(schema = self.self, value.toList)
+      case Http.Header.Object.Record(self)     => record.decode(schema = self.self, value.toList)

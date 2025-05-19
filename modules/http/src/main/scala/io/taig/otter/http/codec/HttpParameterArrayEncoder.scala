@@ -13,5 +13,5 @@ object HttpParameterArrayEncoder extends Encoder[Http.Parameter.Array, Chain[Str
   val tuple = TupleEncoder(encoder = HttpParameterValuePrinter)
 
   override def encode[A](schema: Parameter.Array[A], a: A): Chain[String] = schema match
-    case Http.Parameter.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self, a))
-    case Http.Parameter.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self, a))
+    case Http.Parameter.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
+    case Http.Parameter.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))

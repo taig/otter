@@ -42,7 +42,3 @@ object Header:
 
   given Schema[Header] with
     override def imap[A, B](fa: Header[A])(f: A => B)(g: B => A): Header[B] = fa.imap(f)(g)
-
-    extension [A](self: Header[A])
-      override def metadata: Metadata = self.metadata
-      override def modifyMetadata(f: Metadata => Metadata): Header[A] = self.modifyMetadata(f)

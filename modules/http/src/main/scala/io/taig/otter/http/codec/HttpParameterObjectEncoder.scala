@@ -12,9 +12,9 @@ object HttpParameterObjectEncoder extends Encoder[Http.Parameter.Object, Chain[(
   val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
   val record = RecordEncoder(field =
     FieldEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
-      .mapK[Http.Parameter.Field]([A] => (field: Http.Parameter.Field[A]) => field.self)
+      .mapK[Http.Parameter.Field]([A] => (field: Http.Parameter.Field[A]) => field.self.self)
   )
 
   override def encode[A](schema: Http.Parameter.Object[A], a: A): Chain[(String, Option[String])] = schema match
-    case Http.Parameter.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self, a))
-    case Http.Parameter.Object.Record(self)     => record.encode(schema = self, a)
+    case Http.Parameter.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self.self, a))
+    case Http.Parameter.Object.Record(self)     => record.encode(schema = self.self, a)

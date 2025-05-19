@@ -25,4 +25,4 @@ final class HttpQueryEncoder(explode: Boolean, style: Query.Style) extends Encod
           .pure[Seq]
           .some
     case Http.Query.Nullable(self) =>
-      NullableEncoder(encoder = this, empty = none).encode(schema = self, a)
+      NullableEncoder(encoder = this, empty = none).encode(schema = self.self, a)

@@ -14,7 +14,7 @@ import java.math.BigInteger as JBigInteger
 
 object CirceJsonPrimitiveDecoder extends Decoder[Primitive, CirceJson]:
   override def decode[A](schema: Primitive[A], json: CirceJson): Validated[Violations, A] = schema match
-    case _: Primitive.Boolean.Root            => decode[Boolean](name = "boolean", json)
+    case Primitive.Boolean.Root               => decode[Boolean](name = "boolean", json)
     case _: Primitive.Number.BigDecimal       => decode[JBigDecimal](name = "bigDecimal", json)
     case _: Primitive.Number.BigInteger       => decode[JBigInteger](name = "bigInteger", json)
     case _: Primitive.Number.Double           => decode[Double](name = "double", json)
@@ -24,7 +24,7 @@ object CirceJsonPrimitiveDecoder extends Decoder[Primitive, CirceJson]:
     case Primitive.Boolean.Modify(self, f, _) => decode(schema = self, json).map(f)
     case Primitive.Number.Modify(self, f, _)  => decode(schema = self, json).map(f)
     case Primitive.String.Modify(self, f, _)  => decode(schema = self, json).map(f)
-    case Primitive.String.Parser(name, f, _, _, _, _, _) =>
+    case Primitive.String.Parser(name, f, _, _, _, _) =>
       decode[String](name = "string", json).andThen: value =>
         f(value)
           .leftMap(error => Violations.rootNec(Violation.tpe(name, actual = toValue(json), hint = error)))

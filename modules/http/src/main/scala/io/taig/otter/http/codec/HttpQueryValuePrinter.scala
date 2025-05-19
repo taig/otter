@@ -13,7 +13,7 @@ object HttpQueryValuePrinter extends Encoder[Http.Query.Value, String]:
   val union = UnionEncoder(encoder = this)
 
   override def encode[A](schema: Http.Query.Value[A], a: A): String = schema match
-    case Http.Query.Value.Constant(self)    => constant.encode(schema = self, a)
-    case Http.Query.Value.Enumeration(self) => enumeration.encode(schema = self, a)
-    case Http.Query.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self, a)
-    case Http.Query.Value.Union(self)       => union.encode(schema = self, a)
+    case Http.Query.Value.Constant(self)    => constant.encode(schema = self.self, a)
+    case Http.Query.Value.Enumeration(self) => enumeration.encode(schema = self.self, a)
+    case Http.Query.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.self, a)
+    case Http.Query.Value.Union(self)       => union.encode(schema = self.self, a)

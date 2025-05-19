@@ -11,7 +11,7 @@ object HttpParameterValueParser extends Decoder[Http.Parameter.Value, String]:
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Http.Parameter.Value[A], value: String): Validated[Violations, A] = schema match
-    case Http.Parameter.Value.Constant(self)    => constant.decode(schema = self, value)
-    case Http.Parameter.Value.Enumeration(self) => enumeration.decode(schema = self, value)
-    case Http.Parameter.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self, value)
-    case Http.Parameter.Value.Union(self)       => union.decode(schema = self, value)
+    case Http.Parameter.Value.Constant(self)    => constant.decode(schema = self.self, value)
+    case Http.Parameter.Value.Enumeration(self) => enumeration.decode(schema = self.self, value)
+    case Http.Parameter.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self.self, value)
+    case Http.Parameter.Value.Union(self)       => union.decode(schema = self.self, value)

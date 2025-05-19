@@ -13,5 +13,5 @@ object HttpParameterArrayDecoder extends Decoder[Http.Parameter.Array, Chain[Str
   val tuple = TupleDecoder(decoder = HttpParameterValueParser)
 
   override def decode[A](schema: Http.Parameter.Array[A], value: Chain[String]): Validated[Violations, A] = schema match
-    case Http.Parameter.Array.Collection(self) => collection.decode(schema = self, value.toList)
-    case Http.Parameter.Array.Tuple(self)      => tuple.decode(schema = self, value.toVector)
+    case Http.Parameter.Array.Collection(self) => collection.decode(schema = self.self, value.toList)
+    case Http.Parameter.Array.Tuple(self)      => tuple.decode(schema = self.self, value.toVector)

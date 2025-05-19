@@ -9,5 +9,5 @@ object HttpParameterObjectValueEncoder extends Encoder[Http.Parameter.Object.Val
   val nullable = NullableEncoder(encoder = this, empty = none)
 
   override def encode[A](schema: Http.Parameter.Object.Value[A], a: A): Option[String] = schema match
-    case Http.Parameter.Object.Value.Nullable(self) => nullable.encode(schema = self, a)
+    case Http.Parameter.Object.Value.Nullable(self) => nullable.encode(schema = self.self, a)
     case schema: Http.Parameter.Value[A]            => HttpParameterValuePrinter.encode(schema, a).some

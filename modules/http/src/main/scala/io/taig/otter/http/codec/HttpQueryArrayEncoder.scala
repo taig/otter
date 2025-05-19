@@ -10,5 +10,5 @@ object HttpQueryArrayEncoder extends Encoder[Http.Query.Array, Seq[String]]:
   val tuple = TupleEncoder(encoder = HttpQueryValuePrinter)
 
   override def encode[A](schema: Http.Query.Array[A], a: A): Seq[String] = schema match
-    case Http.Query.Array.Collection(self) => collection.encode(schema = self, a)
-    case Http.Query.Array.Tuple(self)      => tuple.encode(schema = self, a)
+    case Http.Query.Array.Collection(self) => collection.encode(schema = self.self, a)
+    case Http.Query.Array.Tuple(self)      => tuple.encode(schema = self.self, a)

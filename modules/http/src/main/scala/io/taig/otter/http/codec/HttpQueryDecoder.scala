@@ -39,7 +39,7 @@ final class HttpQueryDecoder(explode: Boolean, style: Query.Style)
     case Http.Query.Nullable(self) =>
       NullableDecoder
         .Remainding(decoder = this, empty = _.exists(_.isEmpty))
-        .decodeRemainding(schema = self, values)
+        .decodeRemainding(schema = self.self, values)
         .map: (remainders, value) =>
           remainders.collectFirstWithRemainders { case None => () }.as(value)
 

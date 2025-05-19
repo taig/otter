@@ -21,7 +21,7 @@ object HttpQueryValueParser extends Decoder[Http.Query.Value, String]:
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Value[A], value: String): Validated[Violations, A] = schema match
-    case Http.Query.Value.Constant(self)    => constant.decode(schema = self, value)
-    case Http.Query.Value.Enumeration(self) => enumeration.decode(schema = self, value)
-    case Http.Query.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self, value)
-    case Http.Query.Value.Union(self)       => union.decode(schema = self, value)
+    case Http.Query.Value.Constant(self)    => constant.decode(schema = self.self, value)
+    case Http.Query.Value.Enumeration(self) => enumeration.decode(schema = self.self, value)
+    case Http.Query.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self.self, value)
+    case Http.Query.Value.Union(self)       => union.decode(schema = self.self, value)

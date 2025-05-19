@@ -15,7 +15,7 @@ object HttpParameterObjectDecoder extends Decoder[Http.Parameter.Object, Chain[(
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HttpParameterObjectValueDecoder)
   val record = RecordDecoder(
     field = FieldDecoder(key = KeyCodec.Unquoted, value = HttpParameterObjectValueDecoder, empty = none[String])
-      .mapK[Http.Parameter.Field]([A] => (field: Http.Parameter.Field[A]) => field.self)
+      .mapK[Http.Parameter.Field]([A] => (field: Http.Parameter.Field[A]) => field.self.self)
   )
 
   override def decode[A](
@@ -23,5 +23,5 @@ object HttpParameterObjectDecoder extends Decoder[Http.Parameter.Object, Chain[(
       value: Chain[(String, Option[String])]
   ): Validated[Violations, A] =
     schema match
-      case Http.Parameter.Object.Dictionary(self) => dictionary.decode(schema = self, value.toList)
-      case Http.Parameter.Object.Record(self)     => record.decode(schema = self, value.toList)
+      case Http.Parameter.Object.Dictionary(self) => dictionary.decode(schema = self.self, value.toList)
+      case Http.Parameter.Object.Record(self)     => record.decode(schema = self.self, value.toList)
