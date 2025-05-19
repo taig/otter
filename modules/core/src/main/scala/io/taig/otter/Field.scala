@@ -50,7 +50,7 @@ object Field:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
 
-  given [Key[_], Value[_]]: FieldSchema[Field[Key, Value, *], Key, Value] with
+  given [Key[_], Value[_], Record[_]]: FieldSchema[Field[Key, Value, *], Key, Value, Record] with
     override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] = Root(
       key = Reference.Constant(self = Reference.later(key), value = name),
       value = Reference.later(value),
@@ -69,3 +69,4 @@ object Field:
       override def metadata: Metadata = self.metadata
       override def modifyMetadata(f: Metadata => Metadata): Field[Key, Value, A] = self.modifyMetadata(f)
       override def optional: Field[Key, Value, Option[A]] = self.optional
+      override def toRecord: Record[A] = ???

@@ -2,7 +2,6 @@ package io.taig.otter.schema
 
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import io.taig.otter.syntax.InvariantSyntax.*
 
 import scala.annotation.targetName
 

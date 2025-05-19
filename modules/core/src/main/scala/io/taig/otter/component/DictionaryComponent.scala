@@ -13,7 +13,7 @@ import io.taig.otter.schema.DictionarySchema
 
 import scala.collection.immutable.SortedMap
 
-trait DictionaryComponent[+Self[_], -Key[_], -Value[_]](using self: DictionarySchema[Self, Key, Value]):
+trait DictionaryComponent[Self[_], -Key[_], -Value[_]](using self: DictionarySchema[Self, Key, Value]):
   object dictionary:
     final def list[A, B](
         key: => Key[A],

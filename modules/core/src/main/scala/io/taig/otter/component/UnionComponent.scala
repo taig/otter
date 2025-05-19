@@ -2,7 +2,5 @@ package io.taig.otter.component
 
 import io.taig.otter.schema.UnionSchema
 
-import scala.annotation.targetName
-
-trait UnionComponent[Self[_], -Value[_]](using self: UnionSchema[Self, Value]):
-  export self.{+:, :+}
+trait UnionComponent[Self[_], Value[_]](using self: UnionSchema[Self, Value]):
+  protected given UnionSchema[Self, Value] = self

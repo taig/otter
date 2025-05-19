@@ -1,13 +1,12 @@
 package io.taig.otter.component
+
 import io.taig.otter.Comparison
+import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.NullableSchema
 import io.taig.otter.schema.RecordSchema
-import io.taig.otter.syntax.InvariantSyntax.*
 
-trait ComparisonComponent[Nullable[a] <: Value[a], Record[_], Field[_], Key[_], Value[_]](using
-    RecordSchema[Record, Field],
-    NullableSchema[Nullable, Value]
-) extends FieldComponent.Primitive.String[Field, Key, Value],
+trait ComparisonComponent[Nullable[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using FieldSchema[Field, Key, Value, Record], NullableSchema[Nullable, Value], RecordSchema[Record, Field])
+    extends FieldComponent.Primitive.String[Field, Key, Value, Record],
       NullableComponent[Nullable, Value],
       PrimitiveComponent.Boolean[Value],
       RecordComponent[Record, Field]:

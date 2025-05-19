@@ -64,14 +64,6 @@ object Json:
         [A] => (schema: Self.Record[Json.Field, A]) => Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
-  final case class Sum[A](self: Self.Sum[Json.Branch, A]) extends Json[A]
-
-  object Sum:
-    given SumSchema[Json.Sum, Json.Branch] = SumSchema[Self.Sum[Json.Branch, *], Json.Branch]
-      .imapK(
-        [A] => (schema: Self.Sum[Json.Branch, A]) => Sum(schema)
-      )([A] => (json: Json.Sum[A]) => json.self)
-
   final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
 
   object Tuple:
@@ -88,21 +80,14 @@ object Json:
         [A] => (schema: Self.Union[Json, A]) => Union(schema)
       )([A] => (json: Json.Union[A]) => json.self)
 
-  final case class Branch[A](self: Self.Branch[Key, Json, A])
-
-  object Branch:
-    given BranchSchema[Json.Branch, Key, Json] = BranchSchema[Self.Branch[Key, Json, *], Key, Json]
-      .imapK(
-        [A] => (schema: Self.Branch[Key, Json, A]) => Branch(schema)
-      )([A] => (json: Json.Branch[A]) => json.self)
-
   final case class Field[A](self: Self.Field[Key, Json, A])
 
   object Field:
-    given FieldSchema[Json.Field, Key, Json] = FieldSchema[Self.Field[Key, Json, *], Key, Json]
-      .imapK(
-        [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
-      )([A] => (json: Json.Field[A]) => json.self)
+    given FieldSchema[Json.Field, Key, Json, Json.Record] =
+      FieldSchema[Self.Field[Key, Json, *], Key, Json, Json.Record]
+        .imapK(
+          [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
+        )([A] => (json: Json.Field[A]) => json.self)
 
   given Schema[Json] with
     override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
@@ -113,7 +98,6 @@ object Json:
       case Nullable(self)    => Nullable(self.imap(f)(g))
       case Primitive(self)   => Primitive(self.imap(f)(g))
       case Record(self)      => Record(self.imap(f)(g))
-      case Sum(self)         => Sum(self.imap(f)(g))
       case Tuple(self)       => Tuple(self.imap(f)(g))
       case Union(self)       => Union(self.imap(f)(g))
 
@@ -126,7 +110,6 @@ object Json:
         case Nullable(self)    => self.metadata
         case Primitive(self)   => self.metadata
         case Record(self)      => self.metadata
-        case Sum(self)         => self.metadata
         case Tuple(self)       => self.metadata
         case Union(self)       => self.metadata
 
@@ -138,6 +121,5 @@ object Json:
         case Nullable(self)    => Nullable(self.modifyMetadata(f))
         case Primitive(self)   => Primitive(self.modifyMetadata(f))
         case Record(self)      => Record(self.modifyMetadata(f))
-        case Sum(self)         => Sum(self.modifyMetadata(f))
         case Tuple(self)       => Tuple(self.modifyMetadata(f))
         case Union(self)       => Union(self.modifyMetadata(f))

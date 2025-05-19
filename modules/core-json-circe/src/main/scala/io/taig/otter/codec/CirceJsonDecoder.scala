@@ -41,10 +41,6 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
         .map(_.toList)
         .andThen(record.decode(schema = self, _))
-    case Json.Sum(self) =>
-      json.asObject
-        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
-        .andThen(???)
     case Json.Tuple(self) =>
       json.asArray
         .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))

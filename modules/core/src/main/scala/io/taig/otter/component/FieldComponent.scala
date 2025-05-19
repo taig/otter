@@ -11,24 +11,24 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait FieldComponent[Self[_], Key[_], -Value[_]](using self: FieldSchema[Self, Key, Value]):
+trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using self: FieldSchema[Self, Key, Value, Record]):
   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
 object FieldComponent:
-  trait Primitive[Self[_], Key[_], -Value[_]]
-      extends FieldComponent.Primitive.Boolean[Self, Key, Value],
-        FieldComponent.Primitive.Number[Self, Key, Value],
-        FieldComponent.Primitive.String[Self, Key, Value]:
+  trait Primitive[Self[_], Key[_], Value[_], Record[_]]
+      extends FieldComponent.Primitive.Boolean[Self, Key, Value, Record],
+        FieldComponent.Primitive.Number[Self, Key, Value, Record],
+        FieldComponent.Primitive.String[Self, Key, Value, Record]:
     override def key: PrimitiveComponent[Key]
 
   object Primitive:
-    trait Boolean[Self[_], Key[_], -Value[_]] extends FieldComponent[Self, Key, Value]:
+    trait Boolean[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.Boolean[Key]
 
       final def field[A](name: SBoolean, schema: => Value[A]): Self[A] =
         field(name, key = key.boolean, value = schema)
 
-    trait Number[Self[_], Key[_], -Value[_]] extends FieldComponent[Self, Key, Value]:
+    trait Number[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.Number[Key]
 
       final def field[A](name: BigDecimal, schema: => Value[A]): Self[A] =
@@ -48,7 +48,7 @@ object FieldComponent:
       final def field[A](name: SLong, schema: => Value[A]): Self[A] =
         field(name, key = key.long, value = schema)
 
-    trait String[Self[_], Key[_], -Value[_]] extends FieldComponent[Self, Key, Value]:
+    trait String[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
       def key: PrimitiveComponent.String[Key]
 
       final def field[A](name: JString, schema: => Value[A]): Self[A] =

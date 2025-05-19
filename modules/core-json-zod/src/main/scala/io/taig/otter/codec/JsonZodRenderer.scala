@@ -43,33 +43,5 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
       case Json.Nullable(self)    => nullable.render(schema = self)
       case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer.render(schema = self))
       case Json.Record(self)      => record.render(schema = self)
-      case Json.Sum(self)         => ???
       case Json.Tuple(self)       => tuple.render(schema = self)
       case Json.Union(self)       => union.render(schema = self)
-
-//     def apply(name: String, codec: Json[?], discriminator: Option[Discriminator]): ZodState[ZodExpression] =
-//       discriminator match
-//         case Some(Discriminator.Keyed) =>
-//           self
-//             .apply(codec)
-//             .map: expression =>
-//               ZodExpression.Inline:
-//                 show"""z.object({
-//                       |${indent(show""""$name": $expression""")}
-//                       |})""".stripMargin
-//         case Some(Discriminator.Merged(identifier)) =>
-//           self
-//             .apply(codec)
-//             .map: expression =>
-//               ZodExpression.Inline:
-//                 show"""$expression.merge(z.object({ "$identifier": z.literal("$name") }))"""
-//         case Some(Discriminator.Explicit(identifier, value)) =>
-//           self
-//             .apply(codec)
-//             .map: expression =>
-//               ZodExpression.Inline:
-//                 show"""z.object({
-//                       |  "$identifier": z.literal("$name"),
-//                       |  "$value": $expression
-//                       |})""".stripMargin
-//         case None => self.apply(codec)

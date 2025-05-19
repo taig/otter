@@ -150,8 +150,8 @@ object Http:
     final case class Field[A](self: Self.Field[Key, Http.Header.Object.Value, A])
 
     object Field:
-      given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value] =
-        FieldSchema[Self.Field[Key, Http.Header.Object.Value, *], Key, Http.Header.Object.Value]
+      given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value, Http.Header.Object.Record] =
+        FieldSchema[Self.Field[Key, Http.Header.Object.Value, *], Key, Http.Header.Object.Value, Http.Header.Object.Record]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Header.Object.Value, A]) => Field(schema)
           )([A] => (value: Http.Header.Field[A]) => value.self)
@@ -262,15 +262,6 @@ object Http:
           .imapK(
             [A] => (schema: Self.Nullable[Http.Query, A]) => Nullable(schema)
           )([A] => (value: Http.Query.Nullable[A]) => value.self)
-
-    final case class Field[A](self: Self.Field[Http.Query.Value, Http.Query.Value, A])
-
-    object Field:
-      given FieldSchema[Http.Query.Field, Http.Query.Value, Http.Query.Value] =
-        FieldSchema[Self.Field[Http.Query.Value, Http.Query.Value, *], Http.Query.Value, Http.Query.Value]
-          .imapK(
-            [A] => (schema: Self.Field[Http.Query.Value, Http.Query.Value, A]) => Field(schema)
-          )([A] => (value: Http.Query.Field[A]) => value.self)
 
   sealed trait Parameter[A] extends Product with Serializable
 
@@ -418,8 +409,8 @@ object Http:
     final case class Field[A](self: Self.Field[Key, Http.Parameter.Object.Value, A])
 
     object Field:
-      given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value] =
-        FieldSchema[Self.Field[Key, Http.Parameter.Object.Value, *], Key, Http.Parameter.Object.Value]
+      given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value, Http.Parameter.Object.Record] =
+        FieldSchema[Self.Field[Key, Http.Parameter.Object.Value, *], Key, Http.Parameter.Object.Value, Http.Parameter.Object.Record]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Parameter.Object.Value, A]) => Field(schema)
           )([A] => (value: Http.Parameter.Field[A]) => value.self)

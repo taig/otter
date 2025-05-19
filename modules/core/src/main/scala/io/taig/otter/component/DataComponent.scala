@@ -1,44 +1,40 @@
 package io.taig.otter.component
-
-import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Data
+import io.taig.otter.schema.CollectionSchema
+import io.taig.otter.schema.DictionarySchema
 import io.taig.otter.schema.NullableSchema
-import io.taig.otter.schema.SumSchema
 
 trait DataComponent[
-    Collection[a] <: Value[a]: Invariant,
-    Dictionary[a] <: Value[a]: Invariant,
-    Nullable[a] <: Value[a]: Invariant,
+    Collection[a] <: Value[a],
+    Constant[a] <: Value[a],
+    Dictionary[a] <: Value[a],
+    Nullable[a] <: Value[a],
     Primitive[a] <: Value[a],
-    Sum[a] <: Value[a],
-    Branch[_],
+    Record[a] <: Value[a],
+    Union[a] <: Value[a],
+    Field[_],
     Key[_],
     Value[_]
-](using NullableSchema[Nullable, Value], SumSchema[Sum, Branch])
-    extends BranchComponent.Primitive.String[Branch, Key, Value],
-      CollectionComponent[Collection, Value],
+](using CollectionSchema[Collection, Value], DictionarySchema[Dictionary, Key, Value], NullableSchema[Nullable, Value]) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
       PrimitiveComponent[Primitive],
-      SumComponent[Sum, Branch]:
+      SumComponent[Constant, Record, Field, Key, Value],
+      UnionComponent[Union, Value]:
+  this: PrimitiveComponent.String[Value] =>
+
   object data:
     val any: Nullable[Data.Any] = value.nullable.imap(_.getOrElse(Data.Null)) {
       case Data.Null        => None
       case data: Data.Value => Some(data)
     }
 
-    val number: Sum[Data.Number] =
-      branch("bigDecimal", jBigDecimal) |
-        branch("bigInterger", jBigInteger) |
-        branch("long", long) |
-        branch("int", int) |
-        branch("float", float) |
-        branch("double", double)
+    val number: Union[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
 
-    val primitive: Sum[Data.Primitive] = number | branch("boolean", boolean) | branch("string", string)
+    val primitive: Union[Data.Primitive] = number | boolean | string
 
-    val value: Sum[Data.Value] = primitive | branch("object", obj) | branch("array", array)
+    val value: Union[Data.Value] = primitive | obj | array
 
     def obj[A <: Data.Any](codec: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, codec).imap(Data.Object[A])(_.values)

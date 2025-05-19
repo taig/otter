@@ -7,7 +7,6 @@ import io.taig.otter.http.Body
 import io.taig.otter.http.Code
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Result
-import io.taig.otter.syntax.InvariantSyntax.*
 
 trait ResultSyntax:
   def result[S[_], A, B](
