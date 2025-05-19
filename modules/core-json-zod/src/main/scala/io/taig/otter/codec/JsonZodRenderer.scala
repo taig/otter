@@ -6,9 +6,15 @@ import io.taig.otter.codec.Renderer
 import io.taig.otter.Json
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
+import cats.data.Chain
+import io.taig.otter.indent
 
 object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
   val collection = CollectionZodRenderer(renderer = this)
+  val record = RecordZodRenderer(
+    renderer = FieldZodRenderer(key = KeyPrinter.Quoted, value = this)
+      .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self)
+  )
 
   override def render[A](schema: Json[A]): ZodState[ZodExpression] =
     NamespaceZodRenderer(renderer = ZodRenderer(renderer = Raw)).render(schema)
@@ -17,6 +23,7 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
     override def render[A](schema: Json[A]): ZodState[String] = schema match
       case Json.Collection(self) => collection.render(schema = self)
       case Json.Primitive(self)  => State.pure(PrimitiveZodRenderer.render(schema = self))
+      case Json.Record(self)     => record.render(schema = self)
 
 //   override def apply[A](codec: Json[A]): ZodState[ZodExpression] = NamespaceZodRenderer(renderer = Raw)(codec)
 
@@ -35,9 +42,6 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
 //                 |})""".stripMargin
 //       case Json.Tuple(self) => apply(codec = self)
 //       // case Json.Union(self) => apply(codec = self)
-
-//     def apply(codec: Collection[Json, ?]): ZodState[String] =
-//       self.apply(codec = codec.codec.value).map(expression => show"z.array($expression)")
 
 //     def apply(codec: Constant[Json, ?]): ZodState[String] =
 //       apply(reference = codec.codec)
@@ -58,20 +62,6 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
 //       codec.codec
 //         .map(_.value)
 //         .fold(State.pure("z.void()"))(self.apply(_).map(expression => show"z.nullable(${expression})"))
-
-//     // TODO figure out a proper way to encode partially optional objects
-//     def apply(codec: Record[Json.Field, ?]): ZodState[Chain[(String, ZodExpression)]] = codec match
-//       case Record.Empty(_) => State.pure(Chain.empty)
-//       // case Record.Field(key, value, _) =>
-//       //   self
-//       //     .apply(codec = value.value)
-//       //     .map: value =>
-//       //       Chain.one(ReferenceConstantPrinter(printer = JsonKeyPrinter)(key), value)
-//       case Record.Modify(self, _, _) => apply(codec = self)
-//       case Record.Optional(self) =>
-//         apply(codec = self).map: values =>
-//           values.map((key, value) => (key, Expression.Inline(show"z.optional($value)")))
-//       case Record.Zip(left, right, _) => (apply(codec = left), apply(codec = right)).mapN(_ ++ _)
 
 //     def apply(codec: Tuple[Json, ?]): ZodState[String] = codec.codecs
 //       .map(_.value)

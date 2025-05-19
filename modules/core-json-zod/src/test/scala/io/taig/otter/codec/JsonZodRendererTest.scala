@@ -136,18 +136,18 @@ final class JsonZodRendererTest extends OtterSuite:
   //     expected = Expression.Inline("z.boolean()")
   //   )
 
-  // test("record"):
-  //   val codec = field("foo", string) :* field("bar", int)
+  test("record"):
+    val schema = field("foo", string) :* field("bar", int)
 
-  //   assertEq(
-  //     obtained = renderer(codec).runA(ListMap.empty).value,
-  //     expected = Expression.Inline(
-  //       """z.object({
-  //         |  "foo": z.string(),
-  //         |  "bar": z.number()
-  //         |})""".stripMargin
-  //     )
-  //   )
+    assertEq(
+      obtained = renderer.render(schema).runA(ListMap.empty).value,
+      expected = ZodExpression.Inline(
+        """z.object({
+          |  "foo": z.string(),
+          |  "bar": z.number()
+          |})""".stripMargin
+      )
+    )
 
   // test("record: reference"):
   //   val foo = string.modifyMetadata(_.put(name, "Foo"))
