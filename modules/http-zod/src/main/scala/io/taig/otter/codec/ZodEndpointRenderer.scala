@@ -28,22 +28,30 @@ object ZodEndpointRenderer:
     val functionName = name(endpoint)
     val inputName = s"${functionName.capitalize}Input"
 
-    val (bodies, result) = input(request = endpoint.request)
+    val (bodies, inputFields) = input(request = endpoint.request)
       .run(state)
       .value
-      .map: expression =>
-        ZodExpressionRenderer.render(
-          ZodExpression.Referenced(reference = ZodConst(namespace = none, name = inputName), value = expression)
-        )
 
-    val value = s"""$result
+    val inputType = s"""z.object({
+                       |${indent(inputFields.map((name, value) => s"$name: ${value}").mkString(",\n"))}
+                       |})""".stripMargin
+
+    val inputExpression: ZodExpression.Referenced = ZodExpression.Referenced(
+      reference = ZodConst(namespace = none, name = inputName),
+      value = inputType
+    )
+
+    val functionFields = Chain(
+      ("method", s"\"${endpoint.request.method}\""),
+      ("path", s"`$url`")
+    ) ++ Chain.fromOption(inputFields.get("headers").as(("headers", "input.headers"))) ++
+      Chain.fromOption(inputFields.get("body").as(("body", "input.body"))) ++
+      Chain(("handle", "() => Promise.reject()"))
+
+    val value = s"""${ZodExpressionRenderer.render(inputExpression)}
                    |
                    |export const $functionName = (input: $inputName): Request<any> => ({
-                   |  method: "${endpoint.request.method}",
-                   |  path: `$url`,
-                   |  headers: input.headers,
-                   |  body: input.body,
-                   |  handle: () => Promise.reject()
+                   |${indent(functionFields.map((name, value) => s"$name: $value").mkString_(",\n"))}
                    |})""".stripMargin
 
     (state ++ bodies, value)
@@ -60,30 +68,31 @@ object ZodEndpointRenderer:
 
       s"$head${tail.map(_.capitalize).mkString_("")}"
 
-  def input(request: Request[Json, ?]): ZodState[String] =
+  def input(request: Request[Json, ?]): ZodState[ListMap[String, String]] =
     val path = PathZodRenderer
       .render(request.url.path)
-      .map(path => s"path: ${indent(path, block = true)}")
-      .map[ZodState[String]](State.pure)
+      .tupleLeft("path")
+      .map[ZodState[(String, String)]](State.pure)
 
     val queries = QueriesZodRenderer
       .render(request.url.queries)
-      .map(queries => s"queries: ${indent(queries, block = true)}")
-      .map[ZodState[String]](State.pure)
+      .tupleLeft("queries")
+      .map[ZodState[(String, String)]](State.pure)
 
     val url = NonEmptyChain
       .fromChain(Chain.fromOption(path) ++ Chain.fromOption(queries))
       .map(_.sequence)
       .map(_.map { fields =>
-        s"""url: z.object({
-           |${indent(fields.mkString_(",\n"))}
+        s"""z.object({
+           |${indent(fields.map((name, value) => s"$name: ${value}").mkString_(",\n"))}
            |})""".stripMargin
       })
+      .map(_.tupleLeft("url"))
 
     val headers = HeadersZodRenderer
       .render(request.headers)
-      .map(headers => s"headers: ${indent(headers, block = true)}")
-      .map[ZodState[String]](State.pure)
+      .tupleLeft("headers")
+      .map[ZodState[(String, String)]](State.pure)
 
     val body = Chain
       .fromOption(request.bodies)
@@ -95,13 +104,7 @@ object ZodEndpointRenderer:
         case ZodExpression.Inline(value)            => value
         case ZodExpression.Referenced(reference, _) => reference.name
       })
-      .map(_.map(expression => s"body: ${indent(expression, block = true)}"))
+      .map(_.tupleLeft("body"))
 
-    (
-      Chain.fromOption(headers) ++
-        Chain.fromOption(url) ++
-        Chain.fromOption(body)
-    ).sequence.map: fields =>
-      s"""z.object({
-         |${indent(fields.mkString_(",\n"))}
-         |})""".stripMargin
+    (List.from(url) ++ List.from(headers) ++ List.from(body)).sequence
+      .map(ListMap.from)

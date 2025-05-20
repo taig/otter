@@ -1,6 +1,5 @@
 package io.taig.otter.schema
 
-
 trait DictionarySchema[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
   self =>
 
