@@ -76,27 +76,17 @@ object Json:
   final case class Primitive[A](self: Enriched[Self.Primitive, A]) extends Json[A]
 
   object Primitive:
-    given PrimitiveSchema[Json.Primitive] = PrimitiveSchema[Self.Primitive]
-      .imapK(
-        [A] => (schema: Self.Primitive[A]) => Primitive(Enriched(schema))
-      )([A] => (json: Json.Primitive[A]) => json.self.self)
-
-    given EnrichedSchema[Json.Primitive] = EnrichedSchema[Enriched[Self.Primitive, *]]
-      .imapK[Json.Primitive](
-        [A] => (schema: Enriched[Self.Primitive, A]) => Json.Primitive(schema)
+    given EnrichedPrimitiveSchema[Json.Primitive] =
+      EnrichedPrimitiveSchema[Self.Primitive].imapK(
+        [A] => (schema: Enriched[Self.Primitive, A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 
   final case class Record[A](self: Enriched[Self.Record[Json.Field, *], A]) extends Json[A]
 
   object Record:
-    given RecordSchema[Json.Record, Json.Field] = RecordSchema[Enriched[Self.Record[Json.Field, *], *], Json.Field]
-      .imapK(
+    given EnrichedRecordSchema[Json.Record, Json.Field] =
+      EnrichedRecordSchema[Self.Record[Json.Field, *], Json.Field].imapK(
         [A] => (schema: Enriched[Self.Record[Json.Field, *], A]) => Record(schema)
-      )([A] => (json: Json.Record[A]) => json.self)
-
-    given EnrichedSchema[Json.Record] = EnrichedSchema[Enriched[Self.Record[Json.Field, *], *]]
-      .imapK[Json.Record](
-        [A] => (schema: Enriched[Self.Record[Json.Field, *], A]) => Json.Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
   final case class Tuple[A](self: Enriched[Self.Tuple[Json, *], A]) extends Json[A]
@@ -139,19 +129,7 @@ object Json:
         [A] => (schema: Enriched[Self.Field[Key, Json, *], A]) => Json.Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
 
-  given Schema[Json] with
-    override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
-      case Collection(self)  => Collection(self.mapF(_.imap(f)(g)))
-      case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
-      case Dictionary(self)  => Dictionary(self.mapF(_.imap(f)(g)))
-      case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
-      case Nullable(self)    => Nullable(self.mapF(_.imap(f)(g)))
-      case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
-      case Record(self)      => Record(self.mapF(_.imap(f)(g)))
-      case Tuple(self)       => Tuple(self.mapF(_.imap(f)(g)))
-      case Union(self)       => Union(self.mapF(_.imap(f)(g)))
-
-  given EnrichedSchema[Json] with
+  given Schema[Json] with EnrichedSchema[Json] with
     extension [A](self: Json[A])
       override def metadata: Metadata = self match
         case Collection(schema)  => schema.metadata
@@ -174,3 +152,14 @@ object Json:
         case Record(schema)      => Record(schema.copy(metadata = f(schema.metadata)))
         case Tuple(schema)       => Tuple(schema.copy(metadata = f(schema.metadata)))
         case Union(schema)       => Union(schema.copy(metadata = f(schema.metadata)))
+
+    override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
+      case Collection(self)  => Collection(self.mapF(_.imap(f)(g)))
+      case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
+      case Dictionary(self)  => Dictionary(self.mapF(_.imap(f)(g)))
+      case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
+      case Nullable(self)    => Nullable(self.mapF(_.imap(f)(g)))
+      case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
+      case Record(self)      => Record(self.mapF(_.imap(f)(g)))
+      case Tuple(self)       => Tuple(self.mapF(_.imap(f)(g)))
+      case Union(self)       => Union(self.mapF(_.imap(f)(g)))

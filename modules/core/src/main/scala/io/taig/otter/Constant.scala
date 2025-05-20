@@ -27,3 +27,12 @@ object Constant:
       Root(schema = Reference.Constant(self = Reference.later(schema), value), eq)
 
     override def imap[A, B](fa: Constant[Value, A])(f: A => B)(g: B => A): Constant[Value, B] = fa.imap(f)(g)
+
+  given [Value[_]]: ConstantSchema[Enriched[Constant[Value, *], *], Value] with
+    override def apply[A](schema: => Value[A], value: A)(using eq: Eq[A]): Enriched[Constant[Value, *], Unit] =
+      Enriched(ConstantSchema[Constant[Value, *], Value].apply(schema, value))
+
+    override def imap[A, B](fa: Enriched[Constant[Value, *], A])(f: A => B)(
+        g: B => A
+    ): Enriched[Constant[Value, *], B] =
+      fa.mapF(_.imap(f)(g))

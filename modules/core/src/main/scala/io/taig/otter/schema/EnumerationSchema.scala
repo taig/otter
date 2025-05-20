@@ -2,7 +2,6 @@ package io.taig.otter.schema
 
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.Metadata
 import io.taig.otter.Reference
 
 trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:

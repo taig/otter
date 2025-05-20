@@ -32,4 +32,4 @@ object LibrarianApiSchema:
   val codec: Json.Record[LibrarianApiSchema] = (
     field("email", cistring) :*
       field("reference", uuid)
-  ).metadata(name, "Librarian").to[LibrarianApiSchema]
+  ).metadata(name, "Librarian").to

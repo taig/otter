@@ -65,3 +65,25 @@ object Collection:
     ): Collection[Value, Vector[A]] = Indexed(schema = Reference.later(schema), minimum, maximum, unique)
 
     override def imap[A, B](fa: Collection[Value, A])(f: A => B)(g: B => A): Collection[Value, B] = fa.imap(f)(g)
+
+  given [Value[_]]: CollectionSchema[Enriched[Collection[Value, *], *], Value] with
+    override def linked[A](
+        schema: => Value[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        unique: Boolean
+    ): Enriched[Collection[Value, *], List[A]] =
+      Enriched(CollectionSchema[Collection[Value, *], Value].linked(schema, minimum, maximum, unique))
+
+    override def indexed[A](
+        schema: => Value[A],
+        minimum: Option[Int],
+        maximum: Option[Int],
+        unique: Boolean
+    ): Enriched[Collection[Value, *], Vector[A]] =
+      Enriched(CollectionSchema[Collection[Value, *], Value].indexed(schema, minimum, maximum, unique))
+
+    override def imap[A, B](fa: Enriched[Collection[Value, *], A])(f: A => B)(
+        g: B => A
+    ): Enriched[Collection[Value, *], B] =
+      fa.mapF(_.imap(f)(g))

@@ -73,14 +73,13 @@ object Http:
             [A] => (schema: Enriched[Self.Union[Http.Header.Value, *], A]) => Union(schema)
           )([A] => (value: Http.Header.Value.Union[A]) => value.self)
 
-      given Schema[Http.Header.Value] with
+      given EnrichedSchema[Http.Header.Value] with
         override def imap[A, B](fa: Http.Header.Value[A])(f: A => B)(g: B => A): Http.Header.Value[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
           case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
           case Union(self)       => Union(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Header.Value] with
         extension [A](self: Value[A])
           override def metadata: Metadata = self match
             case Constant(self)    => self.metadata
@@ -127,12 +126,11 @@ object Http:
               [A] => (schema: Enriched[Self.Tuple[Http.Header.Value, *], A]) => Tuple(schema)
             )([A] => (value: Http.Header.Array.Tuple[A]) => value.self)
 
-      given Schema[Http.Header.Array] with
+      given EnrichedSchema[Http.Header.Array] with
         override def imap[A, B](fa: Http.Header.Array[A])(f: A => B)(g: B => A): Http.Header.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Header.Array] with
         extension [A](self: Array[A])
           override def metadata: Metadata = self match
             case Collection(self) => self.metadata
@@ -195,13 +193,12 @@ object Http:
                 [A] => (schema: Enriched[Self.Nullable[Http.Header.Object.Value, *], A]) => Nullable(schema)
               )([A] => (value: Http.Header.Object.Value.Nullable[A]) => value.self)
 
-      given Schema[Http.Header.Object] with
+      given EnrichedSchema[Http.Header.Object] with
         override def imap[A, B](fa: Http.Header.Object[A])(f: A => B)(g: B => A): Object[B] =
           fa match
             case Dictionary(self) => Dictionary(self.mapF(_.imap(f)(g)))
             case Record(self)     => Record(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Header.Object] with
         extension [A](self: Object[A])
           override def metadata: Metadata = self match
             case Dictionary(self) => self.metadata
@@ -231,13 +228,12 @@ object Http:
             [A] => (schema: Enriched[Self.Field[Key, Http.Header.Object.Value, *], A]) => Field(schema)
           )([A] => (value: Http.Header.Field[A]) => value.self)
 
-    given Schema[Http.Header] with
+    given EnrichedSchema[Http.Header] with
       override def imap[A, B](fa: Http.Header[A])(f: A => B)(g: B => A): Http.Header[B] = fa match
         case schema: Http.Header.Value[A]  => schema.imap(f)(g)
         case schema: Http.Header.Array[A]  => schema.imap(f)(g)
         case schema: Http.Header.Object[A] => schema.imap(f)(g)
 
-    given EnrichedSchema[Http.Header] with
       extension [A](self: Header[A])
         override def metadata: Metadata = self match
           case schema: Http.Header.Value[A]  => schema.metadata
@@ -317,14 +313,13 @@ object Http:
               [A] => (schema: Enriched[Self.Union[Http.Query.Value, *], A]) => Union(schema)
             )([A] => (value: Http.Query.Value.Union[A]) => value.self)
 
-      given Schema[Http.Query.Value] with
+      given EnrichedSchema[Http.Query.Value] with
         override def imap[A, B](fa: Http.Query.Value[A])(f: A => B)(g: B => A): Http.Query.Value[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
           case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
           case Union(self)       => Union(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Query.Value] with
         extension [A](self: Value[A])
           override def metadata: Metadata = self match
             case Constant(self)    => self.metadata
@@ -372,12 +367,11 @@ object Http:
               [A] => (schema: Enriched[Self.Tuple[Http.Query.Value, *], A]) => Tuple(schema)
             )([A] => (value: Http.Query.Array.Tuple[A]) => value.self)
 
-      given Schema[Http.Query.Array] with
+      given EnrichedSchema[Http.Query.Array] with
         override def imap[A, B](fa: Http.Query.Array[A])(f: A => B)(g: B => A): Http.Query.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Query.Array] with
         extension [A](self: Array[A])
           override def metadata: Metadata = self match
             case Collection(self) => self.metadata
@@ -471,14 +465,13 @@ object Http:
               [A] => (schema: Enriched[Self.Union[Http.Parameter.Value, *], A]) => Union(schema)
             )([A] => (value: Http.Parameter.Value.Union[A]) => value.self)
 
-      given Schema[Http.Parameter.Value] with
-        override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Value[B] = fa match
+      given EnrichedSchema[Http.Parameter.Value] with
+        override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Http.Parameter.Value[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
           case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
           case Union(self)       => Union(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Parameter.Value] with
         extension [A](self: Value[A])
           override def metadata: Metadata = self match
             case Constant(self)    => self.metadata
@@ -526,12 +519,11 @@ object Http:
               [A] => (schema: Enriched[Self.Tuple[Http.Parameter.Value, *], A]) => Tuple(schema)
             )([A] => (value: Http.Parameter.Array.Tuple[A]) => value.self)
 
-      given Schema[Http.Parameter.Array] with
-        override def imap[A, B](fa: Array[A])(f: A => B)(g: B => A): Array[B] = fa match
+      given EnrichedSchema[Http.Parameter.Array] with
+        override def imap[A, B](fa: Array[A])(f: A => B)(g: B => A): Http.Parameter.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Parameter.Array] with
         extension [A](self: Array[A])
           override def metadata: Metadata = self match
             case Collection(self) => self.metadata
@@ -595,19 +587,18 @@ object Http:
                 [A] => (schema: Enriched[Self.Nullable[Http.Parameter.Object.Value, *], A]) => Nullable(schema)
               )([A] => (value: Http.Parameter.Object.Value.Nullable[A]) => value.self)
 
-      given Schema[Http.Parameter.Object] with
-        override def imap[A, B](fa: Http.Parameter.Object[A])(f: A => B)(g: B => A): Object[B] =
+      given EnrichedSchema[Http.Parameter.Object] with
+        override def imap[A, B](fa: Http.Parameter.Object[A])(f: A => B)(g: B => A): Http.Parameter.Object[B] =
           fa match
             case Dictionary(self) => Dictionary(self.mapF(_.imap(f)(g)))
             case Record(self)     => Record(self.mapF(_.imap(f)(g)))
 
-      given EnrichedSchema[Http.Parameter.Object] with
         extension [A](self: Object[A])
           override def metadata: Metadata = self match
             case Dictionary(self) => self.metadata
             case Record(self)     => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Object[A] = self match
+          override def metadata(f: Metadata => Metadata): Http.Parameter.Object[A] = self match
             case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
             case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
 
@@ -631,13 +622,12 @@ object Http:
             [A] => (schema: Enriched[Self.Field[Key, Http.Parameter.Object.Value, *], A]) => Field(schema)
           )([A] => (value: Http.Parameter.Field[A]) => value.self)
 
-    given Schema[Http.Parameter] with
-      override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] = fa match
+    given EnrichedSchema[Http.Parameter] with
+      override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Http.Parameter[B] = fa match
         case schema: Http.Parameter.Value[A]  => schema.imap(f)(g)
         case schema: Http.Parameter.Array[A]  => schema.imap(f)(g)
         case schema: Http.Parameter.Object[A] => schema.imap(f)(g)
 
-    given EnrichedSchema[Http.Parameter] with
       extension [A](self: Parameter[A])
         override def metadata: Metadata = self match
           case schema: Http.Parameter.Value[A]  => schema.metadata

@@ -53,3 +53,17 @@ object Dictionary:
 
     override def imap[A, B](fa: Dictionary[Key, Value, A])(f: A => B)(g: B => A): Dictionary[Key, Value, B] =
       fa.imap(f)(g)
+
+  given [Key[_], Value[_]]: DictionarySchema[Enriched[Dictionary[Key, Value, *], *], Key, Value] with
+    override def dictionary[A, B](
+        key: => Key[A],
+        value: => Value[B],
+        minimum: Option[Int],
+        maximum: Option[Int]
+    ): Enriched[Dictionary[Key, Value, *], List[(A, B)]] =
+      Enriched(DictionarySchema[Dictionary[Key, Value, *], Key, Value].dictionary(key, value, minimum, maximum))
+
+    override def imap[A, B](fa: Enriched[Dictionary[Key, Value, *], A])(f: A => B)(
+        g: B => A
+    ): Enriched[Dictionary[Key, Value, *], B] =
+      fa.mapF(_.imap(f)(g))

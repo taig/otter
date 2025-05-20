@@ -15,7 +15,7 @@ trait PrimitiveSchema[Self[_]]
       PrimitiveSchema.String[Self]:
   self =>
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema[T] =
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema[T] =
     new PrimitiveSchema[T]:
       override def boolean: T[Boolean] = fK(self.boolean)
 

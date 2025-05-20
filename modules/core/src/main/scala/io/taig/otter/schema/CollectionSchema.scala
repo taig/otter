@@ -9,7 +9,7 @@ trait CollectionSchema[Self[_], -Value[_]] extends Schema[Self]:
 
   def indexed[A](schema: => Value[A], minimum: Option[Int], maximum: Option[Int], unique: Boolean): Self[Vector[A]]
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): CollectionSchema[T, Value] = new CollectionSchema[T, Value]:
     override def linked[A](
