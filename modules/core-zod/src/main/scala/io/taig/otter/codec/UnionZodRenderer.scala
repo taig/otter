@@ -2,13 +2,13 @@ package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.taig.otter.Union
-import io.taig.otter.ZodExpression
-import io.taig.otter.ZodState
 import io.taig.otter.indent
+import cats.Applicative
+import cats.Show
 
-final class UnionZodRenderer[S[_], T](renderer: Renderer[S, ZodState[ZodExpression]])
-    extends Renderer[Union[S, *], ZodState[String]]:
-  override def render[A](schema: Union[S, A]): ZodState[String] = schema.schemas
+final class UnionZodRenderer[S[_], T[_]: Applicative, A: Show](renderer: Renderer[S, T[A]])
+    extends Renderer[Union[S, *], T[String]]:
+  override def render[A](schema: Union[S, A]): T[String] = schema.schemas
     .traverse(reference => renderer.render(schema = reference.value))
     .map: values =>
       s"""z.union([

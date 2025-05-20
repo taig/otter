@@ -11,16 +11,18 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
   val renderer = NamespaceZodRenderer(renderer = ZodRenderer(renderer = Expression))
 
   val collection = CollectionZodRenderer(renderer = this)
-  val constant = ConstantZodRenderer[Json](
+  val constant = ConstantZodRenderer[Json, Option](
     printer = Encoder:
       [A] =>
         (schema: Json[A], a: A) =>
           schema match
             case Json.Primitive(self) => PrimitivePrinter.Quoted.encode(schema = self.self, a).some
-            case _                    => none,
-    renderer = Expression
+            case _                    => none
+  ).map(_.getOrElse("z.any()")).map[ZodState[String]](State.pure)
+  val dictionary = DictionaryZodRenderer(
+    key = KeyZodRenderer.map((expression) => State.pure(ZodExpression.Inline(expression))),
+    value = this
   )
-  // val dictionary = DictionaryZodRenderer(key = KeyZodRenderer, value = this)
   val enumeration = EnumerationZodRenderer(printer =
     PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self.self)
   )
@@ -36,9 +38,9 @@ object JsonZodRenderer extends Renderer[Json, ZodState[ZodExpression]]:
 
   object Expression extends Renderer[Json, ZodState[String]]:
     override def render[A](schema: Json[A]): ZodState[String] = schema match
-      case Json.Collection(self) => collection.render(schema = self.self)
-      case Json.Constant(self)   => constant.render(schema = self.self)
-      // case Json.Dictionary(self)  => dictionary.render(schema = self.self)
+      case Json.Collection(self)  => collection.render(schema = self.self)
+      case Json.Constant(self)    => constant.render(schema = self.self)
+      case Json.Dictionary(self)  => dictionary.render(schema = self.self)
       case Json.Enumeration(self) => State.pure(enumeration.render(schema = self.self))
       case Json.Nullable(self)    => nullable.render(schema = self.self)
       case Json.Primitive(self)   => State.pure(PrimitiveZodRenderer.render(schema = self.self))

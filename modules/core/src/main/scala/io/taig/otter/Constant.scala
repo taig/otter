@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.Eq
 import cats.syntax.all.*
-import io.taig.otter.Metadata
 import io.taig.otter.schema.ConstantSchema
 
 sealed abstract class Constant[+S[_], A] extends Product with Serializable:
