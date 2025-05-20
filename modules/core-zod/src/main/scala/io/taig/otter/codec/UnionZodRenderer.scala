@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.Applicative
+import cats.Show
 import cats.syntax.all.*
 import io.taig.otter.Union
 import io.taig.otter.indent
-import cats.Applicative
-import cats.Show
 
 final class UnionZodRenderer[S[_], T[_]: Applicative, A: Show](renderer: Renderer[S, T[A]])
     extends Renderer[Union[S, *], T[String]]:

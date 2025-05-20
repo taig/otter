@@ -1,7 +1,7 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
 import io.taig.otter.Enriched
+import io.taig.otter.Metadata
 
 final class EnrichedRecordSchema[Self[_], -Field[_]](
     record: RecordSchema[Self, Field],

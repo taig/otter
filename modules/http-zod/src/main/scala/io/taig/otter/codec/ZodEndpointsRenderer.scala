@@ -1,10 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.http.Endpoint
-import io.taig.otter.Json
 import cats.syntax.all.*
-import scala.collection.immutable.ListMap
+import io.taig.otter.Json
 import io.taig.otter.ZodExpression
+import io.taig.otter.http.Endpoint
+
+import scala.collection.immutable.ListMap
 
 final class ZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, Json, Json, ?, ?]]): String =

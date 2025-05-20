@@ -1,8 +1,6 @@
 package io.taig.otter.sample.app
-
-import io.taig.otter.codec.ZodEndpointRenderer
-import io.taig.otter.sample.api.endpoint
 import io.taig.otter.codec.ZodEndpointsRenderer
+import io.taig.otter.sample.api.endpoint
 
 object SampleZodApp:
   @main

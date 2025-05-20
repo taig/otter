@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Constant
-import cats.syntax.all.*
 import cats.Functor
+import cats.syntax.all.*
+import io.taig.otter.Constant
 
 final class ConstantZodRenderer[S[_], T[_]: Functor](printer: Encoder[S, T[String]])
     extends Renderer[Constant[S, *], T[String]]:

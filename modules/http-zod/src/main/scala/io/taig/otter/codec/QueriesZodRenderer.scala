@@ -1,7 +1,7 @@
 package io.taig.otter.codec
 
-import io.taig.otter.http.Queries
 import cats.syntax.all.*
+import io.taig.otter.http.Queries
 import io.taig.otter.indent
 
 object QueriesZodRenderer extends Renderer[Queries, Option[String]]:

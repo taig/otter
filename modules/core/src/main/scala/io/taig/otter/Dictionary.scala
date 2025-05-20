@@ -1,6 +1,5 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.Metadata
 import io.taig.otter.schema.DictionarySchema
 
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Product with Serializable:

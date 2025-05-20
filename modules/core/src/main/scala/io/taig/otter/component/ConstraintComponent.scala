@@ -1,7 +1,7 @@
 package io.taig.otter.component
 import io.taig.otter.Constraint
-import io.taig.otter.schema.RecordSchema
 import io.taig.otter.schema.FieldSchema
+import io.taig.otter.schema.RecordSchema
 import io.taig.otter.schema.UnionSchema
 
 trait ConstraintComponent[

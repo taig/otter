@@ -1,7 +1,7 @@
 package io.taig.otter.codec
 
-import io.taig.otter.http.Headers
 import cats.syntax.all.*
+import io.taig.otter.http.Headers
 import io.taig.otter.indent
 
 object HeadersZodRenderer extends Renderer[Headers, Option[String]]:

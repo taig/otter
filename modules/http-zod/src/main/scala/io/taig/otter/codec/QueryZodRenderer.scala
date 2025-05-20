@@ -1,9 +1,6 @@
 package io.taig.otter.codec
 
 import io.taig.otter.http.Query
-import io.taig.otter.http.Query.Modify
-import io.taig.otter.http.Query.Optional
-import io.taig.otter.http.Query.Root
 
 object QueryZodRenderer extends Renderer[Query, String]:
   override def render[A](schema: Query[A]): String =

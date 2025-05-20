@@ -1,10 +1,10 @@
 package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.Enriched
 import io.taig.otter.Key
 import io.taig.otter.Metadata
 import io.taig.otter.schema.*
-import Self.Enriched
 
 object Http:
   sealed trait Header[A] extends Product with Serializable

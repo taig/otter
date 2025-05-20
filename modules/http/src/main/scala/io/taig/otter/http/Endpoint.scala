@@ -1,7 +1,6 @@
 package io.taig.otter.http
 
 import io.taig.otter.Metadata
-import io.taig.otter.schema.Schema
 import io.taig.otter.schema.EnrichedSchema
 
 final case class Endpoint[+S[_], +T[_], +U[_], A, B](

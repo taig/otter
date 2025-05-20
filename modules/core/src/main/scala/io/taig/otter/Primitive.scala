@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.Metadata
 import io.taig.otter.schema.PrimitiveSchema
 
 import java.lang.String as JString

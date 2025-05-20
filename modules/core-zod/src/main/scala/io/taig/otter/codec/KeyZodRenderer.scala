@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.Id
 import io.taig.otter.Key
 import io.taig.otter.Key.Constant
 import io.taig.otter.Key.Primitive
 import io.taig.otter.Key.Union
-import cats.Id
 
 object KeyZodRenderer extends Renderer[Key, String]:
   val constant = ConstantZodRenderer[Key, Id](printer = KeyPrinter.Quoted)

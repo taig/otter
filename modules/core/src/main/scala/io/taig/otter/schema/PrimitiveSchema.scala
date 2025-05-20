@@ -1,7 +1,6 @@
 package io.taig.otter.schema
 
 import io.taig.otter.Comparison
-import io.taig.otter.Metadata
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal

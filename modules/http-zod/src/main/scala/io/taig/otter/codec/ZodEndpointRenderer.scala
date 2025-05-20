@@ -1,21 +1,21 @@
 package io.taig.otter.codec
 
+import cats.data.Chain
+import cats.data.NonEmptyChain
+import cats.data.State
+import cats.syntax.all.*
 import io.taig.otter.Json
+import io.taig.otter.Keys
+import io.taig.otter.ZodConst
+import io.taig.otter.ZodExpression
+import io.taig.otter.ZodState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
-import cats.syntax.all.*
-import io.taig.otter.http.Method
 import io.taig.otter.http.Request
-import cats.data.NonEmptyChain
-import io.taig.otter.ZodState
 import io.taig.otter.http.syntax.MediaTypeSyntax.*
-import io.taig.otter.ZodExpression
-import cats.data.State
-import scala.collection.immutable.ListMap
-import io.taig.otter.ZodConst
-import cats.data.Chain
 import io.taig.otter.indent
-import io.taig.otter.Keys
+
+import scala.collection.immutable.ListMap
 
 object ZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): ZodState[String] = State: state =>
@@ -61,14 +61,28 @@ object ZodEndpointRenderer:
       s"$head${tail.map(_.capitalize).mkString_("")}"
 
   def input(request: Request[Json, ?]): ZodState[String] =
-    val headers = HeadersZodRenderer
-      .render(request.headers)
-      .map(headers => s"headers: ${indent(headers, block = true)}")
+    val path = PathZodRenderer
+      .render(request.url.path)
+      .map(path => s"path: ${indent(path, block = true)}")
       .map[ZodState[String]](State.pure)
 
     val queries = QueriesZodRenderer
       .render(request.url.queries)
       .map(queries => s"queries: ${indent(queries, block = true)}")
+      .map[ZodState[String]](State.pure)
+
+    val url = NonEmptyChain
+      .fromChain(Chain.fromOption(path) ++ Chain.fromOption(queries))
+      .map(_.sequence)
+      .map(_.map { fields =>
+        s"""url: z.object({
+           |${indent(fields.mkString_(",\n"))}
+           |})""".stripMargin
+      })
+
+    val headers = HeadersZodRenderer
+      .render(request.headers)
+      .map(headers => s"headers: ${indent(headers, block = true)}")
       .map[ZodState[String]](State.pure)
 
     val body = Chain
@@ -85,7 +99,7 @@ object ZodEndpointRenderer:
 
     (
       Chain.fromOption(headers) ++
-        Chain.fromOption(queries) ++
+        Chain.fromOption(url) ++
         Chain.fromOption(body)
     ).sequence.map: fields =>
       s"""z.object({

@@ -1,6 +1,5 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.Metadata
 import io.taig.otter.schema.CollectionSchema
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:

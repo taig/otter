@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.Metadata
 import io.taig.otter.schema.NullableSchema
 
 sealed abstract class Nullable[+S[_], A] extends Product with Serializable:

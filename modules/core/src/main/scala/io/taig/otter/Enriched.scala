@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.taig.otter.schema.EnrichedSchema
 import cats.syntax.all.*
+import io.taig.otter.schema.EnrichedSchema
 import io.taig.otter.schema.Schema
 
 final case class Enriched[S[_], A](self: S[A], metadata: Metadata):

@@ -1,7 +1,8 @@
 package io.taig.otter
 
-import scala.collection.immutable.SortedMap
 import cats.Show
+
+import scala.collection.immutable.SortedMap
 
 final class Metadata(val toMap: SortedMap[String, Any]) extends AnyVal:
   override def toString(): String = toMap.map { (key, value) => s"$key=$value" }.mkString("[", ",", "]")
