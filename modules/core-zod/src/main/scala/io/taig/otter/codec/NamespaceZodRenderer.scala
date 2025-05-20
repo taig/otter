@@ -15,10 +15,11 @@ final class NamespaceZodRenderer[S[_]: EnrichedSchema](renderer: Renderer[S, Zod
   val expression = ZodRenderer[S](renderer)
 
   override def render[A](schema: S[A]): ZodState[ZodExpression] = State: state =>
-    println("let's go: " + schema.metadata)
     schema.metadata(name) match
       case Some(name) =>
-        val reference = ZodConst(namespace = schema.metadata(namespace), name)
+        val reference = ZodConst(namespace = schema.metadata(namespace), symbol(name))
         val (update, result) = expression.render(schema).run(initial = state).value
         (update.updatedWith(reference)(_ => Some(result)), ZodExpression.Referenced(reference, result))
       case None => expression.render(schema).run(initial = state).value.map(ZodExpression.Inline.apply)
+
+  def symbol(value: String): String = value.replace(".", "").replace(" ", "")

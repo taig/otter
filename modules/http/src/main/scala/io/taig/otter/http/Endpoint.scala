@@ -22,5 +22,5 @@ object Endpoint:
       override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Endpoint[S, T, U, A, B] = self.metadata(f)
 
-    override def imap[B, C](fa: Endpoint[S, T, U, A, B])(f: B => C)(g: C => B): Endpoint[S, T, U, A, C] = 
+    override def imap[B, C](fa: Endpoint[S, T, U, A, B])(f: B => C)(g: C => B): Endpoint[S, T, U, A, C] =
       fa.copy(response = fa.response.imap(f)(g))
