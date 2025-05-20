@@ -1,10 +1,5 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Merge
-import io.taig.otter.Metadata
-
-import scala.annotation.targetName
-
 trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
   self =>
 
@@ -12,12 +7,6 @@ trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
   def lift[A](schema: => Value[A]): Self[A]
 
   extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
-
-  extension [A](self: Value[A])
-    @targetName("tuple :* value")
-    def :*[B](schema: Value[B])(using merge: Merge[A, B]): Self[merge.Out] = self.toTuple.zip(schema.toTuple).merge
-
-    def toTuple: Self[A] = lift(self)
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): TupleSchema[T, Value] =
     new TupleSchema[T, Value]:

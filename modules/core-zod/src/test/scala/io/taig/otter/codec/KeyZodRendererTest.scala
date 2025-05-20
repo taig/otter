@@ -9,8 +9,8 @@ import io.taig.otter.ZodExpression
 final class KeyZodRendererTest extends OtterSuite:
   test("constant"):
     assertEq(
-      obtained = KeyZodRenderer.render(constant("foobar")).runA(ListMap.empty).value,
-      expected = ZodExpression.Inline("""z.literal("foobar")""")
+      obtained = KeyZodRenderer.render(constant("foobar")),
+      expected = """z.literal("foobar")"""
     )
 
   test("enumeration"):
@@ -25,25 +25,25 @@ final class KeyZodRendererTest extends OtterSuite:
       case Animal.Dog  => "dog"
 
     assertEq(
-      obtained = KeyZodRenderer.render(schema).runA(ListMap.empty).value,
-      expected = ZodExpression.Inline("""z.enum(["bird", "cat", "dog"])""")
+      obtained = KeyZodRenderer.render(schema),
+      expected = """z.enum(["bird", "cat", "dog"])"""
     )
 
   test("primitive"):
     assertEq(
-      obtained = KeyZodRenderer.render(string).runA(ListMap.empty).value,
-      expected = ZodExpression.Inline("z.string()")
+      obtained = KeyZodRenderer.render(string),
+      expected = "z.string()"
     )
 
     assertEq(
-      obtained = KeyZodRenderer.render(uuid).runA(ListMap.empty).value,
-      expected = ZodExpression.Inline("z.string()")
+      obtained = KeyZodRenderer.render(uuid),
+      expected = "z.string()"
     )
 
   test("union"):
     assertEq(
-      obtained = KeyZodRenderer.render(constant("foobar") :+ string).runA(ListMap.empty).value,
-      expected = ZodExpression.Inline:
+      obtained = KeyZodRenderer.render(constant("foobar") :+ string),
+      expected = 
         """z.union([
           |  z.literal("foobar"),
           |  z.string()

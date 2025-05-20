@@ -22,7 +22,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
 
   test("constant"):
     assertEq(
-      obtained = encoder.encode(constant("foobar"), ""),
+      obtained = encoder.encode(constant("foobar"), ()),
       expected = CirceJson.fromString("foobar")
     )
 
@@ -124,7 +124,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     )
 
   test("union: untagged"):
-    val codec = branch("foo", string) | branch("bar", int)
+    val codec = string | int
 
     assertEq(
       obtained = encoder.encode(codec, "foobar"),
@@ -136,7 +136,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     )
 
   test("union: taggged (keyed)"):
-    val codec = (branch("foo", string) | branch("bar", int)).keyed
+    val codec = keyed("foo", string) | keyed("bar", int)
 
     assertEq(
       obtained = encoder.encode(codec, "foobar"),
@@ -148,7 +148,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     )
 
   test("union: taggged (merged)"):
-    val codec = (branch("foo", field("x", string).toRecord) | branch("bar", field("y", int).toRecord)).merged
+    val codec = merged("foo", field("x", string).toRecord) | merged("bar", field("y", int).toRecord)
 
     assertEq(
       obtained = encoder.encode(codec, "foobar"),
@@ -164,7 +164,7 @@ final class CirceJsonEncoderTest extends OtterSuite:
     )
 
   test("union: taggged (explicit)"):
-    val codec = (branch("foo", string) | branch("bar", int)).explicit
+    val codec = explicit("foo", string) | explicit("bar", int)
 
     assertEq(
       obtained = encoder.encode(codec, "foobar"),

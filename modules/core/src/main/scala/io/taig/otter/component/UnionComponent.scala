@@ -13,7 +13,7 @@ trait UnionComponent[Self[_], Value[_]](using self: UnionSchema[Self, Value]):
     final def :+[B](schema: Value[B]): Self[Either[A, B]] = self.toUnion.orElse(schema.toUnion)
 
     @targetName("schema +: schema")
-    final def +:[B](schema: Value[B]): Self[Either[B, A]] = schema.toUnion.orElse(self.toUnion)
+    final def +:[B](schema: Value[B]): Self[Either[A, B]] = self.toUnion.orElse(schema.toUnion)
 
     final def toUnion: Self[A] = this.self.lift(self)
 
