@@ -20,15 +20,6 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
 
     def optional: Self[Option[A]]
 
-    final def :*[B](field: Self[B])(using merge: Merge[A, B]): Record[merge.Out] = ???
-
-    final def *:[B](field: Self[B])(using merge: Merge[B, A]): Record[merge.Out] = ???
-
-    // final def *:[B](schema: Self[B])(using merge: Merge[A, B]): Self[merge.Out] =
-    //   self.toRecord.zip(schema).merge
-
-    def toRecord: Record[A]
-
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): FieldSchema[T, Key, Value, Record] = new FieldSchema[T, Key, Value, Record]:
@@ -45,7 +36,6 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
       override def nullish: Boolean = self.nullish(gK(ta))
       override def nullish(f: Boolean => Boolean): T[A] = fK(self.nullish(gK(ta))(f))
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
-      override def toRecord: Record[A] = self.toRecord(gK(ta))
 
 object FieldSchema:
   inline def apply[Self[_], Key[_], Value[_], Record[_]](using

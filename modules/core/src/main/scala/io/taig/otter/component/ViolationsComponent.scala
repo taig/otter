@@ -5,6 +5,7 @@ import io.taig.otter.Violations
 import io.taig.otter.schema.DictionarySchema
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.UnionSchema
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],
@@ -17,8 +18,12 @@ trait ViolationsComponent[
     Field[_],
     Key[_],
     Value[_]
-](using DictionarySchema[Dictionary, Key, Value], FieldSchema[Field, Key, Value, Record], RecordSchema[Record, Field])
-    extends CollectionComponent[Collection, Value],
+](using
+    DictionarySchema[Dictionary, Key, Value],
+    FieldSchema[Field, Key, Value, Record],
+    RecordSchema[Record, Field],
+    UnionSchema[Union, Value]
+) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       UnionComponent[Union, Value],

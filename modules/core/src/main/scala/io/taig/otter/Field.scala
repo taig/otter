@@ -60,4 +60,3 @@ object Field:
       override def nullish: Boolean = self.nullish
       override def nullish(f: Boolean => Boolean): Field[Key, Value, A] = self.nullish(f)
       override def optional: Field[Key, Value, Option[A]] = self.optional
-      override def toRecord: Record[A] = ???

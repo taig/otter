@@ -1,22 +1,11 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Merge
-import io.taig.otter.Metadata
-
-import scala.annotation.targetName
-import io.taig.otter.Field
-
 trait RecordSchema[Self[_], -Field[_]] extends Schema[Self]:
   self =>
 
   def lift[A](field: => Field[A]): Self[A]
 
-  extension [A](self: Self[A])
-    def zip[B](schema: Self[B]): Self[(A, B)]
-
-    @targetName("record :* field")
-    final def :*[B](field: Field[B])(using merge: Merge[A, B]): Self[merge.Out] =
-      ???
+  extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
 
   final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): RecordSchema[T, Field] =
     new RecordSchema[T, Field]:
