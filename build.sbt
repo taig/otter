@@ -242,4 +242,4 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sampleApi, httpJsonCirce, munit % "compile->test")
+  .dependsOn(sampleApi, httpJsonCirce, httpZod, munit % "compile->test")
