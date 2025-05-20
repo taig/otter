@@ -1,10 +1,8 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Merge
-import io.taig.otter.Metadata
 import io.taig.otter.Reference
 
-trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
+trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
   self =>
 
   def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
@@ -20,9 +18,9 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
 
     def optional: Self[Option[A]]
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): FieldSchema[T, Key, Value, Record] = new FieldSchema[T, Key, Value, Record]:
+  ): FieldSchema[T, Key, Value] = new FieldSchema[T, Key, Value]:
 
     override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
       fK(self.apply(name, key, value))
@@ -38,6 +36,6 @@ trait FieldSchema[Self[_], Key[_], Value[_], Record[_]] extends Schema[Self]:
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
 
 object FieldSchema:
-  inline def apply[Self[_], Key[_], Value[_], Record[_]](using
-      self: FieldSchema[Self, Key, Value, Record]
-  ): FieldSchema[Self, Key, Value, Record] = self
+  inline def apply[Self[_], Key[_], Value[_]](using
+      self: FieldSchema[Self, Key, Value]
+  ): FieldSchema[Self, Key, Value] = self

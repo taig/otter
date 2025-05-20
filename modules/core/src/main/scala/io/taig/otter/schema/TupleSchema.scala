@@ -8,7 +8,7 @@ trait TupleSchema[Self[_], -Value[_]] extends Schema[Self]:
 
   extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): TupleSchema[T, Value] =
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): TupleSchema[T, Value] =
     new TupleSchema[T, Value]:
       override def empty: T[Unit] = fK(self.empty)
       override def lift[A](schema: => Value[A]): T[A] = fK(self.lift(schema))

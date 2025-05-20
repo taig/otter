@@ -15,7 +15,7 @@ trait ConstraintComponent[
     Field[_],
     Key[_],
     Value[_]
-](using FieldSchema[Field, Key, Value, Record], RecordSchema[Record, Field], UnionSchema[Union, Value])
+](using FieldSchema[Field, Key, Value], RecordSchema[Record, Field], UnionSchema[Union, Value])
     extends ComparisonComponent[Nullable, Record, Field, Key, Value],
       DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],

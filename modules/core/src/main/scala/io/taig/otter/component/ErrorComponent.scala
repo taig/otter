@@ -4,7 +4,7 @@ import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
 
 trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
-    FieldSchema[Field, Key, Value, Record],
+    FieldSchema[Field, Key, Value],
     RecordSchema[Record, Field]
 ) extends ConstantComponent.Primitive.String[Constant, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],

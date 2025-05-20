@@ -211,12 +211,11 @@ object Http:
     final case class Field[A](self: Enriched[Self.Field[Key, Http.Header.Object.Value, *], A])
 
     object Field:
-      given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value, Http.Header.Object.Record] =
+      given FieldSchema[Http.Header.Field, Key, Http.Header.Object.Value] =
         FieldSchema[
           Self.Field[Key, Http.Header.Object.Value, *],
           Key,
-          Http.Header.Object.Value,
-          Http.Header.Object.Record
+          Http.Header.Object.Value
         ]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Header.Object.Value, A]) => Field(Enriched(schema))
@@ -605,12 +604,11 @@ object Http:
     final case class Field[A](self: Enriched[Self.Field[Key, Http.Parameter.Object.Value, *], A])
 
     object Field:
-      given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value, Http.Parameter.Object.Record] =
+      given FieldSchema[Http.Parameter.Field, Key, Http.Parameter.Object.Value] =
         FieldSchema[
           Self.Field[Key, Http.Parameter.Object.Value, *],
           Key,
-          Http.Parameter.Object.Value,
-          Http.Parameter.Object.Record
+          Http.Parameter.Object.Value
         ]
           .imapK(
             [A] => (schema: Self.Field[Key, Http.Parameter.Object.Value, A]) => Field(Enriched(schema))

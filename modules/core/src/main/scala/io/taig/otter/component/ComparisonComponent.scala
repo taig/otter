@@ -6,7 +6,7 @@ import io.taig.otter.schema.NullableSchema
 import io.taig.otter.schema.RecordSchema
 
 trait ComparisonComponent[Nullable[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
-    FieldSchema[Field, Key, Value, Record],
+    FieldSchema[Field, Key, Value],
     NullableSchema[Nullable, Value],
     RecordSchema[Record, Field]
 ) extends FieldComponent.Primitive.String[Field, Key, Value, Record],

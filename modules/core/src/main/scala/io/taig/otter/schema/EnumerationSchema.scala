@@ -13,7 +13,7 @@ trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
     def schema: Reference[Value, ?]
     def values: NonEmptyList[A]
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): EnumerationSchema[T, Value] = new EnumerationSchema[T, Value]:
 

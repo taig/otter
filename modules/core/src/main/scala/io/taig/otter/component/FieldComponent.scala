@@ -11,7 +11,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using self: FieldSchema[Self, Key, Value, Record]):
+trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using self: FieldSchema[Self, Key, Value]):
   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
 object FieldComponent:

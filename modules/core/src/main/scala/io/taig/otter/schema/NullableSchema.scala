@@ -1,7 +1,5 @@
 package io.taig.otter.schema
 
-import io.taig.otter.Metadata
-
 trait NullableSchema[Self[_], -Value[_]] extends Schema[Self]:
   self =>
 

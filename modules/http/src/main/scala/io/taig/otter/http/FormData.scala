@@ -84,8 +84,8 @@ object FormData:
   final case class Field[A](self: Self.Field[Key, FormData.Value, A])
 
   object Field:
-    given FieldSchema[FormData.Field, Key, FormData.Value, FormData.Record] =
-      FieldSchema[Self.Field[Key, FormData.Value, *], Key, FormData.Value, FormData.Record]
+    given FieldSchema[FormData.Field, Key, FormData.Value] =
+      FieldSchema[Self.Field[Key, FormData.Value, *], Key, FormData.Value]
         .imapK(
           [A] => (schema: Self.Field[Key, FormData.Value, A]) => Field(schema)
         )([A] => (formData: FormData.Field[A]) => formData.self)

@@ -20,7 +20,7 @@ trait ViolationsComponent[
     Value[_]
 ](using
     DictionarySchema[Dictionary, Key, Value],
-    FieldSchema[Field, Key, Value, Record],
+    FieldSchema[Field, Key, Value],
     RecordSchema[Record, Field],
     UnionSchema[Union, Value]
 ) extends CollectionComponent[Collection, Value],

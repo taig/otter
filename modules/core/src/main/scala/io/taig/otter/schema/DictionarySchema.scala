@@ -12,7 +12,7 @@ trait DictionarySchema[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
       maximum: Option[Int]
   ): Self[List[(A, B)]]
 
-  final override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): DictionarySchema[T, Key, Value] = new DictionarySchema[T, Key, Value]:
     override def dictionary[A, B](
