@@ -9,6 +9,8 @@ sealed abstract class Query[A]:
 
   def schema: Reference[Http.Query, ?]
 
+  def isOptional: Boolean
+
   def explode: Boolean
   def modifyExplode(f: Boolean => Boolean): Query[A]
   final def explode(value: Boolean): Query[A] = modifyExplode(_ => value)
@@ -28,13 +30,14 @@ sealed abstract class Query[A]:
 
 object Query:
   final private[otter] case class Modify[A, B](self: Query[A], f: A => B, g: B => A) extends Query[B]:
-    export self.{explode, metadata, name, schema, style}
+    export self.{explode, isOptional, metadata, name, schema, style}
     override def modifyExplode(f: Boolean => Boolean): Query[B] = copy(self = self.modifyExplode(f))
     override def modifyStyle(f: Style => Style): Query[B] = copy(self = self.modifyStyle(f))
     override def modifyMetadata(f: Metadata => Metadata): Query[B] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Optional[A](self: Query[A]) extends Query[Option[A]]:
     export self.{explode, metadata, name, schema, style}
+    override def isOptional: Boolean = true
     override def modifyExplode(f: Boolean => Boolean): Query[Option[A]] = copy(self = self.modifyExplode(f))
     override def modifyStyle(f: Style => Style): Query[Option[A]] = copy(self = self.modifyStyle(f))
     override def modifyMetadata(f: Metadata => Metadata): Query[Option[A]] = copy(self = self.modifyMetadata(f))
@@ -46,6 +49,7 @@ object Query:
       style: Query.Style,
       metadata: Metadata
   ) extends Query[A]:
+    override def isOptional: Boolean = false
     override def modifyExplode(f: Boolean => Boolean): Query[A] = copy(explode = f(explode))
     override def modifyStyle(f: Query.Style => Query.Style): Query[A] = copy(style = f(style))
     override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))

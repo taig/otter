@@ -6,6 +6,7 @@ import io.taig.otter.Json
 import io.taig.otter.dsl.*
 import io.taig.otter.dsl.json.*
 import org.typelevel.ci.*
+import io.taig.otter.Keys.*
 
 import java.util.UUID
 
@@ -18,7 +19,7 @@ object LibrarianApiSchema:
     val codec: Json.Record[LibrarianApiSchema.Create] = (
       field("email", cistring) :*
         field("password", string(maximum = 250))
-    ).to
+    ).to[LibrarianApiSchema.Create].metadata(name, "Librarian.Create").metadata(description, "Create a Librarian")
 
   final case class Login(email: CIString, password: String)
 
@@ -31,4 +32,4 @@ object LibrarianApiSchema:
   val codec: Json.Record[LibrarianApiSchema] = (
     field("email", cistring) :*
       field("reference", uuid)
-  ).to
+  ).metadata(name, "Librarian").to[LibrarianApiSchema]

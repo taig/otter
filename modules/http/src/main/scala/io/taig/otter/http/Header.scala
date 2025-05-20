@@ -10,6 +10,8 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   def schema: Reference[Http.Header, ?]
 
+  def isOptional: Boolean
+
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Header[A]
 
@@ -23,14 +25,16 @@ object Header:
       schema: Reference[Http.Header, A],
       metadata: Metadata
   ) extends Header[A]:
+    override def isOptional: Boolean = false
     override def modifyMetadata(f: Metadata => Metadata): Header[A] = copy(metadata = f(metadata))
 
   final private[otter] case class Optional[A](self: Header[A]) extends Header[Option[A]]:
     export self.{metadata, name, schema}
+    override def isOptional: Boolean = true
     override def modifyMetadata(f: Metadata => Metadata): Header[Option[A]] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Modify[A, B](self: Header[A], f: A => B, g: B => A) extends Header[B]:
-    export self.{metadata, name, schema}
+    export self.{isOptional, metadata, name, schema}
     override def modifyMetadata(f: Metadata => Metadata): Header[B] = copy(self = self.modifyMetadata(f))
 
   enum Style:

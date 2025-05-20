@@ -231,6 +231,24 @@ object Http:
             [A] => (schema: Enriched[Self.Field[Key, Http.Header.Object.Value, *], A]) => Field(schema)
           )([A] => (value: Http.Header.Field[A]) => value.self)
 
+    given Schema[Http.Header] with
+      override def imap[A, B](fa: Http.Header[A])(f: A => B)(g: B => A): Http.Header[B] = fa match
+        case schema: Http.Header.Value[A]  => schema.imap(f)(g)
+        case schema: Http.Header.Array[A]  => schema.imap(f)(g)
+        case schema: Http.Header.Object[A] => schema.imap(f)(g)
+
+    given EnrichedSchema[Http.Header] with
+      extension [A](self: Header[A])
+        override def metadata: Metadata = self match
+          case schema: Http.Header.Value[A]  => schema.metadata
+          case schema: Http.Header.Array[A]  => schema.metadata
+          case schema: Http.Header.Object[A] => schema.metadata
+
+        override def metadata(f: Metadata => Metadata): Header[A] = self match
+          case schema: Http.Header.Value[A]  => schema.metadata(f)
+          case schema: Http.Header.Array[A]  => schema.metadata(f)
+          case schema: Http.Header.Object[A] => schema.metadata(f)
+
   sealed trait Query[A] extends Product with Serializable
 
   object Query:

@@ -89,10 +89,10 @@ object Json:
   final case class Record[A](self: Enriched[Self.Record[Json.Field, *], A]) extends Json[A]
 
   object Record:
-    given RecordSchema[Json.Record, Json.Field] = RecordSchema[Self.Record[Json.Field, *], Json.Field]
+    given RecordSchema[Json.Record, Json.Field] = RecordSchema[Enriched[Self.Record[Json.Field, *], *], Json.Field]
       .imapK(
-        [A] => (schema: Self.Record[Json.Field, A]) => Record(Enriched(schema))
-      )([A] => (json: Json.Record[A]) => json.self.self)
+        [A] => (schema: Enriched[Self.Record[Json.Field, *], A]) => Record(schema)
+      )([A] => (json: Json.Record[A]) => json.self)
 
     given EnrichedSchema[Json.Record] = EnrichedSchema[Enriched[Self.Record[Json.Field, *], *]]
       .imapK[Json.Record](

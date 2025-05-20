@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.Chain
 import io.taig.otter.Metadata
 import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.EnrichedSchema
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]
@@ -41,3 +42,14 @@ object Record:
 
     extension [A](self: Record[Field, A])
       override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)
+
+  given [Field[_]]: RecordSchema[Enriched[Record[Field, *], *], Field] with
+    override def imap[A, B](fa: Enriched[Record[Field, *], A])(f: A => B)(g: B => A): Enriched[Record[Field, *], B] =
+      fa.mapF(_.imap(f)(g))
+
+    override def lift[A](field: => Field[A]): Enriched[Record[Field, *], A] =
+      Enriched(RecordSchema[Record[Field, *], Field].lift(field))
+
+    extension [A](self: Enriched[Record[Field, *], A])
+      override def zip[B](schema: Enriched[Record[Field, *], B]): Enriched[Record[Field, *], (A, B)] =
+        Enriched(RecordSchema[Record[Field, *], Field].zip(self.self)(schema.self))

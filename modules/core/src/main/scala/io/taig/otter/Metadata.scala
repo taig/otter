@@ -1,7 +1,10 @@
 package io.taig.otter
-import scala.collection.immutable.SortedMap
 
-final class Metadata(val toMap: SortedMap[String, Any]) extends AnyVal
+import scala.collection.immutable.SortedMap
+import cats.Show
+
+final class Metadata(val toMap: SortedMap[String, Any]) extends AnyVal:
+  override def toString(): String = toMap.map { (key, value) => s"$key=$value" }.mkString("[", ",", "]")
 
 object Metadata:
   opaque type Key[A] = String
@@ -19,3 +22,5 @@ object Metadata:
   val Empty: Metadata = Metadata(SortedMap.empty)
 
   def one[A](key: Metadata.Key[A], value: A): Metadata = Metadata(SortedMap(key -> value))
+
+  given Show[Metadata] = Show.fromToString

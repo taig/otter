@@ -27,7 +27,7 @@ sealed abstract class Body[+S[_], A] extends Product with Serializable:
 
 object Body:
   final private[otter] case class Modify[S[_], A, B](self: Body[S, A], f: A => B, g: B => A) extends Body[S, B]:
-    export self.{schema, mediaType}
+    export self.{mediaType, schema}
 
   final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A]) extends Body[S, A]
 
