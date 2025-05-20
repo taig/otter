@@ -7,7 +7,7 @@ sealed abstract class Request[+S[_], A] extends Product with Serializable:
   def method: Method
   def url: Url[?]
   def headers: Headers[?]
-  def body: Option[Bodies[S, ?]]
+  def bodies: Option[Bodies[S, ?]]
 
   final def imap[B](f: A => B)(g: B => A): Request[S, B] = Request.Modify(self = this, f, g)
 
@@ -15,23 +15,23 @@ sealed abstract class Request[+S[_], A] extends Product with Serializable:
 
 object Request:
   final private[otter] case class Modify[S[_], A, B](self: Request[S, A], f: A => B, g: B => A) extends Request[S, B]:
-    export self.{body, headers, method, url}
+    export self.{bodies, headers, method, url}
 
-  final private[otter] case class Payload[S[_], A, B, C](self: Request.Root[A, B], bodies: Bodies[S, C])
+  final private[otter] case class Payload[S[_], A, B, C](self: Request.Root[A, B], payload: Bodies[S, C])
       extends Request[S, (A, B, C)]:
     export self.{headers, method, url}
-    override def body: Option[Bodies[S, C]] = bodies.some
+    override def bodies: Option[Bodies[S, C]] = payload.some
 
   final private[otter] case class Root[A, B](
       method: Method,
       url: Url[A],
       headers: Headers[B]
   ) extends Request[Nothing, (A, B)]:
-    override def body: Option[Bodies[Nothing, ?]] = none
+    override def bodies: Option[Bodies[Nothing, ?]] = none
 
   final private[otter] case class ZipHeaders[S[_], A, B](self: Request[S, A], headers: Headers[B])
       extends Request[S, (A, B)]:
-    export self.{body, method, url}
+    export self.{bodies, method, url}
 
   final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
     def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))

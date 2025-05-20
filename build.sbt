@@ -233,7 +233,6 @@ lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
 lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(
-    Compile / run / fork := true,
     libraryDependencies ++=
       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::

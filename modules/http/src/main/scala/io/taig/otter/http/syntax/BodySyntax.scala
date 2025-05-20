@@ -5,7 +5,7 @@ import io.taig.otter.http.Body
 import io.taig.otter.http.header.MediaType
 
 trait BodySyntax:
-  def body[S[_], A](mediaType: MediaType, codec: => S[A]): Body[S, A] =
-    Body.Root(mediaType, codec = Reference.later(codec))
+  def body[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =
+    Body.Root(mediaType, schema = Reference.later(schema))
 
 object BodySyntax extends BodySyntax

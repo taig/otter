@@ -11,6 +11,8 @@ import io.taig.otter.http.header.MediaType
 sealed abstract class Body[+S[_], A] extends Product with Serializable:
   def mediaType: MediaType
 
+  def schema: Reference[S, ?]
+
   final def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
 
   final def matches(contentType: MediaType): Boolean = mediaType === contentType
@@ -25,9 +27,9 @@ sealed abstract class Body[+S[_], A] extends Product with Serializable:
 
 object Body:
   final private[otter] case class Modify[S[_], A, B](self: Body[S, A], f: A => B, g: B => A) extends Body[S, B]:
-    export self.mediaType
+    export self.{schema, mediaType}
 
-  final private[otter] case class Root[S[_], A](mediaType: MediaType, codec: Reference[S, A]) extends Body[S, A]
+  final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A]) extends Body[S, A]
 
   given [S[_]]: Invariant[Body[S, *]] with
     override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)
