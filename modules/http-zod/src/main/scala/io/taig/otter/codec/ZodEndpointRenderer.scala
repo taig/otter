@@ -14,6 +14,8 @@ import cats.data.State
 import scala.collection.immutable.ListMap
 import io.taig.otter.ZodConst
 import cats.data.Chain
+import io.taig.otter.indent
+import io.taig.otter.Keys
 
 object ZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): ZodState[String] = State: state =>
@@ -23,7 +25,7 @@ object ZodEndpointRenderer:
         case parameter: Parameter[?] => s"$${input.url.path.${parameter.name}}"
       .mkString_("/", "/", "")
 
-    val functionName = name(endpoint.request)
+    val functionName = name(endpoint)
     val inputName = s"${functionName.capitalize}Input"
 
     val (bodies, result) = input(name = inputName, request = endpoint.request).run(state).value
@@ -40,15 +42,16 @@ object ZodEndpointRenderer:
 
     (state ++ bodies, x)
 
-  def name(request: Request[?, ?]): String =
-    val urls = request.url.path.toSegments
-      .map:
-        case name: String            => name
-        case parameter: Parameter[?] => parameter.name
+  def name(endpoint: Endpoint[?, ?, ?, ?, ?]): String =
+    endpoint.metadata(Keys.name).getOrElse:
+      val urls = endpoint.request.url.path.toSegments
+        .map:
+          case name: String            => name
+          case parameter: Parameter[?] => parameter.name
 
-    val (head, tail) = NonEmptyChain.fromChainAppend(urls, request.method.toString.toLowerCase).uncons
+      val (head, tail) = NonEmptyChain.fromChainAppend(urls, endpoint.request.method.toString.toLowerCase).uncons
 
-    s"$head${tail.map(_.capitalize).mkString_("")}"
+      s"$head${tail.map(_.capitalize).mkString_("")}"
 
   def input(name: String, request: Request[Json, ?]): ZodState[ZodExpression.Referenced] =
     val body = Chain
@@ -57,31 +60,27 @@ object ZodEndpointRenderer:
       .find(body => body.mediaType === mediaType.application.json)
       .map(_.schema.self.value)
       .map(JsonZodRenderer.render)
-      .map: x =>
-        x.map: x =>
-          println(s"Genereated body: $x")
-          x
 
     val value = body match
       case Some(body) =>
         body.map:
           case ZodExpression.Inline(value) =>
             show"""z.object({
-                  |  headers: ${HeadersZodRenderer.render(request.headers)},
-                  |  queries: ${QueriesZodRenderer.render(request.url.queries)},
+                  |  headers: ${indent(HeadersZodRenderer.render(request.headers), tail = true)},
+                  |  queries: ${indent(QueriesZodRenderer.render(request.url.queries), tail = true)},
                   |  body: $value
                   |})""".stripMargin
           case ZodExpression.Referenced(reference, value) =>
             show"""z.object({
-                  |  headers: ${HeadersZodRenderer.render(request.headers)},
-                  |  queries: ${QueriesZodRenderer.render(request.url.queries)},
+                  |  headers: ${indent(HeadersZodRenderer.render(request.headers), tail = true)},
+                  |  queries: ${indent(QueriesZodRenderer.render(request.url.queries), tail = true)},
                   |  body: ${reference.name}
                   |})""".stripMargin
       case None =>
         State.pure(
           show"""z.object({
-                |  headers: ${HeadersZodRenderer.render(request.headers)},
-                |  queries: ${QueriesZodRenderer.render(request.url.queries)}
+                |  headers: ${indent(HeadersZodRenderer.render(request.headers), tail = true)},
+                |  queries: ${indent(QueriesZodRenderer.render(request.url.queries), tail = true)},
                 |})""".stripMargin
         )
 

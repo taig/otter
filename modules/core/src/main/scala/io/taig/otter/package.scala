@@ -15,7 +15,14 @@ private[otter] given Eq[Data.Any] = Eq.fromUniversalEquals
 
 private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
-private[otter] def indent(value: String): String = value.split("\n").map("  " + _).mkString("\n")
+private[otter] def indent(value: String, tail: Boolean = false): String =
+  value
+  .split("\n")
+  .toList
+  .mapWithIndex: 
+    case (value, 0) if tail => value
+    case (value, _) => s"  $value"
+  .mkString("\n")
 
 private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
   characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (value, character) =>
