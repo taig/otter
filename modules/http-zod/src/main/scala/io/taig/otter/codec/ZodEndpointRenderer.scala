@@ -41,12 +41,25 @@ object ZodEndpointRenderer:
       value = inputType
     )
 
+    val codes = endpoint.response.results.toChain
+      .map(_.code.toInt)
+      .map: code =>
+        s"""if(code === $code) {
+           |  // TODO
+           |}""".stripMargin
+
+    val handle = s"""(code: number, body: () => Promise<any>) => {
+                    |${indent(codes.mkString_("\n\n"))}  
+                    |  
+                    |  return Promise.reject(`Unexpected response code: $${code}`)
+                    |}""".stripMargin
+
     val functionFields = Chain(
       ("method", s"\"${endpoint.request.method}\""),
       ("path", s"`$url`")
     ) ++ Chain.fromOption(inputFields.get("headers").as(("headers", "input.headers"))) ++
-      Chain.fromOption(inputFields.get("body").as(("body", "input.body"))) ++
-      Chain(("handle", "() => Promise.reject()"))
+      Chain.fromOption(inputFields.get("body").as(("body", "JSON.stringify(input.body)"))) ++
+      Chain(("handle", handle))
 
     val value = s"""${ZodExpressionRenderer.render(inputExpression)}
                    |

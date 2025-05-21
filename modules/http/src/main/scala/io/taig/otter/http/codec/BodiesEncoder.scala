@@ -13,20 +13,19 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
       schema: Bodies[S, A],
       accept: List[MediaRange],
       a: A
-  ): Either[ContentNegotiationFailed, (MediaType, Array[Byte])] =
-    schema match
-      case Bodies.Modify(self, _, g) => encode(schema = self, accept, g(a))
-      case Bodies.Or(left, right) =>
-        accept
-          .collectFirst:
-            case mediaRange if left.satisfies(mediaRange)  => left
-            case mediaRange if right.satisfies(mediaRange) => right
-          .orElse(Option.when(accept.isEmpty)(left))
-          .toRight(ContentNegotiationFailed)
-          .flatMap(encode(_, accept, a))
-      case Bodies.OrElse(left, right) =>
-        a.fold(encode(schema = left, accept, _), encode(schema = right, accept, _))
-      case Bodies.Root(body) => this.body.encode(body, accept, a).tupleLeft(body.mediaType)
+  ): Either[ContentNegotiationFailed, (MediaType, Array[Byte])] = schema match
+    case Bodies.Modify(self, _, g) => encode(schema = self, accept, g(a))
+    case Bodies.Or(left, right) =>
+      accept
+        .collectFirst:
+          case mediaRange if left.satisfies(mediaRange)  => left
+          case mediaRange if right.satisfies(mediaRange) => right
+        .orElse(Option.when(accept.isEmpty)(left))
+        .toRight(ContentNegotiationFailed)
+        .flatMap(encode(_, accept, a))
+    case Bodies.OrElse(left, right) =>
+      a.fold(encode(schema = left, accept, _), encode(schema = right, accept, _))
+    case Bodies.Root(body) => this.body.encode(body, accept, a).tupleLeft(body.mediaType)
 
   def encode[A](schema: Bodies[S, A], contentType: Option[MediaType], a: A): Either[MediaTypeUnsupported, Array[Byte]] =
     schema match

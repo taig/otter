@@ -1,4 +1,4 @@
-package io.taig.otter.sample.app.route.librarian.librarians
+package io.taig.otter.sample.app.route.librarian
 
 import cats.effect.IO
 import cats.effect.Ref
@@ -9,7 +9,7 @@ import io.taig.otter.sample.api.endpoint
 import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 
 def post(librarians: Ref[IO, List[LibrarianApiSchema]]) = Route(
-  endpoint.librarian.librarians.post,
+  endpoint.librarian.post,
   implementation = librarian =>
     UUIDGen
       .randomUUID[IO]

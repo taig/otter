@@ -35,7 +35,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .andThen(dictionary.decode(schema = self.self, _))
     case Json.Enumeration(self) => enumeration.decode(schema = self.self, json)
     case Json.Nullable(self)    => nullable.decode(schema = self.self, json)
-    case Json.Primitive(self)   => CirceJsonPrimitiveDecoder.decode(schema = self.self, json)
+    case Json.Primitive(self)   => PrimitiveDecoder(CirceJsonPrimitiveDecoder).decode(schema = self.self, json)
     case Json.Record(self) =>
       json.asObject
         .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))

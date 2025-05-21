@@ -1,4 +1,4 @@
-package io.taig.otter.sample.route.librarian.librarians
+package io.taig.otter.sample.route.librarian
 
 import cats.effect.IO
 import io.taig.otter.sample.SampleSuite
@@ -7,10 +7,10 @@ import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 import org.typelevel.ci.*
 
 final class PostTest extends SampleSuite:
-  client.test(endpoint.librarian.librarians.post): client =>
+  client.test(endpoint.librarian.post): client =>
     for
       obtained <- client
-        .submit(endpoint.librarian.librarians.post)(
+        .submit(endpoint.librarian.post)(
           input = LibrarianApiSchema.Create(email = ci"foobar@acme.com", password = "password")
         )
         .assertSuccess

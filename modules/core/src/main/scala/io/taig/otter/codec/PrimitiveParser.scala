@@ -11,8 +11,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
-  override def decode[A](codec: Primitive[A], value: String): Validated[Violations, A] = codec match
-    case Primitive.Boolean.Modify(self, f, _) => decode(codec = self, value).map(f)
+  override def decode[A](schema: Primitive[A], value: String): Validated[Violations, A] = schema match
+    case Primitive.Boolean.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Boolean.Root =>
       value.toBooleanOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Number.BigDecimal(_, _, _) =>
@@ -33,8 +33,8 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
       value.toIntOption.toValid(Violations.rootNec(Violation.tpe(name = "int", actual = value)))
     case Primitive.Number.Long(_, _, _) =>
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
-    case Primitive.Number.Modify(self, f, _) => decode(codec = self, value).map(f)
-    case Primitive.String.Modify(self, f, _) => decode(codec = self, value).map(f)
+    case Primitive.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Primitive.String.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.String.Parser(_, decode, _, _, _, _) =>
       val input =
         if quotes then
@@ -55,5 +55,5 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive, String]:
       else value.valid
 
 object PrimitiveParser:
-  val Quoted: Decoder[Primitive, String] = PrimitiveParser(quotes = true)
-  val Unquoted: Decoder[Primitive, String] = PrimitiveParser(quotes = false)
+  val Quoted: Decoder[Primitive, String] = PrimitiveDecoder(PrimitiveParser(quotes = true))
+  val Unquoted: Decoder[Primitive, String] = PrimitiveDecoder(PrimitiveParser(quotes = false))

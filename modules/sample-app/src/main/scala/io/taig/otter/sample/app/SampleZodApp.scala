@@ -7,8 +7,8 @@ object SampleZodApp:
   def run = {
     val zod = ZodEndpointsRenderer(imports = Nil).render(
       endpoints = List(
-        endpoint.librarian.librarians.post,
-        endpoint.librarian.librarians.reference.get
+        endpoint.librarian.librarians.reference.get,
+        endpoint.librarian.post
       )
     )
 

@@ -9,10 +9,10 @@ import org.typelevel.ci.*
 
 import java.util.UUID
 
-val get: Endpoint[(UUID, String), LibrarianReferenceUnknown, LibrarianApiSchema] = endpoint(
-  request(method.get, url).zip(header(ci"Authorization", header.string).toHeaders),
+val get: Endpoint[UUID, LibrarianReferenceUnknown, LibrarianApiSchema] = endpoint(
+  request(method.get, url),
   response(
     result(code.notFound, json(LibrarianReferenceUnknown.codec)) :+
       result(code.ok, json(LibrarianApiSchema.codec))
   )
-).metadata(name, "initializeLibrarian")
+)

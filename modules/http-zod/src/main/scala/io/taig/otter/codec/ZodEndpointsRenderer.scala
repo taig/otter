@@ -25,7 +25,7 @@ final class ZodEndpointsRenderer(imports: List[String]):
        |  path: string
        |  headers?: HeadersInit
        |  body?: BodyInit | null
-       |  handle: (response: Response) => Promise<A>
+       |  handle: (code: number, body: () => Promise<any>) => Promise<A>
        |}
        |
        |/* Types */

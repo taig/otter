@@ -10,5 +10,5 @@ import io.taig.otter.sample.app.route
 object LibrarianRoutes:
   def apply(librarians: Ref[IO, List[LibrarianApiSchema]]): Routes[IO, Json, Json, Json] = Routes(
     route.librarian.librarians.reference.get(librarians),
-    route.librarian.librarians.post(librarians)
+    route.librarian.post(librarians)
   )
