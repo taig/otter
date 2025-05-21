@@ -1,10 +1,13 @@
 package io.taig.otter.http
+
+import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Metadata
 import io.taig.otter.schema.Schema
 
 sealed abstract class Result[+S[_], A] extends Product with Serializable:
   def code: Code
+  def bodies: Option[Bodies[S, ?]]
 
   def metadata: Metadata
   def modifyMetadata(f: Metadata => Metadata): Result[S, A]
@@ -22,16 +25,18 @@ sealed abstract class Result[+S[_], A] extends Product with Serializable:
 
 object Result:
   final private[otter] case class Modify[S[_], A, B](self: Result[S, A], f: A => B, g: B => A) extends Result[S, B]:
-    export self.{code, metadata}
+    export self.{bodies, code, metadata}
     override def modifyMetadata(f: Metadata => Metadata): Result[S, B] = copy(self = self.modifyMetadata(f))
 
-  final private[otter] case class Payload[S[_], A, B](self: Result.Root[A], bodies: Bodies[S, B])
+  final private[otter] case class Payload[S[_], A, B](self: Result.Root[A], payload: Bodies[S, B])
       extends Result[S, (A, B)]:
     export self.{code, metadata}
+    override def bodies: Option[Bodies[S, ?]] = payload.some
     override def modifyMetadata(f: Metadata => Metadata): Result[S, (A, B)] = copy(self = self.modifyMetadata(f))
 
   final private[otter] case class Root[A](code: Code, headers: Headers[A], metadata: Metadata)
       extends Result[Nothing, A]:
+    override def bodies: Option[Bodies[Nothing, ?]] = none
     override def modifyMetadata(f: Metadata => Metadata): Result.Root[A] = copy(metadata = f(metadata))
 
   given [S[_]]: Schema[Result[S, *]] with

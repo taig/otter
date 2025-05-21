@@ -28,6 +28,10 @@ final class ZodEndpointsRenderer(imports: List[String]):
        |  handle: (code: number, body: () => Promise<any>) => Promise<A>
        |}
        |
+       |export type Result<A> =
+       |  { type: "success", value: A } |
+       |  { type: "error", value: string }
+       |
        |/* Types */
        |${references.mkString("\n\n")}
        |

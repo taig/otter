@@ -160,25 +160,27 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
     case schema @ Primitive.String.Parser(_, _, _, minimum, maximum, matches) =>
       ???
     case schema @ Primitive.String.Text(minimum, maximum, matches) =>
-      decoder.decode(schema, value).andThen: value =>
-        val length = value.length
+      decoder
+        .decode(schema, value)
+        .andThen: value =>
+          val length = value.length
 
-        (minimum.traverse { minimum =>
-          Validated.cond(
-            test = value.length >= minimum,
-            (),
-            Violations.rootNec(Violation(Constraint.Primitive.String.Minimum(minimum), length, hint = none))
-          )
-        } *> maximum.traverse { maximum =>
-          Validated.cond(
-            test = length <= maximum,
-            (),
-            Violations.rootNec(Violation(Constraint.Primitive.String.Maximum(maximum), length, hint = none))
-          )
-        } *> matches.traverse { pattern =>
-          Validated.cond(
-            test = pattern.matcher(value).matches(),
-            (),
-            Violations.rootNec(Violation(Constraint.Primitive.String.Matches(pattern), value, hint = none))
-          )
-        }).as(value)
+          (minimum.traverse { minimum =>
+            Validated.cond(
+              test = value.length >= minimum,
+              (),
+              Violations.rootNec(Violation(Constraint.Primitive.String.Minimum(minimum), length, hint = none))
+            )
+          } *> maximum.traverse { maximum =>
+            Validated.cond(
+              test = length <= maximum,
+              (),
+              Violations.rootNec(Violation(Constraint.Primitive.String.Maximum(maximum), length, hint = none))
+            )
+          } *> matches.traverse { pattern =>
+            Validated.cond(
+              test = pattern.matcher(value).matches(),
+              (),
+              Violations.rootNec(Violation(Constraint.Primitive.String.Matches(pattern), value, hint = none))
+            )
+          }).as(value)
