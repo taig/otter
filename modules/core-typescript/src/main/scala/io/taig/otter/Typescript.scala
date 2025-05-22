@@ -15,7 +15,9 @@ enum Typescript:
   case Record(key: Typescript, value: Typescript)
   case Reference(name: String)
   case String
+  case Tuple(values: Chain[Typescript])
   case Union(left: Typescript, right: Typescript)
+  case Void
 
   override def toString: String = TypescriptPrinter.print(this)
 

@@ -18,18 +18,16 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
             case Json.Primitive(self) => PrimitivePrinter.Quoted.encode(schema = self.self, a).some
             case _                    => none
   ).map(_.getOrElse(Typescript.Any)).map[TypescriptState[Typescript]](State.pure)
-
   val dictionary = DictionaryTypescriptRenderer(key = KeyTypescriptRenderer.map(State.pure), value = this)
-
   val enumeration = EnumerationTypescriptRenderer(printer =
     PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self.self)
   )
-
+  val nullable = NullableTypescriptRenderer(renderer = this)
   val record = RecordTypescriptRenderer(
     renderer = FieldTypescriptRenderer(key = KeyPrinter.Quoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
   )
-
+  val tuple = TupleTypescriptRenderer(renderer = this)
   val union = UnionTypescriptRenderer(renderer = this)
 
   override def render[A](schema: Json[A]): TypescriptState[Typescript] = renderer.render(schema)
@@ -40,8 +38,8 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
       case Json.Constant(self)    => constant.render(schema = self.self)
       case Json.Dictionary(self)  => dictionary.render(schema = self.self)
       case Json.Enumeration(self) => State.pure(enumeration.render(schema = self.self))
-      case Json.Nullable(self)    => ???
+      case Json.Nullable(self)    => nullable.render(schema = self.self)
       case Json.Primitive(self)   => State.pure(PrimitiveTypescriptRenderer.render(schema = self.self))
       case Json.Record(self)      => record.render(schema = self.self)
-      case Json.Tuple(self)       => ???
+      case Json.Tuple(self)       => tuple.render(schema = self.self)
       case Json.Union(self)       => union.render(schema = self.self)

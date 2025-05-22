@@ -24,7 +24,7 @@ object Tuple:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, B] = copy(self = self.mapK[S1, T](fK))
 
   final private[otter] case class Root[S[_], A](schema: Reference[S, A]) extends Tuple[S, A]:
-    override def schemas: Chain[Reference[S, A]] = Chain(schema)
+    override def schemas: Chain[Reference[S, A]] = Chain.one(schema)
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A] =
       copy(schema = schema.mapK[S1, T](fK))
 

@@ -15,16 +15,17 @@ object Playground:
     case Animal.Cat => "cat"
   }.metadata(name, "Animal")
 
+  val t = animal :* int :* string
+
   val array: Json.Collection[?] = (collection.list(value)).metadata(name, "Arr")
   val primitive: Json.Union[?] = (boolean | int | string | constant(3) | animal).metadata(name, "Primitive")
-  val value: Json.Union[?] = (array :+ primitive :+ dictionary.list(key.string, int)).metadata(name, "Value")
+  val value: Json.Union[?] =
+    (array :+ primitive.nullable :+ dictionary.list(key.string, int) :+ t).metadata(name, "Value")
 
   @main
   def run = {
     val (context, ts) = JsonTypescriptRenderer.render(value).run(initial = TypescriptState.Context.Empty).value
 
-    TypecriptReferencesPrinter
-      .print(context.references)
-      .foreach(println)
+    TypecriptReferencesPrinter.print(context.references).foreach(println)
     println(ts)
   }
