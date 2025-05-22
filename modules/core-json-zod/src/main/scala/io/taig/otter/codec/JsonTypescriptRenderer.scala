@@ -21,6 +21,10 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
 
   val dictionary = DictionaryTypescriptRenderer(key = KeyTypescriptRenderer.map(State.pure), value = this)
 
+  val enumeration = EnumerationTypescriptRenderer(printer =
+    PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self.self)
+  )
+
   val record = RecordTypescriptRenderer(
     renderer = FieldTypescriptRenderer(key = KeyPrinter.Quoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
@@ -35,7 +39,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
       case Json.Collection(self)  => collection.render(schema = self.self)
       case Json.Constant(self)    => constant.render(schema = self.self)
       case Json.Dictionary(self)  => dictionary.render(schema = self.self)
-      case Json.Enumeration(self) => ???
+      case Json.Enumeration(self) => State.pure(enumeration.render(schema = self.self))
       case Json.Nullable(self)    => ???
       case Json.Primitive(self)   => State.pure(PrimitiveTypescriptRenderer.render(schema = self.self))
       case Json.Record(self)      => record.render(schema = self.self)

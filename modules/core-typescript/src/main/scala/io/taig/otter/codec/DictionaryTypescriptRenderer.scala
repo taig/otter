@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import cats.Functor
 import cats.Semigroupal
 
-final class DictionaryTypescriptRenderer[S[_], T[_], U[_]: Functor : Semigroupal](
+final class DictionaryTypescriptRenderer[S[_], T[_], U[_]: Functor: Semigroupal](
     key: Renderer[S, U[Typescript]],
     value: Renderer[T, U[Typescript]]
 ) extends Renderer[Dictionary[S, T, *], U[Typescript]]:
