@@ -2,67 +2,57 @@ package io.taig.otter.codec
 
 import io.taig.otter.Typescript
 import cats.syntax.all.*
+import io.taig.otter.Zod
 import io.taig.otter.zodObject
+import cats.data.NonEmptyChain
 import cats.data.Chain
 import scala.collection.immutable.ListMap
 import cats.data.State
-import scala.collection.immutable.SortedSet
+import io.taig.otter.ZodState
+import io.taig.otter.zodUnion
 
 object TypescriptZodPrinter:
-  def print(typescript: Typescript): String = typescript match
-    case Typescript.Any                => "z.any()"
-    case Typescript.Array(self)        => s"z.array(${print(self)})"
-    case Typescript.Boolean            => "z.boolean()"
-    case Typescript.Literal(value)     => s"z.literal($value)"
-    case Typescript.Nullable(self)     => s"z.nullable(${print(self)})"
-    case Typescript.Number             => "z.number()"
-    case Typescript.Object(fields)     => zodObject(fields.map(_.map(print(_))))
-    case Typescript.Record(key, value) => s"z.record(${print(key)}, ${print(value)})"
-    case Typescript.Reference(name)    => name
-    case Typescript.String             => s"z.string()"
-    case Typescript.Tuple(values)      => s"z.tuple([${values.map(print).mkString_(", ")}])"
-    case typescript: Typescript.Union  => print(typescript).map(print).mkString_("z.union([", ", ", "])")
-    case Typescript.Void               => s"z.void()"
-
-  def print(typescript: Typescript.Union): Chain[Typescript] = typescript match
-    case Typescript.Union(left: Typescript.Union, right: Typescript.Union) => print(left) ++ print(right)
-    case Typescript.Union(left: Typescript.Union, right)                   => print(left) :+ right
-    case Typescript.Union(left, right: Typescript.Union)                   => left +: print(right)
-    case Typescript.Union(left, right)                                     => Chain(left, right)
-
-object TypescriptZodPrinter2:
-  def print(
-      references: ListMap[String, Typescript],
-      typescript: Typescript,
-      stack: SortedSet[String] = SortedSet.empty
-  ): State[ListMap[String, (Typescript, String)], (Typescript, String)] =
-    typescript match
-      case Typescript.Any => State.pure((typescript, "z.any()"))
-      case Typescript.Nullable(self) =>
-        print(references, self, stack).map(expression => s"z.nullable(${expression._2})").tupleLeft(typescript)
-      case Typescript.Reference(name) =>
-        if stack.contains(name)
-        then State.pure((typescript, s"z.lazy(() => $name)"))
+  def print(references: ListMap[String, Typescript], typescript: Typescript): ZodState[Zod[String]] = typescript match
+    case Typescript.Any => State.pure(Zod(typescript, "z.any()"))
+    case Typescript.Array(self) =>
+      print(references, self).map(zod => Zod(typescript, expression = s"z.array(${zod.expression})"))
+    case Typescript.Boolean        => State.pure(Zod(typescript, expression = "z.boolean()"))
+    case Typescript.Literal(value) => State.pure(Zod(typescript, s"z.literal($value)"))
+    case Typescript.Nullable(self) =>
+      print(references, self).map(_.map(expression => s"z.nullable($expression)"))
+    case Typescript.Number => State.pure(Zod(typescript, expression = "z.number()"))
+    case Typescript.Object(fields) =>
+      fields
+        .traverse((name, typescript) => print(references, typescript).tupleLeft(name))
+        .map(_.map { case (name, zod) => (name, zod.expression) })
+        .map(zodObject)
+        .map(Zod(typescript, _))
+    case Typescript.Record(key, value) =>
+      (print(references, key), print(references, value)).mapN: (key, value) =>
+        Zod(typescript, expression = s"z.record(${key.expression}, ${value.expression})")
+    case Typescript.Reference(name) =>
+      State: context =>
+        if context.stack.contains_(name) then (context, Zod(typescript, expression = s"z.lazy(() => $name)"))
+        else if context.references.contains(name) then
+          (context, Zod(typescript, expression = name))
         else
-          print(references, typescript = references(name), stack + name).transform((state, value) =>
-            (state + (name -> value), (typescript, name))
-          )
-      case Typescript.Union(left, right) =>
-        (print(references, left, stack), print(references, right, stack))
-          .mapN((left, right) => s"z.union([${left._2}, ${right._2}])")
-          .tupleLeft(typescript)
-      case Typescript.Number  => State.pure((typescript, "z.number()"))
-      case Typescript.Boolean => State.pure((typescript, "z.boolean()"))
-      case Typescript.String  => State.pure((typescript, "z.string()"))
-      case Typescript.Object(fields) =>
-        fields
-          .traverse((name, typescript) => print(references, typescript, stack).tupleLeft(name))
-          .map(_.map { case (a, (_, b)) => (a, b) })
-          .map(zodObject)
-          .tupleLeft(typescript)
-      case Typescript.Array(self) =>
-        print(references, self, stack).map(expression => s"z.array(${expression._2})").tupleLeft(typescript)
-      case Typescript.Record(key, value) =>
-        (print(references, key, stack), print(references, value, stack))
-          .mapN((key, value) => s"z.record(${key._2}, ${value._2})")
-          .tupleLeft(typescript)
+          val (update, zod) = print(references, typescript = references(name)).run(initial = context.push(name)).value
+          (update.pop.modifyReferences(_.updatedWith(name)(_ => zod.some)), Zod(typescript, expression = name))
+    case Typescript.String        => State.pure(Zod(typescript, expression = "z.string()"))
+    case Typescript.Tuple(values) =>
+      values.traverse(print(references, _).map(_.expression)).map: values =>
+        Zod(typescript, expression = s"z.tuple([${values.mkString_(", ")}])")
+    case typescript: Typescript.Union =>
+      print(references, typescript).flatMap: values =>
+        values
+          .traverse(print(references, _).map(_.expression))
+          .map(values => Zod(typescript, expression = zodUnion(values)))
+    case Typescript.Void => State.pure(Zod(typescript, expression = "z.void()"))
+
+  def print(references: ListMap[String, Typescript], typescript: Typescript.Union): ZodState[NonEmptyChain[Typescript]] =
+    typescript match
+      case Typescript.Union(left: Typescript.Union, right: Typescript.Union) =>
+        (print(references, left), print(references, right)).mapN(_ ++ _)
+      case Typescript.Union(left: Typescript.Union, right) => print(references, left).map(_ :+ right)
+      case Typescript.Union(left, right: Typescript.Union) => print(references, right).map(left +: _)
+      case Typescript.Union(left, right)                   => State.pure(NonEmptyChain(left, right))

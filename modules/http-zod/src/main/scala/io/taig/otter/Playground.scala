@@ -4,7 +4,6 @@ import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.codec.TypescriptZodPrinter
 import io.taig.otter.codec.JsonTypescriptRenderer
 import io.taig.otter.Keys.*
-import io.taig.otter.codec.TypescriptZodPrinter2
 import scala.collection.immutable.ListMap
 
 object Playground:
@@ -21,10 +20,10 @@ object Playground:
     // context.references.map((name, value) => s"const $name = ${TypescriptZodPrinter.print(value)}").foreach(println)
     // println(zod)
 
-    val (refs, zod) = TypescriptZodPrinter2.print(context.references, ts).run(ListMap.empty).value
+    val (refs, zod) = TypescriptZodPrinter.print(context.references, ts).run(ZodState.Context.Empty).value
 
-    refs.foreach { case (name, (ts, expression)) =>
-      println(s"""type $name = $ts
-                 |const $name: z.ZodType<$name> = $expression""".stripMargin)
+    refs.references.foreach { case (name, zod) =>
+      println(s"""type $name = ${zod.typescript}
+                 |const $name: z.ZodType<${zod.typescript}> = ${zod.expression}""".stripMargin)
     }
   }

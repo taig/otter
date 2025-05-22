@@ -2,22 +2,21 @@ package io.taig.otter
 
 import cats.data.State
 
-import scala.collection.immutable.SortedSet
 import scala.collection.immutable.ListMap
 
 type ZodState[A] = State[ZodState.Context, A]
 
 object ZodState:
-  final case class Context(stack: SortedSet[String], references: ListMap[ZodConst, String], recursion: Boolean):
-    def modifyStack(f: SortedSet[String] => SortedSet[String]): ZodState.Context =
+  final case class Context(references: ListMap[String, Zod[String]], stack: List[String]):
+    def modifyStack(f: List[String] => List[String]): ZodState.Context =
       copy(stack = f(stack))
 
-    def put(stack: String): ZodState.Context = modifyStack(_ + stack)
+    def push(stack: String): ZodState.Context = modifyStack(stack :: _)
 
-    def remove(stack: String): ZodState.Context = modifyStack(_ - stack)
+    def pop: ZodState.Context = modifyStack(_.tail)
 
-    def modifyReferences(f: ListMap[ZodConst, String] => ListMap[ZodConst, String]): ZodState.Context =
+    def modifyReferences(f: ListMap[String, Zod[String]] => ListMap[String, Zod[String]]): ZodState.Context =
       copy(references = f(references))
 
   object Context:
-    val Empty: ZodState.Context = Context(stack = SortedSet.empty, references = ListMap.empty, recursion = false)
+    val Empty: ZodState.Context = Context(references = ListMap.empty, stack = Nil)
