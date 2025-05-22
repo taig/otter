@@ -7,13 +7,15 @@ import io.taig.otter.TypescriptState
 
 object Playground:
   val array: Json.Collection[?] = (collection.list(value)).metadata(name, "Arr")
-  val primitive: Json.Union[?] = (boolean | int | string).metadata(name, "Primitive")
-  val value: Json.Union[?] = array.:+(primitive).metadata(name, "Value")
+  val primitive: Json.Union[?] = (boolean | int | string | constant(3)).metadata(name, "Primitive")
+  val value: Json.Union[?] = (array :+ primitive :+ dictionary.list(key.string, int)).metadata(name, "Value")
 
   @main
   def run = {
-    val (context, ts) = JsonTypescriptRenderer.render(array).run(initial = TypescriptState.Context.Empty).value
-    TypecriptReferencesPrinter.print(context.references)
+    val (context, ts) = JsonTypescriptRenderer.render(value).run(initial = TypescriptState.Context.Empty).value
+
+    TypecriptReferencesPrinter
+      .print(context.references)
       .foreach(println)
     println(ts)
   }

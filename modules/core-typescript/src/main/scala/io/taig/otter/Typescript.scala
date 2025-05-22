@@ -5,11 +5,14 @@ import io.taig.otter.codec.TypescriptPrinter
 import cats.Show
 
 enum Typescript:
+  case Any
   case Array(self: Typescript)
   case Boolean
+  case Literal(value: String)
   case Nullable(self: Typescript)
   case Number
   case Object(fields: Chain[(String, Typescript)])
+  case Record(key: Typescript, value: Typescript)
   case Reference(name: String)
   case String
   case Union(left: Typescript, right: Typescript)
