@@ -16,6 +16,8 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
   )
 
+  val union = UnionTypescriptRenderer(renderer = this)
+
   override def render[A](schema: Json[A]): TypescriptState[Typescript] =
     renderer.render(schema)
 
@@ -29,4 +31,4 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
       case Json.Primitive(self)   => State.pure(PrimitiveTypescriptRenderer.render(schema = self.self))
       case Json.Record(self)      => record.render(schema = self.self)
       case Json.Tuple(self)       => ???
-      case Json.Union(self)       => UnionTypescriptRenderer(renderer = this).render(schema = self.self)
+      case Json.Union(self)       => union.render(schema = self.self)
