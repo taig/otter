@@ -5,7 +5,8 @@ import io.taig.otter.Violations
 import io.taig.otter.schema.DictionarySchema
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.UnionSchema
+import io.taig.otter.Keys.*
+import io.taig.otter.schema.EnrichedUnionSchema
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],
@@ -22,7 +23,7 @@ trait ViolationsComponent[
     DictionarySchema[Dictionary, Key, Value],
     FieldSchema[Field, Key, Value],
     RecordSchema[Record, Field],
-    UnionSchema[Union, Value]
+    EnrichedUnionSchema[Union, Value]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
@@ -40,4 +41,4 @@ trait ViolationsComponent[
 
     val namespace: Dictionary[Violations.Namespace] = dictionary.nonEmptyMap(step, violations).to
 
-    (root :+ namespace).to
+    (root :+ namespace).metadata(name, "Violations").to

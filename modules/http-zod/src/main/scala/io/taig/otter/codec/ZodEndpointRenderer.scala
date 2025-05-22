@@ -6,7 +6,6 @@ import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Keys
-import io.taig.otter.ZodConst
 import io.taig.otter.ZodExpression
 import io.taig.otter.ZodState
 import io.taig.otter.http.Endpoint
@@ -17,41 +16,21 @@ import io.taig.otter.indent
 
 import scala.collection.immutable.ListMap
 import io.taig.otter.http.Response
+import io.taig.otter.http.Result
+import io.taig.otter.zodObject
+
+import io.taig.otter.component.JsonComponent.*
 
 object ZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): ZodState[String] = for
     url <- url(request = endpoint.request)
-    functionName = function(endpoint)
-    inputName = s"${functionName.capitalize}Input"
-    outputName = s"${functionName.capitalize}Output"
+    _ = println(JsonZodRenderer.render(schema = violation).runA(ListMap.empty).value)
+    name = function(endpoint)
+    inputName = s"${name.capitalize}Input"
+    outputName = s"${name.capitalize}Output"
     input <- input(request = endpoint.request)
-    inputExpression: ZodExpression.Referenced = ZodExpression.Referenced(
-      reference = ZodConst(namespace = none, name = inputName),
-      value = obj(Chain.fromIterableOnce(input))
-    )
-    codes = endpoint.response.results.toChain
-      .map: result =>
-        val parse = result.bodies match
-          case Some(bodies) =>
-            val result = bodies.toChain
-              .find(_.mediaType === mediaType.application.json)
-              .map(_.schema.value)
-              .map(JsonZodRenderer.render)
-              .map(_.map {
-                case ZodExpression.Inline(value)        => "// TODO inline"
-                case r @ ZodExpression.Referenced(_, _) => ZodExpressionRenderer.render(r)
-              })
-              .get
-              .runA(ListMap.empty)
-              .value
-            result
-          case None => "return"
-
-        s"""if(code === ${result.code}) {
-           |  $parse
-           |}""".stripMargin
     handle = s"""(code: number, body: () => Promise<any>) => {
-                |${indent(codes.mkString_("\n\n"))}  
+                |  // TODO oh lard
                 |  
                 |  return Promise.reject(`Unexpected response code: $${code}`)
                 |}""".stripMargin
@@ -61,12 +40,30 @@ object ZodEndpointRenderer:
     ) ++ Chain.fromOption(input.get("headers").as(("headers", "input.headers"))) ++
       Chain.fromOption(input.get("body").as(("body", "JSON.stringify(input.body)"))) ++
       Chain(("handle", handle))
+    // outputViolation <- outputViolation(name, result = endpoint.response.validation)
+    outputFailure <- outputFailure(name, result = endpoint.response.failure)
+    outputFailureDefn = outputFailure
+      .map[ZodExpression.Referenced]:
+        case ZodExpression.Inline(value)          => ZodExpression(name = s"${outputName}Failure", value)
+        case expression: ZodExpression.Referenced => expression
+      .map(ZodExpressionRenderer.render)
+    outputFailureType = outputFailure.fold("void")(_ => s"${outputName}Failure")
     output <- output(response = endpoint.response)
-  yield s"""${ZodExpressionRenderer.render(inputExpression)}
-           |
-           |export const $functionName = (input: $inputName): Request<Result<?>> => ({
-           |${indent(functionFields.map((name, value) => s"$name: $value").mkString_(",\n"))}
-           |})""".stripMargin
+  yield show"""/* ${endpoint.request.method} ${endpoint.request.url.path} */
+              |
+              |${ZodExpressionRenderer.render(ZodExpression(inputName, zodObject(Chain.fromIterableOnce(input))))}
+              |
+              |${outputFailureDefn.orEmpty}
+              |
+              |export const $name = (
+              |  input: $inputName
+              |): Request<
+              |  ${outputName}Result,
+              |  ${outputName}Violation,
+              |  $outputFailureType
+              |> => ({
+              |${indent(functionFields.map((name, value) => s"$name: $value").mkString_(",\n"))}
+              |})""".stripMargin
 
   def url(request: Request[?, ?]): ZodState[String] = State.pure:
     // TODO query params
@@ -99,7 +96,7 @@ object ZodEndpointRenderer:
 
     val url = NonEmptyChain
       .fromChain(Chain.fromOption(path) ++ Chain.fromOption(queries))
-      .map(values => obj(values.toChain))
+      .map(values => zodObject(values.toChain))
       .tupleLeft("url")
 
     val headers = HeadersZodRenderer
@@ -119,19 +116,10 @@ object ZodEndpointRenderer:
     ((List.from(url) ++ List.from(headers)).map(State.pure) ++ List.from(body)).sequence.map(ListMap.from)
 
   def output(response: Response[Json, Json, ?]): ZodState[String] =
-    response.results.toChain
-      .mapFilter(_.bodies.map(_.toChain.head.schema.value))
-      .traverse(JsonZodRenderer.render)
-      .map(_.map {
-        case ZodExpression.Inline(value)            => value
-        case ZodExpression.Referenced(reference, _) => reference.name
-      })
-      .map: types =>
-        s"""z.union([
-           |${indent(types.mkString_(",\n"))}
-           |])""".stripMargin
+    State.pure("todo")
 
-  def obj(fields: Chain[(String, String)]): String =
-    s"""z.object({
-       |${indent(fields.map((name, value) => s"$name: ${value}").mkString_(",\n"))}
-       |})""".stripMargin
+  def outputViolation(name: String, result: Result[Json, ?]): ZodState[Option[ZodExpression]] =
+    result.bodies.map(_.toChain.head.schema.value).traverse(JsonZodRenderer.render)
+
+  def outputFailure(name: String, result: Result[Json, ?]): ZodState[Option[ZodExpression]] =
+    result.bodies.map(_.toChain.head.schema.value).traverse(JsonZodRenderer.render)

@@ -16,24 +16,29 @@ final class ZodEndpointsRenderer(imports: List[String]):
       .leftMap(_.toList.map[ZodExpression.Referenced](ZodExpression.Referenced.apply).map(ZodExpressionRenderer.render))
 
     s"""/* Imports */
+       |
        |import { z } from "zod"
        |${imports.mkString("\n")}
        |
        |/* Definitions */
-       |export type Request<A> = {
+       |
+       |export type Request<A, B, C> = {
        |  method: string
        |  path: string
        |  headers?: HeadersInit
        |  body?: BodyInit | null
-       |  handle: (code: number, body: () => Promise<any>) => Promise<A>
+       |  handle: (code: number, body: () => Promise<any>) => Promise<Response<A, B, C>>
        |}
        |
-       |export type Result<A> =
-       |  { type: "success", value: A } |
-       |  { type: "error", value: string }
+       |export type Response<A, B, C> =
+       |  { type: "result", value: A } |
+       |  { type: "violation", value: B } |
+       |  { type: "failure", value: C }
        |
        |/* Types */
+       |
        |${references.mkString("\n\n")}
        |
        |/* Endpoints */
+       |
        |${definitions.mkString("\n\n")}""".stripMargin

@@ -116,8 +116,11 @@ lazy val coreJavaTime = module(identifier = Some("core-java-time"))
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreZod = module(identifier = Some("core-zod"))
+lazy val coreTypescript = module(identifier = Some("core-typescript"))
   .dependsOn(core % "compile->compile;test->test")
+
+lazy val coreZod = module(identifier = Some("core-zod"))
+  .dependsOn(coreTypescript % "compile->compile;test->test")
 
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(

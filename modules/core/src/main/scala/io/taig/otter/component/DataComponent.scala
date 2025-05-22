@@ -4,6 +4,11 @@ import io.taig.otter.Data
 import io.taig.otter.schema.CollectionSchema
 import io.taig.otter.schema.DictionarySchema
 import io.taig.otter.schema.NullableSchema
+import io.taig.otter.schema.EnrichedSchema
+import io.taig.otter.Keys.*
+import io.taig.otter.schema.EnrichedDictionarySchema
+import io.taig.otter.schema.EnrichedCollectionSchema
+import io.taig.otter.schema.EnrichedNullableSchema
 
 trait DataComponent[
     Collection[a] <: Value[a],
@@ -16,8 +21,12 @@ trait DataComponent[
     Field[_],
     Key[_],
     Value[_]
-](using CollectionSchema[Collection, Value], DictionarySchema[Dictionary, Key, Value], NullableSchema[Nullable, Value])
-    extends CollectionComponent[Collection, Value],
+](using
+    EnrichedCollectionSchema[Collection, Value],
+    EnrichedDictionarySchema[Dictionary, Key, Value],
+    EnrichedNullableSchema[Nullable, Value],
+    EnrichedSchema[Union]
+) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
       PrimitiveComponent[Primitive],
@@ -26,23 +35,26 @@ trait DataComponent[
   this: PrimitiveComponent.String[Value] =>
 
   object data:
-    val any: Nullable[Data.Any] = value.nullable.imap(_.getOrElse(Data.Null)) {
-      case Data.Null        => None
-      case data: Data.Value => Some(data)
-    }
+    val number: Union[Data.Number] = (jBigDecimal | jBigInteger | long | int | float | double)
+      .metadata(zod, "z.number()")
 
-    val number: Union[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
+    val primitive: Union[Data.Primitive] = (number | boolean | string).metadata(name, "Primitive")
 
-    val primitive: Union[Data.Primitive] = number | boolean | string
+    def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
+      dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-    val value: Union[Data.Value] = primitive | obj | array
+    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Object")
 
-    def obj[A <: Data.Any](codec: => Value[A]): Dictionary[Data.Object[A]] =
-      dictionary.list(key.string, codec).imap(Data.Object[A])(_.values)
-
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any)
-
-    def array[A <: Data.Any](codec: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(codec).imap(Data.Array[A])(_.values)
+    def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
+      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Array")
 
     val array: Collection[Data.Array[Data.Any]] = array(any)
+
+    val value: Union[Data.Value] = (primitive | obj | array).metadata(name, "Value")
+
+    val any: Nullable[Data.Any] = value.nullable
+      .imap(_.getOrElse(Data.Null)) {
+        case Data.Null        => None
+        case data: Data.Value => Some(data)
+      }
+      .metadata(name, "Any")

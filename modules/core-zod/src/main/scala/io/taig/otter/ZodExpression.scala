@@ -10,6 +10,9 @@ enum ZodExpression derives Eq:
   case Referenced(reference: ZodConst, value: String)
 
 object ZodExpression:
+  def apply(name: String, value: String): ZodExpression.Referenced =
+    Referenced(reference = ZodConst(name), value)
+
   given Show[ZodExpression] =
     case Inline(value)            => value
     case Referenced(reference, _) => reference.show

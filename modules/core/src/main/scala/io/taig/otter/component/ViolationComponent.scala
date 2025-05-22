@@ -1,8 +1,10 @@
 package io.taig.otter.component
+
+import io.taig.otter.Keys.name
 import io.taig.otter.Violation
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.NullableSchema
-import io.taig.otter.schema.RecordSchema
+import io.taig.otter.schema.EnrichedRecordSchema
 
 trait ViolationComponent[
     Collection[a] <: Value[a],
@@ -15,7 +17,7 @@ trait ViolationComponent[
     Field[_],
     Key[_],
     Value[_]
-](using FieldSchema[Field, Key, Value], NullableSchema[Nullable, Value], RecordSchema[Record, Field])
+](using FieldSchema[Field, Key, Value], NullableSchema[Nullable, Value], EnrichedRecordSchema[Record, Field])
     extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],
@@ -28,4 +30,4 @@ trait ViolationComponent[
     field("constraint", constraint) :*
       field("actual", data.any) :*
       field("hint", string.nullable)
-  ).to
+  ).metadata(name, "Violation").to

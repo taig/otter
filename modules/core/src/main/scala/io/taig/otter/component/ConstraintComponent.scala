@@ -1,8 +1,10 @@
 package io.taig.otter.component
+
 import io.taig.otter.Constraint
+import io.taig.otter.Keys.*
 import io.taig.otter.schema.FieldSchema
 import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.UnionSchema
+import io.taig.otter.schema.EnrichedUnionSchema
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],
@@ -15,7 +17,7 @@ trait ConstraintComponent[
     Field[_],
     Key[_],
     Value[_]
-](using FieldSchema[Field, Key, Value], RecordSchema[Record, Field], UnionSchema[Union, Value])
+](using FieldSchema[Field, Key, Value], RecordSchema[Record, Field], EnrichedUnionSchema[Union, Value])
     extends ComparisonComponent[Nullable, Record, Field, Key, Value],
       DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
@@ -62,4 +64,8 @@ trait ConstraintComponent[
         merged("oneOf", field("values", collection.list(data.any)).toRecord).to[Constraint.OneOf] :+
         merged("required").as(Constraint.Required) :+
         merged("type", field("name", string).toRecord).to[Constraint.Type]
-    ).orElse(col).orElse(obj).orElse(primitive).to
+    ).orElse(col)
+      .orElse(obj)
+      .orElse(primitive)
+      .metadata(name, "Constraint")
+      .to
