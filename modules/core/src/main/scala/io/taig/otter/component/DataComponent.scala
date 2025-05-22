@@ -42,10 +42,10 @@ trait DataComponent[
     def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Obj")
+    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Object")
 
     def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Arr")
+      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Collection")
 
     val array: Collection[Data.Array[Data.Any]] = array(any)
 
