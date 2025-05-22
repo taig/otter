@@ -24,7 +24,7 @@ import io.taig.otter.component.JsonComponent.*
 object ZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): ZodState[String] = for
     url <- url(request = endpoint.request)
-    _ = println(JsonZodRenderer.render(schema = violation).runA(ListMap.empty).value)
+    // _ = println(JsonZodRenderer.render(schema = violation).runA(ListMap.empty).value)
     name = function(endpoint)
     inputName = s"${name.capitalize}Input"
     outputName = s"${name.capitalize}Output"

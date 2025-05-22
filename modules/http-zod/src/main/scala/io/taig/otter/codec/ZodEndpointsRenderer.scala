@@ -4,16 +4,19 @@ import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.ZodExpression
 import io.taig.otter.http.Endpoint
-
-import scala.collection.immutable.ListMap
+import io.taig.otter.ZodState
 
 final class ZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, Json, Json, ?, ?]]): String =
     val (references, definitions) = endpoints
       .traverse(ZodEndpointRenderer.render)
-      .run(initial = ListMap.empty)
+      .run(initial = ZodState.Context.Empty)
       .value
-      .leftMap(_.toList.map[ZodExpression.Referenced](ZodExpression.Referenced.apply).map(ZodExpressionRenderer.render))
+      .leftMap(
+        _.references.toList
+          .map[ZodExpression.Referenced](ZodExpression.Referenced.apply)
+          .map(ZodExpressionRenderer.render)
+      )
 
     s"""/* Imports */
        |
