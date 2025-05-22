@@ -3,8 +3,10 @@ package io.taig.otter
 import cats.data.Chain
 import io.taig.otter.codec.TypescriptPrinter
 import cats.Show
+import cats.derived.*
+import cats.Order
 
-enum Typescript:
+enum Typescript derives Order:
   case Any
   case Array(self: Typescript)
   case Boolean

@@ -35,18 +35,17 @@ trait DataComponent[
   this: PrimitiveComponent.String[Value] =>
 
   object data:
-    val number: Union[Data.Number] = (jBigDecimal | jBigInteger | long | int | float | double)
-      .metadata(zod, "z.number()")
+    val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
 
-    val primitive: Union[Data.Primitive] = (number | boolean | string).metadata(name, "Primitive")
+    val primitive: Value[Data.Primitive] = (number | boolean | string).metadata(name, "Primitive")
 
     def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Object")
+    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Obj")
 
     def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Array")
+      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Arr")
 
     val array: Collection[Data.Array[Data.Any]] = array(any)
 

@@ -18,11 +18,11 @@ object TypescriptZodPrinter:
     case Typescript.Reference(name)    => name
     case Typescript.String             => s"z.string()"
     case Typescript.Tuple(values)      => s"z.tuple([${values.map(print).mkString_(", ")}])"
-    case typescript: Typescript.Union => print(typescript).map(print).mkString_("z.union([", ", ", "])")
-    case Typescript.Void               => s"z.void()"
+    case typescript: Typescript.Union  => print(typescript).map(print).mkString_("z.union([", ", ", "])")
+    case Typescript.Void => s"z.void()"
 
   def print(typescript: Typescript.Union): Chain[Typescript] = typescript match
     case Typescript.Union(left: Typescript.Union, right: Typescript.Union) => print(left) ++ print(right)
-    case Typescript.Union(left: Typescript.Union, right) => print(left) :+ right
-    case Typescript.Union(left, right: Typescript.Union) => left +: print(right)
-    case Typescript.Union(left, right) => Chain(left, right)
+    case Typescript.Union(left: Typescript.Union, right)                   => print(left) :+ right
+    case Typescript.Union(left, right: Typescript.Union)                   => left +: print(right)
+    case Typescript.Union(left, right)                                     => Chain(left, right)

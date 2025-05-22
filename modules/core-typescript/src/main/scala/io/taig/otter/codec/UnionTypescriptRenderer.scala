@@ -9,6 +9,7 @@ final class UnionTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[
     extends Renderer[Union[S, *], T[Typescript]]:
   override def render[A](schema: Union[S, A]): T[Typescript] = schema.schemas
     .traverse(schema => renderer.render(schema.value))
+    .map(_.distinct)
     .map(_.uncons.map(_.uncons))
     .map:
       case (left, Some(right, tail)) =>
