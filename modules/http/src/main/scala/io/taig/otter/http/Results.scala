@@ -1,8 +1,8 @@
 package io.taig.otter.http
 
-import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.+
+import io.taig.otter.schema.Schema
 
 sealed abstract class Results[+S[_], A] extends Product with Serializable:
   def toChain: Chain[Result[S, ?]]
@@ -42,5 +42,5 @@ object Results:
     inline def |[T[_], B <: Matchable](result: Result[T, B]): Results[S + T, A | B] =
       or(result.toResults)
 
-  given [S[_]]: Invariant[Results[S, *]] with
+  given [S[_]]: Schema[Results[S, *]] with
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] = fa.imap(f)(g)

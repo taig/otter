@@ -13,12 +13,8 @@ object ErrorApiSchema:
   type LibrarianInitializationConflict = LibrarianInitializationConflict.type
   case object LibrarianInitializationConflict derives Eq:
     val codec: Json.Record[LibrarianInitializationConflict] =
-      error("librarianInitializationConflict")
-        .metadata(name, "LibrarianInitializationConflict")
-        .as(LibrarianInitializationConflict)
+      error("librarianInitializationConflict").as(LibrarianInitializationConflict)
 
   final case class LibrarianReferenceUnknown(reference: UUID) derives Eq
   object LibrarianReferenceUnknown:
-    val codec: Json.Record[LibrarianReferenceUnknown] = error("librarianReferenceUnknown", uuid)
-      .metadata(name, "LibrarianReferenceUnknown")
-      .to
+    val codec: Json.Record[LibrarianReferenceUnknown] = error("librarianReferenceUnknown", uuid).to
