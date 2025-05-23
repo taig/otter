@@ -1,6 +1,5 @@
 package io.taig.otter.http
 
-import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.schema.Schema
 
@@ -13,6 +12,10 @@ sealed abstract class Request[+S[_], A] extends Product with Serializable:
   final def imap[B](f: A => B)(g: B => A): Request[S, B] = Request.Modify(self = this, f, g)
 
   final def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request.ZipHeaders(self = this, headers)
+  
+  final def :*[B](header: Header[B]): Request[S, (A, B)] = zip(headers = header.toHeaders)
+  
+  final def *:[B](header: Header[B]): Request[S, (B, A)] = zip(headers = header.toHeaders).imap(_.swap)(_.swap)
 
 object Request:
   final private[otter] case class Modify[S[_], A, B](self: Request[S, A], f: A => B, g: B => A) extends Request[S, B]:
