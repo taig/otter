@@ -36,7 +36,7 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
        |  path: string
        |  headers?: HeadersInit
        |  body?: BodyInit | null
-       |  handle: (code: number, body: () => Promise<any>) => Promise<A>
+       |  handle: (code: number, headers: Headers, body: () => Promise<any>) => Promise<A>
        |}
        |
        |/* Types */

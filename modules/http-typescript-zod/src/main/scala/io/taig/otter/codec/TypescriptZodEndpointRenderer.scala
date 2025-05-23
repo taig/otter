@@ -23,7 +23,7 @@ object TypescriptZodEndpointRenderer:
       name = function(endpoint)
       input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
       output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
-      handle = s"""(code: number, body: () => Promise<${output.name}>) =>
+      handle = s"""(code, headers, bod) =>
                   |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
       fields = Chain(
           ("method", s"\"${endpoint.request.method}\""),
