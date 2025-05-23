@@ -3,7 +3,7 @@ package io.taig.otter
 import cats.syntax.all.*
 import cats.Show
 
-final case class TypescriptZodDefinition(typescript: TypescriptDefinition, expression: String):
+final case class TypescriptZodDefinition(typescript: TypescriptDefinition[?], expression: String):
   override def toString: String =
     show"""$typescript
           |export const ${typescript.name}: z.ZodType<${typescript.name}> =

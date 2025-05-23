@@ -7,18 +7,15 @@ import cats.data.NonEmptyChain
 import cats.data.Chain
 import scala.collection.immutable.ListMap
 import cats.data.State
-import io.taig.otter.ZodState
+import io.taig.otter.TypescriptZodState
 import io.taig.otter.zodUnion
 import io.taig.otter.TypescriptZod
-import io.taig.otter.TypescriptState
-import cats.data.IndexedState
-import scala.collection.immutable.SortedSet
 
 object TypescriptZodEncoder:
-  def encode(references: ListMap[String, Typescript], typescript: Typescript): ZodState[String] =
+  def encode(references: ListMap[String, Typescript], typescript: Typescript): TypescriptZodState[String] =
     apply(references, typescript).map(_.expression)
 
-  private def apply(references: ListMap[String, Typescript], typescript: Typescript): ZodState[TypescriptZod] =
+  private def apply(references: ListMap[String, Typescript], typescript: Typescript): TypescriptZodState[TypescriptZod] =
     typescript match
       case Typescript.Any => State.pure(TypescriptZod(typescript, "z.any()"))
       case Typescript.Array(self) =>
@@ -64,7 +61,7 @@ object TypescriptZodEncoder:
   private def apply(
       references: ListMap[String, Typescript],
       typescript: Typescript.Union
-  ): ZodState[NonEmptyChain[Typescript]] = typescript match
+  ): TypescriptZodState[NonEmptyChain[Typescript]] = typescript match
     case Typescript.Union(left: Typescript.Union, right: Typescript.Union) =>
       (apply(references, left), apply(references, right)).mapN(_ ++ _)
     case Typescript.Union(left: Typescript.Union, right) => apply(references, left).map(_ :+ right)

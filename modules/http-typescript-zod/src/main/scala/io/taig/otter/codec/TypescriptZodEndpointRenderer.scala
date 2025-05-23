@@ -9,75 +9,38 @@ import io.taig.otter.Keys
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Request
-import io.taig.otter.http.syntax.MediaTypeSyntax.*
-
-import io.taig.otter.http.Result
-
-import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.TypescriptState
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptDefinition
 import io.taig.otter.TypescriptEndpoint
+import io.taig.otter.indent
+import io.taig.otter.http.Response
 
 object TypescriptZodEndpointRenderer:
-  def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition]] =
+  def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
     for
       url <- url(request = endpoint.request)
       name = function(endpoint)
       input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
-      violation <- output(result = endpoint.response.validation)
-        .map(_.getOrElse(Typescript.Void))
-        .map(_.definition(s"${name.capitalize}Violation"))
-      failure <- output(result = endpoint.response.failure)
-        .map(_.getOrElse(Typescript.Void))
-        .map(_.definition(s"${name.capitalize}Failure"))
+      output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
+      handle = s"""(code: number, body: () => Promise<${output.name}>) =>
+                  |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
+      fields = Chain(
+          ("method", s"\"${endpoint.request.method}\""),
+          ("path", s"`$url`")
+        ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
+        Chain.fromOption(input.value.fields.collectFirst { case ("body", _) => ("body", "JSON.stringify(input.body)") }) :+
+        ("handle", handle)
     yield TypescriptEndpoint(
       input,
       marker = show"/* ${endpoint.request.method} ${endpoint.request.url.path} */",
-      types = List(input, violation, failure),
+      types = List(input, output),
       definition = show"""export const $name = (
                          |  input: ${input.name}
-                         |): Request<
-                         |  any,
-                         |  ${violation.name},
-                         |  ${failure.name}
-                         |> => {
-                         |   // TODO
-                         |  throw "???"
-                         |}""".stripMargin
+                         |): Request<${output.name}> => ({
+                         |${fields.map((name, value) => s"$name: $value").map(indent(_)).mkString_(",\n")}
+                         |})""".stripMargin
     )
-  //   input <- input(request = endpoint.request)
-  //   handle = s"""(code: number, body: () => Promise<any>) => {
-  //               |  // TODO oh lard
-  //               |
-  //               |  return Promise.reject(`Unexpected response code: $${code}`)
-  //               |}""".stripMargin
-  //   functionFields = Chain(
-  //     ("method", s"\"${endpoint.request.method}\""),
-  //     ("path", s"`$url`")
-  //   ) ++ Chain.fromOption(input.get("headers").as(("headers", "input.headers"))) ++
-  //     Chain.fromOption(input.get("body").as(("body", "JSON.stringify(input.body)"))) ++
-  //     Chain(("handle", handle))
-  // // outputViolation <- outputViolation(name, result = endpoint.response.validation)
-  // // outputFailure <- outputFailure(name, result = endpoint.response.failure)
-  // // outputFailureDefn = outputFailure
-  // //   .map[ZodExpression.Referenced]:
-  // //     case ZodExpression.Inline(value)          => ZodExpression(name = s"${outputName}Failure", value)
-  // //     case expression: ZodExpression.Referenced => expression
-  // //   .map(ZodExpressionRenderer.render)
-  // // outputFailureType = outputFailure.fold("void")(_ => s"${outputName}Failure")
-  // // output <- output(response = endpoint.response)
-  // yield show"""/* ${endpoint.request.method} ${endpoint.request.url.path} */
-  //             |
-  //             |export const $name = (
-  //             |  input: $inputName
-  //             |): Request<
-  //             |  ${outputName}Result,
-  //             |  ${outputName}Violation,
-  //             |  ?
-  //             |> => ({
-  //             |${indent(functionFields.map((name, value) => s"$name: $value").mkString_(",\n"))}
-  //             |})""".stripMargin
 
   def url(request: Request[?, ?]): TypescriptState[String] = State.pure:
     // TODO query params
@@ -128,5 +91,19 @@ object TypescriptZodEndpointRenderer:
         Chain.fromOption(body)
     ).sequence.map(Typescript.Object.apply)
 
-  def output(result: Result[Json, ?]): TypescriptState[Option[Typescript]] =
-    result.bodies.map(_.toChain.head.schema.value).traverse(JsonTypescriptRenderer.render)
+  def output(response: Response[Json, Json, ?]): TypescriptState[Typescript] =
+    NonEmptyChain.fromChainAppend(response.results.toChain, response.validation)
+      .groupBy(_.code)
+      .toNel
+      .traverse: (code, results) =>
+        results
+          .map(_.bodies.map(_.toChain.head.schema.value))
+          .traverse(_.traverse(JsonTypescriptRenderer.render).map(_.getOrElse(Typescript.Void)))
+          .map: types =>
+            Typescript.Object(
+              Chain(
+                ("code", Typescript.Literal(String.valueOf(code.toInt))),
+                ("value", Typescript(types.toNonEmptyList))
+              )
+            )
+      .map(Typescript.apply)

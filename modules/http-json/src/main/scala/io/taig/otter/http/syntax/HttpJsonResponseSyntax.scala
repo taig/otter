@@ -15,7 +15,7 @@ trait HttpJsonResponseSyntax:
     results,
     validation = result(
       code.unprocessableEntity,
-      json(error("validation", field("violations", violations).toRecord))
+      json(error("validation", field("violations", violations).toRecord).metadata(name, "ValidationViolation"))
     ),
     failure = result(code.internalServerError, json(string.nullable))
   )

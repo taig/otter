@@ -15,14 +15,15 @@ private[otter] given Eq[Data.Any] = Eq.fromUniversalEquals
 
 private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
-private[otter] def indent(value: String, block: Boolean = false): String =
+private[otter] def indent(value: String, block: Boolean = false, depth: Int = 1): String =
   val lines = value.split("\n").toList
   val last = lines.length - 1
+  val prefix = "  " * depth
 
   lines
     .mapWithIndex:
       case (value, index) if block && (index == 0 || index == last) => value
-      case (value, _)                                               => s"  $value"
+      case (value, _)                                               => prefix + value
     .mkString("\n")
 
 private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =

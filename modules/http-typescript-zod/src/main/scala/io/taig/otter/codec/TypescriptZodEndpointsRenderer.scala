@@ -3,7 +3,7 @@ package io.taig.otter.codec
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.http.Endpoint
-import io.taig.otter.ZodState
+import io.taig.otter.TypescriptZodState
 import io.taig.otter.TypescriptState
 import io.taig.otter.TypescriptZodDefinition
 
@@ -21,7 +21,7 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
           TypescriptZodEncoder
             .encode(references, typescript = typescript.value)
             .map(TypescriptZodDefinition(typescript, _))
-      .run(ZodState.Context.Empty)
+      .run(TypescriptZodState.Context.Empty)
       .value
 
     s"""/* Imports */
@@ -31,18 +31,13 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
        |
        |/* Definitions */
        |
-       |export type Request<A, B, C> = {
+       |export type Request<A> = {
        |  method: string
        |  path: string
        |  headers?: HeadersInit
        |  body?: BodyInit | null
-       |  handle: (code: number, body: () => Promise<any>) => Promise<Response<A, B, C>>
+       |  handle: (code: number, body: () => Promise<any>) => Promise<A>
        |}
-       |
-       |export type Response<A, B, C> =
-       |  { type: "result", value: A } |
-       |  { type: "violation", value: B } |
-       |  { type: "failure", value: C }
        |
        |/* Types */
        |

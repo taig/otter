@@ -6,6 +6,9 @@ import cats.Show
 import cats.syntax.all.*
 import cats.derived.*
 import cats.Order
+import java.lang.String as JString
+import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
 
 enum Typescript derives Order:
   case Any
@@ -22,12 +25,19 @@ enum Typescript derives Order:
   case Union(left: Typescript, right: Typescript)
   case Void
 
-  final def definition(name: String): TypescriptDefinition =
+  final def definition(name: String): TypescriptDefinition[this.type] =
     TypescriptDefinition(name, value = this)
 
   final override def toString: String = this.show
 
 object Typescript:
+  def apply(types: NonEmptyList[Typescript]): Typescript = 
+    val left = types.head
+
+    types.tail match
+      case Nil => left
+      case right :: tail => tail.foldLeft(Union(left, right))(Union.apply)
+
   given Show[Typescript] =
     case Typescript.Any                                => "any"
     case Typescript.Array(self)                        => show"Array<$self>"
