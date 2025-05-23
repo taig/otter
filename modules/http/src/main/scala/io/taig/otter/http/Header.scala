@@ -17,6 +17,8 @@ sealed abstract class Header[A] extends Product, Serializable:
 
   final def imap[B](f: A => B)(g: B => A): Header[B] = Header.Modify(self = this, f, g)
 
+  final def optional: Header[Option[A]] = Header.Optional(self = this)
+
   final def toHeaders: Headers[A] = Headers.Root(header = this)
 
 object Header:
