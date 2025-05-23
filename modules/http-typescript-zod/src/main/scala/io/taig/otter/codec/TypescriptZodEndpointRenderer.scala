@@ -6,31 +6,46 @@ import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Keys
-import io.taig.otter.ZodState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Request
 import io.taig.otter.http.syntax.MediaTypeSyntax.*
-import io.taig.otter.indent
 
-import scala.collection.immutable.ListMap
-import io.taig.otter.http.Response
 import io.taig.otter.http.Result
-import io.taig.otter.zodObject
 
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.TypescriptState
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptDefinition
+import io.taig.otter.TypescriptEndpoint
 
 object TypescriptZodEndpointRenderer:
-  def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): TypescriptState[TypescriptDefinition] = for
-    url <- url(request = endpoint.request)
-    name = function(endpoint)
-    inputName = s"${name.capitalize}Input"
-    outputName = s"${name.capitalize}Output"
-    input <- input(request = endpoint.request)
-  yield TypescriptDefinition(inputName, input)
+  def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition]] =
+    for
+      url <- url(request = endpoint.request)
+      name = function(endpoint)
+      outputName = s"${name.capitalize}Output"
+      input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
+      violation <- output(result = endpoint.response.validation)
+        .map(_.getOrElse(Typescript.Void))
+        .map(_.definition(s"${name.capitalize}Violation"))
+      failure <- output(result = endpoint.response.failure)
+        .map(_.getOrElse(Typescript.Void))
+        .map(_.definition(s"${name.capitalize}Failure"))
+    yield TypescriptEndpoint(
+      input,
+      marker = show"/* ${endpoint.request.method} ${endpoint.request.url.path} */",
+      types = List(violation, failure),
+      definition = show"""export const $name = (
+                         |  input: ${input.name}
+                         |): Request<
+                         |  ${outputName}Result,
+                         |  ${violation.name},
+                         |  ${failure.name}
+                         |> => ({
+                         | // TODO
+                         |})""".stripMargin
+    )
   //   input <- input(request = endpoint.request)
   //   handle = s"""(code: number, body: () => Promise<any>) => {
   //               |  // TODO oh lard
@@ -113,8 +128,5 @@ object TypescriptZodEndpointRenderer:
         Chain.fromOption(body)
     ).sequence.map(Typescript.Object.apply)
 
-  // def outputViolation(name: String, result: Result[Json, ?]): ZodState[Option[Zod]] =
-  //   result.bodies.map(_.toChain.head.schema.value).traverse(TypescriptZodPrinter.render)
-
-  // def outputFailure(name: String, result: Result[Json, ?]): ZodState[Option[ZodExpression]] =
-  //   result.bodies.map(_.toChain.head.schema.value).traverse(JsonZodRenderer.render)
+  def output(result: Result[Json, ?]): TypescriptState[Option[Typescript]] =
+    result.bodies.map(_.toChain.head.schema.value).traverse(JsonTypescriptRenderer.render)

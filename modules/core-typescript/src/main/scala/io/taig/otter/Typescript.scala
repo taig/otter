@@ -22,7 +22,7 @@ enum Typescript derives Order:
   case Union(left: Typescript, right: Typescript)
   case Void
 
-  final def defintion(name: String): TypescriptDefinition =
+  final def definition(name: String): TypescriptDefinition =
     TypescriptDefinition(name, value = this)
 
   final override def toString: String = this.show
