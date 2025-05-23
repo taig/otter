@@ -24,7 +24,6 @@ object TypescriptZodEndpointRenderer:
     for
       url <- url(request = endpoint.request)
       name = function(endpoint)
-      outputName = s"${name.capitalize}Output"
       input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
       violation <- output(result = endpoint.response.validation)
         .map(_.getOrElse(Typescript.Void))
@@ -35,16 +34,17 @@ object TypescriptZodEndpointRenderer:
     yield TypescriptEndpoint(
       input,
       marker = show"/* ${endpoint.request.method} ${endpoint.request.url.path} */",
-      types = List(violation, failure),
+      types = List(input, violation, failure),
       definition = show"""export const $name = (
                          |  input: ${input.name}
                          |): Request<
-                         |  ${outputName}Result,
+                         |  any,
                          |  ${violation.name},
                          |  ${failure.name}
-                         |> => ({
-                         | // TODO
-                         |})""".stripMargin
+                         |> => {
+                         |   // TODO
+                         |  throw "???"
+                         |}""".stripMargin
     )
   //   input <- input(request = endpoint.request)
   //   handle = s"""(code: number, body: () => Promise<any>) => {

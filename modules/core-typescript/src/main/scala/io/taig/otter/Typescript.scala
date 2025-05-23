@@ -38,10 +38,10 @@ object Typescript:
     case Typescript.Object(Chain.nil)                  => "{}"
     case Typescript.Object((key, value) ==: Chain.nil) => show"{ $key: $value }"
     case Typescript.Object(self) =>
-      self.map((key, value) => show"  $key: ${indent(value.show, block = true)}").mkString_("{\n", "\n", "\n}")
+      self.map((key, value) => show"$key: $value").map(indent(_)).mkString_("{\n", "\n", "\n}")
     case Typescript.Record(key, value) => show"{ [key: $key]: $value }"
     case Typescript.Reference(name)    => name
     case Typescript.String             => "string"
     case Typescript.Tuple(values)      => values.mkString_("[", ", ", "]")
-    case Typescript.Union(left, right) => show"${print(left)} | ${print(right)}"
+    case Typescript.Union(left, right) => show"$left | $right"
     case Typescript.Void               => "void"

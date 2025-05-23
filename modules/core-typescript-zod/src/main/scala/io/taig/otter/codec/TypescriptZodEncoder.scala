@@ -26,7 +26,7 @@ object TypescriptZodEncoder:
       case Typescript.Boolean        => State.pure(TypescriptZod(typescript, expression = "z.boolean()"))
       case Typescript.Literal(value) => State.pure(TypescriptZod(typescript, s"z.literal($value)"))
       case Typescript.Nullable(self) =>
-        apply(references, self).map(_.modifyExpression(expression => s"z.nullable($expression)"))
+        apply(references, self).map(zod => TypescriptZod(typescript, expression = s"z.nullable(${zod.expression})"))
       case Typescript.Number => State.pure(TypescriptZod(typescript, expression = "z.number()"))
       case Typescript.Object(fields) =>
         fields
@@ -46,7 +46,7 @@ object TypescriptZodEncoder:
             val (update, zod) = apply(references, typescript = references(name)).run(initial = context.push(name)).value
             (
               update.pop.modifyReferences(_.updatedWith(name)(_ => zod.some)),
-              TypescriptZod(typescript, expression = name)
+              TypescriptZod(typescript = typescript, expression = name)
             )
       case Typescript.String => State.pure(TypescriptZod(typescript, expression = "z.string()"))
       case Typescript.Tuple(values) =>

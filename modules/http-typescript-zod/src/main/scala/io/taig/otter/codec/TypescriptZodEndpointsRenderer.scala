@@ -24,14 +24,6 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
       .run(ZodState.Context.Empty)
       .value
 
-    // val (typesContext, types) = result
-    //   .traverse: endpoint =>
-    //     TypescriptZodEncoder
-    //       .encode(references = context.references, typescript = endpoint.input.value)
-    //       .map(TypescriptZodDefinition(typescript = endpoint.input, _))
-    //   .run(ZodState.Context.Empty)
-    //   .value
-
     s"""/* Imports */
        |
        |import { z } from "zod"
