@@ -68,18 +68,22 @@ lazy val root = module(identifier = None, jvmOnly = true)
   )
   .aggregate(
     core,
-    coreTypescript,
-    coreTypescriptZod,
+    coreCaseInsensitive,
     coreJavaTime,
     coreJson,
     coreJsonCirce,
     coreJsonZod,
+    coreTypescript,
+    coreTypescriptZod,
+    dsl,
     http,
     httpJson,
+    httpJsonCirce,
     httpTypescriptZod,
-    dsl,
+    munit,
     sample,
-    sampleApi
+    sampleApi,
+    sampleApp,
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -164,46 +168,6 @@ lazy val httpHttp4s = module(identifier = Some("http-http4s"))
 
 lazy val httpTypescriptZod = module(identifier = Some("http-typescript-zod"))
   .dependsOn(http % "compile->compile;test->test", coreJsonZod % "compile->compile;test->test")
-
-// lazy val openapi = module(identifier = Some("openapi"))
-//   .dependsOn(http % "compile->compile;test->test")
-
-// // lazy val httpOpenapi = module(identifier = Some("http-openapi"))
-// //   .dependsOn(http % "compile->compile;test->test", openapi % "compile->compile;test->test")
-
-// // TODO waiting for circe 0.15 with scala.js jawn support
-// lazy val httpJsonCirce = module(identifier = Some("http-json-circe"), jvmOnly = true)
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %% "circe-parser" % Version.Circe ::
-//         Nil
-//   )
-//   .dependsOn(jsonCirce % "compile->compile;test->test", http % "compile->compile;test->test")
-
-// lazy val httpCsv = module(identifier = Some("http-csv"))
-//   .settings(
-//     libraryDependencies ++=
-//       "co.fs2" %%% "fs2-core" % Version.Fs2 ::
-//         Nil
-//   )
-//   .dependsOn(http % "compile->compile;test->test")
-
-// lazy val server = module(identifier = Some("server"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(http % "compile->compile;test->test")
-
-// lazy val serverHttp4s = module(identifier = Some("server-http4s"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
-//         "org.typelevel" %%% "cats-effect" % Version.CatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(server % "compile->compile;test->test", httpHttp4s % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(
