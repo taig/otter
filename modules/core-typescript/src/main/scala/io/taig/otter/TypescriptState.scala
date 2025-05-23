@@ -17,5 +17,7 @@ object TypescriptState:
 
     def pop(stack: String): TypescriptState.Context = modfyStack(_ - stack)
 
+    def definitions: List[TypescriptDefinition] = references.toList.map(TypescriptDefinition.apply)
+
   object Context:
     val Empty: TypescriptState.Context = Context(references = ListMap.empty, stack = SortedSet.empty)

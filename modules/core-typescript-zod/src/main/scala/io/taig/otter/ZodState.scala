@@ -7,7 +7,7 @@ import scala.collection.immutable.ListMap
 type ZodState[A] = State[ZodState.Context, A]
 
 object ZodState:
-  final case class Context(references: ListMap[String, Zod[String]], stack: List[String]):
+  final case class Context(references: ListMap[String, TypescriptZod], stack: List[String]):
     def modifyStack(f: List[String] => List[String]): ZodState.Context =
       copy(stack = f(stack))
 
@@ -15,8 +15,10 @@ object ZodState:
 
     def pop: ZodState.Context = modifyStack(_.tail)
 
-    def modifyReferences(f: ListMap[String, Zod[String]] => ListMap[String, Zod[String]]): ZodState.Context =
+    def modifyReferences(f: ListMap[String, TypescriptZod] => ListMap[String, TypescriptZod]): ZodState.Context =
       copy(references = f(references))
+
+    def definitions: List[TypescriptZodDefinition] = references.toList.map((name, zod) => zod.definition(name))
 
   object Context:
     val Empty: ZodState.Context = Context(references = ListMap.empty, stack = Nil)

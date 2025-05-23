@@ -1,8 +1,9 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.codec.TypescriptPrinter
+import cats.data.Chain.==:
 import cats.Show
+import cats.syntax.all.*
 import cats.derived.*
 import cats.Order
 
@@ -21,7 +22,26 @@ enum Typescript derives Order:
   case Union(left: Typescript, right: Typescript)
   case Void
 
-  override def toString: String = TypescriptPrinter.print(this)
+  final def defintion(name: String): TypescriptDefinition =
+    TypescriptDefinition(name, value = this)
+
+  final override def toString: String = this.show
 
 object Typescript:
-  given Show[Typescript] = Show.fromToString
+  given Show[Typescript] =
+    case Typescript.Any                                => "any"
+    case Typescript.Array(self)                        => show"Array<$self>"
+    case Typescript.Boolean                            => "boolean"
+    case Typescript.Literal(value)                     => value
+    case Typescript.Nullable(self)                     => show"($self | null)"
+    case Typescript.Number                             => "number"
+    case Typescript.Object(Chain.nil)                  => "{}"
+    case Typescript.Object((key, value) ==: Chain.nil) => show"{ $key: $value }"
+    case Typescript.Object(self) =>
+      self.map((key, value) => show"  $key: ${indent(value.show, block = true)}").mkString_("{\n", "\n", "\n}")
+    case Typescript.Record(key, value) => show"{ [key: $key]: $value }"
+    case Typescript.Reference(name)    => name
+    case Typescript.String             => "string"
+    case Typescript.Tuple(values)      => values.mkString_("[", ", ", "]")
+    case Typescript.Union(left, right) => show"${print(left)} | ${print(right)}"
+    case Typescript.Void               => "void"

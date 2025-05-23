@@ -76,7 +76,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJsonZod,
     http,
     httpJson,
-    httpZod,
+    httpTypescriptZod,
     dsl,
     sample,
     sampleApi
@@ -162,7 +162,7 @@ lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   )
   .dependsOn(http % "compile->compile;test->test")
 
-lazy val httpZod = module(identifier = Some("http-zod"))
+lazy val httpTypescriptZod = module(identifier = Some("http-typescript-zod"))
   .dependsOn(http % "compile->compile;test->test", coreJsonZod % "compile->compile;test->test")
 
 // lazy val openapi = module(identifier = Some("openapi"))
@@ -245,4 +245,4 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sampleApi, httpJsonCirce, httpZod, munit % "compile->test")
+  .dependsOn(sampleApi, httpJsonCirce, httpTypescriptZod, munit % "compile->test")
