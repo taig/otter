@@ -4,13 +4,13 @@ import cats.syntax.all.*
 import io.taig.otter.schema.EnrichedSchema
 import io.taig.otter.schema.Schema
 
-final case class Enriched[S[_], A](self: S[A], metadata: Metadata):
+final case class Enriched[+S[_], A](self: S[A], metadata: Metadata):
   def mapF[T[_], B](f: S[A] => T[B]): Enriched[T, B] = copy(self = f(self))
 
 object Enriched:
   def apply[S[_], A](self: S[A]): Enriched[S, A] = Enriched(self, metadata = Metadata.Empty)
 
-  given schema[S[_]: Schema]: EnrichedSchema[Enriched[S, *]] = new EnrichedSchema[Enriched[S, *]]:
+  given schema[S[_]: Schema]: EnrichedSchema[Enriched[S, *]] with
     override def imap[A, B](fa: Enriched[S, A])(f: A => B)(g: B => A): Enriched[S, B] =
       fa.mapF(_.imap(f)(g))
 

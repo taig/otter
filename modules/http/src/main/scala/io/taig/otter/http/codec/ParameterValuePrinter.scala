@@ -4,22 +4,21 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.Encoder
-import io.taig.otter.http.Http
 import io.taig.otter.http.Parameter
 
-final class HttpParameterPrinter(name: String, style: Parameter.Style) extends Encoder[Http.Parameter, String]:
-  override def encode[A](schema: Http.Parameter[A], a: A): String = schema match
-    case schema: Http.Parameter.Value[A] => HttpParameterValuePrinter.encode(schema, a)
-    case schema: Http.Parameter.Array[A] =>
-      val values = HttpParameterArrayEncoder.encode(schema, a)
+final class ParameterValuePrinter(name: String, style: Parameter.Style) extends Encoder[Parameter.Value, String]:
+  override def encode[A](schema: Parameter.Value[A], a: A): String = schema match
+    case schema: Parameter.Value.Atom[A] => ParameterValueAtomPrinter.encode(schema, a)
+    case schema: Parameter.Value.Array[A] =>
+      val values = ParameterValueArrayEncoder.encode(schema, a)
 
       style match
         case Parameter.Style.Simple => values.map(escape(_, ",")).mkString_(",")
         case Parameter.Style.Label  => values.map(escape(_, ".")).mkString_(".", ".", "")
         case Parameter.Style.Matrix =>
           values.map(value => s"${escape(name, List("=", ";"))}=${escape(value, ";")}").mkString_(";", ";", "")
-    case schema: Http.Parameter.Object[A] =>
-      val values = HttpParameterObjectEncoder.encode(schema, a)
+    case schema: Parameter.Value.Object[A] =>
+      val values = ParameterValueObjectEncoder.encode(schema, a)
 
       style match
         case Parameter.Style.Simple =>

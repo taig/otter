@@ -13,13 +13,13 @@ import io.taig.otter.http.Headers.Data
 object HeaderDataDecoder extends Decoder.Remainding[Header, Headers.Data]:
   override def decodeRemainding[A](schema: Header[A], value: Data): Validated[Violations, (Data, A)] =
     schema match
-      case Header.Root(name, schema, metadata) =>
+      case Header.Root(name, schema) =>
         val (remainders, result) = value.collectFirstWithRemainders { case (`name`, value) => value }
 
         result
           .toValid(Violations.rootNec(Violation.required))
           .andThen: value =>
-            HttpHeaderParser.decode(schema = schema.value, value).tupleLeft(remainders)
+            HeaderValueParser.decode(schema = schema.value, value).tupleLeft(remainders)
           .leftMap(s"$name" /: _)
       case Header.Optional(self) =>
         val reference = schema.name

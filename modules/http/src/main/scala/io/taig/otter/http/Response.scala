@@ -1,13 +1,14 @@
 package io.taig.otter.http
 
 import io.taig.otter.Violations
+import io.taig.otter.Enriched
 
 final case class Response[+S[_], +T[_], A](
     results: Results[S, A],
     validation: Result[T, Violations],
     failure: Result[T, Option[String]]
 ):
-  def modifyResult[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] = copy(results = f(results))
+  def modifyResults[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] = copy(results = f(results))
 
   def imap[B](f: A => B)(g: B => A): Response[S, T, B] = copy(results = results.imap(f)(g))
 

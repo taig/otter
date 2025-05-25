@@ -6,8 +6,8 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Queries
-import io.taig.otter.http.Query
 import io.taig.otter.partitionMap
+import io.taig.otter.http.Query
 
 object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
   override def decodeRemainding[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
@@ -21,7 +21,7 @@ object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
         val (remainders, results) = values.partitionMap: (key, value) =>
           Either.cond(key === name, right = value, left = (key, value))
 
-        HttpQueryDecoder(explode, style)
+        QueryValueDecoder(explode, style)
           .decodeRemainding(schema = schema.value, values = results)
           .leftMap(name /: _)
           .map((remainders, a) => (remainders.tupleLeft(name), a))

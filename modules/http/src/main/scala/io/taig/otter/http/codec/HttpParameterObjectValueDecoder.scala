@@ -6,15 +6,15 @@ import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
-import io.taig.otter.http.Http
+import Self.http.Parameter
 
-object HttpParameterObjectValueDecoder extends Decoder[Http.Parameter.Object.Value, Option[String]]:
+object HttpParameterObjectValueDecoder extends Decoder[Parameter.Value.Object.Atom, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)
 
-  override def decode[A](schema: Http.Parameter.Object.Value[A], value: Option[String]): Validated[Violations, A] =
+  override def decode[A](schema: Parameter.Value.Object.Atom[A], value: Option[String]): Validated[Violations, A] =
     schema match
-      case Http.Parameter.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
-      case schema: Http.Parameter.Value[A] =>
+      case Parameter.Value.Object.Atom.Nullable(self) => nullable.decode(schema = self.self, value)
+      case schema: Parameter.Value.Atom[A] =>
         value
           .toValid(Violations.rootNec(Violation.required))
-          .andThen(HttpParameterValueParser.decode(schema, _))
+          .andThen(ParameterValueAtomParser.decode(schema, _))

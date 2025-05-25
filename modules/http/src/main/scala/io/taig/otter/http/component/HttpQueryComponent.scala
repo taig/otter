@@ -6,14 +6,14 @@ import io.taig.otter.component.EnumerationComponent
 import io.taig.otter.component.NullableComponent
 import io.taig.otter.component.PrimitiveComponent
 import io.taig.otter.component.TupleComponent
-import io.taig.otter.http.Http
+import io.taig.otter.http.Query
 
 trait HttpQueryComponent
-    extends CollectionComponent[Http.Query.Array.Collection, Http.Query.Value],
-      ConstantComponent[Http.Query.Value.Constant, Http.Query.Value.Primitive],
-      EnumerationComponent[Http.Query.Value.Enumeration, Http.Query.Value.Primitive],
-      NullableComponent[Http.Query.Nullable, Http.Query],
-      PrimitiveComponent.String[Http.Query.Value.Primitive],
-      TupleComponent[Http.Query.Array.Tuple, Http.Query.Value]
+    extends CollectionComponent[Query.Value.Array.Collection, Query.Value.Atom],
+      ConstantComponent[Query.Value.Atom.Constant, Query.Value.Atom.Primitive],
+      EnumerationComponent[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive],
+      NullableComponent[Query.Value.Nullable, Query.Value],
+      PrimitiveComponent.String[Query.Value.Atom.Primitive],
+      TupleComponent[Query.Value.Array.Tuple, Query.Value.Atom]
 
 object HttpQueryComponent extends HttpQueryComponent

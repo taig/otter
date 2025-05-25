@@ -5,13 +5,12 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.Decoder
-import io.taig.otter.http.Http
 import io.taig.otter.http.Parameter
 
-final class HttpParameterParser(name: String, style: Parameter.Style) extends Decoder[Http.Parameter, String]:
-  override def decode[A](schema: Http.Parameter[A], value: String): Validated[Violations, A] = schema match
-    case schema: Http.Parameter.Value[A] => HttpParameterValueParser.decode(schema, value)
-    case schema: Http.Parameter.Array[A] =>
+final class ParameterValueParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Value, String]:
+  override def decode[A](schema: Parameter.Value[A], value: String): Validated[Violations, A] = schema match
+    case schema: Parameter.Value.Atom[A] => ParameterValueAtomParser.decode(schema, value)
+    case schema: Parameter.Value.Array[A] =>
       style
         .match
           case Parameter.Style.Simple => parser.array.simple(value)
@@ -21,8 +20,8 @@ final class HttpParameterParser(name: String, style: Parameter.Style) extends De
           Violations.rootNec(Violation.tpe(name = "parameter.array", actual = value, hint = error.show))
         )
         .toValidated
-        .andThen(values => HttpParameterArrayDecoder.decode(schema, Chain.fromSeq(values)))
-    case schema: Http.Parameter.Object[A] =>
+        .andThen(values => ParameterValueArrayDecoder.decode(schema, Chain.fromSeq(values)))
+    case schema: Parameter.Value.Object[A] =>
       style
         .match
           case Parameter.Style.Simple => parser.obj.simple(value)
@@ -32,7 +31,7 @@ final class HttpParameterParser(name: String, style: Parameter.Style) extends De
           Violations.rootNec(Violation.tpe(name = "parameter.object", actual = value, hint = error.show))
         )
         .toValidated
-        .andThen(values => HttpParameterObjectDecoder.decode(schema, Chain.fromSeq(values)))
+        .andThen(values => ParameterValueObjectDecoder.decode(schema, Chain.fromSeq(values)))
 
   private object parser:
     import cats.parse.Parser

@@ -15,7 +15,9 @@ object TypescriptZodState:
 
     def pop: TypescriptZodState.Context = modifyStack(_.tail)
 
-    def modifyReferences(f: ListMap[String, TypescriptZod] => ListMap[String, TypescriptZod]): TypescriptZodState.Context =
+    def modifyReferences(
+        f: ListMap[String, TypescriptZod] => ListMap[String, TypescriptZod]
+    ): TypescriptZodState.Context =
       copy(references = f(references))
 
     def definitions: List[TypescriptZodDefinition] = references.toList.map((name, zod) => zod.definition(name))

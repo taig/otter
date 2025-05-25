@@ -1,11 +1,12 @@
 package io.taig.otter.http
 
-import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Reference
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.schema.BodySchema
+import io.taig.otter.schema.Schema
 
 // TODO strict vs streaming (?)
 sealed abstract class Body[+S[_], A] extends Product with Serializable:
@@ -31,5 +32,13 @@ object Body:
 
   final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A]) extends Body[S, A]
 
-  given [S[_]]: Invariant[Body[S, *]] with
-    override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)
+  given BodySchema[Body] with
+    override def schema[S[_]]: Schema[Body[S, *]] = new Schema[Body[S, *]]:
+      override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)
+
+    override def apply[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =
+      Body.Root(mediaType, schema = Reference.later(schema))
+
+    extension [S[_], A](self: Body[S, A])
+      override def mediaType: MediaType = self.mediaType
+      override def schema: Reference[S, ?] = self.schema

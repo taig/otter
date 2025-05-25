@@ -1,11 +1,8 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Reference
-import io.taig.otter.http.Body
-import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.component.BodyComponent
+import io.taig.otter.http.Types
 
-trait BodySyntax:
-  def body[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =
-    Body.Root(mediaType, schema = Reference.later(schema))
+trait BodySyntax extends BodyComponent[Types.Body]
 
 object BodySyntax extends BodySyntax

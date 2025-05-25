@@ -6,8 +6,8 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.otter.schema.EnumerationSchema
 
 trait EnumerationComponent[Self[_], Value[_]](using self: EnumerationSchema[Self, Value]):
-  final def enumeration[A, B](codec: => Value[B])(using mapping: Mapping[A, B]): Self[A] =
-    self(codec, mapping)
+  final def enumeration[A, B](schema: => Value[B])(using mapping: Mapping[A, B]): Self[A] =
+    self(schema, mapping)
 
-  final def enumeration[A, B: Order](codec: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
-    enumeration(codec)(using Mapping.enumeration(f))
+  final def enumeration[A, B: Order](schema: => Value[B])(f: A => B)(using EnumerationValues.Aux[A, A]): Self[A] =
+    enumeration(schema)(using Mapping.enumeration(f))

@@ -8,24 +8,22 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.http.Http
-import io.taig.otter.http.Http.Query.Nullable
-import io.taig.otter.http.Query
-import io.taig.otter.http.Query.Style
+import io.taig.otter.http.Query.Value.Nullable
 import io.taig.otter.unescape
+import io.taig.otter.http.Query
 
-final class HttpQueryDecoder(explode: Boolean, style: Query.Style)
-    extends Decoder.Remainding[Http.Query, Chain[Option[String]]]:
+final class QueryValueDecoder(explode: Boolean, style: Query.Style)
+    extends Decoder.Remainding[Query.Value, Chain[Option[String]]]:
   override def decodeRemainding[A](
-      schema: Http.Query[A],
+      schema: Query.Value[A],
       values: Chain[Option[String]]
   ): Validated[Violations, (Chain[Option[String]], A)] = schema match
-    case schema: Http.Query.Value[A] =>
+    case schema: Query.Value.Atom[A] =>
       val (remainders, value) = values.collectFirstWithRemainders { case Some(value) => value }
       value
         .toValid(Violations.rootNec(Violation.required))
-        .andThen(HttpQueryValueParser.decode(schema, _).tupleLeft(remainders))
-    case schema: Http.Query.Array[A] =>
+        .andThen(QueryValueAtomParser.decode(schema, _).tupleLeft(remainders))
+    case schema: Query.Value.Array[A] =>
       values
         .traverse(_.toValid(Violations.rootNec(Violation.required)))
         .map: values =>
@@ -34,9 +32,9 @@ final class HttpQueryDecoder(explode: Boolean, style: Query.Style)
             case (_, Query.Style.Form)           => decode(values, character = ",")
             case (_, Query.Style.PipeDelimited)  => decode(values, character = "|")
             case (_, Query.Style.SpaceDelimited) => decode(values, character = " ")
-        .andThen(HttpQueryArrayDecoder.decode(schema, _))
+        .andThen(QueryValueArrayDecoder.decode(schema, _))
         .tupleLeft(Chain.empty)
-    case Http.Query.Nullable(self) =>
+    case Query.Value.Nullable(self) =>
       NullableDecoder
         .Remainding(decoder = this, empty = _.exists(_.isEmpty))
         .decodeRemainding(schema = self.self, values)

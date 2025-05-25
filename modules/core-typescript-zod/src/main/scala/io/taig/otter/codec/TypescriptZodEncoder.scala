@@ -15,7 +15,10 @@ object TypescriptZodEncoder:
   def encode(references: ListMap[String, Typescript], typescript: Typescript): TypescriptZodState[String] =
     apply(references, typescript).map(_.expression)
 
-  private def apply(references: ListMap[String, Typescript], typescript: Typescript): TypescriptZodState[TypescriptZod] =
+  private def apply(
+      references: ListMap[String, Typescript],
+      typescript: Typescript
+  ): TypescriptZodState[TypescriptZod] =
     typescript match
       case Typescript.Any => State.pure(TypescriptZod(typescript, "z.any()"))
       case Typescript.Array(self) =>

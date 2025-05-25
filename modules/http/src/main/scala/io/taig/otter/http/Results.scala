@@ -30,14 +30,16 @@ object Results:
     override def toChain: Chain[Result[S, ?]] = Chain.one(result)
 
   extension [S[_], A <: Matchable](self: Results[S, A])
-    inline def or[T[_], B <: Matchable](results: Results[T, B]): Results[S + T, A | B] = 
-      self.orElse(results).imap {
-        case Left(a)  => a
-        case Right(b) => b
-      } {
-        case a: A     => Left(a)
-        case b: B     => Right(b)
-      }
+    inline def or[T[_], B <: Matchable](results: Results[T, B]): Results[S + T, A | B] =
+      self
+        .orElse(results)
+        .imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }
 
     inline def |[T[_], B <: Matchable](result: Result[T, B]): Results[S + T, A | B] =
       or(result.toResults)

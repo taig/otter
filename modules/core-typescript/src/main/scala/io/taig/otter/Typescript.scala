@@ -31,11 +31,11 @@ enum Typescript derives Order:
   final override def toString: String = this.show
 
 object Typescript:
-  def apply(types: NonEmptyList[Typescript]): Typescript = 
+  def apply(types: NonEmptyList[Typescript]): Typescript =
     val left = types.head
 
     types.tail match
-      case Nil => left
+      case Nil           => left
       case right :: tail => tail.foldLeft(Union(left, right))(Union.apply)
 
   given Show[Typescript] =

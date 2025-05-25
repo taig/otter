@@ -26,10 +26,12 @@ object TypescriptZodEndpointRenderer:
       handle = s"""(code, headers, bod) =>
                   |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
       fields = Chain(
-          ("method", s"\"${endpoint.request.method}\""),
-          ("path", s"`$url`")
-        ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
-        Chain.fromOption(input.value.fields.collectFirst { case ("body", _) => ("body", "JSON.stringify(input.body)") }) :+
+        ("method", s"\"${endpoint.request.method}\""),
+        ("path", s"`$url`")
+      ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
+        Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
+          ("body", "JSON.stringify(input.body)")
+        }) :+
         ("handle", handle)
     yield TypescriptEndpoint(
       input,
@@ -92,7 +94,8 @@ object TypescriptZodEndpointRenderer:
     ).sequence.map(Typescript.Object.apply)
 
   def output(response: Response[Json, Json, ?]): TypescriptState[Typescript] =
-    NonEmptyChain.fromChainAppend(response.results.toChain, response.validation)
+    NonEmptyChain
+      .fromChainAppend(response.results.toChain, response.validation)
       .groupBy(_.code)
       .toNel
       .traverse: (code, results) =>

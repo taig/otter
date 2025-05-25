@@ -83,7 +83,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     munit,
     sample,
     sampleApi,
-    sampleApp,
+    sampleApp
   )
 
 lazy val core = module(identifier = Some("core"))
