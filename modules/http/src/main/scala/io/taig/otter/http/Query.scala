@@ -64,64 +64,46 @@ object Query:
       final case class Constant[A](self: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) extends Atom[A]
 
       object Constant:
-        given ConstantSchema[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
-          ConstantSchema[Self.Constant[Query.Value.Atom.Primitive, *], Query.Value.Atom.Primitive]
+        given EnrichedConstantSchema[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
+          EnrichedConstantSchema[Enrichment[
+            Self.Constant[Query.Value.Atom.Primitive, *],
+            *
+          ], Query.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Constant[Query.Value.Atom.Primitive, A]) => Constant(Enrichment(schema))
-            )([A] => (atom: Query.Value.Atom.Constant[A]) => atom.self.self)
-
-        given EnrichedSchema[Query.Value.Atom.Constant] =
-          EnrichedSchema[Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Constant[Query.Value.Atom.Primitive, *], A]) => Constant(schema)
-            )([A] => (atom: Query.Value.Atom.Constant[A]) => atom.self)
+              [A] => (schema: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) => Constant(schema)
+            )([A] => (value: Query.Value.Atom.Constant[A]) => value.self)
 
       final case class Enumeration[A](self: Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], A])
           extends Atom[A]
 
       object Enumeration:
-        given EnumerationSchema[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
-          EnumerationSchema[Self.Enumeration[Query.Value.Atom.Primitive, *], Query.Value.Atom.Primitive]
+        given EnrichedEnumerationSchema[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
+          EnrichedEnumerationSchema[Enrichment[
+            Self.Enumeration[Query.Value.Atom.Primitive, *],
+            *
+          ], Query.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Enumeration[Query.Value.Atom.Primitive, A]) => Enumeration(Enrichment(schema))
-            )([A] => (atom: Query.Value.Atom.Enumeration[A]) => atom.self.self)
-
-        given EnrichedSchema[Query.Value.Atom.Enumeration] =
-          EnrichedSchema[Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Enumeration[Query.Value.Atom.Primitive, *], A]) => Enumeration(schema)
-            )([A] => (atom: Query.Value.Atom.Enumeration[A]) => atom.self)
+              [A] => (schema: Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], A]) => Enumeration(schema)
+            )([A] => (value: Query.Value.Atom.Enumeration[A]) => value.self)
 
       final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Atom[A]
 
       object Primitive:
-        given PrimitiveSchema.String[Query.Value.Atom.Primitive] =
-          PrimitiveSchema
-            .String[Self.Primitive.String]
+        given EnrichedPrimitiveSchema.String[Query.Value.Atom.Primitive] =
+          EnrichedPrimitiveSchema
+            .String[Enrichment[Self.Primitive.String, *]]
             .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => Primitive(Enrichment(schema))
-            )([A] => (atom: Query.Value.Atom.Primitive[A]) => atom.self.self)
-
-        given EnrichedSchema[Query.Value.Atom.Primitive] =
-          EnrichedSchema[Enrichment[Self.Primitive.String, *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Primitive.String, A]) => Primitive(schema)
-            )([A] => (atom: Query.Value.Atom.Primitive[A]) => atom.self)
+              [A] => (schema: Enrichment[Self.Primitive.String, A]) => Primitive(schema)
+            )([A] => (value: Query.Value.Atom.Primitive[A]) => value.self)
 
       final case class Union[A](self: Enrichment[Self.Union[Query.Value.Atom, *], A]) extends Atom[A]
 
       object Union:
-        given UnionSchema[Query.Value.Atom.Union, Query.Value.Atom] =
-          UnionSchema[Self.Union[Query.Value.Atom, *], Query.Value.Atom]
+        given EnrichedUnionSchema[Query.Value.Atom.Union, Query.Value.Atom] =
+          EnrichedUnionSchema[Enrichment[Self.Union[Query.Value.Atom, *], *], Query.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Union[Query.Value.Atom, A]) => Union(Enrichment(schema))
-            )([A] => (atom: Query.Value.Atom.Union[A]) => atom.self.self)
-
-        given EnrichedSchema[Query.Value.Atom.Union] =
-          EnrichedSchema[Enrichment[Self.Union[Query.Value.Atom, *], *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Union[Query.Value.Atom, *], A]) => Union(schema)
-            )([A] => (atom: Query.Value.Atom.Union[A]) => atom.self)
+              [A] => (schema: Enrichment[Self.Union[Query.Value.Atom, *], A]) => Union(schema)
+            )([A] => (value: Query.Value.Atom.Union[A]) => value.self)
 
       given EnrichedSchema[Query.Value.Atom] with
         override def imap[A, B](fa: Query.Value.Atom[A])(f: A => B)(g: B => A): Query.Value.Atom[B] = fa match
@@ -150,32 +132,16 @@ object Query:
           extends Query.Value.Array[A]
 
       object Collection:
-        given CollectionSchema[Query.Value.Array.Collection, Query.Value.Atom] =
-          CollectionSchema[Self.Collection[Query.Value.Atom, *], Query.Value.Atom]
+        given EnrichedCollectionSchema[Query.Value.Array.Collection, Query.Value.Atom] =
+          EnrichedCollectionSchema[Enrichment[Self.Collection[Query.Value.Atom, *], *], Query.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Collection[Query.Value.Atom, A]) => Collection(Enrichment(schema))
-            )([A] => (value: Query.Value.Array.Collection[A]) => value.self.self)
-
-        given EnrichedSchema[Query.Value.Array.Collection] =
-          EnrichedSchema[Enrichment[Self.Collection[Query.Value.Atom, *], *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Collection[Query.Value.Atom, *], A]) => Collection(schema)
+              [A] => (schema: Enrichment[Self.Collection[Query.Value.Atom, *], A]) => Collection(schema)
             )([A] => (value: Query.Value.Array.Collection[A]) => value.self)
 
       final case class Tuple[A](self: Enrichment[Self.Tuple[Query.Value.Atom, *], A]) extends Query.Value.Array[A]
 
       object Tuple:
-        given TupleSchema[Query.Value.Array.Tuple, Query.Value.Atom] =
-          TupleSchema[Self.Tuple[Query.Value.Atom, *], Query.Value.Atom]
-            .imapK(
-              [A] => (schema: Self.Tuple[Query.Value.Atom, A]) => Tuple(Enrichment(schema))
-            )([A] => (value: Query.Value.Array.Tuple[A]) => value.self.self)
-
-        given EnrichedSchema[Query.Value.Array.Tuple] =
-          EnrichedSchema[Enrichment[Self.Tuple[Query.Value.Atom, *], *]]
-            .imapK(
-              [A] => (schema: Enriched[Self.Tuple[Query.Value.Atom, *], A]) => Tuple(schema)
-            )([A] => (value: Query.Value.Array.Tuple[A]) => value.self)
+        given EnrichedTupleSchema[Query.Value.Array.Tuple, Query.Value.Atom] = ???
 
       given EnrichedSchema[Query.Value.Array] with
         override def imap[A, B](fa: Query.Value.Array[A])(f: A => B)(g: B => A): Query.Value.Array[B] = fa match
@@ -194,17 +160,7 @@ object Query:
     final case class Nullable[A](self: Enrichment[Self.Nullable[Query.Value, *], A]) extends Query.Value[A]
 
     object Nullable:
-      given NullableSchema[Query.Value.Nullable, Query.Value] =
-        NullableSchema[Self.Nullable[Query.Value, *], Query.Value]
-          .imapK(
-            [A] => (schema: Self.Nullable[Query.Value, A]) => Nullable(Enrichment(schema))
-          )([A] => (value: Query.Value.Nullable[A]) => value.self.self)
-
-      given EnrichedSchema[Query.Value.Nullable] =
-        EnrichedSchema[Enrichment[Self.Nullable[Query.Value, *], *]]
-          .imapK(
-            [A] => (schema: Enriched[Self.Nullable[Query.Value, *], A]) => Nullable(schema)
-          )([A] => (value: Query.Value.Nullable[A]) => value.self)
+      given EnrichedNullableSchema[Query.Value.Nullable, Query.Value] = ???
 
   enum Style:
     case Form

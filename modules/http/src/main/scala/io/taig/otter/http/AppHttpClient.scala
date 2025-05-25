@@ -12,11 +12,11 @@ import io.taig.otter.http.codec.ResponseDataEncoder
 import io.taig.otter.http.codec.ResultDataEncoder
 
 object AppHttpClient:
-  def apply[F[_]: ApplicativeThrow, S[_], T[_], U[_]](
-      decoder: PayloadDecoder[S + T + U],
-      encoder: PayloadEncoder[S + T + U],
+  def apply[F[_]: ApplicativeThrow, S[_]](
+      decoder: PayloadDecoder[S],
+      encoder: PayloadEncoder[S],
       debug: Boolean
-  )(app: App[F, S, T, U]): HttpClient[F] = new HttpClient[F]:
+  )(app: App[F, S]): HttpClient[F] = new HttpClient[F]:
     override def submit[A, B](request: Request.Data): F[Response.Data] = app.routes
       .find(route => RequestMatcher(request = route.endpoint.request, data = request))
       .map: route =>
@@ -28,11 +28,11 @@ object AppHttpClient:
             ResponseDataEncoder(encoder, debug).encode(schema = route.endpoint.response, headers = request.headers, _)
           )
       .getOrElse:
-        ResultDataEncoder[U](encoder)
+        ResultDataEncoder(encoder)
           .encode(
             schema = app.notFound,
             accept = request.headers.accept.getOrElse(none),
             ()
           )
-          .getOrElse(ResultDataEncoder[U](encoder).encode(schema = app.notFound, ()))
+          .getOrElse(ResultDataEncoder(encoder).encode(schema = app.notFound, ()))
           .pure[F]

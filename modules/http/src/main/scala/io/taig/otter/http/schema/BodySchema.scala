@@ -33,6 +33,6 @@ object BodySchema:
 
     override def schema[S[_]]: Schema[Enrichment[Self[S, *], *]] = self
       .schema[S]
-      .imapK([A] => (self: Self[S, A]) => Enriched(self))(
+      .imapK([A] => (self: Self[S, A]) => Enrichment(self))(
         [A] => (self: Enrichment[Self[S, *], A]) => self.self
       )

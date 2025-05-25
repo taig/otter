@@ -16,7 +16,6 @@ trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): EnumerationSchema[T, Value] = new EnumerationSchema[T, Value]:
-
     override def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] =
       fK(self.apply(schema, mapping))
 

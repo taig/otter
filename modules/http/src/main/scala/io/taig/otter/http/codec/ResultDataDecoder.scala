@@ -16,7 +16,7 @@ final class ResultDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
       data: Response.Data
   ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] = result match
     case Result.Modify(self, f, _) => decode(result = self, contentType, data).map(f)
-    case Result.Root(code, headers, _) =>
+    case Result.Root(code, headers) =>
       if data.code === code
       then
         HeadersDataDecoder

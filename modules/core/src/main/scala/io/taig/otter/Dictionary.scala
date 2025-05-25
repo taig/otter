@@ -38,7 +38,7 @@ object Dictionary:
       copy(self = self.leftMapK[S1, U](fK))
 
   given [Key[_], Value[_]]: DictionarySchema[Dictionary[Key, Value, *], Key, Value] with
-    override def dictionary[A, B](
+    override def apply[A, B](
         key: => Key[A],
         value: => Value[B],
         minimum: Option[Int],

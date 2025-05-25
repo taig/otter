@@ -3,7 +3,7 @@ package io.taig.otter.schema
 trait DictionarySchema[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
   self =>
 
-  def dictionary[A, B](
+  def apply[A, B](
       key: => Key[A],
       value: => Value[B],
       minimum: Option[Int],
@@ -13,12 +13,12 @@ trait DictionarySchema[Self[_], -Key[_], -Value[_]] extends Schema[Self]:
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
   ): DictionarySchema[T, Key, Value] = new DictionarySchema[T, Key, Value]:
-    override def dictionary[A, B](
+    override def apply[A, B](
         key: => Key[A],
         value: => Value[B],
         minimum: Option[Int],
         maximum: Option[Int]
-    ): T[List[(A, B)]] = fK(self.dictionary(key, value, minimum, maximum))
+    ): T[List[(A, B)]] = fK(self(key, value, minimum, maximum))
 
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 

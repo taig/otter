@@ -7,10 +7,10 @@ import io.taig.otter.http.syntax.CodeSyntax.*
 import io.taig.otter.http.syntax.ResultSyntax.*
 
 trait AppSyntax:
-  def app[F[_], S[_], T[_], U[_]](routes: Routes[F, S, T, U], notFound: Result[U, Unit]): App[F, S, T, U] =
+  def app[F[_], S[_]](routes: Routes[F, S], notFound: Result[S, Unit]): App[F, S] =
     App(routes, notFound)
 
-  def app[F[_], S[_], T[_], U[_]](routes: Routes[F, S, T, U]): App[F, S, T, U] =
+  def app[F[_], S[_], T[_], U[_]](routes: Routes[F, S]): App[F, S] =
     app(routes, notFound = result(code.notFound))
 
 object AppSyntax extends AppSyntax
