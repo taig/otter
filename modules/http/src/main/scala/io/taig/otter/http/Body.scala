@@ -33,7 +33,7 @@ object Body:
   final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A]) extends Body[S, A]
 
   given BodySchema[Body] with
-    override def schema[S[_]]: Schema[Body[S, *]] = new Schema[Body[S, *]]:
+    override def algebra[S[_]]: Schema[Body[S, *]] = new Schema[Body[S, *]]:
       override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)
 
     override def apply[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =

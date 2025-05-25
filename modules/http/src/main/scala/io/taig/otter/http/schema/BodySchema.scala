@@ -22,17 +22,17 @@ trait BodySchema[Self[+_[_], _]] extends SchemaK[Self]:
 
     final def matches(contentType: MediaType): Boolean = mediaType === contentType
 
-object BodySchema:
-  given schema[Self[+_[_], _]](using self: BodySchema[Self]): BodySchema[[s[_], a] =>> Enrichment[Self[s, *], a]] with
-    override def apply[S[_], A](mediaType: MediaType, schema: => S[A]): Enrichment[Self[S, *], A] =
-      Enrichment(self(mediaType, schema))
+  override def imapK[T[+_[_], _]](fK: [S[_], A] => Self[S, A] => T[S, A])(
+      gK: [S[_], A] => T[S, A] => Self[S, A]
+  ): BodySchema[T] = new BodySchema[T]:
+    override def apply[S[_], A](mediaType: MediaType, schema: => S[A]): T[S, A] = fK(self(mediaType, schema))
 
-    extension [S[_], A](self: Enrichment[Self[S, *], A])
-      override def mediaType: MediaType = self.self.mediaType
-      override def schema: Reference[S, ?] = self.self.schema
+    extension [S[_], A](ta: T[S, A])
+      override def mediaType: MediaType = self.mediaType(gK(ta))
+      override def schema: Reference[S, ?] = self.schema(gK(ta))
 
-    override def schema[S[_]]: Schema[Enrichment[Self[S, *], *]] = self
-      .schema[S]
-      .imapK([A] => (self: Self[S, A]) => Enrichment(self))(
-        [A] => (self: Enrichment[Self[S, *], A]) => self.self
-      )
+    override def algebra[S[_]]: Schema[T[S, *]] = self
+      .algebra[S]
+      .imapK(
+        [A] => (self: Self[S, A]) => fK(self)
+      )([A] => (value: T[S, A]) => gK(value))

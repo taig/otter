@@ -1,6 +1,5 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Metadata
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Request
 import io.taig.otter.http.Response

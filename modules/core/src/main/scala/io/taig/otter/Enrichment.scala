@@ -10,6 +10,6 @@ final case class Enrichment[+S[_], A](self: S[A], metadata: Metadata):
 object Enrichment:
   def apply[S[_], A](self: S[A]): Enrichment[S, A] = Enrichment(self, metadata = Metadata.Empty)
 
-  def liftK[S[_]]: [A] => Enrichment[S, A] => S[A] = [A] => (value: Enrichment[S, A]) => value.self
+  def liftK[S[_]]: [A] => S[A] => Enrichment[S, A] = [A] => (self: S[A]) => Enrichment(self)
 
-  def unliftK[S[_]]: [A] => S[A] => Enrichment[S, A] = [A] => (self: S[A]) => Enrichment(self)
+  def unliftK[S[_]]: [A] => Enrichment[S, A] => S[A] = [A] => (value: Enrichment[S, A]) => value.self
