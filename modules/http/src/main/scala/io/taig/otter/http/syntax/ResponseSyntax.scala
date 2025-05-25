@@ -10,6 +10,6 @@ trait ResponseSyntax:
       results: Results[S, A],
       validation: Result[T, Violations],
       failure: Result[T, Option[String]]
-  ): Response[S, T, A] = Response(results, validation, failure)
+  ): Response[S, A] = ??? // Response(results, validation, failure)
 
 object ResponseSyntax extends ResponseSyntax

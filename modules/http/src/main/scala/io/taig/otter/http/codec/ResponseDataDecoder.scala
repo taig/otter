@@ -6,11 +6,11 @@ import io.taig.otter.http.Headers.Data.contentType
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Response
 
-final class ResponseDataDecoder[-S[_], -T[_]](decoder: PayloadDecoder[S + T]):
+final class ResponseDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
   val results = ResultsDataDecoder(decoder)
 
   def decode[A](
-      schema: Response[S, T, A],
+      schema: Response[S, A],
       value: Response.Data
   ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] = value.headers.contentType
     .leftMap("header" /: _)
