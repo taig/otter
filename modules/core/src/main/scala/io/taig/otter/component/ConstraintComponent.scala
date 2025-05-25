@@ -2,9 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.Constraint
 import io.taig.otter.Keys.*
-import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.RecordSchema
-import io.taig.otter.schema.EnrichedUnionSchema
+import io.taig.otter.schema.*
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],

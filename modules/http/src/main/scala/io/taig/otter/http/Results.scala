@@ -26,5 +26,4 @@ object Results:
 
   given ResultsSchema[Results] with
     override def schema[S[_]]: Schema[Results[S, *]] = new Schema[Results[S, *]]:
-      override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] = fa.imap(f)(g) 
-
+      override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] = fa.imap(f)(g)

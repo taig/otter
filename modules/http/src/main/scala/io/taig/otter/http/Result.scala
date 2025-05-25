@@ -19,11 +19,10 @@ object Result:
 
   final private[otter] case class Payload[S[_], A, B](self: Result.Root[A], payload: Bodies[S, B])
       extends Result[S, (A, B)]:
-    export self.{code}
+    export self.code
     override def bodies: Option[Bodies[S, ?]] = payload.some
 
-  final private[otter] case class Root[A](code: Code, headers: Headers[A])
-      extends Result[Nothing, A]:
+  final private[otter] case class Root[A](code: Code, headers: Headers[A]) extends Result[Nothing, A]:
     override def bodies: Option[Bodies[Nothing, ?]] = none
 
   given [S[_]]: Schema[Result[S, *]] with

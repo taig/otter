@@ -16,8 +16,8 @@ trait ResultSyntax:
     Result.Payload(Result.Root(code, headers), bodies).merge
 
   def result[S[_], A](code: Code, bodies: Bodies[S, A]): Result[S, A] = Result
-      .Payload(Result.Root(code, headers = Headers.Empty), bodies)
-      .imap((_, a) => a)(a => ((), a))
+    .Payload(Result.Root(code, headers = Headers.Empty), bodies)
+    .imap((_, a) => a)(a => ((), a))
 
   def result[S[_], A](code: Code, body: Body[S, A]): Result[S, A] = result(code, bodies = ???)
 

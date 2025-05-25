@@ -25,7 +25,7 @@ object Response:
   // given ResponseSchema[Response] with
   //   override def schema[S[_], T[_]]: Schema[Response[S, T, *]] = new Schema[Response[S, T, *]]:
   //     override def imap[A, B](fa: Response[S, T, A])(f: A => B)(g: B => A): Response[S, T, B] = fa.imap(f)(g)
-    
+
   //   extension [S[_], T[_], A](self: Response[S, T, A])
-  //     override def modifyResults[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] = 
+  //     override def modifyResults[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] =
   //       self.modifyResults(f)

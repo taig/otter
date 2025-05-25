@@ -34,16 +34,3 @@ object Enumeration:
     extension [A](self: Enumeration[Value, A])
       override def schema: Reference[Value, ?] = self.schema
       override def values: NonEmptyList[A] = self.values
-
-  given [Value[_]]: EnumerationSchema[Enriched[Enumeration[Value, *], *], Value] with
-    override def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): Enriched[Enumeration[Value, *], B] =
-      Enriched(EnumerationSchema[Enumeration[Value, *], Value].apply(schema, mapping))
-
-    override def imap[A, B](fa: Enriched[Enumeration[Value, *], A])(f: A => B)(
-        g: B => A
-    ): Enriched[Enumeration[Value, *], B] =
-      fa.mapF(_.imap(f)(g))
-
-    extension [A](self: Enriched[Enumeration[Value, *], A])
-      override def schema: Reference[Value, ?] = EnumerationSchema[Enumeration[Value, *], Value].schema(self.self)
-      override def values: NonEmptyList[A] = EnumerationSchema[Enumeration[Value, *], Value].values(self.self)

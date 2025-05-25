@@ -6,7 +6,7 @@ import io.taig.otter as Self
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.schema.*
-import Self.Enriched
+import Self.Enrichment
 import Self.schema.ConstantSchema
 import Self.Key
 
@@ -48,65 +48,66 @@ object Parameter:
     sealed trait Atom[A] extends Parameter.Value[A], Parameter.Value.Object.Atom[A]
 
     object Atom:
-      final case class Constant[A](self: Enriched[Self.Constant[Parameter.Value.Atom.Primitive, *], A])
+      final case class Constant[A](self: Enrichment[Self.Constant[Parameter.Value.Atom.Primitive, *], A])
           extends Parameter.Value.Atom[A]
 
       object Constant:
         given ConstantSchema[Parameter.Value.Atom.Constant, Parameter.Value.Atom.Primitive] =
           ConstantSchema[Self.Constant[Parameter.Value.Atom.Primitive, *], Parameter.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Constant[Parameter.Value.Atom.Primitive, A]) => Constant(Enriched(schema))
+              [A] => (schema: Self.Constant[Parameter.Value.Atom.Primitive, A]) => Constant(Enrichment(schema))
             )([A] => (value: Parameter.Value.Atom.Constant[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Atom.Constant] =
-          EnrichedSchema[Enriched[Self.Constant[Parameter.Value.Atom.Primitive, *], *]]
+          EnrichedSchema[Enrichment[Self.Constant[Parameter.Value.Atom.Primitive, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Constant[Parameter.Value.Atom.Primitive, *], A]) => Constant(schema)
             )([A] => (value: Parameter.Value.Atom.Constant[A]) => value.self)
 
-      final case class Enumeration[A](self: Enriched[Self.Enumeration[Parameter.Value.Atom.Primitive, *], A])
+      final case class Enumeration[A](self: Enrichment[Self.Enumeration[Parameter.Value.Atom.Primitive, *], A])
           extends Parameter.Value.Atom[A]
 
       object Enumeration:
         given EnumerationSchema[Parameter.Value.Atom.Enumeration, Parameter.Value.Atom.Primitive] =
           EnumerationSchema[Self.Enumeration[Parameter.Value.Atom.Primitive, *], Parameter.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Enumeration[Parameter.Value.Atom.Primitive, A]) => Enumeration(Enriched(schema))
+              [A] => (schema: Self.Enumeration[Parameter.Value.Atom.Primitive, A]) => Enumeration(Enrichment(schema))
             )([A] => (value: Parameter.Value.Atom.Enumeration[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Atom.Enumeration] =
-          EnrichedSchema[Enriched[Self.Enumeration[Parameter.Value.Atom.Primitive, *], *]]
+          EnrichedSchema[Enrichment[Self.Enumeration[Parameter.Value.Atom.Primitive, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Enumeration[Parameter.Value.Atom.Primitive, *], A]) => Enumeration(schema)
             )([A] => (value: Parameter.Value.Atom.Enumeration[A]) => value.self)
 
-      final case class Primitive[A](self: Enriched[Self.Primitive.String, A]) extends Parameter.Value.Atom[A]
+      final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Parameter.Value.Atom[A]
 
       object Primitive:
         given PrimitiveSchema.String[Parameter.Value.Atom.Primitive] =
           PrimitiveSchema
             .String[Self.Primitive.String]
             .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => Primitive(Enriched(schema))
+              [A] => (schema: Self.Primitive.String[A]) => Primitive(Enrichment(schema))
             )([A] => (value: Parameter.Value.Atom.Primitive[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Atom.Primitive] =
-          EnrichedSchema[Enriched[Self.Primitive.String, *]]
+          EnrichedSchema[Enrichment[Self.Primitive.String, *]]
             .imapK(
               [A] => (schema: Enriched[Self.Primitive.String, A]) => Primitive(schema)
             )([A] => (value: Parameter.Value.Atom.Primitive[A]) => value.self)
 
-      final case class Union[A](self: Enriched[Self.Union[Parameter.Value.Atom, *], A]) extends Parameter.Value.Atom[A]
+      final case class Union[A](self: Enrichment[Self.Union[Parameter.Value.Atom, *], A])
+          extends Parameter.Value.Atom[A]
 
       object Union:
         given UnionSchema[Parameter.Value.Atom.Union, Parameter.Value.Atom] =
           UnionSchema[Self.Union[Parameter.Value.Atom, *], Parameter.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Union[Parameter.Value.Atom, A]) => Union(Enriched(schema))
+              [A] => (schema: Self.Union[Parameter.Value.Atom, A]) => Union(Enrichment(schema))
             )([A] => (value: Parameter.Value.Atom.Union[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Atom.Union] =
-          EnrichedSchema[Enriched[Self.Union[Parameter.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Union[Parameter.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Union[Parameter.Value.Atom, *], A]) => Union(schema)
             )([A] => (value: Parameter.Value.Atom.Union[A]) => value.self)
@@ -134,33 +135,34 @@ object Parameter:
     sealed trait Array[A] extends Parameter.Value[A]
 
     object Array:
-      final case class Collection[A](self: Enriched[Self.Collection[Parameter.Value.Atom, *], A])
+      final case class Collection[A](self: Enrichment[Self.Collection[Parameter.Value.Atom, *], A])
           extends Parameter.Value.Array[A]
 
       object Collection:
         given CollectionSchema[Parameter.Value.Array.Collection, Parameter.Value.Atom] =
           CollectionSchema[Self.Collection[Parameter.Value.Atom, *], Parameter.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Collection[Parameter.Value.Atom, A]) => Collection(Enriched(schema))
+              [A] => (schema: Self.Collection[Parameter.Value.Atom, A]) => Collection(Enrichment(schema))
             )([A] => (value: Parameter.Value.Array.Collection[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Array.Collection] =
-          EnrichedSchema[Enriched[Self.Collection[Parameter.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Collection[Parameter.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Collection[Parameter.Value.Atom, *], A]) => Collection(schema)
             )([A] => (value: Parameter.Value.Array.Collection[A]) => value.self)
 
-      final case class Tuple[A](self: Enriched[Self.Tuple[Parameter.Value.Atom, *], A]) extends Parameter.Value.Array[A]
+      final case class Tuple[A](self: Enrichment[Self.Tuple[Parameter.Value.Atom, *], A])
+          extends Parameter.Value.Array[A]
 
       object Tuple:
         given TupleSchema[Parameter.Value.Array.Tuple, Parameter.Value.Atom] =
           TupleSchema[Self.Tuple[Parameter.Value.Atom, *], Parameter.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Tuple[Parameter.Value.Atom, A]) => Tuple(Enriched(schema))
+              [A] => (schema: Self.Tuple[Parameter.Value.Atom, A]) => Tuple(Enrichment(schema))
             )([A] => (value: Parameter.Value.Array.Tuple[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Array.Tuple] =
-          EnrichedSchema[Enriched[Self.Tuple[Parameter.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Tuple[Parameter.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Tuple[Parameter.Value.Atom, *], A]) => Tuple(schema)
             )([A] => (value: Parameter.Value.Array.Tuple[A]) => value.self)
@@ -182,34 +184,34 @@ object Parameter:
     sealed trait Object[A] extends Parameter.Value[A]
 
     object Object:
-      final case class Dictionary[A](self: Enriched[Self.Dictionary[Key, Parameter.Value.Atom, *], A])
+      final case class Dictionary[A](self: Enrichment[Self.Dictionary[Key, Parameter.Value.Atom, *], A])
           extends Parameter.Value.Object[A]
 
       object Dictionary:
         given DictionarySchema[Parameter.Value.Object.Dictionary, Key, Parameter.Value.Atom] =
           DictionarySchema[Self.Dictionary[Key, Parameter.Value.Atom, *], Key, Parameter.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Dictionary[Key, Parameter.Value.Atom, A]) => Dictionary(Enriched(schema))
+              [A] => (schema: Self.Dictionary[Key, Parameter.Value.Atom, A]) => Dictionary(Enrichment(schema))
             )([A] => (value: Parameter.Value.Object.Dictionary[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Object.Dictionary] =
-          EnrichedSchema[Enriched[Self.Dictionary[Key, Parameter.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Dictionary[Key, Parameter.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Dictionary[Key, Parameter.Value.Atom, *], A]) => Dictionary(schema)
             )([A] => (value: Parameter.Value.Object.Dictionary[A]) => value.self)
 
-      final case class Record[A](self: Enriched[Self.Record[Parameter.Value.Field, *], A])
+      final case class Record[A](self: Enrichment[Self.Record[Parameter.Value.Field, *], A])
           extends Parameter.Value.Object[A]
 
       object Record:
         given RecordSchema[Parameter.Value.Object.Record, Parameter.Value.Field] =
           RecordSchema[Self.Record[Parameter.Value.Field, *], Parameter.Value.Field]
             .imapK(
-              [A] => (schema: Self.Record[Parameter.Value.Field, A]) => Record(Enriched(schema))
+              [A] => (schema: Self.Record[Parameter.Value.Field, A]) => Record(Enrichment(schema))
             )([A] => (value: Parameter.Value.Object.Record[A]) => value.self.self)
 
         given EnrichedSchema[Parameter.Value.Object.Record] =
-          EnrichedSchema[Enriched[Self.Record[Parameter.Value.Field, *], *]]
+          EnrichedSchema[Enrichment[Self.Record[Parameter.Value.Field, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Record[Parameter.Value.Field, *], A]) => Record(schema)
             )([A] => (value: Parameter.Value.Object.Record[A]) => value.self)
@@ -217,18 +219,18 @@ object Parameter:
       sealed trait Atom[A] extends Product with Serializable
 
       object Atom:
-        final case class Nullable[A](self: Enriched[Self.Nullable[Parameter.Value.Object.Atom, *], A])
+        final case class Nullable[A](self: Enrichment[Self.Nullable[Parameter.Value.Object.Atom, *], A])
             extends Parameter.Value.Object.Atom[A]
 
         object Nullable:
           given NullableSchema[Parameter.Value.Object.Atom.Nullable, Parameter.Value.Object.Atom] =
             NullableSchema[Self.Nullable[Parameter.Value.Object.Atom, *], Parameter.Value.Object.Atom]
               .imapK(
-                [A] => (schema: Self.Nullable[Parameter.Value.Object.Atom, A]) => Nullable(Enriched(schema))
+                [A] => (schema: Self.Nullable[Parameter.Value.Object.Atom, A]) => Nullable(Enrichment(schema))
               )([A] => (value: Parameter.Value.Object.Atom.Nullable[A]) => value.self.self)
 
           given EnrichedSchema[Parameter.Value.Object.Atom.Nullable] =
-            EnrichedSchema[Enriched[Self.Nullable[Parameter.Value.Object.Atom, *], *]]
+            EnrichedSchema[Enrichment[Self.Nullable[Parameter.Value.Object.Atom, *], *]]
               .imapK(
                 [A] => (schema: Enriched[Self.Nullable[Parameter.Value.Object.Atom, *], A]) => Nullable(schema)
               )([A] => (value: Parameter.Value.Object.Atom.Nullable[A]) => value.self)
@@ -248,7 +250,7 @@ object Parameter:
             case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
             case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
 
-    final case class Field[A](self: Enriched[Self.Field[Key, Parameter.Value.Object.Atom, *], A])
+    final case class Field[A](self: Enrichment[Self.Field[Key, Parameter.Value.Object.Atom, *], A])
 
     object Field:
       given FieldSchema[Parameter.Value.Field, Key, Parameter.Value.Object.Atom] =
@@ -258,11 +260,11 @@ object Parameter:
           Parameter.Value.Object.Atom
         ]
           .imapK(
-            [A] => (schema: Self.Field[Key, Parameter.Value.Object.Atom, A]) => Field(Enriched(schema))
+            [A] => (schema: Self.Field[Key, Parameter.Value.Object.Atom, A]) => Field(Enrichment(schema))
           )([A] => (value: Parameter.Value.Field[A]) => value.self.self)
 
       given EnrichedSchema[Parameter.Value.Field] =
-        EnrichedSchema[Enriched[Self.Field[Key, Parameter.Value.Object.Atom, *], *]]
+        EnrichedSchema[Enrichment[Self.Field[Key, Parameter.Value.Object.Atom, *], *]]
           .imapK(
             [A] => (schema: Enriched[Self.Field[Key, Parameter.Value.Object.Atom, *], A]) => Field(schema)
           )([A] => (value: Parameter.Value.Field[A]) => value.self)

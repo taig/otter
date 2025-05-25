@@ -1,11 +1,11 @@
 package io.taig.otter.http
 
-import io.taig.otter.Enriched
+import io.taig.otter.Enrichment
 import io.taig.otter.schema.EnrichedSchema
 import io.taig.otter.Metadata
 
 object Temp:
-  type Body[+S[_], A] = Enriched[io.taig.otter.http.Body[S, *], A]
+  type Body[+S[_], A] = Enrichment[io.taig.otter.http.Body[S, *], A]
 
   given [S[_]]: EnrichedSchema[Body[S, *]] = new EnrichedSchema[Body[S, *]]:
     extension [A](self: Body[S, A])

@@ -61,64 +61,64 @@ object Query:
     sealed trait Atom[A] extends Query.Value[A]
 
     object Atom:
-      final case class Constant[A](self: Enriched[Self.Constant[Query.Value.Atom.Primitive, *], A]) extends Atom[A]
+      final case class Constant[A](self: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) extends Atom[A]
 
       object Constant:
         given ConstantSchema[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
           ConstantSchema[Self.Constant[Query.Value.Atom.Primitive, *], Query.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Constant[Query.Value.Atom.Primitive, A]) => Constant(Enriched(schema))
+              [A] => (schema: Self.Constant[Query.Value.Atom.Primitive, A]) => Constant(Enrichment(schema))
             )([A] => (atom: Query.Value.Atom.Constant[A]) => atom.self.self)
 
         given EnrichedSchema[Query.Value.Atom.Constant] =
-          EnrichedSchema[Enriched[Self.Constant[Query.Value.Atom.Primitive, *], *]]
+          EnrichedSchema[Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Constant[Query.Value.Atom.Primitive, *], A]) => Constant(schema)
             )([A] => (atom: Query.Value.Atom.Constant[A]) => atom.self)
 
-      final case class Enumeration[A](self: Enriched[Self.Enumeration[Query.Value.Atom.Primitive, *], A])
+      final case class Enumeration[A](self: Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], A])
           extends Atom[A]
 
       object Enumeration:
         given EnumerationSchema[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
           EnumerationSchema[Self.Enumeration[Query.Value.Atom.Primitive, *], Query.Value.Atom.Primitive]
             .imapK(
-              [A] => (schema: Self.Enumeration[Query.Value.Atom.Primitive, A]) => Enumeration(Enriched(schema))
+              [A] => (schema: Self.Enumeration[Query.Value.Atom.Primitive, A]) => Enumeration(Enrichment(schema))
             )([A] => (atom: Query.Value.Atom.Enumeration[A]) => atom.self.self)
 
         given EnrichedSchema[Query.Value.Atom.Enumeration] =
-          EnrichedSchema[Enriched[Self.Enumeration[Query.Value.Atom.Primitive, *], *]]
+          EnrichedSchema[Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Enumeration[Query.Value.Atom.Primitive, *], A]) => Enumeration(schema)
             )([A] => (atom: Query.Value.Atom.Enumeration[A]) => atom.self)
 
-      final case class Primitive[A](self: Enriched[Self.Primitive.String, A]) extends Atom[A]
+      final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Atom[A]
 
       object Primitive:
         given PrimitiveSchema.String[Query.Value.Atom.Primitive] =
           PrimitiveSchema
             .String[Self.Primitive.String]
             .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => Primitive(Enriched(schema))
+              [A] => (schema: Self.Primitive.String[A]) => Primitive(Enrichment(schema))
             )([A] => (atom: Query.Value.Atom.Primitive[A]) => atom.self.self)
 
         given EnrichedSchema[Query.Value.Atom.Primitive] =
-          EnrichedSchema[Enriched[Self.Primitive.String, *]]
+          EnrichedSchema[Enrichment[Self.Primitive.String, *]]
             .imapK(
               [A] => (schema: Enriched[Self.Primitive.String, A]) => Primitive(schema)
             )([A] => (atom: Query.Value.Atom.Primitive[A]) => atom.self)
 
-      final case class Union[A](self: Enriched[Self.Union[Query.Value.Atom, *], A]) extends Atom[A]
+      final case class Union[A](self: Enrichment[Self.Union[Query.Value.Atom, *], A]) extends Atom[A]
 
       object Union:
         given UnionSchema[Query.Value.Atom.Union, Query.Value.Atom] =
           UnionSchema[Self.Union[Query.Value.Atom, *], Query.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Union[Query.Value.Atom, A]) => Union(Enriched(schema))
+              [A] => (schema: Self.Union[Query.Value.Atom, A]) => Union(Enrichment(schema))
             )([A] => (atom: Query.Value.Atom.Union[A]) => atom.self.self)
 
         given EnrichedSchema[Query.Value.Atom.Union] =
-          EnrichedSchema[Enriched[Self.Union[Query.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Union[Query.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Union[Query.Value.Atom, *], A]) => Union(schema)
             )([A] => (atom: Query.Value.Atom.Union[A]) => atom.self)
@@ -146,33 +146,33 @@ object Query:
     sealed trait Array[A] extends Query.Value[A]
 
     object Array:
-      final case class Collection[A](self: Enriched[Self.Collection[Query.Value.Atom, *], A])
+      final case class Collection[A](self: Enrichment[Self.Collection[Query.Value.Atom, *], A])
           extends Query.Value.Array[A]
 
       object Collection:
         given CollectionSchema[Query.Value.Array.Collection, Query.Value.Atom] =
           CollectionSchema[Self.Collection[Query.Value.Atom, *], Query.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Collection[Query.Value.Atom, A]) => Collection(Enriched(schema))
+              [A] => (schema: Self.Collection[Query.Value.Atom, A]) => Collection(Enrichment(schema))
             )([A] => (value: Query.Value.Array.Collection[A]) => value.self.self)
 
         given EnrichedSchema[Query.Value.Array.Collection] =
-          EnrichedSchema[Enriched[Self.Collection[Query.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Collection[Query.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Collection[Query.Value.Atom, *], A]) => Collection(schema)
             )([A] => (value: Query.Value.Array.Collection[A]) => value.self)
 
-      final case class Tuple[A](self: Enriched[Self.Tuple[Query.Value.Atom, *], A]) extends Query.Value.Array[A]
+      final case class Tuple[A](self: Enrichment[Self.Tuple[Query.Value.Atom, *], A]) extends Query.Value.Array[A]
 
       object Tuple:
         given TupleSchema[Query.Value.Array.Tuple, Query.Value.Atom] =
           TupleSchema[Self.Tuple[Query.Value.Atom, *], Query.Value.Atom]
             .imapK(
-              [A] => (schema: Self.Tuple[Query.Value.Atom, A]) => Tuple(Enriched(schema))
+              [A] => (schema: Self.Tuple[Query.Value.Atom, A]) => Tuple(Enrichment(schema))
             )([A] => (value: Query.Value.Array.Tuple[A]) => value.self.self)
 
         given EnrichedSchema[Query.Value.Array.Tuple] =
-          EnrichedSchema[Enriched[Self.Tuple[Query.Value.Atom, *], *]]
+          EnrichedSchema[Enrichment[Self.Tuple[Query.Value.Atom, *], *]]
             .imapK(
               [A] => (schema: Enriched[Self.Tuple[Query.Value.Atom, *], A]) => Tuple(schema)
             )([A] => (value: Query.Value.Array.Tuple[A]) => value.self)
@@ -191,17 +191,17 @@ object Query:
             case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
             case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
 
-    final case class Nullable[A](self: Enriched[Self.Nullable[Query.Value, *], A]) extends Query.Value[A]
+    final case class Nullable[A](self: Enrichment[Self.Nullable[Query.Value, *], A]) extends Query.Value[A]
 
     object Nullable:
       given NullableSchema[Query.Value.Nullable, Query.Value] =
         NullableSchema[Self.Nullable[Query.Value, *], Query.Value]
           .imapK(
-            [A] => (schema: Self.Nullable[Query.Value, A]) => Nullable(Enriched(schema))
+            [A] => (schema: Self.Nullable[Query.Value, A]) => Nullable(Enrichment(schema))
           )([A] => (value: Query.Value.Nullable[A]) => value.self.self)
 
       given EnrichedSchema[Query.Value.Nullable] =
-        EnrichedSchema[Enriched[Self.Nullable[Query.Value, *], *]]
+        EnrichedSchema[Enrichment[Self.Nullable[Query.Value, *], *]]
           .imapK(
             [A] => (schema: Enriched[Self.Nullable[Query.Value, *], A]) => Nullable(schema)
           )([A] => (value: Query.Value.Nullable[A]) => value.self)

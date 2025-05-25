@@ -1,14 +1,9 @@
 package io.taig.otter.component
+
 import cats.syntax.all.*
 import io.taig.otter.Data
-import io.taig.otter.schema.CollectionSchema
-import io.taig.otter.schema.DictionarySchema
-import io.taig.otter.schema.NullableSchema
-import io.taig.otter.schema.EnrichedSchema
+import io.taig.otter.schema.*
 import io.taig.otter.Keys.*
-import io.taig.otter.schema.EnrichedDictionarySchema
-import io.taig.otter.schema.EnrichedCollectionSchema
-import io.taig.otter.schema.EnrichedNullableSchema
 
 trait DataComponent[
     Collection[a] <: Value[a],

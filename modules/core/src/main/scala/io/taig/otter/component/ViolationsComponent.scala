@@ -1,12 +1,10 @@
 package io.taig.otter.component
+
 import cats.syntax.all.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
-import io.taig.otter.schema.DictionarySchema
-import io.taig.otter.schema.FieldSchema
-import io.taig.otter.schema.RecordSchema
 import io.taig.otter.Keys.*
-import io.taig.otter.schema.EnrichedUnionSchema
+import io.taig.otter.schema.*
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],

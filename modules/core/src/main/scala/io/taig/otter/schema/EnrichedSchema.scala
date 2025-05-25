@@ -3,9 +3,7 @@ package io.taig.otter.schema
 import io.taig.otter.Metadata
 import io.taig.otter.Metadata.*
 
-trait EnrichedSchema[Self[_]]:
-  self =>
-
+trait EnrichedSchema[Self[_]] extends Schema[Self]:
   extension [A](self: Self[A])
     def metadata: Metadata
     def metadata(f: Metadata => Metadata): Self[A]
