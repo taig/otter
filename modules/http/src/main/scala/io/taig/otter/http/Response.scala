@@ -1,26 +1,29 @@
-// package io.taig.otter.http
+package io.taig.otter.http
 
-// import io.taig.otter.Violations
-// import io.taig.otter.http.HttpExport.*
+import io.taig.otter.Violations
+import io.taig.otter.Enrichment
 
-// final case class Response[+S[_], A](results: S[A], validation: S[Violations], failure: S[Option[String]]):
-//   def modifyResults[S1[a] >: S[a], B](f: S[A] => S1[B]): Response[S1, B] = copy(results = f(results))
+type Response[+S[_], A] = Enrichment[Response.Value[S, *], A]
 
-//   def modifyValidation[S1[a] >: S[a]](f: S[Violations] => S1[Violations]): Response[S1, A] = copy(validation = f(validation))
+object Response:
+  final case class Value[+S[_], A](
+      results: Results[S, A],
+      validation: Result[S, Violations],
+      failure: Result[S, Option[String]]
+  ):
+    def modifyResults[S1[a] >: S[a], B](f: Results[S, A] => Results[S1, B]): Response.Value[S1, B] =
+      copy(results = f(results))
 
-//   def modifyFailure[S1[a] >: S[a]](f: S[Option[String]] => S1[Option[String]]): Response[S1, A] = copy(failure = f(failure))
+    def modifyValidation[S1[a] >: S[a]](f: Result[S, Violations] => Result[S1, Violations]): Response.Value[S1, A] =
+      copy(validation = f(validation))
 
-// object Response:
-//   final case class Data(code: Code, headers: Headers.Data, body: Array[Byte]):
-//     def modifyHeaders(f: Headers.Data => Headers.Data): Response.Data = copy(headers = f(headers))
+    def modifyFailure[S1[a] >: S[a]](
+        f: Result[S, Option[String]] => Result[S1, Option[String]]
+    ): Response.Value[S1, A] =
+      copy(failure = f(failure))
 
-//     def modifyBody(f: Array[Byte] => Array[Byte]): Response.Data = copy(body = f(body))
-//     def withBody(body: Array[Byte]): Response.Data = modifyBody(_ => body)
+  final case class Data(code: Code, headers: Headers.Data, body: Array[Byte]):
+    def modifyHeaders(f: Headers.Data => Headers.Data): Response.Data = copy(headers = f(headers))
 
-//   // given ResponseSchema[Response] with
-//   //   override def schema[S[_], T[_]]: Schema[Response[S, T, *]] = new Schema[Response[S, T, *]]:
-//   //     override def imap[A, B](fa: Response[S, T, A])(f: A => B)(g: B => A): Response[S, T, B] = fa.imap(f)(g)
-
-//   //   extension [S[_], T[_], A](self: Response[S, T, A])
-//   //     override def modifyResults[U[a] >: S[a], B](f: Results[S, A] => Results[U, B]): Response[U, T, B] =
-//   //       self.modifyResults(f)
+    def modifyBody(f: Array[Byte] => Array[Byte]): Response.Data = copy(body = f(body))
+    def withBody(body: Array[Byte]): Response.Data = modifyBody(_ => body)

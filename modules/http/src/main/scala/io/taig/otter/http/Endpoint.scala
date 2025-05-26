@@ -1,10 +1,14 @@
 package io.taig.otter.http
 
 import io.taig.otter.Reference
+import io.taig.otter.Enrichment
 
-final case class Endpoint[+S[_], +T[_], A, B](request: Reference[S, A], response: Reference[T, B]):
-  def modifyRequest[S1[a] >: S[a], C](f: S1[A] => S1[C]): Endpoint[S1, T, C, B] =
-    copy(request = request.mapF(f))
+type Endpoint[+S[_], A, B] = Enrichment[Endpoint.Value[S, A, *], B]
 
-  def modifyResponse[T1[a] >: T[a], C](f: T1[B] => T1[C]): Endpoint[S, T1, A, C] =
-    copy(response = response.mapF(f))
+object Endpoint:
+  final case class Value[+S[_], A, B](request: Request[S, A], response: Response[S, B]):
+    def modifyRequest[S1[a] >: S[a], C](f: Request[S, A] => Request[S1, C]): Endpoint.Value[S1, C, B] =
+      copy(request = f(request))
+
+    def modifyResponse[S1[a] >: S[a], C](f: Response[S, B] => Response[S1, C]): Endpoint.Value[S1, A, C] =
+      copy(response = f(response))
