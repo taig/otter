@@ -18,7 +18,7 @@ sealed abstract class Path[A] extends Product with Serializable:
 
   final def /[B](name: String): Path[A] = ???
 
-  final def toUrl: Url[A] = Url.Root(path = this, queries = Queries.Empty).imap((a, _) => a)((_, ()))
+  // final def toUrl: Url[A] = Url.Root(path = this, queries = Queries.Empty).imap((a, _) => a)((_, ()))
 
 object Path:
   private[otter] case object Empty extends Path[Unit]:

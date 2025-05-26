@@ -6,7 +6,7 @@ import io.taig.otter.collectFirstWithRemainders
 object UrlMatcher:
   def apply(url: Url[?], data: Url.Data): Boolean =
     apply(path = url.path, data = data.path).fold(false)(_.isEmpty) &&
-      apply(queries = url.queries, data = data.queries).isDefined
+      apply(queries = url.queries.self, data = data.queries).isDefined
 
   def apply(path: Path[?], data: Path.Data): Option[Path.Data] = path match
     case Path.Empty              => data.some
@@ -17,12 +17,12 @@ object UrlMatcher:
       data.uncons.flatMap((head, tail) => Option.when(head === name)(tail))
     case Path.Zip(left, right) => apply(path = left, data).flatMap(apply(path = right, _))
 
-  def apply(queries: Queries[?], data: Queries.Data): Option[Queries.Data] = queries match
-    case Queries.Empty              => data.some
-    case Queries.Root(query)        => apply(query, data)
-    case Queries.Modify(self, _, _) => apply(queries = self, data)
-    case Queries.Optional(_)        => data.some
-    case Queries.Zip(left, right)   => apply(queries = left, data).flatMap(apply(queries = right, _))
+  def apply(queries: Queries.Value[?], data: Queries.Data): Option[Queries.Data] = queries match
+    case Queries.Value.Empty              => data.some
+    case Queries.Value.Root(query)        => apply(query, data)
+    case Queries.Value.Modify(self, _, _) => apply(queries = self, data)
+    case Queries.Value.Optional(_)        => data.some
+    case Queries.Value.Zip(left, right)   => apply(queries = left, data).flatMap(apply(queries = right, _))
 
   def apply(query: Query[?], data: Queries.Data): Option[Queries.Data] =
     val name = query.name

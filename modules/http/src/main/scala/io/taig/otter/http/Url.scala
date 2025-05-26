@@ -15,7 +15,7 @@ sealed abstract class Url[A] extends Product with Serializable:
   final def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = ???
   // zip(parameter.toPath.toUrl).imap(merge.apply)(merge.unapply)
 
-  final def /[B](name: String): Url[A] = zip(Path.Static(name).toUrl).imap(((a, _) => a))(a => (a, ()))
+  // final def /[B](name: String): Url[A] = zip(Path.Static(name).toUrl).imap(((a, _) => a))(a => (a, ()))
 
 object Url:
   private[otter] case object Empty extends Url[Unit]:
@@ -29,7 +29,7 @@ object Url:
 
   final private[otter] case class Zip[A, B](left: Url[A], right: Url[B]) extends Url[(A, B)]:
     override def path: Path[?] = left.path.zip(right.path)
-    override def queries: Queries[?] = left.queries.zip(right.queries)
+    override def queries: Queries[?] = ??? // left.queries.zip(right.queries)
 
   final case class Data(path: Path.Data, queries: Queries.Data):
     def combine(url: Url.Data): Url.Data =
