@@ -1,10 +1,10 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Reference
 
-trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
+trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
 
   def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
@@ -15,7 +15,7 @@ trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): EnumerationSchema[T, Value] = new EnumerationSchema[T, Value]:
+  ): EnumerationSchemaInvariant[T, Value] = new EnumerationSchemaInvariant[T, Value]:
     override def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] =
       fK(self.apply(schema, mapping))
 
@@ -25,6 +25,8 @@ trait EnumerationSchema[Self[_], Value[_]] extends Schema[Self]:
       override def schema: Reference[Value, ?] = self.schema(gK(ta))
       override def values: NonEmptyList[A] = self.values(gK(ta))
 
-object EnumerationSchema:
-  inline def apply[Self[_], Value[_]](using self: EnumerationSchema[Self, Value]): EnumerationSchema[Self, Value] =
+object EnumerationSchemaInvariant:
+  inline def apply[Self[_], Value[_]](using
+      self: EnumerationSchemaInvariant[Self, Value]
+  ): EnumerationSchemaInvariant[Self, Value] =
     self

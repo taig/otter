@@ -1,6 +1,6 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.schema.DictionarySchema
+import io.taig.otter.operation.DictionarySchemaInvariant
 
 sealed abstract class Dictionary[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference[S, ?]
@@ -37,7 +37,7 @@ object Dictionary:
     override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Dictionary[U, T, B] =
       copy(self = self.leftMapK[S1, U](fK))
 
-  given [Key[_], Value[_]]: DictionarySchema[Dictionary[Key, Value, *], Key, Value] with
+  given [Key[_], Value[_]]: DictionarySchemaInvariant[Dictionary[Key, Value, *], Key, Value] with
     override def apply[A, B](
         key: => Key[A],
         value: => Value[B],

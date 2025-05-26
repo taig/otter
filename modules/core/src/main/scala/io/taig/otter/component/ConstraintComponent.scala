@@ -2,7 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.Constraint
 import io.taig.otter.Keys.*
-import io.taig.otter.schema.*
+import io.taig.otter.operation.{EnrichedUnionSchemaInvariant, FieldSchemaInvariant, RecordSchemaInvariant}
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],
@@ -15,8 +15,11 @@ trait ConstraintComponent[
     Field[_],
     Key[_],
     Value[_]
-](using FieldSchema[Field, Key, Value], RecordSchema[Record, Field], EnrichedUnionSchema[Union, Value])
-    extends ComparisonComponent[Nullable, Record, Field, Key, Value],
+](using
+    FieldSchemaInvariant[Field, Key, Value],
+    RecordSchemaInvariant[Record, Field],
+    EnrichedUnionSchemaInvariant[Union, Value]
+) extends ComparisonComponent[Nullable, Record, Field, Key, Value],
       DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       PrimitiveComponent[Primitive],

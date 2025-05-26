@@ -1,7 +1,7 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.schema.TupleSchema
+import io.taig.otter.operation.TupleSchemaInvariant
 
 // TODO support for optional
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
@@ -36,7 +36,7 @@ object Tuple:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, (A, B)] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  given [Value[_]]: TupleSchema[Tuple[Value, *], Value] with
+  given [Value[_]]: TupleSchemaInvariant[Tuple[Value, *], Value] with
     override def empty: Tuple[Value, Unit] = Tuple.Empty
 
     override def lift[A](schema: => Value[A]): Tuple[Value, A] =

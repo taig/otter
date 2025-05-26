@@ -9,11 +9,11 @@ import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
 import io.taig.otter.Argument
-import io.taig.otter.schema.CollectionSchema
+import io.taig.otter.operation.CollectionSchemaInvariant
 
 import scala.collection.immutable.SortedSet
 
-trait CollectionComponent[Self[_], -Value[_]](using self: CollectionSchema[Self, Value]):
+trait CollectionComponent[Self[_], -Value[_]](using self: CollectionSchemaInvariant[Self, Value]):
   object collection:
     final def list[A](
         schema: => Value[A],

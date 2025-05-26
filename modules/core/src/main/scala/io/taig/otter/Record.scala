@@ -1,7 +1,7 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.schema.RecordSchema
+import io.taig.otter.operation.RecordSchemaInvariant
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]
@@ -33,7 +33,7 @@ object Record:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, (A, B)] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  given [Field[_]]: RecordSchema[Record[Field, *], Field] with
+  given [Field[_]]: RecordSchemaInvariant[Record[Field, *], Field] with
     override def lift[A](field: => Field[A]): Record[Field, A] = Root(field = Reference.later(field))
 
     override def imap[A, B](fa: Record[Field, A])(f: A => B)(g: B => A): Record[Field, B] = fa.imap(f)(g)

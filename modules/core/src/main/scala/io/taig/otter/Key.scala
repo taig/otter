@@ -1,11 +1,11 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import io.taig.otter.schema.ConstantSchema
-import io.taig.otter.schema.EnumerationSchema
-import io.taig.otter.schema.PrimitiveSchema
-import io.taig.otter.schema.Schema
-import io.taig.otter.schema.UnionSchema
+import io.taig.otter.operation.ConstantSchemaInvariant
+import io.taig.otter.operation.EnumerationSchemaInvariant
+import io.taig.otter.operation.PrimitiveSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.UnionSchemaInvariant
 
 sealed abstract class Key[A] extends Product with Serializable
 
@@ -13,8 +13,8 @@ object Key:
   final case class Constant[A](self: Self.Constant[Key.Primitive, A]) extends Key[A]
 
   object Constant:
-    given ConstantSchema[Key.Constant, Key.Primitive] =
-      ConstantSchema[Self.Constant[Key.Primitive, *], Key.Primitive]
+    given ConstantSchemaInvariant[Key.Constant, Key.Primitive] =
+      ConstantSchemaInvariant[Self.Constant[Key.Primitive, *], Key.Primitive]
         .imapK(
           [A] => (schema: Self.Constant[Key.Primitive, A]) => Constant(schema)
         )([A] => (key: Key.Constant[A]) => key.self)
@@ -22,8 +22,8 @@ object Key:
   final case class Enumeration[A](self: Self.Enumeration[Key.Primitive, A]) extends Key[A]
 
   object Enumeration:
-    given EnumerationSchema[Key.Enumeration, Key.Primitive] =
-      EnumerationSchema[Self.Enumeration[Key.Primitive, *], Key.Primitive]
+    given EnumerationSchemaInvariant[Key.Enumeration, Key.Primitive] =
+      EnumerationSchemaInvariant[Self.Enumeration[Key.Primitive, *], Key.Primitive]
         .imapK(
           [A] => (schema: Self.Enumeration[Key.Primitive, A]) => Enumeration(schema)
         )([A] => (key: Key.Enumeration[A]) => key.self)
@@ -31,7 +31,7 @@ object Key:
   final case class Primitive[A](self: Self.Primitive.String[A]) extends Key[A]
 
   object Primitive:
-    given PrimitiveSchema.String[Key.Primitive] = PrimitiveSchema
+    given PrimitiveSchemaInvariant.String[Key.Primitive] = PrimitiveSchemaInvariant
       .String[Self.Primitive.String]
       .imapK(
         [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
@@ -40,12 +40,12 @@ object Key:
   final case class Union[A](self: Self.Union[Key, A]) extends Key[A]
 
   object Union:
-    given UnionSchema[Key.Union, Key] = UnionSchema[Self.Union[Key, *], Key]
+    given UnionSchemaInvariant[Key.Union, Key] = UnionSchemaInvariant[Self.Union[Key, *], Key]
       .imapK(
         [A] => (schema: Self.Union[Key, A]) => Union(schema)
       )([A] => (key: Key.Union[A]) => key.self)
 
-  given Schema[Key] with
+  given SchemaInvariant[Key] with
     override def imap[A, B](fa: Key[A])(f: A => B)(g: B => A): Key[B] = fa match
       case Constant(self)    => Constant(self.imap(f)(g))
       case Enumeration(self) => Enumeration(self.imap(f)(g))

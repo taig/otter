@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import io.taig.otter.Reference
 
@@ -6,11 +6,15 @@ import io.taig.otter.Reference.Constant
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 
-trait EnrichedFieldSchema[Self[_], Key[_], Value[_]] extends FieldSchema[Self, Key, Value], EnrichedSchema[Self]:
+trait EnrichedFieldSchemaInvariant[Self[_], Key[_], Value[_]]
+    extends FieldSchemaInvariant[Self, Key, Value],
+      EnrichedSchemaInvariant[Self]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): EnrichedFieldSchema[T, Key, Value] =
-    new EnrichedFieldSchema[T, Key, Value]:
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+      gK: [A] => T[A] => Self[A]
+  ): EnrichedFieldSchemaInvariant[T, Key, Value] =
+    new EnrichedFieldSchemaInvariant[T, Key, Value]:
       override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] = fK(self(name, key, value))
 
       extension [A](ta: T[A])
@@ -25,18 +29,18 @@ trait EnrichedFieldSchema[Self[_], Key[_], Value[_]] extends FieldSchema[Self, K
 
       override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
 
-object EnrichedFieldSchema:
+object EnrichedFieldSchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using
-      schema: EnrichedFieldSchema[Self, Key, Value]
-  ): EnrichedFieldSchema[Self, Key, Value] = schema
+      schema: EnrichedFieldSchemaInvariant[Self, Key, Value]
+  ): EnrichedFieldSchemaInvariant[Self, Key, Value] = schema
 
   given [Self[_], Key[_], Value[_]](using
-      self: FieldSchema[Self, Key, Value],
-      enrichment: EnrichedSchema[Enrichment[Self, *]]
-  ): EnrichedFieldSchema[Enrichment[Self, *], Key, Value] =
-    val field: FieldSchema[Enrichment[Self, *], Key, Value] =
+      self: FieldSchemaInvariant[Self, Key, Value],
+      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+  ): EnrichedFieldSchemaInvariant[Enrichment[Self, *], Key, Value] =
+    val field: FieldSchemaInvariant[Enrichment[Self, *], Key, Value] =
       self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedFieldSchema[Enrichment[Self, *], Key, Value]:
+    new EnrichedFieldSchemaInvariant[Enrichment[Self, *], Key, Value]:
       export field.{apply, isOptional, key, nullish, optional, value}
       export enrichment.{imap, metadata}

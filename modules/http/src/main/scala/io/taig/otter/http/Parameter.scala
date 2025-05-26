@@ -3,12 +3,11 @@ package io.taig.otter.http
 import cats.Show
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.Key
+import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
-import io.taig.otter.schema.*
-import Self.Enrichment
-import Self.schema.ConstantSchema
-import Self.Key
+import io.taig.otter.operation.*
 
 sealed abstract class Parameter[A] extends Product, Serializable:
   def name: String
@@ -52,8 +51,8 @@ object Parameter:
           extends Parameter.Value.Atom[A]
 
       object Constant:
-        given EnrichedConstantSchema[Parameter.Value.Atom.Constant, Parameter.Value.Atom.Primitive] =
-          EnrichedConstantSchema[
+        given EnrichedConstantSchemaInvariant[Parameter.Value.Atom.Constant, Parameter.Value.Atom.Primitive] =
+          EnrichedConstantSchemaInvariant[
             Enrichment[Self.Constant[Parameter.Value.Atom.Primitive, *], *],
             Parameter.Value.Atom.Primitive
           ].imapK(
@@ -64,8 +63,8 @@ object Parameter:
           extends Parameter.Value.Atom[A]
 
       object Enumeration:
-        given EnrichedEnumerationSchema[Parameter.Value.Atom.Enumeration, Parameter.Value.Atom.Primitive] =
-          EnrichedEnumerationSchema[
+        given EnrichedEnumerationSchemaInvariant[Parameter.Value.Atom.Enumeration, Parameter.Value.Atom.Primitive] =
+          EnrichedEnumerationSchemaInvariant[
             Enrichment[Self.Enumeration[Parameter.Value.Atom.Primitive, *], *],
             Parameter.Value.Atom.Primitive
           ].imapK(
@@ -75,8 +74,8 @@ object Parameter:
       final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Parameter.Value.Atom[A]
 
       object Primitive:
-        given EnrichedPrimitiveSchema.String[Parameter.Value.Atom.Primitive] =
-          EnrichedPrimitiveSchema
+        given EnrichedPrimitiveSchemaInvariant.String[Parameter.Value.Atom.Primitive] =
+          EnrichedPrimitiveSchemaInvariant
             .String[Enrichment[Self.Primitive.String, *]]
             .imapK(
               [A] => (schema: Enrichment[Self.Primitive.String, A]) => Primitive(schema)
@@ -86,15 +85,15 @@ object Parameter:
           extends Parameter.Value.Atom[A]
 
       object Union:
-        given EnrichedUnionSchema[Parameter.Value.Atom.Union, Parameter.Value.Atom] =
-          EnrichedUnionSchema[
+        given EnrichedUnionSchemaInvariant[Parameter.Value.Atom.Union, Parameter.Value.Atom] =
+          EnrichedUnionSchemaInvariant[
             Enrichment[Self.Union[Parameter.Value.Atom, *], *],
             Parameter.Value.Atom
           ].imapK(
             [A] => (schema: Enrichment[Self.Union[Parameter.Value.Atom, *], A]) => Union(schema)
           )([A] => (value: Parameter.Value.Atom.Union[A]) => value.self)
 
-      given EnrichedSchema[Parameter.Value.Atom] with
+      given EnrichedSchemaInvariant[Parameter.Value.Atom] with
         override def imap[A, B](fa: Atom[A])(f: A => B)(g: B => A): Parameter.Value.Atom[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
@@ -121,8 +120,8 @@ object Parameter:
           extends Parameter.Value.Array[A]
 
       object Collection:
-        given EnrichedCollectionSchema[Parameter.Value.Array.Collection, Parameter.Value.Atom] =
-          EnrichedCollectionSchema[
+        given EnrichedCollectionSchemaInvariant[Parameter.Value.Array.Collection, Parameter.Value.Atom] =
+          EnrichedCollectionSchemaInvariant[
             Enrichment[Self.Collection[Parameter.Value.Atom, *], *],
             Parameter.Value.Atom
           ].imapK(
@@ -133,15 +132,15 @@ object Parameter:
           extends Parameter.Value.Array[A]
 
       object Tuple:
-        given EnrichedTupleSchema[Parameter.Value.Array.Tuple, Parameter.Value.Atom] =
-          EnrichedTupleSchema[
+        given EnrichedTupleSchemaInvariant[Parameter.Value.Array.Tuple, Parameter.Value.Atom] =
+          EnrichedTupleSchemaInvariant[
             Enrichment[Self.Tuple[Parameter.Value.Atom, *], *],
             Parameter.Value.Atom
           ].imapK(
             [A] => (schema: Enrichment[Self.Tuple[Parameter.Value.Atom, *], A]) => Tuple(schema)
           )([A] => (value: Parameter.Value.Array.Tuple[A]) => value.self)
 
-      given EnrichedSchema[Parameter.Value.Array] with
+      given EnrichedSchemaInvariant[Parameter.Value.Array] with
         override def imap[A, B](fa: Array[A])(f: A => B)(g: B => A): Parameter.Value.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
@@ -162,8 +161,8 @@ object Parameter:
           extends Parameter.Value.Object[A]
 
       object Dictionary:
-        given EnrichedDictionarySchema[Parameter.Value.Object.Dictionary, Key, Parameter.Value.Atom] =
-          EnrichedDictionarySchema[
+        given EnrichedDictionarySchemaInvariant[Parameter.Value.Object.Dictionary, Key, Parameter.Value.Atom] =
+          EnrichedDictionarySchemaInvariant[
             Enrichment[Self.Dictionary[Key, Parameter.Value.Atom, *], *],
             Key,
             Parameter.Value.Atom
@@ -175,8 +174,8 @@ object Parameter:
           extends Parameter.Value.Object[A]
 
       object Record:
-        given EnrichedRecordSchema[Parameter.Value.Object.Record, Parameter.Value.Field] =
-          EnrichedRecordSchema[
+        given EnrichedRecordSchemaInvariant[Parameter.Value.Object.Record, Parameter.Value.Field] =
+          EnrichedRecordSchemaInvariant[
             Enrichment[Self.Record[Parameter.Value.Field, *], *],
             Parameter.Value.Field
           ].imapK(
@@ -190,15 +189,15 @@ object Parameter:
             extends Parameter.Value.Object.Atom[A]
 
         object Nullable:
-          given EnrichedNullableSchema[Parameter.Value.Object.Atom.Nullable, Parameter.Value.Object.Atom] =
-            EnrichedNullableSchema[
+          given EnrichedNullableSchemaInvariant[Parameter.Value.Object.Atom.Nullable, Parameter.Value.Object.Atom] =
+            EnrichedNullableSchemaInvariant[
               Enrichment[Self.Nullable[Parameter.Value.Object.Atom, *], *],
               Parameter.Value.Object.Atom
             ].imapK(
               [A] => (schema: Enrichment[Self.Nullable[Parameter.Value.Object.Atom, *], A]) => Nullable(schema)
             )([A] => (value: Parameter.Value.Object.Atom.Nullable[A]) => value.self)
 
-      given EnrichedSchema[Parameter.Value.Object] with
+      given EnrichedSchemaInvariant[Parameter.Value.Object] with
         override def imap[A, B](fa: Parameter.Value.Object[A])(f: A => B)(g: B => A): Parameter.Value.Object[B] =
           fa match
             case Dictionary(self) => Dictionary(self.mapF(_.imap(f)(g)))
@@ -216,8 +215,8 @@ object Parameter:
     final case class Field[A](self: Enrichment[Self.Field[Key, Parameter.Value.Object.Atom, *], A])
 
     object Field:
-      given EnrichedFieldSchema[Parameter.Value.Field, Key, Parameter.Value.Object.Atom] =
-        EnrichedFieldSchema[
+      given EnrichedFieldSchemaInvariant[Parameter.Value.Field, Key, Parameter.Value.Object.Atom] =
+        EnrichedFieldSchemaInvariant[
           Enrichment[Self.Field[Key, Parameter.Value.Object.Atom, *], *],
           Key,
           Parameter.Value.Object.Atom
@@ -225,7 +224,7 @@ object Parameter:
           [A] => (schema: Enrichment[Self.Field[Key, Parameter.Value.Object.Atom, *], A]) => Field(schema)
         )([A] => (value: Parameter.Value.Field[A]) => value.self)
 
-    given EnrichedSchema[Parameter.Value] with
+    given EnrichedSchemaInvariant[Parameter.Value] with
       override def imap[A, B](fa: Parameter.Value[A])(f: A => B)(g: B => A): Parameter.Value[B] = fa match
         case schema: Parameter.Value.Atom[A]   => schema.imap(f)(g)
         case schema: Parameter.Value.Array[A]  => schema.imap(f)(g)
@@ -245,7 +244,7 @@ object Parameter:
   enum Style:
     case Simple, Label, Matrix
 
-  given Schema[Parameter] with
+  given SchemaInvariant[Parameter] with
     override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] = fa.imap(f)(g)
 
   given [A]: Show[Parameter[A]] = Show.fromToString

@@ -9,11 +9,11 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptyVector
 import cats.implicits.*
 import io.taig.otter.Argument
-import io.taig.otter.schema.DictionarySchema
+import io.taig.otter.operation.DictionarySchemaInvariant
 
 import scala.collection.immutable.SortedMap
 
-trait DictionaryComponent[Self[_], -Key[_], -Value[_]](using self: DictionarySchema[Self, Key, Value]):
+trait DictionaryComponent[Self[_], -Key[_], -Value[_]](using self: DictionarySchemaInvariant[Self, Key, Value]):
   object dictionary:
     final def list[A, B](
         key: => Key[A],

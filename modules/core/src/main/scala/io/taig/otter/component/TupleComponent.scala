@@ -1,9 +1,9 @@
 package io.taig.otter.component
 import io.taig.otter.Merge
-import io.taig.otter.schema.TupleSchema
+import io.taig.otter.operation.TupleSchemaInvariant
 import scala.annotation.targetName
 
-trait TupleComponent[Self[_], -Value[_]](using self: TupleSchema[Self, Value]):
+trait TupleComponent[Self[_], -Value[_]](using self: TupleSchemaInvariant[Self, Value]):
   final def TNil: Self[Unit] = self.empty
 
   extension [A](self: Self[A])

@@ -1,14 +1,18 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import cats.syntax.all.*
 
-trait EnrichedCollectionSchema[Self[_], -Value[_]] extends CollectionSchema[Self, Value], EnrichedSchema[Self]:
+trait EnrichedCollectionSchemaInvariant[Self[_], -Value[_]]
+    extends CollectionSchemaInvariant[Self, Value],
+      EnrichedSchemaInvariant[Self]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): EnrichedCollectionSchema[T, Value] =
-    new EnrichedCollectionSchema[T, Value]:
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+      gK: [A] => T[A] => Self[A]
+  ): EnrichedCollectionSchemaInvariant[T, Value] =
+    new EnrichedCollectionSchemaInvariant[T, Value]:
       override def linked[A](
           schema: => Value[A],
           minimum: Option[Int],
@@ -32,18 +36,18 @@ trait EnrichedCollectionSchema[Self[_], -Value[_]] extends CollectionSchema[Self
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] =
         fK(self.imap(gK(ta))(f)(g))
 
-object EnrichedCollectionSchema:
+object EnrichedCollectionSchemaInvariant:
   inline def apply[Self[_], Value[_]](using
-      schema: EnrichedCollectionSchema[Self, Value]
-  ): EnrichedCollectionSchema[Self, Value] = schema
+      schema: EnrichedCollectionSchemaInvariant[Self, Value]
+  ): EnrichedCollectionSchemaInvariant[Self, Value] = schema
 
   given [Self[_], Value[_]](using
-      self: CollectionSchema[Self, Value],
-      enrichment: EnrichedSchema[Enrichment[Self, *]]
-  ): EnrichedCollectionSchema[Enrichment[Self, *], Value] =
-    val collection: CollectionSchema[Enrichment[Self, *], Value] =
+      self: CollectionSchemaInvariant[Self, Value],
+      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+  ): EnrichedCollectionSchemaInvariant[Enrichment[Self, *], Value] =
+    val collection: CollectionSchemaInvariant[Enrichment[Self, *], Value] =
       self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedCollectionSchema[Enrichment[Self, *], Value]:
+    new EnrichedCollectionSchemaInvariant[Enrichment[Self, *], Value]:
       export collection.{indexed, linked}
       export enrichment.{imap, metadata}

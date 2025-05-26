@@ -1,6 +1,6 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
-trait CollectionSchema[Self[_], -Value[_]] extends Schema[Self]:
+trait CollectionSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>
 
   def linked[A](schema: => Value[A], minimum: Option[Int], maximum: Option[Int], unique: Boolean): Self[List[A]]
@@ -9,7 +9,7 @@ trait CollectionSchema[Self[_], -Value[_]] extends Schema[Self]:
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): CollectionSchema[T, Value] = new CollectionSchema[T, Value]:
+  ): CollectionSchemaInvariant[T, Value] = new CollectionSchemaInvariant[T, Value]:
     override def linked[A](
         schema: => Value[A],
         minimum: Option[Int],
@@ -26,6 +26,8 @@ trait CollectionSchema[Self[_], -Value[_]] extends Schema[Self]:
 
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-object CollectionSchema:
-  inline def apply[Self[_], Value[_]](using self: CollectionSchema[Self, Value]): CollectionSchema[Self, Value] =
+object CollectionSchemaInvariant:
+  inline def apply[Self[_], Value[_]](using
+      self: CollectionSchemaInvariant[Self, Value]
+  ): CollectionSchemaInvariant[Self, Value] =
     self

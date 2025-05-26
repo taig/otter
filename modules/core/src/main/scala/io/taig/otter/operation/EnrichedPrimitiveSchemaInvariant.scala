@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -9,55 +9,52 @@ import io.taig.otter.Comparison
 import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
-trait EnrichedPrimitiveSchema[Self[_]]
-    extends PrimitiveSchema[Self],
-      EnrichedPrimitiveSchema.Boolean[Self],
-      EnrichedPrimitiveSchema.Number[Self],
-      EnrichedPrimitiveSchema.String[Self],
-      EnrichedSchema[Self]:
+trait EnrichedPrimitiveSchemaInvariant[Self[_]]
+    extends PrimitiveSchemaInvariant[Self],
+      EnrichedPrimitiveSchemaInvariant.Boolean[Self],
+      EnrichedPrimitiveSchemaInvariant.Number[Self],
+      EnrichedPrimitiveSchemaInvariant.String[Self],
+      EnrichedSchemaInvariant[Self]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): EnrichedPrimitiveSchema[T] =
-    new EnrichedPrimitiveSchema[T]:
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+      gK: [A] => T[A] => Self[A]
+  ): EnrichedPrimitiveSchemaInvariant[T] =
+    new EnrichedPrimitiveSchemaInvariant[T]:
       override def boolean: T[Boolean] = fK(self.boolean)
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
           multiple: Option[JBigDecimal]
-      ): T[JBigDecimal] =
-        fK(self.jBigDecimal(minimum, maximum, multiple))
+      ): T[JBigDecimal] = fK(self.jBigDecimal(minimum, maximum, multiple))
       override def jBigInteger(
           minimum: Option[Comparison[JBigInteger]],
           maximum: Option[Comparison[JBigInteger]],
           multiple: Option[JBigInteger]
-      ): T[JBigInteger] =
-        fK(self.jBigInteger(minimum, maximum, multiple))
+      ): T[JBigInteger] = fK(self.jBigInteger(minimum, maximum, multiple))
       override def double(
           minimum: Option[Comparison[Double]],
           maximum: Option[Comparison[Double]],
           multiple: Option[Double]
-      ): T[Double] =
-        fK(self.double(minimum, maximum, multiple))
+      ): T[Double] = fK(self.double(minimum, maximum, multiple))
       override def float(
           minimum: Option[Comparison[Float]],
           maximum: Option[Comparison[Float]],
           multiple: Option[Float]
-      ): T[Float] =
-        fK(self.float(minimum, maximum, multiple))
+      ): T[Float] = fK(self.float(minimum, maximum, multiple))
       override def int(
           minimum: Option[Comparison[Int]],
           maximum: Option[Comparison[Int]],
           multiple: Option[Int]
-      ): T[Int] =
-        fK(self.int(minimum, maximum, multiple))
+      ): T[Int] = fK(self.int(minimum, maximum, multiple))
       override def long(
           minimum: Option[Comparison[Long]],
           maximum: Option[Comparison[Long]],
           multiple: Option[Long]
-      ): T[Long] =
-        fK(self.long(minimum, maximum, multiple))
-      override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[String] =
-        fK(self.string(minimum, maximum, matches))
+      ): T[Long] = fK(self.long(minimum, maximum, multiple))
+      override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[String] = fK(
+        self.string(minimum, maximum, matches)
+      )
       override def parser[A](
           name: String,
           decode: String => Either[String, A],
@@ -65,8 +62,7 @@ trait EnrichedPrimitiveSchema[Self[_]]
           minimum: Option[Int],
           maximum: Option[Int],
           matches: Option[Pattern]
-      ): T[A] =
-        fK(self.parser(name, decode, encode, minimum, maximum, matches))
+      ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
       extension [A](ta: T[A])
         override def metadata: Metadata = self.metadata(gK(ta))
@@ -74,14 +70,14 @@ trait EnrichedPrimitiveSchema[Self[_]]
 
       override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
 
-object EnrichedPrimitiveSchema:
-  trait Boolean[Self[_]] extends PrimitiveSchema.Boolean[Self], EnrichedSchema[Self]:
+object EnrichedPrimitiveSchemaInvariant:
+  trait Boolean[Self[_]] extends PrimitiveSchemaInvariant.Boolean[Self], EnrichedSchemaInvariant[Self]:
     self =>
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): EnrichedPrimitiveSchema.Boolean[T] =
-      new EnrichedPrimitiveSchema.Boolean[T]:
+    ): EnrichedPrimitiveSchemaInvariant.Boolean[T] =
+      new EnrichedPrimitiveSchemaInvariant.Boolean[T]:
         override def boolean: T[SBoolean] = fK(self.boolean)
 
         extension [A](ta: T[A])
@@ -92,27 +88,27 @@ object EnrichedPrimitiveSchema:
 
   object Boolean:
     inline def apply[Self[_]](using
-        schema: EnrichedPrimitiveSchema.Boolean[Self]
-    ): EnrichedPrimitiveSchema.Boolean[Self] = schema
+        schema: EnrichedPrimitiveSchemaInvariant.Boolean[Self]
+    ): EnrichedPrimitiveSchemaInvariant.Boolean[Self] = schema
 
     given [Self[_]](using
-        self: PrimitiveSchema.Boolean[Self],
-        enrichment: EnrichedSchema[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchema.Boolean[Enrichment[Self, *]] =
-      val schema: PrimitiveSchema.Boolean[Enrichment[Self, *]] =
+        self: PrimitiveSchemaInvariant.Boolean[Self],
+        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+    ): EnrichedPrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]] =
+      val schema: PrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]] =
         self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchema.Boolean[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]]:
         export schema.boolean
         export enrichment.{imap, metadata}
 
-  trait Number[Self[_]] extends PrimitiveSchema.Number[Self], EnrichedSchema[Self]:
+  trait Number[Self[_]] extends PrimitiveSchemaInvariant.Number[Self], EnrichedSchemaInvariant[Self]:
     self =>
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): EnrichedPrimitiveSchema.Number[T] =
-      new EnrichedPrimitiveSchema.Number[T]:
+    ): EnrichedPrimitiveSchemaInvariant.Number[T] =
+      new EnrichedPrimitiveSchemaInvariant.Number[T]:
         override def jBigDecimal(
             minimum: Option[Comparison[JBigDecimal]],
             maximum: Option[Comparison[JBigDecimal]],
@@ -157,27 +153,27 @@ object EnrichedPrimitiveSchema:
 
   object Number:
     inline def apply[Self[_]](using
-        schema: EnrichedPrimitiveSchema.Number[Self]
-    ): EnrichedPrimitiveSchema.Number[Self] = schema
+        schema: EnrichedPrimitiveSchemaInvariant.Number[Self]
+    ): EnrichedPrimitiveSchemaInvariant.Number[Self] = schema
 
     given [Self[_]](using
-        self: PrimitiveSchema.Number[Self],
-        enrichment: EnrichedSchema[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchema.Number[Enrichment[Self, *]] =
-      val schema: PrimitiveSchema.Number[Enrichment[Self, *]] =
+        self: PrimitiveSchemaInvariant.Number[Self],
+        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+    ): EnrichedPrimitiveSchemaInvariant.Number[Enrichment[Self, *]] =
+      val schema: PrimitiveSchemaInvariant.Number[Enrichment[Self, *]] =
         self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchema.Number[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.Number[Enrichment[Self, *]]:
         export schema.{double, float, int, jBigDecimal, jBigInteger, long}
         export enrichment.{imap, metadata}
 
-  trait String[Self[_]] extends PrimitiveSchema.String[Self], EnrichedSchema[Self]:
+  trait String[Self[_]] extends PrimitiveSchemaInvariant.String[Self], EnrichedSchemaInvariant[Self]:
     self =>
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): EnrichedPrimitiveSchema.String[T] =
-      new EnrichedPrimitiveSchema.String[T]:
+    ): EnrichedPrimitiveSchemaInvariant.String[T] =
+      new EnrichedPrimitiveSchemaInvariant.String[T]:
         override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[JString] =
           fK(self.string(minimum, maximum, matches))
 
@@ -198,31 +194,31 @@ object EnrichedPrimitiveSchema:
 
   object String:
     inline def apply[Self[_]](using
-        schema: EnrichedPrimitiveSchema.String[Self]
-    ): EnrichedPrimitiveSchema.String[Self] = schema
+        schema: EnrichedPrimitiveSchemaInvariant.String[Self]
+    ): EnrichedPrimitiveSchemaInvariant.String[Self] = schema
 
     given [Self[_]](using
-        self: PrimitiveSchema.String[Self],
-        enrichment: EnrichedSchema[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchema.String[Enrichment[Self, *]] =
-      val schema: PrimitiveSchema.String[Enrichment[Self, *]] =
+        self: PrimitiveSchemaInvariant.String[Self],
+        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+    ): EnrichedPrimitiveSchemaInvariant.String[Enrichment[Self, *]] =
+      val schema: PrimitiveSchemaInvariant.String[Enrichment[Self, *]] =
         self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchema.String[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.String[Enrichment[Self, *]]:
         export schema.{parser, string}
         export enrichment.{imap, metadata}
 
   inline def apply[Self[_]](using
-      schema: EnrichedPrimitiveSchema[Self]
-  ): EnrichedPrimitiveSchema[Self] = schema
+      schema: EnrichedPrimitiveSchemaInvariant[Self]
+  ): EnrichedPrimitiveSchemaInvariant[Self] = schema
 
   given [Self[_]](using
-      self: PrimitiveSchema[Self],
-      enrichment: EnrichedSchema[Enrichment[Self, *]]
-  ): EnrichedPrimitiveSchema[Enrichment[Self, *]] =
-    val primitive: PrimitiveSchema[Enrichment[Self, *]] =
+      self: PrimitiveSchemaInvariant[Self],
+      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+  ): EnrichedPrimitiveSchemaInvariant[Enrichment[Self, *]] =
+    val primitive: PrimitiveSchemaInvariant[Enrichment[Self, *]] =
       self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedPrimitiveSchema[Enrichment[Self, *]]:
+    new EnrichedPrimitiveSchemaInvariant[Enrichment[Self, *]]:
       export primitive.{boolean, double, float, int, jBigDecimal, jBigInteger, long, parser, string}
       export enrichment.{imap, metadata}

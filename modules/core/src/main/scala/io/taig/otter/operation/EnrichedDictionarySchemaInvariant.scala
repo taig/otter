@@ -1,18 +1,18 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 import cats.syntax.all.*
 
-trait EnrichedDictionarySchema[Self[_], -Key[_], -Value[_]]
-    extends DictionarySchema[Self, Key, Value],
-      EnrichedSchema[Self]:
+trait EnrichedDictionarySchemaInvariant[Self[_], -Key[_], -Value[_]]
+    extends DictionarySchemaInvariant[Self, Key, Value],
+      EnrichedSchemaInvariant[Self]:
   self =>
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): EnrichedDictionarySchema[T, Key, Value] =
-    new EnrichedDictionarySchema[T, Key, Value]:
+  ): EnrichedDictionarySchemaInvariant[T, Key, Value] =
+    new EnrichedDictionarySchemaInvariant[T, Key, Value]:
 
       override def apply[A, B](
           key: => Key[A],
@@ -28,18 +28,18 @@ trait EnrichedDictionarySchema[Self[_], -Key[_], -Value[_]]
 
       override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
 
-object EnrichedDictionarySchema:
+object EnrichedDictionarySchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using
-      schema: EnrichedDictionarySchema[Self, Key, Value]
-  ): EnrichedDictionarySchema[Self, Key, Value] = schema
+      schema: EnrichedDictionarySchemaInvariant[Self, Key, Value]
+  ): EnrichedDictionarySchemaInvariant[Self, Key, Value] = schema
 
   given [Self[_], Key[_], Value[_]](using
-      self: DictionarySchema[Self, Key, Value],
-      enrichment: EnrichedSchema[Enrichment[Self, *]]
-  ): EnrichedDictionarySchema[Enrichment[Self, *], Key, Value] =
-    val dictionary: DictionarySchema[Enrichment[Self, *], Key, Value] =
+      self: DictionarySchemaInvariant[Self, Key, Value],
+      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
+  ): EnrichedDictionarySchemaInvariant[Enrichment[Self, *], Key, Value] =
+    val dictionary: DictionarySchemaInvariant[Enrichment[Self, *], Key, Value] =
       self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedDictionarySchema[Enrichment[Self, *], Key, Value]:
+    new EnrichedDictionarySchemaInvariant[Enrichment[Self, *], Key, Value]:
       export dictionary.apply
       export enrichment.{imap, metadata}

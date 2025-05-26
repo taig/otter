@@ -1,6 +1,6 @@
 package io.taig.otter.component
 
-import io.taig.otter.schema.FieldSchema
+import io.taig.otter.operation.FieldSchemaInvariant
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -11,7 +11,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using self: FieldSchema[Self, Key, Value]):
+trait FieldComponent[Self[_], Key[_], Value[_], Record[_]](using self: FieldSchemaInvariant[Self, Key, Value]):
   def field[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B] = self(name, key, value)
 
 object FieldComponent:

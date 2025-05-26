@@ -1,7 +1,7 @@
 package io.taig.otter.component
 
 import cats.Eq
-import io.taig.otter.schema.ConstantSchema
+import io.taig.otter.operation.ConstantSchemaInvariant
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -13,7 +13,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait ConstantComponent[Self[_], -Value[_]](using self: ConstantSchema[Self, Value]):
+trait ConstantComponent[Self[_], -Value[_]](using self: ConstantSchemaInvariant[Self, Value]):
   final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self(schema, value)
 
 object ConstantComponent:

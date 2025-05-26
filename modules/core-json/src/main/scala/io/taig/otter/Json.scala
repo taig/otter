@@ -1,7 +1,19 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import io.taig.otter.schema.*
+import operation.{
+  EnrichedCollectionSchemaInvariant,
+  EnrichedConstantSchemaInvariant,
+  EnrichedDictionarySchemaInvariant,
+  EnrichedEnumerationSchemaInvariant,
+  EnrichedFieldSchemaInvariant,
+  EnrichedNullableSchemaInvariant,
+  EnrichedPrimitiveSchemaInvariant,
+  EnrichedRecordSchemaInvariant,
+  EnrichedSchemaInvariant,
+  EnrichedTupleSchemaInvariant,
+  EnrichedUnionSchemaInvariant
+}
 
 sealed abstract class Json[A] extends Product with Serializable
 
@@ -9,84 +21,84 @@ object Json:
   final case class Collection[A](self: Enrichment[Self.Collection[Json, *], A]) extends Json[A]
 
   object Collection:
-    given EnrichedCollectionSchema[Json.Collection, Json] =
-      EnrichedCollectionSchema[Enrichment[Self.Collection[Json, *], *], Json].imapK[Json.Collection](
+    given EnrichedCollectionSchemaInvariant[Json.Collection, Json] =
+      EnrichedCollectionSchemaInvariant[Enrichment[Self.Collection[Json, *], *], Json].imapK[Json.Collection](
         [A] => (schema: Enrichment[Self.Collection[Json, *], A]) => Collection(schema)
       )([A] => (json: Json.Collection[A]) => json.self)
 
   final case class Constant[A](self: Enrichment[Self.Constant[Json, *], A]) extends Json[A]
 
   object Constant:
-    given EnrichedConstantSchema[Json.Constant, Json] =
-      EnrichedConstantSchema[Enrichment[Self.Constant[Json, *], *], Json].imapK(
+    given EnrichedConstantSchemaInvariant[Json.Constant, Json] =
+      EnrichedConstantSchemaInvariant[Enrichment[Self.Constant[Json, *], *], Json].imapK(
         [A] => (schema: Enrichment[Self.Constant[Json, *], A]) => Constant(schema)
       )([A] => (json: Json.Constant[A]) => json.self)
 
   final case class Dictionary[A](self: Enrichment[Self.Dictionary[Key, Json, *], A]) extends Json[A]
 
   object Dictionary:
-    given EnrichedDictionarySchema[Json.Dictionary, Key, Json] =
-      EnrichedDictionarySchema[Enrichment[Self.Dictionary[Key, Json, *], *], Key, Json].imapK(
+    given EnrichedDictionarySchemaInvariant[Json.Dictionary, Key, Json] =
+      EnrichedDictionarySchemaInvariant[Enrichment[Self.Dictionary[Key, Json, *], *], Key, Json].imapK(
         [A] => (schema: Enrichment[Self.Dictionary[Key, Json, *], A]) => Dictionary(schema)
       )([A] => (json: Json.Dictionary[A]) => json.self)
 
   final case class Enumeration[A](self: Enrichment[Self.Enumeration[Json.Primitive, *], A]) extends Json[A]
 
   object Enumeration:
-    given EnrichedEnumerationSchema[Json.Enumeration, Json.Primitive] =
-      EnrichedEnumerationSchema[Enrichment[Self.Enumeration[Json.Primitive, *], *], Json.Primitive].imapK(
+    given EnrichedEnumerationSchemaInvariant[Json.Enumeration, Json.Primitive] =
+      EnrichedEnumerationSchemaInvariant[Enrichment[Self.Enumeration[Json.Primitive, *], *], Json.Primitive].imapK(
         [A] => (schema: Enrichment[Self.Enumeration[Json.Primitive, *], A]) => Enumeration(schema)
       )([A] => (json: Json.Enumeration[A]) => json.self)
 
   final case class Nullable[A](self: Enrichment[Self.Nullable[Json, *], A]) extends Json[A]
 
   object Nullable:
-    given EnrichedNullableSchema[Json.Nullable, Json] =
-      EnrichedNullableSchema[Enrichment[Self.Nullable[Json, *], *], Json].imapK(
+    given EnrichedNullableSchemaInvariant[Json.Nullable, Json] =
+      EnrichedNullableSchemaInvariant[Enrichment[Self.Nullable[Json, *], *], Json].imapK(
         [A] => (schema: Enrichment[Self.Nullable[Json, *], A]) => Nullable(schema)
       )([A] => (json: Json.Nullable[A]) => json.self)
 
   final case class Primitive[A](self: Enrichment[Self.Primitive, A]) extends Json[A]
 
   object Primitive:
-    given EnrichedPrimitiveSchema[Json.Primitive] =
-      EnrichedPrimitiveSchema[Enrichment[Self.Primitive, *]].imapK(
+    given EnrichedPrimitiveSchemaInvariant[Json.Primitive] =
+      EnrichedPrimitiveSchemaInvariant[Enrichment[Self.Primitive, *]].imapK(
         [A] => (schema: Enrichment[Self.Primitive, A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 
   final case class Record[A](self: Enrichment[Self.Record[Json.Field, *], A]) extends Json[A]
 
   object Record:
-    given EnrichedRecordSchema[Json.Record, Json.Field] =
-      EnrichedRecordSchema[Enrichment[Self.Record[Json.Field, *], *], Json.Field].imapK(
+    given EnrichedRecordSchemaInvariant[Json.Record, Json.Field] =
+      EnrichedRecordSchemaInvariant[Enrichment[Self.Record[Json.Field, *], *], Json.Field].imapK(
         [A] => (schema: Enrichment[Self.Record[Json.Field, *], A]) => Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
   final case class Tuple[A](self: Enrichment[Self.Tuple[Json, *], A]) extends Json[A]
 
   object Tuple:
-    given EnrichedTupleSchema[Json.Tuple, Json] =
-      EnrichedTupleSchema[Enrichment[Self.Tuple[Json, *], *], Json].imapK(
+    given EnrichedTupleSchemaInvariant[Json.Tuple, Json] =
+      EnrichedTupleSchemaInvariant[Enrichment[Self.Tuple[Json, *], *], Json].imapK(
         [A] => (schema: Enrichment[Self.Tuple[Json, *], A]) => Tuple(schema)
       )([A] => (json: Json.Tuple[A]) => json.self)
 
   final case class Union[A](self: Enrichment[Self.Union[Json, *], A]) extends Json[A]
 
   object Union:
-    given EnrichedUnionSchema[Json.Union, Json] =
-      EnrichedUnionSchema[Enrichment[Self.Union[Json, *], *], Json].imapK(
+    given EnrichedUnionSchemaInvariant[Json.Union, Json] =
+      EnrichedUnionSchemaInvariant[Enrichment[Self.Union[Json, *], *], Json].imapK(
         [A] => (schema: Enrichment[Self.Union[Json, *], A]) => Union(schema)
       )([A] => (json: Json.Union[A]) => json.self)
 
   final case class Field[A](self: Enrichment[Self.Field[Key, Json, *], A])
 
   object Field:
-    given EnrichedFieldSchema[Json.Field, Key, Json] =
-      EnrichedFieldSchema[Enrichment[Self.Field[Key, Json, *], *], Key, Json].imapK(
+    given EnrichedFieldSchemaInvariant[Json.Field, Key, Json] =
+      EnrichedFieldSchemaInvariant[Enrichment[Self.Field[Key, Json, *], *], Key, Json].imapK(
         [A] => (schema: Enrichment[Self.Field[Key, Json, *], A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
 
-  given EnrichedSchema[Json] with
+  given EnrichedSchemaInvariant[Json] with
     extension [A](self: Json[A])
       override def metadata: Metadata = self match
         case Collection(schema)  => schema.metadata

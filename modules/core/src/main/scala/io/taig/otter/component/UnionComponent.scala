@@ -1,10 +1,10 @@
 package io.taig.otter.component
 
-import io.taig.otter.schema.UnionSchema
+import io.taig.otter.operation.UnionSchemaInvariant
 
 import scala.annotation.targetName
 
-trait UnionComponent[Self[_], Value[_]](using self: UnionSchema[Self, Value]):
+trait UnionComponent[Self[_], Value[_]](using self: UnionSchemaInvariant[Self, Value]):
   extension [A](self: Self[A])
     @targetName("union :+ schema")
     final def :+[B](schema: Value[B]): Self[Either[A, B]] = self.orElse(schema.toUnion)

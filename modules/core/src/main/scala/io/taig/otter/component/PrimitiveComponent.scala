@@ -3,7 +3,7 @@ package io.taig.otter.component
 import cats.syntax.all.*
 import io.taig.otter.Argument
 import io.taig.otter.Comparison
-import io.taig.otter.schema.PrimitiveSchema
+import io.taig.otter.operation.PrimitiveSchemaInvariant
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -24,10 +24,10 @@ trait PrimitiveComponent[+Self[_]]
       PrimitiveComponent.String[Self]
 
 object PrimitiveComponent:
-  trait Boolean[+Self[_]](using self: PrimitiveSchema.Boolean[Self]):
+  trait Boolean[+Self[_]](using self: PrimitiveSchemaInvariant.Boolean[Self]):
     final val boolean: Self[SBoolean] = self.boolean
 
-  trait Number[+Self[_]](using self: PrimitiveSchema.Number[Self]):
+  trait Number[+Self[_]](using self: PrimitiveSchemaInvariant.Number[Self]):
     final def jBigDecimal(
         minimum: Argument[Comparison[JBigDecimal]] = Argument.Default,
         maximum: Argument[Comparison[JBigDecimal]] = Argument.Default,
@@ -124,7 +124,7 @@ object PrimitiveComponent:
 
     final val long: Self[SLong] = long()
 
-  trait String[+Self[_]](using self: PrimitiveSchema.String[Self]):
+  trait String[+Self[_]](using self: PrimitiveSchemaInvariant.String[Self]):
     final def string(
         minimum: Argument[SInt] = Argument.Default,
         maximum: Argument[SInt] = Argument.Default,

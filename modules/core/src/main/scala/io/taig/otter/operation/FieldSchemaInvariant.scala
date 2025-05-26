@@ -1,8 +1,8 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import io.taig.otter.Reference
 
-trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
+trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
 
   def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Self[B]
@@ -20,7 +20,7 @@ trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): FieldSchema[T, Key, Value] = new FieldSchema[T, Key, Value]:
+  ): FieldSchemaInvariant[T, Key, Value] = new FieldSchemaInvariant[T, Key, Value]:
 
     override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
       fK(self.apply(name, key, value))
@@ -35,7 +35,7 @@ trait FieldSchema[Self[_], Key[_], Value[_]] extends Schema[Self]:
       override def nullish(f: Boolean => Boolean): T[A] = fK(self.nullish(gK(ta))(f))
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
 
-object FieldSchema:
+object FieldSchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using
-      self: FieldSchema[Self, Key, Value]
-  ): FieldSchema[Self, Key, Value] = self
+      self: FieldSchemaInvariant[Self, Key, Value]
+  ): FieldSchemaInvariant[Self, Key, Value] = self

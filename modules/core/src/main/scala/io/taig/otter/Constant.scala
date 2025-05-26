@@ -2,7 +2,7 @@ package io.taig.otter
 
 import cats.Eq
 import cats.syntax.all.*
-import io.taig.otter.schema.ConstantSchema
+import io.taig.otter.operation.ConstantSchemaInvariant
 
 sealed abstract class Constant[+S[_], A] extends Product with Serializable:
   def schema: Reference.Constant[S, ?]
@@ -22,7 +22,7 @@ object Constant:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, Unit] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  given [Value[_]]: ConstantSchema[Constant[Value, *], Value] with
+  given [Value[_]]: ConstantSchemaInvariant[Constant[Value, *], Value] with
     override def apply[A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, Unit] =
       Root(schema = Reference.Constant(self = Reference.later(schema), value), eq)
 

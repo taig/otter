@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
-final case class Endpoint[+S[_], A, B](request: Request[S, A], response: Response[S, B]):
-  def modifyRequest[S1[a] >: S[a], C](f: Request[S1, A] => Request[S1, C]): Endpoint[S1, C, B] =
-    copy(request = f(request))
+import io.taig.otter.Reference
 
-  def modifyResponse[S1[a] >: S[a], C](f: Response[S1, B] => Response[S1, C]): Endpoint[S1, A, C] =
-    copy(response = f(response))
+final case class Endpoint[+S[_], +T[_], A, B](request: Reference[S, A], response: Reference[T, B]):
+  def modifyRequest[S1[a] >: S[a], C](f: S1[A] => S1[C]): Endpoint[S1, T, C, B] =
+    copy(request = request.mapF(f))
 
-object Endpoint
+  def modifyResponse[T1[a] >: T[a], C](f: T1[B] => T1[C]): Endpoint[S, T1, A, C] =
+    copy(response = response.mapF(f))

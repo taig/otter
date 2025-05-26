@@ -1,5 +1,6 @@
 package io.taig.otter
-import io.taig.otter.schema.FieldSchema
+
+import io.taig.otter.operation.FieldSchemaInvariant
 
 sealed abstract class Field[+S[_], +T[_], A] extends Product with Serializable:
   def key: Reference.Constant[S, ?]
@@ -42,7 +43,7 @@ object Field:
     override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Field[S, U, B] =
       copy(value = value.mapK[T1, U](fK))
 
-  given [Key[_], Value[_]]: FieldSchema[Field[Key, Value, *], Key, Value] with
+  given [Key[_], Value[_]]: FieldSchemaInvariant[Field[Key, Value, *], Key, Value] with
     override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): Field[Key, Value, B] = Root(
       key = Reference.Constant(self = Reference.later(key), value = name),
       value = Reference.later(value),

@@ -1,6 +1,6 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.schema.CollectionSchema
+import io.taig.otter.operation.CollectionSchemaInvariant
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   def constraints: Vector[Constraint.Collection]
@@ -48,7 +48,7 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  given [Value[_]]: CollectionSchema[Collection[Value, *], Value] with
+  given [Value[_]]: CollectionSchemaInvariant[Collection[Value, *], Value] with
     override def linked[A](
         schema: => Value[A],
         minimum: Option[Int],

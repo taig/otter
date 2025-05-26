@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import io.taig.otter.Comparison
 
@@ -8,14 +8,14 @@ import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 
-trait PrimitiveSchema[Self[_]]
-    extends PrimitiveSchema.Boolean[Self],
-      PrimitiveSchema.Number[Self],
-      PrimitiveSchema.String[Self]:
+trait PrimitiveSchemaInvariant[Self[_]]
+    extends PrimitiveSchemaInvariant.Boolean[Self],
+      PrimitiveSchemaInvariant.Number[Self],
+      PrimitiveSchemaInvariant.String[Self]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema[T] =
-    new PrimitiveSchema[T]:
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchemaInvariant[T] =
+    new PrimitiveSchemaInvariant[T]:
       override def boolean: T[Boolean] = fK(self.boolean)
 
       override def jBigDecimal(
@@ -68,22 +68,24 @@ trait PrimitiveSchema[Self[_]]
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-object PrimitiveSchema:
-  trait Boolean[Self[_]] extends Schema[Self]:
+object PrimitiveSchemaInvariant:
+  trait Boolean[Self[_]] extends SchemaInvariant[Self]:
     self =>
 
     def boolean: Self[SBoolean]
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchema.Boolean[T] = new Boolean[T]:
+    ): PrimitiveSchemaInvariant.Boolean[T] = new Boolean[T]:
       override def boolean: T[SBoolean] = fK(self.boolean)
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   object Boolean:
-    inline def apply[Self[_]](using self: PrimitiveSchema.Boolean[Self]): PrimitiveSchema.Boolean[Self] = self
+    inline def apply[Self[_]](using
+        self: PrimitiveSchemaInvariant.Boolean[Self]
+    ): PrimitiveSchemaInvariant.Boolean[Self] = self
 
-  trait Number[Self[_]] extends Schema[Self]:
+  trait Number[Self[_]] extends SchemaInvariant[Self]:
     self =>
 
     def jBigDecimal(
@@ -124,7 +126,7 @@ object PrimitiveSchema:
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchema.Number[T] = new Number[T]:
+    ): PrimitiveSchemaInvariant.Number[T] = new Number[T]:
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -164,12 +166,16 @@ object PrimitiveSchema:
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
   object Number:
-    inline def apply[Self[_]](using self: PrimitiveSchema.Number[Self]): PrimitiveSchema.Number[Self] = self
+    inline def apply[Self[_]](using
+        self: PrimitiveSchemaInvariant.Number[Self]
+    ): PrimitiveSchemaInvariant.Number[Self] = self
 
-  trait String[Self[_]] extends Schema[Self]:
+  trait String[Self[_]] extends SchemaInvariant[Self]:
     self =>
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchema.String[T] =
+    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+        gK: [A] => T[A] => Self[A]
+    ): PrimitiveSchemaInvariant.String[T] =
       new String[T]:
         override def string(
             minimum: Option[Int],
@@ -200,6 +206,8 @@ object PrimitiveSchema:
     ): Self[A]
 
   object String:
-    inline def apply[Self[_]](using self: PrimitiveSchema.String[Self]): PrimitiveSchema.String[Self] = self
+    inline def apply[Self[_]](using
+        self: PrimitiveSchemaInvariant.String[Self]
+    ): PrimitiveSchemaInvariant.String[Self] = self
 
-  inline def apply[Self[_]](using self: PrimitiveSchema[Self]): PrimitiveSchema[Self] = self
+  inline def apply[Self[_]](using self: PrimitiveSchemaInvariant[Self]): PrimitiveSchemaInvariant[Self] = self

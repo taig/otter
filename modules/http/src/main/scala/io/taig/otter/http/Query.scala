@@ -2,7 +2,7 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.*
-import io.taig.otter.schema.*
+import io.taig.otter.operation.*
 import io.taig.otter as Self
 
 sealed abstract class Query[A]:
@@ -64,8 +64,8 @@ object Query:
       final case class Constant[A](self: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) extends Atom[A]
 
       object Constant:
-        given EnrichedConstantSchema[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
-          EnrichedConstantSchema[Enrichment[
+        given EnrichedConstantSchemaInvariant[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
+          EnrichedConstantSchemaInvariant[Enrichment[
             Self.Constant[Query.Value.Atom.Primitive, *],
             *
           ], Query.Value.Atom.Primitive]
@@ -77,8 +77,8 @@ object Query:
           extends Atom[A]
 
       object Enumeration:
-        given EnrichedEnumerationSchema[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
-          EnrichedEnumerationSchema[Enrichment[
+        given EnrichedEnumerationSchemaInvariant[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
+          EnrichedEnumerationSchemaInvariant[Enrichment[
             Self.Enumeration[Query.Value.Atom.Primitive, *],
             *
           ], Query.Value.Atom.Primitive]
@@ -89,8 +89,8 @@ object Query:
       final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Atom[A]
 
       object Primitive:
-        given EnrichedPrimitiveSchema.String[Query.Value.Atom.Primitive] =
-          EnrichedPrimitiveSchema
+        given EnrichedPrimitiveSchemaInvariant.String[Query.Value.Atom.Primitive] =
+          EnrichedPrimitiveSchemaInvariant
             .String[Enrichment[Self.Primitive.String, *]]
             .imapK(
               [A] => (schema: Enrichment[Self.Primitive.String, A]) => Primitive(schema)
@@ -99,13 +99,13 @@ object Query:
       final case class Union[A](self: Enrichment[Self.Union[Query.Value.Atom, *], A]) extends Atom[A]
 
       object Union:
-        given EnrichedUnionSchema[Query.Value.Atom.Union, Query.Value.Atom] =
-          EnrichedUnionSchema[Enrichment[Self.Union[Query.Value.Atom, *], *], Query.Value.Atom]
+        given EnrichedUnionSchemaInvariant[Query.Value.Atom.Union, Query.Value.Atom] =
+          EnrichedUnionSchemaInvariant[Enrichment[Self.Union[Query.Value.Atom, *], *], Query.Value.Atom]
             .imapK(
               [A] => (schema: Enrichment[Self.Union[Query.Value.Atom, *], A]) => Union(schema)
             )([A] => (value: Query.Value.Atom.Union[A]) => value.self)
 
-      given EnrichedSchema[Query.Value.Atom] with
+      given EnrichedSchemaInvariant[Query.Value.Atom] with
         override def imap[A, B](fa: Query.Value.Atom[A])(f: A => B)(g: B => A): Query.Value.Atom[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
@@ -132,8 +132,8 @@ object Query:
           extends Query.Value.Array[A]
 
       object Collection:
-        given EnrichedCollectionSchema[Query.Value.Array.Collection, Query.Value.Atom] =
-          EnrichedCollectionSchema[Enrichment[Self.Collection[Query.Value.Atom, *], *], Query.Value.Atom]
+        given EnrichedCollectionSchemaInvariant[Query.Value.Array.Collection, Query.Value.Atom] =
+          EnrichedCollectionSchemaInvariant[Enrichment[Self.Collection[Query.Value.Atom, *], *], Query.Value.Atom]
             .imapK(
               [A] => (schema: Enrichment[Self.Collection[Query.Value.Atom, *], A]) => Collection(schema)
             )([A] => (value: Query.Value.Array.Collection[A]) => value.self)
@@ -141,9 +141,9 @@ object Query:
       final case class Tuple[A](self: Enrichment[Self.Tuple[Query.Value.Atom, *], A]) extends Query.Value.Array[A]
 
       object Tuple:
-        given EnrichedTupleSchema[Query.Value.Array.Tuple, Query.Value.Atom] = ???
+        given EnrichedTupleSchemaInvariant[Query.Value.Array.Tuple, Query.Value.Atom] = ???
 
-      given EnrichedSchema[Query.Value.Array] with
+      given EnrichedSchemaInvariant[Query.Value.Array] with
         override def imap[A, B](fa: Query.Value.Array[A])(f: A => B)(g: B => A): Query.Value.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
@@ -160,7 +160,7 @@ object Query:
     final case class Nullable[A](self: Enrichment[Self.Nullable[Query.Value, *], A]) extends Query.Value[A]
 
     object Nullable:
-      given EnrichedNullableSchema[Query.Value.Nullable, Query.Value] = ???
+      given EnrichedNullableSchemaInvariant[Query.Value.Nullable, Query.Value] = ???
 
   enum Style:
     case Form
@@ -169,5 +169,5 @@ object Query:
 
   type Data = (String, Option[String])
 
-  given Schema[Query] with
+  given SchemaInvariant[Query] with
     override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)

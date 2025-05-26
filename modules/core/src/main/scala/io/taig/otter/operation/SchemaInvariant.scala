@@ -1,4 +1,4 @@
-package io.taig.otter.schema
+package io.taig.otter.operation
 
 import cats.Invariant
 import cats.syntax.all.*
@@ -8,7 +8,7 @@ import io.taig.otter.Merge
 import scala.annotation.targetName
 import scala.compiletime.*
 
-trait Schema[Self[_]] extends Invariant[Self]:
+trait SchemaInvariant[Self[_]] extends Invariant[Self]:
   self =>
 
   final protected given Invariant[Self] = this
@@ -30,8 +30,8 @@ trait Schema[Self[_]] extends Invariant[Self]:
     @targetName("asSingleton")
     final def as[A <: Singleton](a: A): Self[A] = self.imap(_ => a)(_ => ())
 
-  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): Schema[T] = new Schema[T]:
+  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): SchemaInvariant[T] = new SchemaInvariant[T]:
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-object Schema:
-  inline def apply[Self[_]](using schema: Schema[Self]): Schema[Self] = schema
+object SchemaInvariant:
+  inline def apply[Self[_]](using schema: SchemaInvariant[Self]): SchemaInvariant[Self] = schema

@@ -1,7 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.schema.PrimitiveSchema
+import io.taig.otter.operation.PrimitiveSchemaInvariant
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -28,7 +28,7 @@ object Primitive:
 
     private[otter] case object Root extends Primitive.Boolean[SBoolean]
 
-    given schema: PrimitiveSchema.Boolean[Primitive.Boolean] with
+    given schema: PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] with
       override def boolean: Boolean[SBoolean] = Root
 
       override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] = fa.imap(f)(g)
@@ -80,7 +80,7 @@ object Primitive:
         g: B => A
     ) extends Primitive.Number[B]
 
-    given schema: PrimitiveSchema.Number[Primitive.Number] with
+    given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] with
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -145,7 +145,7 @@ object Primitive:
         g: B => A
     ) extends Primitive.String[B]
 
-    given schema: PrimitiveSchema.String[Primitive.String] with
+    given schema: PrimitiveSchemaInvariant.String[Primitive.String] with
       override def string(
           minimum: Option[SInt],
           maximum: Option[SInt],
@@ -163,7 +163,7 @@ object Primitive:
 
       override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] = fa.imap(f)(g)
 
-  given PrimitiveSchema[Primitive] with
+  given PrimitiveSchemaInvariant[Primitive] with
     export Primitive.Boolean.schema.boolean
     export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
     export Primitive.String.schema.{parser, string}

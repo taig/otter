@@ -1,7 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.schema.NullableSchema
+import io.taig.otter.operation.NullableSchemaInvariant
 
 sealed abstract class Nullable[+S[_], A] extends Product with Serializable:
   def schema: Option[Reference[S, ?]]
@@ -28,7 +28,7 @@ object Nullable:
     override def schema: Option[Reference[Nothing, ?]] = none
     override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Nullable[T, Unit] = this
 
-  given [Value[_]]: NullableSchema[Nullable[Value, *], Value] with
+  given [Value[_]]: NullableSchemaInvariant[Nullable[Value, *], Value] with
     override def apply[A](schema: => Value[A]): Nullable[Value, Option[A]] =
       Root(reference = Reference.later(schema))
     override def apply[A](schema: => Value[A], default: A): Nullable[Value, A] =
