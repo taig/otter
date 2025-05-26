@@ -18,13 +18,7 @@ sealed abstract class Body[+S[_], A] extends Product with Serializable:
 
   final def matches(contentType: MediaType): Boolean = mediaType === contentType
 
-  final def orElse[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] = toBodies.orElse(body.toBodies)
-
-  final def or[T[_]](body: Body[T, A]): Bodies[S + T, A] = toBodies.or(body.toBodies)
-
   final def imap[B](f: A => B)(g: B => A): Body[S, B] = Body.Modify(self = this, f, g)
-
-  final def toBodies: Bodies[S, A] = Bodies.Root(body = this)
 
 object Body:
   final private[otter] case class Modify[S[_], A, B](self: Body[S, A], f: A => B, g: B => A) extends Body[S, B]:
@@ -32,13 +26,4 @@ object Body:
 
   final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A]) extends Body[S, A]
 
-  given BodySchema[Body] with
-    override def algebra[S[_]]: Schema[Body[S, *]] = new Schema[Body[S, *]]:
-      override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.imap(f)(g)
-
-    override def apply[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =
-      Body.Root(mediaType, schema = Reference.later(schema))
-
-    extension [S[_], A](self: Body[S, A])
-      override def mediaType: MediaType = self.mediaType
-      override def schema: Reference[S, ?] = self.schema
+  given BodySchema[Body] = ???

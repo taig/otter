@@ -2,8 +2,6 @@ package io.taig.otter.http
 
 import io.taig.otter.Violations
 import io.taig.otter.http.HttpExport.*
-import io.taig.otter.http.schema.ResponseSchema
-import io.taig.otter.schema.Schema
 
 final case class Response[+S[_], A](
     results: Results[S, A],

@@ -4,11 +4,8 @@ import io.taig.otter.Enrichment
 import io.taig.otter.schema.EnrichedSchema
 import io.taig.otter.Reference
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.Metadata
-import cats.syntax.all.*
 
-trait EnrichedBodySchema[Self[+_[_], _]] extends BodySchema[Self], EnrichedSchemaK[Self]:
-  override def algebra[S[_]]: EnrichedSchema[Self[S, *]]
+trait EnrichedBodySchema[Self[+_[_], _]] extends BodySchema[Self], EnrichedSchemaK[Self]
 
 object EnrichedBodySchema:
   inline def apply[Self[+_[_], _]](using schema: EnrichedBodySchema[Self]): EnrichedBodySchema[Self] = schema
