@@ -6,10 +6,10 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.TupleEncoder
 import io.taig.otter.http.Parameter
 
-object ParameterValueArrayEncoder extends Encoder[Parameter.Value.Array, Chain[String]]:
+object ParameterValueArrayEncoder extends Encoder[Parameter.Schema.Array, Chain[String]]:
   val collection = CollectionEncoder(encoder = ParameterValueAtomPrinter)
   val tuple = TupleEncoder(encoder = ParameterValueAtomPrinter)
 
-  override def encode[A](schema: Parameter.Value.Array[A], a: A): Chain[String] = schema match
-    case Parameter.Value.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
-    case Parameter.Value.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))
+  override def encode[A](schema: Parameter.Schema.Array[A], a: A): Chain[String] = schema match
+    case Parameter.Schema.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
+    case Parameter.Schema.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))

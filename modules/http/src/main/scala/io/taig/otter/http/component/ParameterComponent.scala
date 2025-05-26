@@ -5,18 +5,18 @@ import io.taig.otter.component.*
 import io.taig.otter.http.Parameter
 
 trait ParameterComponent
-    extends CollectionComponent[Parameter.Value.Array.Collection, Parameter.Value.Atom],
-      ConstantComponent[Parameter.Value.Atom.Constant, Parameter.Value.Atom.Primitive],
-      DictionaryComponent[Parameter.Value.Object.Dictionary, Key, Parameter.Value.Atom],
-      EnumerationComponent[Parameter.Value.Atom.Enumeration, Parameter.Value.Atom.Primitive],
-      PrimitiveComponent.String[Parameter.Value.Atom.Primitive],
+    extends CollectionComponent[Parameter.Schema.Array.Collection, Parameter.Schema.Atom],
+      ConstantComponent[Parameter.Schema.Atom.Constant, Parameter.Schema.Atom.Primitive],
+      DictionaryComponent[Parameter.Schema.Object.Dictionary, Key, Parameter.Schema.Atom],
+      EnumerationComponent[Parameter.Schema.Atom.Enumeration, Parameter.Schema.Atom.Primitive],
+      PrimitiveComponent.String[Parameter.Schema.Atom.Primitive],
       FieldComponent.Primitive.String[
-        Parameter.Value.Field,
+        Parameter.Schema.Field,
         Key,
-        Parameter.Value.Object.Atom,
-        Parameter.Value.Object.Record
+        Parameter.Schema.Object.Atom,
+        Parameter.Schema.Object.Record
       ],
-      TupleComponent[Parameter.Value.Array.Tuple, Parameter.Value.Atom]:
+      TupleComponent[Parameter.Schema.Array.Tuple, Parameter.Schema.Atom]:
   override def key: KeyComponent = KeyComponent
 
 object ParameterComponent extends ParameterComponent

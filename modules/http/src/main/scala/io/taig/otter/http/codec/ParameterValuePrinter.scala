@@ -6,10 +6,10 @@ import io.taig.otter.*
 import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Parameter
 
-final class ParameterValuePrinter(name: String, style: Parameter.Style) extends Encoder[Parameter.Value, String]:
-  override def encode[A](schema: Parameter.Value[A], a: A): String = schema match
-    case schema: Parameter.Value.Atom[A] => ParameterValueAtomPrinter.encode(schema, a)
-    case schema: Parameter.Value.Array[A] =>
+final class ParameterValuePrinter(name: String, style: Parameter.Style) extends Encoder[Parameter.Schema, String]:
+  override def encode[A](schema: Parameter.Schema[A], a: A): String = schema match
+    case schema: Parameter.Schema.Atom[A] => ParameterValueAtomPrinter.encode(schema, a)
+    case schema: Parameter.Schema.Array[A] =>
       val values = ParameterValueArrayEncoder.encode(schema, a)
 
       style match
@@ -17,7 +17,7 @@ final class ParameterValuePrinter(name: String, style: Parameter.Style) extends 
         case Parameter.Style.Label  => values.map(escape(_, ".")).mkString_(".", ".", "")
         case Parameter.Style.Matrix =>
           values.map(value => s"${escape(name, List("=", ";"))}=${escape(value, ";")}").mkString_(";", ";", "")
-    case schema: Parameter.Value.Object[A] =>
+    case schema: Parameter.Schema.Object[A] =>
       val values = ParameterValueObjectEncoder.encode(schema, a)
 
       style match

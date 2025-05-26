@@ -7,10 +7,10 @@ import io.taig.otter.*
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Parameter
 
-final class ParameterValueParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Value, String]:
-  override def decode[A](schema: Parameter.Value[A], value: String): Validated[Violations, A] = schema match
-    case schema: Parameter.Value.Atom[A] => ParameterValueAtomParser.decode(schema, value)
-    case schema: Parameter.Value.Array[A] =>
+final class ParameterValueParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
+  override def decode[A](schema: Parameter.Schema[A], value: String): Validated[Violations, A] = schema match
+    case schema: Parameter.Schema.Atom[A] => ParameterValueAtomParser.decode(schema, value)
+    case schema: Parameter.Schema.Array[A] =>
       style
         .match
           case Parameter.Style.Simple => parser.array.simple(value)
@@ -21,7 +21,7 @@ final class ParameterValueParser(name: String, style: Parameter.Style) extends D
         )
         .toValidated
         .andThen(values => ParameterValueArrayDecoder.decode(schema, Chain.fromSeq(values)))
-    case schema: Parameter.Value.Object[A] =>
+    case schema: Parameter.Schema.Object[A] =>
       style
         .match
           case Parameter.Style.Simple => parser.obj.simple(value)

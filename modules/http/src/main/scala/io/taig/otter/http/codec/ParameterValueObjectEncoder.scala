@@ -8,13 +8,13 @@ import io.taig.otter.codec.KeyPrinter
 import io.taig.otter.codec.RecordEncoder
 import io.taig.otter.http.Parameter
 
-object ParameterValueObjectEncoder extends Encoder[Parameter.Value.Object, Chain[(String, Option[String])]]:
+object ParameterValueObjectEncoder extends Encoder[Parameter.Schema.Object, Chain[(String, Option[String])]]:
   val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
   val record = RecordEncoder(field =
     FieldEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
-      .mapK[Parameter.Value.Field]([A] => (field: Parameter.Value.Field[A]) => field.self.self)
+      .mapK[Parameter.Schema.Field]([A] => (field: Parameter.Schema.Field[A]) => field.self.self)
   )
 
-  override def encode[A](schema: Parameter.Value.Object[A], a: A): Chain[(String, Option[String])] = schema match
-    case Parameter.Value.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self.self, a))
-    case Parameter.Value.Object.Record(self)     => record.encode(schema = self.self, a)
+  override def encode[A](schema: Parameter.Schema.Object[A], a: A): Chain[(String, Option[String])] = schema match
+    case Parameter.Schema.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self.self, a))
+    case Parameter.Schema.Object.Record(self)     => record.encode(schema = self.self, a)

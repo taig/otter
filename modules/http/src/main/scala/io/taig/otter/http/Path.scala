@@ -13,8 +13,8 @@ sealed abstract class Path[A] extends Product with Serializable:
 
   final def zip[B](path: Path[B]): Path[(A, B)] = Path.Zip(left = this, right = path)
 
-  final def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] =
-    zip(parameter.toPath).imap(merge.apply)(merge.unapply)
+  final def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] = ???
+  // zip(parameter.toPath).imap(merge.apply)(merge.unapply)
 
   final def /[B](name: String): Path[A] = ???
 
