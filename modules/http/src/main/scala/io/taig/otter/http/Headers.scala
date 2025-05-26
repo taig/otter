@@ -8,28 +8,31 @@ import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
 
-sealed abstract class Headers[A]:
-  def toChain: Chain[Header[?]]
-
-  final def imap[B](f: A => B)(g: B => A): Headers[B] = Headers.Modify(self = this, f, g)
-
-  final def zip[B](headers: Headers[B]): Headers[(A, B)] = Headers.Zip(left = this, right = headers)
+type Headers[A] = Enrichment[Headers.Value, A]
 
 object Headers:
-  private[otter] object Empty extends Headers[Unit]:
-    override def toChain: Chain[Nothing] = Chain.empty
+  sealed abstract class Value[A]:
+    def toChain: Chain[Header[?]]
 
-  final private[otter] case class Modify[A, B](self: Headers[A], f: A => B, g: B => A) extends Headers[B]:
-    export self.toChain
+    final def imap[B](f: A => B)(g: B => A): Headers.Value[B] = Value.Modify(self = this, f, g)
 
-  final private[otter] case class Optional[A](self: Headers[A]) extends Headers[Option[A]]:
-    export self.toChain
+    final def zip[B](headers: Value[B]): Headers.Value[(A, B)] = Value.Zip(left = this, right = headers)
 
-  final private[otter] case class Root[A](header: Header[A]) extends Headers[A]:
-    override def toChain: Chain[Header[A]] = Chain.one(header)
+  object Value:
+    private[otter] object Empty extends Headers.Value[Unit]:
+      override def toChain: Chain[Nothing] = Chain.empty
 
-  final private[otter] case class Zip[A, B](left: Headers[A], right: Headers[B]) extends Headers[(A, B)]:
-    override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
+    final private[otter] case class Modify[A, B](self: Headers.Value[A], f: A => B, g: B => A) extends Headers.Value[B]:
+      export self.toChain
+
+    final private[otter] case class Optional[A](self: Headers.Value[A]) extends Headers.Value[Option[A]]:
+      export self.toChain
+
+    final private[otter] case class Root[A](header: Header[A]) extends Headers.Value[A]:
+      override def toChain: Chain[Header[A]] = Chain.one(header)
+
+    final private[otter] case class Zip[A, B](left: Value[A], right: Value[B]) extends Value[(A, B)]:
+      override def toChain: Chain[Header[?]] = left.toChain ++ right.toChain
 
   type Data = Chain[Header.Data]
 

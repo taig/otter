@@ -28,7 +28,7 @@ object Url:
   final private[otter] case class Root[A, B](path: Path[A], queries: Queries[B]) extends Url[(A, B)]
 
   final private[otter] case class Zip[A, B](left: Url[A], right: Url[B]) extends Url[(A, B)]:
-    override def path: Path[?] = left.path.zip(right.path)
+    override def path: Path[?] = ??? // left.path.zip(right.path)
     override def queries: Queries[?] = ??? // left.queries.zip(right.queries)
 
   final case class Data(path: Path.Data, queries: Queries.Data):
