@@ -8,22 +8,22 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.http.Query.Value.Nullable
+import io.taig.otter.http.Query.Schema.Nullable
 import io.taig.otter.unescape
 import io.taig.otter.http.Query
 
 final class QueryValueDecoder(explode: Boolean, style: Query.Style)
-    extends Decoder.Remainding[Query.Value, Chain[Option[String]]]:
+    extends Decoder.Remainding[Query.Schema, Chain[Option[String]]]:
   override def decodeRemainding[A](
-      schema: Query.Value[A],
+      schema: Query.Schema[A],
       values: Chain[Option[String]]
   ): Validated[Violations, (Chain[Option[String]], A)] = schema match
-    case schema: Query.Value.Atom[A] =>
+    case schema: Query.Schema.Atom[A] =>
       val (remainders, value) = values.collectFirstWithRemainders { case Some(value) => value }
       value
         .toValid(Violations.rootNec(Violation.required))
         .andThen(QueryValueAtomParser.decode(schema, _).tupleLeft(remainders))
-    case schema: Query.Value.Array[A] =>
+    case schema: Query.Schema.Array[A] =>
       values
         .traverse(_.toValid(Violations.rootNec(Violation.required)))
         .map: values =>
@@ -34,14 +34,13 @@ final class QueryValueDecoder(explode: Boolean, style: Query.Style)
             case (_, Query.Style.SpaceDelimited) => decode(values, character = " ")
         .andThen(QueryValueArrayDecoder.decode(schema, _))
         .tupleLeft(Chain.empty)
-    case Query.Value.Nullable(self) =>
+    case Query.Schema.Nullable(self) =>
       NullableDecoder
         .Remainding(decoder = this, empty = _.exists(_.isEmpty))
         .decodeRemainding(schema = self.self, values)
         .map: (remainders, value) =>
           remainders.collectFirstWithRemainders { case None => () }.as(value)
 
-  def decode(values: Chain[String], character: String): Chain[String] =
-    values
-      .flatMap(value => Chain.fromIterableOnce(value.split(character)))
-      .map(unescape(_, character))
+  def decode(values: Chain[String], character: String): Chain[String] = values
+    .flatMap(value => Chain.fromIterableOnce(value.split(character)))
+    .map(unescape(_, character))

@@ -11,13 +11,16 @@ import io.taig.otter.http.Query
 
 object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
   override def decodeRemainding[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
+    decodeRemainding(schema = schema.self, values)
+
+  def decodeRemainding[A](schema: Query.Value[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
     schema match
-      case Query.Modify(self, f, _) => decodeRemainding(schema = self, values).map(_.map(f))
-      case Query.Optional(self) =>
+      case Query.Value.Modify(self, f, _) => decodeRemainding(schema = self, values).map(_.map(f))
+      case Query.Value.Optional(self) =>
         if values.exists((key, _) => key === self.name)
         then decodeRemainding(schema = self, values).map(_.map(_.some))
         else (values, none).valid
-      case Query.Root(name, schema, explode, style, _) =>
+      case Query.Value.Root(name, schema, explode, style) =>
         val (remainders, results) = values.partitionMap: (key, value) =>
           Either.cond(key === name, right = value, left = (key, value))
 

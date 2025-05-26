@@ -11,8 +11,8 @@ sealed abstract class Queries[A] extends Product with Serializable:
 
   final def zip[B](queries: Queries[B]): Queries[(A, B)] = Queries.Zip(left = this, right = queries)
 
-  final def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
-    zip(queries = query.toQueries).imap(merge.apply)(merge.unapply)
+  final def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = ???
+  // zip(queries = query.toQueries).imap(merge.apply)(merge.unapply)
 
 object Queries:
   private[otter] case object Empty extends Queries[Unit]:

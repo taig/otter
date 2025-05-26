@@ -5,108 +5,98 @@ import io.taig.otter.*
 import io.taig.otter.operation.*
 import io.taig.otter as Self
 
-sealed abstract class Query[A]:
-  def name: String
-
-  def schema: Reference[Query.Value, ?]
-
-  def isOptional: Boolean
-
-  def explode: Boolean
-  def modifyExplode(f: Boolean => Boolean): Query[A]
-  final def explode(value: Boolean): Query[A] = modifyExplode(_ => value)
-
-  def style: Query.Style
-  def modifyStyle(f: Query.Style => Query.Style): Query[A]
-  final def style(value: Query.Style): Query[A] = modifyStyle(_ => value)
-
-  def metadata: Metadata
-  def modifyMetadata(f: Metadata => Metadata): Query[A]
-
-  final def imap[B](f: A => B)(g: B => A): Query[B] = Query.Modify(self = this, f, g)
-
-  final def zip[B](query: Query[B]): Queries[(A, B)] = toQueries.zip(query.toQueries)
-
-  final def toQueries: Queries[A] = Queries.Root(query = this)
+type Query[A] = Enrichment[Query.Value, A]
 
 object Query:
-  final private[otter] case class Modify[A, B](self: Query[A], f: A => B, g: B => A) extends Query[B]:
-    export self.{explode, isOptional, metadata, name, schema, style}
-    override def modifyExplode(f: Boolean => Boolean): Query[B] = copy(self = self.modifyExplode(f))
-    override def modifyStyle(f: Style => Style): Query[B] = copy(self = self.modifyStyle(f))
-    override def modifyMetadata(f: Metadata => Metadata): Query[B] = copy(self = self.modifyMetadata(f))
+  sealed abstract class Value[A]:
+    def name: String
 
-  final private[otter] case class Optional[A](self: Query[A]) extends Query[Option[A]]:
-    export self.{explode, metadata, name, schema, style}
-    override def isOptional: Boolean = true
-    override def modifyExplode(f: Boolean => Boolean): Query[Option[A]] = copy(self = self.modifyExplode(f))
-    override def modifyStyle(f: Style => Style): Query[Option[A]] = copy(self = self.modifyStyle(f))
-    override def modifyMetadata(f: Metadata => Metadata): Query[Option[A]] = copy(self = self.modifyMetadata(f))
+    def schema: Reference[Query.Schema, ?]
 
-  final private[otter] case class Root[A](
-      name: String,
-      schema: Reference[Query.Value, A],
-      explode: Boolean,
-      style: Query.Style,
-      metadata: Metadata
-  ) extends Query[A]:
-    override def isOptional: Boolean = false
-    override def modifyExplode(f: Boolean => Boolean): Query[A] = copy(explode = f(explode))
-    override def modifyStyle(f: Query.Style => Query.Style): Query[A] = copy(style = f(style))
-    override def modifyMetadata(f: Metadata => Metadata): Query[A] = copy(metadata = f(metadata))
+    def isOptional: Boolean
 
-  sealed trait Value[A] extends Product with Serializable
+    def explode: Boolean
+    def modifyExplode(f: Boolean => Boolean): Query.Value[A]
+
+    def style: Query.Style
+    def modifyStyle(f: Query.Style => Query.Style): Query.Value[A]
+
+    final def imap[B](f: A => B)(g: B => A): Query.Value[B] = Query.Value.Modify(self = this, f, g)
 
   object Value:
-    sealed trait Atom[A] extends Query.Value[A]
+    final private[otter] case class Modify[A, B](self: Query.Value[A], f: A => B, g: B => A) extends Query.Value[B]:
+      export self.{explode, isOptional, name, schema, style}
+      override def modifyExplode(f: Boolean => Boolean): Query.Value[B] = copy(self = self.modifyExplode(f))
+      override def modifyStyle(f: Style => Style): Query.Value[B] = copy(self = self.modifyStyle(f))
+
+    final private[otter] case class Optional[A](self: Query.Value[A]) extends Query.Value[Option[A]]:
+      export self.{explode, name, schema, style}
+      override def isOptional: Boolean = true
+      override def modifyExplode(f: Boolean => Boolean): Query.Value[Option[A]] = copy(self = self.modifyExplode(f))
+      override def modifyStyle(f: Style => Style): Query.Value[Option[A]] = copy(self = self.modifyStyle(f))
+
+    final private[otter] case class Root[A](
+        name: String,
+        schema: Reference[Query.Schema, A],
+        explode: Boolean,
+        style: Query.Style
+    ) extends Query.Value[A]:
+      override def isOptional: Boolean = false
+      override def modifyExplode(f: Boolean => Boolean): Query.Value[A] = copy(explode = f(explode))
+      override def modifyStyle(f: Query.Style => Query.Style): Query.Value[A] = copy(style = f(style))
+
+  sealed trait Schema[A] extends Product with Serializable
+
+  object Schema:
+    sealed trait Atom[A] extends Query.Schema[A]
 
     object Atom:
-      final case class Constant[A](self: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) extends Atom[A]
+      final case class Constant[A](self: Enrichment[Self.Constant[Query.Schema.Atom.Primitive, *], A]) extends Atom[A]
 
       object Constant:
-        given EnrichedConstantSchemaInvariant[Query.Value.Atom.Constant, Query.Value.Atom.Primitive] =
+        given EnrichedConstantSchemaInvariant[Query.Schema.Atom.Constant, Query.Schema.Atom.Primitive] =
           EnrichedConstantSchemaInvariant[Enrichment[
-            Self.Constant[Query.Value.Atom.Primitive, *],
+            Self.Constant[Query.Schema.Atom.Primitive, *],
             *
-          ], Query.Value.Atom.Primitive]
+          ], Query.Schema.Atom.Primitive]
             .imapK(
-              [A] => (schema: Enrichment[Self.Constant[Query.Value.Atom.Primitive, *], A]) => Constant(schema)
-            )([A] => (value: Query.Value.Atom.Constant[A]) => value.self)
+              [A] => (schema: Enrichment[Self.Constant[Query.Schema.Atom.Primitive, *], A]) => Constant(schema)
+            )([A] => (schema: Query.Schema.Atom.Constant[A]) => schema.self)
 
-      final case class Enumeration[A](self: Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], A])
+      final case class Enumeration[A](self: Enrichment[Self.Enumeration[Query.Schema.Atom.Primitive, *], A])
           extends Atom[A]
 
       object Enumeration:
-        given EnrichedEnumerationSchemaInvariant[Query.Value.Atom.Enumeration, Query.Value.Atom.Primitive] =
+        given EnrichedEnumerationSchemaInvariant[Query.Schema.Atom.Enumeration, Query.Schema.Atom.Primitive] =
           EnrichedEnumerationSchemaInvariant[Enrichment[
-            Self.Enumeration[Query.Value.Atom.Primitive, *],
+            Self.Enumeration[Query.Schema.Atom.Primitive, *],
             *
-          ], Query.Value.Atom.Primitive]
+          ], Query.Schema.Atom.Primitive]
             .imapK(
-              [A] => (schema: Enrichment[Self.Enumeration[Query.Value.Atom.Primitive, *], A]) => Enumeration(schema)
-            )([A] => (value: Query.Value.Atom.Enumeration[A]) => value.self)
+              [A] => (schema: Enrichment[Self.Enumeration[Query.Schema.Atom.Primitive, *], A]) => Enumeration(schema)
+            )([A] => (schema: Query.Schema.Atom.Enumeration[A]) => schema.self)
 
       final case class Primitive[A](self: Enrichment[Self.Primitive.String, A]) extends Atom[A]
 
       object Primitive:
-        given EnrichedPrimitiveSchemaInvariant.String[Query.Value.Atom.Primitive] =
+        given EnrichedPrimitiveSchemaInvariant.String[Query.Schema.Atom.Primitive] =
           EnrichedPrimitiveSchemaInvariant
             .String[Enrichment[Self.Primitive.String, *]]
             .imapK(
               [A] => (schema: Enrichment[Self.Primitive.String, A]) => Primitive(schema)
-            )([A] => (value: Query.Value.Atom.Primitive[A]) => value.self)
+            )([A] => (schema: Query.Schema.Atom.Primitive[A]) => schema.self)
 
-      final case class Union[A](self: Enrichment[Self.Union[Query.Value.Atom, *], A]) extends Atom[A]
+      final case class Union[A](self: Enrichment[Self.Union[Query.Schema.Atom, *], A]) extends Atom[A]
 
       object Union:
-        given EnrichedUnionSchemaInvariant[Query.Value.Atom.Union, Query.Value.Atom] =
-          EnrichedUnionSchemaInvariant[Enrichment[Self.Union[Query.Value.Atom, *], *], Query.Value.Atom]
+        given EnrichedUnionSchemaInvariant[Query.Schema.Atom.Union, Query.Schema.Atom] =
+          EnrichedUnionSchemaInvariant[Enrichment[Self.Union[Query.Schema.Atom, *], *], Query.Schema.Atom]
             .imapK(
-              [A] => (schema: Enrichment[Self.Union[Query.Value.Atom, *], A]) => Union(schema)
-            )([A] => (value: Query.Value.Atom.Union[A]) => value.self)
+              [A] => (schema: Enrichment[Self.Union[Query.Schema.Atom, *], A]) => Union(schema)
+            )([A] => (schema: Query.Schema.Atom.Union[A]) => schema.self)
 
-      given EnrichedSchemaInvariant[Query.Value.Atom] with
-        override def imap[A, B](fa: Query.Value.Atom[A])(f: A => B)(g: B => A): Query.Value.Atom[B] = fa match
+      given EnrichedSchemaInvariant[Query.Schema.Atom] with
+        override def imap[A, B](fa: Query.Schema.Atom[A])(f: A => B)(g: B => A): Query.Schema.Atom[B] = fa match
           case Constant(self)    => Constant(self.mapF(_.imap(f)(g)))
           case Enumeration(self) => Enumeration(self.mapF(_.imap(f)(g)))
           case Primitive(self)   => Primitive(self.mapF(_.imap(f)(g)))
@@ -125,26 +115,26 @@ object Query:
             case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
             case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
 
-    sealed trait Array[A] extends Query.Value[A]
+    sealed trait Array[A] extends Query.Schema[A]
 
     object Array:
-      final case class Collection[A](self: Enrichment[Self.Collection[Query.Value.Atom, *], A])
-          extends Query.Value.Array[A]
+      final case class Collection[A](self: Enrichment[Self.Collection[Query.Schema.Atom, *], A])
+          extends Query.Schema.Array[A]
 
       object Collection:
-        given EnrichedCollectionSchemaInvariant[Query.Value.Array.Collection, Query.Value.Atom] =
-          EnrichedCollectionSchemaInvariant[Enrichment[Self.Collection[Query.Value.Atom, *], *], Query.Value.Atom]
+        given EnrichedCollectionSchemaInvariant[Query.Schema.Array.Collection, Query.Schema.Atom] =
+          EnrichedCollectionSchemaInvariant[Enrichment[Self.Collection[Query.Schema.Atom, *], *], Query.Schema.Atom]
             .imapK(
-              [A] => (schema: Enrichment[Self.Collection[Query.Value.Atom, *], A]) => Collection(schema)
-            )([A] => (value: Query.Value.Array.Collection[A]) => value.self)
+              [A] => (schema: Enrichment[Self.Collection[Query.Schema.Atom, *], A]) => Collection(schema)
+            )([A] => (schema: Query.Schema.Array.Collection[A]) => schema.self)
 
-      final case class Tuple[A](self: Enrichment[Self.Tuple[Query.Value.Atom, *], A]) extends Query.Value.Array[A]
+      final case class Tuple[A](self: Enrichment[Self.Tuple[Query.Schema.Atom, *], A]) extends Query.Schema.Array[A]
 
       object Tuple:
-        given EnrichedTupleSchemaInvariant[Query.Value.Array.Tuple, Query.Value.Atom] = ???
+        given EnrichedTupleSchemaInvariant[Query.Schema.Array.Tuple, Query.Schema.Atom] = ???
 
-      given EnrichedSchemaInvariant[Query.Value.Array] with
-        override def imap[A, B](fa: Query.Value.Array[A])(f: A => B)(g: B => A): Query.Value.Array[B] = fa match
+      given EnrichedSchemaInvariant[Query.Schema.Array] with
+        override def imap[A, B](fa: Query.Schema.Array[A])(f: A => B)(g: B => A): Query.Schema.Array[B] = fa match
           case Collection(self) => Collection(self.mapF(_.imap(f)(g)))
           case Tuple(self)      => Tuple(self.mapF(_.imap(f)(g)))
 
@@ -157,10 +147,10 @@ object Query:
             case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
             case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
 
-    final case class Nullable[A](self: Enrichment[Self.Nullable[Query.Value, *], A]) extends Query.Value[A]
+    final case class Nullable[A](self: Enrichment[Self.Nullable[Query.Schema, *], A]) extends Query.Schema[A]
 
     object Nullable:
-      given EnrichedNullableSchemaInvariant[Query.Value.Nullable, Query.Value] = ???
+      given EnrichedNullableSchemaInvariant[Query.Schema.Nullable, Query.Schema] = ???
 
   enum Style:
     case Form
@@ -169,5 +159,7 @@ object Query:
 
   type Data = (String, Option[String])
 
-  given SchemaInvariant[Query] with
-    override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)
+  extension [A](self: Query[A]) def name: String = self.self.name
+
+  // given SchemaInvariant[Query] with
+  //   override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)

@@ -6,10 +6,10 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.TupleEncoder
 import io.taig.otter.http.Header
 
-object HeaderValueArrayEncoder extends Encoder[Header.Value.Array, Chain[String]]:
+object HeaderValueArrayEncoder extends Encoder[Header.Schema.Array, Chain[String]]:
   val collection = CollectionEncoder(encoder = HeaderValueAtomPrinter)
   val tuple = TupleEncoder(encoder = HeaderValueAtomPrinter)
 
-  override def encode[A](schema: Header.Value.Array[A], a: A): Chain[String] = schema match
-    case Header.Value.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
-    case Header.Value.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))
+  override def encode[A](schema: Header.Schema.Array[A], a: A): Chain[String] = schema match
+    case Header.Schema.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
+    case Header.Schema.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))

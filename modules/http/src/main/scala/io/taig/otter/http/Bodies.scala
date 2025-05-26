@@ -4,6 +4,7 @@ import cats.data.NonEmptyChain
 import io.taig.otter.+
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 import io.taig.otter.operation.*
 
@@ -34,8 +35,9 @@ object Bodies:
     final private[otter] case class Root[S[_], A](body: Body[S, A]) extends Bodies.Value[S, A]:
       override def toChain: NonEmptyChain[Body[S, A]] = NonEmptyChain.one(body)
 
-  given [S[_]]: SchemaInvariant[Bodies[S, *]] = new SchemaInvariant[Bodies[S, *]] {
+  given [S[_]]: EnrichedSchemaInvariant[Bodies[S, *]] with
+    override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] = fa.mapF(_.imap(f)(g))
 
-    override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] = ???
-
-  }
+    extension [A](self: Bodies[S, A])
+      override def metadata: Metadata = self.metadata
+      override def metadata(f: Metadata => Metadata): Bodies[S, A] = self.modifyMetadata(f)

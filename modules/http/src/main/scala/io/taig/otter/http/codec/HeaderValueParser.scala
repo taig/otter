@@ -9,13 +9,13 @@ import io.taig.otter.codec.Decoder
 import io.taig.otter.unescape
 import io.taig.otter.http.Header
 
-object HeaderValueParser extends Decoder[Header.Value, String]:
-  override def decode[A](schema: Header.Value[A], value: String): Validated[Violations, A] = schema match
-    case schema: Header.Value.Atom[A] => HeaderValueAtomParser.decode(schema, value)
-    case schema: Header.Value.Array[A] =>
+object HeaderValueParser extends Decoder[Header.Schema, String]:
+  override def decode[A](schema: Header.Schema[A], value: String): Validated[Violations, A] = schema match
+    case schema: Header.Schema.Atom[A] => HeaderValueAtomParser.decode(schema, value)
+    case schema: Header.Schema.Array[A] =>
       val values = value.split(",").map(unescape(_, ","))
       HeaderValueArrayDecoder.decode(schema, Chain.fromIterableOnce(values))
-    case schema: Header.Value.Object[A] =>
+    case schema: Header.Schema.Object[A] =>
       parser
         .obj(value)
         .toValidated

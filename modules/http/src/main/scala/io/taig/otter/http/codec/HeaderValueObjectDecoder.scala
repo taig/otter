@@ -12,17 +12,16 @@ import io.taig.otter.codec.KeyParser
 import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Header
 
-object HeaderValueObjectDecoder extends Decoder[Header.Value.Object, Chain[(String, Option[String])]]:
+object HeaderValueObjectDecoder extends Decoder[Header.Schema.Object, Chain[(String, Option[String])]]:
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HeaderValueObjectValueDecoder)
   val record = RecordDecoder(
     field = FieldDecoder(key = KeyCodec.Unquoted, value = HeaderValueObjectValueDecoder, empty = none[String])
-      .mapK[Header.Value.Field]([A] => (field: Header.Value.Field[A]) => field.self.self)
+      .mapK[Header.Schema.Field]([A] => (field: Header.Schema.Field[A]) => field.self.self)
   )
 
   override def decode[A](
-      schema: Header.Value.Object[A],
+      schema: Header.Schema.Object[A],
       value: Chain[(String, Option[String])]
-  ): Validated[Violations, A] =
-    schema match
-      case Header.Value.Object.Dictionary(self) => dictionary.decode(schema = self.self, value.toList)
-      case Header.Value.Object.Record(self)     => record.decode(schema = self.self, value.toList)
+  ): Validated[Violations, A] = schema match
+    case Header.Schema.Object.Dictionary(self) => dictionary.decode(schema = self.self, value.toList)
+    case Header.Schema.Object.Record(self)     => record.decode(schema = self.self, value.toList)
