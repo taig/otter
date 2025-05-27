@@ -1,11 +1,9 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Reference
-
 import cats.data.NonEmptyChain
-
-import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+import io.taig.otter.Reference
 
 trait EnrichedUnionSchemaInvariant[Self[_], Value[_]]
     extends UnionSchemaInvariant[Self, Value],

@@ -1,11 +1,10 @@
 package io.taig.otter.operation
 
 import cats.data.NonEmptyList
-import cats.syntax.all.*
-import io.taig.otter.Reference
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+import io.taig.otter.Reference
 
 trait EnrichedEnumerationSchemaInvariant[Self[_], Value[_]]
     extends EnumerationSchemaInvariant[Self, Value],

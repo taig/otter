@@ -1,15 +1,16 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Primitive
-import cats.data.Validated
-import io.taig.otter.Violations
-import cats.syntax.all.*
 import cats.Order
+import cats.data.Validated
+import cats.syntax.all.*
+import io.taig.otter.Comparison
+import io.taig.otter.Constraint
+import io.taig.otter.Primitive
+import io.taig.otter.Violation
+import io.taig.otter.Violations
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Violation
-import io.taig.otter.Constraint
-import io.taig.otter.Comparison
 
 final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[Primitive, T]:
   given Order[JBigInteger] = Order.fromComparable

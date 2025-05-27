@@ -2,12 +2,12 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.+
+import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.Enrichment
 import io.taig.otter.operation.*
-import io.taig.otter.Metadata
 
 // TODO strict vs streaming (?)
 final case class Body[+S[_], A](self: Enrichment[Body.Value[S, A]]) extends AnyVal:

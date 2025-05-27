@@ -3,10 +3,10 @@ package io.taig.otter.http
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.operation.EnrichedSchemaInvariant
 import io.taig.otter.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.operation.EnrichedSchemaInvariant
 import org.typelevel.ci.*
 
 final case class Headers[A](self: Enrichment[Headers.Value[A]]) extends AnyVal:

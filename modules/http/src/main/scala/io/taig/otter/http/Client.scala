@@ -2,11 +2,10 @@ package io.taig.otter.http
 
 import cats.Functor
 import cats.syntax.all.*
-import io.taig.otter.+
 import io.taig.otter.http.codec.PayloadDecoder
 import io.taig.otter.http.codec.PayloadEncoder
-import io.taig.otter.http.codec.ResponseDataDecoder
 import io.taig.otter.http.codec.RequestDataEncoder
+import io.taig.otter.http.codec.ResponseDataDecoder
 import io.taig.otter.http.header.MediaType
 
 abstract class Client[F[_], S[_]]:

@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
-import org.typelevel.ci.CIString
 import io.taig.otter.operation.*
-import cats.syntax.all.*
+import org.typelevel.ci.CIString
 
 final case class Header[A](self: Enrichment[Header.Value[A]]) extends AnyVal:
   inline def value: Header.Value[A] = self.self

@@ -2,7 +2,9 @@ package io.taig.otter.component
 
 import io.taig.otter.Keys.name
 import io.taig.otter.Violation
-import io.taig.otter.operation.{EnrichedRecordSchemaInvariant, FieldSchemaInvariant, NullableSchemaInvariant}
+import io.taig.otter.operation.EnrichedRecordSchemaInvariant
+import io.taig.otter.operation.FieldSchemaInvariant
+import io.taig.otter.operation.NullableSchemaInvariant
 
 trait ViolationComponent[
     Collection[a] <: Value[a],

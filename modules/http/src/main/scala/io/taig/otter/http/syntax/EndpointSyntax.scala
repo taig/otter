@@ -1,8 +1,8 @@
 package io.taig.otter.http.syntax
 
+import io.taig.otter.Enrichment
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Request
-import io.taig.otter.Enrichment
 import io.taig.otter.http.Response
 
 trait EndpointSyntax:

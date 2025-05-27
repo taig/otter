@@ -3,7 +3,6 @@ package io.taig.otter.http.syntax
 import io.taig.otter.Enrichment
 import io.taig.otter.Merge
 import io.taig.otter.http.*
-import scala.annotation.targetName
 
 trait RequestSyntax:
   def request[A](method: Method, url: Url[A]): Request[Nothing, A] =

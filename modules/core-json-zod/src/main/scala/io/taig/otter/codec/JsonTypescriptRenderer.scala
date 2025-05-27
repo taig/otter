@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.data.State
+import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
-import cats.data.State
-import cats.syntax.all.*
 
 object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]]:
   val renderer = ReferenceTypescriptRenderer(renderer = Expression)

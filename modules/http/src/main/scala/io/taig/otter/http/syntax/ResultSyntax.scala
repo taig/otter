@@ -3,8 +3,8 @@ package io.taig.otter.http.syntax
 import io.taig.otter.Enrichment
 import io.taig.otter.Merge
 import io.taig.otter.http.*
+
 import scala.annotation.targetName
-import cats.syntax.all.*
 
 trait ResultSyntax:
   def result[S[_], A, B](

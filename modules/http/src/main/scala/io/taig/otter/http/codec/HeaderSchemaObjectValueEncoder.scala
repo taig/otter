@@ -1,9 +1,9 @@
 package io.taig.otter.http.codec
 
 import cats.syntax.all.*
-import io.taig.otter.http.Header
 import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.NullableEncoder
+import io.taig.otter.http.Header
 
 object HeaderSchemaObjectValueEncoder extends Encoder[Header.Schema.Object.Value, Option[String]]:
   val nullable = NullableEncoder(encoder = this, empty = none)

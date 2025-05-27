@@ -1,8 +1,7 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
-import cats.syntax.all.*
+import io.taig.otter.Metadata
 
 trait EnrichedDictionarySchemaInvariant[Self[_], -Key[_], -Value[_]]
     extends DictionarySchemaInvariant[Self, Key, Value],

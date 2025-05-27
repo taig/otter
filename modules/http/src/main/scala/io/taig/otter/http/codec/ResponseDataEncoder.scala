@@ -2,7 +2,6 @@ package io.taig.otter.http.codec
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.+
 import io.taig.otter.StacktracePrinter
 import io.taig.otter.Violations
 import io.taig.otter.http.Headers

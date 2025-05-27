@@ -1,10 +1,9 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Reference
-
-import io.taig.otter.Reference.Constant
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
+import io.taig.otter.Reference
+import io.taig.otter.Reference.Constant
 
 trait EnrichedFieldSchemaInvariant[Self[_], Key[_], Value[_]]
     extends FieldSchemaInvariant[Self, Key, Value],

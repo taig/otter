@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Typescript
-import io.taig.otter.Collection
-import cats.syntax.all.*
 import cats.Functor
+import cats.syntax.all.*
+import io.taig.otter.Collection
+import io.taig.otter.Typescript
 
 final class CollectionTypescriptRenderer[S[_], T[_]: Functor](
     renderer: Renderer[S, T[Typescript]]

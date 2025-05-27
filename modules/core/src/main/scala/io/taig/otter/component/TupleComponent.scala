@@ -1,6 +1,7 @@
 package io.taig.otter.component
 import io.taig.otter.Merge
 import io.taig.otter.operation.TupleSchemaInvariant
+
 import scala.annotation.targetName
 
 trait TupleComponent[Self[_], -Value[_]](using self: TupleSchemaInvariant[Self, Value]):

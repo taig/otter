@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import cats.derived.*
-import cats.Traverse
 import cats.Show
+import cats.Traverse
+import cats.derived.*
 import cats.syntax.all.*
 
 final case class TypescriptEndpoint[A](

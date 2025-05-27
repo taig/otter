@@ -1,6 +1,4 @@
 package io.taig.otter.http.codec
-
-import cats.syntax.all.*
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Response
 import io.taig.otter.http.Results

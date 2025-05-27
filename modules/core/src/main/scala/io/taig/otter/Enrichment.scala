@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-import cats.derived.*
 import cats.Traverse
+import cats.derived.*
+import cats.syntax.all.*
 
 final case class Enrichment[+A](self: A, metadata: Metadata) derives Traverse:
   def map[B](f: A => B): Enrichment[B] = copy(self = f(self))

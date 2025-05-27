@@ -1,12 +1,11 @@
 package io.taig.otter.http
 
-import cats.syntax.all.*
 import cats.data.Chain
-import io.taig.otter.Metadata
+import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.operation.*
-import io.taig.otter.Reference
 import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+import io.taig.otter.operation.*
 
 final case class Results[+S[_], A](self: Enrichment[Results.Value[S, A]]) extends AnyVal:
   inline def value: Results.Value[S, A] = self.self

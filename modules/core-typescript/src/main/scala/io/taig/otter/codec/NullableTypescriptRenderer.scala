@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
+import cats.Applicative
 import cats.syntax.all.*
 import io.taig.otter.Nullable
 import io.taig.otter.Typescript
-import cats.Applicative
 
 final class NullableTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[Typescript]])
     extends Renderer[Nullable[S, *], T[Typescript]]:

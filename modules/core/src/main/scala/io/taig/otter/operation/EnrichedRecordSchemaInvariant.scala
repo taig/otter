@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
 
 trait EnrichedRecordSchemaInvariant[Self[_], -Field[_]]
     extends RecordSchemaInvariant[Self, Field],

@@ -2,8 +2,8 @@ package io.taig.otter.http.codec
 
 import cats.data.Validated
 import io.taig.otter.Violations
-import io.taig.otter.http.Header
 import io.taig.otter.codec.*
+import io.taig.otter.http.Header
 
 object HeaderSchemaValueParser extends Decoder[Header.Schema.Value, String]:
   val constant = ConstantDecoder(codec = toCodec(encoder = HeaderSchemaValuePrinter), render = identity)

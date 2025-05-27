@@ -6,15 +6,15 @@ import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Keys
-import io.taig.otter.http.Endpoint
-import io.taig.otter.http.Parameter
-import io.taig.otter.http.Request
-import io.taig.otter.TypescriptState
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptDefinition
 import io.taig.otter.TypescriptEndpoint
-import io.taig.otter.indent
+import io.taig.otter.TypescriptState
+import io.taig.otter.http.Endpoint
+import io.taig.otter.http.Parameter
+import io.taig.otter.http.Request
 import io.taig.otter.http.Response
+import io.taig.otter.indent
 
 object TypescriptZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =

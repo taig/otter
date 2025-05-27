@@ -1,10 +1,10 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Metadata
-import io.taig.otter.Metadata.*
-import io.taig.otter.Enrichment
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+import io.taig.otter.Metadata.*
 
 trait EnrichedSchemaInvariant[Self[_]] extends SchemaInvariant[Self]:
   self =>

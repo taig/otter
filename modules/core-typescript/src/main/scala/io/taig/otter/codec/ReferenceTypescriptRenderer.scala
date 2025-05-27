@@ -1,12 +1,12 @@
 package io.taig.otter.codec
 
-import io.taig.otter.TypescriptState
-import io.taig.otter.Typescript
-import io.taig.otter.Keys.*
-import io.taig.otter.operation.EnrichedSchemaInvariant
-import io.taig.otter.toSymbol
 import cats.data.State
 import cats.syntax.all.*
+import io.taig.otter.Keys.*
+import io.taig.otter.Typescript
+import io.taig.otter.TypescriptState
+import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.toSymbol
 
 final class ReferenceTypescriptRenderer[S[_]: EnrichedSchemaInvariant](
     renderer: Renderer[S, TypescriptState[Typescript]]

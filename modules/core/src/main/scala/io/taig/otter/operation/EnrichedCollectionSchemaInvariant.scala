@@ -2,7 +2,6 @@ package io.taig.otter.operation
 
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
-import cats.syntax.all.*
 
 trait EnrichedCollectionSchemaInvariant[Self[_], -Value[_]]
     extends CollectionSchemaInvariant[Self, Value],

@@ -1,13 +1,13 @@
 package io.taig.otter.http
 
 import cats.data.NonEmptyChain
+import cats.syntax.all.*
 import io.taig.otter.+
+import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.Metadata
-import io.taig.otter.Enrichment
 import io.taig.otter.operation.*
-import cats.syntax.all.*
 
 final case class Bodies[+S[_], A](self: Enrichment[Bodies.Value[S, A]]):
   inline def value: Bodies.Value[S, A] = self.self

@@ -19,7 +19,7 @@ object LibrarianApiSchema:
     val codec: Json.Record[LibrarianApiSchema.Create] = (
       field("email", cistring) :*
         field("password", string(minimum = 6, maximum = 250))
-    ).to[LibrarianApiSchema.Create].metadata(name, "Librarian.Create").metadata(description, "Create a Librarian")
+    ).name("Librarian.Create").description("Create a Librarian").to
 
   final case class Login(email: CIString, password: String)
 
@@ -32,4 +32,4 @@ object LibrarianApiSchema:
   val codec: Json.Record[LibrarianApiSchema] = (
     field("email", cistring) :*
       field("reference", uuid)
-  ).metadata(name, "Librarian").to
+  ).name("Librarian").to

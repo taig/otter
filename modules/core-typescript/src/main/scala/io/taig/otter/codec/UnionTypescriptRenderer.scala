@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
+import cats.Applicative
+import cats.syntax.all.*
 import io.taig.otter.Typescript
 import io.taig.otter.Union
-import cats.syntax.all.*
-import cats.Applicative
 
 final class UnionTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[Typescript]])
     extends Renderer[Union[S, *], T[Typescript]]:

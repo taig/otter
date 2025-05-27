@@ -1,13 +1,14 @@
 package io.taig.otter.operation
 
+import io.taig.otter.Comparison
+import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
-import io.taig.otter.Comparison
-import io.taig.otter.Metadata
-import io.taig.otter.Enrichment
 
 trait EnrichedPrimitiveSchemaInvariant[Self[_]]
     extends PrimitiveSchemaInvariant[Self],

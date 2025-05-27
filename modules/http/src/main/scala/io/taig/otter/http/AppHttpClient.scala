@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.ApplicativeThrow
 import cats.syntax.all.*
-import io.taig.otter.+
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.codec.PayloadDecoder

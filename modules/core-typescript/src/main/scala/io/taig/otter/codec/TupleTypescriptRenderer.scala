@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.Applicative
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Tuple
 import io.taig.otter.Typescript
-import cats.Applicative
 
 final class TupleTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[Typescript]])
     extends Renderer[Tuple[S, *], T[Typescript]]:

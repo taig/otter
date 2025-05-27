@@ -1,10 +1,8 @@
 package io.taig.otter.http
-
-import io.taig.otter.Reference
-import io.taig.otter.Metadata
-import io.taig.otter.Enrichment
-import io.taig.otter.operation.EnrichedSchemaInvariant
 import cats.syntax.all.*
+import io.taig.otter.Enrichment
+import io.taig.otter.Metadata
+import io.taig.otter.operation.EnrichedSchemaInvariant
 
 final case class Endpoint[+S[_], A, B](self: Enrichment[Endpoint.Value[S, A, B]]) extends AnyVal:
   inline def value: Endpoint.Value[S, A, B] = self.self

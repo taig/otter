@@ -2,10 +2,10 @@ package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.http.Endpoint
-import io.taig.otter.TypescriptZodState
 import io.taig.otter.TypescriptState
 import io.taig.otter.TypescriptZodDefinition
+import io.taig.otter.TypescriptZodState
+import io.taig.otter.http.Endpoint
 
 final class TypescriptZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =

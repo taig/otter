@@ -1,10 +1,10 @@
 package io.taig.otter.http
 
 import cats.data.Chain
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.Enrichment
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import io.taig.otter.Enrichment
+import io.taig.otter.operation.EnrichedSchemaInvariant
 
 final case class Url[A](self: Enrichment[Url.Value[A]]) extends AnyVal:
   inline def value: Url.Value[A] = self.self

@@ -8,9 +8,9 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.collectFirstWithRemainders
+import io.taig.otter.http.Query
 import io.taig.otter.http.Query.Schema.Nullable
 import io.taig.otter.unescape
-import io.taig.otter.http.Query
 
 final class QuerySchemaDecoder(explode: Boolean, style: Query.Style)
     extends Decoder.Remaining[Query.Schema, Chain[Option[String]]]:

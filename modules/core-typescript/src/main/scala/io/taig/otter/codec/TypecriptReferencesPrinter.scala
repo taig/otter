@@ -1,7 +1,8 @@
 package io.taig.otter.codec
 
-import scala.collection.immutable.ListMap
 import io.taig.otter.Typescript
+
+import scala.collection.immutable.ListMap
 
 object TypecriptReferencesPrinter:
   def print(references: ListMap[String, Typescript]): List[String] =

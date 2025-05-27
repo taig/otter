@@ -1,9 +1,7 @@
 package io.taig.otter.codec
-
-import cats.syntax.all.*
+import cats.data.NonEmptyList
 import io.taig.otter.Enumeration
 import io.taig.otter.Typescript
-import cats.data.NonEmptyList
 
 final class EnumerationTypescriptRenderer[S[_]](printer: Encoder[S, String])
     extends Renderer[Enumeration[S, *], Typescript]:

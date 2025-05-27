@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Typescript
-import io.taig.otter.Dictionary
-import cats.syntax.all.*
 import cats.Functor
 import cats.Semigroupal
+import cats.syntax.all.*
+import io.taig.otter.Dictionary
+import io.taig.otter.Typescript
 
 final class DictionaryTypescriptRenderer[S[_], T[_], U[_]: Functor: Semigroupal](
     key: Renderer[S, U[Typescript]],

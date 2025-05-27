@@ -4,14 +4,14 @@ import io.taig.otter.component.CaseInsensitiveComponent
 import io.taig.otter.component.JavaTimeComponent
 import io.taig.otter.component.JsonComponent
 import io.taig.otter.http.FormData
+import io.taig.otter.http.Header
+import io.taig.otter.http.Parameter
 import io.taig.otter.http.component.FormDataComponent
 import io.taig.otter.http.component.HttpHeaderComponent
 import io.taig.otter.http.component.ParameterComponent
 import io.taig.otter.http.syntax.AllHttpJsonSyntax
 import io.taig.otter.http.syntax.AllHttpSyntax
 import io.taig.otter.syntax.AllSyntax
-import io.taig.otter.http.Header
-import io.taig.otter.http.Parameter
 
 object dsl extends AllSyntax, AllHttpSyntax, AllHttpJsonSyntax:
   lazy val formData: FormDataComponent & CaseInsensitiveComponent[FormData.Schema.Primitive] & JavaTimeComponent[

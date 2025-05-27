@@ -1,15 +1,16 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Typescript
-import cats.syntax.all.*
-import io.taig.otter.zodObject
-import cats.data.NonEmptyChain
 import cats.data.Chain
-import scala.collection.immutable.ListMap
+import cats.data.NonEmptyChain
 import cats.data.State
-import io.taig.otter.TypescriptZodState
-import io.taig.otter.zodUnion
+import cats.syntax.all.*
+import io.taig.otter.Typescript
 import io.taig.otter.TypescriptZod
+import io.taig.otter.TypescriptZodState
+import io.taig.otter.zodObject
+import io.taig.otter.zodUnion
+
+import scala.collection.immutable.ListMap
 
 object TypescriptZodEncoder:
   def encode(references: ListMap[String, Typescript], typescript: Typescript): TypescriptZodState[String] =

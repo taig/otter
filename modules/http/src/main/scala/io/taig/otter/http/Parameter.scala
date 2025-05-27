@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.Show
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.Key
 import io.taig.otter.Enrichment
+import io.taig.otter.Key
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.operation.*

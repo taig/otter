@@ -6,7 +6,7 @@ import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
-import Self.http.Parameter
+import io.taig.otter.http.Parameter
 
 object ParameterSchemaObjectValueDecoder extends Decoder[Parameter.Schema.Object.Value, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)

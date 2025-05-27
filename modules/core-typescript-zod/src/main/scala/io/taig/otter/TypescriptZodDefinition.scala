@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.syntax.all.*
 import cats.Show
+import cats.syntax.all.*
 
 final case class TypescriptZodDefinition(typescript: TypescriptDefinition[?], expression: String):
   override def toString: String =

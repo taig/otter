@@ -1,9 +1,9 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.FieldSchemaInvariant
 import io.taig.otter.Keys.name
-import io.taig.otter.operation.RecordSchemaInvariant
 import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.FieldSchemaInvariant
+import io.taig.otter.operation.RecordSchemaInvariant
 
 trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
     FieldSchemaInvariant[Field, Key, Value],

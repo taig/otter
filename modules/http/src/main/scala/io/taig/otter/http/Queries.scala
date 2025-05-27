@@ -1,6 +1,4 @@
 package io.taig.otter.http
-
-import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.*
 import io.taig.otter.operation.EnrichedSchemaInvariant

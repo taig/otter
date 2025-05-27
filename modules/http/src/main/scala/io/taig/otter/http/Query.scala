@@ -1,9 +1,9 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
+import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.operation.*
-import io.taig.otter as Self
 
 final case class Query[A](self: Enrichment[Query.Value[A]]) extends AnyVal:
   inline def value: Query.Value[A] = self.self

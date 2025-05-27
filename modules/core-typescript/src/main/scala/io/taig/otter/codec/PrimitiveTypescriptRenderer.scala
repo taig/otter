@@ -1,6 +1,4 @@
 package io.taig.otter.codec
-
-import io.taig.otter.codec.Renderer
 import io.taig.otter.Primitive
 import io.taig.otter.Typescript
 

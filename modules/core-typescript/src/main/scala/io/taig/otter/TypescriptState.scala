@@ -1,7 +1,8 @@
 package io.taig.otter
 
-import scala.collection.immutable.ListMap
 import cats.data.State
+
+import scala.collection.immutable.ListMap
 import scala.collection.immutable.SortedSet
 
 type TypescriptState[A] = State[TypescriptState.Context, A]

@@ -1,13 +1,11 @@
 package io.taig.otter.http
-
-import cats.Invariant
 import cats.Show
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.operation.EnrichedSchemaInvariant
-import io.taig.otter.Merge
 import io.taig.otter.Enrichment
+import io.taig.otter.Merge
 import io.taig.otter.Metadata
+import io.taig.otter.operation.EnrichedSchemaInvariant
 
 final case class Path[A](self: Enrichment[Path.Value[A]]) extends AnyVal:
   inline def value: Path.Value[A] = self.self

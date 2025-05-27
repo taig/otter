@@ -6,8 +6,8 @@ import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Queries
-import io.taig.otter.partitionMap
 import io.taig.otter.http.Query
+import io.taig.otter.partitionMap
 
 object QueryDataDecoder extends Decoder.Remaining[Query, Queries.Data]:
   override def decodeRemaining[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =

@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.data.NonEmptyChain
 import cats.data.Chain
+import cats.data.NonEmptyChain
 import cats.syntax.all.*
 
 private[otter] def zodObject(fields: Chain[(String, String)]): String = fields match

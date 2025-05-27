@@ -1,15 +1,16 @@
 package io.taig.otter.http.syntax
 
-import scala.annotation.targetName
 import io.taig.otter.Json
+import io.taig.otter.Keys.*
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.http.Response
-import io.taig.otter.Keys.*
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
 import io.taig.otter.http.syntax.CodeSyntax.*
 import io.taig.otter.http.syntax.HttpJsonBodySyntax.*
 import io.taig.otter.http.syntax.ResultSyntax.*
+
+import scala.annotation.targetName
 
 trait HttpJsonResponseSyntax:
   @targetName("responseResults")

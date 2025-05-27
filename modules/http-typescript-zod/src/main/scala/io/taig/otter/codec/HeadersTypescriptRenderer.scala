@@ -1,9 +1,6 @@
 package io.taig.otter.codec
-
-import cats.syntax.all.*
-import io.taig.otter.http.Headers
-import io.taig.otter.indent
 import io.taig.otter.Typescript
+import io.taig.otter.http.Headers
 
 object HeadersTypescriptRenderer extends Renderer[Headers, Option[Typescript]]:
   override def render[A](schema: Headers[A]): Option[Typescript] =

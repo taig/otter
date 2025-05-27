@@ -1,14 +1,12 @@
 package io.taig.otter
 
+import cats.Order
+import cats.Show
 import cats.data.Chain
 import cats.data.Chain.==:
-import cats.Show
-import cats.syntax.all.*
-import cats.derived.*
-import cats.Order
-import java.lang.String as JString
-import cats.data.NonEmptyChain
 import cats.data.NonEmptyList
+import cats.derived.*
+import cats.syntax.all.*
 
 enum Typescript derives Order:
   case Any

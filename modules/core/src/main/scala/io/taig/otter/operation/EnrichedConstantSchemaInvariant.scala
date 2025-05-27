@@ -1,9 +1,8 @@
 package io.taig.otter.operation
 
+import cats.Eq
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
-import cats.Eq
-import cats.syntax.all.*
 
 trait EnrichedConstantSchemaInvariant[Self[_], -Value[_]]
     extends ConstantSchemaInvariant[Self, Value],
