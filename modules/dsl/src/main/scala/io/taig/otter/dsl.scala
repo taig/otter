@@ -20,11 +20,12 @@ object dsl extends AllSyntax, AllHttpSyntax, AllHttpJsonSyntax:
     with CaseInsensitiveComponent[FormData.Schema.Primitive]
     with JavaTimeComponent[FormData.Schema.Primitive]
 
-  lazy val header: HttpHeaderComponent = // & CaseInsensitiveComponent[Header] & JavaTimeComponent[Header] =
-    new HttpHeaderComponent {} // with CaseInsensitiveComponent[Header] with JavaTimeComponent[Header]
+  lazy val header: HttpHeaderComponent & CaseInsensitiveComponent[Header.Schema] & JavaTimeComponent[Header.Schema] =
+    new HttpHeaderComponent with CaseInsensitiveComponent[Header.Schema] with JavaTimeComponent[Header.Schema]
 
-  lazy val parameter: ParameterComponent = // & CaseInsensitiveComponent[Parameter] & JavaTimeComponent[Parameter] =
-    new ParameterComponent {} // with CaseInsensitiveComponent[Parameter] with JavaTimeComponent[Parameter]
+  lazy val parameter
+      : ParameterComponent & CaseInsensitiveComponent[Parameter.Schema] & JavaTimeComponent[Parameter.Schema] =
+    new ParameterComponent with CaseInsensitiveComponent[Parameter.Schema] with JavaTimeComponent[Parameter.Schema]
 
   lazy val json: JsonComponent & CaseInsensitiveComponent[Json.Primitive] & JavaTimeComponent[Json.Primitive] =
     new JsonComponent with CaseInsensitiveComponent[Json.Primitive] with JavaTimeComponent[Json.Primitive]
