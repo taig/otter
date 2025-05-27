@@ -3,7 +3,7 @@ package io.taig.otter.sample
 import cats.effect.IO
 import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.dsl.*
+import io.taig.otter.sample.api.dsl.*
 import io.taig.otter.http.Client
 import io.taig.otter.http.HttpError
 import io.taig.otter.sample.api.Endpoint

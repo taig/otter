@@ -3,17 +3,14 @@ package io.taig.otter.http
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import io.taig.otter.operation.*
 
-final case class Results[+S[_], A](self: Enrichment[Results.Value[S, A]]) extends AnyVal:
-  inline def value: Results.Value[S, A] = self.self
-
-  def toChain: Chain[Result[S, ?]] = self.self.toChain
+final case class Results[+S[_], A](value: Results.Value[S, A], metadata: Metadata):
+  def toChain: Chain[Result[S, ?]] = value.toChain
 
   def orElse[T[_], B](results: Results[T, B]): Results[S + T, Either[A, B]] =
-    Results(Enrichment(value.orElse(results.value)))
+    Results(value.orElse(results.value), metadata = Metadata.Empty)
 
   def :+[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] =
     orElse(result.toResults)
@@ -59,9 +56,9 @@ object Results:
 
   given [S[_]]: EnrichedSchemaInvariant[Results[S, *]] with
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Results[S, A])
       override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Results[S, A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(self.metadata))

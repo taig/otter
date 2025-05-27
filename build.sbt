@@ -75,7 +75,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJsonZod,
     coreTypescript,
     coreTypescriptZod,
-    dsl,
     http,
     httpJson,
     httpJsonCirce,
@@ -178,9 +177,6 @@ lazy val munit = module(identifier = Some("munit"))
   )
   .dependsOn(http)
 
-lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(coreCaseInsensitive, coreJavaTime, httpJson)
-
 lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
   .settings(
@@ -192,11 +188,7 @@ lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
 
 lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
   .settings(noPublishSettings)
-  .settings(
-    libraryDependencies ++=
-      Nil
-  )
-  .dependsOn(coreJsonCirce, httpHttp4s, dsl)
+  .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
 
 lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
   .settings(noPublishSettings)

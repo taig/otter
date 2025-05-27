@@ -3,24 +3,21 @@ package io.taig.otter.http
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.*
 
-final case class Bodies[+S[_], A](self: Enrichment[Bodies.Value[S, A]]):
-  inline def value: Bodies.Value[S, A] = self.self
-
-  def toChain: NonEmptyChain[Body[S, ?]] = self.self.toChain
-  def satisfies(mediaRange: MediaRange): Boolean = self.self.satisfies(mediaRange)
-  def matches(contentType: MediaType): Boolean = self.self.matches(contentType)
+final case class Bodies[+S[_], A](value: Bodies.Value[S, A], metadata: Metadata):
+  def toChain: NonEmptyChain[Body[S, ?]] = value.toChain
+  def satisfies(mediaRange: MediaRange): Boolean = value.satisfies(mediaRange)
+  def matches(contentType: MediaType): Boolean = value.matches(contentType)
 
   def orElse[T[_], B](bodies: Bodies[T, B]): Bodies[S + T, Either[A, B]] =
-    Bodies(Enrichment(value.orElse(bodies.value)))
+    Bodies(value.orElse(bodies.value), metadata = Metadata.Empty)
 
   def or[T[_]](bodies: Bodies[T, A]): Bodies[S + T, A] =
-    Bodies(Enrichment(value.or(bodies.value)))
+    Bodies(value.or(bodies.value), metadata = Metadata.Empty)
 
   def :+[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] = orElse(body.toBodies)
 
@@ -69,9 +66,9 @@ object Bodies:
 
   given [S[_]]: EnrichedSchemaInvariant[Bodies[S, *]] with
     override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Bodies[S, A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Bodies[S, A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(metadata))

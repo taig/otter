@@ -2,7 +2,6 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.+
-import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.http.header.MediaRange
@@ -10,9 +9,7 @@ import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.*
 
 // TODO strict vs streaming (?)
-final case class Body[+S[_], A](self: Enrichment[Body.Value[S, A]]) extends AnyVal:
-  inline def value: Body.Value[S, A] = self.self
-
+final case class Body[+S[_], A](value: Body.Value[S, A], metadata: Metadata):
   def mediaType: MediaType = value.mediaType
   def satisfies(mediaRange: MediaRange): Boolean = value.satisfies(mediaRange)
   def matches(contentType: MediaType): Boolean = value.matches(contentType)
@@ -23,7 +20,7 @@ final case class Body[+S[_], A](self: Enrichment[Body.Value[S, A]]) extends AnyV
 
   def +:[T[_], B](body: Body[T, B]): Bodies[S + T, Either[B, A]] = body.toBodies :+ this
 
-  def toBodies: Bodies[S, A] = Bodies(Enrichment(Bodies.Value.Root(this)))
+  def toBodies: Bodies[S, A] = Bodies(value = Bodies.Value.Root(this), metadata = Metadata.Empty)
 
 object Body:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
@@ -48,8 +45,8 @@ object Body:
 
   given [S[_]]: EnrichedSchemaInvariant[Body[S, *]] with
     override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Body[S, A])
       override def metadata: Metadata = self.self.metadata
-      override def metadata(f: Metadata => Metadata): Body[S, A] = self.copy(self = self.self.modifyMetadata(f))
+      override def metadata(f: Metadata => Metadata): Body[S, A] = self.copy(metadata = f(metadata))
