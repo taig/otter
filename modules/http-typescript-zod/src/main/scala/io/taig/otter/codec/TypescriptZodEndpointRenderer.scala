@@ -19,14 +19,14 @@ import io.taig.otter.http.Response
 object TypescriptZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
     for
-      url <- url(request = endpoint.self.request)
+      url <- url(request = endpoint.request)
       name = function(endpoint)
-      input <- input(request = endpoint.self.request).map(_.definition(s"${name.capitalize}Input"))
-      output <- output(endpoint.self.response).map(_.definition(s"${name.capitalize}Output"))
+      input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
+      output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
       handle = s"""(code, headers, bod) =>
                   |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
       fields = Chain(
-        ("method", s"\"${endpoint.self.request.method}\""),
+        ("method", s"\"${endpoint.request.method}\""),
         ("path", s"`$url`")
       ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
         Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
@@ -35,7 +35,7 @@ object TypescriptZodEndpointRenderer:
         ("handle", handle)
     yield TypescriptEndpoint(
       input,
-      marker = show"/* ${endpoint.self.request.method} ${endpoint.self.request.url.path} */",
+      marker = show"/* ${endpoint.request.method} ${endpoint.request.url.path} */",
       types = List(input, output),
       definition = show"""export const $name = (
                          |  input: ${input.name}
@@ -52,15 +52,15 @@ object TypescriptZodEndpointRenderer:
         case parameter: Parameter[?] => s"$${encodeURIComponent(input.url.path.${parameter.name})}"
       .mkString_("/", "/", "")
 
-  def function(endpoint: Endpoint.Any): String = endpoint.metadata
+  def function(endpoint: Endpoint[?, ?, ?]): String = endpoint.metadata
     .get(Keys.name)
     .getOrElse:
-      val urls = endpoint.self.request.url.path.toSegments
+      val urls = endpoint.request.url.path.toSegments
         .map:
           case name: String            => name
           case parameter: Parameter[?] => parameter.name
 
-      val (head, tail) = NonEmptyChain.fromChainAppend(urls, endpoint.self.request.method.toString.toLowerCase).uncons
+      val (head, tail) = NonEmptyChain.fromChainAppend(urls, endpoint.request.method.toString.toLowerCase).uncons
 
       s"$head${tail.map(_.capitalize).mkString_("")}"
 

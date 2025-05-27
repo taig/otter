@@ -18,6 +18,8 @@ final case class Url[A](self: Enrichment[Url.Value[A]]) extends AnyVal:
 
   def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = this * parameter.toPath.toUrl
 
+  def /[B](name: String): Url[A] = this * Path(Enrichment(Path.Value.Static(name))).toUrl
+
 object Url:
   sealed abstract class Value[A] extends Product with Serializable:
     def path: Path[?]

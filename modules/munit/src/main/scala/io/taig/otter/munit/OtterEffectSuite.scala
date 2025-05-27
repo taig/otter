@@ -10,26 +10,26 @@ import munit.TestOptions
 import scala.language.adhocExtensions
 
 abstract class OtterEffectSuite extends CatsEffectSuite:
-  def test(endpoint: Endpoint.Any, description: String)(body: => Any)(implicit loc: Location): Unit =
+  def test(endpoint: Endpoint[?, ?, ?], description: String)(body: => Any)(implicit loc: Location): Unit =
     test(toMessage(endpoint, description))(body)(loc)
 
-  def test(endpoint: Endpoint.Any)(body: => Any)(implicit loc: Location): Unit =
+  def test(endpoint: Endpoint[?, ?, ?])(body: => Any)(implicit loc: Location): Unit =
     test(endpoint, description = "")(body)(loc)
 
   implicit open class SyncIOFunFixtureOtterOps[T](private val self: SyncIO[FunFixture[T]])
       extends SyncIOFunFixtureOps(self):
-    def test(endpoint: Endpoint.Any, options: TestOptions)(
+    def test(endpoint: Endpoint[?, ?, ?], options: TestOptions)(
         body: T => Any
     )(implicit loc: Location): Unit = test(options.withName(toMessage(endpoint, options.name)))(body)(loc)
 
-    def test(endpoint: Endpoint.Any, description: String)(
+    def test(endpoint: Endpoint[?, ?, ?], description: String)(
         body: T => Any
     )(implicit loc: Location): Unit = test(toMessage(endpoint, description))(body)(loc)
 
-    def test(endpoint: Endpoint.Any)(body: T => Any)(implicit loc: Location): Unit =
+    def test(endpoint: Endpoint[?, ?, ?])(body: T => Any)(implicit loc: Location): Unit =
       test(endpoint, description = "")(body)(loc)
 
-private def toMessage(endpoint: Endpoint.Any, description: String): String =
-  val request = endpoint.self.request
+private def toMessage(endpoint: Endpoint[?, ?, ?], description: String): String =
+  val request = endpoint.request
   val coordinates = show"${request.method} ${request.url.path}"
   if description.isEmpty then coordinates else s"$coordinates: $description"
