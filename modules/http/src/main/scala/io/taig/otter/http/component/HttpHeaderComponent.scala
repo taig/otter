@@ -10,7 +10,12 @@ trait HttpHeaderComponent
       DictionaryComponent[Header.Schema.Object.Dictionary, Key, Header.Schema.Value],
       EnumerationComponent[Header.Schema.Value.Enumeration, Header.Schema.Value.Primitive],
       PrimitiveComponent.String[Header.Schema.Value.Primitive],
-      FieldComponent.Primitive.String[Header.Schema.Field, Key, Header.Schema.Object.Value, Header.Schema.Object.Record],
+      FieldComponent.Primitive.String[
+        Header.Schema.Field,
+        Key,
+        Header.Schema.Object.Value,
+        Header.Schema.Object.Record
+      ],
       TupleComponent[Header.Schema.Array.Tuple, Header.Schema.Value]:
   override def key: KeyComponent = KeyComponent
 

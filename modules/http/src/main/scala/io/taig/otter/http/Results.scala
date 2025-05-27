@@ -31,6 +31,33 @@ object Results:
     final private[otter] case class Root[S[_], A](result: Result[S, A]) extends Results.Value[S, A]:
       override def toChain: Chain[Result[S, ?]] = Chain.one(result)
 
+  extension [S[_], A](self: Results[S, A])
+    def toChain: Chain[Result[S, ?]] = self.self.toChain
+
+    def orElse[T[_], B](results: Results[T, B]): Results[S + T, Either[A, B]] =
+      Enrichment(self.self.orElse(results.self))
+
+    def :+[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] =
+      self.orElse(result.toResults)
+
+    def +:[T[_], B](result: Result[T, B]): Results[S + T, Either[B, A]] =
+      result.toResults.orElse(self)
+
+  extension [S[_], A <: Matchable](self: Results[S, A])
+    inline def or[T[_], B <: Matchable](results: Results[T, B]): Results[S + T, A | B] =
+      self
+        .orElse(results)
+        .imap {
+          case Left(a)  => a
+          case Right(b) => b
+        } {
+          case a: A => Left(a)
+          case b: B => Right(b)
+        }
+
+    inline def |[T[_], B <: Matchable](result: Result[T, B]): Results[S + T, A | B] =
+      self.or(result.toResults)
+
   given [S[_]]: EnrichedSchemaInvariant[Results[S, *]] with
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
       fa.mapF(_.imap(f)(g))

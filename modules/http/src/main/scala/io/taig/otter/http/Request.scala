@@ -2,7 +2,9 @@ package io.taig.otter.http
 
 import cats.syntax.all.*
 import io.taig.otter.operation.*
+import io.taig.otter.Merge
 import io.taig.otter.Reference
+import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
 type Request[+S[_], A] = Enrichment[Request.Value[S, *], A]
@@ -39,14 +41,33 @@ object Request:
         extends Request.Value[S, (A, B)]:
       export self.{bodies, method, url}
 
+  final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
+    def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))
+
+    def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
+    def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
+
   extension [S[_], A](self: Request[S, A])
     def method: Method = self.self.method
     def url: Url[?] = self.self.url
     def headers: Headers[?] = self.self.headers
     def bodies: Option[Bodies[S, ?]] = self.self.bodies
 
-  final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
-    def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))
+    def zip[B](headers: Headers[B]): Request[S, (A, B)] = Enrichment(self.self.zip(headers))
 
-    def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
-    def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
+    def merge[B](headers: Headers[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
+      self.zip(headers).merge
+
+    def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
+      self.zip(header.toHeaders).merge
+
+    def *:[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
+      self.zip(header.toHeaders).merge
+
+  given [S[_]]: EnrichedSchemaInvariant[Request[S, *]] with
+    override def imap[A, B](fa: Request[S, A])(f: A => B)(g: B => A): Request[S, B] =
+      fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Request[S, A])
+      def metadata: Metadata = self.metadata
+      def metadata(f: Metadata => Metadata): Request[S, A] = self.modifyMetadata(f)

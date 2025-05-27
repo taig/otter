@@ -15,12 +15,14 @@ object Parameter:
   sealed abstract class Value[A] extends Product, Serializable:
     def name: String
 
+    def schema: Reference[Parameter.Schema, ?]
+
     def style: Parameter.Style
     def modifyStyle(f: Parameter.Style => Parameter.Style): Parameter.Value[A]
 
     final def imap[B](f: A => B)(g: B => A): Parameter.Value[B] = Value.Modify(self = this, f, g)
 
-    override def toString: String = this match
+    final override def toString: String = this match
       case Parameter.Value.Root(name, _, _)   => s"{$name}"
       case Parameter.Value.Modify(self, _, _) => self.toString
 
@@ -34,8 +36,10 @@ object Parameter:
 
     final private[otter] case class Modify[A, B](self: Parameter.Value[A], f: A => B, g: B => A)
         extends Parameter.Value[B]:
-      export self.{name, style}
+      export self.{name, schema, style}
       override def modifyStyle(f: Style => Style): Parameter.Value[B] = copy(self = self.modifyStyle(f))
+
+    given [A]: Show[Parameter.Value[A]] = Show.fromToString
 
   sealed trait Schema[A] extends Product with Serializable
 
@@ -222,25 +226,40 @@ object Parameter:
 
     given EnrichedSchemaInvariant[Parameter.Schema] with
       override def imap[A, B](fa: Parameter.Schema[A])(f: A => B)(g: B => A): Parameter.Schema[B] = fa match
-        case schema: Parameter.Schema.Value[A]   => schema.imap(f)(g)
+        case schema: Parameter.Schema.Value[A]  => schema.imap(f)(g)
         case schema: Parameter.Schema.Array[A]  => schema.imap(f)(g)
         case schema: Parameter.Schema.Object[A] => schema.imap(f)(g)
 
       extension [A](self: Schema[A])
         override def metadata: Metadata = self match
-          case schema: Parameter.Schema.Value[A]   => schema.metadata
+          case schema: Parameter.Schema.Value[A]  => schema.metadata
           case schema: Parameter.Schema.Array[A]  => schema.metadata
           case schema: Parameter.Schema.Object[A] => schema.metadata
 
         override def metadata(f: Metadata => Metadata): Schema[A] = self match
-          case schema: Parameter.Schema.Value[A]   => schema.metadata(f)
+          case schema: Parameter.Schema.Value[A]  => schema.metadata(f)
           case schema: Parameter.Schema.Array[A]  => schema.metadata(f)
           case schema: Parameter.Schema.Object[A] => schema.metadata(f)
 
   enum Style:
     case Simple, Label, Matrix
 
-  given SchemaInvariant[Parameter] with
+  extension [A](self: Parameter[A])
+    def name: String = self.self.name
+
+    def schema: Parameter.Schema[?] = self.self.schema.value
+
+    def style: Parameter.Style = self.self.style
+    def style(f: Parameter.Style => Parameter.Style): Parameter[A] = self.mapF(_.modifyStyle(f))
+    def style(value: Parameter.Style): Parameter[A] = self.style(_ => value)
+
+    def toPath: Path[A] = Enrichment(Path.Value.Root(self))
+
+  given EnrichedSchemaInvariant[Parameter] with
     override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] = fa.imap(f)(g)
 
-  given [A]: Show[Parameter[A]] = Show.fromToString
+    extension [A](self: Parameter[A])
+      override def metadata: Metadata = self.metadata
+      override def metadata(f: Metadata => Metadata): Parameter[A] = self.modifyMetadata(f)
+
+  given [A]: Show[Parameter[A]] = _.self.show

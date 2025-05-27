@@ -18,7 +18,7 @@ object Header:
 
     final def imap[B](f: A => B)(g: B => A): Value[B] = Value.Modify(self = this, f, g)
 
-    final def optional: Value[Option[A]] = Value.Optional(self = this)
+    final def optional: Header.Value[Option[A]] = Value.Optional(self = this)
 
   object Value:
     final private[otter] case class Root[A](name: CIString, schema: Reference[Header.Schema, A]) extends Value[A]:
@@ -203,18 +203,18 @@ object Header:
 
     given EnrichedSchemaInvariant[Header.Schema] with
       override def imap[A, B](fa: Header.Schema[A])(f: A => B)(g: B => A): Header.Schema[B] = fa match
-        case schema: Header.Schema.Value[A]   => schema.imap(f)(g)
+        case schema: Header.Schema.Value[A]  => schema.imap(f)(g)
         case schema: Header.Schema.Array[A]  => schema.imap(f)(g)
         case schema: Header.Schema.Object[A] => schema.imap(f)(g)
 
       extension [A](self: Header.Schema[A])
         override def metadata: Metadata = self match
-          case schema: Header.Schema.Value[A]   => schema.metadata
+          case schema: Header.Schema.Value[A]  => schema.metadata
           case schema: Header.Schema.Array[A]  => schema.metadata
           case schema: Header.Schema.Object[A] => schema.metadata
 
         override def metadata(f: Metadata => Metadata): Header.Schema[A] = self match
-          case schema: Header.Schema.Value[A]   => schema.metadata(f)
+          case schema: Header.Schema.Value[A]  => schema.metadata(f)
           case schema: Header.Schema.Array[A]  => schema.metadata(f)
           case schema: Header.Schema.Object[A] => schema.metadata(f)
 
@@ -225,7 +225,18 @@ object Header:
 
   type Data = (CIString, String)
 
-  extension [A](self: Header[A]) def name: CIString = self.self.name
+  extension [A](self: Header[A])
+    def name: CIString = self.self.name
+    def schema: Header.Schema[?] = self.self.schema.value
+    def isOptional: Boolean = self.self.isOptional
+    def optional: Header[Option[A]] = Enrichment(self.self.optional)
+
+    def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
+
+    def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] =
+      header.toHeaders.merge(self.toHeaders)
+
+    def toHeaders: Headers[A] = Enrichment(Headers.Value.Root(self))
 
   given EnrichedSchemaInvariant[Header] with
     override def imap[A, B](fa: Header[A])(f: A => B)(g: B => A): Header[B] =

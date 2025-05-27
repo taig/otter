@@ -1,8 +1,12 @@
-// package io.taig.otter.http.syntax
+package io.taig.otter.http.syntax
 
-// import io.taig.otter.http.component.BodyComponent
-// import io.taig.otter.http.HttpExport
+import io.taig.otter.http.header.MediaType
+import io.taig.otter.http.Body
+import io.taig.otter.Enrichment
+import io.taig.otter.Reference
 
-// trait BodySyntax //extends BodyComponent[HttpExport.Body]
+trait BodySyntax:
+  def body[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] = 
+    Enrichment(Body.Value.Root(mediaType, schema = Reference.later(schema)))
 
-// object BodySyntax extends BodySyntax
+object BodySyntax extends BodySyntax

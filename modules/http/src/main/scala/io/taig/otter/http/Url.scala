@@ -1,7 +1,9 @@
 package io.taig.otter.http
 
 import cats.data.Chain
+import io.taig.otter.operation.EnrichedSchemaInvariant
 import io.taig.otter.Merge
+import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
 type Url[A] = Enrichment[Url.Value, A]
@@ -16,11 +18,6 @@ object Url:
 
     final def zip[B](url: Url.Value[B]): Url.Value[(A, B)] = Url.Value.Zip(left = this, right = url)
 
-    final def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url.Value[merge.Out] = ???
-    // zip(parameter.toPath.toUrl).imap(merge.apply)(merge.unapply)
-
-    // final def /[B](name: String): Url[A] = zip(Path.Static(name).toUrl).imap(((a, _) => a))(a => (a, ()))
-
   object Value:
     private[otter] case object Empty extends Url.Value[Unit]:
       override def path: Path[?] = Path.Empty
@@ -32,10 +29,8 @@ object Url:
     final private[otter] case class Root[A, B](path: Path[A], queries: Queries[B]) extends Url.Value[(A, B)]
 
     final private[otter] case class Zip[A, B](left: Url.Value[A], right: Url.Value[B]) extends Url.Value[(A, B)]:
-      override def path: Path[?] = ??? // left.path.zip(right.path)
-      override def queries: Queries[?] = ??? // left.queries.zip(right.queries)
-
-  val Empty: Url[Unit] = Enrichment(Url.Value.Empty)
+      override def path: Path[?] = left.path.zip(right.path)
+      override def queries: Queries[?] = left.queries.zip(right.queries)
 
   final case class Data(path: Path.Data, queries: Queries.Data):
     def combine(url: Url.Data): Url.Data =
@@ -43,3 +38,28 @@ object Url:
 
   object Data:
     val Empty: Url.Data = Data(path = Chain.empty, queries = Chain.empty)
+
+  val Empty: Url[Unit] = Enrichment(Url.Value.Empty)
+
+  extension [A](self: Url[A])
+    def path: Path[?] = self.self.path
+    def queries: Queries[?] = self.self.queries
+
+    def zip[B](url: Url[B]): Url[(A, B)] = Enrichment(self.self.zip(url.self))
+
+    def merge[B](url: Url[B])(using merge: Merge[A, B]): Url[merge.Out] = self.zip(url).merge
+
+    def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = self.merge(parameter.toPath.toUrl)
+
+    def /(name: String): Url[A] = Enrichment(
+      self.self
+        .zip(Url.Value.Root(path = Enrichment(Path.Value.Static(name)), queries = Queries.Empty))
+        .imap((a, _) => a)((_, ((), ())))
+    )
+
+  given EnrichedSchemaInvariant[Url] with
+    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Url[A])
+      def metadata: Metadata = self.metadata
+      def metadata(f: Metadata => Metadata): Url[A] = self.modifyMetadata(f)

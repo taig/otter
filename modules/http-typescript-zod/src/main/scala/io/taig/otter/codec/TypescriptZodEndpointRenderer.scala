@@ -17,7 +17,7 @@ import io.taig.otter.indent
 import io.taig.otter.http.Response
 
 object TypescriptZodEndpointRenderer:
-  def render(endpoint: Endpoint[Json, Json, Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
+  def render(endpoint: Endpoint[Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
     for
       url <- url(request = endpoint.request)
       name = function(endpoint)

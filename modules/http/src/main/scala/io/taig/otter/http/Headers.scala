@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.operation.EnrichedSchemaInvariant
 import io.taig.otter.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
@@ -16,7 +17,7 @@ object Headers:
 
     final def imap[B](f: A => B)(g: B => A): Headers.Value[B] = Value.Modify(self = this, f, g)
 
-    final def zip[B](headers: Value[B]): Headers.Value[(A, B)] = Value.Zip(left = this, right = headers)
+    final def zip[B](headers: Headers.Value[B]): Headers.Value[(A, B)] = Value.Zip(left = this, right = headers)
 
   object Value:
     private[otter] object Empty extends Headers.Value[Unit]:
@@ -52,10 +53,23 @@ object Headers:
           .leftMap: error =>
             Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
 
-  // given invariant: Invariant.Product[Headers, Headers, Headers] with
-  //   override def result: Invariant[Headers] = this
-  //   override def fromElement[A](codec: Headers[A]): Headers[A] = codec
+  val Empty: Headers[Unit] = Enrichment(Headers.Value.Empty)
 
-  //   extension [A](self: Headers[A])
-  //     override def imap[B](f: A => B)(g: B => A): Headers[B] = self.imap(f)(g)
-  //     override def zip[B](codec: Headers[B]): Headers[(A, B)] = self.zip(codec)
+  extension [A](self: Headers[A])
+    def toChain: Chain[Header[?]] = self.self.toChain
+
+    def zip[B](headers: Headers[B]): Headers[(A, B)] = Enrichment(self.self.zip(headers.self))
+
+    def merge[B](headers: Headers[B])(using merge: Merge[A, B]): Headers[merge.Out] = zip(headers).merge
+
+    def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = self.merge(header.toHeaders)
+
+    def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header.toHeaders.merge(self)
+
+  given EnrichedSchemaInvariant[Headers] with
+    override def imap[A, B](fa: Headers[A])(f: A => B)(g: B => A): Headers[B] =
+      fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Headers[A])
+      override def metadata: Metadata = self.metadata
+      override def metadata(f: Metadata => Metadata): Headers[A] = self.modifyMetadata(f)

@@ -13,13 +13,13 @@ object Query:
 
     def schema: Reference[Query.Schema, ?]
 
-    def isOptional: Boolean
-
     def explode: Boolean
     def modifyExplode(f: Boolean => Boolean): Query.Value[A]
 
     def style: Query.Style
     def modifyStyle(f: Query.Style => Query.Style): Query.Value[A]
+
+    def isOptional: Boolean
 
     final def imap[B](f: A => B)(g: B => A): Query.Value[B] = Query.Value.Modify(self = this, f, g)
 
@@ -159,7 +159,25 @@ object Query:
 
   type Data = (String, Option[String])
 
-  extension [A](self: Query[A]) def name: String = self.self.name
+  extension [A](self: Query[A])
+    def name: String = self.self.name
+    def schema: Query.Schema[?] = self.self.schema.value
 
-  // given SchemaInvariant[Query] with
-  //   override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.imap(f)(g)
+    def explode: Boolean = self.self.explode
+    def explode(f: Boolean => Boolean): Query[A] = self.mapF(_.modifyExplode(f))
+    def explode(value: Boolean): Query[A] = explode(_ => value)
+
+    def style: Query.Style = self.self.style
+    def style(f: Query.Style => Query.Style): Query[A] = self.mapF(_.modifyStyle(f))
+    def style(value: Query.Style): Query[A] = style(_ => value)
+
+    def isOptional: Boolean = self.self.isOptional
+
+    def toQueries: Queries[A] = Enrichment(Queries.Value.Root(self))
+
+  given EnrichedSchemaInvariant[Query] with
+    override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] = fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Query[A])
+      override def metadata: Metadata = self.metadata
+      override def metadata(f: Metadata => Metadata): Query[A] = self.modifyMetadata(f)

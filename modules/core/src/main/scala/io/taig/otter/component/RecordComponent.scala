@@ -1,4 +1,5 @@
 package io.taig.otter.component
+
 import io.taig.otter.Merge
 import io.taig.otter.operation.RecordSchemaInvariant
 

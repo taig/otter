@@ -1,7 +1,7 @@
 package io.taig.otter.http.syntax
 
 import io.taig.otter.Json
-import io.taig.otter.http.HttpExport.*
+import io.taig.otter.http.Body
 import io.taig.otter.http.syntax.BodySyntax.*
 import io.taig.otter.http.syntax.MediaTypeSyntax.*
 

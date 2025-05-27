@@ -3,6 +3,7 @@ package io.taig.otter.http
 import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.*
+import io.taig.otter.operation.EnrichedSchemaInvariant
 
 type Queries[A] = Enrichment[Queries.Value, A]
 
@@ -14,9 +15,6 @@ object Queries:
 
     final def zip[B](queries: Queries.Value[B]): Queries.Value[(A, B)] =
       Value.Zip(left = this, right = queries)
-
-    final def &[B](query: Query[B])(using merge: Merge[A, B]): Queries.Value[merge.Out] = ???
-    // zip(queries = query.toQueries).imap(merge.apply)(merge.unapply)
 
   object Value:
     private[otter] case object Empty extends Queries.Value[Unit]:
@@ -35,9 +33,24 @@ object Queries:
         extends Queries.Value[(A, B)]:
       override def toChain: Chain[Query[?]] = left.toChain ++ right.toChain
 
-  val Empty: Queries[Unit] = Enrichment(Value.Empty)
-
   type Data = Chain[Query.Data]
 
-  // given Invariant[Queries] with
-  //   override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Value[B] = fa.imap(f)(g)
+  val Empty: Queries[Unit] = Enrichment(Value.Empty)
+
+  extension [A](self: Queries[A])
+    def toChain: Chain[Query[?]] = self.self.toChain
+
+    def zip[B](queries: Queries[B]): Queries[(A, B)] = Enrichment(self.self.zip(queries.self))
+
+    def merge[B](queries: Queries[B])(using merge: Merge[A, B]): Queries[merge.Out] =
+      self.zip(queries).merge
+
+    def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
+      self.merge(query.toQueries)
+
+  given EnrichedSchemaInvariant[Queries] with
+    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Queries[A])
+      def metadata: Metadata = self.metadata
+      def metadata(f: Metadata => Metadata): Queries[A] = self.modifyMetadata(f)

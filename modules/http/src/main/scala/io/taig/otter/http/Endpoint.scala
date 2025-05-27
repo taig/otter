@@ -18,6 +18,8 @@ object Endpoint:
     def modifyResponse[S1[a] >: S[a], C](f: Response[S, B] => Response[S1, C]): Endpoint.Value[S1, A, C] =
       copy(response = f(response))
 
+  type Any = Enrichment[Endpoint.Value[?, ?, *], ?]
+
   extension [S[_], A, B](self: Endpoint[S, A, B])
     def request: Request[S, A] = self.self.request
     def request[C](f: Request[S, A] => Request[S, C]): Endpoint[S, C, B] = self.mapF(_.modifyRequest(f))
