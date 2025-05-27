@@ -8,10 +8,10 @@ import io.taig.otter.codec.KeyPrinter
 import io.taig.otter.codec.RecordEncoder
 import io.taig.otter.http.Parameter
 
-object ParameterValueObjectEncoder extends Encoder[Parameter.Schema.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
+object ParameterSchemaObjectEncoder extends Encoder[Parameter.Schema.Object, Chain[(String, Option[String])]]:
+  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = ParameterSchemaObjectAtomEncoder)
   val record = RecordEncoder(field =
-    FieldEncoder(key = KeyPrinter.Unquoted, value = HttpParameterObjectValueEncoder)
+    FieldEncoder(key = KeyPrinter.Unquoted, value = ParameterSchemaObjectAtomEncoder)
       .mapK[Parameter.Schema.Field]([A] => (field: Parameter.Schema.Field[A]) => field.self.self)
   )
 

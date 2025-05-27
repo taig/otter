@@ -1,6 +1,8 @@
 package io.taig.otter.http
 
+import cats.syntax.all.*
 import cats.data.Chain
+import io.taig.otter.Metadata
 import io.taig.otter.+
 import io.taig.otter.operation.*
 import io.taig.otter.Reference
@@ -10,7 +12,7 @@ type Results[+S[_], A] = Enrichment[Results.Value[S, *], A]
 
 object Results:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
-    def toChain: Chain[Reference[S, ?]]
+    def toChain: Chain[Result[S, ?]]
 
     final def imap[B](f: A => B)(g: B => A): Results.Value[S, B] = Results.Value.Modify(self = this, f, g)
 
@@ -24,7 +26,15 @@ object Results:
 
     final private[otter] case class OrElse[S[_], T[_], A, B](left: Results.Value[S, A], right: Results.Value[T, B])
         extends Results.Value[S + T, Either[A, B]]:
-      override def toChain: Chain[Reference[S + T, ?]] = left.toChain ++ right.toChain
+      override def toChain: Chain[Result[S + T, ?]] = left.toChain ++ right.toChain
 
-    final private[otter] case class Root[S[_], A](result: Reference[S, A]) extends Results.Value[S, A]:
-      override def toChain: Chain[Reference[S, ?]] = Chain.one(result)
+    final private[otter] case class Root[S[_], A](result: Result[S, A]) extends Results.Value[S, A]:
+      override def toChain: Chain[Result[S, ?]] = Chain.one(result)
+
+  given [S[_]]: EnrichedSchemaInvariant[Results[S, *]] with
+    override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
+      fa.mapF(_.imap(f)(g))
+
+    extension [A](self: Results[S, A])
+      override def metadata: Metadata = self.metadata
+      override def metadata(f: Metadata => Metadata): Results[S, A] = self.modifyMetadata(f)

@@ -8,10 +8,10 @@ import io.taig.otter.codec.KeyPrinter
 import io.taig.otter.codec.RecordEncoder
 import io.taig.otter.http.Header
 
-object HeaderValueObjectEncoder extends Encoder[Header.Schema.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HeaderValueObjectValueEncoder)
+object HeaderSchemaObjectEncoder extends Encoder[Header.Schema.Object, Chain[(String, Option[String])]]:
+  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = HeaderSchemaObjectValueEncoder)
   val record = RecordEncoder(
-    field = FieldEncoder(key = KeyPrinter.Unquoted, value = HeaderValueObjectValueEncoder)
+    field = FieldEncoder(key = KeyPrinter.Unquoted, value = HeaderSchemaObjectValueEncoder)
       .mapK[Header.Schema.Field]([A] => (field: Header.Schema.Field[A]) => field.self.self)
   )
 

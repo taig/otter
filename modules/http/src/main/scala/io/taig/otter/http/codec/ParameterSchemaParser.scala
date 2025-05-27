@@ -7,9 +7,9 @@ import io.taig.otter.*
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Parameter
 
-final class ParameterValueParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
+final class ParameterSchemaParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
   override def decode[A](schema: Parameter.Schema[A], value: String): Validated[Violations, A] = schema match
-    case schema: Parameter.Schema.Atom[A] => ParameterValueAtomParser.decode(schema, value)
+    case schema: Parameter.Schema.Atom[A] => ParameterSchemaAtomParser.decode(schema, value)
     case schema: Parameter.Schema.Array[A] =>
       style
         .match
@@ -20,7 +20,7 @@ final class ParameterValueParser(name: String, style: Parameter.Style) extends D
           Violations.rootNec(Violation.tpe(name = "parameter.array", actual = value, hint = error.show))
         )
         .toValidated
-        .andThen(values => ParameterValueArrayDecoder.decode(schema, Chain.fromSeq(values)))
+        .andThen(values => ParameterSchemaArrayDecoder.decode(schema, Chain.fromSeq(values)))
     case schema: Parameter.Schema.Object[A] =>
       style
         .match
@@ -31,7 +31,7 @@ final class ParameterValueParser(name: String, style: Parameter.Style) extends D
           Violations.rootNec(Violation.tpe(name = "parameter.object", actual = value, hint = error.show))
         )
         .toValidated
-        .andThen(values => ParameterValueObjectDecoder.decode(schema, Chain.fromSeq(values)))
+        .andThen(values => ParameterSchemaObjectDecoder.decode(schema, Chain.fromSeq(values)))
 
   private object parser:
     import cats.parse.Parser

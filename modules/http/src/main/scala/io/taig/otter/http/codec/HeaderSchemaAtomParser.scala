@@ -5,9 +5,9 @@ import io.taig.otter.Violations
 import io.taig.otter.http.Header
 import io.taig.otter.codec.*
 
-object HeaderValueAtomParser extends Decoder[Header.Schema.Atom, String]:
-  val constant = ConstantDecoder(codec = toCodec(encoder = HeaderValueAtomPrinter), render = identity)
-  val enumeration = EnumerationDecoder(codec = toCodec(encoder = HeaderValueAtomPrinter), render = identity)
+object HeaderSchemaAtomParser extends Decoder[Header.Schema.Atom, String]:
+  val constant = ConstantDecoder(codec = toCodec(encoder = HeaderSchemaAtomPrinter), render = identity)
+  val enumeration = EnumerationDecoder(codec = toCodec(encoder = HeaderSchemaAtomPrinter), render = identity)
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Header.Schema.Atom[A], value: String): Validated[Violations, A] = schema match

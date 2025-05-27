@@ -41,20 +41,21 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
       schema: Bodies.Value[S, A],
       contentType: Option[MediaType],
       a: A
-  ): Either[MediaTypeUnsupported, Array[Byte]] =
-    schema match
-      case Bodies.Value.Modify(self, _, g) => encode(schema = self, contentType, g(a))
-      case Bodies.Value.Or(left, right) =>
-        contentType
-          .collectFirst:
-            case mediaType if left.matches(mediaType)  => left
-            case mediaType if right.matches(mediaType) => right
-          .orElse(Option.when(contentType.isEmpty)(left))
-          .toRight(MediaTypeUnsupported)
-          .flatMap(encode(_, contentType, a))
-      case Bodies.Value.OrElse(left, right) =>
-        a.fold(encode(schema = left, contentType, _), encode(schema = right, contentType, _))
-      case Bodies.Value.Root(body) => this.body.encode(body, contentType, a)
+  ): Either[MediaTypeUnsupported, Array[Byte]] = schema match
+    case Bodies.Value.Modify(self, _, g) => encode(schema = self, contentType, g(a))
+    case Bodies.Value.Or(left, right) =>
+      contentType
+        .collectFirst:
+          case mediaType if left.matches(mediaType)  => left
+          case mediaType if right.matches(mediaType) => right
+        .orElse(Option.when(contentType.isEmpty)(left))
+        .toRight(MediaTypeUnsupported)
+        .flatMap(encode(_, contentType, a))
+    case Bodies.Value.OrElse(left, right) =>
+      a.fold(encode(schema = left, contentType, _), encode(schema = right, contentType, _))
+    case Bodies.Value.Root(body) => this.body.encode(body, contentType, a)
+
+  def encode[A](schema: Bodies[S, A], a: A): (MediaType, Array[Byte]) = encode(schema = schema.self, a)
 
   def encode[A](schema: Bodies.Value[S, A], a: A): (MediaType, Array[Byte]) = schema match
     case Bodies.Value.Modify(self, _, g) => encode(schema = self, g(a))

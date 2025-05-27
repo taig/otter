@@ -9,7 +9,7 @@ import io.taig.otter.http.Header
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 
-object HeaderValueObjectValueDecoder extends Decoder[Header.Schema.Object.Atom, Option[String]]:
+object HeaderSchemaObjectValueDecoder extends Decoder[Header.Schema.Object.Atom, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)
 
   override def decode[A](schema: Header.Schema.Object.Atom[A], value: Option[String]): Validated[Violations, A] =
@@ -18,4 +18,4 @@ object HeaderValueObjectValueDecoder extends Decoder[Header.Schema.Object.Atom, 
       case schema: Header.Schema.Atom[A] =>
         value
           .toValid(Violations.rootNec(Violation.required))
-          .andThen(HeaderValueAtomParser.decode(schema, _))
+          .andThen(HeaderSchemaAtomParser.decode(schema, _))

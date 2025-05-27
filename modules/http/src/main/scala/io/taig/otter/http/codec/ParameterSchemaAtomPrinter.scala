@@ -4,7 +4,7 @@ import io.taig.otter.*
 import io.taig.otter.codec.*
 import io.taig.otter.http.Parameter
 
-object ParameterValueAtomPrinter extends Encoder[Parameter.Schema.Atom, String]:
+object ParameterSchemaAtomPrinter extends Encoder[Parameter.Schema.Atom, String]:
   val constant = ConstantEncoder(encoder = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val union = UnionEncoder(encoder = this)

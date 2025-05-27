@@ -9,9 +9,9 @@ import io.taig.otter.http.FormData
 import io.taig.otter.http.FormData.Dictionary
 
 object FormDataEncoder extends Encoder[FormData, List[(String, Option[String])]]:
-  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = FormDataValuePrinter)
+  val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = FormDataSchemaPrinter)
   val record = RecordEncoder(
-    field = FieldEncoder(key = KeyPrinter.Unquoted, value = FormDataValuePrinter)
+    field = FieldEncoder(key = KeyPrinter.Unquoted, value = FormDataSchemaPrinter)
       .mapK[FormData.Field]([A] => (field: FormData.Field[A]) => field.self)
   )
 

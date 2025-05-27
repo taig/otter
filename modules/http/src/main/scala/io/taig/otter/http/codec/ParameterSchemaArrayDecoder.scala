@@ -8,9 +8,9 @@ import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.TupleDecoder
 import io.taig.otter.http.Parameter
 
-object ParameterValueArrayDecoder extends Decoder[Parameter.Schema.Array, Chain[String]]:
-  val collection = CollectionDecoder(decoder = ParameterValueAtomParser)
-  val tuple = TupleDecoder(decoder = ParameterValueAtomParser)
+object ParameterSchemaArrayDecoder extends Decoder[Parameter.Schema.Array, Chain[String]]:
+  val collection = CollectionDecoder(decoder = ParameterSchemaAtomParser)
+  val tuple = TupleDecoder(decoder = ParameterSchemaAtomParser)
 
   override def decode[A](schema: Parameter.Schema.Array[A], value: Chain[String]): Validated[Violations, A] =
     schema match

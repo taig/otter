@@ -8,9 +8,9 @@ import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.TupleDecoder
 import io.taig.otter.http.Query
 
-object QueryValueArrayDecoder extends Decoder[Query.Schema.Array, Chain[String]]:
-  val collection = CollectionDecoder(decoder = QueryValueAtomParser)
-  val tuple = TupleDecoder(decoder = QueryValueAtomParser)
+object QuerySchemaArrayDecoder extends Decoder[Query.Schema.Array, Chain[String]]:
+  val collection = CollectionDecoder(decoder = QuerySchemaAtomParser)
+  val tuple = TupleDecoder(decoder = QuerySchemaAtomParser)
 
   override def decode[A](schema: Query.Schema.Array[A], values: Chain[String]): Validated[Violations, A] = schema match
     case Query.Schema.Array.Collection(self) => collection.decode(schema = self.self, values = values.toList)

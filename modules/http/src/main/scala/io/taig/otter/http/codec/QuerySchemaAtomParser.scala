@@ -10,10 +10,10 @@ import io.taig.otter.codec.PrimitiveParser
 import io.taig.otter.codec.UnionDecoder
 import io.taig.otter.http.Query
 
-object QueryValueAtomParser extends Decoder[Query.Schema.Atom, String]:
-  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = QueryValueAtomPrinter), render = identity)
+object QuerySchemaAtomParser extends Decoder[Query.Schema.Atom, String]:
+  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = QuerySchemaAtomPrinter), render = identity)
   val enumeration =
-    EnumerationDecoder(codec = Codec(decoder = this, encoder = QueryValueAtomPrinter), render = identity)
+    EnumerationDecoder(codec = Codec(decoder = this, encoder = QuerySchemaAtomPrinter), render = identity)
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Query.Schema.Atom[A], value: String): Validated[Violations, A] = schema match

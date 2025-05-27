@@ -5,9 +5,9 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.codec.TupleEncoder
 import io.taig.otter.http.Query
 
-object QueryValueArrayEncoder extends Encoder[Query.Schema.Array, Seq[String]]:
-  val collection = CollectionEncoder(encoder = QueryValueAtomPrinter)
-  val tuple = TupleEncoder(encoder = QueryValueAtomPrinter)
+object QuerySchemaArrayEncoder extends Encoder[Query.Schema.Array, Seq[String]]:
+  val collection = CollectionEncoder(encoder = QuerySchemaAtomPrinter)
+  val tuple = TupleEncoder(encoder = QuerySchemaAtomPrinter)
 
   override def encode[A](schema: Query.Schema.Array[A], a: A): Seq[String] = schema match
     case Query.Schema.Array.Collection(self) => collection.encode(schema = self.self, a)

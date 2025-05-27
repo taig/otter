@@ -1,19 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import operation.{
-  EnrichedCollectionSchemaInvariant,
-  EnrichedConstantSchemaInvariant,
-  EnrichedDictionarySchemaInvariant,
-  EnrichedEnumerationSchemaInvariant,
-  EnrichedFieldSchemaInvariant,
-  EnrichedNullableSchemaInvariant,
-  EnrichedPrimitiveSchemaInvariant,
-  EnrichedRecordSchemaInvariant,
-  EnrichedSchemaInvariant,
-  EnrichedTupleSchemaInvariant,
-  EnrichedUnionSchemaInvariant
-}
+import io.taig.otter.operation.*
 
 sealed abstract class Json[A] extends Product with Serializable
 

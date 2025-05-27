@@ -12,10 +12,10 @@ import io.taig.otter.codec.KeyParser
 import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Header
 
-object HeaderValueObjectDecoder extends Decoder[Header.Schema.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HeaderValueObjectValueDecoder)
+object HeaderSchemaObjectDecoder extends Decoder[Header.Schema.Object, Chain[(String, Option[String])]]:
+  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = HeaderSchemaObjectValueDecoder)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec.Unquoted, value = HeaderValueObjectValueDecoder, empty = none[String])
+    field = FieldDecoder(key = KeyCodec.Unquoted, value = HeaderSchemaObjectValueDecoder, empty = none[String])
       .mapK[Header.Schema.Field]([A] => (field: Header.Schema.Field[A]) => field.self.self)
   )
 

@@ -13,15 +13,15 @@ import io.taig.otter.component.UnionComponent
 import io.taig.otter.http.FormData
 
 trait FormDataComponent
-    extends ConstantComponent[FormData.Value.Constant, FormData.Value],
-      DictionaryComponent[FormData.Dictionary, Key, FormData.Value],
-      EnumerationComponent[FormData.Value.Enumeration, FormData.Value],
-      FieldComponent[FormData.Field, Key, FormData.Value, FormData.Record],
-      FieldComponent.Primitive.String[FormData.Field, Key, FormData.Value, FormData.Record],
-      NullableComponent[FormData.Value.Nullable, FormData.Value],
-      PrimitiveComponent.String[FormData.Value.Primitive],
+    extends ConstantComponent[FormData.Schema.Constant, FormData.Schema],
+      DictionaryComponent[FormData.Dictionary, Key, FormData.Schema],
+      EnumerationComponent[FormData.Schema.Enumeration, FormData.Schema],
+      FieldComponent[FormData.Field, Key, FormData.Schema, FormData.Record],
+      FieldComponent.Primitive.String[FormData.Field, Key, FormData.Schema, FormData.Record],
+      NullableComponent[FormData.Schema.Nullable, FormData.Schema],
+      PrimitiveComponent.String[FormData.Schema.Primitive],
       RecordComponent[FormData.Record, FormData.Field],
-      UnionComponent[FormData.Value.Union, FormData.Value]:
+      UnionComponent[FormData.Schema.Union, FormData.Schema]:
   override def key: KeyComponent = KeyComponent
 
 object FormDataComponent extends FormDataComponent

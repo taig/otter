@@ -11,5 +11,5 @@ object ParameterParser extends Decoder[Parameter, String]:
 
   def decode[A](schema: Parameter.Value[A], value: String): Validated[Violations, A] = schema match
     case Parameter.Value.Root(name, schema, style) =>
-      ParameterValueParser(name, style).decode(schema = schema.value, value)
+      ParameterSchemaParser(name, style).decode(schema = schema.value, value)
     case Parameter.Value.Modify(self, f, _) => decode(schema = self, value).map(f)

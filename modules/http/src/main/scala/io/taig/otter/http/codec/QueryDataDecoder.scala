@@ -24,7 +24,7 @@ object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
         val (remainders, results) = values.partitionMap: (key, value) =>
           Either.cond(key === name, right = value, left = (key, value))
 
-        QueryValueDecoder(explode, style)
+        QuerySchemaDecoder(explode, style)
           .decodeRemainding(schema = schema.value, values = results)
           .leftMap(name /: _)
           .map((remainders, a) => (remainders.tupleLeft(name), a))

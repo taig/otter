@@ -21,7 +21,7 @@ object HeaderDataDecoder extends Decoder.Remainding[Header, Headers.Data]:
         result
           .toValid(Violations.rootNec(Violation.required))
           .andThen: value =>
-            HeaderValueParser.decode(schema = schema.value, value).tupleLeft(remainders)
+            HeaderSchemaParser.decode(schema = schema.value, value).tupleLeft(remainders)
           .leftMap(s"$name" /: _)
       case Header.Value.Optional(self) =>
         val reference = schema.name

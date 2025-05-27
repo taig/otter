@@ -7,13 +7,13 @@ import io.taig.otter.operation.*
 sealed abstract class FormData[A] extends Product with Serializable
 
 object FormData:
-  final case class Dictionary[A](self: Self.Dictionary[Key, FormData.Value, A]) extends FormData[A]
+  final case class Dictionary[A](self: Self.Dictionary[Key, FormData.Schema, A]) extends FormData[A]
 
   object Dictionary:
-    given DictionarySchemaInvariant[FormData.Dictionary, Key, FormData.Value] =
-      DictionarySchemaInvariant[Self.Dictionary[Key, FormData.Value, *], Key, FormData.Value]
+    given DictionarySchemaInvariant[FormData.Dictionary, Key, FormData.Schema] =
+      DictionarySchemaInvariant[Self.Dictionary[Key, FormData.Schema, *], Key, FormData.Schema]
         .imapK(
-          [A] => (schema: Self.Dictionary[Key, FormData.Value, A]) => Dictionary(schema)
+          [A] => (schema: Self.Dictionary[Key, FormData.Schema, A]) => Dictionary(schema)
         )([A] => (formData: FormData.Dictionary[A]) => formData.self)
 
   final case class Record[A](self: Self.Record[FormData.Field, A]) extends FormData[A]
@@ -25,59 +25,59 @@ object FormData:
           [A] => (schema: Self.Record[FormData.Field, A]) => Record(schema)
         )([A] => (formData: FormData.Record[A]) => formData.self)
 
-  sealed abstract class Value[A] extends Product with Serializable
+  sealed abstract class Schema[A] extends Product with Serializable
 
-  object Value:
-    final case class Constant[A](self: Self.Constant[FormData.Value, A]) extends Value[A]
+  object Schema:
+    final case class Constant[A](self: Self.Constant[FormData.Schema, A]) extends Schema[A]
 
     object Constant:
-      given ConstantSchemaInvariant[FormData.Value.Constant, FormData.Value] =
-        ConstantSchemaInvariant[Self.Constant[FormData.Value, *], FormData.Value]
+      given ConstantSchemaInvariant[FormData.Schema.Constant, FormData.Schema] =
+        ConstantSchemaInvariant[Self.Constant[FormData.Schema, *], FormData.Schema]
           .imapK(
-            [A] => (schema: Self.Constant[FormData.Value, A]) => Constant(schema)
-          )([A] => (formData: FormData.Value.Constant[A]) => formData.self)
+            [A] => (schema: Self.Constant[FormData.Schema, A]) => Constant(schema)
+          )([A] => (formData: FormData.Schema.Constant[A]) => formData.self)
 
-    final case class Enumeration[A](self: Self.Enumeration[FormData.Value, A]) extends Value[A]
+    final case class Enumeration[A](self: Self.Enumeration[FormData.Schema, A]) extends Schema[A]
 
     object Enumeration:
-      given EnumerationSchemaInvariant[FormData.Value.Enumeration, FormData.Value] =
-        EnumerationSchemaInvariant[Self.Enumeration[FormData.Value, *], FormData.Value]
+      given EnumerationSchemaInvariant[FormData.Schema.Enumeration, FormData.Schema] =
+        EnumerationSchemaInvariant[Self.Enumeration[FormData.Schema, *], FormData.Schema]
           .imapK(
-            [A] => (schema: Self.Enumeration[FormData.Value, A]) => Enumeration(schema)
-          )([A] => (formData: FormData.Value.Enumeration[A]) => formData.self)
+            [A] => (schema: Self.Enumeration[FormData.Schema, A]) => Enumeration(schema)
+          )([A] => (formData: FormData.Schema.Enumeration[A]) => formData.self)
 
-    final case class Nullable[A](self: Self.Nullable[FormData.Value, A]) extends Value[A]
+    final case class Nullable[A](self: Self.Nullable[FormData.Schema, A]) extends Schema[A]
 
     object Nullable:
-      given NullableSchemaInvariant[FormData.Value.Nullable, FormData.Value] =
-        NullableSchemaInvariant[Self.Nullable[FormData.Value, *], FormData.Value]
+      given NullableSchemaInvariant[FormData.Schema.Nullable, FormData.Schema] =
+        NullableSchemaInvariant[Self.Nullable[FormData.Schema, *], FormData.Schema]
           .imapK(
-            [A] => (schema: Self.Nullable[FormData.Value, A]) => Nullable(schema)
-          )([A] => (formData: FormData.Value.Nullable[A]) => formData.self)
+            [A] => (schema: Self.Nullable[FormData.Schema, A]) => Nullable(schema)
+          )([A] => (formData: FormData.Schema.Nullable[A]) => formData.self)
 
-    final case class Primitive[A](self: Self.Primitive.String[A]) extends Value[A]
+    final case class Primitive[A](self: Self.Primitive.String[A]) extends Schema[A]
 
     object Primitive:
-      given PrimitiveSchemaInvariant.String[FormData.Value.Primitive] = PrimitiveSchemaInvariant
+      given PrimitiveSchemaInvariant.String[FormData.Schema.Primitive] = PrimitiveSchemaInvariant
         .String[Self.Primitive.String]
         .imapK(
           [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
-        )([A] => (formData: FormData.Value.Primitive[A]) => formData.self)
+        )([A] => (formData: FormData.Schema.Primitive[A]) => formData.self)
 
-    final case class Union[A](self: Self.Union[FormData.Value, A]) extends Value[A]
+    final case class Union[A](self: Self.Union[FormData.Schema, A]) extends Schema[A]
 
     object Union:
-      given UnionSchemaInvariant[FormData.Value.Union, FormData.Value] =
-        UnionSchemaInvariant[Self.Union[FormData.Value, *], FormData.Value]
+      given UnionSchemaInvariant[FormData.Schema.Union, FormData.Schema] =
+        UnionSchemaInvariant[Self.Union[FormData.Schema, *], FormData.Schema]
           .imapK(
-            [A] => (schema: Self.Union[FormData.Value, A]) => Union(schema)
-          )([A] => (formData: FormData.Value.Union[A]) => formData.self)
+            [A] => (schema: Self.Union[FormData.Schema, A]) => Union(schema)
+          )([A] => (formData: FormData.Schema.Union[A]) => formData.self)
 
-  final case class Field[A](self: Self.Field[Key, FormData.Value, A])
+  final case class Field[A](self: Self.Field[Key, FormData.Schema, A])
 
   object Field:
-    given FieldSchemaInvariant[FormData.Field, Key, FormData.Value] =
-      FieldSchemaInvariant[Self.Field[Key, FormData.Value, *], Key, FormData.Value]
+    given FieldSchemaInvariant[FormData.Field, Key, FormData.Schema] =
+      FieldSchemaInvariant[Self.Field[Key, FormData.Schema, *], Key, FormData.Schema]
         .imapK(
-          [A] => (schema: Self.Field[Key, FormData.Value, A]) => Field(schema)
+          [A] => (schema: Self.Field[Key, FormData.Schema, A]) => Field(schema)
         )([A] => (formData: FormData.Field[A]) => formData.self)

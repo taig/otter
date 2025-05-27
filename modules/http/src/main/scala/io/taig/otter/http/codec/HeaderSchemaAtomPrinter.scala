@@ -3,7 +3,7 @@ package io.taig.otter.http.codec
 import io.taig.otter.codec.*
 import io.taig.otter.http.Header
 
-object HeaderValueAtomPrinter extends Encoder[Header.Schema.Atom, String]:
+object HeaderSchemaAtomPrinter extends Encoder[Header.Schema.Atom, String]:
   val constant = ConstantEncoder(encoder = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val union = UnionEncoder(encoder = this)

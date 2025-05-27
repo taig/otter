@@ -12,7 +12,7 @@ import io.taig.otter.http.Query.Schema.Nullable
 import io.taig.otter.unescape
 import io.taig.otter.http.Query
 
-final class QueryValueDecoder(explode: Boolean, style: Query.Style)
+final class QuerySchemaDecoder(explode: Boolean, style: Query.Style)
     extends Decoder.Remainding[Query.Schema, Chain[Option[String]]]:
   override def decodeRemainding[A](
       schema: Query.Schema[A],
@@ -22,7 +22,7 @@ final class QueryValueDecoder(explode: Boolean, style: Query.Style)
       val (remainders, value) = values.collectFirstWithRemainders { case Some(value) => value }
       value
         .toValid(Violations.rootNec(Violation.required))
-        .andThen(QueryValueAtomParser.decode(schema, _).tupleLeft(remainders))
+        .andThen(QuerySchemaAtomParser.decode(schema, _).tupleLeft(remainders))
     case schema: Query.Schema.Array[A] =>
       values
         .traverse(_.toValid(Violations.rootNec(Violation.required)))
@@ -32,7 +32,7 @@ final class QueryValueDecoder(explode: Boolean, style: Query.Style)
             case (_, Query.Style.Form)           => decode(values, character = ",")
             case (_, Query.Style.PipeDelimited)  => decode(values, character = "|")
             case (_, Query.Style.SpaceDelimited) => decode(values, character = " ")
-        .andThen(QueryValueArrayDecoder.decode(schema, _))
+        .andThen(QuerySchemaArrayDecoder.decode(schema, _))
         .tupleLeft(Chain.empty)
     case Query.Schema.Nullable(self) =>
       NullableDecoder

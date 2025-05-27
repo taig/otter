@@ -7,7 +7,7 @@ import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.codec.UnionEncoder
 import io.taig.otter.http.Query
 
-object QueryValueAtomPrinter extends Encoder[Query.Schema.Atom, String]:
+object QuerySchemaAtomPrinter extends Encoder[Query.Schema.Atom, String]:
   val constant = ConstantEncoder(encoder = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val union = UnionEncoder(encoder = this)
