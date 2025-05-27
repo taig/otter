@@ -8,7 +8,7 @@ import io.taig.otter.TypescriptState
 import io.taig.otter.TypescriptZodDefinition
 
 final class TypescriptZodEndpointsRenderer(imports: List[String]):
-  def render(endpoints: List[Endpoint[Json, Json, Json, ?, ?]]): String =
+  def render(endpoints: List[Endpoint[Json, ?, ?]]): String =
     val (references, result) = endpoints
       .traverse(TypescriptZodEndpointRenderer.render)
       .run(initial = TypescriptState.Context.Empty)

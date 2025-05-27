@@ -8,4 +8,4 @@ import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
 import io.taig.otter.sample.app.route.librarian.LibrarianRoutes
 
 object SampleRoutes:
-  def apply(librarians: Ref[IO, List[LibrarianApiSchema]]): Routes[IO, Json, Json, Json] = LibrarianRoutes(librarians)
+  def apply(librarians: Ref[IO, List[LibrarianApiSchema]]): Routes[IO, Json] = LibrarianRoutes(librarians)

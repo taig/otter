@@ -68,10 +68,10 @@ def toResponseData[F[_]: Concurrent](response: Http4sResponse[F]): F[Response.Da
         body
       )
 
-def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
-    routes: Routes[F, S, T, U],
+def toHttp4sRoutes[F[_]: Concurrent, S[_]](
+    routes: Routes[F, S],
     decoder: PayloadDecoder[S],
-    encoder: PayloadEncoder[S + T + U],
+    encoder: PayloadEncoder[S],
     debug: Boolean = false
 ): Http4sRoutes[F] =
   val reader = RequestDataDecoder(decoder)
@@ -94,10 +94,10 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_], T[_], U[_]](
                 Concurrent[F].unit
               .flatMap(fromResponseData)
 
-def toHttp4sApp[F[_]: Concurrent, S[_], T[_], U[_]](
-    app: App[F, S, T, U],
+def toHttp4sApp[F[_]: Concurrent, S[_]](
+    app: App[F, S],
     decoder: PayloadDecoder[S],
-    encoder: PayloadEncoder[S + T + U],
+    encoder: PayloadEncoder[S],
     debug: Boolean = false
 ): Http4sApp[F] =
   val routes = toHttp4sRoutes(routes = app.routes, decoder, encoder, debug)

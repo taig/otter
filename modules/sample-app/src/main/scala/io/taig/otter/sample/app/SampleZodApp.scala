@@ -14,7 +14,8 @@ object SampleZodApp:
     val zod = TypescriptZodEndpointsRenderer(imports = Nil).render(
       endpoints = List(
         endpoint.librarian.librarians.reference.get,
-        endpoint.librarian.post
+        endpoint.librarian.post,
+        endpoint.librarian.librarians.reference.get
       )
     )
 

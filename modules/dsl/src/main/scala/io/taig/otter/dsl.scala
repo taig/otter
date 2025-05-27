@@ -14,18 +14,17 @@ import io.taig.otter.http.Header
 import io.taig.otter.http.Parameter
 
 object dsl extends AllSyntax, AllHttpSyntax, AllHttpJsonSyntax:
-  lazy val formData: FormDataComponent & CaseInsensitiveComponent[FormData.Value.Primitive] & JavaTimeComponent[
-    FormData.Value.Primitive
+  lazy val formData: FormDataComponent & CaseInsensitiveComponent[FormData.Schema.Primitive] & JavaTimeComponent[
+    FormData.Schema.Primitive
   ] = new FormDataComponent
-    with CaseInsensitiveComponent[FormData.Value.Primitive]
-    with JavaTimeComponent[FormData.Value.Primitive]
+    with CaseInsensitiveComponent[FormData.Schema.Primitive]
+    with JavaTimeComponent[FormData.Schema.Primitive]
 
-  lazy val header: HttpHeaderComponent & CaseInsensitiveComponent[Header.Value] & JavaTimeComponent[Header.Value] =
-    new HttpHeaderComponent with CaseInsensitiveComponent[Header.Value] with JavaTimeComponent[Header.Value]
+  lazy val header: HttpHeaderComponent = // & CaseInsensitiveComponent[Header] & JavaTimeComponent[Header] =
+    new HttpHeaderComponent {} // with CaseInsensitiveComponent[Header] with JavaTimeComponent[Header]
 
-  lazy val parameter
-      : ParameterComponent & CaseInsensitiveComponent[Parameter.Value] & JavaTimeComponent[Parameter.Value] =
-    new ParameterComponent with CaseInsensitiveComponent[Parameter.Value] with JavaTimeComponent[Parameter.Value]
+  lazy val parameter: ParameterComponent = // & CaseInsensitiveComponent[Parameter] & JavaTimeComponent[Parameter] =
+    new ParameterComponent {} // with CaseInsensitiveComponent[Parameter] with JavaTimeComponent[Parameter]
 
   lazy val json: JsonComponent & CaseInsensitiveComponent[Json.Primitive] & JavaTimeComponent[Json.Primitive] =
     new JsonComponent with CaseInsensitiveComponent[Json.Primitive] with JavaTimeComponent[Json.Primitive]

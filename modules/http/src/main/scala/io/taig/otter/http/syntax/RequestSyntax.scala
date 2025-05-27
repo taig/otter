@@ -17,9 +17,8 @@ trait RequestSyntax:
       merge: Merge[A, B]
   ): Request[S, (merge.Out, C)] = Enrichment:
     Request.Value
-    .Payload(self = Request.Value.Root(method, url, headers), bodies)
-    .imap((a, b, c) => (merge.apply((a, b)), c))((ab, c) => (merge.unapply(ab) :* c))
-
+      .Payload(self = Request.Value.Root(method, url, headers), bodies)
+      .imap((a, b, c) => (merge.apply((a, b)), c))((ab, c) => (merge.unapply(ab) :* c))
 
   @targetName("requestHeadersBody")
   def request[S[_], A, B, C](method: Method, url: Url[A], headers: Headers[B], body: Body[S, C])(using
@@ -31,11 +30,11 @@ trait RequestSyntax:
       merge: Merge[A, B]
   ): Request[S, merge.Out] = Enrichment:
     Request.Value
-    .Payload(self = Request.Value.Root(method, url, headers = Headers.Empty), bodies)
-    .imap((a, _, b) => merge.apply((a, b))) { ab =>
-      val (a, b) = merge.unapply(ab)
-      (a, (), b)
-    }
+      .Payload(self = Request.Value.Root(method, url, headers = Headers.Empty), bodies)
+      .imap((a, _, b) => merge.apply((a, b))) { ab =>
+        val (a, b) = merge.unapply(ab)
+        (a, (), b)
+      }
 
   @targetName("requestBody")
   def request[S[_], A, B](method: Method, url: Url[A], body: Body[S, B])(using
