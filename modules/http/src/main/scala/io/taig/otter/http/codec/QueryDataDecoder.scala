@@ -9,22 +9,22 @@ import io.taig.otter.http.Queries
 import io.taig.otter.partitionMap
 import io.taig.otter.http.Query
 
-object QueryDataDecoder extends Decoder.Remainding[Query, Queries.Data]:
-  override def decodeRemainding[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
-    decodeRemainding(schema = schema.self, values)
+object QueryDataDecoder extends Decoder.Remaining[Query, Queries.Data]:
+  override def decodeRemaining[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
+    decodeRemaining(schema = schema.self, values)
 
-  def decodeRemainding[A](schema: Query.Value[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
+  def decodeRemaining[A](schema: Query.Value[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
     schema match
-      case Query.Value.Modify(self, f, _) => decodeRemainding(schema = self, values).map(_.map(f))
+      case Query.Value.Modify(self, f, _) => decodeRemaining(schema = self, values).map(_.map(f))
       case Query.Value.Optional(self) =>
         if values.exists((key, _) => key === self.name)
-        then decodeRemainding(schema = self, values).map(_.map(_.some))
+        then decodeRemaining(schema = self, values).map(_.map(_.some))
         else (values, none).valid
       case Query.Value.Root(name, schema, explode, style) =>
         val (remainders, results) = values.partitionMap: (key, value) =>
           Either.cond(key === name, right = value, left = (key, value))
 
         QuerySchemaDecoder(explode, style)
-          .decodeRemainding(schema = schema.value, values = results)
+          .decodeRemaining(schema = schema.value, values = results)
           .leftMap(name /: _)
           .map((remainders, a) => (remainders.tupleLeft(name), a))

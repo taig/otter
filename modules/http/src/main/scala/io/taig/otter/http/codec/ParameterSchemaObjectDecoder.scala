@@ -13,9 +13,9 @@ import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Parameter
 
 object ParameterSchemaObjectDecoder extends Decoder[Parameter.Schema.Object, Chain[(String, Option[String])]]:
-  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = ParameterSchemaObjectAtomDecoder)
+  val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = ParameterSchemaObjectValueDecoder)
   val record = RecordDecoder(
-    field = FieldDecoder(key = KeyCodec.Unquoted, value = ParameterSchemaObjectAtomDecoder, empty = none[String])
+    field = FieldDecoder(key = KeyCodec.Unquoted, value = ParameterSchemaObjectValueDecoder, empty = none[String])
       .mapK[Parameter.Schema.Field]([A] => (field: Parameter.Schema.Field[A]) => field.self.self)
   )
 

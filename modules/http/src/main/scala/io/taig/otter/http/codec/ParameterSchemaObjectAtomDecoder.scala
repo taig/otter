@@ -8,13 +8,13 @@ import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import Self.http.Parameter
 
-object ParameterSchemaObjectAtomDecoder extends Decoder[Parameter.Schema.Object.Atom, Option[String]]:
+object ParameterSchemaObjectValueDecoder extends Decoder[Parameter.Schema.Object.Value, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)
 
-  override def decode[A](schema: Parameter.Schema.Object.Atom[A], value: Option[String]): Validated[Violations, A] =
+  override def decode[A](schema: Parameter.Schema.Object.Value[A], value: Option[String]): Validated[Violations, A] =
     schema match
-      case Parameter.Schema.Object.Atom.Nullable(self) => nullable.decode(schema = self.self, value)
-      case schema: Parameter.Schema.Atom[A] =>
+      case Parameter.Schema.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
+      case schema: Parameter.Schema.Value[A] =>
         value
           .toValid(Violations.rootNec(Violation.required))
-          .andThen(ParameterSchemaAtomParser.decode(schema, _))
+          .andThen(ParameterSchemaValueParser.decode(schema, _))

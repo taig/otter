@@ -9,7 +9,7 @@ import io.taig.otter.http.component.HttpQueryComponent.*
 final class HttpQueryParserTest extends OtterSuite:
   test("primitive"):
     assertEq(
-      obtained = HttpQueryDecoder(explode = false, style = Query.Style.Form).decodeRemainding(
+      obtained = HttpQueryDecoder(explode = false, style = Query.Style.Form).decodeRemaining(
         schema = string,
         values = Chain("foo".some, "bar".some)
       ),

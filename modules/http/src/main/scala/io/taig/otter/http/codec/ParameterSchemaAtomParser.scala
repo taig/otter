@@ -5,13 +5,13 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.*
 import io.taig.otter.http.Parameter
 
-object ParameterSchemaAtomParser extends Decoder[Parameter.Schema.Atom, String]:
-  val constant = ConstantDecoder(codec = toCodec(encoder = ParameterSchemaAtomPrinter), render = identity)
-  val enumeration = EnumerationDecoder(codec = toCodec(encoder = ParameterSchemaAtomPrinter), render = identity)
+object ParameterSchemaValueParser extends Decoder[Parameter.Schema.Value, String]:
+  val constant = ConstantDecoder(codec = toCodec(encoder = ParameterSchemaValuePrinter), render = identity)
+  val enumeration = EnumerationDecoder(codec = toCodec(encoder = ParameterSchemaValuePrinter), render = identity)
   val union = UnionDecoder(decoder = this)
 
-  override def decode[A](schema: Parameter.Schema.Atom[A], value: String): Validated[Violations, A] = schema match
-    case Parameter.Schema.Atom.Constant(self)    => constant.decode(schema = self.self, value)
-    case Parameter.Schema.Atom.Enumeration(self) => enumeration.decode(schema = self.self, value)
-    case Parameter.Schema.Atom.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self.self, value)
-    case Parameter.Schema.Atom.Union(self)       => union.decode(schema = self.self, value)
+  override def decode[A](schema: Parameter.Schema.Value[A], value: String): Validated[Violations, A] = schema match
+    case Parameter.Schema.Value.Constant(self)    => constant.decode(schema = self.self, value)
+    case Parameter.Schema.Value.Enumeration(self) => enumeration.decode(schema = self.self, value)
+    case Parameter.Schema.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self.self, value)
+    case Parameter.Schema.Value.Union(self)       => union.decode(schema = self.self, value)

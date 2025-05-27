@@ -7,13 +7,13 @@ import io.taig.otter.codec.PrimitivePrinter
 import io.taig.otter.codec.UnionEncoder
 import io.taig.otter.http.Query
 
-object QuerySchemaAtomPrinter extends Encoder[Query.Schema.Atom, String]:
+object QuerySchemaValuePrinter extends Encoder[Query.Schema.Value, String]:
   val constant = ConstantEncoder(encoder = this)
   val enumeration = EnumerationEncoder(encoder = this)
   val union = UnionEncoder(encoder = this)
 
-  override def encode[A](schema: Query.Schema.Atom[A], a: A): String = schema match
-    case Query.Schema.Atom.Constant(self)    => constant.encode(schema = self.self, a)
-    case Query.Schema.Atom.Enumeration(self) => enumeration.encode(schema = self.self, a)
-    case Query.Schema.Atom.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.self, a)
-    case Query.Schema.Atom.Union(self)       => union.encode(schema = self.self, a)
+  override def encode[A](schema: Query.Schema.Value[A], a: A): String = schema match
+    case Query.Schema.Value.Constant(self)    => constant.encode(schema = self.self, a)
+    case Query.Schema.Value.Enumeration(self) => enumeration.encode(schema = self.self, a)
+    case Query.Schema.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.self, a)
+    case Query.Schema.Value.Union(self)       => union.encode(schema = self.self, a)

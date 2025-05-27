@@ -2,12 +2,12 @@
 
 // import cats.data.Chain
 // import cats.effect.IO
-// import cats.effect.std.AtomicCell
+// import cats.effect.std.ValueicCell
 // import cats.syntax.all.*
 // import io.taig.otter.sample.Book
 // import io.taig.otter.sample.app.repository.BookRepository.Error
 
-// final class BookRepository(storage: AtomicCell[IO, Chain[Book]]):
+// final class BookRepository(storage: ValueicCell[IO, Chain[Book]]):
 //   def create(book: Book.Create): IO[Either[Error.Create, Book]] = storage
 //     .evalModify: books =>
 //       IO.raiseWhen(books.exists(_.isbn === book.isbn))(Error.Create.IsbnConflict)

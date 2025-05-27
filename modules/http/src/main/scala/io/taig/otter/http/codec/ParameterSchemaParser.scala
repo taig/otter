@@ -9,7 +9,7 @@ import io.taig.otter.http.Parameter
 
 final class ParameterSchemaParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
   override def decode[A](schema: Parameter.Schema[A], value: String): Validated[Violations, A] = schema match
-    case schema: Parameter.Schema.Atom[A] => ParameterSchemaAtomParser.decode(schema, value)
+    case schema: Parameter.Schema.Value[A] => ParameterSchemaValueParser.decode(schema, value)
     case schema: Parameter.Schema.Array[A] =>
       style
         .match

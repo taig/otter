@@ -23,15 +23,15 @@ trait Decoder[S[_], T]:
   final def toCodec(encoder: Encoder[S, T]): Codec[S, T] = Codec(decoder = this, encoder)
 
 object Decoder:
-  trait Remainding[S[_], T] extends Decoder[S, T]:
+  trait Remaining[S[_], T] extends Decoder[S, T]:
     self =>
 
     override def decode[A](schema: S[A], value: T): Validated[Violations, A] =
-      decodeRemainding(schema, value).map((_, a) => a)
+      decodeRemaining(schema, value).map((_, a) => a)
 
-    def decodeRemainding[A](schema: S[A], value: T): Validated[Violations, (T, A)]
+    def decodeRemaining[A](schema: S[A], value: T): Validated[Violations, (T, A)]
 
-    override def mapK[U[_]](fK: [A] => U[A] => S[A]): Decoder.Remainding[U, T] =
-      new Remainding[U, T]:
-        override def decodeRemainding[A](schema: U[A], value: T): Validated[Violations, (T, A)] =
-          self.decodeRemainding(schema = fK(schema), value)
+    override def mapK[U[_]](fK: [A] => U[A] => S[A]): Decoder.Remaining[U, T] =
+      new Remaining[U, T]:
+        override def decodeRemaining[A](schema: U[A], value: T): Validated[Violations, (T, A)] =
+          self.decodeRemaining(schema = fK(schema), value)

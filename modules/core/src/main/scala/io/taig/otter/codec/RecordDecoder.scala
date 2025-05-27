@@ -5,20 +5,20 @@ import cats.implicits.*
 import io.taig.otter.Record
 import io.taig.otter.Violations
 
-final class RecordDecoder[S[_], T, U](field: Decoder.Remainding[S, List[(T, U)]])
-    extends Decoder.Remainding[Record[S, *], List[(T, U)]]:
-  def decodeRemainding[A](schema: Record[S, A], values: List[(T, U)]): Validated[Violations, (List[(T, U)], A)] =
+final class RecordDecoder[S[_], T, U](field: Decoder.Remaining[S, List[(T, U)]])
+    extends Decoder.Remaining[Record[S, *], List[(T, U)]]:
+  def decodeRemaining[A](schema: Record[S, A], values: List[(T, U)]): Validated[Violations, (List[(T, U)], A)] =
     schema match
       case Record.Empty              => (values, ()).valid
-      case Record.Root(field)        => this.field.decodeRemainding(schema = field.value, values)
-      case Record.Modify(self, f, _) => decodeRemainding(schema = self, values).map(_.map(f))
+      case Record.Root(field)        => this.field.decodeRemaining(schema = field.value, values)
+      case Record.Modify(self, f, _) => decodeRemaining(schema = self, values).map(_.map(f))
       case Record.Zip(left, right) =>
-        decodeRemainding(schema = left, values) match
+        decodeRemaining(schema = left, values) match
           case Validated.Valid((values, a)) =>
-            decodeRemainding(schema = right, values) match
+            decodeRemaining(schema = right, values) match
               case Validated.Valid((values, b))      => (values, (a, b)).valid
               case violations @ Validated.Invalid(_) => violations
           case Validated.Invalid(left) =>
-            decodeRemainding(schema = right, values) match
+            decodeRemaining(schema = right, values) match
               case Validated.Valid((_, _))           => left.invalid
               case violations @ Validated.Invalid(_) => violations

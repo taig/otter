@@ -2,7 +2,7 @@
 
 // import cats.data.Chain
 // import cats.effect.IO
-// import cats.effect.std.AtomicCell
+// import cats.effect.std.ValueicCell
 // import cats.effect.std.UUIDGen
 // import cats.syntax.all.*
 // import io.taig.otter.sample.Librarian
@@ -11,7 +11,7 @@
 
 // import java.util.UUID
 
-// final class LibrarianRepository(storage: AtomicCell[IO, Chain[Librarian]]):
+// final class LibrarianRepository(storage: ValueicCell[IO, Chain[Librarian]]):
 //   def create(librarian: Librarian.Create): IO[Either[Error.Create, Librarian.Summary]] = storage
 //     .evalModify: librarians =>
 //       val verifyEmail: IO[Unit] =

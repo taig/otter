@@ -7,7 +7,7 @@ import io.taig.otter.http.Header
 
 object HeaderSchemaPrinter extends Encoder[Header.Schema, String]:
   override def encode[A](schema: Header.Schema[A], a: A): String = schema match
-    case schema: Header.Schema.Atom[A] => HeaderSchemaAtomPrinter.encode(schema, a)
+    case schema: Header.Schema.Value[A] => HeaderSchemaValuePrinter.encode(schema, a)
     case schema: Header.Schema.Array[A] =>
       HeaderSchemaArrayEncoder
         .encode(schema, a)

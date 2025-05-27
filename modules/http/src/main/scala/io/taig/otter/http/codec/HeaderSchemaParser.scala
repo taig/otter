@@ -11,7 +11,7 @@ import io.taig.otter.http.Header
 
 object HeaderSchemaParser extends Decoder[Header.Schema, String]:
   override def decode[A](schema: Header.Schema[A], value: String): Validated[Violations, A] = schema match
-    case schema: Header.Schema.Atom[A] => HeaderSchemaAtomParser.decode(schema, value)
+    case schema: Header.Schema.Value[A] => HeaderSchemaValueParser.decode(schema, value)
     case schema: Header.Schema.Array[A] =>
       val values = value.split(",").map(unescape(_, ","))
       HeaderSchemaArrayDecoder.decode(schema, Chain.fromIterableOnce(values))

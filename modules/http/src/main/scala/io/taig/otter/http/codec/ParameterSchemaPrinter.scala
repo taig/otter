@@ -8,7 +8,7 @@ import io.taig.otter.http.Parameter
 
 final class ParameterSchemaPrinter(name: String, style: Parameter.Style) extends Encoder[Parameter.Schema, String]:
   override def encode[A](schema: Parameter.Schema[A], a: A): String = schema match
-    case schema: Parameter.Schema.Atom[A] => ParameterSchemaAtomPrinter.encode(schema, a)
+    case schema: Parameter.Schema.Value[A] => ParameterSchemaValuePrinter.encode(schema, a)
     case schema: Parameter.Schema.Array[A] =>
       val values = ParameterSchemaArrayEncoder.encode(schema, a)
 

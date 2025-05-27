@@ -8,7 +8,7 @@ import io.taig.otter.http.Query
 
 final class QuerySchemaEncoder(explode: Boolean, style: Query.Style) extends Encoder[Query.Schema, Option[Seq[String]]]:
   override def encode[A](schema: Query.Schema[A], a: A): Option[Seq[String]] = schema match
-    case schema: Query.Schema.Atom[A] => Seq(QuerySchemaAtomPrinter.encode(schema, a)).some
+    case schema: Query.Schema.Value[A] => Seq(QuerySchemaValuePrinter.encode(schema, a)).some
     case schema: Query.Schema.Array[A] =>
       val values = QuerySchemaArrayEncoder.encode(schema, a)
 

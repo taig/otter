@@ -12,25 +12,21 @@ object Request:
     def method: Method
     def url: Url[?]
     def headers: Headers[?]
-    def bodies: Option[Reference[S, ?]]
+    def bodies: Option[Bodies[S, ?]]
 
     final def imap[B](f: A => B)(g: B => A): Request.Value[S, B] = Request.Value.Modify(self = this, f, g)
 
     final def zip[B](headers: Headers[B]): Request.Value[S, (A, B)] = Request.Value.ZipHeaders(self = this, headers)
-
-    // final def :*[B](header: Header[B]): Request.Value[S, (A, B)] = zip(headers = header.toHeaders)
-
-    // final def *:[B](header: Header[B]): Request.Value[S, (B, A)] = zip(headers = header.toHeaders).imap(_.swap)(_.swap)
 
   object Value:
     final private[otter] case class Modify[S[_], A, B](self: Request.Value[S, A], f: A => B, g: B => A)
         extends Request.Value[S, B]:
       export self.{bodies, headers, method, url}
 
-    final private[otter] case class Payload[S[_], A, B, C](self: Request.Value.Root[A, B], payload: Reference[S, C])
+    final private[otter] case class Payload[S[_], A, B, C](self: Request.Value.Root[A, B], payload: Bodies[S, C])
         extends Request.Value[S, (A, B, C)]:
       export self.{headers, method, url}
-      override def bodies: Option[Reference[S, C]] = payload.some
+      override def bodies: Option[Bodies[S, C]] = payload.some
 
     final private[otter] case class Root[A, B](
         method: Method,
@@ -47,7 +43,7 @@ object Request:
     def method: Method = self.self.method
     def url: Url[?] = self.self.url
     def headers: Headers[?] = self.self.headers
-    def bodies: Option[Reference[S, ?]] = self.self.bodies
+    def bodies: Option[Bodies[S, ?]] = self.self.bodies
 
   final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
     def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))

@@ -20,7 +20,10 @@ object Endpoint:
 
   extension [S[_], A, B](self: Endpoint[S, A, B])
     def request: Request[S, A] = self.self.request
+    def request[C](f: Request[S, A] => Request[S, C]): Endpoint[S, C, B] = self.mapF(_.modifyRequest(f))
+
     def response: Response[S, B] = self.self.response
+    def response[C](f: Response[S, B] => Response[S, C]): Endpoint[S, A, C] = self.mapF(_.modifyResponse(f))
 
   given [S[_], A]: EnrichedSchemaInvariant[Endpoint[S, A, *]] with
     override def imap[B, C](fa: Endpoint[S, A, B])(f: B => C)(g: C => B): Endpoint[S, A, C] = fa.mapF(_.imap(f)(g))

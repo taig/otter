@@ -15,8 +15,10 @@ type Body[+S[_], A] = Enrichment[Body.Value[S, *], A]
 object Body:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
     def mediaType: MediaType
-
     def schema: Reference[S, ?]
+
+    final def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
+    final def matches(contentType: MediaType): Boolean = mediaType === contentType
 
     final def imap[B](f: A => B)(g: B => A): Body.Value[S, B] = Value.Modify(self = this, f, g)
 
@@ -30,10 +32,19 @@ object Body:
 
   extension [S[_], A](self: Body[S, A])
     def mediaType: MediaType = self.self.mediaType
-    def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
-    def matches(contentType: MediaType): Boolean = mediaType === contentType
+    def satisfies(mediaRange: MediaRange): Boolean = self.self.satisfies(mediaRange)
+    def matches(contentType: MediaType): Boolean = self.self.matches(contentType)
 
     def schema: Reference[S, ?] = self.self.schema
+
+    def :+[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] = self.toBodies :+ body
+
+    def +:[T[_], B](body: Body[T, B]): Bodies[S + T, Either[B, A]] = body.toBodies :+ self
+
+    def toBodies: Bodies[S, A] = Enrichment(Bodies.Value.Root(self))
+
+  extension [S[_], A <: Matchable](self: Body[S, A])
+    inline def |[T[_], B <: Matchable](body: Body[T, B]): Bodies[S + T, A | B] = self.toBodies | body
 
   given [S[_]]: EnrichedSchemaInvariant[Body[S, *]] with
     override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.mapF(_.imap(f)(g))
