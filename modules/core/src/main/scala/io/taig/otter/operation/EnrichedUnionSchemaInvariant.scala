@@ -14,18 +14,17 @@ trait EnrichedUnionSchemaInvariant[Self[_], Value[_]]
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): EnrichedUnionSchemaInvariant[T, Value] =
-    new EnrichedUnionSchemaInvariant[T, Value]:
-      override def lift[A](schema: => Value[A]): T[A] = ???
+  ): EnrichedUnionSchemaInvariant[T, Value] = new EnrichedUnionSchemaInvariant[T, Value]:
+    override def lift[A](schema: => Value[A]): T[A] = fK(self.lift(schema))
 
-      extension [A](ta: T[A])
-        override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas(gK(ta))
-        override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
+    extension [A](ta: T[A])
+      override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas(gK(ta))
+      override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
 
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
-      override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+    override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
 
 object EnrichedUnionSchemaInvariant:
   inline def apply[Self[_], Value[_]](using
