@@ -63,6 +63,6 @@ object Results:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Results[S, A])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Results[S, A] =
         self.copy(self = self.self.modifyMetadata(f))

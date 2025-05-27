@@ -190,6 +190,6 @@ object Query:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Query[A])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Query[A] =
         self.copy(self = self.self.modifyMetadata(f))

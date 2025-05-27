@@ -72,6 +72,6 @@ object Bodies:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Bodies[S, A])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Bodies[S, A] =
         self.copy(self = self.self.modifyMetadata(f))

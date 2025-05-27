@@ -56,6 +56,6 @@ object Url:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Url[A])
-      def metadata: Metadata = self.metadata
+      def metadata: Metadata = self.self.metadata
       def metadata(f: Metadata => Metadata): Url[A] =
         self.copy(self = self.self.modifyMetadata(f))

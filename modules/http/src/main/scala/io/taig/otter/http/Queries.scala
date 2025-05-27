@@ -51,6 +51,6 @@ object Queries:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Queries[A])
-      def metadata: Metadata = self.metadata
+      def metadata: Metadata = self.self.metadata
       def metadata(f: Metadata => Metadata): Queries[A] =
         self.copy(self = self.self.modifyMetadata(f))

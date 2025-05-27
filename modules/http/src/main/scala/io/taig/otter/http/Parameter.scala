@@ -260,7 +260,7 @@ object Parameter:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Parameter[A])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Parameter[A] =
         self.copy(self = self.self.modifyMetadata(f))
 

@@ -42,6 +42,6 @@ object Response:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Response[S, A])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Response[S, A] =
         self.copy(self = self.self.modifyMetadata(f))

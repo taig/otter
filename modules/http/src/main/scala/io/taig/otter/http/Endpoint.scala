@@ -32,6 +32,6 @@ object Endpoint:
       fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [B](self: Endpoint[S, A, B])
-      override def metadata: Metadata = self.metadata
+      override def metadata: Metadata = self.self.metadata
       override def metadata(f: Metadata => Metadata): Endpoint[S, A, B] =
         self.copy(self = self.self.modifyMetadata(f))
