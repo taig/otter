@@ -44,10 +44,10 @@ object Request:
       export self.{bodies, method, url}
 
   extension [S[_], A](self: Request[S, A])
-    def method: Method = self.method
-    def url: Url[?] = self.url
-    def headers: Headers[?] = self.headers
-    def bodies: Option[Reference[S, ?]] = self.bodies
+    def method: Method = self.self.method
+    def url: Url[?] = self.self.url
+    def headers: Headers[?] = self.self.headers
+    def bodies: Option[Reference[S, ?]] = self.self.bodies
 
   final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
     def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))
