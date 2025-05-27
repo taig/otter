@@ -1,17 +1,23 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 import io.taig.otter.Violations
 import io.taig.otter.operation.EnrichedSchemaInvariant
 
-final case class Response[+S[_], A](self: Enrichment[Response.Value[S, A]]) extends AnyVal:
-  inline def value: Response.Value[S, A] = self.self
+final case class Response[+S[_], A](value: Response.Value[S, A], metadata: Metadata):
 
   def results: Results[S, A] = value.results
+  def results[S1[a] >: S[a], B](f: Results[S1, A] => Results[S1, B]): Response[S1, B] =
+    copy(value = value.modifyResults(f))
+
   def validation: Result[S, Violations] = value.validation
+  def validation[S1[a] >: S[a]](f: Result[S1, Violations] => Result[S1, Violations]): Response[S1, A] =
+    copy(value = value.modifyValidation(f))
+
   def failure: Result[S, Option[String]] = value.failure
+  def failure[S1[a] >: S[a]](f: Result[S1, Option[String]] => Result[S1, Option[String]]): Response[S1, A] =
+    copy(value = value.modifyFailure(f))
 
 object Response:
   final case class Value[+S[_], A](
@@ -39,9 +45,9 @@ object Response:
 
   given [S[_]]: EnrichedSchemaInvariant[Response[S, *]] with
     override def imap[A, B](fa: Response[S, A])(f: A => B)(g: B => A): Response[S, B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Response[S, A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Response[S, A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(self.self.metadata))
