@@ -9,7 +9,18 @@ import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
 import org.typelevel.ci.*
 
-type Headers[A] = Enrichment[Headers.Value, A]
+final case class Headers[A](self: Enrichment[Headers.Value[A]]) extends AnyVal:
+  inline def value: Headers.Value[A] = self.self
+
+  def toChain: Chain[Header[?]] = value.toChain
+
+  def zip[B](headers: Headers[B]): Headers[(A, B)] = Headers(Enrichment(value.zip(headers.value)))
+
+  def *[B](headers: Headers[B])(using merge: Merge[A, B]): Headers[merge.Out] = this.zip(headers).merge
+
+  def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = this * header.toHeaders
+
+  def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header.toHeaders * this
 
 object Headers:
   sealed abstract class Value[A]:
@@ -53,23 +64,13 @@ object Headers:
           .leftMap: error =>
             Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
 
-  val Empty: Headers[Unit] = Enrichment(Headers.Value.Empty)
-
-  extension [A](self: Headers[A])
-    def toChain: Chain[Header[?]] = self.self.toChain
-
-    def zip[B](headers: Headers[B]): Headers[(A, B)] = Enrichment(self.self.zip(headers.self))
-
-    def merge[B](headers: Headers[B])(using merge: Merge[A, B]): Headers[merge.Out] = zip(headers).merge
-
-    def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = self.merge(header.toHeaders)
-
-    def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header.toHeaders.merge(self)
+  val Empty: Headers[Unit] = Headers(Enrichment(Headers.Value.Empty))
 
   given EnrichedSchemaInvariant[Headers] with
     override def imap[A, B](fa: Headers[A])(f: A => B)(g: B => A): Headers[B] =
-      fa.mapF(_.imap(f)(g))
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Headers[A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Headers[A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Headers[A] =
+        self.copy(self = self.self.modifyMetadata(f))

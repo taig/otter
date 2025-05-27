@@ -6,7 +6,16 @@ import io.taig.otter.Enrichment
 import io.taig.otter.operation.EnrichedSchemaInvariant
 import cats.syntax.all.*
 
-type Endpoint[+S[_], A, B] = Enrichment[Endpoint.Value[S, A, *], B]
+final case class Endpoint[+S[_], A, B](self: Enrichment[Endpoint.Value[S, A, B]]) extends AnyVal:
+  inline def value: Endpoint.Value[S, A, B] = self.self
+
+  def request: Request[S, A] = value.request
+  def request[S1[a] >: S[a], C](f: Request[S, A] => Request[S1, C]): Endpoint[S1, C, B] =
+    copy(self = self.map(_.modifyRequest(f)))
+
+  def response: Response[S, B] = value.response
+  def response[S1[a] >: S[a], C](f: Response[S, B] => Response[S1, C]): Endpoint[S1, A, C] =
+    copy(self = self.map(_.modifyResponse(f)))
 
 object Endpoint:
   final case class Value[+S[_], A, B](request: Request[S, A], response: Response[S, B]):
@@ -18,18 +27,11 @@ object Endpoint:
     def modifyResponse[S1[a] >: S[a], C](f: Response[S, B] => Response[S1, C]): Endpoint.Value[S1, A, C] =
       copy(response = f(response))
 
-  type Any = Enrichment[Endpoint.Value[?, ?, *], ?]
-
-  extension [S[_], A, B](self: Endpoint[S, A, B])
-    def request: Request[S, A] = self.self.request
-    def request[C](f: Request[S, A] => Request[S, C]): Endpoint[S, C, B] = self.mapF(_.modifyRequest(f))
-
-    def response: Response[S, B] = self.self.response
-    def response[C](f: Response[S, B] => Response[S, C]): Endpoint[S, A, C] = self.mapF(_.modifyResponse(f))
-
   given [S[_], A]: EnrichedSchemaInvariant[Endpoint[S, A, *]] with
-    override def imap[B, C](fa: Endpoint[S, A, B])(f: B => C)(g: C => B): Endpoint[S, A, C] = fa.mapF(_.imap(f)(g))
+    override def imap[B, C](fa: Endpoint[S, A, B])(f: B => C)(g: C => B): Endpoint[S, A, C] =
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [B](self: Endpoint[S, A, B])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Endpoint[S, A, B] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Endpoint[S, A, B] =
+        self.copy(self = self.self.modifyMetadata(f))

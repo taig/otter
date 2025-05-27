@@ -5,7 +5,7 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Path
 
 object PathDataEncoder extends Encoder[Path, Path.Data]:
-  override def encode[A](path: Path[A], a: A): Path.Data = encode(path = path.self, a)
+  override def encode[A](path: Path[A], a: A): Path.Data = encode(path = path.value, a)
 
   def encode[A](path: Path.Value[A], a: A): Path.Data = path match
     case Path.Value.Empty              => Chain.empty

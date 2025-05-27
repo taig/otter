@@ -7,7 +7,7 @@ import io.taig.otter.http.Queries
 import io.taig.otter.http.Query
 
 object QueryDataEncoder extends Encoder[Query, Queries.Data]:
-  override def encode[A](schema: Query[A], a: A): Queries.Data = encode(schema = schema.self, a)
+  override def encode[A](schema: Query[A], a: A): Queries.Data = encode(schema = schema.value, a)
 
   def encode[A](schema: Query.Value[A], a: A): Queries.Data = schema match
     case Query.Value.Modify(self, _, g) => encode(schema = self, g(a))

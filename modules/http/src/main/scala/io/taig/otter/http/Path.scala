@@ -9,7 +9,20 @@ import io.taig.otter.Merge
 import io.taig.otter.Enrichment
 import io.taig.otter.Metadata
 
-type Path[A] = Enrichment[Path.Value, A]
+final case class Path[A](self: Enrichment[Path.Value[A]]) extends AnyVal:
+  inline def value: Path.Value[A] = self.self
+
+  def toSegments: Chain[String | Parameter[?]] = value.toSegments
+
+  def zip[B](path: Path[B]): Path[(A, B)] = Path(Enrichment(value.zip(path.value)))
+
+  def *[B](path: Path[B])(using merge: Merge[A, B]): Path[merge.Out] = zip(path).merge
+
+  def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] = this * parameter.toPath
+
+  def /(name: String): Path[A] = Path(Enrichment(value.zip(Path.Value.Static(name)).imap((a, _) => a)((_, ()))))
+
+  def toUrl: Url[A] = Url(Enrichment(Url.Value.Root(path = this, queries = Queries.Empty).imap((a, _) => a)((_, ()))))
 
 object Path:
   sealed abstract class Value[A] extends Product with Serializable:
@@ -44,27 +57,15 @@ object Path:
 
   type Data = Chain[String]
 
-  val Empty: Path[Unit] = Enrichment(Value.Empty)
-
-  extension [A](self: Path[A])
-    def toSegments: Chain[String | Parameter[?]] = self.self.toSegments
-
-    def zip[B](path: Path[B]): Path[(A, B)] = Enrichment(self.self.zip(path.self))
-
-    def merge[B](path: Path[B])(using merge: Merge[A, B]): Path[merge.Out] = self.zip(path).merge
-
-    def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] =
-      self.zip(parameter.toPath).merge
-
-    def /(name: String): Path[A] = Enrichment(self.self.zip(Value.Static(name)).imap((a, _) => a)((_, ())))
-
-    def toUrl: Url[A] = Enrichment(Url.Value.Root(path = self, queries = Queries.Empty).imap((a, _) => a)((_, ())))
+  val Empty: Path[Unit] = Path(Enrichment(Value.Empty))
 
   given EnrichedSchemaInvariant[Path] with
-    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] = fa.mapF(_.imap(f)(g))
+    override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] =
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Path[A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Path[A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Path[A] =
+        self.copy(self = self.self.modifyMetadata(f))
 
-  given [A]: Show[Path[A]] = _.self.show
+  given [A]: Show[Path[A]] = _.value.show

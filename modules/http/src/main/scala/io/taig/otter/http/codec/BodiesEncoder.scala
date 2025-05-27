@@ -14,7 +14,7 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
       accept: List[MediaRange],
       a: A
   ): Either[ContentNegotiationFailed, (MediaType, Array[Byte])] =
-    encode(schema = schema.self, accept, a)
+    encode(schema = schema.value, accept, a)
 
   def encode[A](
       schema: Bodies.Value[S, A],
@@ -35,7 +35,7 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
     case Bodies.Value.Root(body) => this.body.encode(body, accept, a).tupleLeft(body.mediaType)
 
   def encode[A](schema: Bodies[S, A], contentType: Option[MediaType], a: A): Either[MediaTypeUnsupported, Array[Byte]] =
-    encode(schema = schema.self, contentType, a)
+    encode(schema = schema.value, contentType, a)
 
   def encode[A](
       schema: Bodies.Value[S, A],
@@ -55,7 +55,7 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
       a.fold(encode(schema = left, contentType, _), encode(schema = right, contentType, _))
     case Bodies.Value.Root(body) => this.body.encode(body, contentType, a)
 
-  def encode[A](schema: Bodies[S, A], a: A): (MediaType, Array[Byte]) = encode(schema = schema.self, a)
+  def encode[A](schema: Bodies[S, A], a: A): (MediaType, Array[Byte]) = encode(schema = schema.value, a)
 
   def encode[A](schema: Bodies.Value[S, A], a: A): (MediaType, Array[Byte]) = schema match
     case Bodies.Value.Modify(self, _, g) => encode(schema = self, g(a))

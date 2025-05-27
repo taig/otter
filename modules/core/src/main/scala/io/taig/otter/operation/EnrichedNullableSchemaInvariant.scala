@@ -28,11 +28,11 @@ object EnrichedNullableSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: NullableSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedNullableSchemaInvariant[Enrichment[Self, *], Value] =
-    val nullable: NullableSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedNullableSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val nullable: NullableSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedNullableSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedNullableSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export nullable.{apply, void}
       export enrichment.{imap, metadata}

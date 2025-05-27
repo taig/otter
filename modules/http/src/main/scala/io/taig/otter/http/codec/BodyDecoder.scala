@@ -15,7 +15,7 @@ final class BodyDecoder[-S[_]](decoder: PayloadDecoder[S]):
       schema: Body[S, A],
       contentType: Option[MediaType],
       bytes: Array[Byte]
-  ): Either[MediaTypeUnsupported | ValidationViolations, A] = decode(schema = schema.self, contentType, bytes)
+  ): Either[MediaTypeUnsupported | ValidationViolations, A] = decode(schema = schema.value, contentType, bytes)
 
   def decode[A](
       schema: Body.Value[S, A],

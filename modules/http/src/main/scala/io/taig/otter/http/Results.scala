@@ -8,7 +8,19 @@ import io.taig.otter.operation.*
 import io.taig.otter.Reference
 import io.taig.otter.Enrichment
 
-type Results[+S[_], A] = Enrichment[Results.Value[S, *], A]
+final case class Results[+S[_], A](self: Enrichment[Results.Value[S, A]]) extends AnyVal:
+  inline def value: Results.Value[S, A] = self.self
+
+  def toChain: Chain[Result[S, ?]] = self.self.toChain
+
+  def orElse[T[_], B](results: Results[T, B]): Results[S + T, Either[A, B]] =
+    Results(Enrichment(value.orElse(results.value)))
+
+  def :+[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] =
+    orElse(result.toResults)
+
+  def +:[T[_], B](result: Result[T, B]): Results[S + T, Either[B, A]] =
+    result.toResults.orElse(this)
 
 object Results:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
@@ -31,18 +43,6 @@ object Results:
     final private[otter] case class Root[S[_], A](result: Result[S, A]) extends Results.Value[S, A]:
       override def toChain: Chain[Result[S, ?]] = Chain.one(result)
 
-  extension [S[_], A](self: Results[S, A])
-    def toChain: Chain[Result[S, ?]] = self.self.toChain
-
-    def orElse[T[_], B](results: Results[T, B]): Results[S + T, Either[A, B]] =
-      Enrichment(self.self.orElse(results.self))
-
-    def :+[T[_], B](result: Result[T, B]): Results[S + T, Either[A, B]] =
-      self.orElse(result.toResults)
-
-    def +:[T[_], B](result: Result[T, B]): Results[S + T, Either[B, A]] =
-      result.toResults.orElse(self)
-
   extension [S[_], A <: Matchable](self: Results[S, A])
     inline def or[T[_], B <: Matchable](results: Results[T, B]): Results[S + T, A | B] =
       self
@@ -60,8 +60,9 @@ object Results:
 
   given [S[_]]: EnrichedSchemaInvariant[Results[S, *]] with
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
-      fa.mapF(_.imap(f)(g))
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Results[S, A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Results[S, A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Results[S, A] =
+        self.copy(self = self.self.modifyMetadata(f))

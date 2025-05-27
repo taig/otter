@@ -7,6 +7,6 @@ import io.taig.otter.http.Response
 
 trait EndpointSyntax:
   def endpoint[S[_], A, B](request: Request[S, A], response: Response[S, B]): Endpoint[S, A, B] =
-    Enrichment(Endpoint.Value(request, response))
+    Endpoint(Enrichment(Endpoint.Value(request, response)))
 
 object EndpointSyntax extends EndpointSyntax

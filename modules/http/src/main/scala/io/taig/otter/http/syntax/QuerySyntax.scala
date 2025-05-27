@@ -6,12 +6,14 @@ import io.taig.otter.http.Query
 import io.taig.otter.Enrichment
 
 trait QuerySyntax:
-  def query[A](name: String, schema: => Query.Schema[A]): Query[A] = Enrichment(
-    Query.Value.Root(
-      name,
-      schema = Reference.later(schema),
-      explode = true,
-      style = Query.Style.Form
+  def query[A](name: String, schema: => Query.Schema[A]): Query[A] = Query(
+    Enrichment(
+      Query.Value.Root(
+        name,
+        schema = Reference.later(schema),
+        explode = true,
+        style = Query.Style.Form
+      )
     )
   )
 

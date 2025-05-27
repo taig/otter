@@ -11,7 +11,7 @@ import io.taig.otter.http.Query
 
 object QueryDataDecoder extends Decoder.Remaining[Query, Queries.Data]:
   override def decodeRemaining[A](schema: Query[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
-    decodeRemaining(schema = schema.self, values)
+    decodeRemaining(schema = schema.value, values)
 
   def decodeRemaining[A](schema: Query.Value[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
     schema match

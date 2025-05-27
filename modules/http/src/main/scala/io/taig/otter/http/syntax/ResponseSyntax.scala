@@ -11,6 +11,6 @@ trait ResponseSyntax:
       results: Results[S, A],
       validation: Result[S, Violations],
       failure: Result[S, Option[String]]
-  ): Response[S, A] = Enrichment(Response.Value(results, validation, failure))
+  ): Response[S, A] = Response(Enrichment(Response.Value(results, validation, failure)))
 
 object ResponseSyntax extends ResponseSyntax

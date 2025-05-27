@@ -12,11 +12,11 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       accept: List[MediaRange],
       a: A
   ): Either[ContentNegotiationFailed, Array[Byte]] =
-    if (accept.isEmpty) then encode(schema = schema.self, a).asRight
+    if (accept.isEmpty) then encode(schema = schema.value, a).asRight
     else
       Either.cond(
         test = accept.exists(schema.mediaType.satisfies),
-        right = encode(schema = schema.self, a),
+        right = encode(schema = schema.value, a),
         left = ContentNegotiationFailed
       )
 
@@ -24,7 +24,7 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       schema: Body[S, A],
       contentType: Option[MediaType],
       a: A
-  ): Either[MediaTypeUnsupported, Array[Byte]] = encode(schema = schema.self, contentType, a)
+  ): Either[MediaTypeUnsupported, Array[Byte]] = encode(schema = schema.value, contentType, a)
 
   def encode[A](
       schema: Body.Value[S, A],
@@ -39,7 +39,7 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       )
     case None => encode(schema, a).asRight
 
-  def encode[A](schema: Body[S, A], a: A): Array[Byte] = encode(schema = schema.self, a)
+  def encode[A](schema: Body[S, A], a: A): Array[Byte] = encode(schema = schema.value, a)
 
   def encode[A](schema: Body.Value[S, A], a: A): Array[Byte] = schema match
     case Body.Value.Modify(self, f, g)        => encode(schema = self, g(a))

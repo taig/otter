@@ -34,11 +34,11 @@ object EnrichedUnionSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: UnionSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedUnionSchemaInvariant[Enrichment[Self, *], Value] =
-    val union: UnionSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedUnionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val union: UnionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedUnionSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedUnionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export union.{lift, orElse, schemas}
       export enrichment.{imap, metadata}

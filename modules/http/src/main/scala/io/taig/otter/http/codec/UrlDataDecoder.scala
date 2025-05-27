@@ -18,7 +18,7 @@ object UrlDataDecoder extends Decoder.Remaining[Url, Url.Data]:
       )
 
   override def decodeRemaining[A](schema: Url[A], value: Data): Validated[Violations, (Data, A)] =
-    decodeRemaining(schema = schema.self, value)
+    decodeRemaining(schema = schema.value, value)
 
   def decodeRemaining[A](schema: Url.Value[A], value: Data): Validated[Violations, (Data, A)] = schema match
     case Url.Value.Empty              => (value, ()).valid

@@ -6,7 +6,7 @@ import io.taig.otter.http.Queries
 
 object QueriesDataEncoder extends Encoder[Queries, Queries.Data]:
   override def encode[A](queries: Queries[A], a: A): Queries.Data =
-    encode(queries = queries.self, a)
+    encode(queries = queries.value, a)
 
   def encode[A](queries: Queries.Value[A], a: A): Queries.Data = queries match
     case Queries.Value.Empty              => Chain.empty

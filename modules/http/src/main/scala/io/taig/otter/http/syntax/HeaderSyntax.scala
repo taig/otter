@@ -7,6 +7,6 @@ import org.typelevel.ci.CIString
 
 trait HeaderSyntax:
   def header[A](name: CIString, schema: => Header.Schema[A]): Header[A] =
-    Enrichment(Header.Value.Root(name, schema = Reference.later(schema)))
+    Header(Enrichment(Header.Value.Root(name, schema = Reference.later(schema))))
 
 object HeaderSyntax extends HeaderSyntax

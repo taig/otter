@@ -32,11 +32,11 @@ object EnrichedEnumerationSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: EnumerationSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedEnumerationSchemaInvariant[Enrichment[Self, *], Value] =
-    val enumeration: EnumerationSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedEnumerationSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val enumeration: EnumerationSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedEnumerationSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedEnumerationSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export enumeration.{apply, schema, values}
       export enrichment.{imap, metadata}

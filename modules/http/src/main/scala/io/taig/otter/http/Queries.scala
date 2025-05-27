@@ -5,7 +5,16 @@ import cats.data.Chain
 import io.taig.otter.*
 import io.taig.otter.operation.EnrichedSchemaInvariant
 
-type Queries[A] = Enrichment[Queries.Value, A]
+final case class Queries[A](self: Enrichment[Queries.Value[A]]) extends AnyVal:
+  inline def value: Queries.Value[A] = self.self
+
+  def toChain: Chain[Query[?]] = value.toChain
+
+  def zip[B](queries: Queries[B]): Queries[(A, B)] = Queries(Enrichment(value.zip(queries.value)))
+
+  def *[B](queries: Queries[B])(using merge: Merge[A, B]): Queries[merge.Out] = zip(queries).merge
+
+  def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = this * query.toQueries
 
 object Queries:
   sealed abstract class Value[A] extends Product with Serializable:
@@ -35,22 +44,13 @@ object Queries:
 
   type Data = Chain[Query.Data]
 
-  val Empty: Queries[Unit] = Enrichment(Value.Empty)
-
-  extension [A](self: Queries[A])
-    def toChain: Chain[Query[?]] = self.self.toChain
-
-    def zip[B](queries: Queries[B]): Queries[(A, B)] = Enrichment(self.self.zip(queries.self))
-
-    def merge[B](queries: Queries[B])(using merge: Merge[A, B]): Queries[merge.Out] =
-      self.zip(queries).merge
-
-    def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] =
-      self.merge(query.toQueries)
+  val Empty: Queries[Unit] = Queries(Enrichment(Value.Empty))
 
   given EnrichedSchemaInvariant[Queries] with
-    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] = fa.mapF(_.imap(f)(g))
+    override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] =
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Queries[A])
       def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Queries[A] = self.modifyMetadata(f)
+      def metadata(f: Metadata => Metadata): Queries[A] =
+        self.copy(self = self.self.modifyMetadata(f))

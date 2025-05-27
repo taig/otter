@@ -93,12 +93,12 @@ object EnrichedPrimitiveSchemaInvariant:
 
     given [Self[_]](using
         self: PrimitiveSchemaInvariant.Boolean[Self],
-        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]] =
-      val schema: PrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]] =
-        self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+        enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+    ): EnrichedPrimitiveSchemaInvariant.Boolean[[a] =>> Enrichment[Self[a]]] =
+      val schema: PrimitiveSchemaInvariant.Boolean[[a] =>> Enrichment[Self[a]]] =
+        self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchemaInvariant.Boolean[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.Boolean[[a] =>> Enrichment[Self[a]]]:
         export schema.boolean
         export enrichment.{imap, metadata}
 
@@ -158,12 +158,12 @@ object EnrichedPrimitiveSchemaInvariant:
 
     given [Self[_]](using
         self: PrimitiveSchemaInvariant.Number[Self],
-        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchemaInvariant.Number[Enrichment[Self, *]] =
-      val schema: PrimitiveSchemaInvariant.Number[Enrichment[Self, *]] =
-        self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+        enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+    ): EnrichedPrimitiveSchemaInvariant.Number[[a] =>> Enrichment[Self[a]]] =
+      val schema: PrimitiveSchemaInvariant.Number[[a] =>> Enrichment[Self[a]]] =
+        self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchemaInvariant.Number[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.Number[[a] =>> Enrichment[Self[a]]]:
         export schema.{double, float, int, jBigDecimal, jBigInteger, long}
         export enrichment.{imap, metadata}
 
@@ -199,12 +199,12 @@ object EnrichedPrimitiveSchemaInvariant:
 
     given [Self[_]](using
         self: PrimitiveSchemaInvariant.String[Self],
-        enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-    ): EnrichedPrimitiveSchemaInvariant.String[Enrichment[Self, *]] =
-      val schema: PrimitiveSchemaInvariant.String[Enrichment[Self, *]] =
-        self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+        enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+    ): EnrichedPrimitiveSchemaInvariant.String[[a] =>> Enrichment[Self[a]]] =
+      val schema: PrimitiveSchemaInvariant.String[[a] =>> Enrichment[Self[a]]] =
+        self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-      new EnrichedPrimitiveSchemaInvariant.String[Enrichment[Self, *]]:
+      new EnrichedPrimitiveSchemaInvariant.String[[a] =>> Enrichment[Self[a]]]:
         export schema.{parser, string}
         export enrichment.{imap, metadata}
 
@@ -214,11 +214,11 @@ object EnrichedPrimitiveSchemaInvariant:
 
   given [Self[_]](using
       self: PrimitiveSchemaInvariant[Self],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedPrimitiveSchemaInvariant[Enrichment[Self, *]] =
-    val primitive: PrimitiveSchemaInvariant[Enrichment[Self, *]] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedPrimitiveSchemaInvariant[[a] =>> Enrichment[Self[a]]] =
+    val primitive: PrimitiveSchemaInvariant[[a] =>> Enrichment[Self[a]]] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedPrimitiveSchemaInvariant[Enrichment[Self, *]]:
+    new EnrichedPrimitiveSchemaInvariant[[a] =>> Enrichment[Self[a]]]:
       export primitive.{boolean, double, float, int, jBigDecimal, jBigInteger, long, parser, string}
       export enrichment.{imap, metadata}

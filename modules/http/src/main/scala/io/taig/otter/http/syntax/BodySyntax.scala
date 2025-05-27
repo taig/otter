@@ -7,6 +7,6 @@ import io.taig.otter.Reference
 
 trait BodySyntax:
   def body[S[_], A](mediaType: MediaType, schema: => S[A]): Body[S, A] =
-    Enrichment(Body.Value.Root(mediaType, schema = Reference.later(schema)))
+    Body(Enrichment(Body.Value.Root(mediaType, schema = Reference.later(schema))))
 
 object BodySyntax extends BodySyntax

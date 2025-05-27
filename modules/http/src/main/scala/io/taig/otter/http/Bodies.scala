@@ -9,7 +9,22 @@ import io.taig.otter.Enrichment
 import io.taig.otter.operation.*
 import cats.syntax.all.*
 
-type Bodies[+S[_], A] = Enrichment[Bodies.Value[S, *], A]
+final case class Bodies[+S[_], A](self: Enrichment[Bodies.Value[S, A]]):
+  inline def value: Bodies.Value[S, A] = self.self
+
+  def toChain: NonEmptyChain[Body[S, ?]] = self.self.toChain
+  def satisfies(mediaRange: MediaRange): Boolean = self.self.satisfies(mediaRange)
+  def matches(contentType: MediaType): Boolean = self.self.matches(contentType)
+
+  def orElse[T[_], B](bodies: Bodies[T, B]): Bodies[S + T, Either[A, B]] =
+    Bodies(Enrichment(value.orElse(bodies.value)))
+
+  def or[T[_]](bodies: Bodies[T, A]): Bodies[S + T, A] =
+    Bodies(Enrichment(value.or(bodies.value)))
+
+  def :+[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] = orElse(body.toBodies)
+
+  def +:[T[_], B](body: Body[T, B]): Bodies[S + T, Either[B, A]] = body.toBodies.orElse(this)
 
 object Bodies:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
@@ -43,22 +58,6 @@ object Bodies:
     final private[otter] case class Root[S[_], A](body: Body[S, A]) extends Bodies.Value[S, A]:
       override def toChain: NonEmptyChain[Body[S, A]] = NonEmptyChain.one(body)
 
-  extension [S[_], A](self: Bodies[S, A])
-    def toChain: NonEmptyChain[Body[S, ?]] = self.self.toChain
-    def satisfies(mediaRange: MediaRange): Boolean = self.self.satisfies(mediaRange)
-    def matches(contentType: MediaType): Boolean = self.self.matches(contentType)
-
-    def orElse[T[_], B](bodies: Bodies[T, B]): Bodies[S + T, Either[A, B]] =
-      Enrichment(self.self.orElse(bodies.self))
-
-    def or[T[_]](bodies: Bodies[T, A]): Bodies[S + T, A] =
-      Enrichment(self.self.or(bodies.self))
-
-    def :+[T[_], B](body: Body[T, B]): Bodies[S + T, Either[A, B]] =
-      orElse(body.toBodies)
-
-    def +:[T[_], B](body: Body[T, B]): Bodies[S + T, Either[B, A]] = body.toBodies.orElse(self)
-
   extension [S[_], A <: Matchable](self: Bodies[S, A])
     inline def |[T[_], B <: Matchable](body: Body[T, B]): Bodies[S + T, A | B] = (self :+ body).imap {
       case Left(a)  => a
@@ -69,8 +68,10 @@ object Bodies:
     }
 
   given [S[_]]: EnrichedSchemaInvariant[Bodies[S, *]] with
-    override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] = fa.mapF(_.imap(f)(g))
+    override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] =
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Bodies[S, A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Bodies[S, A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Bodies[S, A] =
+        self.copy(self = self.self.modifyMetadata(f))

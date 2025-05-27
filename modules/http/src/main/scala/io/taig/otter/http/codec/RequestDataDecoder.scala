@@ -24,7 +24,7 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
       contentType: Option[MediaType],
       value: Request.Data
   ): Either[MediaTypeUnsupported | ValidationViolations, (Headers.Data, A)] =
-    decodeRemaining(schema = schema.self, contentType, value)
+    decodeRemaining(schema = schema.value, contentType, value)
 
   def decodeRemaining[A](
       schema: Request.Value[S, A],

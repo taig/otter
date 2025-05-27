@@ -13,7 +13,7 @@ final class ResultsDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
       accept: Option[Accept],
       a: A
   ): Either[ContentNegotiationFailed, Response.Data] =
-    encode(schema = schema.self, accept, a)
+    encode(schema = schema.value, accept, a)
 
   def encode[A](
       schema: Results.Value[S, A],

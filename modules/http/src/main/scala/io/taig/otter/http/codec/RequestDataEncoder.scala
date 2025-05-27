@@ -7,7 +7,7 @@ final class RequestDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   val bodies = BodiesEncoder(encoder)
 
   def encode[A](schema: Request[S, A], contentType: Option[MediaType], a: A): Request.Data =
-    encodeValue(schema = schema.self, contentType, a)
+    encodeValue(schema = schema.value, contentType, a)
 
   private def encodeValue[A](schema: Request.Value[S, A], contentType: Option[MediaType], a: A): Request.Data =
     schema match

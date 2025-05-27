@@ -6,7 +6,12 @@ import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 import cats.syntax.all.*
 
-type Response[+S[_], A] = Enrichment[Response.Value[S, *], A]
+final case class Response[+S[_], A](self: Enrichment[Response.Value[S, A]]) extends AnyVal:
+  inline def value: Response.Value[S, A] = self.self
+
+  def results: Results[S, A] = value.results
+  def validation: Result[S, Violations] = value.validation
+  def failure: Result[S, Option[String]] = value.failure
 
 object Response:
   final case class Value[+S[_], A](
@@ -32,15 +37,11 @@ object Response:
     def modifyBody(f: Array[Byte] => Array[Byte]): Response.Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Response.Data = modifyBody(_ => body)
 
-  extension [S[_], A](self: Response[S, A])
-    def results: Results[S, A] = self.self.results
-    def validation: Result[S, Violations] = self.self.validation
-    def failure: Result[S, Option[String]] = self.self.failure
-
   given [S[_]]: EnrichedSchemaInvariant[Response[S, *]] with
     override def imap[A, B](fa: Response[S, A])(f: A => B)(g: B => A): Response[S, B] =
-      fa.mapF(_.imap(f)(g))
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Response[S, A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Response[S, A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Response[S, A] =
+        self.copy(self = self.self.modifyMetadata(f))

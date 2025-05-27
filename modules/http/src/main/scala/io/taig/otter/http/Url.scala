@@ -6,7 +6,17 @@ import io.taig.otter.Merge
 import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
-type Url[A] = Enrichment[Url.Value, A]
+final case class Url[A](self: Enrichment[Url.Value[A]]) extends AnyVal:
+  inline def value: Url.Value[A] = self.self
+
+  def path: Path[?] = value.path
+  def queries: Queries[?] = value.queries
+
+  def zip[B](url: Url[B]): Url[(A, B)] = Url(Enrichment(value.zip(url.value)))
+
+  def *[B](url: Url[B])(using merge: Merge[A, B]): Url[merge.Out] = zip(url).merge
+
+  def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = this * parameter.toPath.toUrl
 
 object Url:
   sealed abstract class Value[A] extends Product with Serializable:
@@ -39,27 +49,13 @@ object Url:
   object Data:
     val Empty: Url.Data = Data(path = Chain.empty, queries = Chain.empty)
 
-  val Empty: Url[Unit] = Enrichment(Url.Value.Empty)
-
-  extension [A](self: Url[A])
-    def path: Path[?] = self.self.path
-    def queries: Queries[?] = self.self.queries
-
-    def zip[B](url: Url[B]): Url[(A, B)] = Enrichment(self.self.zip(url.self))
-
-    def merge[B](url: Url[B])(using merge: Merge[A, B]): Url[merge.Out] = self.zip(url).merge
-
-    def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = self.merge(parameter.toPath.toUrl)
-
-    def /(name: String): Url[A] = Enrichment(
-      self.self
-        .zip(Url.Value.Root(path = Enrichment(Path.Value.Static(name)), queries = Queries.Empty))
-        .imap((a, _) => a)((_, ((), ())))
-    )
+  val Empty: Url[Unit] = Url(Enrichment(Url.Value.Empty))
 
   given EnrichedSchemaInvariant[Url] with
-    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] = fa.mapF(_.imap(f)(g))
+    override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] =
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Url[A])
       def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Url[A] = self.modifyMetadata(f)
+      def metadata(f: Metadata => Metadata): Url[A] =
+        self.copy(self = self.self.modifyMetadata(f))

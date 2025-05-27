@@ -7,7 +7,21 @@ import io.taig.otter.Reference
 import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
-type Request[+S[_], A] = Enrichment[Request.Value[S, *], A]
+final case class Request[+S[_], A](self: Enrichment[Request.Value[S, A]]) extends AnyVal:
+  inline def value: Request.Value[S, A] = self.self
+
+  def method: Method = value.method
+  def url: Url[?] = value.url
+  def headers: Headers[?] = value.headers
+  def bodies: Option[Bodies[S, ?]] = value.bodies
+
+  def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request(Enrichment(value.zip(headers)))
+
+  def *[B](headers: Headers[B])(using merge: Merge[A, B]): Request[S, merge.Out] = zip(headers).merge
+
+  def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] = this * header.toHeaders
+
+  def *:[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] = this * header.toHeaders
 
 object Request:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
@@ -47,27 +61,11 @@ object Request:
     def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
 
-  extension [S[_], A](self: Request[S, A])
-    def method: Method = self.self.method
-    def url: Url[?] = self.self.url
-    def headers: Headers[?] = self.self.headers
-    def bodies: Option[Bodies[S, ?]] = self.self.bodies
-
-    def zip[B](headers: Headers[B]): Request[S, (A, B)] = Enrichment(self.self.zip(headers))
-
-    def merge[B](headers: Headers[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
-      self.zip(headers).merge
-
-    def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
-      self.zip(header.toHeaders).merge
-
-    def *:[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] =
-      self.zip(header.toHeaders).merge
-
   given [S[_]]: EnrichedSchemaInvariant[Request[S, *]] with
     override def imap[A, B](fa: Request[S, A])(f: A => B)(g: B => A): Request[S, B] =
-      fa.mapF(_.imap(f)(g))
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Request[S, A])
       def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Request[S, A] = self.modifyMetadata(f)
+      def metadata(f: Metadata => Metadata): Request[S, A] =
+        self.copy(self = self.self.modifyMetadata(f))

@@ -4,7 +4,7 @@ import io.taig.otter.codec.Encoder
 import io.taig.otter.http.Url
 
 object UrlDataEncoder extends Encoder[Url, Url.Data]:
-  override def encode[A](url: Url[A], a: A): Url.Data = encode(url = url.self, a)
+  override def encode[A](url: Url[A], a: A): Url.Data = encode(url = url.value, a)
 
   def encode[A](url: Url.Value[A], a: A): Url.Data = url match
     case Url.Value.Empty              => Url.Data.Empty

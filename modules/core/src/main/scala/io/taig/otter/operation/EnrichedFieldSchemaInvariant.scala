@@ -36,11 +36,11 @@ object EnrichedFieldSchemaInvariant:
 
   given [Self[_], Key[_], Value[_]](using
       self: FieldSchemaInvariant[Self, Key, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedFieldSchemaInvariant[Enrichment[Self, *], Key, Value] =
-    val field: FieldSchemaInvariant[Enrichment[Self, *], Key, Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedFieldSchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value] =
+    val field: FieldSchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedFieldSchemaInvariant[Enrichment[Self, *], Key, Value]:
+    new EnrichedFieldSchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value]:
       export field.{apply, isOptional, key, nullish, optional, value}
       export enrichment.{imap, metadata}

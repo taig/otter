@@ -43,11 +43,11 @@ object EnrichedCollectionSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: CollectionSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedCollectionSchemaInvariant[Enrichment[Self, *], Value] =
-    val collection: CollectionSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedCollectionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val collection: CollectionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedCollectionSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedCollectionSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export collection.{indexed, linked}
       export enrichment.{imap, metadata}

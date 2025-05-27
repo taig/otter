@@ -10,7 +10,7 @@ import scala.collection.immutable.SortedSet
 
 object QueriesDataDecoder extends Decoder.Remaining[Queries, Queries.Data]:
   override def decodeRemaining[A](schema: Queries[A], value: Queries.Data): Validated[Violations, (Queries.Data, A)] =
-    decodeRemaining(schema = schema.self, value)
+    decodeRemaining(schema = schema.value, value)
 
   def decodeRemaining[A](schema: Queries.Value[A], value: Queries.Data): Validated[Violations, (Queries.Data, A)] =
     schema match

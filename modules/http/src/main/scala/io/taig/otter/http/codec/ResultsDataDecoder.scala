@@ -14,7 +14,7 @@ final class ResultsDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
       contentType: Option[MediaType],
       data: Response.Data
   ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] =
-    decode(schema = schema.self, contentType, data)
+    decode(schema = schema.value, contentType, data)
 
   def decode[A](
       schema: Results.Value[S, A],

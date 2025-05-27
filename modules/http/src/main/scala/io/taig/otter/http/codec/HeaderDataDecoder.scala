@@ -11,7 +11,7 @@ import io.taig.otter.http.Headers
 
 object HeaderDataDecoder extends Decoder.Remaining[Header, Headers.Data]:
   override def decodeRemaining[A](schema: Header[A], value: Headers.Data): Validated[Violations, (Headers.Data, A)] =
-    decodeRemaining(schema = schema.self, value)
+    decodeRemaining(schema = schema.value, value)
 
   def decodeRemaining[A](schema: Header.Value[A], value: Headers.Data): Validated[Violations, (Headers.Data, A)] =
     schema match

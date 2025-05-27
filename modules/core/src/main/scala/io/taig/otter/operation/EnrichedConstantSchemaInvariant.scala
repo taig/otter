@@ -29,11 +29,11 @@ object EnrichedConstantSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: ConstantSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedConstantSchemaInvariant[Enrichment[Self, *], Value] =
-    val constant: ConstantSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedConstantSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val constant: ConstantSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedConstantSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedConstantSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export constant.apply
       export enrichment.{imap, metadata}

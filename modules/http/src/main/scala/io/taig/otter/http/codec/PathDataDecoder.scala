@@ -11,7 +11,7 @@ import io.taig.otter.http.Path
 
 object PathDataDecoder extends Decoder.Remaining[Path, Path.Data]:
   override def decodeRemaining[A](schema: Path[A], value: Path.Data): Validated[Violations, (Path.Data, A)] =
-    decodeRemaining(schema = schema.self, value)
+    decodeRemaining(schema = schema.value, value)
 
   def decodeRemaining[A](schema: Path.Value[A], value: Path.Data): Validated[Violations, (Path.Data, A)] = schema match
     case Path.Value.Empty              => (value, ()).valid

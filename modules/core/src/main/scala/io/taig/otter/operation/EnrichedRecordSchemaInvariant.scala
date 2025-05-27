@@ -28,11 +28,11 @@ object EnrichedRecordSchemaInvariant:
 
   given [Self[_], Field[_]](using
       self: RecordSchemaInvariant[Self, Field],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedRecordSchemaInvariant[Enrichment[Self, *], Field] =
-    val record: RecordSchemaInvariant[Enrichment[Self, *], Field] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedRecordSchemaInvariant[[a] =>> Enrichment[Self[a]], Field] =
+    val record: RecordSchemaInvariant[[a] =>> Enrichment[Self[a]], Field] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedRecordSchemaInvariant[Enrichment[Self, *], Field]:
+    new EnrichedRecordSchemaInvariant[[a] =>> Enrichment[Self[a]], Field]:
       export record.{lift, zip}
       export enrichment.{imap, metadata}

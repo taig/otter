@@ -14,7 +14,7 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
       schema: Result[S, A],
       accept: Option[Accept],
       a: A
-  ): Either[ContentNegotiationFailed, Response.Data] = encode(schema = schema.self, accept, a)
+  ): Either[ContentNegotiationFailed, Response.Data] = encode(schema = schema.value, accept, a)
 
   def encode[A](
       schema: Result.Value[S, A],
@@ -33,7 +33,7 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
             .withBody(bytes)
     case result: Result.Value.Root[?] => encode(result, a).asRight
 
-  def encode[A](schema: Result[S, A], a: A): Response.Data = encode(schema = schema.self, a)
+  def encode[A](schema: Result[S, A], a: A): Response.Data = encode(schema = schema.value, a)
 
   def encode[A](schema: Result.Value[S, A], a: A): Response.Data =
     schema match

@@ -30,11 +30,11 @@ object EnrichedTupleSchemaInvariant:
 
   given [Self[_], Value[_]](using
       self: TupleSchemaInvariant[Self, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedTupleSchemaInvariant[Enrichment[Self, *], Value] =
-    val tuple: TupleSchemaInvariant[Enrichment[Self, *], Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedTupleSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+    val tuple: TupleSchemaInvariant[[a] =>> Enrichment[Self[a]], Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedTupleSchemaInvariant[Enrichment[Self, *], Value]:
+    new EnrichedTupleSchemaInvariant[[a] =>> Enrichment[Self[a]], Value]:
       export tuple.{empty, lift, zip}
       export enrichment.{imap, metadata}

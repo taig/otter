@@ -35,11 +35,11 @@ object EnrichedDictionarySchemaInvariant:
 
   given [Self[_], Key[_], Value[_]](using
       self: DictionarySchemaInvariant[Self, Key, Value],
-      enrichment: EnrichedSchemaInvariant[Enrichment[Self, *]]
-  ): EnrichedDictionarySchemaInvariant[Enrichment[Self, *], Key, Value] =
-    val dictionary: DictionarySchemaInvariant[Enrichment[Self, *], Key, Value] =
-      self.imapK(Enrichment.liftK[Self])(Enrichment.unliftK[Self])
+      enrichment: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]]
+  ): EnrichedDictionarySchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value] =
+    val dictionary: DictionarySchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value] =
+      self.imapK[[a] =>> Enrichment[Self[a]]](Enrichment.liftK[Self])(Enrichment.unliftK[Self])
 
-    new EnrichedDictionarySchemaInvariant[Enrichment[Self, *], Key, Value]:
+    new EnrichedDictionarySchemaInvariant[[a] =>> Enrichment[Self[a]], Key, Value]:
       export dictionary.apply
       export enrichment.{imap, metadata}

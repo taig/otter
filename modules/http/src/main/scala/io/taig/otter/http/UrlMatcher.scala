@@ -5,8 +5,8 @@ import io.taig.otter.collectFirstWithRemainders
 
 object UrlMatcher:
   def apply(url: Url[?], data: Url.Data): Boolean =
-    apply(path = url.self.path.self, data = data.path).fold(false)(_.isEmpty) &&
-      apply(queries = url.self.queries.self, data = data.queries).isDefined
+    apply(path = url.path.value, data = data.path).fold(false)(_.isEmpty) &&
+      apply(queries = url.queries.value, data = data.queries).isDefined
 
   def apply(path: Path.Value[?], data: Path.Data): Option[Path.Data] = path match
     case Path.Value.Empty              => data.some

@@ -6,7 +6,7 @@ import io.taig.otter.http.Headers
 
 object HeadersDataEncoder extends Encoder[Headers, Headers.Data]:
   override def encode[A](headers: Headers[A], a: A): Headers.Data =
-    encode(headers = headers.self, a)
+    encode(headers = headers.value, a)
 
   def encode[A](headers: Headers.Value[A], a: A): Headers.Data = headers match
     case Headers.Value.Empty              => Chain.empty

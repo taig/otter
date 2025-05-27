@@ -28,9 +28,9 @@ trait EnrichedSchemaInvariant[Self[_]] extends SchemaInvariant[Self]:
 object EnrichedSchemaInvariant:
   inline def apply[Self[_]](using self: EnrichedSchemaInvariant[Self]): EnrichedSchemaInvariant[Self] = self
 
-  given [Self[_]: Invariant]: EnrichedSchemaInvariant[[a] =>> Enrichment[Self, a]] with
-    extension [A](self: Enrichment[Self, A])
+  given [Self[_]: Invariant]: EnrichedSchemaInvariant[[a] =>> Enrichment[Self[a]]] with
+    extension [A](self: Enrichment[Self[A]])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Enrichment[Self, A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Enrichment[Self[A]] = self.modifyMetadata(f)
 
-    override def imap[A, B](fa: Enrichment[Self, A])(f: A => B)(g: B => A): Enrichment[Self, B] = fa.mapF(_.imap(f)(g))
+    override def imap[A, B](fa: Enrichment[Self[A]])(f: A => B)(g: B => A): Enrichment[Self[B]] = fa.map(_.imap(f)(g))

@@ -6,7 +6,17 @@ import io.taig.otter.operation.EnrichedSchemaInvariant
 import io.taig.otter.Metadata
 import io.taig.otter.Enrichment
 
-type Result[+S[_], A] = Enrichment[Result.Value[S, *], A]
+final case class Result[+S[_], A](self: Enrichment[Result.Value[S, A]]) extends AnyVal:
+  inline def value: Result.Value[S, A] = self.self
+
+  def code: Code = value.code
+  def bodies: Option[Bodies[S, ?]] = value.bodies
+
+  def :+[T[_], B](schema: Result[T, B]): Results[S + T, Either[A, B]] = toResults :+ schema
+
+  def +:[T[_], B](schema: Result[T, B]): Results[S + T, Either[B, A]] = schema.toResults :+ this
+
+  def toResults: Results[S, A] = Results(Enrichment(Results.Value.Root(this)))
 
 object Result:
   sealed abstract class Value[+S[_], A] extends Product with Serializable:
@@ -28,25 +38,14 @@ object Result:
     final private[otter] case class Root[A](code: Code, headers: Headers[A]) extends Result.Value[Nothing, A]:
       override def bodies: Option[Bodies[Nothing, ?]] = none
 
-  extension [S[_], A](self: Result[S, A])
-    def code: Code = self.self.code
-    def bodies: Option[Bodies[S, ?]] = self.self.bodies
-
-    def :+[T[_], B](schema: Result[T, B]): Results[S + T, Either[A, B]] =
-      self.toResults :+ schema
-
-    def +:[T[_], B](schema: Result[T, B]): Results[S + T, Either[B, A]] =
-      schema.toResults :+ self
-
-    def toResults: Results[S, A] = Enrichment(Results.Value.Root(self))
-
   extension [S[_], A <: Matchable](self: Result[S, A])
     inline def |[T[_], B <: Matchable](schema: Result[T, B]): Results[S + T, A | B] = self.toResults | schema
 
   given [S[_]]: EnrichedSchemaInvariant[Result[S, *]] with
     override def imap[A, B](fa: Result[S, A])(f: A => B)(g: B => A): Result[S, B] =
-      fa.mapF(_.imap(f)(g))
+      fa.copy(self = fa.self.map(_.imap(f)(g)))
 
     extension [A](self: Result[S, A])
       override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Result[S, A] = self.modifyMetadata(f)
+      override def metadata(f: Metadata => Metadata): Result[S, A] =
+        self.copy(self = self.self.modifyMetadata(f))
