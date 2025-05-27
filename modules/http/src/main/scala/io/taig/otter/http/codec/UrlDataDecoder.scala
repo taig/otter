@@ -17,7 +17,7 @@ object UrlDataDecoder extends Decoder.Remainding[Url, Url.Data]:
         Violations.rootNec(Violation.equal(reference = "/", actual = "/" + data.path.mkString_("/")))
       )
 
-  override def decodeRemainding[A](schema: Url[A], value: Data): Validated[Violations, (Data, A)] = 
+  override def decodeRemainding[A](schema: Url[A], value: Data): Validated[Violations, (Data, A)] =
     decodeRemainding(schema = schema.self, value)
 
   def decodeRemainding[A](schema: Url.Value[A], value: Data): Validated[Violations, (Data, A)] = schema match

@@ -18,10 +18,6 @@ object Body:
 
     def schema: Reference[S, ?]
 
-    final def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
-
-    final def matches(contentType: MediaType): Boolean = mediaType === contentType
-
     final def imap[B](f: A => B)(g: B => A): Body.Value[S, B] = Value.Modify(self = this, f, g)
 
   object Value:
@@ -31,6 +27,13 @@ object Body:
 
     final private[otter] case class Root[S[_], A](mediaType: MediaType, schema: Reference[S, A])
         extends Body.Value[S, A]
+
+  extension [S[_], A](self: Body[S, A])
+    def mediaType: MediaType = self.self.mediaType
+    def satisfies(mediaRange: MediaRange): Boolean = mediaType.satisfies(mediaRange)
+    def matches(contentType: MediaType): Boolean = mediaType === contentType
+
+    def schema: Reference[S, ?] = self.self.schema
 
   given [S[_]]: EnrichedSchemaInvariant[Body[S, *]] with
     override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] = fa.mapF(_.imap(f)(g))
