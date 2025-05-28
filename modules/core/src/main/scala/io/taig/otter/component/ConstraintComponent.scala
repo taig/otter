@@ -3,6 +3,7 @@ package io.taig.otter.component
 import io.taig.otter.Constraint
 import io.taig.otter.Keys.*
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],

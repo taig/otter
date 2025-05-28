@@ -2,6 +2,7 @@ package io.taig.otter
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.EnumerationSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Enumeration[+S[_], A](value: Enumeration.Value[S, A], metadata: Metadata)
 
@@ -37,9 +38,11 @@ object Enumeration:
     override def imap[A, B](fa: Enumeration[Value, A])(f: A => B)(g: B => A): Enumeration[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
+    override def enriched[A]: Enriched[Enumeration[Value, A]] = new Enriched[Enumeration[Value, A]]:
+      override def metadata(a: Enumeration[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Enumeration[Value, A])(f: Metadata => Metadata): Enumeration[Value, A] =
+        a.copy(metadata = f(a.metadata))
+
     extension [A](self: Enumeration[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Enumeration[Value, A] =
-        self.copy(metadata = f(self.metadata))
       override def schema: Reference[Value, ?] = self.value.schema
       override def values: NonEmptyList[A] = self.value.values

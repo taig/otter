@@ -1,8 +1,9 @@
 package io.taig.otter.component
 
-import io.taig.otter.Keys.name
 import io.taig.otter.Violation
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait ViolationComponent[
     Collection[a] <: Value[a],
@@ -31,4 +32,4 @@ trait ViolationComponent[
     field("constraint", constraint) :*
       field("actual", data.any) :*
       field("hint", string.nullable)
-  ).metadata(name, "Violation").to
+  ).name("Violation").to

@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Metadata
 import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Result[+S[_], A](value: Result.Value[S, A], metadata: Metadata):
   def code: Code = value.code
@@ -42,7 +43,7 @@ object Result:
     override def imap[A, B](fa: Result[S, A])(f: A => B)(g: B => A): Result[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Result[S, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Result[S, A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Result[S, A]] = new Enriched[Result[S, A]]:
+      override def metadata(a: Result[S, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Result[S, A])(f: Metadata => Metadata): Result[S, A] =
+        a.copy(metadata = f(a.metadata))

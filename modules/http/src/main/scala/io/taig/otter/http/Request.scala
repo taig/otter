@@ -61,7 +61,7 @@ object Request:
     override def imap[A, B](fa: Request[S, A])(f: A => B)(g: B => A): Request[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Request[S, A])
-      def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Request[S, A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Request[S, A]] = new Enriched[Request[S, A]]:
+      override def metadata(a: Request[S, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Request[S, A])(f: Metadata => Metadata): Request[S, A] =
+        a.copy(metadata = f(a.metadata))

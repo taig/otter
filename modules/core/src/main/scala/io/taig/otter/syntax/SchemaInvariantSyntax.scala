@@ -1,0 +1,10 @@
+package io.taig.otter.syntax
+
+import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
+
+trait SchemaInvariantSyntax:
+  implicit def schemaInvariantToEnrichedOps[S[_], A](sa: S[A])(using schema: SchemaInvariant[S]): Enriched.Ops[S[A]] =
+    new Enriched.Ops(sa)(using schema.enriched[A])
+
+object SchemaInvariantSyntax extends SchemaInvariantSyntax

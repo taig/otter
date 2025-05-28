@@ -14,12 +14,10 @@ trait TupleSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
     new TupleSchemaInvariant[T, Value]:
       override def empty: T[Unit] = fK(self.empty)
       override def lift[A](schema: => Value[A]): T[A] = fK(self.lift(schema))
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
+      extension [A](ta: T[A]) override def zip[B](schema: T[B]): T[(A, B)] = fK(self.zip(gK(ta))(gK(schema)))
 
 object TupleSchemaInvariant:
   inline def apply[Self[_], Field[_]](using

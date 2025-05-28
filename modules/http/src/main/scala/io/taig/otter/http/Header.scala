@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 import org.typelevel.ci.CIString
 
 final case class Header[A](value: Header.Value[A], metadata: Metadata):
@@ -96,17 +97,19 @@ object Header:
           case Primitive(self)   => Primitive(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
-        extension [A](self: Header.Schema.Value[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Header.Schema.Value[A]] = new Enriched[Header.Schema.Value[A]]:
+          override def metadata(a: Header.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
             case Union(self)       => self.metadata
-          override def metadata(f: Metadata => Metadata): Header.Schema.Value[A] = self match
-            case Constant(self)    => Constant(self.copy(metadata = f(self.metadata)))
-            case Enumeration(self) => Enumeration(self.copy(metadata = f(self.metadata)))
-            case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
-            case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
+
+          override def modifyMetadata(a: Header.Schema.Value[A])(f: Metadata => Metadata): Header.Schema.Value[A] =
+            a match
+              case Constant(self)    => Constant(self.metadata(f))
+              case Enumeration(self) => Enumeration(self.metadata(f))
+              case Primitive(self)   => Primitive(self.metadata(f))
+              case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Header.Schema[A]
 
@@ -134,14 +137,15 @@ object Header:
           case Collection(self) => Collection(self.imap(f)(g))
           case Tuple(self)      => Tuple(self.imap(f)(g))
 
-        extension [A](self: Array[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Header.Schema.Array[A]] = new Enriched[Header.Schema.Array[A]]:
+          override def metadata(a: Header.Schema.Array[A]): Metadata = a match
             case Collection(self) => self.metadata
             case Tuple(self)      => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
-            case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
+          override def modifyMetadata(a: Header.Schema.Array[A])(f: Metadata => Metadata): Header.Schema.Array[A] =
+            a match
+              case Collection(self) => Collection(self.metadata(f))
+              case Tuple(self)      => Tuple(self.metadata(f))
 
     sealed trait Object[A] extends Header.Schema[A]
 
@@ -188,14 +192,15 @@ object Header:
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
 
-        extension [A](self: Object[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Header.Schema.Object[A]] = new Enriched[Header.Schema.Object[A]]:
+          override def metadata(a: Header.Schema.Object[A]): Metadata = a match
             case Dictionary(self) => self.metadata
             case Record(self)     => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Object[A] = self match
-            case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
-            case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
+          override def modifyMetadata(a: Header.Schema.Object[A])(f: Metadata => Metadata): Header.Schema.Object[A] =
+            a match
+              case Dictionary(self) => Dictionary(self.metadata(f))
+              case Record(self)     => Record(self.metadata(f))
 
     final case class Field[A](self: Self.Field[Key, Header.Schema.Object.Value, A])
 
@@ -212,13 +217,13 @@ object Header:
         case schema: Header.Schema.Array[A]  => schema.imap(f)(g)
         case schema: Header.Schema.Object[A] => schema.imap(f)(g)
 
-      extension [A](self: Header.Schema[A])
-        override def metadata: Metadata = self match
+      override def enriched[A]: Enriched[Header.Schema[A]] = new Enriched[Header.Schema[A]]:
+        override def metadata(a: Header.Schema[A]): Metadata = a match
           case schema: Header.Schema.Value[A]  => schema.metadata
           case schema: Header.Schema.Array[A]  => schema.metadata
           case schema: Header.Schema.Object[A] => schema.metadata
 
-        override def metadata(f: Metadata => Metadata): Header.Schema[A] = self match
+        override def modifyMetadata(a: Header.Schema[A])(f: Metadata => Metadata): Header.Schema[A] = a match
           case schema: Header.Schema.Value[A]  => schema.metadata(f)
           case schema: Header.Schema.Array[A]  => schema.metadata(f)
           case schema: Header.Schema.Object[A] => schema.metadata(f)
@@ -234,7 +239,7 @@ object Header:
     override def imap[A, B](fa: Header[A])(f: A => B)(g: B => A): Header[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Header[A])
-      def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Header[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Header[A]] = new Enriched[Header[A]]:
+      override def metadata(a: Header[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Header[A])(f: Metadata => Metadata): Header[A] =
+        a.copy(metadata = f(a.metadata))

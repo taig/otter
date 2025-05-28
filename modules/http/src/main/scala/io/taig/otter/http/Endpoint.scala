@@ -3,6 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Metadata
 import io.taig.otter.operation.SchemaInvariant
+import cats.Invariant
+import io.taig.otter.operation.Enriched
 
 final case class Endpoint[+S[_], A, B](value: Endpoint.Value[S, A, B], metadata: Metadata):
   def request: Request[S, A] = value.request
@@ -23,11 +25,11 @@ object Endpoint:
     def modifyResponse[S1[a] >: S[a], C](f: Response[S, B] => Response[S1, C]): Endpoint.Value[S1, A, C] =
       copy(response = f(response))
 
-  given [S[_], A]: SchemaInvariant[Endpoint[S, A, *]] with
+  given [S[_], A]: Invariant[Endpoint[S, A, *]] with
     override def imap[B, C](fa: Endpoint[S, A, B])(f: B => C)(g: C => B): Endpoint[S, A, C] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [B](self: Endpoint[S, A, B])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Endpoint[S, A, B] =
-        self.copy(metadata = f(self.metadata))
+  given [S[_], A, B]: Enriched[Endpoint[S, A, B]] with
+    override def metadata(a: Endpoint[S, A, B]): Metadata = a.metadata
+    override def modifyMetadata(a: Endpoint[S, A, B])(f: Metadata => Metadata): Endpoint[S, A, B] =
+      a.copy(metadata = f(a.metadata))

@@ -5,6 +5,8 @@ import io.taig.otter.Keys.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],
@@ -39,4 +41,4 @@ trait ViolationsComponent[
 
     val namespace: Dictionary[Violations.Namespace] = dictionary.nonEmptyMap(step, violations).to
 
-    (root :+ namespace).metadata(name, "Violations").to
+    (root :+ namespace).name("Violations").to

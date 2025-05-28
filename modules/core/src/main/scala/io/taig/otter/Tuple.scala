@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.TupleSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 // TODO support for optional
 final case class Tuple[+S[_], A](value: Tuple.Value[S, A], metadata: Metadata)
@@ -49,9 +50,11 @@ object Tuple:
     override def imap[A, B](fa: Tuple[Value, A])(f: A => B)(g: B => A): Tuple[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
+    override def enriched[A]: Enriched[Tuple[Value, A]] = new Enriched[Tuple[Value, A]]:
+      override def metadata(a: Tuple[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Tuple[Value, A])(f: Metadata => Metadata): Tuple[Value, A] =
+        a.copy(metadata = f(a.metadata))
+
     extension [A](self: Tuple[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Tuple[Value, A] =
-        self.copy(metadata = f(self.metadata))
       override def zip[B](schema: Tuple[Value, B]): Tuple[Value, (A, B)] =
         Tuple(value = self.value.zip(schema.value), metadata = self.metadata)

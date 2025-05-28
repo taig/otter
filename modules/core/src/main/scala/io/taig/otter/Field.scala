@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter.operation.FieldSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Field[+S[_], +T[_], A](value: Field.Value[S, T, A], metadata: Metadata)
 
@@ -60,10 +61,12 @@ object Field:
     override def imap[A, B](fa: Field[Key, Value, A])(f: A => B)(g: B => A): Field[Key, Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
+    override def enriched[A]: Enriched[Field[Key, Value, A]] = new Enriched[Field[Key, Value, A]]:
+      override def metadata(a: Field[Key, Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Field[Key, Value, A])(f: Metadata => Metadata): Field[Key, Value, A] =
+        a.copy(metadata = f(a.metadata))
+
     extension [A](self: Field[Key, Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Field[Key, Value, A] =
-        self.copy(metadata = f(self.metadata))
       override def key: Reference.Constant[Key, ?] = self.value.key
       override def value: Reference[Value, ?] = self.value.value
       override def isOptional: Boolean = self.value.isOptional

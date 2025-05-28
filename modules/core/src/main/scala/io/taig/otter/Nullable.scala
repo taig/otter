@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.operation.NullableSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Nullable[+S[_], A](value: Nullable.Value[S, A], metadata: Metadata)
 
@@ -42,7 +43,7 @@ object Nullable:
     override def imap[A, B](fa: Nullable[Value, A])(f: A => B)(g: B => A): Nullable[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Nullable[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Nullable[Value, A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Nullable[Value, A]] = new Enriched[Nullable[Value, A]]:
+      override def metadata(a: Nullable[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Nullable[Value, A])(f: Metadata => Metadata): Nullable[Value, A] =
+        a.copy(metadata = f(a.metadata))

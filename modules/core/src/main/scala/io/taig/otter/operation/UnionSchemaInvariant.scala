@@ -29,13 +29,12 @@ trait UnionSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): UnionSchemaInvariant[T, Value] =
     new UnionSchemaInvariant[T, Value]:
       override def lift[A](schema: => Value[A]): T[A] = fK(self.lift(schema))
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
       extension [A](ta: T[A])
         override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas(gK(ta))
         override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object UnionSchemaInvariant:
   inline def apply[Self[_], Value[_]](using

@@ -7,7 +7,6 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
-import io.taig.otter.Metadata
 
 trait PrimitiveSchemaInvariant[Self[_]]
     extends PrimitiveSchemaInvariant.Boolean[Self],
@@ -67,11 +66,8 @@ trait PrimitiveSchemaInvariant[Self[_]]
           matches: Option[Pattern]
       ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
 
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object PrimitiveSchemaInvariant:
   trait Boolean[Self[_]] extends SchemaInvariant[Self]:
@@ -83,11 +79,8 @@ object PrimitiveSchemaInvariant:
         gK: [A] => T[A] => Self[A]
     ): PrimitiveSchemaInvariant.Boolean[T] = new Boolean[T]:
       override def boolean: T[SBoolean] = fK(self.boolean)
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
   object Boolean:
     inline def apply[Self[_]](using
@@ -172,11 +165,8 @@ object PrimitiveSchemaInvariant:
           multiple: Option[Long]
       ): T[Long] = fK(self.long(minimum, maximum, multiple))
 
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
   object Number:
     inline def apply[Self[_]](using
@@ -206,9 +196,7 @@ object PrimitiveSchemaInvariant:
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
+      override def enriched[A]: Enriched[T[A]] = ???
 
     def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
 

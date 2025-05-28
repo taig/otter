@@ -4,6 +4,7 @@ import cats.data.Chain
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
 import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Url[A](value: Url.Value[A], metadata: Metadata):
   def path: Path[?] = value.path
@@ -54,7 +55,7 @@ object Url:
     override def imap[A, B](fa: Url[A])(f: A => B)(g: B => A): Url[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Url[A])
-      def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Url[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Url[A]] = new Enriched[Url[A]]:
+      override def metadata(a: Url[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Url[A])(f: Metadata => Metadata): Url[A] =
+        a.copy(metadata = f(a.metadata))

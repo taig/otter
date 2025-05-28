@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.RecordSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Record[+S[_], A](value: Record.Value[S, A], metadata: Metadata)
 
@@ -43,9 +44,11 @@ object Record:
     override def imap[A, B](fa: Record[Field, A])(f: A => B)(g: B => A): Record[Field, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
+    override def enriched[A]: Enriched[Record[Field, A]] = new Enriched[Record[Field, A]]:
+      override def metadata(a: Record[Field, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Record[Field, A])(f: Metadata => Metadata): Record[Field, A] =
+        a.copy(metadata = f(a.metadata))
+
     extension [A](self: Record[Field, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Record[Field, A] =
-        self.copy(metadata = f(self.metadata))
       override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] =
         Record(value = self.value.zip(schema.value), metadata = self.metadata)

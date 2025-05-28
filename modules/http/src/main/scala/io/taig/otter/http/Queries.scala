@@ -2,6 +2,7 @@ package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter.*
 import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
   def toChain: Chain[Query[?]] = value.toChain
@@ -47,7 +48,7 @@ object Queries:
     override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Queries[A])
-      def metadata: Metadata = self.metadata
-      def metadata(f: Metadata => Metadata): Queries[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Queries[A]] = new Enriched[Queries[A]]:
+      override def metadata(a: Queries[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Queries[A])(f: Metadata => Metadata): Queries[A] =
+        a.copy(metadata = f(a.metadata))

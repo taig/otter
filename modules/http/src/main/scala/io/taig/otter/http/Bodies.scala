@@ -7,6 +7,7 @@ import io.taig.otter.Metadata
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 final case class Bodies[+S[_], A](value: Bodies.Value[S, A], metadata: Metadata):
   def toChain: NonEmptyChain[Body[S, ?]] = value.toChain
@@ -68,7 +69,7 @@ object Bodies:
     override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Bodies[S, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Bodies[S, A] =
-        self.copy(metadata = f(metadata))
+    override def enriched[A]: Enriched[Bodies[S, A]] = new Enriched[Bodies[S, A]]:
+      override def metadata(bodies: Bodies[S, A]): Metadata = bodies.metadata
+      override def modifyMetadata(bodies: Bodies[S, A])(f: Metadata => Metadata): Bodies[S, A] =
+        bodies.copy(metadata = f(bodies.metadata))

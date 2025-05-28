@@ -6,6 +6,7 @@ import cats.syntax.all.*
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
 import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Path[A](value: Path.Value[A], metadata: Metadata):
   def toSegments: Chain[String | Parameter[?]] = value.toSegments
@@ -65,9 +66,9 @@ object Path:
     override def imap[A, B](fa: Path[A])(f: A => B)(g: B => A): Path[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Path[A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Path[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Path[A]] = new Enriched[Path[A]]:
+      override def metadata(a: Path[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Path[A])(f: Metadata => Metadata): Path[A] =
+        a.copy(metadata = f(a.metadata))
 
   given [A]: Show[Path[A]] = _.value.show

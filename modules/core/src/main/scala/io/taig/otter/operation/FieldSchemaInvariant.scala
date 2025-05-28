@@ -26,6 +26,7 @@ trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Se
     override def apply[A, B](name: A, key: => Key[A], value: => Value[B]): T[B] =
       fK(self.apply(name, key, value))
 
+    override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
     extension [A](ta: T[A])
@@ -35,8 +36,6 @@ trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Se
       override def nullish: Boolean = self.nullish(gK(ta))
       override def nullish(f: Boolean => Boolean): T[A] = fK(self.nullish(gK(ta))(f))
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
-      override def metadata: Metadata = self.metadata(gK(ta))
-      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object FieldSchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using

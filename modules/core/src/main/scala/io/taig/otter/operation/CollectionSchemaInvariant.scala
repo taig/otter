@@ -26,14 +26,10 @@ trait CollectionSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self
         unique: Boolean
     ): T[Vector[A]] = fK(self.indexed(schema, minimum, maximum, unique))
 
+    override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-    extension [A](ta: T[A])
-      override def metadata: Metadata = self.metadata(gK(ta))
-      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object CollectionSchemaInvariant:
   inline def apply[Self[_], Value[_]](using
       self: CollectionSchemaInvariant[Self, Value]
-  ): CollectionSchemaInvariant[Self, Value] =
-    self
+  ): CollectionSchemaInvariant[Self, Value] = self

@@ -12,6 +12,7 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.operation.Enriched
 
 sealed abstract class Primitive[A]:
   def value: Primitive.Value[A]
@@ -28,9 +29,10 @@ object Primitive:
         override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] =
           fa.copy(value = fa.value.imap(f)(g))
 
-        extension [A](self: Primitive.Boolean[A])
-          override def metadata: Metadata = self.metadata
-          override def metadata(f: Metadata => Metadata): Boolean[A] = self.copy(metadata = f(self.metadata))
+        override def enriched[A]: Enriched[Primitive.Boolean[A]] = new Enriched[Primitive.Boolean[A]]:
+          override def metadata(a: Boolean[A]): Metadata = a.metadata
+          override def modifyMetadata(a: Boolean[A])(f: Metadata => Metadata): Boolean[A] =
+            a.copy(metadata = f(a.metadata))
 
   final case class Number[A](value: Primitive.Value.Number[A], metadata: Metadata) extends Primitive[A]
 
@@ -82,9 +84,10 @@ object Primitive:
         override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] =
           fa.copy(value = fa.value.imap(f)(g))
 
-        extension [A](self: Primitive.Number[A])
-          override def metadata: Metadata = self.metadata
-          override def metadata(f: Metadata => Metadata): Number[A] = self.copy(metadata = f(self.metadata))
+        override def enriched[A]: Enriched[Primitive.Number[A]] = new Enriched[Primitive.Number[A]]:
+          override def metadata(a: Primitive.Number[A]): Metadata = a.metadata
+          override def modifyMetadata(a: Primitive.Number[A])(f: Metadata => Metadata): Primitive.Number[A] =
+            a.copy(metadata = f(a.metadata))
 
   final case class String[A](value: Primitive.Value.String[A], metadata: Metadata) extends Primitive[A]
 
@@ -114,9 +117,10 @@ object Primitive:
         override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] =
           fa.copy(value = fa.value.imap(f)(g))
 
-        extension [A](self: Primitive.String[A])
-          override def metadata: Metadata = self.metadata
-          override def metadata(f: Metadata => Metadata): String[A] = self.copy(metadata = f(self.metadata))
+        override def enriched[A]: Enriched[Primitive.String[A]] = new Enriched[Primitive.String[A]]:
+          override def metadata(a: Primitive.String[A]): Metadata = a.metadata
+          override def modifyMetadata(a: Primitive.String[A])(f: Metadata => Metadata): Primitive.String[A] =
+            a.copy(metadata = f(a.metadata))
 
   def apply[A](value: Primitive.Value[A], metadata: Metadata = Metadata.Empty): Primitive[A] = value match
     case value: Primitive.Value.Boolean[A] => Boolean(value, metadata)
@@ -124,25 +128,25 @@ object Primitive:
     case value: Primitive.Value.String[A]  => String(value, metadata)
 
   given PrimitiveSchemaInvariant[Primitive] with
-    export Boolean.schema.{metadata as _, *}
-    export Number.schema.{metadata as _, *}
-    export String.schema.{metadata as _, *}
+    export Boolean.schema.{enriched as _, *}
+    export Number.schema.{enriched as _, *}
+    export String.schema.{enriched as _, *}
 
     override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa match
       case schema: Boolean[A] => schema.imap(f)(g)
       case schema: Number[A]  => schema.imap(f)(g)
       case schema: String[A]  => schema.imap(f)(g)
 
-    extension [A](self: Primitive[A])
-      override def metadata: Metadata = self match
+    override def enriched[A]: Enriched[Primitive[A]] = new Enriched[Primitive[A]]:
+      override def metadata(a: Primitive[A]): Metadata = a match
         case schema: Boolean[A] => schema.metadata
         case schema: Number[A]  => schema.metadata
         case schema: String[A]  => schema.metadata
 
-      override def metadata(f: Metadata => Metadata): Primitive[A] = self match
-        case schema: Boolean[A] => schema.metadata(f)
-        case schema: Number[A]  => schema.metadata(f)
-        case schema: String[A]  => schema.metadata(f)
+      override def modifyMetadata(a: Primitive[A])(f: Metadata => Metadata): Primitive[A] = a match
+        case schema: Boolean[A] => schema.copy(metadata = f(schema.metadata))
+        case schema: Number[A]  => schema.copy(metadata = f(schema.metadata))
+        case schema: String[A]  => schema.copy(metadata = f(schema.metadata))
 
   sealed abstract class Value[A] extends Product with Serializable:
     def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Value[A]

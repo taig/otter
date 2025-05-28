@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.operation.UnionSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Union[+S[_], A](value: Union.Value[S, A], metadata: Metadata)
 
@@ -40,10 +41,12 @@ object Union:
     override def imap[A, B](fa: Union[Value, A])(f: A => B)(g: B => A): Union[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
+    override def enriched[A]: Enriched[Union[Value, A]] = new Enriched[Union[Value, A]]:
+      override def metadata(a: Union[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Union[Value, A])(f: Metadata => Metadata): Union[Value, A] =
+        a.copy(metadata = f(a.metadata))
+
     extension [A](self: Union[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Union[Value, A] =
-        self.copy(metadata = f(self.metadata))
       override def schemas: NonEmptyChain[Reference[Value, ?]] = self.value.schemas
       override def orElse[B](schema: Union[Value, B]): Union[Value, Either[A, B]] =
         self.copy(value = self.value.orElse(schema.value))

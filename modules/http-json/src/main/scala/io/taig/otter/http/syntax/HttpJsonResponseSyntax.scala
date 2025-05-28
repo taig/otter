@@ -3,6 +3,8 @@ package io.taig.otter.http.syntax
 import io.taig.otter.Json
 import io.taig.otter.Keys.*
 import io.taig.otter.component.JsonComponent.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.http.Response
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
@@ -18,7 +20,7 @@ trait HttpJsonResponseSyntax:
     results,
     validation = result(
       code.unprocessableEntity,
-      json(error("validation", field("violations", violations).toRecord).metadata(name, "ValidationViolation"))
+      json(error("validation", field("violations", violations).toRecord).name("ValidationViolation"))
     ),
     failure = result(code.internalServerError, json(string.nullable))
   )

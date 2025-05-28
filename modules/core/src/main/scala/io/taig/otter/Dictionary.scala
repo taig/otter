@@ -1,6 +1,7 @@
 package io.taig.otter
 import cats.implicits.*
 import io.taig.otter.operation.DictionarySchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata)
 
@@ -59,7 +60,7 @@ object Dictionary:
     override def imap[A, B](fa: Dictionary[Key, Value, A])(f: A => B)(g: B => A): Dictionary[Key, Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Dictionary[Key, Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Dictionary[Key, Value, A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Dictionary[Key, Value, A]] = new Enriched[Dictionary[Key, Value, A]]:
+      override def metadata(a: Dictionary[Key, Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Dictionary[Key, Value, A])(f: Metadata => Metadata): Dictionary[Key, Value, A] =
+        a.copy(metadata = f(a.metadata))

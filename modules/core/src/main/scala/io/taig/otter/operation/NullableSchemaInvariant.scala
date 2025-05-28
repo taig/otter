@@ -14,11 +14,8 @@ trait NullableSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
       override def apply[A](schema: => Value[A]): T[Option[A]] = fK(self.apply(schema))
       override def apply[A](schema: => Value[A], default: A): T[A] = fK(self.apply(schema, default))
       override def void: T[Unit] = fK(self.void)
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-      extension [A](ta: T[A])
-        override def metadata: Metadata = self.metadata(gK(ta))
-        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object NullableSchemaInvariant:
   inline def apply[Self[_], Value[_]](using

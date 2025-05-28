@@ -8,6 +8,7 @@ import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.SchemaInvariant
 import org.typelevel.ci.*
+import Self.operation.Enriched
 
 final case class Headers[A](value: Headers.Value[A], metadata: Metadata):
   def toChain: Chain[Header[?]] = value.toChain
@@ -69,7 +70,7 @@ object Headers:
     override def imap[A, B](fa: Headers[A])(f: A => B)(g: B => A): Headers[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Headers[A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Headers[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Headers[A]] = new Enriched[Headers[A]]:
+      override def metadata(a: Headers[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Headers[A])(f: Metadata => Metadata): Headers[A] =
+        a.copy(metadata = f(a.metadata))

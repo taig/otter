@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Eq
 import cats.syntax.all.*
 import io.taig.otter.operation.ConstantSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Constant[+S[_], A](value: Constant.Value[S, A], metadata: Metadata)
 
@@ -36,6 +37,7 @@ object Constant:
     override def imap[A, B](fa: Constant[Value, A])(f: A => B)(g: B => A): Constant[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Constant[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Constant[Value, A] = self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Constant[Value, A]] = new Enriched[Constant[Value, A]]:
+      override def metadata(a: Constant[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Constant[Value, A])(f: Metadata => Metadata): Constant[Value, A] =
+        a.copy(metadata = f(a.metadata))

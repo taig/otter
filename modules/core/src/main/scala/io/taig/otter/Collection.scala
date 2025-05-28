@@ -1,6 +1,7 @@
 package io.taig.otter
 import cats.implicits.*
 import io.taig.otter.operation.CollectionSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Collection[+S[_], A](value: Collection.Value[S, A], metadata: Metadata)
 
@@ -75,7 +76,7 @@ object Collection:
     override def imap[A, B](fa: Collection[Value, A])(f: A => B)(g: B => A): Collection[Value, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Collection[Value, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Collection[Value, A] =
+    override def enriched[A]: Enriched[Collection[Value, A]] = new Enriched[Collection[Value, A]]:
+      override def metadata(self: Collection[Value, A]): Metadata = self.metadata
+      override def modifyMetadata(self: Collection[Value, A])(f: Metadata => Metadata): Collection[Value, A] =
         self.copy(metadata = f(self.metadata))

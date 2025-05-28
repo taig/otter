@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 final case class Query[A](value: Query.Value[A], metadata: Metadata):
   def name: String = value.name
@@ -110,18 +111,19 @@ object Query:
           case Primitive(self)   => Primitive(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
-        extension [A](self: Value[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Query.Schema.Value[A]] = new Enriched[Query.Schema.Value[A]]:
+          override def metadata(a: Query.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
             case Union(self)       => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Value[A] = self match
-            case Constant(self)    => Constant(self.copy(metadata = f(self.metadata)))
-            case Enumeration(self) => Enumeration(self.copy(metadata = f(self.metadata)))
-            case Primitive(self)   => Primitive(self.copy(metadata = f(self.metadata)))
-            case Union(self)       => Union(self.copy(metadata = f(self.metadata)))
+          override def modifyMetadata(a: Query.Schema.Value[A])(f: Metadata => Metadata): Query.Schema.Value[A] =
+            a match
+              case Constant(self)    => Constant(self.metadata(f))
+              case Enumeration(self) => Enumeration(self.metadata(f))
+              case Primitive(self)   => Primitive(self.metadata(f))
+              case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Query.Schema[A]
 
@@ -147,14 +149,15 @@ object Query:
           case Collection(self) => Collection(self.imap(f)(g))
           case Tuple(self)      => Tuple(self.imap(f)(g))
 
-        extension [A](self: Array[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Query.Schema.Array[A]] = new Enriched[Query.Schema.Array[A]]:
+          override def metadata(a: Query.Schema.Array[A]): Metadata = a match
             case Collection(self) => self.metadata
             case Tuple(self)      => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.copy(metadata = f(self.metadata)))
-            case Tuple(self)      => Tuple(self.copy(metadata = f(self.metadata)))
+          override def modifyMetadata(a: Query.Schema.Array[A])(f: Metadata => Metadata): Query.Schema.Array[A] =
+            a match
+              case Collection(self) => Collection(self.metadata(f))
+              case Tuple(self)      => Tuple(self.metadata(f))
 
     final case class Nullable[A](self: Self.Nullable[Query.Schema, A]) extends Query.Schema[A]
 
@@ -175,7 +178,7 @@ object Query:
     override def imap[A, B](fa: Query[A])(f: A => B)(g: B => A): Query[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Query[A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Query[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Query[A]] = new Enriched[Query[A]]:
+      override def metadata(a: Query[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Query[A])(f: Metadata => Metadata): Query[A] =
+        a.copy(metadata = f(a.metadata))

@@ -2,6 +2,7 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 import cats.syntax.all.*
 
 sealed abstract class Json[A] extends Product with Serializable
@@ -88,28 +89,28 @@ object Json:
       )([A] => (json: Json.Field[A]) => json.self)
 
   given SchemaInvariant[Json] with
-    extension [A](self: Json[A])
-      override def metadata: Metadata = self match
-        case Collection(schema)  => schema.metadata
-        case Constant(schema)    => schema.metadata
-        case Dictionary(schema)  => schema.metadata
-        case Enumeration(schema) => schema.metadata
-        case Nullable(schema)    => schema.metadata
-        case Primitive(schema)   => schema.metadata
-        case Record(schema)      => schema.metadata
-        case Tuple(schema)       => schema.metadata
-        case Union(schema)       => schema.metadata
+    override def enriched[A]: Enriched[Json[A]] = new Enriched[Json[A]]:
+      override def metadata(a: Json[A]): Metadata = a match
+        case Collection(self)  => self.metadata
+        case Constant(self)    => self.metadata
+        case Dictionary(self)  => self.metadata
+        case Enumeration(self) => self.metadata
+        case Nullable(self)    => self.metadata
+        case Primitive(self)   => self.metadata
+        case Record(self)      => self.metadata
+        case Tuple(self)       => self.metadata
+        case Union(self)       => self.metadata
 
-      override def metadata(f: Metadata => Metadata): Json[A] = self match
-        case Collection(schema)  => Collection(schema.metadata(f))
-        case Constant(schema)    => Constant(schema.metadata(f))
-        case Dictionary(schema)  => Dictionary(schema.metadata(f))
-        case Enumeration(schema) => Enumeration(schema.metadata(f))
-        case Nullable(schema)    => Nullable(schema.metadata(f))
-        case Primitive(schema)   => Primitive(schema.metadata(f))
-        case Record(schema)      => Record(schema.metadata(f))
-        case Tuple(schema)       => Tuple(schema.metadata(f))
-        case Union(schema)       => Union(schema.metadata(f))
+      override def modifyMetadata(a: Json[A])(f: Metadata => Metadata): Json[A] = a match
+        case Collection(self)  => Collection(self.metadata(f))
+        case Constant(self)    => Constant(self.metadata(f))
+        case Dictionary(self)  => Dictionary(self.metadata(f))
+        case Enumeration(self) => Enumeration(self.metadata(f))
+        case Nullable(self)    => Nullable(self.metadata(f))
+        case Primitive(self)   => Primitive(self.metadata(f))
+        case Record(self)      => Record(self.metadata(f))
+        case Tuple(self)       => Tuple(self.metadata(f))
+        case Union(self)       => Union(self.metadata(f))
 
     override def imap[A, B](fa: Json[A])(f: A => B)(g: B => A): Json[B] = fa match
       case Collection(self)  => Collection(self.imap(f)(g))

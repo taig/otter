@@ -58,7 +58,7 @@ object Results:
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Results[S, A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Results[S, A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Results[S, A]] = new Enriched[Results[S, A]]:
+      override def metadata(a: Results[S, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Results[S, A])(f: Metadata => Metadata): Results[S, A] =
+        a.copy(metadata = f(a.metadata))

@@ -7,6 +7,7 @@ import io.taig.otter.Key
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 final case class Parameter[A](value: Parameter.Value[A], metadata: Metadata):
   def name: String = value.name
@@ -107,18 +108,21 @@ object Parameter:
           case Primitive(self)   => Primitive(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
-        extension [A](self: Value[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Parameter.Schema.Value[A]] = new Enriched[Parameter.Schema.Value[A]]:
+          override def metadata(a: Parameter.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
             case Primitive(self)   => self.metadata
             case Union(self)       => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Value[A] = self match
-            case Constant(self)    => Constant(self.metadata(f))
-            case Enumeration(self) => Enumeration(self.metadata(f))
-            case Primitive(self)   => Primitive(self.metadata(f))
-            case Union(self)       => Union(self.metadata(f))
+          override def modifyMetadata(a: Parameter.Schema.Value[A])(
+              f: Metadata => Metadata
+          ): Parameter.Schema.Value[A] =
+            a match
+              case Constant(self)    => Constant(self.metadata(f))
+              case Enumeration(self) => Enumeration(self.metadata(f))
+              case Primitive(self)   => Primitive(self.metadata(f))
+              case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Parameter.Schema[A]
 
@@ -150,14 +154,17 @@ object Parameter:
           case Collection(self) => Collection(self.imap(f)(g))
           case Tuple(self)      => Tuple(self.imap(f)(g))
 
-        extension [A](self: Array[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Parameter.Schema.Array[A]] = new Enriched[Parameter.Schema.Array[A]]:
+          override def metadata(a: Parameter.Schema.Array[A]): Metadata = a match
             case Collection(self) => self.metadata
             case Tuple(self)      => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Array[A] = self match
-            case Collection(self) => Collection(self.metadata(f))
-            case Tuple(self)      => Tuple(self.metadata(f))
+          override def modifyMetadata(a: Parameter.Schema.Array[A])(
+              f: Metadata => Metadata
+          ): Parameter.Schema.Array[A] =
+            a match
+              case Collection(self) => Collection(self.metadata(f))
+              case Tuple(self)      => Tuple(self.metadata(f))
 
     sealed trait Object[A] extends Parameter.Schema[A]
 
@@ -207,14 +214,17 @@ object Parameter:
             case Dictionary(self) => Dictionary(self.imap(f)(g))
             case Record(self)     => Record(self.imap(f)(g))
 
-        extension [A](self: Object[A])
-          override def metadata: Metadata = self match
+        override def enriched[A]: Enriched[Parameter.Schema.Object[A]] = new Enriched[Parameter.Schema.Object[A]]:
+          override def metadata(a: Parameter.Schema.Object[A]): Metadata = a match
             case Dictionary(self) => self.metadata
             case Record(self)     => self.metadata
 
-          override def metadata(f: Metadata => Metadata): Parameter.Schema.Object[A] = self match
-            case Dictionary(self) => Dictionary(self.metadata(f))
-            case Record(self)     => Record(self.metadata(f))
+          override def modifyMetadata(a: Parameter.Schema.Object[A])(
+              f: Metadata => Metadata
+          ): Parameter.Schema.Object[A] =
+            a match
+              case Dictionary(self) => Dictionary(self.metadata(f))
+              case Record(self)     => Record(self.metadata(f))
 
     final case class Field[A](self: Self.Field[Key, Parameter.Schema.Object.Value, A])
 
@@ -234,16 +244,17 @@ object Parameter:
         case schema: Parameter.Schema.Array[A]  => schema.imap(f)(g)
         case schema: Parameter.Schema.Object[A] => schema.imap(f)(g)
 
-      extension [A](self: Schema[A])
-        override def metadata: Metadata = self match
+      override def enriched[A]: Enriched[Parameter.Schema[A]] = new Enriched[Parameter.Schema[A]]:
+        override def metadata(a: Parameter.Schema[A]): Metadata = a match
           case schema: Parameter.Schema.Value[A]  => schema.metadata
           case schema: Parameter.Schema.Array[A]  => schema.metadata
           case schema: Parameter.Schema.Object[A] => schema.metadata
 
-        override def metadata(f: Metadata => Metadata): Schema[A] = self match
-          case schema: Parameter.Schema.Value[A]  => schema.metadata(f)
-          case schema: Parameter.Schema.Array[A]  => schema.metadata(f)
-          case schema: Parameter.Schema.Object[A] => schema.metadata(f)
+        override def modifyMetadata(a: Parameter.Schema[A])(f: Metadata => Metadata): Parameter.Schema[A] =
+          a match
+            case schema: Parameter.Schema.Value[A]  => schema.metadata(f)
+            case schema: Parameter.Schema.Array[A]  => schema.metadata(f)
+            case schema: Parameter.Schema.Object[A] => schema.metadata(f)
 
   enum Style:
     case Simple, Label, Matrix
@@ -252,9 +263,9 @@ object Parameter:
     override def imap[A, B](fa: Parameter[A])(f: A => B)(g: B => A): Parameter[B] =
       fa.copy(value = fa.value.imap(f)(g))
 
-    extension [A](self: Parameter[A])
-      override def metadata: Metadata = self.metadata
-      override def metadata(f: Metadata => Metadata): Parameter[A] =
-        self.copy(metadata = f(self.metadata))
+    override def enriched[A]: Enriched[Parameter[A]] = new Enriched[Parameter[A]]:
+      override def metadata(a: Parameter[A]): Metadata = a.metadata
+      override def modifyMetadata(a: Parameter[A])(f: Metadata => Metadata): Parameter[A] =
+        a.copy(metadata = f(a.metadata))
 
   given [A]: Show[Parameter[A]] = _.value.show
