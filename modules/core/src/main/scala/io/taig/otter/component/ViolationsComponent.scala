@@ -1,7 +1,6 @@
 package io.taig.otter.component
 
 import cats.syntax.all.*
-import io.taig.otter.Keys.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.operation.*

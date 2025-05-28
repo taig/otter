@@ -1,9 +1,9 @@
 package io.taig.otter
 
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.SchemaInvariantSyntax.*
-import cats.syntax.all.*
 
 sealed abstract class Json[A] extends Product with Serializable
 

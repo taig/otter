@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.operation.NullableSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.NullableSchemaInvariant
 
 final case class Nullable[+S[_], A](value: Nullable.Value[S, A], metadata: Metadata)
 

@@ -1,7 +1,7 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Metadata
 import io.taig.otter.Merge
+import io.taig.otter.Metadata
 import io.taig.otter.http.*
 
 trait RequestSyntax:

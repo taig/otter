@@ -3,7 +3,6 @@ package io.taig.otter.operation
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.Reference
-import io.taig.otter.Metadata
 
 trait UnionSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   self =>

@@ -3,7 +3,6 @@ package io.taig.otter.operation
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Reference
-import io.taig.otter.Metadata
 
 trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   self =>

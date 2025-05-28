@@ -1,9 +1,9 @@
 package io.taig.otter.http.syntax
 
+import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.http.Header
 import org.typelevel.ci.CIString
-import io.taig.otter.Metadata
 
 trait HeaderSyntax:
   def header[A](name: CIString, schema: => Header.Schema[A]): Header[A] =

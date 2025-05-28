@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
 
 import java.lang.String as JString
@@ -12,7 +13,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.operation.Enriched
 
 sealed abstract class Primitive[A]:
   def value: Primitive.Value[A]

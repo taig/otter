@@ -5,8 +5,8 @@ import cats.data.Chain
 import cats.syntax.all.*
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Path[A](value: Path.Value[A], metadata: Metadata):
   def toSegments: Chain[String | Parameter[?]] = value.toSegments

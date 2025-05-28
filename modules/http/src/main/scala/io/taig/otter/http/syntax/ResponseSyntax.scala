@@ -1,10 +1,10 @@
 package io.taig.otter.http.syntax
 
+import io.taig.otter.Metadata
 import io.taig.otter.Violations
 import io.taig.otter.http.Response
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
-import io.taig.otter.Metadata
 
 trait ResponseSyntax:
   def response[S[_], A](

@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
-import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Url[A](value: Url.Value[A], metadata: Metadata):
   def path: Path[?] = value.path

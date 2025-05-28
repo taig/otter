@@ -2,8 +2,8 @@ package io.taig.otter.component
 
 import io.taig.otter.Violation
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
 import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 trait ViolationComponent[
     Collection[a] <: Value[a],

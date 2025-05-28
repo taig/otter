@@ -1,8 +1,8 @@
 package io.taig.otter
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.operation.EnumerationSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.EnumerationSchemaInvariant
 
 final case class Enumeration[+S[_], A](value: Enumeration.Value[S, A], metadata: Metadata)
 

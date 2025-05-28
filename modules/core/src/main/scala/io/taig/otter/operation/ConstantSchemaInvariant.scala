@@ -1,7 +1,6 @@
 package io.taig.otter.operation
 
 import cats.Eq
-import io.taig.otter.Metadata
 
 trait ConstantSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>

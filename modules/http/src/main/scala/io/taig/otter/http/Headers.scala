@@ -6,9 +6,9 @@ import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
+import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.SchemaInvariant
 import org.typelevel.ci.*
-import Self.operation.Enriched
 
 final case class Headers[A](value: Headers.Value[A], metadata: Metadata):
   def toChain: Chain[Header[?]] = value.toChain

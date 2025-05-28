@@ -1,6 +1,5 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Metadata
 
 trait NullableSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>

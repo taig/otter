@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.operation.TupleSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.TupleSchemaInvariant
 
 // TODO support for optional
 final case class Tuple[+S[_], A](value: Tuple.Value[S, A], metadata: Metadata)

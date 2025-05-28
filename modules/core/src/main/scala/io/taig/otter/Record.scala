@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.operation.RecordSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.RecordSchemaInvariant
 
 final case class Record[+S[_], A](value: Record.Value[S, A], metadata: Metadata)
 

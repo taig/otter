@@ -1,8 +1,7 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.operation.Enriched
 import io.taig.otter.Keys
-import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.operation.Enriched
 
 trait EnrichedSyntax:
   implicit def enrichedToEnrichedOps[A: Enriched](a: A): Enriched.Ops[A] = new Enriched.Ops(a)

@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.taig.otter.operation.FieldSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.FieldSchemaInvariant
 
 final case class Field[+S[_], +T[_], A](value: Field.Value[S, T, A], metadata: Metadata)
 

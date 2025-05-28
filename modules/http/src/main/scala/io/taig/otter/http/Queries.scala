@@ -1,8 +1,8 @@
 package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter.*
-import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
   def toChain: Chain[Query[?]] = value.toChain

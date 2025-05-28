@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Metadata
 import io.taig.otter.Violations
-import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Response[+S[_], A](value: Response.Value[S, A], metadata: Metadata):
 

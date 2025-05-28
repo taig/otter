@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import io.taig.otter.Keys.*
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
 import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.syntax.SchemaInvariantSyntax.*
 import io.taig.otter.toSymbol
 
 final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant](

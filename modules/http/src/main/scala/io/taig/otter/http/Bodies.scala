@@ -7,7 +7,6 @@ import io.taig.otter.Metadata
 import io.taig.otter.http.header.MediaRange
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.EnrichedSyntax.*
 
 final case class Bodies[+S[_], A](value: Bodies.Value[S, A], metadata: Metadata):
   def toChain: NonEmptyChain[Body[S, ?]] = value.toChain

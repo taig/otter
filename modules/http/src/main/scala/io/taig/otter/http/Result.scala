@@ -3,8 +3,8 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Metadata
-import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Result[+S[_], A](value: Result.Value[S, A], metadata: Metadata):
   def code: Code = value.code

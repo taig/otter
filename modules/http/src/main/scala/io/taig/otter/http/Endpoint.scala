@@ -1,9 +1,8 @@
 package io.taig.otter.http
 
+import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Metadata
-import io.taig.otter.operation.SchemaInvariant
-import cats.Invariant
 import io.taig.otter.operation.Enriched
 
 final case class Endpoint[+S[_], A, B](value: Endpoint.Value[S, A, B], metadata: Metadata):

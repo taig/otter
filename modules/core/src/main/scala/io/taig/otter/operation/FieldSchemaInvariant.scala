@@ -1,7 +1,6 @@
 package io.taig.otter.operation
 
 import io.taig.otter.Reference
-import io.taig.otter.Metadata
 
 trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
