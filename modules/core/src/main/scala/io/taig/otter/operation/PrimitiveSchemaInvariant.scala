@@ -196,7 +196,7 @@ object PrimitiveSchemaInvariant:
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-      override def enriched[A]: Enriched[T[A]] = ???
+      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
 
     def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
 
