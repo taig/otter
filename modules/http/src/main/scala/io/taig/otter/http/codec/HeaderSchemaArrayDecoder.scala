@@ -13,5 +13,5 @@ object HeaderSchemaArrayDecoder extends Decoder[Header.Schema.Array, Chain[Strin
   val tuple = TupleDecoder(decoder = HeaderSchemaValueParser)
 
   override def decode[A](schema: Header.Schema.Array[A], value: Chain[String]): Validated[Violations, A] = schema match
-    case Header.Schema.Array.Collection(self) => collection.decode(schema = self.self, value.toList)
-    case Header.Schema.Array.Tuple(self)      => tuple.decode(schema = self.self, value.toVector)
+    case Header.Schema.Array.Collection(self) => collection.decode(schema = self, value.toList)
+    case Header.Schema.Array.Tuple(self)      => tuple.decode(schema = self, value.toVector)

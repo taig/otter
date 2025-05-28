@@ -64,7 +64,7 @@ object Bodies:
       case b: B => Right(b)
     }
 
-  given [S[_]]: EnrichedSchemaInvariant[Bodies[S, *]] with
+  given [S[_]]: SchemaInvariant[Bodies[S, *]] with
     override def imap[A, B](fa: Bodies[S, A])(f: A => B)(g: B => A): Bodies[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 

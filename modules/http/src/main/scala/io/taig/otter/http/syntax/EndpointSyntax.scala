@@ -1,12 +1,12 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Enrichment
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Request
 import io.taig.otter.http.Response
+import io.taig.otter.Metadata
 
 trait EndpointSyntax:
   def endpoint[S[_], A, B](request: Request[S, A], response: Response[S, B]): Endpoint[S, A, B] =
-    Endpoint(Enrichment(Endpoint.Value(request, response)))
+    Endpoint(value = Endpoint.Value(request, response), metadata = Metadata.Empty)
 
 object EndpointSyntax extends EndpointSyntax

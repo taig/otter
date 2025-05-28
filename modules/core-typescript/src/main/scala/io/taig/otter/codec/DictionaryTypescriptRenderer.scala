@@ -11,5 +11,5 @@ final class DictionaryTypescriptRenderer[S[_], T[_], U[_]: Functor: Semigroupal]
     value: Renderer[T, U[Typescript]]
 ) extends Renderer[Dictionary[S, T, *], U[Typescript]]:
   override def render[A](schema: Dictionary[S, T, A]): U[Typescript] =
-    (key.render(schema = schema.key.value), value.render(schema = schema.value.value))
+    (key.render(schema = schema.value.key.value), value.render(schema = schema.value.value.value))
       .mapN(Typescript.Record.apply)

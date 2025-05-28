@@ -1,5 +1,7 @@
 package io.taig.otter.operation
 
+import io.taig.otter.Metadata
+
 trait DictionarySchemaInvariant[Self[_], -Key[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>
 
@@ -21,6 +23,10 @@ trait DictionarySchemaInvariant[Self[_], -Key[_], -Value[_]] extends SchemaInvar
     ): T[List[(A, B)]] = fK(self(key, value, minimum, maximum))
 
     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+
+    extension [A](ta: T[A])
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object DictionarySchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using

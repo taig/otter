@@ -6,15 +6,14 @@ import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 import org.typelevel.ci.*
 
-final case class Headers[A](self: Enrichment[Headers.Value[A]]) extends AnyVal:
-  inline def value: Headers.Value[A] = self.self
-
+final case class Headers[A](value: Headers.Value[A], metadata: Metadata):
   def toChain: Chain[Header[?]] = value.toChain
 
-  def zip[B](headers: Headers[B]): Headers[(A, B)] = Headers(Enrichment(value.zip(headers.value)))
+  def zip[B](headers: Headers[B]): Headers[(A, B)] =
+    Headers(value = value.zip(headers.value), metadata = Metadata.Empty)
 
   def *[B](headers: Headers[B])(using merge: Merge[A, B]): Headers[merge.Out] = this.zip(headers).merge
 
@@ -64,13 +63,13 @@ object Headers:
           .leftMap: error =>
             Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
 
-  val Empty: Headers[Unit] = Headers(Enrichment(Headers.Value.Empty))
+  val Empty: Headers[Unit] = Headers(value = Headers.Value.Empty, metadata = Metadata.Empty)
 
-  given EnrichedSchemaInvariant[Headers] with
+  given SchemaInvariant[Headers] with
     override def imap[A, B](fa: Headers[A])(f: A => B)(g: B => A): Headers[B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Headers[A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Headers[A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(self.metadata))

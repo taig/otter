@@ -10,5 +10,5 @@ final class FieldTypescriptRenderer[S[_], T[_], U[_]: Functor](
     value: Renderer[T, U[Typescript]]
 ) extends Renderer[Field[S, T, *], U[(String, Typescript)]]:
   override def render[A](schema: Field[S, T, A]): U[(String, Typescript)] = value
-    .render(schema = schema.value.value)
+    .render(schema = schema.value.value.value)
     .tupleLeft(ReferenceConstantRenderer(encoder = key).render(schema.key))

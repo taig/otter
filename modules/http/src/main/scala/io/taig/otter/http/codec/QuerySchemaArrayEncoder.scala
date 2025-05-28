@@ -10,5 +10,5 @@ object QuerySchemaArrayEncoder extends Encoder[Query.Schema.Array, Seq[String]]:
   val tuple = TupleEncoder(encoder = QuerySchemaValuePrinter)
 
   override def encode[A](schema: Query.Schema.Array[A], a: A): Seq[String] = schema match
-    case Query.Schema.Array.Collection(self) => collection.encode(schema = self.self, a)
-    case Query.Schema.Array.Tuple(self)      => tuple.encode(schema = self.self, a)
+    case Query.Schema.Array.Collection(self) => collection.encode(schema = self, a)
+    case Query.Schema.Array.Tuple(self)      => tuple.encode(schema = self, a)

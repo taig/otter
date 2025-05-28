@@ -1,10 +1,10 @@
 package io.taig.otter.syntax
 
 import io.taig.otter.Keys
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 
 trait MetadataSyntax:
-  extension [S[_]: EnrichedSchemaInvariant, A](self: S[A])
+  extension [S[_]: SchemaInvariant, A](self: S[A])
     def description: Option[String] = self.metadata(Keys.description)
     def description(value: String): S[A] = self.metadata(Keys.description, value)
 

@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.operation.ConstantSchemaInvariant
 import io.taig.otter.operation.EnumerationSchemaInvariant
@@ -47,7 +48,20 @@ object Key:
 
   given SchemaInvariant[Key] with
     override def imap[A, B](fa: Key[A])(f: A => B)(g: B => A): Key[B] = fa match
-      case Constant(self)    => Constant(self.imap(f)(g))
-      case Enumeration(self) => Enumeration(self.imap(f)(g))
-      case Primitive(self)   => Primitive(self.imap(f)(g))
-      case Union(self)       => Union(self.imap(f)(g))
+      case Key.Constant(self)    => Key.Constant(self.imap(f)(g))
+      case Key.Enumeration(self) => Key.Enumeration(self.imap(f)(g))
+      case Key.Primitive(self)   => Key.Primitive(self.imap(f)(g))
+      case Key.Union(self)       => Key.Union(self.imap(f)(g))
+
+    extension [A](self: Key[A])
+      def metadata: Metadata = self match
+        case Key.Constant(value)    => value.self.metadata
+        case Key.Enumeration(value) => value.self.metadata
+        case Key.Primitive(value)   => value.self.metadata
+        case Key.Union(value)       => value.self.metadata
+
+      def metadata(f: Metadata => Metadata): Key[A] = self match
+        case Key.Constant(value)    => Key.Constant(value.self.metadata(f))
+        case Key.Enumeration(value) => Key.Enumeration(value.self.metadata(f))
+        case Key.Primitive(value)   => Key.Primitive(value.self.metadata(f))
+        case Key.Union(value)       => Key.Union(value.self.metadata(f))

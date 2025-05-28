@@ -11,5 +11,5 @@ object ParameterSchemaArrayEncoder extends Encoder[Parameter.Schema.Array, Chain
   val tuple = TupleEncoder(encoder = ParameterSchemaValuePrinter)
 
   override def encode[A](schema: Parameter.Schema.Array[A], a: A): Chain[String] = schema match
-    case Parameter.Schema.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self.self, a))
-    case Parameter.Schema.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self.self, a))
+    case Parameter.Schema.Array.Collection(self) => Chain.fromSeq(collection.encode(schema = self, a))
+    case Parameter.Schema.Array.Tuple(self)      => Chain.fromSeq(tuple.encode(schema = self, a))

@@ -13,7 +13,7 @@ object QuerySchemaValuePrinter extends Encoder[Query.Schema.Value, String]:
   val union = UnionEncoder(encoder = this)
 
   override def encode[A](schema: Query.Schema.Value[A], a: A): String = schema match
-    case Query.Schema.Value.Constant(self)    => constant.encode(schema = self.self, a)
-    case Query.Schema.Value.Enumeration(self) => enumeration.encode(schema = self.self, a)
-    case Query.Schema.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.self, a)
-    case Query.Schema.Value.Union(self)       => union.encode(schema = self.self, a)
+    case Query.Schema.Value.Constant(self)    => constant.encode(schema = self, a)
+    case Query.Schema.Value.Enumeration(self) => enumeration.encode(schema = self, a)
+    case Query.Schema.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self, a)
+    case Query.Schema.Value.Union(self)       => union.encode(schema = self, a)

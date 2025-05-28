@@ -3,7 +3,7 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.Metadata
 import io.taig.otter.Violations
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Response[+S[_], A](value: Response.Value[S, A], metadata: Metadata):
 
@@ -43,11 +43,11 @@ object Response:
     def modifyBody(f: Array[Byte] => Array[Byte]): Response.Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Response.Data = modifyBody(_ => body)
 
-  given [S[_]]: EnrichedSchemaInvariant[Response[S, *]] with
+  given [S[_]]: SchemaInvariant[Response[S, *]] with
     override def imap[A, B](fa: Response[S, A])(f: A => B)(g: B => A): Response[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Response[S, A])
       override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Response[S, A] =
-        self.copy(metadata = f(self.self.metadata))
+        self.copy(metadata = f(self.metadata))

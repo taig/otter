@@ -12,9 +12,9 @@ object ParameterSchemaObjectEncoder extends Encoder[Parameter.Schema.Object, Cha
   val dictionary = DictionaryEncoder(key = KeyPrinter.Unquoted, value = ParameterSchemaObjectValueEncoder)
   val record = RecordEncoder(field =
     FieldEncoder(key = KeyPrinter.Unquoted, value = ParameterSchemaObjectValueEncoder)
-      .mapK[Parameter.Schema.Field]([A] => (field: Parameter.Schema.Field[A]) => field.self.self)
+      .mapK[Parameter.Schema.Field]([A] => (field: Parameter.Schema.Field[A]) => field.self)
   )
 
   override def encode[A](schema: Parameter.Schema.Object[A], a: A): Chain[(String, Option[String])] = schema match
-    case Parameter.Schema.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self.self, a))
-    case Parameter.Schema.Object.Record(self)     => record.encode(schema = self.self, a)
+    case Parameter.Schema.Object.Dictionary(self) => Chain.fromSeq(dictionary.encode(schema = self, a))
+    case Parameter.Schema.Object.Record(self)     => record.encode(schema = self, a)

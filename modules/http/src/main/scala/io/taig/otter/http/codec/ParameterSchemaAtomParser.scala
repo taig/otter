@@ -11,7 +11,7 @@ object ParameterSchemaValueParser extends Decoder[Parameter.Schema.Value, String
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Parameter.Schema.Value[A], value: String): Validated[Violations, A] = schema match
-    case Parameter.Schema.Value.Constant(self)    => constant.decode(schema = self.self, value)
-    case Parameter.Schema.Value.Enumeration(self) => enumeration.decode(schema = self.self, value)
-    case Parameter.Schema.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self.self, value)
-    case Parameter.Schema.Value.Union(self)       => union.decode(schema = self.self, value)
+    case Parameter.Schema.Value.Constant(self)    => constant.decode(schema = self, value)
+    case Parameter.Schema.Value.Enumeration(self) => enumeration.decode(schema = self, value)
+    case Parameter.Schema.Value.Primitive(self)   => PrimitiveParser.Unquoted.decode(schema = self, value)
+    case Parameter.Schema.Value.Union(self)       => union.decode(schema = self, value)

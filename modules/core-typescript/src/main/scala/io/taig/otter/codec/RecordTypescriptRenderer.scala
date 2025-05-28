@@ -9,4 +9,4 @@ import io.taig.otter.Typescript
 final class RecordTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[(String, Typescript)]])
     extends Renderer[Record[S, *], T[Typescript]]:
   override def render[A](schema: Record[S, A]): T[Typescript] =
-    schema.fields.traverse(field => renderer.render(schema = field.value)).map(Typescript.Object.apply)
+    schema.value.fields.traverse(field => renderer.render(schema = field.value)).map(Typescript.Object.apply)

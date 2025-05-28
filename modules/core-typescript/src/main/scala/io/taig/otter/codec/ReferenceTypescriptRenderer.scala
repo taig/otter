@@ -5,10 +5,10 @@ import cats.syntax.all.*
 import io.taig.otter.Keys.*
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.toSymbol
 
-final class ReferenceTypescriptRenderer[S[_]: EnrichedSchemaInvariant](
+final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptState[Typescript]]
 ) extends Renderer[S, TypescriptState[Typescript]]:
   override def render[A](schema: S[A]): TypescriptState[Typescript] = schema.metadata(name).map(toSymbol) match

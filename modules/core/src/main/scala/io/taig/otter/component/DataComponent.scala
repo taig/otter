@@ -3,10 +3,7 @@ package io.taig.otter.component
 import cats.syntax.all.*
 import io.taig.otter.Data
 import io.taig.otter.Keys.*
-import io.taig.otter.operation.EnrichedCollectionSchemaInvariant
-import io.taig.otter.operation.EnrichedDictionarySchemaInvariant
-import io.taig.otter.operation.EnrichedNullableSchemaInvariant
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.*
 
 trait DataComponent[
     Collection[a] <: Value[a],
@@ -20,10 +17,10 @@ trait DataComponent[
     Key[_],
     Value[_]
 ](using
-    EnrichedCollectionSchemaInvariant[Collection, Value],
-    EnrichedDictionarySchemaInvariant[Dictionary, Key, Value],
-    EnrichedNullableSchemaInvariant[Nullable, Value],
-    EnrichedSchemaInvariant[Union]
+    CollectionSchemaInvariant[Collection, Value],
+    DictionarySchemaInvariant[Dictionary, Key, Value],
+    NullableSchemaInvariant[Nullable, Value],
+    SchemaInvariant[Union]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],

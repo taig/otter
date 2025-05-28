@@ -54,11 +54,11 @@ object Results:
     inline def |[T[_], B <: Matchable](result: Result[T, B]): Results[S + T, A | B] =
       self.or(result.toResults)
 
-  given [S[_]]: EnrichedSchemaInvariant[Results[S, *]] with
+  given [S[_]]: SchemaInvariant[Results[S, *]] with
     override def imap[A, B](fa: Results[S, A])(f: A => B)(g: B => A): Results[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Results[S, A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Results[S, A] =
         self.copy(metadata = f(self.metadata))

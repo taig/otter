@@ -1,6 +1,5 @@
 package io.taig.otter.http.syntax
 
-import io.taig.otter.Enrichment
 import io.taig.otter.Violations
 import io.taig.otter.http.Response
 import io.taig.otter.http.Result

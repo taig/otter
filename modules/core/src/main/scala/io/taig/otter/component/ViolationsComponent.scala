@@ -21,7 +21,7 @@ trait ViolationsComponent[
     DictionarySchemaInvariant[Dictionary, Key, Value],
     FieldSchemaInvariant[Field, Key, Value],
     RecordSchemaInvariant[Record, Field],
-    EnrichedUnionSchemaInvariant[Union, Value]
+    UnionSchemaInvariant[Union, Value]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],

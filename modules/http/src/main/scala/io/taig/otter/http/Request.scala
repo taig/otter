@@ -1,20 +1,17 @@
 package io.taig.otter.http
 
 import cats.syntax.all.*
-import io.taig.otter.Enrichment
 import io.taig.otter.Merge
 import io.taig.otter.Metadata
 import io.taig.otter.operation.*
 
-final case class Request[+S[_], A](self: Enrichment[Request.Value[S, A]]) extends AnyVal:
-  inline def value: Request.Value[S, A] = self.self
-
+final case class Request[+S[_], A](value: Request.Value[S, A], metadata: Metadata):
   def method: Method = value.method
   def url: Url[?] = value.url
   def headers: Headers[?] = value.headers
   def bodies: Option[Bodies[S, ?]] = value.bodies
 
-  def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request(Enrichment(value.zip(headers)))
+  def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request(value.zip(headers), metadata = Metadata.Empty)
 
   def *[B](headers: Headers[B])(using merge: Merge[A, B]): Request[S, merge.Out] = zip(headers).merge
 
@@ -60,11 +57,11 @@ object Request:
     def modifyBody(f: Array[Byte] => Array[Byte]): Data = copy(body = f(body))
     def withBody(body: Array[Byte]): Data = modifyBody(_ => body)
 
-  given [S[_]]: EnrichedSchemaInvariant[Request[S, *]] with
+  given [S[_]]: SchemaInvariant[Request[S, *]] with
     override def imap[A, B](fa: Request[S, A])(f: A => B)(g: B => A): Request[S, B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Request[S, A])
-      def metadata: Metadata = self.self.metadata
+      def metadata: Metadata = self.metadata
       def metadata(f: Metadata => Metadata): Request[S, A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(self.metadata))

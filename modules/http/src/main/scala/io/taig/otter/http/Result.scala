@@ -3,7 +3,7 @@ package io.taig.otter.http
 import cats.syntax.all.*
 import io.taig.otter.+
 import io.taig.otter.Metadata
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 
 final case class Result[+S[_], A](value: Result.Value[S, A], metadata: Metadata):
   def code: Code = value.code
@@ -38,11 +38,11 @@ object Result:
   extension [S[_], A <: Matchable](self: Result[S, A])
     inline def |[T[_], B <: Matchable](schema: Result[T, B]): Results[S + T, A | B] = self.toResults | schema
 
-  given [S[_]]: EnrichedSchemaInvariant[Result[S, *]] with
+  given [S[_]]: SchemaInvariant[Result[S, *]] with
     override def imap[A, B](fa: Result[S, A])(f: A => B)(g: B => A): Result[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Result[S, A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Result[S, A] =
         self.copy(metadata = f(self.metadata))

@@ -13,159 +13,221 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-sealed abstract class Primitive[A] extends Product with Serializable:
-  def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive[A]
-  def imap[B](f: A => B)(g: B => A): Primitive[B]
+sealed abstract class Primitive[A]:
+  def value: Primitive.Value[A]
+  def metadata: Metadata
 
 object Primitive:
-  sealed abstract class Boolean[A] extends Primitive[A]:
-    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Boolean[A] = this
-    override def imap[B](f: A => B)(g: B => A): Primitive.Boolean[B] = Boolean.Modify(self = this, f, g)
+  final case class Boolean[A](value: Primitive.Value.Boolean[A], metadata: Metadata) extends Primitive[A]
 
   object Boolean:
-    final private[otter] case class Modify[A, B](self: Primitive.Boolean[A], f: A => B, g: B => A)
-        extends Primitive.Boolean[B]
+    given schema: PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] =
+      new PrimitiveSchemaInvariant.Boolean[Primitive.Boolean]:
+        override val boolean: Primitive.Boolean[SBoolean] =
+          Boolean(value = Value.Boolean.Root, metadata = Metadata.Empty)
+        override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] =
+          fa.copy(value = fa.value.imap(f)(g))
 
-    private[otter] case object Root extends Primitive.Boolean[SBoolean]
+        extension [A](self: Primitive.Boolean[A])
+          override def metadata: Metadata = self.metadata
+          override def metadata(f: Metadata => Metadata): Boolean[A] = self.copy(metadata = f(self.metadata))
 
-    given schema: PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] with
-      override def boolean: Boolean[SBoolean] = Root
-
-      override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] = fa.imap(f)(g)
-
-  sealed abstract class Number[A] extends Primitive[A]:
-    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Number[A] = this
-    final override def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
+  final case class Number[A](value: Primitive.Value.Number[A], metadata: Metadata) extends Primitive[A]
 
   object Number:
-    final private[otter] case class BigDecimal(
-        minimum: Option[Comparison[JBigDecimal]],
-        maximum: Option[Comparison[JBigDecimal]],
-        multiple: Option[JBigDecimal]
-    ) extends Primitive.Number[JBigDecimal]
+    given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] =
+      new PrimitiveSchemaInvariant.Number[Primitive.Number]:
+        override def jBigDecimal(
+            minimum: Option[Comparison[JBigDecimal]],
+            maximum: Option[Comparison[JBigDecimal]],
+            multiple: Option[JBigDecimal]
+        ): Primitive.Number[JBigDecimal] =
+          Number(value = Value.Number.BigDecimal(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class BigInteger(
-        minimum: Option[Comparison[JBigInteger]],
-        maximum: Option[Comparison[JBigInteger]],
-        multiple: Option[JBigInteger]
-    ) extends Primitive.Number[JBigInteger]
+        override def jBigInteger(
+            minimum: Option[Comparison[JBigInteger]],
+            maximum: Option[Comparison[JBigInteger]],
+            multiple: Option[JBigInteger]
+        ): Primitive.Number[JBigInteger] =
+          Number(value = Value.Number.BigInteger(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class Double(
-        minimum: Option[Comparison[SDouble]],
-        maximum: Option[Comparison[SDouble]],
-        multiple: Option[SDouble]
-    ) extends Primitive.Number[SDouble]
+        override def double(
+            minimum: Option[Comparison[SDouble]],
+            maximum: Option[Comparison[SDouble]],
+            multiple: Option[SDouble]
+        ): Primitive.Number[SDouble] =
+          Number(value = Value.Number.Double(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class Float(
-        minimum: Option[Comparison[SFloat]],
-        maximum: Option[Comparison[SFloat]],
-        multiple: Option[SFloat]
-    ) extends Primitive.Number[SFloat]
+        override def float(
+            minimum: Option[Comparison[SFloat]],
+            maximum: Option[Comparison[SFloat]],
+            multiple: Option[SFloat]
+        ): Primitive.Number[SFloat] =
+          Number(value = Value.Number.Float(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class Int(
-        minimum: Option[Comparison[SInt]],
-        maximum: Option[Comparison[SInt]],
-        multiple: Option[SInt]
-    ) extends Primitive.Number[SInt]
+        override def int(
+            minimum: Option[Comparison[SInt]],
+            maximum: Option[Comparison[SInt]],
+            multiple: Option[SInt]
+        ): Primitive.Number[SInt] =
+          Number(value = Value.Number.Int(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class Long(
-        minimum: Option[Comparison[SLong]],
-        maximum: Option[Comparison[SLong]],
-        multiple: Option[SLong]
-    ) extends Primitive.Number[SLong]
+        override def long(
+            minimum: Option[Comparison[SLong]],
+            maximum: Option[Comparison[SLong]],
+            multiple: Option[SLong]
+        ): Primitive.Number[SLong] =
+          Number(value = Value.Number.Long(minimum, maximum, multiple), metadata = Metadata.Empty)
 
-    final private[otter] case class Modify[A, B](
-        self: Primitive.Number[A],
-        f: A => B,
-        g: B => A
-    ) extends Primitive.Number[B]
+        override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] =
+          fa.copy(value = fa.value.imap(f)(g))
 
-    given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] with
-      override def jBigDecimal(
+        extension [A](self: Primitive.Number[A])
+          override def metadata: Metadata = self.metadata
+          override def metadata(f: Metadata => Metadata): Number[A] = self.copy(metadata = f(self.metadata))
+
+  final case class String[A](value: Primitive.Value.String[A], metadata: Metadata) extends Primitive[A]
+
+  object String:
+    given schema: PrimitiveSchemaInvariant.String[Primitive.String] =
+      new PrimitiveSchemaInvariant.String[Primitive.String]:
+        override def parser[A](
+            name: JString,
+            decode: JString => Either[JString, A],
+            encode: A => JString,
+            minimum: Option[SInt],
+            maximum: Option[SInt],
+            matches: Option[Pattern]
+        ): Primitive.String[A] =
+          String(
+            value = Value.String.Parser(name, decode, encode, minimum, maximum, matches),
+            metadata = Metadata.Empty
+          )
+
+        override def string(
+            minimum: Option[SInt],
+            maximum: Option[SInt],
+            matches: Option[Pattern]
+        ): Primitive.String[JString] =
+          String(value = Value.String.Text(minimum, maximum, matches), metadata = Metadata.Empty)
+
+        override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] =
+          fa.copy(value = fa.value.imap(f)(g))
+
+        extension [A](self: Primitive.String[A])
+          override def metadata: Metadata = self.metadata
+          override def metadata(f: Metadata => Metadata): String[A] = self.copy(metadata = f(self.metadata))
+
+  def apply[A](value: Primitive.Value[A], metadata: Metadata = Metadata.Empty): Primitive[A] = value match
+    case value: Primitive.Value.Boolean[A] => Boolean(value, metadata)
+    case value: Primitive.Value.Number[A]  => Number(value, metadata)
+    case value: Primitive.Value.String[A]  => String(value, metadata)
+
+  given PrimitiveSchemaInvariant[Primitive] with
+    export Boolean.schema.{metadata as _, *}
+    export Number.schema.{metadata as _, *}
+    export String.schema.{metadata as _, *}
+
+    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa match
+      case schema: Boolean[A] => schema.imap(f)(g)
+      case schema: Number[A]  => schema.imap(f)(g)
+      case schema: String[A]  => schema.imap(f)(g)
+
+    extension [A](self: Primitive[A])
+      override def metadata: Metadata = self match
+        case schema: Boolean[A] => schema.metadata
+        case schema: Number[A]  => schema.metadata
+        case schema: String[A]  => schema.metadata
+
+      override def metadata(f: Metadata => Metadata): Primitive[A] = self match
+        case schema: Boolean[A] => schema.metadata(f)
+        case schema: Number[A]  => schema.metadata(f)
+        case schema: String[A]  => schema.metadata(f)
+
+  sealed abstract class Value[A] extends Product with Serializable:
+    def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Value[A]
+    def imap[B](f: A => B)(g: B => A): Value[B]
+
+  object Value:
+    sealed abstract class Boolean[A] extends Value[A]:
+      final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Value.Boolean[A] = this
+      override def imap[B](f: A => B)(g: B => A): Value.Boolean[B] = Boolean.Modify(self = this, f, g)
+
+    object Boolean:
+      final private[otter] case class Modify[A, B](self: Value.Boolean[A], f: A => B, g: B => A)
+          extends Value.Boolean[B]
+
+      private[otter] case object Root extends Value.Boolean[SBoolean]
+
+    sealed abstract class Number[A] extends Value[A]:
+      final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Value.Number[A] = this
+      final override def imap[B](f: A => B)(g: B => A): Value.Number[B] = Number.Modify(self = this, f, g)
+
+    object Number:
+      final private[otter] case class BigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
           multiple: Option[JBigDecimal]
-      ): Number[JBigDecimal] = BigDecimal(minimum, maximum, multiple)
+      ) extends Value.Number[JBigDecimal]
 
-      override def jBigInteger(
+      final private[otter] case class BigInteger(
           minimum: Option[Comparison[JBigInteger]],
           maximum: Option[Comparison[JBigInteger]],
           multiple: Option[JBigInteger]
-      ): Number[JBigInteger] = BigInteger(minimum, maximum, multiple)
+      ) extends Value.Number[JBigInteger]
 
-      override def double(
+      final private[otter] case class Double(
           minimum: Option[Comparison[SDouble]],
           maximum: Option[Comparison[SDouble]],
           multiple: Option[SDouble]
-      ): Number[SDouble] = Double(minimum, maximum, multiple)
+      ) extends Value.Number[SDouble]
 
-      override def float(
+      final private[otter] case class Float(
           minimum: Option[Comparison[SFloat]],
           maximum: Option[Comparison[SFloat]],
           multiple: Option[SFloat]
-      ): Number[SFloat] = Float(minimum, maximum, multiple)
+      ) extends Value.Number[SFloat]
 
-      override def int(
+      final private[otter] case class Int(
           minimum: Option[Comparison[SInt]],
           maximum: Option[Comparison[SInt]],
           multiple: Option[SInt]
-      ): Number[SInt] = Int(minimum, maximum, multiple)
+      ) extends Value.Number[SInt]
 
-      override def long(
+      final private[otter] case class Long(
           minimum: Option[Comparison[SLong]],
           maximum: Option[Comparison[SLong]],
           multiple: Option[SLong]
-      ): Number[SLong] = Long(minimum, maximum, multiple)
+      ) extends Value.Number[SLong]
 
-      override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] = fa.imap(f)(g)
+      final private[otter] case class Modify[A, B](
+          self: Value.Number[A],
+          f: A => B,
+          g: B => A
+      ) extends Value.Number[B]
 
-  sealed abstract class String[A] extends Primitive[A]:
-    final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.String[A] = this
-    final override def imap[B](f: A => B)(g: B => A): Primitive.String[B] = String.Modify(self = this, f, g)
+    sealed abstract class String[A] extends Value[A]:
+      final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Value.String[A] = this
+      final override def imap[B](f: A => B)(g: B => A): Value.String[B] = String.Modify(self = this, f, g)
 
-  object String:
-    final private[otter] case class Parser[A](
-        name: JString,
-        decode: JString => Either[JString, A],
-        encode: A => JString,
-        minimum: Option[SInt],
-        maximum: Option[SInt],
-        matches: Option[Pattern]
-    ) extends Primitive.String[A]
-
-    final private[otter] case class Text(
-        minimum: Option[SInt],
-        maximum: Option[SInt],
-        matches: Option[Pattern]
-    ) extends Primitive.String[JString]
-
-    final private[otter] case class Modify[A, B](
-        self: Primitive.String[A],
-        f: A => B,
-        g: B => A
-    ) extends Primitive.String[B]
-
-    given schema: PrimitiveSchemaInvariant.String[Primitive.String] with
-      override def string(
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
-      ): String[JString] = Text(minimum, maximum, matches)
-
-      override def parser[A](
+    object String:
+      final private[otter] case class Parser[A](
           name: JString,
           decode: JString => Either[JString, A],
           encode: A => JString,
           minimum: Option[SInt],
           maximum: Option[SInt],
           matches: Option[Pattern]
-      ): String[A] = Parser(name, decode, encode, minimum, maximum, matches)
+      ) extends Value.String[A]
 
-      override def imap[A, B](fa: Primitive.String[A])(f: A => B)(g: B => A): Primitive.String[B] = fa.imap(f)(g)
+      final private[otter] case class Text(
+          minimum: Option[SInt],
+          maximum: Option[SInt],
+          matches: Option[Pattern]
+      ) extends Value.String[JString]
 
-  given PrimitiveSchemaInvariant[Primitive] with
-    export Primitive.Boolean.schema.boolean
-    export Primitive.Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
-    export Primitive.String.schema.{parser, string}
-
-    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)
+      final private[otter] case class Modify[A, B](
+          self: Value.String[A],
+          f: A => B,
+          g: B => A
+      ) extends Value.String[B]

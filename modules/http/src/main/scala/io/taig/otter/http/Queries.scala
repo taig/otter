@@ -1,14 +1,13 @@
 package io.taig.otter.http
 import cats.data.Chain
 import io.taig.otter.*
-import io.taig.otter.operation.EnrichedSchemaInvariant
+import io.taig.otter.operation.SchemaInvariant
 
-final case class Queries[A](self: Enrichment[Queries.Value[A]]) extends AnyVal:
-  inline def value: Queries.Value[A] = self.self
-
+final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
   def toChain: Chain[Query[?]] = value.toChain
 
-  def zip[B](queries: Queries[B]): Queries[(A, B)] = Queries(Enrichment(value.zip(queries.value)))
+  def zip[B](queries: Queries[B]): Queries[(A, B)] =
+    Queries(value = value.zip(queries.value), metadata = Metadata.Empty)
 
   def *[B](queries: Queries[B])(using merge: Merge[A, B]): Queries[merge.Out] = zip(queries).merge
 
@@ -42,13 +41,13 @@ object Queries:
 
   type Data = Chain[Query.Data]
 
-  val Empty: Queries[Unit] = Queries(Enrichment(Value.Empty))
+  val Empty: Queries[Unit] = Queries(value = Value.Empty, metadata = Metadata.Empty)
 
-  given EnrichedSchemaInvariant[Queries] with
+  given SchemaInvariant[Queries] with
     override def imap[A, B](fa: Queries[A])(f: A => B)(g: B => A): Queries[B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Queries[A])
-      def metadata: Metadata = self.self.metadata
+      def metadata: Metadata = self.metadata
       def metadata(f: Metadata => Metadata): Queries[A] =
-        self.copy(self = self.self.modifyMetadata(f))
+        self.copy(metadata = f(self.metadata))

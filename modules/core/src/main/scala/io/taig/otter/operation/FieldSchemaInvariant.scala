@@ -1,6 +1,7 @@
 package io.taig.otter.operation
 
 import io.taig.otter.Reference
+import io.taig.otter.Metadata
 
 trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
@@ -34,6 +35,8 @@ trait FieldSchemaInvariant[Self[_], Key[_], Value[_]] extends SchemaInvariant[Se
       override def nullish: Boolean = self.nullish(gK(ta))
       override def nullish(f: Boolean => Boolean): T[A] = fK(self.nullish(gK(ta))(f))
       override def optional: T[Option[A]] = fK(self.optional(gK(ta)))
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object FieldSchemaInvariant:
   inline def apply[Self[_], Key[_], Value[_]](using

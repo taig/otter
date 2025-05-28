@@ -14,5 +14,5 @@ object ParameterSchemaArrayDecoder extends Decoder[Parameter.Schema.Array, Chain
 
   override def decode[A](schema: Parameter.Schema.Array[A], value: Chain[String]): Validated[Violations, A] =
     schema match
-      case Parameter.Schema.Array.Collection(self) => collection.decode(schema = self.self, value.toList)
-      case Parameter.Schema.Array.Tuple(self)      => tuple.decode(schema = self.self, value.toVector)
+      case Parameter.Schema.Array.Collection(self) => collection.decode(schema = self, value.toList)
+      case Parameter.Schema.Array.Tuple(self)      => tuple.decode(schema = self, value.toVector)

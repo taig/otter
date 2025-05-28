@@ -12,13 +12,16 @@ import io.taig.otter.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[Primitive, T]:
+final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends Decoder[Primitive, T]:
   given Order[JBigInteger] = Order.fromComparable
   given Order[JBigDecimal] = Order.fromComparable
 
-  override def decode[A](schema: Primitive[A], value: T): Validated[Violations, A] = schema match
-    case schema: Primitive.Boolean[?] => decoder.decode(schema, value)
-    case schema @ Primitive.Number.BigDecimal(minimum, maximum, multiple) =>
+  override def decode[A](schema: Primitive[A], value: T): Validated[Violations, A] =
+    decode(schema = schema.value, value)
+
+  def decode[A](schema: Primitive.Value[A], value: T): Validated[Violations, A] = schema match
+    case schema: Primitive.Value.Boolean[?] => decoder.decode(schema, value)
+    case schema @ Primitive.Value.Number.BigDecimal(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -41,7 +44,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Number.BigInteger(minimum, maximum, multiple) =>
+    case schema @ Primitive.Value.Number.BigInteger(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -64,7 +67,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Number.Double(minimum, maximum, multiple) =>
+    case schema @ Primitive.Value.Number.Double(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -87,7 +90,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Number.Float(minimum, maximum, multiple) =>
+    case schema @ Primitive.Value.Number.Float(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -110,7 +113,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Number.Int(minimum, maximum, multiple) =>
+    case schema @ Primitive.Value.Number.Int(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -133,7 +136,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Number.Long(minimum, maximum, multiple) =>
+    case schema @ Primitive.Value.Number.Long(minimum, maximum, multiple) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -156,11 +159,11 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive, T]) extends Decoder[
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case Primitive.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.String.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case schema @ Primitive.String.Parser(_, _, _, minimum, maximum, matches) =>
+    case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case schema @ Primitive.Value.String.Parser(_, _, _, minimum, maximum, matches) =>
       ???
-    case schema @ Primitive.String.Text(minimum, maximum, matches) =>
+    case schema @ Primitive.Value.String.Text(minimum, maximum, matches) =>
       decoder
         .decode(schema, value)
         .andThen: value =>

@@ -2,9 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.Keys.name
 import io.taig.otter.Violation
-import io.taig.otter.operation.EnrichedRecordSchemaInvariant
-import io.taig.otter.operation.FieldSchemaInvariant
-import io.taig.otter.operation.NullableSchemaInvariant
+import io.taig.otter.operation.*
 
 trait ViolationComponent[
     Collection[a] <: Value[a],
@@ -20,7 +18,7 @@ trait ViolationComponent[
 ](using
     FieldSchemaInvariant[Field, Key, Value],
     NullableSchemaInvariant[Nullable, Value],
-    EnrichedRecordSchemaInvariant[Record, Field]
+    RecordSchemaInvariant[Record, Field]
 ) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],

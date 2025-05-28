@@ -43,10 +43,10 @@ object Body:
   extension [S[_], A <: Matchable](self: Body[S, A])
     inline def |[T[_], B <: Matchable](body: Body[T, B]): Bodies[S + T, A | B] = self.toBodies | body
 
-  given [S[_]]: EnrichedSchemaInvariant[Body[S, *]] with
+  given [S[_]]: SchemaInvariant[Body[S, *]] with
     override def imap[A, B](fa: Body[S, A])(f: A => B)(g: B => A): Body[S, B] =
       fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Body[S, A])
-      override def metadata: Metadata = self.self.metadata
+      override def metadata: Metadata = self.metadata
       override def metadata(f: Metadata => Metadata): Body[S, A] = self.copy(metadata = f(metadata))

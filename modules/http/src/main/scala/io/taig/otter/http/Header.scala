@@ -6,20 +6,18 @@ import io.taig.otter.*
 import io.taig.otter.operation.*
 import org.typelevel.ci.CIString
 
-final case class Header[A](self: Enrichment[Header.Value[A]]) extends AnyVal:
-  inline def value: Header.Value[A] = self.self
-
+final case class Header[A](value: Header.Value[A], metadata: Metadata):
   def name: CIString = value.name
   def schema: Header.Schema[?] = value.schema.value
   def isOptional: Boolean = value.isOptional
-  def optional: Header[Option[A]] = Header(Enrichment(value.optional))
+  def optional: Header[Option[A]] = Header(value = value.optional, metadata = Metadata.Empty)
 
   def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
 
   def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] =
     header.toHeaders * toHeaders
 
-  def toHeaders: Headers[A] = Headers(Enrichment(Headers.Value.Root(this)))
+  def toHeaders: Headers[A] = Headers(value = Headers.Value.Root(this), metadata = Metadata.Empty)
 
 object Header:
   sealed abstract class Value[A] extends Product, Serializable:
@@ -50,55 +48,53 @@ object Header:
     sealed trait Value[A] extends Header.Schema[A], Header.Schema.Object.Value[A]
 
     object Value:
-      final case class Constant[A](self: Enrichment[Self.Constant[Header.Schema.Value.Primitive, A]])
-          extends Header.Schema.Value[A]
+      final case class Constant[A](self: Self.Constant[Header.Schema.Value.Primitive, A]) extends Header.Schema.Value[A]
 
       object Constant:
-        given EnrichedConstantSchemaInvariant[Header.Schema.Value.Constant, Header.Schema.Value.Primitive] =
-          EnrichedConstantSchemaInvariant[
-            [a] =>> Enrichment[Self.Constant[Header.Schema.Value.Primitive, a]],
+        given ConstantSchemaInvariant[Header.Schema.Value.Constant, Header.Schema.Value.Primitive] =
+          ConstantSchemaInvariant[
+            Self.Constant[Header.Schema.Value.Primitive, *],
             Header.Schema.Value.Primitive
           ].imapK(
-            [A] => (schema: Enrichment[Self.Constant[Header.Schema.Value.Primitive, A]]) => Constant(schema)
+            [A] => (schema: Self.Constant[Header.Schema.Value.Primitive, A]) => Constant(schema)
           )([A] => (value: Header.Schema.Value.Constant[A]) => value.self)
 
-      final case class Enumeration[A](self: Enrichment[Self.Enumeration[Header.Schema.Value.Primitive, A]])
+      final case class Enumeration[A](self: Self.Enumeration[Header.Schema.Value.Primitive, A])
           extends Header.Schema.Value[A]
 
       object Enumeration:
-        given EnrichedEnumerationSchemaInvariant[Header.Schema.Value.Enumeration, Header.Schema.Value.Primitive] =
-          EnrichedEnumerationSchemaInvariant[
-            [a] =>> Enrichment[Self.Enumeration[Header.Schema.Value.Primitive, a]],
+        given EnumerationSchemaInvariant[Header.Schema.Value.Enumeration, Header.Schema.Value.Primitive] =
+          EnumerationSchemaInvariant[
+            Self.Enumeration[Header.Schema.Value.Primitive, *],
             Header.Schema.Value.Primitive
           ].imapK(
-            [A] => (schema: Enrichment[Self.Enumeration[Header.Schema.Value.Primitive, A]]) => Enumeration(schema)
+            [A] => (schema: Self.Enumeration[Header.Schema.Value.Primitive, A]) => Enumeration(schema)
           )([A] => (value: Header.Schema.Value.Enumeration[A]) => value.self)
 
-      final case class Primitive[A](self: Enrichment[Self.Primitive.String[A]]) extends Header.Schema.Value[A]
+      final case class Primitive[A](self: Self.Primitive.String[A]) extends Header.Schema.Value[A]
 
       object Primitive:
-        given EnrichedPrimitiveSchemaInvariant.String[Header.Schema.Value.Primitive] =
-          EnrichedPrimitiveSchemaInvariant
-            .String[[a] =>> Enrichment[Self.Primitive.String[a]]]
-            .imapK(
-              [A] => (schema: Enrichment[Self.Primitive.String[A]]) => Primitive(schema)
-            )([A] => (value: Header.Schema.Value.Primitive[A]) => value.self)
+        given PrimitiveSchemaInvariant.String[Header.Schema.Value.Primitive] = PrimitiveSchemaInvariant
+          .String[Self.Primitive.String]
+          .imapK(
+            [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
+          )([A] => (value: Header.Schema.Value.Primitive[A]) => value.self)
 
-      final case class Union[A](self: Enrichment[Self.Union[Header.Schema.Value, A]]) extends Header.Schema.Value[A]
+      final case class Union[A](self: Self.Union[Header.Schema.Value, A]) extends Header.Schema.Value[A]
 
       object Union:
-        given EnrichedUnionSchemaInvariant[Header.Schema.Value.Union, Header.Schema.Value] =
-          EnrichedUnionSchemaInvariant[[a] =>> Enrichment[Self.Union[Header.Schema.Value, a]], Header.Schema.Value]
+        given UnionSchemaInvariant[Header.Schema.Value.Union, Header.Schema.Value] =
+          UnionSchemaInvariant[Self.Union[Header.Schema.Value, *], Header.Schema.Value]
             .imapK(
-              [A] => (schema: Enrichment[Self.Union[Header.Schema.Value, A]]) => Union(schema)
+              [A] => (schema: Self.Union[Header.Schema.Value, A]) => Union(schema)
             )([A] => (value: Header.Schema.Value.Union[A]) => value.self)
 
-      given EnrichedSchemaInvariant[Header.Schema.Value] with
+      given SchemaInvariant[Header.Schema.Value] with
         override def imap[A, B](fa: Header.Schema.Value[A])(f: A => B)(g: B => A): Header.Schema.Value[B] = fa match
-          case Constant(self)    => Constant(self.map(_.imap(f)(g)))
-          case Enumeration(self) => Enumeration(self.map(_.imap(f)(g)))
-          case Primitive(self)   => Primitive(self.map(_.imap(f)(g)))
-          case Union(self)       => Union(self.map(_.imap(f)(g)))
+          case Constant(self)    => Constant(self.imap(f)(g))
+          case Enumeration(self) => Enumeration(self.imap(f)(g))
+          case Primitive(self)   => Primitive(self.imap(f)(g))
+          case Union(self)       => Union(self.imap(f)(g))
 
         extension [A](self: Header.Schema.Value[A])
           override def metadata: Metadata = self match
@@ -115,31 +111,28 @@ object Header:
     sealed trait Array[A] extends Header.Schema[A]
 
     object Array:
-      final case class Collection[A](self: Enrichment[Self.Collection[Header.Schema.Value, A]])
-          extends Header.Schema.Array[A]
+      final case class Collection[A](self: Self.Collection[Header.Schema.Value, A]) extends Header.Schema.Array[A]
 
       object Collection:
-        given EnrichedCollectionSchemaInvariant[Header.Schema.Array.Collection, Header.Schema.Value] =
-          EnrichedCollectionSchemaInvariant[[a] =>> Enrichment[
-            Self.Collection[Header.Schema.Value, a]
-          ], Header.Schema.Value]
+        given CollectionSchemaInvariant[Header.Schema.Array.Collection, Header.Schema.Value] =
+          CollectionSchemaInvariant[Self.Collection[Header.Schema.Value, *], Header.Schema.Value]
             .imapK(
-              [A] => (schema: Enrichment[Self.Collection[Header.Schema.Value, A]]) => Collection(schema)
+              [A] => (schema: Self.Collection[Header.Schema.Value, A]) => Collection(schema)
             )([A] => (value: Header.Schema.Array.Collection[A]) => value.self)
 
-      final case class Tuple[A](self: Enrichment[Self.Tuple[Header.Schema.Value, A]]) extends Header.Schema.Array[A]
+      final case class Tuple[A](self: Self.Tuple[Header.Schema.Value, A]) extends Header.Schema.Array[A]
 
       object Tuple:
-        given EnrichedTupleSchemaInvariant[Header.Schema.Array.Tuple, Header.Schema.Value] =
-          EnrichedTupleSchemaInvariant[[a] =>> Enrichment[Self.Tuple[Header.Schema.Value, a]], Header.Schema.Value]
+        given TupleSchemaInvariant[Header.Schema.Array.Tuple, Header.Schema.Value] =
+          TupleSchemaInvariant[Self.Tuple[Header.Schema.Value, *], Header.Schema.Value]
             .imapK(
-              [A] => (schema: Enrichment[Self.Tuple[Header.Schema.Value, A]]) => Tuple(schema)
+              [A] => (schema: Self.Tuple[Header.Schema.Value, A]) => Tuple(schema)
             )([A] => (value: Header.Schema.Array.Tuple[A]) => value.self)
 
-      given EnrichedSchemaInvariant[Header.Schema.Array] with
+      given SchemaInvariant[Header.Schema.Array] with
         override def imap[A, B](fa: Header.Schema.Array[A])(f: A => B)(g: B => A): Header.Schema.Array[B] = fa match
-          case Collection(self) => Collection(self.map(_.imap(f)(g)))
-          case Tuple(self)      => Tuple(self.map(_.imap(f)(g)))
+          case Collection(self) => Collection(self.imap(f)(g))
+          case Tuple(self)      => Tuple(self.imap(f)(g))
 
         extension [A](self: Array[A])
           override def metadata: Metadata = self match
@@ -153,47 +146,47 @@ object Header:
     sealed trait Object[A] extends Header.Schema[A]
 
     object Object:
-      final case class Dictionary[A](self: Enrichment[Self.Dictionary[Key, Header.Schema.Object.Value, A]])
+      final case class Dictionary[A](self: Self.Dictionary[Key, Header.Schema.Object.Value, A])
           extends Header.Schema.Object[A]
 
       object Dictionary:
-        given EnrichedDictionarySchemaInvariant[Header.Schema.Object.Dictionary, Key, Header.Schema.Value] =
-          EnrichedDictionarySchemaInvariant[[a] =>> Enrichment[
-            Self.Dictionary[Key, Header.Schema.Object.Value, a]
-          ], Key, Header.Schema.Value]
+        given DictionarySchemaInvariant[Header.Schema.Object.Dictionary, Key, Header.Schema.Value] =
+          DictionarySchemaInvariant[
+            [a] =>> Self.Dictionary[Key, Header.Schema.Object.Value, a],
+            Key,
+            Header.Schema.Value
+          ]
             .imapK(
-              [A] => (schema: Enrichment[Self.Dictionary[Key, Header.Schema.Object.Value, A]]) => Dictionary(schema)
+              [A] => (schema: Self.Dictionary[Key, Header.Schema.Object.Value, A]) => Dictionary(schema)
             )([A] => (value: Header.Schema.Object.Dictionary[A]) => value.self)
 
-      final case class Record[A](self: Enrichment[Self.Record[Header.Schema.Field, A]]) extends Header.Schema.Object[A]
+      final case class Record[A](self: Self.Record[Header.Schema.Field, A]) extends Header.Schema.Object[A]
 
       object Record:
-        given EnrichedRecordSchemaInvariant[Header.Schema.Object.Record, Header.Schema.Field] =
-          EnrichedRecordSchemaInvariant[[a] =>> Enrichment[Self.Record[Header.Schema.Field, a]], Header.Schema.Field]
+        given RecordSchemaInvariant[Header.Schema.Object.Record, Header.Schema.Field] =
+          RecordSchemaInvariant[Self.Record[Header.Schema.Field, *], Header.Schema.Field]
             .imapK(
-              [A] => (schema: Enrichment[Self.Record[Header.Schema.Field, A]]) => Record(schema)
+              [A] => (schema: Self.Record[Header.Schema.Field, A]) => Record(schema)
             )([A] => (value: Header.Schema.Object.Record[A]) => value.self)
 
       sealed trait Value[A] extends Product with Serializable
 
       object Value:
-        final case class Nullable[A](self: Enrichment[Self.Nullable[Header.Schema.Object.Value, A]])
+        final case class Nullable[A](self: Self.Nullable[Header.Schema.Object.Value, A])
             extends Header.Schema.Object.Value[A]
 
         object Nullable:
-          given EnrichedNullableSchemaInvariant[Header.Schema.Object.Value.Nullable, Header.Schema.Object.Value] =
-            EnrichedNullableSchemaInvariant[[a] =>> Enrichment[
-              Self.Nullable[Header.Schema.Object.Value, a]
-            ], Header.Schema.Object.Value]
+          given NullableSchemaInvariant[Header.Schema.Object.Value.Nullable, Header.Schema.Object.Value] =
+            NullableSchemaInvariant[Self.Nullable[Header.Schema.Object.Value, *], Header.Schema.Object.Value]
               .imapK(
-                [A] => (schema: Enrichment[Self.Nullable[Header.Schema.Object.Value, A]]) => Nullable(schema)
+                [A] => (schema: Self.Nullable[Header.Schema.Object.Value, A]) => Nullable(schema)
               )([A] => (value: Header.Schema.Object.Value.Nullable[A]) => value.self)
 
-      given EnrichedSchemaInvariant[Header.Schema.Object] with
+      given SchemaInvariant[Header.Schema.Object] with
         override def imap[A, B](fa: Header.Schema.Object[A])(f: A => B)(g: B => A): Object[B] =
           fa match
-            case Dictionary(self) => Dictionary(self.map(_.imap(f)(g)))
-            case Record(self)     => Record(self.map(_.imap(f)(g)))
+            case Dictionary(self) => Dictionary(self.imap(f)(g))
+            case Record(self)     => Record(self.imap(f)(g))
 
         extension [A](self: Object[A])
           override def metadata: Metadata = self match
@@ -204,18 +197,16 @@ object Header:
             case Dictionary(self) => Dictionary(self.copy(metadata = f(self.metadata)))
             case Record(self)     => Record(self.copy(metadata = f(self.metadata)))
 
-    final case class Field[A](self: Enrichment[Self.Field[Key, Header.Schema.Object.Value, A]])
+    final case class Field[A](self: Self.Field[Key, Header.Schema.Object.Value, A])
 
     object Field:
-      given EnrichedFieldSchemaInvariant[Header.Schema.Field, Key, Header.Schema.Object.Value] =
-        EnrichedFieldSchemaInvariant[[a] =>> Enrichment[
-          Self.Field[Key, Header.Schema.Object.Value, a]
-        ], Key, Header.Schema.Object.Value]
+      given FieldSchemaInvariant[Header.Schema.Field, Key, Header.Schema.Object.Value] =
+        FieldSchemaInvariant[Self.Field[Key, Header.Schema.Object.Value, *], Key, Header.Schema.Object.Value]
           .imapK(
-            [A] => (schema: Enrichment[Self.Field[Key, Header.Schema.Object.Value, A]]) => Field(schema)
+            [A] => (schema: Self.Field[Key, Header.Schema.Object.Value, A]) => Field(schema)
           )([A] => (value: Header.Schema.Field[A]) => value.self)
 
-    given EnrichedSchemaInvariant[Header.Schema] with
+    given SchemaInvariant[Header.Schema] with
       override def imap[A, B](fa: Header.Schema[A])(f: A => B)(g: B => A): Header.Schema[B] = fa match
         case schema: Header.Schema.Value[A]  => schema.imap(f)(g)
         case schema: Header.Schema.Array[A]  => schema.imap(f)(g)
@@ -239,10 +230,11 @@ object Header:
 
   type Data = (CIString, String)
 
-  given EnrichedSchemaInvariant[Header] with
+  given SchemaInvariant[Header] with
     override def imap[A, B](fa: Header[A])(f: A => B)(g: B => A): Header[B] =
-      fa.copy(self = fa.self.map(_.imap(f)(g)))
+      fa.copy(value = fa.value.imap(f)(g))
 
     extension [A](self: Header[A])
-      def metadata: Metadata = self.self.metadata
-      def metadata(f: Metadata => Metadata): Header[A] = self.copy(self = self.self.modifyMetadata(f))
+      def metadata: Metadata = self.metadata
+      def metadata(f: Metadata => Metadata): Header[A] =
+        self.copy(metadata = f(self.metadata))

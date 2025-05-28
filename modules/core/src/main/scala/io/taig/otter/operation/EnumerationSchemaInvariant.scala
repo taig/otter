@@ -3,6 +3,7 @@ package io.taig.otter.operation
 import cats.data.NonEmptyList
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Reference
+import io.taig.otter.Metadata
 
 trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
@@ -24,6 +25,8 @@ trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self
     extension [A](ta: T[A])
       override def schema: Reference[Value, ?] = self.schema(gK(ta))
       override def values: NonEmptyList[A] = self.values(gK(ta))
+      override def metadata: Metadata = self.metadata(gK(ta))
+      override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object EnumerationSchemaInvariant:
   inline def apply[Self[_], Value[_]](using

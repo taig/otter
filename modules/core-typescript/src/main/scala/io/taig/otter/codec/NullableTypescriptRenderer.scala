@@ -8,5 +8,5 @@ import io.taig.otter.Typescript
 final class NullableTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[Typescript]])
     extends Renderer[Nullable[S, *], T[Typescript]]:
   override def render[A](schema: Nullable[S, A]): T[Typescript] =
-    schema.schema.fold(Typescript.Void.pure[T]): schema =>
+    schema.value.schema.fold(Typescript.Void.pure[T]): schema =>
       renderer.render(schema = schema.value).map(Typescript.Nullable.apply)

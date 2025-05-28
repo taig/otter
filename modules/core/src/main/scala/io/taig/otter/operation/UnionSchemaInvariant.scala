@@ -3,6 +3,7 @@ package io.taig.otter.operation
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.Reference
+import io.taig.otter.Metadata
 
 trait UnionSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
   self =>
@@ -33,6 +34,8 @@ trait UnionSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
       extension [A](ta: T[A])
         override def schemas: NonEmptyChain[Reference[Value, ?]] = self.schemas(gK(ta))
         override def orElse[B](schema: T[B]): T[Either[A, B]] = fK(self.orElse(gK(ta))(gK(schema)))
+        override def metadata: Metadata = self.metadata(gK(ta))
+        override def metadata(f: Metadata => Metadata): T[A] = fK(self.metadata(gK(ta))(f))
 
 object UnionSchemaInvariant:
   inline def apply[Self[_], Value[_]](using

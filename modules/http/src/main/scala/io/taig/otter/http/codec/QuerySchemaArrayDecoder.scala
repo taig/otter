@@ -13,5 +13,5 @@ object QuerySchemaArrayDecoder extends Decoder[Query.Schema.Array, Chain[String]
   val tuple = TupleDecoder(decoder = QuerySchemaValueParser)
 
   override def decode[A](schema: Query.Schema.Array[A], values: Chain[String]): Validated[Violations, A] = schema match
-    case Query.Schema.Array.Collection(self) => collection.decode(schema = self.self, values = values.toList)
-    case Query.Schema.Array.Tuple(self)      => tuple.decode(schema = self.self, values = values.toList)
+    case Query.Schema.Array.Collection(self) => collection.decode(schema = self, values = values.toList)
+    case Query.Schema.Array.Tuple(self)      => tuple.decode(schema = self, values = values.toList)
