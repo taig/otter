@@ -1,6 +1,5 @@
 package io.taig.otter.operation
 
-
 trait RecordSchemaInvariant[Self[_], -Field[_]] extends SchemaInvariant[Self]:
   self =>
 

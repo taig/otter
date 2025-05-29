@@ -11,20 +11,16 @@ import io.taig.otter.http.syntax.ResultSyntax.*
 import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
-import scala.annotation.targetName
-
 trait HttpJsonResponseSyntax:
-  @targetName("responseResults")
   def response[A](results: Results[Json, A]): Response[Json, A] = ResponseSyntax.response(
     results,
     validation = result(
       code.unprocessableEntity,
-      json(error("validation", field("violations", violations).toRecord).name("ValidationViolation"))
+      body(error("validation", field("violations", violations).toRecord).name("ValidationViolation"))
     ),
-    failure = result(code.internalServerError, json(string.nullable))
+    failure = result(code.internalServerError, body(string.nullable))
   )
 
-  @targetName("responseResult")
   def response[A](result: Result[Json, A]): Response[Json, A] =
     response(results = result.toResults)
 

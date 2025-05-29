@@ -10,10 +10,10 @@ val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, L
   request(
     method.post,
     url,
-    json(LibrarianApiSchema.Create.codec)
+    body(LibrarianApiSchema.Create.codec)
   ),
   response(
-    result(code.conflict, json(LibrarianInitializationConflict.codec)) :+
-      result(code.created, json(LibrarianApiSchema.codec))
+    result(code.conflict, body(LibrarianInitializationConflict.codec)) :+
+      result(code.created, body(LibrarianApiSchema.codec))
   )
 ).metadata(name, "initializeLibrarian")

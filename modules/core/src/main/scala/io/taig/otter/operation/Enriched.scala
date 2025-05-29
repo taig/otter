@@ -13,6 +13,8 @@ trait Enriched[A]:
     override def modifyMetadata(b: B)(h: Metadata => Metadata): B = f(self.modifyMetadata(g(b))(h))
 
 object Enriched:
+  inline def apply[A](using enriched: Enriched[A]): Enriched[A] = enriched
+
   final class Ops[A](a: A)(using enriched: Enriched[A]):
     def metadata: Metadata = enriched.metadata(a)
     def metadata(f: Metadata => Metadata): A = enriched.modifyMetadata(a)(f)

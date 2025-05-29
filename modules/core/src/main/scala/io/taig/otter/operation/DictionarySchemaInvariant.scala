@@ -1,6 +1,5 @@
 package io.taig.otter.operation
 
-
 trait DictionarySchemaInvariant[Self[_], -Key[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>
 

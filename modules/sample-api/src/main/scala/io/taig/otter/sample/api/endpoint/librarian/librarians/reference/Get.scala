@@ -9,7 +9,7 @@ import java.util.UUID
 val get: Endpoint[UUID, LibrarianReferenceUnknown, LibrarianApiSchema] = endpoint(
   request(method.get, url),
   response(
-    result(code.notFound, json(LibrarianReferenceUnknown.codec)) :+
-      result(code.ok, json(LibrarianApiSchema.codec))
+    result(code.notFound, body(LibrarianReferenceUnknown.codec)) :+
+      result(code.ok, body(LibrarianApiSchema.codec))
   )
 )
