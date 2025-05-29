@@ -3,12 +3,10 @@ package io.taig.otter.codec
 import cats.syntax.all.*
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.Keys.*
-import io.taig.otter.ZodKeys.*
 
 import scala.collection.immutable.ListMap
 import io.taig.otter.OtterSuite
 import io.taig.otter.Json
-import io.taig.otter.ZodKeys.*
 import io.taig.otter.ZodState
 import io.taig.otter.ZodExpression
 import io.taig.otter.ZodConst

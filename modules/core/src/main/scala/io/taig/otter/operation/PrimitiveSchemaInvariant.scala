@@ -60,11 +60,8 @@ trait PrimitiveSchemaInvariant[Self[_]]
       override def parser[A](
           name: JString,
           decode: JString => Either[JString, A],
-          encode: A => JString,
-          minimum: Option[Int],
-          maximum: Option[Int],
-          matches: Option[Pattern]
-      ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
+          encode: A => JString
+      ): T[A] = fK(self.parser(name, decode, encode))
 
       override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
@@ -188,11 +185,8 @@ object PrimitiveSchemaInvariant:
       override def parser[A](
           name: JString,
           decode: JString => Either[JString, A],
-          encode: A => JString,
-          minimum: Option[Int],
-          maximum: Option[Int],
-          matches: Option[Pattern]
-      ): T[A] = fK(self.parser(name, decode, encode, minimum, maximum, matches))
+          encode: A => JString
+      ): T[A] = fK(self.parser(name, decode, encode))
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
@@ -203,10 +197,7 @@ object PrimitiveSchemaInvariant:
     def parser[A](
         name: JString,
         decode: JString => Either[JString, A],
-        encode: A => JString,
-        minimum: Option[Int],
-        maximum: Option[Int],
-        matches: Option[Pattern]
+        encode: A => JString
     ): Self[A]
 
   object String:

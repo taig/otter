@@ -147,19 +147,8 @@ object PrimitiveComponent:
           matches: Argument[Pattern] = Argument.Default
       ): Self[JString] = string(minimum, maximum, matches)
 
-    final def parser[A](
-        name: JString,
-        minimum: Argument[SInt] = Argument.Default,
-        maximum: Argument[SInt] = Argument.Default,
-        matches: Argument[Pattern] = Argument.Default
-    )(f: JString => Either[JString, A])(g: A => JString): Self[A] = self.parser(
-      name,
-      decode = f,
-      encode = g,
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      matches = matches.toOption
-    )
+    final def parser[A](name: JString)(f: JString => Either[JString, A])(g: A => JString): Self[A] =
+      self.parser(name, decode = f, encode = g)
 
     final val uuid: Self[UUID] = parser(name = "uuid") { value =>
       Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)

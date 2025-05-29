@@ -97,15 +97,11 @@ object Primitive:
         override def parser[A](
             name: JString,
             decode: JString => Either[JString, A],
-            encode: A => JString,
-            minimum: Option[SInt],
-            maximum: Option[SInt],
-            matches: Option[Pattern]
-        ): Primitive.String[A] =
-          String(
-            value = Value.String.Parser(name, decode, encode, minimum, maximum, matches),
-            metadata = Metadata.Empty
-          )
+            encode: A => JString
+        ): Primitive.String[A] = String(
+          value = Value.String.Parser(name, decode, encode),
+          metadata = Metadata.Empty
+        )
 
         override def string(
             minimum: Option[SInt],
@@ -218,10 +214,7 @@ object Primitive:
       final private[otter] case class Parser[A](
           name: JString,
           decode: JString => Either[JString, A],
-          encode: A => JString,
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
+          encode: A => JString
       ) extends Value.String[A]
 
       final private[otter] case class Text(
