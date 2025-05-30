@@ -17,10 +17,7 @@ final class BodyEncoder[-S[_]](encoder: PayloadEncoder[S]):
       Either.cond(
         test = accept.exists(schema.mediaType.satisfies),
         right = encode(schema = schema.value, a),
-        left = {
-          println("encode body")
-          ContentNegotiationFailed
-        }
+        left = ContentNegotiationFailed
       )
 
   def encode[A](

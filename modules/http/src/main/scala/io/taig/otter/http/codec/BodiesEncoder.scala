@@ -28,9 +28,7 @@ final class BodiesEncoder[-S[_]](encoder: PayloadEncoder[S]):
           case mediaRange if left.satisfies(mediaRange)  => left
           case mediaRange if right.satisfies(mediaRange) => right
         .orElse(Option.when(accept.isEmpty)(left))
-        .toRight:
-          println("encode bodies")
-          ContentNegotiationFailed
+        .toRight(ContentNegotiationFailed)
         .flatMap(encode(_, accept, a))
     case Bodies.Value.OrElse(left, right) =>
       a.fold(encode(schema = left, accept, _), encode(schema = right, accept, _))
