@@ -2,10 +2,14 @@ package io.taig.otter.codec
 import io.taig.otter.Typescript
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Path
+import io.taig.otter.Keys
 
 object PathTypescriptRenderer extends Renderer[Path, Option[Typescript]]:
   override def render[A](schema: Path[A]): Option[Typescript] =
-    val parameters = schema.toSegments.collect { case paramater: Parameter[?] => paramater }
+    val parameters = schema.toSegments
+      .collect { case paramater: Parameter[?] => paramater }
+      .filter: parameter =>
+        !parameter.metadata.get(Keys.hidden).getOrElse(false)
 
     Option
       .when(parameters.nonEmpty)(
