@@ -23,6 +23,7 @@ import org.http4s.Status as Http4sStatus
 import org.http4s.Uri as Http4sUri
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
+import io.taig.otter.StacktracePrinter
 
 def toUrlData(uri: Http4sUri): Url.Data = Url.Data(
   path = Chain.fromSeq(uri.path.segments).map(_.encoded),
@@ -85,12 +86,8 @@ def toHttp4sRoutes[F[_]: Concurrent, S[_]](
             reader
               .decode(schema = route.endpoint.request, value = request)
               .traverse(route.implementation)
-              .handleError(Failure(_).asLeft)
+              .handleError(throwable => Failure(stacktrace = StacktracePrinter(throwable).some).asLeft)
               .map(writer.encode(schema = route.endpoint.response, headers = request.headers, _))
-              .onError: t =>
-                // TODO remove
-                t.printStackTrace()
-                Concurrent[F].unit
               .flatMap(fromResponseData)
 
 def toHttp4sApp[F[_]: Concurrent, S[_]](

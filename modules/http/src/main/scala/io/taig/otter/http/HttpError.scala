@@ -9,8 +9,8 @@ object HttpError:
   type ContentNegotiationFailed = ContentNegotiationFailed.type
   case object ContentNegotiationFailed extends HttpError
 
-  final case class Failure(throwable: Throwable) extends HttpError:
-    override def getCause: Throwable = throwable
+  final case class Failure(stacktrace: Option[String]) extends HttpError:
+    override def getMessage: String = stacktrace.getOrElse("Failure")
 
   type MediaTypeUnsupported = MediaTypeUnsupported.type
   case object MediaTypeUnsupported extends HttpError

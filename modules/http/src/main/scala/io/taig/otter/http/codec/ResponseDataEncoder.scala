@@ -2,7 +2,6 @@ package io.taig.otter.http.codec
 
 import cats.data.Chain
 import cats.syntax.all.*
-import io.taig.otter.StacktracePrinter
 import io.taig.otter.Violations
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Headers.Data.accept
@@ -33,8 +32,8 @@ final class ResponseDataEncoder[S[_]](encoder: PayloadEncoder[S], debug: Boolean
   ): Response.Data = result
     .match
       case Right(a) => results.encode(schema = schema.results, accept, a)
-      case Left(Failure(throwable)) =>
-        results.result.encode(schema = schema.failure, accept, Option.when(debug)(StacktracePrinter(throwable)))
+      case Left(Failure(stacktrace)) =>
+        results.result.encode(schema = schema.failure, accept, stacktrace.filter(_ => debug))
       case Left(MediaTypeUnsupported) =>
         Response.Data(code = code.unsupportedMediaTypes, headers = Chain.empty, body = Array.emptyByteArray).asRight
       case Left(ValidationViolations(violations)) =>

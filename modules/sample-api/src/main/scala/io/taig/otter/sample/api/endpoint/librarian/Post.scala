@@ -16,4 +16,4 @@ val post: Endpoint[LibrarianApiSchema.Create, LibrarianInitializationConflict, L
     result(code.conflict, body(LibrarianInitializationConflict.codec)) :+
       result(code.created, body(LibrarianApiSchema.codec))
   )
-).metadata(name, "initializeLibrarian")
+).name("initializeLibrarian")

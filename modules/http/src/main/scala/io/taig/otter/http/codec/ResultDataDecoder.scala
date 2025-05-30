@@ -11,18 +11,18 @@ final class ResultDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
   val bodies = BodiesDecoder(decoder)
 
   def decode[A](
-      result: Result[S, A],
+      schema: Result[S, A],
       contentType: Option[MediaType],
       data: Response.Data
-  ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] =
-    decode(result = result.value, contentType, data)
+  ): Either[MediaTypeUnsupported | ValidationViolations, Option[A]] =
+    decode(schema = schema.value, contentType, data)
 
   def decode[A](
-      result: Result.Value[S, A],
+      schema: Result.Value[S, A],
       contentType: Option[MediaType],
       data: Response.Data
-  ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] = result match
-    case Result.Value.Modify(self, f, _) => decode(result = self, contentType, data).map(f)
+  ): Either[MediaTypeUnsupported | ValidationViolations, Option[A]] = schema match
+    case Result.Value.Modify(self, f, _) => decode(schema = self, contentType, data).map(_.map(f))
     case Result.Value.Root(code, headers) =>
       if data.code === code
       then
@@ -31,7 +31,9 @@ final class ResultDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
           .leftMap("header" /: _)
           .leftMap(ValidationViolations.apply)
           .toEither
-      else ContentNegotiationFailed.asLeft
+          .map(_.some)
+      else none.asRight
     case Result.Value.Payload(self, bodies) =>
-      decode(result = self, contentType, data).flatMap: a =>
-        this.bodies.decode(schema = bodies, contentType, bytes = data.body).tupleLeft(a)
+      decode(schema = self, contentType, data).flatMap: a =>
+        a.traverse: a =>
+          this.bodies.decode(schema = bodies, contentType, bytes = data.body).tupleLeft(a)

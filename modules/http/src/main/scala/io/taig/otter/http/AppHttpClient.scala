@@ -9,6 +9,7 @@ import io.taig.otter.http.codec.PayloadEncoder
 import io.taig.otter.http.codec.RequestDataDecoder
 import io.taig.otter.http.codec.ResponseDataEncoder
 import io.taig.otter.http.codec.ResultDataEncoder
+import io.taig.otter.StacktracePrinter
 
 object AppHttpClient:
   def apply[F[_]: ApplicativeThrow, S[_]](
@@ -22,10 +23,14 @@ object AppHttpClient:
         RequestDataDecoder(decoder)
           .decode(schema = route.endpoint.request, value = request)
           .leftWiden[Failure | MediaTypeUnsupported | ValidationViolations]
-          .flatTraverse(route.implementation(_).attempt.map(_.leftMap(Failure.apply)))
-          .map(
-            ResponseDataEncoder(encoder, debug).encode(schema = route.endpoint.response, headers = request.headers, _)
-          )
+          .flatTraverse: b =>
+            route
+              .implementation(b)
+              .attempt
+              .map(_.leftMap(throwable => Failure(stacktrace = StacktracePrinter(throwable).some)))
+          .map: b =>
+            ResponseDataEncoder(encoder, debug)
+              .encode(schema = route.endpoint.response, headers = request.headers, b)
       .getOrElse:
         ResultDataEncoder(encoder)
           .encode(

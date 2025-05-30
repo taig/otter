@@ -11,8 +11,19 @@ final class ResponseDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
   def decode[A](
       schema: Response[S, A],
       value: Response.Data
-  ): Either[ContentNegotiationFailed | MediaTypeUnsupported | ValidationViolations, A] =
+  ): Either[ContentNegotiationFailed | Failure | MediaTypeUnsupported | ValidationViolations, A] =
     value.headers.contentType
       .leftMap("header" /: _)
       .leftMap(ValidationViolations.apply)
-      .flatMap(results.decode(schema = schema.results, _, value))
+      .flatMap: contentType =>
+        // TODO accumulate errors properly
+        results.decode(schema = schema.results, contentType, value) match
+          case Right(Some(a)) => a.asRight
+          case Right(None) | Left(_) =>
+            results.result.decode(schema = schema.validation, contentType, value) match
+              case Right(Some(violations)) => Left(ValidationViolations(violations))
+              case Right(None) | Left(_) =>
+                results.result.decode(schema = schema.failure, contentType, value) match
+                  case Right(Some(failure)) => Failure(failure).asLeft
+                  case Right(None)          => ContentNegotiationFailed.asLeft
+                  case Left(error)          => error.asLeft
