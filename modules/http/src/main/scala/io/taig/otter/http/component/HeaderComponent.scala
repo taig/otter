@@ -4,7 +4,7 @@ import io.taig.otter.Key
 import io.taig.otter.component.*
 import io.taig.otter.http.Header
 
-trait HttpHeaderComponent
+trait HeaderComponent
     extends CollectionComponent[Header.Schema.Array.Collection, Header.Schema.Value],
       ConstantComponent[Header.Schema.Value.Constant, Header.Schema.Value.Primitive],
       DictionaryComponent[Header.Schema.Object.Dictionary, Key, Header.Schema.Value],
@@ -19,4 +19,4 @@ trait HttpHeaderComponent
       TupleComponent[Header.Schema.Array.Tuple, Header.Schema.Value]:
   override def key: KeyComponent = KeyComponent
 
-object HttpHeaderComponent extends HttpHeaderComponent
+object HeaderComponent extends HeaderComponent

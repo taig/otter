@@ -167,6 +167,24 @@ object Query:
           [A] => (schema: Self.Nullable[Query.Schema, A]) => Nullable(schema)
         )([A] => (schema: Query.Schema.Nullable[A]) => schema.self)
 
+    given SchemaInvariant[Query.Schema] = new SchemaInvariant[Query.Schema]:
+      override def imap[A, B](fa: Query.Schema[A])(f: A => B)(g: B => A): Query.Schema[B] =
+        fa match
+          case value: Query.Schema.Value[A]       => value.imap(f)(g)
+          case array: Query.Schema.Array[A]       => array.imap(f)(g)
+          case nullable: Query.Schema.Nullable[A] => nullable.imap(f)(g)
+
+      override def enriched[A]: Enriched[Query.Schema[A]] = new Enriched[Query.Schema[A]]:
+        override def metadata(a: Query.Schema[A]): Metadata = a match
+          case value: Query.Schema.Value[A]       => value.metadata
+          case array: Query.Schema.Array[A]       => array.metadata
+          case nullable: Query.Schema.Nullable[A] => nullable.metadata
+
+        override def modifyMetadata(a: Query.Schema[A])(f: Metadata => Metadata): Query.Schema[A] = a match
+          case value: Query.Schema.Value[A]       => value.metadata(f)
+          case array: Query.Schema.Array[A]       => array.metadata(f)
+          case nullable: Query.Schema.Nullable[A] => nullable.metadata(f)
+
   enum Style:
     case Form
     case SpaceDelimited
