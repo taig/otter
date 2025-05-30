@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter.Data
 import io.taig.otter.Keys.*
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait DataComponent[
     Collection[a] <: Value[a],
@@ -33,23 +33,23 @@ trait DataComponent[
   object data:
     val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
 
-    val primitive: Value[Data.Primitive] = (number | boolean | string).metadata(name, "Primitive")
+    val primitive: Value[Data.Primitive] = (number | boolean | string).name("Primitive")
 
     def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).metadata(name, "Object")
+    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).name("Object")
 
     def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(schema).imap(Data.Array[A])(_.values).metadata(name, "Collection")
+      collection.vector(schema).imap(Data.Array[A])(_.values).name("Collection")
 
     val array: Collection[Data.Array[Data.Any]] = array(any)
 
-    val value: Union[Data.Value] = (primitive | obj | array).metadata(name, "Value")
+    val value: Union[Data.Value] = (primitive | obj | array).name("Value")
 
     val any: Nullable[Data.Any] = value.nullable
       .imap(_.getOrElse(Data.Null)) {
         case Data.Null        => None
         case data: Data.Value => Some(data)
       }
-      .metadata(name, "Any")
+      .name("Any")

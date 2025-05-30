@@ -7,7 +7,7 @@ import io.taig.otter.Key
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 final case class Parameter[A](value: Parameter.Value[A], metadata: Metadata):
   def name: String = value.name

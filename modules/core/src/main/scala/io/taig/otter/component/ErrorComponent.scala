@@ -2,7 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.Keys.name
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
     FieldSchemaInvariant[Field, Key, Value],

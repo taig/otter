@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 import org.typelevel.ci.CIString
 
 final case class Header[A](value: Header.Value[A], metadata: Metadata):

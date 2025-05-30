@@ -1,9 +1,8 @@
 package io.taig.otter.component
 
 import io.taig.otter.Constraint
-import io.taig.otter.Keys.*
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],
@@ -69,5 +68,5 @@ trait ConstraintComponent[
     ).orElse(col)
       .orElse(obj)
       .orElse(primitive)
-      .metadata(name, "Constraint")
+      .name("Constraint")
       .to

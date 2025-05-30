@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.*
 import io.taig.otter.operation.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 final case class Query[A](value: Query.Value[A], metadata: Metadata):
   def name: String = value.name

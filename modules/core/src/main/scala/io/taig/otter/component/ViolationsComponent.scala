@@ -5,7 +5,6 @@ import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
 
 trait ViolationsComponent[
     Collection[a] <: Value[a],

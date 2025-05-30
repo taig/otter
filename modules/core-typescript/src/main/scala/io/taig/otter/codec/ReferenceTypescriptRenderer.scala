@@ -2,17 +2,17 @@ package io.taig.otter.codec
 
 import cats.data.State
 import cats.syntax.all.*
-import io.taig.otter.Keys.*
+import io.taig.otter.Keys
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
 import io.taig.otter.operation.SchemaInvariant
-import io.taig.otter.syntax.SchemaInvariantSyntax.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.toSymbol
 
 final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptState[Typescript]]
 ) extends Renderer[S, TypescriptState[Typescript]]:
-  override def render[A](schema: S[A]): TypescriptState[Typescript] = schema.metadata(name).map(toSymbol) match
+  override def render[A](schema: S[A]): TypescriptState[Typescript] = schema.metadata(Keys.name).map(toSymbol) match
     case Some(name) =>
       State: state =>
         if state.stack.contains_(name)
