@@ -29,5 +29,5 @@ object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
     case FormData.Schema.Primitive(self) =>
       value
         .toValid(Violations.rootNec(Violation.required))
-        .andThen(PrimitiveParser.Unquoted.decode(schema = self, _))
+        .andThen(PrimitiveParser.Unquoted.decode(schema = self.value, _))
     case FormData.Schema.Union(self) => union.decode(schema = self, value)

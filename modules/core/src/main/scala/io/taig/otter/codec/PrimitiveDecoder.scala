@@ -12,12 +12,9 @@ import io.taig.otter.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends Decoder[Primitive, T]:
+final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends Decoder[Primitive.Value, T]:
   given Order[JBigInteger] = Order.fromComparable
   given Order[JBigDecimal] = Order.fromComparable
-
-  override def decode[A](schema: Primitive[A], value: T): Validated[Violations, A] =
-    decode(schema = schema.value, value)
 
   def decode[A](schema: Primitive.Value[A], value: T): Validated[Violations, A] = schema match
     case schema: Primitive.Value.Boolean[?] => decoder.decode(schema, value)
@@ -159,8 +156,11 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case Primitive.Value.Number.Modify(self, f, _)       => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Modify(self, f, _)       => decode(schema = self, value).map(f)
+    case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Coerce(self) =>
+
+      ???
     case schema @ Primitive.Value.String.Parser(_, _, _) => decoder.decode(schema, value)
     case schema @ Primitive.Value.String.Text(minimum, maximum, matches) =>
       decoder

@@ -19,5 +19,5 @@ object FormDataSchemaPrinter extends Encoder[FormData.Schema, Option[String]]:
     case FormData.Schema.Constant(self)    => constant.encode(schema = self, a)
     case FormData.Schema.Enumeration(self) => enumeration.encode(schema = self, a)
     case FormData.Schema.Nullable(self)    => nullable.encode(schema = self, a)
-    case FormData.Schema.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self, a).some
+    case FormData.Schema.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.value, a).some
     case FormData.Schema.Union(self)       => union.encode(schema = self, a)

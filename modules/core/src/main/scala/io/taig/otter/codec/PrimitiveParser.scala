@@ -35,6 +35,7 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive.Value, St
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Coerce(self)       => decode(schema = self, value)
     case Primitive.Value.String.Parser(_, decode, _) =>
       val input =
         if quotes then
@@ -55,5 +56,5 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive.Value, St
       else value.valid
 
 object PrimitiveParser:
-  val Quoted: Decoder[Primitive, String] = PrimitiveDecoder(PrimitiveParser(quotes = true))
-  val Unquoted: Decoder[Primitive, String] = PrimitiveDecoder(PrimitiveParser(quotes = false))
+  val Quoted: Decoder[Primitive.Value, String] = PrimitiveDecoder(PrimitiveParser(quotes = true))
+  val Unquoted: Decoder[Primitive.Value, String] = PrimitiveDecoder(PrimitiveParser(quotes = false))

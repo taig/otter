@@ -15,12 +15,12 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
       [A] =>
         (schema: Json[A], a: A) =>
           schema match
-            case Json.Primitive(self) => PrimitivePrinter.Quoted.encode(schema = self.self, a).some
+            case Json.Primitive(self) => PrimitivePrinter.Quoted.encode(schema = self.self.value, a).some
             case _                    => none
   ).map(_.getOrElse(Typescript.Any)).map[TypescriptState[Typescript]](State.pure)
   val dictionary = DictionaryTypescriptRenderer(key = KeyTypescriptRenderer.map(State.pure), value = this)
   val enumeration = EnumerationTypescriptRenderer(printer =
-    PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self.self)
+    PrimitivePrinter.Quoted.mapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.self.self.value)
   )
   val nullable = NullableTypescriptRenderer(renderer = this)
   val record = RecordTypescriptRenderer(
