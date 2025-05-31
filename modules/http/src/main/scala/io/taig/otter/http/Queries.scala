@@ -14,6 +14,11 @@ final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
 
   def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = this * query.toQueries
 
+  def toUrl: Url[A] = Url(
+    value = Url.Value.Root(path = Path.Empty, queries = this).imap((_, a) => a)(a => ((), a)),
+    metadata = Metadata.Empty
+  )
+
 object Queries:
   sealed abstract class Value[A] extends Product with Serializable:
     def toChain: Chain[Query[?]]
