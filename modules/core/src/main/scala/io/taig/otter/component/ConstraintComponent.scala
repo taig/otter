@@ -10,7 +10,6 @@ trait ConstraintComponent[
     Dictionary[a] <: Value[a],
     Nullable[a] <: Value[a],
     Primitive[a] <: Value[a],
-    String[a] <: Primitive[a],
     Record[a] <: Value[a],
     Union[a] <: Value[a],
     Field[_],
@@ -21,9 +20,9 @@ trait ConstraintComponent[
     RecordSchemaInvariant[Record, Field],
     UnionSchemaInvariant[Union, Value]
 ) extends ComparisonComponent[Nullable, Record, Field, Key, Value],
-      DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, String, Record, Union, Field, Key, Value],
+      DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
-      PrimitiveComponent[Primitive, String],
+      PrimitiveComponent[Primitive],
       NullableComponent[Nullable, Value],
       RecordComponent[Record, Field],
       SumComponent[Constant, Record, Field, Key, Value]:

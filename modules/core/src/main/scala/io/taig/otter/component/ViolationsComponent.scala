@@ -12,7 +12,6 @@ trait ViolationsComponent[
     Dictionary[a] <: Value[a],
     Nullable[a] <: Value[a],
     Primitive[a] <: Value[a],
-    String[a] <: Primitive[a],
     Record[a] <: Value[a],
     Union[a] <: Value[a],
     Field[_],
@@ -27,19 +26,7 @@ trait ViolationsComponent[
       DictionaryComponent[Dictionary, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       UnionComponent[Union, Value],
-      ViolationComponent[
-        Collection,
-        Constant,
-        Dictionary,
-        Nullable,
-        Primitive,
-        String,
-        Record,
-        Union,
-        Field,
-        Key,
-        Value
-      ]:
+      ViolationComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value]:
   this: PrimitiveComponent.String[Value] =>
 
   val violations: Union[Violations] =

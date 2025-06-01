@@ -20,7 +20,7 @@ final case class Request[+S[_], A](value: Request.Value[S, A], metadata: Metadat
   def *:[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] = this * header.toHeaders
 
 object Request:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def method: Method
     def url: Url[?]
     def headers: Headers[?]

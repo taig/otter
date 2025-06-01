@@ -7,7 +7,7 @@ import io.taig.otter.operation.EnumerationSchemaInvariant
 final case class Enumeration[+S[_], A](value: Enumeration.Value[S, A], metadata: Metadata)
 
 object Enumeration:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
     def values: NonEmptyList[A]

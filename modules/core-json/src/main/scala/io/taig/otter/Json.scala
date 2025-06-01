@@ -5,7 +5,7 @@ import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
 
-sealed abstract class Json[A] extends Product with Serializable
+sealed abstract class Json[A] extends Product, Serializable
 
 object Json:
   final case class Collection[A](self: Self.Collection[Json, A]) extends Json[A]
@@ -51,8 +51,8 @@ object Json:
   final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
 
   object Primitive:
-    given PrimitiveSchemaInvariant[Json.Primitive, Json.Primitive] =
-      PrimitiveSchemaInvariant[Self.Primitive, Self.Primitive.String].imapK(
+    given PrimitiveSchemaInvariant[Json.Primitive] =
+      PrimitiveSchemaInvariant[Self.Primitive].imapK(
         [A] => (schema: Self.Primitive[A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 

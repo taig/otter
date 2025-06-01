@@ -8,7 +8,7 @@ import io.taig.otter.operation.Enriched
 final case class Constant[+S[_], A](value: Constant.Value[S, A], metadata: Metadata)
 
 object Constant:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schema: Reference.Constant[S, ?]
 
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant.Value[T, A]

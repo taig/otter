@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.operation.ConstantSchemaInvariant
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.EnumerationSchemaInvariant
@@ -9,7 +10,7 @@ import io.taig.otter.operation.PrimitiveSchemaInvariant
 import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.UnionSchemaInvariant
 
-sealed abstract class Key[A] extends Product with Serializable
+sealed abstract class Key[A] extends Product, Serializable
 
 object Key:
   final case class Constant[A](self: Self.Constant[Key.Primitive, A]) extends Key[A]
@@ -48,7 +49,18 @@ object Key:
       )([A] => (key: Key.Union[A]) => key.self)
 
   given SchemaInvariant[Key] with
-    override def enriched[A]: Enriched[Key[A]] = ???
+    override def enriched[A]: Enriched[Key[A]] = new Enriched[Key[A]]:
+      override def metadata(a: Key[A]): Metadata = a match
+        case Key.Constant(self)    => self.metadata
+        case Key.Enumeration(self) => self.metadata
+        case Key.Primitive(self)   => self.metadata
+        case Key.Union(self)       => self.metadata
+
+      override def modifyMetadata(a: Key[A])(f: Metadata => Metadata): Key[A] = a match
+        case Key.Constant(self)    => Key.Constant(self.metadata(f))
+        case Key.Enumeration(self) => Key.Enumeration(self.metadata(f))
+        case Key.Primitive(self)   => Key.Primitive(self.metadata(f))
+        case Key.Union(self)       => Key.Union(self.metadata(f))
 
     override def imap[A, B](fa: Key[A])(f: A => B)(g: B => A): Key[B] = fa match
       case Key.Constant(self)    => Key.Constant(self.imap(f)(g))

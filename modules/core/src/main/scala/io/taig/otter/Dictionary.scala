@@ -6,7 +6,7 @@ import io.taig.otter.operation.Enriched
 final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata)
 
 object Dictionary:
-  sealed abstract class Value[+S[_], +T[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], +T[_], A] extends Product, Serializable:
     def key: Reference[S, ?]
     def value: Reference[T, ?]
 

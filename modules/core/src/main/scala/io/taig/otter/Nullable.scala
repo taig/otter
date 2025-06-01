@@ -7,7 +7,7 @@ import io.taig.otter.operation.NullableSchemaInvariant
 final case class Nullable[+S[_], A](value: Nullable.Value[S, A], metadata: Metadata)
 
 object Nullable:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schema: Option[Reference[S, ?]]
 
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]

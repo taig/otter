@@ -8,7 +8,7 @@ import io.taig.otter.operation.UnionSchemaInvariant
 final case class Union[+S[_], A](value: Union.Value[S, A], metadata: Metadata)
 
 object Union:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schemas: NonEmptyChain[Reference[S, ?]]
 
     final def imap[B](f: A => B)(g: B => A): Value[S, B] = Value.Modify(self = this, f, g)

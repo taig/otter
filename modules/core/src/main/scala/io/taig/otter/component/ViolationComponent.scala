@@ -10,7 +10,6 @@ trait ViolationComponent[
     Dictionary[a] <: Value[a],
     Nullable[a] <: Value[a],
     Primitive[a] <: Value[a],
-    String[a] <: Primitive[a],
     Record[a] <: Value[a],
     Union[a] <: Value[a],
     Field[_],
@@ -20,34 +19,10 @@ trait ViolationComponent[
     FieldSchemaInvariant[Field, Key, Value],
     NullableSchemaInvariant[Nullable, Value],
     RecordSchemaInvariant[Record, Field]
-) extends DataComponent[
-      Collection,
-      Constant,
-      Dictionary,
-      Nullable,
-      Primitive,
-      String,
-      Record,
-      Union,
-      Field,
-      Key,
-      Value
-    ],
-      ConstraintComponent[
-        Collection,
-        Constant,
-        Dictionary,
-        Nullable,
-        Primitive,
-        String,
-        Record,
-        Union,
-        Field,
-        Key,
-        Value
-      ],
+) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
+      ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],
-      PrimitiveComponent[Primitive, String],
+      PrimitiveComponent[Primitive],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       RecordComponent[Record, Field]:
   this: PrimitiveComponent.String[Value] =>

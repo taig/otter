@@ -19,7 +19,7 @@ final case class Results[+S[_], A](value: Results.Value[S, A], metadata: Metadat
     result.toResults.orElse(this)
 
 object Results:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def toChain: Chain[Result[S, ?]]
 
     final def imap[B](f: A => B)(g: B => A): Results.Value[S, B] = Results.Value.Modify(self = this, f, g)

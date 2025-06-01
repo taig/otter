@@ -46,7 +46,7 @@ object Header:
   sealed trait Schema[A] extends Header.Schema.Any[A]
 
   object Schema:
-    sealed trait Any[A] extends Product with Serializable
+    sealed trait Any[A] extends Product, Serializable
 
     object Any:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Header.Schema.Any[A]
@@ -68,8 +68,6 @@ object Header:
             .imapK(
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Header.Schema.Any.Number[A]) => value.self)
-
-      given PrimitiveSchemaInvariant[Header.Schema.Any, Header.Schema.Value.String] = ???
 
     sealed trait Value[A] extends Header.Schema[A], Header.Schema.Object.Value[A]
 
@@ -198,7 +196,7 @@ object Header:
               [A] => (schema: Self.Record[Header.Schema.Field, A]) => Record(schema)
             )([A] => (value: Header.Schema.Object.Record[A]) => value.self)
 
-      sealed trait Value[A] extends Product with Serializable
+      sealed trait Value[A] extends Product, Serializable
 
       object Value:
         final case class Nullable[A](self: Self.Nullable[Header.Schema.Object.Value, A])

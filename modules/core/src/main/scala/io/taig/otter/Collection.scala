@@ -6,7 +6,7 @@ import io.taig.otter.operation.Enriched
 final case class Collection[+S[_], A](value: Collection.Value[S, A], metadata: Metadata)
 
 object Collection:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def constraints: Vector[Constraint.Collection]
 
     def schema: Reference[S, ?]

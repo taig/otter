@@ -12,7 +12,6 @@ trait DataComponent[
     Dictionary[a] <: Value[a],
     Nullable[a] <: Value[a],
     Primitive[a] <: Value[a],
-    String[a] <: Primitive[a],
     Record[a] <: Value[a],
     Union[a] <: Value[a],
     Field[_],
@@ -26,7 +25,7 @@ trait DataComponent[
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
-      PrimitiveComponent[Primitive, String],
+      PrimitiveComponent[Primitive],
       SumComponent[Constant, Record, Field, Key, Value],
       UnionComponent[Union, Value]:
   this: PrimitiveComponent.String[Value] =>

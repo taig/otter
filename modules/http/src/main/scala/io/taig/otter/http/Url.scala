@@ -22,7 +22,7 @@ final case class Url[A](value: Url.Value[A], metadata: Metadata):
   def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] = this * query.toQueries.toUrl
 
 object Url:
-  sealed abstract class Value[A] extends Product with Serializable:
+  sealed abstract class Value[A] extends Product, Serializable:
     def path: Path[?]
 
     def queries: Queries[?]

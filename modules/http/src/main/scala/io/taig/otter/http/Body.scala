@@ -23,7 +23,7 @@ final case class Body[+S[_], A](value: Body.Value[S, A], metadata: Metadata):
   def toBodies: Bodies[S, A] = Bodies(value = Bodies.Value.Root(this), metadata = Metadata.Empty)
 
 object Body:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def mediaType: MediaType
     def schema: Reference[S, ?]
 

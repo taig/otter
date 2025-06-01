@@ -4,7 +4,7 @@ import io.taig.otter as Self
 import io.taig.otter.Key
 import io.taig.otter.operation.*
 
-sealed abstract class FormData[A] extends Product with Serializable
+sealed abstract class FormData[A] extends Product, Serializable
 
 object FormData:
   final case class Dictionary[A](self: Self.Dictionary[Key, FormData.Schema, A]) extends FormData[A]
@@ -25,9 +25,48 @@ object FormData:
           [A] => (schema: Self.Record[FormData.Field, A]) => Record(schema)
         )([A] => (formData: FormData.Record[A]) => formData.self)
 
-  sealed abstract class Schema[A] extends Product with Serializable
+  sealed trait Schema[A] extends FormData.Schema.Any[A]
 
   object Schema:
+    sealed trait Any[A] extends Product, Serializable
+
+    sealed trait Primitive[A] extends FormData.Schema.Any[A]
+
+    object Primitive:
+      final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends FormData.Schema.Primitive[A]
+
+      object Boolean:
+        given PrimitiveSchemaInvariant.Boolean[FormData.Schema.Primitive.Boolean] =
+          PrimitiveSchemaInvariant
+            .Boolean[Self.Primitive.Boolean]
+            .imapK(
+              [A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema)
+            )([A] => (formData: FormData.Schema.Primitive.Boolean[A]) => formData.self)
+
+      final case class Number[A](self: Self.Primitive.Number[A]) extends FormData.Schema.Primitive[A]
+
+      object Number:
+        given PrimitiveSchemaInvariant.Number[FormData.Schema.Primitive.Number] =
+          PrimitiveSchemaInvariant
+            .Number[Self.Primitive.Number]
+            .imapK(
+              [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
+            )([A] => (formData: FormData.Schema.Primitive.Number[A]) => formData.self)
+
+      final case class String[A](self: Self.Primitive.String[A])
+          extends FormData.Schema.Primitive[A],
+            FormData.Schema[A]
+
+      object String:
+        given PrimitiveSchemaInvariant.String[FormData.Schema.Primitive.String] =
+          PrimitiveSchemaInvariant
+            .String[Self.Primitive.String]
+            .imapK(
+              [A] => (schema: Self.Primitive.String[A]) => String(schema)
+            )([A] => (formData: FormData.Schema.Primitive.String[A]) => formData.self)
+
+      given PrimitiveSchemaInvariant[FormData.Schema.Primitive] = ???
+
     final case class Constant[A](self: Self.Constant[FormData.Schema, A]) extends Schema[A]
 
     object Constant:
@@ -54,15 +93,6 @@ object FormData:
           .imapK(
             [A] => (schema: Self.Nullable[FormData.Schema, A]) => Nullable(schema)
           )([A] => (formData: FormData.Schema.Nullable[A]) => formData.self)
-
-    final case class Primitive[A](self: Self.Primitive.String[A]) extends Schema[A]
-
-    object Primitive:
-      given PrimitiveSchemaInvariant.String[FormData.Schema.Primitive] = PrimitiveSchemaInvariant
-        .String[Self.Primitive.String]
-        .imapK(
-          [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
-        )([A] => (formData: FormData.Schema.Primitive[A]) => formData.self)
 
     final case class Union[A](self: Self.Union[FormData.Schema, A]) extends Schema[A]
 

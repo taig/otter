@@ -19,7 +19,7 @@ object FieldComponent:
       extends FieldComponent.Primitive.Boolean[Self, Key, Value, Record],
         FieldComponent.Primitive.Number[Self, Key, Value, Record],
         FieldComponent.Primitive.String[Self, Key, Value, Record]:
-    override def key: PrimitiveComponent[Key, Key]
+    override def key: PrimitiveComponent[Key]
 
   object Primitive:
     trait Boolean[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:

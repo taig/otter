@@ -8,7 +8,7 @@ import io.taig.otter.operation.TupleSchemaInvariant
 final case class Tuple[+S[_], A](value: Tuple.Value[S, A], metadata: Metadata)
 
 object Tuple:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schemas: Chain[Reference[S, ?]]
 
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]

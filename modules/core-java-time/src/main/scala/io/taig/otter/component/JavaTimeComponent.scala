@@ -6,7 +6,7 @@ import java.time.Duration
 import java.time.Instant
 import java.time.format.DateTimeParseException
 
-trait JavaTimeComponent[Self[_]]:
+trait JavaTimeComponent[+Self[_]]:
   this: PrimitiveComponent.String[Self] =>
 
   val duration: Self[Duration] = parser(name = "iso8601.duration")(value =>

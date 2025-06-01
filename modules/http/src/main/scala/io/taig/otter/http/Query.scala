@@ -65,7 +65,7 @@ object Query:
   sealed trait Schema[A] extends Query.Schema.Any[A]
 
   object Schema:
-    sealed trait Any[A] extends Product with Serializable
+    sealed trait Any[A] extends Product, Serializable
 
     object Any:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Query.Schema.Any[A]
@@ -87,8 +87,6 @@ object Query:
             .imapK(
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (schema: Query.Schema.Any.Number[A]) => schema.self)
-
-      given PrimitiveSchemaInvariant[Query.Schema.Any, Query.Schema.Value.String] = ???
 
     sealed trait Value[A] extends Query.Schema[A]
 
@@ -114,12 +112,11 @@ object Query:
       final case class String[A](self: Self.Primitive.String[A]) extends Value[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[Query.Schema.Value.String] =
-          PrimitiveSchemaInvariant
-            .String[Self.Primitive.String]
-            .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => String(schema)
-            )([A] => (schema: Query.Schema.Value.String[A]) => schema.self)
+        given PrimitiveSchemaInvariant.String[Query.Schema.Value.String] = PrimitiveSchemaInvariant
+          .String[Self.Primitive.String]
+          .imapK(
+            [A] => (schema: Self.Primitive.String[A]) => String(schema)
+          )([A] => (schema: Query.Schema.Value.String[A]) => schema.self)
 
       final case class Union[A](self: Self.Union[Query.Schema.Value, A]) extends Value[A]
 

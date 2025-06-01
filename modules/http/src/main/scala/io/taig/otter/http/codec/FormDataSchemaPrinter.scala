@@ -16,8 +16,8 @@ object FormDataSchemaPrinter extends Encoder[FormData.Schema, Option[String]]:
   val union = UnionEncoder(encoder = this)
 
   override def encode[A](schema: FormData.Schema[A], a: A): Option[String] = schema match
-    case FormData.Schema.Constant(self)    => constant.encode(schema = self, a)
-    case FormData.Schema.Enumeration(self) => enumeration.encode(schema = self, a)
-    case FormData.Schema.Nullable(self)    => nullable.encode(schema = self, a)
-    case FormData.Schema.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.value, a).some
-    case FormData.Schema.Union(self)       => union.encode(schema = self, a)
+    case FormData.Schema.Constant(self)         => constant.encode(schema = self, a)
+    case FormData.Schema.Enumeration(self)      => enumeration.encode(schema = self, a)
+    case FormData.Schema.Nullable(self)         => nullable.encode(schema = self, a)
+    case FormData.Schema.Primitive.String(self) => PrimitivePrinter.Unquoted.encode(schema = self.value, a).some
+    case FormData.Schema.Union(self)            => union.encode(schema = self, a)

@@ -19,7 +19,10 @@ trait FormDataComponent
       FieldComponent[FormData.Field, Key, FormData.Schema, FormData.Record],
       FieldComponent.Primitive.String[FormData.Field, Key, FormData.Schema, FormData.Record],
       NullableComponent[FormData.Schema.Nullable, FormData.Schema],
-      PrimitiveComponent.String[FormData.Schema.Primitive],
+      PrimitiveComponent[FormData.Schema.Primitive],
+      PrimitiveComponent.Boolean[FormData.Schema.Primitive.Boolean],
+      PrimitiveComponent.Number[FormData.Schema.Primitive.Number],
+      PrimitiveComponent.String[FormData.Schema.Primitive.String],
       RecordComponent[FormData.Record, FormData.Field],
       UnionComponent[FormData.Schema.Union, FormData.Schema]:
   override def key: KeyComponent = KeyComponent

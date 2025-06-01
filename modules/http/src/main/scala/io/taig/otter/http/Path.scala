@@ -28,7 +28,7 @@ final case class Path[A](value: Path.Value[A], metadata: Metadata):
   )
 
 object Path:
-  sealed abstract class Value[A] extends Product with Serializable:
+  sealed abstract class Value[A] extends Product, Serializable:
     def toSegments: Chain[String | Parameter[?]]
 
     final def imap[B](f: A => B)(g: B => A): Path.Value[B] = Value.Modify(self = this, f, g)

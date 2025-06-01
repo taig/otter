@@ -20,7 +20,7 @@ final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
   )
 
 object Queries:
-  sealed abstract class Value[A] extends Product with Serializable:
+  sealed abstract class Value[A] extends Product, Serializable:
     def toChain: Chain[Query[?]]
 
     final def imap[B](f: A => B)(g: B => A): Queries.Value[B] = Value.Modify(self = this, f, g)

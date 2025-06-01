@@ -76,8 +76,6 @@ object Parameter:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Parameter.Schema.Any.Number[A]) => value.self)
 
-      given PrimitiveSchemaInvariant[Parameter.Schema.Any, Parameter.Schema.Value.String] = ???
-
     sealed trait Value[A] extends Parameter.Schema[A], Parameter.Schema.Object.Value[A]
 
     object Value:
@@ -108,12 +106,11 @@ object Parameter:
       final case class String[A](self: Self.Primitive.String[A]) extends Parameter.Schema.Value[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[Parameter.Schema.Value.String] =
-          PrimitiveSchemaInvariant
-            .String[Self.Primitive.String]
-            .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => String(schema)
-            )([A] => (value: Parameter.Schema.Value.String[A]) => value.self)
+        given PrimitiveSchemaInvariant.String[Parameter.Schema.Value.String] = PrimitiveSchemaInvariant
+          .String[Self.Primitive.String]
+          .imapK(
+            [A] => (schema: Self.Primitive.String[A]) => String(schema)
+          )([A] => (value: Parameter.Schema.Value.String[A]) => value.self)
 
       final case class Union[A](self: Self.Union[Parameter.Schema.Value, A]) extends Parameter.Schema.Value[A]
 
@@ -218,7 +215,7 @@ object Parameter:
             [A] => (schema: Self.Record[Parameter.Schema.Field, A]) => Record(schema)
           )([A] => (value: Parameter.Schema.Object.Record[A]) => value.self)
 
-      sealed trait Value[A] extends Product with Serializable
+      sealed trait Value[A] extends Product, Serializable
 
       object Value:
         final case class Nullable[A](self: Self.Nullable[Parameter.Schema.Object.Value, A])

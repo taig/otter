@@ -17,7 +17,7 @@ final case class Result[+S[_], A](value: Result.Value[S, A], metadata: Metadata)
   def toResults: Results[S, A] = Results(value = Results.Value.Root(this), metadata = Metadata.Empty)
 
 object Result:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def code: Code
     def bodies: Option[Bodies[S, ?]]
 

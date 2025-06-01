@@ -6,7 +6,7 @@ import io.taig.otter.operation.FieldSchemaInvariant
 final case class Field[+S[_], +T[_], A](value: Field.Value[S, T, A], metadata: Metadata)
 
 object Field:
-  sealed abstract class Value[+S[_], +T[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], +T[_], A] extends Product, Serializable:
     def key: Reference.Constant[S, ?]
     def value: Reference[T, ?]
 

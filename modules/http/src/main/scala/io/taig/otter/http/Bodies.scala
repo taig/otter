@@ -24,7 +24,7 @@ final case class Bodies[+S[_], A](value: Bodies.Value[S, A], metadata: Metadata)
   def +:[T[_], B](body: Body[T, B]): Bodies[S + T, Either[B, A]] = body.toBodies.orElse(this)
 
 object Bodies:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def toChain: NonEmptyChain[Body[S, ?]]
 
     final def satisfies(mediaRange: MediaRange): Boolean = toChain.exists(_.satisfies(mediaRange))

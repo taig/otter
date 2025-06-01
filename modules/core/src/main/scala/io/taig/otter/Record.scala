@@ -7,7 +7,7 @@ import io.taig.otter.operation.RecordSchemaInvariant
 final case class Record[+S[_], A](value: Record.Value[S, A], metadata: Metadata)
 
 object Record:
-  sealed abstract class Value[+S[_], A] extends Product with Serializable:
+  sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def fields: Chain[Reference[S, ?]]
 
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]
