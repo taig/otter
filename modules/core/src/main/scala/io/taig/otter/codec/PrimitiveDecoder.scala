@@ -156,11 +156,9 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Coerce(self) =>
-
-      ???
+    case Primitive.Value.Number.Modify(self, f, _)       => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Modify(self, f, _)       => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Interpreter(self)        => decoder.decode(schema = self, value)
     case schema @ Primitive.Value.String.Parser(_, _, _) => decoder.decode(schema, value)
     case schema @ Primitive.Value.String.Text(minimum, maximum, matches) =>
       decoder

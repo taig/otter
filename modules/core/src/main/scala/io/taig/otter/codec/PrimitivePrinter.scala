@@ -14,7 +14,7 @@ final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive.Value, S
     case Primitive.Value.Number.Long(_, _, _)        => String.valueOf(a)
     case Primitive.Value.Number.Modify(self, _, g)   => encode(schema = self, g(a))
     case Primitive.Value.String.Modify(self, _, g)   => encode(schema = self, g(a))
-    case Primitive.Value.String.Coerce(self)         => encode(schema = self, a)
+    case Primitive.Value.String.Interpreter(self)    => encode(schema = self, a)
     case Primitive.Value.String.Parser(_, _, encode) => apply(encode(a))
     case Primitive.Value.String.Text(_, _, _)        => apply(a)
 
