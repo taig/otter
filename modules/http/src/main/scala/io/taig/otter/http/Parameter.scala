@@ -76,6 +76,8 @@ object Parameter:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Parameter.Schema.Any.Number[A]) => value.self)
 
+      given PrimitiveSchemaInvariant[Parameter.Schema.Any, Parameter.Schema.Value.String] = ???
+
     sealed trait Value[A] extends Parameter.Schema[A], Parameter.Schema.Object.Value[A]
 
     object Value:
@@ -128,14 +130,14 @@ object Parameter:
         override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Parameter.Schema.Value[B] = fa match
           case Constant(self)    => Constant(self.imap(f)(g))
           case Enumeration(self) => Enumeration(self.imap(f)(g))
-          case String(self)   => String(self.imap(f)(g))
+          case String(self)      => String(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
         override def enriched[A]: Enriched[Parameter.Schema.Value[A]] = new Enriched[Parameter.Schema.Value[A]]:
           override def metadata(a: Parameter.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
-            case String(self)   => self.metadata
+            case String(self)      => self.metadata
             case Union(self)       => self.metadata
 
           override def modifyMetadata(a: Parameter.Schema.Value[A])(
@@ -144,7 +146,7 @@ object Parameter:
             a match
               case Constant(self)    => Constant(self.metadata(f))
               case Enumeration(self) => Enumeration(self.metadata(f))
-              case String(self)   => String(self.metadata(f))
+              case String(self)      => String(self.metadata(f))
               case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Parameter.Schema[A]

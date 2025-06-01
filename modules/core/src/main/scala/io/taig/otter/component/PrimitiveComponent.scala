@@ -18,7 +18,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait PrimitiveComponent[+Self[_]]
+trait PrimitiveComponent[+Self[_], +String[a] <: Self[a]](using self: PrimitiveSchemaInvariant[Self, String])
     extends PrimitiveComponent.Boolean[Self],
       PrimitiveComponent.Number[Self],
       PrimitiveComponent.String[Self]

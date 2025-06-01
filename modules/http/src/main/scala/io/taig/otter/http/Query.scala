@@ -88,6 +88,8 @@ object Query:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (schema: Query.Schema.Any.Number[A]) => schema.self)
 
+      given PrimitiveSchemaInvariant[Query.Schema.Any, Query.Schema.Value.String] = ???
+
     sealed trait Value[A] extends Query.Schema[A]
 
     object Value:
@@ -131,21 +133,21 @@ object Query:
         override def imap[A, B](fa: Query.Schema.Value[A])(f: A => B)(g: B => A): Query.Schema.Value[B] = fa match
           case Constant(self)    => Constant(self.imap(f)(g))
           case Enumeration(self) => Enumeration(self.imap(f)(g))
-          case String(self)   => String(self.imap(f)(g))
+          case String(self)      => String(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
         override def enriched[A]: Enriched[Query.Schema.Value[A]] = new Enriched[Query.Schema.Value[A]]:
           override def metadata(a: Query.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
-            case String(self)   => self.metadata
+            case String(self)      => self.metadata
             case Union(self)       => self.metadata
 
           override def modifyMetadata(a: Query.Schema.Value[A])(f: Metadata => Metadata): Query.Schema.Value[A] =
             a match
               case Constant(self)    => Constant(self.metadata(f))
               case Enumeration(self) => Enumeration(self.metadata(f))
-              case String(self)   => String(self.metadata(f))
+              case String(self)      => String(self.metadata(f))
               case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Query.Schema[A]

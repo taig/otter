@@ -8,14 +8,16 @@ import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 
-trait PrimitiveSchemaInvariant[Self[_]]
+trait PrimitiveSchemaInvariant[Self[_], +String[a] <: Self[a]]
     extends PrimitiveSchemaInvariant.Boolean[Self],
       PrimitiveSchemaInvariant.Number[Self],
       PrimitiveSchemaInvariant.String[Self]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchemaInvariant[T] =
-    new PrimitiveSchemaInvariant[T]:
+  extension [A](self: Self[A]) def parsed: String[A]
+
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): PrimitiveSchemaInvariant[T, T] =
+    new PrimitiveSchemaInvariant[T, T]:
       override def boolean: T[Boolean] = fK(self.boolean)
 
       override def jBigDecimal(
@@ -62,6 +64,8 @@ trait PrimitiveSchemaInvariant[Self[_]]
           decode: JString => Either[JString, A],
           encode: A => JString
       ): T[A] = fK(self.parser(name, decode, encode))
+
+      extension [A](ta: T[A]) override def parsed: T[A] = fK(self.parsed(gK(ta)))
 
       override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
@@ -205,4 +209,6 @@ object PrimitiveSchemaInvariant:
         self: PrimitiveSchemaInvariant.String[Self]
     ): PrimitiveSchemaInvariant.String[Self] = self
 
-  inline def apply[Self[_]](using self: PrimitiveSchemaInvariant[Self]): PrimitiveSchemaInvariant[Self] = self
+  inline def apply[Self[_], String[a] <: Self[a]](using
+      self: PrimitiveSchemaInvariant[Self, String]
+  ): PrimitiveSchemaInvariant[Self, String] = self

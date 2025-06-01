@@ -13,7 +13,7 @@ trait QueryComponent
       ConstantComponent[Query.Schema.Value.Constant, Query.Schema.Value.String],
       EnumerationComponent[Query.Schema.Value.Enumeration, Query.Schema.Value.String],
       NullableComponent[Query.Schema.Nullable, Query.Schema],
-      PrimitiveComponent[Query.Schema.Any],
+      PrimitiveComponent[Query.Schema.Any, Query.Schema.Value.String],
       PrimitiveComponent.Boolean[Query.Schema.Any.Boolean],
       PrimitiveComponent.Number[Query.Schema.Any.Number],
       PrimitiveComponent.String[Query.Schema.Value.String],

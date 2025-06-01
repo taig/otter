@@ -51,8 +51,8 @@ object Json:
   final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
 
   object Primitive:
-    given PrimitiveSchemaInvariant[Json.Primitive] =
-      PrimitiveSchemaInvariant[Self.Primitive].imapK(
+    given PrimitiveSchemaInvariant[Json.Primitive, Json.Primitive] =
+      PrimitiveSchemaInvariant[Self.Primitive, Self.Primitive.String].imapK(
         [A] => (schema: Self.Primitive[A]) => Primitive(schema)
       )([A] => (json: Json.Primitive[A]) => json.self)
 

@@ -69,6 +69,8 @@ object Header:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Header.Schema.Any.Number[A]) => value.self)
 
+      given PrimitiveSchemaInvariant[Header.Schema.Any, Header.Schema.Value.String] = ???
+
     sealed trait Value[A] extends Header.Schema[A], Header.Schema.Object.Value[A]
 
     object Value:

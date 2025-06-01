@@ -21,7 +21,7 @@ object ConstantComponent:
       extends ConstantComponent.Primitive.Boolean[Self, Value],
         ConstantComponent.Primitive.Number[Self, Value],
         ConstantComponent.Primitive.String[Self, Value]:
-    this: PrimitiveComponent[Value] =>
+    this: PrimitiveComponent[Value, Value] =>
 
   object Primitive:
     trait Boolean[Self[_], -Value[_]] extends ConstantComponent[Self, Value]:

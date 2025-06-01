@@ -14,12 +14,12 @@ trait JsonComponent extends
       FieldComponent[Json.Field, Key, Json, Json.Record],
       FieldComponent.Primitive.String[Json.Field, Key, Json, Json.Record],
       NullableComponent[Json.Nullable, Json],
-      PrimitiveComponent[Json.Primitive],
+      PrimitiveComponent[Json.Primitive, Json.Primitive],
       RecordComponent[Json.Record, Json.Field],
       TupleComponent[Json.Tuple, Json],
       UnionComponent[Json.Union, Json],
       ErrorComponent[Json.Constant, Json.Record, Json.Field, Key, Json],
-      ViolationsComponent[Json.Collection, Json.Constant, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Record, Json.Union, Json.Field, Key, Json]:
+      ViolationsComponent[Json.Collection, Json.Constant, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Primitive, Json.Record, Json.Union, Json.Field, Key, Json]:
   override def key: KeyComponent = KeyComponent
 
 object JsonComponent extends JsonComponent
