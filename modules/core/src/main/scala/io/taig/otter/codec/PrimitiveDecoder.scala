@@ -158,7 +158,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
           }).as(value)
     case Primitive.Value.Number.Modify(self, f, _)       => decode(schema = self, value).map(f)
     case Primitive.Value.String.Modify(self, f, _)       => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Interpreter(self)        => decoder.decode(schema = self, value)
+    case Primitive.Value.String.Parsed(self)        => decoder.decode(schema = self, value)
     case schema @ Primitive.Value.String.Parser(_, _, _) => decoder.decode(schema, value)
     case schema @ Primitive.Value.String.Text(minimum, maximum, matches) =>
       decoder

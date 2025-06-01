@@ -211,7 +211,7 @@ object Primitive:
       final override def imap[B](f: A => B)(g: B => A): Value.String[B] = String.Modify(self = this, f, g)
 
     object String:
-      final private[otter] case class Interpreter[A](self: Primitive.Value[A]) extends Value.String[A]
+      final private[otter] case class Parsed[A](self: Primitive.Value[A]) extends Value.String[A]
 
       final private[otter] case class Parser[A](
           name: JString,

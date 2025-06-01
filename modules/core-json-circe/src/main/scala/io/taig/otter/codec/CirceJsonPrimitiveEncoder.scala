@@ -16,6 +16,6 @@ object CirceJsonPrimitiveEncoder extends Encoder[Primitive.Value, CirceJson]:
     case Primitive.Value.Boolean.Modify(self, _, g) => encode(schema = self, g(a))
     case Primitive.Value.String.Modify(self, _, g)  => encode(schema = self, g(a))
     case Primitive.Value.Number.Modify(self, _, g)  => encode(schema = self, g(a))
-    case Primitive.Value.String.Interpreter(self) =>
+    case Primitive.Value.String.Parsed(self) =>
       CirceJson.fromString(PrimitivePrinter.Unquoted.encode(schema = self, a))
     case Primitive.Value.String.Parser(name, _, encode) => CirceJson.fromString(encode(a))
