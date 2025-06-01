@@ -1,8 +1,8 @@
 package io.taig.otter.codec
+import io.taig.otter.Keys
 import io.taig.otter.Typescript
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Path
-import io.taig.otter.Keys
 
 object PathTypescriptRenderer extends Renderer[Path, Option[Typescript]]:
   override def render[A](schema: Path[A]): Option[Typescript] =

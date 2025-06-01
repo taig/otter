@@ -2,13 +2,13 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.operation.ConstantSchemaInvariant
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.EnumerationSchemaInvariant
 import io.taig.otter.operation.PrimitiveSchemaInvariant
 import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.operation.UnionSchemaInvariant
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 sealed abstract class Key[A] extends Product, Serializable
 

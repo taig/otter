@@ -5,6 +5,7 @@ import cats.data.Chain
 import cats.data.OptionT
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import io.taig.otter.StacktracePrinter
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.codec.PayloadDecoder
@@ -23,7 +24,6 @@ import org.http4s.Status as Http4sStatus
 import org.http4s.Uri as Http4sUri
 import org.typelevel.ci.*
 import scodec.bits.ByteVector
-import io.taig.otter.StacktracePrinter
 
 def toUrlData(uri: Http4sUri): Url.Data = Url.Data(
   path = Chain.fromSeq(uri.path.segments).map(_.encoded),

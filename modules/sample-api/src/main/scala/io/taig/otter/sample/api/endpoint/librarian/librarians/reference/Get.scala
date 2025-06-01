@@ -4,7 +4,6 @@ import io.taig.otter.sample.api.Endpoint
 import io.taig.otter.sample.api.dsl.*
 import io.taig.otter.sample.api.schema.librarian.ErrorApiSchema.*
 import io.taig.otter.sample.api.schema.librarian.LibrarianApiSchema
-import org.typelevel.ci.*
 
 import java.util.UUID
 

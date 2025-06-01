@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.ApplicativeThrow
 import cats.syntax.all.*
+import io.taig.otter.StacktracePrinter
 import io.taig.otter.http.Headers.Data.accept
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.codec.PayloadDecoder
@@ -9,7 +10,6 @@ import io.taig.otter.http.codec.PayloadEncoder
 import io.taig.otter.http.codec.RequestDataDecoder
 import io.taig.otter.http.codec.ResponseDataEncoder
 import io.taig.otter.http.codec.ResultDataEncoder
-import io.taig.otter.StacktracePrinter
 
 object AppHttpClient:
   def apply[F[_]: ApplicativeThrow, S[_]](

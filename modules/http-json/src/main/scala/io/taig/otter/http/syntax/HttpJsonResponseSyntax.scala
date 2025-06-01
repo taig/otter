@@ -9,7 +9,6 @@ import io.taig.otter.http.syntax.CodeSyntax.*
 import io.taig.otter.http.syntax.HttpJsonBodySyntax.*
 import io.taig.otter.http.syntax.ResultSyntax.*
 import io.taig.otter.syntax.EnrichedSyntax.*
-import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait HttpJsonResponseSyntax:
   def response[A](results: Results[Json, A]): Response[Json, A] = ResponseSyntax.response(

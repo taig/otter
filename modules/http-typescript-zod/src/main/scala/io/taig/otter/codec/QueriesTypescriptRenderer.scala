@@ -1,7 +1,7 @@
 package io.taig.otter.codec
+import io.taig.otter.Keys
 import io.taig.otter.Typescript
 import io.taig.otter.http.Queries
-import io.taig.otter.Keys
 
 object QueriesTypescriptRenderer extends Renderer[Queries, Option[Typescript]]:
   override def render[A](schema: Queries[A]): Option[Typescript] =

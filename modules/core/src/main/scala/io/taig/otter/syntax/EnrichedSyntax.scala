@@ -1,9 +1,9 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.Keys
-import io.taig.otter.operation.Enriched
-import io.taig.otter.Metadata
 import cats.syntax.all.*
+import io.taig.otter.Keys
+import io.taig.otter.Metadata
+import io.taig.otter.operation.Enriched
 
 trait EnrichedSyntax:
   extension [A](a: A)(using enriched: Enriched[A])

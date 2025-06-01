@@ -2,7 +2,6 @@ package io.taig.otter.component
 
 import cats.syntax.all.*
 import io.taig.otter.Data
-import io.taig.otter.Keys.*
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
 
