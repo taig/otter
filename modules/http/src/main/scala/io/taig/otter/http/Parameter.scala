@@ -56,7 +56,7 @@ object Parameter:
     sealed trait Any[A] extends Product, Serializable
 
     sealed trait Primitive[A] extends Parameter.Schema.Any[A]:
-      def self: Self.Primitive[A]
+      def self: Self.Primitive[Parameter.Schema.Primitive, A]
 
     object Primitive:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Parameter.Schema.Primitive[A]
@@ -79,25 +79,27 @@ object Parameter:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Parameter.Schema.Primitive.Number[A]) => value.self)
 
-      final case class String[A](self: Self.Primitive.String[A])
+      final case class String[A](self: Self.Primitive.String[Parameter.Schema.Primitive, A])
           extends Parameter.Schema.Primitive[A],
             Parameter.Schema.Value[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[Parameter.Schema.Primitive.String] = PrimitiveSchemaInvariant
-          .String[Self.Primitive.String]
-          .imapK(
-            [A] => (schema: Self.Primitive.String[A]) => String(schema)
-          )([A] => (value: Parameter.Schema.Primitive.String[A]) => value.self)
+        given PrimitiveSchemaInvariant.String[Parameter.Schema.Primitive.String, Parameter.Schema.Primitive] =
+          PrimitiveSchemaInvariant
+            .String[Self.Primitive.String[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive]
+            .imapK(
+              [A] => (schema: Self.Primitive.String[Parameter.Schema.Primitive, A]) => String(schema)
+            )([A] => (value: Parameter.Schema.Primitive.String[A]) => value.self)
 
-      given PrimitiveSchemaInvariant[Parameter.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive].imapK(
+      given PrimitiveSchemaInvariant[Parameter.Schema.Primitive, Parameter.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive].imapK(
           [A] =>
-            (schema: Self.Primitive[A]) =>
+            (schema: Self.Primitive[Parameter.Schema.Primitive, A]) =>
               schema match
                 case self: Self.Primitive.Boolean[A] => Parameter.Schema.Primitive.Boolean(self)
                 case self: Self.Primitive.Number[A]  => Parameter.Schema.Primitive.Number(self)
-                case self: Self.Primitive.String[A]  => Parameter.Schema.Primitive.String(self)
+                case self: Self.Primitive.String[Parameter.Schema.Primitive, A] =>
+                  Parameter.Schema.Primitive.String(self)
         )([A] => (value: Parameter.Schema.Primitive[A]) => value.self)
 
     sealed trait Value[A] extends Parameter.Schema[A], Parameter.Schema.Object.Value[A]

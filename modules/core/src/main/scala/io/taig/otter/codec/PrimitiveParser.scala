@@ -10,8 +10,11 @@ import io.taig.otter.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive.Value, String]:
-  override def decode[A](schema: Primitive.Value[A], value: String): Validated[Violations, A] = schema match
+final class PrimitiveParser[S[_]](parser: Decoder[S, String])(quotes: Boolean) extends Decoder[Primitive[S, *], String]:
+  override def decode[A](schema: Primitive[S, A], value: String): Validated[Violations, A] =
+    decode(schema = schema.value, value)
+
+  def decode[A](schema: Primitive.Value[S, A], value: String): Validated[Violations, A] = schema match
     case Primitive.Value.Boolean.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Value.Boolean.Root =>
       value.toBooleanOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
@@ -35,7 +38,7 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive.Value, St
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Parsed(self)       => decode(schema = self, value)
+    case Primitive.Value.String.Parsed(self)       => parser.decode(self, value)
     case Primitive.Value.String.Parser(_, decode, _) =>
       val input =
         if quotes then
@@ -54,7 +57,3 @@ final class PrimitiveParser(quotes: Boolean) extends Decoder[Primitive.Value, St
           .toValidated
           .leftMap(_ => Violations.rootNec(Violation.tpe(name = "string", actual = value)))
       else value.valid
-
-object PrimitiveParser:
-  val Quoted: Decoder[Primitive.Value, String] = PrimitiveDecoder(PrimitiveParser(quotes = true))
-  val Unquoted: Decoder[Primitive.Value, String] = PrimitiveDecoder(PrimitiveParser(quotes = false))

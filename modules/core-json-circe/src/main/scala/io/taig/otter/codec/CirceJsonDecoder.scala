@@ -15,7 +15,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = this)
   val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = toValue)
   val nullable = NullableDecoder(decoder = this, empty = _.isNull)
-  val primitive = PrimitiveDecoder(CirceJsonPrimitiveDecoder)
+  val primitive = PrimitiveDecoder(decoder = CirceJsonPrimitiveDecoder)
   val record = RecordDecoder(
     field = FieldDecoder(key = KeyCodec.Unquoted, value = this, empty = CirceJson.Null)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
@@ -36,7 +36,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .andThen(dictionary.decode(schema = self.self, _))
     case Json.Enumeration(self) => enumeration.decode(schema = self.self, json)
     case Json.Nullable(self)    => nullable.decode(schema = self.self, json)
-    case Json.Primitive(self)   => primitive.decode(schema = self.self.value, json)
+    case Json.Primitive(self)   => primitive.decode(schema = self.self, json)
     case Json.Record(self) =>
       json.asObject
         .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))

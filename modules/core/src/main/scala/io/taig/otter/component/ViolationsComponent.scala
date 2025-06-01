@@ -27,7 +27,7 @@ trait ViolationsComponent[
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       UnionComponent[Union, Value],
       ViolationComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value]:
-  this: PrimitiveComponent.String[Value] =>
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   val violations: Union[Violations] =
     val step: Key[Step] = key.parser(name = "step")(Step.parse(_).leftMap(_.show))(_.show)

@@ -49,7 +49,7 @@ object Header:
     sealed trait Any[A] extends Product, Serializable
 
     sealed trait Primitive[A] extends Header.Schema.Any[A]:
-      def self: Self.Primitive[A]
+      def self: Self.Primitive[Header.Schema.Primitive, A]
 
     object Primitive:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Header.Schema.Primitive[A]
@@ -72,26 +72,28 @@ object Header:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (value: Header.Schema.Primitive.Number[A]) => value.self)
 
-      final case class String[A](self: Self.Primitive.String[A])
+      final case class String[A](self: Self.Primitive.String[Header.Schema.Primitive, A])
           extends Header.Schema.Primitive[A],
             Header.Schema.Value[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[Header.Schema.Primitive.String] = PrimitiveSchemaInvariant
-          .String[Self.Primitive.String]
-          .imapK(
-            [A] => (schema: Self.Primitive.String[A]) => String(schema)
-          )([A] => (value: Header.Schema.Primitive.String[A]) => value.self)
+        given PrimitiveSchemaInvariant.String[Header.Schema.Primitive.String, Header.Schema.Primitive] =
+          PrimitiveSchemaInvariant
+            .String[Self.Primitive.String[Header.Schema.Primitive, *], Header.Schema.Primitive]
+            .imapK(
+              [A] => (schema: Self.Primitive.String[Header.Schema.Primitive, A]) => String(schema)
+            )([A] => (value: Header.Schema.Primitive.String[A]) => value.self)
 
-      given PrimitiveSchemaInvariant[Header.Schema.Primitive] = PrimitiveSchemaInvariant[Self.Primitive]
-        .imapK(
-          [A] =>
-            (schema: Self.Primitive[A]) =>
-              schema match
-                case self: Self.Primitive.Boolean[A] => Boolean(self)
-                case self: Self.Primitive.Number[A]  => Number(self)
-                case self: Self.Primitive.String[A]  => String(self)
-        )([A] => (value: Header.Schema.Primitive[A]) => value.self)
+      given PrimitiveSchemaInvariant[Header.Schema.Primitive, Header.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Header.Schema.Primitive, *], Header.Schema.Primitive]
+          .imapK(
+            [A] =>
+              (schema: Self.Primitive[Header.Schema.Primitive, A]) =>
+                schema match
+                  case self: Self.Primitive.Boolean[A]                         => Boolean(self)
+                  case self: Self.Primitive.Number[A]                          => Number(self)
+                  case self: Self.Primitive.String[Header.Schema.Primitive, A] => String(self)
+          )([A] => (value: Header.Schema.Primitive[A]) => value.self)
 
     sealed trait Value[A] extends Header.Schema[A], Header.Schema.Object.Value[A]
 

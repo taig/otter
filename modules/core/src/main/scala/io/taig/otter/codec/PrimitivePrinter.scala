@@ -2,8 +2,11 @@ package io.taig.otter.codec
 import io.taig.otter.Primitive
 import io.taig.otter.escape
 
-final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive.Value, String]:
-  override def encode[A](schema: Primitive.Value[A], a: A): String = schema match
+final class PrimitivePrinter[S[_]](printer: Encoder[S, String])(quotes: Boolean)
+    extends Encoder[Primitive[S, *], String]:
+  override def encode[A](schema: Primitive[S, A], a: A): String = encode(schema = schema.value, a)
+
+  def encode[A](schema: Primitive.Value[S, A], a: A): String = schema match
     case Primitive.Value.Boolean.Modify(self, _, g)  => encode(schema = self, g(a))
     case Primitive.Value.Boolean.Root                => String.valueOf(a)
     case Primitive.Value.Number.BigDecimal(_, _, _)  => a.toPlainString
@@ -14,12 +17,8 @@ final class PrimitivePrinter(quotes: Boolean) extends Encoder[Primitive.Value, S
     case Primitive.Value.Number.Long(_, _, _)        => String.valueOf(a)
     case Primitive.Value.Number.Modify(self, _, g)   => encode(schema = self, g(a))
     case Primitive.Value.String.Modify(self, _, g)   => encode(schema = self, g(a))
-    case Primitive.Value.String.Parsed(self)         => encode(schema = self, a)
+    case Primitive.Value.String.Parsed(self)         => printer.encode(self, a)
     case Primitive.Value.String.Parser(_, _, encode) => apply(encode(a))
     case Primitive.Value.String.Text(_, _, _)        => apply(a)
 
   def apply(value: String): String = if quotes then s""""${{ escape(value, "\"") }}"""" else value
-
-object PrimitivePrinter:
-  val Quoted: Encoder[Primitive.Value, String] = PrimitivePrinter(quotes = true)
-  val Unquoted: Encoder[Primitive.Value, String] = PrimitivePrinter(quotes = false)

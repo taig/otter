@@ -19,7 +19,7 @@ object FieldComponent:
       extends FieldComponent.Primitive.Boolean[Self, Key, Value, Record],
         FieldComponent.Primitive.Number[Self, Key, Value, Record],
         FieldComponent.Primitive.String[Self, Key, Value, Record]:
-    override def key: PrimitiveComponent[Key]
+    override def key: PrimitiveComponent[Key, Key]
 
   object Primitive:
     trait Boolean[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
@@ -49,7 +49,7 @@ object FieldComponent:
         field(name, key = key.long, value = schema)
 
     trait String[Self[_], Key[_], Value[_], Record[_]] extends FieldComponent[Self, Key, Value, Record]:
-      def key: PrimitiveComponent.String[Key]
+      def key: PrimitiveComponent.String[Key, ?]
 
       final def field[A](name: JString, schema: => Value[A]): Self[A] =
         field(name, key = key.string, value = schema)

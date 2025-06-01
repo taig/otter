@@ -30,7 +30,8 @@ object FormData:
   object Schema:
     sealed trait Any[A] extends Product, Serializable
 
-    sealed trait Primitive[A] extends FormData.Schema.Any[A]
+    sealed trait Primitive[A] extends FormData.Schema.Any[A]:
+      def self: Self.Primitive[FormData.Schema.Primitive, A]
 
     object Primitive:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends FormData.Schema.Primitive[A]
@@ -53,19 +54,19 @@ object FormData:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (formData: FormData.Schema.Primitive.Number[A]) => formData.self)
 
-      final case class String[A](self: Self.Primitive.String[A])
+      final case class String[A](self: Self.Primitive.String[FormData.Schema.Primitive, A])
           extends FormData.Schema.Primitive[A],
             FormData.Schema[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[FormData.Schema.Primitive.String] =
+        given PrimitiveSchemaInvariant.String[FormData.Schema.Primitive.String, FormData.Schema.Primitive] =
           PrimitiveSchemaInvariant
-            .String[Self.Primitive.String]
+            .String[Self.Primitive.String[FormData.Schema.Primitive, *], FormData.Schema.Primitive]
             .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => String(schema)
+              [A] => (schema: Self.Primitive.String[FormData.Schema.Primitive, A]) => String(schema)
             )([A] => (formData: FormData.Schema.Primitive.String[A]) => formData.self)
 
-      given PrimitiveSchemaInvariant[FormData.Schema.Primitive] = ???
+      given PrimitiveSchemaInvariant[FormData.Schema.Primitive, FormData.Schema.Primitive] = ???
 
     final case class Constant[A](self: Self.Constant[FormData.Schema, A]) extends Schema[A]
 

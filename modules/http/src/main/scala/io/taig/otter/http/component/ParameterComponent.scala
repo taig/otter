@@ -9,10 +9,10 @@ trait ParameterComponent
       ConstantComponent[Parameter.Schema.Value.Constant, Parameter.Schema.Primitive.String],
       DictionaryComponent[Parameter.Schema.Object.Dictionary, Key, Parameter.Schema.Value],
       EnumerationComponent[Parameter.Schema.Value.Enumeration, Parameter.Schema.Primitive.String],
-      PrimitiveComponent[Parameter.Schema.Primitive],
+      PrimitiveComponent[Parameter.Schema.Primitive, Parameter.Schema.Primitive.String],
       PrimitiveComponent.Boolean[Parameter.Schema.Primitive.Boolean],
       PrimitiveComponent.Number[Parameter.Schema.Primitive.Number],
-      PrimitiveComponent.String[Parameter.Schema.Primitive.String],
+      PrimitiveComponent.String[Parameter.Schema.Primitive.String, Parameter.Schema.Primitive],
       FieldComponent.Primitive.String[
         Parameter.Schema.Field,
         Key,

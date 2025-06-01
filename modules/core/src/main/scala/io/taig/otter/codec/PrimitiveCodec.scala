@@ -3,7 +3,5 @@ package io.taig.otter.codec
 import io.taig.otter.Primitive
 
 object PrimitiveCodec:
-  val Quoted: Codec[Primitive.Value, String] =
-    Codec(decoder = PrimitiveParser.Quoted, encoder = PrimitivePrinter.Quoted)
-  val Unquoted: Codec[Primitive.Value, String] =
-    Codec(decoder = PrimitiveParser.Unquoted, encoder = PrimitivePrinter.Unquoted)
+  def apply[S[_]](codec: Codec[S, String])(quotes: Boolean): Codec[Primitive[S, *], String] =
+    Codec(decoder = PrimitiveParser(parser = codec)(quotes), encoder = PrimitivePrinter(printer = codec)(quotes))

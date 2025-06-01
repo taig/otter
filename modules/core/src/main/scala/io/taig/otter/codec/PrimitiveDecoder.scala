@@ -12,13 +12,12 @@ import io.taig.otter.Violations
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends Decoder[Primitive.Value, T]:
+final class PrimitiveDecoder[S[_], T](decoder: Decoder[Primitive[S, *], T]) extends Decoder[Primitive[S, *], T]:
   given Order[JBigInteger] = Order.fromComparable
   given Order[JBigDecimal] = Order.fromComparable
 
-  def decode[A](schema: Primitive.Value[A], value: T): Validated[Violations, A] = schema match
-    case schema: Primitive.Value.Boolean[?] => decoder.decode(schema, value)
-    case schema @ Primitive.Value.Number.BigDecimal(minimum, maximum, multiple) =>
+  override def decode[A](schema: Primitive[S, A], value: T): Validated[Violations, A] = schema match
+    case schema @ Primitive.Number(Primitive.Value.Number.BigDecimal(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -41,7 +40,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Value.Number.BigInteger(minimum, maximum, multiple) =>
+    case schema @ Primitive.Number(Primitive.Value.Number.BigInteger(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -64,7 +63,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Value.Number.Double(minimum, maximum, multiple) =>
+    case schema @ Primitive.Number(Primitive.Value.Number.Double(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -87,7 +86,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Value.Number.Float(minimum, maximum, multiple) =>
+    case schema @ Primitive.Number(Primitive.Value.Number.Float(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -110,7 +109,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Value.Number.Int(minimum, maximum, multiple) =>
+    case schema @ Primitive.Number(Primitive.Value.Number.Int(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -133,7 +132,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case schema @ Primitive.Value.Number.Long(minimum, maximum, multiple) =>
+    case schema @ Primitive.Number(Primitive.Value.Number.Long(minimum, maximum, multiple), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -156,11 +155,7 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.Number.Multiple(multiple), value, hint = none))
             )
           }).as(value)
-    case Primitive.Value.Number.Modify(self, f, _)       => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Modify(self, f, _)       => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Parsed(self)             => decoder.decode(schema = self, value)
-    case schema @ Primitive.Value.String.Parser(_, _, _) => decoder.decode(schema, value)
-    case schema @ Primitive.Value.String.Text(minimum, maximum, matches) =>
+    case schema @ Primitive.String(Primitive.Value.String.Text(minimum, maximum, matches), _) =>
       decoder
         .decode(schema, value)
         .andThen: value =>
@@ -185,3 +180,4 @@ final class PrimitiveDecoder[T](decoder: Decoder[Primitive.Value, T]) extends De
               Violations.rootNec(Violation(Constraint.Primitive.String.Matches(pattern), value, hint = none))
             )
           }).as(value)
+    case schema => decode(schema, value)

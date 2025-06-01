@@ -8,15 +8,14 @@ import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 
-trait PrimitiveSchemaInvariant[Self[_]]
+trait PrimitiveSchemaInvariant[Self[_], Primitive[_]]
     extends PrimitiveSchemaInvariant.Boolean[Self],
       PrimitiveSchemaInvariant.Number[Self],
-      PrimitiveSchemaInvariant.String[Self]:
-  self =>
-
+      PrimitiveSchemaInvariant.String[Self, Primitive]:
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): PrimitiveSchemaInvariant[T] = ???
+  ): PrimitiveSchemaInvariant[T, Primitive] =
+    ???
 
 object PrimitiveSchemaInvariant:
   trait Boolean[Self[_]] extends SchemaInvariant[Self]:
@@ -122,12 +121,22 @@ object PrimitiveSchemaInvariant:
         self: PrimitiveSchemaInvariant.Number[Self]
     ): PrimitiveSchemaInvariant.Number[Self] = self
 
-  trait String[Self[_]] extends SchemaInvariant[Self]:
+  trait String[Self[_], Primitive[_]] extends SchemaInvariant[Self]:
     self =>
+
+    def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
+
+    def parser[A](
+        name: JString,
+        decode: JString => Either[JString, A],
+        encode: A => JString
+    ): Self[A]
+
+    def parsed[A](schema: Primitive[A]): Self[A]
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchemaInvariant.String[T] = new String[T]:
+    ): PrimitiveSchemaInvariant.String[T, Primitive] = new String[T, Primitive]:
       override def string(
           minimum: Option[Int],
           maximum: Option[Int],
@@ -140,23 +149,17 @@ object PrimitiveSchemaInvariant:
           encode: A => JString
       ): T[A] = fK(self.parser(name, decode, encode))
 
+      override def parsed[A](schema: Primitive[A]): T[A] = fK(self.parsed(schema))
+
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
       override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
 
-    def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
-
-    def parser[A](
-        name: JString,
-        decode: JString => Either[JString, A],
-        encode: A => JString
-    ): Self[A]
-
   object String:
-    inline def apply[Self[_]](using
-        self: PrimitiveSchemaInvariant.String[Self]
-    ): PrimitiveSchemaInvariant.String[Self] = self
+    inline def apply[Self[_], Primitive[_]](using
+        self: PrimitiveSchemaInvariant.String[Self, Primitive]
+    ): PrimitiveSchemaInvariant.String[Self, Primitive] = self
 
-  inline def apply[Self[_]](using
-      self: PrimitiveSchemaInvariant[Self]
-  ): PrimitiveSchemaInvariant[Self] = self
+  inline def apply[Self[_], Primitive[_]](using
+      self: PrimitiveSchemaInvariant[Self, Primitive]
+  ): PrimitiveSchemaInvariant[Self, Primitive] = self

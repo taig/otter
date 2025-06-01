@@ -68,7 +68,7 @@ object Query:
     sealed trait Any[A] extends Product, Serializable
 
     sealed trait Primitive[A] extends Query.Schema.Any[A]:
-      def self: Self.Primitive[A]
+      def self: Self.Primitive[Query.Schema.Primitive, A]
 
     object Primitive:
       final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Query.Schema.Primitive[A]
@@ -91,25 +91,26 @@ object Query:
               [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
             )([A] => (schema: Query.Schema.Primitive.Number[A]) => schema.self)
 
-      final case class String[A](self: Self.Primitive.String[A])
+      final case class String[A](self: Self.Primitive.String[Query.Schema.Primitive, A])
           extends Query.Schema.Primitive[A],
             Query.Schema.Value[A]
 
       object String:
-        given PrimitiveSchemaInvariant.String[Query.Schema.Primitive.String] = PrimitiveSchemaInvariant
-          .String[Self.Primitive.String]
-          .imapK(
-            [A] => (schema: Self.Primitive.String[A]) => String(schema)
-          )([A] => (schema: Query.Schema.Primitive.String[A]) => schema.self)
+        given PrimitiveSchemaInvariant.String[Query.Schema.Primitive.String, Query.Schema.Primitive] =
+          PrimitiveSchemaInvariant
+            .String[Self.Primitive.String[Query.Schema.Primitive, *], Query.Schema.Primitive]
+            .imapK(
+              [A] => (schema: Self.Primitive.String[Query.Schema.Primitive, A]) => String(schema)
+            )([A] => (schema: Query.Schema.Primitive.String[A]) => schema.self)
 
-      given PrimitiveSchemaInvariant[Query.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive].imapK(
+      given PrimitiveSchemaInvariant[Query.Schema.Primitive, Query.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *], Query.Schema.Primitive].imapK(
           [A] =>
-            (self: Self.Primitive[A]) =>
+            (self: Self.Primitive[Query.Schema.Primitive, A]) =>
               self match
-                case self: Self.Primitive.Boolean[A] => Query.Schema.Primitive.Boolean(self)
-                case self: Self.Primitive.Number[A]  => Query.Schema.Primitive.Number(self)
-                case self: Self.Primitive.String[A]  => Query.Schema.Primitive.String(self)
+                case self: Self.Primitive.Boolean[A]                        => Query.Schema.Primitive.Boolean(self)
+                case self: Self.Primitive.Number[A]                         => Query.Schema.Primitive.Number(self)
+                case self: Self.Primitive.String[Query.Schema.Primitive, A] => Query.Schema.Primitive.String(self)
         )([A] => (schema: Query.Schema.Primitive[A]) => schema.self)
 
     sealed trait Value[A] extends Query.Schema[A]

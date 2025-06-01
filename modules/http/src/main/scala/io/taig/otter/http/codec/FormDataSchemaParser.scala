@@ -26,8 +26,8 @@ object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
     case FormData.Schema.Constant(self)    => constant.decode(schema = self, value)
     case FormData.Schema.Enumeration(self) => enumeration.decode(schema = self, value)
     case FormData.Schema.Nullable(self)    => nullable.decode(schema = self, value)
-    case FormData.Schema.Primitive.String(self) =>
+    case schema: FormData.Schema.Primitive.String[A] =>
       value
         .toValid(Violations.rootNec(Violation.required))
-        .andThen(PrimitiveParser.Unquoted.decode(schema = self.value, _))
+        .andThen(FormDataSchemaPrimitiveParser.decode(schema, _))
     case FormData.Schema.Union(self) => union.decode(schema = self, value)

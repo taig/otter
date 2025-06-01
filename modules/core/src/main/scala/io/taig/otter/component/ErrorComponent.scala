@@ -4,14 +4,16 @@ import io.taig.otter.Keys.name
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
 
-trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
+trait ErrorComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Primitive[a] <: Value[a], Field[_], Key[_], Value[
+    _
+]](using
     FieldSchemaInvariant[Field, Key, Value],
     RecordSchemaInvariant[Record, Field],
     SchemaInvariant[Record]
-) extends ConstantComponent.Primitive.String[Constant, Value],
+) extends ConstantComponent.Primitive.String[Constant, Primitive, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       RecordComponent[Record, Field]:
-  this: PrimitiveComponent.String[Value] =>
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   def error[A](tpe: String, schema: => Value[A]): Record[A] =
     (field(name = "error", schema = constant(tpe)) :* field(name = "value", schema))

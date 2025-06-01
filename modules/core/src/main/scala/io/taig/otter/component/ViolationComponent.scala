@@ -22,10 +22,10 @@ trait ViolationComponent[
 ) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],
-      PrimitiveComponent[Primitive],
+      PrimitiveComponent[Primitive, Primitive],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       RecordComponent[Record, Field]:
-  this: PrimitiveComponent.String[Value] =>
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   val violation: Record[Violation] = (
     field("constraint", constraint) :*

@@ -2,13 +2,20 @@ package io.taig.otter.component
 import io.taig.otter.operation.FieldSchemaInvariant
 import io.taig.otter.operation.RecordSchemaInvariant
 
-trait SumComponent[Constant[a] <: Value[a], Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
+trait SumComponent[
+    Constant[a] <: Value[a],
+    Primitive[a] <: Value[a],
+    Record[a] <: Value[a],
+    Field[_],
+    Key[_],
+    Value[_]
+](using
     FieldSchemaInvariant[Field, Key, Value],
     RecordSchemaInvariant[Record, Field]
-) extends ConstantComponent.Primitive.String[Constant, Value],
+) extends ConstantComponent.Primitive.String[Constant, Primitive, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
       RecordComponent[Record, Field]:
-  this: PrimitiveComponent.String[Value] =>
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   def explicit(name: String): Record[Unit] = field(name = "type", constant(name)).toRecord
 

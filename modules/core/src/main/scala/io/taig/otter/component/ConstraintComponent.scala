@@ -22,11 +22,11 @@ trait ConstraintComponent[
 ) extends ComparisonComponent[Nullable, Record, Field, Key, Value],
       DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       FieldComponent.Primitive.String[Field, Key, Value, Record],
-      PrimitiveComponent[Primitive],
+      PrimitiveComponent[Primitive, Primitive],
       NullableComponent[Nullable, Value],
       RecordComponent[Record, Field],
-      SumComponent[Constant, Record, Field, Key, Value]:
-  this: PrimitiveComponent.String[Value] =>
+      SumComponent[Constant, Primitive, Record, Field, Key, Value]:
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   val constraint: Union[Constraint] =
     val col: Union[Constraint.Collection] = (

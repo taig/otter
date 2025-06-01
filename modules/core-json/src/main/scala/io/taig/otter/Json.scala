@@ -48,13 +48,14 @@ object Json:
         [A] => (schema: Self.Nullable[Json, A]) => Nullable(schema)
       )([A] => (json: Json.Nullable[A]) => json.self)
 
-  final case class Primitive[A](self: Self.Primitive[A]) extends Json[A]
+  final case class Primitive[A](self: Self.Primitive[Json.Primitive, A]) extends Json[A]
 
   object Primitive:
-    given PrimitiveSchemaInvariant[Json.Primitive] =
-      PrimitiveSchemaInvariant[Self.Primitive].imapK(
-        [A] => (schema: Self.Primitive[A]) => Primitive(schema)
-      )([A] => (json: Json.Primitive[A]) => json.self)
+    given PrimitiveSchemaInvariant[Json.Primitive, Json.Primitive] =
+      PrimitiveSchemaInvariant[Self.Primitive[Json.Primitive, *], Json.Primitive]
+        .imapK(
+          [A] => (schema: Self.Primitive[Json.Primitive, A]) => Primitive(schema)
+        )([A] => (json: Json.Primitive[A]) => json.self)
 
   final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
 

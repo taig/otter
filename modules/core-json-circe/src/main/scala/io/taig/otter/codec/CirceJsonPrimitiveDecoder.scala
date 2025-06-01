@@ -11,9 +11,13 @@ import io.taig.otter.toValue
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import io.taig.otter.Json
 
-object CirceJsonPrimitiveDecoder extends Decoder[Primitive.Value, CirceJson]:
-  override def decode[A](schema: Primitive.Value[A], json: CirceJson): Validated[Violations, A] = schema match
+object CirceJsonPrimitiveDecoder extends Decoder[Primitive[Json.Primitive, *], CirceJson]:
+  override def decode[A](schema: Primitive[Json.Primitive, A], json: CirceJson): Validated[Violations, A] =
+    decode(schema = schema.value, json)
+
+  def decode[A](schema: Primitive.Value[Json.Primitive, A], json: CirceJson): Validated[Violations, A] = schema match
     case Primitive.Value.Boolean.Root               => decode[Boolean](name = "boolean", json)
     case _: Primitive.Value.Number.BigDecimal       => decode[JBigDecimal](name = "bigDecimal", json)
     case _: Primitive.Value.Number.BigInteger       => decode[JBigInteger](name = "bigInteger", json)
@@ -25,8 +29,7 @@ object CirceJsonPrimitiveDecoder extends Decoder[Primitive.Value, CirceJson]:
     case Primitive.Value.Number.Modify(self, f, _)  => decode(schema = self, json).map(f)
     case Primitive.Value.String.Modify(self, f, _)  => decode(schema = self, json).map(f)
     case Primitive.Value.String.Parsed(self) =>
-      decode[String](name = "string", json).andThen: value =>
-        PrimitiveParser.Unquoted.decode(schema = self, value)
+      decode[String](name = "string", json).andThen(JsonPrimitiveParser.decode(schema = self, _))
     case Primitive.Value.String.Parser(name, f, _) =>
       decode[String](name = "string", json).andThen: value =>
         f(value)

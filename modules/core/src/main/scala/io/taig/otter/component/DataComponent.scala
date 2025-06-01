@@ -24,10 +24,10 @@ trait DataComponent[
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
-      PrimitiveComponent[Primitive],
-      SumComponent[Constant, Record, Field, Key, Value],
+      PrimitiveComponent[Primitive, Primitive],
+      SumComponent[Constant, Primitive, Record, Field, Key, Value],
       UnionComponent[Union, Value]:
-  this: PrimitiveComponent.String[Value] =>
+  this: PrimitiveComponent.String[Primitive, Primitive] =>
 
   object data:
     val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double

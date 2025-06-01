@@ -18,10 +18,10 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-trait PrimitiveComponent[Self[_]]
+trait PrimitiveComponent[Self[_], String[_]]
     extends PrimitiveComponent.Boolean[Self],
       PrimitiveComponent.Number[Self],
-      PrimitiveComponent.String[Self]
+      PrimitiveComponent.String[String, Self]
 
 object PrimitiveComponent:
   trait Boolean[+Self[_]](using self: PrimitiveSchemaInvariant.Boolean[Self]):
@@ -124,7 +124,7 @@ object PrimitiveComponent:
 
     final val long: Self[SLong] = long()
 
-  trait String[+Self[_]](using self: PrimitiveSchemaInvariant.String[Self]):
+  trait String[+Self[_], -Primitive[_]](using self: PrimitiveSchemaInvariant.String[Self, Primitive]):
     final def string(
         minimum: Argument[SInt] = Argument.Default,
         maximum: Argument[SInt] = Argument.Default,
