@@ -6,13 +6,13 @@ import io.taig.otter.http.Parameter
 
 trait ParameterComponent
     extends CollectionComponent[Parameter.Schema.Array.Collection, Parameter.Schema.Value],
-      ConstantComponent[Parameter.Schema.Value.Constant, Parameter.Schema.Value.String],
+      ConstantComponent[Parameter.Schema.Value.Constant, Parameter.Schema.Primitive.String],
       DictionaryComponent[Parameter.Schema.Object.Dictionary, Key, Parameter.Schema.Value],
-      EnumerationComponent[Parameter.Schema.Value.Enumeration, Parameter.Schema.Value.String],
-      PrimitiveComponent[Parameter.Schema.Any],
-      PrimitiveComponent.Boolean[Parameter.Schema.Any.Boolean],
-      PrimitiveComponent.Number[Parameter.Schema.Any.Number],
-      PrimitiveComponent.String[Parameter.Schema.Value.String],
+      EnumerationComponent[Parameter.Schema.Value.Enumeration, Parameter.Schema.Primitive.String],
+      PrimitiveComponent[Parameter.Schema.Primitive],
+      PrimitiveComponent.Boolean[Parameter.Schema.Primitive.Boolean],
+      PrimitiveComponent.Number[Parameter.Schema.Primitive.Number],
+      PrimitiveComponent.String[Parameter.Schema.Primitive.String],
       FieldComponent.Primitive.String[
         Parameter.Schema.Field,
         Key,
