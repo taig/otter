@@ -50,45 +50,68 @@ object Parameter:
 
     given [A]: Show[Parameter.Value[A]] = Show.fromToString
 
-  sealed trait Schema[A] extends Product with Serializable
+  sealed trait Schema[A] extends Parameter.Schema.Any[A]
 
   object Schema:
+    sealed trait Any[A] extends Product, Serializable
+
+    object Any:
+      final case class Boolean[A](self: Self.Primitive.Boolean[A]) extends Parameter.Schema.Any[A]
+
+      object Boolean:
+        given PrimitiveSchemaInvariant.Boolean[Parameter.Schema.Any.Boolean] =
+          PrimitiveSchemaInvariant
+            .Boolean[Self.Primitive.Boolean]
+            .imapK(
+              [A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema)
+            )([A] => (value: Parameter.Schema.Any.Boolean[A]) => value.self)
+
+      final case class Number[A](self: Self.Primitive.Number[A]) extends Parameter.Schema.Any[A]
+
+      object Number:
+        given PrimitiveSchemaInvariant.Number[Parameter.Schema.Any.Number] =
+          PrimitiveSchemaInvariant
+            .Number[Self.Primitive.Number]
+            .imapK(
+              [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
+            )([A] => (value: Parameter.Schema.Any.Number[A]) => value.self)
+
     sealed trait Value[A] extends Parameter.Schema[A], Parameter.Schema.Object.Value[A]
 
     object Value:
-      final case class Constant[A](self: Self.Constant[Parameter.Schema.Value.Primitive, A])
+      final case class Constant[A](self: Self.Constant[Parameter.Schema.Value.String, A])
           extends Parameter.Schema.Value[A]
 
       object Constant:
-        given ConstantSchemaInvariant[Parameter.Schema.Value.Constant, Parameter.Schema.Value.Primitive] =
+        given ConstantSchemaInvariant[Parameter.Schema.Value.Constant, Parameter.Schema.Value.String] =
           ConstantSchemaInvariant[
-            Self.Constant[Parameter.Schema.Value.Primitive, *],
-            Parameter.Schema.Value.Primitive
+            Self.Constant[Parameter.Schema.Value.String, *],
+            Parameter.Schema.Value.String
           ].imapK(
-            [A] => (schema: Self.Constant[Parameter.Schema.Value.Primitive, A]) => Constant(schema)
+            [A] => (schema: Self.Constant[Parameter.Schema.Value.String, A]) => Constant(schema)
           )([A] => (value: Parameter.Schema.Value.Constant[A]) => value.self)
 
-      final case class Enumeration[A](self: Self.Enumeration[Parameter.Schema.Value.Primitive, A])
+      final case class Enumeration[A](self: Self.Enumeration[Parameter.Schema.Value.String, A])
           extends Parameter.Schema.Value[A]
 
       object Enumeration:
-        given EnumerationSchemaInvariant[Parameter.Schema.Value.Enumeration, Parameter.Schema.Value.Primitive] =
+        given EnumerationSchemaInvariant[Parameter.Schema.Value.Enumeration, Parameter.Schema.Value.String] =
           EnumerationSchemaInvariant[
-            Self.Enumeration[Parameter.Schema.Value.Primitive, *],
-            Parameter.Schema.Value.Primitive
+            Self.Enumeration[Parameter.Schema.Value.String, *],
+            Parameter.Schema.Value.String
           ].imapK(
-            [A] => (schema: Self.Enumeration[Parameter.Schema.Value.Primitive, A]) => Enumeration(schema)
+            [A] => (schema: Self.Enumeration[Parameter.Schema.Value.String, A]) => Enumeration(schema)
           )([A] => (value: Parameter.Schema.Value.Enumeration[A]) => value.self)
 
-      final case class Primitive[A](self: Self.Primitive.String[A]) extends Parameter.Schema.Value[A]
+      final case class String[A](self: Self.Primitive.String[A]) extends Parameter.Schema.Value[A]
 
-      object Primitive:
-        given PrimitiveSchemaInvariant.String[Parameter.Schema.Value.Primitive] =
+      object String:
+        given PrimitiveSchemaInvariant.String[Parameter.Schema.Value.String] =
           PrimitiveSchemaInvariant
             .String[Self.Primitive.String]
             .imapK(
-              [A] => (schema: Self.Primitive.String[A]) => Primitive(schema)
-            )([A] => (value: Parameter.Schema.Value.Primitive[A]) => value.self)
+              [A] => (schema: Self.Primitive.String[A]) => String(schema)
+            )([A] => (value: Parameter.Schema.Value.String[A]) => value.self)
 
       final case class Union[A](self: Self.Union[Parameter.Schema.Value, A]) extends Parameter.Schema.Value[A]
 
@@ -105,14 +128,14 @@ object Parameter:
         override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Parameter.Schema.Value[B] = fa match
           case Constant(self)    => Constant(self.imap(f)(g))
           case Enumeration(self) => Enumeration(self.imap(f)(g))
-          case Primitive(self)   => Primitive(self.imap(f)(g))
+          case String(self)   => String(self.imap(f)(g))
           case Union(self)       => Union(self.imap(f)(g))
 
         override def enriched[A]: Enriched[Parameter.Schema.Value[A]] = new Enriched[Parameter.Schema.Value[A]]:
           override def metadata(a: Parameter.Schema.Value[A]): Metadata = a match
             case Constant(self)    => self.metadata
             case Enumeration(self) => self.metadata
-            case Primitive(self)   => self.metadata
+            case String(self)   => self.metadata
             case Union(self)       => self.metadata
 
           override def modifyMetadata(a: Parameter.Schema.Value[A])(
@@ -121,7 +144,7 @@ object Parameter:
             a match
               case Constant(self)    => Constant(self.metadata(f))
               case Enumeration(self) => Enumeration(self.metadata(f))
-              case Primitive(self)   => Primitive(self.metadata(f))
+              case String(self)   => String(self.metadata(f))
               case Union(self)       => Union(self.metadata(f))
 
     sealed trait Array[A] extends Parameter.Schema[A]

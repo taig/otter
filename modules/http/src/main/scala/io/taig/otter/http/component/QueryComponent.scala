@@ -10,10 +10,13 @@ import io.taig.otter.http.Query
 
 trait QueryComponent
     extends CollectionComponent[Query.Schema.Array.Collection, Query.Schema.Value],
-      ConstantComponent[Query.Schema.Value.Constant, Query.Schema.Value.Primitive],
-      EnumerationComponent[Query.Schema.Value.Enumeration, Query.Schema.Value.Primitive],
+      ConstantComponent[Query.Schema.Value.Constant, Query.Schema.Value.String],
+      EnumerationComponent[Query.Schema.Value.Enumeration, Query.Schema.Value.String],
       NullableComponent[Query.Schema.Nullable, Query.Schema],
-      PrimitiveComponent.String[Query.Schema.Value.Primitive],
+      PrimitiveComponent[Query.Schema.Any],
+      PrimitiveComponent.Boolean[Query.Schema.Any.Boolean],
+      PrimitiveComponent.Number[Query.Schema.Any.Number],
+      PrimitiveComponent.String[Query.Schema.Value.String],
       TupleComponent[Query.Schema.Array.Tuple, Query.Schema.Value]
 
 object QueryComponent extends QueryComponent

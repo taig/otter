@@ -12,5 +12,5 @@ object ParameterSchemaValuePrinter extends Encoder[Parameter.Schema.Value, Strin
   override def encode[A](schema: Parameter.Schema.Value[A], a: A): String = schema match
     case Parameter.Schema.Value.Constant(self)    => constant.encode(schema = self, a)
     case Parameter.Schema.Value.Enumeration(self) => enumeration.encode(schema = self, a)
-    case Parameter.Schema.Value.Primitive(self)   => PrimitivePrinter.Unquoted.encode(schema = self.value, a)
+    case Parameter.Schema.Value.String(self)   => PrimitivePrinter.Unquoted.encode(schema = self.value, a)
     case Parameter.Schema.Value.Union(self)       => union.encode(schema = self, a)

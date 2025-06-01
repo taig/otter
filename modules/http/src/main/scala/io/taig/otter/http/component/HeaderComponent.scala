@@ -6,10 +6,13 @@ import io.taig.otter.http.Header
 
 trait HeaderComponent
     extends CollectionComponent[Header.Schema.Array.Collection, Header.Schema.Value],
-      ConstantComponent[Header.Schema.Value.Constant, Header.Schema.Value.Primitive],
+      ConstantComponent[Header.Schema.Value.Constant, Header.Schema.Value.String],
       DictionaryComponent[Header.Schema.Object.Dictionary, Key, Header.Schema.Value],
-      EnumerationComponent[Header.Schema.Value.Enumeration, Header.Schema.Value.Primitive],
-      PrimitiveComponent.String[Header.Schema.Value.Primitive],
+      EnumerationComponent[Header.Schema.Value.Enumeration, Header.Schema.Value.String],
+      PrimitiveComponent[Header.Schema.Any],
+      PrimitiveComponent.Boolean[Header.Schema.Any.Boolean],
+      PrimitiveComponent.Number[Header.Schema.Any.Number],
+      PrimitiveComponent.String[Header.Schema.Value.String],
       FieldComponent.Primitive.String[
         Header.Schema.Field,
         Key,
