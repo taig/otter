@@ -1,7 +1,6 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Key
-import io.taig.otter.Primitive
 
 final class KeyPrinter /*(printer: Encoder[Primitive.Value, String])*/ extends Encoder[Key, String]:
   val constant = ConstantEncoder(encoder = this)

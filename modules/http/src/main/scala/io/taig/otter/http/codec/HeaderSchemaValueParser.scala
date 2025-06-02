@@ -11,7 +11,7 @@ object HeaderSchemaValueParser extends Decoder[Header.Schema.Value, String]:
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Header.Schema.Value[A], value: String): Validated[Violations, A] = schema match
-    case Header.Schema.Primitive.String(self)  => PrimitiveParser.Unquoted.decode(schema = self.value, value)
-    case Header.Schema.Value.Constant(self)    => constant.decode(schema = self, value)
-    case Header.Schema.Value.Enumeration(self) => enumeration.decode(schema = self, value)
-    case Header.Schema.Value.Union(self)       => union.decode(schema = self, value)
+    case schema: Header.Schema.Primitive.String[A] => HeaderSchemaPrimitiveParser.decode(schema, value)
+    case Header.Schema.Value.Constant(self)        => constant.decode(schema = self, value)
+    case Header.Schema.Value.Enumeration(self)     => enumeration.decode(schema = self, value)
+    case Header.Schema.Value.Union(self)           => union.decode(schema = self, value)

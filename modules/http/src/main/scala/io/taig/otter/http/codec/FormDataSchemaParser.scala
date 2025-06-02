@@ -10,7 +10,6 @@ import io.taig.otter.codec.ConstantDecoder
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.EnumerationDecoder
 import io.taig.otter.codec.NullableDecoder
-import io.taig.otter.codec.PrimitiveParser
 import io.taig.otter.codec.UnionDecoder
 import io.taig.otter.http.FormData
 import io.taig.otter.http.FormData.Schema

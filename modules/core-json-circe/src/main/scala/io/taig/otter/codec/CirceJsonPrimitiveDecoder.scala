@@ -4,6 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Decoder as CirceDecoder
 import io.circe.Json as CirceJson
+import io.taig.otter.Json
 import io.taig.otter.Primitive
 import io.taig.otter.Violation
 import io.taig.otter.Violations
@@ -11,7 +12,6 @@ import io.taig.otter.toValue
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Json
 
 object CirceJsonPrimitiveDecoder extends Decoder[Primitive[Json.Primitive, *], CirceJson]:
   override def decode[A](schema: Primitive[Json.Primitive, A], json: CirceJson): Validated[Violations, A] =

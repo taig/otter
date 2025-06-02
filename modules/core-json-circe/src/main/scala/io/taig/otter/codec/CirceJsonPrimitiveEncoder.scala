@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
 import io.circe.Json as CirceJson
-import io.taig.otter.Primitive
 import io.taig.otter.Json
+import io.taig.otter.Primitive
 
 object CirceJsonPrimitiveEncoder extends Encoder[Primitive.Value[Json.Primitive, *], CirceJson]:
   override def encode[A](schema: Primitive.Value[Json.Primitive, A], a: A): CirceJson = schema match

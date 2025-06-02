@@ -16,7 +16,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
         (schema: Json[A], a: A) =>
           schema match
             case schema: Json.Primitive[A] => JsonPrimitivePrinter.encode(schema, a).some
-            case _                    => none
+            case _                         => none
   ).map(_.getOrElse(Typescript.Any)).map[TypescriptState[Typescript]](State.pure)
   val dictionary = DictionaryTypescriptRenderer(key = KeyTypescriptRenderer.map(State.pure), value = this)
   val enumeration = EnumerationTypescriptRenderer(printer = JsonPrimitivePrinter)
