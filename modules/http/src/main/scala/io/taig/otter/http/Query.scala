@@ -205,7 +205,7 @@ object Query:
           [A] => (schema: Self.Nullable[Query.Schema, A]) => Nullable(schema)
         )([A] => (schema: Query.Schema.Nullable[A]) => schema.self)
 
-    given SchemaInvariant[Query.Schema] = new SchemaInvariant[Query.Schema]:
+    given SchemaInvariant.Nullable[Query.Schema, Query.Schema.Nullable] with
       override def imap[A, B](fa: Query.Schema[A])(f: A => B)(g: B => A): Query.Schema[B] =
         fa match
           case value: Query.Schema.Value[A]       => value.imap(f)(g)

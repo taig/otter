@@ -89,7 +89,7 @@ object Json:
         [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
 
-  given SchemaInvariant[Json] with
+  given SchemaInvariant.Nullable[Json, Json.Nullable] with
     override def enriched[A]: Enriched[Json[A]] = new Enriched[Json[A]]:
       override def metadata(a: Json[A]): Metadata = a match
         case Collection(self)  => self.metadata

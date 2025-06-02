@@ -110,10 +110,11 @@ object Primitive:
         metadata = Metadata.Empty
       )
 
-      extension [A](schema: Value[A]) override def parsed: String[Value, A] = Primitive.String(
-        value = Primitive.Value.String.Parsed(schema),
-        metadata = Metadata.Empty
-      )
+      extension [A](schema: Value[A])
+        override def parsed: String[Value, A] = Primitive.String(
+          value = Primitive.Value.String.Parsed(schema),
+          metadata = Metadata.Empty
+        )
 
       override def imap[A, B](fa: Primitive.String[Value, A])(f: A => B)(g: B => A): Primitive.String[Value, B] =
         fa.copy(value = fa.value.imap(f)(g))

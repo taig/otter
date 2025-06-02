@@ -18,7 +18,8 @@ trait ViolationComponent[
 ](using
     FieldSchemaInvariant[Field, Key, Value],
     NullableSchemaInvariant[Nullable, Value],
-    RecordSchemaInvariant[Record, Field]
+    RecordSchemaInvariant[Record, Field],
+    SchemaInvariant.Nullable[Value, Nullable]
 ) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
       NullableComponent[Nullable, Value],

@@ -20,7 +20,8 @@ trait DataComponent[
     CollectionSchemaInvariant[Collection, Value],
     DictionarySchemaInvariant[Dictionary, Key, Value],
     NullableSchemaInvariant[Nullable, Value],
-    SchemaInvariant[Union]
+    SchemaInvariant[Union],
+    SchemaInvariant.Nullable[Value, Nullable]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       NullableComponent[Nullable, Value],
