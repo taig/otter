@@ -110,7 +110,7 @@ object Primitive:
         metadata = Metadata.Empty
       )
 
-      override def parsed[A](schema: Value[A]): Primitive.String[Value, A] = Primitive.String(
+      extension [A](schema: Value[A]) override def parsed: String[Value, A] = Primitive.String(
         value = Primitive.Value.String.Parsed(schema),
         metadata = Metadata.Empty
       )

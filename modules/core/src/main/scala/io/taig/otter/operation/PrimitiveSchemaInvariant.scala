@@ -60,7 +60,7 @@ trait PrimitiveSchemaInvariant[Self[_], Primitive[_]]
       fK(self.string(minimum, maximum, matches))
     override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
       fK(self.parser(name, decode, encode))
-    override def parsed[A](schema: Primitive[A]): T[A] = fK(self.parsed(schema))
+    extension [A](schema: Primitive[A]) override def parsed: T[A] = fK(self.parsed(schema))
 
 object PrimitiveSchemaInvariant:
   trait Boolean[Self[_]] extends SchemaInvariant[Self]:
@@ -177,7 +177,7 @@ object PrimitiveSchemaInvariant:
         encode: A => JString
     ): Self[A]
 
-    def parsed[A](schema: Primitive[A]): Self[A]
+    extension [A](schema: Primitive[A]) def parsed: Self[A]
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
@@ -194,7 +194,7 @@ object PrimitiveSchemaInvariant:
           encode: A => JString
       ): T[A] = fK(self.parser(name, decode, encode))
 
-      override def parsed[A](schema: Primitive[A]): T[A] = fK(self.parsed(schema))
+      extension [A](schema: Primitive[A]) override def parsed: T[A] = fK(self.parsed(schema))
 
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 

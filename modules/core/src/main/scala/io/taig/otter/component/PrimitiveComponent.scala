@@ -150,8 +150,6 @@ object PrimitiveComponent:
     final def parser[A](name: JString)(f: JString => Either[JString, A])(g: A => JString): Self[A] =
       self.parser(name, decode = f, encode = g)
 
-    extension [A](schema: Primitive[A]) def parsed: Self[A] = self.parsed(schema)
-
     final val uuid: Self[UUID] = parser(name = "uuid") { value =>
       Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
     }(_.show)
