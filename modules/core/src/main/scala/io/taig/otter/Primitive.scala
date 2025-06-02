@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.syntax.all.*
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -22,7 +23,7 @@ object Primitive:
   final case class Boolean[A](value: Primitive.Value.Boolean[A], metadata: Metadata) extends Primitive[Nothing, A]
 
   object Boolean:
-    given PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] with
+    given schema: PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] with
       override val boolean: Primitive.Boolean[SBoolean] =
         Boolean(value = Value.Boolean.Root, metadata = Metadata.Empty)
       override def imap[A, B](fa: Primitive.Boolean[A])(f: A => B)(g: B => A): Primitive.Boolean[B] =
@@ -36,7 +37,7 @@ object Primitive:
   final case class Number[A](value: Primitive.Value.Number[A], metadata: Metadata) extends Primitive[Nothing, A]
 
   object Number:
-    given PrimitiveSchemaInvariant.Number[Primitive.Number] with
+    given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] with
       override def jBigDecimal(
           minimum: Option[Comparison[JBigDecimal]],
           maximum: Option[Comparison[JBigDecimal]],
@@ -90,7 +91,7 @@ object Primitive:
   final case class String[+S[_], A](value: Primitive.Value.String[S, A], metadata: Metadata) extends Primitive[S, A]
 
   object String:
-    given [Value[_]]: PrimitiveSchemaInvariant.String[Primitive.String[Value, *], Value] with
+    given schema[Value[_]]: PrimitiveSchemaInvariant.String[Primitive.String[Value, *], Value] with
       override def parser[A](
           name: JString,
           decode: JString => Either[JString, A],
@@ -124,7 +125,26 @@ object Primitive:
         ): Primitive.String[Value, A] =
           a.copy(metadata = f(a.metadata))
 
-  given [Value[_]]: PrimitiveSchemaInvariant[Primitive[Value, *], Value] = ???
+  given [Value[_]]: PrimitiveSchemaInvariant[Primitive[Value, *], Value] =
+    new PrimitiveSchemaInvariant[Primitive[Value, *], Value]:
+      self =>
+      private val string = Primitive.String.schema[Value]
+
+      export Boolean.schema.boolean
+      export Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
+      export string.{parsed, parser, string}
+
+      override def imap[A, B](fa: Primitive[Value, A])(f: A => B)(g: B => A): Primitive[Value, B] = fa match
+        case self: Primitive.Boolean[A]       => self.imap(f)(g)
+        case self: Primitive.Number[A]        => self.imap(f)(g)
+        case self: Primitive.String[Value, A] => self.imap(f)(g)
+
+      override def enriched[A]: Enriched[Primitive[Value, A]] = new Enriched[Primitive[Value, A]]:
+        override def metadata(a: Primitive[Value, A]): Metadata = a.metadata
+        override def modifyMetadata(a: Primitive[Value, A])(f: Metadata => Metadata): Primitive[Value, A] = a match
+          case self: Primitive.Boolean[A]       => self.metadata(f)
+          case self: Primitive.Number[A]        => self.metadata(f)
+          case self: Primitive.String[Value, A] => self.metadata(f)
 
   sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]

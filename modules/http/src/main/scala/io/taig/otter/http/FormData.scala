@@ -66,7 +66,16 @@ object FormData:
               [A] => (schema: Self.Primitive.String[FormData.Schema.Primitive, A]) => String(schema)
             )([A] => (formData: FormData.Schema.Primitive.String[A]) => formData.self)
 
-      given PrimitiveSchemaInvariant[FormData.Schema.Primitive, FormData.Schema.Primitive] = ???
+      given PrimitiveSchemaInvariant[FormData.Schema.Primitive, FormData.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[FormData.Schema.Primitive, *], FormData.Schema.Primitive]
+          .imapK(
+            [A] =>
+              (schema: Self.Primitive[FormData.Schema.Primitive, A]) =>
+                schema match
+                  case self: Self.Primitive.Boolean[A]                           => Boolean(self)
+                  case self: Self.Primitive.Number[A]                            => Number(self)
+                  case self: Self.Primitive.String[FormData.Schema.Primitive, A] => String(self)
+          )([A] => (formData: FormData.Schema.Primitive[A]) => formData.self)
 
     final case class Constant[A](self: Self.Constant[FormData.Schema, A]) extends Schema[A]
 

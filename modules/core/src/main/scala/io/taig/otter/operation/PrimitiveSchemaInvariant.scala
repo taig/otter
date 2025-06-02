@@ -12,10 +12,55 @@ trait PrimitiveSchemaInvariant[Self[_], Primitive[_]]
     extends PrimitiveSchemaInvariant.Boolean[Self],
       PrimitiveSchemaInvariant.Number[Self],
       PrimitiveSchemaInvariant.String[Self, Primitive]:
+  self =>
+
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
       gK: [A] => T[A] => Self[A]
-  ): PrimitiveSchemaInvariant[T, Primitive] =
-    ???
+  ): PrimitiveSchemaInvariant[T, Primitive] = new PrimitiveSchemaInvariant[T, Primitive]:
+    override def boolean: T[SBoolean] = fK(self.boolean)
+    override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
+    override def jBigDecimal(
+        minimum: Option[Comparison[JBigDecimal]],
+        maximum: Option[Comparison[JBigDecimal]],
+        multiple: Option[JBigDecimal]
+    ): T[JBigDecimal] =
+      fK(self.jBigDecimal(minimum, maximum, multiple))
+    override def jBigInteger(
+        minimum: Option[Comparison[JBigInteger]],
+        maximum: Option[Comparison[JBigInteger]],
+        multiple: Option[JBigInteger]
+    ): T[JBigInteger] =
+      fK(self.jBigInteger(minimum, maximum, multiple))
+    override def double(
+        minimum: Option[Comparison[Double]],
+        maximum: Option[Comparison[Double]],
+        multiple: Option[Double]
+    ): T[Double] =
+      fK(self.double(minimum, maximum, multiple))
+    override def float(
+        minimum: Option[Comparison[Float]],
+        maximum: Option[Comparison[Float]],
+        multiple: Option[Float]
+    ): T[Float] =
+      fK(self.float(minimum, maximum, multiple))
+    override def int(
+        minimum: Option[Comparison[Int]],
+        maximum: Option[Comparison[Int]],
+        multiple: Option[Int]
+    ): T[Int] =
+      fK(self.int(minimum, maximum, multiple))
+    override def long(
+        minimum: Option[Comparison[Long]],
+        maximum: Option[Comparison[Long]],
+        multiple: Option[Long]
+    ): T[Long] =
+      fK(self.long(minimum, maximum, multiple))
+    override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
+    override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[JString] =
+      fK(self.string(minimum, maximum, matches))
+    override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
+      fK(self.parser(name, decode, encode))
+    override def parsed[A](schema: Primitive[A]): T[A] = fK(self.parsed(schema))
 
 object PrimitiveSchemaInvariant:
   trait Boolean[Self[_]] extends SchemaInvariant[Self]:

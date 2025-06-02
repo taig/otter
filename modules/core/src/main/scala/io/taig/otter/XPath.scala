@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.Order
 import cats.Show
 import cats.data.Chain
-import cats.parse.Parser
 import cats.syntax.all.*
 
 opaque type XPath = Chain[Step]
@@ -18,8 +17,6 @@ object XPath:
     def /(index: Int): XPath = /(Step.Index(index))
 
   def apply(steps: Chain[Step]): XPath = steps
-
-  def parse(value: String): Either[Parser.Error, XPath] = ??? // Parsers.xpath.parseAll(value)
 
   given (using order: Order[Chain[Step]]): Order[XPath] = order
 
