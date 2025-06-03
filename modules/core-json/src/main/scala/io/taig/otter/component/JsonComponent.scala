@@ -15,6 +15,9 @@ trait JsonComponent extends
       FieldComponent.Primitive.String[Json.Field, Key, Json, Json.Record],
       NullableComponent[Json.Nullable, Json],
       PrimitiveComponent[Json.Primitive, Json.Primitive],
+      PrimitiveComponent.Boolean[Json.Primitive],
+      PrimitiveComponent.Number[Json.Primitive],
+      PrimitiveComponent.String[Json.Primitive, Json.Primitive],
       RecordComponent[Json.Record, Json.Field],
       TupleComponent[Json.Tuple, Json],
       UnionComponent[Json.Union, Json],
@@ -22,5 +25,5 @@ trait JsonComponent extends
       ViolationsComponent[Json.Collection, Json.Constant, Json.Dictionary, Json.Nullable, Json.Primitive, Json.Record, Json.Union, Json.Field, Key, Json]:
   override def key: KeyComponent = KeyComponent
 
-object JsonComponent extends JsonComponent
+// object JsonComponent extends JsonComponent
 // format: on

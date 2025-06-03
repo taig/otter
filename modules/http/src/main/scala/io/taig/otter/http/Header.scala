@@ -84,8 +84,8 @@ object Header:
               [A] => (schema: Self.Primitive.String[Header.Schema.Primitive, A]) => String(schema)
             )([A] => (value: Header.Schema.Primitive.String[A]) => value.self)
 
-      given PrimitiveSchemaInvariant[Header.Schema.Primitive, Header.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Header.Schema.Primitive, *], Header.Schema.Primitive]
+      given PrimitiveSchemaInvariant[Header.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Header.Schema.Primitive, *]]
           .imapK(
             [A] =>
               (schema: Self.Primitive[Header.Schema.Primitive, A]) =>

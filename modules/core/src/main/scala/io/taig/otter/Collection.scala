@@ -1,6 +1,5 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.operation.CollectionSchemaInvariant
 import io.taig.otter.operation.Enriched
 
 final case class Collection[+S[_], A](value: Collection.Value[S, A], metadata: Metadata)
@@ -52,31 +51,31 @@ object Collection:
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection.Value[T, B] =
         copy(self = self.mapK[S1, T](fK))
 
-  given [Value[_]]: CollectionSchemaInvariant[Collection[Value, *], Value] with
-    override def linked[A](
-        schema: => Value[A],
-        minimum: Option[Int],
-        maximum: Option[Int],
-        unique: Boolean
-    ): Collection[Value, List[A]] = Collection(
-      value = Value.Linked(schema = Reference.later(schema), minimum, maximum, unique),
-      metadata = Metadata.Empty
-    )
+  // given [Value[_]]: CollectionSchemaInvariant[Collection[Value, *], Value] with
+  //   override def linked[A](
+  //       schema: => Value[A],
+  //       minimum: Option[Int],
+  //       maximum: Option[Int],
+  //       unique: Boolean
+  //   ): Collection[Value, List[A]] = Collection(
+  //     value = Value.Linked(schema = Reference.later(schema), minimum, maximum, unique),
+  //     metadata = Metadata.Empty
+  //   )
 
-    override def indexed[A](
-        schema: => Value[A],
-        minimum: Option[Int],
-        maximum: Option[Int],
-        unique: Boolean
-    ): Collection[Value, Vector[A]] = Collection(
-      value = Value.Indexed(schema = Reference.later(schema), minimum, maximum, unique),
-      metadata = Metadata.Empty
-    )
+  //   override def indexed[A](
+  //       schema: => Value[A],
+  //       minimum: Option[Int],
+  //       maximum: Option[Int],
+  //       unique: Boolean
+  //   ): Collection[Value, Vector[A]] = Collection(
+  //     value = Value.Indexed(schema = Reference.later(schema), minimum, maximum, unique),
+  //     metadata = Metadata.Empty
+  //   )
 
-    override def imap[A, B](fa: Collection[Value, A])(f: A => B)(g: B => A): Collection[Value, B] =
-      fa.copy(value = fa.value.imap(f)(g))
+  //   override def imap[A, B](fa: Collection[Value, A])(f: A => B)(g: B => A): Collection[Value, B] =
+  //     fa.copy(value = fa.value.imap(f)(g))
 
-    override def enriched[A]: Enriched[Collection[Value, A]] = new Enriched[Collection[Value, A]]:
-      override def metadata(self: Collection[Value, A]): Metadata = self.metadata
-      override def modifyMetadata(self: Collection[Value, A])(f: Metadata => Metadata): Collection[Value, A] =
-        self.copy(metadata = f(self.metadata))
+  //   override def enriched[A]: Enriched[Collection[Value, A]] = new Enriched[Collection[Value, A]]:
+  //     override def metadata(self: Collection[Value, A]): Metadata = self.metadata
+  //     override def modifyMetadata(self: Collection[Value, A])(f: Metadata => Metadata): Collection[Value, A] =
+  //       self.copy(metadata = f(self.metadata))

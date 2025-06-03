@@ -38,7 +38,7 @@ final class PrimitiveParser[S[_]](parser: Decoder[S, String])(quotes: Boolean) e
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Parsed(self)       => parser.decode(self, value)
+    case Primitive.Value.String.Parsed(self)       => parser.decode(schema = self.value, value)
     case Primitive.Value.String.Parser(_, decode, _) =>
       val input =
         if quotes then

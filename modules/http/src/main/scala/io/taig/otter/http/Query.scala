@@ -103,8 +103,8 @@ object Query:
               [A] => (schema: Self.Primitive.String[Query.Schema.Primitive, A]) => String(schema)
             )([A] => (schema: Query.Schema.Primitive.String[A]) => schema.self)
 
-      given PrimitiveSchemaInvariant[Query.Schema.Primitive, Query.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *], Query.Schema.Primitive].imapK(
+      given PrimitiveSchemaInvariant[Query.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *]].imapK(
           [A] =>
             (self: Self.Primitive[Query.Schema.Primitive, A]) =>
               self match

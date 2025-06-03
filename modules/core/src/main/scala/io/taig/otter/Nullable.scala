@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.operation.Enriched
-import io.taig.otter.operation.NullableSchemaInvariant
 
 final case class Nullable[+S[_], A](value: Nullable.Value[S, A], metadata: Metadata)
 
@@ -32,18 +31,18 @@ object Nullable:
       override def schema: Option[Reference[Nothing, ?]] = none
       override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Value[T, Unit] = this
 
-  given [Value[_]]: NullableSchemaInvariant[Nullable[Value, *], Value] with
-    override def apply[A](schema: => Value[A]): Nullable[Value, Option[A]] =
-      Nullable(value = Value.Root(reference = Reference.later(schema)), metadata = Metadata.Empty)
-    override def apply[A](schema: => Value[A], default: A): Nullable[Value, A] =
-      Nullable(value = Value.Default(reference = Reference.later(schema), default = default), metadata = Metadata.Empty)
-    override val void: Nullable[Nothing, Unit] =
-      Nullable(value = Value.Void, metadata = Metadata.Empty)
+  // given [Value[_]]: NullableSchemaInvariant[Nullable[Value, *], Value] with
+  //   override def apply[A](schema: => Value[A]): Nullable[Value, Option[A]] =
+  //     Nullable(value = Value.Root(reference = Reference.later(schema)), metadata = Metadata.Empty)
+  //   override def apply[A](schema: => Value[A], default: A): Nullable[Value, A] =
+  //     Nullable(value = Value.Default(reference = Reference.later(schema), default = default), metadata = Metadata.Empty)
+  //   override val void: Nullable[Nothing, Unit] =
+  //     Nullable(value = Value.Void, metadata = Metadata.Empty)
 
-    override def imap[A, B](fa: Nullable[Value, A])(f: A => B)(g: B => A): Nullable[Value, B] =
-      fa.copy(value = fa.value.imap(f)(g))
+  //   override def imap[A, B](fa: Nullable[Value, A])(f: A => B)(g: B => A): Nullable[Value, B] =
+  //     fa.copy(value = fa.value.imap(f)(g))
 
-    override def enriched[A]: Enriched[Nullable[Value, A]] = new Enriched[Nullable[Value, A]]:
-      override def metadata(a: Nullable[Value, A]): Metadata = a.metadata
-      override def modifyMetadata(a: Nullable[Value, A])(f: Metadata => Metadata): Nullable[Value, A] =
-        a.copy(metadata = f(a.metadata))
+  //   override def enriched[A]: Enriched[Nullable[Value, A]] = new Enriched[Nullable[Value, A]]:
+  //     override def metadata(a: Nullable[Value, A]): Metadata = a.metadata
+  //     override def modifyMetadata(a: Nullable[Value, A])(f: Metadata => Metadata): Nullable[Value, A] =
+  //       a.copy(metadata = f(a.metadata))

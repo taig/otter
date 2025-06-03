@@ -66,8 +66,8 @@ object FormData:
               [A] => (schema: Self.Primitive.String[FormData.Schema.Primitive, A]) => String(schema)
             )([A] => (formData: FormData.Schema.Primitive.String[A]) => formData.self)
 
-      given PrimitiveSchemaInvariant[FormData.Schema.Primitive, FormData.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[FormData.Schema.Primitive, *], FormData.Schema.Primitive]
+      given PrimitiveSchemaInvariant[FormData.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[FormData.Schema.Primitive, *]]
           .imapK(
             [A] =>
               (schema: Self.Primitive[FormData.Schema.Primitive, A]) =>

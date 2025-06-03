@@ -7,7 +7,7 @@ import io.taig.otter.Violations
 
 final class UnionDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Union[S, *], T]:
   override def decode[A](schema: Union[S, A], value: T): Validated[Violations, A] =
-    decode(schema = schema.value, value, index = schema.schemas.length - 1)
+    decode(schema = schema.value, value, index = schema.value.schemas.length - 1)
 
   def decode[A](schema: Union.Value[S, A], value: T, index: Long): Validated[Violations, A] = schema match
     case Union.Value.OrElse(left, right) =>

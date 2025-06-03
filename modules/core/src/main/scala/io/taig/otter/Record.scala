@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.Enriched
-import io.taig.otter.operation.RecordSchemaInvariant
 
 final case class Record[+S[_], A](value: Record.Value[S, A], metadata: Metadata)
 
@@ -37,18 +36,18 @@ object Record:
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, (A, B)] =
         copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  given [Field[_]]: RecordSchemaInvariant[Record[Field, *], Field] with
-    override def lift[A](field: => Field[A]): Record[Field, A] =
-      Record(value = Value.Root(field = Reference.later(field)), metadata = Metadata.Empty)
+  // given [Field[_]]: RecordSchemaInvariant[Record[Field, *], Field] with
+  //   override def lift[A](field: => Field[A]): Record[Field, A] =
+  //     Record(value = Value.Root(field = Reference.later(field)), metadata = Metadata.Empty)
 
-    override def imap[A, B](fa: Record[Field, A])(f: A => B)(g: B => A): Record[Field, B] =
-      fa.copy(value = fa.value.imap(f)(g))
+  //   override def imap[A, B](fa: Record[Field, A])(f: A => B)(g: B => A): Record[Field, B] =
+  //     fa.copy(value = fa.value.imap(f)(g))
 
-    override def enriched[A]: Enriched[Record[Field, A]] = new Enriched[Record[Field, A]]:
-      override def metadata(a: Record[Field, A]): Metadata = a.metadata
-      override def modifyMetadata(a: Record[Field, A])(f: Metadata => Metadata): Record[Field, A] =
-        a.copy(metadata = f(a.metadata))
+  //   override def enriched[A]: Enriched[Record[Field, A]] = new Enriched[Record[Field, A]]:
+  //     override def metadata(a: Record[Field, A]): Metadata = a.metadata
+  //     override def modifyMetadata(a: Record[Field, A])(f: Metadata => Metadata): Record[Field, A] =
+  //       a.copy(metadata = f(a.metadata))
 
-    extension [A](self: Record[Field, A])
-      override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] =
-        Record(value = self.value.zip(schema.value), metadata = self.metadata)
+  //   extension [A](self: Record[Field, A])
+  //     override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] =
+  //       Record(value = self.value.zip(schema.value), metadata = self.metadata)
