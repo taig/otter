@@ -17,10 +17,13 @@ object Client:
       decoder: PayloadDecoder[S],
       encoder: PayloadEncoder[S]
   ): Client[F, S] = new Client[F, S]:
+    val writer = RequestDataEncoder(encoder)
+    val reader = ResponseDataDecoder(decoder)
     override def submit[A, B](
         endpoint: Endpoint[S, A, B],
         contentType: Option[MediaType],
         a: A
     ): F[Either[HttpError, B]] =
-      val request = RequestDataEncoder[S](encoder).encode(schema = endpoint.request, contentType, a)
-      http.submit(request).map(ResponseDataDecoder(decoder).decode(schema = endpoint.response, _))
+      // TODO handle 404
+      val request = writer.encode(schema = endpoint.request, contentType, a)
+      http.submit(request).map(reader.decode(schema = endpoint.response, _))

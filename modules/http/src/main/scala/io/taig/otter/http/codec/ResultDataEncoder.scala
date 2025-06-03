@@ -35,18 +35,18 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
 
   def encode[A](schema: Result[S, A], a: A): Response.Data = encode(schema = schema.value, a)
 
-  def encode[A](schema: Result.Value[S, A], a: A): Response.Data =
-    schema match
-      case Result.Value.Modify(self, _, g) => encode(schema = self, g(a))
-      case Result.Value.Payload(self, bodies) =>
-        val (mediaType, bytes) = this.bodies.encode(bodies, a._2)
-        encode(schema = self, a._1)
-          .modifyHeaders((ci"Content-Type", mediaType.show) +: _)
-          .withBody(bytes)
-      case result: Result.Value.Root[?] => encode(result, a)
+  def encode[A](schema: Result.Value[S, A], a: A): Response.Data = schema match
+    case Result.Value.Modify(self, _, g) => encode(schema = self, g(a))
+    case Result.Value.Payload(self, bodies) =>
+      val (mediaType, bytes) = this.bodies.encode(bodies, a._2)
+      encode(schema = self, a._1)
+        .modifyHeaders((ci"Content-Type", mediaType.show) +: _)
+        .withBody(bytes)
+    case result: Result.Value.Root[?] => encode(result, a)
 
-  def encode[A](schema: Result.Value.Root[A], a: A): Response.Data = Response.Data(
-    code = schema.code,
-    headers = HeadersDataEncoder.encode(headers = schema.headers, a),
-    body = Array.emptyByteArray
-  )
+  def encode[A](schema: Result.Value.Root[A], a: A): Response.Data =
+    Response.Data(
+      code = schema.code,
+      headers = HeadersDataEncoder.encode(headers = schema.headers, a),
+      body = Array.emptyByteArray
+    )
