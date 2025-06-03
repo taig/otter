@@ -67,10 +67,10 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
-    core
+    core,
     // coreCaseInsensitive,
     // coreJavaTime,
-    // coreJson,
+    coreJson
     // coreJsonCirce,
     // coreJsonZod,
     // coreTypescript,
@@ -117,8 +117,8 @@ lazy val core = module(identifier = Some("core"))
 //   )
 //   .dependsOn(core)
 
-// lazy val coreJson = module(identifier = Some("core-json"))
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val coreJson = module(identifier = Some("core-json"))
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val coreTypescript = module(identifier = Some("core-typescript"))
 //   .dependsOn(core % "compile->compile;test->test")

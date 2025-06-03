@@ -1,55 +1,49 @@
-// package io.taig.otter.component
+package io.taig.otter.component
 
-// import cats.syntax.all.*
-// import io.taig.otter.Data
-// import io.taig.otter.operation.*
-// import io.taig.otter.syntax.EnrichedSyntax.*
+import cats.syntax.all.*
+import io.taig.otter.Data
+import io.taig.otter.operation.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
-// trait DataComponent[
-//     Collection[a] <: Value[a],
-//     Constant[a] <: Value[a],
-//     Dictionary[a] <: Value[a],
-//     Nullable[a] <: Value[a],
-//     Primitive[a] <: Value[a],
-//     Record[a] <: Value[a],
-//     Union[a] <: Value[a],
-//     Field[_],
-//     Key[_],
-//     Value[_]
-// ](using
-//     CollectionSchemaInvariant[Collection, Value],
-//     DictionarySchemaInvariant[Dictionary, Key, Value],
-//     NullableSchemaInvariant[Nullable, Value],
-//     SchemaInvariant[Union],
-//     SchemaInvariant.Nullable[Value, Nullable]
-// ) extends CollectionComponent[Collection, Value],
-//       DictionaryComponent[Dictionary, Key, Value],
-//       NullableComponent[Nullable, Value],
-//       PrimitiveComponent[Primitive, Primitive],
-//       SumComponent[Constant, Primitive, Record, Field, Key, Value],
-//       UnionComponent[Union, Value]:
-//   this: PrimitiveComponent.String[Primitive, Primitive] =>
+trait DataComponent[
+    Collection[a] <: Value[a],
+    Dictionary[a] <: Value[a],
+    Primitive[a] <: Value[a],
+    Union[a] <: Value[a],
+    Key[_],
+    Value[_]
+](using
+    SchemaInvariant.Nullable[Value, Value],
+    SchemaInvariant.Unionable[Value, Union],
+    SchemaInvariant[Collection],
+    SchemaInvariant[Dictionary],
+    SchemaInvariant[Union]
+) extends CollectionComponent[Collection, Value],
+      DictionaryComponent[Dictionary, Key, Value],
+      PrimitiveComponent[Primitive, Primitive]:
 
-//   object data:
-//     val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
+  def key: PrimitiveComponent.String[Key, ?]
 
-//     val primitive: Value[Data.Primitive] = (number | boolean | string).name("Primitive")
+  object data:
+    val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
 
-//     def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
-//       dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
+    val primitive: Value[Data.Primitive] = (number | boolean | string).name("Primitive")
 
-//     val obj: Dictionary[Data.Object[Data.Any]] = obj(any).name("Object")
+    def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
+      dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-//     def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
-//       collection.vector(schema).imap(Data.Array[A])(_.values).name("Collection")
+    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).name("Object")
 
-//     val array: Collection[Data.Array[Data.Any]] = array(any)
+    def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
+      collection.vector(schema).imap(Data.Array[A])(_.values).name("Collection")
 
-//     val value: Union[Data.Value] = (primitive | obj | array).name("Value")
+    val array: Collection[Data.Array[Data.Any]] = array(any)
 
-//     val any: Nullable[Data.Any] = value.nullable
-//       .imap(_.getOrElse(Data.Null)) {
-//         case Data.Null        => None
-//         case data: Data.Value => Some(data)
-//       }
-//       .name("Any")
+    val value: Union[Data.Value] = (primitive | obj | array).name("Value")
+
+    val any: Value[Data.Any] = value.nullable
+      .imap(_.getOrElse(Data.Null)) {
+        case Data.Null        => None
+        case data: Data.Value => Some(data)
+      }
+      .name("Any")

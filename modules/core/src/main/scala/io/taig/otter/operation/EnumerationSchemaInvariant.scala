@@ -1,33 +1,33 @@
-// package io.taig.otter.operation
+package io.taig.otter.operation
 
-// import cats.data.NonEmptyList
-// import io.taig.enumeration.ext.Mapping
-// import io.taig.otter.Reference
+import cats.data.NonEmptyList
+import io.taig.enumeration.ext.Mapping
+import io.taig.otter.Reference
 
-// trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
-//   self =>
+trait EnumerationSchemaInvariant[Self[_], Value[_]] extends SchemaInvariant[Self]:
+  self =>
 
-//   def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
+  def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B]
 
-//   extension [A](self: Self[A])
-//     def schema: Reference[Value, ?]
-//     def values: NonEmptyList[A]
+  extension [A](self: Self[A])
+    def schema: Reference[Value, ?]
+    def values: NonEmptyList[A]
 
-//   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-//       gK: [A] => T[A] => Self[A]
-//   ): EnumerationSchemaInvariant[T, Value] = new EnumerationSchemaInvariant[T, Value]:
-//     override def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] =
-//       fK(self.apply(schema, mapping))
+  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
+      gK: [A] => T[A] => Self[A]
+  ): EnumerationSchemaInvariant[T, Value] = new EnumerationSchemaInvariant[T, Value]:
+    override def apply[A, B](schema: => Value[A], mapping: Mapping[B, A]): T[B] =
+      fK(self.apply(schema, mapping))
 
-//     override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-//     override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+    override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
+    override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
-//     extension [A](ta: T[A])
-//       override def schema: Reference[Value, ?] = self.schema(gK(ta))
-//       override def values: NonEmptyList[A] = self.values(gK(ta))
+    extension [A](ta: T[A])
+      override def schema: Reference[Value, ?] = self.schema(gK(ta))
+      override def values: NonEmptyList[A] = self.values(gK(ta))
 
-// object EnumerationSchemaInvariant:
-//   inline def apply[Self[_], Value[_]](using
-//       self: EnumerationSchemaInvariant[Self, Value]
-//   ): EnumerationSchemaInvariant[Self, Value] =
-//     self
+object EnumerationSchemaInvariant:
+  inline def apply[Self[_], Value[_]](using
+      self: EnumerationSchemaInvariant[Self, Value]
+  ): EnumerationSchemaInvariant[Self, Value] =
+    self

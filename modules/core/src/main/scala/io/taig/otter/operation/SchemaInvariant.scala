@@ -39,12 +39,26 @@ trait SchemaInvariant[Self[_]] extends Invariant[Self]:
 object SchemaInvariant:
   inline def apply[Self[_]](using schema: SchemaInvariant[Self]): SchemaInvariant[Self] = schema
 
+  trait Nullable[Self[_], Nullable[_]](using self: NullableSchemaInvariant[Nullable, Self])
+      extends SchemaInvariant[Self]:
+    extension [A](sa: => Self[A])
+      final def nullable: Nullable[Option[A]] = self(sa)
+      final def nullable(default: A): Nullable[A] = self(sa, default)
+
   trait Parseable[Self[_], String[_]](using self: PrimitiveSchemaInvariant.String[String, Self])
       extends SchemaInvariant[Self]:
     extension [A](schema: => Self[A]) final def parse: String[A] = self.parsed(schema)
 
-  // trait Nullable[Self[_], Nullable[_]](using self: NullableSchemaInvariant[Nullable, Self])
-  //     extends SchemaInvariant[Self]:
-  //   extension [A](sa: => Self[A])
-  //     final def nullable: Nullable[Option[A]] = self(sa)
-  //     final def nullable(default: A): Nullable[A] = self(sa, default)
+  trait Recordable[Self[_], Record[_]](using self: RecordSchemaInvariant[Record, Self]):
+    extension [A](self: => Self[A])
+      def :*[B](schema: => Self[B])(using m: Merge[A, B]): Record[m.Out] = this.self.lift(self) :* schema
+      def *:[B](schema: => Self[B])(using m: Merge[A, B]): Record[m.Out] = this.self.lift(self) :* schema
+      def toRecord: Record[A] = this.self.lift(self)
+
+  trait Unionable[Self[_], Union[_]](using self: UnionSchemaInvariant[Union, Self]):
+    extension [A](self: => Self[A])
+      def :+[B](schema: => Self[B]): Union[Either[A, B]] = this.self.lift(self) :+ schema
+      def toUnion: Union[A] = this.self.lift(self)
+
+    extension [A <: Matchable](self: Self[A])
+      inline def |[B <: Matchable](schema: => Self[B]): Union[A | B] = this.self.lift(self) | schema

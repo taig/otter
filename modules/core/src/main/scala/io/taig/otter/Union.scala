@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.UnionSchemaInvariant
 
 final case class Union[+S[_], A](value: Union.Value[S, A], metadata: Metadata)
 
@@ -33,19 +34,19 @@ object Union:
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A] =
         copy(schema = schema.mapK[S1, T](fK))
 
-  // given [Value[_]]: UnionSchemaInvariant[Union[Value, *], Value] with
-  //   override def lift[A](schema: => Value[A]): Union[Value, A] =
-  //     Union(value = Value.Root(schema = Reference.later(schema)), metadata = Metadata.Empty)
+  given [Value[_]]: UnionSchemaInvariant[Union[Value, *], Value] with
+    override def lift[A](schema: => Value[A]): Union[Value, A] =
+      Union(value = Value.Root(schema = Reference.later(schema)), metadata = Metadata.Empty)
 
-  //   override def imap[A, B](fa: Union[Value, A])(f: A => B)(g: B => A): Union[Value, B] =
-  //     fa.copy(value = fa.value.imap(f)(g))
+    override def imap[A, B](fa: Union[Value, A])(f: A => B)(g: B => A): Union[Value, B] =
+      fa.copy(value = fa.value.imap(f)(g))
 
-  //   override def enriched[A]: Enriched[Union[Value, A]] = new Enriched[Union[Value, A]]:
-  //     override def metadata(a: Union[Value, A]): Metadata = a.metadata
-  //     override def modifyMetadata(a: Union[Value, A])(f: Metadata => Metadata): Union[Value, A] =
-  //       a.copy(metadata = f(a.metadata))
+    override def enriched[A]: Enriched[Union[Value, A]] = new Enriched[Union[Value, A]]:
+      override def metadata(a: Union[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Union[Value, A])(f: Metadata => Metadata): Union[Value, A] =
+        a.copy(metadata = f(a.metadata))
 
-  //   extension [A](self: Union[Value, A])
-  //     override def schemas: NonEmptyChain[Reference[Value, ?]] = self.value.schemas
-  //     override def orElse[B](schema: Union[Value, B]): Union[Value, Either[A, B]] =
-  //       self.copy(value = self.value.orElse(schema.value))
+    extension [A](self: Union[Value, A])
+      override def schemas: NonEmptyChain[Reference[Value, ?]] = self.value.schemas
+      override def orElse[B](schema: Union[Value, B]): Union[Value, Either[A, B]] =
+        self.copy(value = self.value.orElse(schema.value))

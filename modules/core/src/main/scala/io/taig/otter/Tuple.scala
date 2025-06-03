@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.Enriched
+import io.taig.otter.operation.TupleSchemaInvariant
 
 // TODO support for optional
 final case class Tuple[+S[_], A](value: Tuple.Value[S, A], metadata: Metadata)
@@ -39,21 +40,21 @@ object Tuple:
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, (A, B)] =
         copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  // given [Value[_]]: TupleSchemaInvariant[Tuple[Value, *], Value] with
-  //   override val empty: Tuple[Value, Unit] =
-  //     Tuple(value = Value.Empty, metadata = Metadata.Empty)
+  given [Value[_]]: TupleSchemaInvariant[Tuple[Value, *], Value] with
+    override val empty: Tuple[Value, Unit] =
+      Tuple(value = Value.Empty, metadata = Metadata.Empty)
 
-  //   override def lift[A](schema: => Value[A]): Tuple[Value, A] =
-  //     Tuple(value = Value.Root(schema = Reference.later(schema)), metadata = Metadata.Empty)
+    override def lift[A](schema: => Value[A]): Tuple[Value, A] =
+      Tuple(value = Value.Root(schema = Reference.later(schema)), metadata = Metadata.Empty)
 
-  //   override def imap[A, B](fa: Tuple[Value, A])(f: A => B)(g: B => A): Tuple[Value, B] =
-  //     fa.copy(value = fa.value.imap(f)(g))
+    override def imap[A, B](fa: Tuple[Value, A])(f: A => B)(g: B => A): Tuple[Value, B] =
+      fa.copy(value = fa.value.imap(f)(g))
 
-  //   override def enriched[A]: Enriched[Tuple[Value, A]] = new Enriched[Tuple[Value, A]]:
-  //     override def metadata(a: Tuple[Value, A]): Metadata = a.metadata
-  //     override def modifyMetadata(a: Tuple[Value, A])(f: Metadata => Metadata): Tuple[Value, A] =
-  //       a.copy(metadata = f(a.metadata))
+    override def enriched[A]: Enriched[Tuple[Value, A]] = new Enriched[Tuple[Value, A]]:
+      override def metadata(a: Tuple[Value, A]): Metadata = a.metadata
+      override def modifyMetadata(a: Tuple[Value, A])(f: Metadata => Metadata): Tuple[Value, A] =
+        a.copy(metadata = f(a.metadata))
 
-  //   extension [A](self: Tuple[Value, A])
-  //     override def zip[B](schema: Tuple[Value, B]): Tuple[Value, (A, B)] =
-  //       Tuple(value = self.value.zip(schema.value), metadata = self.metadata)
+    extension [A](self: Tuple[Value, A])
+      override def zip[B](schema: Tuple[Value, B]): Tuple[Value, (A, B)] =
+        Tuple(value = self.value.zip(schema.value), metadata = self.metadata)
