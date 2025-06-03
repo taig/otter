@@ -17,16 +17,20 @@ trait ConstantComponent[Self[_], -Value[_]](using self: ConstantSchemaInvariant[
   final def constant[A: Eq](schema: => Value[A], value: A): Self[Unit] = self(schema, value)
 
 object ConstantComponent:
-  trait Primitive[Self[_], Value[_]]
+  trait Primitive[Self[_], -Value[_]]
       extends ConstantComponent.Primitive.Boolean[Self, Value],
         ConstantComponent.Primitive.Number[Self, Value],
-        ConstantComponent.Primitive.String[Self, Value]
+        ConstantComponent.Primitive.String[Self, Value]:
+    this: PrimitiveComponent[Value] =>
 
   object Primitive:
-    trait Boolean[Self[_], Value[_]] extends ConstantComponent[Self, Value], PrimitiveComponent.Boolean[Value]:
+    trait Boolean[Self[_], -Value[_]] extends ConstantComponent[Self, Value]:
+      this: PrimitiveComponent.Boolean[Value] =>
       final def constant(value: SBoolean): Self[Unit] = constant(schema = boolean, value)
 
-    trait Number[Self[_], Value[_]] extends ConstantComponent[Self, Value], PrimitiveComponent.Number[Value]:
+    trait Number[Self[_], -Value[_]] extends ConstantComponent[Self, Value]:
+      this: PrimitiveComponent.Number[Value] =>
+
       final def constant(value: JBigDecimal): Self[Unit] =
         constant(schema = jBigDecimal, value)(using Eq.fromUniversalEquals)
       final def constant(value: BigDecimal): Self[Unit] = constant(schema = bigDecimal, value)
@@ -38,6 +42,7 @@ object ConstantComponent:
       final def constant(value: SFloat): Self[Unit] = constant(schema = float, value)
       final def constant(value: SInt): Self[Unit] = constant(schema = int, value)
 
-    trait String[Self[_], Value[_]] extends ConstantComponent[Self, Value], PrimitiveComponent.String[Value, Value]:
+    trait String[Self[_], -Value[_]] extends ConstantComponent[Self, Value]:
+      this: PrimitiveComponent.String[Value] =>
       final def constant(value: JString): Self[Unit] = constant(schema = string, value)
       final def constant(value: UUID): Self[Unit] = constant(schema = uuid, value)

@@ -4,6 +4,8 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
+import java.util.regex.Pattern
+import java.math.BigInteger
 
 sealed abstract class Json[A] extends Product, Serializable
 
@@ -57,6 +59,8 @@ object Json:
           [A] => (schema: Self.Primitive[Json.Primitive, A]) => Primitive(schema)
         )([A] => (json: Json.Primitive[A]) => json.self)
 
+    given Parseable[Json.Primitive, Json.Primitive] = Parseable[Json.Primitive, Json.Primitive]
+
   final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
 
   object Record:
@@ -89,7 +93,10 @@ object Json:
         [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
 
-  given SchemaInvariant.Nullable[Json, Json.Nullable] with
+  given SchemaInvariant.Nullable[Json, Json.Nullable]
+    with SchemaInvariant.Recordable[Json.Field, Json.Record]
+    with SchemaInvariant.Unionable[Json, Json.Union]
+    with
     override def enriched[A]: Enriched[Json[A]] = new Enriched[Json[A]]:
       override def metadata(a: Json[A]): Metadata = a match
         case Collection(self)  => self.metadata

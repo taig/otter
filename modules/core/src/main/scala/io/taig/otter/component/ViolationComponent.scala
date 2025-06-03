@@ -1,35 +1,31 @@
-// package io.taig.otter.component
+package io.taig.otter.component
 
-// import io.taig.otter.Violation
-// import io.taig.otter.operation.*
-// import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.Violation
+import io.taig.otter.operation.*
+import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.Constraint
 
-// trait ViolationComponent[
-//     Collection[a] <: Value[a],
-//     Constant[a] <: Value[a],
-//     Dictionary[a] <: Value[a],
-//     Nullable[a] <: Value[a],
-//     Primitive[a] <: Value[a],
-//     Record[a] <: Value[a],
-//     Union[a] <: Value[a],
-//     Field[_],
-//     Key[_],
-//     Value[_]
-// ](using
-//     FieldSchemaInvariant[Field, Key, Value],
-//     NullableSchemaInvariant[Nullable, Value],
-//     RecordSchemaInvariant[Record, Field],
-//     SchemaInvariant.Nullable[Value, Nullable]
-// ) extends DataComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
-//       ConstraintComponent[Collection, Constant, Dictionary, Nullable, Primitive, Record, Union, Field, Key, Value],
-//       NullableComponent[Nullable, Value],
-//       PrimitiveComponent[Primitive, Primitive],
-//       FieldComponent.Primitive.String[Field, Key, Value, Record],
-//       RecordComponent[Record, Field]:
-//   this: PrimitiveComponent.String[Primitive, Primitive] =>
+trait ViolationComponent[
+    Collection[a] <: Value[a],
+    Constant[a] <: Value[a],
+    Dictionary[a] <: Value[a],
+    Primitive[a] <: Value[a],
+    Record[a] <: Value[a],
+    Union[a] <: Value[a],
+    Field[_],
+    Key[_],
+    Value[_]
+](using
+    SchemaInvariant.Nullable[Value, Value],
+    SchemaInvariant.Recordable[Field, Record],
+    RecordSchemaInvariant[Record, Field]
+) extends ConstraintComponent[Collection, Constant, Dictionary, Primitive, Record, Union, Field, Key, Value],
+      DataComponent[Collection, Dictionary, Primitive, Union, Key, Value],
+      FieldComponent[Field, Key, Value]:
+  this: PrimitiveComponent[Value] =>
 
-//   val violation: Record[Violation] = (
-//     field("constraint", constraint) :*
-//       field("actual", data.any) :*
-//       field("hint", string.nullable)
-//   ).name("Violation").to
+  val violation: Record[Violation] = (
+    field("constraint", constraint) :*
+      field("actual", data.any) :*
+      field("hint", string.nullable)
+  ).name("Violation").to

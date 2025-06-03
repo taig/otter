@@ -20,9 +20,9 @@ trait DataComponent[
     SchemaInvariant[Union]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
-      PrimitiveComponent[Primitive, Primitive]:
+      PrimitiveComponent[Primitive]:
 
-  def key: PrimitiveComponent.String[Key, ?]
+  def key: PrimitiveComponent.String[Key]
 
   object data:
     val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double

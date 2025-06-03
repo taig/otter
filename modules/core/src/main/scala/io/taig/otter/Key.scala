@@ -43,28 +43,18 @@ object Key:
           [A] => (schema: Self.Primitive.String[Key.Primitive, A]) => String(schema)
         )([A] => (key: Key.Primitive.String[A]) => key.self)
 
-    given PrimitiveSchemaInvariant[Key.Primitive, Key.Primitive]
-      with SchemaInvariant.Parseable[Key.Primitive, Key.Primitive.String]
-      with
-      export Boolean.schema.boolean
-      export Number.schema.{double, float, int, jBigDecimal, jBigInteger, long}
-      export String.schema.{parsed, parser, string}
+    given PrimitiveSchemaInvariant[Key.Primitive, Key.Primitive] =
+      PrimitiveSchemaInvariant[Self.Primitive[Key.Primitive, *], Key.Primitive]
+        .imapK(
+          [A] =>
+            (schema: Self.Primitive[Key.Primitive, A]) =>
+              schema match
+                case self: Self.Primitive.Boolean[A]               => Key.Primitive.Boolean(self)
+                case self: Self.Primitive.Number[A]                => Key.Primitive.Number(self)
+                case self: Self.Primitive.String[Key.Primitive, A] => Key.Primitive.String(self)
+        )([A] => (key: Key.Primitive[A]) => key.self)
 
-      override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa match
-        case Primitive.Boolean(self) => Primitive.Boolean(self.imap(f)(g))
-        case Primitive.Number(self)  => Primitive.Number(self.imap(f)(g))
-        case Primitive.String(self)  => Primitive.String(self.imap(f)(g))
-
-      override def enriched[A]: Enriched[Primitive[A]] = new Enriched[Primitive[A]]:
-        override def metadata(a: Primitive[A]): Metadata = a match
-          case Primitive.Boolean(self) => self.metadata
-          case Primitive.Number(self)  => self.metadata
-          case Primitive.String(self)  => self.metadata
-
-        override def modifyMetadata(a: Primitive[A])(f: Metadata => Metadata): Primitive[A] = a match
-          case Primitive.Boolean(self) => Primitive.Boolean(self.metadata(f))
-          case Primitive.Number(self)  => Primitive.Number(self.metadata(f))
-          case Primitive.String(self)  => Primitive.String(self.metadata(f))
+    given Parseable[Key.Primitive, Key.Primitive.String] = Parseable[Key.Primitive, Key.Primitive.String]
 
   final case class Constant[A](self: Self.Constant[Key.Primitive.String, A]) extends Key[A]
 
