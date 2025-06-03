@@ -22,7 +22,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]
   val enumeration = EnumerationTypescriptRenderer(printer = JsonPrimitivePrinter)
   val nullable = NullableTypescriptRenderer(renderer = this)
   val record = RecordTypescriptRenderer(
-    renderer = FieldTypescriptRenderer(key = KeyPrinter.Quoted, value = this)
+    renderer = FieldTypescriptRenderer(key = KeyPrinter.Unquoted, value = this)
       .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
   )
   val tuple = TupleTypescriptRenderer(renderer = this)
