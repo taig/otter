@@ -1,11 +1,9 @@
 package io.taig.otter
 
 import cats.syntax.all.*
-import io.taig.otter.syntax.EnrichedSyntax.*
-import io.taig.otter.operation.*
 import io.taig.otter as Self
-import java.util.regex.Pattern
-import java.math.BigInteger
+import io.taig.otter.operation.*
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 sealed trait Key[A] extends Key.Any[A]
 

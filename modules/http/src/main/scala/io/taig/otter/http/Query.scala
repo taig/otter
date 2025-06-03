@@ -103,8 +103,8 @@ object Query:
               [A] => (schema: Self.Primitive.String[Query.Schema.Primitive, A]) => String(schema)
             )([A] => (schema: Query.Schema.Primitive.String[A]) => schema.self)
 
-      given PrimitiveSchemaInvariant[Query.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *]].imapK(
+      given PrimitiveSchemaInvariant[Query.Schema.Primitive, Query.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *], Query.Schema.Primitive].imapK(
           [A] =>
             (self: Self.Primitive[Query.Schema.Primitive, A]) =>
               self match
@@ -112,6 +112,9 @@ object Query:
                 case self: Self.Primitive.Number[A]                         => Query.Schema.Primitive.Number(self)
                 case self: Self.Primitive.String[Query.Schema.Primitive, A] => Query.Schema.Primitive.String(self)
         )([A] => (schema: Query.Schema.Primitive[A]) => schema.self)
+
+      given Parseable[Query.Schema.Primitive, Query.Schema.Primitive.String] =
+        Parseable[Query.Schema.Primitive, Query.Schema.Primitive.String]
 
     sealed trait Value[A] extends Query.Schema[A]
 

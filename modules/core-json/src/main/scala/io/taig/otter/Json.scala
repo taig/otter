@@ -4,8 +4,6 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
-import java.util.regex.Pattern
-import java.math.BigInteger
 
 sealed abstract class Json[A] extends Product, Serializable
 

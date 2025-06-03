@@ -1,7 +1,7 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.CollectionSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Collection[+S[_], A](value: Collection.Value[S, A], metadata: Metadata)
 

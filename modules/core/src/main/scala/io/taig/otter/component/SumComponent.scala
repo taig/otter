@@ -13,8 +13,7 @@ trait SumComponent[
     RecordSchemaInvariant[Record, Field],
     SchemaInvariant.Recordable[Field, Record]
 ) extends ConstantComponent.Primitive.String[Constant, Value],
-      FieldComponent.Primitive.String[Field, Key, Value],
-      RecordComponent[Record, Field]:
+      FieldComponent.Primitive.String[Field, Key, Value]:
   this: PrimitiveComponent[Value] =>
 
   def explicit(name: String): Record[Unit] = field(name = "type", constant(name)).toRecord

@@ -1,7 +1,7 @@
 package io.taig.otter
 import cats.implicits.*
-import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.DictionarySchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata)
 

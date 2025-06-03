@@ -1,7 +1,6 @@
 package io.taig.otter.operation
 
 import io.taig.otter.Merge
-import cats.syntax.all.*
 
 trait RecordSchemaInvariant[Self[_], -Field[_]] extends SchemaInvariant[Self]:
   self =>

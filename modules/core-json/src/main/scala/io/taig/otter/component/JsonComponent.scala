@@ -14,7 +14,6 @@ trait JsonComponent extends
       FieldComponent.Primitive.String[Json.Field, Key, Json],
       NullableComponent[Json.Nullable, Json],
       PrimitiveComponent[Json.Primitive],
-      RecordComponent[Json.Record, Json.Field],
       TupleComponent[Json.Tuple, Json],
       ErrorComponent[Json.Constant, Json.Record, Json.Field, Key, Json],
       ViolationsComponent[Json.Collection, Json.Constant, Json.Dictionary, Json.Primitive, Json.Record, Json.Union, Json.Field, Key, Json]:

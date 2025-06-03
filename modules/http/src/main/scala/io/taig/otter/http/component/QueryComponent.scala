@@ -13,10 +13,10 @@ trait QueryComponent
       ConstantComponent[Query.Schema.Value.Constant, Query.Schema.Primitive.String],
       EnumerationComponent[Query.Schema.Value.Enumeration, Query.Schema.Primitive.String],
       NullableComponent[Query.Schema.Nullable, Query.Schema],
-      PrimitiveComponent[Query.Schema.Primitive, Query.Schema.Primitive.String],
+      PrimitiveComponent[Query.Schema.Primitive],
       PrimitiveComponent.Boolean[Query.Schema.Primitive.Boolean],
       PrimitiveComponent.Number[Query.Schema.Primitive.Number],
-      PrimitiveComponent.String[Query.Schema.Primitive.String, Query.Schema.Primitive],
+      PrimitiveComponent.String[Query.Schema.Primitive.String],
       TupleComponent[Query.Schema.Array.Tuple, Query.Schema.Value]
 
 object QueryComponent extends QueryComponent

@@ -91,8 +91,8 @@ object Parameter:
               [A] => (schema: Self.Primitive.String[Parameter.Schema.Primitive, A]) => String(schema)
             )([A] => (value: Parameter.Schema.Primitive.String[A]) => value.self)
 
-      given PrimitiveSchemaInvariant[Parameter.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Parameter.Schema.Primitive, *]].imapK(
+      given PrimitiveSchemaInvariant[Parameter.Schema.Primitive, Parameter.Schema.Primitive] =
+        PrimitiveSchemaInvariant[Self.Primitive[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive].imapK(
           [A] =>
             (schema: Self.Primitive[Parameter.Schema.Primitive, A]) =>
               schema match
@@ -101,6 +101,9 @@ object Parameter:
                 case self: Self.Primitive.String[Parameter.Schema.Primitive, A] =>
                   Parameter.Schema.Primitive.String(self)
         )([A] => (value: Parameter.Schema.Primitive[A]) => value.self)
+
+      given Parseable[Parameter.Schema.Primitive, Parameter.Schema.Primitive] =
+        Parseable[Parameter.Schema.Primitive, Parameter.Schema.Primitive.String]
 
     sealed trait Value[A] extends Parameter.Schema[A], Parameter.Schema.Object.Value[A]
 

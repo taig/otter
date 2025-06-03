@@ -2,8 +2,8 @@ package io.taig.otter
 
 import cats.Eq
 import cats.syntax.all.*
-import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.ConstantSchemaInvariant
+import io.taig.otter.operation.Enriched
 
 final case class Constant[+S[_], A](value: Constant.Value[S, A], metadata: Metadata)
 

@@ -2,7 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter.operation.Enriched
-import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.operation.PrimitiveSchemaInvariant
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -13,7 +13,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.operation.PrimitiveSchemaInvariant
 
 sealed abstract class Primitive[+S[_], A]:
   def value: Primitive.Value[S, A]

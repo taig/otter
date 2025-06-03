@@ -8,7 +8,7 @@ import org.typelevel.ci.CIString
 import java.util.regex.Pattern
 
 trait CaseInsensitiveComponent[+Self[_]: Invariant]:
-  this: PrimitiveComponent.String[Self, ?] =>
+  this: PrimitiveComponent.String[Self] =>
 
   def cistring(
       minimum: Argument[Int] = Argument.Default,
