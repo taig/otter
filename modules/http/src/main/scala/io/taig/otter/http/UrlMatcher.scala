@@ -18,7 +18,7 @@ object UrlMatcher:
     case Path.Value.Zip(left, right) => apply(path = left, data).flatMap(apply(path = right, _))
 
   def apply(queries: Queries.Value[?], data: Queries.Data): Option[Queries.Data] = queries match
-    case Queries.Value.Default(_, _)        => data.some
+    case Queries.Value.Default(_, _)      => data.some
     case Queries.Value.Empty              => data.some
     case Queries.Value.Modify(self, _, _) => apply(queries = self, data)
     case Queries.Value.Optional(_)        => data.some

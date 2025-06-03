@@ -15,11 +15,12 @@ import io.taig.otter.http.Parameter
 import io.taig.otter.http.Request
 import io.taig.otter.http.Response
 import io.taig.otter.indent
+import io.taig.otter.http.Url
 
 object TypescriptZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
     for
-      url <- url(request = endpoint.request)
+      url <- url(self = endpoint.request.url)
       name = function(endpoint)
       input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
       output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
@@ -27,7 +28,7 @@ object TypescriptZodEndpointRenderer:
                   |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
       fields = Chain(
         ("method", s"\"${endpoint.request.method}\""),
-        ("path", s"`$url`")
+        ("path", "url.toString()")
       ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
         Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
           ("body", "JSON.stringify(input.body)")
@@ -39,18 +40,28 @@ object TypescriptZodEndpointRenderer:
       types = List(input, output),
       definition = show"""export const $name = (
                          |  input: ${input.name}
-                         |): Request<${output.name}> => ({
-                         |${fields.map((name, value) => s"$name: $value").map(indent(_)).mkString_(",\n")}
-                         |})""".stripMargin
+                         |): Request<${output.name}> => {
+                         |${indent(url)}
+                         |
+                         |  return {
+                         |${fields.map((name, value) => s"$name: $value").map(indent(_, depth = 2)).mkString_(",\n")}
+                         |  };
+                         |}""".stripMargin
     )
 
-  def url[S[_], A](request: Request[S, A]): TypescriptState[String] = State.pure:
-    // TODO query params
-    request.url.path.toSegments
+  def url[A](self: Url[A]): TypescriptState[String] = State.pure:
+    val url = self.path.toSegments
       .map:
-        case name: String            => name
-        case parameter: Parameter[?] => s"$${encodeURIComponent(input.url.path.${parameter.name})}"
-      .mkString_("/", "/", "")
+        case name: String            => s"\"$name\""
+        case parameter: Parameter[?] => s"""encodeURIComponent(input.url.path["${parameter.name}"])"""
+      .mkString_("[", ", ", "]")
+
+    val queries = self.queries.toChain
+      .map: query =>
+        s"""url.searchParams.append("${query.name}", input.url.queries["${query.name}"])"""
+      .mkString_("\n")
+
+    (List(s"""const url = new URL($url.join("/"))""") ++ List(queries).filter(_.nonEmpty)).mkString("\n")
 
   def function(endpoint: Endpoint[?, ?, ?]): String = endpoint.metadata
     .get(Keys.name)

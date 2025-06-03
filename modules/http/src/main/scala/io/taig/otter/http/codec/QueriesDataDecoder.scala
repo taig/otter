@@ -26,7 +26,7 @@ object QueriesDataDecoder extends Decoder.Remaining[Queries, Queries.Data]:
         if self.toChain.map(_.name).exists(keys.contains)
         then decodeRemaining(schema = self, value).map(_.map(_.some))
         else (value, none).valid
-      case Queries.Value.Root(query)        => QueryDataDecoder.decodeRemaining(query, value)
+      case Queries.Value.Root(query) => QueryDataDecoder.decodeRemaining(query, value)
       case Queries.Value.Zip(left, right) =>
         decodeRemaining(schema = left, value) match
           case Validated.Valid((values, a)) => decodeRemaining(schema = right, value).map(_.tupleLeft(a))

@@ -30,14 +30,14 @@ object Queries:
     final def imap[B](f: A => B)(g: B => A): Queries.Value[B] = Value.Modify(self = this, f, g)
 
     final def optional: Queries.Value[Option[A]] = Value.Optional(self = this)
-    
+
     final def optional(default: A): Queries.Value[A] = Value.Default(self = this, value = default)
 
     final def zip[B](queries: Queries.Value[B]): Queries.Value[(A, B)] =
       Value.Zip(left = this, right = queries)
 
   object Value:
-    private[otter] final case class Default[A](self: Queries.Value[A], value: A) extends Queries.Value[A]:
+    final private[otter] case class Default[A](self: Queries.Value[A], value: A) extends Queries.Value[A]:
       export self.toChain
 
     private[otter] case object Empty extends Queries.Value[Unit]:

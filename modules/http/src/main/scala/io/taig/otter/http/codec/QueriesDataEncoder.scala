@@ -9,7 +9,7 @@ object QueriesDataEncoder extends Encoder[Queries, Queries.Data]:
     encode(queries = queries.value, a)
 
   def encode[A](queries: Queries.Value[A], a: A): Queries.Data = queries match
-    case Queries.Value.Default(self, _) => encode(queries = self, a)
+    case Queries.Value.Default(self, _)   => encode(queries = self, a)
     case Queries.Value.Empty              => Chain.empty
     case Queries.Value.Root(query)        => QueryDataEncoder.encode(query, a)
     case Queries.Value.Modify(self, _, g) => encode(queries = self, g(a))
