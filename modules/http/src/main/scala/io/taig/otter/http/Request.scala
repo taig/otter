@@ -13,11 +13,11 @@ final case class Request[+S[_], A](value: Request.Value[S, A], metadata: Metadat
 
   def zip[B](headers: Headers[B]): Request[S, (A, B)] = Request(value.zip(headers), metadata = Metadata.Empty)
 
-  def *[B](headers: Headers[B])(using merge: Merge[A, B]): Request[S, merge.Out] = zip(headers).merge
+  def merge[B](headers: Headers[B])(using m: Merge[A, B]): Request[S, m.Out] = zip(headers).merged
 
-  def :*[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] = this * header.toHeaders
+  def :*[B](header: Header[B])(using m: Merge[A, B]): Request[S, m.Out] = merge(header.toHeaders)
 
-  def *:[B](header: Header[B])(using merge: Merge[A, B]): Request[S, merge.Out] = this * header.toHeaders
+  def *:[B](header: Header[B])(using m: Merge[A, B]): Request[S, m.Out] = merge(header.toHeaders)
 
 object Request:
   sealed abstract class Value[+S[_], A] extends Product, Serializable:

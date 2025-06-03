@@ -16,11 +16,11 @@ final case class Headers[A](value: Headers.Value[A], metadata: Metadata):
   def zip[B](headers: Headers[B]): Headers[(A, B)] =
     Headers(value = value.zip(headers.value), metadata = Metadata.Empty)
 
-  def *[B](headers: Headers[B])(using merge: Merge[A, B]): Headers[merge.Out] = this.zip(headers).merge
+  def merge[B](headers: Headers[B])(using m: Merge[A, B]): Headers[m.Out] = zip(headers).merged
 
-  def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = this * header.toHeaders
+  def :*[B](header: Header[B])(using m: Merge[A, B]): Headers[m.Out] = merge(header.toHeaders)
 
-  def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] = header.toHeaders * this
+  def *:[B](header: Header[B])(using m: Merge[B, A]): Headers[m.Out] = header.toHeaders.merge(this)
 
 object Headers:
   sealed abstract class Value[A]:

@@ -24,6 +24,6 @@ trait SumComponent[
   def merged(name: String): Record[Unit] = field(name = "type", constant(name)).toRecord
 
   def merged[A](name: String, schema: => Record[A]): Record[A] =
-    merged(name).zip(schema).merge
+    merged(name).zip(schema).merged
 
   def keyed[A](name: String, schema: => Value[A]): Record[A] = field(name, schema).toRecord

@@ -13,9 +13,9 @@ final case class Path[A](value: Path.Value[A], metadata: Metadata):
 
   def zip[B](path: Path[B]): Path[(A, B)] = Path(value = value.zip(path.value), metadata = Metadata.Empty)
 
-  def *[B](path: Path[B])(using merge: Merge[A, B]): Path[merge.Out] = zip(path).merge
+  def merge[B](path: Path[B])(using m: Merge[A, B]): Path[m.Out] = zip(path).merged
 
-  def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Path[merge.Out] = this * parameter.toPath
+  def /[B](parameter: Parameter[B])(using m: Merge[A, B]): Path[m.Out] = merge(parameter.toPath)
 
   def /(name: String): Path[A] = Path(
     value = value.zip(Path.Value.Static(name)).imap((a, _) => a)((_, ())),

@@ -13,17 +13,17 @@ final case class Url[A](value: Url.Value[A], metadata: Metadata):
 
   def zip[B](url: Url[B]): Url[(A, B)] = Url(value.zip(url.value), metadata = Metadata.Empty)
 
-  def *[B](url: Url[B])(using merge: Merge[A, B]): Url[merge.Out] = zip(url).merge
+  def merge[B](url: Url[B])(using m: Merge[A, B]): Url[m.Out] = zip(url).merged
 
-  def /[B](path: Path[B])(using merge: Merge[A, B]): Url[merge.Out] = this * path.toUrl
+  def /[B](path: Path[B])(using m: Merge[A, B]): Url[m.Out] = merge(path.toUrl)
 
-  def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = this * parameter.toPath.toUrl
+  def /[B](parameter: Parameter[B])(using m: Merge[A, B]): Url[m.Out] = /(parameter.toPath)
 
-  def /[B](name: String): Url[A] = this * Path(value = Path.Value.Static(name), metadata = Metadata.Empty).toUrl
+  def /[B](name: String): Url[A] = /(Path(value = Path.Value.Static(name), metadata = Metadata.Empty))
 
-  def &[B](queries: Queries[B])(using merge: Merge[A, B]): Url[merge.Out] = this * queries.toUrl
+  def &[B](queries: Queries[B])(using m: Merge[A, B]): Url[m.Out] = merge(queries.toUrl)
 
-  def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] = this & query.toQueries
+  def &[B](query: Query[B])(using m: Merge[A, B]): Url[m.Out] = &(query.toQueries)
 
 object Url:
   sealed abstract class Value[A] extends Product, Serializable:

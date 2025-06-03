@@ -9,7 +9,7 @@ trait RecordSchemaInvariant[Self[_], -Field[_]] extends SchemaInvariant[Self]:
 
   extension [A](self: Self[A])
     def zip[B](schema: Self[B]): Self[(A, B)]
-    final def merge[B](schema: Self[B])(using m: Merge[A, B]): Self[m.Out] = zip(schema).merge
+    final def merge[B](schema: Self[B])(using m: Merge[A, B]): Self[m.Out] = zip(schema).merged
     final def :*[B](field: => Field[B])(using m: Merge[A, B]): Self[m.Out] = merge(lift(field))
 
   extension [A](self: Field[A])

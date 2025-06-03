@@ -9,10 +9,10 @@ trait ResultSyntax:
       code: Code,
       headers: Headers[A],
       bodies: Bodies[S, B]
-  )(using merge: Merge[A, B]): Result[S, merge.Out] = Result(
+  )(using m: Merge[A, B]): Result[S, m.Out] = Result(
     value = Result.Value.Payload(Result.Value.Root(code, headers), bodies),
     metadata = Metadata.Empty
-  ).merge
+  ).merged
 
   def result[S[_], A](code: Code, bodies: Bodies[S, A]): Result[S, A] = Result(
     value = Result.Value

@@ -10,9 +10,9 @@ final case class Queries[A](value: Queries.Value[A], metadata: Metadata):
   def zip[B](queries: Queries[B]): Queries[(A, B)] =
     Queries(value = value.zip(queries.value), metadata = Metadata.Empty)
 
-  def *[B](queries: Queries[B])(using merge: Merge[A, B]): Queries[merge.Out] = zip(queries).merge
+  def merge[B](queries: Queries[B])(using m: Merge[A, B]): Queries[m.Out] = zip(queries).merged
 
-  def &[B](query: Query[B])(using merge: Merge[A, B]): Queries[merge.Out] = this * query.toQueries
+  def &[B](query: Query[B])(using m: Merge[A, B]): Queries[m.Out] = merge(query.toQueries)
 
   def toUrl: Url[A] = Url(
     value = Url.Value.Root(path = Path.Empty, queries = this).imap((_, a) => a)(a => ((), a)),

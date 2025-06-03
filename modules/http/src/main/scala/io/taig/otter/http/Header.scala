@@ -13,10 +13,10 @@ final case class Header[A](value: Header.Value[A], metadata: Metadata):
   def isOptional: Boolean = value.isOptional
   def optional: Header[Option[A]] = Header(value = value.optional, metadata = Metadata.Empty)
 
-  def :*[B](header: Header[B])(using merge: Merge[A, B]): Headers[merge.Out] = toHeaders :* header
+  def :*[B](header: Header[B])(using m: Merge[A, B]): Headers[m.Out] = toHeaders :* header
 
-  def *:[B](header: Header[B])(using merge: Merge[B, A]): Headers[merge.Out] =
-    header.toHeaders * toHeaders
+  def *:[B](header: Header[B])(using m: Merge[B, A]): Headers[m.Out] =
+    header.toHeaders.merge(toHeaders)
 
   def toHeaders: Headers[A] = Headers(value = Headers.Value.Root(this), metadata = Metadata.Empty)
 

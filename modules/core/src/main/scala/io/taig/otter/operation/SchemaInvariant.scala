@@ -23,7 +23,7 @@ trait SchemaInvariant[Self[_]] extends Invariant[Self]:
       self.imap(convert.to)(convert.from)
 
   extension [A, B](self: Self[(A, B)])
-    final def merge(using merge: Merge[A, B]): Self[merge.Out] =
+    final def merged(using merge: Merge[A, B]): Self[merge.Out] =
       self.imap(merge.apply)(merge.unapply)
 
   extension (self: Self[Unit])
