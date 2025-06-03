@@ -180,4 +180,4 @@ final class PrimitiveDecoder[S[_], T](decoder: Decoder[Primitive[S, *], T]) exte
               Violations.rootNec(Violation(Constraint.Primitive.String.Matches(pattern), value, hint = none))
             )
           }).as(value)
-    case schema => decode(schema, value)
+    case schema => decoder.decode(schema, value)
