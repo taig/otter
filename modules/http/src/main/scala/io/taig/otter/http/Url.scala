@@ -15,11 +15,15 @@ final case class Url[A](value: Url.Value[A], metadata: Metadata):
 
   def *[B](url: Url[B])(using merge: Merge[A, B]): Url[merge.Out] = zip(url).merge
 
+  def /[B](path: Path[B])(using merge: Merge[A, B]): Url[merge.Out] = this * path.toUrl
+
   def /[B](parameter: Parameter[B])(using merge: Merge[A, B]): Url[merge.Out] = this * parameter.toPath.toUrl
 
   def /[B](name: String): Url[A] = this * Path(value = Path.Value.Static(name), metadata = Metadata.Empty).toUrl
 
-  def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] = this * query.toQueries.toUrl
+  def &[B](queries: Queries[B])(using merge: Merge[A, B]): Url[merge.Out] = this * queries.toUrl
+
+  def &[B](query: Query[B])(using merge: Merge[A, B]): Url[merge.Out] = this & query.toQueries
 
 object Url:
   sealed abstract class Value[A] extends Product, Serializable:
