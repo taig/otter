@@ -21,29 +21,28 @@ trait DataComponent[
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       PrimitiveComponent[Primitive]:
-
   def key: PrimitiveComponent.String[Key]
 
   object data:
     val number: Value[Data.Number] = jBigDecimal | jBigInteger | long | int | float | double
 
-    val primitive: Value[Data.Primitive] = (number | boolean | string).name("Primitive")
+    val primitive: Value[Data.Primitive] = (number | boolean | string).name("Data.Primitive")
 
-    def obj[A <: Data.Any](schema: => Value[A]): Dictionary[Data.Object[A]] =
+    def obj[A <: Data](schema: => Value[A]): Dictionary[Data.Object[A]] =
       dictionary.list(key.string, schema).imap(Data.Object[A])(_.values)
 
-    val obj: Dictionary[Data.Object[Data.Any]] = obj(any).name("Object")
+    val obj: Dictionary[Data.Object[Data]] = obj(any).name("Data.Object")
 
-    def array[A <: Data.Any](schema: => Value[A]): Collection[Data.Array[A]] =
-      collection.vector(schema).imap(Data.Array[A])(_.values).name("Collection")
+    def array[A <: Data](schema: => Value[A]): Collection[Data.Array[A]] =
+      collection.vector(schema).imap(Data.Array[A])(_.values).name("Data.Collection")
 
-    val array: Collection[Data.Array[Data.Any]] = array(any)
+    val array: Collection[Data.Array[Data]] = array(any)
 
-    val value: Union[Data.Value] = (primitive | obj | array).name("Value")
+    val value: Union[Data.Value] = (primitive | obj | array).name("Data.Value")
 
-    val any: Value[Data.Any] = value.nullable
+    val any: Value[Data] = value.nullable
       .imap(_.getOrElse(Data.Null)) {
         case Data.Null        => None
         case data: Data.Value => Some(data)
       }
-      .name("Any")
+      .name("Data")

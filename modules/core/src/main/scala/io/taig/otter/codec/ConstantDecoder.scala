@@ -6,7 +6,7 @@ import io.taig.otter.Data
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 
-final class ConstantDecoder[S[_], T](codec: Codec[S, T], render: T => Data.Any) extends Decoder[Constant[S, *], T]:
+final class ConstantDecoder[S[_], T](codec: Codec[S, T], render: T => Data) extends Decoder[Constant[S, *], T]:
   override def decode[A](schema: Constant[S, A], value: T): Validated[Violations, A] =
     decode(schema = schema.value, value)
 

@@ -30,8 +30,8 @@ sealed abstract class Constraint extends SProduct, Serializable derives Eq:
     case Constraint.Primitive.Number.Multiple(reference)                   => show"primitive.string.multiple $reference"
 
 object Constraint:
-  final case class Equal(reference: Data.Any) extends Constraint
-  final case class OneOf(values: List[Data.Any]) extends Constraint
+  final case class Equal(reference: Data) extends Constraint
+  final case class OneOf(values: List[Data]) extends Constraint
   case object Required extends Constraint
   final case class Type(name: String) extends Constraint
 

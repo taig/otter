@@ -8,11 +8,6 @@ import java.io.PrintWriter
 import java.io.StringWriter
 import java.util.regex.Pattern
 
-private[otter] given Eq[Data.Number] = Eq.fromUniversalEquals
-private[otter] given Eq[Data.Primitive] = Eq.fromUniversalEquals
-private[otter] given Eq[Data.Value] = Eq.fromUniversalEquals
-private[otter] given Eq[Data.Any] = Eq.fromUniversalEquals
-
 private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
 private[otter] def indent(value: String, block: Boolean = false, depth: Int = 1): String =

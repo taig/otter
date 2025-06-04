@@ -79,8 +79,8 @@ object TypescriptZodEndpointRenderer:
     val http = show"${endpoint.request.method} ${endpoint.request.url.path}"
     val label = endpoint.metadata.get(Keys.name) match
       case Some(name) => show"$http ($name)"
-      case None => http
-    
+      case None       => http
+
     show"/* $label */"
 
   def input(request: Request[Json, ?]): TypescriptState[Typescript.Object] =
