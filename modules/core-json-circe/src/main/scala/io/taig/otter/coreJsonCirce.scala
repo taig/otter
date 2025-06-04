@@ -32,10 +32,10 @@ def fromJsonArray(json: Vector[Json]): Data.Array[Data] =
   Data.Array(json.map(fromJson))
 
 def toJson(data: Data): Json = data match
-  case data: Data.Primitive => toJson(data)
+  case data: Data.Primitive    => toJson(data)
   case data: Data.Object[Data] => Json.fromJsonObject(toJsonObject(data))
   case data: Data.Array[Data]  => Json.fromValues(toJsonArray(data))
-  case Data.Null => Json.Null
+  case Data.Null               => Json.Null
 
 @targetName("toJsonPrimitive")
 def toJson(data: Data.Primitive): Json = data match

@@ -8,23 +8,28 @@ import io.taig.otter.TypescriptState
 import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.toSymbol
+import io.taig.otter.TypescriptKeys
 
 final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptState[Typescript]]
 ) extends Renderer[S, TypescriptState[Typescript]]:
-  override def render[A](schema: S[A]): TypescriptState[Typescript] = schema.metadata(Keys.name).map(toSymbol) match
-    case Some(name) =>
-      State: state =>
-        if state.stack.contains_(name)
-        then (state, Typescript.Reference(name))
-        else
-          state.references.get(name) match
-            case Some(value) => (state, Typescript.Reference(name))
-            case None =>
-              val (update, typescript) = renderer.render(schema).run(initial = state.push(name)).value
+  override def render[A](schema: S[A]): TypescriptState[Typescript] =
+    schema.metadata.get(TypescriptKeys.typescript) match
+      case Some(typescript) => State.pure(typescript)
+      case None =>
+        schema.metadata(Keys.name).map(toSymbol) match
+          case Some(name) =>
+            State: state =>
+              if state.stack.contains_(name)
+              then (state, Typescript.Reference(name))
+              else
+                state.references.get(name) match
+                  case Some(value) => (state, Typescript.Reference(name))
+                  case None =>
+                    val (update, typescript) = renderer.render(schema).run(initial = state.push(name)).value
 
-              (
-                update.modifyReferences(_.updatedWith(name)(_ => typescript.some)).pop(name),
-                Typescript.Reference(name)
-              )
-    case None => renderer.render(schema)
+                    (
+                      update.modifyReferences(_.updatedWith(name)(_ => typescript.some)).pop(name),
+                      Typescript.Reference(name)
+                    )
+          case None => renderer.render(schema)

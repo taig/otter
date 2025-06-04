@@ -12,6 +12,7 @@ enum Typescript derives Order:
   case Any
   case Array(self: Typescript)
   case Boolean
+  case Custom(name: String)
   case Literal(value: String)
   case Nullable(self: Typescript)
   case Number
@@ -40,6 +41,7 @@ object Typescript:
     case Typescript.Any                                => "any"
     case Typescript.Array(self)                        => show"Array<$self>"
     case Typescript.Boolean                            => "boolean"
+    case Typescript.Custom(name)                       => name
     case Typescript.Literal(value)                     => value
     case Typescript.Nullable(self)                     => show"($self | null)"
     case Typescript.Number                             => "number"
