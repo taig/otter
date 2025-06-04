@@ -36,7 +36,7 @@ object TypescriptZodEndpointRenderer:
         ("handle", handle)
     yield TypescriptEndpoint(
       input,
-      marker = show"/* ${endpoint.request.method} ${endpoint.request.url.path} */",
+      marker = marker(endpoint),
       types = List(input, output),
       definition = show"""export const $name = (
                          |  input: ${input.name}
@@ -74,6 +74,14 @@ object TypescriptZodEndpointRenderer:
       val (head, tail) = NonEmptyChain.fromChainAppend(urls, endpoint.request.method.toString.toLowerCase).uncons
 
       s"$head${tail.map(_.capitalize).mkString_("")}"
+
+  def marker(endpoint: Endpoint[?, ?, ?]): String =
+    val http = show"${endpoint.request.method} ${endpoint.request.url.path}"
+    val label = endpoint.metadata.get(Keys.name) match
+      case Some(name) => show"$http ($name)"
+      case None => http
+    
+    show"/* $label */"
 
   def input(request: Request[Json, ?]): TypescriptState[Typescript.Object] =
     val path = PathTypescriptRenderer
