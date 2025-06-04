@@ -36,12 +36,16 @@ object Data:
   final case class Object[+A <: Data](values: List[(String, A)]) extends AnyVal
 
   object Object:
+    val Empty: Data.Object[Nothing] = Object(List.empty)
+
     given show[A <: Data]: Show[Data.Object[A]] = obj =>
       "{" + obj.values.map { case (key, value) => show"\"$key\":${Data.show.show(value)}" }.mkString(",") + "}"
 
   final case class Array[+A <: Data](values: Vector[A]) extends AnyVal
 
   object Array:
+    val Empty: Data.Array[Nothing] = Array(Vector.empty)
+
     given show[A <: Data]: Show[Data.Array[A]] = array => "[" + array.values.map(Data.show.show).mkString(",") + "]"
 
   type Null = Data.Null.type

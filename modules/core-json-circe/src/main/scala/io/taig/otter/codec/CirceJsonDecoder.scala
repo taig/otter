@@ -6,14 +6,14 @@ import io.circe.Json as CirceJson
 import io.taig.otter.Json
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.toType
-import io.taig.otter.toValue
+import io.taig.otter.typeOf
+import io.taig.otter.fromJson
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)
-  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = toValue)
+  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = fromJson)
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = this)
-  val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = toValue)
+  val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = fromJson)
   val nullable = NullableDecoder(decoder = this, empty = _.isNull)
   val primitive = PrimitiveDecoder(decoder = CirceJsonPrimitiveDecoder)
   val record = RecordDecoder(
@@ -26,12 +26,12 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def decode[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
     case Json.Collection(self) =>
       json.asArray
-        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))
+        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = typeOf(json))))
         .andThen(collection.decode(schema = self.self, _))
     case Json.Constant(self) => constant.decode(schema = self.self, json)
     case Json.Dictionary(self) =>
       json.asObject
-        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
+        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = typeOf(json))))
         .map(_.toList)
         .andThen(dictionary.decode(schema = self.self, _))
     case Json.Enumeration(self) => enumeration.decode(schema = self.self, json)
@@ -39,11 +39,11 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Primitive(self)   => primitive.decode(schema = self.self, json)
     case Json.Record(self) =>
       json.asObject
-        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = toType(json))))
+        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = typeOf(json))))
         .map(_.toList)
         .andThen(record.decode(schema = self.self, _))
     case Json.Tuple(self) =>
       json.asArray
-        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = toType(json))))
+        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = typeOf(json))))
         .andThen(tuple.decode(schema = self.self, _))
     case Json.Union(self) => union.decode(schema = self.self, json)

@@ -8,7 +8,7 @@ import io.taig.otter.Json
 import io.taig.otter.Primitive
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.toValue
+import io.taig.otter.fromJson
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -33,11 +33,11 @@ object CirceJsonPrimitiveDecoder extends Decoder[Primitive[Json.Primitive, *], C
     case Primitive.Value.String.Parser(name, f, _) =>
       decode[String](name = "string", json).andThen: value =>
         f(value)
-          .leftMap(error => Violations.rootNec(Violation.tpe(name, actual = toValue(json), hint = error)))
+          .leftMap(error => Violations.rootNec(Violation.tpe(name, actual = fromJson(json), hint = error)))
           .toValidated
     case _: Primitive.Value.String.Text => decode[String](name = "string", json)
 
   def decode[A: CirceDecoder](name: String, json: CirceJson): Validated[Violations, A] = json
     .as[A]
-    .leftMap(failure => Violations.rootNec(Violation.tpe(name, actual = toValue(json), hint = failure.show)))
+    .leftMap(failure => Violations.rootNec(Violation.tpe(name, actual = fromJson(json), hint = failure.show)))
     .toValidated
