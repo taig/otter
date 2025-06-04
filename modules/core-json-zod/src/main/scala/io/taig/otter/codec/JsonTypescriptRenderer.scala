@@ -7,7 +7,7 @@ import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
 
 object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]]:
-  val renderer = ReferenceTypescriptRenderer(renderer = Expression)
+  val renderer = TypescriptRenderer(renderer = Expression)
 
   val collection = CollectionTypescriptRenderer(renderer = this)
   val constant = ConstantTypescriptRenderer[Json, Option](
