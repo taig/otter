@@ -72,9 +72,10 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJavaTime,
     coreJson,
     coreJsonCirce,
+    coreJsonTypescript,
     coreJsonZod,
     coreTypescript,
-    coreTypescriptZod,
+    coreZod,
     http,
     httpJson,
     httpJsonCirce,
@@ -123,7 +124,7 @@ lazy val coreJson = module(identifier = Some("core-json"))
 lazy val coreTypescript = module(identifier = Some("core-typescript"))
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreTypescriptZod = module(identifier = Some("core-typescript-zod"))
+lazy val coreZod = module(identifier = Some("core-zod"))
   .dependsOn(coreTypescript % "compile->compile;test->test")
 
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
@@ -134,8 +135,11 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   )
   .dependsOn(coreJson % "compile->compile;test->test")
 
+lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
+
 lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
-  .dependsOn(coreJson % "compile->compile;test->test", coreTypescriptZod % "compile->compile;test->test")
+  .dependsOn(coreJson % "compile->compile;test->test", coreZod % "compile->compile;test->test")
 
 lazy val http = module(identifier = Some("http"))
   .settings(
