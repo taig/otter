@@ -47,10 +47,7 @@ object Data:
   type Null = Data.Null.type
   case object Null
 
-  given Eq[Data.Number] = Eq.fromUniversalEquals
-  given Eq[Data.Primitive] = Eq.fromUniversalEquals
-  given Eq[Data.Value] = Eq.fromUniversalEquals
-  given Eq[Data] = Eq.fromUniversalEquals
+  given [A <: Data]: Eq[A] = Eq.fromUniversalEquals
 
   given show: Show[Data] =
     case value: Data.Value => Value.show.show(value)
