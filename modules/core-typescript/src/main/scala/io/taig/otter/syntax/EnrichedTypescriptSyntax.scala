@@ -5,8 +5,8 @@ import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptKeys
 
-trait TypescriptEnrichedSyntax:
+trait EnrichedTypescriptSyntax:
   extension [A](a: A)(using enriched: Enriched[A])
     def typescript(value: Typescript): A = a.metadata(TypescriptKeys.typescript, value)
 
-object TypescriptEnrichedSyntax extends TypescriptEnrichedSyntax
+object EnrichedTypescriptSyntax extends EnrichedTypescriptSyntax
