@@ -1,6 +1,6 @@
 package io.taig.otter
 
-import cats.data.NonEmptyList
+import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.EnumerationSchemaInvariant
@@ -11,7 +11,7 @@ object Enumeration:
   sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
-    def values: NonEmptyList[A]
+    def values: NonEmptyChain[A]
 
     final def imap[B](f: A => B)(g: B => A): Value[S, B] = Value.Modify(self = this, f, g)
     def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]
@@ -19,13 +19,13 @@ object Enumeration:
   object Value:
     final private[otter] case class Modify[S[_], A, B](self: Value[S, A], f: A => B, g: B => A) extends Value[S, B]:
       export self.schema
-      override def values: NonEmptyList[B] = self.values.map(f)
+      override def values: NonEmptyChain[B] = self.values.map(f)
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, B] =
         copy(self = self.mapK[S1, T](fK))
 
     final private[otter] case class Root[S[_], A, B](schema: Reference[S, A], mapping: Mapping[B, A])
         extends Value[S, B]:
-      override def values: NonEmptyList[B] = mapping.values
+      override def values: NonEmptyChain[B] = NonEmptyChain.fromNonEmptyList(mapping.values)
       override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, B] =
         copy(schema = schema.mapK[S1, T](fK))
 
@@ -46,4 +46,4 @@ object Enumeration:
 
     extension [A](self: Enumeration[Value, A])
       override def schema: Reference[Value, ?] = self.value.schema
-      override def values: NonEmptyList[A] = self.value.values
+      override def values: NonEmptyChain[A] = self.value.values

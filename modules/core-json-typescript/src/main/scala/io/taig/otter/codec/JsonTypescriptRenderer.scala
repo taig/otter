@@ -1,43 +1,58 @@
 package io.taig.otter.codec
 
-import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptState
+import io.taig.otter.Typescript.Value
+import io.taig.otter.Json.Dictionary
+import io.taig.otter.Json.Nullable
+import io.taig.otter.Json.Primitive
+import io.taig.otter.Json.Union
+import io.taig.otter.Key
 
-object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript]]:
-  val renderer = TypescriptRenderer(renderer = Expression)
+object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.Value, Typescript.Value]]:
+  val value: Encoder[Json, Option[String]] = Encoder {
+    [A] =>
+      (schema: Json[A], a: A) =>
+        schema match
+          case schema: Json.Primitive[A] => JsonPrimitivePrinter.encode(schema, a).some
+          case _                         => none
+  }
 
-  val collection = CollectionTypescriptRenderer(renderer = this)
-  val constant = ConstantTypescriptRenderer[Json, Option](
-    printer = Encoder:
-      [A] =>
-        (schema: Json[A], a: A) =>
-          schema match
-            case schema: Json.Primitive[A] => JsonPrimitivePrinter.encode(schema, a).some
-            case _                         => none
-  ).map(_.getOrElse(Typescript.Any)).map[TypescriptState[Typescript]](State.pure)
-  val dictionary = DictionaryTypescriptRenderer(key = KeyTypescriptRenderer.map(State.pure), value = this)
-  val enumeration = EnumerationTypescriptRenderer(printer = JsonPrimitivePrinter)
-  val nullable = NullableTypescriptRenderer(renderer = this)
-  val record = RecordTypescriptRenderer(
-    renderer = FieldTypescriptRenderer(key = KeyPrinter.Unquoted, value = this)
-      .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
-  )
-  val tuple = TupleTypescriptRenderer(renderer = this)
-  val union = UnionTypescriptRenderer(renderer = this)
+  val field = FieldTypescriptRenderer[
+    Key,
+    Json,
+    TypescriptState[Typescript.Value, *],
+    Typescript.Value
+  ](key = KeyPrinter.Unquoted, value = this).mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
 
-  override def render[A](schema: Json[A]): TypescriptState[Typescript] = renderer.render(schema)
+  val renderer: Renderer[Json, TypescriptState[Typescript.Value, Typescript.Value]] = TypescriptRenderer[
+    Json,
+    Json.Primitive,
+    Json.Field,
+    TypescriptState[Typescript.Value, *],
+    Typescript.Value
+  ](
+    renderer = TypescriptStateRenderer(renderer = this),
+    printer = JsonPrimitivePrinter,
+    value,
+    key = JsonKeyTypescriptRenderer,
+    field
+  ).mapK[Json](
+    [A] =>
+      (self: Json[A]) =>
+        self match
+          case Json.Collection(self)  => self
+          case Json.Constant(self)    => self
+          case Json.Dictionary(self)  => self
+          case Json.Enumeration(self) => self
+          case Json.Nullable(self)    => self
+          case Json.Primitive(self)   => self
+          case Json.Record(self)      => self
+          case Json.Tuple(self)       => self
+          case Json.Union(self)       => self
+  ).map(_.map(Typescript.Value.apply))
 
-  object Expression extends Renderer[Json, TypescriptState[Typescript]]:
-    override def render[A](schema: Json[A]): TypescriptState[Typescript] = schema match
-      case Json.Collection(self)  => collection.render(schema = self.self)
-      case Json.Constant(self)    => constant.render(schema = self.self)
-      case Json.Dictionary(self)  => dictionary.render(schema = self.self)
-      case Json.Enumeration(self) => State.pure(enumeration.render(schema = self.self))
-      case Json.Nullable(self)    => nullable.render(schema = self.self)
-      case Json.Primitive(self)   => State.pure(PrimitiveTypescriptRenderer.render(schema = self.self))
-      case Json.Record(self)      => record.render(schema = self.self)
-      case Json.Tuple(self)       => tuple.render(schema = self.self)
-      case Json.Union(self)       => union.render(schema = self.self)
+  override def render[A](schema: Json[A]): TypescriptState[Typescript.Value, Typescript.Value] =
+    renderer.render(schema)

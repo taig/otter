@@ -20,6 +20,8 @@ enum Zod derives Order:
   case Tuple(values: Chain[Zod])
   case Union(values: NonEmptyChain[Zod])
 
+  final def definition(name: String): ZodDefinition = ZodDefinition(name, value = this)
+
   final override def toString: String = this.show
 
 object Zod:

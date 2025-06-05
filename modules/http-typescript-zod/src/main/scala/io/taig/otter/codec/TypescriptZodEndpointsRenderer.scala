@@ -9,20 +9,19 @@ import io.taig.otter.http.Endpoint
 
 final class TypescriptZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =
-    val (references, result) = endpoints
+    val (context, result) = endpoints
       .traverse(TypescriptZodEndpointRenderer.render)
-      .run(initial = TypescriptState.Context.Empty)
+      .run(initial = TypescriptZodState.Context.Empty)
       .value
-      .leftMap(_.references)
 
-    val (context, zod) = result
-      .traverse: endpoint =>
-        endpoint.traverse: typescript =>
-          TypescriptZodEncoder
-            .encode(references, typescript = typescript.value)
-            .map(TypescriptZodDefinition(typescript, _))
-      .run(TypescriptZodState.Context.Empty)
-      .value
+    // val (context, zod) = result
+    //   .traverse: endpoint =>
+    //     endpoint.traverse: typescript =>
+    //       TypescriptZodEncoder
+    //         .encode(references, typescript = typescript.value)
+    //         .map(TypescriptZodDefinition(typescript, _))
+    //   .run(TypescriptZodState.Context.Empty)
+    //   .value
 
     s"""/* Imports */
        |
@@ -45,4 +44,4 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
        |
        |/* Endpoints */
        |
-       |${zod.mkString_("\n\n")}""".stripMargin
+       |""".stripMargin

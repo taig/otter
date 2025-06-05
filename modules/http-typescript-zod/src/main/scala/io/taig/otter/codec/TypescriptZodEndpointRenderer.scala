@@ -10,15 +10,19 @@ import io.taig.otter.Typescript
 import io.taig.otter.TypescriptDefinition
 import io.taig.otter.TypescriptEndpoint
 import io.taig.otter.TypescriptState
+import io.taig.otter.TypescriptZodState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Request
 import io.taig.otter.http.Response
 import io.taig.otter.indent
 import io.taig.otter.http.Url
+import io.taig.otter.TypescriptZod
+import io.taig.otter.Zod
+import io.taig.otter.TypescriptZodDefinition
 
 object TypescriptZodEndpointRenderer:
-  def render(endpoint: Endpoint[Json, ?, ?]): TypescriptState[TypescriptEndpoint[TypescriptDefinition[?]]] =
+  def render(endpoint: Endpoint[Json, ?, ?]): TypescriptZodState[TypescriptEndpoint[TypescriptZodDefinition]] =
     for
       url <- url(self = endpoint.request.url)
       name = function(endpoint)
@@ -29,10 +33,10 @@ object TypescriptZodEndpointRenderer:
       fields = Chain(
         ("method", s"\"${endpoint.request.method}\""),
         ("path", "url.toString()")
-      ) ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
+      ) /* ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
         Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
           ("body", "JSON.stringify(input.body)")
-        }) :+
+        })*/ :+
         ("handle", handle)
     yield TypescriptEndpoint(
       input,
@@ -49,7 +53,7 @@ object TypescriptZodEndpointRenderer:
                          |}""".stripMargin
     )
 
-  def url[A](self: Url[A]): TypescriptState[String] = State.pure:
+  def url[A](self: Url[A]): TypescriptZodState[String] = State.pure:
     val url = self.path.toSegments
       .map:
         case name: String            => s"\"$name\""
@@ -83,7 +87,7 @@ object TypescriptZodEndpointRenderer:
 
     show"/* $label */"
 
-  def input(request: Request[Json, ?]): TypescriptState[Typescript.Object] =
+  def input(request: Request[Json, ?]): TypescriptZodState[TypescriptZod] =
     val path = PathTypescriptRenderer
       .render(request.url.path)
       .tupleLeft("path")
@@ -94,7 +98,12 @@ object TypescriptZodEndpointRenderer:
 
     val url = NonEmptyChain
       .fromChain(Chain.fromOption(path) ++ Chain.fromOption(queries))
-      .map(values => Typescript.Object(values.toChain))
+      .map(_.toChain)
+      .map: values =>
+        TypescriptZod(
+          typescript = Typescript.Object(values.map((name, value) => (name, value.typescript))),
+          zod = Zod.Object(values.map((name, value) => (name, value.zod)))
+        )
       .tupleLeft("url")
 
     val headers = HeadersTypescriptRenderer
@@ -104,28 +113,47 @@ object TypescriptZodEndpointRenderer:
     val body = request.bodies
       .map(_.toChain.head)
       .map(_.schema.self.value)
-      .map(JsonTypescriptRenderer.render)
+      .map(JsonTypescriptZodRenderer.render)
       .map(_.tupleLeft("body"))
 
     (
       (Chain.fromOption(url) ++ Chain.fromOption(headers)).map(State.pure) ++
         Chain.fromOption(body)
-    ).sequence.map(Typescript.Object.apply)
+    ).sequence.map: values =>
+      TypescriptZod(
+        typescript = Typescript.Object(values.map((name, value) => (name, value.typescript))),
+        zod = Zod.Object(values.map((name, value) => (name, value.zod)))
+      )
 
-  def output(response: Response[Json, ?]): TypescriptState[Typescript] =
-    NonEmptyChain
-      .fromChainAppend(response.results.toChain, response.validation)
-      .groupBy(_.code)
-      .toNel
-      .traverse: (code, results) =>
-        results
-          .map(_.bodies.map(_.toChain.head.schema.value))
-          .traverse(_.traverse(JsonTypescriptRenderer.render).map(_.getOrElse(Typescript.Void)))
-          .map: types =>
-            Typescript.Object(
+  def output(response: Response[Json, ?]): TypescriptZodState[TypescriptZod] = NonEmptyChain
+    .fromChainAppend(response.results.toChain, response.validation)
+    .groupBy(_.code)
+    .toNel
+    .traverse: (code, results) =>
+      results
+        .map(_.bodies.map(_.toChain.head.schema.value))
+        .traverse(
+          _.traverse(JsonTypescriptZodRenderer.render)
+            .map(_.getOrElse(TypescriptZod(typescript = Typescript.Void, zod = Zod.Expression("z.void()"))))
+        )
+        .map: types =>
+          TypescriptZod(
+            typescript = Typescript.Object(
               Chain(
                 ("code", Typescript.Literal(String.valueOf(code.toInt))),
-                ("value", Typescript(types.toNonEmptyList))
+                ("value", Typescript.Union(types.map(_.typescript)))
+              )
+            ),
+            zod = Zod.Object(
+              Chain(
+                ("code", Zod.Literal(String.valueOf(code.toInt))),
+                ("value", Zod.Union(types.map(_.zod)))
               )
             )
-      .map(Typescript.apply)
+          )
+    .map(NonEmptyChain.fromNonEmptyList)
+    .map: values =>
+      TypescriptZod(
+        typescript = Typescript.Union(values.map(_.typescript)),
+        zod = Zod.Union(values.map(_.zod))
+      )

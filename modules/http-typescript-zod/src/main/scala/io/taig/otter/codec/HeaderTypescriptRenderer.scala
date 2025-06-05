@@ -2,8 +2,13 @@ package io.taig.otter.codec
 
 import io.taig.otter.Typescript
 import io.taig.otter.http.Header
+import io.taig.otter.TypescriptZod
+import io.taig.otter.Zod
 
-object HeaderTypescriptRenderer extends Renderer[Header, Typescript]:
-  override def render[A](schema: Header[A]): Typescript =
-    val value = Typescript.String // TODO schema.schema.value
-    if schema.isOptional then Typescript.Nullable(value) else value
+object HeaderTypescriptRenderer extends Renderer[Header, TypescriptZod]:
+  override def render[A](schema: Header[A]): TypescriptZod =
+    val value = TypescriptZod(typescript = Typescript.String, zod = Zod.Expression("z.string()"))
+
+    if schema.isOptional
+    then TypescriptZod(typescript = Typescript.Nullable(value.typescript), zod = Zod.Nullable(value.zod))
+    else value

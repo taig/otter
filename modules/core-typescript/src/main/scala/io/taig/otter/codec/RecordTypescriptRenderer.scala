@@ -6,7 +6,8 @@ import cats.syntax.all.*
 import io.taig.otter.Record
 import io.taig.otter.Typescript
 
-final class RecordTypescriptRenderer[S[_], T[_]: Applicative](renderer: Renderer[S, T[(String, Typescript)]])
-    extends Renderer[Record[S, *], T[Typescript]]:
-  override def render[A](schema: Record[S, A]): T[Typescript] =
-    schema.value.fields.traverse(field => renderer.render(schema = field.value)).map(Typescript.Object.apply)
+final class RecordTypescriptRenderer[S[_], T[_]: Applicative, A](renderer: Renderer[S, T[(String, A)]])
+    extends Renderer[Record[S, *], T[Typescript[A]]]:
+  override def render[B](schema: Record[S, B]): T[Typescript[A]] = schema.value.fields
+    .traverse(field => renderer.render(schema = field.value))
+    .map(Typescript.Object.apply)

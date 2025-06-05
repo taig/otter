@@ -1,20 +1,17 @@
 package io.taig.otter.codec
-import cats.data.NonEmptyList
+
 import io.taig.otter.Enumeration
 import io.taig.otter.Typescript
 
 final class EnumerationTypescriptRenderer[S[_]](printer: Encoder[S, String])
-    extends Renderer[Enumeration[S, *], Typescript]:
-  override def render[A](schema: Enumeration[S, A]): Typescript = render(schema = schema.value)
+    extends Renderer[Enumeration[S, *], Typescript[Nothing]]:
+  override def render[B](schema: Enumeration[S, B]): Typescript[Nothing] = render(schema = schema.value)
 
-  def render[A](schema: Enumeration.Value[S, A]): Typescript = schema match
+  def render[B](schema: Enumeration.Value[S, B]): Typescript[Nothing] = schema match
     case Enumeration.Value.Modify(self, _, _) => render(schema = self)
     case schema @ Enumeration.Value.Root(reference, mapping) =>
-      val NonEmptyList(left, tail) = schema.values
+      val values = schema.values
         .map(mapping.apply)
-        .map(a => printer.encode(schema = reference.value, a))
-        .map(Typescript.Literal.apply)
+        .map(printer.encode(schema = reference.value, _))
 
-      tail match
-        case right :: tail => tail.foldLeft(Typescript.Union(left, right))(Typescript.Union.apply)
-        case Nil           => left
+      Typescript.Enumeration(values)

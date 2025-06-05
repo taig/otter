@@ -4,54 +4,32 @@ import cats.Order
 import cats.Show
 import cats.data.Chain
 import cats.data.Chain.==:
-import cats.data.NonEmptyList
+import cats.data.NonEmptyChain
 import cats.derived.*
+import cats.derived
 import cats.syntax.all.*
 
-enum Typescript derives Order:
+enum Typescript[+A] derives Order:
   case Any
-  case Array(self: Typescript)
+  case Array(self: A)
   case Boolean
-  case Custom(name: String)
+  case Dynamic(value: String)
+  case Enumeration(values: NonEmptyChain[String])
   case Literal(value: String)
-  case Nullable(self: Typescript)
+  case Nullable(self: A)
   case Number
-  case Object(fields: Chain[(String, Typescript)])
-  case Record(key: Typescript, value: Typescript)
+  case Object(fields: Chain[(String, A)])
+  case Record(key: A, value: A)
+  case Recursive(self: A)
   case Reference(name: String)
   case String
-  case Tuple(values: Chain[Typescript])
-  case Union(left: Typescript, right: Typescript)
+  case Tuple(values: Chain[A])
+  case Union(values: NonEmptyChain[A])
   case Void
 
-  final def definition(name: String): TypescriptDefinition[this.type] =
-    TypescriptDefinition(name, value = this)
-
-  final override def toString: String = this.show
-
 object Typescript:
-  def apply(types: NonEmptyList[Typescript]): Typescript =
-    val left = types.head
+  final case class Value(self: Typescript[Value]) extends AnyVal
 
-    types.tail match
-      case Nil           => left
-      case right :: tail => tail.foldLeft(Union(left, right))(Union.apply)
-
-  given Show[Typescript] =
-    case Typescript.Any                                => "any"
-    case Typescript.Array(self)                        => show"Array<$self>"
-    case Typescript.Boolean                            => "boolean"
-    case Typescript.Custom(name)                       => name
-    case Typescript.Literal(value)                     => value
-    case Typescript.Nullable(self)                     => show"($self | null)"
-    case Typescript.Number                             => "number"
-    case Typescript.Object(Chain.nil)                  => "{}"
-    case Typescript.Object((key, value) ==: Chain.nil) => show"{ $key: $value }"
-    case Typescript.Object(self) =>
-      self.map((key, value) => show""""$key": $value""").map(indent(_)).mkString_("{\n", "\n", "\n}")
-    case Typescript.Record(key, value) => show"{ [key: $key]: $value }"
-    case Typescript.Reference(name)    => name
-    case Typescript.String             => "string"
-    case Typescript.Tuple(values)      => values.mkString_("[", ", ", "]")
-    case Typescript.Union(left, right) => show"$left | $right"
-    case Typescript.Void               => "void"
+  object Value:
+    given Order[Typescript.Value] with
+      override def compare(x: Value, y: Value): Int = x.self.compare(y.self)

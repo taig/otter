@@ -3,14 +3,17 @@ package io.taig.otter.codec
 import cats.Id
 import io.taig.otter.Key
 import io.taig.otter.Typescript
+import cats.Order
 
-object KeyTypescriptRenderer extends Renderer[Key, Typescript]:
+final class KeyTypescriptRenderer[A: Order](renderer: Renderer[Key, A]) extends Renderer[Key, Typescript[A]]:
   val constant = ConstantTypescriptRenderer[Key, Id](printer = KeyPrinter.Quoted)
-  val enumeration = EnumerationTypescriptRenderer(printer = KeyPrinter.Quoted)
-  val union = UnionTypescriptRenderer[Key, Id](renderer = this)
 
-  override def render[A](schema: Key[A]): Typescript = schema match
-    case Key.Primitive.String(self) => PrimitiveTypescriptRenderer.render(schema = self)
+  val enumeration = EnumerationTypescriptRenderer[Key](printer = KeyPrinter.Quoted)
+
+  val union = UnionTypescriptRenderer[Key, Id, A](renderer)
+
+  override def render[B](schema: Key[B]): Typescript[A] = schema match
+    case Key.Primitive.String(self) => PrimitiveTypescriptRenderer.render(self)
     case Key.Constant(self)         => constant.render(schema = self)
     case Key.Enumeration(self)      => enumeration.render(schema = self)
     case Key.Union(self)            => union.render(schema = self)

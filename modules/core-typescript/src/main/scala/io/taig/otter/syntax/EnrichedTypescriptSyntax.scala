@@ -7,6 +7,7 @@ import io.taig.otter.TypescriptKeys
 
 trait EnrichedTypescriptSyntax:
   extension [A](a: A)(using enriched: Enriched[A])
-    def typescript(value: Typescript): A = a.metadata(TypescriptKeys.typescript, value)
+    def typescript(value: Typescript[Typescript.Value]): A = a.metadata(TypescriptKeys.typescript, value)
+    def typescript(value: String): A = typescript(Typescript.Dynamic(value))
 
 object EnrichedTypescriptSyntax extends EnrichedTypescriptSyntax
