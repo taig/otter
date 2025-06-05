@@ -139,10 +139,8 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
 
-lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod")).dependsOn(
-  coreJsonTypescript % "compile->compile;test->test",
-  coreTypescriptZod % "compile->compile;test->test"
-)
+lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod"))
+  .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptZod % "compile->compile;test->test")
 
 // lazy val http = module(identifier = Some("http"))
 //   .settings(

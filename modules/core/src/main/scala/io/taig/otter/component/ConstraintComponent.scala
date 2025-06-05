@@ -21,7 +21,7 @@ trait ConstraintComponent[
     SchemaInvariant.Unionable[Value, Union]
 ) extends ComparisonComponent[Record, Field, Key, Value],
       DataComponent[Collection, Dictionary, Primitive, Union, Key, Value],
-      SumComponent[Constant, Record, Field, Key, Value]:
+      SumComponent[Constant, Primitive, Record, Field, Key, Value]:
   val constraint: Union[Constraint] =
     val col: Union[Constraint.Collection] = (
       merged("collection.maximum", field("reference", int).toRecord).to[Constraint.Collection.Maximum] :+

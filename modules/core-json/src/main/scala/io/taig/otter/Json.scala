@@ -16,12 +16,12 @@ object Json:
         [A] => (schema: Self.Collection[Json, A]) => Collection(schema)
       )([A] => (json: Json.Collection[A]) => json.self)
 
-  final case class Constant[A](self: Self.Constant[Json, A]) extends Json[A]
+  final case class Constant[A](self: Self.Constant[Json.Primitive, A]) extends Json[A]
 
   object Constant:
-    given ConstantSchemaInvariant[Json.Constant, Json] =
-      ConstantSchemaInvariant[Self.Constant[Json, *], Json].imapK(
-        [A] => (schema: Self.Constant[Json, A]) => Constant(schema)
+    given ConstantSchemaInvariant[Json.Constant, Json.Primitive] =
+      ConstantSchemaInvariant[Self.Constant[Json.Primitive, *], Json.Primitive].imapK(
+        [A] => (schema: Self.Constant[Json.Primitive, A]) => Constant(schema)
       )([A] => (json: Json.Constant[A]) => json.self)
 
   final case class Dictionary[A](self: Self.Dictionary[Key, Json, A]) extends Json[A]

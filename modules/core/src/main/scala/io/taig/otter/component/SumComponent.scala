@@ -5,6 +5,7 @@ import io.taig.otter.operation.SchemaInvariant
 
 trait SumComponent[
     Constant[a] <: Value[a],
+    Primitive[a] <: Value[a],
     Record[a] <: Value[a],
     Field[_],
     Key[_],
@@ -12,9 +13,9 @@ trait SumComponent[
 ](using
     RecordSchemaInvariant[Record, Field],
     SchemaInvariant.Recordable[Field, Record]
-) extends ConstantComponent.Primitive.String[Constant, Value],
+) extends ConstantComponent.Primitive.String[Constant, Primitive],
       FieldComponent.Primitive.String[Field, Key, Value]:
-  this: PrimitiveComponent[Value] =>
+  this: PrimitiveComponent[Primitive] =>
 
   def explicit(name: String): Record[Unit] = field(name = "type", constant(name)).toRecord
 

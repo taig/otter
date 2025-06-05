@@ -3,10 +3,8 @@ package io.taig.otter.codec
 import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Typescript
-import io.taig.otter.TypescriptState
 import io.taig.otter.Collection
 import io.taig.otter.Constant
-import io.taig.otter.Typescript.Value
 import io.taig.otter.Dictionary
 import io.taig.otter.Record
 import io.taig.otter.Key
@@ -16,21 +14,17 @@ import io.taig.otter.Enumeration
 import io.taig.otter.Tuple
 import io.taig.otter.Union
 import cats.Applicative
-import cats.kernel.Order
-import cats.Functor
+import cats.Order
 
 final class TypescriptRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
     renderer: Renderer[S, V[A]],
     printer: Encoder[T, String],
-    value: Encoder[S, Option[String]],
     key: Renderer[Key, A],
     field: Renderer[U, V[(String, A)]]
 ) extends Renderer[TypescriptRenderer.Input[S, T, U, *], V[Typescript[A]]]:
   val collection = CollectionTypescriptRenderer(renderer)
 
-  val constant = ConstantTypescriptRenderer[S, Option](printer = value)
-    .map(_.getOrElse(Typescript.Any))
-    .map[V[Typescript[A]]](_.pure[V])
+  val constant = ConstantTypescriptRenderer(printer).map[V[Typescript[A]]](_.pure[V])
 
   val dictionary = DictionaryTypescriptRenderer[Key, S, V, A](key = key.map(_.pure[V]), value = renderer)
 
@@ -48,7 +42,7 @@ final class TypescriptRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
 
   override def render[B](schema: TypescriptRenderer.Input[S, T, U, B]): V[Typescript[A]] = schema match
     case schema: Collection[S, B]      => collection.render(schema)
-    case schema: Constant[S, B]        => constant.render(schema)
+    case schema: Constant[T, B]        => constant.render(schema)
     case schema: Dictionary[Key, S, B] => dictionary.render(schema)
     case schema: Enumeration[T, B]     => enumeration.render(schema)
     case schema: Nullable[S, B]        => nullable.render(schema)
@@ -58,5 +52,5 @@ final class TypescriptRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
     case schema: Union[S, B]           => union.render(schema)
 
 object TypescriptRenderer:
-  type Input[S[_], T[_], U[_], A] = Collection[S, A] | Constant[S, A] | Dictionary[Key, S, A] | Enumeration[T, A] |
+  type Input[S[_], T[_], U[_], A] = Collection[S, A] | Constant[T, A] | Dictionary[Key, S, A] | Enumeration[T, A] |
     Nullable[S, A] | Primitive[S, A] | Record[U, A] | Tuple[S, A] | Union[S, A]

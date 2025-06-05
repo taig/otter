@@ -10,10 +10,10 @@ import io.taig.otter.toSymbol
 import io.taig.otter.TypescriptState
 
 final class TypescriptStateRenderer[S[_]: SchemaInvariant](
-    renderer: Renderer[S, TypescriptState[Typescript.Value, Typescript.Value]]
-) extends Renderer[S, TypescriptState[Typescript.Value, Typescript.Value]]:
+    renderer: Renderer[S, TypescriptState[Typescript.Value]]
+) extends Renderer[S, TypescriptState[Typescript.Value]]:
   // TODO recursion marker
-  override def render[B](schema: S[B]): TypescriptState[Typescript.Value, Typescript.Value] =
+  override def render[B](schema: S[B]): TypescriptState[Typescript.Value] =
     schema.metadata(Keys.name).map(toSymbol) match
       case Some(name) =>
         State: state =>

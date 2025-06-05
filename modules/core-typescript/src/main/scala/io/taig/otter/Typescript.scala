@@ -1,9 +1,7 @@
 package io.taig.otter
 
 import cats.Order
-import cats.Show
 import cats.data.Chain
-import cats.data.Chain.==:
 import cats.data.NonEmptyChain
 import cats.derived.*
 import cats.derived

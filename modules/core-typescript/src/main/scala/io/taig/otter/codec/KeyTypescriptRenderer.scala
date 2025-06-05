@@ -6,7 +6,7 @@ import io.taig.otter.Typescript
 import cats.Order
 
 final class KeyTypescriptRenderer[A: Order](renderer: Renderer[Key, A]) extends Renderer[Key, Typescript[A]]:
-  val constant = ConstantTypescriptRenderer[Key, Id](printer = KeyPrinter.Quoted)
+  val constant = ConstantTypescriptRenderer[Key](printer = KeyPrinter.Quoted)
 
   val enumeration = EnumerationTypescriptRenderer[Key](printer = KeyPrinter.Quoted)
 
