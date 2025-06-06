@@ -26,7 +26,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.
     TypescriptState,
     Typescript.Value
   ](
-    renderer = TypescriptStateRenderer(renderer = this),
+    renderer = TypescriptStateRenderer[Json, Typescript.Value](renderer = this)(lift = Typescript.Value.apply),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
     field

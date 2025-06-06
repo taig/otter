@@ -7,26 +7,26 @@ import io.taig.otter.Typescript
 import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.toSymbol
-import io.taig.otter.TypescriptState
+import io.taig.otter.ContextState
 
-final class TypescriptStateRenderer[S[_]: SchemaInvariant](
-    renderer: Renderer[S, TypescriptState[Typescript.Value]]
-) extends Renderer[S, TypescriptState[Typescript.Value]]:
+final class TypescriptStateRenderer[S[_]: SchemaInvariant, A](
+    renderer: Renderer[S, ContextState[A, A]]
+)(lift: Typescript[A] => A)
+    extends Renderer[S, ContextState[A, A]]:
   // TODO recursion marker
-  override def render[B](schema: S[B]): TypescriptState[Typescript.Value] =
-    schema.metadata(Keys.name).map(toSymbol) match
-      case Some(name) =>
-        State: state =>
-          if state.stack.contains_(name)
-          then (state, Typescript.Value(Typescript.Reference(name)))
-          else
-            state.references.get(name) match
-              case Some(value) => (state, Typescript.Value(Typescript.Reference(name)))
-              case None =>
-                val (update, typescript) = renderer.render(schema).run(initial = state.push(name)).value
+  override def render[B](schema: S[B]): ContextState[A, A] = schema.metadata(Keys.name).map(toSymbol) match
+    case Some(name) =>
+      State: state =>
+        if state.stack.contains_(name)
+        then (state, lift(Typescript.Reference(name)))
+        else
+          state.references.get(name) match
+            case Some(value) => (state, lift(Typescript.Reference(name)))
+            case None =>
+              val (update, typescript) = renderer.render(schema).run(initial = state.push(name)).value
 
-                (
-                  update.modifyReferences(_.updatedWith(name)(_ => typescript.some)).pop(name),
-                  Typescript.Value(Typescript.Reference(name))
-                )
-      case None => renderer.render(schema)
+              (
+                update.modifyReferences(_.updatedWith(name)(_ => typescript.some)).pop(name),
+                lift(Typescript.Reference(name))
+              )
+    case None => renderer.render(schema)

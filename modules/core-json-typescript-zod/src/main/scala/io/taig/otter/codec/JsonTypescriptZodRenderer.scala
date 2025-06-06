@@ -7,14 +7,6 @@ import io.taig.otter.TypescriptZodState
 import io.taig.otter.Key
 
 object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[TypescriptZod]]:
-  val value: Encoder[Json, Option[String]] = Encoder {
-    [A] =>
-      (schema: Json[A], a: A) =>
-        schema match
-          case schema: Json.Primitive[A] => JsonPrimitivePrinter.encode(schema, a).some
-          case _                         => none
-  }
-
   val field = FieldTypescriptRenderer[
     Key,
     Json,
@@ -29,10 +21,9 @@ object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[Types
     TypescriptZodState,
     TypescriptZod
   ](
-    renderer = this,
+    renderer = TypescriptStateRenderer[Json, TypescriptZod](renderer = ???)(lift = TypescriptZod.Shared.apply),
     printer = JsonPrimitivePrinter,
-    value,
-    key = ???,
+    key = JsonKeyTypescriptZodRenderer,
     field
   ).mapK[Json](
     [A] =>
