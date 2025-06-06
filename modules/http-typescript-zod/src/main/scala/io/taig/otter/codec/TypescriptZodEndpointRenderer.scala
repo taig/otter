@@ -7,7 +7,6 @@ import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Keys
 import io.taig.otter.Typescript
-import io.taig.otter.TypescriptDefinition
 import io.taig.otter.TypescriptEndpoint
 import io.taig.otter.TypescriptState
 import io.taig.otter.TypescriptZodState
@@ -18,8 +17,6 @@ import io.taig.otter.http.Response
 import io.taig.otter.indent
 import io.taig.otter.http.Url
 import io.taig.otter.TypescriptZod
-import io.taig.otter.Zod
-import io.taig.otter.TypescriptZodDefinition
 
 object TypescriptZodEndpointRenderer:
   def render(endpoint: Endpoint[Json, ?, ?]): TypescriptZodState[TypescriptEndpoint[TypescriptZodDefinition]] =

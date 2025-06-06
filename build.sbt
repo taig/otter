@@ -30,7 +30,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .build()
     .settings(
       Compile / console / scalacOptions -= "-Wunused:all",
-      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
+      Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: "-Xmax-inlines" :: "64" :: Nil,
       name := "otter" + identifier.fold("")("-" + _)
     )
 }
@@ -47,8 +47,8 @@ inThisBuild(
   )
 )
 
-// addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
-// addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
+addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
+addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
 
 noPublishSettings
 
@@ -75,16 +75,16 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJsonCirce,
     coreJsonTypescript,
     coreJsonTypescriptZod,
-    coreTypescriptZod
-    // http,
-    // httpHttp4s,
-    // httpJson,
-    // httpJsonCirce,
-    // httpTypescriptZod,
-    // munit
-    // sample,
-    // sampleApi,
-    // sampleApp
+    coreTypescriptZod,
+    http,
+    httpHttp4s,
+    httpJson,
+    httpJsonCirce,
+    httpTypescriptZod,
+    munit,
+    sample,
+    sampleApi,
+    sampleApp
   )
 
 lazy val core = module(identifier = Some("core"))
@@ -142,68 +142,68 @@ lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
 lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod"))
   .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptZod % "compile->compile;test->test")
 
-// lazy val http = module(identifier = Some("http"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val http = module(identifier = Some("http"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
-// lazy val httpJson = module(identifier = Some("http-json"))
-//   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+lazy val httpJson = module(identifier = Some("http-json"))
+  .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
 
-// lazy val httpJsonCirce = module(identifier = Some("http-json-circe"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %%% "circe-jawn" % Version.Circe ::
-//         Nil
-//   )
-//   .dependsOn(httpJson % "compile->compile;test->test", coreJsonCirce % "compile->compile;test->test")
+lazy val httpJsonCirce = module(identifier = Some("http-json-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-jawn" % Version.Circe ::
+        Nil
+  )
+  .dependsOn(httpJson % "compile->compile;test->test", coreJsonCirce % "compile->compile;test->test")
 
-// lazy val httpHttp4s = module(identifier = Some("http-http4s"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
-//         Nil
-//   )
-//   .dependsOn(http % "compile->compile;test->test")
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %%% "http4s-server" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
 
-// lazy val httpTypescriptZod = module(identifier = Some("http-typescript-zod"))
-//   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptZod % "compile->compile;test->test")
+lazy val httpTypescriptZod = module(identifier = Some("http-typescript-zod"))
+  .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptZod % "compile->compile;test->test")
 
-// lazy val munit = module(identifier = Some("munit"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.scalameta" %%% "munit" % Version.Munit ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
-//         Nil
-//   )
-//   .dependsOn(http)
+lazy val munit = module(identifier = Some("munit"))
+  .settings(
+    libraryDependencies ++=
+      "org.scalameta" %%% "munit" % Version.Munit ::
+        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
+        Nil
+  )
+  .dependsOn(http)
 
-// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %% "circe-parser" % Version.Circe ::
-//         "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
-//         Nil
-//   )
+lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %% "circe-parser" % Version.Circe ::
+        "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
 
-// lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
+lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
 
-// lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     libraryDependencies ++=
-//       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-//         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-//         "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
-//         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-//         "org.typelevel" %% "mouse" % Version.Mouse ::
-//         Nil
-//   )
-//   .dependsOn(sampleApi, httpJsonCirce, httpTypescriptZod, munit % "compile->test")
+lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+        "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
+        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+        "org.typelevel" %% "mouse" % Version.Mouse ::
+        Nil
+  )
+  .dependsOn(sampleApi, httpJsonCirce, httpTypescriptZod, munit % "compile->test")

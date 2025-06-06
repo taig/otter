@@ -6,8 +6,9 @@ import cats.data.NonEmptyChain
 import cats.derived.*
 import cats.derived
 import cats.syntax.all.*
+import cats.Traverse
 
-enum Typescript[+A] derives Order:
+enum Typescript[+A] derives Order, Traverse:
   case Any
   case Array(self: A)
   case Boolean

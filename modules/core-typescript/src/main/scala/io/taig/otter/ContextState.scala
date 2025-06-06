@@ -6,7 +6,7 @@ import scala.collection.immutable.ListMap
 import scala.collection.immutable.SortedSet
 import cats.Functor
 import cats.syntax.all.*
-import cats.derived.*
+import cats.FunctorFilter
 
 type ContextState[A, B] = State[ContextState.Context[A], B]
 
@@ -26,5 +26,11 @@ object ContextState:
   object Context:
     val Empty: ContextState.Context[Nothing] = Context(references = ListMap.empty, stack = SortedSet.empty)
 
-    given Functor[ContextState.Context] with
+    given functor: Functor[ContextState.Context] with
       override def map[A, B](fa: Context[A])(f: A => B): Context[B] = fa.map(f)
+
+    given FunctorFilter[ContextState.Context] with
+      override def functor: Functor[ContextState.Context] = Context.functor
+
+      override def mapFilter[A, B](fa: Context[A])(f: A => Option[B]): Context[B] =
+        fa.copy(references = fa.references.view.mapValues(f).collect { case (k, Some(v)) => (k, v) }.to(ListMap))

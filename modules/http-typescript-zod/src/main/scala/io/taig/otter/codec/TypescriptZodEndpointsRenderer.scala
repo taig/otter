@@ -3,15 +3,15 @@ package io.taig.otter.codec
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.TypescriptState
-import io.taig.otter.TypescriptZodDefinition
 import io.taig.otter.TypescriptZodState
 import io.taig.otter.http.Endpoint
+import io.taig.otter.ContextState
 
 final class TypescriptZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =
     val (context, result) = endpoints
       .traverse(TypescriptZodEndpointRenderer.render)
-      .run(initial = TypescriptZodState.Context.Empty)
+      .run(initial = ContextState.Context.Empty)
       .value
 
     // val (context, zod) = result
