@@ -5,6 +5,7 @@ import io.taig.otter.Json
 import io.taig.otter.TypescriptZod
 import io.taig.otter.TypescriptZodState
 import io.taig.otter.Key
+import io.taig.otter.Typescript
 
 object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[TypescriptZod]]:
   val field = FieldTypescriptRenderer[
@@ -21,7 +22,8 @@ object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[Types
     TypescriptZodState,
     TypescriptZod
   ](
-    renderer = TypescriptStateRenderer[Json, TypescriptZod](renderer = ???)(lift = TypescriptZod.Shared.apply),
+    renderer =
+      TypescriptStateRenderer(renderer = JsonTypescriptMetadataZodRenderer(this))(lift = TypescriptZod.Shared.apply),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptZodRenderer,
     field
@@ -40,5 +42,4 @@ object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[Types
           case Json.Union(self)       => self
   ).map(_.map(TypescriptZod.Shared.apply))
 
-  override def render[A](schema: Json[A]): TypescriptZodState[TypescriptZod] =
-    renderer.render(schema)
+  override def render[A](schema: Json[A]): TypescriptZodState[TypescriptZod] = renderer.render(schema)

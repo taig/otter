@@ -5,6 +5,6 @@ import cats.Order
 
 enum TypescriptZod derives Order:
   case Shared(self: Typescript[TypescriptZod])
-  case Split(tpe: Typescript[TypescriptZod], expression: Typescript[TypescriptZod])
+  case Split(typescript: Typescript[TypescriptZod], zod: Typescript[TypescriptZod])
   case Type(self: Typescript[TypescriptZod])
-  case Expresseion(self: Typescript[TypescriptZod])
+  case Expression(self: Typescript[TypescriptZod])
