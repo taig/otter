@@ -10,6 +10,7 @@ import io.taig.otter.Json.Nullable
 import io.taig.otter.Json.Primitive
 import io.taig.otter.Json.Union
 import io.taig.otter.Key
+import io.taig.otter.TypescriptKeys
 
 object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[Typescript.Value]]]:
   val field: Renderer[Json.Field, TypescriptState[(String, Typescript.Value)]] = FieldTypescriptRenderer[
@@ -28,7 +29,8 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[
     TypescriptState,
     Typescript.Value
   ](
-    renderer = TypescriptReferenceRenderer(this).map(_.map(Typescript.Value.apply)),
+    renderer = ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))
+      .map(_.map(Typescript.Value.apply)),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
     field

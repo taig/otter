@@ -9,7 +9,7 @@ import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.toSymbol
 import io.taig.otter.ContextState
 
-final class TypescriptReferenceRenderer[S[_]: SchemaInvariant, A](
+final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant, A](
     renderer: Renderer[S, ContextState[Typescript[A], Typescript[A]]]
 ) extends Renderer[S, ContextState[Typescript[A], Typescript[A]]]:
   // TODO recursion marker
