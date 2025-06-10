@@ -12,7 +12,7 @@
 // import io.taig.otter.ContextState
 // import cats.data.State
 // import scala.collection.immutable.SortedSet
-
+//
 // final class JsonTypescriptMetadataZodRenderer(renderer: Renderer[Json, TypescriptZodState[TypescriptZod]])
 //     extends Renderer[Json, TypescriptZodState[TypescriptZod]]:
 //   override def render[A](schema: Json[A]): TypescriptZodState[TypescriptZod] =

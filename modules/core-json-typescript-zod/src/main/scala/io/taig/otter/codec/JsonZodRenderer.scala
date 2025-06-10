@@ -9,9 +9,9 @@ import io.taig.otter.Json.Dictionary
 import io.taig.otter.Json.Nullable
 import io.taig.otter.Json.Primitive
 import io.taig.otter.Json.Union
-import io.taig.otter.TypescriptKeys
+import io.taig.otter.TypescriptZodKeys
 
-object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[Typescript.Value]]]:
+object JsonZodRenderer extends Renderer[Json, TypescriptState[Typescript[Typescript.Value]]]:
   val renderer: Renderer[Json, TypescriptState[Typescript[Typescript.Value]]] = TypescriptRenderer[
     Json,
     Json.Primitive,
@@ -19,7 +19,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[
     TypescriptState,
     Typescript.Value
   ](
-    renderer = ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))
+    renderer = ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptZodKeys.zod))
       .map(_.map(Typescript.Value.apply)),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
