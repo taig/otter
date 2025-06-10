@@ -15,7 +15,8 @@ object JsonTypescriptZodRenderer extends Renderer[Json, TypescriptZodState[Types
     TypescriptZodState,
     TypescriptZod
   ](
-    renderer = ReferenceTypescriptRenderer(this).map(_.map(TypescriptZod.Shared.apply)),
+    renderer =
+      ???, // ReferenceTypescriptRenderer(MetadataTypescriptZodRenderer(???)).map(_.map(TypescriptZod.Shared.apply)),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptZodRenderer,
     field = JsonFieldRenderer(this).map(_.map(_.map(TypescriptZod.Shared.apply)))
