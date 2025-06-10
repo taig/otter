@@ -8,6 +8,8 @@ enum TypescriptZod derives Order:
   case Shared(self: Typescript[TypescriptZod])
   case Split(typescript: Typescript.Value, zod: Typescript.Value)
 
+  def containsZodRecursion: Boolean = toZod.containsRecursive
+
   final def definition(name: String): TypescriptZodDefinition = TypescriptZodDefinition(name, value = this)
 
   final def toTypescript: Typescript.Value = this match

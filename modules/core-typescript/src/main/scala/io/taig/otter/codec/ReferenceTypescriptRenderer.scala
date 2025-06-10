@@ -13,13 +13,12 @@ final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant, A](
     renderer: Renderer[S, ContextState[A, A]]
 )(lift: Typescript[A] => A)
     extends Renderer[S, ContextState[A, A]]:
-  // TODO recursion marker
   override def render[B](schema: S[B]): ContextState[A, A] =
     schema.metadata(Keys.name).map(toSymbol) match
       case Some(name) =>
         State: state =>
           if state.stack.contains_(name)
-          then (state, lift(Typescript.Reference(name)))
+          then (state, lift(Typescript.Recursive(lift(Typescript.Reference(name)))))
           else
             state.references.get(name) match
               case Some(value) => (state, lift(Typescript.Reference(name)))

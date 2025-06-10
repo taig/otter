@@ -17,7 +17,7 @@ object ZodPrinter:
     case Typescript.Array(self)                        => show"z.array($self)"
     case Typescript.Boolean                            => "z.boolean()"
     case Typescript.Dynamic(value)                     => value
-    case Typescript.Enumeration(values)                => show"z.enumeration(TODO)"
+    case Typescript.Enumeration(values)                => values.mkString_("z.enum([", ", ", "])")
     case Typescript.Literal(value)                     => show"z.literal($value)"
     case Typescript.Nullable(self)                     => show"z.nullable($self)"
     case Typescript.Number                             => "z.number()"
