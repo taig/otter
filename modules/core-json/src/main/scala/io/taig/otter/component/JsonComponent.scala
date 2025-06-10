@@ -2,7 +2,6 @@ package io.taig.otter.component
 
 import io.taig.otter.Json
 import io.taig.otter.Key
-import io.taig.otter.operation.ConstantSchemaInvariant
 
 // format: off
 trait JsonComponent extends
@@ -20,7 +19,7 @@ trait JsonComponent extends
       ViolationsComponent[Json.Collection, Json.Constant, Json.Dictionary, Json.Primitive, Json.Record, Json.Union, Json.Field, Key, Json]:
   self =>
 
-  override def key: PrimitiveComponent.String[Key] = KeyComponent
+  override def key: KeyComponent = KeyComponent
 
 object JsonComponent extends JsonComponent
 // format: on
