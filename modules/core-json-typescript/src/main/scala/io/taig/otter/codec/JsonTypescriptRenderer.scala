@@ -11,22 +11,24 @@ import io.taig.otter.Json.Primitive
 import io.taig.otter.Json.Union
 import io.taig.otter.Key
 
-object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.Value]]:
-  val field = FieldTypescriptRenderer[
+object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[Typescript.Value]]]:
+  val field: Renderer[Json.Field, TypescriptState[(String, Typescript.Value)]] = FieldTypescriptRenderer[
     Key,
     Json,
     TypescriptState,
-    Typescript.Value
-  ](key = KeyPrinter.Unquoted, value = this).mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
+    Typescript[Typescript.Value]
+  ](key = KeyPrinter.Unquoted, value = this)
+    .map(_.map(_.map(Typescript.Value.apply)))
+    .mapK[Json.Field]([A] => (field: Json.Field[A]) => field.self.self)
 
-  val renderer: Renderer[Json, TypescriptState[Typescript.Value]] = TypescriptRenderer[
+  val renderer: Renderer[Json, TypescriptState[Typescript[Typescript.Value]]] = TypescriptRenderer[
     Json,
     Json.Primitive,
     Json.Field,
     TypescriptState,
     Typescript.Value
   ](
-    renderer = TypescriptStateRenderer[Json, Typescript.Value](renderer = this)(lift = Typescript.Value.apply),
+    renderer = TypescriptReferenceRenderer(this).map(_.map(Typescript.Value.apply)),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
     field
@@ -43,7 +45,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.
           case Json.Record(self)      => self
           case Json.Tuple(self)       => self
           case Json.Union(self)       => self
-  ).map(_.map(Typescript.Value.apply))
+  )
 
-  override def render[A](schema: Json[A]): TypescriptState[Typescript.Value] =
+  override def render[A](schema: Json[A]): TypescriptState[Typescript[Typescript.Value]] =
     renderer.render(schema)
