@@ -7,7 +7,7 @@ import io.taig.otter.Typescript
 
 trait EnrichedTypescriptZodSyntax:
   extension [A](a: A)(using enriched: Enriched[A])
-    def zod(value: Typescript[Typescript.Value]): A = a.metadata(TypescriptZodKeys.zod, value)
-    def zod(value: String): A = zod(Typescript.Dynamic(value))
+    def zod(value: Typescript.Value): A = a.metadata(TypescriptZodKeys.zod, value)
+    def zod(value: String): A = zod(Typescript.Value(Typescript.Dynamic(value)))
 
 object EnrichedTypescriptZodSyntax extends EnrichedTypescriptZodSyntax

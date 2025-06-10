@@ -11,19 +11,19 @@ import io.taig.otter.Json.Primitive
 import io.taig.otter.Json.Union
 import io.taig.otter.TypescriptKeys
 
-object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[Typescript.Value]]]:
-  val renderer: Renderer[Json, TypescriptState[Typescript[Typescript.Value]]] = TypescriptRenderer[
+object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.Value]]:
+  val core: Renderer[Json, TypescriptState[Typescript[Typescript.Value]]] = TypescriptRenderer[
     Json,
     Json.Primitive,
     Json.Field,
     TypescriptState,
     Typescript.Value
   ](
-    renderer = ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))
-      .map(_.map(Typescript.Value.apply)),
+    renderer =
+      this, // ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))(lift = ???).map(_.map(Typescript.Value.apply)),
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
-    field = JsonFieldRenderer(this).map(_.map(_.map(Typescript.Value.apply)))
+    field = JsonFieldRenderer(this)
   ).mapK[Json](
     [A] =>
       (self: Json[A]) =>
@@ -39,5 +39,8 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript[
           case Json.Union(self)       => self
   )
 
-  override def render[A](schema: Json[A]): TypescriptState[Typescript[Typescript.Value]] =
+  val renderer: Renderer[Json, TypescriptState[Typescript.Value]] =
+    ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))(Typescript.Value.apply)
+
+  override def render[A](schema: Json[A]): TypescriptState[Typescript.Value] =
     renderer.render(schema)

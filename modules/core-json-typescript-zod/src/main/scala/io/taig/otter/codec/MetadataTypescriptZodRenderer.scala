@@ -8,15 +8,23 @@ import io.taig.otter.TypescriptKeys
 import io.taig.otter.TypescriptZodKeys
 import io.taig.otter.Typescript
 import cats.data.State
+import cats.syntax.all.*
 
 final class MetadataTypescriptZodRenderer[S[_]: SchemaInvariant](
-    renderer: Renderer[S, TypescriptZodState[TypescriptZod]]
+    renderer: Renderer[S, TypescriptZodState[Typescript[TypescriptZod]]]
 ) extends Renderer[S, TypescriptZodState[TypescriptZod]]:
   override def render[A](schema: S[A]): TypescriptZodState[TypescriptZod] =
     (schema.metadata.get(TypescriptKeys.typescript), schema.metadata.get(TypescriptZodKeys.zod)) match
-      case (Some(typescript), Some(zod)) => State.pure(TypescriptZod.Split(typescript, zod))
+      case (Some(typescript), Some(zod)) =>
+        State.pure(TypescriptZod.Split(typescript, zod))
       case (None, Some(zod)) =>
-        renderer.render(schema).map(typescript => TypescriptZod.Split(typescript = typescript.toTypescript, zod))
+        renderer
+          .render(schema)
+          .map: typescript =>
+            TypescriptZod.Split(typescript = Typescript.Value(typescript.map(_.toTypescript)), zod)
       case (Some(typescript), None) =>
-        renderer.render(schema).map(zod => TypescriptZod.Split(typescript, zod = zod.toZod))
-      case (None, None) => renderer.render(schema)
+        renderer
+          .render(schema)
+          .map: zod =>
+            TypescriptZod.Split(typescript, zod = Typescript.Value(zod.map(_.toZod)))
+      case (None, None) => renderer.render(schema).map(TypescriptZod.Shared.apply)
