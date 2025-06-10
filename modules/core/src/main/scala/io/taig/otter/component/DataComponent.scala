@@ -17,7 +17,7 @@ trait DataComponent[
     SchemaInvariant.Unionable[Value, Union],
     SchemaInvariant[Collection],
     SchemaInvariant[Dictionary],
-    SchemaInvariant[Union]
+    UnionSchemaInvariant[Union, Value]
 ) extends CollectionComponent[Collection, Value],
       DictionaryComponent[Dictionary, Key, Value],
       PrimitiveComponent[Primitive]:

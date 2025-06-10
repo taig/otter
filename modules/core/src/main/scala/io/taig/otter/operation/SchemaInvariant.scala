@@ -7,6 +7,7 @@ import io.taig.otter.Merge
 
 import scala.annotation.targetName
 import scala.compiletime.*
+import scala.util.NotGiven
 
 trait SchemaInvariant[Self[_]] extends Invariant[Self]:
   self =>
@@ -54,7 +55,8 @@ object SchemaInvariant:
   trait Unionable[Self[_], Union[_]](using self: UnionSchemaInvariant[Union, Self]):
     extension [A](self: => Self[A])
       def :+[B](schema: => Self[B]): Union[Either[A, B]] = this.self.lift(self) :+ schema
-      def toUnion: Union[A] = this.self.lift(self)
+      inline def toUnion: Union[A] = this.self.lift(self)
 
     extension [A <: Matchable](self: Self[A])
-      inline def |[B <: Matchable](schema: => Self[B]): Union[A | B] = this.self.lift(self) | schema
+      inline def |[B <: Matchable](schema: => Self[B]): Union[A | B] =
+        self.toUnion.or(schema.toUnion)

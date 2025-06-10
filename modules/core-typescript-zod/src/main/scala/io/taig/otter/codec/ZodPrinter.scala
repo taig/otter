@@ -24,11 +24,12 @@ object ZodPrinter:
     case Typescript.Object(Chain.nil)                  => "z.object({})"
     case Typescript.Object((key, value) ==: Chain.nil) => show"z.object({ $key: $value })"
     case Typescript.Object(self) =>
-      self.map((key, value) => show""""$key": $value""").map(indent(_)).mkString_("z.object({\n", "\n", "\n})")
-    case Typescript.Record(key, value) => show"z.record($key, $value)"
-    case Typescript.Recursive(self)    => show"z.lazy(() => $self)"
-    case Typescript.Reference(name)    => name
-    case Typescript.String             => "z.string()"
-    case Typescript.Tuple(values)      => values.mkString_("z.tuple([", ", ", "])")
-    case Typescript.Union(values)      => values.mkString_("z.union([", ", ", "])")
-    case Typescript.Void               => "z.void()"
+      self.map((key, value) => show""""$key": $value""").map(indent(_)).mkString_("z.object({\n", ",\n", "\n})")
+    case Typescript.Record(key, value)                  => show"z.record($key, $value)"
+    case Typescript.Recursive(self)                     => show"z.lazy(() => $self)"
+    case Typescript.Reference(name)                     => name
+    case Typescript.String                              => "z.string()"
+    case Typescript.Tuple(values)                       => values.mkString_("z.tuple([", ", ", "])")
+    case Typescript.Union(values) if values.length == 1 => values.head.show
+    case Typescript.Union(values)                       => values.mkString_("z.union([", ", ", "])")
+    case Typescript.Void                                => "z.void()"
