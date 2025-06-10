@@ -2,10 +2,9 @@ package io.taig.otter.codec
 
 import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.TypescriptState
-import io.taig.otter.TypescriptZodState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.ContextState
+import io.taig.otter.TypescriptZodDefinition
 
 final class TypescriptZodEndpointsRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =
@@ -13,15 +12,6 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
       .traverse(TypescriptZodEndpointRenderer.render)
       .run(initial = ContextState.Context.Empty)
       .value
-
-    // val (context, zod) = result
-    //   .traverse: endpoint =>
-    //     endpoint.traverse: typescript =>
-    //       TypescriptZodEncoder
-    //         .encode(references, typescript = typescript.value)
-    //         .map(TypescriptZodDefinition(typescript, _))
-    //   .run(TypescriptZodState.Context.Empty)
-    //   .value
 
     s"""/* Imports */
        |
@@ -40,7 +30,7 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
        |
        |/* Types */
        |
-       |${context.definitions.mkString_("\n\n")}
+       |${context.references.toList.map(TypescriptZodDefinition.apply).mkString_("\n\n")}
        |
        |/* Endpoints */
        |

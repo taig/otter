@@ -19,8 +19,7 @@ object JsonTypescriptRenderer extends Renderer[Json, TypescriptState[Typescript.
     TypescriptState,
     Typescript.Value
   ](
-    renderer =
-      this, // ReferenceTypescriptRenderer(MetadataRenderer(this)(TypescriptKeys.typescript))(lift = ???).map(_.map(Typescript.Value.apply)),
+    renderer = this,
     printer = JsonPrimitivePrinter,
     key = JsonKeyTypescriptRenderer,
     field = JsonFieldRenderer(this)
