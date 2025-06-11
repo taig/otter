@@ -8,12 +8,10 @@ import io.taig.otter.codec.ZodPrinter
 final case class TypescriptZodDefinition(name: String, value: TypescriptZod):
   override def toString: String =
     if value.containsZodRecursion
-    then
-      show"""export type $name = ${TypescriptPrinter.print(value.toTypescript)}
-            |const $name: z.ZodType<$name> = ${ZodPrinter.print(value.toZod)}""".stripMargin
-    else 
-      show"""export type $name = z.infer<typeof $name>
-            |const $name = ${ZodPrinter.print(value.toZod)}""".stripMargin
+    then show"""export type $name = ${TypescriptPrinter.print(value.toTypescript)}
+               |const $name: z.ZodType<$name> = ${ZodPrinter.print(value.toZod)}""".stripMargin
+    else show"""export type $name = ${TypescriptPrinter.print(value.toTypescript)}
+               |const $name = ${ZodPrinter.print(value.toZod)}""".stripMargin
 
 object TypescriptZodDefinition:
   given Show[TypescriptZodDefinition] = Show.fromToString

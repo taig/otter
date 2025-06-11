@@ -25,20 +25,18 @@ enum Typescript[+A] derives Order, Traverse:
   case Tuple(values: Chain[A])
   case Union(values: NonEmptyChain[A])
   case Void
-  
 
 object Typescript:
   final case class Value(self: Typescript[Value]) extends AnyVal:
     def containsRecursive: Boolean = self match
-      case Array(self) => self.containsRecursive
-      case Nullable(self) => self.containsRecursive
-      case Object(fields) => fields.exists((_, value) => value.containsRecursive)
+      case Array(self)        => self.containsRecursive
+      case Nullable(self)     => self.containsRecursive
+      case Object(fields)     => fields.exists((_, value) => value.containsRecursive)
       case Record(key, value) => key.containsRecursive || value.containsRecursive
-      case Recursive(_) => true
-      case Tuple(values) => values.exists(_.containsRecursive)
-      case Union(values) => values.exists(_.containsRecursive)
-      case _ => false
-    
+      case Recursive(_)       => true
+      case Tuple(values)      => values.exists(_.containsRecursive)
+      case Union(values)      => values.exists(_.containsRecursive)
+      case _                  => false
 
   object Value:
     given Order[Typescript.Value] with

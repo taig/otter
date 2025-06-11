@@ -13,25 +13,25 @@ final class TypescriptZodEndpointsRenderer(imports: List[String]):
       .run(initial = ContextState.Context.Empty)
       .value
 
-    s"""/* Imports */
-       |
-       |import { z } from "zod"
-       |${imports.mkString("\n")}
-       |
-       |/* Definitions */
-       |
-       |export type Request<A> = {
-       |  method: string
-       |  path: string
-       |  headers?: HeadersInit
-       |  body?: BodyInit | null
-       |  handle: (code: number, headers: Headers, body: () => Promise<any>) => Promise<A>
-       |}
-       |
-       |/* Types */
-       |
-       |${context.references.toList.map(TypescriptZodDefinition.apply).mkString_("\n\n")}
-       |
-       |/* Endpoints */
-       |
-       |""".stripMargin
+    show"""/* Imports */
+          |
+          |import { z } from "zod"
+          |${imports.mkString("\n")}
+          |
+          |/* Definitions */
+          |
+          |export type Request<A> = {
+          |  method: string
+          |  path: string
+          |  headers?: HeadersInit
+          |  body?: BodyInit | null
+          |  handle: (code: number, headers: Headers, body: () => Promise<any>) => Promise<A>
+          |}
+          |
+          |/* Types */
+          |
+          |${context.references.toList.map(TypescriptZodDefinition.apply).mkString_("\n\n")}
+          |
+          |/* Endpoints */
+          |
+          |${result.mkString_("\n\n")}""".stripMargin

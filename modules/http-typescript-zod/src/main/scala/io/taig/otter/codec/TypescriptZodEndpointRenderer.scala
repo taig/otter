@@ -8,7 +8,6 @@ import io.taig.otter.Json
 import io.taig.otter.Keys
 import io.taig.otter.Typescript
 import io.taig.otter.TypescriptEndpoint
-import io.taig.otter.TypescriptState
 import io.taig.otter.TypescriptZodState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
@@ -24,17 +23,18 @@ object TypescriptZodEndpointRenderer:
     for
       url <- url(self = endpoint.request.url)
       name = function(endpoint)
-      input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
+      arguments <- input(request = endpoint.request)//.map(_.definition(s"${name.capitalize}Input"))
+      input = TypescriptZod.Shared(arguments).definition(s"${name.capitalize}Input")
       output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
       handle = s"""(code, headers, body) =>
                   |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
       fields = Chain(
         ("method", s"\"${endpoint.request.method}\""),
         ("path", "url.toString()")
-      ) /* ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
-        Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
+      ) ++ Chain.fromOption(arguments.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
+        Chain.fromOption(arguments.fields.collectFirst { case ("body", _) =>
           ("body", "JSON.stringify(input.body)")
-        })*/ :+
+        }) :+
         ("handle", handle)
     yield TypescriptEndpoint(
       input,
@@ -85,7 +85,7 @@ object TypescriptZodEndpointRenderer:
 
     show"/* $label */"
 
-  def input(request: Request[Json, ?]): TypescriptZodState[TypescriptZod] =
+  def input(request: Request[Json, ?]): TypescriptZodState[Typescript.Object[TypescriptZod]] =
     val path = PathTypescriptRenderer
       .render(request.url.path)
       .tupleLeft("path")
@@ -113,7 +113,7 @@ object TypescriptZodEndpointRenderer:
     (
       (Chain.fromOption(url) ++ Chain.fromOption(headers)).map(State.pure) ++
         Chain.fromOption(body)
-    ).sequence.map(values => TypescriptZod.Shared(Typescript.Object(values)))
+    ).sequence.map(Typescript.Object.apply)
 
   def output(response: Response[Json, ?]): TypescriptZodState[TypescriptZod] = NonEmptyChain
     .fromChainAppend(response.results.toChain, response.validation)
