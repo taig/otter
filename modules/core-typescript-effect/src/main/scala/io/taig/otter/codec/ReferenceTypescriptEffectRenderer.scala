@@ -12,17 +12,20 @@ import io.taig.otter.TypescriptEffect
 final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptEffectState[TypescriptEffect]]
 ) extends Renderer[S, TypescriptEffectState[TypescriptEffect]]:
-  override def render[B](schema: S[B]): TypescriptEffectState[TypescriptEffect] = schema.metadata.get(Keys.name) match
-    case Some(name) =>
-      State: state =>
-        val reference = TypescriptEffect(Effect.Reference(name))
+  override def render[B](schema: S[B]): TypescriptEffectState[TypescriptEffect] =
+    schema.metadata.get(Keys.name).map(toSymbol) match
+      case Some(name) =>
+        State: state =>
+          val reference = TypescriptEffect(Effect.Reference(name))
 
-        if state.stack.contains_(name)
-        then (state, TypescriptEffect(Effect.Recursion(reference)))
-        else
-          state.references.get(name) match
-            case Some(_) => (state, reference)
-            case None =>
-              val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
-              (context.modifyReferences(_.updatedWith(name)(_ => effect.some)).pop(name), reference)
-    case None => renderer.render(schema)
+          if state.stack.contains_(name)
+          then (state, TypescriptEffect(Effect.Recursion(name, reference)))
+          else
+            state.references.get(name) match
+              case Some(current) => (state, current)
+              case None =>
+                val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
+                (context.modifyReferences(_.updatedWith(name)(_ => effect.some)).pop(name), reference)
+      case None => renderer.render(schema)
+
+  private def toSymbol(value: String): String = value.replace(".", "").replace(" ", "")

@@ -5,7 +5,9 @@ import cats.implicits.*
 import io.taig.otter.operation.DictionarySchemaInvariant
 import io.taig.otter.operation.Enriched
 
-final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata)
+final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata):
+  def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A] = copy(value = value.mapK(fK))
+  def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Dictionary[U, T, A] = copy(value = value.leftMapK(fK))
 
 object Dictionary:
   sealed abstract class Value[+S[_], +T[_], A] extends Product, Serializable:
