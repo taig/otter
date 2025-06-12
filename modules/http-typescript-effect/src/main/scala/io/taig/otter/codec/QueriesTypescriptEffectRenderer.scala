@@ -13,4 +13,4 @@ object QueriesTypescriptEffectRenderer extends Renderer[Queries, Option[Typescri
 
     Option
       .when(values.nonEmpty)(values.map(query => (query.name, QueryTypescriptEffectRenderer.render(query))))
-      .map(values => TypescriptEffect(Effect.Object(values.map((name, value) => (name, value)))))
+      .map(values => TypescriptEffect(Effect.Struct(values.map((name, value) => (name, value)))))

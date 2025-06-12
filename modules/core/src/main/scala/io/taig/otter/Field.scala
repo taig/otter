@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.FieldSchemaInvariant
 
@@ -17,7 +18,7 @@ object Field:
 
     final def imap[B](f: A => B)(g: B => A): Value[S, T, B] = Value.Modify(self = this, f, g)
 
-    def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, A]
+    def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, A]
 
     final def optional: Value[S, T, Option[A]] = Value.Optional(self = this)
 
@@ -27,7 +28,7 @@ object Field:
       export self.{isOptional, key, value}
       override def nullish: Boolean = self.nullish
       override def nullish(f: Boolean => Boolean): Value[S, T, B] = copy(self = self.nullish(f))
-      override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, B] =
+      override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, B] =
         copy(self = self.mapK[T1, U](fK))
 
     final private[otter] case class Optional[S[_], T[_], A](self: Value[S, T, A]) extends Value[S, T, Option[A]]:
@@ -35,7 +36,7 @@ object Field:
       override def isOptional: Boolean = true
       override def nullish: Boolean = self.nullish
       override def nullish(f: Boolean => Boolean): Value[S, T, Option[A]] = copy(self = self.nullish(f))
-      override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, Option[A]] =
+      override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, Option[A]] =
         copy(self = self.mapK[T1, U](fK))
 
     final private[otter] case class Root[+S[_], +T[_], A, B](
@@ -45,7 +46,7 @@ object Field:
     ) extends Value[S, T, B]:
       override def isOptional: Boolean = false
       override def nullish(f: Boolean => Boolean): Value[S, T, B] = copy(nullish = f(nullish))
-      override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, B] =
+      override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, B] =
         copy(value = value.mapK[T1, U](fK))
 
   given [Key[_], Value[_]]: FieldSchemaInvariant[Field[Key, Value, *], Key, Value] with

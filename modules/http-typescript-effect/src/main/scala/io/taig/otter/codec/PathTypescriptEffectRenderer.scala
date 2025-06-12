@@ -17,4 +17,4 @@ object PathTypescriptRenderer extends Renderer[Path, Option[TypescriptEffect]]:
       .when(parameters.nonEmpty)(
         parameters.map(parameter => (parameter.name, ParameterTypescriptEffectRenderer.render(parameter)))
       )
-      .map(values => TypescriptEffect(Effect.Object(values.map((name, value) => (name, value)))))
+      .map(values => TypescriptEffect(Effect.Struct(values.map((name, value) => (name, value)))))

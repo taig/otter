@@ -96,7 +96,7 @@ object EndpointTypescriptEffectRenderer:
     val url = NonEmptyChain
       .fromChain(Chain.fromOption(path) ++ Chain.fromOption(queries))
       .map(_.toChain)
-      .map(values => TypescriptEffect(Effect.Object(values)))
+      .map(values => TypescriptEffect(Effect.Struct(values)))
       .tupleLeft("url")
 
     val headers = HeadersTypescriptEffectRenderer
@@ -112,7 +112,7 @@ object EndpointTypescriptEffectRenderer:
     (
       (Chain.fromOption(url) ++ Chain.fromOption(headers)).map(State.pure) ++
         Chain.fromOption(body)
-    ).sequence.map(values => TypescriptEffect(Effect.Object(values)))
+    ).sequence.map(values => TypescriptEffect(Effect.Struct(values)))
 
   def output(response: Response[Json, ?]): TypescriptEffectState[TypescriptEffect] = NonEmptyChain
     .fromChainAppend(response.results.toChain, response.validation)
@@ -127,7 +127,7 @@ object EndpointTypescriptEffectRenderer:
         )
         .map: types =>
           TypescriptEffect(
-            Effect.Object(
+            Effect.Struct(
               Chain(
                 ("code", TypescriptEffect(Effect.Literal(String.valueOf(code.toInt)))),
                 ("value", TypescriptEffect(Effect.Union(types)))

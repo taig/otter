@@ -59,6 +59,8 @@ object Json:
 
     given Parseable[Json.Primitive, Json.Primitive] = Parseable[Json.Primitive, Json.Primitive]
 
+    given Translator[Key.Primitive, Json.Primitive] = KeyPrimitiveToJsonPrimitive
+
   final case class Record[A](self: Self.Record[Json.Field, A]) extends Json[A]
 
   object Record:
@@ -128,3 +130,5 @@ object Json:
       case Record(self)      => Record(self.imap(f)(g))
       case Tuple(self)       => Tuple(self.imap(f)(g))
       case Union(self)       => Union(self.imap(f)(g))
+
+  given Translator[Key, Json] = KeyToJson

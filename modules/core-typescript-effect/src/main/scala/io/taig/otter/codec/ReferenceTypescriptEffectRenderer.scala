@@ -15,13 +15,14 @@ final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
   override def render[B](schema: S[B]): TypescriptEffectState[TypescriptEffect] = schema.metadata.get(Keys.name) match
     case Some(name) =>
       State: state =>
-        state.references.get(name) match
-          case Some(_) => (state, TypescriptEffect(Effect.Reference(name)))
-          case None =>
-            val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
+        val reference = TypescriptEffect(Effect.Reference(name))
 
-            (
-              context.modifyReferences(_.updatedWith(name)(_ => effect.some)).pop(name),
-              TypescriptEffect(Effect.Reference(name))
-            )
+        if state.stack.contains_(name)
+        then (state, TypescriptEffect(Effect.Recursion(reference)))
+        else
+          state.references.get(name) match
+            case Some(_) => (state, reference)
+            case None =>
+              val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
+              (context.modifyReferences(_.updatedWith(name)(_ => effect.some)).pop(name), reference)
     case None => renderer.render(schema)

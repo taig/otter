@@ -15,4 +15,4 @@ object HeadersTypescriptEffectRenderer extends Renderer[Headers, Option[Typescri
       .when(values.nonEmpty)(
         values.map(header => (header.name.toString, HeaderTypescriptEffectRenderer.render(header)))
       )
-      .map(values => TypescriptEffect(Effect.Object(values.map((name, value) => (name, value)))))
+      .map(values => TypescriptEffect(Effect.Struct(values.map((name, value) => (name, value)))))

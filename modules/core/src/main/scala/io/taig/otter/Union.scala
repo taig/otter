@@ -1,11 +1,13 @@
 package io.taig.otter
 
+import cats.~>
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.UnionSchemaInvariant
 
-final case class Union[+S[_], A](value: Union.Value[S, A], metadata: Metadata)
+final case class Union[+S[_], A](value: Union.Value[S, A], metadata: Metadata):
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Union[T, A] = copy(value = value.mapK[S1, T](fK))
 
 object Union:
   sealed abstract class Value[+S[_], A] extends Product, Serializable:
@@ -16,22 +18,22 @@ object Union:
     final def orElse[S1[a] >: S[a], B](schema: Value[S1, B]): Value[S1, Either[A, B]] =
       Value.OrElse(left = this, right = schema)
 
-    def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]
+    def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, A]
 
   object Value:
     final private[otter] case class Modify[S[_], A, B](self: Value[S, A], f: A => B, g: B => A) extends Value[S, B]:
       export self.schemas
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, B] = copy(self = self.mapK[S1, T](fK))
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, B] = copy(self = self.mapK[S1, T](fK))
 
     final private[otter] case class OrElse[S[_], A, B](left: Value[S, A], right: Value[S, B])
         extends Value[S, Either[A, B]]:
       override def schemas: NonEmptyChain[Reference[S, ?]] = left.schemas ++ right.schemas
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, Either[A, B]] =
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, Either[A, B]] =
         copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
     final private[otter] case class Root[S[_], A](schema: Reference[S, A]) extends Value[S, A]:
       override def schemas: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(schema)
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A] =
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, A] =
         copy(schema = schema.mapK[S1, T](fK))
 
   given [Value[_]]: UnionSchemaInvariant[Union[Value, *], Value] with

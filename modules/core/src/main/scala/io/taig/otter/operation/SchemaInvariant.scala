@@ -7,7 +7,7 @@ import io.taig.otter.Merge
 
 import scala.annotation.targetName
 import scala.compiletime.*
-import scala.util.NotGiven
+import io.taig.otter.Translator
 
 trait SchemaInvariant[Self[_]] extends Invariant[Self]:
   self =>
@@ -22,6 +22,8 @@ trait SchemaInvariant[Self[_]] extends Invariant[Self]:
     final inline def to[B]: Self[B] =
       val convert = summonInline[Convert[A, B]]
       self.imap(convert.to)(convert.from)
+
+    def translate[F[_]](using translator: Translator[Self, F]): F[A] = translator.translate(self)
 
   extension [A, B](self: Self[(A, B)])
     final def merged(using merge: Merge[A, B]): Self[merge.Out] =

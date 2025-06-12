@@ -1,4 +1,6 @@
 package io.taig.otter
+
+import cats.~>
 import cats.implicits.*
 import io.taig.otter.operation.DictionarySchemaInvariant
 import io.taig.otter.operation.Enriched
@@ -12,9 +14,9 @@ object Dictionary:
 
     def constraints: Vector[Constraint.Object]
 
-    def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, A]
+    def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, A]
 
-    def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Value[U, T, A]
+    def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Value[U, T, A]
     final def imap[B](f: A => B)(g: B => A): Value[S, T, B] = Value.Modify(self = this, f, g)
 
   object Value:
@@ -28,17 +30,17 @@ object Dictionary:
         minimum.map(Constraint.Object.Minimum.apply),
         maximum.map(Constraint.Object.Maximum.apply)
       ).flatten
-      override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, List[(A, B)]] =
+      override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, List[(A, B)]] =
         copy(value = value.mapK[T1, U](fK))
-      override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Value[U, T, List[(A, B)]] =
+      override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Value[U, T, List[(A, B)]] =
         copy(key = key.mapK[S1, U](fK))
 
     final private[otter] case class Modify[S[_], T[_], A, B](self: Value[S, T, A], f: A => B, g: B => A)
         extends Value[S, T, B]:
       export self.{constraints, key, value}
-      override def mapK[T1[a] >: T[a], U[_]](fK: [A] => T1[A] => U[A]): Value[S, U, B] =
+      override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, B] =
         copy(self = self.mapK[T1, U](fK))
-      override def leftMapK[S1[a] >: S[a], U[_]](fK: [A] => S1[A] => U[A]): Value[U, T, B] =
+      override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Value[U, T, B] =
         copy(self = self.leftMapK[S1, U](fK))
 
   given [Key[_], Value[_]]: DictionarySchemaInvariant[Dictionary[Key, Value, *], Key, Value] with

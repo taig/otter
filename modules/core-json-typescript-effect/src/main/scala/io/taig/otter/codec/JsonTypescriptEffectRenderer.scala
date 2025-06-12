@@ -4,18 +4,13 @@ import io.taig.otter.Json
 import io.taig.otter.TypescriptEffectState
 import io.taig.otter.TypescriptEffect
 import cats.syntax.all.*
-import cats.data.State
-import io.taig.otter.ContextState
-import scala.collection.immutable.SortedSet
-import cats.Id
-import io.taig.otter.EffectState
-import io.taig.otter.Effect
 
 object JsonTypescriptEffectRenderer extends Renderer[Json, TypescriptEffectState[TypescriptEffect]]:
-  val renderer = ReferenceTypescriptEffectRenderer(renderer = this)
+  val renderer = ReferenceTypescriptEffectRenderer(
+    renderer = JsonEffectRenderer(value = this).map(_.map(TypescriptEffect(_)))
+  )
 
-  override def render[A](schema: Json[A]): TypescriptEffectState[TypescriptEffect] =
-    renderer.render(schema)
+  override def render[A](schema: Json[A]): TypescriptEffectState[TypescriptEffect] = renderer.render(schema)
 
   // JsonEffectRenderer.State
   //   .render(schema)

@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.~>
 import cats.data.Chain
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.TupleSchemaInvariant
@@ -11,7 +12,7 @@ object Tuple:
   sealed abstract class Value[+S[_], A] extends Product, Serializable:
     def schemas: Chain[Reference[S, ?]]
 
-    def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A]
+    def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, A]
 
     final def imap[B](f: A => B)(g: B => A): Value[S, B] = Value.Modify(self = this, f, g)
 
@@ -21,15 +22,15 @@ object Tuple:
   object Value:
     private[otter] case object Empty extends Value[Nothing, Unit]:
       override def schemas: Chain[Nothing] = Chain.empty
-      override def mapK[S1[a] >: Nothing, T[_]](fK: [A] => S1[A] => T[A]): Value[T, Unit] = this
+      override def mapK[S1[a] >: Nothing, T[_]](fK: S1 ~> T): Value[T, Unit] = this
 
     final private[otter] case class Modify[S[_], A, B](self: Value[S, A], f: A => B, g: B => A) extends Value[S, B]:
       export self.schemas
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, B] = copy(self = self.mapK[S1, T](fK))
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, B] = copy(self = self.mapK[S1, T](fK))
 
     final private[otter] case class Root[S[_], A](schema: Reference[S, A]) extends Value[S, A]:
       override def schemas: Chain[Reference[S, A]] = Chain.one(schema)
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, A] =
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, A] =
         copy(schema = schema.mapK[S1, T](fK))
 
     final private[otter] case class Zip[S[_], A, B](
@@ -37,7 +38,7 @@ object Tuple:
         right: Value[S, B]
     ) extends Value[S, (A, B)]:
       override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Value[T, (A, B)] =
+      override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Value[T, (A, B)] =
         copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   given [Value[_]]: TupleSchemaInvariant[Tuple[Value, *], Value] with

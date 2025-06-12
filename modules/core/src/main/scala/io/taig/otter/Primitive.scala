@@ -13,15 +13,21 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import cats.~>
+import cats.arrow.FunctionK
 
 sealed abstract class Primitive[+S[_], A]:
   def value: Primitive.Value[S, A]
   def metadata: Metadata
   def metadata(f: Metadata => Metadata): Primitive[S, A]
 
+  def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Primitive[T, A]
+
 object Primitive:
   final case class Boolean[A](value: Primitive.Value.Boolean[A], metadata: Metadata) extends Primitive[Nothing, A]:
     override def metadata(f: Metadata => Metadata): Primitive.Boolean[A] = copy(metadata = f(metadata))
+
+    def mapK[S1[_] >: Nothing, T[_]](fK: S1 ~> T): Primitive[T, A] = this
 
   object Boolean:
     given schema: PrimitiveSchemaInvariant.Boolean[Primitive.Boolean] with
@@ -37,6 +43,8 @@ object Primitive:
 
   final case class Number[A](value: Primitive.Value.Number[A], metadata: Metadata) extends Primitive[Nothing, A]:
     override def metadata(f: Metadata => Metadata): Primitive.Number[A] = copy(metadata = f(metadata))
+
+    override def mapK[S1[_] >: Nothing, T[_]](fK: S1 ~> T): Primitive[T, A] = this
 
   object Number:
     given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] with
@@ -93,6 +101,8 @@ object Primitive:
   final case class String[+S[_], A](value: Primitive.Value.String[S, A], metadata: Metadata) extends Primitive[S, A]:
     override def metadata(f: Metadata => Metadata): Primitive.String[S, A] = copy(metadata = f(metadata))
 
+    override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Primitive[T, A] = copy(value = value.mapK(fK))
+
   object String:
     given schema[Value[_]]: PrimitiveSchemaInvariant.String[Primitive.String[Value, *], Value] with
       override def parser[A](
@@ -143,12 +153,10 @@ object Primitive:
         a.metadata(f)
 
   sealed abstract class Value[+S[_], A] extends Product, Serializable:
-    def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Primitive.Value[T, A]
     def imap[B](f: A => B)(g: B => A): Primitive.Value[S, B]
 
   object Value:
     sealed abstract class Boolean[A] extends Primitive.Value[Nothing, A]:
-      final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Value.Boolean[A] = this
       override def imap[B](f: A => B)(g: B => A): Primitive.Value.Boolean[B] = Boolean.Modify(self = this, f, g)
 
     object Boolean:
@@ -158,7 +166,6 @@ object Primitive:
       private[otter] case object Root extends Primitive.Value.Boolean[SBoolean]
 
     sealed abstract class Number[A] extends Primitive.Value[Nothing, A]:
-      final override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): Primitive.Value.Number[A] = this
       final override def imap[B](f: A => B)(g: B => A): Primitive.Value.Number[B] = Number.Modify(self = this, f, g)
 
     object Number:
@@ -205,12 +212,12 @@ object Primitive:
       ) extends Value.Number[B]
 
     sealed abstract class String[+S[_], A] extends Primitive.Value[S, A]:
-      override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Primitive.Value.String[T, A]
+      def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Primitive.Value.String[T, A]
       final override def imap[B](f: A => B)(g: B => A): Value.String[S, B] = String.Modify(self = this, f, g)
 
     object String:
       final private[otter] case class Parsed[S[_], A](self: Reference[S, A]) extends Primitive.Value.String[S, A]:
-        override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): String[T, A] =
+        override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): String[T, A] =
           copy(self = self.mapK[S1, T](fK))
 
       final private[otter] case class Parser[A](
@@ -218,19 +225,19 @@ object Primitive:
           decode: JString => Either[JString, A],
           encode: A => JString
       ) extends Primitive.Value.String[Nothing, A]:
-        override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): String[T, A] = this
+        override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): String[T, A] = this
 
       final private[otter] case class Text(
           minimum: Option[SInt],
           maximum: Option[SInt],
           matches: Option[Pattern]
       ) extends Primitive.Value.String[Nothing, JString]:
-        override def mapK[S[_] >: Nothing, T[_]](fK: [A] => S[A] => T[A]): String[T, JString] = this
+        override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): String[T, JString] = this
 
       final private[otter] case class Modify[S[_], A, B](
           self: Primitive.Value.String[S, A],
           f: A => B,
           g: B => A
       ) extends Primitive.Value.String[S, B]:
-        override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): String[T, B] =
+        override def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): String[T, B] =
           copy(self = self.mapK[S1, T](fK))
