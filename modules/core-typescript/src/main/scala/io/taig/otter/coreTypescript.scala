@@ -1,3 +1,3 @@
-package io.taig.otter
+// package io.taig.otter
 
-private[otter] def toSymbol(value: String): String = value.replace(".", "").replace(" ", "")
+// private[otter] def toSymbol(value: String): String = value.replace(".", "").replace(" ", "")

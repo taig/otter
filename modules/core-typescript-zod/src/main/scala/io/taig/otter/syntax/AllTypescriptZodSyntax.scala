@@ -1,5 +1,0 @@
-package io.taig.otter.syntax
-
-trait AllTypescriptZodSyntax extends EnrichedTypescriptZodSyntax
-
-object AllTypescriptZodSyntax extends AllTypescriptZodSyntax

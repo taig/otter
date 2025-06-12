@@ -1,13 +1,13 @@
 package io.taig.otter.sample.app
 
 import io.taig.otter.Json
-import io.taig.otter.codec.TypescriptZodEndpointsRenderer
+import io.taig.otter.codec.EndpointsTypescriptEffectRenderer
 import io.taig.otter.sample.api.endpoint
 
 object SampleZodApp:
   @main
   def run = {
-    val zod = TypescriptZodEndpointsRenderer(imports = Nil).render(
+    val zod = EndpointsTypescriptEffectRenderer(imports = Nil).render(
       endpoints = List(
         endpoint.librarian.librarians.reference.get,
         endpoint.librarian.post,

@@ -71,16 +71,17 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreCaseInsensitive,
     coreJavaTime,
     coreJson,
+    coreEffect,
     coreTypescript,
     coreJsonCirce,
+    coreJsonEffect,
     coreJsonTypescript,
-    coreJsonTypescriptZod,
-    coreTypescriptZod,
+    coreJsonTypescriptEffect,
     http,
     httpHttp4s,
     httpJson,
     httpJsonCirce,
-    httpTypescriptZod,
+    httpTypescriptEffect,
     munit,
     sample,
     sampleApi,
@@ -125,8 +126,11 @@ lazy val coreJson = module(identifier = Some("core-json"))
 lazy val coreTypescript = module(identifier = Some("core-typescript"))
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreTypescriptZod = module(identifier = Some("core-typescript-zod"))
-  .dependsOn(coreTypescript % "compile->compile;test->test")
+lazy val coreEffect = module(identifier = Some("core-effect"))
+  .dependsOn(core % "compile->compile;test->test")
+
+lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
+  .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
 
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
@@ -136,11 +140,18 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   )
   .dependsOn(coreJson % "compile->compile;test->test")
 
+lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
+
 lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
 
-lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod"))
-  .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptZod % "compile->compile;test->test")
+lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
+  .dependsOn(
+    coreTypescriptEffect % "compile->compile;test->test",
+    coreJsonEffect % "compile->compile;test->test",
+    coreJsonTypescript % "compile->compile;test->test"
+  )
 
 lazy val http = module(identifier = Some("http"))
   .settings(
@@ -170,8 +181,8 @@ lazy val httpHttp4s = module(identifier = Some("http-http4s"))
   )
   .dependsOn(http % "compile->compile;test->test")
 
-lazy val httpTypescriptZod = module(identifier = Some("http-typescript-zod"))
-  .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptZod % "compile->compile;test->test")
+lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
+  .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
 
 lazy val munit = module(identifier = Some("munit"))
   .settings(
@@ -206,4 +217,4 @@ lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
         "org.typelevel" %% "mouse" % Version.Mouse ::
         Nil
   )
-  .dependsOn(sampleApi, httpJsonCirce, httpTypescriptZod, munit % "compile->test")
+  .dependsOn(sampleApi, httpJsonCirce, httpTypescriptEffect, munit % "compile->test")
