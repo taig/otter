@@ -11,7 +11,7 @@ import cats.FunctorFilter
 type ContextState[A, B] = State[ContextState.Context[A], B]
 
 object ContextState:
-  final case class Context[+A](references: ListMap[String, A], stack: SortedSet[String]):
+  final case class Context[+A](references: ListMap[String, A], stack: SortedSet[String], recursion: SortedSet[String]):
     def map[B](f: A => B): ContextState.Context[B] = copy(references = references.view.mapValues(f).to(ListMap))
 
     def modifyReferences[A1 >: A](f: ListMap[String, A] => ListMap[String, A1]): ContextState.Context[A1] =
@@ -21,10 +21,15 @@ object ContextState:
 
     def push(stack: String): ContextState.Context[A] = modfyStack(_ + stack)
 
-    def pop(stack: String): ContextState.Context[A] = modfyStack(_ - stack)
+    def pop(stack: String): ContextState.Context[A] = modfyStack(_ - stack).modifyRecursion(_ - stack)
+
+    def modifyRecursion(f: SortedSet[String] => SortedSet[String]): ContextState.Context[A] =
+      copy(recursion = f(recursion))
+
+    def recurse(name: String): ContextState.Context[A] = modifyRecursion(_ + name)
 
   object Context:
-    val Empty: ContextState.Context[Nothing] = Context(references = ListMap.empty, stack = SortedSet.empty)
+    val Empty: ContextState.Context[Nothing] = Context(references = ListMap.empty, stack = SortedSet.empty, recursion = SortedSet.empty)
 
     given functor: Functor[ContextState.Context] with
       override def map[A, B](fa: Context[A])(f: A => B): Context[B] = fa.map(f)

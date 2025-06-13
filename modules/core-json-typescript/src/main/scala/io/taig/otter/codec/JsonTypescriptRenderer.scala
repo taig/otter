@@ -25,12 +25,10 @@ object JsonTypescriptRenderer extends Renderer[Json, Typescript.Value]:
         case Json.Tuple(self)       => self
         case Json.Union(self)       => self
 
-  val base = ReferenceTypescriptRenderer(
-    renderer = TypescriptRenderer[Json, Json.Primitive, Json.Field, Id, Typescript.Value](
-      renderer = this,
+  val renderer =  TypescriptRenderer[Json, Json.Primitive, Json.Field, Id, Typescript.Value](
+      renderer = ReferenceTypescriptRenderer(this)(lift = Typescript.Value.apply),
       printer = JsonPrimitivePrinter,
       field
-    )(lift = Typescript.Value.apply).mapK[Json](FunctionK.lift(fromJson))
-  ).map(Typescript.Value.apply)
+    )(lift = Typescript.Value.apply).mapK[Json](FunctionK.lift(fromJson)).map(Typescript.Value.apply)
 
-  override def render[B](schema: Json[B]): Typescript.Value = base.render(schema)
+  override def render[B](schema: Json[B]): Typescript.Value = renderer.render(schema)
