@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.Applicative
+import cats.Order
 import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.TypescriptRenderer.Schema
-import cats.Applicative
-import cats.Order
 
 final class TypescriptRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
     renderer: Renderer[S, V[A]],

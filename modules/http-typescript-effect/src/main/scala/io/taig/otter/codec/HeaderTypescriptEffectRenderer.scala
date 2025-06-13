@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.http.Header
-import io.taig.otter.TypescriptEffect
 import io.taig.otter.Effect
+import io.taig.otter.TypescriptEffect
+import io.taig.otter.http.Header
 
 object HeaderTypescriptEffectRenderer extends Renderer[Header, TypescriptEffect]:
   override def render[A](schema: Header[A]): TypescriptEffect =

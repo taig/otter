@@ -1,13 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Json
-import io.taig.otter.Effect
-import cats.syntax.all.*
 import cats.Applicative
 import cats.Order
-import io.taig.otter.Key
-import cats.Id
 import cats.arrow.FunctionK
+import io.taig.otter.Effect
+import io.taig.otter.Json
+import io.taig.otter.Key
 
 final class JsonEffectRenderer[S[_]: Applicative, A: Order](renderer: Renderer[Json, S[A]])(lift: Effect[A] => A)
     extends Renderer[Json, S[Effect[A]]]:
@@ -29,9 +27,9 @@ final class JsonEffectRenderer[S[_]: Applicative, A: Order](renderer: Renderer[J
         case Json.Union(self)       => self
 
   val base = EffectRenderer[Json, Json.Primitive, Json.Field, S, A](
-      renderer,
-      printer = JsonPrimitivePrinter.Quoted,
-      field
-    )(lift).mapK[Json](FunctionK.lift(fromJson))
+    renderer,
+    printer = JsonPrimitivePrinter.Quoted,
+    field
+  )(lift).mapK[Json](FunctionK.lift(fromJson))
 
   override def render[B](schema: Json[B]): S[Effect[A]] = base.render(schema)

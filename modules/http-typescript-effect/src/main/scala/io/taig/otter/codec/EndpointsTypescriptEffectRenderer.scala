@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
 import cats.syntax.all.*
-import io.taig.otter.Json
-import io.taig.otter.http.Endpoint
 import io.taig.otter.ContextState
+import io.taig.otter.Json
 import io.taig.otter.TypescriptEffectDefinition
+import io.taig.otter.http.Endpoint
 
 final class EndpointsTypescriptEffectRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =

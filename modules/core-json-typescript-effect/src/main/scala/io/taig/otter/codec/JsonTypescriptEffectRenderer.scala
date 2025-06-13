@@ -1,9 +1,8 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Json
-import io.taig.otter.TypescriptEffectState
 import io.taig.otter.TypescriptEffect
-import cats.syntax.all.*
+import io.taig.otter.TypescriptEffectState
 
 object JsonTypescriptEffectRenderer extends Renderer[Json, TypescriptEffectState[TypescriptEffect]]:
 

@@ -1,14 +1,14 @@
 package io.taig.otter
 
 import cats.Order
+import cats.Show
+import cats.Traverse
 import cats.data.Chain
 import cats.data.Chain.==:
 import cats.data.NonEmptyChain
-import cats.derived.*
 import cats.derived
+import cats.derived.*
 import cats.syntax.all.*
-import cats.Traverse
-import cats.Show
 
 enum Typescript[+A] derives Order, Traverse:
   case Array(self: A)

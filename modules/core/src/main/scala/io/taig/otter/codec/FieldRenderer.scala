@@ -1,9 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Field
-import cats.syntax.all.*
-import cats.data.Chain
 import cats.Applicative
+import cats.syntax.all.*
+import io.taig.otter.Field
 
 final class FieldRenderer[S[_], T[_], U[_]: Applicative, A](
     printer: Encoder[S, String],

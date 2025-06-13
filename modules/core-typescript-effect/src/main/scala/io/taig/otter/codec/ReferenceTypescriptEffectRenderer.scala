@@ -1,14 +1,14 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Effect
-import io.taig.otter.operation.SchemaInvariant
-import io.taig.otter.syntax.EnrichedSyntax.*
-import io.taig.otter.Keys
 import cats.data.State
 import cats.syntax.all.*
-import io.taig.otter.TypescriptEffectState
-import io.taig.otter.TypescriptEffect
+import io.taig.otter.Effect
+import io.taig.otter.Keys
 import io.taig.otter.Typescript
+import io.taig.otter.TypescriptEffect
+import io.taig.otter.TypescriptEffectState
+import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptEffectState[TypescriptEffect]],
@@ -27,7 +27,8 @@ final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
               case Some(current) => (state, current)
               case None =>
                 val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
-                val updatedEffect = if context.recursion.nonEmpty
+                val updatedEffect =
+                  if context.recursion.nonEmpty
                   then effect.copy(typescript = typescript.render(schema).some)
                   else effect
                 (context.modifyReferences(_.updatedWith(name)(_ => updatedEffect.some)).pop(name), reference)

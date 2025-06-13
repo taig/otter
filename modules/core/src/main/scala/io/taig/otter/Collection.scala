@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.~>
 import cats.implicits.*
+import cats.~>
 import io.taig.otter.operation.CollectionSchemaInvariant
 import io.taig.otter.operation.Enriched
 

@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import io.taig.otter.operation.SchemaInvariant
-import io.taig.otter.Typescript
-import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.otter.Keys
+import io.taig.otter.Typescript
+import io.taig.otter.operation.SchemaInvariant
+import io.taig.otter.syntax.EnrichedSyntax.*
 
 final class ReferenceTypescriptRenderer[S[_]: SchemaInvariant, A](renderer: Renderer[S, A])(lift: Typescript[A] => A)
     extends Renderer[S, A]:

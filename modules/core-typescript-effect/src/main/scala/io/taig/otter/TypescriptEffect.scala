@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-import cats.derived.*
 import cats.Order
+import cats.derived.*
+import cats.syntax.all.*
 
 final case class TypescriptEffect(typescript: Option[Typescript.Value], effect: Effect[TypescriptEffect]) derives Order:
   def definition(name: String): TypescriptEffectDefinition = TypescriptEffectDefinition(name, value = this)

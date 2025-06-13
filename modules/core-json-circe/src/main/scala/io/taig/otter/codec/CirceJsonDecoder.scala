@@ -6,8 +6,8 @@ import io.circe.Json as CirceJson
 import io.taig.otter.Json
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.typeOf
 import io.taig.otter.fromJson
+import io.taig.otter.typeOf
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)

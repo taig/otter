@@ -1,14 +1,13 @@
 package io.taig.otter
 
 import cats.Order
-import cats.data.Chain.==:
+import cats.Show
+import cats.Traverse
 import cats.data.Chain
 import cats.data.NonEmptyChain
-import cats.derived.*
 import cats.derived
+import cats.derived.*
 import cats.syntax.all.*
-import cats.Traverse
-import cats.Show
 
 enum Effect[+A] derives Order, Traverse:
   case Array(self: A)
@@ -42,7 +41,8 @@ object Effect:
   given [A: Show]: Show[Effect[A]] =
     case Array(self)        => show"Schema.Array($self)"
     case Boolean            => "Schema.Boolean"
-    case Literal(value) => show"Schema.Literal(${value.show})"
+    case Dynamic(value)     => value
+    case Literal(value)     => show"Schema.Literal(${value.show})"
     case Nullable(self)     => show"Schema.NullOr($self)"
     case Record(key, value) => show"Schema.Record({ key: $key, value: $value })"
     case Reference(name)    => name
@@ -53,3 +53,5 @@ object Effect:
     case Recursion(tpe, self)                 => show"Schema.suspend((): Schema.Schema<$tpe> => $self)"
     case Union(values) if values.length === 1 => values.head.show
     case Union(values)                        => show"Schema.Union(${values.map(_.show).mkString_(", ")})"
+    case Tuple(values)                        => show"Schema.Tuple(${values.map(_.show).mkString_(", ")})"
+    case Void                                 => "Schema.Void"

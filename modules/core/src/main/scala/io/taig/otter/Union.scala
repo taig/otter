@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import cats.~>
 import cats.data.NonEmptyChain
 import cats.syntax.all.*
+import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.UnionSchemaInvariant
 

@@ -1,11 +1,11 @@
 package io.taig.otter
 
-import cats.~>
 import cats.data.NonEmptyChain
+import cats.data.NonEmptyChainImpl.Type
+import cats.~>
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.EnumerationSchemaInvariant
-import cats.data.NonEmptyChainImpl.Type
 
 final case class Enumeration[+S[_], A](value: Enumeration.Value[S, A], metadata: Metadata):
   def mapK[S1[a] >: S[a], T[_]](fK: S1 ~> T): Enumeration[T, A] = copy(value = value.mapK(fK))

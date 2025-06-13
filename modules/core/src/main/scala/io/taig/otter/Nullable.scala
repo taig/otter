@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.~>
 import cats.syntax.all.*
+import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.NullableSchemaInvariant
 

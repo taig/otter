@@ -4,10 +4,10 @@ import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Convert
 import io.taig.otter.Merge
+import io.taig.otter.Translator
 
 import scala.annotation.targetName
 import scala.compiletime.*
-import io.taig.otter.Translator
 
 trait SchemaInvariant[Self[_]] extends Invariant[Self]:
   self =>

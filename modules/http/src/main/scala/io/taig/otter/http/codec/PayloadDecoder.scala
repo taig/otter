@@ -17,5 +17,5 @@ object PayloadDecoder:
           charset: Option[Charset],
           bytes: Array[Byte]
       ): Validated[Violations, A] = schema match
-          case schema: S[A] => self.decode(schema, charset, bytes)
-          case schema: T[A] => decoder.decode(schema, charset, bytes)
+        case schema: S[A] => self.decode(schema, charset, bytes)
+        case schema: T[A] => decoder.decode(schema, charset, bytes)

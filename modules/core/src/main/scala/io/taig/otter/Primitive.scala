@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.syntax.all.*
+import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
 
@@ -13,8 +14,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.~>
-import cats.arrow.FunctionK
 
 sealed abstract class Primitive[+S[_], A]:
   def value: Primitive.Value[S, A]

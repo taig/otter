@@ -1,11 +1,11 @@
 package io.taig.otter
 
+import cats.Eq
 import cats.Show
 import cats.syntax.all.*
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.Eq
 
 type Data = Data.Value | Data.Null
 

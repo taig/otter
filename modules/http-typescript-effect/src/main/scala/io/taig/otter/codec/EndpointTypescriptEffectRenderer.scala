@@ -4,19 +4,19 @@ import cats.data.Chain
 import cats.data.NonEmptyChain
 import cats.data.State
 import cats.syntax.all.*
+import io.taig.otter.Effect
 import io.taig.otter.Json
 import io.taig.otter.Keys
+import io.taig.otter.TypescriptEffect
+import io.taig.otter.TypescriptEffectDefinition
+import io.taig.otter.TypescriptEffectEndpoint
 import io.taig.otter.TypescriptEffectState
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Request
 import io.taig.otter.http.Response
-import io.taig.otter.indent
 import io.taig.otter.http.Url
-import io.taig.otter.TypescriptEffect
-import io.taig.otter.TypescriptEffectDefinition
-import io.taig.otter.Effect
-import io.taig.otter.TypescriptEffectEndpoint
+import io.taig.otter.indent
 
 object EndpointTypescriptEffectRenderer:
   def render(endpoint: Endpoint[Json, ?, ?]): TypescriptEffectState[TypescriptEffectEndpoint] =

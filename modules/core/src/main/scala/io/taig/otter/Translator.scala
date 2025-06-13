@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import cats.arrow.*
 import cats.~>
 
 trait Translator[F[_], G[_]] extends (F ~> G):

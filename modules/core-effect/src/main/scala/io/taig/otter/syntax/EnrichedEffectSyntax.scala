@@ -1,8 +1,8 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.operation.Enriched
 import io.taig.otter.Effect
 import io.taig.otter.EffectKeys
+import io.taig.otter.operation.Enriched
 import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait EnrichedEffectSyntax:

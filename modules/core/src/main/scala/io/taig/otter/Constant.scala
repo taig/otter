@@ -1,8 +1,8 @@
 package io.taig.otter
 
-import cats.~>
 import cats.Eq
 import cats.syntax.all.*
+import cats.~>
 import io.taig.otter.operation.ConstantSchemaInvariant
 import io.taig.otter.operation.Enriched
 

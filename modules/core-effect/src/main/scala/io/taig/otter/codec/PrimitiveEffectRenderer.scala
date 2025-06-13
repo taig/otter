@@ -1,7 +1,7 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Primitive
 import io.taig.otter.Effect
+import io.taig.otter.Primitive
 
 object PrimitiveEffectRenderer extends Renderer[Primitive[?, *], Effect[Nothing]]:
   override def render[A](schema: Primitive[?, A]): Effect[Nothing] = schema match

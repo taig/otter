@@ -1,11 +1,9 @@
 package io.taig.otter.codec
-
-import cats.syntax.all.*
-import io.taig.otter.Json
-import io.taig.otter.Typescript
 import cats.Id
 import cats.arrow.FunctionK
+import io.taig.otter.Json
 import io.taig.otter.Key
+import io.taig.otter.Typescript
 
 object JsonTypescriptRenderer extends Renderer[Json, Typescript.Value]:
   val field: Renderer[Json.Field, (String, Typescript.Value)] =
@@ -25,10 +23,10 @@ object JsonTypescriptRenderer extends Renderer[Json, Typescript.Value]:
         case Json.Tuple(self)       => self
         case Json.Union(self)       => self
 
-  val renderer =  TypescriptRenderer[Json, Json.Primitive, Json.Field, Id, Typescript.Value](
-      renderer = ReferenceTypescriptRenderer(this)(lift = Typescript.Value.apply),
-      printer = JsonPrimitivePrinter.Quoted,
-      field
-    )(lift = Typescript.Value.apply).mapK[Json](FunctionK.lift(fromJson)).map(Typescript.Value.apply)
+  val renderer = TypescriptRenderer[Json, Json.Primitive, Json.Field, Id, Typescript.Value](
+    renderer = ReferenceTypescriptRenderer(this)(lift = Typescript.Value.apply),
+    printer = JsonPrimitivePrinter.Quoted,
+    field
+  )(lift = Typescript.Value.apply).mapK[Json](FunctionK.lift(fromJson)).map(Typescript.Value.apply)
 
   override def render[B](schema: Json[B]): Typescript.Value = renderer.render(schema)
