@@ -9,16 +9,6 @@ object JsonTypescriptEffectRenderer extends Renderer[Json, TypescriptEffectState
 
   override def render[A](schema: Json[A]): TypescriptEffectState[TypescriptEffect] =
     ReferenceTypescriptEffectRenderer(
-      renderer = JsonEffectRenderer(value = this).map(_.map(TypescriptEffect.apply))/*.map(_.map { effect =>
-        if effect.isRecursion || effect.exists(_.isRecursive)
-        then
-          TypescriptEffect(
-            typescript = JsonTypescriptRenderer
-              .render(schema)
-              .some,
-            effect
-          )
-        else TypescriptEffect(effect)
-      })*/,
+      renderer = JsonEffectRenderer(renderer = this)(lift = TypescriptEffect.apply).map(_.map(TypescriptEffect.apply)),
       typescript = JsonTypescriptRenderer
     ).render(schema)

@@ -30,7 +30,6 @@ final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
                 val updatedEffect = if context.recursion.nonEmpty
                   then effect.copy(typescript = typescript.render(schema).some)
                   else effect
-                // println(s"Rednered: $name, Recursive: ${context.recursion.nonEmpty}")
                 (context.modifyReferences(_.updatedWith(name)(_ => updatedEffect.some)).pop(name), reference)
       case None => renderer.render(schema)
 

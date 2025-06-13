@@ -42,6 +42,7 @@ object Effect:
   given [A: Show]: Show[Effect[A]] =
     case Array(self)        => show"Schema.Array($self)"
     case Boolean            => "Schema.Boolean"
+    case Literal(value) => show"Schema.Literal(${value.show})"
     case Nullable(self)     => show"Schema.NullOr($self)"
     case Record(key, value) => show"Schema.Record({ key: $key, value: $value })"
     case Reference(name)    => name

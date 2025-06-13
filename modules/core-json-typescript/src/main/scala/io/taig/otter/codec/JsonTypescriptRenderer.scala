@@ -9,7 +9,7 @@ import io.taig.otter.Key
 
 object JsonTypescriptRenderer extends Renderer[Json, Typescript.Value]:
   val field: Renderer[Json.Field, (String, Typescript.Value)] =
-    FieldTypescriptRenderer[Key, Json, Id, Typescript.Value](printer = KeyPrinter.Quoted, renderer = this)
+    FieldRenderer[Key, Json, Id, Typescript.Value](printer = KeyPrinter.Unquoted, renderer = this)
       .mapK[Json.Field](FunctionK.liftFunction(_.self))
 
   val fromJson = [A] =>
@@ -27,7 +27,7 @@ object JsonTypescriptRenderer extends Renderer[Json, Typescript.Value]:
 
   val renderer =  TypescriptRenderer[Json, Json.Primitive, Json.Field, Id, Typescript.Value](
       renderer = ReferenceTypescriptRenderer(this)(lift = Typescript.Value.apply),
-      printer = JsonPrimitivePrinter,
+      printer = JsonPrimitivePrinter.Quoted,
       field
     )(lift = Typescript.Value.apply).mapK[Json](FunctionK.lift(fromJson)).map(Typescript.Value.apply)
 

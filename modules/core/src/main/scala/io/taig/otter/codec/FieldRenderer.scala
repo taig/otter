@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import cats.data.Chain
 import cats.Applicative
 
-final class FieldTypescriptRenderer[S[_], T[_], U[_]: Applicative, A](
+final class FieldRenderer[S[_], T[_], U[_]: Applicative, A](
     printer: Encoder[S, String],
     renderer: Renderer[T, U[A]]
 ) extends Renderer[Field[S, T, *], U[(String, A)]]:
