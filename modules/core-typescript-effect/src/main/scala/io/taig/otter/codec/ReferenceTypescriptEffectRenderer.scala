@@ -9,6 +9,8 @@ import io.taig.otter.TypescriptEffect
 import io.taig.otter.TypescriptEffectState
 import io.taig.otter.operation.SchemaInvariant
 import io.taig.otter.syntax.EnrichedSyntax.*
+import io.taig.otter.TypescriptKeys
+import io.taig.otter.EffectKeys
 
 final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
     renderer: Renderer[S, TypescriptEffectState[TypescriptEffect]],
@@ -26,12 +28,19 @@ final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
             state.references.get(name) match
               case Some(current) => (state, current)
               case None =>
-                val (context, effect) = renderer.render(schema).run(initial = state.push(name)).value
+                val (context, effect) = overrideOrRender(schema).run(initial = state.push(name)).value
                 val updatedEffect =
                   if context.recursion.nonEmpty
                   then effect.copy(typescript = typescript.render(schema).some)
                   else effect
                 (context.modifyReferences(_.updatedWith(name)(_ => updatedEffect.some)).pop(name), reference)
-      case None => renderer.render(schema)
+      case None => overrideOrRender(schema)
+
+  def overrideOrRender[B](schema: S[B]): TypescriptEffectState[TypescriptEffect] = 
+    renderer.render(schema)
+      .map: result =>
+        schema.metadata.get(TypescriptKeys.typescript).fold(result)(typescript => result.copy(typescript = typescript.some))
+      .map: result =>
+        schema.metadata.get(EffectKeys.effect).fold(result)(effect => result.copy(effect = effect))
 
   private def toSymbol(value: String): String = value.replace(".", "").replace(" ", "")

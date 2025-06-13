@@ -23,17 +23,18 @@ object EndpointTypescriptEffectRenderer:
     for
       url <- url(self = endpoint.request.url)
       name = function(endpoint)
-      input <- input(request = endpoint.request).map(_.definition(s"${name.capitalize}Input"))
+      struct <- input(request = endpoint.request)
+      input = TypescriptEffect(struct).definition(s"${name.capitalize}Input")
       output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
       handle = s"""(code, headers, body) =>
-                  |  body().then((value) => ${output.name}.parse({ code, value }))""".stripMargin
-      fields = Chain(
+                  |  body().then((value) => Schema.decodeUnknownSync(${output.name})({ code, value }))""".stripMargin
+      result = Chain(
         ("method", s"\"${endpoint.request.method}\""),
         ("path", "url.toString()")
-      ) /* ++ Chain.fromOption(input.value.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
-        Chain.fromOption(input.value.fields.collectFirst { case ("body", _) =>
+      ) ++ Chain.fromOption(struct.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
+       Chain.fromOption(struct.fields.collectFirst { case ("body", _) =>
           ("body", "JSON.stringify(input.body)")
-        })*/ :+
+        }) :+
         ("handle", handle)
     yield TypescriptEffectEndpoint(
       input,
@@ -45,7 +46,7 @@ object EndpointTypescriptEffectRenderer:
                          |${indent(url)}
                          |
                          |  return {
-                         |${fields.map((name, value) => s"$name: $value").map(indent(_, depth = 2)).mkString_(",\n")}
+                         |${result.map((name, value) => s"$name: $value").map(indent(_, depth = 2)).mkString_(",\n")}
                          |  };
                          |}""".stripMargin
     )
@@ -84,7 +85,7 @@ object EndpointTypescriptEffectRenderer:
 
     show"/* $label */"
 
-  def input(request: Request[Json, ?]): TypescriptEffectState[TypescriptEffect] =
+  def input(request: Request[Json, ?]): TypescriptEffectState[Effect.Struct[TypescriptEffect]] =
     val path = PathTypescriptRenderer
       .render(request.url.path)
       .tupleLeft("path")
@@ -112,7 +113,7 @@ object EndpointTypescriptEffectRenderer:
     (
       (Chain.fromOption(url) ++ Chain.fromOption(headers)).map(State.pure) ++
         Chain.fromOption(body)
-    ).sequence.map(values => TypescriptEffect(Effect.Struct(values)))
+    ).sequence.map(Effect.Struct.apply)
 
   def output(response: Response[Json, ?]): TypescriptEffectState[TypescriptEffect] = NonEmptyChain
     .fromChainAppend(response.results.toChain, response.validation)

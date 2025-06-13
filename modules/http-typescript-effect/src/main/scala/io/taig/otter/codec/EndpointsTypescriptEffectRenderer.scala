@@ -8,14 +8,14 @@ import io.taig.otter.http.Endpoint
 
 final class EndpointsTypescriptEffectRenderer(imports: List[String]):
   def render(endpoints: List[Endpoint[Json, ?, ?]]): String =
-    val (context, result) = endpoints
+    val (context, results) = endpoints
       .traverse(EndpointTypescriptEffectRenderer.render)
       .run(initial = ContextState.Context.Empty)
       .value
 
     s"""/* Imports */
        |
-       |import { z } from "Effect"
+       |import { Schema } from "Effect"
        |${imports.mkString("\n")}
        |
        |/* Definitions */
@@ -34,4 +34,4 @@ final class EndpointsTypescriptEffectRenderer(imports: List[String]):
        |
        |/* Endpoints */
        |
-       |""".stripMargin
+       |${results.mkString_("\n\n")}""".stripMargin
