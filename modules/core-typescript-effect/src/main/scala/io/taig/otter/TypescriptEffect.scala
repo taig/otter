@@ -11,5 +11,9 @@ final case class TypescriptEffect(typescript: Option[Typescript.Value], effect: 
 
   def toEffect: Effect.Value = Effect.Value(effect.map(_.toEffect))
 
+  def withTypescript(value: Typescript.Value): TypescriptEffect = copy(typescript = value.some)
+
+  def withEffect(value: Effect[TypescriptEffect]): TypescriptEffect = copy(effect = value)
+
 object TypescriptEffect:
   def apply(effect: Effect[TypescriptEffect]): TypescriptEffect = TypescriptEffect(typescript = none, effect = effect)

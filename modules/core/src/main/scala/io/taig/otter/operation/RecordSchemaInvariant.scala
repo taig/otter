@@ -13,7 +13,7 @@ trait RecordSchemaInvariant[Self[_], -Field[_]] extends SchemaInvariant[Self]:
     final def :*[B](field: => Field[B])(using m: Merge[A, B]): Self[m.Out] = merge(lift(field))
 
   extension [A](self: Field[A])
-    final def *:[B](schema: => Self[B])(using m: Merge[B, A]): Self[m.Out] = schema.merge(lift(self))
+    final def *:[B](schema: => Self[B])(using m: Merge[A, B]): Self[m.Out] = lift(self).merge(schema)
 
   override def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): RecordSchemaInvariant[T, Field] =
     new RecordSchemaInvariant[T, Field]:

@@ -23,8 +23,8 @@ final class EndpointsTypescriptEffectRenderer(imports: List[String]):
        |export type Request<A> = {
        |  method: string
        |  path: string
-       |  headers?: HeadersInit
-       |  body?: BodyInit | null
+       |  headers?: { [key: string]: string | null }
+       |  body?: string
        |  handle: (code: number, headers: Headers, body: () => Promise<any>) => Promise<A>
        |}
        |

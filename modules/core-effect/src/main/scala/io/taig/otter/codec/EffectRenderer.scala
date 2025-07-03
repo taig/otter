@@ -13,8 +13,7 @@ final class EffectRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
 )(lift: Effect[A] => A)
     extends Renderer[Schema[S, T, U, *], V[Effect[A]]]:
   override def render[B](schema: Schema[S, T, U, B]): V[Effect[A]] = schema match
-    case schema: Collection[S, B] =>
-      renderer.render(schema.value.schema.value).map(Effect.Array.apply)
+    case schema: Collection[S, B] => renderer.render(schema.value.schema.value).map(Effect.Array.apply)
     case schema: Constant[T, B] =>
       ReferenceConstantRenderer(encoder = printer)
         .render(reference = schema.value.schema)

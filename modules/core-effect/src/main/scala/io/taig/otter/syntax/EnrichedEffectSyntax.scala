@@ -7,7 +7,7 @@ import io.taig.otter.syntax.EnrichedSyntax.*
 
 trait EnrichedEffectSyntax:
   extension [A](a: A)(using enriched: Enriched[A])
-    def effect(value: Effect[Nothing]): A = a.metadata(EffectKeys.effect, value)
+    def effect(value: Effect[Effect.Value]): A = a.metadata(EffectKeys.effect, value)
     def effect(value: String): A = effect(Effect.Dynamic(value))
 
 object EnrichedEffectSyntax extends EnrichedEffectSyntax

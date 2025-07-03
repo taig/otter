@@ -27,7 +27,7 @@ final class JsonEffectRenderer[S[_]: Applicative, A: Order](renderer: Renderer[J
         case Json.Union(self)       => self
 
   val base = EffectRenderer[Json, Json.Primitive, Json.Field, S, A](
-    renderer,
+    renderer = renderer,
     printer = JsonPrimitivePrinter.Quoted,
     field
   )(lift).mapK[Json](FunctionK.lift(fromJson))

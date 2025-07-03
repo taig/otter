@@ -47,9 +47,10 @@ object Request:
     ) extends Request.Value[Nothing, (A, B)]:
       override def bodies: Option[Nothing] = none
 
-    final private[otter] case class ZipHeaders[S[_], A, B](self: Request.Value[S, A], headers: Headers[B])
+    final private[otter] case class ZipHeaders[S[_], A, B](self: Request.Value[S, A], values: Headers[B])
         extends Request.Value[S, (A, B)]:
       export self.{bodies, method, url}
+      override def headers: Headers[?] = self.headers.zip(values)
 
   final case class Data(method: Method, url: Url.Data, headers: Headers.Data, body: Array[Byte]):
     def modifyHeaders(f: Headers.Data => Headers.Data): Data = copy(headers = f(headers))

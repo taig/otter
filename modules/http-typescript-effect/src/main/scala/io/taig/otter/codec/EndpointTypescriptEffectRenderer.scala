@@ -23,7 +23,8 @@ object EndpointTypescriptEffectRenderer:
     for
       url <- url(self = endpoint.request.url)
       name = function(endpoint)
-      struct <- input(request = endpoint.request)
+      body <- body(request = endpoint.request).sequence
+      struct <- input(request = endpoint.request, body).pure[TypescriptEffectState]
       input = TypescriptEffect(struct).definition(s"${name.capitalize}Input")
       output <- output(endpoint.response).map(_.definition(s"${name.capitalize}Output"))
       handle = s"""(code, headers, body) =>
@@ -32,9 +33,9 @@ object EndpointTypescriptEffectRenderer:
         ("method", s"\"${endpoint.request.method}\""),
         ("path", "url.toString()")
       ) ++ Chain.fromOption(struct.fields.collectFirst { case ("headers", _) => ("headers", "input.headers") }) ++
-       Chain.fromOption(struct.fields.collectFirst { case ("body", _) =>
-          ("body", "JSON.stringify(input.body)")
-        }) :+
+        Chain.fromOption(
+          body.map(body => ("body", show"JSON.stringify(Schema.encodeSync(${body.toEffect})(input.body))"))
+        ) :+
         ("handle", handle)
     yield TypescriptEffectEndpoint(
       input,
@@ -85,7 +86,12 @@ object EndpointTypescriptEffectRenderer:
 
     show"/* $label */"
 
-  def input(request: Request[Json, ?]): TypescriptEffectState[Effect.Struct[TypescriptEffect]] =
+  def body(request: Request[Json, ?]): Option[TypescriptEffectState[TypescriptEffect]] = request.bodies
+    .map(_.toChain.head)
+    .map(_.schema.self.value)
+    .map(JsonTypescriptEffectRenderer.render)
+
+  def input(request: Request[Json, ?], body: Option[TypescriptEffect]): Effect.Struct[TypescriptEffect] =
     val path = PathTypescriptRenderer
       .render(request.url.path)
       .tupleLeft("path")
@@ -104,16 +110,7 @@ object EndpointTypescriptEffectRenderer:
       .render(request.headers)
       .tupleLeft("headers")
 
-    val body = request.bodies
-      .map(_.toChain.head)
-      .map(_.schema.self.value)
-      .map(JsonTypescriptEffectRenderer.render)
-      .map(_.tupleLeft("body"))
-
-    (
-      (Chain.fromOption(url) ++ Chain.fromOption(headers)).map(State.pure) ++
-        Chain.fromOption(body)
-    ).sequence.map(Effect.Struct.apply)
+    Effect.Struct(Chain.fromOption(url) ++ Chain.fromOption(headers) ++ Chain.fromOption(body.tupleLeft("body")))
 
   def output(response: Response[Json, ?]): TypescriptEffectState[TypescriptEffect] = NonEmptyChain
     .fromChainAppend(response.results.toChain, response.validation)
