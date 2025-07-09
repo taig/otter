@@ -85,10 +85,10 @@ final class DataEndpointPrinter(codecs: CodecPrinter[State[ListMap[Reference, St
 
     val value =
       """z.object({
-         |  body: Body,
-         |  headers: Headers,
-         |  url: Url
-         |})""".stripMargin
+        |  body: Body,
+        |  headers: Headers,
+        |  url: Url
+        |})""".stripMargin
 
     (
       references +
