@@ -1,13 +1,14 @@
 package io.taig.otter
 
-import scala.compiletime.*
 import scala.Tuple as STuple
+import scala.compiletime.*
 
 trait Merge[A, B]:
   type Out
   def apply(ab: (A, B)): Out
   def unapply(out: Out): (A, B)
 
+@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 object Merge extends Merge1:
   type Aux[A, B, C] = Merge[A, B] { type Out = C }
 
@@ -31,6 +32,7 @@ object Merge extends Merge1:
       (a.asInstanceOf[A], b.asInstanceOf[B])
     }
 
+@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 trait Merge1 extends Merge2:
   given [A, B <: STuple]: Merge.Aux[A, B, A *: B] = new Merge[A, B]:
     override type Out = A *: B
@@ -40,7 +42,6 @@ trait Merge1 extends Merge2:
   given [A <: STuple, B]: Merge.Aux[A, B, STuple.Append[A, B]] = new Merge[A, B]:
     override type Out = STuple.Append[A, B]
     override def apply(ab: (A, B)): Out = ab._1 :* ab._2
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     override def unapply(ab: Out): (A, B) = (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
 
 trait Merge2:

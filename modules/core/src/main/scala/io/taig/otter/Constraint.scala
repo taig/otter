@@ -4,7 +4,6 @@ import cats.Eq
 import cats.Show
 import cats.derived.strict.*
 import cats.parse.Parser
-import cats.syntax.all.*
 
 import java.util.regex.Pattern
 import scala.Product as SProduct

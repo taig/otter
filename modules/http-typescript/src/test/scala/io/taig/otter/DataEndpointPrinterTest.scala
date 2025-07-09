@@ -1,10 +1,11 @@
 package io.taig.otter
 
-import munit.FunSuite
+import cats.syntax.all.*
 import io.taig.otter.http.Dsl.*
 import io.taig.otter.http.json.Codecs.json
+import munit.FunSuite
 import org.typelevel.ci.*
-import cats.syntax.all.*
+
 import scala.collection.immutable.ListMap
 
 final class DataEndpointPrinterTest extends FunSuite:

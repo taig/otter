@@ -1,15 +1,15 @@
 package io.taig.otter
 
-import cats.syntax.all.*
-import io.taig.otter.http.Endpoint
 import cats.Id
 import cats.data.State
-import scala.collection.immutable.ListMap
+import cats.syntax.all.*
+import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Method
-import io.taig.otter.http.header.MediaType
-import io.taig.otter.http.Segment
-import scala.util.chaining.*
 import io.taig.otter.http.Request
+import io.taig.otter.http.Segment
+import io.taig.otter.http.header.MediaType
+
+import scala.collection.immutable.ListMap
 import scala.util.chaining.*
 
 final class DataEndpointPrinter(codecs: CodecPrinter[State[ListMap[Reference, String], *]])(
@@ -84,7 +84,7 @@ final class DataEndpointPrinter(codecs: CodecPrinter[State[ListMap[Reference, St
            |})""".stripMargin
 
     val value =
-      s"""z.object({
+      """z.object({
          |  body: Body,
          |  headers: Headers,
          |  url: Url

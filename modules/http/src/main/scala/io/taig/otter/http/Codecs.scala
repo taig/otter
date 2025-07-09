@@ -6,7 +6,6 @@ import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.http.header.Parameters
 import org.typelevel.ci.*
-import org.typelevel.ci.CIString
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
