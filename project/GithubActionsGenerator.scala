@@ -35,6 +35,7 @@ object GithubActionsGenerator {
         "env" := Json.obj(
           s"SBT_TPOLECAT_$mode" := "true"
         ),
+        "needs" := needs,
         "steps" := steps
       )
 

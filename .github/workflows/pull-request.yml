@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SBT_TPOLECAT_DEV: 'true'
+    needs: []
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -30,6 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SBT_TPOLECAT_DEV: 'true'
+    needs: []
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -49,6 +51,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SBT_TPOLECAT_CI: 'true'
+    needs: []
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -68,6 +71,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       SBT_TPOLECAT_DEV: 'true'
+    needs: []
     steps:
     - name: Checkout
       uses: actions/checkout@v4
