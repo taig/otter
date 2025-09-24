@@ -35,7 +35,7 @@ final class TypescriptRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
       schema.value.schema.fold(Typescript.Void.pure[V]): schema =>
         renderer.render(schema.value).map(Typescript.Nullable.apply)
     case schema: Primitive[T, B] => PrimitiveTypescriptRenderer.render(schema).pure
-    case schema: Record[U, B] =>
+    case schema: Record[U, B]    =>
       schema.value.fields.traverse(schema => field.render(schema.value)).map(Typescript.Object.apply)
     case schema: Tuple[S, B] =>
       schema.value.schemas

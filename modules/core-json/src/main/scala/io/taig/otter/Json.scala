@@ -12,40 +12,40 @@ object Json:
 
   object Collection:
     given CollectionSchemaInvariant[Json.Collection, Json] =
-      CollectionSchemaInvariant[Self.Collection[Json, *], Json].imapK[Json.Collection](
-        [A] => (schema: Self.Collection[Json, A]) => Collection(schema)
+      CollectionSchemaInvariant[Self.Collection[Json, *], Json].imapK[Json.Collection]([A] =>
+        (schema: Self.Collection[Json, A]) => Collection(schema)
       )([A] => (json: Json.Collection[A]) => json.self)
 
   final case class Constant[A](self: Self.Constant[Json.Primitive, A]) extends Json[A]
 
   object Constant:
     given ConstantSchemaInvariant[Json.Constant, Json.Primitive] =
-      ConstantSchemaInvariant[Self.Constant[Json.Primitive, *], Json.Primitive].imapK(
-        [A] => (schema: Self.Constant[Json.Primitive, A]) => Constant(schema)
+      ConstantSchemaInvariant[Self.Constant[Json.Primitive, *], Json.Primitive].imapK([A] =>
+        (schema: Self.Constant[Json.Primitive, A]) => Constant(schema)
       )([A] => (json: Json.Constant[A]) => json.self)
 
   final case class Dictionary[A](self: Self.Dictionary[Key, Json, A]) extends Json[A]
 
   object Dictionary:
     given DictionarySchemaInvariant[Json.Dictionary, Key, Json] =
-      DictionarySchemaInvariant[Self.Dictionary[Key, Json, *], Key, Json].imapK(
-        [A] => (schema: Self.Dictionary[Key, Json, A]) => Dictionary(schema)
+      DictionarySchemaInvariant[Self.Dictionary[Key, Json, *], Key, Json].imapK([A] =>
+        (schema: Self.Dictionary[Key, Json, A]) => Dictionary(schema)
       )([A] => (json: Json.Dictionary[A]) => json.self)
 
   final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[A]
 
   object Enumeration:
     given EnumerationSchemaInvariant[Json.Enumeration, Json.Primitive] =
-      EnumerationSchemaInvariant[Self.Enumeration[Json.Primitive, *], Json.Primitive].imapK(
-        [A] => (schema: Self.Enumeration[Json.Primitive, A]) => Enumeration(schema)
+      EnumerationSchemaInvariant[Self.Enumeration[Json.Primitive, *], Json.Primitive].imapK([A] =>
+        (schema: Self.Enumeration[Json.Primitive, A]) => Enumeration(schema)
       )([A] => (json: Json.Enumeration[A]) => json.self)
 
   final case class Nullable[A](self: Self.Nullable[Json, A]) extends Json[A]
 
   object Nullable:
     given NullableSchemaInvariant[Json.Nullable, Json] =
-      NullableSchemaInvariant[Self.Nullable[Json, *], Json].imapK(
-        [A] => (schema: Self.Nullable[Json, A]) => Nullable(schema)
+      NullableSchemaInvariant[Self.Nullable[Json, *], Json].imapK([A] =>
+        (schema: Self.Nullable[Json, A]) => Nullable(schema)
       )([A] => (json: Json.Nullable[A]) => json.self)
 
   final case class Primitive[A](self: Self.Primitive[Json.Primitive, A]) extends Json[A]
@@ -53,9 +53,9 @@ object Json:
   object Primitive:
     given PrimitiveSchemaInvariant[Json.Primitive, Json.Primitive] =
       PrimitiveSchemaInvariant[Self.Primitive[Json.Primitive, *], Json.Primitive]
-        .imapK(
-          [A] => (schema: Self.Primitive[Json.Primitive, A]) => Primitive(schema)
-        )([A] => (json: Json.Primitive[A]) => json.self)
+        .imapK([A] => (schema: Self.Primitive[Json.Primitive, A]) => Primitive(schema))([A] =>
+          (json: Json.Primitive[A]) => json.self
+        )
 
     given Parseable[Json.Primitive, Json.Primitive] = Parseable[Json.Primitive, Json.Primitive]
 
@@ -65,32 +65,32 @@ object Json:
 
   object Record:
     given RecordSchemaInvariant[Json.Record, Json.Field] =
-      RecordSchemaInvariant[Self.Record[Json.Field, *], Json.Field].imapK(
-        [A] => (schema: Self.Record[Json.Field, A]) => Record(schema)
+      RecordSchemaInvariant[Self.Record[Json.Field, *], Json.Field].imapK([A] =>
+        (schema: Self.Record[Json.Field, A]) => Record(schema)
       )([A] => (json: Json.Record[A]) => json.self)
 
   final case class Tuple[A](self: Self.Tuple[Json, A]) extends Json[A]
 
   object Tuple:
     given TupleSchemaInvariant[Json.Tuple, Json] =
-      TupleSchemaInvariant[Self.Tuple[Json, *], Json].imapK(
-        [A] => (schema: Self.Tuple[Json, A]) => Tuple(schema)
-      )([A] => (json: Json.Tuple[A]) => json.self)
+      TupleSchemaInvariant[Self.Tuple[Json, *], Json].imapK([A] => (schema: Self.Tuple[Json, A]) => Tuple(schema))(
+        [A] => (json: Json.Tuple[A]) => json.self
+      )
 
   final case class Union[A](self: Self.Union[Json, A]) extends Json[A]
 
   object Union:
     given UnionSchemaInvariant[Json.Union, Json] =
-      UnionSchemaInvariant[Self.Union[Json, *], Json].imapK(
-        [A] => (schema: Self.Union[Json, A]) => Union(schema)
-      )([A] => (json: Json.Union[A]) => json.self)
+      UnionSchemaInvariant[Self.Union[Json, *], Json].imapK([A] => (schema: Self.Union[Json, A]) => Union(schema))(
+        [A] => (json: Json.Union[A]) => json.self
+      )
 
   final case class Field[A](self: Self.Field[Key, Json, A])
 
   object Field:
     given FieldSchemaInvariant[Json.Field, Key, Json] =
-      FieldSchemaInvariant[Self.Field[Key, Json, *], Key, Json].imapK(
-        [A] => (schema: Self.Field[Key, Json, A]) => Field(schema)
+      FieldSchemaInvariant[Self.Field[Key, Json, *], Key, Json].imapK([A] =>
+        (schema: Self.Field[Key, Json, A]) => Field(schema)
       )([A] => (json: Json.Field[A]) => json.self)
 
   given SchemaInvariant.Nullable[Json, Json.Nullable]

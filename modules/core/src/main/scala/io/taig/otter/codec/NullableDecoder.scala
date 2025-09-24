@@ -10,7 +10,7 @@ final class NullableDecoder[S[_], T](decoder: Decoder[S, T], empty: T => Boolean
     decode(schema = schema.value, value)
 
   def decode[A](schema: Nullable.Value[S, A], value: T): Validated[Violations, A] = schema match
-    case Nullable.Value.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Nullable.Value.Modify(self, f, _)          => decode(schema = self, value).map(f)
     case Nullable.Value.Default(reference, default) =>
       if empty(value)
       then default.valid
@@ -28,7 +28,7 @@ object NullableDecoder:
       decodeRemaining(schema = schema.value, value)
 
     def decodeRemaining[A](schema: Nullable.Value[S, A], value: T): Validated[Violations, (T, A)] = schema match
-      case Nullable.Value.Modify(self, f, _) => decodeRemaining(schema = self, value).map(_.map(f))
+      case Nullable.Value.Modify(self, f, _)          => decodeRemaining(schema = self, value).map(_.map(f))
       case Nullable.Value.Default(reference, default) =>
         if empty(value)
         then (value, default).valid

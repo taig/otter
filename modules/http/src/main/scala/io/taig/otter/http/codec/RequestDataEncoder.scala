@@ -11,7 +11,7 @@ final class RequestDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
 
   private def encodeValue[A](schema: Request.Value[S, A], contentType: Option[MediaType], a: A): Request.Data =
     schema match
-      case Request.Value.Modify(self, _, g) => encodeValue(schema = self, contentType, g(a))
+      case Request.Value.Modify(self, _, g)    => encodeValue(schema = self, contentType, g(a))
       case Request.Value.Payload(self, bodies) =>
         encodeValue(schema = self, contentType, a.init)
           .withBody(this.bodies.encode(bodies, contentType, a._3).getOrElse(Array.emptyByteArray))

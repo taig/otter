@@ -22,9 +22,9 @@ object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
   val union = UnionDecoder(decoder = this)
 
   override def decode[A](schema: Schema[A], value: Option[String]): Validated[Violations, A] = schema match
-    case FormData.Schema.Constant(self)    => constant.decode(schema = self, value)
-    case FormData.Schema.Enumeration(self) => enumeration.decode(schema = self, value)
-    case FormData.Schema.Nullable(self)    => nullable.decode(schema = self, value)
+    case FormData.Schema.Constant(self)              => constant.decode(schema = self, value)
+    case FormData.Schema.Enumeration(self)           => enumeration.decode(schema = self, value)
+    case FormData.Schema.Nullable(self)              => nullable.decode(schema = self, value)
     case schema: FormData.Schema.Primitive.String[A] =>
       value
         .toValid(Violations.rootNec(Violation.required))

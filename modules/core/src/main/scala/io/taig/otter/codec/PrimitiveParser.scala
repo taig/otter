@@ -16,7 +16,7 @@ final class PrimitiveParser[S[_]](parser: Decoder[S, String])(quotes: Boolean) e
 
   def decode[A](schema: Primitive.Value[S, A], value: String): Validated[Violations, A] = schema match
     case Primitive.Value.Boolean.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.Boolean.Root =>
+    case Primitive.Value.Boolean.Root               =>
       value.toBooleanOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
     case Primitive.Value.Number.BigDecimal(_, _, _) =>
       Validated
@@ -36,9 +36,9 @@ final class PrimitiveParser[S[_]](parser: Decoder[S, String])(quotes: Boolean) e
       value.toIntOption.toValid(Violations.rootNec(Violation.tpe(name = "int", actual = value)))
     case Primitive.Value.Number.Long(_, _, _) =>
       value.toLongOption.toValid(Violations.rootNec(Violation.tpe(name = "long", actual = value)))
-    case Primitive.Value.Number.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Primitive.Value.String.Parsed(self)       => parser.decode(schema = self.value, value)
+    case Primitive.Value.Number.Modify(self, f, _)   => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Modify(self, f, _)   => decode(schema = self, value).map(f)
+    case Primitive.Value.String.Parsed(self)         => parser.decode(schema = self.value, value)
     case Primitive.Value.String.Parser(_, decode, _) =>
       val input =
         if quotes then

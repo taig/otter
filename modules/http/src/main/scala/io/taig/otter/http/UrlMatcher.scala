@@ -11,7 +11,7 @@ object UrlMatcher:
   def apply(path: Path.Value[?], data: Path.Data): Option[Path.Data] = path match
     case Path.Value.Empty              => data.some
     case Path.Value.Modify(self, _, _) => apply(path = self, data)
-    case Path.Value.Root(_) =>
+    case Path.Value.Root(_)            =>
       data.uncons.map((_, tail) => tail)
     case Path.Value.Static(name) =>
       data.uncons.flatMap((head, tail) => Option.when(head === name)(tail))

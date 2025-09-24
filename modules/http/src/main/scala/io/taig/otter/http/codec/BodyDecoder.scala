@@ -22,7 +22,7 @@ final class BodyDecoder[-S[_]](decoder: PayloadDecoder[S]):
       contentType: Option[MediaType],
       bytes: Array[Byte]
   ): Either[MediaTypeUnsupported | ValidationViolations, A] = schema match
-    case Body.Value.Modify(self, f, _) => decode(schema = self, contentType, bytes).map(f)
+    case Body.Value.Modify(self, f, _)      => decode(schema = self, contentType, bytes).map(f)
     case Body.Value.Root(mediaType, schema) =>
       contentType match
         case Some(contentType) if contentType === mediaType =>
@@ -36,5 +36,5 @@ final class BodyDecoder[-S[_]](decoder: PayloadDecoder[S]):
 
           decoder.decode(schema = schema.value, charset, bytes).toEither.leftMap(ValidationViolations.apply)
         case Some(_) => MediaTypeUnsupported.asLeft
-        case None =>
+        case None    =>
           decoder.decode(schema = schema.value, charset = none, bytes).toEither.leftMap(ValidationViolations.apply)

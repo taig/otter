@@ -25,7 +25,7 @@ final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[
   def decode[A](schema: Tuple.Value[S, A], values: Seq[T], index: Int): Validated[Violations, A] = schema match
     case Tuple.Value.Empty              => ().valid
     case Tuple.Value.Modify(self, f, _) => decode(schema = self, values, index).map(f)
-    case Tuple.Value.Root(schema) =>
+    case Tuple.Value.Root(schema)       =>
       values.headOption
         .toValid(Violations.rootNec(Violation.required))
         .andThen(decoder.decode(schema = schema.value, _))

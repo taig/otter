@@ -22,7 +22,7 @@ final class ResultDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
       contentType: Option[MediaType],
       data: Response.Data
   ): Either[MediaTypeUnsupported | ValidationViolations, Option[A]] = schema match
-    case Result.Value.Modify(self, f, _) => decode(schema = self, contentType, data).map(_.map(f))
+    case Result.Value.Modify(self, f, _)  => decode(schema = self, contentType, data).map(_.map(f))
     case Result.Value.Root(code, headers) =>
       if data.code === code
       then

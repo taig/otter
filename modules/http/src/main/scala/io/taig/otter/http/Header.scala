@@ -58,9 +58,9 @@ object Header:
         given PrimitiveSchemaInvariant.Boolean[Header.Schema.Primitive.Boolean] =
           PrimitiveSchemaInvariant
             .Boolean[Self.Primitive.Boolean]
-            .imapK(
-              [A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema)
-            )([A] => (value: Header.Schema.Primitive.Boolean[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema))([A] =>
+              (value: Header.Schema.Primitive.Boolean[A]) => value.self
+            )
 
       final case class Number[A](self: Self.Primitive.Number[A]) extends Header.Schema.Primitive[A]
 
@@ -68,9 +68,9 @@ object Header:
         given PrimitiveSchemaInvariant.Number[Header.Schema.Primitive.Number] =
           PrimitiveSchemaInvariant
             .Number[Self.Primitive.Number]
-            .imapK(
-              [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
-            )([A] => (value: Header.Schema.Primitive.Number[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.Number[A]) => Number(schema))([A] =>
+              (value: Header.Schema.Primitive.Number[A]) => value.self
+            )
 
       final case class String[A](self: Self.Primitive.String[Header.Schema.Primitive, A])
           extends Header.Schema.Primitive[A],
@@ -80,19 +80,18 @@ object Header:
         given PrimitiveSchemaInvariant.String[Header.Schema.Primitive.String, Header.Schema.Primitive] =
           PrimitiveSchemaInvariant
             .String[Self.Primitive.String[Header.Schema.Primitive, *], Header.Schema.Primitive]
-            .imapK(
-              [A] => (schema: Self.Primitive.String[Header.Schema.Primitive, A]) => String(schema)
-            )([A] => (value: Header.Schema.Primitive.String[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.String[Header.Schema.Primitive, A]) => String(schema))([A] =>
+              (value: Header.Schema.Primitive.String[A]) => value.self
+            )
 
       given PrimitiveSchemaInvariant[Header.Schema.Primitive, Header.Schema.Primitive] =
         PrimitiveSchemaInvariant[Self.Primitive[Header.Schema.Primitive, *], Header.Schema.Primitive]
-          .imapK(
-            [A] =>
-              (schema: Self.Primitive[Header.Schema.Primitive, A]) =>
-                schema match
-                  case self: Self.Primitive.Boolean[A]                         => Boolean(self)
-                  case self: Self.Primitive.Number[A]                          => Number(self)
-                  case self: Self.Primitive.String[Header.Schema.Primitive, A] => String(self)
+          .imapK([A] =>
+            (schema: Self.Primitive[Header.Schema.Primitive, A]) =>
+              schema match
+                case self: Self.Primitive.Boolean[A]                         => Boolean(self)
+                case self: Self.Primitive.Number[A]                          => Number(self)
+                case self: Self.Primitive.String[Header.Schema.Primitive, A] => String(self)
           )([A] => (value: Header.Schema.Primitive[A]) => value.self)
 
       given Parseable[Header.Schema.Primitive, Header.Schema.Primitive.String] =
@@ -109,9 +108,9 @@ object Header:
           ConstantSchemaInvariant[
             Self.Constant[Header.Schema.Primitive.String, *],
             Header.Schema.Primitive.String
-          ].imapK(
-            [A] => (schema: Self.Constant[Header.Schema.Primitive.String, A]) => Constant(schema)
-          )([A] => (value: Header.Schema.Value.Constant[A]) => value.self)
+          ].imapK([A] => (schema: Self.Constant[Header.Schema.Primitive.String, A]) => Constant(schema))([A] =>
+            (value: Header.Schema.Value.Constant[A]) => value.self
+          )
 
       final case class Enumeration[A](self: Self.Enumeration[Header.Schema.Primitive.String, A])
           extends Header.Schema.Value[A]
@@ -121,18 +120,18 @@ object Header:
           EnumerationSchemaInvariant[
             Self.Enumeration[Header.Schema.Primitive.String, *],
             Header.Schema.Primitive.String
-          ].imapK(
-            [A] => (schema: Self.Enumeration[Header.Schema.Primitive.String, A]) => Enumeration(schema)
-          )([A] => (value: Header.Schema.Value.Enumeration[A]) => value.self)
+          ].imapK([A] => (schema: Self.Enumeration[Header.Schema.Primitive.String, A]) => Enumeration(schema))([A] =>
+            (value: Header.Schema.Value.Enumeration[A]) => value.self
+          )
 
       final case class Union[A](self: Self.Union[Header.Schema.Value, A]) extends Header.Schema.Value[A]
 
       object Union:
         given UnionSchemaInvariant[Header.Schema.Value.Union, Header.Schema.Value] =
           UnionSchemaInvariant[Self.Union[Header.Schema.Value, *], Header.Schema.Value]
-            .imapK(
-              [A] => (schema: Self.Union[Header.Schema.Value, A]) => Union(schema)
-            )([A] => (value: Header.Schema.Value.Union[A]) => value.self)
+            .imapK([A] => (schema: Self.Union[Header.Schema.Value, A]) => Union(schema))([A] =>
+              (value: Header.Schema.Value.Union[A]) => value.self
+            )
 
       given SchemaInvariant[Header.Schema.Value] with
         override def imap[A, B](fa: Header.Schema.Value[A])(f: A => B)(g: B => A): Header.Schema.Value[B] = fa match
@@ -163,18 +162,18 @@ object Header:
       object Collection:
         given CollectionSchemaInvariant[Header.Schema.Array.Collection, Header.Schema.Value] =
           CollectionSchemaInvariant[Self.Collection[Header.Schema.Value, *], Header.Schema.Value]
-            .imapK(
-              [A] => (schema: Self.Collection[Header.Schema.Value, A]) => Collection(schema)
-            )([A] => (value: Header.Schema.Array.Collection[A]) => value.self)
+            .imapK([A] => (schema: Self.Collection[Header.Schema.Value, A]) => Collection(schema))([A] =>
+              (value: Header.Schema.Array.Collection[A]) => value.self
+            )
 
       final case class Tuple[A](self: Self.Tuple[Header.Schema.Value, A]) extends Header.Schema.Array[A]
 
       object Tuple:
         given TupleSchemaInvariant[Header.Schema.Array.Tuple, Header.Schema.Value] =
           TupleSchemaInvariant[Self.Tuple[Header.Schema.Value, *], Header.Schema.Value]
-            .imapK(
-              [A] => (schema: Self.Tuple[Header.Schema.Value, A]) => Tuple(schema)
-            )([A] => (value: Header.Schema.Array.Tuple[A]) => value.self)
+            .imapK([A] => (schema: Self.Tuple[Header.Schema.Value, A]) => Tuple(schema))([A] =>
+              (value: Header.Schema.Array.Tuple[A]) => value.self
+            )
 
       given SchemaInvariant[Header.Schema.Array] with
         override def imap[A, B](fa: Header.Schema.Array[A])(f: A => B)(g: B => A): Header.Schema.Array[B] = fa match
@@ -204,18 +203,18 @@ object Header:
             Key,
             Header.Schema.Value
           ]
-            .imapK(
-              [A] => (schema: Self.Dictionary[Key, Header.Schema.Object.Value, A]) => Dictionary(schema)
-            )([A] => (value: Header.Schema.Object.Dictionary[A]) => value.self)
+            .imapK([A] => (schema: Self.Dictionary[Key, Header.Schema.Object.Value, A]) => Dictionary(schema))([A] =>
+              (value: Header.Schema.Object.Dictionary[A]) => value.self
+            )
 
       final case class Record[A](self: Self.Record[Header.Schema.Field, A]) extends Header.Schema.Object[A]
 
       object Record:
         given RecordSchemaInvariant[Header.Schema.Object.Record, Header.Schema.Field] =
           RecordSchemaInvariant[Self.Record[Header.Schema.Field, *], Header.Schema.Field]
-            .imapK(
-              [A] => (schema: Self.Record[Header.Schema.Field, A]) => Record(schema)
-            )([A] => (value: Header.Schema.Object.Record[A]) => value.self)
+            .imapK([A] => (schema: Self.Record[Header.Schema.Field, A]) => Record(schema))([A] =>
+              (value: Header.Schema.Object.Record[A]) => value.self
+            )
 
       sealed trait Value[A] extends Product, Serializable
 
@@ -226,9 +225,9 @@ object Header:
         object Nullable:
           given NullableSchemaInvariant[Header.Schema.Object.Value.Nullable, Header.Schema.Object.Value] =
             NullableSchemaInvariant[Self.Nullable[Header.Schema.Object.Value, *], Header.Schema.Object.Value]
-              .imapK(
-                [A] => (schema: Self.Nullable[Header.Schema.Object.Value, A]) => Nullable(schema)
-              )([A] => (value: Header.Schema.Object.Value.Nullable[A]) => value.self)
+              .imapK([A] => (schema: Self.Nullable[Header.Schema.Object.Value, A]) => Nullable(schema))([A] =>
+                (value: Header.Schema.Object.Value.Nullable[A]) => value.self
+              )
 
       given SchemaInvariant[Header.Schema.Object] with
         override def imap[A, B](fa: Header.Schema.Object[A])(f: A => B)(g: B => A): Object[B] =
@@ -251,9 +250,9 @@ object Header:
     object Field:
       given FieldSchemaInvariant[Header.Schema.Field, Key, Header.Schema.Object.Value] =
         FieldSchemaInvariant[Self.Field[Key, Header.Schema.Object.Value, *], Key, Header.Schema.Object.Value]
-          .imapK(
-            [A] => (schema: Self.Field[Key, Header.Schema.Object.Value, A]) => Field(schema)
-          )([A] => (value: Header.Schema.Field[A]) => value.self)
+          .imapK([A] => (schema: Self.Field[Key, Header.Schema.Object.Value, A]) => Field(schema))([A] =>
+            (value: Header.Schema.Field[A]) => value.self
+          )
 
     given SchemaInvariant[Header.Schema] with
       override def imap[A, B](fa: Header.Schema[A])(f: A => B)(g: B => A): Header.Schema[B] = fa match

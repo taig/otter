@@ -43,7 +43,7 @@ object Typescript:
     case Typescript.Number                             => "number"
     case Typescript.Object(Chain.nil)                  => "{}"
     case Typescript.Object((key, value) ==: Chain.nil) => show"{ $key: $value }"
-    case Typescript.Object(self) =>
+    case Typescript.Object(self)                       =>
       self.map((key, value) => show""""$key": $value""").map(indent(_)).mkString_("{\n", "\n", "\n}")
     case Typescript.Record(key, value) => show"{ [key: $key]: $value }"
     case Typescript.Reference(name)    => name

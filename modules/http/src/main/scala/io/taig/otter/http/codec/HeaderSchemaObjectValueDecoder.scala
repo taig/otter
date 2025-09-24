@@ -15,7 +15,7 @@ object HeaderSchemaObjectValueDecoder extends Decoder[Header.Schema.Object.Value
   override def decode[A](schema: Header.Schema.Object.Value[A], value: Option[String]): Validated[Violations, A] =
     schema match
       case Header.Schema.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
-      case schema: Header.Schema.Value[A] =>
+      case schema: Header.Schema.Value[A]            =>
         value
           .toValid(Violations.rootNec(Violation.required))
           .andThen(HeaderSchemaValueParser.decode(schema, _))

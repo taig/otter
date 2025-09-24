@@ -20,7 +20,7 @@ final class BodiesDecoder[-S[_]](decoder: PayloadDecoder[S]):
       bytes: Array[Byte]
   ): Either[MediaTypeUnsupported | ValidationViolations, A] = schema match
     case Bodies.Value.Modify(self, f, _) => decode(schema = self, contentType, bytes).map(f)
-    case Bodies.Value.Or(left, right) =>
+    case Bodies.Value.Or(left, right)    =>
       decode(schema = left, contentType, bytes) match
         case result @ Right(_)                      => result
         case Left(MediaTypeUnsupported)             => decode(schema = right, contentType, bytes)

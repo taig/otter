@@ -14,7 +14,7 @@ final class EffectRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
     extends Renderer[Schema[S, T, U, *], V[Effect[A]]]:
   override def render[B](schema: Schema[S, T, U, B]): V[Effect[A]] = schema match
     case schema: Collection[S, B] => renderer.render(schema.value.schema.value).map(Effect.Array.apply)
-    case schema: Constant[T, B] =>
+    case schema: Constant[T, B]   =>
       ReferenceConstantRenderer(encoder = printer)
         .render(reference = schema.value.schema)
         .pure[V]
@@ -34,7 +34,7 @@ final class EffectRenderer[S[_], T[_], U[_], V[_]: Applicative, A: Order](
       schema.value.schema.fold(Effect.Void.pure[V]): schema =>
         renderer.render(schema.value).map(Effect.Nullable.apply)
     case schema: Primitive[T, B] => PrimitiveEffectRenderer.render(schema).pure
-    case schema: Record[U, B] =>
+    case schema: Record[U, B]    =>
       schema.value.fields.traverse(schema => field.render(schema.value)).map(Effect.Struct.apply)
     case schema: Tuple[S, B] =>
       schema.value.schemas

@@ -21,8 +21,8 @@ object UrlDataDecoder extends Decoder.Remaining[Url, Url.Data]:
     decodeRemaining(schema = schema.value, value)
 
   def decodeRemaining[A](schema: Url.Value[A], value: Data): Validated[Violations, (Data, A)] = schema match
-    case Url.Value.Empty              => (value, ()).valid
-    case Url.Value.Modify(self, f, _) => decodeRemaining(schema = self, value).map(_.map(f))
+    case Url.Value.Empty               => (value, ()).valid
+    case Url.Value.Modify(self, f, _)  => decodeRemaining(schema = self, value).map(_.map(f))
     case Url.Value.Root(path, queries) =>
       PathDataDecoder
         .decodeRemaining(schema = path, value = value.path)

@@ -18,11 +18,11 @@ final class ResponseDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
       .flatMap: contentType =>
         // TODO accumulate errors properly
         results.decode(schema = schema.results, contentType, value) match
-          case Right(Some(a)) => a.asRight
+          case Right(Some(a))        => a.asRight
           case Right(None) | Left(_) =>
             results.result.decode(schema = schema.validation, contentType, value) match
               case Right(Some(violations)) => Left(ValidationViolations(violations))
-              case Right(None) | Left(_) =>
+              case Right(None) | Left(_)   =>
                 results.result.decode(schema = schema.failure, contentType, value) match
                   case Right(Some(failure)) => Failure(failure).asLeft
                   case Right(None)          => ContentNegotiationFailed.asLeft

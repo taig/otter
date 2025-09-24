@@ -27,7 +27,7 @@ final class ReferenceTypescriptEffectRenderer[S[_]: SchemaInvariant](
           else
             state.references.get(name) match
               case Some(_) => (state, reference)
-              case None =>
+              case None    =>
                 val (context, effect) = overrideOrRender(schema).run(initial = state.push(name)).value
                 val updatedEffect =
                   if context.recursion.nonEmpty

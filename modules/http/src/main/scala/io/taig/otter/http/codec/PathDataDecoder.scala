@@ -16,7 +16,7 @@ object PathDataDecoder extends Decoder.Remaining[Path, Path.Data]:
   def decodeRemaining[A](schema: Path.Value[A], value: Path.Data): Validated[Violations, (Path.Data, A)] = schema match
     case Path.Value.Empty              => (value, ()).valid
     case Path.Value.Modify(self, f, _) => decodeRemaining(schema = self, value).map(_.map(f))
-    case Path.Value.Static(name) =>
+    case Path.Value.Static(name)       =>
       value.uncons match
         case Some((head, tail)) =>
           Validated.cond(

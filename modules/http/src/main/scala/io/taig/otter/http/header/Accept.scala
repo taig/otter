@@ -19,7 +19,7 @@ object Accept:
       val blocklist = toNel.filter(_.weight === BigDecimal(0).some).map(_.self)
 
       blocklist.toNel match
-        case None => Ior.right(toNel.sorted(resultOrder).map(_.self))
+        case None            => Ior.right(toNel.sorted(resultOrder).map(_.self))
         case Some(blocklist) =>
           toNel
             .filter(_.weight =!= BigDecimal(0).some)

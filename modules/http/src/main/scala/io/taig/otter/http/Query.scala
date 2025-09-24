@@ -77,9 +77,9 @@ object Query:
         given PrimitiveSchemaInvariant.Boolean[Query.Schema.Primitive.Boolean] =
           PrimitiveSchemaInvariant
             .Boolean[Self.Primitive.Boolean]
-            .imapK(
-              [A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema)
-            )([A] => (schema: Query.Schema.Primitive.Boolean[A]) => schema.self)
+            .imapK([A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema))([A] =>
+              (schema: Query.Schema.Primitive.Boolean[A]) => schema.self
+            )
 
       final case class Number[A](self: Self.Primitive.Number[A]) extends Query.Schema.Primitive[A]
 
@@ -87,9 +87,9 @@ object Query:
         given PrimitiveSchemaInvariant.Number[Query.Schema.Primitive.Number] =
           PrimitiveSchemaInvariant
             .Number[Self.Primitive.Number]
-            .imapK(
-              [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
-            )([A] => (schema: Query.Schema.Primitive.Number[A]) => schema.self)
+            .imapK([A] => (schema: Self.Primitive.Number[A]) => Number(schema))([A] =>
+              (schema: Query.Schema.Primitive.Number[A]) => schema.self
+            )
 
       final case class String[A](self: Self.Primitive.String[Query.Schema.Primitive, A])
           extends Query.Schema.Primitive[A],
@@ -99,18 +99,17 @@ object Query:
         given PrimitiveSchemaInvariant.String[Query.Schema.Primitive.String, Query.Schema.Primitive] =
           PrimitiveSchemaInvariant
             .String[Self.Primitive.String[Query.Schema.Primitive, *], Query.Schema.Primitive]
-            .imapK(
-              [A] => (schema: Self.Primitive.String[Query.Schema.Primitive, A]) => String(schema)
-            )([A] => (schema: Query.Schema.Primitive.String[A]) => schema.self)
+            .imapK([A] => (schema: Self.Primitive.String[Query.Schema.Primitive, A]) => String(schema))([A] =>
+              (schema: Query.Schema.Primitive.String[A]) => schema.self
+            )
 
       given PrimitiveSchemaInvariant[Query.Schema.Primitive, Query.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *], Query.Schema.Primitive].imapK(
-          [A] =>
-            (self: Self.Primitive[Query.Schema.Primitive, A]) =>
-              self match
-                case self: Self.Primitive.Boolean[A]                        => Query.Schema.Primitive.Boolean(self)
-                case self: Self.Primitive.Number[A]                         => Query.Schema.Primitive.Number(self)
-                case self: Self.Primitive.String[Query.Schema.Primitive, A] => Query.Schema.Primitive.String(self)
+        PrimitiveSchemaInvariant[Self.Primitive[Query.Schema.Primitive, *], Query.Schema.Primitive].imapK([A] =>
+          (self: Self.Primitive[Query.Schema.Primitive, A]) =>
+            self match
+              case self: Self.Primitive.Boolean[A]                        => Query.Schema.Primitive.Boolean(self)
+              case self: Self.Primitive.Number[A]                         => Query.Schema.Primitive.Number(self)
+              case self: Self.Primitive.String[Query.Schema.Primitive, A] => Query.Schema.Primitive.String(self)
         )([A] => (schema: Query.Schema.Primitive[A]) => schema.self)
 
       given Parseable[Query.Schema.Primitive, Query.Schema.Primitive.String] =
@@ -124,25 +123,25 @@ object Query:
       object Constant:
         given ConstantSchemaInvariant[Query.Schema.Value.Constant, Query.Schema.Primitive.String] =
           ConstantSchemaInvariant[Self.Constant[Query.Schema.Primitive.String, *], Query.Schema.Primitive.String]
-            .imapK(
-              [A] => (schema: Self.Constant[Query.Schema.Primitive.String, A]) => Constant(schema)
-            )([A] => (schema: Query.Schema.Value.Constant[A]) => schema.self)
+            .imapK([A] => (schema: Self.Constant[Query.Schema.Primitive.String, A]) => Constant(schema))([A] =>
+              (schema: Query.Schema.Value.Constant[A]) => schema.self
+            )
 
       final case class Enumeration[A](self: Self.Enumeration[Query.Schema.Primitive.String, A]) extends Value[A]
 
       object Enumeration:
         given EnumerationSchemaInvariant[Query.Schema.Value.Enumeration, Query.Schema.Primitive.String] =
           EnumerationSchemaInvariant[Self.Enumeration[Query.Schema.Primitive.String, *], Query.Schema.Primitive.String]
-            .imapK(
-              [A] => (schema: Self.Enumeration[Query.Schema.Primitive.String, A]) => Enumeration(schema)
-            )([A] => (schema: Query.Schema.Value.Enumeration[A]) => schema.self)
+            .imapK([A] => (schema: Self.Enumeration[Query.Schema.Primitive.String, A]) => Enumeration(schema))([A] =>
+              (schema: Query.Schema.Value.Enumeration[A]) => schema.self
+            )
 
       final case class Union[A](self: Self.Union[Query.Schema.Value, A]) extends Value[A]
 
       object Union:
         given UnionSchemaInvariant[Query.Schema.Value.Union, Query.Schema.Value] =
-          UnionSchemaInvariant[Self.Union[Query.Schema.Value, *], Query.Schema.Value].imapK(
-            [A] => (schema: Self.Union[Query.Schema.Value, A]) => Union(schema)
+          UnionSchemaInvariant[Self.Union[Query.Schema.Value, *], Query.Schema.Value].imapK([A] =>
+            (schema: Self.Union[Query.Schema.Value, A]) => Union(schema)
           )([A] => (schema: Query.Schema.Value.Union[A]) => schema.self)
 
       given SchemaInvariant[Query.Schema.Value] with
@@ -173,16 +172,16 @@ object Query:
 
       object Collection:
         given CollectionSchemaInvariant[Query.Schema.Array.Collection, Query.Schema.Value] =
-          CollectionSchemaInvariant[Self.Collection[Query.Schema.Value, *], Query.Schema.Value].imapK(
-            [A] => (schema: Self.Collection[Query.Schema.Value, A]) => Collection(schema)
+          CollectionSchemaInvariant[Self.Collection[Query.Schema.Value, *], Query.Schema.Value].imapK([A] =>
+            (schema: Self.Collection[Query.Schema.Value, A]) => Collection(schema)
           )([A] => (schema: Query.Schema.Array.Collection[A]) => schema.self)
 
       final case class Tuple[A](self: Self.Tuple[Query.Schema.Value, A]) extends Query.Schema.Array[A]
 
       object Tuple:
         given TupleSchemaInvariant[Query.Schema.Array.Tuple, Query.Schema.Value] =
-          TupleSchemaInvariant[Self.Tuple[Query.Schema.Value, *], Query.Schema.Value].imapK(
-            [A] => (schema: Self.Tuple[Query.Schema.Value, A]) => Tuple(schema)
+          TupleSchemaInvariant[Self.Tuple[Query.Schema.Value, *], Query.Schema.Value].imapK([A] =>
+            (schema: Self.Tuple[Query.Schema.Value, A]) => Tuple(schema)
           )([A] => (schema: Query.Schema.Array.Tuple[A]) => schema.self)
 
       given SchemaInvariant[Query.Schema.Array] with
@@ -204,8 +203,8 @@ object Query:
 
     object Nullable:
       given NullableSchemaInvariant[Query.Schema.Nullable, Query.Schema] =
-        NullableSchemaInvariant[Self.Nullable[Query.Schema, *], Query.Schema].imapK(
-          [A] => (schema: Self.Nullable[Query.Schema, A]) => Nullable(schema)
+        NullableSchemaInvariant[Self.Nullable[Query.Schema, *], Query.Schema].imapK([A] =>
+          (schema: Self.Nullable[Query.Schema, A]) => Nullable(schema)
         )([A] => (schema: Query.Schema.Nullable[A]) => schema.self)
 
     given SchemaInvariant.Nullable[Query.Schema, Query.Schema.Nullable] with

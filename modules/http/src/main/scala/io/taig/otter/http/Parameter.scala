@@ -65,9 +65,9 @@ object Parameter:
         given PrimitiveSchemaInvariant.Boolean[Parameter.Schema.Primitive.Boolean] =
           PrimitiveSchemaInvariant
             .Boolean[Self.Primitive.Boolean]
-            .imapK(
-              [A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema)
-            )([A] => (value: Parameter.Schema.Primitive.Boolean[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.Boolean[A]) => Boolean(schema))([A] =>
+              (value: Parameter.Schema.Primitive.Boolean[A]) => value.self
+            )
 
       final case class Number[A](self: Self.Primitive.Number[A]) extends Parameter.Schema.Primitive[A]
 
@@ -75,9 +75,9 @@ object Parameter:
         given PrimitiveSchemaInvariant.Number[Parameter.Schema.Primitive.Number] =
           PrimitiveSchemaInvariant
             .Number[Self.Primitive.Number]
-            .imapK(
-              [A] => (schema: Self.Primitive.Number[A]) => Number(schema)
-            )([A] => (value: Parameter.Schema.Primitive.Number[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.Number[A]) => Number(schema))([A] =>
+              (value: Parameter.Schema.Primitive.Number[A]) => value.self
+            )
 
       final case class String[A](self: Self.Primitive.String[Parameter.Schema.Primitive, A])
           extends Parameter.Schema.Primitive[A],
@@ -87,19 +87,18 @@ object Parameter:
         given PrimitiveSchemaInvariant.String[Parameter.Schema.Primitive.String, Parameter.Schema.Primitive] =
           PrimitiveSchemaInvariant
             .String[Self.Primitive.String[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive]
-            .imapK(
-              [A] => (schema: Self.Primitive.String[Parameter.Schema.Primitive, A]) => String(schema)
-            )([A] => (value: Parameter.Schema.Primitive.String[A]) => value.self)
+            .imapK([A] => (schema: Self.Primitive.String[Parameter.Schema.Primitive, A]) => String(schema))([A] =>
+              (value: Parameter.Schema.Primitive.String[A]) => value.self
+            )
 
       given PrimitiveSchemaInvariant[Parameter.Schema.Primitive, Parameter.Schema.Primitive] =
-        PrimitiveSchemaInvariant[Self.Primitive[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive].imapK(
-          [A] =>
-            (schema: Self.Primitive[Parameter.Schema.Primitive, A]) =>
-              schema match
-                case self: Self.Primitive.Boolean[A] => Parameter.Schema.Primitive.Boolean(self)
-                case self: Self.Primitive.Number[A]  => Parameter.Schema.Primitive.Number(self)
-                case self: Self.Primitive.String[Parameter.Schema.Primitive, A] =>
-                  Parameter.Schema.Primitive.String(self)
+        PrimitiveSchemaInvariant[Self.Primitive[Parameter.Schema.Primitive, *], Parameter.Schema.Primitive].imapK([A] =>
+          (schema: Self.Primitive[Parameter.Schema.Primitive, A]) =>
+            schema match
+              case self: Self.Primitive.Boolean[A] => Parameter.Schema.Primitive.Boolean(self)
+              case self: Self.Primitive.Number[A]  => Parameter.Schema.Primitive.Number(self)
+              case self: Self.Primitive.String[Parameter.Schema.Primitive, A] =>
+                Parameter.Schema.Primitive.String(self)
         )([A] => (value: Parameter.Schema.Primitive[A]) => value.self)
 
       given Parseable[Parameter.Schema.Primitive, Parameter.Schema.Primitive] =
@@ -116,9 +115,9 @@ object Parameter:
           ConstantSchemaInvariant[
             Self.Constant[Parameter.Schema.Primitive.String, *],
             Parameter.Schema.Primitive.String
-          ].imapK(
-            [A] => (schema: Self.Constant[Parameter.Schema.Primitive.String, A]) => Constant(schema)
-          )([A] => (value: Parameter.Schema.Value.Constant[A]) => value.self)
+          ].imapK([A] => (schema: Self.Constant[Parameter.Schema.Primitive.String, A]) => Constant(schema))([A] =>
+            (value: Parameter.Schema.Value.Constant[A]) => value.self
+          )
 
       final case class Enumeration[A](self: Self.Enumeration[Parameter.Schema.Primitive.String, A])
           extends Parameter.Schema.Value[A]
@@ -128,9 +127,9 @@ object Parameter:
           EnumerationSchemaInvariant[
             Self.Enumeration[Parameter.Schema.Primitive.String, *],
             Parameter.Schema.Primitive.String
-          ].imapK(
-            [A] => (schema: Self.Enumeration[Parameter.Schema.Primitive.String, A]) => Enumeration(schema)
-          )([A] => (value: Parameter.Schema.Value.Enumeration[A]) => value.self)
+          ].imapK([A] => (schema: Self.Enumeration[Parameter.Schema.Primitive.String, A]) => Enumeration(schema))([A] =>
+            (value: Parameter.Schema.Value.Enumeration[A]) => value.self
+          )
 
       final case class Union[A](self: Self.Union[Parameter.Schema.Value, A]) extends Parameter.Schema.Value[A]
 
@@ -139,9 +138,9 @@ object Parameter:
           UnionSchemaInvariant[
             Self.Union[Parameter.Schema.Value, *],
             Parameter.Schema.Value
-          ].imapK(
-            [A] => (schema: Self.Union[Parameter.Schema.Value, A]) => Union(schema)
-          )([A] => (value: Parameter.Schema.Value.Union[A]) => value.self)
+          ].imapK([A] => (schema: Self.Union[Parameter.Schema.Value, A]) => Union(schema))([A] =>
+            (value: Parameter.Schema.Value.Union[A]) => value.self
+          )
 
       given SchemaInvariant[Parameter.Schema.Value] with
         override def imap[A, B](fa: Value[A])(f: A => B)(g: B => A): Parameter.Schema.Value[B] = fa match
@@ -175,9 +174,9 @@ object Parameter:
           CollectionSchemaInvariant[
             Self.Collection[Parameter.Schema.Value, *],
             Parameter.Schema.Value
-          ].imapK(
-            [A] => (schema: Self.Collection[Parameter.Schema.Value, A]) => Collection(schema)
-          )([A] => (value: Parameter.Schema.Array.Collection[A]) => value.self)
+          ].imapK([A] => (schema: Self.Collection[Parameter.Schema.Value, A]) => Collection(schema))([A] =>
+            (value: Parameter.Schema.Array.Collection[A]) => value.self
+          )
 
       final case class Tuple[A](self: Self.Tuple[Parameter.Schema.Value, A]) extends Parameter.Schema.Array[A]
 
@@ -186,9 +185,9 @@ object Parameter:
           TupleSchemaInvariant[
             Self.Tuple[Parameter.Schema.Value, *],
             Parameter.Schema.Value
-          ].imapK(
-            [A] => (schema: Self.Tuple[Parameter.Schema.Value, A]) => Tuple(schema)
-          )([A] => (value: Parameter.Schema.Array.Tuple[A]) => value.self)
+          ].imapK([A] => (schema: Self.Tuple[Parameter.Schema.Value, A]) => Tuple(schema))([A] =>
+            (value: Parameter.Schema.Array.Tuple[A]) => value.self
+          )
 
       given SchemaInvariant[Parameter.Schema.Array] with
         override def imap[A, B](fa: Array[A])(f: A => B)(g: B => A): Parameter.Schema.Array[B] = fa match
@@ -219,9 +218,9 @@ object Parameter:
             Self.Dictionary[Key, Parameter.Schema.Value, *],
             Key,
             Parameter.Schema.Value
-          ].imapK(
-            [A] => (schema: Self.Dictionary[Key, Parameter.Schema.Value, A]) => Dictionary(schema)
-          )([A] => (value: Parameter.Schema.Object.Dictionary[A]) => value.self)
+          ].imapK([A] => (schema: Self.Dictionary[Key, Parameter.Schema.Value, A]) => Dictionary(schema))([A] =>
+            (value: Parameter.Schema.Object.Dictionary[A]) => value.self
+          )
 
       final case class Record[A](self: Self.Record[Parameter.Schema.Field, A]) extends Parameter.Schema.Object[A]
 
@@ -230,9 +229,9 @@ object Parameter:
           RecordSchemaInvariant[
             Self.Record[Parameter.Schema.Field, *],
             Parameter.Schema.Field
-          ].imapK(
-            [A] => (schema: Self.Record[Parameter.Schema.Field, A]) => Record(schema)
-          )([A] => (value: Parameter.Schema.Object.Record[A]) => value.self)
+          ].imapK([A] => (schema: Self.Record[Parameter.Schema.Field, A]) => Record(schema))([A] =>
+            (value: Parameter.Schema.Object.Record[A]) => value.self
+          )
 
       sealed trait Value[A] extends Product, Serializable
 
@@ -245,9 +244,9 @@ object Parameter:
             NullableSchemaInvariant[
               Self.Nullable[Parameter.Schema.Object.Value, *],
               Parameter.Schema.Object.Value
-            ].imapK(
-              [A] => (schema: Self.Nullable[Parameter.Schema.Object.Value, A]) => Nullable(schema)
-            )([A] => (value: Parameter.Schema.Object.Value.Nullable[A]) => value.self)
+            ].imapK([A] => (schema: Self.Nullable[Parameter.Schema.Object.Value, A]) => Nullable(schema))([A] =>
+              (value: Parameter.Schema.Object.Value.Nullable[A]) => value.self
+            )
 
       given SchemaInvariant[Parameter.Schema.Object] with
         override def imap[A, B](fa: Parameter.Schema.Object[A])(f: A => B)(g: B => A): Parameter.Schema.Object[B] =
@@ -275,9 +274,9 @@ object Parameter:
           Self.Field[Key, Parameter.Schema.Object.Value, *],
           Key,
           Parameter.Schema.Object.Value
-        ].imapK(
-          [A] => (schema: Self.Field[Key, Parameter.Schema.Object.Value, A]) => Field(schema)
-        )([A] => (value: Parameter.Schema.Field[A]) => value.self)
+        ].imapK([A] => (schema: Self.Field[Key, Parameter.Schema.Object.Value, A]) => Field(schema))([A] =>
+          (value: Parameter.Schema.Field[A]) => value.self
+        )
 
     given SchemaInvariant[Parameter.Schema] with
       override def imap[A, B](fa: Parameter.Schema[A])(f: A => B)(g: B => A): Parameter.Schema[B] = fa match

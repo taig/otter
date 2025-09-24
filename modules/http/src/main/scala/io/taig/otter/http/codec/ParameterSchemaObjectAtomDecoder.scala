@@ -14,7 +14,7 @@ object ParameterSchemaObjectValueDecoder extends Decoder[Parameter.Schema.Object
   override def decode[A](schema: Parameter.Schema.Object.Value[A], value: Option[String]): Validated[Violations, A] =
     schema match
       case Parameter.Schema.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
-      case schema: Parameter.Schema.Value[A] =>
+      case schema: Parameter.Schema.Value[A]            =>
         value
           .toValid(Violations.rootNec(Violation.required))
           .andThen(ParameterSchemaValueParser.decode(schema, _))

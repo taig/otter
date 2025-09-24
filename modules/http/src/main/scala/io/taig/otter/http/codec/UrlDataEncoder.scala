@@ -7,8 +7,8 @@ object UrlDataEncoder extends Encoder[Url, Url.Data]:
   override def encode[A](url: Url[A], a: A): Url.Data = encode(url = url.value, a)
 
   def encode[A](url: Url.Value[A], a: A): Url.Data = url match
-    case Url.Value.Empty              => Url.Data.Empty
-    case Url.Value.Modify(self, _, g) => encode(url = self, g(a))
+    case Url.Value.Empty               => Url.Data.Empty
+    case Url.Value.Modify(self, _, g)  => encode(url = self, g(a))
     case Url.Value.Root(path, queries) =>
       Url.Data(
         path = PathDataEncoder.encode(path, a._1),

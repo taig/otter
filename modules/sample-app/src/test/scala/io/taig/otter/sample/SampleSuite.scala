@@ -6,12 +6,12 @@ import cats.effect.Resource
 import cats.effect.SyncIO
 import cats.syntax.all.*
 import io.circe.Printer as CircePrinter
-import io.taig.otter.sample.api.dsl.*
 import io.taig.otter.http.AppClient
 import io.taig.otter.http.HttpError
 import io.taig.otter.http.codec.CirceJsonPayloadDecoder
 import io.taig.otter.http.codec.CirceJsonPayloadEncoder
 import io.taig.otter.munit.OtterEffectSuite
+import io.taig.otter.sample.api.dsl.*
 import io.taig.otter.sample.app.SampleApp
 import munit.Compare
 import munit.Location

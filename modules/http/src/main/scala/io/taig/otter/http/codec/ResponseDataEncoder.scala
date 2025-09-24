@@ -31,7 +31,7 @@ final class ResponseDataEncoder[S[_]](encoder: PayloadEncoder[S], debug: Boolean
       result: Either[Failure | MediaTypeUnsupported | ValidationViolations, A]
   ): Response.Data = result
     .match
-      case Right(a) => results.encode(schema = schema.results, accept, a)
+      case Right(a)                  => results.encode(schema = schema.results, accept, a)
       case Left(Failure(stacktrace)) =>
         results.result.encode(schema = schema.failure, accept, stacktrace.filter(_ => debug))
       case Left(MediaTypeUnsupported) =>

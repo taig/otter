@@ -8,7 +8,6 @@ import cats.data.NonEmptyChain
 import cats.derived
 import cats.derived.*
 import cats.syntax.all.*
-import cats.data.NonEmptyList
 
 enum Effect[+A] derives Order, Traverse:
   case Array(self: A)
@@ -49,14 +48,14 @@ object Effect:
     case Reference(name)                  => name
     case String                           => "Schema.String"
     case Struct(fields) if fields.isEmpty => "Schema.Struct({})"
-    case Struct(fields) =>
+    case Struct(fields)                   =>
       show"""Schema.Struct({
             |${fields.map((name, value) => show""""$name": $value""").map(indent(_)).mkString_(",\n")}
             |})""".stripMargin
-    case Number => "Schema.Number"
+    case Number                               => "Schema.Number"
     case Recursion(tpe, self)                 => show"Schema.suspend((): Schema.Schema<$tpe> => $self)"
     case Union(values) if values.length === 1 => values.head.show
-    case Union(values) =>
+    case Union(values)                        =>
       show"""Schema.Union(
             |${values.map(_.show).map(indent(_)).mkString_(",\n")}
             |)""".stripMargin

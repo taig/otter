@@ -28,7 +28,7 @@ object CirceJsonPrimitiveDecoder extends Decoder[Primitive[Json.Primitive, *], C
     case Primitive.Value.Boolean.Modify(self, f, _) => decode(schema = self, json).map(f)
     case Primitive.Value.Number.Modify(self, f, _)  => decode(schema = self, json).map(f)
     case Primitive.Value.String.Modify(self, f, _)  => decode(schema = self, json).map(f)
-    case Primitive.Value.String.Parsed(self) =>
+    case Primitive.Value.String.Parsed(self)        =>
       decode[String](name = "string", json).andThen(JsonPrimitiveParser.decode(schema = self.value, _))
     case Primitive.Value.String.Parser(name, f, _) =>
       decode[String](name = "string", json).andThen: value =>

@@ -57,7 +57,7 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
           decodeRemaining(schema = self, contentType, value = value.copy(headers = headers)).map(_.tupleRight(b))
         case Validated.Invalid(left) =>
           decodeRemaining(schema = self, contentType, value) match
-            case Right(_)                   => ValidationViolations(left).asLeft
-            case Left(MediaTypeUnsupported) => MediaTypeUnsupported.asLeft
+            case Right(_)                                   => ValidationViolations(left).asLeft
+            case Left(MediaTypeUnsupported)                 => MediaTypeUnsupported.asLeft
             case result @ Left(ValidationViolations(right)) =>
               ValidationViolations(left |+| right).asLeft

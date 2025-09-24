@@ -21,7 +21,7 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
       accept: Option[Accept],
       a: A
   ): Either[ContentNegotiationFailed, Response.Data] = schema match
-    case Result.Value.Modify(self, _, g) => encode(schema = self, accept, g(a))
+    case Result.Value.Modify(self, _, g)    => encode(schema = self, accept, g(a))
     case Result.Value.Payload(self, bodies) =>
       val mediaRanges = accept.flatMap(_.toResult.right).fold(Nil)(_.toList)
 
@@ -36,7 +36,7 @@ final class ResultDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
   def encode[A](schema: Result[S, A], a: A): Response.Data = encode(schema = schema.value, a)
 
   def encode[A](schema: Result.Value[S, A], a: A): Response.Data = schema match
-    case Result.Value.Modify(self, _, g) => encode(schema = self, g(a))
+    case Result.Value.Modify(self, _, g)    => encode(schema = self, g(a))
     case Result.Value.Payload(self, bodies) =>
       val (mediaType, bytes) = this.bodies.encode(bodies, a._2)
       encode(schema = self, a._1)

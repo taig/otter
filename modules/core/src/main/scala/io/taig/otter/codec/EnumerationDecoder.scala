@@ -12,7 +12,7 @@ final class EnumerationDecoder[S[_], T](codec: Codec[S, T], render: T => Data) e
     decode(schema = schema.value, value)
 
   def decode[A](schema: Enumeration.Value[S, A], value: T): Validated[Violations, A] = schema match
-    case Enumeration.Value.Modify(self, f, _) => decode(schema = self, value).map(f)
+    case Enumeration.Value.Modify(self, f, _)       => decode(schema = self, value).map(f)
     case Enumeration.Value.Root(reference, mapping) =>
       codec
         .decode(schema = reference.value, value)

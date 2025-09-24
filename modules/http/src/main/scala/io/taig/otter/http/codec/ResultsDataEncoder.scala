@@ -20,7 +20,7 @@ final class ResultsDataEncoder[-S[_]](encoder: PayloadEncoder[S]):
       accept: Option[Accept],
       a: A
   ): Either[ContentNegotiationFailed, Response.Data] = schema match
-    case Results.Value.Modify(self, _, g) => encode(schema = self, accept, g(a))
+    case Results.Value.Modify(self, _, g)  => encode(schema = self, accept, g(a))
     case Results.Value.OrElse(left, right) =>
       a.fold(encode(schema = left, accept, _), encode(schema = right, accept, _))
     case Results.Value.Root(result) => this.result.encode(result, accept, a)

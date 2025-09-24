@@ -16,7 +16,7 @@ object QueryDataDecoder extends Decoder.Remaining[Query, Queries.Data]:
   def decodeRemaining[A](schema: Query.Value[A], values: Queries.Data): Validated[Violations, (Queries.Data, A)] =
     schema match
       case Query.Value.Modify(self, f, _) => decodeRemaining(schema = self, values).map(_.map(f))
-      case Query.Value.Optional(self) =>
+      case Query.Value.Optional(self)     =>
         if values.exists((key, _) => key === self.name)
         then decodeRemaining(schema = self, values).map(_.map(_.some))
         else (values, none).valid

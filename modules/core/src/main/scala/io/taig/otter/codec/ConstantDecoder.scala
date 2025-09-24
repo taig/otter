@@ -12,7 +12,7 @@ final class ConstantDecoder[S[_], T](codec: Codec[S, T], render: T => Data) exte
 
   def decode[A](schema: Constant.Value[S, A], value: T): Validated[Violations, A] = schema match
     case Constant.Value.Modify(self, f, _) => decode(schema = self, value).map(f)
-    case Constant.Value.Root(schema, eq) =>
+    case Constant.Value.Root(schema, eq)   =>
       codec
         .decode(schema = schema.self.value, value)
         .andThen: a =>

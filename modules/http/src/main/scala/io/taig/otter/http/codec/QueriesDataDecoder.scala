@@ -21,14 +21,14 @@ object QueriesDataDecoder extends Decoder.Remaining[Queries, Queries.Data]:
         else (value, default).valid
       case Queries.Value.Empty              => (value, ()).valid
       case Queries.Value.Modify(self, f, _) => decodeRemaining(schema = self, value).map(_.map(f))
-      case Queries.Value.Optional(self) =>
+      case Queries.Value.Optional(self)     =>
         val keys = SortedSet.from(value.map((key, _) => key).toIterable)
         if self.toChain.map(_.name).exists(keys.contains)
         then decodeRemaining(schema = self, value).map(_.map(_.some))
         else (value, none).valid
-      case Queries.Value.Root(query) => QueryDataDecoder.decodeRemaining(query, value)
+      case Queries.Value.Root(query)      => QueryDataDecoder.decodeRemaining(query, value)
       case Queries.Value.Zip(left, right) =>
         decodeRemaining(schema = left, value) match
-          case Validated.Valid((values, a)) => decodeRemaining(schema = right, value).map(_.tupleLeft(a))
+          case Validated.Valid((values, a))  => decodeRemaining(schema = right, value).map(_.tupleLeft(a))
           case Validated.Invalid(violations) =>
             decodeRemaining(schema = right, value).fold(violations.combine, _ => violations).invalid
