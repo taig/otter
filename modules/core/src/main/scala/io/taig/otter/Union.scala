@@ -27,10 +27,10 @@ sealed abstract class Union[+O <: Data, A] extends Codec[O, A]:
     override def branches: NonEmptyChain[Branch[?, ?]] = self.branches ++ codec.branches
     override def metadata: Metadata = Metadata.Empty
     override def decodeBranches(data: Data): Either[Option[Violations], Either[A, B]] = self.decodeBranches(data) match
-      case Right(a) => a.asLeft.asRight
+      case Right(a)   => a.asLeft.asRight
       case Left(left) =>
         codec.decodeBranches(data) match
-          case Right(b) => b.asRight.asRight
+          case Right(b)    => b.asRight.asRight
           case Left(right) =>
             (left, right) match
               case (Some(left), Some(right)) => (left |+| right).some.asLeft

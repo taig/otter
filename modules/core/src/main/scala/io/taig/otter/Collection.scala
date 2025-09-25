@@ -59,7 +59,7 @@ object Collection:
     def verifyUniqueItems(values: Vector[Data]): Codec.Result[Unit] =
       values.groupBy(identity).collect { case (a, as) if as.sizeCompare(1) > 0 => a }.toVector match
         case Vector() => ().valid
-        case values =>
+        case values   =>
           Violations.rootNec(Violation(Constraint.Collection.UniqueItems, actual = Data.Array(values))).invalid
     override def decode(data: Option[Vector[Data]]): Codec.Result[Vector[A]] = data
       .toValid(Violations.rootNec(Violation(Constraint.Type("array"), actual = Data.String("null"))))

@@ -97,7 +97,7 @@ object Request:
               _bodies
                 .decode(contentType, request.body) match
                 case Validated.Valid(Some((_, c))) => (a, b, c).asRight
-                case Validated.Valid(None) =>
+                case Validated.Valid(None)         =>
                   val supportedContentTypes = _bodies.toNev.toList.map(_.mediaType.show)
                   Route.Error
                     .MediaTypesUnsupported(

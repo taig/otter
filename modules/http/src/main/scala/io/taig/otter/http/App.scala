@@ -10,7 +10,7 @@ final case class App[F[_]](routes: Routes[F], error: Results[App.Error]):
   def apply(request: Http.Request, onError: Throwable => F[Unit])(using F: MonadThrow[F]): F[Http.Response] =
     routes.find(request.method, request.url) match
       case Some(route) => route(request, onError)
-      case None =>
+      case None        =>
         val accept = request.headers
           .collectFirst { case (ci"Accept", value) => value }
           .flatMap(Accept.parse(_).toOption)

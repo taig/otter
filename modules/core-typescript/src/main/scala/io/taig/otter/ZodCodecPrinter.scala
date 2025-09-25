@@ -14,14 +14,14 @@ object ZodCodecPrinter extends CodecPrinter[State[ListMap[Reference, String], *]
 
           references.get(reference) match
             case Some(value) => (references, Expression.Referenced(reference, value))
-            case None =>
+            case None        =>
               val (nestedReferences, value) = render(codec).run(references).value
               (nestedReferences ++ references.updated(reference, value), Expression.Referenced(reference, value))
       case None => render(codec).map(Expression.Inline.apply)
 
   def render(codec: Codec[?, ?]): State[ListMap[Reference, String], String] = codec.typescript.value match
     case Some(typescript) => State.pure(typescript)
-    case None =>
+    case None             =>
       codec match
         case codec: Collection[?, ?]  => render(codec)
         case codec: Dictionary[?, ?]  => render(codec)
@@ -63,7 +63,7 @@ object ZodCodecPrinter extends CodecPrinter[State[ListMap[Reference, String], *]
 
     val size = (minItems, maxItems) match
       case (Some(min), Some(max)) if min === max => s".length($min)"
-      case _ =>
+      case _                                     =>
         minItems.filter(_ > 1).map(min => s".min($min)").orEmpty + maxItems.map(max => s".max($max)").orEmpty
 
     print(codec.codec.value)

@@ -23,8 +23,8 @@ final class DataEndpointPrinterTest extends FunSuite:
     )
 
     val printer = DataEndpointPrinter(codecs = ZodCodecPrinter):
-      case (mediaType.text.plain, _)              => ("z.string()", "(response) => response.text()")
-      case (mediaType.application.octetStream, _) => ("z.instanceof(Uint8Array)", "(response) => response.text()")
+      case (mediaType.text.plain, _)                 => ("z.string()", "(response) => response.text()")
+      case (mediaType.application.octetStream, _)    => ("z.instanceof(Uint8Array)", "(response) => response.text()")
       case (mediaType.application.json, Some(codec)) =>
         (ZodCodecPrinter.print(codec).runA(ListMap.empty).value.show, "(response) => response.text()")
 

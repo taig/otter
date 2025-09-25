@@ -10,7 +10,7 @@ import munit.Location
 trait Assertions extends MunitAssertions:
   extension [F[_]: MonadThrow, E, O](self: F[Validated[Violations, Either[E, O]]])
     def assertValid(using Location): F[Either[E, O]] = self.flatMap:
-      case Validated.Valid(o) => o.pure
+      case Validated.Valid(o)            => o.pure
       case Validated.Invalid(violations) =>
         new IllegalArgumentException(s"Expected Valid, but got Violations: $violations").raiseError
 

@@ -81,7 +81,7 @@ object Path:
     override def decodeWithRemainders(values: Http.Path): Codec.Result[(Http.Path, A)] =
       values.headOption match
         case Some(value) => segment.decode(value).tupleLeft(values.tail)
-        case None =>
+        case None        =>
           Violations
             .rootNec(
               Violation(

@@ -25,13 +25,13 @@ sealed abstract class Results[A]:
     override def decode(response: Http.Response): Ior[Violations, Option[Either[A, B]]] = self.decode(response) match
       case Ior.Right(Some(a)) => a.asLeft.some.rightIor
       case Ior.Right(None)    => results.decode(response).map(_.map(_.asRight))
-      case Ior.Left(left) =>
+      case Ior.Left(left)     =>
         results.decode(response) match
           case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
           case Ior.Left(right)    => Ior.Left(left.combine(right))
           case Ior.Both(right, b) => Ior.Both(left.combine(right), b.map(_.asRight))
       case Ior.Both(left, Some(a)) => Ior.Both(left, a.asLeft.some)
-      case Ior.Both(left, None) =>
+      case Ior.Both(left, None)    =>
         results.decode(response) match
           case Ior.Right(b)       => Ior.Both(left, b.map(_.asRight))
           case Ior.Left(right)    => Ior.Both(left.combine(right), none)
