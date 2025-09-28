@@ -30,5 +30,12 @@ final class ResultsDataDecoder[-S[_]](decoder: PayloadDecoder[S]):
             case Right(Some(b)) => b.asRight.some.asRight
             case Right(None)    => none.asRight
             case Left(error)    => error.asLeft
-        case Left(error) => error.asLeft
-    case Results.Value.Root(result) => this.result.decode(result, contentType, data)
+        case Left(error) =>
+          // TODO error accumulation
+          decode(schema = right, contentType, data) match
+            case Right(Some(b)) => b.asRight.some.asRight
+            case Right(None)    => error.asLeft
+            case Left(error)    => error.asLeft
+
+    case Results.Value.Root(result) =>
+      this.result.decode(result, contentType, data)

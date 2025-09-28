@@ -7,7 +7,6 @@ import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.SchemaInvariant
 
 final case class Response[+S[_], A](value: Response.Value[S, A], metadata: Metadata):
-
   def results: Results[S, A] = value.results
   def results[S1[a] >: S[a], B](f: Results[S1, A] => Results[S1, B]): Response[S1, B] =
     copy(value = value.modifyResults(f))
