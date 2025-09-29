@@ -35,9 +35,9 @@ object Violation:
   def oneOf(values: List[Data], actual: Data): Violation[Constraint.OneOf] =
     Violation(Constraint.OneOf(values), actual, hint = none)
 
-  def matches(pattern: Pattern, actual: Data): Violation[Constraint.Primitive.String] =
-    Violation(Constraint.Primitive.String.Matches(pattern), actual, hint = none)
-  def matches(expected: String, actual: Data): Violation[Constraint.Primitive.String] =
+  def matches(pattern: Pattern, actual: Data): Violation[Constraint.Primitive.Text] =
+    Violation(Constraint.Primitive.Text.Matches(pattern), actual, hint = none)
+  def matches(expected: String, actual: Data): Violation[Constraint.Primitive.Text] =
     matches(pattern = Pattern.compile(Pattern.quote(expected)), actual)
 
   given Show[Violation[?]] = Show.fromToString

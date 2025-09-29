@@ -44,12 +44,12 @@ trait ConstraintComponent[
             .to[Constraint.Primitive.Number.Multiple]
       ).to
 
-      val string: Union[Constraint.Primitive.String] = (
+      val string: Union[Constraint.Primitive.Text] = (
         merged("primitive.string.matches", field("pattern", pattern).toRecord)
-          .to[Constraint.Primitive.String.Matches] :+
+          .to[Constraint.Primitive.Text.Matches] :+
           merged("primitive.string.maximum", field("reference", int).toRecord)
-            .to[Constraint.Primitive.String.Maximum] :+
-          merged("primitive.string.minimum", field("reference", int).toRecord).to[Constraint.Primitive.String.Minimum]
+            .to[Constraint.Primitive.Text.Maximum] :+
+          merged("primitive.string.minimum", field("reference", int).toRecord).to[Constraint.Primitive.Text.Minimum]
       ).to
 
       number.orElse(string).to

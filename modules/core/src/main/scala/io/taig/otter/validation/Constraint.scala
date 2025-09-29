@@ -12,22 +12,22 @@ import scala.Product as SProduct
 
 sealed abstract class Constraint extends SProduct, Serializable derives Eq:
   final override def toString: String = this match
-    case Constraint.Equal(reference)                  => show"equal \"$reference\""
-    case Constraint.OneOf(values)                     => show"oneOf [${values.map(_.show).mkString_(",")}]"
-    case Constraint.Required                          => "required"
-    case Constraint.Type(name)                        => show"type \"$name\""
-    case Constraint.Collection.Maximum(reference)     => show"collection.maximum $reference"
-    case Constraint.Collection.Minimum(reference)     => show"collection.minimum $reference"
-    case Constraint.Collection.Unique                 => "collection.unique"
-    case Constraint.Object.Maximum(reference)         => show"collection.maximum $reference"
-    case Constraint.Object.Minimum(reference)         => show"collection.minimum $reference"
-    case Constraint.Primitive.String.Matches(pattern) => show"primitive.string.matches \"${pattern.pattern()}\""
+    case Constraint.Equal(reference)                => show"equal \"$reference\""
+    case Constraint.OneOf(values)                   => show"oneOf [${values.map(_.show).mkString_(",")}]"
+    case Constraint.Required                        => "required"
+    case Constraint.Type(name)                      => show"type \"$name\""
+    case Constraint.Collection.Maximum(reference)   => show"collection.maximum $reference"
+    case Constraint.Collection.Minimum(reference)   => show"collection.minimum $reference"
+    case Constraint.Collection.Unique               => "collection.unique"
+    case Constraint.Object.Maximum(reference)       => show"collection.maximum $reference"
+    case Constraint.Object.Minimum(reference)       => show"collection.minimum $reference"
+    case Constraint.Primitive.Text.Matches(pattern) => show"primitive.string.matches \"${pattern.pattern()}\""
     case Constraint.Primitive.Number.Maximum(Comparison(reference, true))  => show"primitive.number.lt $reference"
     case Constraint.Primitive.Number.Maximum(Comparison(reference, false)) => show"primitive.number.lteq $reference"
     case Constraint.Primitive.Number.Minimum(Comparison(reference, true))  => show"primitive.number.gt $reference"
     case Constraint.Primitive.Number.Minimum(Comparison(reference, false)) => show"primitive.number.gteq $reference"
-    case Constraint.Primitive.String.Maximum(reference)                    => show"primitive.string.maximum $reference"
-    case Constraint.Primitive.String.Minimum(reference)                    => show"primitive.string.minimum $reference"
+    case Constraint.Primitive.Text.Maximum(reference)                      => show"primitive.string.maximum $reference"
+    case Constraint.Primitive.Text.Minimum(reference)                      => show"primitive.string.minimum $reference"
     case Constraint.Primitive.Number.Multiple(reference)                   => show"primitive.string.multiple $reference"
 
 object Constraint:
@@ -60,12 +60,12 @@ object Constraint:
       final case class Minimum(comparison: Comparison[Data.Number]) extends Constraint.Primitive.Number
       final case class Multiple(reference: Data.Number) extends Constraint.Primitive.Number
 
-    sealed abstract class String extends Constraint.Primitive derives Eq
+    sealed abstract class Text extends Constraint.Primitive derives Eq
 
-    object String:
-      final case class Matches(pattern: Pattern) extends Constraint.Primitive.String
-      final case class Maximum(reference: Int) extends Constraint.Primitive.String
-      final case class Minimum(reference: Int) extends Constraint.Primitive.String
+    object Text:
+      final case class Matches(pattern: Pattern) extends Constraint.Primitive.Text
+      final case class Maximum(reference: Int) extends Constraint.Primitive.Text
+      final case class Minimum(reference: Int) extends Constraint.Primitive.Text
 
       private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 

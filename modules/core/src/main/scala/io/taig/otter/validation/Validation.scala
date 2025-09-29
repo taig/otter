@@ -13,9 +13,9 @@ object Validation:
   abstract class Text[I, O] extends Validation[I, O]:
     self =>
 
-    override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.String], O]
+    override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.Text], O]
 
     final override def imap[T](f: O => T)(g: T => O): Validation.Text[I, T] = new Text[I, T]:
-      override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.String], T] =
+      override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.Text], T] =
         self.decode(input).map(f)
       override def encode(o: T): I = self.encode(g(o))

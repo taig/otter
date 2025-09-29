@@ -165,19 +165,19 @@ final class PrimitiveDecoder[S[_], T](decoder: Decoder[Primitive[S, *], T]) exte
             Validated.cond(
               test = value.length >= minimum,
               (),
-              Violations.rootNec(Violation(Constraint.Primitive.String.Minimum(minimum), length, hint = none))
+              Violations.rootNec(Violation(Constraint.Primitive.Text.Minimum(minimum), length, hint = none))
             )
           } *> maximum.traverse { maximum =>
             Validated.cond(
               test = length <= maximum,
               (),
-              Violations.rootNec(Violation(Constraint.Primitive.String.Maximum(maximum), length, hint = none))
+              Violations.rootNec(Violation(Constraint.Primitive.Text.Maximum(maximum), length, hint = none))
             )
           } *> matches.traverse { pattern =>
             Validated.cond(
               test = pattern.matcher(value).matches(),
               (),
-              Violations.rootNec(Violation(Constraint.Primitive.String.Matches(pattern), value, hint = none))
+              Violations.rootNec(Violation(Constraint.Primitive.Text.Matches(pattern), value, hint = none))
             )
           }).as(value)
     case schema => decoder.decode(schema, value)
