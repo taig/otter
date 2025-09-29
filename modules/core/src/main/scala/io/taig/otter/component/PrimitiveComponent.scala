@@ -1,7 +1,7 @@
 package io.taig.otter.component
 
 import cats.syntax.all.*
-import io.taig.otter.Argument
+import io.taig.Undefined
 import io.taig.otter.operation.PrimitiveSchemaInvariant
 import io.taig.otter.validation.Comparison
 
@@ -29,9 +29,9 @@ object PrimitiveComponent:
 
   trait Number[+Self[_]](using self: PrimitiveSchemaInvariant.Number[Self]):
     final def jBigDecimal(
-        minimum: Argument[Comparison[JBigDecimal]] = Argument.Default,
-        maximum: Argument[Comparison[JBigDecimal]] = Argument.Default,
-        multiple: Argument[JBigDecimal] = Argument.Default
+        minimum: Undefined.Or[Comparison[JBigDecimal]] = Undefined,
+        maximum: Undefined.Or[Comparison[JBigDecimal]] = Undefined,
+        multiple: Undefined.Or[JBigDecimal] = Undefined
     ): Self[JBigDecimal] = self.jBigDecimal(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -41,9 +41,9 @@ object PrimitiveComponent:
     final val jBigDecimal: Self[JBigDecimal] = jBigDecimal()
 
     final def bigDecimal(
-        minimum: Argument[Comparison[SBigDecimal]] = Argument.Default,
-        maximum: Argument[Comparison[SBigDecimal]] = Argument.Default,
-        multiple: Argument[SBigDecimal] = Argument.Default
+        minimum: Undefined.Or[Comparison[SBigDecimal]] = Undefined,
+        maximum: Undefined.Or[Comparison[SBigDecimal]] = Undefined,
+        multiple: Undefined.Or[SBigDecimal] = Undefined
     ): Self[SBigDecimal] = jBigDecimal(
       minimum = minimum.map(_.map(_.bigDecimal)),
       maximum = maximum.map(_.map(_.bigDecimal)),
@@ -53,9 +53,9 @@ object PrimitiveComponent:
     final val bigDecimal: Self[SBigDecimal] = bigDecimal()
 
     final def jBigInteger(
-        minimum: Argument[Comparison[JBigInteger]] = Argument.Default,
-        maximum: Argument[Comparison[JBigInteger]] = Argument.Default,
-        multiple: Argument[JBigInteger] = Argument.Default
+        minimum: Undefined.Or[Comparison[JBigInteger]] = Undefined,
+        maximum: Undefined.Or[Comparison[JBigInteger]] = Undefined,
+        multiple: Undefined.Or[JBigInteger] = Undefined
     ): Self[JBigInteger] = self.jBigInteger(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -65,9 +65,9 @@ object PrimitiveComponent:
     final val jBigInteger: Self[JBigInteger] = jBigInteger()
 
     final def bigInteger(
-        minimum: Argument[Comparison[SBigInt]] = Argument.Default,
-        maximum: Argument[Comparison[SBigInt]] = Argument.Default,
-        multiple: Argument[SBigInt] = Argument.Default
+        minimum: Undefined.Or[Comparison[SBigInt]] = Undefined,
+        maximum: Undefined.Or[Comparison[SBigInt]] = Undefined,
+        multiple: Undefined.Or[SBigInt] = Undefined
     ): Self[SBigInt] = jBigInteger(
       minimum = minimum.map(_.map(_.bigInteger)),
       maximum = maximum.map(_.map(_.bigInteger)),
@@ -77,9 +77,9 @@ object PrimitiveComponent:
     final val bigInteger: Self[SBigInt] = bigInteger()
 
     final def double(
-        minimum: Argument[Comparison[SDouble]] = Argument.Default,
-        maximum: Argument[Comparison[SDouble]] = Argument.Default,
-        multiple: Argument[SDouble] = Argument.Default
+        minimum: Undefined.Or[Comparison[SDouble]] = Undefined,
+        maximum: Undefined.Or[Comparison[SDouble]] = Undefined,
+        multiple: Undefined.Or[SDouble] = Undefined
     ): Self[SDouble] = self.double(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -89,9 +89,9 @@ object PrimitiveComponent:
     final val double: Self[SDouble] = double()
 
     final def float(
-        minimum: Argument[Comparison[SFloat]] = Argument.Default,
-        maximum: Argument[Comparison[SFloat]] = Argument.Default,
-        multiple: Argument[SFloat] = Argument.Default
+        minimum: Undefined.Or[Comparison[SFloat]] = Undefined,
+        maximum: Undefined.Or[Comparison[SFloat]] = Undefined,
+        multiple: Undefined.Or[SFloat] = Undefined
     ): Self[SFloat] = self.float(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -101,9 +101,9 @@ object PrimitiveComponent:
     final val float: Self[SFloat] = float()
 
     final def int(
-        minimum: Argument[Comparison[SInt]] = Argument.Default,
-        maximum: Argument[Comparison[SInt]] = Argument.Default,
-        multiple: Argument[SInt] = Argument.Default
+        minimum: Undefined.Or[Comparison[SInt]] = Undefined,
+        maximum: Undefined.Or[Comparison[SInt]] = Undefined,
+        multiple: Undefined.Or[SInt] = Undefined
     ): Self[SInt] = self.int(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -113,9 +113,9 @@ object PrimitiveComponent:
     final val int: Self[SInt] = int()
 
     final def long(
-        minimum: Argument[Comparison[SLong]] = Argument.Default,
-        maximum: Argument[Comparison[SLong]] = Argument.Default,
-        multiple: Argument[SLong] = Argument.Default
+        minimum: Undefined.Or[Comparison[SLong]] = Undefined,
+        maximum: Undefined.Or[Comparison[SLong]] = Undefined,
+        multiple: Undefined.Or[SLong] = Undefined
     ): Self[SLong] = self.long(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -126,9 +126,9 @@ object PrimitiveComponent:
 
   trait String[+Self[_]](using self: PrimitiveSchemaInvariant.String[Self, ?]):
     final def string(
-        minimum: Argument[SInt] = Argument.Default,
-        maximum: Argument[SInt] = Argument.Default,
-        matches: Argument[Pattern] = Argument.Default
+        minimum: Undefined.Or[SInt] = Undefined,
+        maximum: Undefined.Or[SInt] = Undefined,
+        matches: Undefined.Or[Pattern] = Undefined
     ): Self[JString] = self.string(
       minimum = minimum.toOption,
       maximum = maximum.toOption,
@@ -142,9 +142,9 @@ object PrimitiveComponent:
       override protected def isEmpty(a: JString): SBoolean = a.isEmpty
 
       def apply(
-          minimum: Argument[Int] = Argument.Default,
-          maximum: Argument[Int] = Argument.Default,
-          matches: Argument[Pattern] = Argument.Default
+          minimum: Undefined.Or[Int] = Undefined,
+          maximum: Undefined.Or[Int] = Undefined,
+          matches: Undefined.Or[Pattern] = Undefined
       ): Self[JString] = string(minimum, maximum, matches)
 
     final def parser[A](name: JString)(f: JString => Either[JString, A])(g: A => JString): Self[A] =

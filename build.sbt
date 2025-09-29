@@ -21,6 +21,7 @@ val Version = new {
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
+  val Undefined = "0.0.2"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -109,6 +110,7 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+        "io.taig" %%% "undefined" % Version.Undefined ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         Nil
   )

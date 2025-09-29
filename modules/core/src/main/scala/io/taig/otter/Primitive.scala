@@ -15,6 +15,11 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import cats.Show
+import io.taig.otter.validation.Constraint
+import io.taig.otter.validation.Violation
+import io.taig.otter.validation.Validation
+import cats.arrow.FunctionK
 
 sealed abstract class Primitive[+S[_], A]:
   def value: Primitive.Value[S, A]

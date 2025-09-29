@@ -2,7 +2,7 @@ package io.taig.otter.component
 
 import cats.Invariant
 import cats.syntax.all.*
-import io.taig.otter.Argument
+import io.taig.Undefined
 import org.typelevel.ci.CIString
 
 import java.util.regex.Pattern
@@ -11,9 +11,9 @@ trait CaseInsensitiveComponent[+Self[_]: Invariant]:
   this: PrimitiveComponent.String[Self] =>
 
   def cistring(
-      minimum: Argument[Int] = Argument.Default,
-      maximum: Argument[Int] = Argument.Default,
-      matches: Argument[Pattern] = Argument.Default
+      minimum: Undefined.Or[Int] = Undefined,
+      maximum: Undefined.Or[Int] = Undefined,
+      matches: Undefined.Or[Pattern] = Undefined
   ): Self[CIString] = string(minimum, maximum, matches).imap(CIString.apply)(_.toString)
 
   val cistring: Self[CIString] = cistring()
@@ -22,5 +22,9 @@ trait CaseInsensitiveComponent[+Self[_]: Invariant]:
     override protected def empty: CIString = CIString.empty
     override protected def isEmpty(a: CIString): Boolean = a.isEmpty
 
-    override def apply(minimum: Argument[Int], maximum: Argument[Int], matches: Argument[Pattern]): Self[CIString] =
+    override def apply(
+        minimum: Undefined.Or[Int],
+        maximum: Undefined.Or[Int],
+        matches: Undefined.Or[Pattern]
+    ): Self[CIString] =
       cistring(minimum, maximum, matches)

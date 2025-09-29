@@ -40,4 +40,4 @@ object Violation:
   def matches(expected: String, actual: Data): Violation[Constraint.Primitive.Text] =
     matches(pattern = Pattern.compile(Pattern.quote(expected)), actual)
 
-  given Show[Violation[?]] = Show.fromToString
+  given [C <: Constraint]: Show[Violation[C]] = Show.fromToString

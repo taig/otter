@@ -2,7 +2,7 @@ package io.taig.otter.component
 
 import cats.Invariant
 import cats.syntax.all.*
-import io.taig.otter.Argument
+import io.taig.Undefined
 
 import java.util.regex.Pattern
 
@@ -11,20 +11,20 @@ abstract class StringComponentExtension[+Self[_]: Invariant, A]:
   protected def empty: A
 
   def apply(
-      minimum: Argument[Int] = Argument.Default,
-      maximum: Argument[Int] = Argument.Default,
-      matches: Argument[Pattern] = Argument.Default
+      minimum: Undefined.Or[Int] = Undefined,
+      maximum: Undefined.Or[Int] = Undefined,
+      matches: Undefined.Or[Pattern] = Undefined
   ): Self[A]
 
   final def matches(
       pattern: String,
-      minimum: Argument[Int] = Argument.Default,
-      maximum: Argument[Int] = Argument.Default
+      minimum: Undefined.Or[Int] = Undefined,
+      maximum: Undefined.Or[Int] = Undefined
   ): Self[A] = apply(minimum, maximum, matches = Pattern.compile(Pattern.quote(pattern)))
 
   final def required(
-      maximum: Argument[Int] = Argument.Default,
-      matches: Argument[Pattern] = Argument.Default
+      maximum: Undefined.Or[Int] = Undefined,
+      matches: Undefined.Or[Pattern] = Undefined
   ): Self[A] =
     apply(minimum = 1, maximum, matches)
   final val required: Self[A] = required()

@@ -1,21 +1,25 @@
 package io.taig.otter.validation
 
 import cats.data.ValidatedNec
+import cats.Invariant
+import cats.data.Validated
 
-abstract class Validation[I, O]:
-  def decode(input: I): ValidatedNec[Violation[Constraint], O]
+abstract class Validation[+C <: Constraint, I, O]:
+  self =>
+
+  def decode(input: I): ValidatedNec[Violation[C], O]
 
   def encode(o: O): I
 
-  def imap[T](f: O => T)(g: T => O): Validation[I, T]
+  final def imap[T](f: O => T)(g: T => O): Validation[C, I, T] = new Validation[C, I, T]:
+    override def decode(input: I): ValidatedNec[Violation[C], T] = self.decode(input).map(f)
+    override def encode(o: T): I = self.encode(g(o))
 
 object Validation:
-  abstract class Text[I, O] extends Validation[I, O]:
-    self =>
+  def valid[A]: Validation[Nothing, A, A] = new Validation[Nothing, A, A]:
+    override def decode(a: A): ValidatedNec[Violation[Nothing], A] = Validated.valid(a)
+    override def encode(a: A): A = a
 
-    override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.Text], O]
-
-    final override def imap[T](f: O => T)(g: T => O): Validation.Text[I, T] = new Text[I, T]:
-      override def decode(input: I): ValidatedNec[Violation[Constraint.Primitive.Text], T] =
-        self.decode(input).map(f)
-      override def encode(o: T): I = self.encode(g(o))
+  given [C <: Constraint, I]: Invariant[Validation[C, I, *]] with
+    override def imap[A, B](fa: Validation[C, I, A])(f: A => B)(g: B => A): Validation[C, I, B] =
+      fa.imap(f)(g)
