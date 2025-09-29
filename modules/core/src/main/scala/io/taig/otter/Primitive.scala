@@ -4,6 +4,7 @@ import cats.syntax.all.*
 import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
+import io.taig.otter.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal

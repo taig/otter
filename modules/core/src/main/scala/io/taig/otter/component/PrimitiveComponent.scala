@@ -2,8 +2,8 @@ package io.taig.otter.component
 
 import cats.syntax.all.*
 import io.taig.otter.Argument
-import io.taig.otter.Comparison
 import io.taig.otter.operation.PrimitiveSchemaInvariant
+import io.taig.otter.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal

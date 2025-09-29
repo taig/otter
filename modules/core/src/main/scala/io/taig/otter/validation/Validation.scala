@@ -1,8 +1,6 @@
 package io.taig.otter.validation
 
 import cats.data.ValidatedNec
-import io.taig.otter.Constraint
-import io.taig.otter.Violation
 
 abstract class Validation[I, O]:
   def decode(input: I): ValidatedNec[Violation[Constraint], O]

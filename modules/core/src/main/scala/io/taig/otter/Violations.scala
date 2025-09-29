@@ -9,6 +9,7 @@ import cats.data.NonEmptyList
 import cats.data.NonEmptyMap
 import cats.derived.strict.*
 import cats.implicits.*
+import io.taig.otter.validation.Violation
 
 import scala.collection.immutable.SortedMap
 

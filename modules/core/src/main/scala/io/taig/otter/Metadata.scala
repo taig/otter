@@ -16,6 +16,7 @@ object Metadata:
 
   extension (self: Metadata)
     inline def contains[A](key: Metadata.Key[A]): Boolean = self.toMap.contains(key)
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     inline def get[A](key: Metadata.Key[A]): Option[A] = self.toMap
       .get(key)
       .flatMap(value => Either.catchOnly[ClassCastException](value.asInstanceOf[A]).toOption)

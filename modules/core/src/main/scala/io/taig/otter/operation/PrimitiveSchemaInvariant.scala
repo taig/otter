@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Comparison
+import io.taig.otter.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal

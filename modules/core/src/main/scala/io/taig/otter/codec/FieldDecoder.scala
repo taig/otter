@@ -3,9 +3,9 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Field
-import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.collectFirstWithRemainders
+import io.taig.otter.validation.Violation
 
 final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T, U], empty: U)
     extends Decoder.Remaining[Field[S, T, *], List[(String, U)]]:

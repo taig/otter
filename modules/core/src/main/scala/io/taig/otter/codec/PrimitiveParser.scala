@@ -4,8 +4,8 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Parsers
 import io.taig.otter.Primitive
-import io.taig.otter.Violation
 import io.taig.otter.Violations
+import io.taig.otter.validation.Violation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger

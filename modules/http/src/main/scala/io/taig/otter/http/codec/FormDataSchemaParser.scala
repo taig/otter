@@ -3,7 +3,6 @@ package io.taig.otter.http.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.data.Data
-import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Codec
 import io.taig.otter.codec.ConstantDecoder
@@ -13,6 +12,7 @@ import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.codec.UnionDecoder
 import io.taig.otter.http.FormData
 import io.taig.otter.http.FormData.Schema
+import io.taig.otter.validation.Violation
 
 object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
   val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = FormDataSchemaPrinter), _.getOrElse(Data.Null))

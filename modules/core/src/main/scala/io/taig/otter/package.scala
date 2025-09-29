@@ -6,9 +6,6 @@ import cats.syntax.all.*
 
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.util.regex.Pattern
-
-private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
 private[otter] def indent(value: String, block: Boolean = false, depth: Int = 1): String =
   val lines = value.split("\n").toList

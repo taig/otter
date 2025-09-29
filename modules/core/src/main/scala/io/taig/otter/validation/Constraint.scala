@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.validation
 
 import cats.Eq
 import cats.Show
@@ -66,5 +66,7 @@ object Constraint:
       final case class Matches(pattern: Pattern) extends Constraint.Primitive.String
       final case class Maximum(reference: Int) extends Constraint.Primitive.String
       final case class Minimum(reference: Int) extends Constraint.Primitive.String
+
+      private[otter] given Eq[Pattern] = Eq.by(_.pattern)
 
   given Show[Constraint] = Show.fromToString

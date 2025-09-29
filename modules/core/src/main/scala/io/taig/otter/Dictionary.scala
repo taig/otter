@@ -4,6 +4,7 @@ import cats.implicits.*
 import cats.~>
 import io.taig.otter.operation.DictionarySchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.validation.Constraint
 
 final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata):
   def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A] = copy(value = value.mapK(fK))
@@ -29,8 +30,8 @@ object Dictionary:
         maximum: Option[Int]
     ) extends Value[S, T, List[(A, B)]]:
       override def constraints: Vector[Constraint.Object] = Vector(
-        minimum.map(Constraint.Object.Minimum.apply),
-        maximum.map(Constraint.Object.Maximum.apply)
+        minimum.map(validation.Constraint.Object.Minimum.apply),
+        maximum.map(validation.Constraint.Object.Maximum.apply)
       ).flatten
       override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, List[(A, B)]] =
         copy(value = value.mapK[T1, U](fK))

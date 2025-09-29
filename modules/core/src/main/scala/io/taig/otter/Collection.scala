@@ -4,6 +4,7 @@ import cats.implicits.*
 import cats.~>
 import io.taig.otter.operation.CollectionSchemaInvariant
 import io.taig.otter.operation.Enriched
+import io.taig.otter.validation.Constraint
 
 final case class Collection[+S[_], A](value: Collection.Value[S, A], metadata: Metadata)
 
@@ -23,9 +24,9 @@ object Collection:
         maximum: Option[Int],
         unique: Boolean
     ): Vector[Constraint.Collection] = Vector(
-      minimum.map(Constraint.Collection.Minimum.apply),
-      maximum.map(Constraint.Collection.Maximum.apply),
-      Option.when(unique)(Constraint.Collection.Unique)
+      minimum.map(validation.Constraint.Collection.Minimum.apply),
+      maximum.map(validation.Constraint.Collection.Maximum.apply),
+      Option.when(unique)(validation.Constraint.Collection.Unique)
     ).flatten
 
     final private[otter] case class Indexed[S[_], A](

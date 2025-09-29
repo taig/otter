@@ -3,7 +3,6 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
@@ -11,6 +10,7 @@ import io.taig.otter.collectFirstWithRemainders
 import io.taig.otter.http.Query
 import io.taig.otter.http.Query.Schema.Nullable
 import io.taig.otter.unescape
+import io.taig.otter.validation.Violation
 
 final class QuerySchemaDecoder(explode: Boolean, style: Query.Style)
     extends Decoder.Remaining[Query.Schema, Chain[Option[String]]]:

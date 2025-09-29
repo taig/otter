@@ -5,9 +5,9 @@ import cats.parse.Parser
 import cats.parse.Parser.*
 import cats.parse.Parser0
 import cats.syntax.all.*
-import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.http.FormData
+import io.taig.otter.validation.Violation
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets

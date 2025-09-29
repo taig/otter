@@ -7,8 +7,8 @@ import io.circe.Json as CirceJson
 import io.taig.data.circe.*
 import io.taig.otter.Json
 import io.taig.otter.Primitive
-import io.taig.otter.Violation
 import io.taig.otter.Violations
+import io.taig.otter.validation.Violation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
