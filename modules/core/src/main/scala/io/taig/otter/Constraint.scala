@@ -4,7 +4,8 @@ import cats.Eq
 import cats.Show
 import cats.derived.strict.*
 import cats.syntax.all.*
-import io.taig.otter.Data.given
+import io.taig.data.Data
+import io.taig.data.Data.given
 
 import java.util.regex.Pattern
 import scala.Product as SProduct
@@ -32,6 +33,7 @@ sealed abstract class Constraint extends SProduct, Serializable derives Eq:
 object Constraint:
   final case class Equal(reference: Data) extends Constraint
   final case class OneOf(values: List[Data]) extends Constraint
+  type Required = Constraint.Required.type
   case object Required extends Constraint
   final case class Type(name: String) extends Constraint
 

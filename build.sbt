@@ -7,6 +7,7 @@ val Version = new {
   val CatsEffect = "3.6.0"
   val CatsParse = "1.1.0"
   val Circe = "0.14.14"
+  val Data = "0.0.2"
   val EnumerationExt = "0.5.0"
   val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M45"
@@ -67,6 +68,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
+    validation,
     core,
     coreCaseInsensitive,
     coreJavaTime,
@@ -88,6 +90,16 @@ lazy val root = module(identifier = None, jvmOnly = true)
     sampleApp
   )
 
+lazy val validation = module(identifier = Some("validation"))
+  .settings(
+    libraryDependencies ++=
+      "io.taig" %%% "data-core" % Version.Data ::
+        "org.typelevel" %%% "cats-core" % Version.Cats ::
+        "org.typelevel" %%% "kittens" % Version.Kittens ::
+        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
+        Nil
+  )
+
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -97,12 +109,10 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
-        "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
-        "org.typelevel" %%% "kittens" % Version.Kittens ::
-        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         Nil
   )
+  .dependsOn(validation % "compile->compile;test->test")
 
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
   .settings(
@@ -136,6 +146,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
+        "io.taig" %%% "data-circe" % Version.Data ::
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")

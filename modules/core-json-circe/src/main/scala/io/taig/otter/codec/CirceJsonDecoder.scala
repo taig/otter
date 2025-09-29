@@ -3,17 +3,17 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
+import io.taig.data.circe.*
 import io.taig.otter.Json
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.fromJson
 import io.taig.otter.typeOf
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)
-  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = fromJson)
+  val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = _.toData)
   val dictionary = DictionaryDecoder(key = KeyParser.Unquoted, value = this)
-  val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = fromJson)
+  val enumeration = EnumerationDecoder(codec = Codec(decoder = this, encoder = CirceJsonEncoder), render = _.toData)
   val nullable = NullableDecoder(decoder = this, empty = _.isNull)
   val primitive = PrimitiveDecoder(decoder = CirceJsonPrimitiveDecoder)
   val record = RecordDecoder(

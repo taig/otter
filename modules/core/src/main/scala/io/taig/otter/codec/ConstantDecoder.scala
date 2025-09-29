@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
+import io.taig.data.Data
 import io.taig.otter.Constant
-import io.taig.otter.Data
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 

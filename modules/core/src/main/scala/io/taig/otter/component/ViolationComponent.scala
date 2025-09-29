@@ -24,7 +24,7 @@ trait ViolationComponent[
       FieldComponent[Field, Key, Value]:
   this: PrimitiveComponent[Value] =>
 
-  val violation: Record[Violation] = (
+  val violation: Record[Violation[?]] = (
     field("constraint", constraint) :*
       field("actual", data.any) :*
       field("hint", string.nullable)

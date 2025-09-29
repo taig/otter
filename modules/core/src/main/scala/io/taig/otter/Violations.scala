@@ -13,10 +13,10 @@ import cats.implicits.*
 import scala.collection.immutable.SortedMap
 
 enum Violations derives Eq:
-  case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
+  case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation[?]])
   case Namespace(values: NonEmptyMap[Step, Violations])
 
-  final def modifyViolations(f: Violation => Violation): Violations = this match
+  final def modifyViolations(f: Violation[?] => Violation[?]): Violations = this match
     case Root(values, violations) =>
       Root(values = values.fmap(_.modifyViolations(f)), violations = violations.map(f))
     case Namespace(values) => Namespace(values = values.fmap(_.modifyViolations(f)))
@@ -31,9 +31,9 @@ enum Violations derives Eq:
     case (left: Root, Namespace(right))      => Root(left.values |+| right.toSortedMap, left.violations)
     case (Namespace(left), right: Root)      => Root(left.toSortedMap |+| right.values, right.violations)
 
-  final def toNem: NonEmptyMap[XPath, NonEmptyChain[Violation]] = toNem(xpath = XPath.Root)
+  final def toNem: NonEmptyMap[XPath, NonEmptyChain[Violation[?]]] = toNem(xpath = XPath.Root)
 
-  private def toNem(xpath: XPath): NonEmptyMap[XPath, NonEmptyChain[Violation]] = this match
+  private def toNem(xpath: XPath): NonEmptyMap[XPath, NonEmptyChain[Violation[?]]] = this match
     case Root(values, violations) =>
       val root = NonEmptyMap.one(xpath, violations)
 
@@ -44,7 +44,7 @@ enum Violations derives Eq:
     case Namespace(values) =>
       values.toNel.map { case (step, violations) => violations.toNem(xpath / step) }.reduce
 
-  final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation]]] = toNem.toNel.map(Indexed.apply)
+  final def toNel: NonEmptyList[Indexed[NonEmptyChain[Violation[?]]]] = toNem.toNel.map(Indexed.apply)
 
   final override def toString: String = toNel
     .map: value =>
@@ -52,23 +52,23 @@ enum Violations derives Eq:
     .mkString_("\n")
 
 object Violations:
-  def root(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)
-  def rootNec(violation: Violation): Violations = root(NonEmptyChain.one(violation))
+  def root(violations: NonEmptyChain[Violation[?]]): Violations = Root(values = SortedMap.empty, violations)
+  def rootNec(violation: Violation[?]): Violations = root(NonEmptyChain.one(violation))
 
-  def of[A](violation: (Step, Violation), violations: (Step, Violation)*): Violations = Namespace(
+  def of[A](violation: (Step, Violation[?]), violations: (Step, Violation[?])*): Violations = Namespace(
     NonEmptyMap.of(violation, violations*).mapBoth { case (step, violation) => (step, rootNec(violation)) }
   )
 
-  def namespace(xpath: XPath, violations: NonEmptyChain[Violation]): Violations =
+  def namespace(xpath: XPath, violations: NonEmptyChain[Violation[?]]): Violations =
     xpath.toChain.foldRight(Root(SortedMap.empty, violations))(_ /: _)
-  def namespaceNec(xpath: XPath, violation: Violation): Violations = namespace(xpath, NonEmptyChain.one(violation))
+  def namespaceNec(xpath: XPath, violation: Violation[?]): Violations = namespace(xpath, NonEmptyChain.one(violation))
 
-  def from(violations: Indexed[NonEmptyChain[Violation]]): Violations =
+  def from(violations: Indexed[NonEmptyChain[Violation[?]]]): Violations =
     violations.xpath.toChain.foldRight(root(violations.self))(_ /: _)
 
-  def from(values: NonEmptyMap[XPath, NonEmptyChain[Violation]]): Violations = from(values.toNel.map(Indexed.apply))
+  def from(values: NonEmptyMap[XPath, NonEmptyChain[Violation[?]]]): Violations = from(values.toNel.map(Indexed.apply))
 
-  def from(values: NonEmptyList[Indexed[NonEmptyChain[Violation]]]): Violations =
+  def from(values: NonEmptyList[Indexed[NonEmptyChain[Violation[?]]]]): Violations =
     val NonEmptyList(head, tail) = values.map(from)
     tail.foldLeft(head)(_.combine(_))
 

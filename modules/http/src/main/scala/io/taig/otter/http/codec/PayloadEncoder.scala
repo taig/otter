@@ -1,6 +1,7 @@
 package io.taig.otter.http.codec
 
 import io.taig.otter.+
+
 import scala.annotation.nowarn
 
 abstract class PayloadEncoder[-S[_]]:

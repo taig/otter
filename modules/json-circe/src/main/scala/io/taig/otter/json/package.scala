@@ -4,7 +4,7 @@ import io.circe.Json
 import io.circe.JsonNumber
 import io.circe.JsonObject
 import io.circe.syntax.*
-import io.taig.otter.Data
+import io.taig.data.Data
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
