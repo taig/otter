@@ -2,9 +2,9 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.Tuple
 import io.taig.data.Data
 import io.taig.otter.Constraint
+import io.taig.otter.Tuple
 import io.taig.otter.Violation
 import io.taig.otter.Violations
 

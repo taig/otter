@@ -5,13 +5,13 @@ import cats.parse.Parser
 import cats.parse.Parser.*
 import cats.parse.Parser0
 import cats.syntax.all.*
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.http.FormData
-import io.taig.otter.Violation
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import io.taig.otter.Constraint
 
 object FormDataPayloadDecoder extends PayloadDecoder[FormData]:
   override def decode[A](schema: FormData[A], charset: Option[Charset], bytes: Array[Byte]): Validated[Violations, A] =

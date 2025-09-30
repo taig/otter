@@ -1,13 +1,11 @@
 package io.taig.otter.operation
+import io.taig.validation.Constraint
+import io.taig.validation.Validation
 
-import io.taig.validation.Comparison
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import java.util.regex.Pattern
 import scala.Boolean as SBoolean
-import io.taig.validation.Validation
-import io.taig.validation.Constraint
 
 trait PrimitiveSchemaInvariant[Self[_], -Value[_]]
     extends PrimitiveSchemaInvariant.Boolean[Self],

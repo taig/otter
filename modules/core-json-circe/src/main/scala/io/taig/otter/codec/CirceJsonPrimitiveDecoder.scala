@@ -5,11 +5,11 @@ import cats.syntax.all.*
 import io.circe.Decoder as CirceDecoder
 import io.circe.Json as CirceJson
 import io.taig.data.circe.*
-import io.taig.otter.Json
 import io.taig.otter.Constraint
+import io.taig.otter.Json
 import io.taig.otter.Primitive
-import io.taig.otter.Violations
 import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger

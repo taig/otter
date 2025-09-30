@@ -3,12 +3,12 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Header
 import io.taig.otter.unescape
-import io.taig.otter.Violation
-import io.taig.otter.Constraint
 
 object HeaderSchemaParser extends Decoder[Header.Schema, String]:
   override def decode[A](schema: Header.Schema[A], value: String): Validated[Violations, A] = schema match

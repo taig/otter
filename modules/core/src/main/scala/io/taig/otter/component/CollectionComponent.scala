@@ -8,9 +8,9 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
-import io.taig.validation
-import io.taig.otter.operation.CollectionSchemaInvariant
 import io.taig.Undefined
+import io.taig.otter.operation.CollectionSchemaInvariant
+import io.taig.validation
 
 import scala.collection.immutable.SortedSet
 

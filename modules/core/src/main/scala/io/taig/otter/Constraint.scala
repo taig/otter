@@ -1,11 +1,11 @@
 package io.taig.otter
 
-import io.taig.validation.Constraint as ValidationConstraint
-import io.taig.data.Data
-import cats.syntax.all.*
-import cats.derived.*
 import cats.Eq
 import cats.Show
+import cats.derived.*
+import cats.syntax.all.*
+import io.taig.data.Data
+import io.taig.validation.Constraint as ValidationConstraint
 
 type Constraint = Constraint.Generic | ValidationConstraint
 

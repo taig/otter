@@ -6,8 +6,6 @@ import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Parameter
-import io.taig.otter.Constraint
-import io.taig.otter.Violation
 
 final class ParameterSchemaParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
   override def decode[A](schema: Parameter.Schema[A], value: String): Validated[Violations, A] = schema match

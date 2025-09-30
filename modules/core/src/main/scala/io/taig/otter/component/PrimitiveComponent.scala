@@ -3,6 +3,8 @@ package io.taig.otter.component
 import cats.syntax.all.*
 import io.taig.Undefined
 import io.taig.otter.operation.PrimitiveSchemaInvariant
+import io.taig.validation
+import io.taig.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -16,8 +18,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.validation.Comparison
-import io.taig.validation
 
 trait PrimitiveComponent[+Self[_]]
     extends PrimitiveComponent.Boolean[Self],

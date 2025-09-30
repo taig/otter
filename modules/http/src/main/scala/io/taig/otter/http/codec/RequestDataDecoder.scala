@@ -2,14 +2,14 @@ package io.taig.otter.http.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.http.Headers
 import io.taig.otter.http.Headers.Data.contentType
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Request
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.Constraint
-import io.taig.otter.Violation
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
   val bodies = BodiesDecoder(decoder)

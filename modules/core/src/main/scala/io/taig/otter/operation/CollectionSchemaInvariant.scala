@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 
-import io.taig.validation.Validation
 import io.taig.validation.Constraint
+import io.taig.validation.Validation
 
 trait CollectionSchemaInvariant[Self[_], -Value[_]] extends SchemaInvariant[Self]:
   self =>

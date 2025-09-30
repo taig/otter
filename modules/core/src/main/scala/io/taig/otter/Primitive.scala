@@ -4,21 +4,17 @@ import cats.syntax.all.*
 import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
-import io.taig.validation.Comparison
+import io.taig.validation.Constraint
+import io.taig.validation.Validation
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import java.util.regex.Pattern
 import scala.Boolean as SBoolean
 import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.Show
-import io.taig.validation.Constraint
-import io.taig.validation.Validation
-import cats.arrow.FunctionK
 
 sealed abstract class Primitive[+S[_], A]:
   def value: Primitive.Value[S, A]

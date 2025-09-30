@@ -3,10 +3,10 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.data.Data
+import io.taig.otter.Constraint
 import io.taig.otter.Enumeration
 import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.Constraint
 
 final class EnumerationDecoder[S[_], T](codec: Codec[S, T], render: T => Data) extends Decoder[Enumeration[S, *], T]:
   override def decode[A](schema: Enumeration[S, A], value: T): Validated[Violations, A] =

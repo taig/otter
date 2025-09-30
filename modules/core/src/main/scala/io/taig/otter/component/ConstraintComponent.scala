@@ -1,9 +1,9 @@
 package io.taig.otter.component
 
+import io.taig.otter.Constraint
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
 import io.taig.validation.Constraint as ValidationConstraint
-import io.taig.otter.Constraint
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],

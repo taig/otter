@@ -4,11 +4,11 @@ import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.data.Data
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Path
-import io.taig.otter.Violation
-import io.taig.otter.Constraint
 
 object PathDataDecoder extends Decoder.Remaining[Path, Path.Data]:
   override def decodeRemaining[A](schema: Path[A], value: Path.Data): Validated[Violations, (Path.Data, A)] =

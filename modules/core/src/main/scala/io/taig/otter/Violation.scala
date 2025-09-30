@@ -1,11 +1,11 @@
 package io.taig.otter
 
-import io.taig.data.Data
-import cats.syntax.all.*
-import cats.data.NonEmptyChain
-import cats.derived.*
 import cats.Eq
 import cats.Show
+import cats.data.NonEmptyChain
+import cats.derived.*
+import cats.syntax.all.*
+import io.taig.data.Data
 import io.taig.otter.Constraint
 
 final case class Violation(causes: NonEmptyChain[Violation.Cause], actual: Data) derives Eq:

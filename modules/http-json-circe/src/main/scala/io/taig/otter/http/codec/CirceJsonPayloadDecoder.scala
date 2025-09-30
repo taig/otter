@@ -3,14 +3,14 @@ package io.taig.otter.http.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.jawn.JawnParser
+import io.taig.otter.Constraint
 import io.taig.otter.Json
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.codec.CirceJsonDecoder
-import io.taig.otter.Violation
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
-import io.taig.otter.Constraint
 
 object CirceJsonPayloadDecoder extends PayloadDecoder[Json]:
   val parser = new JawnParser()
