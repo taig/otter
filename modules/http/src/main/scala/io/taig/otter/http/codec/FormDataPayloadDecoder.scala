@@ -7,10 +7,11 @@ import cats.parse.Parser0
 import cats.syntax.all.*
 import io.taig.otter.Violations
 import io.taig.otter.http.FormData
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import io.taig.otter.Constraint
 
 object FormDataPayloadDecoder extends PayloadDecoder[FormData]:
   override def decode[A](schema: FormData[A], charset: Option[Charset], bytes: Array[Byte]): Validated[Violations, A] =
@@ -20,7 +21,12 @@ object FormDataPayloadDecoder extends PayloadDecoder[FormData]:
       .parseAll(value)
       .toValidated
       .leftMap: error =>
-        Violations.rootNec(Violation.tpe(name = "x-www-url-formencoded", actual = value, hint = error.show))
+        val validation = Violation.fromConstraint(
+          constraint = Constraint.Generic.Type(name = "x-www-url-formencoded"),
+          actual = value,
+          hint = error.show.some
+        )
+        Violations.rootNec(validation)
       .andThen(FormDataDecoder.decode(schema, _))
 
   private val parser: Parser0[List[(String, Option[String])]] =

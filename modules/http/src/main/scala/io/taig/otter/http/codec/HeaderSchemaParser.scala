@@ -7,7 +7,8 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Header
 import io.taig.otter.unescape
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
 
 object HeaderSchemaParser extends Decoder[Header.Schema, String]:
   override def decode[A](schema: Header.Schema[A], value: String): Validated[Violations, A] = schema match
@@ -19,7 +20,13 @@ object HeaderSchemaParser extends Decoder[Header.Schema, String]:
       parser
         .obj(value)
         .toValidated
-        .leftMap(error => Violations.rootNec(Violation.tpe(name = "object", actual = value, hint = error.show)))
+        .leftMap: error =>
+          Violation.fromConstraint(
+            constraint = Constraint.Generic.Type(name = "object"),
+            actual = value,
+            hint = error.show.some
+          )
+        .leftMap(Violations.rootNec)
         .andThen(values => HeaderSchemaObjectDecoder.decode(schema, Chain.fromSeq(values)))
 
   private object parser:

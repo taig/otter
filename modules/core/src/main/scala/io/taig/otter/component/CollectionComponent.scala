@@ -8,6 +8,7 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
+import io.taig.validation
 import io.taig.otter.operation.CollectionSchemaInvariant
 import io.taig.Undefined
 
@@ -20,21 +21,21 @@ trait CollectionComponent[Self[_], -Value[_]](using self: CollectionSchemaInvari
         minimum: Undefined.Or[Int] = Undefined,
         maximum: Undefined.Or[Int] = Undefined,
         unique: Boolean = false
-    ): Self[List[A]] = self.linked(schema, minimum = minimum.toOption, maximum = maximum.toOption, unique)
+    ): Self[List[A]] = self.linked(schema, validation = validation.std.collection.list(minimum, maximum, unique))
 
     final def vector[A](
         schema: => Value[A],
         minimum: Undefined.Or[Int] = Undefined,
         maximum: Undefined.Or[Int] = Undefined,
         unique: Boolean = false
-    ): Self[Vector[A]] = self.indexed(schema, minimum = minimum.toOption, maximum = maximum.toOption, unique)
+    ): Self[Vector[A]] = self.indexed(schema, validation = validation.std.collection.vector(minimum, maximum, unique))
 
     final def nonEmptyList[A](
         schema: => Value[A],
         minimum: Undefined.Or[Int] = Undefined,
         maximum: Undefined.Or[Int] = Undefined,
         unique: Boolean = false
-    ): Self[NonEmptyList[A]] = list(schema, minimum = minimum.toOption.getOrElse(1).max(1), maximum, unique)
+    ): Self[NonEmptyList[A]] = list(schema, minimum = minimum.getOrElse(1).max(1), maximum, unique)
       .imap(NonEmptyList.fromListUnsafe)(_.toList)
 
     final def nonEmptyVector[A](
@@ -42,7 +43,7 @@ trait CollectionComponent[Self[_], -Value[_]](using self: CollectionSchemaInvari
         minimum: Undefined.Or[Int] = Undefined,
         maximum: Undefined.Or[Int] = Undefined,
         unique: Boolean = false
-    ): Self[NonEmptyVector[A]] = vector(schema, minimum = minimum.toOption.getOrElse(1).max(1), maximum, unique)
+    ): Self[NonEmptyVector[A]] = vector(schema, minimum = minimum.getOrElse(1).max(1), maximum, unique)
       .imap(NonEmptyVector.fromVectorUnsafe)(_.toVector)
 
     final def seq[A](

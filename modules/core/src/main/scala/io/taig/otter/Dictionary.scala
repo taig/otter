@@ -4,7 +4,8 @@ import cats.implicits.*
 import cats.~>
 import io.taig.otter.operation.DictionarySchemaInvariant
 import io.taig.otter.operation.Enriched
-import io.taig.otter.validation.Constraint
+import io.taig.validation.Constraint
+import io.taig.validation.Validation
 
 final case class Dictionary[+S[_], +T[_], A](value: Dictionary.Value[S, T, A], metadata: Metadata):
   def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Dictionary[S, U, A] = copy(value = value.mapK(fK))
@@ -15,7 +16,7 @@ object Dictionary:
     def key: Reference[S, ?]
     def value: Reference[T, ?]
 
-    def constraints: Vector[Constraint.Object]
+    def validation: Validation[Constraint.Object, ?]
 
     def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, A]
 
@@ -26,13 +27,8 @@ object Dictionary:
     final private[otter] case class Root[S[_], T[_], A, B](
         key: Reference[S, A],
         value: Reference[T, B],
-        minimum: Option[Int],
-        maximum: Option[Int]
+        validation: Validation[Constraint.Object, List[(A, B)]]
     ) extends Value[S, T, List[(A, B)]]:
-      override def constraints: Vector[Constraint.Object] = Vector(
-        minimum.map(validation.Constraint.Object.Minimum.apply),
-        maximum.map(validation.Constraint.Object.Maximum.apply)
-      ).flatten
       override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, List[(A, B)]] =
         copy(value = value.mapK[T1, U](fK))
       override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Value[U, T, List[(A, B)]] =
@@ -40,7 +36,7 @@ object Dictionary:
 
     final private[otter] case class Modify[S[_], T[_], A, B](self: Value[S, T, A], f: A => B, g: B => A)
         extends Value[S, T, B]:
-      export self.{constraints, key, value}
+      export self.{key, validation, value}
       override def mapK[T1[a] >: T[a], U[_]](fK: T1 ~> U): Value[S, U, B] =
         copy(self = self.mapK[T1, U](fK))
       override def leftMapK[S1[a] >: S[a], U[_]](fK: S1 ~> U): Value[U, T, B] =
@@ -50,14 +46,12 @@ object Dictionary:
     override def apply[A, B](
         key: => Key[A],
         value: => Value[B],
-        minimum: Option[Int],
-        maximum: Option[Int]
+        validation: Validation[Constraint.Object, List[(A, B)]]
     ): Dictionary[Key, Value, List[(A, B)]] = Dictionary(
       value = Value.Root(
         key = Reference.later(key),
         value = Reference.later(value),
-        minimum = minimum,
-        maximum = maximum
+        validation
       ),
       metadata = Metadata.Empty
     )

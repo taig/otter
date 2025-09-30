@@ -3,7 +3,6 @@ package io.taig.otter.component
 import cats.syntax.all.*
 import io.taig.Undefined
 import io.taig.otter.operation.PrimitiveSchemaInvariant
-import io.taig.otter.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -17,6 +16,8 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.validation.Comparison
+import io.taig.validation
 
 trait PrimitiveComponent[+Self[_]]
     extends PrimitiveComponent.Boolean[Self],
@@ -32,11 +33,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[JBigDecimal]] = Undefined,
         maximum: Undefined.Or[Comparison[JBigDecimal]] = Undefined,
         multiple: Undefined.Or[JBigDecimal] = Undefined
-    ): Self[JBigDecimal] = self.jBigDecimal(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[JBigDecimal] =
+      self.jBigDecimal(validation = validation.std.jBigDecimal(minimum, maximum, multiple))
 
     final val jBigDecimal: Self[JBigDecimal] = jBigDecimal()
 
@@ -56,11 +54,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[JBigInteger]] = Undefined,
         maximum: Undefined.Or[Comparison[JBigInteger]] = Undefined,
         multiple: Undefined.Or[JBigInteger] = Undefined
-    ): Self[JBigInteger] = self.jBigInteger(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[JBigInteger] =
+      self.jBigInteger(validation = validation.std.jBigInteger(minimum, maximum, multiple))
 
     final val jBigInteger: Self[JBigInteger] = jBigInteger()
 
@@ -80,11 +75,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[SDouble]] = Undefined,
         maximum: Undefined.Or[Comparison[SDouble]] = Undefined,
         multiple: Undefined.Or[SDouble] = Undefined
-    ): Self[SDouble] = self.double(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[SDouble] =
+      self.double(validation = validation.std.double(minimum, maximum, multiple))
 
     final val double: Self[SDouble] = double()
 
@@ -92,11 +84,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[SFloat]] = Undefined,
         maximum: Undefined.Or[Comparison[SFloat]] = Undefined,
         multiple: Undefined.Or[SFloat] = Undefined
-    ): Self[SFloat] = self.float(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[SFloat] =
+      self.float(validation = validation.std.float(minimum, maximum, multiple))
 
     final val float: Self[SFloat] = float()
 
@@ -104,11 +93,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[SInt]] = Undefined,
         maximum: Undefined.Or[Comparison[SInt]] = Undefined,
         multiple: Undefined.Or[SInt] = Undefined
-    ): Self[SInt] = self.int(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[SInt] =
+      self.int(validation = validation.std.int(minimum, maximum, multiple))
 
     final val int: Self[SInt] = int()
 
@@ -116,11 +102,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[Comparison[SLong]] = Undefined,
         maximum: Undefined.Or[Comparison[SLong]] = Undefined,
         multiple: Undefined.Or[SLong] = Undefined
-    ): Self[SLong] = self.long(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      multiple = multiple.toOption
-    )
+    ): Self[SLong] =
+      self.long(validation = validation.std.long(minimum, maximum, multiple))
 
     final val long: Self[SLong] = long()
 
@@ -129,11 +112,8 @@ object PrimitiveComponent:
         minimum: Undefined.Or[SInt] = Undefined,
         maximum: Undefined.Or[SInt] = Undefined,
         matches: Undefined.Or[Pattern] = Undefined
-    ): Self[JString] = self.string(
-      minimum = minimum.toOption,
-      maximum = maximum.toOption,
-      matches = matches.toOption
-    )
+    ): Self[JString] =
+      self.string(validation = validation.std.string(minimum, maximum, matches))
 
     final val string: Self[JString] = string()
 

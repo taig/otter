@@ -6,7 +6,8 @@ import cats.syntax.all.*
 import io.taig.otter.*
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Parameter
-import io.taig.otter.validation.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 
 final class ParameterSchemaParser(name: String, style: Parameter.Style) extends Decoder[Parameter.Schema, String]:
   override def decode[A](schema: Parameter.Schema[A], value: String): Validated[Violations, A] = schema match
@@ -17,9 +18,13 @@ final class ParameterSchemaParser(name: String, style: Parameter.Style) extends 
           case Parameter.Style.Simple => parser.array.simple(value)
           case Parameter.Style.Label  => parser.array.label(value)
           case Parameter.Style.Matrix => parser.array.matrix(value).map(_.collect { case (`name`, value) => value })
-        .leftMap(error =>
-          Violations.rootNec(Violation.tpe(name = "parameter.array", actual = value, hint = error.show))
-        )
+        .leftMap: error =>
+          Violation.fromConstraint(
+            constraint = Constraint.Generic.Type(name = "parameter.array"),
+            actual = value,
+            hint = error.show.some
+          )
+        .leftMap(Violations.rootNec)
         .toValidated
         .andThen(values => ParameterSchemaArrayDecoder.decode(schema, Chain.fromSeq(values)))
     case schema: Parameter.Schema.Object[A] =>
@@ -28,9 +33,13 @@ final class ParameterSchemaParser(name: String, style: Parameter.Style) extends 
           case Parameter.Style.Simple => parser.obj.simple(value)
           case Parameter.Style.Label  => parser.obj.label(value)
           case Parameter.Style.Matrix => parser.obj.matrix(value)
-        .leftMap(error =>
-          Violations.rootNec(Violation.tpe(name = "parameter.object", actual = value, hint = error.show))
-        )
+        .leftMap: error =>
+          Violation.fromConstraint(
+            constraint = Constraint.Generic.Type(name = "parameter.object"),
+            actual = value,
+            hint = error.show.some
+          )
+        .leftMap(Violations.rootNec)
         .toValidated
         .andThen(values => ParameterSchemaObjectDecoder.decode(schema, Chain.fromSeq(values)))
 

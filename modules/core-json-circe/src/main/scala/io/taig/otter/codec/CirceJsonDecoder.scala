@@ -7,7 +7,8 @@ import io.taig.data.circe.*
 import io.taig.otter.Json
 import io.taig.otter.Violations
 import io.taig.otter.typeOf
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   val collection = CollectionDecoder(decoder = this)
@@ -26,12 +27,14 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
   override def decode[A](codec: Json[A], json: CirceJson): Validated[Violations, A] = codec match
     case Json.Collection(self) =>
       json.asArray
-        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = typeOf(json))))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json)))
+        .leftMap(Violations.rootNec)
         .andThen(collection.decode(schema = self.self, _))
     case Json.Constant(self)   => constant.decode(schema = self.self, json)
     case Json.Dictionary(self) =>
       json.asObject
-        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = typeOf(json))))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json)))
+        .leftMap(Violations.rootNec)
         .map(_.toList)
         .andThen(dictionary.decode(schema = self.self, _))
     case Json.Enumeration(self) => enumeration.decode(schema = self.self, json)
@@ -39,11 +42,13 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Primitive(self)   => primitive.decode(schema = self.self, json)
     case Json.Record(self)      =>
       json.asObject
-        .toValid(Violations.rootNec(Violation.tpe(name = "object", actual = typeOf(json))))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json)))
+        .leftMap(Violations.rootNec)
         .map(_.toList)
         .andThen(record.decode(schema = self.self, _))
     case Json.Tuple(self) =>
       json.asArray
-        .toValid(Violations.rootNec(Violation.tpe(name = "array", actual = typeOf(json))))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json)))
+        .leftMap(Violations.rootNec)
         .andThen(tuple.decode(schema = self.self, _))
     case Json.Union(self) => union.decode(schema = self.self, json)

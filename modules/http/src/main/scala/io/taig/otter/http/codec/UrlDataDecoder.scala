@@ -6,16 +6,22 @@ import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.http.Url
 import io.taig.otter.http.Url.Data
-import io.taig.otter.validation.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 
 object UrlDataDecoder extends Decoder.Remaining[Url, Url.Data]:
   override def decode[A](schema: Url[A], value: Data): Validated[Violations, A] =
     decodeRemaining(schema, value).andThen: (data, a) =>
-      Validated.cond(
-        test = data.path.isEmpty,
-        a,
-        Violations.rootNec(Violation.equal(reference = "/", actual = "/" + data.path.mkString_("/")))
-      )
+      Validated
+        .cond(
+          test = data.path.isEmpty,
+          a,
+          Violation.fromConstraint(
+            constraint = Constraint.Generic.Equals(reference = "/"),
+            actual = "/" + data.path.mkString_("/")
+          )
+        )
+        .leftMap(Violations.rootNec)
 
   override def decodeRemaining[A](schema: Url[A], value: Data): Validated[Violations, (Data, A)] =
     decodeRemaining(schema = schema.value, value)

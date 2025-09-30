@@ -4,8 +4,9 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.data.Data
 import io.taig.otter.Enumeration
+import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.validation.Violation
+import io.taig.otter.Constraint
 
 final class EnumerationDecoder[S[_], T](codec: Codec[S, T], render: T => Data) extends Decoder[Enumeration[S, *], T]:
   override def decode[A](schema: Enumeration[S, A], value: T): Validated[Violations, A] =
@@ -21,5 +22,8 @@ final class EnumerationDecoder[S[_], T](codec: Codec[S, T], render: T => Data) e
             .unapply(a)
             .toValid:
               val values = schema.values.map(mapping.apply).map(codec.encode(reference.value, _))
-              Violation.oneOf(values = values.map(render).toList, actual = render(value))
+              Violation.fromConstraint(
+                constraint = Constraint.Generic.OneOf(references = values.map(render).toList),
+                actual = render(value)
+              )
             .leftMap(Violations.rootNec)

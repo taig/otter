@@ -3,10 +3,12 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Tuple
+import io.taig.data.Data
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
-import io.taig.otter.validation.Constraint
-import io.taig.otter.validation.Violation
 
+// TODO leverage validation
 final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[S, *], Seq[T]]:
   override def decode[A](schema: Tuple[S, A], values: Seq[T]): Validated[Violations, A] =
     val reference = schema.value.schemas.size.toInt
@@ -15,11 +17,11 @@ final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[
     Validated.cond(
       test = actual <= reference,
       (),
-      Violations.rootNec(Violation(Constraint.Collection.Maximum(reference), actual, hint = none))
+      Violations.rootNec(Violation.fromConstraint(constraint = Constraint.Collection.Maximum(reference), actual))
     ) *> Validated.cond(
       test = actual >= reference,
       (),
-      Violations.rootNec(Violation(Constraint.Collection.Minimum(reference), actual, hint = none))
+      Violations.rootNec(Violation.fromConstraint(constraint = Constraint.Collection.Minimum(reference), actual))
     ) *> decode(schema.value, values, index = 0)
 
   def decode[A](schema: Tuple.Value[S, A], values: Seq[T], index: Int): Validated[Violations, A] = schema match
@@ -27,7 +29,9 @@ final class TupleDecoder[S[_], T](decoder: Decoder[S, T]) extends Decoder[Tuple[
     case Tuple.Value.Modify(self, f, _) => decode(schema = self, values, index).map(f)
     case Tuple.Value.Root(schema)       =>
       values.headOption
-        .toValid(Violations.rootNec(Violation.required))
+        .toValid(
+          Violations.rootNec(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+        )
         .andThen(decoder.decode(schema = schema.value, _))
         .leftMap(index /: _)
     case Tuple.Value.Zip(left, right) =>

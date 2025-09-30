@@ -8,7 +8,8 @@ import io.taig.otter.http.Headers.Data.contentType
 import io.taig.otter.http.HttpError.*
 import io.taig.otter.http.Request
 import io.taig.otter.http.header.MediaType
-import io.taig.otter.validation.Violation
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 
 final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
   val bodies = BodiesDecoder(decoder)
@@ -38,8 +39,12 @@ final class RequestDataDecoder[S[_]](decoder: PayloadDecoder[S]):
         .cond(
           test = method === schema.method,
           (),
-          Violations.rootNec(Violation.equal(reference = method.show, actual = schema.method.show))
+          Violation.fromConstraint(
+            constraint = Constraint.Generic.Equals(reference = method.show),
+            actual = schema.method.show
+          )
         )
+        .leftMap(Violations.rootNec)
         .leftMap("method" /: _) *> (
         UrlDataDecoder.decode(url, value = value.url).leftMap("url" /: _),
         HeadersDataDecoder.decodeRemaining(headers, value = value.headers).leftMap("header" /: _)

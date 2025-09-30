@@ -7,7 +7,9 @@ import io.taig.otter.codec.Decoder
 import io.taig.otter.collectFirstWithRemainders
 import io.taig.otter.http.Header
 import io.taig.otter.http.Headers
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
+import io.taig.data.Data
 
 object HeaderDataDecoder extends Decoder.Remaining[Header, Headers.Data]:
   override def decodeRemaining[A](schema: Header[A], value: Headers.Data): Validated[Violations, (Headers.Data, A)] =
@@ -19,9 +21,9 @@ object HeaderDataDecoder extends Decoder.Remaining[Header, Headers.Data]:
         val (remainders, result) = value.collectFirstWithRemainders { case (`name`, value) => value }
 
         result
-          .toValid(Violations.rootNec(Violation.required))
-          .andThen: value =>
-            HeaderSchemaParser.decode(schema = schema.value, value).tupleLeft(remainders)
+          .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+          .leftMap(Violations.rootNec)
+          .andThen(HeaderSchemaParser.decode(schema = schema.value, _).tupleLeft(remainders))
           .leftMap(s"$name" /: _)
       case Header.Value.Optional(self) =>
         val reference = schema.name

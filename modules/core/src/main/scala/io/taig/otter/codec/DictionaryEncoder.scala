@@ -11,7 +11,7 @@ final class DictionaryEncoder[S[_], T[_], U](key: Encoder[S, String], value: Enc
 
   @tailrec
   def encode[A](schema: Dictionary.Value[S, T, A], a: A): List[(String, U)] = schema match
-    case Dictionary.Value.Root(key, schema, _, _) =>
+    case Dictionary.Value.Root(key, schema, _) =>
       a.map((name, value) =>
         (this.key.encode(schema = key.value, name), this.value.encode(schema = schema.value, value))
       )

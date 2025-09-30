@@ -8,7 +8,7 @@ import io.taig.otter.http.header.Accept
 import io.taig.otter.http.header.MediaType
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.SchemaInvariant
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
 import org.typelevel.ci.*
 
 final case class Headers[A](value: Headers.Value[A], metadata: Metadata):
@@ -57,13 +57,23 @@ object Headers:
         Accept
           .parse(value)
           .leftMap: error =>
-            Violations.rootNec(Violation.tpe(name = "Accept", actual = value, hint = error.show))
+            val violation = Violation.fromConstraint(
+              constraint = Constraint.Generic.Type(name = "Accept"),
+              actual = value,
+              hint = error.show.some
+            )
+            Violations.rootNec(violation)
 
       def contentType: Either[Violations, Option[MediaType]] = self(ci"Content-Type").traverse: value =>
         MediaType
           .parse(value)
           .leftMap: error =>
-            Violations.rootNec(Violation.tpe(name = "Content-Type", actual = value, hint = error.show))
+            val violation = Violation.fromConstraint(
+              constraint = Constraint.Generic.Type(name = "MediaType"),
+              actual = value,
+              hint = error.show.some
+            )
+            Violations.rootNec(violation)
 
   val Empty: Headers[Unit] = Headers(value = Headers.Value.Empty, metadata = Metadata.Empty)
 

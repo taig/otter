@@ -3,11 +3,13 @@ package io.taig.otter.http.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.data.Data
+import io.taig.otter.Constraint
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.http.Header
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
 
 object HeaderSchemaObjectValueDecoder extends Decoder[Header.Schema.Object.Value, Option[String]]:
   val nullable = NullableDecoder(decoder = this, empty = _.isEmpty)
@@ -17,5 +19,6 @@ object HeaderSchemaObjectValueDecoder extends Decoder[Header.Schema.Object.Value
       case Header.Schema.Object.Value.Nullable(self) => nullable.decode(schema = self.self, value)
       case schema: Header.Schema.Value[A]            =>
         value
-          .toValid(Violations.rootNec(Violation.required))
+          .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+          .leftMap(Violations.rootNec)
           .andThen(HeaderSchemaValueParser.decode(schema, _))

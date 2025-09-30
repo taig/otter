@@ -12,7 +12,8 @@ import io.taig.otter.codec.NullableDecoder
 import io.taig.otter.codec.UnionDecoder
 import io.taig.otter.http.FormData
 import io.taig.otter.http.FormData.Schema
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
+import io.taig.otter.Constraint
 
 object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
   val constant = ConstantDecoder(codec = Codec(decoder = this, encoder = FormDataSchemaPrinter), _.getOrElse(Data.Null))
@@ -27,6 +28,7 @@ object FormDataSchemaParser extends Decoder[FormData.Schema, Option[String]]:
     case FormData.Schema.Nullable(self)              => nullable.decode(schema = self, value)
     case schema: FormData.Schema.Primitive.String[A] =>
       value
-        .toValid(Violations.rootNec(Violation.required))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+        .leftMap(Violations.rootNec)
         .andThen(FormDataSchemaPrimitiveParser.decode(schema, _))
     case FormData.Schema.Union(self) => union.decode(schema = self, value)

@@ -9,6 +9,6 @@ final class CollectionEncoder[S[_], T](encoder: Encoder[S, T]) extends Encoder[C
 
   @tailrec
   def encode[A](schema: Collection.Value[S, A], a: A): Seq[T] = schema match
-    case Collection.Value.Indexed(schema, _, _, _) => a.map(encoder.encode(schema = schema.value, _))
-    case Collection.Value.Linked(schema, _, _, _)  => a.map(encoder.encode(schema = schema.value, _))
-    case Collection.Value.Modify(self, _, g)       => encode(schema = self, g(a))
+    case Collection.Value.Indexed(schema, _) => a.map(encoder.encode(schema = schema.value, _))
+    case Collection.Value.Linked(schema, _)  => a.map(encoder.encode(schema = schema.value, _))
+    case Collection.Value.Modify(self, _, g) => encode(schema = self, g(a))

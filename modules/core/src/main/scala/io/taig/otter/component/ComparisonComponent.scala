@@ -1,7 +1,7 @@
 package io.taig.otter.component
 
 import io.taig.otter.operation.SchemaInvariant
-import io.taig.otter.validation.Comparison
+import io.taig.validation.Comparison
 
 trait ComparisonComponent[Record[a] <: Value[a], Field[_], Key[_], Value[_]](using
     SchemaInvariant[Record],

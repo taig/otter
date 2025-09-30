@@ -4,7 +4,7 @@ import cats.syntax.all.*
 import cats.~>
 import io.taig.otter.operation.Enriched
 import io.taig.otter.operation.PrimitiveSchemaInvariant
-import io.taig.otter.validation.Comparison
+import io.taig.validation.Comparison
 
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
@@ -16,9 +16,8 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 import cats.Show
-import io.taig.otter.validation.Constraint
-import io.taig.otter.validation.Violation
-import io.taig.otter.validation.Validation
+import io.taig.validation.Constraint
+import io.taig.validation.Validation
 import cats.arrow.FunctionK
 
 sealed abstract class Primitive[+S[_], A]:
@@ -54,46 +53,28 @@ object Primitive:
   object Number:
     given schema: PrimitiveSchemaInvariant.Number[Primitive.Number] with
       override def jBigDecimal(
-          minimum: Option[Comparison[JBigDecimal]],
-          maximum: Option[Comparison[JBigDecimal]],
-          multiple: Option[JBigDecimal]
-      ): Primitive.Number[JBigDecimal] =
-        Number(value = Value.Number.BigDecimal(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, JBigDecimal]
+      ): Primitive.Number[JBigDecimal] = Number(value = Value.Number.BigDecimal(validation), metadata = Metadata.Empty)
 
       override def jBigInteger(
-          minimum: Option[Comparison[JBigInteger]],
-          maximum: Option[Comparison[JBigInteger]],
-          multiple: Option[JBigInteger]
-      ): Primitive.Number[JBigInteger] =
-        Number(value = Value.Number.BigInteger(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, JBigInteger]
+      ): Primitive.Number[JBigInteger] = Number(value = Value.Number.BigInteger(validation), metadata = Metadata.Empty)
 
       override def double(
-          minimum: Option[Comparison[SDouble]],
-          maximum: Option[Comparison[SDouble]],
-          multiple: Option[SDouble]
-      ): Primitive.Number[SDouble] =
-        Number(value = Value.Number.Double(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, SDouble]
+      ): Primitive.Number[SDouble] = Number(value = Value.Number.Double(validation), metadata = Metadata.Empty)
 
       override def float(
-          minimum: Option[Comparison[SFloat]],
-          maximum: Option[Comparison[SFloat]],
-          multiple: Option[SFloat]
-      ): Primitive.Number[SFloat] =
-        Number(value = Value.Number.Float(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, SFloat]
+      ): Primitive.Number[SFloat] = Number(value = Value.Number.Float(validation), metadata = Metadata.Empty)
 
       override def int(
-          minimum: Option[Comparison[SInt]],
-          maximum: Option[Comparison[SInt]],
-          multiple: Option[SInt]
-      ): Primitive.Number[SInt] =
-        Number(value = Value.Number.Int(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, SInt]
+      ): Primitive.Number[SInt] = Number(value = Value.Number.Int(validation), metadata = Metadata.Empty)
 
       override def long(
-          minimum: Option[Comparison[SLong]],
-          maximum: Option[Comparison[SLong]],
-          multiple: Option[SLong]
-      ): Primitive.Number[SLong] =
-        Number(value = Value.Number.Long(minimum, maximum, multiple), metadata = Metadata.Empty)
+          validation: Validation[Constraint.Primitive.Number, SLong]
+      ): Primitive.Number[SLong] = Number(value = Value.Number.Long(validation), metadata = Metadata.Empty)
 
       override def imap[A, B](fa: Primitive.Number[A])(f: A => B)(g: B => A): Primitive.Number[B] =
         fa.copy(value = fa.value.imap(f)(g))
@@ -120,11 +101,9 @@ object Primitive:
       )
 
       override def string(
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
+          validation: Validation[Constraint.Primitive.Text, JString]
       ): Primitive.String[Value, JString] = String(
-        value = Primitive.Value.String.Text(minimum, maximum, matches),
+        value = Primitive.Value.String.Text(validation),
         metadata = Metadata.Empty
       )
 
@@ -175,39 +154,27 @@ object Primitive:
 
     object Number:
       final private[otter] case class BigDecimal(
-          minimum: Option[Comparison[JBigDecimal]],
-          maximum: Option[Comparison[JBigDecimal]],
-          multiple: Option[JBigDecimal]
+          validation: Validation[Constraint.Primitive.Number, JBigDecimal]
       ) extends Value.Number[JBigDecimal]
 
       final private[otter] case class BigInteger(
-          minimum: Option[Comparison[JBigInteger]],
-          maximum: Option[Comparison[JBigInteger]],
-          multiple: Option[JBigInteger]
+          validation: Validation[Constraint.Primitive.Number, JBigInteger]
       ) extends Value.Number[JBigInteger]
 
       final private[otter] case class Double(
-          minimum: Option[Comparison[SDouble]],
-          maximum: Option[Comparison[SDouble]],
-          multiple: Option[SDouble]
+          validation: Validation[Constraint.Primitive.Number, SDouble]
       ) extends Value.Number[SDouble]
 
       final private[otter] case class Float(
-          minimum: Option[Comparison[SFloat]],
-          maximum: Option[Comparison[SFloat]],
-          multiple: Option[SFloat]
+          validation: Validation[Constraint.Primitive.Number, SFloat]
       ) extends Value.Number[SFloat]
 
       final private[otter] case class Int(
-          minimum: Option[Comparison[SInt]],
-          maximum: Option[Comparison[SInt]],
-          multiple: Option[SInt]
+          validation: Validation[Constraint.Primitive.Number, SInt]
       ) extends Value.Number[SInt]
 
       final private[otter] case class Long(
-          minimum: Option[Comparison[SLong]],
-          maximum: Option[Comparison[SLong]],
-          multiple: Option[SLong]
+          validation: Validation[Constraint.Primitive.Number, SLong]
       ) extends Value.Number[SLong]
 
       final private[otter] case class Modify[A, B](
@@ -233,9 +200,7 @@ object Primitive:
         override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): String[T, A] = this
 
       final private[otter] case class Text(
-          minimum: Option[SInt],
-          maximum: Option[SInt],
-          matches: Option[Pattern]
+          validation: Validation[Constraint.Primitive.Text, JString]
       ) extends Primitive.Value.String[Nothing, JString]:
         override def mapK[S[_] >: Nothing, T[_]](fK: S ~> T): String[T, JString] = this
 

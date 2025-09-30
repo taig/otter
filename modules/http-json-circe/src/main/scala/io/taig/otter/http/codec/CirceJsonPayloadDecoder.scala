@@ -6,10 +6,11 @@ import io.circe.jawn.JawnParser
 import io.taig.otter.Json
 import io.taig.otter.Violations
 import io.taig.otter.codec.CirceJsonDecoder
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
 
 import java.nio.charset.Charset
 import java.nio.charset.StandardCharsets
+import io.taig.otter.Constraint
 
 object CirceJsonPayloadDecoder extends PayloadDecoder[Json]:
   val parser = new JawnParser()
@@ -21,5 +22,10 @@ object CirceJsonPayloadDecoder extends PayloadDecoder[Json]:
 
     result.toValidated
       .leftMap: failure =>
-        Violations.rootNec(Violation.tpe(name = "json", actual = "unknown", hint = failure.show))
+        Violation.fromConstraint(
+          constraint = Constraint.Generic.Type(name = "json"),
+          actual = "unknown",
+          hint = failure.show.some
+        )
+      .leftMap(Violations.rootNec)
       .andThen(CirceJsonDecoder.decode(codec, _))

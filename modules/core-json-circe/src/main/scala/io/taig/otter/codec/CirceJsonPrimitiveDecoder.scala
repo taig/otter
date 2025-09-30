@@ -6,9 +6,10 @@ import io.circe.Decoder as CirceDecoder
 import io.circe.Json as CirceJson
 import io.taig.data.circe.*
 import io.taig.otter.Json
+import io.taig.otter.Constraint
 import io.taig.otter.Primitive
 import io.taig.otter.Violations
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -33,11 +34,23 @@ object CirceJsonPrimitiveDecoder extends Decoder[Primitive[Json.Primitive, *], C
     case Primitive.Value.String.Parser(name, f, _) =>
       decode[String](name = "string", json).andThen: value =>
         f(value)
-          .leftMap(error => Violations.rootNec(Violation.tpe(name, actual = json.toData, hint = error)))
+          .leftMap: error =>
+            val violation = Violation.fromConstraint(
+              constraint = Constraint.Generic.Type(name),
+              actual = json.toData,
+              hint = error.some
+            )
+            Violations.rootNec(violation)
           .toValidated
     case _: Primitive.Value.String.Text => decode[String](name = "string", json)
 
   def decode[A: CirceDecoder](name: String, json: CirceJson): Validated[Violations, A] = json
     .as[A]
-    .leftMap(failure => Violations.rootNec(Violation.tpe(name, actual = json.toData, hint = failure.show)))
+    .leftMap: failure =>
+      val violation = Violation.fromConstraint(
+        constraint = Constraint.Generic.Type(name),
+        actual = json.toData,
+        hint = failure.show.some
+      )
+      Violations.rootNec(violation)
     .toValidated

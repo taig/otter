@@ -21,7 +21,8 @@ val Version = new {
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
-  val Undefined = "0.0.2"
+  val Validation = "HEAD+20250930-0843"
+  val Undefined = "0.0.3"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -69,7 +70,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
   .aggregate(
-    validation,
     core,
     coreCaseInsensitive,
     coreJavaTime,
@@ -91,16 +91,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
     sampleApp
   )
 
-lazy val validation = module(identifier = Some("validation"))
-  .settings(
-    libraryDependencies ++=
-      "io.taig" %%% "data-core" % Version.Data ::
-        "org.typelevel" %%% "cats-core" % Version.Cats ::
-        "org.typelevel" %%% "kittens" % Version.Kittens ::
-        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        Nil
-  )
-
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -109,12 +99,16 @@ lazy val core = module(identifier = Some("core"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
-      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+      "io.taig" %%% "data-core" % Version.Data ::
+        "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
         "io.taig" %%% "undefined" % Version.Undefined ::
+        "io.taig" %%% "validation-core" % Version.Validation ::
+        "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
+        "org.typelevel" %%% "kittens" % Version.Kittens ::
+        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
         Nil
   )
-  .dependsOn(validation % "compile->compile;test->test")
 
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
   .settings(

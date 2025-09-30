@@ -2,7 +2,8 @@ package io.taig.otter.component
 
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.EnrichedSyntax.*
-import io.taig.otter.validation.Constraint
+import io.taig.validation.Constraint as ValidationConstraint
+import io.taig.otter.Constraint
 
 trait ConstraintComponent[
     Collection[a] <: Value[a],
@@ -54,13 +55,13 @@ trait ConstraintComponent[
 
       number.orElse(string).to
 
-    (
-      merged("equal", field("reference", data.any).toRecord).to[Constraint.Equal] :+
-        merged("oneOf", field("values", collection.list(data.any)).toRecord).to[Constraint.OneOf] :+
-        merged("required").as(Constraint.Required) :+
-        merged("type", field("name", string).toRecord).to[Constraint.Type]
-    ).orElse(col)
-      .orElse(obj)
-      .orElse(primitive)
-      .name("Constraint")
-      .to
+    val validation: Union[ValidationConstraint] = col.orElse(obj).orElse(primitive).to
+
+    val generic: Union[Constraint.Generic] = (
+      merged("equals", field("reference", data.any).toRecord).to[Constraint.Generic.Equals] :+
+        merged("oneOf", field("values", collection.list(data.any)).toRecord).to[Constraint.Generic.OneOf] :+
+        merged("required").as(Constraint.Generic.Required) :+
+        merged("type", field("name", string).toRecord).to[Constraint.Generic.Type]
+    ).to
+
+    (generic | validation).name("Constraint")

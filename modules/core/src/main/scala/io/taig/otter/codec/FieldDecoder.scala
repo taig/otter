@@ -3,9 +3,11 @@ package io.taig.otter.codec
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Field
+import io.taig.otter.Constraint
+import io.taig.otter.Violation
 import io.taig.otter.Violations
 import io.taig.otter.collectFirstWithRemainders
-import io.taig.otter.validation.Violation
+import io.taig.data.Data
 
 final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T, U], empty: U)
     extends Decoder.Remaining[Field[S, T, *], List[(String, U)]]:
@@ -36,7 +38,9 @@ final class FieldDecoder[S[_], T[_], U](key: Codec[S, String], value: Decoder[T,
       val (remainders, result) = adjustedValued.collectFirstWithRemainders { case (`name`, value) => value }
 
       result
-        .toValid(Violations.rootNec(Violation.required))
+        .toValid(
+          Violations.rootNec(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+        )
         .andThen(ReferenceDecoder(this.value)(reference = value, _))
         .leftMap(name /: _)
         .tupleLeft(remainders)

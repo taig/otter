@@ -10,7 +10,9 @@ import io.taig.otter.collectFirstWithRemainders
 import io.taig.otter.http.Query
 import io.taig.otter.http.Query.Schema.Nullable
 import io.taig.otter.unescape
-import io.taig.otter.validation.Violation
+import io.taig.otter.Violation
+import io.taig.data.Data
+import io.taig.otter.Constraint
 
 final class QuerySchemaDecoder(explode: Boolean, style: Query.Style)
     extends Decoder.Remaining[Query.Schema, Chain[Option[String]]]:
@@ -21,11 +23,16 @@ final class QuerySchemaDecoder(explode: Boolean, style: Query.Style)
     case schema: Query.Schema.Value[A] =>
       val (remainders, value) = values.collectFirstWithRemainders { case Some(value) => value }
       value
-        .toValid(Violations.rootNec(Violation.required))
+        .toValid(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+        .leftMap(Violations.rootNec)
         .andThen(QuerySchemaValueParser.decode(schema, _).tupleLeft(remainders))
     case schema: Query.Schema.Array[A] =>
       values
-        .traverse(_.toValid(Violations.rootNec(Violation.required)))
+        .traverse(
+          _.toValid(
+            Violations.rootNec(Violation.fromConstraint(constraint = Constraint.Generic.Required, actual = Data.Null))
+          )
+        )
         .map: values =>
           (explode, style) match
             case (true, _)                       => values

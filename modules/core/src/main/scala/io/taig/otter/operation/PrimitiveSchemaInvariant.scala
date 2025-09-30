@@ -1,12 +1,13 @@
 package io.taig.otter.operation
 
-import io.taig.otter.validation.Comparison
-
+import io.taig.validation.Comparison
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 import scala.Boolean as SBoolean
+import io.taig.validation.Validation
+import io.taig.validation.Constraint
 
 trait PrimitiveSchemaInvariant[Self[_], -Value[_]]
     extends PrimitiveSchemaInvariant.Boolean[Self],
@@ -19,44 +20,20 @@ trait PrimitiveSchemaInvariant[Self[_], -Value[_]]
   ): PrimitiveSchemaInvariant[T, Value] = new PrimitiveSchemaInvariant[T, Value]:
     override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
     override def boolean: T[SBoolean] = fK(self.boolean)
-    override def jBigDecimal(
-        minimum: Option[Comparison[JBigDecimal]],
-        maximum: Option[Comparison[JBigDecimal]],
-        multiple: Option[JBigDecimal]
-    ): T[JBigDecimal] =
-      fK(self.jBigDecimal(minimum, maximum, multiple))
-    override def jBigInteger(
-        minimum: Option[Comparison[JBigInteger]],
-        maximum: Option[Comparison[JBigInteger]],
-        multiple: Option[JBigInteger]
-    ): T[JBigInteger] =
-      fK(self.jBigInteger(minimum, maximum, multiple))
-    override def double(
-        minimum: Option[Comparison[Double]],
-        maximum: Option[Comparison[Double]],
-        multiple: Option[Double]
-    ): T[Double] =
-      fK(self.double(minimum, maximum, multiple))
-    override def float(
-        minimum: Option[Comparison[Float]],
-        maximum: Option[Comparison[Float]],
-        multiple: Option[Float]
-    ): T[Float] =
-      fK(self.float(minimum, maximum, multiple))
-    override def int(
-        minimum: Option[Comparison[Int]],
-        maximum: Option[Comparison[Int]],
-        multiple: Option[Int]
-    ): T[Int] =
-      fK(self.int(minimum, maximum, multiple))
-    override def long(
-        minimum: Option[Comparison[Long]],
-        maximum: Option[Comparison[Long]],
-        multiple: Option[Long]
-    ): T[Long] =
-      fK(self.long(minimum, maximum, multiple))
-    override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[JString] =
-      fK(self.string(minimum, maximum, matches))
+    override def jBigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): T[JBigDecimal] =
+      fK(self.jBigDecimal(validation))
+    override def jBigInteger(validation: Validation[Constraint.Primitive.Number, JBigInteger]): T[JBigInteger] =
+      fK(self.jBigInteger(validation))
+    override def double(validation: Validation[Constraint.Primitive.Number, Double]): T[Double] =
+      fK(self.double(validation))
+    override def float(validation: Validation[Constraint.Primitive.Number, Float]): T[Float] =
+      fK(self.float(validation))
+    override def int(validation: Validation[Constraint.Primitive.Number, Int]): T[Int] =
+      fK(self.int(validation))
+    override def long(validation: Validation[Constraint.Primitive.Number, Long]): T[Long] =
+      fK(self.long(validation))
+    override def string(validation: Validation[Constraint.Primitive.Text, JString]): T[JString] =
+      fK(self.string(validation))
     override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
       fK(self.parser(name, decode, encode))
     override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
@@ -84,74 +61,42 @@ object PrimitiveSchemaInvariant:
     self =>
 
     def jBigDecimal(
-        minimum: Option[Comparison[JBigDecimal]],
-        maximum: Option[Comparison[JBigDecimal]],
-        multiple: Option[JBigDecimal]
+        validation: Validation[Constraint.Primitive.Number, JBigDecimal]
     ): Self[JBigDecimal]
 
     def jBigInteger(
-        minimum: Option[Comparison[JBigInteger]],
-        maximum: Option[Comparison[JBigInteger]],
-        multiple: Option[JBigInteger]
+        validation: Validation[Constraint.Primitive.Number, JBigInteger]
     ): Self[JBigInteger]
 
-    def double(
-        minimum: Option[Comparison[Double]],
-        maximum: Option[Comparison[Double]],
-        multiple: Option[Double]
-    ): Self[Double]
+    def double(validation: Validation[Constraint.Primitive.Number, Double]): Self[Double]
 
-    def float(
-        minimum: Option[Comparison[Float]],
-        maximum: Option[Comparison[Float]],
-        multiple: Option[Float]
-    ): Self[Float]
+    def float(validation: Validation[Constraint.Primitive.Number, Float]): Self[Float]
 
-    def int(
-        minimum: Option[Comparison[Int]],
-        maximum: Option[Comparison[Int]],
-        multiple: Option[Int]
-    ): Self[Int]
+    def int(validation: Validation[Constraint.Primitive.Number, Int]): Self[Int]
 
-    def long(
-        minimum: Option[Comparison[Long]],
-        maximum: Option[Comparison[Long]],
-        multiple: Option[Long]
-    ): Self[Long]
+    def long(validation: Validation[Constraint.Primitive.Number, Long]): Self[Long]
 
     override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
         gK: [A] => T[A] => Self[A]
     ): PrimitiveSchemaInvariant.Number[T] = new Number[T]:
       override def jBigDecimal(
-          minimum: Option[Comparison[JBigDecimal]],
-          maximum: Option[Comparison[JBigDecimal]],
-          multiple: Option[JBigDecimal]
-      ): T[JBigDecimal] = fK(self.jBigDecimal(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, JBigDecimal]
+      ): T[JBigDecimal] = fK(self.jBigDecimal(validation))
       override def jBigInteger(
-          minimum: Option[Comparison[JBigInteger]],
-          maximum: Option[Comparison[JBigInteger]],
-          multiple: Option[JBigInteger]
-      ): T[JBigInteger] = fK(self.jBigInteger(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, JBigInteger]
+      ): T[JBigInteger] = fK(self.jBigInteger(validation))
       override def double(
-          minimum: Option[Comparison[Double]],
-          maximum: Option[Comparison[Double]],
-          multiple: Option[Double]
-      ): T[Double] = fK(self.double(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, Double]
+      ): T[Double] = fK(self.double(validation))
       override def float(
-          minimum: Option[Comparison[Float]],
-          maximum: Option[Comparison[Float]],
-          multiple: Option[Float]
-      ): T[Float] = fK(self.float(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, Float]
+      ): T[Float] = fK(self.float(validation))
       override def int(
-          minimum: Option[Comparison[Int]],
-          maximum: Option[Comparison[Int]],
-          multiple: Option[Int]
-      ): T[Int] = fK(self.int(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, Int]
+      ): T[Int] = fK(self.int(validation))
       override def long(
-          minimum: Option[Comparison[Long]],
-          maximum: Option[Comparison[Long]],
-          multiple: Option[Long]
-      ): T[Long] = fK(self.long(minimum, maximum, multiple))
+          validation: Validation[Constraint.Primitive.Number, Long]
+      ): T[Long] = fK(self.long(validation))
       override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
       override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
 
@@ -163,7 +108,7 @@ object PrimitiveSchemaInvariant:
   trait String[Self[_], -Value[_]] extends SchemaInvariant[Self]:
     self =>
 
-    def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): Self[JString]
+    def string(validation: Validation[Constraint.Primitive.Text, JString]): Self[JString]
 
     def parser[A](
         name: JString,
@@ -178,8 +123,8 @@ object PrimitiveSchemaInvariant:
     ): PrimitiveSchemaInvariant.String[T, Value] = new PrimitiveSchemaInvariant.String[T, Value]:
       override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
       override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-      override def string(minimum: Option[Int], maximum: Option[Int], matches: Option[Pattern]): T[JString] =
-        fK(self.string(minimum, maximum, matches))
+      override def string(validation: Validation[Constraint.Primitive.Text, JString]): T[JString] =
+        fK(self.string(validation))
       override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
         fK(self.parser(name, decode, encode))
       override def parsed[A](schema: => Value[A]): T[A] = fK(self.parsed(schema))

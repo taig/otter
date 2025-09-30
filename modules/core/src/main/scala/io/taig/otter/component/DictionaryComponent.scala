@@ -20,7 +20,7 @@ trait DictionaryComponent[Self[_], -Key[_], -Value[_]](using self: DictionarySch
         value: => Value[B],
         minimum: Undefined.Or[Int] = Undefined,
         maximum: Undefined.Or[Int] = Undefined
-    ): Self[List[(A, B)]] = self(key, value, minimum = minimum.toOption, maximum = maximum.toOption)
+    ): Self[List[(A, B)]] = self(key, value, validation = ???)
 
     final def nonEmptyList[A, B](
         key: => Key[A],
