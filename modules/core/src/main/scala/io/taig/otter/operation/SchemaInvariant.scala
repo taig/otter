@@ -2,8 +2,6 @@ package io.taig.otter.operation
 
 import cats.Invariant
 import io.taig.otter.Merge
-import io.taig.otter.Annotation
-import io.taig.otter.Schema
 
 trait SchemaInvariant[Self[_]]:
   self =>
@@ -25,8 +23,3 @@ trait SchemaInvariant[Self[_]]:
 
 object SchemaInvariant:
   inline def apply[Self[_]](using invariant: SchemaInvariant[Self]): SchemaInvariant[Self] = invariant
-
-  given schema: SchemaInvariant[[a] =>> Annotation[Schema[a]]] with
-    extension [A](self: Annotation[Schema[A]])
-      override def imap[B](f: A => B)(g: B => A): Annotation[Schema[B]] =
-        self.map(_.imap(f)(g))

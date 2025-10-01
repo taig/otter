@@ -1,6 +1,6 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.BooleanSchemaInvariant
+import io.taig.otter.operation.BooleanOperation
 
-trait BooleanComponent[+Self[_]](using schema: BooleanSchemaInvariant[Self]):
-  val boolean: Self[Boolean] = schema.boolean
+trait BooleanComponent[+Self[_]](using operation: BooleanOperation[Self]):
+  val boolean: Self[Boolean] = operation.boolean

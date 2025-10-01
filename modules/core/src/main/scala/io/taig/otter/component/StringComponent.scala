@@ -2,19 +2,21 @@ package io.taig.otter.component
 
 import io.taig.Undefined
 import io.taig.otter.Constraint
-import io.taig.otter.operation.StringSchemaInvariant
+import io.taig.otter.Invariant
 import io.taig.validation
 import io.taig.validation.Validation
 import java.util.regex.Pattern
 import java.util.UUID
 import cats.syntax.all.*
+import io.taig.otter.operation.StringOperation
 
-trait StringComponent[+Self[_]](using schema: StringSchemaInvariant[Self, ?]):
+trait StringComponent[+Self[_]: Invariant](using operation: StringOperation[Self]):
   self =>
 
-  final def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String] = schema.string(validation)
+  final def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String] =
+    operation.string(validation)
 
-  final val string: Self[String] = schema.string(Validation.valid)
+  final val string: Self[String] = operation.string(Validation.valid)
 
   extension (x: string.type)
     def apply(
@@ -35,7 +37,7 @@ trait StringComponent[+Self[_]](using schema: StringSchemaInvariant[Self, ?]):
     def nonEmpty: Self[Option[String]] = self.string.imap(_.some.filter(_.nonEmpty))(_.getOrElse(""))
 
   final def parser[A](name: String)(f: String => Either[String, A])(g: A => String): Self[A] =
-    schema.parser(name, decode = f, encode = g)
+    operation.parser(name, decode = f, encode = g)
 
   final val uuid: Self[UUID] = parser(name = "uuid") { value =>
     Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_.getMessage)
