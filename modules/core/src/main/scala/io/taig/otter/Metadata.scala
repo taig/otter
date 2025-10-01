@@ -5,8 +5,7 @@ import cats.syntax.all.*
 
 import scala.collection.immutable.SortedMap
 
-final class Metadata(val toMap: SortedMap[String, Any]) extends AnyVal:
-  override def toString: String = toMap.map { (key, value) => s"$key=$value" }.mkString("[", ",", "]")
+opaque type Metadata = SortedMap[String, Any]
 
 object Metadata:
   opaque type Key[A] = String
@@ -15,16 +14,23 @@ object Metadata:
     inline def apply[A](name: String): Metadata.Key[A] = name
 
   extension (self: Metadata)
-    inline def contains[A](key: Metadata.Key[A]): Boolean = self.toMap.contains(key)
+    inline def toSortedMap: SortedMap[String, Any] = self
+
+    def contains[A](key: Metadata.Key[A]): Boolean = toSortedMap.contains(key)
+
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    inline def get[A](key: Metadata.Key[A]): Option[A] = self.toMap
+    def get[A](key: Metadata.Key[A]): Option[A] = toSortedMap
       .get(key)
       .flatMap(value => Either.catchOnly[ClassCastException](value.asInstanceOf[A]).toOption)
-    inline def put[A](key: Metadata.Key[A], value: A): Metadata = Metadata(self.toMap.updated(key, value))
-    inline def remove[A](key: Metadata.Key[A]): Metadata = Metadata(self.toMap.removed(key))
 
-  val Empty: Metadata = Metadata(SortedMap.empty)
+    def put[A](key: Metadata.Key[A], value: A): Metadata = toSortedMap.updated(key, value)
 
-  def one[A](key: Metadata.Key[A], value: A): Metadata = Metadata(SortedMap(key -> value))
+    def remove[A](key: Metadata.Key[A]): Metadata = toSortedMap.removed(key)
 
-  given Show[Metadata] = Show.fromToString
+    def ++(metadata: Metadata): Metadata = toSortedMap ++ metadata.toSortedMap
+
+  val Empty: Metadata = SortedMap.empty
+
+  def one[A](key: Metadata.Key[A], value: A): Metadata = SortedMap(key -> value)
+
+  given Show[Metadata] = _.toSortedMap.map((key, value) => s"$key=$value").mkString("[", ",", "]")

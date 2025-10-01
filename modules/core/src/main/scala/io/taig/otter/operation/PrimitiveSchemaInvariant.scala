@@ -1,137 +1,65 @@
 package io.taig.otter.operation
+
 import io.taig.validation.Constraint
 import io.taig.validation.Validation
 
-import java.lang.String as JString
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
-import scala.Boolean as SBoolean
+import cats.data.Chain
+import java.math.BigInteger
+import io.taig.otter.Annotation
+import io.taig.otter.Primitive
 
-trait PrimitiveSchemaInvariant[Self[_], -Value[_]]
-    extends PrimitiveSchemaInvariant.Boolean[Self],
-      PrimitiveSchemaInvariant.Number[Self],
-      PrimitiveSchemaInvariant.String[Self, Value]:
+trait PrimitiveSchemaInvariant[Self[_]]
+    extends BooleanSchemaInvariant[Self],
+      NumberSchemaInvariant[Self, Constraint.Primitive],
+      StringSchemaInvariant[Self, Constraint.Primitive]:
   self =>
 
-  override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-      gK: [A] => T[A] => Self[A]
-  ): PrimitiveSchemaInvariant[T, Value] = new PrimitiveSchemaInvariant[T, Value]:
-    override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
-    override def boolean: T[SBoolean] = fK(self.boolean)
-    override def jBigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): T[JBigDecimal] =
-      fK(self.jBigDecimal(validation))
-    override def jBigInteger(validation: Validation[Constraint.Primitive.Number, JBigInteger]): T[JBigInteger] =
-      fK(self.jBigInteger(validation))
-    override def double(validation: Validation[Constraint.Primitive.Number, Double]): T[Double] =
-      fK(self.double(validation))
-    override def float(validation: Validation[Constraint.Primitive.Number, Float]): T[Float] =
-      fK(self.float(validation))
-    override def int(validation: Validation[Constraint.Primitive.Number, Int]): T[Int] =
-      fK(self.int(validation))
-    override def long(validation: Validation[Constraint.Primitive.Number, Long]): T[Long] =
-      fK(self.long(validation))
-    override def string(validation: Validation[Constraint.Primitive.Text, JString]): T[JString] =
-      fK(self.string(validation))
-    override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
-      fK(self.parser(name, decode, encode))
-    override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-    override def parsed[A](schema: => Value[A]): T[A] = fK(self.parsed(schema))
+  extension [A](self: Self[A]) override def constraints: Chain[Constraint.Primitive]
+
+  final override def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): PrimitiveSchemaInvariant[G] =
+    new PrimitiveSchemaInvariant[G]:
+      override def boolean: G[Boolean] = fK(self.boolean)
+
+      override def bigDecimal(
+          validation: Validation[Constraint.Primitive.Number, java.math.BigDecimal]
+      ): G[java.math.BigDecimal] = fK(self.bigDecimal(validation))
+
+      override def bigInteger(validation: Validation[Constraint.Primitive.Number, BigInteger]): G[BigInteger] =
+        fK(self.bigInteger(validation))
+
+      override def double(validation: Validation[Constraint.Primitive.Number, Double]): G[Double] =
+        fK(self.double(validation))
+
+      override def float(validation: Validation[Constraint.Primitive.Number, Float]): G[Float] =
+        fK(self.float(validation))
+
+      override def int(validation: Validation[Constraint.Primitive.Number, Int]): G[Int] =
+        fK(self.int(validation))
+
+      override def long(validation: Validation[Constraint.Primitive.Number, Long]): G[Long] =
+        fK(self.long(validation))
+
+      override def string(validation: Validation[Constraint.Primitive.Text, String]): G[String] =
+        fK(self.string(validation))
+
+      override def parser[A](name: String, decode: String => Either[String, A], encode: A => String): G[A] =
+        fK(self.parser(name, decode, encode))
+
+      extension [A](ga: G[A])
+        override def constraints: Chain[Constraint.Primitive] = self.constraints(gK(ga))
+
+        override def imap[B](f: A => B)(g: B => A): G[B] = fK(self.imap(gK(ga))(f)(g))
 
 object PrimitiveSchemaInvariant:
-  trait Boolean[Self[_]] extends SchemaInvariant[Self]:
-    self =>
+  inline def apply[Self[_]](using invariant: PrimitiveSchemaInvariant[Self]): PrimitiveSchemaInvariant[Self] =
+    invariant
 
-    def boolean: Self[SBoolean]
+  given PrimitiveSchemaInvariant[[a] =>> Annotation[Primitive[a]]] with
+    export BooleanSchemaInvariant.schema.boolean
+    export NumberSchemaInvariant.schema.{bigDecimal, bigInteger, double, float, int, long}
+    export StringSchemaInvariant.schema.{parser, string}
 
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-        gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchemaInvariant.Boolean[T] = new Boolean[T]:
-      override def boolean: T[SBoolean] = fK(self.boolean)
-      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-      override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
+    extension [A](self: Annotation[Primitive[A]])
+      override def constraints: Chain[Constraint.Primitive] = self.self.constraints
 
-  object Boolean:
-    inline def apply[Self[_]](using
-        self: PrimitiveSchemaInvariant.Boolean[Self]
-    ): PrimitiveSchemaInvariant.Boolean[Self] = self
-
-  trait Number[Self[_]] extends SchemaInvariant[Self]:
-    self =>
-
-    def jBigDecimal(
-        validation: Validation[Constraint.Primitive.Number, JBigDecimal]
-    ): Self[JBigDecimal]
-
-    def jBigInteger(
-        validation: Validation[Constraint.Primitive.Number, JBigInteger]
-    ): Self[JBigInteger]
-
-    def double(validation: Validation[Constraint.Primitive.Number, Double]): Self[Double]
-
-    def float(validation: Validation[Constraint.Primitive.Number, Float]): Self[Float]
-
-    def int(validation: Validation[Constraint.Primitive.Number, Int]): Self[Int]
-
-    def long(validation: Validation[Constraint.Primitive.Number, Long]): Self[Long]
-
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-        gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchemaInvariant.Number[T] = new Number[T]:
-      override def jBigDecimal(
-          validation: Validation[Constraint.Primitive.Number, JBigDecimal]
-      ): T[JBigDecimal] = fK(self.jBigDecimal(validation))
-      override def jBigInteger(
-          validation: Validation[Constraint.Primitive.Number, JBigInteger]
-      ): T[JBigInteger] = fK(self.jBigInteger(validation))
-      override def double(
-          validation: Validation[Constraint.Primitive.Number, Double]
-      ): T[Double] = fK(self.double(validation))
-      override def float(
-          validation: Validation[Constraint.Primitive.Number, Float]
-      ): T[Float] = fK(self.float(validation))
-      override def int(
-          validation: Validation[Constraint.Primitive.Number, Int]
-      ): T[Int] = fK(self.int(validation))
-      override def long(
-          validation: Validation[Constraint.Primitive.Number, Long]
-      ): T[Long] = fK(self.long(validation))
-      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-      override def imap[A, B](ta: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(ta))(f)(g))
-
-  object Number:
-    inline def apply[Self[_]](using
-        self: PrimitiveSchemaInvariant.Number[Self]
-    ): PrimitiveSchemaInvariant.Number[Self] = self
-
-  trait String[Self[_], -Value[_]] extends SchemaInvariant[Self]:
-    self =>
-
-    def string(validation: Validation[Constraint.Primitive.Text, JString]): Self[JString]
-
-    def parser[A](
-        name: JString,
-        decode: JString => Either[JString, A],
-        encode: A => JString
-    ): Self[A]
-
-    def parsed[A](schema: => Value[A]): Self[A]
-
-    override def imapK[T[_]](fK: [A] => Self[A] => T[A])(
-        gK: [A] => T[A] => Self[A]
-    ): PrimitiveSchemaInvariant.String[T, Value] = new PrimitiveSchemaInvariant.String[T, Value]:
-      override def imap[A, B](fa: T[A])(f: A => B)(g: B => A): T[B] = fK(self.imap(gK(fa))(f)(g))
-      override def enriched[A]: Enriched[T[A]] = self.enriched[A].imap(fK(_))(gK(_))
-      override def string(validation: Validation[Constraint.Primitive.Text, JString]): T[JString] =
-        fK(self.string(validation))
-      override def parser[A](name: JString, decode: JString => Either[JString, A], encode: A => JString): T[A] =
-        fK(self.parser(name, decode, encode))
-      override def parsed[A](schema: => Value[A]): T[A] = fK(self.parsed(schema))
-
-  object String:
-    inline def apply[Self[_], Value[_]](using
-        self: PrimitiveSchemaInvariant.String[Self, Value]
-    ): PrimitiveSchemaInvariant.String[Self, Value] = self
-
-  inline def apply[Self[_], Value[_]](using
-      self: PrimitiveSchemaInvariant[Self, Value]
-  ): PrimitiveSchemaInvariant[Self, Value] = self
+      override def imap[B](f: A => B)(g: B => A): Annotation[Primitive[B]] = self.map(_.imap(f)(g))

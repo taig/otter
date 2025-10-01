@@ -50,8 +50,8 @@ inThisBuild(
   )
 )
 
-addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
-addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
+// addCommandAlias("start", s"${sampleApp.jvm.id}/reStart")
+// addCommandAlias("stop", s"${sampleApp.jvm.id}/reStop")
 
 noPublishSettings
 
@@ -69,34 +69,15 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(
-    core,
-    coreCaseInsensitive,
-    coreJavaTime,
-    coreJson,
-    coreEffect,
-    coreTypescript,
-    coreJsonCirce,
-    coreJsonEffect,
-    coreJsonTypescript,
-    coreJsonTypescriptEffect,
-    http,
-    httpHttp4s,
-    httpJson,
-    httpJsonCirce,
-    httpTypescriptEffect,
-    munit,
-    sample,
-    sampleApi,
-    sampleApp
-  )
+  .aggregate(core, coreCaseInsensitive, coreJson)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
       val sumInstances = (Compile / sourceManaged).value / "ConvertInstances.scala"
-      IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
-      Seq(sumInstances)
+      // IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
+      // Seq(sumInstances)
+      Nil
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "data-core" % Version.Data ::
@@ -113,115 +94,116 @@ lazy val core = module(identifier = Some("core"))
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
   .settings(
     libraryDependencies ++=
-      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+      "io.taig" %%% "validation-cistring" % Version.Validation ::
+        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
         Nil
   )
   .dependsOn(core)
 
-lazy val coreJavaTime = module(identifier = Some("core-java-time"))
-  .settings(
-    libraryDependencies ++=
-      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
-        Nil
-  )
-  .dependsOn(core)
+// lazy val coreJavaTime = module(identifier = Some("core-java-time"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+//         Nil
+//   )
+//   .dependsOn(core)
 
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreTypescript = module(identifier = Some("core-typescript"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val coreTypescript = module(identifier = Some("core-typescript"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreEffect = module(identifier = Some("core-effect"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val coreEffect = module(identifier = Some("core-effect"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
-  .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
+// lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
+//   .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
 
-lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        "io.taig" %%% "data-circe" % Version.Data ::
-        Nil
-  )
-  .dependsOn(coreJson % "compile->compile;test->test")
+// lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %%% "circe-core" % Version.Circe ::
+//         "io.taig" %%% "data-circe" % Version.Data ::
+//         Nil
+//   )
+//   .dependsOn(coreJson % "compile->compile;test->test")
 
-lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
-  .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
+// lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
+//   .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
 
-lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
-  .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
+// lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
+//   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
 
-lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
-  .dependsOn(
-    coreTypescriptEffect % "compile->compile;test->test",
-    coreJsonEffect % "compile->compile;test->test",
-    coreJsonTypescript % "compile->compile;test->test"
-  )
+// lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
+//   .dependsOn(
+//     coreTypescriptEffect % "compile->compile;test->test",
+//     coreJsonEffect % "compile->compile;test->test",
+//     coreJsonTypescript % "compile->compile;test->test"
+//   )
 
-lazy val http = module(identifier = Some("http"))
-  .settings(
-    libraryDependencies ++=
-      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
-        Nil
-  )
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val http = module(identifier = Some("http"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
+//         Nil
+//   )
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val httpJson = module(identifier = Some("http-json"))
-  .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+// lazy val httpJson = module(identifier = Some("http-json"))
+//   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
 
-lazy val httpJsonCirce = module(identifier = Some("http-json-circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-jawn" % Version.Circe ::
-        Nil
-  )
-  .dependsOn(httpJson % "compile->compile;test->test", coreJsonCirce % "compile->compile;test->test")
+// lazy val httpJsonCirce = module(identifier = Some("http-json-circe"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %%% "circe-jawn" % Version.Circe ::
+//         Nil
+//   )
+//   .dependsOn(httpJson % "compile->compile;test->test", coreJsonCirce % "compile->compile;test->test")
 
-lazy val httpHttp4s = module(identifier = Some("http-http4s"))
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %%% "http4s-server" % Version.Http4s ::
-        Nil
-  )
-  .dependsOn(http % "compile->compile;test->test")
+// lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.http4s" %%% "http4s-server" % Version.Http4s ::
+//         Nil
+//   )
+//   .dependsOn(http % "compile->compile;test->test")
 
-lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
-  .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
+// lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
+//   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
 
-lazy val munit = module(identifier = Some("munit"))
-  .settings(
-    libraryDependencies ++=
-      "org.scalameta" %%% "munit" % Version.Munit ::
-        "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
-        Nil
-  )
-  .dependsOn(http)
+// lazy val munit = module(identifier = Some("munit"))
+//   .settings(
+//     libraryDependencies ++=
+//       "org.scalameta" %%% "munit" % Version.Munit ::
+//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect ::
+//         Nil
+//   )
+//   .dependsOn(http)
 
-lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %% "circe-parser" % Version.Circe ::
-        "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
-        Nil
-  )
+// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+//   .settings(noPublishSettings)
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %% "circe-parser" % Version.Circe ::
+//         "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
+//         Nil
+//   )
 
-lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
+// lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+//   .settings(noPublishSettings)
+//   .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
 
-lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .settings(
-    libraryDependencies ++=
-      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
-        "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
-        "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
-        "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
-        "org.typelevel" %% "mouse" % Version.Mouse ::
-        Nil
-  )
-  .dependsOn(sampleApi, httpJsonCirce, httpTypescriptEffect, munit % "compile->test")
+// lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
+//   .settings(noPublishSettings)
+//   .settings(
+//     libraryDependencies ++=
+//       "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+//         "org.slf4j" % "slf4j-simple" % Version.Slf4j ::
+//         "org.typelevel" %% "log4cats-noop" % Version.Log4Cats ::
+//         "org.typelevel" %% "log4cats-slf4j" % Version.Log4Cats ::
+//         "org.typelevel" %% "mouse" % Version.Mouse ::
+//         Nil
+//   )
+//   .dependsOn(sampleApi, httpJsonCirce, httpTypescriptEffect, munit % "compile->test")
