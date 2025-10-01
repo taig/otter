@@ -9,9 +9,14 @@ trait CollectionOperation[+Self[_], -Value[_]]:
 
   def indexed[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): Self[Vector[A]]
 
+  def linked[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): Self[List[A]]
+
   def mapK[T[_]](fK: [A] => Self[A] => T[A]): CollectionOperation[T, Value] = new CollectionOperation[T, Value]:
-    def indexed[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): T[Vector[A]] =
+    override def indexed[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): T[Vector[A]] =
       fK(self.indexed(schema, validation))
+
+    override def linked[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): T[List[A]] =
+      fK(self.linked(schema, validation))
 
 object CollectionOperation:
   inline def apply[Self[_], Value[_]](using

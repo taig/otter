@@ -23,6 +23,13 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, Vector[A]] =
       copy(schema = schema.mapK[S1, T](fK))
 
+  final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, A])
+      extends Collection[S, List[A]]:
+    override def constraints: Chain[Constraint.Collection] = validation.constraints
+
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, List[A]] =
+      copy(schema = schema.mapK[S1, T](fK))
+
   final case class Modify[S[_], A, B](self: Collection[S, A], f: A => B, g: B => A) extends Collection[S, B]:
     export self.{constraints, schema}
 
@@ -34,3 +41,6 @@ object Collection:
         schema: => S[A],
         validation: Validation[Constraint.Collection, A]
     ): Collection[S, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
+
+    override def linked[A](schema: => S[A], validation: Validation[Constraint.Collection, A]): Collection[S, List[A]] =
+      Collection.Linked(schema = Reference.later(schema), validation)
