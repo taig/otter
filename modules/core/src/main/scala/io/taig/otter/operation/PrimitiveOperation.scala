@@ -1,11 +1,11 @@
 package io.taig.otter.operation
 
 import cats.data.Chain
-
 import io.taig.otter.Constraint
-import io.taig.validation.Validation
-import java.math.BigInteger
 import io.taig.otter.InvariantK
+import io.taig.validation.Validation
+
+import java.math.BigInteger
 
 trait PrimitiveOperation[Self[_]] extends BooleanOperation[Self], NumberOperation[Self], StringOperation[Self]:
   self =>

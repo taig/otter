@@ -1,11 +1,12 @@
 package io.taig.otter.operation
 
-import io.taig.validation.Validation
+import cats.data.Chain
 import io.taig.otter.Constraint
+import io.taig.otter.InvariantK
+import io.taig.validation.Validation
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import cats.data.Chain
-import io.taig.otter.InvariantK
 
 trait NumberOperation[Self[_]]:
   self =>

@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import java.io.StringWriter
 import java.io.PrintWriter
+import java.io.StringWriter
 
 private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
   characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (value, character) =>

@@ -2,9 +2,9 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import io.taig.otter.operation.BooleanOperation
-import io.taig.otter.operation.StringOperation
-import io.taig.otter.operation.NumberOperation
 import io.taig.otter.operation.CoerceOperation
+import io.taig.otter.operation.NumberOperation
+import io.taig.otter.operation.StringOperation
 
 sealed abstract class Text[A] extends Product with Serializable
 

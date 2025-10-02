@@ -1,10 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Constraint
 import cats.data.Validated
-import io.taig.otter.Primitive
 import cats.syntax.all.*
+import io.taig.otter.Constraint
+import io.taig.otter.Primitive
 import io.taig.otter.Violation
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 

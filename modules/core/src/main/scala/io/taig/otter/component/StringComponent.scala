@@ -1,14 +1,15 @@
 package io.taig.otter.component
 
+import cats.syntax.all.*
 import io.taig.Undefined
 import io.taig.otter.Constraint
 import io.taig.otter.Invariant
+import io.taig.otter.operation.StringOperation
 import io.taig.validation
 import io.taig.validation.Validation
-import java.util.regex.Pattern
+
 import java.util.UUID
-import cats.syntax.all.*
-import io.taig.otter.operation.StringOperation
+import java.util.regex.Pattern
 
 trait StringComponent[+Self[_]: Invariant](using operation: StringOperation[Self]):
   self =>

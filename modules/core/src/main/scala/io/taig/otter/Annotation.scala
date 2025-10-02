@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.Applicative
 import cats.syntax.all.*
+
 import java.lang.String as String
 
 final case class Annotation[+A](metadata: Metadata, self: A):

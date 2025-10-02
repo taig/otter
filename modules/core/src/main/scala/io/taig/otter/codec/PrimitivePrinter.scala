@@ -1,6 +1,7 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Primitive
+
 import scala.annotation.tailrec
 
 object PrimitivePrinter extends Printer[Primitive]:

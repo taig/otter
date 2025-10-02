@@ -1,6 +1,7 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Coerce
+
 import scala.annotation.tailrec
 
 final class CoercePrinter[-S[_]](printer: Printer[S]) extends Printer[Coerce[S, *]]:

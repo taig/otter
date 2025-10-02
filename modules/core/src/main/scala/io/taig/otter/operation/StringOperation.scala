@@ -1,9 +1,9 @@
 package io.taig.otter.operation
 
-import io.taig.validation.Validation
-import io.taig.otter.Constraint
 import cats.data.Chain
+import io.taig.otter.Constraint
 import io.taig.otter.InvariantK
+import io.taig.validation.Validation
 
 trait StringOperation[Self[_]]:
   self =>

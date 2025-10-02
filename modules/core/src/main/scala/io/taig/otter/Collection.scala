@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.validation.Validation
 import io.taig.otter.operation.CollectionOperation
+import io.taig.validation.Validation
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   self =>

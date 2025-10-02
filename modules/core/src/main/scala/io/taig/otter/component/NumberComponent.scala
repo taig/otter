@@ -1,11 +1,4 @@
 package io.taig.otter.component
-
-import io.taig.Undefined
-import io.taig.validation.Validation
-import io.taig.validation
-import io.taig.validation.Constraint
-import java.math.BigDecimal as JBigDecimal
-import io.taig.validation.Comparison
 import io.taig.otter.operation.NumberOperation
 
 trait NumberComponent[+Self[_]](using operation: NumberOperation[Self])

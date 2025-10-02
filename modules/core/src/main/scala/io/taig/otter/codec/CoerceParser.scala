@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Coerce
 import cats.data.Validated
-import io.taig.otter.Violation
+import io.taig.otter.Coerce
 import io.taig.otter.Coerce.Modify
 import io.taig.otter.Coerce.Root
+import io.taig.otter.Violation
 
 final class CoerceParser[-S[_]](parser: Parser[S]) extends Parser[Coerce[S, *]]:
   override def parse[A](schema: Coerce[S, A], value: String): Validated[Violation, A] = schema match

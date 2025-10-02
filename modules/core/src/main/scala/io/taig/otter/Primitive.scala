@@ -1,6 +1,10 @@
 package io.taig.otter
 
 import cats.data.Chain
+import io.taig.otter.operation.BooleanOperation
+import io.taig.otter.operation.NumberOperation
+import io.taig.otter.operation.PrimitiveOperation
+import io.taig.otter.operation.StringOperation
 import io.taig.validation.Constraint
 import io.taig.validation.Validation
 
@@ -12,10 +16,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.operation.BooleanOperation
-import io.taig.otter.operation.NumberOperation
-import io.taig.otter.operation.StringOperation
-import io.taig.otter.operation.PrimitiveOperation
 
 sealed abstract class Primitive[A] extends Product with Serializable:
   def constraints: Chain[Constraint.Primitive.Number | Constraint.Primitive.Text]
