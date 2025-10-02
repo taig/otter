@@ -18,19 +18,19 @@ trait StringComponent[+Self[_]: Invariant](using operation: StringOperation[Self
 
   final val string: Self[String] = operation.string(Validation.valid)
 
-  extension (x: string.type)
-    def apply(
-        minimum: Undefined.Or[Int] = Undefined,
-        maximum: Undefined.Or[Int] = Undefined,
-        matches: Undefined.Or[Pattern] = Undefined
-    ): Self[String] = self.string(validation = validation.std.string(minimum, maximum, matches))
+  final def string(
+      minimum: Undefined.Or[Int] = Undefined,
+      maximum: Undefined.Or[Int] = Undefined,
+      matches: Undefined.Or[Pattern] = Undefined
+  ): Self[String] = self.string(validation = validation.std.string(minimum, maximum, matches))
 
+  extension (x: string.type)
     def matches(reference: String): Self[String] = self.string(validation = validation.std.string.equals(reference))
 
     def required(
         maximum: Undefined.Or[Int] = Undefined,
         matches: Undefined.Or[Pattern] = Undefined
-    ): Self[String] = apply(minimum = 1, maximum, matches)
+    ): Self[String] = self.string(minimum = 1, maximum, matches)
 
     def required: Self[String] = required()
 
