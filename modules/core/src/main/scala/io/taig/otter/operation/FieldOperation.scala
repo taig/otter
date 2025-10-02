@@ -1,5 +1,7 @@
 package io.taig.otter.operation
 
+import io.taig.otter.InvariantK
+
 trait FieldOperation[Self[_], -Value[_]]:
   self =>
 
@@ -22,3 +24,8 @@ trait FieldOperation[Self[_], -Value[_]]:
 object FieldOperation:
   inline def apply[Self[_], Value[_]](using operation: FieldOperation[Self, Value]): FieldOperation[Self, Value] =
     operation
+
+  given [Value[_]]: InvariantK[[s[_]] =>> FieldOperation[s, Value]] with
+    extension [G[_]](self: FieldOperation[G, Value])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): FieldOperation[H, Value] =
+        self.imapK(fK)(gK)

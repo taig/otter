@@ -24,12 +24,12 @@ object Annotation:
     extension [A](self: Annotation[F[A]])
       override def imap[B](f: A => B)(g: B => A): Annotation[F[B]] = self.map(_.imap(f)(g))
 
-  given [F[_[_]], G[_]](using fg: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
+  given operation1[F[_[_]], G[_]](using fg: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
     fg.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
       (annotation: Annotation[G[A]]) => annotation.self
     )
 
-  given [F[_[_], _[_]], G[_], H[_]](using
+  given operation2[F[_[_], _[_]], G[_], H[_]](using
       fgh: F[G, H]
   )(using InvariantK[[g[_]] =>> F[g, H]]): F[[a] =>> Annotation[G[a]], H] =
     fgh.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>

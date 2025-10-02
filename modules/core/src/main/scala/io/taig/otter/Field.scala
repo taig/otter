@@ -41,12 +41,11 @@ object Field:
   given invariant[S[_]]: Invariant[Field[S, *]] with
     override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: FieldOperation[[a] =>> Annotation[Field[S, a]], S] with
-    override def apply[A](name: String, value: => S[A]): Annotation[Field[S, A]] =
-      Annotation(Field.Root(name, schema = Reference.now(value)))
+  given operation[S[_]]: FieldOperation[Field[S, *], S] with
+    override def apply[A](name: String, value: => S[A]): Field[S, A] =
+      Field.Root(name, schema = Reference.now(value))
 
-    extension [A](self: Annotation[Field[S, A]])
-      override def optional: Annotation[Field[S, Option[A]]] = Annotation(Field.Optional(self.self))
+    extension [A](self: Field[S, A])
+      override def optional: Field[S, Option[A]] = Field.Optional(self)
 
-      override def optional(default: => A): Annotation[Field[S, A]] =
-        Annotation(Field.Default(self.self, Eval.later(default)))
+      override def optional(default: => A): Field[S, A] = Field.Default(self, Eval.later(default))
