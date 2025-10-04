@@ -5,9 +5,10 @@ import io.taig.otter.operation.CoerceOperation
 import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.otter.operation.RecordOperation
-import Self.operation.NullableOperation
-import Self.operation.ConstantOperation
-import Self.operation.CollectionOperation
+import io.taig.otter.operation.NullableOperation
+import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.operation.CollectionOperation
+import Self.operation.DictionaryOperation
 
 sealed abstract class Json[+S[a] <: Json[?, a], A] extends Product with Serializable
 
@@ -46,6 +47,18 @@ object Json:
 
     given operation: ConstantOperation[Json.Constant, Json.Primitive] =
       ConstantOperation[[a] =>> Self.Constant[Json.Primitive, a], Json.Primitive].mapK(liftK)
+
+  final case class Dictionary[+S[a] <: Json[?, a], A](self: Self.Dictionary[S, A]) extends Json[S, A]
+
+  object Dictionary:
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Self.Dictionary[S, A]) => Dictionary(self)
+    def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Dictionary[S, A]) => json.self
+
+    given invariant[S[a] <: Json[?, a]]: Invariant[Json.Dictionary[S, *]] =
+      Invariant[[a] =>> Self.Dictionary[S, a]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Json[?, a]]: DictionaryOperation[Json.Dictionary[S, *], S] =
+      DictionaryOperation[[a] =>> Self.Dictionary[S, a], S].mapK(liftK[S])
 
   final case class Nullable[+S[a] <: Json[?, a], A](self: Self.Nullable[S, A]) extends Json[S, A]
 
@@ -98,8 +111,9 @@ object Json:
   given invariant[S[a] <: Json[?, a]]: Invariant[Json[S, *]] with
     extension [A](json: Json[S, A])
       override def imap[B](f: A => B)(g: B => A): Json[S, B] = json match
-        case json: Json.Coerce[A]      => json.imap(f)(g)
-        case json: Json.Constant[A]    => json.imap(f)(g)
-        case json: Json.Nullable[S, A] => json.imap(f)(g)
-        case json: Json.Primitive[A]   => json.imap(f)(g)
-        case json: Json.Record[S, A]   => json.imap(f)(g)
+        case json: Json.Coerce[?]        => json.imap(f)(g)
+        case json: Json.Collection[?, ?] => json.imap(f)(g)
+        case json: Json.Constant[?]      => json.imap(f)(g)
+        case json: Json.Nullable[?, ?]   => json.imap(f)(g)
+        case json: Json.Primitive[?]     => json.imap(f)(g)
+        case json: Json.Record[?, ?]     => json.imap(f)(g)

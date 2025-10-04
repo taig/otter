@@ -22,6 +22,13 @@ trait SchemaShape:
 
       export Self.Schema.Constant.unapply
 
+    type Dictionary[A] = Self.Schema.Dictionary[?, A]
+
+    object Dictionary:
+      type Of[S[a] <: Self.Schema[?, a], A] = Self.Schema.Dictionary[S, A]
+
+      export Self.Schema.Dictionary.unapply
+
     type Primitive[A] = Self.Schema.Primitive[A]
 
     object Primitive:
