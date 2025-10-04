@@ -5,6 +5,8 @@ import io.taig.otter.operation.BooleanOperation
 import io.taig.otter.operation.CoerceOperation
 import io.taig.otter.operation.NumberOperation
 import io.taig.otter.operation.StringOperation
+import Self.operation.UnionOperation
+import Self.operation.ConstantOperation
 
 sealed abstract class Text[+S[a] <: Text[?, a], A] extends Product with Serializable
 
@@ -40,6 +42,16 @@ object Text:
 
   final case class Constant[+S[a] <: Text[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Text[S, A]
 
+  object Constant:
+    def liftK[S[a] <: Text[?, a]] = [A] => (self: Annotation[Self.Constant[S, A]]) => Constant(self)
+    def unliftK[S[a] <: Text[?, a]] = [A] => (schema: Text.Constant[S, A]) => schema.self
+
+    given invariant[S[a] <: Text[?, a]]: Invariant[Text.Constant[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Constant[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Text[?, a]]: ConstantOperation[Text.Constant[S, *], S] =
+      ConstantOperation[[a] =>> Annotation[Self.Constant[S, a]], S].mapK(liftK[S])
+
   final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
 
   object Number:
@@ -64,8 +76,22 @@ object Text:
     given operation: StringOperation[Text.String] =
       StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
+  final case class Union[+S[a] <: Text[?, a], A](self: Annotation[Self.Union[S, A]]) extends Text[S, A]
+
+  object Union:
+    def liftK[S[a] <: Text[?, a]] = [A] => (self: Annotation[Self.Union[S, A]]) => Union(self)
+    def unliftK[S[a] <: Text[?, a]] = [A] => (schema: Text.Union[S, A]) => schema.self
+
+    given invariant[S[a] <: Text[?, a]]: Invariant[Text.Union[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Union[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Text[?, a]]: UnionOperation[Text.Union[S, *], S] =
+      UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].mapK(liftK[S])
+
   given invariant[S[a] <: Text[?, a]]: Invariant[Text[S, *]] with
     extension [A](self: Text[S, A])
       override def imap[B](f: A => B)(g: B => A): Text[S, B] = self match
-        case Text.Coerce(self) => Text.Coerce(self.imap(f)(g))
-        case Text.String(self) => Text.String(self.imap(f)(g))
+        case self: Text.Coerce[?]      => self.imap(f)(g)
+        case self: Text.Constant[?, ?] => self.imap(f)(g)
+        case self: Text.String[?]      => self.imap(f)(g)
+        case self: Text.Union[?, ?]    => self.imap(f)(g)

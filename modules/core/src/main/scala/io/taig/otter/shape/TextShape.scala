@@ -35,4 +35,11 @@ trait TextShape:
     object String:
       export Self.Text.String.unapply
 
+    type Union[A] = Self.Text.Union[?, A]
+
+    object Union:
+      type Of[S[a] <: Self.Text[?, a], A] = Self.Text.Union[S, A]
+
+      export Self.Text.Union.unapply
+
 object TextShape extends TextShape
