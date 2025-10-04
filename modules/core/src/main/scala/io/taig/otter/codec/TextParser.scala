@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
-import io.taig.otter.Text
 import io.taig.otter.Violation
+import io.taig.otter.shape.TextShape.Text
 
 object TextParser extends Parser[Text]:
   override def parse[A](schema: Text[A], value: String): Validated[Violation, A] = schema match
