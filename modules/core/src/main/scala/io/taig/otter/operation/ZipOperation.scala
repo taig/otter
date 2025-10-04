@@ -7,14 +7,14 @@ trait ZipOperation[Self[_]]:
 
   extension [A](self: Self[A]) def zip[B](schema: Self[B]): Self[(A, B)]
 
-  def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): ZipOperation[G] =
-    new ZipOperation[G]:
-      extension [A](ga: G[A])
-        override def zip[B](schema: G[B]): G[(A, B)] =
+  def imapK[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): ZipOperation[T] =
+    new ZipOperation[T]:
+      extension [A](ga: T[A])
+        override def zip[B](schema: T[B]): T[(A, B)] =
           fK(self.zip(gK(ga))(gK(schema)))
 
 object ZipOperation:
   given InvariantK[ZipOperation] with
-    extension [G[_]](self: ZipOperation[G])
-      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): ZipOperation[H] =
+    extension [T[_]](self: ZipOperation[T])
+      override def imapK[H[_]](fK: [A] => T[A] => H[A])(gK: [A] => H[A] => T[A]): ZipOperation[H] =
         self.imapK(fK)(gK)

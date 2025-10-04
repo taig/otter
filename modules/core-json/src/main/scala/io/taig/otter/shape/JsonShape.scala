@@ -51,6 +51,13 @@ trait JsonShape:
 
       export Self.Json.Record.unapply
 
+    type Tuple[A] = Self.Json.Tuple[?, A]
+
+    object Tuple:
+      type Of[S[a] <: Self.Json[?, a], A] = Self.Json.Tuple[S, A]
+
+      export Self.Json.Tuple.unapply
+
     type Field[A] = Self.Json.Field[?, A]
 
     object Field:

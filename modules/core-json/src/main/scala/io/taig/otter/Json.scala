@@ -9,6 +9,8 @@ import io.taig.otter.operation.NullableOperation
 import io.taig.otter.operation.ConstantOperation
 import io.taig.otter.operation.CollectionOperation
 import Self.operation.DictionaryOperation
+import Self.operation.EnumerationOperation
+import Self.operation.TupleOperation
 
 sealed abstract class Json[+S[a] <: Json[?, a], A] extends Product with Serializable
 
@@ -60,6 +62,18 @@ object Json:
     given operation[S[a] <: Json[?, a]]: DictionaryOperation[Json.Dictionary[S, *], S] =
       DictionaryOperation[[a] =>> Self.Dictionary[S, a], S].mapK(liftK[S])
 
+  final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[Json.Primitive, A]
+
+  object Enumeration:
+    val liftK = [A] => (self: Self.Enumeration[Json.Primitive, A]) => Enumeration(self)
+    val unliftK = [A] => (json: Json.Enumeration[A]) => json.self
+
+    given invariant: Invariant[Json.Enumeration] =
+      Invariant[[a] =>> Self.Enumeration[Json.Primitive, a]].imapK(liftK)(unliftK)
+
+    given operation: EnumerationOperation[Json.Enumeration, Json.Primitive] =
+      EnumerationOperation[[a] =>> Self.Enumeration[Json.Primitive, a], Json.Primitive].mapK(liftK)
+
   final case class Nullable[+S[a] <: Json[?, a], A](self: Self.Nullable[S, A]) extends Json[S, A]
 
   object Nullable:
@@ -95,6 +109,18 @@ object Json:
     given operation[S[a] <: Json[?, a]]: RecordOperation[Json.Record[S, *], Json.Field[S, *]] =
       RecordOperation[[a] =>> Annotation[Self.Record[Json.Field[S, *], a]], Json.Field[S, *]]
         .imapK(liftK[S])(unliftK[S])
+
+  final case class Tuple[+S[a] <: Json[?, a], A](self: Annotation[Self.Tuple[S, A]]) extends Json[S, A]
+
+  object Tuple:
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Annotation[Self.Tuple[S, A]]) => Tuple(self)
+    def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Tuple[S, A]) => json.self
+
+    given invariant[S[a] <: Json[?, a]]: Invariant[Json.Tuple[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Json[?, a]]: TupleOperation[Json.Tuple[S, *], S] =
+      TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
 
   final case class Field[+S[a] <: Json[?, a], A](self: Annotation[Self.Field[S, A]]) extends AnyVal
 

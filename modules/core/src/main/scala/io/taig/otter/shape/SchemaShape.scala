@@ -29,6 +29,13 @@ trait SchemaShape:
 
       export Self.Schema.Dictionary.unapply
 
+    type Enumeration[A] = Self.Schema.Enumeration[?, A]
+
+    object Enumeration:
+      type Of[S[a] <: Self.Schema[?, a], A] = Self.Schema.Enumeration[S, A]
+
+      export Self.Schema.Enumeration.unapply
+
     type Primitive[A] = Self.Schema.Primitive[A]
 
     object Primitive:
@@ -53,6 +60,13 @@ trait SchemaShape:
       type Of[S[a] <: Self.Schema[?, a], A] = Self.Schema.Record[S, A]
 
       export Self.Schema.Record.unapply
+
+    type Tuple[A] = Self.Schema.Tuple[?, A]
+
+    object Tuple:
+      type Of[S[a] <: Self.Schema[?, a], A] = Self.Schema.Tuple[S, A]
+
+      export Self.Schema.Tuple.unapply
 
     type Field[A] = Self.Schema.Field[?, A]
 

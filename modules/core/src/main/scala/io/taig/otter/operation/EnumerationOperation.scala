@@ -14,6 +14,10 @@ trait EnumerationOperation[+Self[_], -Value[_]]:
         fK(self.enumeration(schema, mapping))
 
 object EnumerationOperation:
+  inline def apply[Self[_], Value[_]](using
+      operation: EnumerationOperation[Self, Value]
+  ): EnumerationOperation[Self, Value] = operation
+
   given [Value[_]]: FunctorK[[s[_]] =>> EnumerationOperation[s, Value]] with
     extension [G[_]](self: EnumerationOperation[G, Value])
       override def mapK[H[_]](fK: [A] => G[A] => H[A]): EnumerationOperation[H, Value] =

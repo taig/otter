@@ -2,10 +2,8 @@ package io.taig.otter.operation
 
 import io.taig.otter.InvariantK
 
-trait RecordOperation[Self[_], -Field[_]] extends LiftOperation[Self, Field], ZipOperation[Self]:
+trait RecordOperation[Self[_], -Field[_]] extends EmptyOperation[Self], LiftOperation[Self, Field], ZipOperation[Self]:
   self =>
-
-  def empty: Self[Unit]
 
   override def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): RecordOperation[G, Field] =
     new RecordOperation[G, Field]:

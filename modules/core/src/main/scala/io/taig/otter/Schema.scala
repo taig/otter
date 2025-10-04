@@ -10,6 +10,8 @@ import io.taig.otter.operation.StringOperation
 import Self.operation.FieldOperation
 import Self.operation.ConstantOperation
 import Self.operation.DictionaryOperation
+import Self.operation.EnumerationOperation
+import Self.operation.TupleOperation
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Product with Serializable
 
@@ -50,6 +52,18 @@ object Schema:
     given operation[S[a] <: Schema[?, a]]: DictionaryOperation[Schema.Dictionary[S, *], S] =
       DictionaryOperation[[a] =>> Annotation[Self.Dictionary[S, a]], S].mapK(liftK[S])
 
+  final case class Enumeration[+S[a] <: Schema[?, a], A](self: Annotation[Self.Enumeration[S, A]]) extends Schema[S, A]
+
+  object Enumeration:
+    def liftK[S[a] <: Schema[?, a]] = [A] => (self: Annotation[Self.Enumeration[S, A]]) => Enumeration(self)
+    def unliftK[S[a] <: Schema[?, a]] = [A] => (schema: Schema.Enumeration[S, A]) => schema.self
+
+    given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Enumeration[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Enumeration[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Schema[?, a]]: EnumerationOperation[Schema.Enumeration[S, *], S] =
+      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
+
   final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[Schema.Field[S, *], A]])
       extends Schema[S, A]
 
@@ -63,6 +77,18 @@ object Schema:
     given operation[S[a] <: Schema[?, a]]: RecordOperation[Schema.Record[S, *], Schema.Field[S, *]] =
       RecordOperation[[a] =>> Annotation[Self.Record[Schema.Field[S, *], a]], Schema.Field[S, *]]
         .imapK(liftK[S])(unliftK[S])
+
+  final case class Tuple[+S[a] <: Schema[?, a], A](self: Annotation[Self.Tuple[S, A]]) extends Schema[S, A]
+
+  object Tuple:
+    def liftK[S[a] <: Schema[?, a]] = [A] => (self: Annotation[Self.Tuple[S, A]]) => Tuple(self)
+    def unliftK[S[a] <: Schema[?, a]] = [A] => (schema: Schema.Tuple[S, A]) => schema.self
+
+    given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Tuple[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Schema[?, a]]: TupleOperation[Schema.Tuple[S, *], S] =
+      TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
 
   final case class Field[+S[a] <: Schema[?, a], A](self: Annotation[Self.Field[S, A]]) extends AnyVal
 
