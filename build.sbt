@@ -69,7 +69,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCaseInsensitive, coreJson)
+  .aggregate(core, coreCaseInsensitive, coreJson, coreJsonCirce)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -120,14 +120,14 @@ lazy val coreJson = module(identifier = Some("core-json"))
 // lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
 //   .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
 
-// lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %%% "circe-core" % Version.Circe ::
-//         "io.taig" %%% "data-circe" % Version.Data ::
-//         Nil
-//   )
-//   .dependsOn(coreJson % "compile->compile;test->test")
+lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        "io.taig" %%% "data-circe" % Version.Data ::
+        Nil
+  )
+  .dependsOn(coreJson % "compile->compile;test->test")
 
 // lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
 //   .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")

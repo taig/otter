@@ -1,8 +1,8 @@
 package io.taig.otter.operation
 
-import io.taig.validation.Validation
 import io.taig.otter.Constraint
 import io.taig.otter.FunctorK
+import io.taig.validation.Validation
 
 trait DictionaryOperation[+Self[_], -Value[_]]:
   self =>

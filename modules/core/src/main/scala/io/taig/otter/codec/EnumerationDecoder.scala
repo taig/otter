@@ -1,11 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Enumeration
 import cats.data.Validated
-import io.taig.otter.Violation
 import cats.syntax.all.*
-import io.taig.otter.Constraint
 import io.taig.data.Data
+import io.taig.otter.Constraint
+import io.taig.otter.Enumeration
+import io.taig.otter.Violation
 
 final class EnumerationDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encoder[S, T], render: T => Data)
     extends Decoder[Enumeration[S, *], T]:

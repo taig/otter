@@ -3,11 +3,11 @@ package io.taig.otter
 import io.taig.otter as Self
 import io.taig.otter.operation.BooleanOperation
 import io.taig.otter.operation.CoerceOperation
+import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.operation.EnumerationOperation
 import io.taig.otter.operation.NumberOperation
 import io.taig.otter.operation.StringOperation
-import Self.operation.UnionOperation
-import Self.operation.ConstantOperation
-import Self.operation.EnumerationOperation
+import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Text[+S[a] <: Text[?, a], A] extends Product with Serializable
 
@@ -106,5 +106,6 @@ object Text:
       override def imap[B](f: A => B)(g: B => A): Text[S, B] = self match
         case self: Text.Coerce[?]      => self.imap(f)(g)
         case self: Text.Constant[?, ?] => self.imap(f)(g)
+        case self: Text.Enumeration[?, ?] => self.imap(f)(g)
         case self: Text.String[?]      => self.imap(f)(g)
         case self: Text.Union[?, ?]    => self.imap(f)(g)

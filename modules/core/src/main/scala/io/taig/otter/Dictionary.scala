@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.taig.validation.Validation
 import io.taig.otter.operation.DictionaryOperation
+import io.taig.validation.Validation
 
 sealed abstract class Dictionary[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]

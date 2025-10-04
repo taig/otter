@@ -32,6 +32,11 @@ trait JsonShape:
 
       export Self.Json.Dictionary.unapply
 
+    type Enumeration[A] = Self.Json.Enumeration[A]
+
+    object Enumeration:
+      export Self.Json.Enumeration.unapply
+
     type Nullable[A] = Self.Json.Nullable[?, A]
 
     object Nullable:
@@ -57,6 +62,13 @@ trait JsonShape:
       type Of[S[a] <: Self.Json[?, a], A] = Self.Json.Tuple[S, A]
 
       export Self.Json.Tuple.unapply
+
+    type Union[A] = Self.Json.Union[?, A]
+
+    object Union:
+      type Of[S[a] <: Self.Json[?, a], A] = Self.Json.Union[S, A]
+
+      export Self.Json.Union.unapply
 
     type Field[A] = Self.Json.Field[?, A]
 

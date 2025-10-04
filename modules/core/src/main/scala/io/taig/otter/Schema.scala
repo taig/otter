@@ -2,17 +2,17 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.operation.CollectionOperation
-import io.taig.otter.operation.RecordOperation
 import io.taig.otter.operation.BooleanOperation
+import io.taig.otter.operation.CollectionOperation
+import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.operation.DictionaryOperation
+import io.taig.otter.operation.EnumerationOperation
+import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.NumberOperation
+import io.taig.otter.operation.RecordOperation
 import io.taig.otter.operation.StringOperation
-import Self.operation.FieldOperation
-import Self.operation.ConstantOperation
-import Self.operation.DictionaryOperation
-import Self.operation.EnumerationOperation
-import Self.operation.TupleOperation
-import Self.operation.UnionOperation
+import io.taig.otter.operation.TupleOperation
+import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Product with Serializable
 

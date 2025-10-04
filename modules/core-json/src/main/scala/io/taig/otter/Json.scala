@@ -2,90 +2,91 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import io.taig.otter.operation.CoerceOperation
+import io.taig.otter.operation.CollectionOperation
+import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.operation.DictionaryOperation
+import io.taig.otter.operation.EnumerationOperation
 import io.taig.otter.operation.FieldOperation
+import io.taig.otter.operation.NullableOperation
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.otter.operation.RecordOperation
-import io.taig.otter.operation.NullableOperation
-import io.taig.otter.operation.ConstantOperation
-import io.taig.otter.operation.CollectionOperation
-import Self.operation.DictionaryOperation
-import Self.operation.EnumerationOperation
-import Self.operation.TupleOperation
-import Self.operation.UnionOperation
+import io.taig.otter.operation.TupleOperation
+import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Json[+S[a] <: Json[?, a], A] extends Product with Serializable
 
 object Json:
-  final case class Coerce[A](self: Self.Coerce[Json.Primitive, A]) extends Json[Json.Primitive, A]
+  final case class Coerce[A](self: Annotation[Self.Coerce[Json.Primitive, A]]) extends Json[Json.Primitive, A]
 
   object Coerce:
-    val liftK = [A] => (self: Self.Coerce[Json.Primitive, A]) => Coerce(self)
+    val liftK = [A] => (self: Annotation[Self.Coerce[Json.Primitive, A]]) => Coerce(self)
     val unliftK = [A] => (json: Json.Coerce[A]) => json.self
 
-    given invariant: Invariant[Json.Coerce] = Invariant[[a] =>> Self.Coerce[Json.Primitive, a]].imapK(liftK)(unliftK)
+    given invariant: Invariant[Json.Coerce] =
+      Invariant[[a] =>> Annotation[Self.Coerce[Json.Primitive, a]]].imapK(liftK)(unliftK)
 
     given operation: CoerceOperation[Json.Coerce, Json.Primitive] =
-      CoerceOperation[[a] =>> Self.Coerce[Json.Primitive, a], Json.Primitive].mapK(liftK)
+      CoerceOperation[[a] =>> Annotation[Self.Coerce[Json.Primitive, a]], Json.Primitive].mapK(liftK)
 
-  final case class Collection[+S[a] <: Json[?, a], A](self: Self.Collection[S, A]) extends Json[S, A]
+  final case class Collection[+S[a] <: Json[?, a], A](self: Annotation[Self.Collection[S, A]]) extends Json[S, A]
 
   object Collection:
-    def liftK[S[a] <: Json[?, a]] = [A] => (self: Self.Collection[S, A]) => Collection(self)
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Annotation[Self.Collection[S, A]]) => Collection(self)
     def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Collection[S, A]) => json.self
 
     given invariant[S[a] <: Json[?, a]]: Invariant[Json.Collection[S, *]] =
-      Invariant[[a] =>> Self.Collection[S, a]].imapK(liftK[S])(unliftK[S])
+      Invariant[[a] =>> Annotation[Self.Collection[S, a]]].imapK(liftK[S])(unliftK[S])
 
     given operation[S[a] <: Json[?, a]]: CollectionOperation[Json.Collection[S, *], S] =
-      CollectionOperation[[a] =>> Self.Collection[S, a], S].mapK(liftK[S])
+      CollectionOperation[[a] =>> Annotation[Self.Collection[S, a]], S].mapK(liftK[S])
 
-  final case class Constant[A](self: Self.Constant[Json.Primitive, A]) extends Json[Json.Primitive, A]
+  final case class Constant[A](self: Annotation[Self.Constant[Json.Primitive, A]]) extends Json[Json.Primitive, A]
 
   object Constant:
-    val liftK = [A] => (self: Self.Constant[Json.Primitive, A]) => Constant(self)
+    val liftK = [A] => (self: Annotation[Self.Constant[Json.Primitive, A]]) => Constant(self)
     val unliftK = [A] => (json: Json.Constant[A]) => json.self
 
     given invariant: Invariant[Json.Constant] =
-      Invariant[[a] =>> Self.Constant[Json.Primitive, a]].imapK(liftK)(unliftK)
+      Invariant[[a] =>> Annotation[Self.Constant[Json.Primitive, a]]].imapK(liftK)(unliftK)
 
     given operation: ConstantOperation[Json.Constant, Json.Primitive] =
-      ConstantOperation[[a] =>> Self.Constant[Json.Primitive, a], Json.Primitive].mapK(liftK)
+      ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive].mapK(liftK)
 
-  final case class Dictionary[+S[a] <: Json[?, a], A](self: Self.Dictionary[S, A]) extends Json[S, A]
+  final case class Dictionary[+S[a] <: Json[?, a], A](self: Annotation[Self.Dictionary[S, A]]) extends Json[S, A]
 
   object Dictionary:
-    def liftK[S[a] <: Json[?, a]] = [A] => (self: Self.Dictionary[S, A]) => Dictionary(self)
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Annotation[Self.Dictionary[S, A]]) => Dictionary(self)
     def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Dictionary[S, A]) => json.self
 
     given invariant[S[a] <: Json[?, a]]: Invariant[Json.Dictionary[S, *]] =
-      Invariant[[a] =>> Self.Dictionary[S, a]].imapK(liftK[S])(unliftK[S])
+      Invariant[[a] =>> Annotation[Self.Dictionary[S, a]]].imapK(liftK[S])(unliftK[S])
 
     given operation[S[a] <: Json[?, a]]: DictionaryOperation[Json.Dictionary[S, *], S] =
-      DictionaryOperation[[a] =>> Self.Dictionary[S, a], S].mapK(liftK[S])
+      DictionaryOperation[[a] =>> Annotation[Self.Dictionary[S, a]], S].mapK(liftK[S])
 
-  final case class Enumeration[A](self: Self.Enumeration[Json.Primitive, A]) extends Json[Json.Primitive, A]
+  final case class Enumeration[A](self: Annotation[Self.Enumeration[Json.Primitive, A]]) extends Json[Json.Primitive, A]
 
   object Enumeration:
-    val liftK = [A] => (self: Self.Enumeration[Json.Primitive, A]) => Enumeration(self)
+    val liftK = [A] => (self: Annotation[Self.Enumeration[Json.Primitive, A]]) => Enumeration(self)
     val unliftK = [A] => (json: Json.Enumeration[A]) => json.self
 
     given invariant: Invariant[Json.Enumeration] =
-      Invariant[[a] =>> Self.Enumeration[Json.Primitive, a]].imapK(liftK)(unliftK)
+      Invariant[[a] =>> Annotation[Self.Enumeration[Json.Primitive, a]]].imapK(liftK)(unliftK)
 
     given operation: EnumerationOperation[Json.Enumeration, Json.Primitive] =
-      EnumerationOperation[[a] =>> Self.Enumeration[Json.Primitive, a], Json.Primitive].mapK(liftK)
+      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Json.Primitive, a]], Json.Primitive].mapK(liftK)
 
-  final case class Nullable[+S[a] <: Json[?, a], A](self: Self.Nullable[S, A]) extends Json[S, A]
+  final case class Nullable[+S[a] <: Json[?, a], A](self: Annotation[Self.Nullable[S, A]]) extends Json[S, A]
 
   object Nullable:
-    def liftK[S[a] <: Json[?, a]] = [A] => (self: Self.Nullable[S, A]) => Nullable(self)
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Annotation[Self.Nullable[S, A]]) => Nullable(self)
     def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Nullable[S, A]) => json.self
 
     given invariant[S[a] <: Json[?, a]]: Invariant[Json.Nullable[S, *]] =
-      Invariant[[a] =>> Self.Nullable[S, a]].imapK(liftK[S])(unliftK[S])
+      Invariant[[a] =>> Annotation[Self.Nullable[S, a]]].imapK(liftK[S])(unliftK[S])
 
     given operation[S[a] <: Json[?, a]]: NullableOperation[Json.Nullable[S, *], S] =
-      NullableOperation[[a] =>> Self.Nullable[S, a], S].mapK(liftK[S])
+      NullableOperation[[a] =>> Annotation[Self.Nullable[S, a]], S].mapK(liftK[S])
 
   final case class Primitive[A](self: Annotation[Self.Primitive[A]]) extends Json[Nothing, A]
 

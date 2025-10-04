@@ -6,6 +6,8 @@ import io.taig.otter.operation.TupleOperation
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
   def schemas: Chain[Reference[S, ?]]
 
+  final def size: Int = schemas.length.toInt
+
   final def imap[T](f: A => T)(g: T => A): Tuple[S, T] = Tuple.Modify(self = this, f, g)
 
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Tuple[T, A]
