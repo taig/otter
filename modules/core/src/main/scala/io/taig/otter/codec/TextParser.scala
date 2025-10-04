@@ -9,6 +9,9 @@ object TextParser extends Parser[Text]:
     case Text.Constant(schema) =>
       ConstantDecoder(decoder = this, encoder = TextPrinter, render = identity)
         .decode(schema = schema.self, value)
+    case Text.Enumeration(schema) =>
+      EnumerationDecoder(decoder = this, encoder = TextPrinter, render = identity)
+        .decode(schema = schema.self, value)
     case Text.Coerce(schema) => CoerceDecoder(decoder = Value).decode(schema = schema.self, value)
     case Text.String(schema) => PrimitiveParser.parse(schema = schema.self, value)
     case Text.Union(schema)  => UnionDecoder(decoder = this).decode(schema = schema.self, value)
