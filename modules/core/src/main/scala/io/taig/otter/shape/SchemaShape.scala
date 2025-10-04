@@ -68,6 +68,13 @@ trait SchemaShape:
 
       export Self.Schema.Tuple.unapply
 
+    type Union[A] = Self.Schema.Union[?, A]
+
+    object Union:
+      type Of[S[a] <: Self.Schema[?, a], A] = Self.Schema.Union[S, A]
+
+      export Self.Schema.Union.unapply
+
     type Field[A] = Self.Schema.Field[?, A]
 
     object Field:

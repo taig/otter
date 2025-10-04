@@ -11,6 +11,7 @@ import io.taig.otter.operation.CollectionOperation
 import Self.operation.DictionaryOperation
 import Self.operation.EnumerationOperation
 import Self.operation.TupleOperation
+import Self.operation.UnionOperation
 
 sealed abstract class Json[+S[a] <: Json[?, a], A] extends Product with Serializable
 
@@ -122,6 +123,18 @@ object Json:
     given operation[S[a] <: Json[?, a]]: TupleOperation[Json.Tuple[S, *], S] =
       TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
 
+  final case class Union[+S[a] <: Json[?, a], A](self: Annotation[Self.Union[S, A]]) extends Json[S, A]
+
+  object Union:
+    def liftK[S[a] <: Json[?, a]] = [A] => (self: Annotation[Self.Union[S, A]]) => Union(self)
+    def unliftK[S[a] <: Json[?, a]] = [A] => (json: Json.Union[S, A]) => json.self
+
+    given invariant[S[a] <: Json[?, a]]: Invariant[Json.Union[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Union[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Json[?, a]]: UnionOperation[Json.Union[S, *], S] =
+      UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].imapK(liftK[S])(unliftK[S])
+
   final case class Field[+S[a] <: Json[?, a], A](self: Annotation[Self.Field[S, A]]) extends AnyVal
 
   object Field:
@@ -140,6 +153,10 @@ object Json:
         case json: Json.Coerce[?]        => json.imap(f)(g)
         case json: Json.Collection[?, ?] => json.imap(f)(g)
         case json: Json.Constant[?]      => json.imap(f)(g)
+        case json: Json.Dictionary[?, ?] => json.imap(f)(g)
+        case json: Json.Enumeration[?]   => json.imap(f)(g)
         case json: Json.Nullable[?, ?]   => json.imap(f)(g)
         case json: Json.Primitive[?]     => json.imap(f)(g)
         case json: Json.Record[?, ?]     => json.imap(f)(g)
+        case json: Json.Tuple[?, ?]      => json.imap(f)(g)
+        case json: Json.Union[?, ?]      => json.imap(f)(g)

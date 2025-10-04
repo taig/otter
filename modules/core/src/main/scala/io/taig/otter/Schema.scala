@@ -12,6 +12,7 @@ import Self.operation.ConstantOperation
 import Self.operation.DictionaryOperation
 import Self.operation.EnumerationOperation
 import Self.operation.TupleOperation
+import Self.operation.UnionOperation
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Product with Serializable
 
@@ -90,6 +91,18 @@ object Schema:
     given operation[S[a] <: Schema[?, a]]: TupleOperation[Schema.Tuple[S, *], S] =
       TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
 
+  final case class Union[+S[a] <: Schema[?, a], A](self: Annotation[Self.Union[S, A]]) extends Schema[S, A]
+
+  object Union:
+    def liftK[S[a] <: Schema[?, a]] = [A] => (self: Annotation[Self.Union[S, A]]) => Union(self)
+    def unliftK[S[a] <: Schema[?, a]] = [A] => (schema: Schema.Union[S, A]) => schema.self
+
+    given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Union[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Union[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Schema[?, a]]: UnionOperation[Schema.Union[S, *], S] =
+      UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].imapK(liftK[S])(unliftK[S])
+
   final case class Field[+S[a] <: Schema[?, a], A](self: Annotation[Self.Field[S, A]]) extends AnyVal
 
   object Field:
@@ -150,8 +163,12 @@ object Schema:
 
   given invariant[S[a] <: Schema[?, a]]: Invariant[Schema[S, *]] with
     extension [A](self: Schema[S, A])
-      override def imap[B](f: A => B)(g: B => A): Schema[S, B] =
-        self match
-          case self: Schema.Collection[S, A] => self.imap(f)(g)
-          case self: Schema.Record[S, A]     => self.imap(f)(g)
-          case self: Schema.Primitive[A]     => self.imap(f)(g)
+      override def imap[B](f: A => B)(g: B => A): Schema[S, B] = self match
+        case self: Schema.Collection[S, A]  => self.imap(f)(g)
+        case self: Schema.Constant[S, A]    => self.imap(f)(g)
+        case self: Schema.Dictionary[S, A]  => self.imap(f)(g)
+        case self: Schema.Enumeration[S, A] => self.imap(f)(g)
+        case self: Schema.Record[S, A]      => self.imap(f)(g)
+        case self: Schema.Primitive[A]      => self.imap(f)(g)
+        case self: Schema.Tuple[S, A]       => self.imap(f)(g)
+        case self: Schema.Union[S, A]       => self.imap(f)(g)
