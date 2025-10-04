@@ -8,6 +8,7 @@ import io.taig.otter.operation.BooleanOperation
 import io.taig.otter.operation.NumberOperation
 import io.taig.otter.operation.StringOperation
 import Self.operation.FieldOperation
+import Self.operation.ConstantOperation
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Product with Serializable
 
@@ -23,6 +24,18 @@ object Schema:
 
     given operation[S[a] <: Schema[?, a]]: CollectionOperation[Schema.Collection[S, *], S] =
       CollectionOperation[[a] =>> Annotation[Self.Collection[S, a]], S].mapK(liftK[S])
+
+  final case class Constant[+S[a] <: Schema[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Schema[S, A]
+
+  object Constant:
+    def liftK[S[a] <: Schema[?, a]] = [A] => (self: Annotation[Self.Constant[S, A]]) => Constant(self)
+    def unliftK[S[a] <: Schema[?, a]] = [A] => (schema: Schema.Constant[S, A]) => schema.self
+
+    given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Constant[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Constant[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Schema[?, a]]: ConstantOperation[Schema.Constant[S, *], S] =
+      ConstantOperation[[a] =>> Annotation[Self.Constant[S, a]], S].mapK(liftK[S])
 
   final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[Schema.Field[S, *], A]])
       extends Schema[S, A]
