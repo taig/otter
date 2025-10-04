@@ -2,5 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.operation.FieldOperation
 
-trait FieldComponent[+Self[_], -Value[_]](using operation: FieldOperation[Self, Value]):
-  def field[A](name: String, value: => Value[A]): Self[A] = operation.apply(name, value)
+trait FieldComponent[-Shape[_], Self[_[a] <: Shape[a], _]]:
+  def field[Value[a] <: Shape[a], A](name: String, value: => Value[A])(using
+      operation: FieldOperation[Self[Value, *], Value]
+  ): Self[Value, A] = operation.apply(name, value)

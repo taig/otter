@@ -10,7 +10,7 @@ sealed abstract class Record[+S[_], A] extends Product with Serializable:
 
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, A]
 
-  final def zip[S1[a] >: S[a], B](schema: Record[S1, B]): Record[S1, (A, B)] =
+  final def zip[T[_], B](schema: Record[T, B]): Record[[a] =>> S[a] | T[a], (A, B)] =
     Record.Zip(left = this, right = schema)
 
 object Record:
@@ -31,11 +31,12 @@ object Record:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, A] =
       copy(field = field.mapK[S1, T](fK))
 
-  final case class Zip[S[_], A, B](left: Record[S, A], right: Record[S, B]) extends Record[S, (A, B)]:
-    override def fields: Chain[Reference[S, ?]] = left.fields ++ right.fields
+  final case class Zip[S[_], T[_], A, B](left: Record[S, A], right: Record[T, B])
+      extends Record[[a] =>> S[a] | T[a], (A, B)]:
+    override def fields: Chain[Reference[[a] =>> S[a] | T[a], ?]] = left.fields ++ right.fields
 
-    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, (A, B)] =
-      copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
+    override def mapK[S1[a] >: (S[a] | T[a]), U[_]](fK: [A] => S1[A] => U[A]): Record[U, (A, B)] =
+      copy(left = left.mapK[S1, U](fK), right = right.mapK[S1, U](fK))
 
   given invariant[S[_]]: Invariant[Record[S, *]] with
     extension [A](self: Record[S, A])

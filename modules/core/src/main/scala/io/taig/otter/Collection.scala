@@ -36,7 +36,10 @@ object Collection:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  given [S[_]]: CollectionOperation[Collection[S, *], S] with
+  given invariant[S[_]]: Invariant[Collection[S, *]] with
+    extension [A](self: Collection[S, A]) override def imap[B](f: A => B)(g: B => A): Collection[S, B] = self.imap(f)(g)
+
+  given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
     override def indexed[A](
         schema: => S[A],
         validation: Validation[Constraint.Collection, A]

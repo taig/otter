@@ -1,7 +1,6 @@
 package io.taig.otter
 
 import cats.Eval
-import cats.Invariant
 import io.taig.otter.operation.FieldOperation
 
 sealed abstract class Field[+S[_], A] extends Product with Serializable:
@@ -39,7 +38,7 @@ object Field:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Field[S, *]] with
-    override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = fa.imap(f)(g)
+    extension [A](self: Field[S, A]) override def imap[B](f: A => B)(g: B => A): Field[S, B] = self.imap(f)(g)
 
   given operation[S[_]]: FieldOperation[Field[S, *], S] with
     override def apply[A](name: String, value: => S[A]): Field[S, A] =
