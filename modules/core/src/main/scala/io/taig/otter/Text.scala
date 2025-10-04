@@ -7,6 +7,7 @@ import io.taig.otter.operation.NumberOperation
 import io.taig.otter.operation.StringOperation
 import Self.operation.UnionOperation
 import Self.operation.ConstantOperation
+import Self.operation.EnumerationOperation
 
 sealed abstract class Text[+S[a] <: Text[?, a], A] extends Product with Serializable
 
@@ -51,6 +52,18 @@ object Text:
 
     given operation[S[a] <: Text[?, a]]: ConstantOperation[Text.Constant[S, *], S] =
       ConstantOperation[[a] =>> Annotation[Self.Constant[S, a]], S].mapK(liftK[S])
+
+  final case class Enumeration[+S[a] <: Text[?, a], A](self: Annotation[Self.Enumeration[S, A]]) extends Text[S, A]
+
+  object Enumeration:
+    def liftK[S[a] <: Text[?, a]] = [A] => (self: Annotation[Self.Enumeration[S, A]]) => Enumeration(self)
+    def unliftK[S[a] <: Text[?, a]] = [A] => (schema: Text.Enumeration[S, A]) => schema.self
+
+    given invariant[S[a] <: Text[?, a]]: Invariant[Text.Enumeration[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Enumeration[S, a]]].imapK(liftK[S])(unliftK[S])
+
+    given operation[S[a] <: Text[?, a]]: EnumerationOperation[Text.Enumeration[S, *], S] =
+      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
 
   final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
 

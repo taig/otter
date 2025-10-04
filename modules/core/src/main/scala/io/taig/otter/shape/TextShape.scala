@@ -25,6 +25,13 @@ trait TextShape:
 
       export Self.Text.Constant.unapply
 
+    type Enumeration[A] = Self.Text.Enumeration[?, A]
+
+    object Enumeration:
+      type Of[S[a] <: Self.Text[?, a], A] = Self.Text.Enumeration[S, A]
+
+      export Self.Text.Enumeration.unapply
+
     type Number[A] = Self.Text.Number[A]
 
     object Number:
