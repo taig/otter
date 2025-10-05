@@ -104,8 +104,8 @@ object Text:
   given invariant[S[a] <: Text[?, a]]: Invariant[Text[S, *]] with
     extension [A](self: Text[S, A])
       override def imap[B](f: A => B)(g: B => A): Text[S, B] = self match
-        case self: Text.Coerce[?]      => self.imap(f)(g)
-        case self: Text.Constant[?, ?] => self.imap(f)(g)
+        case self: Text.Coerce[?]         => self.imap(f)(g)
+        case self: Text.Constant[?, ?]    => self.imap(f)(g)
         case self: Text.Enumeration[?, ?] => self.imap(f)(g)
-        case self: Text.String[?]      => self.imap(f)(g)
-        case self: Text.Union[?, ?]    => self.imap(f)(g)
+        case self: Text.String[?]         => self.imap(f)(g)
+        case self: Text.Union[?, ?]       => self.imap(f)(g)

@@ -88,6 +88,7 @@ lazy val core = module(identifier = Some("core"))
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.typelevel" %%% "kittens" % Version.Kittens ::
         "org.scalameta" %%% "munit" % Version.Munit % "test" ::
+        "dev.zio" %% "zio-test-sbt"      % "2.1.21" % "test" ::
         Nil
   )
 
