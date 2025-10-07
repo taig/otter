@@ -1,17 +1,7 @@
 package io.taig.otter
 
 import io.taig.otter as Self
-import io.taig.otter.operation.CoerceOperation
-import io.taig.otter.operation.CollectionOperation
-import io.taig.otter.operation.ConstantOperation
-import io.taig.otter.operation.DictionaryOperation
-import io.taig.otter.operation.EnumerationOperation
-import io.taig.otter.operation.FieldOperation
-import io.taig.otter.operation.NullableOperation
-import io.taig.otter.operation.PrimitiveOperation
-import io.taig.otter.operation.RecordOperation
-import io.taig.otter.operation.TupleOperation
-import io.taig.otter.operation.UnionOperation
+import io.taig.otter.operation.*
 
 sealed abstract class Json[+S[a] <: Json[?, a], A] extends Product with Serializable
 
@@ -49,8 +39,10 @@ object Json:
     given invariant: Invariant[Json.Constant] =
       Invariant[[a] =>> Annotation[Self.Constant[Json.Primitive, a]]].imapK(liftK)(unliftK)
 
-    given operation: ConstantOperation[Json.Constant, Json.Primitive] =
-      ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive].mapK(liftK)
+    // given operation: ConstantOperation[Json.Constant, Json.Primitive] =
+    //   ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive].mapK(liftK)
+
+    // given op2: ConstantOperation2[Json.Primitive, [_[_], a] =>> Json.Constant[a]] = ???
 
   final case class Dictionary[+S[a] <: Json[?, a], A](self: Annotation[Self.Dictionary[S, A]]) extends Json[S, A]
 

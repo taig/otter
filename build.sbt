@@ -6,7 +6,7 @@ val Version = new {
   val Cats = "2.13.0"
   val CatsEffect = "3.6.0"
   val CatsParse = "1.1.0"
-  val Circe = "0.14.14"
+  val Circe = "0.14.15"
   val Data = "0.0.2"
   val EnumerationExt = "0.5.0"
   val Fs2 = "3.12.0"
@@ -16,13 +16,12 @@ val Version = new {
   val Kittens = "3.5.0"
   val Log4Cats = "2.7.1"
   val Mouse = "1.3.2"
-  val Munit = "1.2.0"
-  val MunitCatsEffect = "1.0.7"
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
   val Validation = "HEAD+20250930-0843"
   val Undefined = "0.0.3"
+  val Zio = "2.1.21"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -87,8 +86,7 @@ lazy val core = module(identifier = Some("core"))
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.typelevel" %%% "kittens" % Version.Kittens ::
-        "org.scalameta" %%% "munit" % Version.Munit % "test" ::
-        "dev.zio" %% "zio-test-sbt"      % "2.1.21" % "test" ::
+        "dev.zio" %%% "zio-test-sbt" % Version.Zio % "test" ::
         Nil
   )
 
@@ -147,7 +145,6 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 //   .settings(
 //     libraryDependencies ++=
 //       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//         "org.typelevel" %%% "munit-cats-effect-3" % Version.MunitCatsEffect % "test" ::
 //         Nil
 //   )
 //   .dependsOn(core % "compile->compile;test->test")

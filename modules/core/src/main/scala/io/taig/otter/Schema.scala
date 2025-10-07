@@ -2,17 +2,7 @@ package io.taig.otter
 
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.operation.BooleanOperation
-import io.taig.otter.operation.CollectionOperation
-import io.taig.otter.operation.ConstantOperation
-import io.taig.otter.operation.DictionaryOperation
-import io.taig.otter.operation.EnumerationOperation
-import io.taig.otter.operation.FieldOperation
-import io.taig.otter.operation.NumberOperation
-import io.taig.otter.operation.RecordOperation
-import io.taig.otter.operation.StringOperation
-import io.taig.otter.operation.TupleOperation
-import io.taig.otter.operation.UnionOperation
+import io.taig.otter.operation.*
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Product with Serializable
 
@@ -38,8 +28,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Constant[S, *]] =
       Invariant[[a] =>> Annotation[Self.Constant[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: ConstantOperation[Schema.Constant[S, *], S] =
-      ConstantOperation[[a] =>> Annotation[Self.Constant[S, a]], S].mapK(liftK[S])
+    given operation[S[a] <: Schema[?, a]]: ConstantOperation[S, Schema.Constant] = ???
+    // ConstantOperation[[a] =>> Annotation[Self.Constant[S, a]], S].mapK(liftK[S])
 
   final case class Dictionary[+S[a] <: Schema[?, a], A](self: Annotation[Self.Dictionary[S, A]]) extends Schema[S, A]
 
