@@ -1,8 +1,6 @@
 package io.taig.otter
 
 import cats.data.NonEmptyChain
-import cats.data.NonEmptyChainImpl.Type
-import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]
@@ -25,7 +23,7 @@ object Union:
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
   final case class Root[S[_], A](schema: Reference[S, A]) extends Union[S, A]:
-    override def schemas: Type[Reference[S, ?]] = NonEmptyChain.one(schema)
+    override def schemas: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(schema)
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] =
       copy(schema = schema.mapK[S1, T](fK))
@@ -33,5 +31,5 @@ object Union:
   given invariant[S[_]]: Invariant[Union[S, *]] with
     extension [A](self: Union[S, A]) override def imap[B](f: A => B)(g: B => A): Union[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: UnionOperation[Union[S, *], S] with
-    override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))
+  // given operation[S[_]]: UnionOperation[Union[S, *], S] with
+  //   override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))

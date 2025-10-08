@@ -1,10 +1,7 @@
 package io.taig.otter
 
 import cats.data.Chain
-import io.taig.otter.operation.BooleanOperation
-import io.taig.otter.operation.NumberOperation
-import io.taig.otter.operation.PrimitiveOperation
-import io.taig.otter.operation.StringOperation
+import io.taig.otter.operation.*
 import io.taig.validation.Constraint
 import io.taig.validation.Validation
 
@@ -73,29 +70,29 @@ object Primitive:
     given invariant: Invariant[Primitive.Number] with
       extension [A](self: Primitive.Number[A]) def imap[T](f: A => T)(g: T => A): Primitive.Number[T] = self.imap(f)(g)
 
-    given operation: NumberOperation[Primitive.Number] with
-      override def bigDecimal(
-          validation: Validation[Constraint.Primitive.Number, JBigDecimal]
-      ): Primitive.Number[JBigDecimal] = BigDecimal(validation)
+    // given operation: NumberOperation[Primitive.Number] with
+    //   override def bigDecimal(
+    //       validation: Validation[Constraint.Primitive.Number, JBigDecimal]
+    //   ): Primitive.Number[JBigDecimal] = BigDecimal(validation)
 
-      override def bigInteger(
-          validation: Validation[Constraint.Primitive.Number, JBigInteger]
-      ): Primitive.Number[JBigInteger] = BigInteger(validation)
+    //   override def bigInteger(
+    //       validation: Validation[Constraint.Primitive.Number, JBigInteger]
+    //   ): Primitive.Number[JBigInteger] = BigInteger(validation)
 
-      override def double(validation: Validation[Constraint.Primitive.Number, SDouble]): Primitive.Number[SDouble] =
-        Double(validation)
+    //   override def double(validation: Validation[Constraint.Primitive.Number, SDouble]): Primitive.Number[SDouble] =
+    //     Double(validation)
 
-      override def float(validation: Validation[Constraint.Primitive.Number, SFloat]): Primitive.Number[SFloat] =
-        Float(validation)
+    //   override def float(validation: Validation[Constraint.Primitive.Number, SFloat]): Primitive.Number[SFloat] =
+    //     Float(validation)
 
-      override def int(validation: Validation[Constraint.Primitive.Number, SInt]): Primitive.Number[SInt] =
-        Int(validation)
+    //   override def int(validation: Validation[Constraint.Primitive.Number, SInt]): Primitive.Number[SInt] =
+    //     Int(validation)
 
-      override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Primitive.Number[SLong] =
-        Long(validation)
+    //   override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Primitive.Number[SLong] =
+    //     Long(validation)
 
-      extension [A](self: Primitive.Number[A])
-        override def constraints: Chain[Constraint.Primitive.Number] = self.constraints
+    //   extension [A](self: Primitive.Number[A])
+    //     override def constraints: Chain[Constraint.Primitive.Number] = self.constraints
 
   sealed abstract class String[A] extends Primitive[A]:
     override def constraints: Chain[Constraint.Primitive.Text]
@@ -116,17 +113,17 @@ object Primitive:
     given invariant: Invariant[Primitive.String] with
       extension [A](self: Primitive.String[A]) def imap[T](f: A => T)(g: T => A): Primitive.String[T] = self.imap(f)(g)
 
-    given operation: StringOperation[Primitive.String] with
-      override def string(validation: Validation[Constraint.Primitive.Text, JString]): Primitive.String[JString] =
-        Root(validation)
+    // given operation: StringOperation[Primitive.String] with
+    //   override def string(validation: Validation[Constraint.Primitive.Text, JString]): Primitive.String[JString] =
+    //     Root(validation)
 
-      override def parser[A](
-          name: JString,
-          decode: JString => Either[JString, A],
-          encode: A => JString
-      ): Primitive.String[A] = Parser(name, decode, encode)
+    //   override def parser[A](
+    //       name: JString,
+    //       decode: JString => Either[JString, A],
+    //       encode: A => JString
+    //   ): Primitive.String[A] = Parser(name, decode, encode)
 
-      extension [A](self: Primitive.String[A]) override def constraints: Chain[Constraint] = self.constraints
+    //   extension [A](self: Primitive.String[A]) override def constraints: Chain[Constraint] = self.constraints
 
   given invariant: Invariant[Primitive] with
     extension [A](self: Primitive[A])
@@ -135,9 +132,9 @@ object Primitive:
         case schema: Primitive.Number[A]  => schema.imap(f)(g)
         case schema: Primitive.String[A]  => schema.imap(f)(g)
 
-  given operation: PrimitiveOperation[Primitive] with
-    export Boolean.operation.boolean
-    export Number.operation.{bigDecimal, bigInteger, double, float, int, long}
-    export String.operation.{parser, string}
-    extension [A](self: Primitive[A])
-      override def constraints: Chain[Constraint.Primitive.Number | Constraint.Primitive.Text] = self.constraints
+  // given operation: PrimitiveOperation[Primitive] with
+  //   export Boolean.operation.boolean
+  //   export Number.operation.{bigDecimal, bigInteger, double, float, int, long}
+  //   export String.operation.{parser, string}
+  //   extension [A](self: Primitive[A])
+  //     override def constraints: Chain[Constraint.Primitive.Number | Constraint.Primitive.Text] = self.constraints

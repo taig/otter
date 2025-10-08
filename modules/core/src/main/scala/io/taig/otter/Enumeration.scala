@@ -32,6 +32,4 @@ object Enumeration:
     extension [A](self: Enumeration[S, A])
       override def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: EnumerationOperation[Enumeration[S, *], S] with
-    override def enumeration[A, B](schema: => S[A], mapping: Mapping[B, A]): Enumeration[S, B] =
-      Enumeration.Root(schema = Reference.later(schema), mapping)
+  given operation[S[_]]: EnumerationOperation[S, Enumeration] = ???

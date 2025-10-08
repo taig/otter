@@ -40,11 +40,13 @@ object Field:
   given invariant[S[_]]: Invariant[Field[S, *]] with
     extension [A](self: Field[S, A]) override def imap[B](f: A => B)(g: B => A): Field[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: FieldOperation[Field[S, *], S] with
-    override def apply[A](name: String, value: => S[A]): Field[S, A] =
-      Field.Root(name, schema = Reference.now(value))
+  given operation[S[_]]: FieldOperation[S, Field] = ???
 
-    extension [A](self: Field[S, A])
-      override def optional: Field[S, Option[A]] = Field.Optional(self)
+  // given operation[S[_]]: FieldOperation[Field[S, *], S] with
+  //   override def apply[A](name: String, value: => S[A]): Field[S, A] =
+  //     Field.Root(name, schema = Reference.now(value))
 
-      override def optional(default: => A): Field[S, A] = Field.Default(self, Eval.later(default))
+  //   extension [A](self: Field[S, A])
+  //     override def optional: Field[S, Option[A]] = Field.Optional(self)
+
+  //     override def optional(default: => A): Field[S, A] = Field.Default(self, Eval.later(default))

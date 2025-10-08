@@ -27,8 +27,8 @@ object Dictionary:
       override def imap[B](f: A => B)(g: B => A): Dictionary[S, B] =
         self.imap(f)(g)
 
-  given operation[S[_]]: DictionaryOperation[Dictionary[S, *], S] with
-    override def dictionary[A](
-        schema: => S[A],
-        validation: Validation[Constraint.Object, A]
-    ): Dictionary[S, List[(String, A)]] = Root(schema = Reference.later(schema), validation)
+  // given operation[S[_]]: DictionaryOperation[Dictionary[S, *], S] with
+  //   override def dictionary[A](
+  //       schema: => S[A],
+  //       validation: Validation[Constraint.Object, A]
+  //   ): Dictionary[S, List[(String, A)]] = Root(schema = Reference.later(schema), validation)

@@ -16,8 +16,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Collection[S, *]] =
       Invariant[[a] =>> Annotation[Self.Collection[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: CollectionOperation[Schema.Collection[S, *], S] =
-      CollectionOperation[[a] =>> Annotation[Self.Collection[S, a]], S].mapK(liftK[S])
+    // given operation[S[a] <: Schema[?, a]]: CollectionOperation[Schema.Collection[S, *], S] =
+    //   CollectionOperation[[a] =>> Annotation[Self.Collection[S, a]], S].mapK(liftK[S])
 
   final case class Constant[+S[a] <: Schema[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Schema[S, A]
 
@@ -40,8 +40,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Dictionary[S, *]] =
       Invariant[[a] =>> Annotation[Self.Dictionary[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: DictionaryOperation[Schema.Dictionary[S, *], S] =
-      DictionaryOperation[[a] =>> Annotation[Self.Dictionary[S, a]], S].mapK(liftK[S])
+    // given operation[S[a] <: Schema[?, a]]: DictionaryOperation[Schema.Dictionary[S, *], S] =
+    //   DictionaryOperation[[a] =>> Annotation[Self.Dictionary[S, a]], S].mapK(liftK[S])
 
   final case class Enumeration[+S[a] <: Schema[?, a], A](self: Annotation[Self.Enumeration[S, A]]) extends Schema[S, A]
 
@@ -52,8 +52,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Enumeration[S, *]] =
       Invariant[[a] =>> Annotation[Self.Enumeration[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: EnumerationOperation[Schema.Enumeration[S, *], S] =
-      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
+    // given operation[S[a] <: Schema[?, a]]: EnumerationOperation[Schema.Enumeration[S, *], S] =
+    //   EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
 
   final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[Schema.Field[S, *], A]])
       extends Schema[S, A]
@@ -65,9 +65,9 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Record[S, *]] =
       Invariant[[a] =>> Annotation[Self.Record[Schema.Field[S, *], a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: RecordOperation[Schema.Record[S, *], Schema.Field[S, *]] =
-      RecordOperation[[a] =>> Annotation[Self.Record[Schema.Field[S, *], a]], Schema.Field[S, *]]
-        .imapK(liftK[S])(unliftK[S])
+    // given operation[S[a] <: Schema[?, a]]: RecordOperation[Schema.Record[S, *], Schema.Field[S, *]] =
+    //   RecordOperation[[a] =>> Annotation[Self.Record[Schema.Field[S, *], a]], Schema.Field[S, *]]
+    //     .imapK(liftK[S])(unliftK[S])
 
   final case class Tuple[+S[a] <: Schema[?, a], A](self: Annotation[Self.Tuple[S, A]]) extends Schema[S, A]
 
@@ -78,8 +78,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Tuple[S, *]] =
       Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: TupleOperation[Schema.Tuple[S, *], S] =
-      TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
+    // given operation[S[a] <: Schema[?, a]]: TupleOperation[Schema.Tuple[S, *], S] =
+    //   TupleOperation[[a] =>> Annotation[Self.Tuple[S, a]], S].imapK(liftK[S])(unliftK[S])
 
   final case class Union[+S[a] <: Schema[?, a], A](self: Annotation[Self.Union[S, A]]) extends Schema[S, A]
 
@@ -90,8 +90,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Union[S, *]] =
       Invariant[[a] =>> Annotation[Self.Union[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: UnionOperation[Schema.Union[S, *], S] =
-      UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].imapK(liftK[S])(unliftK[S])
+    // given operation[S[a] <: Schema[?, a]]: UnionOperation[Schema.Union[S, *], S] =
+    //   UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].imapK(liftK[S])(unliftK[S])
 
   final case class Field[+S[a] <: Schema[?, a], A](self: Annotation[Self.Field[S, A]]) extends AnyVal
 
@@ -102,8 +102,8 @@ object Schema:
     given invariant[S[a] <: Schema[?, a]]: Invariant[Schema.Field[S, *]] =
       Invariant[[a] =>> Annotation[Self.Field[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Schema[?, a]]: FieldOperation[Schema.Field[S, *], S] =
-      FieldOperation[[a] =>> Annotation[Self.Field[S, a]], S].imapK(liftK[S])(unliftK[S])
+    // given operation[S[a] <: Schema[?, a]]: FieldOperation[Schema.Field[S, *], S] =
+    //   FieldOperation[[a] =>> Annotation[Self.Field[S, a]], S].imapK(liftK[S])(unliftK[S])
 
   sealed abstract class Primitive[A] extends Schema[Nothing, A]
 
@@ -117,8 +117,8 @@ object Schema:
       given invariant: Invariant[Schema.Primitive.Boolean] =
         Invariant[[a] =>> Annotation[Self.Primitive.Boolean[a]]].imapK(liftK)(unliftK)
 
-      given operation: BooleanOperation[Schema.Primitive.Boolean] =
-        BooleanOperation[[a] =>> Annotation[Self.Primitive.Boolean[a]]].mapK(liftK)
+      // given operation: BooleanOperation[Schema.Primitive.Boolean] =
+      //   BooleanOperation[[a] =>> Annotation[Self.Primitive.Boolean[a]]].mapK(liftK)
 
     final case class Number[A](self: Annotation[Self.Primitive.Number[A]]) extends Schema.Primitive[A]
 
@@ -129,8 +129,8 @@ object Schema:
       given invariant: Invariant[Schema.Primitive.Number] =
         Invariant[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
 
-      given operation: NumberOperation[Schema.Primitive.Number] =
-        NumberOperation[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
+      // given operation: NumberOperation[Schema.Primitive.Number] =
+      //   NumberOperation[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
 
     final case class String[A](self: Annotation[Self.Primitive.String[A]]) extends Schema.Primitive[A]
 
@@ -141,8 +141,8 @@ object Schema:
       given invariant: Invariant[Schema.Primitive.String] =
         Invariant[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
-      given operation: StringOperation[Schema.Primitive.String] =
-        StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
+      // given operation: StringOperation[Schema.Primitive.String] =
+      //   StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
     given invariant[A]: Invariant[Schema.Primitive] with
       extension [A](self: Schema.Primitive[A])

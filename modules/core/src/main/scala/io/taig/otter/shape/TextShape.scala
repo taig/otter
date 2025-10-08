@@ -13,7 +13,7 @@ trait TextShape:
     object Boolean:
       export Self.Text.Primitive.Boolean.unapply
 
-    type Coerce[A] = Self.Text.Coerce[A]
+    type Coerce[A] = Self.Text.Coerce[?, A]
 
     object Coerce:
       export Self.Text.Coerce.unapply

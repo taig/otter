@@ -43,10 +43,10 @@ object Record:
       override def imap[B](f: A => B)(g: B => A): Record[S, B] =
         self.imap(f)(g)
 
-  given operation[Field[_]]: RecordOperation[Record[Field, *], Field] with
-    override def empty: Record[Field, Unit] = Record.Empty
+  // given operation[Field[_]]: RecordOperation[Record[Field, *], Field] with
+  //   override def empty: Record[Field, Unit] = Record.Empty
 
-    override def lift[A](value: => Field[A]): Record[Field, A] = Record.Root(field = Reference.later(value))
+  //   override def lift[A](value: => Field[A]): Record[Field, A] = Record.Root(field = Reference.later(value))
 
-    extension [A](self: Record[Field, A])
-      override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)
+  //   extension [A](self: Record[Field, A])
+  //     override def zip[B](schema: Record[Field, B]): Record[Field, (A, B)] = self.zip(schema)

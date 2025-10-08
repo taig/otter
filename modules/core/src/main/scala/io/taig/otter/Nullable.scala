@@ -28,7 +28,7 @@ object Nullable:
   given invariant[S[_]]: Invariant[Nullable[S, *]] with
     extension [A](self: Nullable[S, A]) override def imap[B](f: A => B)(g: B => A): Nullable[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: NullableOperation[Nullable[S, *], S] with
-    override def nullable[A](value: => S[A]): Nullable[S, Option[A]] = Optional(schema = Reference.later(value))
-    override def nullable[A](value: => S[A], default: => A): Nullable[S, A] =
-      Default(schema = Reference.later(value), default = Eval.later(default))
+  // given operation[S[_]]: NullableOperation[Nullable[S, *], S] with
+  //   override def nullable[A](value: => S[A]): Nullable[S, Option[A]] = Optional(schema = Reference.later(value))
+  //   override def nullable[A](value: => S[A], default: => A): Nullable[S, A] =
+  //     Default(schema = Reference.later(value), default = Eval.later(default))

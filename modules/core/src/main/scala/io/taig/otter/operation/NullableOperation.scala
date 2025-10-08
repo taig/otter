@@ -1,25 +1,26 @@
 package io.taig.otter.operation
 
-import io.taig.otter.FunctorK
+import io.taig.otter.OperationInvariant
 
-trait NullableOperation[+Self[_], -Value[_]]:
-  self =>
+trait NullableOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
+  def nullable[Value[a] <: Shape[a], A](value: => Value[A]): Self[Value, Option[A]]
 
-  def nullable[A](value: => Value[A]): Self[Option[A]]
-
-  def nullable[A](value: => Value[A], default: => A): Self[A]
-
-  def mapK[T[_]](fK: [A] => Self[A] => T[A]): NullableOperation[T, Value] =
-    new NullableOperation[T, Value]:
-      def nullable[A](value: => Value[A]): T[Option[A]] = fK(self.nullable(value))
-      def nullable[A](value: => Value[A], default: => A): T[A] = fK(self.nullable(value, default))
+  def nullable[Value[a] <: Shape[a], A](value: => Value[A], default: => A): Self[Value, A]
 
 object NullableOperation:
-  inline def apply[Self[_], Value[_]](using
-      operation: NullableOperation[Self, Value]
-  ): NullableOperation[Self, Value] = operation
+  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
+      operation: NullableOperation[Shape, Self]
+  ): NullableOperation[Shape, Self] = operation
 
-  given [Value[_]]: FunctorK[[s[_]] =>> NullableOperation[s, Value]] with
-    extension [G[_]](self: NullableOperation[G, Value])
-      override def mapK[H[_]](fK: [A] => G[A] => H[A]): NullableOperation[H, Value] =
-        self.mapK(fK)
+  given OperationInvariant[NullableOperation] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: NullableOperation[Shape, Self])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): NullableOperation[Shape, T] = new NullableOperation[Shape, T]:
+        override def nullable[Value[a] <: Shape[a], A](value: => Value[A]): T[Value, Option[A]] =
+          fK(operation.nullable(value))
+
+        override def nullable[Value[a] <: Shape[a], A](value: => Value[A], default: => A): T[Value, A] =
+          fK(operation.nullable(value, default))

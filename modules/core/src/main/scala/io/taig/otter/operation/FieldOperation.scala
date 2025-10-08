@@ -1,31 +1,31 @@
 package io.taig.otter.operation
 
-import io.taig.otter.InvariantK
+import io.taig.otter.OperationInvariant
 
-trait FieldOperation[Self[_], -Value[_]]:
-  self =>
+trait FieldOperation[-Shape[_], Self[_[a] <: Shape[a], _]]:
+  def apply[Value[a] <: Shape[a], A](name: String, value: => Value[A]): Self[Value, A]
 
-  def apply[A](name: String, value: => Value[A]): Self[A]
+  def optional[Value[a] <: Shape[a], A](self: Self[Value, A]): Self[Value, Option[A]]
 
-  extension [A](self: Self[A])
-    def optional: Self[Option[A]]
-
-    def optional(default: => A): Self[A]
-
-  def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): FieldOperation[G, Value] =
-    new FieldOperation[G, Value]:
-      def apply[A](name: String, value: => Value[A]): G[A] = fK(self.apply(name, value))
-
-      extension [A](ga: G[A])
-        override def optional: G[Option[A]] = fK(self.optional(gK(ga)))
-
-        override def optional(default: => A): G[A] = fK(self.optional(gK(ga))(default))
+  def optional[Value[a] <: Shape[a], A](self: Self[Value, A], default: => A): Self[Value, A]
 
 object FieldOperation:
-  inline def apply[Self[_], Value[_]](using operation: FieldOperation[Self, Value]): FieldOperation[Self, Value] =
-    operation
+  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
+      operation: FieldOperation[Shape, Self]
+  ): FieldOperation[Shape, Self] = operation
 
-  given [Value[_]]: InvariantK[[s[_]] =>> FieldOperation[s, Value]] with
-    extension [G[_]](self: FieldOperation[G, Value])
-      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): FieldOperation[H, Value] =
-        self.imapK(fK)(gK)
+  given OperationInvariant[FieldOperation] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: FieldOperation[Shape, Self])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): FieldOperation[Shape, T] = new FieldOperation[Shape, T]:
+        override def apply[Value[a] <: Shape[a], A](name: String, value: => Value[A]): T[Value, A] =
+          fK(operation.apply(name, value))
+
+        override def optional[Value[a] <: Shape[a], A](self: T[Value, A]): T[Value, Option[A]] =
+          fK(operation.optional(gK(self)))
+
+        override def optional[Value[a] <: Shape[a], A](self: T[Value, A], default: => A): T[Value, A] =
+          fK(operation.optional(gK(self), default))

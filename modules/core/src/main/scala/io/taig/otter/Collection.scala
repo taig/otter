@@ -39,11 +39,11 @@ object Collection:
   given invariant[S[_]]: Invariant[Collection[S, *]] with
     extension [A](self: Collection[S, A]) override def imap[B](f: A => B)(g: B => A): Collection[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
-    override def indexed[A](
-        schema: => S[A],
-        validation: Validation[Constraint.Collection, A]
-    ): Collection[S, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
+  // given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
+  //   override def indexed[A](
+  //       schema: => S[A],
+  //       validation: Validation[Constraint.Collection, A]
+  //   ): Collection[S, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
 
-    override def linked[A](schema: => S[A], validation: Validation[Constraint.Collection, A]): Collection[S, List[A]] =
-      Collection.Linked(schema = Reference.later(schema), validation)
+  //   override def linked[A](schema: => S[A], validation: Validation[Constraint.Collection, A]): Collection[S, List[A]] =
+  //     Collection.Linked(schema = Reference.later(schema), validation)

@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import io.taig.otter as Self
 import io.taig.otter.operation.*
+import io.taig.otter as Self
 
 sealed abstract class Text[+S[a], A] extends Product with Serializable
 
@@ -18,8 +18,8 @@ object Text:
       given invariant: Invariant[Text.Primitive.Boolean] =
         Invariant[[a] =>> Annotation[Self.Primitive.Boolean[a]]].imapK(liftK)(unliftK)
 
-      given operation: BooleanOperation[Text.Primitive.Boolean] =
-        BooleanOperation[[a] =>> Annotation[Self.Primitive.Boolean[a]]].mapK(liftK)
+      // given operation: BooleanOperation[Text.Primitive.Boolean] =
+      //   BooleanOperation[[a] =>> Annotation[Self.Primitive.Boolean[a]]].mapK(liftK)
 
     final case class Number[A](self: Annotation[Self.Primitive.Number[A]]) extends Text.Primitive[A]
 
@@ -30,8 +30,8 @@ object Text:
       given invariant: Invariant[Text.Primitive.Number] =
         Invariant[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
 
-      given operation: NumberOperation[Text.Primitive.Number] =
-        NumberOperation[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
+      // given operation: NumberOperation[Text.Primitive.Number] =
+      //   NumberOperation[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK(liftK)(unliftK)
 
     final case class String[A](self: Annotation[Self.Primitive.String[A]]) extends Text[Nothing, A], Text.Primitive[A]
 
@@ -42,8 +42,8 @@ object Text:
       given invariant: Invariant[Text.Primitive.String] =
         Invariant[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
-      given operation: StringOperation[Text.Primitive.String] =
-        StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
+      // given operation: StringOperation[Text.Primitive.String] =
+      //   StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
   final case class Coerce[+S[a] <: Text.Primitive[a], A](self: Annotation[Self.Coerce[S, A]]) extends Text[S, A]
 
@@ -55,7 +55,9 @@ object Text:
       Invariant[[a] =>> Annotation[Self.Coerce[S, a]]].imapK(liftK[S])(unliftK[S])
 
     given operation: CoerceOperation[Text.Primitive, Text.Coerce] = ???
-      // CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive].mapK(liftK)
+    // CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive].mapK(liftK)
+
+    // given op2: CoerceOperation2[Text.Coerce] = ???
 
   final case class Constant[+S[a] <: Text[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Text[S, A]
 
@@ -78,8 +80,8 @@ object Text:
     given invariant[S[a] <: Text[?, a]]: Invariant[Text.Enumeration[S, *]] =
       Invariant[[a] =>> Annotation[Self.Enumeration[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Text[?, a]]: EnumerationOperation[Text.Enumeration[S, *], S] =
-      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
+    // given operation[S[a] <: Text[?, a]]: EnumerationOperation[Text.Enumeration[S, *], S] =
+    //   EnumerationOperation[[a] =>> Annotation[Self.Enumeration[S, a]], S].mapK(liftK[S])
 
   final case class Union[+S[a] <: Text[?, a], A](self: Annotation[Self.Union[S, A]]) extends Text[S, A]
 
@@ -90,13 +92,13 @@ object Text:
     given invariant[S[a] <: Text[?, a]]: Invariant[Text.Union[S, *]] =
       Invariant[[a] =>> Annotation[Self.Union[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation[S[a] <: Text[?, a]]: UnionOperation[Text.Union[S, *], S] =
-      UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].mapK(liftK[S])
+    // given operation[S[a] <: Text[?, a]]: UnionOperation[Text.Union[S, *], S] =
+    //   UnionOperation[[a] =>> Annotation[Self.Union[S, a]], S].mapK(liftK[S])
 
   given invariant[S[a] <: Text[?, a]]: Invariant[Text[S, *]] with
     extension [A](self: Text[S, A])
       override def imap[B](f: A => B)(g: B => A): Text[S, B] = self match
-        case self: Text.Coerce[?, ?]           => self.imap(f)(g)
+        case self: Text.Coerce[?, ?]        => self.imap(f)(g)
         case self: Text.Constant[?, ?]      => self.imap(f)(g)
         case self: Text.Enumeration[?, ?]   => self.imap(f)(g)
         case self: Text.Primitive.String[?] => self.imap(f)(g)

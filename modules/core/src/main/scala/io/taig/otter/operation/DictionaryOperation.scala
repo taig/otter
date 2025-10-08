@@ -1,25 +1,28 @@
 package io.taig.otter.operation
 
 import io.taig.otter.Constraint
-import io.taig.otter.FunctorK
 import io.taig.validation.Validation
+import io.taig.otter.OperationInvariant
 
-trait DictionaryOperation[+Self[_], -Value[_]]:
-  self =>
-
-  def dictionary[A](schema: => Value[A], validation: Validation[Constraint.Object, A]): Self[List[(String, A)]]
-
-  def mapK[T[_]](fK: [A] => Self[A] => T[A]): DictionaryOperation[T, Value] = new DictionaryOperation[T, Value]:
-    override def dictionary[A](
-        schema: => Value[A],
-        validation: Validation[Constraint.Object, A]
-    ): T[List[(String, A)]] = fK(self.dictionary(schema, validation))
+trait DictionaryOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
+  def dictionary[Value[a] <: Shape[a], A](
+      schema: => Value[A],
+      validation: Validation[Constraint.Object, A]
+  ): Self[Value, List[(String, A)]]
 
 object DictionaryOperation:
-  inline def apply[Self[_], Value[_]](using
-      operation: DictionaryOperation[Self, Value]
-  ): DictionaryOperation[Self, Value] = operation
+  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
+      operation: DictionaryOperation[Shape, Self]
+  ): DictionaryOperation[Shape, Self] = operation
 
-  given [Value[_]]: FunctorK[[s[_]] =>> DictionaryOperation[s, Value]] with
-    extension [G[_]](self: DictionaryOperation[G, Value])
-      override def mapK[H[_]](fK: [A] => G[A] => H[A]): DictionaryOperation[H, Value] = self.mapK(fK)
+  given OperationInvariant[DictionaryOperation] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: DictionaryOperation[Shape, Self])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): DictionaryOperation[Shape, T] = new DictionaryOperation[Shape, T]:
+        override def dictionary[Value[a] <: Shape[a], A](
+            schema: => Value[A],
+            validation: Validation[Constraint.Object, A]
+        ): T[Value, List[(String, A)]] = fK(operation.dictionary(schema, validation))

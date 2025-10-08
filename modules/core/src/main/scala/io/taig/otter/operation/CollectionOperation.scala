@@ -3,26 +3,38 @@ package io.taig.otter.operation
 import io.taig.otter.FunctorK
 import io.taig.validation.Constraint
 import io.taig.validation.Validation
+import io.taig.otter.OperationInvariant
+import io.taig.validation.Constraint.Collection
 
-trait CollectionOperation[+Self[_], -Value[_]]:
-  self =>
+trait CollectionOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
+  def indexed[Value[a] <: Shape[a], A](
+      schema: => Value[A],
+      validation: Validation[Constraint.Collection, A]
+  ): Self[Value, Vector[A]]
 
-  def indexed[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): Self[Vector[A]]
-
-  def linked[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): Self[List[A]]
-
-  def mapK[T[_]](fK: [A] => Self[A] => T[A]): CollectionOperation[T, Value] = new CollectionOperation[T, Value]:
-    override def indexed[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): T[Vector[A]] =
-      fK(self.indexed(schema, validation))
-
-    override def linked[A](schema: => Value[A], validation: Validation[Constraint.Collection, A]): T[List[A]] =
-      fK(self.linked(schema, validation))
+  def linked[Value[a] <: Shape[a], A](
+      schema: => Value[A],
+      validation: Validation[Constraint.Collection, A]
+  ): Self[Value, List[A]]
 
 object CollectionOperation:
-  inline def apply[Self[_], Value[_]](using
-      operation: CollectionOperation[Self, Value]
-  ): CollectionOperation[Self, Value] = operation
+  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
+      operation: CollectionOperation[Shape, Self]
+  ): CollectionOperation[Shape, Self] = operation
 
-  given [Value[_]]: FunctorK[[s[_]] =>> CollectionOperation[s, Value]] with
-    extension [G[_]](self: CollectionOperation[G, Value])
-      override def mapK[H[_]](fK: [A] => G[A] => H[A]): CollectionOperation[H, Value] = self.mapK(fK)
+  given OperationInvariant[CollectionOperation] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: CollectionOperation[Shape, Self])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): CollectionOperation[Shape, T] = new CollectionOperation[Shape, T]:
+        override def indexed[Value[a] <: Shape[a], A](
+            schema: => Value[A],
+            validation: Validation[Collection, A]
+        ): T[Value, Vector[A]] = fK(operation.indexed(schema, validation))
+
+        override def linked[Value[a] <: Shape[a], A](
+            schema: => Value[A],
+            validation: Validation[Collection, A]
+        ): T[Value, List[A]] = fK(operation.linked(schema, validation))

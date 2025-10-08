@@ -2,31 +2,32 @@ package io.taig.otter.operation
 
 import cats.data.Chain
 import io.taig.otter.Constraint
-import io.taig.otter.InvariantK
 import io.taig.validation.Validation
+import io.taig.otter.OperationInvariant
 
 trait StringOperation[Self[_]]:
-  self =>
-
   def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String]
 
   def parser[A](name: String, decode: String => Either[String, A], encode: A => String): Self[A]
 
-  extension [A](self: Self[A]) def constraints: Chain[Constraint]
-
-  def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): StringOperation[G] = new StringOperation[G]:
-    override def string(validation: Validation[Constraint.Primitive.Text, String]): G[String] =
-      fK(self.string(validation))
-
-    override def parser[A](name: String, decode: String => Either[String, A], encode: A => String): G[A] =
-      fK(self.parser(name, decode, encode))
-
-    extension [A](ga: G[A]) override def constraints: Chain[Constraint] = self.constraints(gK(ga))
+  def constraints[A](self: Self[A]): Chain[Constraint.Primitive.Text]
 
 object StringOperation:
   inline def apply[Self[_]](using operation: StringOperation[Self]): StringOperation[Self] = operation
 
-  given InvariantK[StringOperation] with
-    extension [G[_]](self: StringOperation[G])
-      def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): StringOperation[H] =
-        self.imapK(fK)(gK)
+  given OperationInvariant[[Shape[_], Self[_[a] <: Shape[a], _]] =>> StringOperation[[a] =>> Self[Nothing, a]]] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: StringOperation[[a] =>> Self[Nothing, a]])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): StringOperation[[a] =>> T[Nothing, a]] = new StringOperation[[a] =>> T[Nothing, a]]:
+        override def string(validation: Validation[Constraint.Primitive.Text, String]): T[Nothing, String] = fK(
+          operation.string(validation)
+        )
+
+        override def parser[A](name: String, decode: String => Either[String, A], encode: A => String): T[Nothing, A] =
+          fK(operation.parser(name, decode, encode))
+
+        override def constraints[A](self: T[Nothing, A]): Chain[Constraint.Primitive.Text] =
+          operation.constraints(gK(self))

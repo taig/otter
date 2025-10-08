@@ -23,5 +23,5 @@ object Coerce:
   given invariant[S[_]]: Invariant[Coerce[S, *]] with
     extension [A](self: Coerce[S, A]) override def imap[B](f: A => B)(g: B => A): Coerce[S, B] = self.imap(f)(g)
 
-  given operation[S[_]]: CoerceOperation[Coerce[S, *], S] with
-    override def coerce[A](schema: => S[A]): Coerce[S, A] = Root(schema = Reference.later(schema))
+  // given operation[S[_]]: CoerceOperation[Coerce[S, *], S] with
+  //   override def coerce[A](schema: => S[A]): Coerce[S, A] = Root(schema = Reference.later(schema))
