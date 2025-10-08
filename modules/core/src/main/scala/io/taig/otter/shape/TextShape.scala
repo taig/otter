@@ -8,10 +8,10 @@ trait TextShape:
   object Text:
     type Of[S[a] <: Self.Text[?, a], A] = Self.Text[S, A]
 
-    type Boolean[A] = Self.Text.Boolean[A]
+    type Boolean[A] = Self.Text.Primitive.Boolean[A]
 
     object Boolean:
-      export Self.Text.Boolean.unapply
+      export Self.Text.Primitive.Boolean.unapply
 
     type Coerce[A] = Self.Text.Coerce[A]
 
@@ -32,15 +32,15 @@ trait TextShape:
 
       export Self.Text.Enumeration.unapply
 
-    type Number[A] = Self.Text.Number[A]
+    type Number[A] = Self.Text.Primitive.Number[A]
 
     object Number:
-      export Self.Text.Number.unapply
+      export Self.Text.Primitive.Number.unapply
 
-    type String[A] = Self.Text.String[A]
+    type String[A] = Self.Text.Primitive.String[A]
 
     object String:
-      export Self.Text.String.unapply
+      export Self.Text.Primitive.String.unapply
 
     type Union[A] = Self.Text.Union[?, A]
 

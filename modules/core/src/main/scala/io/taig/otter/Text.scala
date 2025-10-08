@@ -2,9 +2,8 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import io.taig.otter.operation.*
-import cats.Eq
 
-sealed abstract class Text[+S[a] <: Text[?, a], A] extends Product with Serializable
+sealed abstract class Text[+S[a], A] extends Product with Serializable
 
 object Text:
   sealed trait Primitive[A] extends Product with Serializable
@@ -46,17 +45,17 @@ object Text:
       given operation: StringOperation[Text.Primitive.String] =
         StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK(liftK)(unliftK)
 
-  final case class Coerce[A](self: Annotation[Self.Coerce[Text.Primitive, A]]) extends Text[Nothing, A]
+  final case class Coerce[+S[a] <: Text.Primitive[a], A](self: Annotation[Self.Coerce[S, A]]) extends Text[S, A]
 
   object Coerce:
-    val liftK = [A] => (self: Annotation[Self.Coerce[Text.Primitive, A]]) => Coerce(self)
-    val unliftK = [A] => (schema: Text.Coerce[A]) => schema.self
+    def liftK[S[a] <: Text.Primitive[a]] = [A] => (self: Annotation[Self.Coerce[S, A]]) => Coerce(self)
+    def unliftK[S[a] <: Text.Primitive[a]] = [A] => (schema: Text.Coerce[S, A]) => schema.self
 
-    given invariant: Invariant[Text.Coerce] =
-      Invariant[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]]].imapK(liftK)(unliftK)
+    given invariant[S[a] <: Text.Primitive[a]]: Invariant[Text.Coerce[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Coerce[S, a]]].imapK(liftK[S])(unliftK[S])
 
-    given operation: CoerceOperation[Text.Coerce, Text.Primitive] =
-      CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive].mapK(liftK)
+    given operation: CoerceOperation[Text.Primitive, Text.Coerce] = ???
+      // CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive].mapK(liftK)
 
   final case class Constant[+S[a] <: Text[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Text[S, A]
 
@@ -97,7 +96,7 @@ object Text:
   given invariant[S[a] <: Text[?, a]]: Invariant[Text[S, *]] with
     extension [A](self: Text[S, A])
       override def imap[B](f: A => B)(g: B => A): Text[S, B] = self match
-        case self: Text.Coerce[?]           => self.imap(f)(g)
+        case self: Text.Coerce[?, ?]           => self.imap(f)(g)
         case self: Text.Constant[?, ?]      => self.imap(f)(g)
         case self: Text.Enumeration[?, ?]   => self.imap(f)(g)
         case self: Text.Primitive.String[?] => self.imap(f)(g)
