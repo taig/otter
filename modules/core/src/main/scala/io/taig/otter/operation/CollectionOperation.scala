@@ -1,12 +1,11 @@
 package io.taig.otter.operation
 
-import io.taig.otter.FunctorK
 import io.taig.validation.Constraint
 import io.taig.validation.Validation
 import io.taig.otter.OperationInvariant
-import io.taig.validation.Constraint.Collection
+import cats.data.Chain
 
-trait CollectionOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
+trait CollectionOperation[Shape[_], Self[_[a] <: Shape[a], _]]:
   def indexed[Value[a] <: Shape[a], A](
       schema: => Value[A],
       validation: Validation[Constraint.Collection, A]
@@ -16,6 +15,8 @@ trait CollectionOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
       schema: => Value[A],
       validation: Validation[Constraint.Collection, A]
   ): Self[Value, List[A]]
+
+  def constraints[A](self: Self[Shape, A]): Chain[Constraint.Collection]
 
 object CollectionOperation:
   inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
@@ -31,10 +32,13 @@ object CollectionOperation:
       ): CollectionOperation[Shape, T] = new CollectionOperation[Shape, T]:
         override def indexed[Value[a] <: Shape[a], A](
             schema: => Value[A],
-            validation: Validation[Collection, A]
+            validation: Validation[Constraint.Collection, A]
         ): T[Value, Vector[A]] = fK(operation.indexed(schema, validation))
 
         override def linked[Value[a] <: Shape[a], A](
             schema: => Value[A],
-            validation: Validation[Collection, A]
+            validation: Validation[Constraint.Collection, A]
         ): T[Value, List[A]] = fK(operation.linked(schema, validation))
+
+        override def constraints[A](self: T[Shape, A]): Chain[Constraint.Collection] =
+          operation.constraints(gK(self))

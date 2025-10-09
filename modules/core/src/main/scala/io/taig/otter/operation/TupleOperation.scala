@@ -1,23 +1,28 @@
-// package io.taig.otter.operation
+package io.taig.otter.operation
 
-// import io.taig.otter.InvariantK
+import io.taig.otter.OperationInvariant
 
-// trait TupleOperation[Self[_], -Value[_]] extends EmptyOperation[Self], LiftOperation[Self, Value], ZipOperation[Self]:
-//   self =>
+trait TupleOperation[-Shape[_], Self[_[a] <: Shape[a], _]]
+    extends EmptyOperation[Self],
+      LiftOperation[Shape, Self],
+      ZipOperation[Shape, Self]
 
-//   override def imapK[G[_]](fK: [A] => Self[A] => G[A])(gK: [A] => G[A] => Self[A]): TupleOperation[G, Value] =
-//     new TupleOperation[G, Value]:
-//       override def empty: G[Unit] = fK(self.empty)
+object TupleOperation:
+  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
+      operation: TupleOperation[Shape, Self]
+  ): TupleOperation[Shape, Self] = operation
 
-//       override def lift[A](value: => Value[A]): G[A] = fK(self.lift(value))
+  given OperationInvariant[TupleOperation] with
+    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: TupleOperation[Shape, Self])
+      override def imapK[T[_[a] <: Shape[a], _]](
+          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
+      )(
+          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
+      ): TupleOperation[Shape, T] = new TupleOperation[Shape, T]:
+        override def empty: T[Nothing, Unit] = fK(operation.empty)
 
-//       extension [A](ga: G[A]) override def zip[B](schema: G[B]): G[(A, B)] = fK(self.zip(gK(ga))(gK(schema)))
+        override def lift[Value[a] <: Shape[a], A](value: => Value[A]): T[Value, A] = fK(operation.lift(value))
 
-// object TupleOperation:
-//   inline def apply[Self[_], Value[_]](using operation: TupleOperation[Self, Value]): TupleOperation[Self, Value] =
-//     operation
-
-//   given [Value[_]]: InvariantK[[s[_]] =>> TupleOperation[s, Value]] with
-//     extension [G[_]](self: TupleOperation[G, Value])
-//       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): TupleOperation[H, Value] =
-//         self.imapK(fK)(gK)
+        extension [S[a] <: Shape[a], A](self: T[S, A])
+          override def zip[G[a] <: Shape[a], B](schema: T[G, B]): T[[a] =>> S[a] | G[a], (A, B)] =
+            fK(operation.zip(gK(self))(gK(schema)))

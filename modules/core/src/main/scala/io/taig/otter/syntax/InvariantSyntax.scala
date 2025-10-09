@@ -1,6 +1,8 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.Invariant
+import cats.Invariant
+import cats.derived.*
+import cats.syntax.all.*
 import io.taig.otter.Merge
 
 trait InvariantSyntax:

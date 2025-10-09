@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.Eval
 import io.taig.otter.operation.FieldOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Field[+S[_], A] extends Product with Serializable:
   def name: String
@@ -38,15 +40,13 @@ object Field:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Field[S, *]] with
-    extension [A](self: Field[S, A]) override def imap[B](f: A => B)(g: B => A): Field[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: FieldOperation[S, Field] = ???
+  given operation[S[_]]: FieldOperation[S, Field] with
+    override def apply[Value[a] <: S[a], A](name: String, value: => Value[A]): Field[Value, A] =
+      Field.Root(name, schema = Reference.later(value))
 
-  // given operation[S[_]]: FieldOperation[Field[S, *], S] with
-  //   override def apply[A](name: String, value: => S[A]): Field[S, A] =
-  //     Field.Root(name, schema = Reference.now(value))
+    override def optional[Value[a] <: S[a], A](self: Field[Value, A]): Field[Value, Option[A]] = Field.Optional(self)
 
-  //   extension [A](self: Field[S, A])
-  //     override def optional: Field[S, Option[A]] = Field.Optional(self)
-
-  //     override def optional(default: => A): Field[S, A] = Field.Default(self, Eval.later(default))
+    override def optional[Value[a] <: S[a], A](self: Field[Value, A], default: => A): Field[Value, A] =
+      Field.Default(self, Eval.later(default))

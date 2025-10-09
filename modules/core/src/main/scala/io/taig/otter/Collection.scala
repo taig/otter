@@ -3,6 +3,8 @@ package io.taig.otter
 import cats.data.Chain
 import io.taig.otter.operation.CollectionOperation
 import io.taig.validation.Validation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   self =>
@@ -37,13 +39,17 @@ object Collection:
       copy(self = self.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Collection[S, *]] with
-    extension [A](self: Collection[S, A]) override def imap[B](f: A => B)(g: B => A): Collection[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)
 
-  // given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
-  //   override def indexed[A](
-  //       schema: => S[A],
-  //       validation: Validation[Constraint.Collection, A]
-  //   ): Collection[S, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
+  given operation[S[_]]: CollectionOperation[S, Collection] with
+    override def indexed[Value[a] <: S[a], A](
+        schema: => Value[A],
+        validation: Validation[Constraint.Collection, A]
+    ): Collection[Value, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
 
-  //   override def linked[A](schema: => S[A], validation: Validation[Constraint.Collection, A]): Collection[S, List[A]] =
-  //     Collection.Linked(schema = Reference.later(schema), validation)
+    override def linked[Value[a] <: S[a], A](
+        schema: => Value[A],
+        validation: Validation[Constraint.Collection, A]
+    ): Collection[Value, List[A]] = Collection.Linked(schema = Reference.later(schema), validation)
+
+    override def constraints[A](self: Collection[S, A]): Chain[Constraint.Collection] = self.constraints

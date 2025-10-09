@@ -17,10 +17,10 @@ object Constraint:
     case Type(name: String)
 
     final override def toString: String = this match
-      case Equals(reference) => show"_.equals $reference"
-      case OneOf(references) => show"_.oneof ${references.mkString(",")}"
-      case Required          => "_.required"
-      case Type(name)        => show"_.type $name"
+      case Equals(reference) => show"*.equals $reference"
+      case OneOf(references) => show"*.oneof ${references.mkString(",")}"
+      case Required          => "*.required"
+      case Type(name)        => show"*.type $name"
 
   object Generic:
     given Show[Generic] = Show.fromToString

@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.Applicative
 import cats.syntax.all.*
+import cats.Invariant
+import cats.derived.*
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modifyMetadata(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -19,14 +21,38 @@ object Annotation:
 
     override def pure[A](x: A): Annotation[A] = Annotation(self = x)
 
+  given annotated: Annotated[Annotation] with
+    override def get[A](self: Annotation[A]): Metadata = self.metadata
+
+    override def update[A](self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
+      self.modifyMetadata(metadata)
+
   given invariant[F[_]: Invariant]: Invariant[[a] =>> Annotation[F[a]]] with
-    extension [A](self: Annotation[F[A]])
-      override def imap[B](f: A => B)(g: B => A): Annotation[F[B]] = self.map(_.imap(f)(g))
+    override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
+      fa.map(_.imap(f)(g))
 
   // given operation1[F[_[_]], G[_]](using fg: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
   //   fg.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
   //     (annotation: Annotation[G[A]]) => annotation.self
   //   )
+
+  given operation1[F[_[_]], G[_]](using
+      fg: F[G]
+  )(using
+      oi: OperationInvariant[[Shape[_], Self[_[a] <: Shape[a], _]] =>> F[[a] =>> Self[Nothing, a]]]
+  ): F[[a] =>> Annotation[G[a]]] =
+    ???
+
+  given operation2[
+      F[Shape[_], _[_[a] <: Shape[a], _]],
+      G[_],
+      H[_[a] <: G[a], _]
+  ](using fgh: F[G, H])(using OperationInvariant[F]): F[G, [Self[a] <: G[a], A] =>> Annotation[H[Self, A]]] =
+    fgh.imapK[[Self[a] <: G[a], A] =>> Annotation[H[Self, A]]](
+      fK = [Value[a] <: G[a], A] => (self: H[Value, A]) => Annotation(self)
+    )(
+      gK = [Value[a] <: G[a], A] => (self: Annotation[H[Value, A]]) => self.self
+    )
 
   // given operation2[F[_[_], _[_]], G[_], H[_]](using
   //     fgh: F[G, H]

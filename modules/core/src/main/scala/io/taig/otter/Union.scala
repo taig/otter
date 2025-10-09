@@ -1,6 +1,8 @@
 package io.taig.otter
 
 import cats.data.NonEmptyChain
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]
@@ -29,7 +31,7 @@ object Union:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Union[S, *]] with
-    extension [A](self: Union[S, A]) override def imap[B](f: A => B)(g: B => A): Union[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)
 
   // given operation[S[_]]: UnionOperation[Union[S, *], S] with
   //   override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))

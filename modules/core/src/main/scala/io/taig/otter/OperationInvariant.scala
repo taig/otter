@@ -7,3 +7,8 @@ trait OperationInvariant[F[A[_], B[_[a] <: A[a], _]]]:
     )(
         gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
     ): F[Shape, T]
+
+object OperationInvariant:
+  trait Simple[F[_[_]]] extends OperationInvariant[[A[_], B[_[a] <: A[a], _]] =>> F[[a] =>> B[Nothing, a]]]:
+    extension [Self[_]](operation: F[Self])
+      def imapKSimple[T[_]](fK: [A] => Self[A] => T[A])(gK: [A] => T[A] => Self[A]): F[T]

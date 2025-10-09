@@ -1,6 +1,8 @@
 package io.taig.otter
 
 import cats.data.Chain
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
   def schemas: Chain[Reference[S, ?]]
@@ -47,7 +49,7 @@ object Tuple:
       copy(left = left.mapK[S1, U](fK), right = right.mapK[S1, U](fK))
 
   given invariant[S[_]]: Invariant[Tuple[S, *]] with
-    extension [A](self: Tuple[S, A]) override def imap[B](f: A => B)(g: B => A): Tuple[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = fa.imap(f)(g)
 
   // given operation[S[_]]: TupleOperation[Tuple[S, *], S] with
   //   override def empty: Tuple[S, Unit] = Empty

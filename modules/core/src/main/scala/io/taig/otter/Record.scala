@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.RecordOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]
@@ -39,9 +41,7 @@ object Record:
       copy(left = left.mapK[S1, U](fK), right = right.mapK[S1, U](fK))
 
   given invariant[S[_]]: Invariant[Record[S, *]] with
-    extension [A](self: Record[S, A])
-      override def imap[B](f: A => B)(g: B => A): Record[S, B] =
-        self.imap(f)(g)
+    override def imap[A, B](fa: Record[S, A])(f: A => B)(g: B => A): Record[S, B] = fa.imap(f)(g)
 
   // given operation[Field[_]]: RecordOperation[Record[Field, *], Field] with
   //   override def empty: Record[Field, Unit] = Record.Empty

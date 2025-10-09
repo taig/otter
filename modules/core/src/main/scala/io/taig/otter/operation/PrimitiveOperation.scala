@@ -1,10 +1,18 @@
-// package io.taig.otter.operation
+package io.taig.otter.operation
 
-// import cats.data.Chain
-// import io.taig.otter.Constraint
+import io.taig.otter.InvariantK
+import cats.data.Chain
+import io.taig.validation.Constraint
+import io.taig.validation.Constraint.Primitive
 
-// trait PrimitiveOperation[Self[_]] extends BooleanOperation[Self], NumberOperation[Self], StringOperation[Self]:
-//   override def constraints[A](self: Self[A]): Chain[Constraint.Primitive.Number | Constraint.Primitive.Text] = ???
+trait PrimitiveOperation[Self[_]]:
+  def constraints[A](self: Self[A]): Chain[Constraint.Primitive]
 
-// object PrimitiveOperation:
-//   inline def apply[Self[_]](using operation: PrimitiveOperation[Self]): PrimitiveOperation[Self] = operation
+object PrimitiveOperation:
+  inline def apply[Self[_]](using operation: PrimitiveOperation[Self]): PrimitiveOperation[Self] = operation
+
+  given InvariantK[PrimitiveOperation] with
+    extension [G[_]](operation: PrimitiveOperation[G])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): PrimitiveOperation[H] =
+        new PrimitiveOperation[H]:
+          override def constraints[A](self: H[A]): Chain[Primitive] = operation.constraints(gK(self))

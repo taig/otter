@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.Eval
 import io.taig.otter.operation.NullableOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Nullable[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]
@@ -26,9 +28,11 @@ object Nullable:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Nullable[S, *]] with
-    extension [A](self: Nullable[S, A]) override def imap[B](f: A => B)(g: B => A): Nullable[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Nullable[S, A])(f: A => B)(g: B => A): Nullable[S, B] = fa.imap(f)(g)
 
-  // given operation[S[_]]: NullableOperation[Nullable[S, *], S] with
-  //   override def nullable[A](value: => S[A]): Nullable[S, Option[A]] = Optional(schema = Reference.later(value))
-  //   override def nullable[A](value: => S[A], default: => A): Nullable[S, A] =
-  //     Default(schema = Reference.later(value), default = Eval.later(default))
+  given operation[S[_]]: NullableOperation[S, Nullable] with
+    override def nullable[Value[a] <: S[a], A](value: => Value[A]): Nullable[Value, Option[A]] =
+      Optional(schema = Reference.later(value))
+
+    override def nullable[Value[a] <: S[a], A](value: => Value[A], default: => A): Nullable[Value, A] =
+      Default(schema = Reference.later(value), default = Eval.later(default))

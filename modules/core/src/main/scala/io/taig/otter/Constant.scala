@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.Eq
 import io.taig.otter.operation.ConstantOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Constant[+S[_], A]:
   def schema: Reference[S, ?]
@@ -21,12 +23,8 @@ object Constant:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Constant[S, *]] with
-    extension [A](self: Constant[S, A]) override def imap[B](f: A => B)(g: B => A): Constant[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)
 
-  // given operation[S[_]]: ConstantOperation[S, Constant] with
-  //   override def constant[A](schema: => S[A], value: A)(using eq: Eq[A]): Constant[S, A] =
-  //     Root(schema = Reference.later(schema), value, eq)
-
-  // given operation2[S[_]]: ConstantOperation2[S, Constant] with
-  //   override def constant[Value[a] <: S[a], A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, A] =
-  //     Constant.Root(schema = Reference.later(schema), value, eq)
+  given operation[S[_]]: ConstantOperation[S, Constant] with
+    override def constant[Value[a] <: S[a], A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, A] =
+      Root(schema = Reference.later(schema), value, eq)

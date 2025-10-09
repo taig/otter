@@ -3,6 +3,8 @@ package io.taig.otter
 import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.EnumerationOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]
@@ -29,7 +31,10 @@ object Enumeration:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Enumeration[S, *]] with
-    extension [A](self: Enumeration[S, A])
-      override def imap[B](f: A => B)(g: B => A): Enumeration[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: EnumerationOperation[S, Enumeration] = ???
+  given operation[S[_]]: EnumerationOperation[S, Enumeration] with
+    override def enumeration[Value[a] <: S[a], A, B](
+        schema: => Value[A],
+        mapping: Mapping[B, A]
+    ): Enumeration[Value, B] = Enumeration.Root(schema = Reference.later(schema), mapping)

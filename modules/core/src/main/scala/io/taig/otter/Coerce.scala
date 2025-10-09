@@ -1,6 +1,8 @@
 package io.taig.otter
 
 import io.taig.otter.operation.CoerceOperation
+import cats.Invariant
+import cats.derived.*
 
 sealed abstract class Coerce[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]
@@ -21,7 +23,8 @@ object Coerce:
       copy(schema = schema.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Coerce[S, *]] with
-    extension [A](self: Coerce[S, A]) override def imap[B](f: A => B)(g: B => A): Coerce[S, B] = self.imap(f)(g)
+    override def imap[A, B](fa: Coerce[S, A])(f: A => B)(g: B => A): Coerce[S, B] = fa.imap(f)(g)
 
-  // given operation[S[_]]: CoerceOperation[Coerce[S, *], S] with
-  //   override def coerce[A](schema: => S[A]): Coerce[S, A] = Root(schema = Reference.later(schema))
+  given operation[S[_]]: CoerceOperation[S, Coerce] with
+    override def coerce[Value[a] <: S[a], A](schema: => Value[A]): Coerce[Value, A] =
+      Root(schema = Reference.later(schema))

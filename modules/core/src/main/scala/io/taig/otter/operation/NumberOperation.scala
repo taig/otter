@@ -7,6 +7,7 @@ import io.taig.validation.Validation
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import io.taig.otter.OperationInvariant
+import io.taig.otter.InvariantK
 
 trait NumberOperation[Self[_]]:
   def bigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): Self[JBigDecimal]
@@ -26,32 +27,26 @@ trait NumberOperation[Self[_]]:
 object NumberOperation:
   inline def apply[Self[_]](using operation: NumberOperation[Self]): NumberOperation[Self] = operation
 
-  given OperationInvariant[[Shape[_], Self[_[a] <: Shape[a], _]] =>> NumberOperation[[a] =>> Self[Nothing, a]]] with
-    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: NumberOperation[[a] =>> Self[Nothing, a]])
-      override def imapK[T[_[a] <: Shape[a], _]](
-          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
-      )(
-          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
-      ): NumberOperation[[a] =>> T[Nothing, a]] = new NumberOperation[[a] =>> T[Nothing, a]]:
-        override def bigDecimal(
-            validation: Validation[Constraint.Primitive.Number, JBigDecimal]
-        ): T[Nothing, JBigDecimal] = fK(operation.bigDecimal(validation))
+  given InvariantK[NumberOperation] with
+    extension [G[_]](operation: NumberOperation[G])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): NumberOperation[H] =
+        new NumberOperation[H]:
+          override def bigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): H[JBigDecimal] =
+            fK(operation.bigDecimal(validation))
 
-        override def bigInteger(
-            validation: Validation[Constraint.Primitive.Number, JBigInteger]
-        ): T[Nothing, JBigInteger] = fK(operation.bigInteger(validation))
+          override def bigInteger(validation: Validation[Constraint.Primitive.Number, JBigInteger]): H[JBigInteger] =
+            fK(operation.bigInteger(validation))
 
-        override def double(validation: Validation[Constraint.Primitive.Number, Double]): T[Nothing, Double] =
-          fK(operation.double(validation))
+          override def double(validation: Validation[Constraint.Primitive.Number, Double]): H[Double] =
+            fK(operation.double(validation))
 
-        override def float(validation: Validation[Constraint.Primitive.Number, Float]): T[Nothing, Float] =
-          fK(operation.float(validation))
+          override def float(validation: Validation[Constraint.Primitive.Number, Float]): H[Float] =
+            fK(operation.float(validation))
 
-        override def int(validation: Validation[Constraint.Primitive.Number, Int]): T[Nothing, Int] =
-          fK(operation.int(validation))
+          override def int(validation: Validation[Constraint.Primitive.Number, Int]): H[Int] =
+            fK(operation.int(validation))
 
-        override def long(validation: Validation[Constraint.Primitive.Number, Long]): T[Nothing, Long] =
-          fK(operation.long(validation))
+          override def long(validation: Validation[Constraint.Primitive.Number, Long]): H[Long] =
+            fK(operation.long(validation))
 
-        override def constraints[A](self: T[Nothing, A]): Chain[Constraint.Primitive.Number] =
-          operation.constraints(gK(self))
+          override def constraints[A](self: H[A]): Chain[Constraint.Primitive.Number] = operation.constraints(gK(self))
