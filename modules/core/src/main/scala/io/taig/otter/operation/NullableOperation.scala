@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 
 trait NullableOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
   def nullable[Value[a] <: Shape[a], A](value: => Value[A]): Self[Value, Option[A]]
@@ -12,7 +12,7 @@ object NullableOperation:
       operation: NullableOperation[Shape, Self]
   ): NullableOperation[Shape, Self] = operation
 
-  given OperationInvariant[NullableOperation] with
+  given OperationK[NullableOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: NullableOperation[Shape, Self])
       override def imapK[T[_[a] <: Shape[a], _]](
           fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]

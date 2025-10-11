@@ -4,6 +4,8 @@ import cats.data.Chain
 import io.taig.otter.Constraint
 import io.taig.validation.Validation
 import io.taig.otter.InvariantK
+import scala.deriving.Mirror
+import scala.Tuple.fromProductTyped
 
 trait StringOperation[Self[_]]:
   def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String]

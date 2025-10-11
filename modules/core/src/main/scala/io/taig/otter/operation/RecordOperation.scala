@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 
 trait RecordOperation[-Shape[_], Self[_[a] <: Shape[a], _]]
     extends EmptyOperation[Self],
@@ -12,7 +12,7 @@ object RecordOperation:
       operation: RecordOperation[Shape, Self]
   ): RecordOperation[Shape, Self] = operation
 
-  given OperationInvariant[RecordOperation] with
+  given OperationK[RecordOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: RecordOperation[Shape, Self])
       override def imapK[T[_[a] <: Shape[a], _]](
           fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]

@@ -2,8 +2,9 @@ package io.taig.otter.operation
 
 import io.taig.otter.Constraint
 import io.taig.validation.Validation
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 import cats.data.Chain
+import io.taig.otter.InvariantK
 
 trait DictionaryOperation[Shape[_], Self[_[a] <: Shape[a], _]]:
   def dictionary[Value[a] <: Shape[a], A](
@@ -18,11 +19,9 @@ object DictionaryOperation:
       operation: DictionaryOperation[Shape, Self]
   ): DictionaryOperation[Shape, Self] = operation
 
-  given OperationInvariant[DictionaryOperation] with
+  given OperationK[DictionaryOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: DictionaryOperation[Shape, Self])
-      override def imapK[T[_[a] <: Shape[a], _]](
-          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
-      )(
+      override def imapK[T[_[a] <: Shape[a], _]](fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A])(
           gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
       ): DictionaryOperation[Shape, T] = new DictionaryOperation[Shape, T]:
         override def dictionary[Value[a] <: Shape[a], A](

@@ -6,8 +6,8 @@ import io.taig.validation.Validation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.OperationInvariant
 import io.taig.otter.InvariantK
+import scala.deriving.Mirror
 
 trait NumberOperation[Self[_]]:
   def bigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): Self[JBigDecimal]

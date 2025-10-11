@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 
 trait UnionOperation[-Shape[_], Self[_[a] <: Shape[a], _]]
     extends LiftOperation[Shape, Self],
@@ -11,7 +11,7 @@ object UnionOperation:
       operation: UnionOperation[Shape, Self]
   ): UnionOperation[Shape, Self] = operation
 
-  given OperationInvariant[UnionOperation] with
+  given OperationK[UnionOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: UnionOperation[Shape, Self])
       override def imapK[T[_[a] <: Shape[a], _]](fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A])(
           gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]

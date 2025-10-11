@@ -1,7 +1,7 @@
 package io.taig.otter.component
 
-import io.taig.otter.shape.JsonShape.Json
+import io.taig.otter.Json
 
-trait JsonComponent extends FieldComponent[Json, Json.Field.Of]
+trait JsonComponent extends CollectionComponent[Json.Collection, Json], PrimitiveComponent[Json.Primitive]
 
 object JsonComponent extends JsonComponent

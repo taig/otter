@@ -1,6 +1,7 @@
 package io.taig.otter.operation
 
 import io.taig.otter.FunctorK
+import scala.deriving.Mirror
 
 trait BooleanOperation[+Self[_]]:
   self =>

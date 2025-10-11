@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 
 trait TupleOperation[-Shape[_], Self[_[a] <: Shape[a], _]]
     extends EmptyOperation[Self],
@@ -12,7 +12,7 @@ object TupleOperation:
       operation: TupleOperation[Shape, Self]
   ): TupleOperation[Shape, Self] = operation
 
-  given OperationInvariant[TupleOperation] with
+  given OperationK[TupleOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: TupleOperation[Shape, Self])
       override def imapK[T[_[a] <: Shape[a], _]](
           fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]

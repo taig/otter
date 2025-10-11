@@ -1,6 +1,6 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationInvariant
+import io.taig.otter.OperationK
 
 trait FieldOperation[-Shape[_], Self[_[a] <: Shape[a], _]]:
   def apply[Value[a] <: Shape[a], A](name: String, value: => Value[A]): Self[Value, A]
@@ -14,7 +14,7 @@ object FieldOperation:
       operation: FieldOperation[Shape, Self]
   ): FieldOperation[Shape, Self] = operation
 
-  given OperationInvariant[FieldOperation] with
+  given OperationK[FieldOperation] with
     extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: FieldOperation[Shape, Self])
       override def imapK[T[_[a] <: Shape[a], _]](
           fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
