@@ -63,6 +63,17 @@ object Schema:
           (self: Annotation[Self.Enumeration[Value, A]]) => Enumeration(self)
         )([Value[a] <: Schema[?, a], A] => (schema: Enumeration[Value, A]) => schema.self)
 
+  final case class Nullable[+S[a] <: Schema[?, a], A](self: Annotation[Self.Nullable[S, A]]) extends Schema[S, A]
+      derives Annotated,
+        Invariant
+
+  object Nullable:
+    given NullableOperation[Schema[?, *], Schema.Nullable] =
+      NullableOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Nullable[s, a]]]
+        .imapK[Schema.Nullable]([Value[a] <: Schema[?, a], A] =>
+          (self: Annotation[Self.Nullable[Value, A]]) => Nullable(self)
+        )([Value[a] <: Schema[?, a], A] => (schema: Nullable[Value, A]) => schema.self)
+
   sealed abstract class Primitive[A] extends Schema[Nothing, A]
 
   object Primitive:
@@ -95,3 +106,47 @@ object Schema:
         StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK([A] =>
           (self: Annotation[Self.Primitive.String[A]]) => String(self)
         )([A] => (schema: Schema.Primitive.String[A]) => schema.self)
+
+  final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[S, A]]) extends Schema[S, A]
+      derives Annotated,
+        Invariant
+
+  object Record:
+    given RecordOperation[Schema[?, *], Schema.Record] =
+      RecordOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Record[s, a]]]
+        .imapK([Value[a] <: Schema[?, a], A] => (self: Annotation[Self.Record[Value, A]]) => Record(self))(
+          [Value[a] <: Schema[?, a], A] => (schema: Record[Value, A]) => schema.self
+        )
+
+  final case class Tuple[+S[a] <: Schema[?, a], A](self: Annotation[Self.Tuple[S, A]]) extends Schema[S, A]
+      derives Annotated,
+        Invariant
+
+  object Tuple:
+    given TupleOperation[Schema[?, *], Schema.Tuple] =
+      TupleOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Tuple[s, a]]]
+        .imapK([Value[a] <: Schema[?, a], A] => (self: Annotation[Self.Tuple[Value, A]]) => Tuple(self))(
+          [Value[a] <: Schema[?, a], A] => (schema: Tuple[Value, A]) => schema.self
+        )
+
+  final case class Union[+S[a] <: Schema[?, a], A](self: Annotation[Self.Union[S, A]]) extends Schema[S, A]
+      derives Annotated,
+        Invariant
+
+  object Union:
+    given UnionOperation[Schema[?, *], Schema.Union] =
+      UnionOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Union[s, a]]]
+        .imapK([Value[a] <: Schema[?, a], A] => (self: Annotation[Self.Union[Value, A]]) => Union(self))(
+          [Value[a] <: Schema[?, a], A] => (schema: Union[Value, A]) => schema.self
+        )
+
+  final case class Field[+S[a] <: Schema[?, a], A](self: Annotation[Self.Field[S, A]]) extends Schema[S, A]
+      derives Annotated,
+        Invariant
+
+  object Field:
+    given FieldOperation[Schema[?, *], Schema.Field] =
+      FieldOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Field[s, a]]]
+        .imapK([Value[a] <: Schema[?, a], A] => (self: Annotation[Self.Field[Value, A]]) => Field(self))(
+          [Value[a] <: Schema[?, a], A] => (schema: Field[Value, A]) => schema.self
+        )

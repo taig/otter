@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.data.Chain
 import cats.Invariant
 import cats.derived.*
+import io.taig.otter.operation.TupleOperation
 
 sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
   def schemas: Chain[Reference[S, ?]]
@@ -51,11 +52,11 @@ object Tuple:
   given invariant[S[_]]: Invariant[Tuple[S, *]] with
     override def imap[A, B](fa: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = fa.imap(f)(g)
 
-  // given operation[S[_]]: TupleOperation[Tuple[S, *], S] with
-  //   override def empty: Tuple[S, Unit] = Empty
+  given operation[S[_]]: TupleOperation[S, Tuple] with
+    override def empty: Tuple[Nothing, Unit] = Empty
 
-  //   override def lift[A](value: => S[A]): Tuple[S, A] = Root(schema = Reference.later(value))
+    override def lift[Value[a] <: S[a], A](value: => Value[A]): Tuple[Value, A] = Root(schema = Reference.later(value))
 
-  //   extension [A](self: Tuple[S, A])
-  //     override def zip[B](schema: Tuple[S, B]): Tuple[S, (A, B)] =
-  //       Zip(left = self, right = schema)
+    extension [R[a] <: S[a], A](self: Tuple[R, A])
+      override def zip[U[a] <: S[a], B](schema: Tuple[U, B]): Tuple[[a] =>> R[a] | U[a], (A, B)] =
+        Zip(left = self, right = schema)
