@@ -30,5 +30,12 @@ object TextCodecTest extends ZIOSpecDefault:
       )
     ,
     test("enumeration"):
-      assertTrue(true)
+      val schema = enumeration[Animal](string):
+        case Animal.Bird => "bird"
+        case Animal.Cat  => "cat"
+        case Animal.Dog  => "dog"
+      val input = TextPrinter.print(schema, Animal.Cat)
+      val result = TextParser.parse(schema, input)
+
+      assertTrue(result.toEither.is(_.right) == Animal.Cat)
   )
