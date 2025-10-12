@@ -21,10 +21,10 @@ object Annotation:
 
     override def pure[A](x: A): Annotation[A] = Annotation(self = x)
 
-  given annotated: Annotated[Annotation] with
-    override def get[A](self: Annotation[A]): Metadata = self.metadata
+  given annotated[A]: Annotated[Annotation[A]] with
+    override def get(self: Annotation[A]): Metadata = self.metadata
 
-    override def update[A](self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
+    override def update(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
       self.modifyMetadata(metadata)
 
   given invariant[F[_]: Invariant]: Invariant[[a] =>> Annotation[F[a]]] with

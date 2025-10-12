@@ -1,36 +1,29 @@
 package io.taig.otter
 
 import scala.deriving.Mirror
-import scala.Tuple.fromProductTyped
+import scala.compiletime.*
+import scala.Tuple as STuple
+import cats.kernel.Eq
+import cats.derived.*
+import shapeless3.deriving.K0
+import cats.Invariant
 
-trait Annotated[F[_]]:
+trait Annotated[A]:
   self =>
 
-  def get[A](self: F[A]): Metadata
+  def get(self: A): Metadata
 
-  def update[A](self: F[A], metadata: Metadata => Metadata): F[A]
+  def update(self: A, metadata: Metadata => Metadata): A
 
-  def imapK[G[_]](fK: [A] => F[A] => G[A])(gK: [A] => G[A] => F[A]): Annotated[G] = new Annotated[G]:
-    override def get[A](ga: G[A]): Metadata = self.get(gK(ga))
+  final def imap[B](f: A => B)(g: B => A): Annotated[B] = new Annotated[B]:
+    def get(b: B): Metadata = self.get(g(b))
 
-    override def update[A](ga: G[A], metadata: Metadata => Metadata): G[A] = fK(self.update(gK(ga), metadata))
+    def update(b: B, metadata: Metadata => Metadata): B =
+      f(self.update(g(b), metadata))
 
 object Annotated:
-  inline def apply[F[_]](using annotated: Annotated[F]): Annotated[F] = annotated
+  inline def apply[A](using annotated: Annotated[A]): Annotated[A] = annotated
 
-  def derived[F[_] <: Product, G[_], B](using
-      mirror: Mirror.ProductOf[F[Any]] { type MirroredElemTypes = G[B] *: EmptyTuple },
-      annotated: Annotated[G]
-  ): Annotated[F] = new Annotated[F]:
-    override def get[A](self: F[A]): Metadata =
-      val gb = fromProductTyped(self)(using
-        mirror.asInstanceOf[Mirror.ProductOf[F[A]] { type MirroredElemTypes = G[B] *: EmptyTuple }]
-      ).head
-      annotated.get(gb)
-
-    override def update[A](self: F[A], metadata: Metadata => Metadata): F[A] =
-      val gb = fromProductTyped(self)(using
-        mirror.asInstanceOf[Mirror.ProductOf[F[A]] { type MirroredElemTypes = G[B] *: EmptyTuple }]
-      ).head
-      val update = annotated.update(gb, metadata)
-      mirror.fromProduct(update *: EmptyTuple).asInstanceOf[F[A]]
+  given Invariant[Annotated] with
+    override def imap[A, B](fa: Annotated[A])(f: A => B)(g: B => A): Annotated[B] =
+      fa.imap(f)(g)
