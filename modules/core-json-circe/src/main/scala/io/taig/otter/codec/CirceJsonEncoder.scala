@@ -14,8 +14,8 @@ object CirceJsonEncoder extends Encoder[Json, CirceJson]:
     case Json.Enumeration(schema) => EnumerationEncoder(encoder = this).encode(schema = schema.self, a)
     case Json.Nullable(schema)    =>
       NullableEncoder(encoder = this, empty = CirceJson.Null).encode(schema = schema.self, a)
-    case Json.Primitive(schema) => CirceJsonPrimitiveEncoder.encode(schema = schema.self, a)
-    case Json.Record(schema)    =>
+    case schema: Json.Primitive[?] => CirceJsonPrimitiveEncoder.encode(schema, a)
+    case Json.Record(schema)       =>
       CirceJson.fromFields(RecordEncoder(encoder = CirceJsonFieldEncoder).encode(schema = schema.self, a).toList)
     case Json.Tuple(schema) =>
       CirceJson.fromValues(TupleEncoder(encoder = this, empty = CirceJson.Null).encode(schema = schema.self, a))

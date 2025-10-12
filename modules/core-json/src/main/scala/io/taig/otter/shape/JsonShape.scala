@@ -1,0 +1,99 @@
+package io.taig.otter.shape
+
+import io.taig.otter as Self
+
+trait JsonShape:
+  type Json[A] = Self.Json[?, A]
+
+  object Json:
+    type Of[S[a] <: Json[a], A] = Self.Json[S, A]
+
+    type Coerce[A] = Self.Json.Coerce[?, A]
+
+    object Coerce:
+      type Of[S[a] <: Json.Primitive[a], A] = Self.Json.Coerce[S, A]
+
+      export Self.Json.Coerce.unapply
+
+    type Collection[A] = Self.Json.Collection[?, A]
+
+    object Collection:
+      type Of[S[a] <: Json[a], A] = Self.Json.Collection[S, A]
+
+      export Self.Json.Collection.unapply
+
+    type Constant[A] = Self.Json.Constant[?, A]
+
+    object Constant:
+      type Of[S[a] <: Json.Primitive[a], A] = Self.Json.Constant[S, A]
+
+      export Self.Json.Constant.unapply
+
+    type Dictionary[A] = Self.Json.Dictionary[?, A]
+
+    object Dictionary:
+      type Of[S[a] <: Json[a], A] = Self.Json.Dictionary[S, A]
+
+      export Self.Json.Dictionary.unapply
+
+    type Enumeration[A] = Self.Json.Enumeration[?, A]
+
+    object Enumeration:
+      type Of[S[a] <: Json.Primitive[a], A] = Self.Json.Enumeration[S, A]
+
+      export Self.Json.Enumeration.unapply
+
+    type Nullable[A] = Self.Json.Nullable[?, A]
+
+    object Nullable:
+      type Of[S[a] <: Json[a], A] = Self.Json.Nullable[S, A]
+
+      export Self.Json.Nullable.unapply
+
+    type Primitive[A] = Self.Json.Primitive[A]
+
+    object Primitive:
+      type Boolean[A] = Self.Json.Primitive.Boolean[A]
+
+      object Boolean:
+        export Self.Json.Primitive.Boolean.unapply
+
+      type Number[A] = Self.Json.Primitive.Number[A]
+
+      object Number:
+        export Self.Json.Primitive.Number.unapply
+
+      type String[A] = Self.Json.Primitive.String[A]
+
+      object String:
+        export Self.Json.Primitive.String.unapply
+
+    type Record[A] = Self.Json.Record[?, A]
+
+    object Record:
+      type Of[S[a] <: Json.Field[a], A] = Self.Json.Record[S, A]
+
+      export Self.Json.Record.unapply
+
+    type Tuple[A] = Self.Json.Tuple[?, A]
+
+    object Tuple:
+      type Of[S[a] <: Json[a], A] = Self.Json.Tuple[S, A]
+
+      export Self.Json.Tuple.unapply
+
+    type Union[A] = Self.Json.Union[?, A]
+
+    object Union:
+      type Of[S[a] <: Json[a], A] = Self.Json.Union[S, A]
+
+      export Self.Json.Union.unapply
+
+    type Field[A] = Self.Json.Field[?, A]
+
+    object Field:
+      type Of[S[a] <: Json[a], A] = Self.Json.Field[S, A]
+
+      export Self.Json.Field.unapply
+
+object JsonShape extends JsonShape

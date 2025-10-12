@@ -2,7 +2,6 @@ package io.taig.otter.component
 
 import cats.syntax.all.*
 import io.taig.Undefined
-import io.taig.otter.Invariant
 import io.taig.otter.operation.StringOperation
 import io.taig.validation
 import io.taig.validation.Constraint
@@ -10,6 +9,7 @@ import io.taig.validation.Validation
 import org.typelevel.ci.CIString
 
 import java.util.regex.Pattern
+import cats.Invariant
 
 trait CaseInsensitiveComponent[+Self[_]: Invariant](using operation: StringOperation[Self]):
   self =>

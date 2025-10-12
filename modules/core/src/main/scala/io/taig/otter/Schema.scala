@@ -12,8 +12,8 @@ object Schema:
       derives Invariant
 
   object Coerce:
-    given [A]: Annotated[Schema.Coerce[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Coerce[Schema[?, *], A]]].imap(Coerce.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Coerce[S, A]] =
+      Annotated[Annotation[Self.Coerce[S, A]]].imap(Coerce.apply)(_.self)
 
     given CoerceOperation[Schema[?, *], Schema.Coerce] =
       CoerceOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Coerce[s, a]]]
@@ -25,8 +25,8 @@ object Schema:
       derives Invariant
 
   object Collection:
-    given [A]: Annotated[Schema.Collection[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Collection[Schema[?, *], A]]].imap(Collection.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Collection[S, A]] =
+      Annotated[Annotation[Self.Collection[S, A]]].imap(Collection.apply)(_.self)
 
     given CollectionOperation[Schema[?, *], Schema.Collection] =
       CollectionOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Collection[s, a]]]
@@ -38,8 +38,8 @@ object Schema:
       derives Invariant
 
   object Constant:
-    given [A]: Annotated[Schema.Constant[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Constant[Schema[?, *], A]]].imap(Constant.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Constant[S, A]] =
+      Annotated[Annotation[Self.Constant[S, A]]].imap(Constant.apply)(_.self)
 
     given ConstantOperation[Schema[?, *], Schema.Constant] =
       ConstantOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Constant[s, a]]]
@@ -51,8 +51,8 @@ object Schema:
       derives Invariant
 
   object Dictionary:
-    given [A]: Annotated[Schema.Dictionary[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Dictionary[Schema[?, *], A]]].imap(Dictionary.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Dictionary[S, A]] =
+      Annotated[Annotation[Self.Dictionary[S, A]]].imap(Dictionary.apply)(_.self)
 
     given DictionaryOperation[Schema[?, *], Schema.Dictionary] =
       DictionaryOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Dictionary[s, a]]]
@@ -64,8 +64,8 @@ object Schema:
       derives Invariant
 
   object Enumeration:
-    given [A]: Annotated[Schema.Enumeration[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Enumeration[Schema[?, *], A]]].imap(Enumeration.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Enumeration[S, A]] =
+      Annotated[Annotation[Self.Enumeration[S, A]]].imap(Enumeration.apply)(_.self)
 
     given EnumerationOperation[Schema[?, *], Schema.Enumeration] =
       EnumerationOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Enumeration[s, a]]]
@@ -77,8 +77,8 @@ object Schema:
       derives Invariant
 
   object Nullable:
-    given [A]: Annotated[Schema.Nullable[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Nullable[Schema[?, *], A]]].imap(Nullable.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Nullable[S, A]] =
+      Annotated[Annotation[Self.Nullable[S, A]]].imap(Nullable.apply)(_.self)
 
     given NullableOperation[Schema[?, *], Schema.Nullable] =
       NullableOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Nullable[s, a]]]
@@ -135,25 +135,28 @@ object Schema:
         case Schema.Primitive.String(self)  => self
       }
 
-  final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[S, A]]) extends Schema[S, A]
-      derives Invariant
+  final case class Record[+S[a] <: Schema[?, a], A](self: Annotation[Self.Record[Schema.Field[S, *], A]])
+      extends Schema[S, A] derives Invariant
 
   object Record:
-    given [A]: Annotated[Schema.Record[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Record[Schema[?, *], A]]].imap(Record.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Record[S, A]] =
+      Annotated[Annotation[Self.Record[Schema.Field[S, *], A]]].imap(Record.apply)(_.self)
 
-    given RecordOperation[Schema[?, *], Schema.Record] =
-      RecordOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Record[s, a]]]
-        .imapK([Value[a] <: Schema[?, a], A] => (self: Annotation[Self.Record[Value, A]]) => Record(self))(
-          [Value[a] <: Schema[?, a], A] => (schema: Record[Value, A]) => schema.self
-        )
+    given RecordOperation[Schema.Field[?, *], Schema.Record] = new RecordOperation[Schema.Field[?, *], Schema.Record] {
+      override def empty: Record[Nothing, Unit] = Record(Annotation(Self.Record.Empty))
+
+      override def lift[Value[a] <: Schema.Field[?, a], A](value: => Value[A]): Record[Value, A] = ???
+
+      extension [S[a] <: Schema[?, a], A](self: Record[S, A])
+        override def zip[T[a] <: Schema[?, a], B](schema: Record[T, B]): Record[[a] =>> S[a] | T[a], (A, B)] = ???
+    }
 
   final case class Tuple[+S[a] <: Schema[?, a], A](self: Annotation[Self.Tuple[S, A]]) extends Schema[S, A]
       derives Invariant
 
   object Tuple:
-    given [A]: Annotated[Schema.Tuple[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Tuple[Schema[?, *], A]]].imap(Tuple.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Tuple[S, A]] =
+      Annotated[Annotation[Self.Tuple[S, A]]].imap(Tuple.apply)(_.self)
 
     given TupleOperation[Schema[?, *], Schema.Tuple] =
       TupleOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Tuple[s, a]]]
@@ -165,8 +168,8 @@ object Schema:
       derives Invariant
 
   object Union:
-    given [A]: Annotated[Schema.Union[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Union[Schema[?, *], A]]].imap(Union.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Union[S, A]] =
+      Annotated[Annotation[Self.Union[S, A]]].imap(Union.apply)(_.self)
 
     given UnionOperation[Schema[?, *], Schema.Union] =
       UnionOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Union[s, a]]]
@@ -178,8 +181,8 @@ object Schema:
       derives Invariant
 
   object Field:
-    given [A]: Annotated[Schema.Field[Schema[?, *], A]] =
-      Annotated[Annotation[Self.Field[Schema[?, *], A]]].imap(Field.apply)(_.self)
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Field[S, A]] =
+      Annotated[Annotation[Self.Field[S, A]]].imap(Field.apply)(_.self)
 
     given FieldOperation[Schema[?, *], Schema.Field] =
       FieldOperation[Schema[?, *], [s[a] <: Schema[?, a], a] =>> Annotation[Self.Field[s, a]]]

@@ -13,8 +13,8 @@ object Text:
       derives Invariant
 
   object Coerce:
-    given [A]: Annotated[Text.Coerce[Text.Primitive, A]] =
-      Annotated[Annotation[Self.Coerce[Text.Primitive, A]]].imap(Coerce.apply)(_.self)
+    given [S[a] <: Text.Primitive[a], A]: Annotated[Text.Coerce[S, A]] =
+      Annotated[Annotation[Self.Coerce[S, A]]].imap(Coerce.apply)(_.self)
 
     given CoerceOperation[Text.Primitive, Text.Coerce] =
       CoerceOperation[Text.Primitive, [s[a] <: Text.Primitive[a], a] =>> Annotation[Self.Coerce[s, a]]]
@@ -26,8 +26,8 @@ object Text:
       derives Invariant
 
   object Constant:
-    given [A]: Annotated[Text.Constant[Text[?, *], A]] =
-      Annotated[Annotation[Self.Constant[Text[?, *], A]]].imap(Constant.apply)(_.self)
+    given [S[a] <: Text[?, a], A]: Annotated[Text.Constant[S, A]] =
+      Annotated[Annotation[Self.Constant[S, A]]].imap(Constant.apply)(_.self)
 
     given ConstantOperation[Text[?, *], Text.Constant] =
       ConstantOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Constant[s, a]]]
@@ -39,8 +39,8 @@ object Text:
       derives Invariant
 
   object Enumeration:
-    given [A]: Annotated[Text.Enumeration[Text[?, *], A]] =
-      Annotated[Annotation[Self.Enumeration[Text[?, *], A]]].imap(Enumeration.apply)(_.self)
+    given [S[a] <: Text[?, a], A]: Annotated[Text.Enumeration[S, A]] =
+      Annotated[Annotation[Self.Enumeration[S, A]]].imap(Enumeration.apply)(_.self)
 
     given EnumerationOperation[Text[?, *], Text.Enumeration] =
       EnumerationOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Enumeration[s, a]]]
@@ -116,8 +116,8 @@ object Text:
       derives Invariant
 
   object Union:
-    given [A]: Annotated[Text.Union[Text[?, *], A]] =
-      Annotated[Annotation[Self.Union[Text[?, *], A]]].imap(Union.apply)(_.self)
+    given [S[a] <: Text[?, a], A]: Annotated[Text.Union[S, A]] =
+      Annotated[Annotation[Self.Union[S, A]]].imap(Union.apply)(_.self)
 
     given UnionOperation[Text[?, *], Text.Union] =
       UnionOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Union[s, a]]]
