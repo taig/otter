@@ -34,9 +34,7 @@ object Union:
   given invariant[S[_]]: Invariant[Union[S, *]] with
     override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: UnionOperation[S, Union] with
-    override def lift[Value[a] <: S[a], A](value: => Value[A]): Union[Value, A] = Root(schema = Reference.later(value))
+  given operation[S[_]]: UnionOperation[Union[S, *], S] with
+    override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))
 
-    extension [T[a] <: S[a], A](self: Union[T, A])
-      override def orElse[T1[a] >: T[a] <: S[a], B](schema: Union[T1, B]): Union[T1, Either[A, B]] =
-        OrElse(left = self, right = schema)
+    override def orElse[A, B](left: Union[S, A], right: Union[S, B]): Union[S, Either[A, B]] = OrElse(left, right)

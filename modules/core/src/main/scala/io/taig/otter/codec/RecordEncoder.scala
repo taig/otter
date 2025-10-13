@@ -12,4 +12,5 @@ final class RecordEncoder[-S[_], T](encoder: Encoder[S, Option[(String, T)]])
     case Record.Zip(left, right)   => encode(schema = left, a._1) ++ encode(schema = right, a._2)
 
 object RecordEncoder:
-  def apply[S[_], A](encoder: Encoder[S, Option[(String, A)]]) = new RecordEncoder(encoder)
+  def apply[S[_], A](encoder: Encoder[S, Option[(String, A)]]): Encoder[Record[S, *], Chain[(String, A)]] =
+    new RecordEncoder(encoder)

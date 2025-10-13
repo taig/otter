@@ -1,6 +1,6 @@
 package io.taig.otter.codec
 
-import io.taig.otter.shape.TextShape.Text
+import io.taig.otter.Text
 
 object TextPrimitivePrinter extends Printer[Text.Primitive]:
   override def print[A](schema: Text.Primitive[A], a: A): String = schema match

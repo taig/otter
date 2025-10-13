@@ -2,32 +2,18 @@ package io.taig.otter.operation
 
 import io.taig.otter.Constraint
 import io.taig.validation.Validation
-import io.taig.otter.OperationK
 import cats.data.Chain
 import io.taig.otter.InvariantK
 
-trait DictionaryOperation[Shape[_], Self[_[a] <: Shape[a], _]]:
-  def dictionary[Value[a] <: Shape[a], A](
+trait DictionaryOperation[Self[_], -Value[_]]:
+  def dictionary[A](
       schema: => Value[A],
       validation: Validation[Constraint.Object, A]
-  ): Self[Value, List[(String, A)]]
+  ): Self[List[(String, A)]]
 
-  def constraints[A](self: Self[Shape, A]): Chain[Constraint.Object]
+  def constraints[A](self: Self[A]): Chain[Constraint.Object]
 
 object DictionaryOperation:
-  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
-      operation: DictionaryOperation[Shape, Self]
-  ): DictionaryOperation[Shape, Self] = operation
-
-  given OperationK[DictionaryOperation] with
-    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: DictionaryOperation[Shape, Self])
-      override def imapK[T[_[a] <: Shape[a], _]](fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A])(
-          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
-      ): DictionaryOperation[Shape, T] = new DictionaryOperation[Shape, T]:
-        override def dictionary[Value[a] <: Shape[a], A](
-            schema: => Value[A],
-            validation: Validation[Constraint.Object, A]
-        ): T[Value, List[(String, A)]] = fK(operation.dictionary(schema, validation))
-
-        override def constraints[A](self: T[Shape, A]): Chain[Constraint.Object] =
-          operation.constraints(gK(self))
+  inline def apply[Self[_], Value[_]](using
+      operation: DictionaryOperation[Self, Value]
+  ): DictionaryOperation[Self, Value] = operation

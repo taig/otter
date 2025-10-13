@@ -1,21 +1,17 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationK
+import io.taig.otter.FunctorK
 
-trait CoerceOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
-  def coerce[Value[a] <: Shape[a], A](schema: => Value[A]): Self[Value, A]
+trait CoerceOperation[+Self[_], -Value[_]]:
+  def coerce[A](schema: => Value[A]): Self[A]
 
 object CoerceOperation:
-  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
-      operation: CoerceOperation[Shape, Self]
-  ): CoerceOperation[Shape, Self] = operation
+  inline def apply[Self[_], Value[_]](using
+      operation: CoerceOperation[Self, Value]
+  ): CoerceOperation[Self, Value] = operation
 
-  given OperationK[CoerceOperation] with
-    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: CoerceOperation[Shape, Self])
-      override def imapK[T[_[a] <: Shape[a], _]](
-          fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A]
-      )(
-          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
-      ): CoerceOperation[Shape, T] = new CoerceOperation[Shape, T]:
-        override def coerce[Value[a] <: Shape[a], A](schema: => Value[A]): T[Value, A] =
-          fK(operation.coerce(schema))
+  given [Value[_]]: FunctorK[[s[_]] =>> CoerceOperation[s, Value]] with
+    extension [G[_]](self: CoerceOperation[G, Value])
+      override def mapK[H[_]](fK: [A] => G[A] => H[A]): CoerceOperation[H, Value] =
+        new CoerceOperation[H, Value]:
+          override def coerce[A](schema: => Value[A]): H[A] = fK(self.coerce(schema))

@@ -1,23 +1,19 @@
 package io.taig.otter.operation
 
-import io.taig.otter.OperationK
+import io.taig.otter.InvariantK
 
-trait UnionOperation[-Shape[_], Self[_[a] <: Shape[a], _]]
-    extends LiftOperation[Shape, Self],
-      OrElseOperation[Shape, Self]
+trait UnionOperation[Self[_], -Value[_]] extends LiftOperation[Self, Value], OrElseOperation[Self]
 
 object UnionOperation:
-  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
-      operation: UnionOperation[Shape, Self]
-  ): UnionOperation[Shape, Self] = operation
+  inline def apply[Self[_], Value[_]](using
+      operation: UnionOperation[Self, Value]
+  ): UnionOperation[Self, Value] = operation
 
-  given OperationK[UnionOperation] with
-    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: UnionOperation[Shape, Self])
-      override def imapK[T[_[a] <: Shape[a], _]](fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A])(
-          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
-      ): UnionOperation[Shape, T] = new UnionOperation[Shape, T]:
-        override def lift[Value[a] <: Shape[a], A](value: => Value[A]): T[Value, A] = fK(operation.lift(value))
+  given [Value[_]]: InvariantK[[f[_]] =>> UnionOperation[f, Value]] with
+    extension [G[_]](operation: UnionOperation[G, Value])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): UnionOperation[H, Value] =
+        new UnionOperation[H, Value]:
+          override def orElse[A, B](left: H[A], right: H[B]): H[Either[A, B]] =
+            fK(operation.orElse(gK(left), gK(right)))
 
-        extension [S[a] <: Shape[a], A](self: T[S, A])
-          override def orElse[S1[a] >: S[a] <: Shape[a], B](schema: T[S1, B]): T[S1, Either[A, B]] =
-            fK(operation.orElse(gK(self))(gK(schema)))
+          override def lift[A](schema: => Value[A]): H[A] = fK(operation.lift(schema))

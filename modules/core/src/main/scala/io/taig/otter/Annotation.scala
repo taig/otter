@@ -36,13 +36,9 @@ object Annotation:
       (annotation: Annotation[G[A]]) => annotation.self
     )
 
-  given operation2[
-      F[Shape[_], _[_[a] <: Shape[a], _]],
-      G[_],
-      H[_[a] <: G[a], _]
-  ](using fgh: F[G, H])(using OperationK[F]): F[G, [Self[a] <: G[a], A] =>> Annotation[H[Self, A]]] =
-    fgh.imapK[[Self[a] <: G[a], A] =>> Annotation[H[Self, A]]](
-      fK = [Value[a] <: G[a], A] => (self: H[Value, A]) => Annotation(self)
-    )(
-      gK = [Value[a] <: G[a], A] => (self: Annotation[H[Value, A]]) => self.self
+  given operation2[F[_[_], _[_]], G[_], H[_]](using
+      fgh: F[G, H]
+  )(using InvariantK[[f[_]] =>> F[f, H]]): F[[a] =>> Annotation[G[a]], H] =
+    fgh.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
+      (annotation: Annotation[G[A]]) => annotation.self
     )

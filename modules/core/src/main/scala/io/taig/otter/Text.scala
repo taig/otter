@@ -6,47 +6,38 @@ import cats.Invariant
 import cats.derived.*
 import cats.syntax.all.*
 
-sealed abstract class Text[+S[_], A] extends Product with Serializable derives Invariant
+sealed abstract class Text[A] extends Product with Serializable derives Invariant
 
 object Text:
-  final case class Coerce[+S[a] <: Text.Primitive[a], A](self: Annotation[Self.Coerce[S, A]]) extends Text[S, A]
-      derives Invariant
+  final case class Coerce[A](self: Annotation[Self.Coerce[Text.Primitive, A]]) extends Text[A] derives Invariant
 
   object Coerce:
-    given [S[a] <: Text.Primitive[a], A]: Annotated[Text.Coerce[S, A]] =
-      Annotated[Annotation[Self.Coerce[S, A]]].imap(Coerce.apply)(_.self)
+    given [A]: Annotated[Text.Coerce[A]] =
+      Annotated[Annotation[Self.Coerce[Text.Primitive, A]]].imap(apply)(_.self)
 
-    given CoerceOperation[Text.Primitive, Text.Coerce] =
-      CoerceOperation[Text.Primitive, [s[a] <: Text.Primitive[a], a] =>> Annotation[Self.Coerce[s, a]]]
-        .imapK[Text.Coerce]([Value[a] <: Text.Primitive[a], A] =>
-          (self: Annotation[Self.Coerce[Value, A]]) => Coerce(self)
-        )([Value[a] <: Text.Primitive[a], A] => (schema: Text.Coerce[Value, A]) => schema.self)
+    given CoerceOperation[Text.Coerce, Text.Primitive] =
+      CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive]
+        .mapK([A] => (self: Annotation[Self.Coerce[Text.Primitive, A]]) => Coerce(self))
 
-  final case class Constant[+S[a] <: Text[?, a], A](self: Annotation[Self.Constant[S, A]]) extends Text[S, A]
-      derives Invariant
+  final case class Constant[A](self: Annotation[Self.Constant[Text, A]]) extends Text[A] derives Invariant
 
   object Constant:
-    given [S[a] <: Text[?, a], A]: Annotated[Text.Constant[S, A]] =
-      Annotated[Annotation[Self.Constant[S, A]]].imap(Constant.apply)(_.self)
+    given [A]: Annotated[Text.Constant[A]] =
+      Annotated[Annotation[Self.Constant[Text, A]]].imap(apply)(_.self)
 
-    given ConstantOperation[Text[?, *], Text.Constant] =
-      ConstantOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Constant[s, a]]]
-        .imapK[Text.Constant]([Value[a] <: Text[?, a], A] =>
-          (self: Annotation[Self.Constant[Value, A]]) => Constant(self)
-        )([Value[a] <: Text[?, a], A] => (schema: Text.Constant[Value, A]) => schema.self)
+    given ConstantOperation[Text.Constant, Text] =
+      ConstantOperation[[a] =>> Annotation[Self.Constant[Text, a]], Text]
+        .mapK([A] => (self: Annotation[Self.Constant[Text, A]]) => Constant(self))
 
-  final case class Enumeration[+S[a] <: Text[?, a], A](self: Annotation[Self.Enumeration[S, A]]) extends Text[S, A]
-      derives Invariant
+  final case class Enumeration[A](self: Annotation[Self.Enumeration[Text, A]]) extends Text[A] derives Invariant
 
   object Enumeration:
-    given [S[a] <: Text[?, a], A]: Annotated[Text.Enumeration[S, A]] =
-      Annotated[Annotation[Self.Enumeration[S, A]]].imap(Enumeration.apply)(_.self)
+    given [A]: Annotated[Text.Enumeration[A]] =
+      Annotated[Annotation[Self.Enumeration[Text, A]]].imap(apply)(_.self)
 
-    given EnumerationOperation[Text[?, *], Text.Enumeration] =
-      EnumerationOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Enumeration[s, a]]]
-        .imapK[Text.Enumeration]([Value[a] <: Text[?, a], A] =>
-          (self: Annotation[Self.Enumeration[Value, A]]) => Enumeration(self)
-        )([Value[a] <: Text[?, a], A] => (schema: Enumeration[Value, A]) => schema.self)
+    given EnumerationOperation[Text.Enumeration, Text] =
+      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Text, a]], Text]
+        .mapK([A] => (self: Annotation[Self.Enumeration[Text, A]]) => Enumeration(self))
 
   sealed trait Primitive[A] extends Product with Serializable derives Invariant
 
@@ -73,7 +64,7 @@ object Text:
           (self: Annotation[Self.Primitive.Number[A]]) => Number(self)
         )([A] => (schema: Number[A]) => schema.self)
 
-    final case class String[A](self: Annotation[Self.Primitive.String[A]]) extends Text[Nothing, A], Text.Primitive[A]
+    final case class String[A](self: Annotation[Self.Primitive.String[A]]) extends Text[A], Text.Primitive[A]
         derives Invariant
 
     object String:
@@ -112,15 +103,12 @@ object Text:
             case Text.Primitive.String(self)  => self
       )
 
-  final case class Union[+S[a] <: Text[?, a], A](self: Annotation[Self.Union[S, A]]) extends Text[S, A]
-      derives Invariant
+  final case class Union[A](self: Annotation[Self.Union[Text, A]]) extends Text[A] derives Invariant
 
   object Union:
-    given [S[a] <: Text[?, a], A]: Annotated[Text.Union[S, A]] =
-      Annotated[Annotation[Self.Union[S, A]]].imap(Union.apply)(_.self)
+    given [A]: Annotated[Text.Union[A]] =
+      Annotated[Annotation[Self.Union[Text, A]]].imap(apply)(_.self)
 
-    given UnionOperation[Text[?, *], Text.Union] =
-      UnionOperation[Text[?, *], [s[a] <: Text[?, a], a] =>> Annotation[Self.Union[s, a]]]
-        .imapK[Text.Union]([Value[a] <: Text[?, a], A] => (self: Annotation[Self.Union[Value, A]]) => Union(self))(
-          [Value[a] <: Text[?, a], A] => (schema: Union[Value, A]) => schema.self
-        )
+    given UnionOperation[Text.Union, Text] =
+      UnionOperation[[a] =>> Annotation[Self.Union[Text, a]], Text]
+        .imapK([A] => (self: Annotation[Self.Union[Text, A]]) => Union(self))([A] => (schema: Union[A]) => schema.self)

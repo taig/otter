@@ -1,20 +1,18 @@
 package io.taig.otter.operation
 
 import cats.Eq
-import io.taig.otter.OperationK
+import io.taig.otter.FunctorK
 
-trait ConstantOperation[-Shape[_], +Self[_[a] <: Shape[a], _]]:
-  def constant[Value[a] <: Shape[a], A: Eq](schema: => Value[A], value: A): Self[Value, A]
+trait ConstantOperation[+Self[_], -Value[_]]:
+  def constant[A: Eq](schema: => Value[A], value: A): Self[A]
 
 object ConstantOperation:
-  inline def apply[Shape[_], Self[_[a] <: Shape[a], _]](using
-      operation: ConstantOperation[Shape, Self]
-  ): ConstantOperation[Shape, Self] = operation
+  inline def apply[Self[_], Value[_]](using
+      operation: ConstantOperation[Self, Value]
+  ): ConstantOperation[Self, Value] = operation
 
-  given OperationK[ConstantOperation] with
-    extension [Shape[_], Self[_[a] <: Shape[a], _]](operation: ConstantOperation[Shape, Self])
-      override def imapK[T[_[a] <: Shape[a], _]](fK: [Value[a] <: Shape[a], A] => Self[Value, A] => T[Value, A])(
-          gK: [Value[a] <: Shape[a], A] => T[Value, A] => Self[Value, A]
-      ): ConstantOperation[Shape, T] = new ConstantOperation[Shape, T]:
-        override def constant[Value[a] <: Shape[a], A: Eq](schema: => Value[A], value: A): T[Value, A] =
-          fK(operation.constant(schema, value))
+  given [Value[_]]: FunctorK[[f[_]] =>> ConstantOperation[f, Value]] with
+    extension [G[_]](self: ConstantOperation[G, Value])
+      override def mapK[H[_]](fK: [A] => G[A] => H[A]): ConstantOperation[H, Value] =
+        new ConstantOperation[H, Value]:
+          override def constant[A: Eq](schema: => Value[A], value: A): H[A] = fK(self.constant(schema, value))

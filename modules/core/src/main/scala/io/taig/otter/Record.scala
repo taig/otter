@@ -43,12 +43,9 @@ object Record:
   given invariant[S[_]]: Invariant[Record[S, *]] with
     override def imap[A, B](fa: Record[S, A])(f: A => B)(g: B => A): Record[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: RecordOperation[S, Record] with
-    override def empty: Record[Nothing, Unit] = Empty
+  given operation[S[_]]: RecordOperation[Record[S, *], S] with
+    override def empty: Record[S, Unit] = Empty
 
-    override def lift[Value[a] <: S[a], A](value: => Value[A]): Record[Value, A] =
-      Record.Root(field = Reference.later(value))
+    override def lift[A](value: => S[A]): Record[S, A] = Root(field = Reference.later(value))
 
-    extension [T[a] <: S[a], A](self: Record[T, A])
-      override def zip[U[a] <: S[a], B](schema: Record[U, B]): Record[[a] =>> T[a] | U[a], (A, B)] =
-        Record.Zip(left = self, right = schema)
+    override def zip[A, B](left: Record[S, A], right: Record[S, B]): Record[S, (A, B)] = Zip(left, right)

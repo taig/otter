@@ -25,6 +25,5 @@ object Coerce:
   given invariant[S[_]]: Invariant[Coerce[S, *]] with
     override def imap[A, B](fa: Coerce[S, A])(f: A => B)(g: B => A): Coerce[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: CoerceOperation[S, Coerce] with
-    override def coerce[Value[a] <: S[a], A](schema: => Value[A]): Coerce[Value, A] =
-      Root(schema = Reference.later(schema))
+  given operation[S[_]]: CoerceOperation[Coerce[S, *], S] with
+    override def coerce[A](schema: => S[A]): Coerce[S, A] = Root(Reference.later(schema))

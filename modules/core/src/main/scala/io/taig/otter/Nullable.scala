@@ -30,9 +30,8 @@ object Nullable:
   given invariant[S[_]]: Invariant[Nullable[S, *]] with
     override def imap[A, B](fa: Nullable[S, A])(f: A => B)(g: B => A): Nullable[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: NullableOperation[S, Nullable] with
-    override def nullable[Value[a] <: S[a], A](value: => Value[A]): Nullable[Value, Option[A]] =
-      Optional(schema = Reference.later(value))
+  given operation[S[_]]: NullableOperation[Nullable[S, *], S] with
+    override def nullable[A](value: => S[A]): Nullable[S, Option[A]] = Optional(schema = Reference.later(value))
 
-    override def nullable[Value[a] <: S[a], A](value: => Value[A], default: => A): Nullable[Value, A] =
+    override def nullable[A](value: => S[A], default: => A): Nullable[S, A] =
       Default(schema = Reference.later(value), default = Eval.later(default))

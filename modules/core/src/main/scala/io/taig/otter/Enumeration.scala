@@ -33,8 +33,6 @@ object Enumeration:
   given invariant[S[_]]: Invariant[Enumeration[S, *]] with
     override def imap[A, B](fa: Enumeration[S, A])(f: A => B)(g: B => A): Enumeration[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: EnumerationOperation[S, Enumeration] with
-    override def enumeration[Value[a] <: S[a], A, B](
-        schema: => Value[A],
-        mapping: Mapping[B, A]
-    ): Enumeration[Value, B] = Enumeration.Root(schema = Reference.later(schema), mapping)
+  given operation[S[_]]: EnumerationOperation[Enumeration[S, *], S] with
+    override def enumeration[A, B](schema: => S[A], mapping: Mapping[B, A]): Enumeration[S, B] =
+      Root(schema = Reference.later(schema), mapping)

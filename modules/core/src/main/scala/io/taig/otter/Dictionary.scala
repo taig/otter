@@ -32,10 +32,11 @@ object Dictionary:
   given invariant[S[_]]: Invariant[Dictionary[S, *]] with
     override def imap[A, B](fa: Dictionary[S, A])(f: A => B)(g: B => A): Dictionary[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: DictionaryOperation[S, Dictionary] with
-    override def dictionary[Value[a] <: S[a], A](
-        schema: => Value[A],
+  given operation[S[_]]: DictionaryOperation[Dictionary[S, *], S] with
+    override def dictionary[A](
+        schema: => S[A],
         validation: Validation[Constraint.Object, A]
-    ): Dictionary[Value, List[(String, A)]] = Dictionary.Root(schema = Reference.later(schema), validation)
+    ): Dictionary[S, List[(String, A)]] =
+      Root(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Dictionary[S, A]): Chain[Constraint.Object] = self.constraints

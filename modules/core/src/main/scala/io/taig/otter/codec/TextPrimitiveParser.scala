@@ -1,6 +1,6 @@
 package io.taig.otter.codec
 
-import io.taig.otter.shape.TextShape.Text
+import io.taig.otter.Text
 import cats.data.Validated
 import io.taig.otter.Violation
 

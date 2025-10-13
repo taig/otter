@@ -25,6 +25,6 @@ object Constant:
   given invariant[S[_]]: Invariant[Constant[S, *]] with
     override def imap[A, B](fa: Constant[S, A])(f: A => B)(g: B => A): Constant[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: ConstantOperation[S, Constant] with
-    override def constant[Value[a] <: S[a], A](schema: => Value[A], value: A)(using eq: Eq[A]): Constant[Value, A] =
+  given operation[S[_]]: ConstantOperation[Constant[S, *], S] with
+    override def constant[A](schema: => S[A], value: A)(using eq: Eq[A]): Constant[S, A] =
       Root(schema = Reference.later(schema), value, eq)

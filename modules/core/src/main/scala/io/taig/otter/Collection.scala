@@ -2,9 +2,9 @@ package io.taig.otter
 
 import cats.data.Chain
 import io.taig.otter.operation.CollectionOperation
-import io.taig.validation.Validation
 import cats.Invariant
 import cats.derived.*
+import io.taig.validation.Validation
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   self =>
@@ -41,15 +41,17 @@ object Collection:
   given invariant[S[_]]: Invariant[Collection[S, *]] with
     override def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: CollectionOperation[S, Collection] with
-    override def indexed[Value[a] <: S[a], A](
-        schema: => Value[A],
+  given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
+    override def indexed[A](
+        schema: => S[A],
         validation: Validation[Constraint.Collection, Vector[A]]
-    ): Collection[Value, Vector[A]] = Collection.Indexed(schema = Reference.later(schema), validation)
+    ): Collection[S, Vector[A]] =
+      Indexed(schema = Reference.later(schema), validation)
 
-    override def linked[Value[a] <: S[a], A](
-        schema: => Value[A],
+    override def linked[A](
+        schema: => S[A],
         validation: Validation[Constraint.Collection, List[A]]
-    ): Collection[Value, List[A]] = Collection.Linked(schema = Reference.later(schema), validation)
+    ): Collection[S, List[A]] =
+      Linked(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Collection[S, A]): Chain[Constraint.Collection] = self.constraints

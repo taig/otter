@@ -22,16 +22,19 @@ sealed abstract class Field[+S[_], A] extends Product with Serializable:
 object Field:
   final case class Default[S[_], A](self: Field[S, A], default: Eval[A]) extends Field[S, A]:
     export self.{name, schema}
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, A] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Modify[S[_], A, B](self: Field[S, A], f: A => B, g: B => A) extends Field[S, B]:
     export self.{name, schema}
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Optional[S[_], A](self: Field[S, A]) extends Field[S, Option[A]]:
     export self.{name, schema}
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, Option[A]] =
       copy(self = self.mapK[S1, T](fK))
 
@@ -42,11 +45,9 @@ object Field:
   given invariant[S[_]]: Invariant[Field[S, *]] with
     override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = fa.imap(f)(g)
 
-  given operation[S[_]]: FieldOperation[S, Field] with
-    override def apply[Value[a] <: S[a], A](name: String, value: => Value[A]): Field[Value, A] =
-      Field.Root(name, schema = Reference.later(value))
+  given operation[S[_]]: FieldOperation[Field[S, *], S] with
+    override def apply[A](name: String, value: => S[A]): Field[S, A] = Root(name, Reference.later(value))
 
-    override def optional[Value[a] <: S[a], A](self: Field[Value, A]): Field[Value, Option[A]] = Field.Optional(self)
+    override def optional[A](self: Field[S, A]): Field[S, Option[A]] = self.optional
 
-    override def optional[Value[a] <: S[a], A](self: Field[Value, A], default: => A): Field[Value, A] =
-      Field.Default(self, Eval.later(default))
+    override def optional[A](self: Field[S, A], default: => A): Field[S, A] = self.optional(default)
