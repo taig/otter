@@ -3,9 +3,10 @@ package io.taig.otter.codec
 import cats.data.Validated
 import io.taig.otter.Text
 import io.taig.otter.Violation
+import io.taig.otter.Violations
 
 object TextParser extends Parser[Text]:
-  override def parse[A](schema: Text[A], value: String): Validated[Violation, A] = schema match
+  override def parse[A](schema: Text[A], value: String): Validated[Violations, A] = schema match
     case Text.Constant(schema) =>
       ConstantDecoder(decoder = this, encoder = TextPrinter, render = identity)
         .decode(schema = schema.self, value)

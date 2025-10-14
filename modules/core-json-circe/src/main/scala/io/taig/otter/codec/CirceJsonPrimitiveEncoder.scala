@@ -2,9 +2,9 @@ package io.taig.otter.codec
 
 import io.circe.Json as CirceJson
 import io.taig.otter as Self
-import io.taig.otter.shape.JsonShape.Json
 
 import scala.annotation.tailrec
+import Self.Json
 
 object CirceJsonPrimitiveEncoder extends Encoder[Json.Primitive, CirceJson]:
   override def encode[A](schema: Json.Primitive[A], a: A): CirceJson =
