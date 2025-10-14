@@ -2,8 +2,6 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import io.taig.otter.Coerce
-import io.taig.otter.Coerce.Modify
-import io.taig.otter.Coerce.Root
 import io.taig.otter.Violations
 
 final class CoerceDecoder[-S[_], T](decoder: Decoder[S, T]) extends Decoder[Coerce[S, *], T]:
