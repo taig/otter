@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.Eq
-import io.taig.otter.operation.ConstantOperation
 import cats.Invariant
-import cats.derived.*
+import io.taig.otter.operation.ConstantOperation
 
 sealed abstract class Constant[+S[_], A]:
   def schema: Reference[S, ?]

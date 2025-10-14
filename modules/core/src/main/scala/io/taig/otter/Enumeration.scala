@@ -1,10 +1,9 @@
 package io.taig.otter
 
+import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.EnumerationOperation
-import cats.Invariant
-import cats.derived.*
 
 sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]

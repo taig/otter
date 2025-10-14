@@ -1,10 +1,9 @@
 package io.taig.otter
 
+import cats.Invariant
+import cats.data.Chain
 import io.taig.otter.operation.DictionaryOperation
 import io.taig.validation.Validation
-import cats.data.Chain
-import cats.Invariant
-import cats.derived.*
 
 sealed abstract class Dictionary[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]

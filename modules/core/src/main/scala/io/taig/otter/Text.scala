@@ -1,10 +1,10 @@
 package io.taig.otter
 
-import io.taig.otter.operation.*
-import io.taig.otter as Self
 import cats.Invariant
 import cats.derived.*
 import cats.syntax.all.*
+import io.taig.otter as Self
+import io.taig.otter.operation.*
 
 sealed abstract class Text[A] extends Product with Serializable derives Invariant
 

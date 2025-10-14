@@ -1,9 +1,8 @@
 package io.taig.otter
 
+import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.RecordOperation
-import cats.Invariant
-import cats.derived.*
 
 sealed abstract class Record[+S[_], A] extends Product with Serializable:
   def fields: Chain[Reference[S, ?]]

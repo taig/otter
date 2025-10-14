@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.Eval
-import io.taig.otter.operation.NullableOperation
 import cats.Invariant
-import cats.derived.*
+import io.taig.otter.operation.NullableOperation
 
 sealed abstract class Nullable[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]

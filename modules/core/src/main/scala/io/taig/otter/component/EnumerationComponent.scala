@@ -1,9 +1,9 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.EnumerationOperation
-import io.taig.enumeration.ext.Mapping
 import cats.kernel.Order
 import io.taig.enumeration.ext.EnumerationValues
+import io.taig.enumeration.ext.Mapping
+import io.taig.otter.operation.EnumerationOperation
 
 trait EnumerationComponent[+Self[_], -Value[_]](using operation: EnumerationOperation[Self, Value]):
   def enumeration[A, B](schema: => Value[A], mapping: Mapping[B, A]): Self[B] =

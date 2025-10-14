@@ -1,12 +1,10 @@
 package io.taig.otter
 
+import cats.Invariant
 import scala.deriving.Mirror
 import scala.compiletime.*
-import scala.Tuple as STuple
-import cats.kernel.Eq
-import cats.derived.*
+import scala.Tuple.fromProductTyped
 import shapeless3.deriving.K0
-import cats.Invariant
 
 trait Annotated[A]:
   self =>

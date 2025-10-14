@@ -1,7 +1,6 @@
 package io.taig.otter.syntax
 
 import cats.Invariant
-import cats.derived.*
 import cats.syntax.all.*
 import io.taig.otter.Merge
 

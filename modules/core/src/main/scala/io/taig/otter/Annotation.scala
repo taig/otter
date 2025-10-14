@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.Applicative
-import cats.syntax.all.*
 import cats.Invariant
-import cats.derived.*
+import cats.syntax.all.*
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modifyMetadata(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))

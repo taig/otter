@@ -1,5 +1,6 @@
 package io.taig.otter
 
+import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.*
 import io.taig.validation.Constraint
@@ -13,8 +14,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.Invariant
-import cats.derived.*
 
 sealed abstract class Primitive[A] extends Product with Serializable:
   def constraints: Chain[Constraint.Primitive.Number | Constraint.Primitive.Text]

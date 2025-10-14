@@ -1,19 +1,19 @@
 package io.taig.otter.component
 
-import io.taig.otter.shape.JsonShape.Json
+import io.taig.otter.Json
 
 trait JsonComponent
     extends BooleanComponent[Json.Primitive.Boolean],
-      CoerceComponent[Json.Primitive, Json.Coerce.Of],
-      CollectionComponent[Json, Json.Collection.Of],
-      ConstantComponent[Json.Primitive, Json.Constant.Of],
-      DictionaryComponent[Json, Json.Dictionary.Of],
-      EnumerationComponent[Json.Primitive, Json.Enumeration.Of],
+      CoerceComponent[Json.Coerce, Json.Primitive],
+      CollectionComponent[Json.Collection, Json],
+      ConstantComponent[Json.Constant, Json.Primitive],
+      DictionaryComponent[Json.Dictionary, Json],
+      EnumerationComponent[Json.Enumeration, Json.Primitive],
       NumberComponent[Json.Primitive.Number],
       PrimitiveComponent[Json.Primitive],
-      RecordComponent[Json, Json.Record.Of],
+      RecordComponent[Json.Record, Json.Field],
       StringComponent[Json.Primitive.String],
-      TupleComponent[Json, Json.Tuple.Of],
-      UnionComponent[Json, Json.Union.Of]
+      TupleComponent[Json.Tuple, Json],
+      UnionComponent[Json.Union, Json]
 
 object JsonComponent extends JsonComponent

@@ -1,8 +1,7 @@
 package io.taig.otter
 
-import io.taig.otter.operation.CoerceOperation
 import cats.Invariant
-import cats.derived.*
+import io.taig.otter.operation.CoerceOperation
 
 sealed abstract class Coerce[+S[_], A] extends Product with Serializable:
   def schema: Reference[S, ?]

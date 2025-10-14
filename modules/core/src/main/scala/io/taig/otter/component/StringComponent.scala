@@ -1,12 +1,11 @@
 package io.taig.otter.component
 
+import cats.Invariant
 import cats.syntax.all.*
 import io.taig.Undefined
 import io.taig.otter.Constraint
 import io.taig.otter.operation.StringOperation
 import io.taig.validation
-import cats.Invariant
-import cats.derived.*
 import io.taig.validation.Validation
 
 import java.util.UUID

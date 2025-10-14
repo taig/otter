@@ -1,9 +1,8 @@
 package io.taig.otter
 
 import cats.Eval
-import io.taig.otter.operation.FieldOperation
 import cats.Invariant
-import cats.derived.*
+import io.taig.otter.operation.FieldOperation
 
 sealed abstract class Field[+S[_], A] extends Product with Serializable:
   def name: String

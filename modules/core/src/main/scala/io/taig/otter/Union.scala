@@ -1,8 +1,7 @@
 package io.taig.otter
 
-import cats.data.NonEmptyChain
 import cats.Invariant
-import cats.derived.*
+import cats.data.NonEmptyChain
 import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:

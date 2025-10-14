@@ -1,9 +1,8 @@
 package io.taig.otter
 
+import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.CollectionOperation
-import cats.Invariant
-import cats.derived.*
 import io.taig.validation.Validation
 
 sealed abstract class Collection[+S[_], A] extends Product with Serializable:
