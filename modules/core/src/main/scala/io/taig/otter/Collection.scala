@@ -17,14 +17,14 @@ sealed abstract class Collection[+S[_], A] extends Product with Serializable:
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, A]
 
 object Collection:
-  final case class Indexed[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Vector[A]])
+  final case class Indexed[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Vector[?]])
       extends Collection[S, Vector[A]]:
     override def constraints: Chain[Constraint.Collection] = validation.constraints
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Collection[T, Vector[A]] =
       copy(schema = schema.mapK[S1, T](fK))
 
-  final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, List[A]])
+  final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, List[?]])
       extends Collection[S, List[A]]:
     override def constraints: Chain[Constraint.Collection] = validation.constraints
 
@@ -43,14 +43,12 @@ object Collection:
   given operation[S[_]]: CollectionOperation[Collection[S, *], S] with
     override def indexed[A](
         schema: => S[A],
-        validation: Validation[Constraint.Collection, Vector[A]]
-    ): Collection[S, Vector[A]] =
-      Indexed(schema = Reference.later(schema), validation)
+        validation: Validation[Constraint.Collection, Vector[?]]
+    ): Collection[S, Vector[A]] = Indexed(schema = Reference.later(schema), validation)
 
     override def linked[A](
         schema: => S[A],
-        validation: Validation[Constraint.Collection, List[A]]
-    ): Collection[S, List[A]] =
-      Linked(schema = Reference.later(schema), validation)
+        validation: Validation[Constraint.Collection, List[?]]
+    ): Collection[S, List[A]] = Linked(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Collection[S, A]): Chain[Constraint.Collection] = self.constraints

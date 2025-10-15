@@ -5,7 +5,7 @@ import cats.syntax.all.*
 import io.taig.data.Data
 import io.taig.otter.Constraint
 import io.taig.otter.Enumeration
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 import io.taig.otter.Violations
 
 final class EnumerationDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encoder[S, T], render: T => Data)
@@ -24,7 +24,8 @@ final class EnumerationDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encode
                   references =
                     schema.values.toList.map(mapping.apply).map(encoder.encode(schema = reference.value, _)).map(render)
                 ),
-                actual = render(value)
+                actual = render(value),
+                hint = none
               )
             .leftMap(Violations.apply)
 

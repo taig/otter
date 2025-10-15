@@ -2,7 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import io.taig.otter.Union
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 import io.taig.otter.Violations
 
 final class UnionDecoder[-S[_], T](decoder: Decoder[S, T]) extends Decoder[Union[S, *], T]:

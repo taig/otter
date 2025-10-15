@@ -19,7 +19,7 @@ val Version = new {
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
-  val Validation = "HEAD+20250930-0843"
+  val Validation = "HEAD+20251015-2058"
   val Undefined = "0.0.3"
   val Zio = "2.1.21"
 }

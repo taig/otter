@@ -4,7 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Constraint
 import io.taig.otter.Primitive
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
@@ -15,7 +15,7 @@ object PrimitiveParser extends Parser[Primitive]:
     case Primitive.Boolean.Modify(self, f, _) => parse(schema = self, value).map(f)
     case Primitive.Boolean.Root               =>
       value.toBooleanOption
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "boolean"), actual = value))
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "boolean"), actual = value, hint = none))
         .leftMap(Violations.apply)
     case Primitive.Number.BigDecimal(validation) =>
       Validated
@@ -32,7 +32,6 @@ object PrimitiveParser extends Parser[Primitive]:
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.BigInteger(validation) =>
       Validated
@@ -49,51 +48,46 @@ object PrimitiveParser extends Parser[Primitive]:
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.Double(validation) =>
       value.toDoubleOption
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "double"), actual = value))
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "double"), actual = value, hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
           validation
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.Float(validation) =>
       value.toFloatOption
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "float"), actual = value))
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "float"), actual = value, hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
           validation
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.Int(validation) =>
       value.toIntOption
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "int"), actual = value))
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "int"), actual = value, hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
           validation
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.Long(validation) =>
       value.toLongOption
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "long"), actual = value))
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "long"), actual = value, hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
           validation
             .validate(input)
             .toValidated
             .as(input)
-            .leftMap(_.map(Violation(_, actual = value)))
             .leftMap(Violations.apply)
     case Primitive.Number.Modify(self, f, _)      => parse(schema = self, value).map(f)
     case Primitive.String.Modify(self, f, _)      => parse(schema = self, value).map(f)
@@ -111,5 +105,4 @@ object PrimitiveParser extends Parser[Primitive]:
         .validate(input = value)
         .toValidated
         .as(value)
-        .leftMap(_.map(Violation(_, actual = value)))
         .leftMap(Violations.apply)

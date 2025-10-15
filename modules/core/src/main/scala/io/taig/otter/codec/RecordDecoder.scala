@@ -31,5 +31,4 @@ final class RecordDecoder[-S[_], T](decoder: Decoder.Remaining[S, Chain[(String,
 object RecordDecoder:
   def apply[S[_], T](
       decoder: Decoder.Remaining[S, Chain[(String, T)]]
-  ): Decoder.Remaining[Record[S, *], Chain[(String, T)]] =
-    new RecordDecoder(decoder)
+  ): Decoder.Remaining[Record[S, *], Chain[(String, T)]] = new RecordDecoder(decoder)

@@ -2,7 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import io.taig.otter.Text
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 import io.taig.otter.Violations
 
 object TextParser extends Parser[Text]:

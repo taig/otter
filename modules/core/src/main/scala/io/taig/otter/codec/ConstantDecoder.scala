@@ -5,7 +5,7 @@ import cats.data.Validated
 import io.taig.data.Data
 import io.taig.otter.Constant
 import io.taig.otter.Constraint
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 import io.taig.otter.Violations
 
 final class ConstantDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encoder[S, T], render: T => Data)

@@ -2,6 +2,8 @@ package io.taig.otter
 
 import java.io.PrintWriter
 import java.io.StringWriter
+import cats.syntax.all.*
+import cats.data.Chain
 
 private[otter] def escape(value: String, characters: List[String], escape: Char = '\\'): String =
   characters.foldLeft(value.replace(s"$escape", s"$escape$escape")): (value, character) =>
@@ -23,3 +25,22 @@ private[otter] object StacktracePrinter:
     val writer = new StringWriter
     throwable.printStackTrace(new PrintWriter(writer))
     writer.toString
+
+extension [A](self: List[A])
+  private[otter] def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (List[A], Option[B]) =
+    @SuppressWarnings(Array("scalafix:DisableSyntax.var"))
+    var result: Option[B] = none
+    val remainders = List.newBuilder[A]
+
+    self.foreach: a =>
+      if result.isEmpty && pf.isDefinedAt(a)
+      then result = pf.apply(a).some
+      else remainders += a
+
+    if result.isEmpty
+    then (self, none)
+    else (remainders.result(), result)
+
+extension [A](self: Chain[A])
+  private[otter] def collectFirstWithRemainders[B](pf: PartialFunction[A, B]): (Chain[A], Option[B]) =
+    self.toList.collectFirstWithRemainders(pf).leftMap(Chain.fromSeq)

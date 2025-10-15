@@ -10,12 +10,12 @@ import io.taig.otter.InvariantK
 trait CollectionOperation[Self[_], -Value[_]]:
   def indexed[A](
       schema: => Value[A],
-      validation: Validation[Constraint.Collection, Vector[A]]
+      validation: Validation[Constraint.Collection, Vector[?]]
   ): Self[Vector[A]]
 
   def linked[A](
       schema: => Value[A],
-      validation: Validation[Constraint.Collection, List[A]]
+      validation: Validation[Constraint.Collection, List[?]]
   ): Self[List[A]]
 
   def constraints[A](self: Self[A]): Chain[Constraint.Collection]
@@ -29,10 +29,10 @@ object CollectionOperation:
     extension [G[_]](operation: CollectionOperation[G, Value])
       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): CollectionOperation[H, Value] =
         new CollectionOperation[H, Value]:
-          override def indexed[A](schema: => Value[A], validation: Validation[Collection, Vector[A]]): H[Vector[A]] =
+          override def indexed[A](schema: => Value[A], validation: Validation[Collection, Vector[?]]): H[Vector[A]] =
             fK(operation.indexed(schema, validation))
 
-          override def linked[A](schema: => Value[A], validation: Validation[Collection, List[A]]): H[List[A]] =
+          override def linked[A](schema: => Value[A], validation: Validation[Collection, List[?]]): H[List[A]] =
             fK(operation.linked(schema, validation))
 
           override def constraints[A](self: H[A]): Chain[Collection] = operation.constraints(gK(self))

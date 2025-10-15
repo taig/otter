@@ -4,11 +4,12 @@ import scala.collection.immutable.SortedMap
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyMap
 import io.taig.data.Data
+import io.taig.validation.Violation
 import cats.implicits.*
-import cats.kernel.Semigroup
+import cats.Semigroup
 
 enum Violations:
-  case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation])
+  case Root(values: SortedMap[Step, Violations], violations: NonEmptyChain[Violation[Constraint]])
   case Namespace(values: NonEmptyMap[Step, Violations])
 
   final def /:(step: Step): Violations = Namespace(NonEmptyMap.one(step, this))
@@ -22,9 +23,9 @@ enum Violations:
     case (Namespace(left), right: Root)      => Root(left.toSortedMap ++ right.values, right.violations)
 
 object Violations:
-  def apply(violations: NonEmptyChain[Violation]): Violations = Root(values = SortedMap.empty, violations)
+  def apply(violations: NonEmptyChain[Violation[Constraint]]): Violations = Root(values = SortedMap.empty, violations)
 
-  def apply(violation: Violation): Violations = Violations(violations = NonEmptyChain.one(violation))
+  def apply(violation: Violation[Constraint]): Violations = Violations(violations = NonEmptyChain.one(violation))
 
   given Semigroup[Violations] with
     def combine(x: Violations, y: Violations): Violations = x.combine(y)

@@ -2,7 +2,7 @@ package io.taig.otter.codec
 
 import io.taig.otter.Tuple
 import cats.data.Validated
-import io.taig.otter.Violation
+import io.taig.validation.Violation
 import cats.syntax.all.*
 import io.taig.otter.Constraint
 import io.taig.otter.Violations
@@ -13,9 +13,15 @@ final class TupleDecoder[-S[_], T](decoder: Decoder[S, T], empty: T => Boolean) 
     val actual = values.length
 
     if actual < reference
-    then Violations(Violation(constraint = Constraint.Collection.Minimum(reference = reference.toInt), actual)).invalid
+    then
+      Violations(
+        Violation(constraint = Constraint.Collection.Minimum(reference = reference.toInt), actual, hint = none)
+      ).invalid
     else if actual > reference
-    then Violations(Violation(constraint = Constraint.Collection.Maximum(reference = reference.toInt), actual)).invalid
+    then
+      Violations(
+        Violation(constraint = Constraint.Collection.Maximum(reference = reference.toInt), actual, hint = none)
+      ).invalid
     else unsafeDecode(schema, values, index = 0)
 
   def unsafeDecode[A](schema: Tuple[S, A], values: Vector[T], index: Int): Validated[Violations, A] = schema match
