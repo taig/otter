@@ -30,7 +30,8 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
     case Json.Enumeration(schema) =>
       EnumerationDecoder(decoder = this, encoder = CirceJsonEncoder, render = _.toData)
         .decode(schema = schema.self, json)
-    case Json.Nullable(schema)     => ???
+    case Json.Nullable(schema) =>
+      NullableDecoder(decoder = this, empty = _.isNull).decode(schema = schema.self, json)
     case schema: Json.Primitive[?] => CirceJsonPrimitiveDecoder.decode(schema, json)
     case Json.Record(schema)       =>
       json.asObject
