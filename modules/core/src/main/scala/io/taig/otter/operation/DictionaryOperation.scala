@@ -8,7 +8,7 @@ import io.taig.otter.InvariantK
 trait DictionaryOperation[Self[_], -Value[_]]:
   def dictionary[A](
       schema: => Value[A],
-      validation: Validation[Constraint.Object, A]
+      validation: Validation[Constraint.Object, List[(String, ?)]]
   ): Self[List[(String, A)]]
 
   def constraints[A](self: Self[A]): Chain[Constraint.Object]
@@ -24,7 +24,7 @@ object DictionaryOperation:
         new DictionaryOperation[H, Value]:
           override def dictionary[A](
               schema: => Value[A],
-              validation: Validation[Constraint.Object, A]
+              validation: Validation[Constraint.Object, List[(String, ?)]]
           ): H[List[(String, A)]] =
             fK(operation.dictionary(schema, validation))
 
