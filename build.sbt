@@ -11,6 +11,7 @@ val Version = new {
   val EnumerationExt = "0.5.0"
   val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M45"
+  val Iron = "3.2.0"
   val Java = "17"
   val JNanoId = "2.0.0"
   val Kittens = "3.5.0"
@@ -21,7 +22,7 @@ val Version = new {
   val Slf4j = "2.0.17"
   val Validation = "HEAD+20251015-2058"
   val Undefined = "0.0.3"
-  val Zio = "2.1.21"
+  val Zio = "2.1.22"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
@@ -68,7 +69,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCaseInsensitive, coreJson, coreJsonCirce)
+  .aggregate(core, coreCaseInsensitive, coreIron, coreJson, coreJsonCirce, coreJsonSchema)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -99,6 +100,14 @@ lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive")
   )
   .dependsOn(core)
 
+lazy val coreIron = module(identifier = Some("core-iron"))
+  .settings(
+    libraryDependencies ++=
+      "io.github.iltotore" %%% "iron" % Version.Iron ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
+
 // lazy val coreJavaTime = module(identifier = Some("core-java-time"))
 //   .settings(
 //     libraryDependencies ++=
@@ -120,6 +129,15 @@ lazy val coreJson = module(identifier = Some("core-json"))
 //   .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
 
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        "io.taig" %%% "data-circe" % Version.Data ::
+        Nil
+  )
+  .dependsOn(coreJson % "compile->compile;test->test")
+
+lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
   .settings(
     libraryDependencies ++=
       "io.circe" %%% "circe-core" % Version.Circe ::
