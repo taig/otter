@@ -7,11 +7,10 @@ val Version = new {
   val CatsEffect = "3.6.0"
   val CatsParse = "1.1.0"
   val Circe = "0.14.15"
-  val Data = "0.0.2"
+  val Data = "0.0.3"
   val EnumerationExt = "0.5.0"
   val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M45"
-  val Iron = "3.2.0"
   val Java = "17"
   val JNanoId = "2.0.0"
   val Kittens = "3.5.0"
@@ -20,7 +19,7 @@ val Version = new {
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
-  val Validation = "HEAD+20251015-2058"
+  val Validation = "0.0.0+2-93591fea-SNAPSHOT"
   val Undefined = "0.0.3"
   val Zio = "2.1.22"
 }
@@ -103,7 +102,7 @@ lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive")
 lazy val coreIron = module(identifier = Some("core-iron"))
   .settings(
     libraryDependencies ++=
-      "io.github.iltotore" %%% "iron" % Version.Iron ::
+      "io.taig" %%% "validation-iron" % Version.Validation ::
         Nil
   )
   .dependsOn(core % "compile->compile;test->test")
@@ -197,6 +196,9 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //         Nil
 //   )
 //   .dependsOn(http)
+
+lazy val playground = module(identifier = Some("playground"))
+  .dependsOn(coreIron, coreJson)
 
 // lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
 //   .settings(noPublishSettings)

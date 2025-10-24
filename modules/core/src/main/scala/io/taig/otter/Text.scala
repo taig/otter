@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.Invariant
 import cats.derived.*
-import cats.syntax.all.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 

@@ -1,7 +1,6 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
-import io.taig.validation.Violation
 import io.taig.otter.Violations
 
 trait Parser[-S[_]] extends Decoder[S, String]:

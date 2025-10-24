@@ -1,14 +1,14 @@
 package io.taig.otter.codec
 
-import io.circe.Json as CirceJson
-import cats.syntax.all.*
+import cats.data.Chain
 import cats.data.Validated
+import cats.syntax.all.*
+import io.circe.Json as CirceJson
 import io.taig.data.circe.*
-import io.taig.otter.typeOf
+import io.taig.otter.Constraint
 import io.taig.otter.Json
 import io.taig.otter.Violations
-import io.taig.otter.Constraint
-import cats.data.Chain
+import io.taig.otter.typeOf
 import io.taig.validation.Violation
 
 object CirceJsonDecoder extends Decoder[Json, CirceJson]:

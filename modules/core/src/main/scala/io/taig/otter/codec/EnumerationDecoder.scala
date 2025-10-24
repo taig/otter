@@ -5,8 +5,8 @@ import cats.syntax.all.*
 import io.taig.data.Data
 import io.taig.otter.Constraint
 import io.taig.otter.Enumeration
-import io.taig.validation.Violation
 import io.taig.otter.Violations
+import io.taig.validation.Violation
 
 final class EnumerationDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encoder[S, T], render: T => Data)
     extends Decoder[Enumeration[S, *], T]:

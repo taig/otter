@@ -1,12 +1,12 @@
 package io.taig.otter.codec
 
-import cats.syntax.all.*
 import cats.data.Validated
+import cats.syntax.all.*
 import io.taig.data.Data
 import io.taig.otter.Constant
 import io.taig.otter.Constraint
-import io.taig.validation.Violation
 import io.taig.otter.Violations
+import io.taig.validation.Violation
 
 final class ConstantDecoder[-S[_], T](decoder: Decoder[S, T], encoder: Encoder[S, T], render: T => Data)
     extends Decoder[Constant[S, *], T]:

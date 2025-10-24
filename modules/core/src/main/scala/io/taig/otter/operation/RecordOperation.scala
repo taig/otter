@@ -1,7 +1,6 @@
 package io.taig.otter.operation
 
 import io.taig.otter.InvariantK
-import cats.Invariant
 
 trait RecordOperation[Self[_], -Value[_]]
     extends EmptyOperation[Self],

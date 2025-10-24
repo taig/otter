@@ -1,14 +1,14 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Field
-import cats.syntax.all.*
 import cats.data.Chain
 import cats.data.Validated
-import io.taig.otter.Violations
+import cats.syntax.all.*
 import io.taig.data.Data
+import io.taig.otter.Constraint
+import io.taig.otter.Field
+import io.taig.otter.Violations
 import io.taig.otter.collectFirstWithRemainders
 import io.taig.validation.Violation
-import io.taig.otter.Constraint
 
 final class FieldDecoder[-S[_], T](decoder: Decoder[S, T]) extends Decoder.Remaining[Field[S, *], Chain[(String, T)]]:
   override def decodeRemaining[A](

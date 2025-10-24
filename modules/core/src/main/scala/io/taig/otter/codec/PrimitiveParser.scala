@@ -4,11 +4,11 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Constraint
 import io.taig.otter.Primitive
+import io.taig.otter.Violations
 import io.taig.validation.Violation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.Violations
 
 object PrimitiveParser extends Parser[Primitive]:
   override def parse[A](schema: Primitive[A], value: String): Validated[Violations, A] = schema match
@@ -30,8 +30,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.BigInteger(validation) =>
       Validated
@@ -46,8 +45,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.Double(validation) =>
       value.toDoubleOption
@@ -56,8 +54,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.Float(validation) =>
       value.toFloatOption
@@ -66,8 +63,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.Int(validation) =>
       value.toIntOption
@@ -76,8 +72,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.Long(validation) =>
       value.toLongOption
@@ -86,8 +81,7 @@ object PrimitiveParser extends Parser[Primitive]:
         .andThen: input =>
           validation
             .validate(input)
-            .toValidated
-            .as(input)
+            .toInvalid(input)
             .leftMap(Violations.apply)
     case Primitive.Number.Modify(self, f, _)      => parse(schema = self, value).map(f)
     case Primitive.String.Modify(self, f, _)      => parse(schema = self, value).map(f)
@@ -102,7 +96,6 @@ object PrimitiveParser extends Parser[Primitive]:
         .leftMap(Violations.apply)
     case Primitive.String.Root(validation) =>
       validation
-        .validate(input = value)
-        .toValidated
-        .as(value)
+        .validate(value)
+        .toInvalid(value)
         .leftMap(Violations.apply)

@@ -21,8 +21,10 @@ object Dictionary:
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Dictionary[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
-  final case class Root[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Object, List[(String, ?)]])
-      extends Dictionary[S, List[(String, A)]]:
+  final case class Root[S[_], A](
+      schema: Reference[S, A],
+      validation: Validation[Constraint.Object, List[(String, A)]]
+  ) extends Dictionary[S, List[(String, A)]]:
     override def constraints: Chain[Constraint.Object] = validation.constraints
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Dictionary[T, List[(String, A)]] =
@@ -34,7 +36,7 @@ object Dictionary:
   given operation[S[_]]: DictionaryOperation[Dictionary[S, *], S] with
     override def dictionary[A](
         schema: => S[A],
-        validation: Validation[Constraint.Object, List[(String, ?)]]
+        validation: Validation[Constraint.Object, List[(String, A)]]
     ): Dictionary[S, List[(String, A)]] = Root(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Dictionary[S, A]): Chain[Constraint.Object] = self.constraints

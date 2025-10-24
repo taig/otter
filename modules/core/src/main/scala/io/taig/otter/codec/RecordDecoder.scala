@@ -1,12 +1,12 @@
 package io.taig.otter.codec
 
 import cats.data.Chain
-import io.taig.otter.Record
-import cats.syntax.all.*
 import cats.data.Validated
-import io.taig.otter.Violations
-import cats.data.Validated.Valid
 import cats.data.Validated.Invalid
+import cats.data.Validated.Valid
+import cats.syntax.all.*
+import io.taig.otter.Record
+import io.taig.otter.Violations
 
 final class RecordDecoder[-S[_], T](decoder: Decoder.Remaining[S, Chain[(String, T)]])
     extends Decoder.Remaining[Record[S, *], Chain[(String, T)]]:

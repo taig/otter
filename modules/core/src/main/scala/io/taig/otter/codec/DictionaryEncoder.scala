@@ -8,7 +8,9 @@ final class DictionaryEncoder[-S[_], T](encoder: Encoder[S, T]) extends Encoder[
   @tailrec
   override def encode[A](schema: Dictionary[S, A], a: A): List[(String, T)] = schema match
     case Dictionary.Modify(self, _, g) => encode(schema = self, g(a))
-    case Dictionary.Root(schema, _)    => a.map((key, value) => (key, encoder.encode(schema = schema.value, value)))
+    case Dictionary.Root(schema, _)    =>
+      ???
+      // a.map((key, value) => (key, encoder.encode(schema = schema.value, value)))
 
 object DictionaryEncoder:
   def apply[S[_], A](encoder: Encoder[S, A]): Encoder[Dictionary[S, *], List[(String, A)]] =

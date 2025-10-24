@@ -1,8 +1,6 @@
 package io.taig.otter.codec
-
-import cats.syntax.all.*
-import io.taig.otter.Field
 import cats.data.Chain
+import io.taig.otter.Field
 
 final class FieldEncoder[-S[_], T](encoder: Encoder[S, T]) extends Encoder[Field[S, *], Chain[(String, T)]]:
   override def encode[A](schema: Field[S, A], a: A): Chain[(String, T)] = schema match

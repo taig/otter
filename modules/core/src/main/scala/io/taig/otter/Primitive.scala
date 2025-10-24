@@ -79,17 +79,21 @@ object Primitive:
           validation: Validation[Constraint.Primitive.Number, JBigInteger]
       ): Primitive.Number[JBigInteger] = BigInteger(validation)
 
-      override def double(validation: Validation[Constraint.Primitive.Number, SDouble]): Primitive.Number[SDouble] =
-        Double(validation)
+      override def double(
+          validation: Validation[Constraint.Primitive.Number, SDouble]
+      ): Primitive.Number[SDouble] = Double(validation)
 
-      override def float(validation: Validation[Constraint.Primitive.Number, SFloat]): Primitive.Number[SFloat] =
-        Float(validation)
+      override def float(
+          validation: Validation[Constraint.Primitive.Number, SFloat]
+      ): Primitive.Number[SFloat] = Float(validation)
 
-      override def int(validation: Validation[Constraint.Primitive.Number, SInt]): Primitive.Number[SInt] =
-        Int(validation)
+      override def int(
+          validation: Validation[Constraint.Primitive.Number, SInt]
+      ): Primitive.Number[SInt] = Int(validation)
 
-      override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Primitive.Number[SLong] =
-        Long(validation)
+      override def long(
+          validation: Validation[Constraint.Primitive.Number, SLong]
+      ): Primitive.Number[SLong] = Long(validation)
 
       override def constraints[A](self: Number[A]): Chain[Constraint.Primitive.Number] = self.constraints
 

@@ -50,3 +50,7 @@ object Field:
     override def optional[A](self: Field[S, A]): Field[S, Option[A]] = self.optional
 
     override def optional[A](self: Field[S, A], default: => A): Field[S, A] = self.optional(default)
+
+    override def name[A](self: Field[S, A]): String = self.name
+
+    override def schema[A](self: Field[S, A]): Reference[S, ?] = self.schema

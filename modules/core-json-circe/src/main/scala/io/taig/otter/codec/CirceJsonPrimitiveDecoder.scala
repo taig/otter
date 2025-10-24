@@ -1,12 +1,12 @@
 package io.taig.otter.codec
 
+import cats.data.Validated
+import cats.syntax.all.*
+import io.circe.Json as CirceJson
 import io.taig.otter as Self
 import io.taig.otter.Constraint
 import io.taig.otter.Json
-import io.circe.Json as CirceJson
-import cats.data.Validated
 import io.taig.otter.Violations
-import cats.syntax.all.*
 import io.taig.otter.typeOf
 import io.taig.validation.Violation
 
@@ -24,79 +24,52 @@ object CirceJsonPrimitiveDecoder extends Decoder[Json.Primitive, CirceJson]:
       json.asNumber
         .flatMap(_.toBigDecimal)
         .map(_.bigDecimal)
-        .toValid(
-          Violation(constraint = Constraint.Generic.Type(name = "bigDecimal"), actual = typeOf(json), hint = none)
-        )
+        .toValid(Constraint.Generic.Type(name = "bigDecimal"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.BigInteger(validation) =>
       json.asNumber
         .flatMap(_.toBigInt)
         .map(_.bigInteger)
-        .toValid(
-          Violation(constraint = Constraint.Generic.Type(name = "bigInteger"), actual = typeOf(json), hint = none)
-        )
+        .toValid(Constraint.Generic.Type(name = "bigInteger"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.Double(validation) =>
       json.asNumber
         .map(_.toDouble)
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "double"), actual = typeOf(json), hint = none))
+        .toValid(Constraint.Generic.Type(name = "double"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.Float(validation) =>
       json.asNumber
         .map(_.toFloat)
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "float"), actual = typeOf(json), hint = none))
+        .toValid(Constraint.Generic.Type(name = "float"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.Int(validation) =>
       json.asNumber
         .flatMap(_.toInt)
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "int"), actual = typeOf(json), hint = none))
+        .toValid(Constraint.Generic.Type(name = "int"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.Long(validation) =>
       json.asNumber
         .flatMap(_.toLong)
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "long"), actual = typeOf(json), hint = none))
+        .toValid(Constraint.Generic.Type(name = "long"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
     case Self.Primitive.Number.Modify(self, f, _)   => decode(schema = self, json).map(f)
     case Self.Primitive.String.Modify(self, f, _)   => decode(schema = self, json).map(f)
     case Self.Primitive.String.Parser(_, decode, _) =>
       json.asString
-        .toValid(Violation(constraint = Constraint.Generic.Type(name = "string"), actual = typeOf(json), hint = none))
+        .toValid(Constraint.Generic.Type(name = "string"))
+        .leftMap(Violation(_, actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
           decode(input).toValidated
@@ -112,8 +85,4 @@ object CirceJsonPrimitiveDecoder extends Decoder[Json.Primitive, CirceJson]:
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "string"), actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
         .andThen: input =>
-          validation
-            .validate(input)
-            .toValidated
-            .as(input)
-            .leftMap(Violations.apply)
+          validation.validate(input).toInvalid(input).leftMap(Violations.apply)

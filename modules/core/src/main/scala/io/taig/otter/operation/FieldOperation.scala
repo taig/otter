@@ -1,13 +1,18 @@
 package io.taig.otter.operation
 
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
-trait FieldOperation[Self[_], -Value[_]]:
+trait FieldOperation[Self[_], Value[_]]:
   def apply[A](name: String, value: => Value[A]): Self[A]
 
   def optional[A](self: Self[A]): Self[Option[A]]
 
   def optional[A](self: Self[A], default: => A): Self[A]
+
+  def name[A](self: Self[A]): String
+
+  def schema[A](self: Self[A]): Reference[Value, ?]
 
 object FieldOperation:
   inline def apply[Self[_], Value[_]](using
@@ -23,3 +28,7 @@ object FieldOperation:
           override def optional[A](self: H[A]): H[Option[A]] = fK(operation.optional(gK(self)))
 
           override def optional[A](self: H[A], default: => A): H[A] = fK(operation.optional(gK(self), default))
+
+          override def name[A](self: H[A]): String = operation.name(gK(self))
+
+          override def schema[A](self: H[A]): Reference[Value, ?] = operation.schema(gK(self))

@@ -2,9 +2,9 @@ package io.taig.otter
 
 import cats.Order
 import cats.Show
+import cats.parse.Numbers
 import cats.parse.Parser
 import cats.syntax.all.*
-import cats.parse.Numbers
 
 enum Step:
   case Field(name: String)
