@@ -23,26 +23,31 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaEncoderTest")(
     test("sample"):
       val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
-        field("foo", string) :*
-          field("bar", int).optional :*
+        field("name", string) :*
+          field("age", int).optional :*
+          field("height", float).optional(default = 1.60f) :*
           field("animal", Animal.json)
       )
 
       val result = CirceJson.obj(
         "type" := "object",
         "properties" := List(
-          "foo" := CirceJson.obj(
+          "name" := CirceJson.obj(
             "type" := "string"
           ),
-          "bar" := CirceJson.obj(
+          "age" := CirceJson.obj(
             "type" := "integer"
+          ),
+          "height" := CirceJson.obj(
+            "type" := "number",
+            "default" := 1.60f
           ),
           "animal" := CirceJson.obj(
             "type" := "string",
             "enum" := List("bird", "cat", "dog")
           )
         ),
-        "required" := List("foo", "animal")
+        "required" := List("name", "animal")
       )
 
       assertTrue(input == result)

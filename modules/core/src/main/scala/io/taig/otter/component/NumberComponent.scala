@@ -5,6 +5,11 @@ import io.taig.otter.operation.NumberOperation
 import io.taig.validation.Validation
 
 trait NumberComponent[+Self[_]](using operation: NumberOperation[Self]):
+  def float(validation: Validation[Constraint.Primitive.Number, Float]): Self[Float] =
+    operation.float(validation)
+
+  val float: Self[Float] = float(Validation.valid)
+
   def int(validation: Validation[Constraint.Primitive.Number, Int]): Self[Int] = operation.int(validation)
 
   val int: Self[Int] = int(Validation.valid)

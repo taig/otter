@@ -17,6 +17,7 @@ import cats.data.NonEmptyList
 import cats.data.Chain
 
 final class JsonSchemaRenderer(encoder: Encoder[Json, CirceJson]) extends Renderer[Json, CirceJson]:
+  val record = RecordRenderer(renderer = JsonSchemaFieldRenderer(renderer = this, encoder))
   override def render[A](json: Json[A]): CirceJson = json match
     case Json.Enumeration(annotation) =>
       render(metadata = annotation.metadata)
@@ -34,7 +35,7 @@ final class JsonSchemaRenderer(encoder: Encoder[Json, CirceJson]) extends Render
       render(metadata = annotation.metadata).deepMerge(
         CirceJson
           .obj(
-            "properties" := RecordRenderer(renderer = JsonSchemaFieldRenderer(renderer = this)).render(annotation.self),
+            "properties" := record.render(annotation.self),
             "required" := json.fields
               .map(_.value)
               .mapFilter(field => Option.when(!field.isOptional)(field.name)),

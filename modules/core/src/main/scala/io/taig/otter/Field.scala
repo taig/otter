@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Eval
 import cats.Invariant
 import io.taig.otter.operation.FieldOperation
+import io.taig.otter.codec.Encoder
 
 sealed abstract class Field[+S[_], A] extends Product with Serializable:
   def name: String
