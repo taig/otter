@@ -2,11 +2,11 @@ package io.taig.otter.component
 
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter.Constraint
 import io.taig.otter.operation.StringOperation
+import io.taig.validation.Validation
 
 import java.util.UUID
-import io.taig.validation.Validation
-import io.taig.otter.Constraint
 
 trait StringComponent[+Self[_]: Invariant](using operation: StringOperation[Self]):
   self =>

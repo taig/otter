@@ -1,23 +1,31 @@
 package io.taig.otter.codec
 
-import zio.test.ZIOSpecDefault
-import zio.Scope
-import zio.test.Spec
-import zio.test.TestEnvironment
-import io.taig.otter.component.JsonComponent.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
-import cats.syntax.all.*
+import io.taig.otter.component.JsonComponent.*
+import io.taig.otter.syntax.JsonSyntax.*
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 object JsonSchemaRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaEncoderTest")(
     test("sample"):
-      val input = JsonSchemaRenderer.render(string)
+      val input = JsonSchemaRenderer.render(
+        field("foo", string) :*
+          field("bar", int).optional
+      )
+
       val result = CirceJson.obj(
-        "type" := "string"
+        "type" := "object",
+        "properties" := List(
+          "foo" := CirceJson.obj(
+            "type" := "string"
+          ),
+          "bar" := CirceJson.obj(
+            "type" := "integer"
+          )
+        ),
+        "required" := List("foo")
       )
 
       assertTrue(input == result)

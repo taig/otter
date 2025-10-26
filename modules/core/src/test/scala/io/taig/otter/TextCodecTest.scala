@@ -1,12 +1,10 @@
 package io.taig.otter
 
-import io.taig.otter.component.TextComponent.*
-import io.taig.otter.codec.TextPrinter
 import io.taig.otter.codec.TextParser
-import zio.test.ZIOSpecDefault
+import io.taig.otter.codec.TextPrinter
+import io.taig.otter.component.TextComponent.*
 import zio.*
 import zio.test.*
-import zio.test.Assertion.*
 
 object TextCodecTest extends ZIOSpecDefault:
   enum Animal:

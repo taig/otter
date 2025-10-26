@@ -9,6 +9,7 @@ trait JsonComponent
       ConstantComponent[Json.Constant, Json.Primitive],
       DictionaryComponent[Json.Dictionary, Json],
       EnumerationComponent[Json.Enumeration, Json.Primitive],
+      FieldComponent[Json.Field, Json],
       NumberComponent[Json.Primitive.Number],
       PrimitiveComponent[Json.Primitive],
       RecordComponent[Json.Record, Json.Field],

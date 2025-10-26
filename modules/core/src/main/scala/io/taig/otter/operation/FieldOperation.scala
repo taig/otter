@@ -14,6 +14,8 @@ trait FieldOperation[Self[_], Value[_]]:
 
   def schema[A](self: Self[A]): Reference[Value, ?]
 
+  def isOptional[A](self: Self[A]): Boolean
+
 object FieldOperation:
   inline def apply[Self[_], Value[_]](using
       operation: FieldOperation[Self, Value]
@@ -32,3 +34,5 @@ object FieldOperation:
           override def name[A](self: H[A]): String = operation.name(gK(self))
 
           override def schema[A](self: H[A]): Reference[Value, ?] = operation.schema(gK(self))
+
+          override def isOptional[A](self: H[A]): Boolean = operation.isOptional(gK(self))

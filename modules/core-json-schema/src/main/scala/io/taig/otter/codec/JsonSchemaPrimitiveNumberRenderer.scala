@@ -1,12 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Json
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
 import io.taig.otter.Json
-import io.taig.otter.syntax.JsonSyntax.*
-import io.taig.otter.Keys.*
-import cats.data.Chain
 import io.taig.otter.Primitive
 
 object JsonSchemaPrimitiveNumberRenderer extends Renderer[Json.Primitive.Number, CirceJson]:

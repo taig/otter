@@ -45,6 +45,8 @@ object Record:
   given operation[S[_]]: RecordOperation[Record[S, *], S] with
     override def empty: Record[S, Unit] = Empty
 
+    override def fields[A](self: Record[S, A]): Chain[Reference[S, ?]] = self.fields
+
     override def lift[A](value: => S[A]): Record[S, A] = Root(field = Reference.later(value))
 
     override def zip[A, B](left: Record[S, A], right: Record[S, B]): Record[S, (A, B)] = Zip(left, right)

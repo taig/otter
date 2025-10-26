@@ -1,5 +1,6 @@
 package io.taig.otter.codec
 
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
 import io.taig.otter.Json
@@ -25,12 +26,16 @@ object JsonSchemaRenderer extends Renderer[Json, CirceJson]:
           "type" := "string"
         )
         .dropNullValues
-    case Json.Record(json) =>
+    case json @ Json.Record(annotation) =>
       CirceJson
         .obj(
-          "description" := json.metadata.get(description),
-          "title" := json.metadata.get(title),
+          "description" := annotation.metadata.get(description),
+          "title" := annotation.metadata.get(title),
           "type" := "object",
-          "properties" := RecordRenderer(renderer = JsonSchemaFieldRenderer).render(json.self)
+          "properties" := RecordRenderer(renderer = JsonSchemaFieldRenderer).render(annotation.self),
+          "required" := json.fields
+            .map(_.value)
+            .mapFilter: field =>
+              Option.when(!field.isOptional)(field.name)
         )
         .dropNullValues

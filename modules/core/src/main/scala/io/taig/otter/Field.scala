@@ -9,6 +9,8 @@ sealed abstract class Field[+S[_], A] extends Product with Serializable:
 
   def schema: Reference[S, ?]
 
+  def isOptional: Boolean
+
   final def imap[T](f: A => T)(g: T => A): Field[S, T] = Field.Modify(self = this, f, g)
 
   def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, A]
@@ -22,11 +24,13 @@ object Field:
   final case class Default[S[_], A](self: Field[S, A], default: Eval[A]) extends Field[S, A]:
     export self.{name, schema}
 
+    override def isOptional: Boolean = true
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, A] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Modify[S[_], A, B](self: Field[S, A], f: A => B, g: B => A) extends Field[S, B]:
-    export self.{name, schema}
+    export self.{isOptional, name, schema}
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, B] =
       copy(self = self.mapK[S1, T](fK))
@@ -34,10 +38,14 @@ object Field:
   final case class Optional[S[_], A](self: Field[S, A]) extends Field[S, Option[A]]:
     export self.{name, schema}
 
+    override def isOptional: Boolean = true
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, Option[A]] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Root[S[_], A](name: String, schema: Reference[S, A]) extends Field[S, A]:
+    override def isOptional: Boolean = false
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Field[T, A] =
       copy(schema = schema.mapK[S1, T](fK))
 
@@ -54,3 +62,5 @@ object Field:
     override def name[A](self: Field[S, A]): String = self.name
 
     override def schema[A](self: Field[S, A]): Reference[S, ?] = self.schema
+
+    override def isOptional[A](self: Field[S, A]): Boolean = self.isOptional
