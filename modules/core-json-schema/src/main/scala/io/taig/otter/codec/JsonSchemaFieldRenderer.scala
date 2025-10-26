@@ -7,5 +7,5 @@ import io.taig.otter.syntax.JsonSyntax.*
 import io.taig.otter.Keys.*
 import cats.data.Chain
 
-val JsonSchemaFieldEncoder: Encoder[Json.Field, Chain[(String, CirceJson)]] =
-  FieldEncoder(encoder = JsonSchemaEncoder).contramapK([A] => (json: Json.Field[A]) => json.self.self)
+val JsonSchemaFieldRenderer: Renderer[Json.Field, Chain[(String, CirceJson)]] =
+  FieldRenderer(renderer = JsonSchemaRenderer).contramapK([A] => (json: Json.Field[A]) => json.self.self)

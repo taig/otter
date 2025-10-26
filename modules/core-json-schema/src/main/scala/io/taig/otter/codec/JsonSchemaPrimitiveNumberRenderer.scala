@@ -9,17 +9,15 @@ import io.taig.otter.Keys.*
 import cats.data.Chain
 import io.taig.otter.Primitive
 
-object JsonSchemaPrimitiveNumberEncoder extends Encoder[Json.Primitive.Number, CirceJson]:
-  override def encode[A](schema: Json.Primitive.Number[A], a: A): CirceJson =
-    encode(schema = schema.self.self, a)
+object JsonSchemaPrimitiveNumberRenderer extends Renderer[Json.Primitive.Number, CirceJson]:
+  override def render[A](schema: Json.Primitive.Number[A]): CirceJson =
+    render(schema = schema.self.self)
 
-  def encode[A](schema: Primitive.Number[A], a: A): CirceJson = schema match
-    case Primitive.Number.BigDecimal(_) =>
-      CirceJson.obj("type" := "number")
-    case Primitive.Number.BigInteger(_) =>
-      CirceJson.obj("type" := "integer")
+  def render[A](schema: Primitive.Number[A]): CirceJson = schema match
+    case Primitive.Number.BigDecimal(_)      => CirceJson.obj("type" := "number")
+    case Primitive.Number.BigInteger(_)      => CirceJson.obj("type" := "integer")
     case Primitive.Number.Double(_)          => CirceJson.obj("type" := "number")
     case Primitive.Number.Float(_)           => CirceJson.obj("type" := "number")
     case Primitive.Number.Int(_)             => CirceJson.obj("type" := "integer")
     case Primitive.Number.Long(_)            => CirceJson.obj("type" := "integer")
-    case Primitive.Number.Modify(self, _, g) => encode(schema = self, g(a))
+    case Primitive.Number.Modify(self, _, g) => render(schema = self)

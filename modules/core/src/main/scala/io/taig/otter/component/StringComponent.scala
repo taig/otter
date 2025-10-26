@@ -5,14 +5,16 @@ import cats.syntax.all.*
 import io.taig.otter.operation.StringOperation
 
 import java.util.UUID
+import io.taig.validation.Validation
+import io.taig.otter.Constraint
 
 trait StringComponent[+Self[_]: Invariant](using operation: StringOperation[Self]):
   self =>
 
-  // final def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String] =
-  //   operation.string(validation)
+  final def string(validation: Validation[Constraint.Primitive.Text, String]): Self[String] =
+    operation.string(validation)
 
-  // final val string: Self[String] = operation.string(Validation.valid)
+  final val string: Self[String] = operation.string(Validation.valid)
 
   // final def string(
   //     minimum: Undefined.Or[Int] = Undefined,
