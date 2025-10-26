@@ -143,7 +143,7 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
         "io.taig" %%% "data-circe" % Version.Data ::
         Nil
   )
-  .dependsOn(coreJson % "compile->compile;test->test")
+  .dependsOn(coreJson % "compile->compile;test->test", coreJsonCirce % "compile->test")
 
 // lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
 //   .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")

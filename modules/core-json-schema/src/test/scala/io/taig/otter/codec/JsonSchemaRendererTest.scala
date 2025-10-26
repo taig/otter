@@ -6,13 +6,26 @@ import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.syntax.JsonSyntax.*
 import zio.*
 import zio.test.*
+import io.taig.otter.Json
 
 object JsonSchemaRendererTest extends ZIOSpecDefault:
+  enum Animal:
+    case Bird
+    case Cat
+    case Dog
+
+  object Animal:
+    val json: Json.Enumeration[Animal] = enumeration(string):
+      case Bird => "bird"
+      case Cat  => "cat"
+      case Dog  => "dog"
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaEncoderTest")(
     test("sample"):
-      val input = JsonSchemaRenderer.render(
+      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
         field("foo", string) :*
-          field("bar", int).optional
+          field("bar", int).optional :*
+          field("animal", Animal.json)
       )
 
       val result = CirceJson.obj(
@@ -23,9 +36,13 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
           ),
           "bar" := CirceJson.obj(
             "type" := "integer"
+          ),
+          "animal" := CirceJson.obj(
+            "type" := "string",
+            "enum" := List("bird", "cat", "dog")
           )
         ),
-        "required" := List("foo")
+        "required" := List("foo", "animal")
       )
 
       assertTrue(input == result)

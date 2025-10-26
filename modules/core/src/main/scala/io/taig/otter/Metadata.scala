@@ -1,20 +1,28 @@
 package io.taig.otter
 
 import cats.Show
-import cats.syntax.all.*
+import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
+import cats.Order
+import cats.derived.*
 
-opaque type Metadata = SortedMap[String, Any]
+opaque type Metadata = SortedMap[Metadata.Key[?], Any]
 
 object Metadata:
-  opaque type Key[A] = String
+  final case class Key[+A](namespace: String, identifier: String)
 
   object Key:
-    inline def apply[A](name: String): Metadata.Key[A] = name
+    object Namespace:
+      val Global: String = "*"
+
+    def apply[A](identifier: String): Metadata.Key[A] =
+      Key(namespace = Namespace.Global, identifier)
+
+    given [A]: Order[Metadata.Key[A]] = Order.by(key => (key.namespace, key.identifier))
 
   extension (self: Metadata)
-    inline def toSortedMap: SortedMap[String, Any] = self
+    inline def toSortedMap: SortedMap[Metadata.Key[?], Any] = self
 
     def contains[A](key: Metadata.Key[A]): Boolean = toSortedMap.contains(key)
 

@@ -10,6 +10,12 @@ object TextCodecTest extends ZIOSpecDefault:
   enum Animal:
     case Bird, Cat, Dog
 
+  object Animal:
+    val text: Text.Enumeration[Animal] = enumeration(string):
+      case Bird => "bird"
+      case Cat  => "cat"
+      case Dog  => "dog"
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TextCodecTest")(
     test("primitive"):
       val input = TextPrinter.print(string, "foobar")
@@ -28,12 +34,8 @@ object TextCodecTest extends ZIOSpecDefault:
       )
     ,
     test("enumeration"):
-      val schema = enumeration[Animal](string):
-        case Animal.Bird => "bird"
-        case Animal.Cat  => "cat"
-        case Animal.Dog  => "dog"
-      val input = TextPrinter.print(schema, Animal.Cat)
-      val result = TextParser.parse(schema, input)
+      val input = TextPrinter.print(Animal.text, Animal.Cat)
+      val result = TextParser.parse(Animal.text, input)
 
       assertTrue(result.toEither.is(_.right) == Animal.Cat)
   )

@@ -4,5 +4,12 @@ import cats.data.Chain
 import io.circe.Json as CirceJson
 import io.taig.otter.Json
 
-val JsonSchemaFieldRenderer: Renderer[Json.Field, Chain[(String, CirceJson)]] =
-  FieldRenderer(renderer = JsonSchemaRenderer).contramapK([A] => (json: Json.Field[A]) => json.self.self)
+final class JsonSchemaFieldRenderer(renderer: Renderer[Json, CirceJson])
+    extends Renderer[Json.Field, Chain[(String, CirceJson)]]:
+  val self = FieldRenderer(renderer).contramapK[Json.Field]([A] => (json: Json.Field[A]) => json.self.self)
+
+  override def render[A](schema: Json.Field[A]): Chain[(String, CirceJson)] = self.render(schema)
+
+object JsonSchemaFieldRenderer:
+  def apply(renderer: Renderer[Json, CirceJson]): Renderer[Json.Field, Chain[(String, CirceJson)]] =
+    new JsonSchemaFieldRenderer(renderer)

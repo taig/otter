@@ -12,10 +12,3 @@ trait EnumerationComponent[+Self[_], -Value[_]](using operation: EnumerationOper
   def enumeration[A: Order, B](schema: => Value[A])(f: B => A)(using
       EnumerationValues.Aux[B, B]
   ): Self[B] = enumeration(schema, Mapping.enumeration(f))
-
-  def enumeration[A]: EnumerationApply[A] = new EnumerationApply[A]
-
-  final class EnumerationApply[A]:
-    def apply[B: Order](schema: => Value[B])(f: A => B)(using
-        EnumerationValues.Aux[A, A]
-    ): Self[A] = enumeration(schema, Mapping.enumeration(f))
