@@ -3,9 +3,12 @@ package io.taig.otter
 import cats.Eq
 import cats.Invariant
 import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.codec.Encoder
 
 sealed abstract class Constant[+S[_], A]:
   def schema: Reference[S, ?]
+
+  def encode[T](encoder: Encoder[S, T]): T
 
   final def imap[T](f: A => T)(g: T => A): Constant[S, T] = Constant.Modify(self = this, f, g)
 
@@ -14,10 +17,15 @@ sealed abstract class Constant[+S[_], A]:
 object Constant:
   final case class Modify[S[_], A, B](self: Constant[S, A], f: A => B, g: B => A) extends Constant[S, B]:
     export self.schema
+
+    override def encode[T](encoder: Encoder[S, T]): T = self.encode(encoder)
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, B] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Root[S[_], A](schema: Reference[S, A], value: A, eq: Eq[A]) extends Constant[S, A]:
+    override def encode[T](encoder: Encoder[S, T]): T = encoder.encode(schema = schema.value, value)
+
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, A] =
       copy(schema = schema.mapK[S1, T](fK))
 
@@ -27,3 +35,6 @@ object Constant:
   given operation[S[_]]: ConstantOperation[Constant[S, *], S] with
     override def constant[A](schema: => S[A], value: A)(using eq: Eq[A]): Constant[S, A] =
       Root(schema = Reference.later(schema), value, eq)
+
+    override def encode[A, T](self: Constant[S, A])(encoder: Encoder[S, T]): T =
+      self.encode(encoder)

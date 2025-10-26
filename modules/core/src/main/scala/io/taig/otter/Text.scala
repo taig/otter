@@ -26,7 +26,9 @@ object Text:
 
     given ConstantOperation[Text.Constant, Text] =
       ConstantOperation[[a] =>> Annotation[Self.Constant[Text, a]], Text]
-        .mapK([A] => (self: Annotation[Self.Constant[Text, A]]) => Constant(self))
+        .imapK([A] => (self: Annotation[Self.Constant[Text, A]]) => Constant(self))([A] =>
+          (schema: Constant[A]) => schema.self
+        )
 
   final case class Enumeration[A](self: Annotation[Self.Enumeration[Text, A]]) extends Text[A] derives Invariant
 

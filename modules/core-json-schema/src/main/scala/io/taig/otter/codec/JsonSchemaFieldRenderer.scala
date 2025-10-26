@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.syntax.all.*
 import io.circe.syntax.*
 import io.circe.Json as CirceJson
@@ -29,5 +28,4 @@ object JsonSchemaFieldRenderer:
   def apply(
       renderer: Renderer[Json, CirceJson],
       encoder: Encoder[Json, CirceJson]
-  ): Renderer[Json.Field, (String, CirceJson)] =
-    new JsonSchemaFieldRenderer(renderer, encoder)
+  ): Renderer[Json.Field, (String, CirceJson)] = new JsonSchemaFieldRenderer(renderer, encoder)

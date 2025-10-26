@@ -26,6 +26,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
         field("name", string) :*
           field("age", int).optional :*
           field("height", float).optional(default = 1.60f) :*
+          field("probability", bigDecimal.coerce) :*
+          field("country", constant(string, "de")) :*
+          field("scores", collection.list(int)) :*
           field("animal", Animal.json)
       )
 
@@ -42,12 +45,24 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             "type" := "number",
             "default" := 1.60f
           ),
+          "probability" := CirceJson.obj(
+            "type" := "string"
+          ),
+          "country" := CirceJson.obj(
+            "const" := "de"
+          ),
+          "scores" := CirceJson.obj(
+            "type" := "array",
+            "items" := CirceJson.obj(
+              "type" := "integer"
+            )
+          ),
           "animal" := CirceJson.obj(
             "type" := "string",
             "enum" := List("bird", "cat", "dog")
           )
         ),
-        "required" := List("name", "animal")
+        "required" := List("name", "probability", "country", "scores", "animal")
       )
 
       assertTrue(input == result)

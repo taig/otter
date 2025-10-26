@@ -19,6 +19,18 @@ import cats.data.Chain
 final class JsonSchemaRenderer(encoder: Encoder[Json, CirceJson]) extends Renderer[Json, CirceJson]:
   val record = RecordRenderer(renderer = JsonSchemaFieldRenderer(renderer = this, encoder))
   override def render[A](json: Json[A]): CirceJson = json match
+    case Json.Coerce(annotation) =>
+      render(metadata = annotation.metadata).deepMerge(CirceJson.obj("type" := "string"))
+    case Json.Collection(annotation) =>
+      render(metadata = annotation.metadata).deepMerge(
+        CirceJson.obj(
+          "type" := "array",
+          "items" := render(json = annotation.self.schema.value)
+        )
+      )
+    case json @ Json.Constant(annotation) =>
+      render(metadata = annotation.metadata)
+        .deepMerge(CirceJson.obj("const" := json.encode(encoder)))
     case Json.Enumeration(annotation) =>
       render(metadata = annotation.metadata)
         .deepMerge(render(json = annotation.self.schema.value))

@@ -40,7 +40,9 @@ object Json:
 
     given ConstantOperation[Json.Constant, Json.Primitive] =
       ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive]
-        .mapK([A] => (self: Annotation[Self.Constant[Json.Primitive, A]]) => Constant(self))
+        .imapK([A] => (self: Annotation[Self.Constant[Json.Primitive, A]]) => Constant(self))([A] =>
+          (schema: Json.Constant[A]) => schema.self
+        )
 
   final case class Dictionary[A](self: Annotation[Self.Dictionary[Json, A]]) extends Json[A] derives Invariant
 
