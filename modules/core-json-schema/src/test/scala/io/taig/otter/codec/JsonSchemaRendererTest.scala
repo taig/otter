@@ -1,12 +1,15 @@
 package io.taig.otter.codec
 
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
 import io.taig.otter.component.JsonComponent.*
+import io.taig.otter.syntax.AnnotatedSyntax.*
 import io.taig.otter.syntax.JsonSyntax.*
 import zio.*
 import zio.test.*
 import io.taig.otter.Json
+import io.taig.otter.Keys
 
 object JsonSchemaRendererTest extends ZIOSpecDefault:
   enum Animal:
@@ -34,7 +37,7 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
 
       val result = CirceJson.obj(
         "type" := "object",
-        "properties" := List(
+        "properties" := CirceJson.obj(
           "name" := CirceJson.obj(
             "type" := "string"
           ),
@@ -63,6 +66,31 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
           )
         ),
         "required" := List("name", "probability", "country", "scores", "animal")
+      )
+
+      assertTrue(input == result),
+    test("refs"):
+      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
+        field("name", string) :*
+          field("age", int.attr(Keys.name, "age")).optional
+      )
+
+      val result = CirceJson.obj(
+        "type" := "object",
+        "properties" := CirceJson.obj(
+          "name" := CirceJson.obj(
+            "type" := "string"
+          ),
+          "age" := CirceJson.obj(
+            "$ref" := "#/$defs/age"
+          )
+        ),
+        "required" := List("name"),
+        "$defs" := CirceJson.obj(
+          "age" := CirceJson.obj(
+            "type" := "integer"
+          )
+        )
       )
 
       assertTrue(input == result)

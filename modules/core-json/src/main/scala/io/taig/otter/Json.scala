@@ -11,8 +11,8 @@ object Json:
   final case class Coerce[A](self: Annotation[Self.Coerce[Json.Primitive, A]]) extends Json[A] derives Invariant
 
   object Coerce:
-    given [A]: Annotated[Coerce[A]] =
-      Annotated[Annotation[Self.Coerce[Json.Primitive, A]]].imap(Coerce.apply)(_.self)
+    given [A]: Annotated[Coerce[A]] = Annotated[Annotation[Self.Coerce[Json.Primitive, A]]]
+      .imap(Coerce.apply)(_.self)
 
     given CoerceOperation[Json.Coerce, Json.Primitive] =
       CoerceOperation[[a] =>> Annotation[Self.Coerce[Json.Primitive, a]], Json.Primitive]
@@ -23,8 +23,8 @@ object Json:
   final case class Collection[A](self: Annotation[Self.Collection[Json, A]]) extends Json[A] derives Invariant
 
   object Collection:
-    given [A]: Annotated[Json.Collection[A]] =
-      Annotated[Annotation[Self.Collection[Json, A]]].imap(Collection.apply)(_.self)
+    given [A]: Annotated[Json.Collection[A]] = Annotated[Annotation[Self.Collection[Json, A]]]
+      .imap(Collection.apply)(_.self)
 
     given CollectionOperation[Json.Collection, Json] =
       CollectionOperation[[a] =>> Annotation[Self.Collection[Json, a]], Json]
@@ -35,8 +35,8 @@ object Json:
   final case class Constant[A](self: Annotation[Self.Constant[Json.Primitive, A]]) extends Json[A] derives Invariant
 
   object Constant:
-    given [A]: Annotated[Json.Constant[A]] =
-      Annotated[Annotation[Self.Constant[Json.Primitive, A]]].imap(Constant.apply)(_.self)
+    given [A]: Annotated[Json.Constant[A]] = Annotated[Annotation[Self.Constant[Json.Primitive, A]]]
+      .imap(Constant.apply)(_.self)
 
     given ConstantOperation[Json.Constant, Json.Primitive] =
       ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive]
@@ -182,3 +182,32 @@ object Json:
       .imapK([A] => (self: Annotation[Self.Field[Json, A]]) => Field(self))([A] =>
         (schema: Json.Field[A]) => schema.self
       )
+
+  given [A]: Annotated[Json[A]] with
+    override def get(self: Json[A]): Metadata = self match
+      case Coerce(self)            => self.metadata
+      case Collection(self)        => self.metadata
+      case Constant(self)          => self.metadata
+      case Dictionary(self)        => self.metadata
+      case Enumeration(self)       => self.metadata
+      case Nullable(self)          => self.metadata
+      case Primitive.Boolean(self) => self.metadata
+      case Primitive.Number(self)  => self.metadata
+      case Primitive.String(self)  => self.metadata
+      case Record(self)            => self.metadata
+      case Tuple(self)             => self.metadata
+      case Union(self)             => self.metadata
+
+    override def update(self: Json[A], metadata: Metadata => Metadata): Json[A] = self match
+      case Coerce(self)            => Coerce(self.copy(metadata = metadata(self.metadata)))
+      case Collection(self)        => Collection(self.copy(metadata = metadata(self.metadata)))
+      case Constant(self)          => Constant(self.copy(metadata = metadata(self.metadata)))
+      case Dictionary(self)        => Dictionary(self.copy(metadata = metadata(self.metadata)))
+      case Enumeration(self)       => Enumeration(self.copy(metadata = metadata(self.metadata)))
+      case Nullable(self)          => Nullable(self.copy(metadata = metadata(self.metadata)))
+      case Primitive.Boolean(self) => Primitive.Boolean(self.copy(metadata = metadata(self.metadata)))
+      case Primitive.Number(self)  => Primitive.Number(self.copy(metadata = metadata(self.metadata)))
+      case Primitive.String(self)  => Primitive.String(self.copy(metadata = metadata(self.metadata)))
+      case Record(self)            => Record(self.copy(metadata = metadata(self.metadata)))
+      case Tuple(self)             => Tuple(self.copy(metadata = metadata(self.metadata)))
+      case Union(self)             => Union(self.copy(metadata = metadata(self.metadata)))

@@ -1,7 +1,6 @@
 package io.taig.otter.component
 import io.github.iltotore.iron.*
 import io.taig.otter.Constraint
-import io.taig.validation
 import io.taig.validation.Validation
 import io.taig.validation.iron.DerivedValidation
 

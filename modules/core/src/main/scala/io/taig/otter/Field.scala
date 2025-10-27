@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.Eval
 import cats.Invariant
-import cats.syntax.all.*
 import io.taig.otter.operation.FieldOperation
 
 sealed abstract class Field[+S[_], A] extends Product with Serializable:
