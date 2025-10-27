@@ -38,7 +38,9 @@ object Text:
 
     given EnumerationOperation[Text.Enumeration, Text] =
       EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Text, a]], Text]
-        .mapK([A] => (self: Annotation[Self.Enumeration[Text, A]]) => Enumeration(self))
+        .imapK([A] => (self: Annotation[Self.Enumeration[Text, A]]) => Enumeration(self))([A] =>
+          (schema: Enumeration[A]) => schema.self
+        )
 
   sealed trait Primitive[A] extends Product with Serializable derives Invariant
 

@@ -3,6 +3,7 @@ package io.taig.otter.component
 import io.taig.otter.Constraint
 import io.taig.otter.operation.NumberOperation
 import io.taig.validation.Validation
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 

@@ -1,11 +1,12 @@
 package io.taig.otter.syntax
 
+import cats.Invariant
 import cats.data.Chain
+import cats.syntax.all.*
+import io.taig.otter.Merge
 import io.taig.otter.Reference
 import io.taig.otter.operation.RecordOperation
-import io.taig.otter.Merge
-import cats.Invariant
-import cats.syntax.all.*
+
 import scala.annotation.targetName
 
 trait RecordSyntax[Self[_]: Invariant, Value[_]](using record: RecordOperation[Self, Value]):

@@ -1,9 +1,8 @@
 package io.taig.otter.operation
 
 import cats.Eq
-import io.taig.otter.FunctorK
-import io.taig.otter.codec.Encoder
 import io.taig.otter.InvariantK
+import io.taig.otter.codec.Encoder
 
 trait ConstantOperation[Self[_], Value[_]]:
   def constant[A: Eq](schema: => Value[A], value: A): Self[A]

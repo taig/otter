@@ -1,6 +1,4 @@
 package io.taig.otter.codec
-
-import cats.data.Chain
 import io.taig.otter.Field
 
 final class FieldRenderer[-S[_], T](renderer: Renderer[S, T]) extends Renderer[Field[S, *], (String, T)]:

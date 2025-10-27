@@ -65,7 +65,9 @@ object Json:
 
     given EnumerationOperation[Json.Enumeration, Json.Primitive] =
       EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Json.Primitive, a]], Json.Primitive]
-        .mapK([A] => (self: Annotation[Self.Enumeration[Json.Primitive, A]]) => Enumeration(self))
+        .imapK([A] => (self: Annotation[Self.Enumeration[Json.Primitive, A]]) => Enumeration(self))([A] =>
+          (schema: Json.Enumeration[A]) => schema.self
+        )
 
   final case class Nullable[A](self: Annotation[Self.Nullable[Json, A]]) extends Json[A] derives Invariant
 
@@ -75,7 +77,9 @@ object Json:
 
     given NullableOperation[Json.Nullable, Json] =
       NullableOperation[[a] =>> Annotation[Self.Nullable[Json, a]], Json]
-        .mapK([A] => (self: Annotation[Self.Nullable[Json, A]]) => Nullable(self))
+        .imapK([A] => (self: Annotation[Self.Nullable[Json, A]]) => Nullable(self))([A] =>
+          (schema: Json.Nullable[A]) => schema.self
+        )
 
   sealed abstract class Primitive[A] extends Json[A] derives Invariant:
     def self: Annotation[Self.Primitive[A]]

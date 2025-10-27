@@ -1,11 +1,10 @@
 package io.taig.otter
 
+import cats.Order
 import cats.Show
 import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
-import cats.Order
-import cats.derived.*
 
 opaque type Metadata = SortedMap[Metadata.Key[?], Any]
 

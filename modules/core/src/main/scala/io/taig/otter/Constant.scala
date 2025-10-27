@@ -2,8 +2,8 @@ package io.taig.otter
 
 import cats.Eq
 import cats.Invariant
-import io.taig.otter.operation.ConstantOperation
 import io.taig.otter.codec.Encoder
+import io.taig.otter.operation.ConstantOperation
 
 sealed abstract class Constant[+S[_], A]:
   def schema: Reference[S, ?]
@@ -16,9 +16,7 @@ sealed abstract class Constant[+S[_], A]:
 
 object Constant:
   final case class Modify[S[_], A, B](self: Constant[S, A], f: A => B, g: B => A) extends Constant[S, B]:
-    export self.schema
-
-    override def encode[T](encoder: Encoder[S, T]): T = self.encode(encoder)
+    export self.{encode, schema}
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Constant[T, B] =
       copy(self = self.mapK[S1, T](fK))

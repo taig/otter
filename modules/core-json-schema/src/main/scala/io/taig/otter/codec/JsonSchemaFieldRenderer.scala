@@ -1,11 +1,10 @@
 package io.taig.otter.codec
 
 import cats.syntax.all.*
-import io.circe.syntax.*
 import io.circe.Json as CirceJson
-import io.taig.otter.Json
-import io.taig.otter.syntax.JsonSyntax.*
+import io.circe.syntax.*
 import io.taig.otter.Field
+import io.taig.otter.Json
 
 final class JsonSchemaFieldRenderer(renderer: Renderer[Json, CirceJson], encoder: Encoder[Json, CirceJson])
     extends Renderer[Json.Field, (String, CirceJson)]:
