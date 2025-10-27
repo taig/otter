@@ -68,7 +68,11 @@ final class JsonSchemaRenderer(encoder: Encoder[Json, CirceJson]) extends Render
         )
       )
     case Json.Union(annotation) =>
-      render(metadata = annotation.metadata)
+      render(metadata = annotation.metadata).deepMerge(
+        CirceJson.obj(
+          "oneOf" := annotation.self.schemas.map(_.value).map(render)
+        )
+      )
 
   def render[A](schema: Primitive.Number[A]): CirceJson = schema match
     case Primitive.Number.BigDecimal(_)      => CirceJson.obj("type" := "number")
