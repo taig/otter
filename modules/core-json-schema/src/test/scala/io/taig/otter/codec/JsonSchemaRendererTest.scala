@@ -10,6 +10,7 @@ import zio.*
 import zio.test.*
 import io.taig.otter.Json
 import io.taig.otter.Keys
+import io.taig.otter.JsonSchemaKeys
 
 object JsonSchemaRendererTest extends ZIOSpecDefault:
   enum Animal:
@@ -86,6 +87,28 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
           )
         ),
         "required" := List("name"),
+        "$defs" := CirceJson.obj(
+          "age" := CirceJson.obj(
+            "type" := "integer"
+          )
+        )
+      )
+
+      assertTrue(input == result),
+    test("refs: field default"):
+      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
+          field("age", int.attr(JsonSchemaKeys.name, "age")).optional(default = 18).toRecord
+      )
+
+      val result = CirceJson.obj(
+        "type" := "object",
+        "properties" := CirceJson.obj(
+          "age" := CirceJson.obj(
+            "$ref" := "#/$defs/age",
+            "default" := 18
+          )
+        ),
+        "required" := CirceJson.arr(),
         "$defs" := CirceJson.obj(
           "age" := CirceJson.obj(
             "type" := "integer"
