@@ -35,8 +35,7 @@ object TextCodecTest extends ZIOSpecDefault:
     ,
     test("enumeration"):
       val input = TextPrinter.encode(Animal.text, Animal.Cat)
-      val result = TextParser.parse(Animal.text
-      , input)
+      val result = TextParser.parse(Animal.text, input)
 
       assertTrue(result.toEither.is(_.right) == Animal.Cat)
   )

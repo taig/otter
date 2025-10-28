@@ -5,7 +5,7 @@ import io.taig.otter.Json
 import io.taig.otter.syntax.JsonSyntax.*
 import scala.util.chaining.*
 
-final class JsonZodRenderer extends Renderer[Json, String]:
+object JsonZodRenderer extends Renderer[Json, String]:
   override def render[A](json: Json[A]): String = json match
     case json @ Json.Coerce(_)               => JsonCoerceZodRenderer.render(json)
     case json @ Json.Constant(_)             => s"z.literal(${json.encode(JsonPrimitiveZodPrinter)})"
@@ -26,6 +26,6 @@ final class JsonZodRenderer extends Renderer[Json, String]:
 
           s""""${field.name}": $value"""
 
-      s"z.object(${fields.mkString_("{ ", ", ", " }")})"
+      s"z.object(${fields.mkString_("{\n", ",\n", "\n}")})"
     case json @ Json.Tuple(_) => s"z.tuple(${json.schemas.map(_.value).map(render).mkString_("[", ", ", "]")})"
     case json @ Json.Union(_) => json.schemas.map(_.value).map(render).mkString_("z.union([", ", ", "])")
