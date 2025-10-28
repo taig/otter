@@ -2,12 +2,13 @@ package io.taig.otter.syntax
 
 import cats.Invariant
 import cats.syntax.all.*
-import io.taig.otter.Merge
 import io.taig.otter.Convert
+import io.taig.otter.Merge
 
 trait InvariantSyntax:
-  extension [F[_]: Invariant, A](self: F[A]) final def to[B](using convert: Convert[A, B]): F[B] =
-    self.imap(convert.to)(convert.from)
+  extension [F[_]: Invariant, A](self: F[A])
+    final def to[B](using convert: Convert[A, B]): F[B] =
+      self.imap(convert.to)(convert.from)
 
   extension [F[_]: Invariant](self: F[Unit]) final def as[A](a: A): F[a.type] = self.imap(_ => a)(_ => ())
 

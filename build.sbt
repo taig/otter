@@ -10,8 +10,8 @@ val Version = new {
   val EnumerationExt = "0.5.0"
   val Fs2 = "3.12.0"
   val Http4s = "1.0.0-M45"
+  val Iron = "3.2.0"
   val Java = "17"
-  val JNanoId = "2.0.0"
   val Kittens = "3.5.0"
   val Log4Cats = "2.7.1"
   val Mouse = "1.3.2"
@@ -67,7 +67,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCaseInsensitive, coreIron, coreJson, coreJsonCirce, coreJsonSchema, dsl, sample, sampleApi)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -105,13 +104,13 @@ lazy val coreIron = module(identifier = Some("core-iron"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val coreJavaTime = module(identifier = Some("core-java-time"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
-//         Nil
-//   )
-//   .dependsOn(core)
+lazy val coreJavaTime = module(identifier = Some("core-java-time"))
+  .settings(
+    libraryDependencies ++=
+      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+        Nil
+  )
+  .dependsOn(core)
 
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
@@ -184,7 +183,7 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //   .dependsOn(http % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(coreCaseInsensitive, coreIron, coreJson, coreJsonSchema)
+  .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson, coreJsonSchema)
 
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
@@ -198,8 +197,13 @@ lazy val dsl = module(identifier = Some("dsl"))
 //   )
 //   .dependsOn(http)
 
-lazy val sample = module(identifier = Some("sample"))
+lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
   .settings(noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      "io.github.iltotore" %% "iron" % Version.Iron ::
+        Nil
+  )
 
 lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
   .settings(noPublishSettings)

@@ -1,9 +1,10 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.operation.UnionOperation
-import scala.annotation.targetName
-import cats.syntax.all.*
 import cats.Invariant
+import cats.syntax.all.*
+import io.taig.otter.operation.UnionOperation
+
+import scala.annotation.targetName
 import scala.reflect.TypeTest
 
 trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[Self, Value]):

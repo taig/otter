@@ -22,7 +22,7 @@ trait CaseInsensitiveComponent[+Self[_]: Invariant](using operation: StringOpera
   def cistring(validation: Validation[Constraint.Primitive.Text, CIString]): Self[CIString] =
     operation.string(validation = validation.contramap(CIString.apply)).imap(CIString.apply)(_.toString)
 
-  val cistring: Self[CIString] = cistring(validation = Validation.valid)
+  final val cistring: Self[CIString] = cistring(validation = Validation.valid)
 
   def cistring(
       minimum: Undefined.Or[Int] = Undefined,
@@ -35,14 +35,14 @@ trait CaseInsensitiveComponent[+Self[_]: Invariant](using operation: StringOpera
         pattern.map(std.text.matches[CIString]).toList
     ).foldLeft[Validation[Constraint.Primitive.Text, CIString]](Validation.valid)(_ & _)
 
-    self.cistring(validation)
+    cistring(validation)
 
-  extension (x: cistring.type)
-    def required(
-        maximum: Undefined.Or[Int] = Undefined,
-        pattern: Undefined.Or[Pattern] = Undefined
-    ): Self[CIString] = self.cistring(minimum = 1, maximum, pattern)
+  // extension (x: cistring.type)
+  //   def required(
+  //       maximum: Undefined.Or[Int] = Undefined,
+  //       pattern: Undefined.Or[Pattern] = Undefined
+  //   ): Self[CIString] = self.cistring(minimum = 1, maximum, pattern)
 
-    def required: Self[CIString] = required()
+  //   def required: Self[CIString] = required()
 
-    def nonEmpty: Self[Option[CIString]] = self.cistring.imap(_.some.filter(_.nonEmpty))(_.getOrElse(CIString.empty))
+  //   def nonEmpty: Self[Option[CIString]] = self.cistring.imap(_.some.filter(_.nonEmpty))(_.getOrElse(CIString.empty))
