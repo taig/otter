@@ -1,8 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Field
 import cats.Functor
 import cats.syntax.all.*
+import io.taig.otter.Field
 
 final class FieldRenderer[-S[_], F[_]: Functor, T](renderer: Renderer[S, F[T]])
     extends Renderer[Field[S, *], F[(String, T)]]:

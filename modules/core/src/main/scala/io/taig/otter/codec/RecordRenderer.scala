@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
-import io.taig.otter.Record
 import cats.Applicative
+import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.Record
 
 final class RecordRenderer[-S[_], F[_]: Applicative, T](renderer: Renderer[S, F[(String, T)]])
     extends Renderer[Record[S, *], F[Chain[(String, T)]]]:

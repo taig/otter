@@ -1,32 +1,27 @@
 package io.taig.otter.codec
 
+import cats.Functor
 import cats.syntax.all.*
-import io.circe.JsonObject as CirceJsonObject
+import io.circe.Encoder as CirceEncoder
 import io.circe.Json as CirceJson
+import io.circe.JsonObject as CirceJsonObject
 import io.circe.syntax.*
 import io.taig.otter.Field
 import io.taig.otter.Json
 import io.taig.otter.JsonSchemaExpression
-import cats.Functor
 
 final class JsonSchemaFieldRenderer[F[_]: Functor](
-    renderer: Renderer[Json, F[JsonSchemaExpression]],
-    encoder: Encoder[Json, CirceJson]
+    encoder: Encoder[Json, CirceJson],
+    renderer: Renderer[Json, F[JsonSchemaExpression]]
 ) extends Renderer[Json.Field, F[(String, JsonSchemaExpression)]]:
-  val self = FieldRenderer(renderer).contramapK[Json.Field]([A] => (json: Json.Field[A]) => json.self.self)
+  val self: Renderer[Json.Field, F[(String, JsonSchemaExpression)]] = FieldRenderer(renderer)
+    .contramapK([A] => (json: Json.Field[A]) => json.self.self)
 
   override def render[A](json: Json.Field[A]): F[(String, JsonSchemaExpression)] =
     val properties = CirceJsonObject("default" := encode(field = json.self.self, none))
       .filter((_, value) => value != CirceJson.Null)
 
-    self
-      .render(json)
-      .map:
-        _.fmap:
-          case JsonSchemaExpression.Inline(json) =>
-            JsonSchemaExpression.Inline(json.deepMerge(properties.toJson))
-          case JsonSchemaExpression.Reference(name, data) =>
-            JsonSchemaExpression.Reference(name, data.deepMerge(properties))
+    self.render(json).map(_.map(_.merge(properties)))
 
   def encode[A](field: Field[Json, A], a: Option[A]): Option[CirceJson] = field match
     case Field.Default(self, default) => encode(field = self, default.value.some)
@@ -36,6 +31,6 @@ final class JsonSchemaFieldRenderer[F[_]: Functor](
 
 object JsonSchemaFieldRenderer:
   def apply[F[_]: Functor](
-      renderer: Renderer[Json, F[JsonSchemaExpression]],
-      encoder: Encoder[Json, CirceJson]
-  ): Renderer[Json.Field, F[(String, JsonSchemaExpression)]] = new JsonSchemaFieldRenderer(renderer, encoder)
+      encoder: Encoder[Json, CirceJson],
+      renderer: Renderer[Json, F[JsonSchemaExpression]]
+  ): Renderer[Json.Field, F[(String, JsonSchemaExpression)]] = new JsonSchemaFieldRenderer(encoder, renderer)
