@@ -6,6 +6,8 @@ import io.taig.otter.operation.UnionOperation
 
 import scala.annotation.targetName
 import scala.reflect.TypeTest
+import cats.data.NonEmptyChain
+import io.taig.otter.Reference
 
 trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[Self, Value]):
   extension [A](self: Self[A])
@@ -18,6 +20,9 @@ trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[
       (self :+ schema).imap(_.merge):
         case a: A => Left(a)
         case b: B => Right(b)
+
+    @targetName("unionSchemas")
+    def schemas: NonEmptyChain[Reference[Value, ?]] = operation.schemas(self)
 
   extension [A](self: Value[A])
     def toUnion: Self[A] = operation.lift(self)

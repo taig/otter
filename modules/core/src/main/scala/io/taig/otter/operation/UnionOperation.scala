@@ -1,8 +1,11 @@
 package io.taig.otter.operation
 
 import io.taig.otter.InvariantK
+import cats.data.NonEmptyChain
+import io.taig.otter.Reference
 
-trait UnionOperation[Self[_], -Value[_]] extends LiftOperation[Self, Value], OrElseOperation[Self]
+trait UnionOperation[Self[_], Value[_]] extends LiftOperation[Self, Value], OrElseOperation[Self]:
+  def schemas[A](self: Self[A]): NonEmptyChain[Reference[Value, ?]]
 
 object UnionOperation:
   inline def apply[Self[_], Value[_]](using
@@ -17,3 +20,5 @@ object UnionOperation:
             fK(operation.orElse(gK(left), gK(right)))
 
           override def lift[A](schema: => Value[A]): H[A] = fK(operation.lift(schema))
+
+          override def schemas[A](self: H[A]): NonEmptyChain[Reference[Value, ?]] = operation.schemas(gK(self))

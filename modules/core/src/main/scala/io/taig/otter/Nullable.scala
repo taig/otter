@@ -46,3 +46,5 @@ object Nullable:
 
     override def encode[A, T](self: Nullable[S, A])(encoder: Encoder[S, T]): Option[T] =
       self.encode(encoder)
+
+    override def schema[A](self: Nullable[S, A]): Reference[S, ?] = self.schema

@@ -1,6 +1,7 @@
 package io.taig.otter.operation
 import io.taig.otter.InvariantK
 import io.taig.otter.codec.Encoder
+import io.taig.otter.Reference
 
 trait NullableOperation[Self[_], Value[_]]:
   def nullable[A](value: => Value[A]): Self[Option[A]]
@@ -8,6 +9,8 @@ trait NullableOperation[Self[_], Value[_]]:
   def nullable[A](value: => Value[A], default: => A): Self[A]
 
   def encode[A, T](self: Self[A])(encoder: Encoder[Value, T]): Option[T]
+
+  def schema[A](self: Self[A]): Reference[Value, ?]
 
 object NullableOperation:
   inline def apply[Self[_], Value[_]](using
@@ -24,3 +27,5 @@ object NullableOperation:
 
           override def encode[A, T](self: H[A])(encoder: Encoder[Value, T]): Option[T] =
             operation.encode(gK(self))(encoder)
+
+          override def schema[A](self: H[A]): Reference[Value, ?] = operation.schema(gK(self))

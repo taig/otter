@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.otter.operation.UnionOperation
+import cats.data.NonEmptyList
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]
@@ -37,3 +38,5 @@ object Union:
     override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))
 
     override def orElse[A, B](left: Union[S, A], right: Union[S, B]): Union[S, Either[A, B]] = OrElse(left, right)
+
+    override def schemas[A](self: Union[S, A]): NonEmptyChain[Reference[S, ?]] = self.schemas

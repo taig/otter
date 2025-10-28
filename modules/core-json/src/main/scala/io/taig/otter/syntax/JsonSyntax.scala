@@ -9,6 +9,7 @@ trait JsonSyntax
       FieldSyntax[Json.Field, Json.Record, Json],
       NullableSyntax[Json.Nullable, Json],
       RecordSyntax[Json.Record, Json.Field],
+      TupleSyntax[Json.Tuple, Json],
       UnionSyntax[Json.Union, Json]
 
 object JsonSyntax extends JsonSyntax

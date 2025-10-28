@@ -57,3 +57,5 @@ object Tuple:
     override def lift[A](value: => S[A]): Tuple[S, A] = Root(schema = Reference.later(value))
 
     override def zip[A, B](left: Tuple[S, A], right: Tuple[S, B]): Tuple[S, (A, B)] = Zip(left, right)
+
+    override def schemas[A](tuple: Tuple[S, A]): Chain[Reference[S, ?]] = tuple.schemas

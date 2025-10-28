@@ -18,14 +18,14 @@ object TextCodecTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TextCodecTest")(
     test("primitive"):
-      val input = TextPrinter.print(string, "foobar")
+      val input = TextPrinter.encode(string, "foobar")
       val result = TextParser.parse(string, input)
 
       assertTrue(result.toEither.is(_.right) == input)
     ,
     test("constant"):
       val schema = constant(string, "foo")
-      val input = TextPrinter.print(schema, "bar")
+      val input = TextPrinter.encode(schema, "bar")
       val result = TextParser.parse(schema, input)
 
       assertTrue(
@@ -34,8 +34,9 @@ object TextCodecTest extends ZIOSpecDefault:
       )
     ,
     test("enumeration"):
-      val input = TextPrinter.print(Animal.text, Animal.Cat)
-      val result = TextParser.parse(Animal.text, input)
+      val input = TextPrinter.encode(Animal.text, Animal.Cat)
+      val result = TextParser.parse(Animal.text
+      , input)
 
       assertTrue(result.toEither.is(_.right) == Animal.Cat)
   )

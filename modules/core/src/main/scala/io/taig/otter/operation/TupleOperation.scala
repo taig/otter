@@ -1,11 +1,14 @@
 package io.taig.otter.operation
 
 import io.taig.otter.InvariantK
+import cats.data.Chain
+import io.taig.otter.Reference
 
-trait TupleOperation[Self[_], -Value[_]]
+trait TupleOperation[Self[_], Value[_]]
     extends EmptyOperation[Self],
       LiftOperation[Self, Value],
-      ZipOperation[Self, Value]
+      ZipOperation[Self, Value]:
+  def schemas[A](self: Self[A]): Chain[Reference[Value, ?]]
 
 object TupleOperation:
   inline def apply[Self[_], Value[_]](using
@@ -21,3 +24,5 @@ object TupleOperation:
           override def lift[A](value: => Value[A]): H[A] = fK(operation.lift(value))
 
           override def zip[A, B](left: H[A], right: H[B]): H[(A, B)] = fK(operation.zip(gK(left), gK(right)))
+
+          override def schemas[A](self: H[A]): Chain[Reference[Value, ?]] = operation.schemas(gK(self))
