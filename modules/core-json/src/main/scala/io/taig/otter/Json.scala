@@ -211,12 +211,3 @@ object Json:
       case Record(self)            => Record(self.copy(metadata = metadata(self.metadata)))
       case Tuple(self)             => Tuple(self.copy(metadata = metadata(self.metadata)))
       case Union(self)             => Union(self.copy(metadata = metadata(self.metadata)))
-
-object Lol:
-  import io.taig.otter.syntax.JsonSyntax.*
-
-  import io.taig.otter.component.JsonComponent.*
-
-  string.toUnion :+ int | long
-  string :+ int
-  string | int

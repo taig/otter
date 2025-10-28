@@ -67,7 +67,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCaseInsensitive, coreIron, coreJson, coreJsonCirce, coreJsonSchema)
+  .aggregate(core, coreCaseInsensitive, coreIron, coreJson, coreJsonCirce, coreJsonSchema, dsl, sample, sampleApi)
 
 lazy val core = module(identifier = Some("core"))
   .settings(
@@ -183,6 +183,9 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //   )
 //   .dependsOn(http % "compile->compile;test->test")
 
+lazy val dsl = module(identifier = Some("dsl"))
+  .dependsOn(coreCaseInsensitive, coreIron, coreJson, coreJsonSchema)
+
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
 
@@ -195,21 +198,12 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //   )
 //   .dependsOn(http)
 
-lazy val playground = module(identifier = Some("playground"))
-  .dependsOn(coreIron, coreJson)
+lazy val sample = module(identifier = Some("sample"))
+  .settings(noPublishSettings)
 
-// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %% "circe-parser" % Version.Circe ::
-//         "org.typelevel" %% "case-insensitive" % Version.CaseInsensitive ::
-//         Nil
-//   )
-
-// lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-//   .settings(noPublishSettings)
-//   .dependsOn(coreJson, coreCaseInsensitive, coreJavaTime, httpJson, httpHttp4s)
+lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .dependsOn(dsl, sample)
 
 // lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
 //   .settings(noPublishSettings)

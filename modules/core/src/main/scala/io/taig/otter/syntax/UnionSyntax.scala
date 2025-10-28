@@ -13,9 +13,10 @@ trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[
 
     def :+[B](schema: Value[B]): Self[Either[A, B]] = operation.orElse(self, operation.lift(schema))
 
-    def |[B](schema: Value[B])(using TypeTest[A | B, A], TypeTest[A | B, B]): Self[A | B] = (self :+ schema).imap(_.merge):
-      case a: A => Left(a)
-      case b: B => Right(b)
+    def |[B](schema: Value[B])(using TypeTest[A | B, A], TypeTest[A | B, B]): Self[A | B] =
+      (self :+ schema).imap(_.merge):
+        case a: A => Left(a)
+        case b: B => Right(b)
 
   extension [A](self: Value[A])
     def toUnion: Self[A] = operation.lift(self)
@@ -24,6 +25,7 @@ trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[
     def :+[B](schema: Value[B]): Self[Either[A, B]] = operation.orElse(operation.lift(self), operation.lift(schema))
 
     @targetName("_|")
-    def |[B](schema: Value[B])(using TypeTest[A | B, A], TypeTest[A | B, B]): Self[A | B] = (self :+ schema).imap(_.merge):
-      case a: A => Left(a)
-      case b: B => Right(b)
+    def |[B](schema: Value[B])(using TypeTest[A | B, A], TypeTest[A | B, B]): Self[A | B] =
+      (self :+ schema).imap(_.merge):
+        case a: A => Left(a)
+        case b: B => Right(b)
