@@ -8,6 +8,7 @@ trait JsonSyntax
       EnumerationSyntax[Json.Enumeration, Json.Primitive],
       FieldSyntax[Json.Field, Json.Record, Json],
       NullableSyntax[Json.Nullable, Json],
-      RecordSyntax[Json.Record, Json.Field]
+      RecordSyntax[Json.Record, Json.Field],
+      UnionSyntax[Json.Union, Json]
 
 object JsonSyntax extends JsonSyntax

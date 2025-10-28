@@ -13,6 +13,6 @@ trait RecordSyntax[Self[_]: Invariant, Value[_]](using record: RecordOperation[S
   extension [A](self: Self[A])
     def fields: Chain[Reference[Value, ?]] = record.fields(self)
 
-    @targetName("appendField")
+    @targetName("append")
     def :*[B](field: Value[B])(using merge: Merge[A, B]): Self[merge.Out] =
       record.zip(left = self, right = record.lift(field)).imap(merge.apply)(merge.unapply)

@@ -1,4 +1,3 @@
-import org.checkerframework.checker.units.qual.m
 import sbtcrossproject.CrossProject
 
 val Version = new {
@@ -74,9 +73,8 @@ lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
       val sumInstances = (Compile / sourceManaged).value / "ConvertInstances.scala"
-      // IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
-      // Seq(sumInstances)
-      Nil
+      IO.write(sumInstances, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
+      Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %%% "data-core" % Version.Data ::
