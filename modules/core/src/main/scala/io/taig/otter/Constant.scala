@@ -36,3 +36,5 @@ object Constant:
 
     override def encode[A, T](self: Constant[S, A])(encoder: Encoder[S, T]): T =
       self.encode(encoder)
+
+    override def schema[A](self: Constant[S, A]): Reference[S, ?] = self.schema

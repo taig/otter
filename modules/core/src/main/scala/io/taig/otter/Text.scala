@@ -16,7 +16,9 @@ object Text:
 
     given CoerceOperation[Text.Coerce, Text.Primitive] =
       CoerceOperation[[a] =>> Annotation[Self.Coerce[Text.Primitive, a]], Text.Primitive]
-        .mapK([A] => (self: Annotation[Self.Coerce[Text.Primitive, A]]) => Coerce(self))
+        .imapK([A] => (self: Annotation[Self.Coerce[Text.Primitive, A]]) => Coerce(self))([A] =>
+          (schema: Coerce[A]) => schema.self
+        )
 
   final case class Constant[A](self: Annotation[Self.Constant[Text, A]]) extends Text[A] derives Invariant
 

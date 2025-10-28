@@ -6,6 +6,7 @@ import io.taig.otter.Merge
 import io.taig.otter.Reference
 import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.RecordOperation
+import scala.annotation.targetName
 
 trait FieldSyntax[Self[_], +Record[_]: Invariant, +Value[_]](using
     field: FieldOperation[Self, Value],
@@ -20,6 +21,7 @@ trait FieldSyntax[Self[_], +Record[_]: Invariant, +Value[_]](using
 
     def optional(default: => A): Self[A] = field.optional(self, default)
 
+    @targetName("fieldSchema")
     def schema: Reference[Value, ?] = field.schema(self)
 
     def toRecord: Record[A] = record.lift(self)

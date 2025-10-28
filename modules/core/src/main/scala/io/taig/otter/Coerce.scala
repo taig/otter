@@ -26,3 +26,5 @@ object Coerce:
 
   given operation[S[_]]: CoerceOperation[Coerce[S, *], S] with
     override def coerce[A](schema: => S[A]): Coerce[S, A] = Root(Reference.later(schema))
+
+    override def schema[A](self: Coerce[S, A]): Reference[S, ?] = self.schema
