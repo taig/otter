@@ -11,7 +11,7 @@ import io.taig.otter.Violations
 import io.taig.otter.typeOf
 import io.taig.validation.Violation
 
-object CirceJsonDecoder extends Decoder[Json, CirceJson]:
+object JsonCirceDecoder extends Decoder[Json, CirceJson]:
   override def decode[A](schema: Json[A], json: CirceJson): Validated[Violations, A] = schema match
     case Json.Coerce(schema)     => CoerceDecoder(decoder = this).decode(schema = schema.self, json)
     case Json.Collection(schema) =>
@@ -20,7 +20,7 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .leftMap(Violations.apply)
         .andThen(CollectionDecoder(decoder = this).decode(schema = schema.self, _))
     case Json.Constant(schema) =>
-      ConstantDecoder(decoder = this, encoder = CirceJsonEncoder, render = _.toData).decode(schema = schema.self, json)
+      ConstantDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData).decode(schema = schema.self, json)
     case Json.Dictionary(schema) =>
       json.asObject
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
@@ -28,18 +28,18 @@ object CirceJsonDecoder extends Decoder[Json, CirceJson]:
         .map(_.toList)
         .andThen(DictionaryDecoder(decoder = this).decode(schema = schema.self, _))
     case Json.Enumeration(schema) =>
-      EnumerationDecoder(decoder = this, encoder = CirceJsonEncoder, render = _.toData)
+      EnumerationDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData)
         .decode(schema = schema.self, json)
     case Json.Nullable(schema) =>
       NullableDecoder(decoder = this, empty = _.isNull).decode(schema = schema.self, json)
-    case schema: Json.Primitive[?] => CirceJsonPrimitiveDecoder.decode(schema, json)
+    case schema: Json.Primitive[?] => JsonPrimitiveCirceDecoder.decode(schema, json)
     case Json.Record(schema)       =>
       json.asObject
         .map(_.toList)
         .map(Chain.fromSeq)
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
-        .andThen(RecordDecoder(decoder = CirceJsonFieldDecoder).decode(schema.self, _))
+        .andThen(RecordDecoder(decoder = JsonFieldCirceDecoder).decode(schema.self, _))
     case Json.Tuple(schema) =>
       json.asArray
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))

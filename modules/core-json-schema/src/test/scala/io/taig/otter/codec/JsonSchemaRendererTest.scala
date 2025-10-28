@@ -26,7 +26,7 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaEncoderTest")(
     test("sample"):
-      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
+      val input = JsonSchemaRenderer(encoder = JsonCirceEncoder).render(
         field("name", string) :*
           field("age", int).optional :*
           field("height", float).optional(default = 1.60f) :*
@@ -69,9 +69,10 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
         "required" := List("name", "probability", "country", "scores", "animal")
       )
 
-      assertTrue(input == result),
+      assertTrue(input == result)
+    ,
     test("refs"):
-      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
+      val input = JsonSchemaRenderer(encoder = JsonCirceEncoder).render(
         field("name", string) :*
           field("age", int.attr(Keys.name, "age")).optional
       )
@@ -94,10 +95,11 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
         )
       )
 
-      assertTrue(input == result),
+      assertTrue(input == result)
+    ,
     test("refs: field default"):
-      val input = JsonSchemaRenderer(encoder = CirceJsonEncoder).render(
-          field("age", int.attr(JsonSchemaKeys.name, "age")).optional(default = 18).toRecord
+      val input = JsonSchemaRenderer(encoder = JsonCirceEncoder).render(
+        field("age", int.attr(JsonSchemaKeys.name, "age")).optional(default = 18).toRecord
       )
 
       val result = CirceJson.obj(

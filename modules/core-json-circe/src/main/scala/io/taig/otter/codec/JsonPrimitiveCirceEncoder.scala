@@ -6,7 +6,7 @@ import io.taig.otter.Json
 
 import scala.annotation.tailrec
 
-object CirceJsonPrimitiveEncoder extends Encoder[Json.Primitive, CirceJson]:
+object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive, CirceJson]:
   override def encode[A](schema: Json.Primitive[A], a: A): CirceJson =
     encode(schema = schema.self.self, a)
 

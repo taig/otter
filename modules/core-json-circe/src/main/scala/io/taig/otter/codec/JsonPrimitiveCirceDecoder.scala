@@ -10,7 +10,7 @@ import io.taig.otter.Violations
 import io.taig.otter.typeOf
 import io.taig.validation.Violation
 
-object CirceJsonPrimitiveDecoder extends Decoder[Json.Primitive, CirceJson]:
+object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive, CirceJson]:
   override def decode[A](schema: Json.Primitive[A], json: CirceJson): Validated[Violations, A] =
     decode(schema = schema.self.self, json)
 
