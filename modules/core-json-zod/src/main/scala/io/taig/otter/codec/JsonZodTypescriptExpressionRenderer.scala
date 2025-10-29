@@ -8,13 +8,13 @@ import cats.syntax.all.*
 import io.taig.otter.ZodTypescriptExpression
 import io.taig.otter.syntax.AnnotatedSyntax.*
 
-import scala.collection.immutable.SortedMap
+import scala.collection.immutable.ListMap
 
 object JsonZodTypescriptExpressionRenderer
-    extends Renderer[Json, State[SortedMap[String, String], ZodTypescriptExpression]]:
+    extends Renderer[Json, State[ListMap[String, String], ZodTypescriptExpression]]:
   val self = JsonZodInlineRenderer(renderer = this)
 
-  override def render[A](json: Json[A]): State[SortedMap[String, String], ZodTypescriptExpression] = State:
+  override def render[A](json: Json[A]): State[ListMap[String, String], ZodTypescriptExpression] = State:
     definitions =>
       json.attr(ZodKeys.name).orElse(json.attr(Keys.name)) match
         case Some(name) =>

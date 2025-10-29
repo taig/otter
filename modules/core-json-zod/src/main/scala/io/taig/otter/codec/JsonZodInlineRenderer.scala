@@ -30,7 +30,7 @@ final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json, F[
             .render(field.schema.value)
             .map: expression =>
               val value = if field.isOptional then s"z.optional($expression)" else expression
-              s""""${field.name}": $value""""
+              s""""${field.name}": $value"""
         .map(fields => s"z.object(${fields.mkString_("{\n", ",\n", "\n}")})")
     case json @ Json.Tuple(_) =>
       json.schemas
