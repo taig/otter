@@ -2,6 +2,7 @@ package io.taig.otter.sample
 
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
+
 import java.time.Instant
 
 final case class Book(

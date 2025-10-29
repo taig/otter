@@ -15,10 +15,10 @@ final class JsonSchemaFieldRenderer[F[_]: Functor](
     renderer: Renderer[Json, F[JsonSchemaExpression]]
 ) extends Renderer[Json.Field, F[(String, JsonSchemaExpression)]]:
   val self: Renderer[Json.Field, F[(String, JsonSchemaExpression)]] = FieldRenderer(renderer)
-    .contramapK([A] => (json: Json.Field[A]) => json.self.self)
+    .contramapK([A] => (json: Json.Field[A]) => json.annotation.self)
 
   override def render[A](json: Json.Field[A]): F[(String, JsonSchemaExpression)] =
-    val properties = CirceJsonObject("default" := encode(field = json.self.self, none))
+    val properties = CirceJsonObject("default" := encode(field = json.annotation.self, none))
       .filter((_, value) => value != CirceJson.Null)
 
     self.render(json).map(_.map(_.merge(properties)))

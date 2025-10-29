@@ -1,7 +1,8 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.operation.CoerceOperation
 import io.taig.otter.Reference
+import io.taig.otter.operation.CoerceOperation
+
 import scala.annotation.targetName
 
 trait CoerceSyntax[Self[_], Value[_]](using operation: CoerceOperation[Self, Value]):

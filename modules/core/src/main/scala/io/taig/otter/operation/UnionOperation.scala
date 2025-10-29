@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 
-import io.taig.otter.InvariantK
 import cats.data.NonEmptyChain
+import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 
 trait UnionOperation[Self[_], Value[_]] extends LiftOperation[Self, Value], OrElseOperation[Self]:

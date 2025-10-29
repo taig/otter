@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 
-import io.taig.otter.InvariantK
 import cats.data.Chain
+import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 
 trait TupleOperation[Self[_], Value[_]]

@@ -8,7 +8,7 @@ import scala.annotation.tailrec
 
 object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive, CirceJson]:
   override def encode[A](schema: Json.Primitive[A], a: A): CirceJson =
-    encode(schema = schema.self.self, a)
+    encode(schema = schema.annotation.self, a)
 
   @tailrec
   def encode[A](schema: Self.Primitive[A], a: A): CirceJson = schema match

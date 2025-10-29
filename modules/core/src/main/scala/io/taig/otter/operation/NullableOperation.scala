@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 import io.taig.otter.InvariantK
-import io.taig.otter.codec.Encoder
 import io.taig.otter.Reference
+import io.taig.otter.codec.Encoder
 
 trait NullableOperation[Self[_], Value[_]]:
   def nullable[A](value: => Value[A]): Self[Option[A]]

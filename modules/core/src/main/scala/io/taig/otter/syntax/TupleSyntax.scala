@@ -1,8 +1,9 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.operation.TupleOperation
 import cats.data.Chain
 import io.taig.otter.Reference
+import io.taig.otter.operation.TupleOperation
+
 import scala.annotation.targetName
 
 trait TupleSyntax[Self[_], Value[_]](using operation: TupleOperation[Self, Value]):

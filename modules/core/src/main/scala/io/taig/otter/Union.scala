@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.otter.operation.UnionOperation
-import cats.data.NonEmptyList
 
 sealed abstract class Union[+S[_], A] extends Product with Serializable:
   def schemas: NonEmptyChain[Reference[S, ?]]

@@ -2,10 +2,10 @@ package io.taig.otter.operation
 
 import cats.data.Chain
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 import io.taig.validation.Constraint
 import io.taig.validation.Constraint.Collection
 import io.taig.validation.Validation
-import io.taig.otter.Reference
 
 trait CollectionOperation[Self[_], Value[_]]:
   def indexed[A](

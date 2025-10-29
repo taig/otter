@@ -6,6 +6,7 @@ import io.taig.otter.Merge
 import io.taig.otter.Reference
 import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.RecordOperation
+
 import scala.annotation.targetName
 
 trait FieldSyntax[Self[_], +Record[_]: Invariant, +Value[_]](using

@@ -1,8 +1,8 @@
 package io.taig.otter.codec
-
 import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.syntax.JsonSyntax.*
+
 import scala.util.chaining.*
 
 object JsonZodRenderer extends Renderer[Json, String]:

@@ -3,8 +3,8 @@ package io.taig.otter.operation
 import cats.data.Chain
 import io.taig.otter.Constraint
 import io.taig.otter.InvariantK
-import io.taig.validation.Validation
 import io.taig.otter.Reference
+import io.taig.validation.Validation
 
 trait DictionaryOperation[Self[_], Value[_]]:
   def dictionary[A](

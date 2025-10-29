@@ -3,8 +3,8 @@ package io.taig.otter
 import io.taig.otter.component.CaseInsensitiveComponent
 import io.taig.otter.component.IronNumberComponent
 import io.taig.otter.component.IronStringComponent
-import io.taig.otter.component.JsonComponent
 import io.taig.otter.component.JavaTimeComponent
+import io.taig.otter.component.JsonComponent
 import io.taig.otter.syntax.AllSyntax
 import io.taig.otter.syntax.JsonSyntax
 

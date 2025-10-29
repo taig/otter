@@ -4,7 +4,7 @@ import io.taig.otter.Json
 import io.taig.otter.Primitive
 
 val JsonPrimitiveZodPrinter: Printer[Json.Primitive] = PrimitivePrinter
-  .contramapK[Json.Primitive]([A] => (self: Json.Primitive[A]) => self.self.self)
+  .contramapK[Json.Primitive]([A] => (json: Json.Primitive[A]) => json.annotation.self)
   .mapWithSchema: [A] =>
     (schema: Json.Primitive[A], value: String) =>
       schema match

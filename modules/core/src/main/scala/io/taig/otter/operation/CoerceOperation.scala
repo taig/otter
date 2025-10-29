@@ -1,8 +1,6 @@
 package io.taig.otter.operation
-
-import io.taig.otter.FunctorK
-import io.taig.otter.Reference
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
 trait CoerceOperation[Self[_], Value[_]]:
   def coerce[A](schema: => Value[A]): Self[A]

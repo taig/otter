@@ -1,13 +1,13 @@
 package io.taig.otter.syntax
 
 import cats.Invariant
+import cats.data.NonEmptyChain
 import cats.syntax.all.*
+import io.taig.otter.Reference
 import io.taig.otter.operation.UnionOperation
 
 import scala.annotation.targetName
 import scala.reflect.TypeTest
-import cats.data.NonEmptyChain
-import io.taig.otter.Reference
 
 trait UnionSyntax[Self[_]: Invariant, Value[_]](using operation: UnionOperation[Self, Value]):
   extension [A](self: Self[A])

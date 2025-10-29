@@ -3,8 +3,6 @@ package io.taig.otter.sample.api
 import io.taig.otter.Dsl.*
 import io.taig.otter.Dsl.json.*
 import io.taig.otter.Json
-import io.github.iltotore.iron.*
-import io.github.iltotore.iron.constraint.all.*
 
 enum GenreApiSchema:
   case Fiction
