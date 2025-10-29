@@ -47,4 +47,4 @@ object JsonCirceDecoder extends Decoder[Json, CirceJson]:
         .leftMap(Violations.apply)
         .andThen(TupleDecoder(decoder = this, empty = _.isNull).decode(schema = annotation.self, _))
     case Json.Union(annotation) =>
-      UnionDecoder(decoder = this).decode(schema = annotation.self, json)
+      UnionDecoder(decoder = JsonBranchCirceDecoder).decode(schema = annotation.self, json)

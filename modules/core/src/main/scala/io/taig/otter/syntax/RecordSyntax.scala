@@ -9,10 +9,12 @@ import io.taig.otter.operation.RecordOperation
 
 import scala.annotation.targetName
 
-trait RecordSyntax[Self[_]: Invariant, Value[_]](using record: RecordOperation[Self, Value]):
-  extension [A](self: Self[A])
-    def fields: Chain[Reference[Value, ?]] = record.fields(self)
+trait RecordSyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: RecordOperation[Self, Value])
+    def fields: Chain[Reference[Value, ?]] = operation.fields(self)
 
-    @targetName("_:*")
+  extension [Self[_]: Invariant, Value[_], A](self: Self[A])(using operation: RecordOperation[Self, Value])
     def :*[B](field: Value[B])(using merge: Merge[A, B]): Self[merge.Out] =
-      record.zip(left = self, right = record.lift(field)).imap(merge.apply)(merge.unapply)
+      operation.zip(left = self, right = operation.lift(field)).imap(merge.apply)(merge.unapply)
+
+object RecordSyntax extends RecordSyntax

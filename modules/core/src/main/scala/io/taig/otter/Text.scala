@@ -5,7 +5,7 @@ import cats.derived.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 
-sealed abstract class Text[A] extends Product with Serializable derives Invariant
+sealed abstract class Text[A] extends Product, Serializable derives Invariant
 
 object Text:
   final case class Coerce[A](self: Annotation[Self.Coerce[Text.Primitive, A]]) extends Text[A] derives Invariant
@@ -44,7 +44,7 @@ object Text:
           (schema: Enumeration[A]) => schema.self
         )
 
-  sealed trait Primitive[A] extends Product with Serializable derives Invariant
+  sealed trait Primitive[A] extends Product, Serializable derives Invariant
 
   object Primitive:
     final case class Boolean[A](self: Annotation[Self.Primitive.Boolean[A]]) extends Text.Primitive[A] derives Invariant
@@ -82,38 +82,52 @@ object Text:
         )([A] => (schema: String[A]) => schema.self)
 
     given [A]: Annotated[Text.Primitive[A]] = Annotated[Annotation[Self.Primitive[A]]]
-      .imap { self =>
-        self.self match
-          case schema: Self.Primitive.Boolean[A] => Boolean(self.copy(self = schema))
-          case schema: Self.Primitive.Number[A]  => Number(self.copy(self = schema))
-          case schema: Self.Primitive.String[A]  => String(self.copy(self = schema))
+      .imap { annotation =>
+        annotation.self match
+          case schema: Self.Primitive.Boolean[A] => Boolean(annotation.copy(self = schema))
+          case schema: Self.Primitive.Number[A]  => Number(annotation.copy(self = schema))
+          case schema: Self.Primitive.String[A]  => String(annotation.copy(self = schema))
       } {
-        case Text.Primitive.Boolean(self) => self
-        case Text.Primitive.Number(self)  => self
-        case Text.Primitive.String(self)  => self
+        case Text.Primitive.Boolean(annotation) => annotation
+        case Text.Primitive.Number(annotation)  => annotation
+        case Text.Primitive.String(annotation)  => annotation
       }
 
     given PrimitiveOperation[Text.Primitive] =
       PrimitiveOperation[[a] =>> Annotation[Self.Primitive[a]]].imapK([A] =>
-        (self: Annotation[Self.Primitive[A]]) =>
-          self.self match
-            case schema: Self.Primitive.Boolean[A] => Text.Primitive.Boolean(self.copy(self = schema))
-            case schema: Self.Primitive.Number[A]  => Text.Primitive.Number(self.copy(self = schema))
-            case schema: Self.Primitive.String[A]  => Text.Primitive.String(self.copy(self = schema))
+        (annotation: Annotation[Self.Primitive[A]]) =>
+          annotation.self match
+            case schema: Self.Primitive.Boolean[A] => Text.Primitive.Boolean(annotation.copy(self = schema))
+            case schema: Self.Primitive.Number[A]  => Text.Primitive.Number(annotation.copy(self = schema))
+            case schema: Self.Primitive.String[A]  => Text.Primitive.String(annotation.copy(self = schema))
       )([A] =>
-        (schema: Text.Primitive[A]) =>
-          schema match
+        (text: Text.Primitive[A]) =>
+          text match
             case Text.Primitive.Boolean(self) => self
             case Text.Primitive.Number(self)  => self
             case Text.Primitive.String(self)  => self
       )
 
-  final case class Union[A](self: Annotation[Self.Union[Text, A]]) extends Text[A] derives Invariant
+  final case class Union[A](self: Annotation[Self.Union[Text.Branch, A]]) extends Text[A] derives Invariant
 
   object Union:
     given [A]: Annotated[Text.Union[A]] =
-      Annotated[Annotation[Self.Union[Text, A]]].imap(apply)(_.self)
+      Annotated[Annotation[Self.Union[Text.Branch, A]]].imap(apply)(_.self)
 
-    given UnionOperation[Text.Union, Text] =
-      UnionOperation[[a] =>> Annotation[Self.Union[Text, a]], Text]
-        .imapK([A] => (self: Annotation[Self.Union[Text, A]]) => Union(self))([A] => (schema: Union[A]) => schema.self)
+    given UnionOperation[Text.Union, Text.Branch] =
+      UnionOperation[[a] =>> Annotation[Self.Union[Text.Branch, a]], Text.Branch]
+        .imapK([A] => (annotation: Annotation[Self.Union[Text.Branch, A]]) => Union(annotation))([A] =>
+          (text: Union[A]) => text.self
+        )
+
+  final case class Branch[A](annotation: Annotation[Self.Branch[Text, A]]) derives Invariant
+
+  object Branch:
+    given [A]: Annotated[Text.Branch[A]] =
+      Annotated[Annotation[Self.Branch[Text, A]]].imap(apply)(_.annotation)
+
+    given BranchOperation[Text.Branch, Text] =
+      BranchOperation[[a] =>> Annotation[Self.Branch[Text, a]], Text]
+        .imapK([A] => (annotation: Annotation[Self.Branch[Text, A]]) => Branch(annotation))([A] =>
+          (text: Branch[A]) => text.annotation
+        )

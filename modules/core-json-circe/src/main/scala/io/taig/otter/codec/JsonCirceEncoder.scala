@@ -19,4 +19,5 @@ object JsonCirceEncoder extends Encoder[Json, CirceJson]:
       CirceJson.fromFields(RecordEncoder(encoder = JsonFieldCirceEncoder).encode(schema = annotation.self, a).toList)
     case Json.Tuple(annotation) =>
       CirceJson.fromValues(TupleEncoder(encoder = this, empty = CirceJson.Null).encode(schema = annotation.self, a))
-    case Json.Union(annotation) => UnionEncoder(encoder = this).encode(schema = annotation.self, a)
+    case Json.Union(annotation) =>
+      UnionEncoder(encoder = JsonBranchCirceEncoder).encode(schema = annotation.self, a)

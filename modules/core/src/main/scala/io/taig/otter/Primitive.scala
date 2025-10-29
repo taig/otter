@@ -15,7 +15,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-sealed abstract class Primitive[A] extends Product with Serializable:
+sealed abstract class Primitive[A] extends Product, Serializable:
   def constraints: Chain[Constraint.Primitive.Number | Constraint.Primitive.Text]
 
   def imap[T](f: A => T)(g: T => A): Primitive[T]

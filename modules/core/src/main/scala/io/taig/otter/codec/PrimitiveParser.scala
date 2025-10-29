@@ -11,8 +11,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 object PrimitiveParser extends Parser[Primitive]:
-  override def parse[A](schema: Primitive[A], value: String): Validated[Violations, A] = schema match
-    case Primitive.Boolean.Modify(self, f, _) => parse(schema = self, value).map(f)
+  override def decode[A](schema: Primitive[A], value: String): Validated[Violations, A] = schema match
+    case Primitive.Boolean.Modify(self, f, _) => decode(schema = self, value).map(f)
     case Primitive.Boolean.Root               =>
       value.toBooleanOption
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "boolean"), actual = value, hint = none))
@@ -83,8 +83,8 @@ object PrimitiveParser extends Parser[Primitive]:
             .validate(input)
             .toInvalid(input)
             .leftMap(Violations.apply)
-    case Primitive.Number.Modify(self, f, _)      => parse(schema = self, value).map(f)
-    case Primitive.String.Modify(self, f, _)      => parse(schema = self, value).map(f)
+    case Primitive.Number.Modify(self, f, _)      => decode(schema = self, value).map(f)
+    case Primitive.String.Modify(self, f, _)      => decode(schema = self, value).map(f)
     case Primitive.String.Parser(name, decode, _) =>
       decode(value).toValidated
         .leftMap: error =>

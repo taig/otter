@@ -6,9 +6,8 @@ import io.taig.otter.component.IronStringComponent
 import io.taig.otter.component.JavaTimeComponent
 import io.taig.otter.component.JsonComponent
 import io.taig.otter.syntax.AllSyntax
-import io.taig.otter.syntax.JsonSyntax
 
-trait Dsl extends AllSyntax, JsonSyntax, Keys:
+trait Dsl extends AllSyntax, Keys:
   val json: JsonComponent & CaseInsensitiveComponent[Json.Primitive.String] & JavaTimeComponent[Json.Primitive.String] =
     new JsonComponent
       with CaseInsensitiveComponent[Json.Primitive.String]

@@ -4,7 +4,7 @@ import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.TupleOperation
 
-sealed abstract class Tuple[+S[_], A] extends Product with Serializable:
+sealed abstract class Tuple[+S[_], A] extends Product, Serializable:
   def schemas: Chain[Reference[S, ?]]
 
   final def size: Int = schemas.length.toInt

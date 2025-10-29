@@ -5,7 +5,7 @@ import cats.data.Chain
 import io.taig.otter.operation.DictionaryOperation
 import io.taig.validation.Validation
 
-sealed abstract class Dictionary[+S[_], A] extends Product with Serializable:
+sealed abstract class Dictionary[+S[_], A] extends Product, Serializable:
   def schema: Reference[S, ?]
 
   def constraints: Chain[Constraint.Object]

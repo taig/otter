@@ -3,7 +3,7 @@ package io.taig.otter
 import cats.Invariant
 import io.taig.otter.operation.CoerceOperation
 
-sealed abstract class Coerce[+S[_], A] extends Product with Serializable:
+sealed abstract class Coerce[+S[_], A] extends Product, Serializable:
   def schema: Reference[S, ?]
 
   final def imap[T](f: A => T)(g: T => A): Coerce[S, T] = Coerce.Modify(self = this, f, g)

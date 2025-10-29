@@ -4,7 +4,7 @@ import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.RecordOperation
 
-sealed abstract class Record[+S[_], A] extends Product with Serializable:
+sealed abstract class Record[+S[_], A] extends Product, Serializable:
   def fields: Chain[Reference[S, ?]]
 
   final def imap[T](f: A => T)(g: T => A): Record[S, T] = Record.Modify(self = this, f, g)

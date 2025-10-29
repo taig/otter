@@ -5,12 +5,10 @@ import io.taig.otter.Constraint
 import io.taig.otter.Reference
 import io.taig.otter.operation.CollectionOperation
 
-import scala.annotation.targetName
-
-trait CollectionSyntax[Self[_], Value[_]](using operation: CollectionOperation[Self, Value]):
-  extension [A](self: Self[A])
-    @targetName("collectionConstraints")
+trait CollectionSyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: CollectionOperation[Self, Value])
     def constraints: Chain[Constraint.Collection] = operation.constraints(self)
 
-    @targetName("collectionSchema")
     def schema: Reference[Value, ?] = operation.schema(self)
+
+object CollectionSyntax extends CollectionSyntax

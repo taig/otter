@@ -1,5 +1,17 @@
 package io.taig.otter.syntax
 
-trait AllSyntax extends AnnotatedSyntax, InvariantSyntax
+trait AllSyntax
+    extends AnnotatedSyntax,
+      CoerceSyntax,
+      CollectionSyntax,
+      ConstantSyntax,
+      DictionarySyntax,
+      EnumerationSyntax,
+      FieldSyntax,
+      InvariantSyntax,
+      NullableSyntax,
+      RecordSyntax,
+      TupleSyntax,
+      UnionSyntax
 
 object AllSyntax extends AllSyntax

@@ -4,6 +4,7 @@ import io.taig.otter.Json
 
 trait JsonComponent
     extends BooleanComponent[Json.Primitive.Boolean],
+      BranchComponent[Json.Branch, Json],
       CoerceComponent[Json.Coerce, Json.Primitive],
       CollectionComponent[Json.Collection, Json],
       ConstantComponent[Json.Constant, Json.Primitive],
@@ -15,6 +16,6 @@ trait JsonComponent
       RecordComponent[Json.Record, Json.Field],
       StringComponent[Json.Primitive.String],
       TupleComponent[Json.Tuple, Json],
-      UnionComponent[Json.Union, Json]
+      UnionComponent[Json.Union, Json.Branch]
 
 object JsonComponent extends JsonComponent

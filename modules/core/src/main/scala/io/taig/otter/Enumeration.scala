@@ -7,7 +7,7 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.EnumerationOperation
 
-sealed abstract class Enumeration[+S[_], A] extends Product with Serializable:
+sealed abstract class Enumeration[+S[_], A] extends Product, Serializable:
   def schema: Reference[S, ?]
 
   def values: NonEmptyChain[A]

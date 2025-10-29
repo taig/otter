@@ -6,14 +6,15 @@ import io.taig.otter.operation.NullableOperation
 
 import scala.annotation.targetName
 
-trait NullableSyntax[Self[_], Value[_]](using operation: NullableOperation[Self, Value]):
-  extension [A](self: Self[A])
+trait NullableSyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: NullableOperation[Self, Value])
     def encode[T](encoder: Encoder[Value, T]): Option[T] = operation.encode(self)(encoder)
 
-    @targetName("nullableSchema")
     def schema: Reference[Value, ?] = operation.schema(self)
 
-  extension [A](self: Value[A])
+  extension [Self[_], Value[_], A](self: Value[A])(using operation: NullableOperation[Self, Value])
     def nullable: Self[Option[A]] = operation.nullable(self)
 
     def nullable(default: => A): Self[A] = operation.nullable(self, default)
+
+object NullableSyntax extends NullableSyntax

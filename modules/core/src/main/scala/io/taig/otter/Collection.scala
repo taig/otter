@@ -5,7 +5,7 @@ import cats.data.Chain
 import io.taig.otter.operation.CollectionOperation
 import io.taig.validation.Validation
 
-sealed abstract class Collection[+S[_], A] extends Product with Serializable:
+sealed abstract class Collection[+S[_], A] extends Product, Serializable:
   self =>
 
   def constraints: Chain[Constraint.Collection]

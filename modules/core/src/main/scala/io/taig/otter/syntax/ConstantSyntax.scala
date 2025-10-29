@@ -6,9 +6,10 @@ import io.taig.otter.operation.ConstantOperation
 
 import scala.annotation.targetName
 
-trait ConstantSyntax[Self[_], Value[_]](using operation: ConstantOperation[Self, Value]):
-  extension [A](self: Self[A])
+trait ConstantSyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: ConstantOperation[Self, Value])
     def encode[T](encoder: Encoder[Value, T]): T = operation.encode(self)(encoder)
 
-    @targetName("constantSchema")
     def schema: Reference[Value, ?] = operation.schema(self)
+
+object ConstantSyntax extends ConstantSyntax

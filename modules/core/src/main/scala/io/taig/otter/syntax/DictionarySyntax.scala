@@ -7,10 +7,10 @@ import io.taig.validation.Constraint
 
 import scala.annotation.targetName
 
-trait DictionarySyntax[Self[_], Value[_]](using operation: DictionaryOperation[Self, Value]):
-  extension [A](self: Self[A])
-    @targetName("dictionaryConstraints")
+trait DictionarySyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: DictionaryOperation[Self, Value])
     def constraints: Chain[Constraint.Object] = operation.constraints(self)
 
-    @targetName("dictionarySchema")
     def schema: Reference[Value, ?] = operation.schema(self)
+
+object DictionarySyntax extends DictionarySyntax

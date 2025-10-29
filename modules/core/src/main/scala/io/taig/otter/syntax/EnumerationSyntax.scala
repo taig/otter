@@ -4,7 +4,9 @@ import cats.data.NonEmptyList
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.EnumerationOperation
 
-trait EnumerationSyntax[Self[_], Value[_]](using operation: EnumerationOperation[Self, Value]):
-  extension [A](self: Self[A])
+trait EnumerationSyntax:
+  extension [Self[_], Value[_], A](self: Self[A])(using operation: EnumerationOperation[Self, Value])
     def encode[T](encoder: Encoder[Value, T]): NonEmptyList[T] =
       operation.encode(self)(encoder)
+
+object EnumerationSyntax extends EnumerationSyntax

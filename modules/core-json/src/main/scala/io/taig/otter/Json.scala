@@ -5,7 +5,7 @@ import cats.derived.*
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 
-sealed abstract class Json[A] extends Product with Serializable derives Invariant
+sealed abstract class Json[A] extends Product, Serializable derives Invariant
 
 object Json:
   final case class Coerce[A](annotation: Annotation[Self.Coerce[Json.Primitive, A]]) extends Json[A] derives Invariant
@@ -166,16 +166,26 @@ object Json:
         (schema: Json.Tuple[A]) => schema.annotation
       )
 
-  final case class Union[A](annotation: Annotation[Self.Union[Json, A]]) extends Json[A] derives Invariant
+  final case class Union[A](annotation: Annotation[Self.Union[Json.Branch, A]]) extends Json[A] derives Invariant
 
   object Union:
     given [A]: Annotated[Json.Union[A]] =
-      Annotated[Annotation[Self.Union[Json, A]]].imap(Union.apply)(_.annotation)
+      Annotated[Annotation[Self.Union[Json.Branch, A]]].imap(Union.apply)(_.annotation)
 
-    given UnionOperation[Json.Union, Json] =
-      UnionOperation[[a] =>> Annotation[Self.Union[Json, a]], Json].imapK([A] =>
-        (self: Annotation[Self.Union[Json, A]]) => Union(self)
+    given UnionOperation[Json.Union, Json.Branch] =
+      UnionOperation[[a] =>> Annotation[Self.Union[Json.Branch, a]], Json.Branch].imapK([A] =>
+        (self: Annotation[Self.Union[Json.Branch, A]]) => Union(self)
       )([A] => (schema: Json.Union[A]) => schema.annotation)
+
+  final case class Branch[A](annotation: Annotation[Self.Branch[Json, A]]) derives Invariant
+
+  object Branch:
+    given [A]: Annotated[Json.Branch[A]] = Annotated[Annotation[Self.Branch[Json, A]]].imap(Branch.apply)(_.annotation)
+
+    given BranchOperation[Json.Branch, Json] = BranchOperation[[a] =>> Annotation[Self.Branch[Json, a]], Json]
+      .imapK([A] => (annotation: Annotation[Self.Branch[Json, A]]) => Branch(annotation))([A] =>
+        (json: Json.Branch[A]) => json.annotation
+      )
 
   final case class Field[A](annotation: Annotation[Self.Field[Json, A]]) derives Invariant
 

@@ -6,7 +6,7 @@ import cats.syntax.all.*
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.NullableOperation
 
-sealed abstract class Nullable[+S[_], A] extends Product with Serializable:
+sealed abstract class Nullable[+S[_], A] extends Product, Serializable:
   def schema: Reference[S, ?]
 
   def encode[T](encoder: Encoder[S, T]): Option[T]

@@ -5,7 +5,7 @@ import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 
 trait UnionOperation[Self[_], Value[_]] extends LiftOperation[Self, Value], OrElseOperation[Self]:
-  def schemas[A](self: Self[A]): NonEmptyChain[Reference[Value, ?]]
+  def branches[A](self: Self[A]): NonEmptyChain[Reference[Value, ?]]
 
 object UnionOperation:
   inline def apply[Self[_], Value[_]](using
@@ -21,4 +21,4 @@ object UnionOperation:
 
           override def lift[A](schema: => Value[A]): H[A] = fK(operation.lift(schema))
 
-          override def schemas[A](self: H[A]): NonEmptyChain[Reference[Value, ?]] = operation.schemas(gK(self))
+          override def branches[A](self: H[A]): NonEmptyChain[Reference[Value, ?]] = operation.branches(gK(self))
