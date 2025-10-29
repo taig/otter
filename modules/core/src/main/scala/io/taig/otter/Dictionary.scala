@@ -40,3 +40,5 @@ object Dictionary:
     ): Dictionary[S, List[(String, A)]] = Root(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Dictionary[S, A]): Chain[Constraint.Object] = self.constraints
+
+    override def schema[A](self: Dictionary[S, A]): Reference[S, ?] = self.schema

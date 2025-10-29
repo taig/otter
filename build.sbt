@@ -118,15 +118,6 @@ lazy val coreJson = module(identifier = Some("core-json"))
 lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
   .dependsOn(coreJson % "compile->compile;test->test")
 
-// lazy val coreTypescript = module(identifier = Some("core-typescript"))
-//   .dependsOn(core % "compile->compile;test->test")
-
-// lazy val coreEffect = module(identifier = Some("core-effect"))
-//   .dependsOn(core % "compile->compile;test->test")
-
-// lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
-//   .dependsOn(coreTypescript % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
-
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
     libraryDependencies ++=

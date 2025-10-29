@@ -9,8 +9,8 @@ object JsonZodRenderer extends Renderer[Json, String]:
   override def render[A](json: Json[A]): String = json match
     case json @ Json.Coerce(_)               => JsonCoerceZodRenderer.render(json)
     case json @ Json.Constant(_)             => s"z.literal(${json.encode(JsonPrimitiveZodPrinter)})"
-    case Json.Collection(annotation)         => s"z.array(${render(json = annotation.self.schema.value)})"
-    case Json.Dictionary(annotation)         => s"z.record(z.string(), ${render(json = annotation.self.schema.value)})"
+    case json @ Json.Collection(_)           => s"z.array(${render(json = json.schema.value)})"
+    case json @ Json.Dictionary(_)           => s"z.record(z.string(), ${render(json = json.schema.value)})"
     case json @ Json.Enumeration(annotation) =>
       s"z.enum(${json.encode(JsonPrimitiveZodPrinter).mkString_("[", ", ", "]")})"
     case Json.Primitive.Boolean(_) => "z.boolean()"

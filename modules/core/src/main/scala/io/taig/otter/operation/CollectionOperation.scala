@@ -5,8 +5,9 @@ import io.taig.otter.InvariantK
 import io.taig.validation.Constraint
 import io.taig.validation.Constraint.Collection
 import io.taig.validation.Validation
+import io.taig.otter.Reference
 
-trait CollectionOperation[Self[_], -Value[_]]:
+trait CollectionOperation[Self[_], Value[_]]:
   def indexed[A](
       schema: => Value[A],
       validation: Validation[Constraint.Collection, Vector[A]]
@@ -18,6 +19,8 @@ trait CollectionOperation[Self[_], -Value[_]]:
   ): Self[List[A]]
 
   def constraints[A](self: Self[A]): Chain[Constraint.Collection]
+
+  def schema[A](self: Self[A]): Reference[Value, ?]
 
 object CollectionOperation:
   inline def apply[Self[_], Value[_]](using
@@ -37,3 +40,5 @@ object CollectionOperation:
           ): H[List[A]] = fK(operation.linked(schema, validation))
 
           override def constraints[A](self: H[A]): Chain[Collection] = operation.constraints(gK(self))
+
+          override def schema[A](self: H[A]): Reference[Value, ?] = operation.schema(gK(self))

@@ -56,3 +56,5 @@ object Collection:
     ): Collection[S, List[A]] = Linked(schema = Reference.later(schema), validation)
 
     override def constraints[A](self: Collection[S, A]): Chain[Constraint.Collection] = self.constraints
+
+    override def schema[A](self: Collection[S, A]): Reference[S, ?] = self.schema
