@@ -3,12 +3,12 @@ package io.taig.otter.operation
 import cats.data.Chain
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
+import io.taig.otter.Field
 
-trait RecordOperation[Self[_], Value[_]]
-    extends EmptyOperation[Self],
-      LiftOperation[Self, Value],
-      ZipOperation[Self, Value]:
-  def fields[A](self: Self[A]): Chain[Reference[Value, ?]]
+trait RecordOperation[Self[_], Value[_]] extends EmptyOperation[Self], ZipOperation[Self, Value]:
+  def apply[A](name: String, schema: => Value[A]): Self[A]
+
+  def fields[A](self: Self[A]): Chain[Field[Value, ?]]
 
 object RecordOperation:
   inline def apply[Self[_], Value[_]](using
@@ -19,11 +19,10 @@ object RecordOperation:
     extension [G[_]](operation: RecordOperation[G, Value])
       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): RecordOperation[H, Value] =
         new RecordOperation[H, Value]:
+          override def apply[A](name: String, schema: => Value[A]): H[A] = fK(operation(name, schema))
+
           override def empty: H[Unit] = fK(operation.empty)
 
-          override def fields[A](self: H[A]): Chain[Reference[Value, ?]] =
-            operation.fields(gK(self))
-
-          override def lift[A](value: => Value[A]): H[A] = fK(operation.lift(value))
+          override def fields[A](self: H[A]): Chain[Field[Value, ?]] = operation.fields(gK(self))
 
           override def zip[A, B](left: H[A], right: H[B]): H[(A, B)] = fK(operation.zip(gK(left), gK(right)))

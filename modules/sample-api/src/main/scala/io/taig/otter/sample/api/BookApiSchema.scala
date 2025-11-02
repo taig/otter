@@ -25,11 +25,16 @@ object BookApiSchema:
     val json: Json.Primitive.String[BookApiSchema.Reference] =
       iron.text[FixedLength[Book.Reference.Length.type]](string)
 
-  val json: Json.Record[BookApiSchema] = (
-    field("author", string(minimum = 1, maximum = 100)) :*
-      field("created", instant) :*
-      field("genre", GenreApiSchema.json) :*
-      field("isbn", IsbnApiSchema.json) :*
-      field("reference", Reference.json) :*
-      field("title", string(minimum = 1, maximum = 250))
-  ).to
+  val myField = field("author", string(minimum = 1, maximum = 100))
+
+  myField.toRecord
+
+  val json: Json.Record[BookApiSchema] = ???
+  // (
+  //   field("author", string(minimum = 1, maximum = 100)) :*
+  //     field("created", instant) :*
+  //     field("genre", GenreApiSchema.json) :*
+  //     field("isbn", IsbnApiSchema.json) :*
+  //     field("reference", Reference.json) :*
+  //     field("title", string(minimum = 1, maximum = 250))
+  // ).to

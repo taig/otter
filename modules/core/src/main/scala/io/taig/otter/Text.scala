@@ -108,26 +108,14 @@ object Text:
             case Text.Primitive.String(self)  => self
       )
 
-  final case class Union[A](self: Annotation[Self.Union[Text.Branch, A]]) extends Text[A] derives Invariant
+  final case class Union[A](self: Annotation[Self.Union[Text, A]]) extends Text[A] derives Invariant
 
   object Union:
     given [A]: Annotated[Text.Union[A]] =
-      Annotated[Annotation[Self.Union[Text.Branch, A]]].imap(apply)(_.self)
+      Annotated[Annotation[Self.Union[Text, A]]].imap(apply)(_.self)
 
-    given UnionOperation[Text.Union, Text.Branch] =
-      UnionOperation[[a] =>> Annotation[Self.Union[Text.Branch, a]], Text.Branch]
-        .imapK([A] => (annotation: Annotation[Self.Union[Text.Branch, A]]) => Union(annotation))([A] =>
+    given UnionOperation[Text.Union, Text] =
+      UnionOperation[[a] =>> Annotation[Self.Union[Text, a]], Text]
+        .imapK([A] => (annotation: Annotation[Self.Union[Text, A]]) => Union(annotation))([A] =>
           (text: Union[A]) => text.self
-        )
-
-  final case class Branch[A](annotation: Annotation[Self.Branch[Text, A]]) derives Invariant
-
-  object Branch:
-    given [A]: Annotated[Text.Branch[A]] =
-      Annotated[Annotation[Self.Branch[Text, A]]].imap(apply)(_.annotation)
-
-    given BranchOperation[Text.Branch, Text] =
-      BranchOperation[[a] =>> Annotation[Self.Branch[Text, a]], Text]
-        .imapK([A] => (annotation: Annotation[Self.Branch[Text, A]]) => Branch(annotation))([A] =>
-          (text: Branch[A]) => text.annotation
         )

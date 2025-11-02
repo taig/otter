@@ -13,20 +13,21 @@ final class RecordDecoder[-S[_], T](decoder: Decoder.Remaining[S, Chain[(String,
   override def decodeRemaining[A](
       schema: Record[S, A],
       values: Chain[(String, T)]
-  ): Validated[Violations, (Chain[(String, T)], A)] = schema match
-    case Record.Empty              => (values, ()).valid
-    case Record.Modify(self, f, _) => decodeRemaining(schema = self, values).map(_.map(f))
-    case Record.Root(field)        => decoder.decodeRemaining(schema = field.value, values)
-    case Record.Zip(left, right)   =>
-      decodeRemaining(schema = left, values) match
-        case Validated.Valid((values, a)) =>
-          decodeRemaining(schema = right, values) match
-            case Validated.Valid((values, b))  => (values, (a, b)).valid
-            case result @ Validated.Invalid(_) => result
-        case result @ Validated.Invalid(left) =>
-          decodeRemaining(schema = right, values) match
-            case Validated.Valid(_)       => result
-            case Validated.Invalid(right) => Validated.Invalid(left |+| right)
+  ): Validated[Violations, (Chain[(String, T)], A)] = ???
+  // schema match
+  //   case Record.Empty              => (values, ()).valid
+  //   case Record.Modify(self, f, _) => decodeRemaining(schema = self, values).map(_.map(f))
+  //   case Record.Root(field)        => decoder.decodeRemaining(schema = field.value, values)
+  //   case Record.Zip(left, right)   =>
+  //     decodeRemaining(schema = left, values) match
+  //       case Validated.Valid((values, a)) =>
+  //         decodeRemaining(schema = right, values) match
+  //           case Validated.Valid((values, b))  => (values, (a, b)).valid
+  //           case result @ Validated.Invalid(_) => result
+  //       case result @ Validated.Invalid(left) =>
+  //         decodeRemaining(schema = right, values) match
+  //           case Validated.Valid(_)       => result
+  //           case Validated.Invalid(right) => Validated.Invalid(left |+| right)
 
 object RecordDecoder:
   def apply[S[_], T](

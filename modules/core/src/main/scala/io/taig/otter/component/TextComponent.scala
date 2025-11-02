@@ -10,6 +10,6 @@ trait TextComponent
       NumberComponent[Text.Primitive.Number],
       PrimitiveComponent[Text.Primitive],
       StringComponent[Text.Primitive.String],
-      UnionComponent[Text.Union, Text.Branch]
+      UnionComponent[Text.Union, Text]
 
 object TextComponent extends TextComponent

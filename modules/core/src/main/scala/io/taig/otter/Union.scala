@@ -5,7 +5,7 @@ import cats.data.NonEmptyChain
 import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Union[+S[_], A] extends Product, Serializable:
-  def branches: NonEmptyChain[Reference[S, ?]]
+  def branches: NonEmptyChain[Branch[S, ?]]
 
   final def imap[T](f: A => T)(g: T => A): Union[S, T] = Union.Modify(self = this, f, g)
 
@@ -19,23 +19,24 @@ object Union:
       copy(self = self.mapK[S1, T](fK))
 
   final case class OrElse[S[_], A, B](left: Union[S, A], right: Union[S, B]) extends Union[S, Either[A, B]]:
-    override def branches: NonEmptyChain[Reference[S, ?]] = left.branches ++ right.branches
+    override def branches: NonEmptyChain[Branch[S, ?]] = left.branches ++ right.branches
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, Either[A, B]] =
       copy(left = left.mapK[S1, T](fK), right = right.mapK[S1, T](fK))
 
-  final case class Root[S[_], A](schema: Reference[S, A]) extends Union[S, A]:
-    override def branches: NonEmptyChain[Reference[S, ?]] = NonEmptyChain.one(schema)
+  final case class Root[S[_], A](branch: Branch[S, A]) extends Union[S, A]:
+    override def branches: NonEmptyChain[Branch[S, A]] = NonEmptyChain.one(branch)
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Union[T, A] =
-      copy(schema = schema.mapK[S1, T](fK))
+      copy(branch = branch.mapK[S1, T](fK))
 
   given invariant[S[_]]: Invariant[Union[S, *]] with
     override def imap[A, B](fa: Union[S, A])(f: A => B)(g: B => A): Union[S, B] = fa.imap(f)(g)
 
   given operation[S[_]]: UnionOperation[Union[S, *], S] with
-    override def lift[A](value: => S[A]): Union[S, A] = Root(schema = Reference.later(value))
+    override def apply[A](name: String, schema: => S[A]): Union[S, A] =
+      Root(Branch(name = name, schema = Reference.later(schema)))
 
     override def orElse[A, B](left: Union[S, A], right: Union[S, B]): Union[S, Either[A, B]] = OrElse(left, right)
 
-    override def branches[A](self: Union[S, A]): NonEmptyChain[Reference[S, ?]] = self.branches
+    override def branches[A](self: Union[S, A]): NonEmptyChain[Branch[S, ?]] = self.branches

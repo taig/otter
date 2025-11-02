@@ -14,4 +14,4 @@ object TextParser extends Parser[Text]:
         .decode(schema = schema.self, value)
     case Text.Coerce(schema) => CoerceDecoder(decoder = TextPrimitiveParser).decode(schema = schema.self, value)
     case Text.Primitive.String(schema) => PrimitiveParser.decode(schema = schema.self, value)
-    case Text.Union(schema)            => UnionDecoder(decoder = TextBranchParser).decode(schema = schema.self, value)
+    case Text.Union(schema)            => UnionDecoder(decoder = ???).decode(schema = schema.self, value)
