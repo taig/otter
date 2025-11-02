@@ -8,4 +8,4 @@ object TextPrinter extends Printer[Text]:
     case Text.Constant(annotation) => ConstantEncoder(encoder = this).encode(schema = annotation.self, a)
     case Text.Enumeration(annotation)      => EnumerationEncoder(encoder = this).encode(schema = annotation.self, a)
     case Text.Primitive.String(annotation) => PrimitivePrinter.encode(schema = annotation.self, a)
-    case Text.Union(annotation)            => UnionEncoder(encoder = ???).encode(schema = annotation.self, a)
+    case Text.Union(annotation)            => UnionEncoder(encoder = this).encode(schema = annotation.self, a)

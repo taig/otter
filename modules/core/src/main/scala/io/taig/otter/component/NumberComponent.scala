@@ -28,6 +28,11 @@ trait NumberComponent[+Self[_]](using operation: NumberOperation[Self]):
 
   val bigInteger: Self[JBigInteger] = bigInteger(Validation.valid)
 
+  def double(validation: Validation[Constraint.Primitive.Number, Double]): Self[Double] =
+    operation.double(validation)
+
+  val double: Self[Double] = double(Validation.valid)
+
   def float(validation: Validation[Constraint.Primitive.Number, Float]): Self[Float] =
     operation.float(validation)
 

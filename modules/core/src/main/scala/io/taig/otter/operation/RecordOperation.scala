@@ -6,9 +6,9 @@ import io.taig.otter.Reference
 import io.taig.otter.Field
 
 trait RecordOperation[Self[_], Value[_]] extends EmptyOperation[Self], ZipOperation[Self, Value]:
-  def apply[A](name: String, schema: => Value[A]): Self[A]
-
   def fields[A](self: Self[A]): Chain[Field[Value, ?]]
+
+  def lift[A](field: Field[Value, A]): Self[A]
 
 object RecordOperation:
   inline def apply[Self[_], Value[_]](using
@@ -19,10 +19,10 @@ object RecordOperation:
     extension [G[_]](operation: RecordOperation[G, Value])
       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): RecordOperation[H, Value] =
         new RecordOperation[H, Value]:
-          override def apply[A](name: String, schema: => Value[A]): H[A] = fK(operation(name, schema))
-
           override def empty: H[Unit] = fK(operation.empty)
 
           override def fields[A](self: H[A]): Chain[Field[Value, ?]] = operation.fields(gK(self))
+
+          override def lift[A](field: Field[Value, A]): H[A] = fK(operation.lift(field))
 
           override def zip[A, B](left: H[A], right: H[B]): H[(A, B)] = fK(operation.zip(gK(left), gK(right)))

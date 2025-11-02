@@ -9,7 +9,7 @@ final class UnionDecoder[-S[_], T](decoder: Decoder[S, T]) extends Decoder[Union
     case Union.Modify(self, f, _)  => decode(schema = self, value).map(f)
     case Union.OrElse(left, right) =>
       decode(schema = left, value).map(Left(_)).orElse(decode(schema = right, value).map(Right(_)))
-    case Union.Root(schema) => decoder.decode(schema = ???, value)
+    case Union.Root(branch) => decoder.decode(schema = branch.schema.value, value).leftMap(branch.name /: _)
 
 object UnionDecoder:
   def apply[S[_], A](decoder: Decoder[S, A]): Decoder[Union[S, *], A] = new UnionDecoder(decoder)

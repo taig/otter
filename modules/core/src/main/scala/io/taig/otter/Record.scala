@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.operation.RecordOperation
+import cats.Eval
 
 sealed abstract class Record[+S[_], A] extends Product, Serializable:
   def fields: Chain[Field[S, ?]]
@@ -15,6 +16,12 @@ sealed abstract class Record[+S[_], A] extends Product, Serializable:
     Record.Zip(left = this, right = schema)
 
 object Record:
+  final case class Default[S[_], A](self: Record[S, A], value: Eval[A]) extends Record[S, A]:
+    export self.fields
+
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, A] =
+      copy(self = self.mapK[S1, T](fK))
+
   case object Empty extends Record[Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty
 
@@ -24,6 +31,12 @@ object Record:
     export self.fields
 
     override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, B] =
+      copy(self = self.mapK[S1, T](fK))
+
+  final case class Optional[S[_], A](self: Record[S, A]) extends Record[S, Option[A]]:
+    export self.fields
+
+    override def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Record[T, Option[A]] =
       copy(self = self.mapK[S1, T](fK))
 
   final case class Root[S[_], A](field: Field[S, A]) extends Record[S, A]:
@@ -43,11 +56,10 @@ object Record:
     override def imap[A, B](fa: Record[S, A])(f: A => B)(g: B => A): Record[S, B] = fa.imap(f)(g)
 
   given operation[S[_]]: RecordOperation[Record[S, *], S] with
-    override def apply[A](name: String, schema: => S[A]): Record[S, A] =
-      Root(Field(name = name, schema = Reference.later(schema)))
-
     override def empty: Record[S, Unit] = Empty
 
     override def fields[A](self: Record[S, A]): Chain[Field[S, ?]] = self.fields
+
+    override def lift[A](field: Field[S, A]): Record[S, A] = Root(field)
 
     override def zip[A, B](left: Record[S, A], right: Record[S, B]): Record[S, (A, B)] = Zip(left, right)
