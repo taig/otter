@@ -7,6 +7,7 @@ trait AllSyntax
       ConstantSyntax,
       DictionarySyntax,
       EnumerationSyntax,
+      FunctorSyntax,
       InvariantSyntax,
       NullableSyntax,
       RecordSyntax,

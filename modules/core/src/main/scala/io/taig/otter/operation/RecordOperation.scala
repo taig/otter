@@ -2,7 +2,6 @@ package io.taig.otter.operation
 
 import cats.data.Chain
 import io.taig.otter.InvariantK
-import io.taig.otter.Reference
 import io.taig.otter.Field
 
 trait RecordOperation[Self[_], Value[_]] extends EmptyOperation[Self], ZipOperation[Self, Value]:

@@ -3,6 +3,7 @@ package io.taig.otter
 import cats.Applicative
 import cats.Invariant
 import cats.syntax.all.*
+import cats.Functor
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modifyMetadata(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -18,13 +19,17 @@ object Annotation:
     override def ap[A, B](ff: Annotation[A => B])(fa: Annotation[A]): Annotation[B] =
       Annotation(metadata = fa.metadata ++ ff.metadata, self = ff.self(fa.self))
 
-    override def pure[A](x: A): Annotation[A] = Annotation(self = x)
+    override def pure[A](a: A): Annotation[A] = Annotation(self = a)
 
   given annotated[A]: Annotated[Annotation[A]] with
     override def get(self: Annotation[A]): Metadata = self.metadata
 
     override def update(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
       self.modifyMetadata(metadata)
+
+  given functor[F[_]: Functor]: Functor[[a] =>> Annotation[F[a]]] with
+    override def map[A, B](fa: Annotation[F[A]])(f: A => B): Annotation[F[B]] =
+      fa.map(_.map(f))
 
   given invariant[F[_]: Invariant]: Invariant[[a] =>> Annotation[F[a]]] with
     override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
@@ -35,9 +40,11 @@ object Annotation:
       (annotation: Annotation[G[A]]) => annotation.self
     )
 
-  given operation2[F[_[_], _[_]], G[_], H[_]](using
-      fgh: F[G, H]
-  )(using InvariantK[[f[_]] =>> F[f, H]]): F[[a] =>> Annotation[G[a]], H] =
-    fgh.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
-      (annotation: Annotation[G[A]]) => annotation.self
-    )
+  given xxx[F[_[_[_], _]], G[_[_], _]]: F[[s[_], a] =>> Annotation[G[s, a]]] = ???
+
+  // given operation2[F[_[_], _[_]], G[_], H[_]](using
+  //     fgh: F[G, H]
+  // )(using InvariantK[[f[_]] =>> F[f, H]]): F[[a] =>> Annotation[G[a]], H] =
+  //   fgh.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
+  //     (annotation: Annotation[G[A]]) => annotation.self
+  //   )
