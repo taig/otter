@@ -4,6 +4,7 @@ import cats.Applicative
 import cats.Invariant
 import cats.syntax.all.*
 import cats.Functor
+import cats.Contravariant
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modifyMetadata(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -11,6 +12,8 @@ final case class Annotation[+A](metadata: Metadata, self: A):
   def map[B](f: A => B): Annotation[B] = copy(self = f(self))
 
 object Annotation:
+  type Of[F[_]] = [a] =>> Annotation[F[a]]
+
   def apply[A](self: A): Annotation[A] = Annotation(metadata = Metadata.Empty, self)
 
   given applicative: Applicative[Annotation] with
@@ -27,6 +30,10 @@ object Annotation:
     override def update(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
       self.modifyMetadata(metadata)
 
+  given contravariant[F[_]: Contravariant]: Contravariant[[a] =>> Annotation[F[a]]] with
+    override def contramap[A, B](fa: Annotation[F[A]])(f: B => A): Annotation[F[B]] =
+      fa.map(_.contramap(f))
+
   given functor[F[_]: Functor]: Functor[[a] =>> Annotation[F[a]]] with
     override def map[A, B](fa: Annotation[F[A]])(f: A => B): Annotation[F[B]] =
       fa.map(_.map(f))
@@ -35,14 +42,12 @@ object Annotation:
     override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
       fa.map(_.imap(f)(g))
 
-  given operation1[F[_[_]], G[_]](using fg: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
-    fg.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
-      (annotation: Annotation[G[A]]) => annotation.self
-    )
+  // given [F[_[_]], G[_]](using fg: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
+  //   fg.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>
+  //     (annotation: Annotation[G[A]]) => annotation.self
+  //   )
 
-  given xxx[F[_[_[_], _]], G[_[_], _]]: F[[s[_], a] =>> Annotation[G[s, a]]] = ???
-
-  // given operation2[F[_[_], _[_]], G[_], H[_]](using
+  // given [F[_[_], _[_]], G[_], H[_]](using
   //     fgh: F[G, H]
   // )(using InvariantK[[f[_]] =>> F[f, H]]): F[[a] =>> Annotation[G[a]], H] =
   //   fgh.imapK[[a] =>> Annotation[G[a]]]([A] => (self: G[A]) => Annotation(self))([A] =>

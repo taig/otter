@@ -1,27 +1,23 @@
 package io.taig.otter.component
 
-import io.taig.otter.Constraint
-import io.taig.otter.operation.CollectionOperation
+import io.taig.otter as Self
+import io.taig.otter.Collection
 import io.taig.validation.Validation
+import io.taig.otter.Constraint
 import io.taig.otter.Reference
-import io.taig.otter.:<:
-import cats.data.Chain
-import io.taig.otter.Schema
-import io.taig.otter.operation.PrimitiveOperation
 
-trait CollectionComponent[Self[_[_], _], Shape[_]](using operation: CollectionOperation.Aux[Self, Shape]):
-  def chain[S[_], A](schema: => S[A], validation: Validation[Constraint.Collection, Chain[A]])(using
-      S :<: Shape
-  ): Self[S, Chain[A]] = operation.chained(schema = Reference.later(schema), validation)
+// trait CollectionComponent[F[+_[a] <: G[a], _], G[_]](using val F: Collection[F, G]):
+//   object collection:
+//     def list[H[a] <: G[a], A](schema: => H[A], validation: Validation[Constraint.Collection, List[A]]): F[H, List[A]] =
+//       F.linked(schema = Reference.later(schema), validation)
 
-trait PrimitiveComponent[Self[_]](using operation: PrimitiveOperation[Self]):
-  def string: Self[String] = operation.string(Validation.valid)
+//     def list[H[a] <: G[a], A](schema: => H[A]): F[H, List[A]] = list(schema, validation = Validation.valid)
 
-// object SchemaComponent
-//     extends CollectionComponent[Schema.Collection, Schema[?, *]],
-//       PrimitiveComponent[Schema.Primitive]
+// object JsonComponent extends CollectionComponent[Json.Collection.Of, Json]
 
 // object Playground:
-//   import SchemaComponent.*
+//   import JsonComponent.*
 
-//   chain(string, Validation.valid)
+//   val name: Json[String] = ???
+
+//   val names: Json.Collection[List[String]] = collection.list(name)
