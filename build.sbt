@@ -18,7 +18,7 @@ val Version = new {
   val Scala3 = "3.3.6"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
-  val Validation = "0.0.0+2-93591fea-SNAPSHOT"
+  val Validation = "0.0.0+3-4cd02cef-SNAPSHOT"
   val Undefined = "0.0.3"
   val Zio = "2.1.22"
 }
@@ -87,54 +87,54 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
-lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
-  .settings(
-    libraryDependencies ++=
-      "io.taig" %%% "validation-cistring" % Version.Validation ::
-        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-        Nil
-  )
-  .dependsOn(core)
+// lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.taig" %%% "validation-cistring" % Version.Validation ::
+//         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+//         Nil
+//   )
+//   .dependsOn(core)
 
-lazy val coreIron = module(identifier = Some("core-iron"))
-  .settings(
-    libraryDependencies ++=
-      "io.taig" %%% "validation-iron" % Version.Validation ::
-        Nil
-  )
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val coreIron = module(identifier = Some("core-iron"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.taig" %%% "validation-iron" % Version.Validation ::
+//         Nil
+//   )
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreJavaTime = module(identifier = Some("core-java-time"))
-  .settings(
-    libraryDependencies ++=
-      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
-        Nil
-  )
-  .dependsOn(core)
+// lazy val coreJavaTime = module(identifier = Some("core-java-time"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+//         Nil
+//   )
+//   .dependsOn(core)
 
-lazy val coreJson = module(identifier = Some("core-json"))
-  .dependsOn(core % "compile->compile;test->test")
+// lazy val coreJson = module(identifier = Some("core-json"))
+//   .dependsOn(core % "compile->compile;test->test")
 
-lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
-  .dependsOn(coreJson % "compile->compile;test->test")
+// lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
+//   .dependsOn(coreJson % "compile->compile;test->test")
 
-lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        "io.taig" %%% "data-circe" % Version.Data ::
-        Nil
-  )
-  .dependsOn(coreJson % "compile->compile;test->test")
+// lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %%% "circe-core" % Version.Circe ::
+//         "io.taig" %%% "data-circe" % Version.Data ::
+//         Nil
+//   )
+//   .dependsOn(coreJson % "compile->compile;test->test")
 
-lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
-  .settings(
-    libraryDependencies ++=
-      "io.circe" %%% "circe-core" % Version.Circe ::
-        "io.taig" %%% "data-circe" % Version.Data ::
-        Nil
-  )
-  .dependsOn(coreJson % "compile->compile;test->test", coreJsonCirce % "compile->test")
+// lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
+//   .settings(
+//     libraryDependencies ++=
+//       "io.circe" %%% "circe-core" % Version.Circe ::
+//         "io.taig" %%% "data-circe" % Version.Data ::
+//         Nil
+//   )
+//   .dependsOn(coreJson % "compile->compile;test->test", coreJsonCirce % "compile->test")
 
 // lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
 //   .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
@@ -176,8 +176,8 @@ lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //   )
 //   .dependsOn(http % "compile->compile;test->test")
 
-lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson, coreJsonSchema)
+// lazy val dsl = module(identifier = Some("dsl"))
+//   .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson, coreJsonSchema)
 
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")
@@ -191,17 +191,17 @@ lazy val dsl = module(identifier = Some("dsl"))
 //   )
 //   .dependsOn(http)
 
-lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .settings(
-    libraryDependencies ++=
-      "io.github.iltotore" %% "iron" % Version.Iron ::
-        Nil
-  )
+// lazy val sample = module(identifier = Some("sample"), jvmOnly = true)
+//   .settings(noPublishSettings)
+//   .settings(
+//     libraryDependencies ++=
+//       "io.github.iltotore" %% "iron" % Version.Iron ::
+//         Nil
+//   )
 
-lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
-  .settings(noPublishSettings)
-  .dependsOn(dsl, sample)
+// lazy val sampleApi = module(identifier = Some("sample-api"), jvmOnly = true)
+//   .settings(noPublishSettings)
+//   .dependsOn(dsl, sample)
 
 // lazy val sampleApp = module(identifier = Some("sample-app"), jvmOnly = true)
 //   .settings(noPublishSettings)
