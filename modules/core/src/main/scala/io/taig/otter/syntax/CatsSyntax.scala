@@ -1,7 +1,7 @@
 package io.taig.otter.syntax
 
-import cats.Functor
 import cats.Contravariant
+import cats.Functor
 import cats.Invariant
 
 trait CatsSyntax:

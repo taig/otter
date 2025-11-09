@@ -7,13 +7,12 @@ trait Annotated[A]:
 
   def get(self: A): Metadata
 
-  def update(self: A, metadata: Metadata => Metadata): A
+  def modify(self: A, metadata: Metadata => Metadata): A
 
   final def imap[B](f: A => B)(g: B => A): Annotated[B] = new Annotated[B]:
     def get(b: B): Metadata = self.get(g(b))
 
-    def update(b: B, metadata: Metadata => Metadata): B =
-      f(self.update(g(b), metadata))
+    def modify(b: B, metadata: Metadata => Metadata): B = f(self.modify(g(b), metadata))
 
 object Annotated:
   inline def apply[A](using annotated: Annotated[A]): Annotated[A] = annotated

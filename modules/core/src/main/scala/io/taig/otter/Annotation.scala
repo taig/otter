@@ -1,10 +1,10 @@
 package io.taig.otter
 
 import cats.Applicative
+import cats.Contravariant
+import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
-import cats.Functor
-import cats.Contravariant
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -25,7 +25,7 @@ object Annotation:
   given annotated[A]: Annotated[Annotation[A]] with
     override def get(self: Annotation[A]): Metadata = self.metadata
 
-    override def update(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
+    override def modify(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
       self.modify(metadata)
 
   given contravariant[F[_]: Contravariant]: Contravariant[[a] =>> Annotation[F[a]]] with
