@@ -48,4 +48,32 @@ trait SchemaShape:
       object Write:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Dictionary.Write[S, A]
 
+    type Primitive[A] = Self.Schema.Primitive[A]
+
+    object Primitive:
+      type Read[+A] = Self.Schema.Primitive.Read[A]
+
+      type Write[-A] = Self.Schema.Primitive.Write[A]
+
+      type Boolean[A] = Self.Schema.Primitive.Boolean[A]
+
+      object Boolean:
+        type Read[+A] = Self.Schema.Primitive.Boolean.Read[A]
+
+        type Write[-A] = Self.Schema.Primitive.Boolean.Write[A]
+
+      type Number[A] = Self.Schema.Primitive.Number[A]
+
+      object Number:
+        type Read[+A] = Self.Schema.Primitive.Number.Read[A]
+
+        type Write[-A] = Self.Schema.Primitive.Number.Write[A]
+
+      type Text[A] = Self.Schema.Primitive.Text[A]
+
+      object Text:
+        type Read[+A] = Self.Schema.Primitive.Text.Read[A]
+
+        type Write[-A] = Self.Schema.Primitive.Text.Write[A]
+
 object SchemaShape extends SchemaShape

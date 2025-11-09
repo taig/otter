@@ -39,7 +39,7 @@ object Dictionary:
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Dictionary.Read[F, G]): Dictionary.Read[F, G] = self
 
-    given InvariantK[Dictionary.Read] with
+    given InvariantK2[Dictionary.Read] with
       extension [F[+_[a] <: G[a], _], G[_]](fa: Dictionary.Read[F, G])
         override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
             gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -65,7 +65,7 @@ object Dictionary:
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Dictionary.Write[F, G]): Dictionary.Write[F, G] = self
 
-    given InvariantK[Dictionary.Write] with
+    given InvariantK2[Dictionary.Write] with
       extension [F[+_[a] <: G[a], _], G[_]](fa: Dictionary.Write[F, G])
         override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
             gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -73,7 +73,7 @@ object Dictionary:
 
   inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Dictionary[F, G]): Dictionary[F, G] = self
 
-  given InvariantK[Dictionary] with
+  given InvariantK2[Dictionary] with
     extension [F[+_[a] <: G[a], _], G[_]](fa: Dictionary[F, G])
       override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
           gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]

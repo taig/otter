@@ -5,6 +5,8 @@ import cats.Contravariant
 import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter as Self
+import io.taig.otter.base as Base
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -40,9 +42,11 @@ object Annotation:
     override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
       fa.map(_.imap(f)(g))
 
+  given [F[_[_]], G[_]](using F: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] = ???
+
   given [F[_[+_[a] <: f[a], _], f[_]], G[+_[a] <: H[a], _], H[_]](using
       F: F[G, H]
-  )(using InvariantK[F]): F[[s[a] <: H[a], a] =>> Annotation[G[s, a]], H] =
+  )(using InvariantK2[F]): F[[s[a] <: H[a], a] =>> Annotation[G[s, a]], H] =
     F.imapK[[s[a] <: H[a], a] =>> Annotation[G[s, a]]]([s[a] <: H[a], a] => (gsa: G[s, a]) => Annotation(gsa))(
       [s[a] <: H[a], a] => (annotation: Annotation[G[s, a]]) => annotation.self
     )

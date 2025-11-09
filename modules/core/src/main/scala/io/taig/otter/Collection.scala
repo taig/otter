@@ -71,7 +71,7 @@ object Collection:
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Collection.Read[F, G]): Collection.Read[F, G] = self
 
-    given InvariantK[Collection.Read] with
+    given InvariantK2[Collection.Read] with
       extension [F[+_[a] <: G[a], _], G[_]](fa: Collection.Read[F, G])
         override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
             gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -118,7 +118,7 @@ object Collection:
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Collection.Write[F, G]): Collection.Write[F, G] = self
 
-    given InvariantK[Collection.Write] with
+    given InvariantK2[Collection.Write] with
       extension [F[+_[a] <: G[a], _], G[_]](fa: Collection.Write[F, G])
         override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
             gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -126,7 +126,7 @@ object Collection:
 
   inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Collection[F, G]): Collection[F, G] = self
 
-  given InvariantK[Collection] with
+  given InvariantK2[Collection] with
     extension [F[+_[a] <: G[a], _], G[_]](fa: Collection[F, G])
       override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
           gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
