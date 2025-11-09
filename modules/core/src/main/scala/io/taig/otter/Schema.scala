@@ -10,24 +10,26 @@ import io.taig.otter.base.Collection
 import io.taig.otter.syntax.CatsSyntax.*
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Schema.Read[S, A], Schema.Write[S, A]:
-  override def self: Annotation[Base.Collection[S, A]]
+  override def self: Annotation[Base.Collection[S, A] | Base.Dictionary[S, A]]
 
 object Schema:
-  sealed trait Read[+S[a] <: Schema.Read[?, a], A]:
-    def self: Annotation[Base.Collection.Read[S, A]]
+  sealed trait Read[+S[a] <: Schema.Read[?, a], +A]:
+    def self: Annotation[Base.Collection.Read[S, A] | Base.Dictionary.Read[S, A]]
 
   object Read:
     given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Read[S, *]] with
       override def map[A, B](schema: Schema.Read[S, A])(f: A => B): Schema.Read[S, B] = schema match
         case schema: Schema.Collection.Read[S, A] => schema.map(f)
+        case schema: Schema.Dictionary.Read[S, A] => schema.map(f)
 
     given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Read[S, A]] =
-      Annotated[Annotation[Base.Collection.Read[S, A]]].imap {
-        case annotation: Annotation[Base.Collection.Read[S, A]] => Collection.Read(annotation)
+      Annotated[Annotation[Base.Collection.Read[S, A] | Base.Dictionary.Read[S, A]]].imap {
+        case Annotation(metadata, self: Base.Collection.Read[S, A]) => Collection.Read(Annotation(metadata, self))
+        case Annotation(metadata, self: Base.Dictionary.Read[S, A]) => Dictionary.Read(Annotation(metadata, self))
       }(_.self)
 
   sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
-    def self: Annotation[Base.Collection.Write[S, A]]
+    def self: Annotation[Base.Collection.Write[S, A] | Base.Dictionary.Write[S, A]]
 
   object Write:
     def unapply[S[a] <: Schema.Write[?, a], A](
@@ -37,20 +39,22 @@ object Schema:
     given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Write[S, *]] with
       override def contramap[A, B](schema: Schema.Write[S, A])(f: B => A): Schema.Write[S, B] = schema match
         case schema: Schema.Collection.Write[S, A] => schema.contramap(f)
+        case schema: Schema.Dictionary.Write[S, A] => schema.contramap(f)
 
     given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Write[S, A]] =
-      Annotated[Annotation[Base.Collection.Write[S, A]]].imap {
-        case annotation: Annotation[Base.Collection.Write[S, A]] => Collection.Write(annotation)
+      Annotated[Annotation[Base.Collection.Write[S, A] | Base.Dictionary.Write[S, A]]].imap {
+        case Annotation(metadata, self: Base.Collection.Write[S, A]) => Collection.Write(Annotation(metadata, self))
+        case Annotation(metadata, self: Base.Dictionary.Write[S, A]) => Dictionary.Write(Annotation(metadata, self))
       }(_.self)
 
   sealed abstract class Collection[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
-        Collection.Read[S, A],
-        Collection.Write[S, A]:
+        Schema.Collection.Read[S, A],
+        Schema.Collection.Write[S, A]:
     override def self: Annotation[Base.Collection[S, A]]
 
   object Collection:
-    sealed trait Read[+S[a] <: Schema.Read[?, a], A] extends Schema.Read[S, A]:
+    sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
       override def self: Annotation[Base.Collection.Read[S, A]]
 
     object Read:
@@ -68,7 +72,7 @@ object Schema:
           (annotation: Annotation[Base.Collection.Read[S, A]]) => Read(annotation)
         )([A] => (schema: Schema.Collection.Read[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Read[S, A]] =
+      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Collection.Read[S, A]] =
         Annotated[Annotation[Base.Collection.Read[S, A]]].imap(Read.apply)(_.self)
 
       given Self.Collection.Read[Schema.Collection.Read, Schema.Read[?, *]] = Self.Collection
@@ -95,7 +99,7 @@ object Schema:
           (annotation: Annotation[Base.Collection.Write[S, A]]) => Write(annotation)
         )([A] => (schema: Schema.Collection.Write[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Write[S, A]] =
+      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Collection.Write[S, A]] =
         Annotated[Annotation[Base.Collection.Write[S, A]]].imap(Write.apply)(_.self)
 
       given Self.Collection.Write[Schema.Collection.Write, Schema.Write[?, *]] = Self.Collection
@@ -125,14 +129,100 @@ object Schema:
         [s[a] <: Schema[?, a], a] => (schema: Schema.Collection[s, a]) => schema.self
       )
 
-  def unapply[S[a] <: Schema[?, a], A](schema: Schema[S, A]): Annotation[Base.Collection[S, A]] =
+  sealed abstract class Dictionary[+S[a] <: Schema[?, a], A]
+      extends Schema[S, A],
+        Schema.Dictionary.Read[S, A],
+        Schema.Dictionary.Write[S, A]:
+    override def self: Annotation[Base.Dictionary[S, A]]
+
+  object Dictionary:
+    sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
+      override def self: Annotation[Base.Dictionary.Read[S, A]]
+
+    object Read:
+      def apply[S[a] <: Schema.Read[?, a], A](
+          annotation: Annotation[Base.Dictionary.Read[S, A]]
+      ): Schema.Dictionary.Read[S, A] = new Read[S, A]:
+        override def self: Annotation[Base.Dictionary.Read[S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Read[?, a], A](
+          schema: Schema.Dictionary.Read[S, A]
+      ): Annotation[Base.Dictionary.Read[S, A]] = schema.self
+
+      given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Dictionary.Read[S, *]] =
+        Functor[[a] =>> Annotation[Base.Dictionary.Read[S, a]]].imapK([A] =>
+          (annotation: Annotation[Base.Dictionary.Read[S, A]]) => Read(annotation)
+        )([A] => (schema: Schema.Dictionary.Read[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Dictionary.Read[S, A]] =
+        Annotated[Annotation[Base.Dictionary.Read[S, A]]].imap(Read.apply)(_.self)
+
+      given Self.Dictionary.Read[Schema.Dictionary.Read, Schema.Read[?, *]] = Self.Dictionary
+        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Dictionary.Read[s, a]], Schema.Read[?, *]]
+        .imapK([s[a] <: Schema.Read[?, a], a] => (self: Annotation[Base.Dictionary.Read[s, a]]) => Read(self))(
+          [s[a] <: Schema.Read[?, a], a] => (schema: Schema.Dictionary.Read[s, a]) => schema.self
+        )
+
+    sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
+      override def self: Annotation[Base.Dictionary.Write[S, A]]
+
+    object Write:
+      def apply[S[a] <: Schema.Write[?, a], A](
+          annotation: Annotation[Base.Dictionary.Write[S, A]]
+      ): Schema.Dictionary.Write[S, A] = new Write[S, A]:
+        override def self: Annotation[Base.Dictionary.Write[S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Write[?, a], A](
+          schema: Schema.Dictionary.Write[S, A]
+      ): Annotation[Base.Dictionary.Write[S, A]] = schema.self
+
+      given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Dictionary.Write[S, *]] =
+        Contravariant[[a] =>> Annotation[Base.Dictionary.Write[S, a]]].imapK([A] =>
+          (annotation: Annotation[Base.Dictionary.Write[S, A]]) => Write(annotation)
+        )([A] => (schema: Schema.Dictionary.Write[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Dictionary.Write[S, A]] =
+        Annotated[Annotation[Base.Dictionary.Write[S, A]]].imap(Write.apply)(_.self)
+
+      given Self.Dictionary.Write[Schema.Dictionary.Write, Schema.Write[?, *]] = Self.Dictionary
+        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Dictionary.Write[s, a]], Schema.Write[?, *]]
+        .imapK([s[a] <: Schema.Write[?, a], a] => (self: Annotation[Base.Dictionary.Write[s, a]]) => Write(self))(
+          [s[a] <: Schema.Write[?, a], a] => (schema: Schema.Dictionary.Write[s, a]) => schema.self
+        )
+
+    def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Dictionary[S, A]]): Schema.Dictionary[S, A] =
+      new Dictionary[S, A]:
+        override def self: Annotation[Base.Dictionary[S, A]] = annotation
+
+    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Dictionary[S, A]): Annotation[Base.Dictionary[S, A]] =
+      schema.self
+
+    given [S[a] <: Schema[?, a]]: Invariant[Schema.Dictionary[S, *]] =
+      Invariant[[a] =>> Annotation[Base.Dictionary[S, a]]].imapK([A] =>
+        (annotation: Annotation[Base.Dictionary[S, A]]) => Dictionary(annotation)
+      )([A] => (schema: Schema.Dictionary[S, A]) => schema.self)
+
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Dictionary[S, A]] =
+      Annotated[Annotation[Base.Dictionary[S, A]]].imap(Dictionary.apply)(_.self)
+
+    given Self.Dictionary[Schema.Dictionary, Schema[?, *]] = Self
+      .Dictionary[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Dictionary[s, a]], Schema[?, *]]
+      .imapK([s[a] <: Schema[?, a], a] => (self: Annotation[Base.Dictionary[s, a]]) => Dictionary(self))(
+        [s[a] <: Schema[?, a], a] => (schema: Schema.Dictionary[s, a]) => schema.self
+      )
+
+  def unapply[S[a] <: Schema[?, a], A](
+      schema: Schema[S, A]
+  ): Annotation[Base.Collection[S, A] | Base.Dictionary[S, A]] =
     schema.self
 
   given [S[a] <: Schema[?, a]]: Invariant[Schema[S, *]] with
     override def imap[A, B](fa: Schema[S, A])(f: A => B)(g: B => A): Schema[S, B] = fa match
       case schema: Schema.Collection[S, A] => schema.imap(f)(g)
+      case schema: Schema.Dictionary[S, A] => schema.imap(f)(g)
 
   given [S[a] <: Schema[?, a], A]: Annotated[Schema[S, A]] =
-    Annotated[Annotation[Base.Collection[S, A]]].imap { case annotation: Annotation[Base.Collection[S, A]] =>
-      Collection(annotation)
+    Annotated[Annotation[Base.Collection[S, A] | Base.Dictionary[S, A]]].imap {
+      case Annotation(metadata, self: Base.Collection[S, A]) => Collection(Annotation(metadata, self))
+      case Annotation(metadata, self: Base.Dictionary[S, A]) => Dictionary(Annotation(metadata, self))
     }(_.self)
