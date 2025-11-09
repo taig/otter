@@ -30,6 +30,10 @@ object Primitive:
     object Read:
       inline def apply[F[_]](using self: Primitive.Boolean.Read[F]): Primitive.Boolean.Read[F] = self
 
+      given FunctorK[Primitive.Boolean.Read] with
+        extension [G[_]](fa: Boolean.Read[G])
+          override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Boolean.Read[H] = fa.mapK(fK)
+
     trait Write[F[_]] extends Primitive.Boolean[F]:
       self =>
 
@@ -38,6 +42,10 @@ object Primitive:
 
     object Write:
       inline def apply[F[_]](using self: Primitive.Boolean.Write[F]): Primitive.Boolean.Write[F] = self
+
+      given FunctorK[Primitive.Boolean.Write] with
+        extension [G[_]](fa: Boolean.Write[G])
+          override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Boolean.Write[H] = fa.mapK(fK)
 
     inline def apply[F[_]](using self: Primitive.Boolean[F]): Primitive.Boolean[F] = self
 
@@ -170,6 +178,8 @@ object Primitive:
         extension [G[_]](fa: Primitive.Number.Write[G])
           override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Number.Write[H] =
             fa.imapK(fK)(gK)
+
+    inline def apply[F[_]](using self: Primitive.Number[F]): Primitive.Number[F] = self
 
     given InvariantK[Primitive.Number] with
       extension [G[_]](fa: Primitive.Number[G])
