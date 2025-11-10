@@ -21,7 +21,7 @@ sealed abstract class Primitive[A] extends Primitive.Read[A], Primitive.Write[A]
   def imap[T](f: A => T)(g: T => A): Primitive[T]
 
 object Primitive:
-  sealed trait Read[+A]:
+  sealed trait Read[+A] extends Product, Serializable:
     def constraints: Chain[Constraint.Primitive]
 
     def map[T](f: A => T): Primitive.Read[T]
@@ -30,7 +30,7 @@ object Primitive:
     given Functor[Primitive.Read] with
       final override def map[A, B](fa: Primitive.Read[A])(f: A => B): Primitive.Read[B] = fa.map(f)
 
-  sealed trait Write[-A]:
+  sealed trait Write[-A] extends Product, Serializable:
     def contramap[T](f: T => A): Primitive.Write[T]
 
   object Write:

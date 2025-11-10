@@ -1,5 +1,5 @@
 package io.taig.otter.syntax
 
-trait AllSyntax extends CatsSyntax, CollectionSyntax, DictionarySyntax
+trait AllSyntax extends CatsSyntax, CoerceSyntax, CollectionSyntax, DictionarySyntax
 
 object AllSyntax extends AllSyntax

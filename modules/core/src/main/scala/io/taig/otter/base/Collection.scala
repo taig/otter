@@ -34,7 +34,7 @@ object Collection:
     given [S[_]]: Functor[Collection.Read[S, *]] with
       def map[A, B](fa: Collection.Read[S, A])(f: A => B): Collection.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Self.Collection.Read[Collection.Read, S] = new Self.Collection.Read[Collection.Read, S]:
+    given [S[_]]: Self.Collection.Read[Collection.Read, S] with
       override def chained[T[a] <: S[a], A](
           schema: Reference[T, A],
           validation: Validation[Constraint.Collection, Chain[A]]
@@ -70,7 +70,7 @@ object Collection:
     given [S[_]]: Contravariant[Collection.Write[S, *]] with
       def contramap[A, B](fa: Collection.Write[S, A])(f: B => A): Collection.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Self.Collection.Write[Collection.Write, S] = new Self.Collection.Write[Collection.Write, S]:
+    given [S[_]]: Self.Collection.Write[Collection.Write, S] with
       override def chained[T[a] <: S[a], A](schema: Reference[T, A]): Collection.Write[T, Chain[A]] =
         Collection.Write.Chained(schema)
 
@@ -97,7 +97,7 @@ object Collection:
   given [S[_]]: Invariant[Collection[S, *]] with
     def imap[A, B](fa: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Self.Collection[Collection, S] = new Self.Collection[Collection, S]:
+  given [S[_]]: Self.Collection[Collection, S] with
     override def chained[T[a] <: S[a], A](
         schema: Reference[T, A],
         validation: Validation[Constraint.Collection, Chain[A]]
