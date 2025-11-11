@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.data.Chain
 import cats.Eval
+import cats.data.Chain
 
 trait Record[F[+_[a] <: G[a], _], G[_]]:
   self =>

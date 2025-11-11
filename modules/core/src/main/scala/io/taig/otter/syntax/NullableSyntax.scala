@@ -1,8 +1,8 @@
 package io.taig.otter.syntax
 
-import io.taig.otter.Reference
-import io.taig.otter.Nullable
 import cats.Eval
+import io.taig.otter.Nullable
+import io.taig.otter.Reference
 
 trait NullableSyntax:
   extension [F[+_[a] <: G[a], _], G[_], A](self: G[A])(using F: Nullable[F, G])
