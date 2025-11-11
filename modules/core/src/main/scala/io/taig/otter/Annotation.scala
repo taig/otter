@@ -41,7 +41,10 @@ object Annotation:
     override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
       fa.map(_.imap(f)(g))
 
-  given [F[_[_]], G[_]](using F: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] = ???
+  given [F[_[_]], G[_]](using F: F[G])(using InvariantK[F]): F[[a] =>> Annotation[G[a]]] =
+    F.imapK[[a] =>> Annotation[G[a]]]([a] => (ga: G[a]) => Annotation(ga))([a] =>
+      (annotation: Annotation[G[a]]) => annotation.self
+    )
 
   given [F[_[+_[a] <: f[a], _], f[_]], G[+_[a] <: H[a], _], H[_]](using
       F: F[G, H]

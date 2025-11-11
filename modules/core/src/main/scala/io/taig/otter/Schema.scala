@@ -41,17 +41,14 @@ object Schema:
     given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Read[S, A]] =
       Annotated[Annotation[Schema.Read.Of[S, A]]].imap(Schema.Read.apply)(_.self)
 
-    given Coerceable[Schema.Coerce.Read, Schema.Read[?, *]] with
-      override val coerce: Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]] =
-        Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]]
+    given [S[a] <: Schema.Read[?, a]]: Coerceable[Schema.Coerce.Read, S] with
+      override val coerce: Self.Coerce.Read[Schema.Coerce.Read, S] = Self.Coerce.Read[Schema.Coerce.Read, S]
 
-    given Nullable[Schema.Nullish.Read, Schema.Read[?, *]] with
-      override val nullish: Self.Nullish.Read[Schema.Nullish.Read, Schema.Read[?, *]] =
-        Self.Nullish.Read[Schema.Nullish.Read, Schema.Read[?, *]]
+    given [S[a] <: Schema.Read[?, a]]: Nullable[Schema.Nullish.Read, S] with
+      override val nullish: Self.Nullish.Read[Schema.Nullish.Read, S] = Self.Nullish.Read[Schema.Nullish.Read, S]
 
-    given Tupleable[Schema.Tuple.Read, Schema.Read[?, *]] with
-      override val tuple: Self.Tuple[Schema.Tuple.Read, Schema.Read[?, *]] =
-        Self.Tuple[Schema.Tuple.Read, Schema.Read[?, *]]
+    given [S[a] <: Schema.Read[?, a]]: Tupleable[Schema.Tuple.Read, S] with
+      override val tuple: Self.Tuple[Schema.Tuple.Read, S] = Self.Tuple[Schema.Tuple.Read, S]
 
   sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
     def self: Annotation[Schema.Write.Of[S, A]]
@@ -80,17 +77,15 @@ object Schema:
     given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Write[S, A]] =
       Annotated[Annotation[Schema.Write.Of[S, A]]].imap(Schema.Write.apply)(_.self)
 
-    given Coerceable[Schema.Coerce.Write, Schema.Write[?, *]] with
-      override val coerce: Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]] =
-        Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]]
+    given [S[a] <: Schema.Write[?, a]]: Coerceable[Schema.Coerce.Write, S] with
+      override val coerce: Self.Coerce.Write[Schema.Coerce.Write, S] = Self.Coerce.Write[Schema.Coerce.Write, S]
 
-    given Nullable[Schema.Nullish.Write, Schema.Write[?, *]] with
-      override val nullish: Self.Nullish.Write[Schema.Nullish.Write, Schema.Write[?, *]] =
-        Self.Nullish.Write[Schema.Nullish.Write, Schema.Write[?, *]]
+    given [S[a] <: Schema.Write[?, a]]: Nullable[Schema.Nullish.Write, S] with
+      override val nullish: Self.Nullish.Write[Schema.Nullish.Write, S] =
+        Self.Nullish.Write[Schema.Nullish.Write, S]
 
-    given Tupleable[Schema.Tuple.Write, Schema.Write[?, *]] with
-      override val tuple: Self.Tuple[Schema.Tuple.Write, Schema.Write[?, *]] =
-        Self.Tuple[Schema.Tuple.Write, Schema.Write[?, *]]
+    given [S[a] <: Schema.Write[?, a]]: Tupleable[Schema.Tuple.Write, S] with
+      override val tuple: Self.Tuple[Schema.Tuple.Write, S] = Self.Tuple[Schema.Tuple.Write, S]
 
   sealed abstract class Coerce[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
@@ -119,10 +114,10 @@ object Schema:
       given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Coerce.Read[S, A]] =
         Annotated[Annotation[Base.Coerce.Read[S, A]]].imap(Schema.Coerce.Read.apply)(_.self)
 
-      given Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]] = Self.Coerce
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Coerce.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Coerce.Read[S, A]]) => Read(annotation))(
-          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Coerce.Read[S, A]) => schema.self
+      given [S[a] <: Schema.Read[?, a]]: Self.Coerce.Read[Schema.Coerce.Read, S] = Self.Coerce
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Coerce.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Coerce.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Coerce.Read[s, a]) => schema.self
         )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
@@ -146,11 +141,11 @@ object Schema:
       given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Coerce.Write[S, A]] =
         Annotated[Annotation[Base.Coerce.Write[S, A]]].imap(Schema.Coerce.Write.apply)(_.self)
 
-      given Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]] = Self.Coerce
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Coerce.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Coerce.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Coerce.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Coerce.Write[Schema.Coerce.Write, S] = Self.Coerce
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Coerce.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Coerce.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Coerce.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Coerce[S, A]]): Schema.Coerce[S, A] =
       new Coerce[S, A]:
@@ -166,10 +161,10 @@ object Schema:
     given [S[a] <: Schema[?, a], A]: Annotated[Schema.Coerce[S, A]] =
       Annotated[Annotation[Base.Coerce[S, A]]].imap(Coerce.apply)(_.self)
 
-    given Self.Coerce[Schema.Coerce, Schema[?, *]] = Self
-      .Coerce[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Coerce[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Coerce[S, A]]) => Coerce(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Coerce[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Coerce[Schema.Coerce, S] = Self
+      .Coerce[[s[a] <: S[a], a] =>> Annotation[Base.Coerce[s, a]], S]
+      .imapK([s[a] <: Schema[?, a], a] => (annotation: Annotation[Base.Coerce[s, a]]) => Coerce(annotation))(
+        [s[a] <: Schema[?, a], a] => (schema: Coerce[s, a]) => schema.self
       )
 
   sealed abstract class Collection[+S[a] <: Schema[?, a], A]
@@ -200,11 +195,11 @@ object Schema:
           (annotation: Annotation[Base.Collection.Read[S, A]]) => Schema.Collection.Read(annotation)
         )([A] => (schema: Schema.Collection.Read[S, A]) => schema.self)
 
-      given Self.Collection.Read[Schema.Collection.Read, Schema.Read[?, *]] = Self.Collection
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Collection.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] =>
-          (annotation: Annotation[Base.Collection.Read[S, A]]) => Read(annotation)
-        )([S[a] <: Schema.Read[?, a], A] => (schema: Schema.Collection.Read[S, A]) => schema.self)
+      given [S[a] <: Schema.Read[?, a]]: Self.Collection.Read[Schema.Collection.Read, S] = Self.Collection
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Collection.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Collection.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Collection.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[Base.Collection.Write[S, A]]
@@ -227,11 +222,11 @@ object Schema:
           (annotation: Annotation[Base.Collection.Write[S, A]]) => Schema.Collection.Write(annotation)
         )([A] => (schema: Schema.Collection.Write[S, A]) => schema.self)
 
-      given Self.Collection.Write[Schema.Collection.Write, Schema.Write[?, *]] = Self.Collection
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Collection.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Collection.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Collection.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Collection.Write[Schema.Collection.Write, S] = Self.Collection
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Collection.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Collection.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Collection.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Collection[S, A]]): Schema.Collection[S, A] =
       new Collection[S, A]:
@@ -248,10 +243,10 @@ object Schema:
         (annotation: Annotation[Base.Collection[S, A]]) => Schema.Collection(annotation)
       )([A] => (schema: Schema.Collection[S, A]) => schema.self)
 
-    given Self.Collection[Schema.Collection, Schema[?, *]] = Self
-      .Collection[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Collection[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Collection[S, A]]) => Collection(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Collection[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Collection[Schema.Collection, S] = Self
+      .Collection[[s[a] <: S[a], a] =>> Annotation[Base.Collection[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Collection[s, a]]) => Collection(annotation))(
+        [s[a] <: S[a], a] => (schema: Collection[s, a]) => schema.self
       )
 
   sealed abstract class Constant[+S[a] <: Schema[?, a], A]
@@ -282,11 +277,11 @@ object Schema:
           (annotation: Annotation[Base.Constant.Read[S, A]]) => Schema.Constant.Read(annotation)
         )([A] => (schema: Schema.Constant.Read[S, A]) => schema.self)
 
-      given Self.Constant.Read[Schema.Constant.Read, Schema.Read[?, *]] = Self.Constant
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Constant.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] =>
-          (annotation: Annotation[Base.Constant.Read[S, A]]) => Read(annotation)
-        )([S[a] <: Schema.Read[?, a], A] => (schema: Schema.Constant.Read[S, A]) => schema.self)
+      given [S[a] <: Schema.Read[?, a]]: Self.Constant.Read[Schema.Constant.Read, S] = Self.Constant
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Constant.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Constant.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Constant.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[Base.Constant.Write[S, A]]
@@ -309,11 +304,11 @@ object Schema:
           (annotation: Annotation[Base.Constant.Write[S, A]]) => Schema.Constant.Write(annotation)
         )([A] => (schema: Schema.Constant.Write[S, A]) => schema.self)
 
-      given Self.Constant.Write[Schema.Constant.Write, Schema.Write[?, *]] = Self.Constant
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Constant.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Constant.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Constant.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Constant.Write[Schema.Constant.Write, S] = Self.Constant
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Constant.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Constant.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Constant.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Constant[S, A]]): Schema.Constant[S, A] =
       new Constant[S, A]:
@@ -330,10 +325,10 @@ object Schema:
         (annotation: Annotation[Base.Constant[S, A]]) => Schema.Constant(annotation)
       )([A] => (schema: Schema.Constant[S, A]) => schema.self)
 
-    given Self.Constant[Schema.Constant, Schema[?, *]] = Self
-      .Constant[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Constant[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Constant[S, A]]) => Constant(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Constant[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Constant[Schema.Constant, S] = Self
+      .Constant[[s[a] <: S[a], a] =>> Annotation[Base.Constant[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Constant[s, a]]) => Constant(annotation))(
+        [s[a] <: S[a], a] => (schema: Constant[s, a]) => schema.self
       )
 
   sealed abstract class Dictionary[+S[a] <: Schema[?, a], A]
@@ -364,11 +359,11 @@ object Schema:
           (annotation: Annotation[Base.Dictionary.Read[S, A]]) => Schema.Dictionary.Read(annotation)
         )([A] => (schema: Schema.Dictionary.Read[S, A]) => schema.self)
 
-      given Self.Dictionary.Read[Schema.Dictionary.Read, Schema.Read[?, *]] = Self.Dictionary
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Dictionary.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] =>
-          (annotation: Annotation[Base.Dictionary.Read[S, A]]) => Read(annotation)
-        )([S[a] <: Schema.Read[?, a], A] => (schema: Schema.Dictionary.Read[S, A]) => schema.self)
+      given [S[a] <: Schema.Read[?, a]]: Self.Dictionary.Read[Schema.Dictionary.Read, S] = Self.Dictionary
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Dictionary.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Dictionary.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Dictionary.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[Base.Dictionary.Write[S, A]]
@@ -391,11 +386,11 @@ object Schema:
           (annotation: Annotation[Base.Dictionary.Write[S, A]]) => Schema.Dictionary.Write(annotation)
         )([A] => (schema: Schema.Dictionary.Write[S, A]) => schema.self)
 
-      given Self.Dictionary.Write[Schema.Dictionary.Write, Schema.Write[?, *]] = Self.Dictionary
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Dictionary.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Dictionary.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Dictionary.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Dictionary.Write[Schema.Dictionary.Write, S] = Self.Dictionary
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Dictionary.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Dictionary.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Dictionary.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Dictionary[S, A]]): Schema.Dictionary[S, A] =
       new Dictionary[S, A]:
@@ -412,10 +407,10 @@ object Schema:
         (annotation: Annotation[Base.Dictionary[S, A]]) => Schema.Dictionary(annotation)
       )([A] => (schema: Schema.Dictionary[S, A]) => schema.self)
 
-    given Self.Dictionary[Schema.Dictionary, Schema[?, *]] = Self
-      .Dictionary[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Dictionary[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Dictionary[S, A]]) => Dictionary(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Dictionary[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Dictionary[Schema.Dictionary, S] = Self
+      .Dictionary[[s[a] <: S[a], a] =>> Annotation[Base.Dictionary[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Dictionary[s, a]]) => Dictionary(annotation))(
+        [s[a] <: S[a], a] => (schema: Dictionary[s, a]) => schema.self
       )
 
   sealed abstract class Enumeration[+S[a] <: Schema[?, a], A]
@@ -446,11 +441,11 @@ object Schema:
           (annotation: Annotation[Base.Enumeration.Read[S, A]]) => Schema.Enumeration.Read(annotation)
         )([A] => (schema: Schema.Enumeration.Read[S, A]) => schema.self)
 
-      given Self.Enumeration.Read[Schema.Enumeration.Read, Schema.Read[?, *]] = Self.Enumeration
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Enumeration.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] =>
-          (annotation: Annotation[Base.Enumeration.Read[S, A]]) => Read(annotation)
-        )([S[a] <: Schema.Read[?, a], A] => (schema: Schema.Enumeration.Read[S, A]) => schema.self)
+      given [S[a] <: Schema.Read[?, a]]: Self.Enumeration.Read[Schema.Enumeration.Read, S] = Self.Enumeration
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Enumeration.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Enumeration.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Enumeration.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[Base.Enumeration.Write[S, A]]
@@ -473,11 +468,11 @@ object Schema:
           (annotation: Annotation[Base.Enumeration.Write[S, A]]) => Schema.Enumeration.Write(annotation)
         )([A] => (schema: Schema.Enumeration.Write[S, A]) => schema.self)
 
-      given Self.Enumeration.Write[Schema.Enumeration.Write, Schema.Write[?, *]] = Self.Enumeration
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Enumeration.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Enumeration.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Enumeration.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Enumeration.Write[Schema.Enumeration.Write, S] = Self.Enumeration
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Enumeration.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Enumeration.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Enumeration.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Enumeration[S, A]]): Schema.Enumeration[S, A] =
       new Enumeration[S, A]:
@@ -494,10 +489,10 @@ object Schema:
         (annotation: Annotation[Base.Enumeration[S, A]]) => Schema.Enumeration(annotation)
       )([A] => (schema: Schema.Enumeration[S, A]) => schema.self)
 
-    given Self.Enumeration[Schema.Enumeration, Schema[?, *]] = Self
-      .Enumeration[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Enumeration[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Enumeration[S, A]]) => Enumeration(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Enumeration[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Enumeration[Schema.Enumeration, S] = Self
+      .Enumeration[[s[a] <: S[a], a] =>> Annotation[Base.Enumeration[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Enumeration[s, a]]) => Enumeration(annotation))(
+        [s[a] <: S[a], a] => (schema: Enumeration[s, a]) => schema.self
       )
 
   sealed abstract class Nullish[+S[a] <: Schema[?, a], A]
@@ -528,10 +523,10 @@ object Schema:
           (annotation: Annotation[Base.Nullish.Read[S, A]]) => Schema.Nullish.Read(annotation)
         )([A] => (schema: Schema.Nullish.Read[S, A]) => schema.self)
 
-      given Self.Nullish.Read[Schema.Nullish.Read, Schema.Read[?, *]] = Self.Nullish
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Nullish.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Nullish.Read[S, A]]) => Read(annotation))(
-          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Nullish.Read[S, A]) => schema.self
+      given [S[a] <: Schema.Read[?, a]]: Self.Nullish.Read[Schema.Nullish.Read, S] = Self.Nullish
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Nullish.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Nullish.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Nullish.Read[s, a]) => schema.self
         )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
@@ -555,11 +550,11 @@ object Schema:
           (annotation: Annotation[Base.Nullish.Write[S, A]]) => Schema.Nullish.Write(annotation)
         )([A] => (schema: Schema.Nullish.Write[S, A]) => schema.self)
 
-      given Self.Nullish.Write[Schema.Nullish.Write, Schema.Write[?, *]] = Self.Nullish
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Nullish.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Nullish.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Nullish.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Nullish.Write[Schema.Nullish.Write, S] = Self.Nullish
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Nullish.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Nullish.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Nullish.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Nullish[S, A]]): Schema.Nullish[S, A] =
       new Nullish[S, A]:
@@ -576,10 +571,10 @@ object Schema:
         (annotation: Annotation[Base.Nullish[S, A]]) => Schema.Nullish(annotation)
       )([A] => (schema: Schema.Nullish[S, A]) => schema.self)
 
-    given Self.Nullish[Schema.Nullish, Schema[?, *]] = Self
-      .Nullish[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Nullish[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Nullish[S, A]]) => Nullish(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Nullish[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Nullish[Schema.Nullish, S] = Self
+      .Nullish[[s[a] <: S[a], a] =>> Annotation[Base.Nullish[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Nullish[s, a]]) => Nullish(annotation))(
+        [s[a] <: S[a], a] => (schema: Nullish[s, a]) => schema.self
       )
 
   sealed abstract class Record[+S[a] <: Schema[?, a], A]
@@ -610,10 +605,10 @@ object Schema:
           (annotation: Annotation[Base.Record.Read[S, A]]) => Schema.Record.Read(annotation)
         )([A] => (schema: Schema.Record.Read[S, A]) => schema.self)
 
-      given Self.Record.Read[Schema.Record.Read, Schema.Read[?, *]] = Self.Record
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Record.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Record.Read[S, A]]) => Read(annotation))(
-          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Record.Read[S, A]) => schema.self
+      given [S[a] <: Schema.Read[?, a]]: Self.Record.Read[Schema.Record.Read, S] = Self.Record
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Record.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Record.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Record.Read[s, a]) => schema.self
         )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
@@ -637,11 +632,11 @@ object Schema:
           (annotation: Annotation[Base.Record.Write[S, A]]) => Schema.Record.Write(annotation)
         )([A] => (schema: Schema.Record.Write[S, A]) => schema.self)
 
-      given Self.Record.Write[Schema.Record.Write, Schema.Write[?, *]] = Self.Record
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Record.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Record.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Record.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Record.Write[Schema.Record.Write, S] = Self.Record
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Record.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Record.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Record.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Record[S, A]]): Schema.Record[S, A] =
       new Record[S, A]:
@@ -658,10 +653,10 @@ object Schema:
         (annotation: Annotation[Base.Record[S, A]]) => Schema.Record(annotation)
       )([A] => (schema: Schema.Record[S, A]) => schema.self)
 
-    given Self.Record[Schema.Record, Schema[?, *]] = Self
-      .Record[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Record[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Record[S, A]]) => Record(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Record[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, S] = Self
+      .Record[[s[a] <: S[a], a] =>> Annotation[Base.Record[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Record[s, a]]) => Record(annotation))(
+        [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
       )
 
   sealed abstract class Tuple[+S[a] <: Schema[?, a], A]
@@ -692,10 +687,10 @@ object Schema:
           (annotation: Annotation[Base.Tuple.Read[S, A]]) => Schema.Tuple.Read(annotation)
         )([A] => (schema: Schema.Tuple.Read[S, A]) => schema.self)
 
-      given Self.Tuple.Read[Schema.Tuple.Read, Schema.Read[?, *]] = Self.Tuple
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Tuple.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Tuple.Read[S, A]]) => Read(annotation))(
-          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Tuple.Read[S, A]) => schema.self
+      given [S[a] <: Schema.Read[?, a]]: Self.Tuple.Read[Schema.Tuple.Read, S] = Self.Tuple
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Tuple.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Tuple.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Tuple.Read[s, a]) => schema.self
         )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
@@ -719,11 +714,11 @@ object Schema:
           (annotation: Annotation[Base.Tuple.Write[S, A]]) => Schema.Tuple.Write(annotation)
         )([A] => (schema: Schema.Tuple.Write[S, A]) => schema.self)
 
-      given Self.Tuple.Write[Schema.Tuple.Write, Schema.Write[?, *]] = Self.Tuple
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Tuple.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Tuple.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Tuple.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Tuple.Write[Schema.Tuple.Write, S] = Self.Tuple
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Tuple.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Tuple.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Tuple.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Tuple[S, A]]): Schema.Tuple[S, A] =
       new Tuple[S, A]:
@@ -740,10 +735,10 @@ object Schema:
         (annotation: Annotation[Base.Tuple[S, A]]) => Schema.Tuple(annotation)
       )([A] => (schema: Schema.Tuple[S, A]) => schema.self)
 
-    given Self.Tuple[Schema.Tuple, Schema[?, *]] = Self
-      .Tuple[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Tuple[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Tuple[S, A]]) => Tuple(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Tuple[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Tuple[Schema.Tuple, S] = Self
+      .Tuple[[s[a] <: S[a], a] =>> Annotation[Base.Tuple[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Tuple[s, a]]) => Tuple(annotation))([s[a] <: S[a], a] =>
+        (schema: Tuple[s, a]) => schema.self
       )
 
   sealed abstract class Primitive[A] extends Schema[Nothing, A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
@@ -989,10 +984,10 @@ object Schema:
           (annotation: Annotation[Base.Union.Read[S, A]]) => Schema.Union.Read(annotation)
         )([A] => (schema: Schema.Union.Read[S, A]) => schema.self)
 
-      given Self.Union.Read[Schema.Union.Read, Schema.Read[?, *]] = Self.Union
-        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Union.Read[s, a]], Schema.Read[?, *]]
-        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Union.Read[S, A]]) => Read(annotation))(
-          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Union.Read[S, A]) => schema.self
+      given [S[a] <: Schema.Read[?, a]]: Self.Union.Read[Schema.Union.Read, S] = Self.Union
+        .Read[[s[a] <: S[a], a] =>> Annotation[Base.Union.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Union.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Union.Read[s, a]) => schema.self
         )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
@@ -1016,11 +1011,11 @@ object Schema:
           (annotation: Annotation[Base.Union.Write[S, A]]) => Schema.Union.Write(annotation)
         )([A] => (schema: Schema.Union.Write[S, A]) => schema.self)
 
-      given Self.Union.Write[Schema.Union.Write, Schema.Write[?, *]] = Self.Union
-        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Union.Write[s, a]], Schema.Write[?, *]]
-        .imapK([S[a] <: Schema.Write[?, a], A] =>
-          (annotation: Annotation[Base.Union.Write[S, A]]) => Write(annotation)
-        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Union.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[?, a]]: Self.Union.Write[Schema.Union.Write, S] = Self.Union
+        .Write[[s[a] <: S[a], a] =>> Annotation[Base.Union.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Union.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Union.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Union[S, A]]): Schema.Union[S, A] =
       new Union[S, A]:
@@ -1037,10 +1032,10 @@ object Schema:
         (annotation: Annotation[Base.Union[S, A]]) => Schema.Union(annotation)
       )([A] => (schema: Schema.Union[S, A]) => schema.self)
 
-    given Self.Union[Schema.Union, Schema[?, *]] = Self
-      .Union[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Union[s, a]], Schema[?, *]]
-      .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Union[S, A]]) => Union(annotation))(
-        [S[a] <: Schema[?, a], A] => (schema: Union[S, A]) => schema.self
+    given [S[a] <: Schema[?, a]]: Self.Union[Schema.Union, S] = Self
+      .Union[[s[a] <: S[a], a] =>> Annotation[Base.Union[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[Base.Union[s, a]]) => Union(annotation))([s[a] <: S[a], a] =>
+        (schema: Union[s, a]) => schema.self
       )
 
   def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Schema.Of[S, A]]): Schema[S, A] = annotation.self match
@@ -1060,11 +1055,12 @@ object Schema:
   given [S[a] <: Schema[?, a], A]: Annotated[Schema[S, A]] =
     Annotated[Annotation[Schema.Of[S, A]]].imap(Schema.apply)(_.self)
 
-  given Coerceable[Schema.Coerce, Schema[?, *]] with
-    override val coerce: Self.Coerce[Schema.Coerce, Schema[?, *]] = Self.Coerce[Schema.Coerce, Schema[?, *]]
+  given [S[a] <: Schema[?, a]]: Coerceable[Schema.Coerce, S] with
+    override val coerce: Self.Coerce[Schema.Coerce, S] =
+      Self.Coerce[Schema.Coerce, S]
 
-  given Nullable[Schema.Nullish, Schema[?, *]] with
-    override val nullish: Self.Nullish[Schema.Nullish, Schema[?, *]] = Self.Nullish[Schema.Nullish, Schema[?, *]]
+  given [S[a] <: Schema[?, a]]: Nullable[Schema.Nullish, S] with
+    override val nullish: Self.Nullish[Schema.Nullish, S] = Self.Nullish[Schema.Nullish, S]
 
-  given Tupleable[Schema.Tuple, Schema[?, *]] with
-    override val tuple: Self.Tuple[Schema.Tuple, Schema[?, *]] = Self.Tuple[Schema.Tuple, Schema[?, *]]
+  given [S[a] <: Schema[?, a]]: Tupleable[Schema.Tuple, S] with
+    override val tuple: Self.Tuple[Schema.Tuple, S] = Self.Tuple[Schema.Tuple, S]

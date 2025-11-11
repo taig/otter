@@ -30,5 +30,5 @@ object Playground:
 
   val coercedName = schema.coerce(name)
 
-  val a = schema.field("foo", name) :* schema.field("foo", name)
-  // a.nullable
+  val a = schema.field("foo", name) :* schema.field("foo", name) :* schema.field("foobar", name)
+  val b = name :** a
