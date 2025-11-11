@@ -20,15 +20,11 @@ object dsl extends AllSyntax, SchemaShape:
 
 object Playground:
   import dsl.*
-  // import AllInstances.given
 
-  val name: Schema[String] = ???
+  val name: Schema.Primitive.Text[String] = ???
   val names: Schema.Collection[List[String]] = schema.collection.list(name)
-
-  val x = name.coerce
-  // name.coerceLol
 
   val coercedName = schema.coerce(name)
 
   val a = schema.field("foo", name) :* schema.field("foo", name) :* schema.field("foobar", name)
-  val b = name :** a
+  // val b = name :* a
