@@ -2,9 +2,11 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import io.taig.otter.base as Base
-import io.taig.otter.base.Collection
+import io.taig.otter.syntax.CatsSyntax.*
 import cats.Contravariant
 import cats.derived.*
+import cats.Invariant
+import cats.Functor
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Schema.Read[S, A], Schema.Write[S, A]:
   override def self: Annotation[Schema.Of[S, A]]
@@ -40,6 +42,10 @@ object Schema:
       override def inject[I[a] <: S[a], A](annotation: Annotation[Schema.Read.Of[I, A]]): Schema.Read[I, A] =
         Schema.Read(annotation)
 
+    given Coerceable[Schema.Coerce.Read, Schema.Read[?, *]] with
+      override val coerce: Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]] =
+        Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]]
+
   sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
     def self: Annotation[Schema.Write.Of[S, A]]
 
@@ -69,6 +75,10 @@ object Schema:
       override def inject[I[a] <: S[a], A](annotation: Annotation[Schema.Write.Of[I, A]]): Schema.Write[I, A] =
         Schema.Write(annotation)
 
+    given Coerceable[Schema.Coerce.Write, Schema.Write[?, *]] with
+      override val coerce: Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]] =
+        Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]]
+
   sealed abstract class Coerce[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
         Schema.Coerce.Read[S, A],
@@ -88,12 +98,19 @@ object Schema:
       def unapply[S[a] <: Schema.Read[?, a], A](schema: Schema.Coerce.Read[S, A]): Annotation[Base.Coerce.Read[S, A]] =
         schema.self
 
-      given [S[a] <: Schema.Read[?, a]]
-          : WrapperK2[Schema.Coerce.Read, [s[a] <: S[a], a] =>> Annotation[Base.Coerce.Read[s, a]], S] with
-        override def extract[I[a] <: S[a], A](schema: Schema.Coerce.Read[I, A]): Annotation[Base.Coerce.Read[I, A]] =
-          schema.self
-        override def inject[I[a] <: S[a], A](annotation: Annotation[Base.Coerce.Read[I, A]]): Schema.Coerce.Read[I, A] =
-          Schema.Coerce.Read(annotation)
+      given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Coerce.Read[S, *]] =
+        Functor[[a] =>> Annotation[Base.Coerce.Read[S, a]]].imapK([A] =>
+          (annotation: Annotation[Base.Coerce.Read[S, A]]) => Schema.Coerce.Read(annotation)
+        )([A] => (schema: Schema.Coerce.Read[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Coerce.Read[S, A]] =
+        Annotated[Annotation[Base.Coerce.Read[S, A]]].imap(Schema.Coerce.Read.apply)(_.self)
+
+      given Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]] = Self.Coerce
+        .Read[[s[a] <: Schema.Read[?, a], a] =>> Annotation[Base.Coerce.Read[s, a]], Schema.Read[?, *]]
+        .imapK([S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Base.Coerce.Read[S, A]]) => Read(annotation))(
+          [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Coerce.Read[S, A]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[Base.Coerce.Write[S, A]]
@@ -108,14 +125,19 @@ object Schema:
           schema: Schema.Coerce.Write[S, A]
       ): Annotation[Base.Coerce.Write[S, A]] = schema.self
 
-      given [S[a] <: Schema.Write[?, a]]
-          : WrapperK2[Schema.Coerce.Write, [s[a] <: S[a], a] =>> Annotation[Base.Coerce.Write[s, a]], S] with
-        override def extract[I[a] <: S[a], A](schema: Schema.Coerce.Write[I, A]): Annotation[Base.Coerce.Write[I, A]] =
-          schema.self
-        override def inject[I[a] <: S[a], A](
-            annotation: Annotation[Base.Coerce.Write[I, A]]
-        ): Schema.Coerce.Write[I, A] =
-          Schema.Coerce.Write(annotation)
+      given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Coerce.Write[S, *]] =
+        Contravariant[[a] =>> Annotation[Base.Coerce.Write[S, a]]].imapK([A] =>
+          (annotation: Annotation[Base.Coerce.Write[S, A]]) => Schema.Coerce.Write(annotation)
+        )([A] => (schema: Schema.Coerce.Write[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Coerce.Write[S, A]] =
+        Annotated[Annotation[Base.Coerce.Write[S, A]]].imap(Schema.Coerce.Write.apply)(_.self)
+
+      given Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]] = Self.Coerce
+        .Write[[s[a] <: Schema.Write[?, a], a] =>> Annotation[Base.Coerce.Write[s, a]], Schema.Write[?, *]]
+        .imapK([S[a] <: Schema.Write[?, a], A] =>
+          (annotation: Annotation[Base.Coerce.Write[S, A]]) => Write(annotation)
+        )([S[a] <: Schema.Write[?, a], A] => (schema: Schema.Coerce.Write[S, A]) => schema.self)
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Base.Coerce[S, A]]): Schema.Coerce[S, A] =
       new Coerce[S, A]:
@@ -123,10 +145,20 @@ object Schema:
 
     def unapply[S[a] <: Schema[?, a], A](schema: Schema.Coerce[S, A]): Annotation[Base.Coerce[S, A]] = schema.self
 
-    given [S[a] <: Schema[?, a]]: WrapperK2[Schema.Coerce, [s[a] <: S[a], a] =>> Annotation[Base.Coerce[s, a]], S] with
-      override def extract[I[a] <: S[a], A](schema: Schema.Coerce[I, A]): Annotation[Base.Coerce[I, A]] = schema.self
-      override def inject[I[a] <: S[a], A](annotation: Annotation[Base.Coerce[I, A]]): Schema.Coerce[I, A] =
-        Schema.Coerce(annotation)
+    given [S[a] <: Schema[?, a]]: Invariant[Schema.Coerce[S, *]] =
+      Invariant[[a] =>> Annotation[Base.Coerce[S, a]]].imapK([A] =>
+        (annotation: Annotation[Base.Coerce[S, A]]) => Coerce(annotation)
+      )([A] => (schema: Coerce[S, A]) => schema.self)
+
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Coerce[S, A]] =
+      Annotated[Annotation[Base.Coerce[S, A]]].imap(Coerce.apply)(_.self)
+
+    given Self.Coerce[Schema.Coerce, Schema[?, *]] =
+      Self
+        .Coerce[[s[a] <: Schema[?, a], a] =>> Annotation[Base.Coerce[s, a]], Schema[?, *]]
+        .imapK([S[a] <: Schema[?, a], A] => (annotation: Annotation[Base.Coerce[S, A]]) => Coerce(annotation))(
+          [S[a] <: Schema[?, a], A] => (schema: Coerce[S, A]) => schema.self
+        )
 
   sealed abstract class Collection[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
@@ -557,7 +589,9 @@ object Schema:
 
       given WrapperK[Schema.Primitive.Read, [a] =>> Annotation[Base.Primitive.Read[a]]] with
         override def extract[A](schema: Schema.Primitive.Read[A]): Annotation[Base.Primitive.Read[A]] = schema.self
-        override def inject[A](annotation: Annotation[Base.Primitive.Read[A]]): Schema.Primitive.Read[A] = Read(annotation)
+        override def inject[A](annotation: Annotation[Base.Primitive.Read[A]]): Schema.Primitive.Read[A] = Read(
+          annotation
+        )
 
     sealed trait Write[-A] extends Schema.Write[Nothing, A]:
       override def self: Annotation[Base.Primitive.Write[A]]
@@ -771,5 +805,5 @@ object Schema:
     override def extract[I[a] <: S[a], A](schema: Schema[I, A]): Annotation[Schema.Of[I, A]] = schema.self
     override def inject[I[a] <: S[a], A](annotation: Annotation[Schema.Of[I, A]]): Schema[I, A] = Schema(annotation)
 
-  given [S[a] <: Schema[?, a]]: Coerceable[Schema.Coerce, S] with
-    override val coerce: Self.Coerce[Schema.Coerce, S] = Self.Coerce[Schema.Coerce, S]
+  given Coerceable[Schema.Coerce, Schema[?, *]] with
+    override val coerce: Self.Coerce[Schema.Coerce, Schema[?, *]] = Self.Coerce[Schema.Coerce, Schema[?, *]]
