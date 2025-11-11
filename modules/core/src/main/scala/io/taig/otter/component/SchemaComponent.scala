@@ -1,12 +1,8 @@
 package io.taig.otter.component
 
-import io.taig.otter.Annotation
-import io.taig.otter.Coerce
-import io.taig.otter.base as Base
 import io.taig.otter.shape.SchemaShape
 import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
-import io.taig.otter.instances.AllInstances
 
 object SchemaComponent
     extends CoerceComponent[Schema.Coerce.Of, Schema],
@@ -17,7 +13,7 @@ object SchemaComponent
       NullableComponent[Schema.Nullable.Of, Schema],
       RecordComponent[Schema.Record.Of, Schema]
 
-object dsl extends AllInstances, AllSyntax, SchemaShape:
+object dsl extends AllSyntax, SchemaShape:
   val schema = SchemaComponent
 
 object Playground:

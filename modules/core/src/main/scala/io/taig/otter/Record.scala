@@ -81,10 +81,3 @@ object Record:
       override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
           gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
       ): Record[H, G] = fa.imapK(fK)(gK)
-
-  given derive[G[+_[a] <: I[a], _], H[+_[a] <: I[a], _], I[_]](using
-      W: WrapperK2[G, H, I],
-      F: Record[H, I]
-  ): Record[G, I] = F.imapK[G]([s[a] <: I[a], a] => (gsa: H[s, a]) => W.inject(gsa))([s[a] <: I[a], a] =>
-    (hsa: G[s, a]) => W.extract(hsa)
-  )

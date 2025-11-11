@@ -65,10 +65,3 @@ object Enumeration:
       override def imapK[I[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => H[S, A] => I[S, A])(
           gK: [S[a] <: G[a], A] => I[S, A] => H[S, A]
       ): Enumeration[I, G] = fa.imapK(fK)(gK)
-
-  given derive[G[+_[a] <: I[a], _], H[+_[a] <: I[a], _], I[_]](using
-      W: WrapperK2[G, H, I],
-      F: Enumeration[H, I]
-  ): Enumeration[G, I] = F.imapK[G]([s[a] <: I[a], a] => (gsa: H[s, a]) => W.inject(gsa))([s[a] <: I[a], a] =>
-    (hsa: G[s, a]) => W.extract(hsa)
-  )
