@@ -10,8 +10,9 @@ object SchemaComponent
       ConstantComponent[Schema.Constant.Of, Schema],
       DictionaryComponent[Schema.Dictionary.Of, Schema],
       EnumerationComponent[Schema.Enumeration.Of, Schema],
-      NullableComponent[Schema.Nullable.Of, Schema],
-      RecordComponent[Schema.Record.Of, Schema]
+      NullishComponent[Schema.Nullish.Of, Schema],
+      RecordComponent[Schema.Record.Of, Schema],
+      TupleComponent[Schema.Tuple.Of, Schema]
 
 object dsl extends AllSyntax, SchemaShape:
   val schema = SchemaComponent

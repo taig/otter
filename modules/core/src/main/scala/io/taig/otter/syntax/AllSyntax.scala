@@ -8,7 +8,8 @@ trait AllSyntax
       ConstantSyntax,
       DictionarySyntax,
       EnumerationSyntax,
-      NullableSyntax,
-      RecordSyntax
+      NullishSyntax,
+      RecordSyntax,
+      TupleSyntax
 
 object AllSyntax extends AllSyntax
