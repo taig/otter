@@ -45,6 +45,14 @@ object Schema:
       override val coerce: Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]] =
         Self.Coerce.Read[Schema.Coerce.Read, Schema.Read[?, *]]
 
+    given Nullable[Schema.Nullish.Read, Schema.Read[?, *]] with
+      override val nullish: Self.Nullish.Read[Schema.Nullish.Read, Schema.Read[?, *]] =
+        Self.Nullish.Read[Schema.Nullish.Read, Schema.Read[?, *]]
+
+    given Tupleable[Schema.Tuple.Read, Schema.Read[?, *]] with
+      override val tuple: Self.Tuple[Schema.Tuple.Read, Schema.Read[?, *]] =
+        Self.Tuple[Schema.Tuple.Read, Schema.Read[?, *]]
+
   sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
     def self: Annotation[Schema.Write.Of[S, A]]
 
@@ -75,6 +83,14 @@ object Schema:
     given Coerceable[Schema.Coerce.Write, Schema.Write[?, *]] with
       override val coerce: Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]] =
         Self.Coerce.Write[Schema.Coerce.Write, Schema.Write[?, *]]
+
+    given Nullable[Schema.Nullish.Write, Schema.Write[?, *]] with
+      override val nullish: Self.Nullish.Write[Schema.Nullish.Write, Schema.Write[?, *]] =
+        Self.Nullish.Write[Schema.Nullish.Write, Schema.Write[?, *]]
+
+    given Tupleable[Schema.Tuple.Write, Schema.Write[?, *]] with
+      override val tuple: Self.Tuple[Schema.Tuple.Write, Schema.Write[?, *]] =
+        Self.Tuple[Schema.Tuple.Write, Schema.Write[?, *]]
 
   sealed abstract class Coerce[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
@@ -1049,3 +1065,6 @@ object Schema:
 
   given Nullable[Schema.Nullish, Schema[?, *]] with
     override val nullish: Self.Nullish[Schema.Nullish, Schema[?, *]] = Self.Nullish[Schema.Nullish, Schema[?, *]]
+
+  given Tupleable[Schema.Tuple, Schema[?, *]] with
+    override val tuple: Self.Tuple[Schema.Tuple, Schema[?, *]] = Self.Tuple[Schema.Tuple, Schema[?, *]]
