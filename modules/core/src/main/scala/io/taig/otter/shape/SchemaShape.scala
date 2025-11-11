@@ -129,6 +129,24 @@ trait SchemaShape:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Nullable.Write[S, A]
         export Self.Schema.Nullable.Write.{apply, unapply}
 
+    type Record[A] = Self.Schema.Record[?, A]
+
+    object Record:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Record[S, A]
+      export Self.Schema.Record.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Record.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Record.Read[S, A]
+        export Self.Schema.Record.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Record.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Record.Write[S, A]
+        export Self.Schema.Record.Write.{apply, unapply}
+
     type Primitive[A] = Self.Schema.Primitive[A]
 
     object Primitive:

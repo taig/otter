@@ -62,7 +62,7 @@ object Coerce:
       ): Coerce[I, G] = fa.imapK(fK)(gK)
 
   given derive[G[+_[a] <: I[a], _], H[+_[a] <: I[a], _], I[_]](using
-      W: Wrapper[G, H, I],
+      W: WrapperK2[G, H, I],
       F: Coerce[H, I]
   ): Coerce[G, I] = F.imapK[G]([s[a] <: I[a], a] => (gsa: H[s, a]) => W.inject(gsa))([s[a] <: I[a], a] =>
     (hsa: G[s, a]) => W.extract(hsa)
