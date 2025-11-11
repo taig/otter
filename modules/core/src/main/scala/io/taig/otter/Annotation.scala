@@ -6,7 +6,6 @@ import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter as Self
-import io.taig.otter.base as Base
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))

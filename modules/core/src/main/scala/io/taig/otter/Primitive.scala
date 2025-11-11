@@ -1,15 +1,16 @@
 package io.taig.otter
 
+import cats.data.Chain
+import io.taig.validation.Validation
+
+import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import scala.Boolean as SBoolean
+import scala.Double as SDouble
+import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import scala.Float as SFloat
-import scala.Double as SDouble
-import scala.Boolean as SBoolean
-import java.lang.String as JString
-import io.taig.validation.Validation
-import cats.data.Chain
 
 object Primitive:
   trait Boolean[F[_]]:

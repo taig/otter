@@ -1,10 +1,10 @@
 package io.taig.otter.base
 
+import cats.Contravariant
+import cats.Functor
+import cats.Invariant
 import io.taig.otter as Self
 import io.taig.otter.Reference
-import cats.Functor
-import cats.Contravariant
-import cats.Invariant
 
 sealed abstract class Coerce[+S[_], A] extends Coerce.Read[S, A], Coerce.Write[S, A]:
   final def imap[T](f: A => T)(g: T => A): Coerce[S, T] = Coerce.Modify(self = this, f, g)

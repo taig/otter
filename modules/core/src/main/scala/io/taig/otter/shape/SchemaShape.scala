@@ -7,7 +7,7 @@ trait SchemaShape:
 
   object Schema:
     type Of[+S[a] <: Schema[a], A] = Self.Schema[S, A]
-    export Self.Schema.unapply
+    export Self.Schema.{apply, unapply}
 
     type Read[+A] = Self.Schema.Read[?, A]
 
@@ -57,6 +57,24 @@ trait SchemaShape:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Collection.Write[S, A]
         export Self.Schema.Collection.Write.{apply, unapply}
 
+    type Constant[A] = Self.Schema.Constant[?, A]
+
+    object Constant:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Constant[S, A]
+      export Self.Schema.Constant.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Constant.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Constant.Read[S, A]
+        export Self.Schema.Constant.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Constant.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Constant.Write[S, A]
+        export Self.Schema.Constant.Write.{apply, unapply}
+
     type Dictionary[A] = Self.Schema.Dictionary[?, A]
 
     object Dictionary:
@@ -75,6 +93,24 @@ trait SchemaShape:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Dictionary.Write[S, A]
         export Self.Schema.Dictionary.Write.{apply, unapply}
 
+    type Nullable[A] = Self.Schema.Nullable[?, A]
+
+    object Nullable:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Nullable[S, A]
+      export Self.Schema.Nullable.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Nullable.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Nullable.Read[S, A]
+        export Self.Schema.Nullable.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Nullable.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Nullable.Write[S, A]
+        export Self.Schema.Nullable.Write.{apply, unapply}
+
     type Primitive[A] = Self.Schema.Primitive[A]
 
     object Primitive:
@@ -83,12 +119,12 @@ trait SchemaShape:
       type Read[+A] = Self.Schema.Primitive.Read[A]
 
       object Read:
-        export Self.Schema.Primitive.Read.unapply
+        export Self.Schema.Primitive.Read.{apply, unapply}
 
       type Write[-A] = Self.Schema.Primitive.Write[A]
 
       object Write:
-        export Self.Schema.Primitive.Write.unapply
+        export Self.Schema.Primitive.Write.{apply, unapply}
 
       type Boolean[A] = Self.Schema.Primitive.Boolean[A]
 

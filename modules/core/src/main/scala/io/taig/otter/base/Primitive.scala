@@ -1,21 +1,22 @@
 package io.taig.otter.base
 
-import scala.Boolean as SBoolean
-import java.lang.String as JString
-import io.taig.validation.Validation
-import io.taig.otter as Self
-import io.taig.otter.Constraint
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
-import scala.Int as SInt
-import scala.Long as SLong
-import scala.Float as SFloat
-import scala.Double as SDouble
-import cats.Invariant
 import cats.Contravariant
 import cats.Functor
+import cats.Invariant
 import cats.data.Chain
+import io.taig.otter as Self
+import io.taig.otter.Constraint
 import io.taig.validation.Constraint.Primitive.Text
+import io.taig.validation.Validation
+
+import java.lang.String as JString
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import scala.Boolean as SBoolean
+import scala.Double as SDouble
+import scala.Float as SFloat
+import scala.Int as SInt
+import scala.Long as SLong
 
 sealed abstract class Primitive[A] extends Primitive.Read[A], Primitive.Write[A]:
   def imap[T](f: A => T)(g: T => A): Primitive[T]
