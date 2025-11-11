@@ -10,6 +10,7 @@ trait AllSyntax
       EnumerationSyntax,
       NullishSyntax,
       RecordSyntax,
-      TupleSyntax
+      TupleSyntax,
+      UnionSyntax
 
 object AllSyntax extends AllSyntax

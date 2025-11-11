@@ -10,11 +10,17 @@ import io.taig.otter.Reference
 sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:
   final def imap[T](f: A => T)(g: T => A): Tuple[S, T] = Tuple.Modify(self = this, f, g)
 
+  def zip[S1[a] >: S[a], B](schema: Tuple[S1, B]): Tuple[S1, (A, B)] =
+    Tuple.Zip(left = this, right = schema)
+
 object Tuple:
   sealed trait Read[+S[_], +A] extends Product, Serializable:
     def schemas: Chain[Reference[S, ?]]
 
     final def map[T](f: A => T): Tuple.Read[S, T] = Read.Modify(self = this, f)
+
+    def zip[S1[a] >: S[a], B](schema: Tuple.Read[S1, B]): Tuple.Read[S1, (A, B)] =
+      Read.Zip(left = this, right = schema)
 
   object Read:
     case object Empty extends Tuple.Read[Nothing, Unit]:
@@ -38,7 +44,7 @@ object Tuple:
       override def tuple[T[a] <: S[a], A](schema: Reference[T, A]): Tuple.Read[T, A] = Root(schema)
 
       override def zip[T[a] <: S[a], A, B](left: Tuple.Read[T, A], right: Tuple.Read[T, B]): Tuple.Read[T, (A, B)] =
-        Zip(left, right)
+        left.zip(right)
 
       override def schemas[T[a] <: S[a], A](self: Tuple.Read[T, A]): Chain[Reference[T, ?]] = self.schemas
 
@@ -46,6 +52,9 @@ object Tuple:
     def schemas: Chain[Reference[S, ?]]
 
     final def contramap[T](f: T => A): Tuple.Write[S, T] = Write.Modify(self = this, f)
+
+    def zip[S1[a] >: S[a], B](schema: Tuple.Write[S1, B]): Tuple.Write[S1, (A, B)] =
+      Write.Zip(left = this, right = schema)
 
   object Write:
     case object Empty extends Tuple.Write[Nothing, Unit]:
@@ -71,7 +80,7 @@ object Tuple:
       override def zip[T[a] <: S[a], A, B](
           left: Tuple.Write[T, A],
           right: Tuple.Write[T, B]
-      ): Tuple.Write[T, (A, B)] = Zip(left, right)
+      ): Tuple.Write[T, (A, B)] = left.zip(right)
 
       override def schemas[T[a] <: S[a], A](self: Tuple.Write[T, A]): Chain[Reference[T, ?]] = self.schemas
 
@@ -96,6 +105,6 @@ object Tuple:
     override def tuple[T[a] <: S[a], A](schema: Reference[T, A]): Tuple[T, A] = Root(schema)
 
     override def zip[T[a] <: S[a], A, B](left: Tuple[T, A], right: Tuple[T, B]): Tuple[T, (A, B)] =
-      Zip(left, right)
+      left.zip(right)
 
     override def schemas[T[a] <: S[a], A](self: Tuple[T, A]): Chain[Reference[T, ?]] = self.schemas

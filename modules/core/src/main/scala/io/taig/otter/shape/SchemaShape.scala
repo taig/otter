@@ -225,4 +225,22 @@ trait SchemaShape:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Tuple.Write[S, A]
         export Self.Schema.Tuple.Write.{apply, unapply}
 
+    type Union[A] = Self.Schema.Union[?, A]
+
+    object Union:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Union[S, A]
+      export Self.Schema.Union.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Union.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Union.Read[S, A]
+        export Self.Schema.Union.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Union.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Union.Write[S, A]
+        export Self.Schema.Union.Write.{apply, unapply}
+
 object SchemaShape extends SchemaShape
