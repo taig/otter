@@ -7,6 +7,7 @@ trait AllSyntax
       CollectionSyntax,
       ConstantSyntax,
       DictionarySyntax,
+      EnumerationSyntax,
       NullableSyntax
 
 object AllSyntax extends AllSyntax

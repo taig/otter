@@ -1,11 +1,11 @@
 package io.taig.otter.base
 
 import cats.Contravariant
+import cats.Eq
 import cats.Functor
 import cats.Invariant
-import io.taig.otter.Reference
 import io.taig.otter as Self
-import cats.Eq
+import io.taig.otter.Reference
 
 sealed abstract class Constant[+S[_], A] extends Constant.Read[S, A], Constant.Write[S, A]:
   final def imap[T](f: A => T)(g: T => A): Constant[S, T] = Constant.Modify(self = this, f, g)

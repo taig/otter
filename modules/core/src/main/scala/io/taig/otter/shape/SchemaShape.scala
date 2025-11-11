@@ -93,6 +93,24 @@ trait SchemaShape:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Dictionary.Write[S, A]
         export Self.Schema.Dictionary.Write.{apply, unapply}
 
+    type Enumeration[A] = Self.Schema.Enumeration[?, A]
+
+    object Enumeration:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Enumeration[S, A]
+      export Self.Schema.Enumeration.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Enumeration.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Enumeration.Read[S, A]
+        export Self.Schema.Enumeration.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Enumeration.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Enumeration.Write[S, A]
+        export Self.Schema.Enumeration.Write.{apply, unapply}
+
     type Nullable[A] = Self.Schema.Nullable[?, A]
 
     object Nullable:

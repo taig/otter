@@ -1,6 +1,4 @@
 package io.taig.otter
-
-import io.taig.data.Data
 import cats.Eq
 
 trait Constant[F[+_[a] <: G[a], _], G[_]]:
