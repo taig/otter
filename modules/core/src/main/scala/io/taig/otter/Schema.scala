@@ -650,88 +650,6 @@ object Schema:
     //     [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
     //   )
 
-  sealed abstract class Tuple[+S[a] <: Schema[?, a], A]
-      extends Schema[S, A],
-        Schema.Tuple.Read[S, A],
-        Schema.Tuple.Write[S, A]:
-    override def self: Annotation[TupleBase[S, A]]
-
-  object Tuple:
-    sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
-      override def self: Annotation[TupleBase.Read[S, A]]
-
-    object Read:
-      def apply[S[a] <: Schema.Read[?, a], A](
-          annotation: Annotation[TupleBase.Read[S, A]]
-      ): Schema.Tuple.Read[S, A] = new Schema.Tuple.Read[S, A]:
-        override def self: Annotation[TupleBase.Read[S, A]] = annotation
-
-      def unapply[S[a] <: Schema.Read[?, a], A](
-          schema: Schema.Tuple.Read[S, A]
-      ): Annotation[TupleBase.Read[S, A]] = schema.self
-
-      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Tuple.Read[S, A]] =
-        Annotated[Annotation[TupleBase.Read[S, A]]].imap(Schema.Tuple.Read.apply)(_.self)
-
-      given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Tuple.Read[S, *]] =
-        Functor[[a] =>> Annotation[TupleBase.Read[S, a]]].imapK([A] =>
-          (annotation: Annotation[TupleBase.Read[S, A]]) => Schema.Tuple.Read(annotation)
-        )([A] => (schema: Schema.Tuple.Read[S, A]) => schema.self)
-
-      given [S[a] <: Schema.Read[?, a]]: Self.Tuple.Read[Schema.Tuple.Read, S] = Self.Tuple
-        .Read[[s[a] <: S[a], a] =>> Annotation[TupleBase.Read[s, a]], S]
-        .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase.Read[s, a]]) => Read(annotation))(
-          [s[a] <: S[a], a] => (schema: Schema.Tuple.Read[s, a]) => schema.self
-        )
-
-    sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
-      override def self: Annotation[TupleBase.Write[S, A]]
-
-    object Write:
-      def apply[S[a] <: Schema.Write[?, a], A](
-          annotation: Annotation[TupleBase.Write[S, A]]
-      ): Schema.Tuple.Write[S, A] = new Schema.Tuple.Write[S, A]:
-        override def self: Annotation[TupleBase.Write[S, A]] = annotation
-
-      def unapply[S[a] <: Schema.Write[?, a], A](
-          schema: Schema.Tuple.Write[S, A]
-      ): Annotation[TupleBase.Write[S, A]] = schema.self
-
-      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Tuple.Write[S, A]] =
-        Annotated[Annotation[TupleBase.Write[S, A]]].imap(Schema.Tuple.Write.apply)(_.self)
-
-      given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Tuple.Write[S, *]] =
-        Contravariant[[a] =>> Annotation[TupleBase.Write[S, a]]].imapK([A] =>
-          (annotation: Annotation[TupleBase.Write[S, A]]) => Schema.Tuple.Write(annotation)
-        )([A] => (schema: Schema.Tuple.Write[S, A]) => schema.self)
-
-      given [S[a] <: Schema.Write[?, a]]: Self.Tuple.Write[Schema.Tuple.Write, S] = Self.Tuple
-        .Write[[s[a] <: S[a], a] =>> Annotation[TupleBase.Write[s, a]], S]
-        .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase.Write[s, a]]) => Write(annotation))(
-          [s[a] <: S[a], a] => (schema: Schema.Tuple.Write[s, a]) => schema.self
-        )
-
-    def apply[S[a] <: Schema[?, a], A](annotation: Annotation[TupleBase[S, A]]): Schema.Tuple[S, A] =
-      new Tuple[S, A]:
-        override def self: Annotation[TupleBase[S, A]] = annotation
-
-    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Tuple[S, A]): Annotation[TupleBase[S, A]] =
-      schema.self
-
-    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Tuple[S, A]] =
-      Annotated[Annotation[TupleBase[S, A]]].imap(Schema.Tuple.apply)(_.self)
-
-    given [S[a] <: Schema[?, a]]: Invariant[Schema.Tuple[S, *]] =
-      Invariant[[a] =>> Annotation[TupleBase[S, a]]].imapK([A] =>
-        (annotation: Annotation[TupleBase[S, A]]) => Schema.Tuple(annotation)
-      )([A] => (schema: Schema.Tuple[S, A]) => schema.self)
-
-    given [S[a] <: Schema[?, a]]: Self.Tuple[Schema.Tuple, S] = Self
-      .Tuple[[s[a] <: S[a], a] =>> Annotation[TupleBase[s, a]], S]
-      .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase[s, a]]) => Tuple(annotation))([s[a] <: S[a], a] =>
-        (schema: Tuple[s, a]) => schema.self
-      )
-
   sealed abstract class Primitive[A] extends Schema[Nothing, A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
     override def self: Annotation[PrimitiveBase[A]]
 
@@ -949,6 +867,88 @@ object Schema:
     given [A]: Annotated[Schema.Primitive[A]] =
       Annotated[Annotation[PrimitiveBase[A]]].imap(Schema.Primitive.apply)(_.self)
 
+  sealed abstract class Tuple[+S[a] <: Schema[?, a], A]
+      extends Schema[S, A],
+        Schema.Tuple.Read[S, A],
+        Schema.Tuple.Write[S, A]:
+    override def self: Annotation[TupleBase[S, A]]
+
+  object Tuple:
+    sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
+      override def self: Annotation[TupleBase.Read[S, A]]
+
+    object Read:
+      def apply[S[a] <: Schema.Read[?, a], A](
+          annotation: Annotation[TupleBase.Read[S, A]]
+      ): Schema.Tuple.Read[S, A] = new Schema.Tuple.Read[S, A]:
+        override def self: Annotation[TupleBase.Read[S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Read[?, a], A](
+          schema: Schema.Tuple.Read[S, A]
+      ): Annotation[TupleBase.Read[S, A]] = schema.self
+
+      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Tuple.Read[S, A]] =
+        Annotated[Annotation[TupleBase.Read[S, A]]].imap(Schema.Tuple.Read.apply)(_.self)
+
+      given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Tuple.Read[S, *]] =
+        Functor[[a] =>> Annotation[TupleBase.Read[S, a]]].imapK([A] =>
+          (annotation: Annotation[TupleBase.Read[S, A]]) => Schema.Tuple.Read(annotation)
+        )([A] => (schema: Schema.Tuple.Read[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Read[?, a]]: Self.Tuple.Read[Schema.Tuple.Read, S] = Self.Tuple
+        .Read[[s[a] <: S[a], a] =>> Annotation[TupleBase.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Tuple.Read[s, a]) => schema.self
+        )
+
+    sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
+      override def self: Annotation[TupleBase.Write[S, A]]
+
+    object Write:
+      def apply[S[a] <: Schema.Write[?, a], A](
+          annotation: Annotation[TupleBase.Write[S, A]]
+      ): Schema.Tuple.Write[S, A] = new Schema.Tuple.Write[S, A]:
+        override def self: Annotation[TupleBase.Write[S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Write[?, a], A](
+          schema: Schema.Tuple.Write[S, A]
+      ): Annotation[TupleBase.Write[S, A]] = schema.self
+
+      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Tuple.Write[S, A]] =
+        Annotated[Annotation[TupleBase.Write[S, A]]].imap(Schema.Tuple.Write.apply)(_.self)
+
+      given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Tuple.Write[S, *]] =
+        Contravariant[[a] =>> Annotation[TupleBase.Write[S, a]]].imapK([A] =>
+          (annotation: Annotation[TupleBase.Write[S, A]]) => Schema.Tuple.Write(annotation)
+        )([A] => (schema: Schema.Tuple.Write[S, A]) => schema.self)
+
+      given [S[a] <: Schema.Write[?, a]]: Self.Tuple.Write[Schema.Tuple.Write, S] = Self.Tuple
+        .Write[[s[a] <: S[a], a] =>> Annotation[TupleBase.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Tuple.Write[s, a]) => schema.self
+        )
+
+    def apply[S[a] <: Schema[?, a], A](annotation: Annotation[TupleBase[S, A]]): Schema.Tuple[S, A] =
+      new Tuple[S, A]:
+        override def self: Annotation[TupleBase[S, A]] = annotation
+
+    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Tuple[S, A]): Annotation[TupleBase[S, A]] =
+      schema.self
+
+    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Tuple[S, A]] =
+      Annotated[Annotation[TupleBase[S, A]]].imap(Schema.Tuple.apply)(_.self)
+
+    given [S[a] <: Schema[?, a]]: Invariant[Schema.Tuple[S, *]] =
+      Invariant[[a] =>> Annotation[TupleBase[S, a]]].imapK([A] =>
+        (annotation: Annotation[TupleBase[S, A]]) => Schema.Tuple(annotation)
+      )([A] => (schema: Schema.Tuple[S, A]) => schema.self)
+
+    given [S[a] <: Schema[?, a]]: Self.Tuple[Schema.Tuple, S] = Self
+      .Tuple[[s[a] <: S[a], a] =>> Annotation[TupleBase[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[TupleBase[s, a]]) => Tuple(annotation))([s[a] <: S[a], a] =>
+        (schema: Tuple[s, a]) => schema.self
+      )
+
   sealed abstract class Union[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
         Schema.Union.Read[S, A],
@@ -1083,4 +1083,6 @@ object Schema:
   given [S[a] <: Schema[?, a], A]: Annotated[Schema[S, A]] =
     Annotated[Annotation[Schema.Of[S, A]]].imap(Schema.apply)(_.self)
 
-  given Tupleable[Schema, Schema.Tuple, Schema[?, *]] = ???
+  given [S[+_[a] <: Schema[?, a], a] <: Schema[?, a]]: Tupleable[S, Schema.Tuple, Schema[?, *]] with
+    extension [I[a] <: Schema[?, a], A](self: S[I, A])
+      def toTuple: Schema.Tuple[S[I, *], A] = Schema.Tuple(Annotation(TupleBase.Root(schema = Reference.now(self))))
