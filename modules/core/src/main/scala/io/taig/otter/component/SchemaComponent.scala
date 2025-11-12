@@ -10,6 +10,7 @@ object SchemaComponent
       ConstantComponent[Schema.Constant.Of, Schema],
       DictionaryComponent[Schema.Dictionary.Of, Schema],
       EnumerationComponent[Schema.Enumeration.Of, Schema],
+      FieldComponent[Schema.Field.Of, Schema](using ???),
       NullishComponent[Schema.Nullish.Of, Schema],
       RecordComponent[Schema.Record.Of, Schema],
       TupleComponent[Schema.Tuple.Of, Schema],
@@ -26,5 +27,9 @@ object Playground:
 
   val coercedName = schema.coerce(name)
 
-  val a = schema.field("foo", name) :* schema.field("foo", name) :* schema.field("foobar", name)
+  schema.field(name = "name", name).toRecord
+
+  // :*[Schema.Record.Of, Schema, String](schema.field("foo", name))(schema.field("foo", name))
+
+  // val a = schema.field("foo", name) :* schema.field("foo", name) :* schema.field("foobar", name)
   // val b = name :* a

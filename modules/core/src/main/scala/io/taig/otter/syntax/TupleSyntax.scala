@@ -6,7 +6,6 @@ import io.taig.otter.Tuple
 import cats.syntax.all.*
 import cats.Invariant
 import io.taig.otter.Merge
-import scala.annotation.targetName
 
 trait TupleSyntax:
   extension [F[+_[a] <: G[a], _], G[_], A](self: F[G, A])(using F: Tuple[F, G])
@@ -15,7 +14,6 @@ trait TupleSyntax:
     def zip[B](schema: F[G, B]): F[G, (A, B)] = F.zip(self, schema)
 
   extension [F[+_[a] <: G[a], _], G[_], A](self: F[G, A])(using Tuple[F, G], Invariant[F[G, *]])
-    @targetName("appendTuple")
     def :*[B](schema: F[G, B])(using merge: Merge[A, B]): F[G, merge.Out] =
       self.zip(schema).imap(merge.apply)(merge.unapply)
 

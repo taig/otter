@@ -8,9 +8,11 @@ trait AllSyntax
       ConstantSyntax,
       DictionarySyntax,
       EnumerationSyntax,
+      FieldSyntax,
       NullableSyntax,
       NullishSyntax,
       RecordSyntax,
+      RecordeableSyntax,
       TupleableSyntax,
       TupleSyntax,
       UnionSyntax

@@ -8,13 +8,13 @@ trait Record[F[+_[a] <: G[a], _], G[_]]:
 
   def empty: F[G, Unit]
 
-  def fields[H[a] <: G[a], A](self: F[H, A]): Chain[Field[H, ?]]
+  def fields[H[a] <: G[a], A](self: F[H, A]): Chain[Reference[H, ?]]
 
   def optional[H[a] <: G[a], A](self: F[H, A]): F[H, Option[A]]
 
   def optional[H[a] <: G[a], A](self: F[H, A], default: Eval[A]): F[H, A]
 
-  def record[H[a] <: G[a], A](field: Field[H, A]): F[H, A]
+  def record[H[a] <: G[a], A](field: Reference[H, A]): F[H, A]
 
   def zip[H[a] <: G[a], A, B](left: F[H, A], right: F[H, B]): F[H, (A, B)]
 
@@ -23,14 +23,14 @@ trait Record[F[+_[a] <: G[a], _], G[_]]:
   ): Record[H, G] = new Record[H, G]:
     override def empty: H[G, Unit] = fK(self.empty)
 
-    override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Field[I, ?]] = self.fields(gK(hia))
+    override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.fields(gK(hia))
 
     override def optional[I[a] <: G[a], A](hia: H[I, A]): H[I, Option[A]] = fK(self.optional(gK(hia)))
 
     override def optional[I[a] <: G[a], A](hia: H[I, A], default: Eval[A]): H[I, A] =
       fK(self.optional(gK(hia), default))
 
-    override def record[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.record(field))
+    override def record[I[a] <: G[a], A](field: Reference[I, A]): H[I, A] = fK(self.record(field))
 
     override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
       fK(self.zip(gK(left), gK(right)))
@@ -44,14 +44,14 @@ object Record:
     ): Record.Read[H, G] = new Read[H, G]:
       override def empty: H[G, Unit] = fK(self.empty)
 
-      override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Field[I, ?]] = self.fields(gK(hia))
+      override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.fields(gK(hia))
 
       override def optional[I[a] <: G[a], A](hia: H[I, A]): H[I, Option[A]] = fK(self.optional(gK(hia)))
 
       override def optional[I[a] <: G[a], A](hia: H[I, A], default: Eval[A]): H[I, A] =
         fK(self.optional(gK(hia), default))
 
-      override def record[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.record(field))
+      override def record[I[a] <: G[a], A](field: Reference[I, A]): H[I, A] = fK(self.record(field))
 
       override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
         fK(self.zip(gK(left), gK(right)))
@@ -73,14 +73,14 @@ object Record:
     ): Record.Write[H, G] = new Write[H, G]:
       override def empty: H[G, Unit] = fK(self.empty)
 
-      override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Field[I, ?]] = self.fields(gK(hia))
+      override def fields[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.fields(gK(hia))
 
       override def optional[I[a] <: G[a], A](hia: H[I, A]): H[I, Option[A]] = fK(self.optional(gK(hia)))
 
       override def optional[I[a] <: G[a], A](hia: H[I, A], default: Eval[A]): H[I, A] =
         fK(self.optional(gK(hia), default))
 
-      override def record[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.record(field))
+      override def record[I[a] <: G[a], A](field: Reference[I, A]): H[I, A] = fK(self.record(field))
 
       override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
         fK(self.zip(gK(left), gK(right)))
