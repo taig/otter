@@ -7,11 +7,12 @@ trait Tuple[F[+_[a] <: G[a], _], G[_]]:
 
   def empty: F[G, Unit]
 
-  def schemas[H[a] <: G[a], A](self: F[H, A]): Chain[Reference[H, ?]]
-
   def tuple[H[a] <: G[a], A](schema: Reference[H, A]): F[H, A]
 
-  def zip[H[a] <: G[a], A, B](left: F[H, A], right: F[H, B]): F[H, (A, B)]
+  extension [H[a] <: G[a], A](fha: F[H, A])
+    def schemas: Chain[Reference[H, ?]]
+
+    def zip[I[a] <: G[a], B](schema: F[I, B]): F[[a] =>> H[a] | I[a], (A, B)]
 
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -20,10 +21,11 @@ trait Tuple[F[+_[a] <: G[a], _], G[_]]:
 
     override def tuple[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] = fK(self.tuple(schema))
 
-    override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
-      fK(self.zip(gK(left), gK(right)))
+    extension [I[a] <: G[a], A](fha: H[I, A])
+      override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-    override def schemas[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.schemas(gK(hia))
+      override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
+        fK(self.zip(gK(fha))(gK(schema)))
 
 object Tuple:
   trait Read[F[+_[a] <: G[a], _], G[_]] extends Tuple[F, G]:
@@ -36,10 +38,11 @@ object Tuple:
 
       override def tuple[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] = fK(self.tuple(schema))
 
-      override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
-        fK(self.zip(gK(left), gK(right)))
+      extension [I[a] <: G[a], A](fha: H[I, A])
+        override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-      override def schemas[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.schemas(gK(hia))
+        override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
+          fK(self.zip(gK(fha))(gK(schema)))
 
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Read[F, G]): Tuple.Read[F, G] = self
@@ -60,10 +63,11 @@ object Tuple:
 
       override def tuple[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] = fK(self.tuple(schema))
 
-      override def zip[I[a] <: G[a], A, B](left: H[I, A], right: H[I, B]): H[I, (A, B)] =
-        fK(self.zip(gK(left), gK(right)))
+      extension [I[a] <: G[a], A](fha: H[I, A])
+        override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-      override def schemas[I[a] <: G[a], A](hia: H[I, A]): Chain[Reference[I, ?]] = self.schemas(gK(hia))
+        override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
+          fK(self.zip(gK(fha))(gK(schema)))
 
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Write[F, G]): Tuple.Write[F, G] = self

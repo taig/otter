@@ -33,8 +33,6 @@ object DictionaryBase:
           validation: Validation[Constraint.Object, List[A]]
       ): DictionaryBase.Read[T, List[A]] = Linked(schema, validation)
 
-      override def schema[T[a] <: S[a], A](self: DictionaryBase.Read[T, A]): Reference[T, ?] = self.schema
-
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
@@ -52,8 +50,6 @@ object DictionaryBase:
     given [S[_]]: Dictionary.Write[DictionaryBase.Write, S] with
       override def linked[T[a] <: S[a], A](schema: Reference[T, A]): DictionaryBase.Write[T, List[A]] = Linked(schema)
 
-      override def schema[T[a] <: S[a], A](self: Write[T, A]): Reference[T, ?] = self.schema
-
   final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Object, List[A]])
       extends DictionaryBase[S, List[A]]
 
@@ -68,5 +64,3 @@ object DictionaryBase:
         schema: Reference[T, A],
         validation: Validation[Constraint.Object, List[A]]
     ): DictionaryBase[T, List[A]] = Linked(schema, validation)
-
-    override def schema[T[a] <: S[a], A](self: DictionaryBase[T, A]): Reference[T, ?] = self.schema

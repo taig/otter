@@ -32,8 +32,6 @@ object EnumerationBase:
           mapping: Mapping[B, A]
       ): EnumerationBase.Read[T, B] = Root(schema, mapping)
 
-      override def schema[T[a] <: S[a], A](self: EnumerationBase.Read[T, A]): Reference[T, ?] = self.schema
-
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
@@ -56,8 +54,6 @@ object EnumerationBase:
           mapping: Mapping[B, A]
       ): EnumerationBase.Write[T, B] = Root(schema, mapping)
 
-      override def schema[T[a] <: S[a], A](self: EnumerationBase.Write[T, A]): Reference[T, ?] = self.schema
-
   final case class Root[S[_], A, B](schema: Reference[S, A], mapping: Mapping[B, A]) extends EnumerationBase[S, B]
 
   final case class Modify[S[_], A, B](self: EnumerationBase[S, A], f: A => B, g: B => A) extends EnumerationBase[S, B]:
@@ -70,7 +66,4 @@ object EnumerationBase:
     override def enumeration[T[a] <: S[a], A, B](
         schema: Reference[T, A],
         mapping: Mapping[B, A]
-    ): EnumerationBase[T, B] =
-      Root(schema, mapping)
-
-    override def schema[T[a] <: S[a], A](self: EnumerationBase[T, A]): Reference[T, ?] = self.schema
+    ): EnumerationBase[T, B] = Root(schema, mapping)

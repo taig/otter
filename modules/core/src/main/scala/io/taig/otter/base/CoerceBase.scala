@@ -24,10 +24,7 @@ object CoerceBase:
     given [S[_]]: Functor[CoerceBase.Read[S, *]] with
       override def map[A, B](fa: CoerceBase.Read[S, A])(f: A => B): CoerceBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Coerce.Read[CoerceBase.Read, S] with
-      override def coerce[T[a] <: S[a], A](schema: Reference[T, A]): CoerceBase.Read[T, A] = Root(schema)
-
-      override def schema[T[a] <: S[a], A](self: CoerceBase.Read[T, A]): Reference[T, ?] = self.schema
+    given [S[_]]: Coerce.Read[CoerceBase.Read, S] = ???
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
@@ -43,10 +40,7 @@ object CoerceBase:
     given [S[_]]: Contravariant[CoerceBase.Write[S, *]] with
       override def contramap[A, B](fa: CoerceBase.Write[S, A])(f: B => A): CoerceBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Coerce.Write[CoerceBase.Write, S] with
-      override def coerce[T[a] <: S[a], A](schema: Reference[T, A]): CoerceBase.Write[T, A] = Root(schema)
-
-      override def schema[T[a] <: S[a], A](self: CoerceBase.Write[T, A]): Reference[T, ?] = self.schema
+    given [S[_]]: Coerce.Write[CoerceBase.Write, S] = ???
 
   final case class Modify[S[_], A, B](self: CoerceBase[S, A], f: A => B, g: B => A) extends CoerceBase[S, B]:
     export self.schema
@@ -56,7 +50,4 @@ object CoerceBase:
   given [S[_]]: Invariant[CoerceBase[S, *]] with
     override def imap[A, B](fa: CoerceBase[S, A])(f: A => B)(g: B => A): CoerceBase[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Coerce[CoerceBase, S] with
-    override def coerce[T[a] <: S[a], A](schema: Reference[T, A]): CoerceBase[T, A] = Root(schema)
-
-    override def schema[T[a] <: S[a], A](self: CoerceBase[T, A]): Reference[T, ?] = self.schema
+  given [S[_]]: Coerce[CoerceBase, S] = ???

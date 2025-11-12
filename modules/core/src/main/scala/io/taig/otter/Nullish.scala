@@ -5,21 +5,9 @@ import cats.Eval
 trait Nullish[F[+_[a] <: G[a], _], G[_]]:
   self =>
 
-  def nullable[H[a] <: G[a], A](schema: Reference[H, A]): F[H, Option[A]]
-
-  def nullable[H[a] <: G[a], A](schema: Reference[H, A], default: Eval[A]): F[H, A]
-
-  def schema[H[a] <: G[a], A](self: F[H, A]): Reference[H, ?]
-
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-  ): Nullish[H, G] = new Nullish[H, G]:
-    override def nullable[I[a] <: G[a], A](schema: Reference[I, A]): H[I, Option[A]] = fK(self.nullable(schema))
-
-    override def nullable[I[a] <: G[a], A](schema: Reference[I, A], default: Eval[A]): H[I, A] =
-      fK(self.nullable(schema, default))
-
-    override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
+  ): Nullish[H, G] = ???
 
 object Nullish:
   trait Read[F[+_[a] <: G[a], _], G[_]] extends Nullish[F, G]:
@@ -27,13 +15,7 @@ object Nullish:
 
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
         gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Nullish.Read[H, G] = new Read[H, G]:
-      override def nullable[I[a] <: G[a], A](schema: Reference[I, A]): H[I, Option[A]] = fK(self.nullable(schema))
-
-      override def nullable[I[a] <: G[a], A](schema: Reference[I, A], default: Eval[A]): H[I, A] =
-        fK(self.nullable(schema, default))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
+    ): Nullish.Read[H, G] = ???
 
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Nullish.Read[F, G]): Nullish.Read[F, G] = self
@@ -49,13 +31,7 @@ object Nullish:
 
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
         gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Nullish.Write[H, G] = new Write[H, G]:
-      override def nullable[I[a] <: G[a], A](schema: Reference[I, A]): H[I, Option[A]] = fK(self.nullable(schema))
-
-      override def nullable[I[a] <: G[a], A](schema: Reference[I, A], default: Eval[A]): H[I, A] =
-        fK(self.nullable(schema, default))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
+    ): Nullish.Write[H, G] = ???
 
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Nullish.Write[F, G]): Nullish.Write[F, G] = self

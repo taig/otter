@@ -6,15 +6,11 @@ trait Constant[F[+_[a] <: G[a], _], G[_]]:
 
   def constant[H[a] <: G[a], A](schema: Reference[H, A], value: A, eq: Eq[A]): F[H, A]
 
-  def schema[H[a] <: G[a], A](self: F[H, A]): Reference[H, ?]
-
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
   ): Constant[H, G] = new Constant[H, G]:
     override def constant[I[a] <: G[a], A](schema: Reference[I, A], value: A, eq: Eq[A]): H[I, A] =
       fK(self.constant(schema, value, eq))
-
-    override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
 object Constant:
   trait Read[F[+_[a] <: G[a], _], G[_]] extends Constant[F, G]:
@@ -25,8 +21,6 @@ object Constant:
     ): Constant.Read[H, G] = new Read[H, G]:
       override def constant[I[a] <: G[a], A](schema: Reference[I, A], value: A, eq: Eq[A]): H[I, A] =
         fK(self.constant(schema, value, eq))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Constant.Read[F, G]): Constant.Read[F, G] = self
@@ -50,8 +44,6 @@ object Constant:
     ): Constant.Write[H, G] = new Write[H, G]:
       override def constant[I[a] <: G[a], A](schema: Reference[I, A], value: A): H[I, A] =
         fK(self.constant(schema, value))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Constant.Write[F, G]): Constant.Write[F, G] = self

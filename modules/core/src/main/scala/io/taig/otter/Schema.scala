@@ -41,15 +41,6 @@ object Schema:
     given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Read[S, A]] =
       Annotated[Annotation[Schema.Read.Of[S, A]]].imap(Schema.Read.apply)(_.self)
 
-    given [S[a] <: Schema.Read[?, a]]: Coerceable[Schema.Coerce.Read, S] with
-      override val coerce: Self.Coerce.Read[Schema.Coerce.Read, S] = Self.Coerce.Read[Schema.Coerce.Read, S]
-
-    given [S[a] <: Schema.Read[?, a]]: Nullable[Schema.Nullish.Read, S] with
-      override val nullish: Self.Nullish.Read[Schema.Nullish.Read, S] = Self.Nullish.Read[Schema.Nullish.Read, S]
-
-    given [S[a] <: Schema.Read[?, a]]: Tupleable[Schema.Tuple.Read, S] with
-      override val tuple: Self.Tuple[Schema.Tuple.Read, S] = Self.Tuple[Schema.Tuple.Read, S]
-
   sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
     def self: Annotation[Schema.Write.Of[S, A]]
 
@@ -78,16 +69,6 @@ object Schema:
 
     given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Write[S, A]] =
       Annotated[Annotation[Schema.Write.Of[S, A]]].imap(Schema.Write.apply)(_.self)
-
-    given [S[a] <: Schema.Write[?, a]]: Coerceable[Schema.Coerce.Write, S] with
-      override val coerce: Self.Coerce.Write[Schema.Coerce.Write, S] = Self.Coerce.Write[Schema.Coerce.Write, S]
-
-    given [S[a] <: Schema.Write[?, a]]: Nullable[Schema.Nullish.Write, S] with
-      override val nullish: Self.Nullish.Write[Schema.Nullish.Write, S] =
-        Self.Nullish.Write[Schema.Nullish.Write, S]
-
-    given [S[a] <: Schema.Write[?, a]]: Tupleable[Schema.Tuple.Write, S] with
-      override val tuple: Self.Tuple[Schema.Tuple.Write, S] = Self.Tuple[Schema.Tuple.Write, S]
 
   sealed abstract class Coerce[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
@@ -647,14 +628,12 @@ object Schema:
 
     def apply[S[a] <: Schema[?, a], A](
         annotation: Annotation[RecordBase[Schema.Field[S, *], A]]
-    ): Schema.Record[S, A] =
-      new Record[S, A]:
-        override def self: Annotation[RecordBase[Schema.Field[S, *], A]] = annotation
+    ): Schema.Record[S, A] = new Record[S, A]:
+      override def self: Annotation[RecordBase[Schema.Field[S, *], A]] = annotation
 
     def unapply[S[a] <: Schema[?, a], A](
         schema: Schema.Record[S, A]
-    ): Annotation[RecordBase[Schema.Field[S, *], A]] =
-      schema.self
+    ): Annotation[RecordBase[Schema.Field[S, *], A]] = schema.self
 
     given [S[a] <: Schema[?, a], A]: Annotated[Schema.Record[S, A]] =
       Annotated[Annotation[RecordBase[Schema.Field[S, *], A]]].imap(Schema.Record.apply)(_.self)
@@ -1085,8 +1064,7 @@ object Schema:
 
     def unapply[S[a] <: Schema[?, a], A](schema: Schema.Field[S, A]): Annotation[FieldBase[S, A]] = schema.self
 
-    given [S[a] <: Schema[?, a]]: Recordeable[Schema.Record, S] with
-      override val record: Self.Record[Schema.Record, S] = Self.Record[Schema.Record, S]
+    given Recordable[Schema.Field, Schema.Record, Schema[?, *]] = ???
 
   def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Schema.Of[S, A]]): Schema[S, A] = annotation.self match
     case self: CoerceBase[S, A]                  => Schema.Coerce(annotation.copy(self = self))
@@ -1105,12 +1083,4 @@ object Schema:
   given [S[a] <: Schema[?, a], A]: Annotated[Schema[S, A]] =
     Annotated[Annotation[Schema.Of[S, A]]].imap(Schema.apply)(_.self)
 
-  given [S[a] <: Schema[?, a]]: Coerceable[Schema.Coerce, S] with
-    override val coerce: Self.Coerce[Schema.Coerce, S] =
-      Self.Coerce[Schema.Coerce, S]
-
-  given [S[a] <: Schema[?, a]]: Nullable[Schema.Nullish, S] with
-    override val nullish: Self.Nullish[Schema.Nullish, S] = Self.Nullish[Schema.Nullish, S]
-
-  given [S[a] <: Schema[?, a]]: Tupleable[Schema.Tuple, S] with
-    override val tuple: Self.Tuple[Schema.Tuple, S] = Self.Tuple[Schema.Tuple, S]
+  given Tupleable[Schema, Schema.Tuple, Schema[?, *]] = ???

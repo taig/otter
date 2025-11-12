@@ -27,14 +27,7 @@ object NullishBase:
     given [S[_]]: Functor[NullishBase.Read[S, *]] with
       override def map[A, B](fa: NullishBase.Read[S, A])(f: A => B): NullishBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Nullish.Read[NullishBase.Read, S] with
-      override def nullable[T[a] <: S[a], A](schema: Reference[T, A]): NullishBase.Read[T, Option[A]] =
-        NullishBase.Read.Optional(schema)
-
-      override def nullable[T[a] <: S[a], A](schema: Reference[T, A], default: Eval[A]): NullishBase.Read[T, A] =
-        NullishBase.Read.Default(schema, default)
-
-      override def schema[T[a] <: S[a], A](self: NullishBase.Read[T, A]): Reference[T, ?] = self.schema
+    given [S[_]]: Nullish.Read[NullishBase.Read, S] = ???
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
@@ -52,14 +45,7 @@ object NullishBase:
     given [S[_]]: Contravariant[NullishBase.Write[S, *]] with
       override def contramap[A, B](fa: NullishBase.Write[S, A])(f: B => A): NullishBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Nullish.Write[NullishBase.Write, S] with
-      override def nullable[T[a] <: S[a], A](schema: Reference[T, A]): NullishBase.Write[T, Option[A]] =
-        NullishBase.Write.Optional(schema)
-
-      override def nullable[T[a] <: S[a], A](schema: Reference[T, A], default: Eval[A]): NullishBase.Write[T, A] =
-        NullishBase.Write.Default(schema)
-
-      override def schema[T[a] <: S[a], A](self: NullishBase.Write[T, A]): Reference[T, ?] = self.schema
+    given [S[_]]: Nullish.Write[NullishBase.Write, S] = ???
 
   final case class Default[S[_], A](schema: Reference[S, A], default: Eval[A]) extends NullishBase[S, A]
 
@@ -71,11 +57,4 @@ object NullishBase:
   given [S[_]]: Invariant[NullishBase[S, *]] with
     override def imap[A, B](fa: NullishBase[S, A])(f: A => B)(g: B => A): NullishBase[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Nullish[NullishBase, S] with
-    override def nullable[T[a] <: S[a], A](schema: Reference[T, A]): NullishBase[T, Option[A]] =
-      NullishBase.Optional(schema)
-
-    override def nullable[T[a] <: S[a], A](schema: Reference[T, A], default: Eval[A]): NullishBase[T, A] =
-      NullishBase.Default(schema, default)
-
-    override def schema[T[a] <: S[a], A](self: NullishBase[T, A]): Reference[T, ?] = self.schema
+  given [S[_]]: Nullish[NullishBase, S] = ???

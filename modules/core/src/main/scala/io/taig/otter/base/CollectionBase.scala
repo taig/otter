@@ -50,8 +50,6 @@ object CollectionBase:
           validation: Validation[Constraint.Collection, Vector[A]]
       ): CollectionBase.Read[T, Vector[A]] = CollectionBase.Read.Indexed(schema, validation)
 
-      override def schema[T[a] <: S[a], A](self: CollectionBase.Read[T, A]): Reference[T, ?] = self.schema
-
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
@@ -79,8 +77,6 @@ object CollectionBase:
 
       override def indexed[T[a] <: S[a], A](schema: Reference[T, A]): CollectionBase.Write[T, Vector[A]] =
         CollectionBase.Write.Indexed(schema)
-
-      override def schema[T[a] <: S[a], A](self: CollectionBase.Write[T, A]): Reference[T, ?] = self.schema
 
   final case class Chained[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Chain[A]])
       extends CollectionBase[S, Chain[A]]
@@ -112,5 +108,3 @@ object CollectionBase:
         schema: Reference[T, A],
         validation: Validation[Constraint.Collection, Vector[A]]
     ): CollectionBase[T, Vector[A]] = CollectionBase.Indexed(schema, validation)
-
-    override def schema[T[a] <: S[a], A](self: CollectionBase[T, A]): Reference[T, ?] = self.schema

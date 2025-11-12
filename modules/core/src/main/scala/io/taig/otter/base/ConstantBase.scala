@@ -29,8 +29,6 @@ object ConstantBase:
       override def constant[T[a] <: S[a], A](schema: Reference[T, A], value: A, eq: Eq[A]): ConstantBase.Read[T, A] =
         Root(schema, value, eq)
 
-      override def schema[T[a] <: S[a], A](self: ConstantBase.Read[T, A]): Reference[T, ?] = self.schema
-
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
@@ -49,8 +47,6 @@ object ConstantBase:
       override def constant[T[a] <: S[a], A](schema: Reference[T, A], value: A): ConstantBase.Write[T, A] =
         Root(schema, value)
 
-      override def schema[T[a] <: S[a], A](self: ConstantBase.Write[T, A]): Reference[T, ?] = self.schema
-
   final case class Root[S[_], A](schema: Reference[S, A], value: A, eq: Eq[A]) extends ConstantBase[S, A]
 
   final case class Modify[S[_], A, B](self: ConstantBase[S, A], f: A => B, g: B => A) extends ConstantBase[S, B]:
@@ -62,5 +58,3 @@ object ConstantBase:
   given [S[_]]: Constant[ConstantBase, S] with
     override def constant[T[a] <: S[a], A](schema: Reference[T, A], value: A, eq: Eq[A]): ConstantBase[T, A] =
       ConstantBase.Root(schema, value, eq)
-
-    override def schema[T[a] <: S[a], A](self: ConstantBase[T, A]): Reference[T, ?] = self.schema

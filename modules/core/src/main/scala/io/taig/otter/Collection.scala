@@ -22,8 +22,6 @@ trait Collection[F[+_[a] <: G[a], _], G[_]]:
       validation: Validation[Constraint.Collection, Vector[A]]
   ): F[H, Vector[A]]
 
-  def schema[H[a] <: G[a], A](self: F[H, A]): Reference[H, ?]
-
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
   ): Collection[H, G] = new Collection[H, G]:
@@ -41,8 +39,6 @@ trait Collection[F[+_[a] <: G[a], _], G[_]]:
         schema: Reference[I, A],
         validation: Validation[Constraint.Collection, Vector[A]]
     ): H[I, Vector[A]] = fK(self.indexed(schema, validation))
-
-    override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
 object Collection:
   trait Read[F[+_[a] <: G[a], _], G[_]] extends Collection[F, G]:
@@ -65,8 +61,6 @@ object Collection:
           schema: Reference[I, A],
           validation: Validation[Constraint.Collection, Vector[A]]
       ): H[I, Vector[A]] = fK(self.indexed(schema, validation))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Collection.Read[F, G]): Collection.Read[F, G] = self
@@ -112,8 +106,6 @@ object Collection:
 
       override def indexed[I[a] <: G[a], A](schema: Reference[I, A]): H[I, Vector[A]] =
         fK(self.indexed(schema))
-
-      override def schema[I[a] <: G[a], A](hia: H[I, A]): Reference[I, ?] = self.schema(gK(hia))
 
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Collection.Write[F, G]): Collection.Write[F, G] = self
