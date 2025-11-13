@@ -1064,7 +1064,10 @@ object Schema:
 
     def unapply[S[a] <: Schema[?, a], A](schema: Schema.Field[S, A]): Annotation[FieldBase[S, A]] = schema.self
 
-    given Recordable[Schema.Field, Schema.Record, Schema[?, *]] = ???
+    given [S[a] <: Schema[?, a]]: Recordable[Schema.Field, Schema.Record, Schema[?, *]] with
+      extension [I[a] <: Schema[?, a], A](self: Schema.Field[I, A])
+        override def toRecord: Schema.Record[I, A] =
+          Schema.Record(Annotation(RecordBase.Root(field = Reference.now(self))))
 
   def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Schema.Of[S, A]]): Schema[S, A] = annotation.self match
     case self: CoerceBase[S, A]                  => Schema.Coerce(annotation.copy(self = self))

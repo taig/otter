@@ -18,18 +18,18 @@ object Playground:
   val name: Schema.Primitive.Text[String] = ???
   val names: Schema.Collection[List[String]] = ???
 
-  val x: Schema[Unit] = ???
+  val x: Schema.Primitive[Unit] = ???
 
   val myField: Schema.Field.Of[Schema.Primitive.Text, String] = schema.field("name", name)
 
   val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField.toRecord
 
-  val rec = schema.field("name", name) :* schema.field("age", x) // :* schema.field("name", name)
+  val rec: Schema.Record.Of[Schema.Primitive, String] =
+    schema.field("name", name) :* schema.field("age", x) // :* schema.field("name", name)
 
-  // TODO dont resolve nothing as self type for primitives but the primitives themselves!
   val t: Schema.Tuple.Of[Schema.Tuple.Of[Schema, *], String] = name.toTuple.toTuple.toTuple
-  val u: Schema.Tuple.Of[Schema.Record, (String, String)] = rec.:*(rec)
-  // val u = name :* x
+  // val u: Schema.Tuple.Of[Schema.Record, (String, String)] = rec.:*(rec)
+  val u = name :* x
   // val t: Schema.Tuple.Of[Schema.Primitive, String] = name.toTuple2
 
   // val a: Schema.Tuple.Of[Schema, String] = name :* x
