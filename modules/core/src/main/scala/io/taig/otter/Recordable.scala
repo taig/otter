@@ -12,6 +12,11 @@ trait Recordable[F[+_[a] <: H[a], a], G[+_[a] <: H[a], _], H[_]]:
     )(using Invariant[G[J, *]]): G[J, merge.Out] =
       self.toRecord.zip(schema.toRecord).imap(merge.apply)(merge.unapply)
 
+    final def *:[J[a] >: I[a] <: H[a], B](schema: F[J, B])(using
+        merge: Merge[A, B]
+    )(using Invariant[G[J, *]]): G[J, merge.Out] =
+      self.toRecord.zip(schema.toRecord).imap(merge.apply)(merge.unapply)
+
 object Recordable:
   // TODO imapK?
   sealed trait Read[F[+_[a] <: H[a], a] <: H[a], G[+_[a] <: H[a], _], H[_]] extends Recordable[F, G, H]

@@ -47,8 +47,7 @@ object TupleBase:
       extension [T[a] <: S[a], A](self: TupleBase.Read[T, A])
         override def schemas: Chain[Reference[T, ?]] = self.schemas
 
-        override def zip[U[a] <: S[a], B](schema: TupleBase.Read[U, B]): TupleBase.Read[[a] =>> T[a] | U[a], (A, B)] =
-          self.zip(schema)
+        override def zip[B](schema: TupleBase.Read[T, B]): TupleBase.Read[T, (A, B)] = self.zip(schema)
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schemas: Chain[Reference[S, ?]]
@@ -83,8 +82,7 @@ object TupleBase:
       extension [T[a] <: S[a], A](self: TupleBase.Write[T, A])
         override def schemas: Chain[Reference[T, ?]] = self.schemas
 
-        override def zip[U[a] <: S[a], B](schema: TupleBase.Write[U, B]): TupleBase.Write[[a] =>> T[a] | U[a], (A, B)] =
-          self.zip(schema)
+        override def zip[B](schema: TupleBase.Write[T, B]): TupleBase.Write[T, (A, B)] = self.zip(schema)
 
   case object Empty extends TupleBase[Nothing, Unit]:
     override def schemas: Chain[Reference[Nothing, ?]] = Chain.empty
@@ -109,5 +107,4 @@ object TupleBase:
     extension [T[a] <: S[a], A](self: TupleBase[T, A])
       override def schemas: Chain[Reference[T, ?]] = self.schemas
 
-      override def zip[U[a] <: S[a], B](schema: TupleBase[U, B]): TupleBase[[a] =>> T[a] | U[a], (A, B)] =
-        self.zip(schema)
+      override def zip[B](schema: TupleBase[T, B]): TupleBase[T, (A, B)] = self.zip(schema)

@@ -1,6 +1,5 @@
 package io.taig.otter
 
-import cats.Eval
 
 trait Nullish[F[+_[a] <: G[a], _], G[_]]:
   self =>

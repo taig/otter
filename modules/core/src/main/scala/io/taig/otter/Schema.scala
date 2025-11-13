@@ -3,8 +3,8 @@ package io.taig.otter
 import cats.Contravariant
 import cats.Functor
 import cats.Invariant
-import io.taig.otter.base.*
 import io.taig.otter as Self
+import io.taig.otter.base.*
 import io.taig.otter.syntax.CatsSyntax.*
 
 sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Schema.Read[S, A], Schema.Write[S, A]:
@@ -867,6 +867,8 @@ object Schema:
     given [A]: Annotated[Schema.Primitive[A]] =
       Annotated[Annotation[PrimitiveBase[A]]].imap(Schema.Primitive.apply)(_.self)
 
+    given [S[a] <: Schema.Primitive[a]]: Tupleable[[_[_], a] =>> S[a], Schema.Tuple, Schema[?, *]] = ???
+
   sealed abstract class Tuple[+S[a] <: Schema[?, a], A]
       extends Schema[S, A],
         Schema.Tuple.Read[S, A],
@@ -1086,6 +1088,4 @@ object Schema:
   given [S[a] <: Schema[?, a], A]: Annotated[Schema[S, A]] =
     Annotated[Annotation[Schema.Of[S, A]]].imap(Schema.apply)(_.self)
 
-  given [S[+_[a] <: Schema[?, a], a] <: Schema[?, a]]: Tupleable[S, Schema.Tuple, Schema[?, *]] with
-    extension [I[a] <: Schema[?, a], A](self: S[I, A])
-      def toTuple: Schema.Tuple[S[I, *], A] = Schema.Tuple(Annotation(TupleBase.Root(schema = Reference.now(self))))
+  given [S[+_[a] <: Schema[?, a], a] <: Schema[?, a]]: Tupleable[S, Schema.Tuple, Schema[?, *]] = ???

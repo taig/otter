@@ -1,7 +1,6 @@
 package io.taig.otter.base
 
 import cats.Contravariant
-import cats.Eval
 import cats.Functor
 import cats.Invariant
 import cats.data.Chain

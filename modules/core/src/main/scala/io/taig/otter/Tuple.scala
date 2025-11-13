@@ -12,7 +12,7 @@ trait Tuple[F[+_[a] <: G[a], _], G[_]]:
   extension [H[a] <: G[a], A](fha: F[H, A])
     def schemas: Chain[Reference[H, ?]]
 
-    def zip[I[a] <: G[a], B](schema: F[I, B]): F[[a] =>> H[a] | I[a], (A, B)]
+    def zip[B](schema: F[H, B]): F[H, (A, B)]
 
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
@@ -24,8 +24,7 @@ trait Tuple[F[+_[a] <: G[a], _], G[_]]:
     extension [I[a] <: G[a], A](fha: H[I, A])
       override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-      override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
-        fK(self.zip(gK(fha))(gK(schema)))
+      override def zip[B](schema: H[I, B]): H[I, (A, B)] = fK(self.zip(gK(fha))(gK(schema)))
 
 object Tuple:
   trait Read[F[+_[a] <: G[a], _], G[_]] extends Tuple[F, G]:
@@ -41,8 +40,7 @@ object Tuple:
       extension [I[a] <: G[a], A](fha: H[I, A])
         override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-        override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
-          fK(self.zip(gK(fha))(gK(schema)))
+        override def zip[B](schema: H[I, B]): H[I, (A, B)] = fK(self.zip(gK(fha))(gK(schema)))
 
   object Read:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Read[F, G]): Tuple.Read[F, G] = self
@@ -66,8 +64,7 @@ object Tuple:
       extension [I[a] <: G[a], A](fha: H[I, A])
         override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(fha))
 
-        override def zip[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], (A, B)] =
-          fK(self.zip(gK(fha))(gK(schema)))
+        override def zip[B](schema: H[I, B]): H[I, (A, B)] = fK(self.zip(gK(fha))(gK(schema)))
 
   object Write:
     inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Write[F, G]): Tuple.Write[F, G] = self
