@@ -1,6 +1,5 @@
 package io.taig.otter
 
-
 trait Nullish[F[+_[a] <: G[a], _], G[_]]:
   self =>
 

@@ -4,6 +4,7 @@ import io.taig.otter as Self
 import io.taig.otter.shape.SchemaShape
 import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
+import Self.Tupleable
 
 object SchemaComponent
     extends FieldComponent[Schema.Field.Of, Schema](using ???),
@@ -35,5 +36,10 @@ object Playground:
   val _: Schema.Tuple.Of[Schema.Collection, List[String]] = names.toTuple
 
   val _: Schema.Tuple.Of[Schema.Tuple.Of[Schema.Primitive.Text, *], String] = name.toTuple.toTuple
+  val _: Schema.Tuple.Of[Schema, (List[String], String)] = names :* name
+  val _: Schema.Tuple.Of[Schema, (List[String], String)] = names :* name
   val _: Schema.Tuple.Of[[a] =>> Schema.Collection[a] | Schema.Primitive[a], (List[String], String)] = names :* name
   val _: Schema.Tuple.Of[[a] =>> Schema.Collection[a] | Schema.Primitive[a], (String, List[String])] = name :* names
+  val a: Schema.Tuple.Of[Schema.Primitive, (Int, String)] = age :* name
+  val _: Schema.Tuple.Of[Schema.Primitive, (String, Int)] = name :* age
+  val _: Schema.Tuple.Of[Schema.Primitive.Text, (String, String)] = name :* name
