@@ -39,15 +39,15 @@ object RecordBase:
     given [S[_]]: Functor[RecordBase.Read[S, *]] with
       def map[A, B](fa: RecordBase.Read[S, A])(f: A => B): RecordBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Record.Read[RecordBase.Read, S] with
-      override def empty: RecordBase.Read[S, Unit] = Empty
+    // given [S[_]]: Record.Read[RecordBase.Read, S] with
+    //   override def empty: RecordBase.Read[S, Unit] = Empty
 
-      override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase.Read[T, A] = Root(field)
+    //   override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase.Read[T, A] = Root(field)
 
-      extension [T[a] <: S[a], A](self: RecordBase.Read[T, A])
-        override def fields: Chain[Reference[T, ?]] = self.fields
+    //   extension [T[a] <: S[a], A](self: RecordBase.Read[T, A])
+    //     override def fields: Chain[Reference[T, ?]] = self.fields
 
-        override def zip[B](schema: RecordBase.Read[T, B]): RecordBase.Read[T, (A, B)] = self.zip(schema)
+    //     override def zip[B](schema: RecordBase.Read[T, B]): RecordBase.Read[T, (A, B)] = self.zip(schema)
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def fields: Chain[Reference[S, ?]]
@@ -74,15 +74,15 @@ object RecordBase:
     given [S[_]]: Contravariant[RecordBase.Write[S, *]] with
       def contramap[A, B](fa: RecordBase.Write[S, A])(f: B => A): RecordBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Record.Write[RecordBase.Write, S] with
-      override def empty: RecordBase.Write[S, Unit] = Empty
+    // given [S[_]]: Record.Write[RecordBase.Write, S] with
+    //   override def empty: RecordBase.Write[S, Unit] = Empty
 
-      override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase.Write[T, A] = Root(field)
+    //   override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase.Write[T, A] = Root(field)
 
-      extension [T[a] <: S[a], A](self: RecordBase.Write[T, A])
-        override def fields: Chain[Reference[T, ?]] = self.fields
+    //   extension [T[a] <: S[a], A](self: RecordBase.Write[T, A])
+    //     override def fields: Chain[Reference[T, ?]] = self.fields
 
-        override def zip[B](schema: RecordBase.Write[T, B]): RecordBase.Write[T, (A, B)] = self.zip(schema)
+    //     override def zip[B](schema: RecordBase.Write[T, B]): RecordBase.Write[T, (A, B)] = self.zip(schema)
 
   case object Empty extends RecordBase[Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty
@@ -99,12 +99,12 @@ object RecordBase:
   given [S[_]]: Invariant[RecordBase[S, *]] with
     def imap[A, B](fa: RecordBase[S, A])(f: A => B)(g: B => A): RecordBase[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Record[RecordBase, S] with
-    override def empty: RecordBase[S, Unit] = Empty
+  // given [S[_]]: Record[RecordBase, S] with
+  //   override def empty: RecordBase[S, Unit] = Empty
 
-    override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase[T, A] = Root(field)
+  //   override def record[T[a] <: S[a], A](field: Reference[T, A]): RecordBase[T, A] = Root(field)
 
-    extension [T[a] <: S[a], A](self: RecordBase[T, A])
-      override def fields: Chain[Reference[T, ?]] = self.fields
+  //   extension [T[a] <: S[a], A](self: RecordBase[T, A])
+  //     override def fields: Chain[Reference[T, ?]] = self.fields
 
-      override def zip[B](schema: RecordBase[T, B]): RecordBase[T, (A, B)] = self.zip(schema)
+  //     override def zip[B](schema: RecordBase[T, B]): RecordBase[T, (A, B)] = self.zip(schema)

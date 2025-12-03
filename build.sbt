@@ -20,7 +20,7 @@ val Version = new {
   val Slf4j = "2.0.17"
   val Validation = "0.0.0+3-4cd02cef-SNAPSHOT"
   val Undefined = "0.0.3"
-  val Zio = "2.1.22"
+  val Zio = "2.1.23"
 }
 
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {

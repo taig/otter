@@ -590,7 +590,7 @@ object Schema:
           (annotation: Annotation[RecordBase.Read[Schema.Field.Read[S, *], A]]) => Schema.Record.Read(annotation)
         )([A] => (schema: Schema.Record.Read[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Read[?, a]]: Self.Record.Read[Schema.Record.Read, S] = ???
+      // given [S[a] <: Schema.Read[?, a]]: Self.Record.Read[Schema.Record.Read, S] = ???
       // Self.Record
       //   .Read[[s[a] <: S[a], a] =>> Annotation[RecordBase.Read[Schema.Field.Read[s, *], a]], S]
       //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Read[s, a]]) => Read(annotation))(
@@ -619,7 +619,7 @@ object Schema:
           (annotation: Annotation[RecordBase.Write[Schema.Field.Write[S, *], A]]) => Schema.Record.Write(annotation)
         )([A] => (schema: Schema.Record.Write[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Write[?, a]]: Self.Record.Write[Schema.Record.Write, S] = ???
+      // given [S[a] <: Schema.Write[?, a]]: Self.Record.Write[Schema.Record.Write, S] = ???
       // Self.Record
       //   .Write[[s[a] <: S[a], a] =>> Annotation[RecordBase.Write[s, a]], S]
       //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Write[s, a]]) => Write(annotation))(
@@ -643,7 +643,7 @@ object Schema:
         (annotation: Annotation[RecordBase[Schema.Field[S, *], A]]) => Schema.Record(annotation)
       )([A] => (schema: Schema.Record[S, A]) => schema.self)
 
-    given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, S] = ???
+    // given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, S] = ???
     // Self
     //   .Record[[s[a] <: S[a], a] =>> Annotation[RecordBase[s, a]], S]
     //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[s, a]]) => Record(annotation))(
@@ -1067,7 +1067,9 @@ object Schema:
 
     def unapply[S[a] <: Schema[?, a], A](schema: Schema.Field[S, A]): Annotation[FieldBase[S, A]] = schema.self
 
-    given [S[a] <: Schema[?, a]]: Recordable[Schema.Field, Schema.Record, Schema[?, *]] with
+    given Self.Field[Schema.Field, Schema.Record, Schema[?, *]] with
+      override def field[H[a] <: Schema[?, a], A](name: String, schema: Reference[H, A]): Schema.Field[H, A] = ???
+
       extension [I[a] <: Schema[?, a], A](self: Schema.Field[I, A])
         override def toRecord: Schema.Record[I, A] =
           Schema.Record(Annotation(RecordBase.Root(field = Reference.now(self))))
