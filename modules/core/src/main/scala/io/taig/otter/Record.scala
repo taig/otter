@@ -1,24 +1,42 @@
 package io.taig.otter
+
 import cats.data.Chain
+import cats.Invariant
+import cats.syntax.all.*
 
 trait Record[F[+_[a] <: G[a], _], G[_]]:
   self =>
 
-  def empty: F[G, Unit]
+  def apply[H[a] <: G[a], A](field: Field[H, A]): F[H, A]
 
-  def field[H[a] <: G[a], A](name: String, schema: Reference[H, A]): F[H, A]
+  def empty: F[G, Unit]
 
   extension [A](fha: F[G, A]) def fields: Chain[Field[G, ?]]
 
-  extension [I[a] <: G[a], A](fia: F[I, A]) def zip[J[a] <: G[a], B](schema: F[J, B]): F[[a] =>> I[a] | J[a], (A, B)]
+  extension [I[a] <: G[a], A](fia: F[I, A])
+    def zip[J[a] <: G[a], B](schema: F[J, B]): F[[a] =>> I[a] | J[a], (A, B)]
+
+    final def *[J[a] <: G[a], B](schema: F[J, B])(using
+        merge: Merge[A, B]
+    )(using Invariant[F[[a] =>> I[a] | J[a], *]]): F[[a] =>> I[a] | J[a], merge.Out] =
+      zip(schema).imap(merge.apply)(merge.unapply)
+
+    final def :*[J[a] <: G[a], B](schema: F[J, B])(using
+        append: Append[A, B]
+    )(using Invariant[F[[a] =>> I[a] | J[a], *]]): F[[a] =>> I[a] | J[a], append.Out] =
+      zip(schema).imap(append.apply)(append.unapply)
+
+    final def *:[J[a] <: G[a], B](schema: F[J, B])(using
+        prepend: Prepend[A, B]
+    )(using Invariant[F[[a] =>> I[a] | J[a], *]]): F[[a] =>> I[a] | J[a], prepend.Out] =
+      zip(schema).imap(prepend.apply)(prepend.unapply)
 
   def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
       gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
   ): Record[H, G] = new Record[H, G]:
-    override def empty: H[G, Unit] = fK(self.empty)
+    override def apply[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.apply(field))
 
-    override def field[I[a] <: G[a], A](name: String, schema: Reference[I, A]): H[I, A] =
-      fK(self.field(name, schema))
+    override def empty: H[G, Unit] = fK(self.empty)
 
     extension [A](fha: H[G, A]) override def fields: Chain[Field[G, ?]] = self.fields(gK(fha))
 
@@ -33,10 +51,9 @@ object Record:
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
         gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
     ): Record.Read[H, G] = new Read[H, G]:
-      override def empty: H[G, Unit] = fK(self.empty)
+      override def apply[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.apply(field))
 
-      override def field[I[a] <: G[a], A](name: String, schema: Reference[I, A]): H[I, A] =
-        fK(self.field(name, schema))
+      override def empty: H[G, Unit] = fK(self.empty)
 
       extension [A](fha: H[G, A]) override def fields: Chain[Field[G, ?]] = self.fields(gK(fha))
 
@@ -59,10 +76,9 @@ object Record:
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
         gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
     ): Record.Write[H, G] = new Write[H, G]:
-      override def empty: H[G, Unit] = fK(self.empty)
+      override def apply[I[a] <: G[a], A](field: Field[I, A]): H[I, A] = fK(self.apply(field))
 
-      override def field[I[a] <: G[a], A](name: String, schema: Reference[I, A]): H[I, A] =
-        fK(self.field(name, schema))
+      override def empty: H[G, Unit] = fK(self.empty)
 
       extension [A](fha: H[G, A]) override def fields: Chain[Field[G, ?]] = self.fields(gK(fha))
 

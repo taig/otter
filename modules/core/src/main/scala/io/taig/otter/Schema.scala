@@ -589,12 +589,11 @@ object Schema:
           (annotation: Annotation[RecordBase.Read[S, A]]) => Schema.Record.Read(annotation)
         )([A] => (schema: Schema.Record.Read[S, A]) => schema.self)
 
-      // given [S[a] <: Schema.Read[?, a]]: Self.Record.Read[Schema.Record.Read, S] = ???
-      // Self.Record
-      //   .Read[[s[a] <: S[a], a] =>> Annotation[RecordBase.Read[S, a]], S]
-      //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Read[s, a]]) => Read(annotation))(
-      //     [s[a] <: S[a], a] => (schema: Schema.Record.Read[s, a]) => schema.self
-      //   )
+      given [S[a] <: Schema.Read[?, a]]: Self.Record.Read[Schema.Record.Read, S] = Self.Record
+        .Read[[s[a] <: S[a], a] =>> Annotation[RecordBase.Read[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Read[s, a]]) => Read(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Record.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[RecordBase.Write[S, A]]
@@ -617,12 +616,11 @@ object Schema:
           (annotation: Annotation[RecordBase.Write[S, A]]) => Schema.Record.Write(annotation)
         )([A] => (schema: Schema.Record.Write[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Write[?, a]]: Self.Record.Write[Schema.Record.Write, S] = ???
-      // Self.Record
-      //   .Write[[s[a] <: S[a], a] =>> Annotation[RecordBase.Write[s, a]], S]
-      //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Write[s, a]]) => Write(annotation))(
-      //     [s[a] <: S[a], a] => (schema: Schema.Record.Write[s, a]) => schema.self
-      //   )
+      given [S[a] <: Schema.Write[?, a]]: Self.Record.Write[Schema.Record.Write, S] = Self.Record
+        .Write[[s[a] <: S[a], a] =>> Annotation[RecordBase.Write[s, a]], S]
+        .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase.Write[s, a]]) => Write(annotation))(
+          [s[a] <: S[a], a] => (schema: Schema.Record.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](
         annotation: Annotation[RecordBase[S, A]]
@@ -641,12 +639,11 @@ object Schema:
         (annotation: Annotation[RecordBase[S, A]]) => Schema.Record(annotation)
       )([A] => (schema: Schema.Record[S, A]) => schema.self)
 
-    // given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, S] = ???
-    // Self
-    //   .Record[[s[a] <: S[a], a] =>> Annotation[RecordBase[s, a]], S]
-    //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[s, a]]) => Record(annotation))(
-    //     [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
-    //   )
+    given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, S] = Self
+      .Record[[s[a] <: S[a], a] =>> Annotation[RecordBase[s, a]], S]
+      .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[s, a]]) => Record(annotation))([s[a] <: S[a], a] =>
+        (schema: Record[s, a]) => schema.self
+      )
 
   sealed abstract class Primitive[A] extends Schema[Nothing, A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
     override def self: Annotation[PrimitiveBase[A]]

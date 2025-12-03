@@ -4,9 +4,8 @@ import io.taig.otter as Self
 import io.taig.otter.shape.SchemaShape
 import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
-import io.taig.otter.Tupleable
 
-object SchemaComponent extends RecordComponent[Schema.Record.Of, Schema](using ???)
+object SchemaComponent extends RecordComponent[Schema.Record.Of, Schema], UnionComponent[Schema.Union.Of, Schema]
 
 object dsl extends AllSyntax, SchemaShape:
   val schema = SchemaComponent
@@ -20,14 +19,21 @@ object Playground:
   val age: Schema.Primitive[Int] = ???
 
   val myField: Schema.Record.Of[Schema.Primitive.Text, String] = schema.field("name", name)
+  val myBranch: Schema.Union.Of[Schema.Primitive.Text, String] = schema.branch("name", name)
 
   val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField
 
-  // val rec1: Schema.Record.Of[Schema.Primitive, (String, Int)] =
-  //   schema.field("name", name) :* schema.field("age", age) // :* schema.field("name", name)
+  val rec1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
+    schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)
 
-  // val rec2: Schema.Record.Of[Schema.Primitive, (String, Int)] =
-  //   schema.field("name", name) *: schema.field("age", age)
+  val rec2: Schema.Record.Of[Schema, ((String, Int, String, (String, Int, String)))] =
+    schema.field("a", rec1) :* schema.field("b", rec1)
+
+  val rec3: Schema.Record.Of[Schema, ((String, Int, String), String, Int)] =
+    schema.field("rec", rec1) *: schema.field("name", name) *: schema.field("age", age)
+
+  val rec4: Schema.Record.Of[Schema, (String, Int, String, String, Int, String)] =
+    schema.field("a", rec1) * schema.field("b", rec1)
 
   val _: Schema.Tuple.Of[Schema.Primitive.Text, String] = name.toTuple
   val _: Schema.Tuple.Of[Schema.Primitive, String] = name.toTuple

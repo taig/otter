@@ -34,14 +34,14 @@ object UnionBase:
       def map[A, B](fa: UnionBase.Read[S, A])(f: A => B): UnionBase.Read[S, B] = fa.map(f)
 
     given [S[_]]: Union.Read[UnionBase.Read, S] with
-      override def union[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase.Read[T, A] = Root(branch)
+      override def apply[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase.Read[T, A] = UnionBase.Read.Root(branch)
 
-      override def orElse[T[a] <: S[a], A, B](
-          left: UnionBase.Read[T, A],
-          right: UnionBase.Read[T, B]
-      ): UnionBase.Read[T, Either[A, B]] = OrElse(left, right)
+      extension [A](fha: UnionBase.Read[S, A]) override def branches: NonEmptyChain[Branch[S, ?]] = fha.branches
 
-      override def branches[T[a] <: S[a], A](self: UnionBase.Read[T, A]): NonEmptyChain[Branch[T, ?]] = self.branches
+      extension [T[a] <: S[a], A](fia: UnionBase.Read[T, A])
+        override def orElse[U[a] <: S[a], B](
+            schema: UnionBase.Read[U, B]
+        ): UnionBase.Read[[a] =>> T[a] | U[a], Either[A, B]] = fia.orElse(schema)
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def branches: NonEmptyChain[Branch[S, ?]]
@@ -66,14 +66,14 @@ object UnionBase:
       def contramap[A, B](fa: UnionBase.Write[S, A])(f: B => A): UnionBase.Write[S, B] = fa.contramap(f)
 
     given [S[_]]: Union.Write[UnionBase.Write, S] with
-      override def union[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase.Write[T, A] = Root(branch)
+      override def apply[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase.Write[T, A] = UnionBase.Write.Root(branch)
 
-      override def orElse[T[a] <: S[a], A, B](
-          left: UnionBase.Write[T, A],
-          right: UnionBase.Write[T, B]
-      ): UnionBase.Write[T, Either[A, B]] = OrElse(left, right)
+      extension [A](fha: UnionBase.Write[S, A]) override def branches: NonEmptyChain[Branch[S, ?]] = fha.branches
 
-      override def branches[T[a] <: S[a], A](self: UnionBase.Write[T, A]): NonEmptyChain[Branch[T, ?]] = self.branches
+      extension [T[a] <: S[a], A](fia: UnionBase.Write[T, A])
+        override def orElse[U[a] <: S[a], B](
+            schema: UnionBase.Write[U, B]
+        ): UnionBase.Write[[a] =>> T[a] | U[a], Either[A, B]] = fia.orElse(schema)
 
   final case class Root[S[_], A](branch: Branch[S, A]) extends UnionBase[S, A]:
     override def branches: NonEmptyChain[Branch[S, ?]] = NonEmptyChain.one(branch)
@@ -89,11 +89,10 @@ object UnionBase:
     def imap[A, B](fa: UnionBase[S, A])(f: A => B)(g: B => A): UnionBase[S, B] = fa.imap(f)(g)
 
   given [S[_]]: Union[UnionBase, S] with
-    override def union[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase[T, A] = Root(branch)
+    override def apply[T[a] <: S[a], A](branch: Branch[T, A]): UnionBase[T, A] = Root(branch)
 
-    override def orElse[T[a] <: S[a], A, B](
-        left: UnionBase[T, A],
-        right: UnionBase[T, B]
-    ): UnionBase[T, Either[A, B]] = OrElse(left, right)
+    extension [A](fha: UnionBase[S, A]) override def branches: NonEmptyChain[Branch[S, ?]] = fha.branches
 
-    override def branches[T[a] <: S[a], A](self: UnionBase[T, A]): NonEmptyChain[Branch[T, ?]] = self.branches
+    extension [T[a] <: S[a], A](fia: UnionBase[T, A])
+      override def orElse[U[a] <: S[a], B](schema: UnionBase[U, B]): UnionBase[[a] =>> T[a] | U[a], Either[A, B]] =
+        OrElse(fia, schema)
