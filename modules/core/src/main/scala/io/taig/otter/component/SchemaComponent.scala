@@ -6,9 +6,7 @@ import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
 import io.taig.otter.Tupleable
 
-object SchemaComponent
-    extends FieldComponent[Schema.Field.Of, Schema](using ???),
-      RecordComponent[Schema.Record.Of, Schema](using ???)
+object SchemaComponent extends RecordComponent[Schema.Record.Of, Schema](using ???)
 
 object dsl extends AllSyntax, SchemaShape:
   val schema = SchemaComponent
@@ -21,9 +19,9 @@ object Playground:
 
   val age: Schema.Primitive[Int] = ???
 
-  val myField: Schema.Field.Of[Schema.Primitive.Text, String] = schema.field("name", name)
+  val myField: Schema.Record.Of[Schema.Primitive.Text, String] = schema.field("name", name)
 
-  val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField.toRecord
+  val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField
 
   // val rec1: Schema.Record.Of[Schema.Primitive, (String, Int)] =
   //   schema.field("name", name) :* schema.field("age", age) // :* schema.field("name", name)
