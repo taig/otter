@@ -18,22 +18,22 @@ object Playground:
 
   val age: Schema.Primitive[Int] = ???
 
-  val myField: Schema.Record.Of[Schema.Primitive.Text, String] = schema.field("name", name)
-  val myBranch: Schema.Union.Of[Schema.Primitive.Text, String] = schema.branch("name", name)
+  // val myField: Schema.Record.Of[Schema.Primitive.Text, String] = schema.field("name", name)
+  // val myBranch: Schema.Union.Of[Schema.Primitive.Text, String] = schema.branch("name", name)
 
-  val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField
+  // val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField
 
-  val rec1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
-    schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)
+  // val rec1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
+  //   schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)
 
-  val rec2: Schema.Record.Of[Schema, ((String, Int, String, (String, Int, String)))] =
-    schema.field("a", rec1) :* schema.field("b", rec1)
+  // val rec2: Schema.Record.Of[Schema, ((String, Int, String, (String, Int, String)))] =
+  //   schema.field("a", rec1) :* schema.field("b", rec1)
 
-  val rec3: Schema.Record.Of[Schema, ((String, Int, String), String, Int)] =
-    schema.field("rec", rec1) *: schema.field("name", name) *: schema.field("age", age)
+  // val rec3: Schema.Record.Of[Schema, ((String, Int, String), String, Int)] =
+  //   schema.field("rec", rec1) *: schema.field("name", name) *: schema.field("age", age)
 
-  val rec4: Schema.Record.Of[Schema, (String, Int, String, String, Int, String)] =
-    schema.field("a", rec1) * schema.field("b", rec1)
+  // val rec4: Schema.Record.Of[Schema, (String, Int, String, String, Int, String)] =
+  //   schema.field("a", rec1) * schema.field("b", rec1)
 
   val _: Schema.Tuple.Of[Schema.Primitive.Text, String] = name.toTuple
   val _: Schema.Tuple.Of[Schema.Primitive, String] = name.toTuple
