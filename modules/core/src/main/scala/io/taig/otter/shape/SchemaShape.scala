@@ -193,19 +193,19 @@ trait SchemaShape:
 
     object Record:
       type Of[+S[a] <: Schema[a], A] = Self.Schema.Record[S, A]
-      export Self.Schema.Record.{apply, unapply}
+    //   export Self.Schema.Record.{apply, unapply}
 
-      type Read[+A] = Self.Schema.Record.Read[?, A]
+    //   type Read[+A] = Self.Schema.Record.Read[?, A]
 
-      object Read:
-        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Record.Read[S, A]
-        export Self.Schema.Record.Read.{apply, unapply}
+    //   object Read:
+    //     type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Record.Read[S, A]
+    //     export Self.Schema.Record.Read.{apply, unapply}
 
-      type Write[-A] = Self.Schema.Record.Write[?, A]
+    //   type Write[-A] = Self.Schema.Record.Write[?, A]
 
-      object Write:
-        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Record.Write[S, A]
-        export Self.Schema.Record.Write.{apply, unapply}
+    //   object Write:
+    //     type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Record.Write[S, A]
+    //     export Self.Schema.Record.Write.{apply, unapply}
 
     type Tuple[A] = Self.Schema.Tuple[?, A]
 
@@ -242,5 +242,23 @@ trait SchemaShape:
       object Write:
         type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Union.Write[S, A]
         export Self.Schema.Union.Write.{apply, unapply}
+
+    type Field[A] = Self.Schema.Field[?, A]
+
+    object Field:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Field[S, A]
+      export Self.Schema.Field.{apply, unapply}
+
+      type Read[+A] = Self.Schema.Field.Read[?, A]
+
+      object Read:
+        type Of[+S[a] <: Schema.Read[a], A] = Self.Schema.Field.Read[S, A]
+        export Self.Schema.Field.Read.{apply, unapply}
+
+      type Write[-A] = Self.Schema.Field.Write[?, A]
+
+      object Write:
+        type Of[+S[a] <: Schema.Write[a], A] = Self.Schema.Field.Write[S, A]
+        export Self.Schema.Field.Write.{apply, unapply}
 
 object SchemaShape extends SchemaShape

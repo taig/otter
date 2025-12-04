@@ -29,7 +29,7 @@ trait Field[F[+_[a] <: G[a], _], G[_]]:
       def schema: Reference[I, ?] = self.schema(gK(hia))
 
 object Field:
-  sealed trait Read[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
+  trait Read[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
     self =>
 
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
@@ -53,7 +53,7 @@ object Field:
             gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
         ): Field.Read[H, G] = fa.imapK(fK)(gK)
 
-  sealed trait Write[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
+  trait Write[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
     self =>
 
     override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(

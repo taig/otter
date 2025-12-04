@@ -5,7 +5,6 @@ import cats.Functor
 import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.Record
-import io.taig.otter.Field
 import io.taig.otter.Reference
 
 sealed abstract class RecordBase[+S[_], A] extends RecordBase.Read[S, A], RecordBase.Write[S, A]:
@@ -34,17 +33,6 @@ object RecordBase:
     given [S[_]]: Functor[RecordBase.Read[S, *]] with
       def map[A, B](fa: RecordBase.Read[S, A])(f: A => B): RecordBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Record.Read[RecordBase.Read, S] with
-      // override def apply[T[a] <: S[a], A](field: Field[T, A]): RecordBase.Read[T, A] = Root(field)
-
-      override def empty: RecordBase.Read[S, Unit] = Empty
-
-      extension [A](fha: RecordBase.Read[S, A]) override def fields: Chain[Reference[S, ?]] = fha.fields
-
-      extension [T[a] <: S[a], A](fia: RecordBase.Read[T, A])
-        override def zip[U[a] <: S[a], B](schema: RecordBase.Read[U, B]): RecordBase.Read[[a] =>> T[a] | U[a], (A, B)] =
-          Zip(fia, schema)
-
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def fields: Chain[Reference[S, ?]]
 
@@ -64,19 +52,6 @@ object RecordBase:
     given [S[_]]: Contravariant[RecordBase.Write[S, *]] with
       def contramap[A, B](fa: RecordBase.Write[S, A])(f: B => A): RecordBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Record.Write[RecordBase.Write, S] with
-      // override def apply[T[a] <: S[a], A](field: Field[T, A]): RecordBase.Write[T, A] = Root(field)
-
-      override def empty: RecordBase.Write[S, Unit] = Empty
-
-      extension [A](fha: RecordBase.Write[S, A]) override def fields: Chain[Reference[S, ?]] = fha.fields
-
-      extension [T[a] <: S[a], A](fia: RecordBase.Write[T, A])
-        override def zip[U[a] <: S[a], B](
-            schema: RecordBase.Write[U, B]
-        ): RecordBase.Write[[a] =>> T[a] | U[a], (A, B)] =
-          Zip(fia, schema)
-
   case object Empty extends RecordBase[Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty
 
@@ -93,13 +68,7 @@ object RecordBase:
   given [S[_]]: Invariant[RecordBase[S, *]] with
     def imap[A, B](fa: RecordBase[S, A])(f: A => B)(g: B => A): RecordBase[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Record[RecordBase, S] with
-    // override def apply[T[a] <: S[a], A](field: Field[T, A]): RecordBase[T, A] = Root(field)
+  given [F[+_[a] <: S[a], _], S[_]]: Record[RecordBase, F, S] with
+    override def apply[I[a] <: S[a], A](field: F[I, A]): RecordBase[F[I, *], A] = Root(field = Reference.later(field))
 
-    override def empty: RecordBase[S, Unit] = Empty
-
-    extension [A](fha: RecordBase[S, A]) override def fields: Chain[Reference[S, ?]] = fha.fields
-
-    extension [T[a] <: S[a], A](fia: RecordBase[T, A])
-      override def zip[U[a] <: S[a], B](schema: RecordBase[U, B]): RecordBase[[a] =>> T[a] | U[a], (A, B)] =
-        Zip(fia, schema)
+    override def empty: RecordBase[F[S, *], Unit] = Empty

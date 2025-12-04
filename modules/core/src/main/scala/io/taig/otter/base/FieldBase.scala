@@ -39,7 +39,7 @@ object FieldBase:
     given [S[_]]: Functor[FieldBase.Read[S, *]] with
       def map[A, B](fa: FieldBase.Read[S, A])(f: A => B): FieldBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Field[FieldBase.Read, S] with
+    given [S[_]]: Field.Read[FieldBase.Read, S] with
       extension [A](self: FieldBase.Read[S, A]) override def name: String = self.name
 
       extension [T[a] <: S[a], A](self: FieldBase.Read[T, A])
@@ -71,7 +71,7 @@ object FieldBase:
     given [S[_]]: Contravariant[FieldBase.Write[S, *]] with
       def contramap[A, B](fa: FieldBase.Write[S, A])(f: B => A): FieldBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Field[FieldBase.Write, S] with
+    given [S[_]]: Field.Write[FieldBase.Write, S] with
       extension [A](self: FieldBase.Write[S, A]) override def name: String = self.name
 
       extension [T[a] <: S[a], A](self: FieldBase.Write[T, A])
