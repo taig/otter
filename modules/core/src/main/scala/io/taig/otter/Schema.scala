@@ -571,8 +571,31 @@ object Schema:
     sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
       override def self: Annotation[RecordBase.Read[Schema.Field.Read, S, A]]
 
+    object Read:
+      def apply[S[a] <: Schema.Read[?, a], A](
+          annotation: Annotation[RecordBase.Read[Schema.Field.Read, S, A]]
+      ): Schema.Record.Read[S, A] = new Read[S, A]:
+        override def self: Annotation[RecordBase.Read[Schema.Field.Read, S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Read[?, a], A](
+          schema: Schema.Record.Read[S, A]
+      ): Annotation[RecordBase.Read[Schema.Field.Read, S, A]] = schema.self
+
+      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Record.Read[S, A]] =
+        Annotated[Annotation[RecordBase.Read[Schema.Field.Read, S, A]]].imap(Schema.Record.Read.apply)(_.self)
+
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
       override def self: Annotation[RecordBase.Write[Schema.Field.Write, S, A]]
+
+    object Write:
+      def apply[S[a] <: Schema.Write[?, a], A](
+          annotation: Annotation[RecordBase.Write[Schema.Field.Write, S, A]]
+      ): Schema.Record.Write[S, A] = new Write[S, A]:
+        override def self: Annotation[RecordBase.Write[Schema.Field.Write, S, A]] = annotation
+
+      def unapply[S[a] <: Schema.Write[?, a], A](
+          schema: Schema.Record.Write[S, A]
+      ): Annotation[RecordBase.Write[Schema.Field.Write, S, A]] = schema.self
 
     def apply[S[a] <: Schema[?, a], A](
         annotation: Annotation[RecordBase[Schema.Field, S, A]]
@@ -585,16 +608,17 @@ object Schema:
     given [S[a] <: Schema[?, a], A]: Annotated[Schema.Record[S, A]] =
       Annotated[Annotation[RecordBase[Schema.Field, S, A]]].imap(Schema.Record.apply)(_.self)
 
-    given [S[a] <: Schema[?, a]]: Invariant[Schema.Record[S, *]] = ???
-    // Invariant[[a] =>> Annotation[RecordBase[Schema.Field, S, a]]].imapK([A] =>
-    //   (annotation: Annotation[RecordBase[Schema.Field, S, A]]) => Schema.Record(annotation)
-    // )([A] => (schema: Schema.Record[S, A]) => schema.self)
+    given [S[a] <: Schema[?, a]]: Invariant[Schema.Record[S, *]] =
+      Invariant[[a] =>> Annotation[RecordBase[Schema.Field, S, a]]].imapK([A] =>
+        (annotation: Annotation[RecordBase[Schema.Field, S, A]]) => Schema.Record(annotation)
+      )([A] => (schema: Schema.Record[S, A]) => schema.self)
 
-  //   // given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, Schema.Field, S] =
-  //     // Self.Record[RecordBase, Schema.Field, S]
-  //     // .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[Schema.Field[s, *], a]]) => Record(annotation))(
-  //     //   [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
-  //     // )
+    given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, Schema.Field, S] =
+      // Self.Record[[s[a] <: S[a], a] =>> RecordBase[S, s, a], Schema.Field, S]
+      //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[Schema.Field[s, *], a]]) => Record(annotation))(
+      //     [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
+      //   )
+      ???
 
   sealed abstract class Primitive[A] extends Schema[Nothing, A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
     override def self: Annotation[PrimitiveBase[A]]
