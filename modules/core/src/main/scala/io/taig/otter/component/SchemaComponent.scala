@@ -5,7 +5,10 @@ import io.taig.otter.shape.SchemaShape
 import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
 
-object SchemaComponent extends RecordComponent[Schema.Record.Of, Schema], UnionComponent[Schema.Union.Of, Schema]
+object SchemaComponent
+    extends
+// RecordComponent[Schema.Record.Of, Schema],
+    UnionComponent[Schema.Union.Of, Schema]
 
 object dsl extends AllSyntax, SchemaShape:
   val schema = SchemaComponent
@@ -44,6 +47,6 @@ object Playground:
   val _: Schema.Tuple.Of[Schema, (List[String], String)] = names :* name
   val _: Schema.Tuple.Of[[a] =>> Schema.Collection[a] | Schema.Primitive[a], (List[String], String)] = names :* name
   val _: Schema.Tuple.Of[[a] =>> Schema.Collection[a] | Schema.Primitive[a], (String, List[String])] = name :* names
-  val a: Schema.Tuple.Of[Schema.Primitive, (Int, String)] = age :* name
+  val _: Schema.Tuple.Of[Schema.Primitive, (Int, String)] = age :* name
   val _: Schema.Tuple.Of[Schema.Primitive, (String, Int)] = name :* age
   val _: Schema.Tuple.Of[Schema.Primitive.Text, (String, String)] = name :* name

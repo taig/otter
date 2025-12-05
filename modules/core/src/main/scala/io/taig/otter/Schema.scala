@@ -13,7 +13,7 @@ sealed abstract class Schema[+S[a] <: Schema[?, a], A] extends Schema.Read[S, A]
 object Schema:
   type Of[+S[a] <: Schema[?, a], A] = CoerceBase[S, A] | CollectionBase[S, A] | ConstantBase[S, A] |
     DictionaryBase[S, A] | EnumerationBase[S, A] | NullishBase[S, A] | PrimitiveBase[A] |
-    RecordBase[Schema.Field[S, *], A] | TupleBase[S, A] | UnionBase[S, A]
+    RecordBase[Schema.Field, S, A] | TupleBase[S, A] | UnionBase[S, A]
 
   sealed trait Read[+S[a] <: Schema.Read[?, a], +A]:
     def self: Annotation[Schema.Read.Of[S, A]]
@@ -21,19 +21,18 @@ object Schema:
   object Read:
     type Of[+S[a] <: Schema.Read[?, a], +A] = CoerceBase.Read[S, A] | CollectionBase.Read[S, A] |
       ConstantBase.Read[S, A] | DictionaryBase.Read[S, A] | EnumerationBase.Read[S, A] | NullishBase.Read[S, A] |
-      PrimitiveBase.Read[A] | RecordBase.Read[Schema.Field.Read[S, *], A] | TupleBase.Read[S, A] | UnionBase.Read[S, A]
+      PrimitiveBase.Read[A] | RecordBase.Read[Schema.Field.Read, S, A] | TupleBase.Read[S, A] | UnionBase.Read[S, A]
 
     def apply[S[a] <: Schema.Read[?, a], A](annotation: Annotation[Schema.Read.Of[S, A]]): Schema.Read[S, A] =
       annotation.self match
-        case self: CoerceBase.Read[S, A]                       => Schema.Coerce.Read(annotation.copy(self = self))
-        case self: CollectionBase.Read[S, A]                   => Schema.Collection.Read(annotation.copy(self = self))
-        case self: ConstantBase.Read[S, A]                     => Schema.Constant.Read(annotation.copy(self = self))
-        case self: DictionaryBase.Read[S, A]                   => Schema.Dictionary.Read(annotation.copy(self = self))
-        case self: EnumerationBase.Read[S, A]                  => Schema.Enumeration.Read(annotation.copy(self = self))
-        case self: NullishBase.Read[S, A]                      => Schema.Nullish.Read(annotation.copy(self = self))
-        case self: PrimitiveBase.Read[A]                       => Schema.Primitive.Read(annotation.copy(self = self))
-        case self: RecordBase.Read[Schema.Field.Read[S, *], A] =>
-          ??? // Schema.Record.Read(annotation.copy(self = self))
+        case self: CoerceBase.Read[S, A]      => Schema.Coerce.Read(annotation.copy(self = self))
+        case self: CollectionBase.Read[S, A]  => Schema.Collection.Read(annotation.copy(self = self))
+        case self: ConstantBase.Read[S, A]    => Schema.Constant.Read(annotation.copy(self = self))
+        case self: DictionaryBase.Read[S, A]  => Schema.Dictionary.Read(annotation.copy(self = self))
+        case self: EnumerationBase.Read[S, A] => Schema.Enumeration.Read(annotation.copy(self = self))
+        case self: NullishBase.Read[S, A]     => Schema.Nullish.Read(annotation.copy(self = self))
+        case self: PrimitiveBase.Read[A]      => Schema.Primitive.Read(annotation.copy(self = self))
+        // case self: RecordBase.Read[Schema.Field.Read, S, A] => Schema.Record.Read(annotation.copy(self = self))
         case self: TupleBase.Read[S, A] => Schema.Tuple.Read(annotation.copy(self = self))
         case self: UnionBase.Read[S, A] => Schema.Union.Read(annotation.copy(self = self))
 
@@ -48,7 +47,7 @@ object Schema:
   object Write:
     type Of[+S[a] <: Schema.Write[?, a], -A] = CoerceBase.Write[S, A] | CollectionBase.Write[S, A] |
       ConstantBase.Write[S, A] | DictionaryBase.Write[S, A] | EnumerationBase.Write[S, A] | NullishBase.Write[S, A] |
-      PrimitiveBase.Write[A] | RecordBase.Write[Schema.Field.Write[S, *], A] | TupleBase.Write[S, A] |
+      PrimitiveBase.Write[A] | RecordBase.Write[Schema.Field.Write, S, A] | TupleBase.Write[S, A] |
       UnionBase.Write[S, A]
 
     def apply[S[a] <: Schema.Write[?, a], A](annotation: Annotation[Schema.Write.Of[S, A]]): Schema.Write[S, A] =
@@ -60,8 +59,7 @@ object Schema:
         case self: EnumerationBase.Write[S, A] => Schema.Enumeration.Write(annotation.copy(self = self))
         case self: NullishBase.Write[S, A]     => Schema.Nullish.Write(annotation.copy(self = self))
         case self: PrimitiveBase.Write[A]      => Schema.Primitive.Write(annotation.copy(self = self))
-        case self: RecordBase.Write[Schema.Field.Write[S, *], A] =>
-          ??? // Schema.Record.Write(annotation.copy(self = self))
+        // case self: RecordBase.Write[Schema.Field.Write, S, A] => Schema.Record.Write(annotation.copy(self = self))
         case self: TupleBase.Write[S, A] => Schema.Tuple.Write(annotation.copy(self = self))
         case self: UnionBase.Write[S, A] => Schema.Union.Write(annotation.copy(self = self))
 
@@ -567,37 +565,36 @@ object Schema:
       extends Schema[S, A],
         Schema.Record.Read[S, A],
         Schema.Record.Write[S, A]:
-    override def self: Annotation[RecordBase[Schema.Field[S, *], A]]
+    override def self: Annotation[RecordBase[Schema.Field, S, A]]
 
   object Record:
     sealed trait Read[+S[a] <: Schema.Read[?, a], +A] extends Schema.Read[S, A]:
-      override def self: Annotation[RecordBase.Read[Schema.Field.Read[S, *], A]]
+      override def self: Annotation[RecordBase.Read[Schema.Field.Read, S, A]]
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A] extends Schema.Write[S, A]:
-      override def self: Annotation[RecordBase.Write[Schema.Field.Write[S, *], A]]
+      override def self: Annotation[RecordBase.Write[Schema.Field.Write, S, A]]
 
     def apply[S[a] <: Schema[?, a], A](
-        annotation: Annotation[RecordBase[Schema.Field[S, *], A]]
+        annotation: Annotation[RecordBase[Schema.Field, S, A]]
     ): Schema.Record[S, A] = new Record[S, A]:
-      override def self: Annotation[RecordBase[Schema.Field[S, *], A]] = annotation
+      override def self: Annotation[RecordBase[Schema.Field, S, A]] = annotation
 
-    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Record[S, A]): Annotation[RecordBase[Schema.Field[S, *], A]] =
+    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Record[S, A]): Annotation[RecordBase[Schema.Field, S, A]] =
       schema.self
 
     given [S[a] <: Schema[?, a], A]: Annotated[Schema.Record[S, A]] =
-      Annotated[Annotation[RecordBase[Schema.Field[S, *], A]]].imap(Schema.Record.apply)(_.self)
+      Annotated[Annotation[RecordBase[Schema.Field, S, A]]].imap(Schema.Record.apply)(_.self)
 
-    given [S[a] <: Schema[?, a]]: Invariant[Schema.Record[S, *]] =
-      Invariant[[a] =>> Annotation[RecordBase[Schema.Field[S, *], a]]].imapK([A] =>
-        (annotation: Annotation[RecordBase[Schema.Field[S, *], A]]) => Schema.Record(annotation)
-      )([A] => (schema: Schema.Record[S, A]) => schema.self)
+    given [S[a] <: Schema[?, a]]: Invariant[Schema.Record[S, *]] = ???
+    // Invariant[[a] =>> Annotation[RecordBase[Schema.Field, S, a]]].imapK([A] =>
+    //   (annotation: Annotation[RecordBase[Schema.Field, S, A]]) => Schema.Record(annotation)
+    // )([A] => (schema: Schema.Record[S, A]) => schema.self)
 
-    given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, Schema.Field, S] =
-      // Self.Record[RecordBase, Schema.Field, S]
-      ???
-      // .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[Schema.Field[s, *], a]]) => Record(annotation))(
-      //   [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
-      // )
+  //   // given [S[a] <: Schema[?, a]]: Self.Record[Schema.Record, Schema.Field, S] =
+  //     // Self.Record[RecordBase, Schema.Field, S]
+  //     // .imapK([s[a] <: S[a], a] => (annotation: Annotation[RecordBase[Schema.Field[s, *], a]]) => Record(annotation))(
+  //     //   [s[a] <: S[a], a] => (schema: Record[s, a]) => schema.self
+  //     // )
 
   sealed abstract class Primitive[A] extends Schema[Nothing, A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
     override def self: Annotation[PrimitiveBase[A]]
@@ -983,95 +980,92 @@ object Schema:
         (schema: Union[s, a]) => schema.self
       )
 
-  sealed abstract class Field[+S[a] <: Schema[?, a], A] extends Schema.Field.Read[S, A], Schema.Field.Write[S, A]:
+  sealed abstract class Field[+S[_], A] extends Schema.Field.Read[S, A], Schema.Field.Write[S, A]:
     override def self: Annotation[FieldBase[S, A]]
 
   object Field:
-    sealed trait Read[+S[a] <: Schema.Read[?, a], +A]:
+    sealed trait Read[+S[_], +A]:
       def self: Annotation[FieldBase.Read[S, A]]
 
     object Read:
-      def apply[S[a] <: Schema.Read[?, a], A](
+      def apply[S[_], A](
           annotation: Annotation[FieldBase.Read[S, A]]
       ): Schema.Field.Read[S, A] = new Schema.Field.Read[S, A]:
         override def self: Annotation[FieldBase.Read[S, A]] = annotation
 
-      def unapply[S[a] <: Schema.Read[?, a], A](
-          schema: Schema.Field.Read[S, A]
-      ): Annotation[FieldBase.Read[S, A]] = schema.self
+      def unapply[S[_], A](schema: Schema.Field.Read[S, A]): Annotation[FieldBase.Read[S, A]] = schema.self
 
-      given [S[a] <: Schema.Read[?, a], A]: Annotated[Schema.Field.Read[S, A]] =
+      given [S[_], A]: Annotated[Schema.Field.Read[S, A]] =
         Annotated[Annotation[FieldBase.Read[S, A]]].imap(Schema.Field.Read.apply)(_.self)
 
-      given [S[a] <: Schema.Read[?, a]]: Functor[Schema.Field.Read[S, *]] =
+      given [S[_]]: Functor[Schema.Field.Read[S, *]] =
         Functor[[a] =>> Annotation[FieldBase.Read[S, a]]].imapK([A] =>
           (annotation: Annotation[FieldBase.Read[S, A]]) => Schema.Field.Read(annotation)
         )([A] => (schema: Schema.Field.Read[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Read[?, a]]: Self.Field.Read[Schema.Field.Read, S] = Self.Field
+      given [S[_]]: Self.Field.Read[Schema.Field.Read, S] = Self.Field
         .Read[[s[a] <: S[a], a] =>> Annotation[FieldBase.Read[s, a]], S]
         .imapK([s[a] <: S[a], a] => (annotation: Annotation[FieldBase.Read[s, a]]) => Read(annotation))(
           [s[a] <: S[a], a] => (schema: Schema.Field.Read[s, a]) => schema.self
         )
 
-    sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
+    sealed trait Write[+S[_], -A]:
       def self: Annotation[FieldBase.Write[S, A]]
 
     object Write:
-      def apply[S[a] <: Schema.Write[?, a], A](
+      def apply[S[_], A](
           annotation: Annotation[FieldBase.Write[S, A]]
       ): Schema.Field.Write[S, A] = new Schema.Field.Write[S, A]:
         override def self: Annotation[FieldBase.Write[S, A]] = annotation
 
-      def unapply[S[a] <: Schema.Write[?, a], A](
+      def unapply[S[_], A](
           schema: Schema.Field.Write[S, A]
       ): Annotation[FieldBase.Write[S, A]] = schema.self
 
-      given [S[a] <: Schema.Write[?, a], A]: Annotated[Schema.Field.Write[S, A]] =
+      given [S[_], A]: Annotated[Schema.Field.Write[S, A]] =
         Annotated[Annotation[FieldBase.Write[S, A]]].imap(Schema.Field.Write.apply)(_.self)
 
-      given [S[a] <: Schema.Write[?, a]]: Contravariant[Schema.Field.Write[S, *]] =
+      given [S[_]]: Contravariant[Schema.Field.Write[S, *]] =
         Contravariant[[a] =>> Annotation[FieldBase.Write[S, a]]].imapK([A] =>
           (annotation: Annotation[FieldBase.Write[S, A]]) => Schema.Field.Write(annotation)
         )([A] => (schema: Schema.Field.Write[S, A]) => schema.self)
 
-      given [S[a] <: Schema.Write[?, a]]: Self.Field.Write[Schema.Field.Write, S] = Self.Field
+      given [S[_]]: Self.Field.Write[Schema.Field.Write, S] = Self.Field
         .Write[[s[a] <: S[a], a] =>> Annotation[FieldBase.Write[s, a]], S]
         .imapK([s[a] <: S[a], a] => (annotation: Annotation[FieldBase.Write[s, a]]) => Write(annotation))(
           [s[a] <: S[a], a] => (schema: Schema.Field.Write[s, a]) => schema.self
         )
 
-    def apply[S[a] <: Schema[?, a], A](annotation: Annotation[FieldBase[S, A]]): Schema.Field[S, A] =
-      new Schema.Field[S, A]:
-        override def self: Annotation[FieldBase[S, A]] = annotation
+    def apply[S[_], A](annotation: Annotation[FieldBase[S, A]]): Schema.Field[S, A] = new Schema.Field[S, A]:
+      override def self: Annotation[FieldBase[S, A]] = annotation
 
-    def unapply[S[a] <: Schema[?, a], A](schema: Schema.Field[S, A]): Annotation[FieldBase[S, A]] = schema.self
+    def unapply[S[_], A](schema: Schema.Field[S, A]): Annotation[FieldBase[S, A]] = schema.self
 
-    given [S[a] <: Schema[?, a], A]: Annotated[Schema.Field[S, A]] =
+    given [S[_], A]: Annotated[Schema.Field[S, A]] =
       Annotated[Annotation[FieldBase[S, A]]].imap(Schema.Field.apply)(_.self)
 
-    given [S[a] <: Schema[?, a]]: Invariant[Schema.Field[S, *]] =
+    given [S[_]]: Invariant[Schema.Field[S, *]] =
       Invariant[[a] =>> Annotation[FieldBase[S, a]]].imapK([A] =>
         (annotation: Annotation[FieldBase[S, A]]) => Schema.Field(annotation)
       )([A] => (schema: Schema.Field[S, A]) => schema.self)
 
-    given [S[a] <: Schema[?, a]]: Self.Field[Schema.Field, S] = Self
+    given [S[_]]: Self.Field[Schema.Field, S] = Self
       .Field[[s[a] <: S[a], a] =>> Annotation[FieldBase[s, a]], S]
       .imapK([s[a] <: S[a], a] => (annotation: Annotation[FieldBase[s, a]]) => Field(annotation))([s[a] <: S[a], a] =>
         (schema: Field[s, a]) => schema.self
       )
 
   def apply[S[a] <: Schema[?, a], A](annotation: Annotation[Schema.Of[S, A]]): Schema[S, A] = annotation.self match
-    case self: CoerceBase[S, A]                  => Schema.Coerce(annotation.copy(self = self))
-    case self: CollectionBase[S, A]              => Schema.Collection(annotation.copy(self = self))
-    case self: ConstantBase[S, A]                => Schema.Constant(annotation.copy(self = self))
-    case self: DictionaryBase[S, A]              => Schema.Dictionary(annotation.copy(self = self))
-    case self: EnumerationBase[S, A]             => Schema.Enumeration(annotation.copy(self = self))
-    case self: NullishBase[S, A]                 => Schema.Nullish(annotation.copy(self = self))
-    case self: PrimitiveBase[A]                  => Schema.Primitive(annotation.copy(self = self))
-    case self: RecordBase[Schema.Field[S, *], A] => ??? // Schema.Record(annotation.copy(self = self))
-    case self: TupleBase[S, A]                   => Schema.Tuple(annotation.copy(self = self))
-    case self: UnionBase[S, A]                   => Schema.Union(annotation.copy(self = self))
+    case self: CoerceBase[S, A]      => Schema.Coerce(annotation.copy(self = self))
+    case self: CollectionBase[S, A]  => Schema.Collection(annotation.copy(self = self))
+    case self: ConstantBase[S, A]    => Schema.Constant(annotation.copy(self = self))
+    case self: DictionaryBase[S, A]  => Schema.Dictionary(annotation.copy(self = self))
+    case self: EnumerationBase[S, A] => Schema.Enumeration(annotation.copy(self = self))
+    case self: NullishBase[S, A]     => Schema.Nullish(annotation.copy(self = self))
+    case self: PrimitiveBase[A]      => Schema.Primitive(annotation.copy(self = self))
+    // case self: RecordBase[Schema.Field, S, A] => Schema.Record(annotation.copy(self = self))
+    case self: TupleBase[S, A] => Schema.Tuple(annotation.copy(self = self))
+    case self: UnionBase[S, A] => Schema.Union(annotation.copy(self = self))
 
   def unapply[S[a] <: Schema[?, a], A](schema: Schema[S, A]): Annotation[Schema.Of[S, A]] = schema.self
 
