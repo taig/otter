@@ -189,11 +189,11 @@ trait SchemaShape:
         object Write:
           export Self.Schema.Primitive.Text.Write.{apply, unapply}
 
-    // type Record[A] = Self.Schema.Record[?, A]
+    type Record[A] = Self.Schema.Record[?, A]
 
-    // object Record:
-    //   type Of[+S[a] <: Schema[a], A] = Self.Schema.Record[S, A]
-      // export Self.Schema.Record.{apply, unapply}
+    object Record:
+      type Of[+S[a] <: Schema[a], A] = Self.Schema.Record[S, A]
+      export Self.Schema.Record.{apply, unapply}
 
     //   type Read[+A] = Self.Schema.Record.Read[?, A]
 
@@ -246,7 +246,7 @@ trait SchemaShape:
     type Field[A] = Self.Schema.Field[?, A]
 
     object Field:
-      type Of[+S[a] <: Schema[a], A] = Self.Schema.Field[S, A]
+      type Of[+S[_], A] = Self.Schema.Field[S, A]
       export Self.Schema.Field.{apply, unapply}
 
       type Read[+A] = Self.Schema.Field.Read[?, A]

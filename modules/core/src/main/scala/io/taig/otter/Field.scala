@@ -2,85 +2,38 @@ package io.taig.otter
 
 import cats.Eval
 
-trait Field[F[+_[a] <: G[a], _], G[_]]:
+trait Field[F[+_[_], _], G[+_[a] <: H[a], _], H[_]]:
   self =>
 
-  extension [A](self: F[G, A]) def name: String
+  def apply[I[a] <: H[a], A](name: String, schema: Reference[I, A]): F[I, A]
 
-  extension [H[a] <: G[a], A](self: F[H, A])
-    def optional: F[H, Option[A]]
+  extension [A](self: F[H, A]) def name: String
 
-    def optional(default: Eval[A]): F[H, A]
+  extension [I[a] <: H[a], A](self: F[I, A])
+    def optional: F[I, Option[A]]
 
-    final def optional(default: => A): F[H, A] = optional(default = Eval.later(default))
+    def optional(default: Eval[A]): F[I, A]
 
-    def schema: Reference[H, ?]
+    final def optional(default: => A): F[I, A] = optional(default = Eval.later(default))
 
-  def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-      gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-  ): Field[H, G] = new Field[H, G]:
-    extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
-
-    extension [I[a] <: G[a], A](hia: H[I, A])
-      def optional: H[I, Option[A]] = fK(self.optional(gK(hia)))
-
-      def optional(default: Eval[A]): H[I, A] = fK(self.optional(gK(hia))(default))
-
-      def schema: Reference[I, ?] = self.schema(gK(hia))
+    def schema: Reference[I, ?]
 
 object Field:
-  trait Read[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
+  trait Read[F[+_[_], _], G[+_[a] <: H[a], _], H[_]] extends Field[F, G, H]:
     self =>
-
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Field.Read[H, G] = new Read[H, G]:
-      extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
-
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        def optional: H[I, Option[A]] = fK(self.optional(gK(hia)))
-
-        def optional(default: Eval[A]): H[I, A] = fK(self.optional(gK(hia))(default))
-
-        def schema: Reference[I, ?] = self.schema(gK(hia))
 
   object Read:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Field.Read[F, G]): Field.Read[F, G] = self
+    inline def apply[F[+_[_], _], G[+_[a] <: H[a], _], H[_]](using self: Field.Read[F, G, H]): Field.Read[F, G, H] = self
 
-    given InvariantK2[Field.Read] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Field.Read[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Field.Read[H, G] = fa.imapK(fK)(gK)
-
-  trait Write[F[+_[a] <: G[a], _], G[_]] extends Field[F, G]:
+  trait Write[F[+_[_], _], G[+_[a] <: H[a], _], H[_]] extends Field[F, G, H]:
     self =>
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Field.Write[H, G] = new Write[H, G]:
-      extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
+    extension [I[a] <: H[a], A](fa: F[I, A])
+      def optional: F[I, Option[A]]
 
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        def optional: H[I, Option[A]] = fK(self.optional(gK(hia)))
-
-        def optional(default: Eval[A]): H[I, A] = fK(self.optional(gK(hia))(default))
-
-        def schema: Reference[I, ?] = self.schema(gK(hia))
+      override final def optional(default: Eval[A]): F[I, A] = fa
 
   object Write:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Field.Write[F, G]): Field.Write[F, G] = self
+    inline def apply[F[+_[_], _], G[+_[a] <: H[a], _], H[_]](using self: Field.Write[F, G, H]): Field.Write[F, G, H] = self
 
-    given InvariantK2[Field.Write] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Field.Write[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Field.Write[H, G] = fa.imapK(fK)(gK)
-
-  inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Field[F, G]): Field[F, G] = self
-
-  given InvariantK2[Field] with
-    extension [F[+_[a] <: G[a], _], G[_]](fa: Field[F, G])
-      override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-          gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-      ): Field[H, G] = fa.imapK(fK)(gK)
+  inline def apply[F[+_[_], _], G[+_[a] <: H[a], _], H[_]](using self: Field[F, G, H]): Field[F, G, H] = self
