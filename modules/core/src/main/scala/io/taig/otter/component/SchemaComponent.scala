@@ -6,7 +6,8 @@ import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
 
 object SchemaComponent
-    extends RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema],
+    extends FieldComponent[Schema.Field.Of, Schema.Record.Of, Schema],
+      RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema],
       UnionComponent[Schema.Union.Of, Schema]
 
 object dsl extends AllSyntax, SchemaShape:
