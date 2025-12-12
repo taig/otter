@@ -21,10 +21,11 @@ object RecordBase:
   object Read:
     given [S[_]]: Functor[RecordBase.Read[S, *]] with
       override def map[A, B](fa: RecordBase.Read[S, A])(f: A => B): RecordBase.Read[S, B] = fa.map(f)
-    // given [S[+_[_], _], T[_]]: Record.Read[[t[_], a] =>> RecordBase.Read[S, t, a], S, T] = ???
+
+    given [S[+_[a] <: T[a], _], T[_]]: Record.Read[[s[a] <: T[a], a] =>> RecordBase.Read[S[s, *], a], S, T] = ???
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
-    // def fields: Chain[Reference[S[T, *], ?]]
+    def fields: Chain[Reference[S, ?]]
 
     final def contramap[B](f: B => A): RecordBase.Write[S, B] = ???
 
@@ -33,7 +34,7 @@ object RecordBase:
       override def contramap[A, B](fa: RecordBase.Write[S, A])(f: B => A): RecordBase.Write[S, B] =
         fa.contramap(f)
 
-    // given [S[+_[_], _], T[_]]: Record.Write[[t[_], a] =>> RecordBase.Write[S, t, a], S, T] = ???
+    given [S[+_[a] <: T[a], _], T[_]]: Record.Write[[s[a] <: T[a], a] =>> RecordBase.Write[S[s, *], a], S, T] = ???
 
   case object Empty extends RecordBase[Nothing, Unit]:
     override def fields: Chain[Nothing] = Chain.empty

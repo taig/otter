@@ -93,8 +93,8 @@ object FieldBase:
   given [S[_]]: Invariant[FieldBase[S, *]] with
     def imap[A, B](fa: FieldBase[S, A])(f: A => B)(g: B => A): FieldBase[S, B] = fa.imap(f)(g)
 
-  given inst[S[+_[a], _], T[_]]: Field[FieldBase, S, T] with
-    override def apply[I[a] <: T[a], A](name: String, schema: Reference[I, A]): FieldBase[I, A] =
+  given [S[+_[a] <: T[a], _], T[_]]: Field[FieldBase, S, T] with
+    override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase[U, A] =
       FieldBase.Root(name, schema)
 
     extension [A](self: FieldBase[T, A]) override def name: String = self.name

@@ -81,14 +81,16 @@ object Record:
           fK(self.zip(gK(ija))(gK(schema)))
 
   object Write:
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Record.Write[F, G, H]
+    ): Record.Write[F, G, H] =
+      self
+
     given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Record.Write] with
       extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Record.Write[F, GG, HH])
         def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
             gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
         ): Record.Write[I, GG, HH] = fa.imapK(fK)(gK)
-
-    inline def apply[F[+_[a] <: H[a], _], G[+_[_], _], H[_]](using self: Record.Write[F, G, H]): Record.Write[F, G, H] =
-      self
 
   inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using self: Record[F, G, H]): Record[F, G, H] = self
 
