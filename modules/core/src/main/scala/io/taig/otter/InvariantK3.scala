@@ -1,10 +1,10 @@
 package io.taig.otter
 
-trait InvariantK3[F[_[+_[_], _], _[+_[_], _], _[_]]]:
-  extension [H[+_[_], _], G[+_[_], _], I[_]](fa: F[H, G, I])
-    def imapK[J[+_[_], _]](fK: [S[_], A] => H[S, A] => J[S, A])(
-        gK: [S[a], A] => J[S, A] => H[S, A]
-    ): F[J, G, I]
+trait InvariantK3[F[_[+_[a] <: h[a], _], _[+_[a] <: h[a], _], h[_]]]:
+  extension [H[+_[a] <: K[a], _], G[+_[a] <: K[a], _], K[_]](fa: F[H, G, K])
+    def imapK[I[+_[a] <: K[a], _]](fK: [S[a] <: K[a], A] => H[S, A] => I[S, A])(
+        gK: [S[a] <: K[a], A] => I[S, A] => H[S, A]
+    ): F[I, G, K]
 
 object InvariantK3:
-  inline def apply[F[_[+_[_], _], _[+_[_], _], h[_]]](using self: InvariantK3[F]): InvariantK3[F] = self
+  inline def apply[F[_[+_[a] <: h[a], _], _[+_[a] <: h[a], _], h[_]]](using self: InvariantK3[F]): InvariantK3[F] = self

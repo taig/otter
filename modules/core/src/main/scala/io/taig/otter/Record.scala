@@ -53,14 +53,16 @@ object Record:
           fK(self.zip(gK(ija))(gK(schema)))
 
   object Read:
-    inline def apply[F[+_[a] <: H[a], _], G[+_[_], _], H[_]](using self: Record.Read[F, G, H]): Record.Read[F, G, H] =
-      self
+    given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Record.Read] with
+      extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Record.Read[F, GG, HH])
+        def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
+            gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
+        ): Record.Read[I, GG, HH] = fa.imapK(fK)(gK)
 
-    given InvariantK3[Record.Read] with
-      extension [F[+_[_], _], G[+_[_], _], H[_]](fa: Record.Read[F, G, H])
-        override def imapK[I[+_[_], _]](fK: [S[a], A] => F[S, A] => I[S, A])(
-            gK: [S[a], A] => I[S, A] => F[S, A]
-        ): Record.Read[I, G, H] = fa.imapK(fK)(gK)
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Record.Read[F, G, H]
+    ): Record.Read[F, G, H] =
+      self
 
   trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Record[F, G, H]:
     self =>
@@ -79,19 +81,19 @@ object Record:
           fK(self.zip(gK(ija))(gK(schema)))
 
   object Write:
+    given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Record.Write] with
+      extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Record.Write[F, GG, HH])
+        def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
+            gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
+        ): Record.Write[I, GG, HH] = fa.imapK(fK)(gK)
+
     inline def apply[F[+_[a] <: H[a], _], G[+_[_], _], H[_]](using self: Record.Write[F, G, H]): Record.Write[F, G, H] =
       self
 
-    given InvariantK3[Record.Write] with
-      extension [F[+_[_], _], G[+_[_], _], H[_]](fa: Record.Write[F, G, H])
-        override def imapK[I[+_[_], _]](fK: [S[a], A] => F[S, A] => I[S, A])(
-            gK: [S[a], A] => I[S, A] => F[S, A]
-        ): Record.Write[I, G, H] = fa.imapK(fK)(gK)
+  inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using self: Record[F, G, H]): Record[F, G, H] = self
 
-  inline def apply[F[+_[a] <: H[a], _], G[+_[_], _], H[_]](using self: Record[F, G, H]): Record[F, G, H] = self
-
-  given InvariantK3[Record] with
-    extension [F[+_[_], _], G[+_[_], _], H[_]](fa: Record[F, G, H])
-      def imapK[I[+_[_], _]](fK: [S[a], A] => F[S, A] => I[S, A])(
-          gK: [S[a], A] => I[S, A] => F[S, A]
-      ): Record[I, G, H] = fa.imapK(fK)(gK)
+  given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Record] with
+    extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Record[F, GG, HH])
+      def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
+          gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
+      ): Record[I, GG, HH] = fa.imapK(fK)(gK)

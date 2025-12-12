@@ -53,9 +53,9 @@ object Annotation:
       [s[a] <: H[a], a] => (annotation: Annotation[G[s, a]]) => annotation.self
     )
 
-  given [F[_[+_[_], _], _[+_[_], _], _[_]], H[+_[_], _], G[+_[_], _], I[_]](using
-      F: F[H, G, I]
-  )(using InvariantK3[F]): F[[s[_], a] =>> Annotation[H[s, a]], G, I] =
-    F.imapK[[s[_], a] =>> Annotation[H[s, a]]]([s[_], a] => (hsa: H[s, a]) => Annotation(hsa))([s[_], a] =>
-      (annotation: Annotation[H[s, a]]) => annotation.self
-    )
+  given [F[_[+_[a] <: f[a], _], _[+_[a] <: f[a], _], f[_]], G[+_[a], _], H[+_[a] <: I[a], _], I[_]](using
+      F: F[[s[a] <: I[a], a] =>> G[H[s, *], a], H, I]
+  )(using InvariantK3[F]): F[[s[a] <: I[a], a] =>> Annotation[G[H[s, *], a]], H, I] =
+    F.imapK[[s[a] <: I[a], a] =>> Annotation[G[H[s, *], a]]]([s[a] <: I[a], a] =>
+      (ghsa: G[H[s, *], a]) => Annotation(ghsa)
+    )([s[a] <: I[a], a] => (annotation: Annotation[G[H[s, *], a]]) => annotation.self)
