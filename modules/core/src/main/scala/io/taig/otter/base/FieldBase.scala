@@ -39,6 +39,8 @@ object FieldBase:
     given [S[_]]: Functor[FieldBase.Read[S, *]] with
       def map[A, B](fa: FieldBase.Read[S, A])(f: A => B): FieldBase.Read[S, B] = fa.map(f)
 
+    given [S[+_[a] <: T[a], _], T[_]]: Field.Read[FieldBase.Read, S, T] = ???
+
     // given [S[_]]: Field.Read[FieldBase.Read, S] with
     //   extension [A](self: FieldBase.Read[S, A]) override def name: String = self.name
 
@@ -71,13 +73,16 @@ object FieldBase:
     given [S[_]]: Contravariant[FieldBase.Write[S, *]] with
       def contramap[A, B](fa: FieldBase.Write[S, A])(f: B => A): FieldBase.Write[S, B] = fa.contramap(f)
 
-    // given [S[_[_], _], T[_]]: Field.Write[FieldBase.Write, S, T] with
-    //   extension [A](self: FieldBase.Write[T, A]) override def name: String = self.name
+    given [S[+_[a] <: T[a], _], T[_]]: Field.Write[FieldBase.Write, S, T] with
+      override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase.Write[U, A] =
+        Root(name, schema)
 
-    //   extension [U[a] <: T[a], A](self: FieldBase.Write[U, A])
-    //     override def optional: FieldBase.Write[U, Option[A]] = self.optional
-    //     override def optional(default: Eval[A]): FieldBase.Write[U, A] = self.optional(default)
-    //     override def schema: Reference[U, ?] = self.schema
+      extension [A](self: FieldBase.Write[T, A]) override def name: String = self.name
+
+      extension [U[a] <: T[a], A](self: FieldBase.Write[U, A])
+        override def schema: Reference[U, ?] = self.schema
+
+        override def optional: FieldBase.Write[U, Option[A]] = self.optional
 
   final case class Default[S[_], A](self: FieldBase[S, A], value: Eval[A]) extends FieldBase[S, A]:
     export self.{name, schema}

@@ -1064,11 +1064,15 @@ object Schema:
           (annotation: Annotation[FieldBase.Read[S, A]]) => Schema.Field.Read(annotation)
         )([A] => (schema: Schema.Field.Read[S, A]) => schema.self)
 
-      // given [S[_]]: Self.Field.Read[Schema.Field.Read, S] = Self.Field
-      //   .Read[[s[a] <: S[a], a] =>> Annotation[FieldBase.Read[s, a]], S]
-      //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[FieldBase.Read[s, a]]) => Read(annotation))(
-      //     [s[a] <: S[a], a] => (schema: Schema.Field.Read[s, a]) => schema.self
-      //   )
+      given Self.Field.Read[Schema.Field.Read, Schema.Record.Read, Schema.Read[?, *]] = Self.Field
+        .Read[
+          [s[a] <: Schema.Read[?, a], a] =>> Annotation[FieldBase.Read[s, a]],
+          Schema.Record.Read,
+          Schema.Read[?, *]
+        ]
+        .imapK([s[a] <: Schema.Read[?, a], a] => (annotation: Annotation[FieldBase.Read[s, a]]) => Read(annotation))(
+          [s[a] <: Schema.Read[?, a], a] => (schema: Schema.Field.Read[s, a]) => schema.self
+        )
 
     sealed trait Write[+S[a] <: Schema.Write[?, a], -A]:
       def self: Annotation[FieldBase.Write[S, A]]
@@ -1091,11 +1095,15 @@ object Schema:
           (annotation: Annotation[FieldBase.Write[S, A]]) => Schema.Field.Write(annotation)
         )([A] => (schema: Schema.Field.Write[S, A]) => schema.self)
 
-      // given [S[_]]: Self.Field.Write[Schema.Field.Write, Schema.Record, S] = Self.Field
-      //   .Write[[s[a] <: S[a], a] =>> Annotation[FieldBase.Write[s, a]], Schema.Record, S]
-      //   .imapK([s[a] <: S[a], a] => (annotation: Annotation[FieldBase.Write[s, a]]) => Write(annotation))(
-      //     [s[a] <: S[a], a] => (schema: Schema.Field.Write[s, a]) => schema.self
-      //   )
+      given Self.Field.Write[Schema.Field.Write, Schema.Record.Write, Schema.Write[?, *]] = Self.Field
+        .Write[
+          [s[a] <: Schema.Write[?, a], a] =>> Annotation[FieldBase.Write[s, a]],
+          Schema.Record.Write,
+          Schema.Write[?, *]
+        ]
+        .imapK([s[a] <: Schema.Write[?, a], a] => (annotation: Annotation[FieldBase.Write[s, a]]) => Write(annotation))(
+          [s[a] <: Schema.Write[?, a], a] => (schema: Schema.Field.Write[s, a]) => schema.self
+        )
 
     def apply[S[a] <: Schema[?, a], A](annotation: Annotation[FieldBase[S, A]]): Schema.Field[S, A] =
       new Schema.Field[S, A]:

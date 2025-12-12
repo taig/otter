@@ -85,7 +85,9 @@ object Field:
         def schema: Reference[J, ?] = self.schema(gK(ia))
 
   object Write:
-    inline def apply[F[+_[_], _], G[+_[a] <: H[a], _], H[_]](using self: Field.Write[F, G, H]): Field.Write[F, G, H] =
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Field.Write[F, G, H]
+    ): Field.Write[F, G, H] =
       self
 
     given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Field.Write] with
