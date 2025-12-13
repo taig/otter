@@ -1,14 +1,15 @@
-// package io.taig.otter.component
+package io.taig.otter.component
 
-// import io.taig.otter as Self
-// import io.taig.otter.shape.SchemaShape
-// import io.taig.otter.shape.SchemaShape.*
-// import io.taig.otter.syntax.AllSyntax
+import io.taig.otter as Self
+import io.taig.otter.shape.SchemaShape
+import io.taig.otter.shape.SchemaShape.*
+import io.taig.otter.syntax.AllSyntax
 
-// object SchemaComponent
-//     extends FieldComponent[Schema.Field.Of, Schema.Record.Of, Schema],
-//       RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema],
-//       UnionComponent[Schema.Union.Of, Schema]
+object SchemaComponent
+    extends BranchComponent[Schema.Branch.Of, Schema.Union.Of, Schema],
+      FieldComponent[Schema.Field.Of, Schema.Record.Of, Schema],
+      RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema]
+// UnionComponent[Schema.Union.Of, Schema.Branch.Of, Schema]
 
 // object dsl extends AllSyntax, SchemaShape:
 //   val schema = SchemaComponent

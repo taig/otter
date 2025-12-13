@@ -11,6 +11,17 @@ trait Record[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
 
   def empty: F[Nothing, Unit]
 
+  extension [I[a] <: H[a], A](fia: F[I, A])
+    def fields: Chain[Reference[G[I, *], ?]]
+
+    def zip[J[a] >: I[a] <: H[a], B](schema: F[J, B]): F[J, (A, B)]
+
+    final def :*[J[a] >: I[a] <: H[a], B](field: G[J, B])(using
+        append: Append[A, B]
+    )(using Invariant[F[J, *]]): F[J, append.Out] = self
+      .zip(fia)(self.apply(Reference.now(field)))
+      .imap(append.apply)(append.unapply)
+
   def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
       gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
   ): Record[I, G, H] = new Record[I, G, H]:
@@ -23,17 +34,6 @@ trait Record[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
 
       override def zip[K[a] >: J[a] <: H[a], B](schema: I[K, B]): I[K, (A, B)] =
         fK(self.zip(gK(ija))(gK(schema)))
-
-  extension [I[a] <: H[a], A](fia: F[I, A])
-    def fields: Chain[Reference[G[I, *], ?]]
-
-    def zip[J[a] >: I[a] <: H[a], B](schema: F[J, B]): F[J, (A, B)]
-
-    final def :*[J[a] >: I[a] <: H[a], B](field: G[J, B])(using
-        append: Append[A, B]
-    )(using Invariant[F[J, *]]): F[J, append.Out] = self
-      .zip(fia)(self.apply(Reference.now(field)))
-      .imap(append.apply)(append.unapply)
 
 object Record:
   trait Read[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Record[F, G, H]:

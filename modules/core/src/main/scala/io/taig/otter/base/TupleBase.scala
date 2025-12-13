@@ -23,14 +23,8 @@ object TupleBase:
       Read.Zip(left = this, right = schema)
 
   object Read:
-    case object Empty extends TupleBase.Read[Nothing, Unit]:
-      override def schemas: Chain[Reference[Nothing, ?]] = Chain.empty
-
     final case class Modify[S[_], A, B](self: TupleBase.Read[S, A], f: A => B) extends TupleBase.Read[S, B]:
       export self.schemas
-
-    final case class Root[S[_], A](schema: Reference[S, A]) extends TupleBase.Read[S, A]:
-      override def schemas: Chain[Reference[S, ?]] = Chain.one(schema)
 
     final case class Zip[S[_], A, B](left: TupleBase.Read[S, A], right: TupleBase.Read[S, B])
         extends TupleBase.Read[S, (A, B)]:
@@ -59,14 +53,8 @@ object TupleBase:
       Write.Zip(left = this, right = schema)
 
   object Write:
-    case object Empty extends TupleBase.Write[Nothing, Unit]:
-      override def schemas: Chain[Reference[Nothing, ?]] = Chain.empty
-
     final case class Modify[S[_], A, B](self: TupleBase.Write[S, A], f: B => A) extends TupleBase.Write[S, B]:
       export self.schemas
-
-    final case class Root[S[_], A](schema: Reference[S, A]) extends TupleBase.Write[S, A]:
-      override def schemas: Chain[Reference[S, ?]] = Chain.one(schema)
 
     final case class Zip[S[_], A, B](left: TupleBase.Write[S, A], right: TupleBase.Write[S, B])
         extends TupleBase.Write[S, (A, B)]:

@@ -2,78 +2,81 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 
-trait Union[F[+_[a] <: G[a], _], G[_]]:
+trait Union[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
   self =>
 
-  // def apply[H[a] <: G[a], A](branch: Branch[H, A]): F[H, A]
+  def apply[I[a] <: H[a], A](field: Reference[G[I, *], A]): F[I, A]
 
-  extension [A](fha: F[G, A]) def branches: NonEmptyChain[Reference[G, ?]]
+  extension [A](fha: F[H, A]) def branches: NonEmptyChain[Reference[G[H, *], ?]]
 
-  extension [H[a] <: G[a], A](fha: F[H, A])
-    def orElse[I[a] <: G[a], B](schema: F[I, B]): F[[a] =>> H[a] | I[a], Either[A, B]]
+  extension [I[a] <: H[a], A](fia: F[I, A]) def orElse[J[a] >: I[a] <: H[a], B](schema: F[J, B]): F[J, Either[A, B]]
 
-  def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-      gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-  ): Union[H, G] = new Union[H, G]:
-    // override def apply[I[a] <: G[a], A](branch: Branch[I, A]): H[I, A] = fK(self.apply(branch))
+  def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+      gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+  ): Union[I, G, H] = new Union[I, G, H]:
+    override def apply[J[a] <: H[a], A](field: Reference[G[J, *], A]): I[J, A] = fK(self.apply(field))
 
-    extension [A](hga: H[G, A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(hga))
+    extension [A](iha: I[H, A]) override def branches: NonEmptyChain[Reference[G[H, *], ?]] = self.branches(gK(iha))
 
-    extension [I[a] <: G[a], A](hia: H[I, A])
-      override def orElse[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], Either[A, B]] =
-        fK(self.orElse(gK(hia))(gK(schema)))
+    extension [J[a] <: H[a], A](ija: I[J, A])
+      override def orElse[K[a] >: J[a] <: H[a], B](schema: I[K, B]): I[K, Either[A, B]] =
+        fK(self.orElse(gK(ija))(gK(schema)))
 
 object Union:
-  trait Read[F[+_[a] <: G[a], _], G[_]] extends Union[F, G]:
+  trait Read[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Union[F, G, H]:
     self =>
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Union.Read[H, G] = new Read[H, G]:
-      // override def apply[I[a] <: G[a], A](branch: Branch[I, A]): H[I, A] = fK(self.apply(branch))
+    override def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+        gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+    ): Union.Read[I, G, H] = new Read[I, G, H]:
+      override def apply[J[a] <: H[a], A](field: Reference[G[J, *], A]): I[J, A] = fK(self.apply(field))
 
-      extension [A](hga: H[G, A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(hga))
+      extension [A](iha: I[H, A]) override def branches: NonEmptyChain[Reference[G[H, *], ?]] = self.branches(gK(iha))
 
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        override def orElse[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], Either[A, B]] =
-          fK(self.orElse(gK(hia))(gK(schema)))
+      extension [J[a] <: H[a], A](ija: I[J, A])
+        override def orElse[K[a] >: J[a] <: H[a], B](schema: I[K, B]): I[K, Either[A, B]] =
+          fK(self.orElse(gK(ija))(gK(schema)))
 
   object Read:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Union.Read[F, G]): Union.Read[F, G] = self
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Union.Read[F, G, H]
+    ): Union.Read[F, G, H] = self
 
-    given InvariantK2[Union.Read] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Union.Read[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Union.Read[H, G] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Union.Read] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](fa: Union.Read[H, I, J])
+        override def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Union.Read[K, I, J] = fa.imapK(fK)(gK)
 
-  trait Write[F[+_[a] <: G[a], _], G[_]] extends Union[F, G]:
+  trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Union[F, G, H]:
     self =>
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Union.Write[H, G] = new Write[H, G]:
-      // override def apply[I[a] <: G[a], A](branch: Branch[I, A]): H[I, A] = fK(self.apply(branch))
+    override def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+        gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+    ): Union.Write[I, G, H] = new Write[I, G, H]:
+      override def apply[J[a] <: H[a], A](field: Reference[G[J, *], A]): I[J, A] = fK(self.apply(field))
 
-      extension [A](hga: H[G, A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(hga))
+      extension [A](iha: I[H, A]) override def branches: NonEmptyChain[Reference[G[H, *], ?]] = self.branches(gK(iha))
 
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        override def orElse[J[a] <: G[a], B](schema: H[J, B]): H[[a] =>> I[a] | J[a], Either[A, B]] =
-          fK(self.orElse(gK(hia))(gK(schema)))
+      extension [J[a] <: H[a], A](ija: I[J, A])
+        override def orElse[K[a] >: J[a] <: H[a], B](schema: I[K, B]): I[K, Either[A, B]] =
+          fK(self.orElse(gK(ija))(gK(schema)))
 
   object Write:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Union.Write[F, G]): Union.Write[F, G] = self
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Union.Write[F, G, H]
+    ): Union.Write[F, G, H] = self
 
-    given InvariantK2[Union.Write] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Union.Write[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Union.Write[H, G] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Union.Write] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](fa: Union.Write[H, I, J])
+        override def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Union.Write[K, I, J] = fa.imapK(fK)(gK)
 
-  inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Union[F, G]): Union[F, G] = self
+  inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using self: Union[F, G, H]): Union[F, G, H] = self
 
-  given InvariantK2[Union] with
-    extension [F[+_[a] <: G[a], _], G[_]](fa: Union[F, G])
-      override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-          gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-      ): Union[H, G] = fa.imapK(fK)(gK)
+  given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Union] with
+    extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Union[H, I, J])
+      override def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+          gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+      ): Union[K, I, J] = self.imapK(fK)(gK)

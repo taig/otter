@@ -97,8 +97,8 @@ object RecordBase:
 
     override def empty: RecordBase[Nothing, Unit] = Empty
 
-    extension [I[a] <: T[a], A](self: RecordBase[S[I, *], A])
-      override def fields: Chain[Reference[S[I, *], ?]] = self.fields
+    extension [U[a] <: T[a], A](self: RecordBase[S[U, *], A])
+      override def fields: Chain[Reference[S[U, *], ?]] = self.fields
 
-      override def zip[J[a] >: I[a] <: T[a], B](schema: RecordBase[S[J, *], B]): RecordBase[S[J, *], (A, B)] =
+      override def zip[J[a] >: U[a] <: T[a], B](schema: RecordBase[S[J, *], B]): RecordBase[S[J, *], (A, B)] =
         self.zip(schema)
