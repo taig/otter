@@ -11,18 +11,42 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import cats.Functor
+
+trait Primitive[F[_]]:
+  def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive[G] = new Primitive[G] {}
 
 object Primitive:
-  trait Boolean[F[_]]:
+  trait Read[F[_]] extends Primitive[F]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Read[G] = new Read[G] {}
+
+  object Read:
+    inline def apply[F[_]](using self: Primitive.Read[F]): Primitive.Read[F] = self
+
+    given FunctorK[Primitive.Read] with
+      extension [G[_]](fa: Primitive.Read[G])
+        override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Read[H] = fa.mapK(fK)
+
+  trait Write[F[_]] extends Primitive[F]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Write[G] = new Write[G] {}
+
+  object Write:
+    inline def apply[F[_]](using self: Primitive.Write[F]): Primitive.Write[F] = self
+
+    given FunctorK[Primitive.Write] with
+      extension [G[_]](fa: Primitive.Write[G])
+        override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Write[H] = fa.mapK(fK)
+
+  trait Boolean[F[_]] extends Primitive[F]:
     self =>
 
     def boolean: F[SBoolean]
 
-    def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Boolean[G] = new Boolean[G]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Boolean[G] = new Boolean[G]:
       override def boolean: G[SBoolean] = fK(self.boolean)
 
   object Boolean:
-    trait Read[F[_]] extends Primitive.Boolean[F]:
+    trait Read[F[_]] extends Primitive.Read[F], Primitive.Boolean[F]:
       self =>
 
       override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Boolean.Read[G] = new Read[G]:
@@ -32,10 +56,10 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Boolean.Read[F]): Primitive.Boolean.Read[F] = self
 
       given FunctorK[Primitive.Boolean.Read] with
-        extension [G[_]](fa: Boolean.Read[G])
+        extension [G[_]](fa: Primitive.Boolean.Read[G])
           override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Boolean.Read[H] = fa.mapK(fK)
 
-    trait Write[F[_]] extends Primitive.Boolean[F]:
+    trait Write[F[_]] extends Primitive.Read[F], Primitive.Boolean[F]:
       self =>
 
       override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Boolean.Write[G] = new Write[G]:
@@ -45,17 +69,17 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Boolean.Write[F]): Primitive.Boolean.Write[F] = self
 
       given FunctorK[Primitive.Boolean.Write] with
-        extension [G[_]](fa: Boolean.Write[G])
+        extension [G[_]](fa: Primitive.Boolean.Write[G])
           override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Boolean.Write[H] = fa.mapK(fK)
 
     inline def apply[F[_]](using self: Primitive.Boolean[F]): Primitive.Boolean[F] = self
 
     given FunctorK[Primitive.Boolean] with
-      extension [G[_]](fa: Boolean[G])
+      extension [G[_]](fa: Primitive.Boolean[G])
         override def mapK[H[_]](fK: [A] => G[A] => H[A]): Primitive.Boolean[H] =
           fa.mapK(fK)
 
-  trait Number[F[_]]:
+  trait Number[F[_]] extends Primitive[F]:
     self =>
 
     def bigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): F[JBigDecimal]
@@ -94,7 +118,7 @@ object Primitive:
         fK(self.long(validation))
 
   object Number:
-    trait Read[F[_]] extends Primitive.Number[F]:
+    trait Read[F[_]] extends Primitive.Read[F], Primitive.Number[F]:
       self =>
 
       override def imapK[G[_]](fK: [A] => F[A] => G[A])(gK: [A] => G[A] => F[A]): Primitive.Number.Read[G] =
@@ -123,11 +147,11 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Number.Read[F]): Primitive.Number.Read[F] = self
 
       given InvariantK[Primitive.Number.Read] with
-        extension [G[_]](fa: Primitive.Number.Read[G])
+        extension [G[_]](self: Primitive.Number.Read[G])
           override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Number.Read[H] =
-            fa.imapK(fK)(gK)
+            self.imapK(fK)(gK)
 
-    trait Write[F[_]] extends Primitive.Number[F]:
+    trait Write[F[_]] extends Primitive.Read[F], Primitive.Number[F]:
       self =>
 
       def bigDecimal: F[JBigDecimal]
@@ -176,18 +200,18 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Number.Write[F]): Primitive.Number.Write[F] = self
 
       given InvariantK[Primitive.Number.Write] with
-        extension [G[_]](fa: Primitive.Number.Write[G])
+        extension [G[_]](self: Primitive.Number.Write[G])
           override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Number.Write[H] =
-            fa.imapK(fK)(gK)
+            self.imapK(fK)(gK)
 
     inline def apply[F[_]](using self: Primitive.Number[F]): Primitive.Number[F] = self
 
     given InvariantK[Primitive.Number] with
-      extension [G[_]](fa: Primitive.Number[G])
+      extension [G[_]](self: Primitive.Number[G])
         override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Number[H] =
-          fa.imapK(fK)(gK)
+          self.imapK(fK)(gK)
 
-  trait Text[F[_]]:
+  trait Text[F[_]] extends Primitive[F]:
     self =>
 
     def codec[A](name: JString, parse: JString => Either[JString, A], print: A => JString): F[A]
@@ -206,7 +230,7 @@ object Primitive:
         fK(self.string(validation))
 
   object Text:
-    trait Read[F[_]] extends Primitive.Text[F]:
+    trait Read[F[_]] extends Primitive.Read[F], Primitive.Text[F]:
       self =>
 
       final override def codec[A](
@@ -231,11 +255,11 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Text.Read[F]): Primitive.Text.Read[F] = self
 
       given InvariantK[Primitive.Text.Read] with
-        extension [G[_]](fa: Primitive.Text.Read[G])
+        extension [G[_]](self: Primitive.Text.Read[G])
           override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Text.Read[H] =
-            fa.imapK(fK)(gK)
+            self.imapK(fK)(gK)
 
-    trait Write[F[_]] extends Primitive.Text[F]:
+    trait Write[F[_]] extends Primitive.Read[F], Primitive.Text[F]:
       self =>
 
       final override def constraints[A](self: F[A]): Chain[Constraint.Primitive.Text] = Chain.empty
@@ -259,13 +283,19 @@ object Primitive:
       inline def apply[F[_]](using self: Primitive.Text.Write[F]): Primitive.Text.Write[F] = self
 
       given InvariantK[Primitive.Text.Write] with
-        extension [G[_]](fa: Primitive.Text.Write[G])
+        extension [G[_]](self: Primitive.Text.Write[G])
           override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Text.Write[H] =
-            fa.imapK(fK)(gK)
+            self.imapK(fK)(gK)
 
     inline def apply[F[_]](using self: Primitive.Text[F]): Primitive.Text[F] = self
 
     given InvariantK[Primitive.Text] with
-      extension [G[_]](fa: Primitive.Text[G])
+      extension [G[_]](self: Primitive.Text[G])
         override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive.Text[H] =
-          fa.imapK(fK)(gK)
+          self.imapK(fK)(gK)
+
+  inline def apply[F[_]](using self: Primitive[F]): Primitive[F] = self
+
+  given InvariantK[Primitive] with
+    extension [G[_]](self: Primitive[G])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Primitive[H] = self.mapK(fK)

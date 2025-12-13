@@ -14,7 +14,7 @@ object NullishBase:
   sealed trait Read[+S[_], +A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
-    final def map[T](f: A => T): NullishBase.Read[S, T] = Read.Modify(this, f)
+    final def map[T](f: A => T): NullishBase.Read[S, T] = Read.Modify(self = this, f)
 
   object Read:
     final case class Default[S[_], A](schema: Reference[S, A], default: Eval[A]) extends NullishBase.Read[S, A]
@@ -27,12 +27,13 @@ object NullishBase:
     given [S[_]]: Functor[NullishBase.Read[S, *]] with
       override def map[A, B](fa: NullishBase.Read[S, A])(f: A => B): NullishBase.Read[S, B] = fa.map(f)
 
-    given [S[_]]: Nullish.Read[NullishBase.Read, S] = ???
+    given [S[_]]: Nullish.Read[NullishBase.Read, S] with
+      extension [A](self: NullishBase.Read[S, A]) override def schema: Reference[S, ?] = self.schema
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
 
-    final def contramap[T](f: T => A): NullishBase.Write[S, T] = Write.Modify(this, f)
+    final def contramap[T](f: T => A): NullishBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
     final case class Default[S[_], A](schema: Reference[S, A]) extends NullishBase.Write[S, A]
@@ -45,11 +46,12 @@ object NullishBase:
     given [S[_]]: Contravariant[NullishBase.Write[S, *]] with
       override def contramap[A, B](fa: NullishBase.Write[S, A])(f: B => A): NullishBase.Write[S, B] = fa.contramap(f)
 
-    given [S[_]]: Nullish.Write[NullishBase.Write, S] = ???
+    given [S[_]]: Nullish.Write[NullishBase.Write, S] with
+      extension [A](self: NullishBase.Write[S, A]) override def schema: Reference[S, ?] = self.schema
 
   final case class Default[S[_], A](schema: Reference[S, A], default: Eval[A]) extends NullishBase[S, A]
 
-  final case class Modify[S[_], A, B](self: NullishBase.Write[S, A], f: A => B, g: B => A) extends NullishBase[S, B]:
+  final case class Modify[S[_], A, B](self: NullishBase[S, A], f: A => B, g: B => A) extends NullishBase[S, B]:
     export self.schema
 
   final case class Optional[S[_], A](schema: Reference[S, A]) extends NullishBase[S, Option[A]]
@@ -57,4 +59,5 @@ object NullishBase:
   given [S[_]]: Invariant[NullishBase[S, *]] with
     override def imap[A, B](fa: NullishBase[S, A])(f: A => B)(g: B => A): NullishBase[S, B] = fa.imap(f)(g)
 
-  given [S[_]]: Nullish[NullishBase, S] = ???
+  given [S[_]]: Nullish[NullishBase, S] with
+    extension [A](self: NullishBase[S, A]) override def schema: Reference[S, ?] = self.schema

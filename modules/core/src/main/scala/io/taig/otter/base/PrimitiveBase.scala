@@ -4,7 +4,6 @@ import cats.Contravariant
 import cats.Functor
 import cats.Invariant
 import cats.data.Chain
-import io.taig.otter as Self
 import io.taig.otter.Constraint
 import io.taig.validation.Constraint.Primitive.Text
 import io.taig.validation.Validation
@@ -17,6 +16,7 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
+import io.taig.otter.Primitive
 
 sealed abstract class PrimitiveBase[A] extends PrimitiveBase.Read[A], PrimitiveBase.Write[A]:
   def imap[T](f: A => T)(g: T => A): PrimitiveBase[T]
@@ -31,6 +31,8 @@ object PrimitiveBase:
     given Functor[PrimitiveBase.Read] with
       final override def map[A, B](fa: PrimitiveBase.Read[A])(f: A => B): PrimitiveBase.Read[B] = fa.map(f)
 
+    given Primitive.Read[PrimitiveBase.Read] = new Primitive.Read[PrimitiveBase.Read] {}
+
   sealed trait Write[-A] extends Product, Serializable:
     def contramap[T](f: T => A): PrimitiveBase.Write[T]
 
@@ -38,6 +40,8 @@ object PrimitiveBase:
     given Contravariant[PrimitiveBase.Write] with
       final override def contramap[A, B](fa: PrimitiveBase.Write[A])(f: B => A): PrimitiveBase.Write[B] =
         fa.contramap(f)
+
+    given Primitive.Write[PrimitiveBase.Write] = new Primitive.Write[PrimitiveBase.Write] {}
 
   sealed abstract class Boolean[A]
       extends PrimitiveBase[A],
@@ -61,7 +65,7 @@ object PrimitiveBase:
         final override def map[A, B](fa: PrimitiveBase.Boolean.Read[A])(f: A => B): PrimitiveBase.Boolean.Read[B] =
           fa.map(f)
 
-      given Self.Primitive.Boolean.Read[PrimitiveBase.Boolean.Read] with
+      given Primitive.Boolean.Read[PrimitiveBase.Boolean.Read] with
         override def boolean: PrimitiveBase.Boolean.Read[SBoolean] = Root
 
     sealed trait Write[-A] extends PrimitiveBase.Write[A]:
@@ -79,7 +83,7 @@ object PrimitiveBase:
         ): PrimitiveBase.Boolean.Write[B] =
           fa.contramap(f)
 
-      given Self.Primitive.Boolean.Write[PrimitiveBase.Boolean.Write] with
+      given Primitive.Boolean.Write[PrimitiveBase.Boolean.Write] with
         override def boolean: PrimitiveBase.Boolean.Write[SBoolean] = Root
 
     final case class Modify[A, B](self: PrimitiveBase.Boolean[A], f: A => B, g: B => A) extends PrimitiveBase.Boolean[B]
@@ -90,7 +94,7 @@ object PrimitiveBase:
       final override def imap[A, B](fa: PrimitiveBase.Boolean[A])(f: A => B)(g: B => A): PrimitiveBase.Boolean[B] =
         fa.imap(f)(g)
 
-    given Self.Primitive.Boolean[PrimitiveBase.Boolean] with
+    given Primitive.Boolean[PrimitiveBase.Boolean] with
       override def boolean: Boolean[SBoolean] = Root
 
   sealed abstract class Number[A] extends PrimitiveBase[A], PrimitiveBase.Number.Read[A], PrimitiveBase.Number.Write[A]:
@@ -134,37 +138,32 @@ object PrimitiveBase:
         final override def map[A, B](fa: PrimitiveBase.Number.Read[A])(f: A => B): PrimitiveBase.Number.Read[B] =
           fa.map(f)
 
-      given Self.Primitive.Number.Read[PrimitiveBase.Number.Read] with
+      given Primitive.Number.Read[PrimitiveBase.Number.Read] with
         override def bigDecimal(
             validation: Validation[Constraint.Primitive.Number, JBigDecimal]
-        ): PrimitiveBase.Number.Read[JBigDecimal] =
-          BigDecimal(validation)
+        ): PrimitiveBase.Number.Read[JBigDecimal] = BigDecimal(validation)
 
         override def bigInteger(
             validation: Validation[Constraint.Primitive.Number, JBigInteger]
-        ): PrimitiveBase.Number.Read[JBigInteger] =
-          BigInteger(validation)
+        ): PrimitiveBase.Number.Read[JBigInteger] = BigInteger(validation)
 
         override def constraints[A](self: PrimitiveBase.Number.Read[A]): Chain[Constraint.Primitive.Number] =
           self.constraints
 
         override def double(
             validation: Validation[Constraint.Primitive.Number, SDouble]
-        ): PrimitiveBase.Number.Read[SDouble] =
-          Double(validation)
+        ): PrimitiveBase.Number.Read[SDouble] = Double(validation)
 
         override def float(
             validation: Validation[Constraint.Primitive.Number, SFloat]
-        ): PrimitiveBase.Number.Read[SFloat] =
-          Float(validation)
+        ): PrimitiveBase.Number.Read[SFloat] = Float(validation)
 
         override def int(validation: Validation[Constraint.Primitive.Number, SInt]): PrimitiveBase.Number.Read[SInt] =
           Int(validation)
 
         override def long(
             validation: Validation[Constraint.Primitive.Number, SLong]
-        ): PrimitiveBase.Number.Read[SLong] =
-          Long(validation)
+        ): PrimitiveBase.Number.Read[SLong] = Long(validation)
 
     sealed trait Write[-A] extends PrimitiveBase.Write[A]:
       final override def contramap[T](f: T => A): PrimitiveBase.Number.Write[T] = Write.Modify(self = this, f)
@@ -188,10 +187,9 @@ object PrimitiveBase:
       given Contravariant[PrimitiveBase.Number.Write] with
         final override def contramap[A, B](fa: PrimitiveBase.Number.Write[A])(
             f: B => A
-        ): PrimitiveBase.Number.Write[B] =
-          fa.contramap(f)
+        ): PrimitiveBase.Number.Write[B] = fa.contramap(f)
 
-      given Self.Primitive.Number.Write[PrimitiveBase.Number.Write] with
+      given Primitive.Number.Write[PrimitiveBase.Number.Write] with
         override def bigDecimal: PrimitiveBase.Number.Write[JBigDecimal] = BigDecimal
 
         override def bigInteger: PrimitiveBase.Number.Write[JBigInteger] = BigInteger
@@ -234,7 +232,7 @@ object PrimitiveBase:
       final override def imap[A, B](fa: PrimitiveBase.Number[A])(f: A => B)(g: B => A): PrimitiveBase.Number[B] =
         fa.imap(f)(g)
 
-    given Self.Primitive.Number[PrimitiveBase.Number] with
+    given Primitive.Number[PrimitiveBase.Number] with
       override def bigDecimal(
           validation: Validation[Constraint.Primitive.Number, JBigDecimal]
       ): PrimitiveBase.Number[JBigDecimal] =
@@ -284,7 +282,7 @@ object PrimitiveBase:
         final override def map[A, B](fa: PrimitiveBase.Text.Read[A])(f: A => B): PrimitiveBase.Text.Read[B] =
           fa.map(f)
 
-      given Self.Primitive.Text.Read[PrimitiveBase.Text.Read] with
+      given Primitive.Text.Read[PrimitiveBase.Text.Read] with
         override def constraints[A](self: PrimitiveBase.Text.Read[A]): Chain[Constraint.Primitive.Text] =
           self.constraints
 
@@ -310,7 +308,7 @@ object PrimitiveBase:
         final override def contramap[A, B](fa: PrimitiveBase.Text.Write[A])(f: B => A): PrimitiveBase.Text.Write[B] =
           fa.contramap(f)
 
-      given Self.Primitive.Text.Write[PrimitiveBase.Text.Write] with
+      given Primitive.Text.Write[PrimitiveBase.Text.Write] with
         override def printer[A](name: JString, print: A => JString): PrimitiveBase.Text.Write[A] = Printer(name, print)
 
         override def string: PrimitiveBase.Text.Write[JString] = Root
@@ -330,7 +328,7 @@ object PrimitiveBase:
       final override def imap[A, B](fa: PrimitiveBase.Text[A])(f: A => B)(g: B => A): PrimitiveBase.Text[B] =
         fa.imap(f)(g)
 
-    given Self.Primitive.Text[PrimitiveBase.Text] with
+    given Primitive.Text[PrimitiveBase.Text] with
       override def codec[A](
           name: JString,
           parse: JString => Either[JString, A],
@@ -344,3 +342,5 @@ object PrimitiveBase:
 
   given Invariant[PrimitiveBase] with
     final override def imap[A, B](fa: PrimitiveBase[A])(f: A => B)(g: B => A): PrimitiveBase[B] = fa.imap(f)(g)
+
+  given Primitive[PrimitiveBase] = new Primitive[PrimitiveBase] {}

@@ -1,62 +1,77 @@
 package io.taig.otter
 
-trait Branch[F[+_[a] <: G[a], _], G[_]]:
+trait Branch[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
   self =>
 
-  extension [A](self: F[G, A]) def name: String
+  def apply[I[a] <: H[a], A](name: String, schema: Reference[I, A]): F[I, A]
 
-  extension [H[a] <: G[a], A](self: F[H, A]) def schema: Reference[H, ?]
+  extension [A](self: F[H, A]) def name: String
 
-  def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-      gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-  ): Branch[H, G] = new Branch[H, G]:
-    extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
+  extension [I[a] <: H[a], A](fia: F[I, A]) def schema: Reference[I, ?]
 
-    extension [I[a] <: G[a], A](hia: H[I, A]) def schema: Reference[I, ?] = self.schema(gK(hia))
+  def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+      gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+  ): Branch[I, G, H] = new Branch[I, G, H]:
+    override def apply[J[a] <: H[a], A](name: String, schema: Reference[J, A]): I[J, A] =
+      fK(self.apply(name, schema))
+
+    extension [A](iha: I[H, A]) def name: String = self.name(gK(iha))
+
+    extension [J[a] <: H[a], A](ija: I[J, A]) def schema: Reference[J, ?] = self.schema(gK(ija))
 
 object Branch:
-  sealed trait Read[F[+_[a] <: G[a], _], G[_]] extends Branch[F, G]:
+  trait Read[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Branch[F, G, H]:
     self =>
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Branch.Read[H, G] = new Read[H, G]:
-      extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
+    override def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+        gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+    ): Branch.Read[I, G, H] = new Read[I, G, H]:
+      override def apply[J[a] <: H[a], A](name: String, schema: Reference[J, A]): I[J, A] =
+        fK(self.apply(name, schema))
 
-      extension [I[a] <: G[a], A](hia: H[I, A]) def schema: Reference[I, ?] = self.schema(gK(hia))
+      extension [A](iha: I[H, A]) def name: String = self.name(gK(iha))
+
+      extension [J[a] <: H[a], A](ija: I[J, A]) def schema: Reference[J, ?] = self.schema(gK(ija))
 
   object Read:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Branch.Read[F, G]): Branch.Read[F, G] = self
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Branch.Read[F, G, H]
+    ): Branch.Read[F, G, H] = self
 
-    given InvariantK2[Branch.Read] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Branch.Read[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Branch.Read[H, G] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Branch.Read] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Branch.Read[H, I, J])
+        def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Branch.Read[K, I, J] = self.imapK(fK)(gK)
 
-  sealed trait Write[F[+_[a] <: G[a], _], G[_]] extends Branch[F, G]:
+  trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Branch[F, G, H]:
     self =>
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Branch.Write[H, G] = new Write[H, G]:
-      extension [A](hga: H[G, A]) def name: String = self.name(gK(hga))
+    override def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
+        gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
+    ): Branch.Write[I, G, H] = new Write[I, G, H]:
+      override def apply[J[a] <: H[a], A](name: String, schema: Reference[J, A]): I[J, A] =
+        fK(self.apply(name, schema))
 
-      extension [I[a] <: G[a], A](hia: H[I, A]) def schema: Reference[I, ?] = self.schema(gK(hia))
+      extension [A](ia: I[H, A]) def name: String = self.name(gK(ia))
+
+      extension [J[a] <: H[a], A](ia: I[J, A]) def schema: Reference[J, ?] = self.schema(gK(ia))
 
   object Write:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Branch.Write[F, G]): Branch.Write[F, G] = self
+    inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
+        self: Branch.Write[F, G, H]
+    ): Branch.Write[F, G, H] = self
 
-    given InvariantK2[Branch.Write] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Branch.Write[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Branch.Write[H, G] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Branch.Write] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Branch.Write[H, I, J])
+        def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Branch.Write[K, I, J] = self.imapK(fK)(gK)
 
-  inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Branch[F, G]): Branch[F, G] = self
+  inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using self: Branch[F, G, H]): Branch[F, G, H] = self
 
-  given InvariantK2[Branch] with
-    extension [F[+_[a] <: G[a], _], G[_]](fa: Branch[F, G])
-      override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-          gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-      ): Branch[H, G] = fa.imapK(fK)(gK)
+  given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Branch] with
+    extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Branch[H, I, J])
+      def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+          gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+      ): Branch[K, I, J] = self.imapK(fK)(gK)

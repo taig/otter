@@ -39,15 +39,18 @@ object FieldBase:
     given [S[_]]: Functor[FieldBase.Read[S, *]] with
       def map[A, B](fa: FieldBase.Read[S, A])(f: A => B): FieldBase.Read[S, B] = fa.map(f)
 
-    given [S[+_[a] <: T[a], _], T[_]]: Field.Read[FieldBase.Read, S, T] = ???
+    given [S[+_[a] <: T[a], _], T[_]]: Field.Read[FieldBase.Read, S, T] with
+      override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase.Read[U, A] =
+        Root(name, schema)
 
-    // given [S[_]]: Field.Read[FieldBase.Read, S] with
-    //   extension [A](self: FieldBase.Read[S, A]) override def name: String = self.name
+      extension [A](self: FieldBase.Read[T, A]) override def name: String = self.name
 
-    //   extension [T[a] <: S[a], A](self: FieldBase.Read[T, A])
-    //     override def optional: FieldBase.Read[T, Option[A]] = self.optional
-    //     override def optional(default: Eval[A]): FieldBase.Read[T, A] = self.optional(default)
-    //     override def schema: Reference[T, ?] = self.schema
+      extension [U[a] <: T[a], A](self: FieldBase.Read[U, A])
+        override def optional: FieldBase.Read[U, Option[A]] = self.optional
+
+        override def optional(default: Eval[A]): FieldBase.Read[U, A] = self.optional(default)
+
+        override def schema: Reference[U, ?] = self.schema
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def name: String
@@ -56,14 +59,9 @@ object FieldBase:
 
     def optional: FieldBase.Write[S, Option[A]] = Write.Optional(self = this)
 
-    // def optional(default: Eval[A]): FieldBase.Write[S, A] = Write.Default(self = this, value = default)
-
     final def contramap[T](f: T => A): FieldBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
-    // final case class Default[S[_], A](self: FieldBase.Write[S, A], value: Eval[A]) extends Write[S, A]:
-    //   export self.{name, schema}
-
     final case class Modify[S[_], A, B](self: FieldBase.Write[S, A], f: B => A) extends Write[S, B]:
       export self.{name, schema}
 

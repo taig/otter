@@ -19,17 +19,8 @@ object CollectionBase:
     final def map[T](f: A => T): CollectionBase.Read[S, T] = Read.Modify(self = this, f)
 
   object Read:
-    final case class Chained[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Chain[A]])
-        extends Read[S, Chain[A]]
-
-    final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, List[A]])
-        extends Read[S, List[A]]
-
     final case class Modify[S[_], A, B](self: CollectionBase.Read[S, A], f: A => B) extends Read[S, B]:
       export self.schema
-
-    final case class Indexed[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Vector[A]])
-        extends Read[S, Vector[A]]
 
     given [S[_]]: Functor[CollectionBase.Read[S, *]] with
       def map[A, B](fa: CollectionBase.Read[S, A])(f: A => B): CollectionBase.Read[S, B] = fa.map(f)
@@ -38,17 +29,17 @@ object CollectionBase:
       override def chained[T[a] <: S[a], A](
           schema: Reference[T, A],
           validation: Validation[Constraint.Collection, Chain[A]]
-      ): CollectionBase.Read[T, Chain[A]] = CollectionBase.Read.Chained(schema, validation)
+      ): CollectionBase.Read[T, Chain[A]] = Chained(schema, validation)
 
       override def linked[T[a] <: S[a], A](
           schema: Reference[T, A],
           validation: Validation[Constraint.Collection, List[A]]
-      ): CollectionBase.Read[T, List[A]] = CollectionBase.Read.Linked(schema, validation)
+      ): CollectionBase.Read[T, List[A]] = Linked(schema, validation)
 
       override def indexed[T[a] <: S[a], A](
           schema: Reference[T, A],
           validation: Validation[Constraint.Collection, Vector[A]]
-      ): CollectionBase.Read[T, Vector[A]] = CollectionBase.Read.Indexed(schema, validation)
+      ): CollectionBase.Read[T, Vector[A]] = Indexed(schema, validation)
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def schema: Reference[S, ?]
@@ -56,27 +47,21 @@ object CollectionBase:
     final def contramap[T](f: T => A): CollectionBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
-    final case class Chained[S[_], A](schema: Reference[S, A]) extends Write[S, Chain[A]]
-
-    final case class Linked[S[_], A](schema: Reference[S, A]) extends Write[S, List[A]]
-
     final case class Modify[S[_], A, B](self: CollectionBase.Write[S, A], f: B => A) extends Write[S, B]:
       export self.schema
-
-    final case class Indexed[S[_], A](schema: Reference[S, A]) extends Write[S, Vector[A]]
 
     given [S[_]]: Contravariant[CollectionBase.Write[S, *]] with
       def contramap[A, B](fa: CollectionBase.Write[S, A])(f: B => A): CollectionBase.Write[S, B] = fa.contramap(f)
 
     given [S[_]]: Collection.Write[CollectionBase.Write, S] with
       override def chained[T[a] <: S[a], A](schema: Reference[T, A]): CollectionBase.Write[T, Chain[A]] =
-        CollectionBase.Write.Chained(schema)
+        Chained(schema, validation = Validation.valid)
 
       override def linked[T[a] <: S[a], A](schema: Reference[T, A]): CollectionBase.Write[T, List[A]] =
-        CollectionBase.Write.Linked(schema)
+        Linked(schema, validation = Validation.valid)
 
       override def indexed[T[a] <: S[a], A](schema: Reference[T, A]): CollectionBase.Write[T, Vector[A]] =
-        CollectionBase.Write.Indexed(schema)
+        Indexed(schema, validation = Validation.valid)
 
   final case class Chained[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Collection, Chain[A]])
       extends CollectionBase[S, Chain[A]]
@@ -97,14 +82,14 @@ object CollectionBase:
     override def chained[T[a] <: S[a], A](
         schema: Reference[T, A],
         validation: Validation[Constraint.Collection, Chain[A]]
-    ): CollectionBase[T, Chain[A]] = CollectionBase.Chained(schema, validation)
+    ): CollectionBase[T, Chain[A]] = Chained(schema, validation)
 
     override def linked[T[a] <: S[a], A](
         schema: Reference[T, A],
         validation: Validation[Constraint.Collection, List[A]]
-    ): CollectionBase[T, List[A]] = CollectionBase.Linked(schema, validation)
+    ): CollectionBase[T, List[A]] = Linked(schema, validation)
 
     override def indexed[T[a] <: S[a], A](
         schema: Reference[T, A],
         validation: Validation[Constraint.Collection, Vector[A]]
-    ): CollectionBase[T, Vector[A]] = CollectionBase.Indexed(schema, validation)
+    ): CollectionBase[T, Vector[A]] = Indexed(schema, validation)

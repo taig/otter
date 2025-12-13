@@ -18,9 +18,6 @@ object DictionaryBase:
     final def map[T](f: A => T): DictionaryBase.Read[S, T] = Read.Modify(self = this, f)
 
   object Read:
-    final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Object, List[A]])
-        extends DictionaryBase.Read[S, List[A]]
-
     final case class Modify[S[_], A, B](self: DictionaryBase.Read[S, A], f: A => B) extends DictionaryBase.Read[S, B]:
       export self.schema
 
@@ -39,8 +36,6 @@ object DictionaryBase:
     final def contramap[T](f: T => A): DictionaryBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
-    final case class Linked[S[_], A](schema: Reference[S, A]) extends DictionaryBase.Write[S, List[A]]
-
     final case class Modify[S[_], A, B](self: DictionaryBase.Write[S, A], f: B => A) extends DictionaryBase.Write[S, B]:
       export self.schema
 
@@ -48,7 +43,8 @@ object DictionaryBase:
       def contramap[A, B](fa: DictionaryBase.Write[S, A])(f: B => A): DictionaryBase.Write[S, B] = fa.contramap(f)
 
     given [S[_]]: Dictionary.Write[DictionaryBase.Write, S] with
-      override def linked[T[a] <: S[a], A](schema: Reference[T, A]): DictionaryBase.Write[T, List[A]] = Linked(schema)
+      override def linked[T[a] <: S[a], A](schema: Reference[T, A]): DictionaryBase.Write[T, List[A]] =
+        Linked(schema, validation = Validation.valid)
 
   final case class Linked[S[_], A](schema: Reference[S, A], validation: Validation[Constraint.Object, List[A]])
       extends DictionaryBase[S, List[A]]

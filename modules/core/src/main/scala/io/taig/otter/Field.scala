@@ -9,7 +9,7 @@ trait Field[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
 
   extension [A](self: F[H, A]) def name: String
 
-  extension [I[a] <: H[a], A](self: F[I, A])
+  extension [I[a] <: H[a], A](fia: F[I, A])
     def optional: F[I, Option[A]]
 
     def optional(default: Eval[A]): F[I, A]
@@ -24,14 +24,14 @@ trait Field[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
     override def apply[J[a] <: H[a], A](name: String, schema: Reference[J, A]): I[J, A] =
       fK(self.apply(name, schema))
 
-    extension [A](ia: I[H, A]) def name: String = self.name(gK(ia))
+    extension [A](iha: I[H, A]) def name: String = self.name(gK(iha))
 
-    extension [J[a] <: H[a], A](ia: I[J, A])
-      def optional: I[J, Option[A]] = fK(self.optional(gK(ia)))
+    extension [J[a] <: H[a], A](ija: I[J, A])
+      def optional: I[J, Option[A]] = fK(self.optional(gK(ija)))
 
-      def optional(default: Eval[A]): I[J, A] = fK(self.optional(gK(ia))(default))
+      def optional(default: Eval[A]): I[J, A] = fK(self.optional(gK(ija))(default))
 
-      def schema: Reference[J, ?] = self.schema(gK(ia))
+      def schema: Reference[J, ?] = self.schema(gK(ija))
 
 object Field:
   trait Read[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Field[F, G, H]:
@@ -43,33 +43,33 @@ object Field:
       override def apply[J[a] <: H[a], A](name: String, schema: Reference[J, A]): I[J, A] =
         fK(self.apply(name, schema))
 
-      extension [A](ia: I[H, A]) def name: String = self.name(gK(ia))
+      extension [A](iha: I[H, A]) def name: String = self.name(gK(iha))
 
-      extension [J[a] <: H[a], A](ia: I[J, A])
-        def optional: I[J, Option[A]] = fK(self.optional(gK(ia)))
+      extension [J[a] <: H[a], A](ija: I[J, A])
+        def optional: I[J, Option[A]] = fK(self.optional(gK(ija)))
 
-        def optional(default: Eval[A]): I[J, A] = fK(self.optional(gK(ia))(default))
+        def optional(default: Eval[A]): I[J, A] = fK(self.optional(gK(ija))(default))
 
-        def schema: Reference[J, ?] = self.schema(gK(ia))
+        def schema: Reference[J, ?] = self.schema(gK(ija))
 
   object Read:
     inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
         self: Field.Read[F, G, H]
     ): Field.Read[F, G, H] = self
 
-    given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Field.Read] with
-      extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Field.Read[F, GG, HH])
-        def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
-            gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
-        ): Field.Read[I, GG, HH] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Field.Read] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Field.Read[H, I, J])
+        def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Field.Read[K, I, J] = self.imapK(fK)(gK)
 
   trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Field[F, G, H]:
     self =>
 
-    extension [I[a] <: H[a], A](fa: F[I, A])
+    extension [I[a] <: H[a], A](fia: F[I, A])
       def optional: F[I, Option[A]]
 
-      final override def optional(default: Eval[A]): F[I, A] = fa
+      final override def optional(default: Eval[A]): F[I, A] = fia
 
     override def imapK[I[+_[a] <: H[a], _]](fK: [S[a] <: H[a], A] => F[S, A] => I[S, A])(
         gK: [S[a] <: H[a], A] => I[S, A] => F[S, A]
@@ -87,19 +87,18 @@ object Field:
   object Write:
     inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
         self: Field.Write[F, G, H]
-    ): Field.Write[F, G, H] =
-      self
+    ): Field.Write[F, G, H] = self
 
-    given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Field.Write] with
-      extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Field.Write[F, GG, HH])
-        def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
-            gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
-        ): Field.Write[I, GG, HH] = fa.imapK(fK)(gK)
+    given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Field.Write] with
+      extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Field.Write[H, I, J])
+        def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+            gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+        ): Field.Write[K, I, J] = self.imapK(fK)(gK)
 
   inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using self: Field[F, G, H]): Field[F, G, H] = self
 
-  given [G[+_[a] <: H[a], _], H[_]]: InvariantK3[Field] with
-    extension [F[+_[a] <: HH[a], _], GG[+_[a] <: HH[a], _], HH[_]](fa: Field[F, GG, HH])
-      def imapK[I[+_[a] <: HH[a], _]](fK: [S[a] <: HH[a], A] => F[S, A] => I[S, A])(
-          gK: [S[a] <: HH[a], A] => I[S, A] => F[S, A]
-      ): Field[I, GG, HH] = fa.imapK(fK)(gK)
+  given [F[+_[a] <: G[a], _], G[_]]: InvariantK3[Field] with
+    extension [H[+_[a] <: J[a], _], I[+_[a] <: J[a], _], J[_]](self: Field[H, I, J])
+      def imapK[K[+_[a] <: J[a], _]](fK: [S[a] <: J[a], A] => H[S, A] => K[S, A])(
+          gK: [S[a] <: J[a], A] => K[S, A] => H[S, A]
+      ): Field[K, I, J] = self.imapK(fK)(gK)

@@ -17,8 +17,6 @@ object ConstantBase:
     final def map[T](f: A => T): ConstantBase.Read[S, T] = Read.Modify(self = this, f)
 
   object Read:
-    final case class Root[S[_], A](schema: Reference[S, A], value: A, eq: Eq[A]) extends Read[S, A]
-
     final case class Modify[S[_], A, B](self: ConstantBase.Read[S, A], f: A => B) extends Read[S, B]:
       export self.schema
 
@@ -35,8 +33,6 @@ object ConstantBase:
     final def contramap[T](f: T => A): ConstantBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
-    final case class Root[S[_], A](schema: Reference[S, A], value: A) extends ConstantBase.Write[S, A]
-
     final case class Modify[S[_], A, B](self: ConstantBase.Write[S, A], f: B => A) extends ConstantBase.Write[S, B]:
       export self.schema
 
@@ -45,7 +41,7 @@ object ConstantBase:
 
     given [S[_]]: Constant.Write[ConstantBase.Write, S] with
       override def constant[T[a] <: S[a], A](schema: Reference[T, A], value: A): ConstantBase.Write[T, A] =
-        Root(schema, value)
+        Root(schema, value, eq = Eq.allEqual)
 
   final case class Root[S[_], A](schema: Reference[S, A], value: A, eq: Eq[A]) extends ConstantBase[S, A]
 

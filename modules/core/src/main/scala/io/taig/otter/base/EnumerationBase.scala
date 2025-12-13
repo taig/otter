@@ -17,9 +17,6 @@ object EnumerationBase:
     final def map[T](f: A => T): EnumerationBase.Read[S, T] = Read.Modify(self = this, f)
 
   object Read:
-    final case class Root[S[_], A, B](schema: Reference[S, A], mapping: Mapping[B, A])
-        extends EnumerationBase.Read[S, B]
-
     final case class Modify[S[_], A, B](self: EnumerationBase.Read[S, A], f: A => B) extends EnumerationBase.Read[S, B]:
       export self.schema
 
@@ -38,9 +35,6 @@ object EnumerationBase:
     final def contramap[T](f: T => A): EnumerationBase.Write[S, T] = Write.Modify(self = this, f)
 
   object Write:
-    final case class Root[S[_], A, B](schema: Reference[S, A], mapping: Mapping[B, A])
-        extends EnumerationBase.Write[S, B]
-
     final case class Modify[S[_], A, B](self: EnumerationBase.Write[S, A], f: B => A)
         extends EnumerationBase.Write[S, B]:
       export self.schema
