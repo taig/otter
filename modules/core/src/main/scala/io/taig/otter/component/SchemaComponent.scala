@@ -8,8 +8,8 @@ import io.taig.otter.syntax.AllSyntax
 object SchemaComponent
     extends BranchComponent[Schema.Branch.Of, Schema.Union.Of, Schema],
       FieldComponent[Schema.Field.Of, Schema.Record.Of, Schema],
-      RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema]
-// UnionComponent[Schema.Union.Of, Schema.Branch.Of, Schema]
+      RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema],
+      UnionComponent[Schema.Union.Of, Schema.Branch.Of, Schema]
 
 // object dsl extends AllSyntax, SchemaShape:
 //   val schema = SchemaComponent
