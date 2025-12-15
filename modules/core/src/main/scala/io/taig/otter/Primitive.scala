@@ -11,7 +11,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import cats.Functor
 
 trait Primitive[F[_]]:
   def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive[G] = new Primitive[G] {}

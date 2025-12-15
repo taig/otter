@@ -1,8 +1,6 @@
 package io.taig.otter.component
 
 import io.taig.otter.Union
-import io.taig.otter.Reference
-import io.taig.otter.Branch
 
 trait UnionComponent[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using F: Union[F, G, H])
 // def apply[H[a] <: G[a], A](value: Branch[H, A]): F[H, A] = U.apply(value)

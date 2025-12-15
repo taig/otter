@@ -6,26 +6,33 @@ import io.taig.otter.shape.SchemaShape.*
 import io.taig.otter.syntax.AllSyntax
 
 object SchemaComponent
-    extends BranchComponent[Schema.Branch.Of, Schema.Union.Of, Schema],
-      FieldComponent[Schema.Field.Of, Schema.Record.Of, Schema],
+    extends BranchComponent[Schema.Branch.Of, Schema],
+      FieldComponent[Schema.Field.Of, Schema],
       RecordComponent[Schema.Record.Of, Schema.Field.Of, Schema],
       UnionComponent[Schema.Union.Of, Schema.Branch.Of, Schema]
 
-// object dsl extends AllSyntax, SchemaShape:
-//   val schema = SchemaComponent
+object dsl extends AllSyntax, SchemaShape:
+  val schema = SchemaComponent
 
-// object Playground:
-//   import dsl.*
+object Playground:
+  import dsl.*
 
-//   val name: Schema.Primitive.Text[String] = ???
-//   val names: Schema.Collection[List[String]] = ???
+  val name: Schema.Primitive.Text[String] = ???
+  val names: Schema.Collection[List[String]] = ???
 
-//   val age: Schema.Primitive[Int] = ???
+  val age: Schema.Primitive[Int] = ???
 
-//   // val myField: Schema.Record.Of[Schema.Primitive.Text, String] = schema.field("name", name)
-//   // val myBranch: Schema.Union.Of[Schema.Primitive.Text, String] = schema.branch("name", name)
+  val myField: Schema.Field.Of[Schema.Primitive.Text, String] = schema.field("name", name)
+  val myFieldRead: Schema.Field.Read.Of[Schema.Primitive.Text.Read, String] = schema.field("name", name)
+  val myBranch: Schema.Branch.Of[Schema.Primitive.Text, String] = schema.branch("name", name)
 
-//   // val myRecord: Schema.Record.Of[Schema.Primitive, String] = myField
+  val _ = myField.toRecord
+  val _: Schema.Record.Of[Schema.Primitive, String] = myField.toRecord
+  val _: Schema.Record.Read.Of[Schema.Primitive, String] = myField.toRecord
+  val _: Schema.Record.Read.Of[Schema.Read, String] = myFieldRead.toRecord
+
+  val _: Schema.Record[(String, String)] = myField :* myField
+  val _: Schema.Record.Read[(String, String)] = (myField: Schema.Field.Read[String]) :* myFieldRead
 
 //   // val rec1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
 //   //   schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)

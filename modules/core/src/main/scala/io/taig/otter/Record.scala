@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.data.Chain
 import cats.Invariant
+import cats.data.Chain
 import cats.syntax.all.*
 
 trait Record[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:

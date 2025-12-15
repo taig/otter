@@ -1,11 +1,11 @@
 package io.taig.otter.base
 
+import cats.Contravariant
+import cats.Functor
+import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.Record
 import io.taig.otter.Reference
-import cats.Invariant
-import cats.Contravariant
-import cats.Functor
 
 sealed abstract class RecordBase[+S[_], A] extends RecordBase.Read[S, A], RecordBase.Write[S, A]:
   final def imap[B](f: A => B)(g: B => A): RecordBase[S, B] = RecordBase.Modify(self = this, f, g)

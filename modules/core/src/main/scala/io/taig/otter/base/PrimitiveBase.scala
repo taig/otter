@@ -5,6 +5,7 @@ import cats.Functor
 import cats.Invariant
 import cats.data.Chain
 import io.taig.otter.Constraint
+import io.taig.otter.Primitive
 import io.taig.validation.Constraint.Primitive.Text
 import io.taig.validation.Validation
 
@@ -16,7 +17,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.otter.Primitive
 
 sealed abstract class PrimitiveBase[A] extends PrimitiveBase.Read[A], PrimitiveBase.Write[A]:
   def imap[T](f: A => T)(g: T => A): PrimitiveBase[T]

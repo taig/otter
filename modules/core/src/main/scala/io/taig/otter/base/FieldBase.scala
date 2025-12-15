@@ -1,11 +1,11 @@
 package io.taig.otter.base
 
 import cats.Contravariant
+import cats.Eval
 import cats.Functor
 import cats.Invariant
-import io.taig.otter.Reference
 import io.taig.otter.Field
-import cats.Eval
+import io.taig.otter.Reference
 
 sealed abstract class FieldBase[+S[_], A] extends FieldBase.Read[S, A], FieldBase.Write[S, A]:
   final override def optional: FieldBase[S, Option[A]] = FieldBase.Optional(self = this)
@@ -39,18 +39,18 @@ object FieldBase:
     given [S[_]]: Functor[FieldBase.Read[S, *]] with
       def map[A, B](fa: FieldBase.Read[S, A])(f: A => B): FieldBase.Read[S, B] = fa.map(f)
 
-    given [S[+_[a] <: T[a], _], T[_]]: Field.Read[FieldBase.Read, S, T] with
-      override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase.Read[U, A] =
+    given [S[_]]: Field.Read[FieldBase.Read, S] with
+      override def apply[T[a] <: S[a], A](name: String, schema: Reference[T, A]): FieldBase.Read[T, A] =
         Root(name, schema)
 
-      extension [A](self: FieldBase.Read[T, A]) override def name: String = self.name
+      extension [A](self: FieldBase.Read[S, A]) override def name: String = self.name
 
-      extension [U[a] <: T[a], A](self: FieldBase.Read[U, A])
-        override def optional: FieldBase.Read[U, Option[A]] = self.optional
+      extension [T[a] <: S[a], A](self: FieldBase.Read[T, A])
+        override def optional: FieldBase.Read[T, Option[A]] = self.optional
 
-        override def optional(default: Eval[A]): FieldBase.Read[U, A] = self.optional(default)
+        override def optional(default: Eval[A]): FieldBase.Read[T, A] = self.optional(default)
 
-        override def schema: Reference[U, ?] = self.schema
+        override def schema: Reference[T, ?] = self.schema
 
   sealed trait Write[+S[_], -A] extends Product, Serializable:
     def name: String
@@ -71,16 +71,16 @@ object FieldBase:
     given [S[_]]: Contravariant[FieldBase.Write[S, *]] with
       def contramap[A, B](fa: FieldBase.Write[S, A])(f: B => A): FieldBase.Write[S, B] = fa.contramap(f)
 
-    given [S[+_[a] <: T[a], _], T[_]]: Field.Write[FieldBase.Write, S, T] with
-      override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase.Write[U, A] =
+    given [S[_]]: Field.Write[FieldBase.Write, S] with
+      override def apply[T[a] <: S[a], A](name: String, schema: Reference[T, A]): FieldBase.Write[T, A] =
         Root(name, schema)
 
-      extension [A](self: FieldBase.Write[T, A]) override def name: String = self.name
+      extension [A](self: FieldBase.Write[S, A]) override def name: String = self.name
 
-      extension [U[a] <: T[a], A](self: FieldBase.Write[U, A])
-        override def schema: Reference[U, ?] = self.schema
+      extension [T[a] <: S[a], A](self: FieldBase.Write[T, A])
+        override def schema: Reference[T, ?] = self.schema
 
-        override def optional: FieldBase.Write[U, Option[A]] = self.optional
+        override def optional: FieldBase.Write[T, Option[A]] = self.optional
 
   final case class Default[S[_], A](self: FieldBase[S, A], value: Eval[A]) extends FieldBase[S, A]:
     export self.{name, schema}
@@ -96,13 +96,13 @@ object FieldBase:
   given [S[_]]: Invariant[FieldBase[S, *]] with
     def imap[A, B](fa: FieldBase[S, A])(f: A => B)(g: B => A): FieldBase[S, B] = fa.imap(f)(g)
 
-  given [S[+_[a] <: T[a], _], T[_]]: Field[FieldBase, S, T] with
-    override def apply[U[a] <: T[a], A](name: String, schema: Reference[U, A]): FieldBase[U, A] =
+  given [S[_]]: Field[FieldBase, S] with
+    override def apply[T[a] <: S[a], A](name: String, schema: Reference[T, A]): FieldBase[T, A] =
       FieldBase.Root(name, schema)
 
-    extension [A](self: FieldBase[T, A]) override def name: String = self.name
+    extension [A](self: FieldBase[S, A]) override def name: String = self.name
 
-    extension [U[a] <: T[a], A](self: FieldBase[U, A])
-      override def optional: FieldBase[U, Option[A]] = self.optional
-      override def optional(default: Eval[A]): FieldBase[U, A] = self.optional(default)
-      override def schema: Reference[U, ?] = self.schema
+    extension [T[a] <: S[a], A](self: FieldBase[T, A])
+      override def optional: FieldBase[T, Option[A]] = self.optional
+      override def optional(default: Eval[A]): FieldBase[T, A] = self.optional(default)
+      override def schema: Reference[T, ?] = self.schema

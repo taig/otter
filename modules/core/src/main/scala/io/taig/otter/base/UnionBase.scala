@@ -4,9 +4,9 @@ import cats.Contravariant
 import cats.Functor
 import cats.Invariant
 import cats.data.NonEmptyChain
-import io.taig.otter.Union
-import io.taig.otter.Reference
 import cats.data.NonEmptyChainImpl.Type
+import io.taig.otter.Reference
+import io.taig.otter.Union
 
 sealed abstract class UnionBase[+S[_], A] extends UnionBase.Read[S, A], UnionBase.Write[S, A]:
   final def orElse[S1[a] >: S[a], B](that: UnionBase[S1, B]): UnionBase[S1, Either[A, B]] =

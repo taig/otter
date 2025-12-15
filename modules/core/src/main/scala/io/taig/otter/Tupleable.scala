@@ -1,8 +1,5 @@
 package io.taig.otter
-
-import cats.syntax.all.*
 import cats.Invariant
-import scala.annotation.targetName
 
 trait Tupleable[F[a] <: H[a], G[+_[a] <: H[a], a] <: H[a], H[_]]:
   extension [A](self: F[A]) def toTuple: G[F, A]
