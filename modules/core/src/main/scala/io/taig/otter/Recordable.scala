@@ -11,6 +11,14 @@ trait Recordable[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]]:
         append: Append[A, B]
     )(using Invariant[G[J, *]]): G[J, append.Out]
 
+    def *:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+        prepend: Prepend[A, B]
+    )(using Invariant[G[J, *]]): G[J, prepend.Out]
+
+    def :*:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+        merge: Merge[A, B]
+    )(using Invariant[G[J, *]]): G[J, merge.Out]
+
     def toRecord: G[I, A]
 
 object Recordable:
@@ -20,29 +28,35 @@ object Recordable:
           append: Append[A, B]
       )(using Functor[G[J, *]]): G[J, append.Out]
 
+      def *:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+          prepend: Prepend[A, B]
+      )(using Functor[G[J, *]]): G[J, prepend.Out]
+
+      def :*:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+          merge: Merge[A, B]
+      )(using Functor[G[J, *]]): G[J, merge.Out]
+
   object Read:
     inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
         self: Recordable.Read[F, G, H]
     ): Recordable.Read[F, G, H] = self
 
     def derived[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using Record.Read[G, F, H]): Recordable.Read[F, G, H] =
-      new Recordable.Read[F, G, H]:
-        extension [I[a] <: H[a], A](self: F[I, A])
-          override def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
-              append: Append[A, B]
-          )(using Invariant[G[J, *]]): G[J, append.Out] = Record
-            .Read[G, F, H]
-            .zip(self.toRecord)(field.toRecord)
-            .imap(append.apply)(append.unapply)
+      ???
 
-          override def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
-              append: Append[A, B]
-          )(using Functor[G[J, *]]): G[J, append.Out] =
-            Record.Read[G, F, H].zip(self.toRecord)(field.toRecord).map(append.apply)
+  trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Recordable[F, G, H]:
+    extension [I[a] <: H[a], A](self: F[I, A])
+      def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+          append: Append[A, B]
+      )(using Contravariant[G[J, *]]): G[J, append.Out]
 
-          override def toRecord: G[I, A] = Record.Read[G, F, H].apply(field = Reference.now(self))
+      def *:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+          prepend: Prepend[A, B]
+      )(using Contravariant[G[J, *]]): G[J, prepend.Out]
 
-  trait Write[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]] extends Recordable[F, G, H]
+      def :*:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+          merge: Merge[A, B]
+      )(using Contravariant[G[J, *]]): G[J, merge.Out]
 
   object Write:
     inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
@@ -51,21 +65,7 @@ object Recordable:
 
     def derived[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
         Record.Write[G, F, H]
-    ): Recordable.Write[F, G, H] = new Recordable.Write[F, G, H]:
-      extension [I[a] <: H[a], A](self: F[I, A])
-        override def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
-            append: Append[A, B]
-        )(using Invariant[G[J, *]]): G[J, append.Out] = Record
-          .Write[G, F, H]
-          .zip(self.toRecord)(field.toRecord)
-          .imap(append.apply)(append.unapply)
-
-        def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
-            append: Append[A, B]
-        )(using Contravariant[G[J, *]]): G[J, append.Out] =
-          Record.Write[G, F, H].zip(self.toRecord)(field.toRecord).contramap(append.unapply)
-
-        override def toRecord: G[I, A] = Record.Write[G, F, H].apply(field = Reference.now(self))
+    ): Recordable.Write[F, G, H] = ???
 
   inline def apply[F[+_[a] <: H[a], _], G[+_[a] <: H[a], _], H[_]](using
       self: Recordable[F, G, H]
@@ -77,6 +77,20 @@ object Recordable:
         override def :*[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
             append: Append[A, B]
         )(using Invariant[G[J, *]]): G[J, append.Out] =
-          ???
+          Record[G, F, H]
+            .zip(self.toRecord)(field.toRecord)
+            .imap(append.apply)(append.unapply)
+
+        override def *:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+            prepend: Prepend[A, B]
+        )(using Invariant[G[J, *]]): G[J, prepend.Out] = Record[G, F, H]
+          .zip(self.toRecord)(field.toRecord)
+          .imap(prepend.apply)(prepend.unapply)
+
+        override def :*:[J[a] >: I[a] <: H[a], B](field: F[J, B])(using
+            merge: Merge[A, B]
+        )(using Invariant[G[J, *]]): G[J, merge.Out] = Record[G, F, H]
+          .zip(self.toRecord)(field.toRecord)
+          .imap(merge.apply)(merge.unapply)
 
         override def toRecord: G[I, A] = Record[G, F, H].apply(field = Reference.now(self))

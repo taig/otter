@@ -34,14 +34,14 @@ object Playground:
   val _: Schema.Record[(String, String)] = myField :* myField
   val _: Schema.Record.Read[(String, String)] = (myField: Schema.Field.Read[String]) :* myFieldRead
 
-//   // val rec1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
-//   //   schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)
+  val r1: Schema.Record.Of[Schema.Primitive, (String, Int, String)] =
+    schema.field("name", name) :* schema.field("age", age) :* schema.field("name", name)
 
-//   // val rec2: Schema.Record.Of[Schema, ((String, Int, String, (String, Int, String)))] =
-//   //   schema.field("a", rec1) :* schema.field("b", rec1)
+  val r2: Schema.Record.Of[Schema, ((String, Int, String, (String, Int, String)))] =
+    schema.field("a", r1) :* schema.field("b", r1)
 
-//   // val rec3: Schema.Record.Of[Schema, ((String, Int, String), String, Int)] =
-//   //   schema.field("rec", rec1) *: schema.field("name", name) *: schema.field("age", age)
+  val r3 =
+    schema.field("rec", r1) *: schema.field("name", name) *: schema.field("age", age)
 
 //   // val rec4: Schema.Record.Of[Schema, (String, Int, String, String, Int, String)] =
 //   //   schema.field("a", rec1) * schema.field("b", rec1)
