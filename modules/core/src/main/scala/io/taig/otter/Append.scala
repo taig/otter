@@ -19,18 +19,18 @@ object Append extends Append1:
     override def apply(ab: (A, B)): Out = f(ab)
     override def unapply(out: C): (A, B) = g(out)
 
-  given [A]: Append.Aux[A, Unit, A] = Append[A, Unit, A](_._1)((_, ()))
+  given [A] => Append.Aux[A, Unit, A] = Append[A, Unit, A](_._1)((_, ()))
 
-  given [A]: Append.Aux[Unit, A, A] = Append[Unit, A, A](_._2)(((), _))
+  given [A] => Append.Aux[Unit, A, A] = Append[Unit, A, A](_._2)(((), _))
 
-  given [A <: STuple, B]: Append.Aux[A, B, STuple.Append[A, B]] = new Append[A, B]:
+  given [A <: STuple, B] => Append.Aux[A, B, STuple.Append[A, B]] = new Append[A, B]:
     override type Out = STuple.Append[A, B]
     override def apply(ab: (A, B)): Out = ab._1 :* ab._2
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     override def unapply(ab: Out): (A, B) = (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
 
 trait Append1:
-  given [A, B]: Append.Aux[A, B, (A, B)] = new Append[A, B]:
+  given [A, B] => Append.Aux[A, B, (A, B)] = new Append[A, B]:
     override type Out = (A, B)
     override def apply(ab: (A, B)): (A, B) = ab
     override def unapply(ab: (A, B)): (A, B) = ab

@@ -12,11 +12,10 @@ object ConvertSourceGenerators {
           ("Left(" * level) + (if (right) s"Right($argument)" else s"Left($argument)") + (")" * level)
         }
 
-        s"""  given sum$n[${types.map(tpe => s"$tpe <: B").mkString(", ")}, B](using
+        s"""  given sum$n: [${types.map(tpe => s"$tpe <: B").mkString(", ")}, B] => (
            |    mirror: Mirror.SumOf[B],
            |    evidence: mirror.MirroredElemTypes =:= (${types.mkString(", ")})
-           |  ): Convert[$eithers, B] =
-           |    new Convert[$eithers, B]:
+           |  ) => Convert[$eithers, B]:
            |      override def to(a: $eithers): B = a match
            |        ${(0 until n).map(i => s"case ${nested(i, "b")} => b").mkString("\n        ")}
            |      override def from(b: B): $eithers =

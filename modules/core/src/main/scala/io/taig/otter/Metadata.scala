@@ -18,7 +18,7 @@ object Metadata:
     def apply[A](identifier: String): Metadata.Key[A] =
       Key(namespace = Namespace.Global, identifier)
 
-    given [A]: Order[Metadata.Key[A]] = Order.by(key => (key.namespace, key.identifier))
+    given [A] => Order[Metadata.Key[A]] = Order.by(key => (key.namespace, key.identifier))
 
   extension (self: Metadata)
     inline def toSortedMap: SortedMap[Metadata.Key[?], Any] = self

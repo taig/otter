@@ -27,5 +27,5 @@ object Violations:
 
   def apply(violation: Violation[Constraint]): Violations = Violations(violations = NonEmptyChain.one(violation))
 
-  given Semigroup[Violations] with
+  given Semigroup[Violations]:
     def combine(x: Violations, y: Violations): Violations = x.combine(y)

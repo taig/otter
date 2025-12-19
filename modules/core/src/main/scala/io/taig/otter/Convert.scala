@@ -15,19 +15,21 @@ trait Convert[A, B]:
 object Convert extends ConvertInstances:
   inline def apply[A, B](using convert: Convert[A, B]): Convert[A, B] = convert
 
-  given product1[A, B <: Product](using
-      mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple }
-  ): Convert[A, B] with
+  given product1: [A, B <: Product]
+    => (
+        mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple }
+  ) => Convert[A, B]:
     override def to(a: A): B = mirror.fromProduct(a *: EmptyTuple)
     override def from(b: B): A = STuple.fromProductTyped(b).head
 
-  given productN[A <: STuple, B <: Product](using
-      mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A }
-  ): Convert[A, B] with
+  given productN: [A <: STuple, B <: Product]
+    => (
+        mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A }
+  ) => Convert[A, B]:
     override def to(a: A): B = mirror.fromProduct(a)
     override def from(b: B): A = STuple.fromProductTyped(b)
 
-  given sum1[A <: B, B](using mirror: Mirror.SumOf[B] { type MirroredElemTypes = A *: EmptyTuple }): Convert[A, B] with
+  given sum1: [A <: B, B] => (mirror: Mirror.SumOf[B] { type MirroredElemTypes = A *: EmptyTuple }) => Convert[A, B]:
     override def to(a: A): B = a
 
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))

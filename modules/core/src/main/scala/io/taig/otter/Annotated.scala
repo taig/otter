@@ -17,6 +17,6 @@ trait Annotated[A]:
 object Annotated:
   inline def apply[A](using annotated: Annotated[A]): Annotated[A] = annotated
 
-  given Invariant[Annotated] with
+  given Invariant[Annotated]:
     override def imap[A, B](fa: Annotated[A])(f: A => B)(g: B => A): Annotated[B] =
       fa.imap(f)(g)

@@ -21,11 +21,11 @@ object Merge extends Merge1:
     override def apply(ab: (A, B)): Out = f(ab)
     override def unapply(out: C): (A, B) = g(out)
 
-  given [A]: Merge.Aux[A, Unit, A] = Merge[A, Unit, A](_._1)((_, ()))
+  given [A] => Merge.Aux[A, Unit, A] = Merge[A, Unit, A](_._1)((_, ()))
 
-  given [A]: Merge.Aux[Unit, A, A] = Merge[Unit, A, A](_._2)(((), _))
+  given [A] => Merge.Aux[Unit, A, A] = Merge[Unit, A, A](_._2)(((), _))
 
-  inline given [A <: STuple, B <: STuple]: Merge.Aux[A, B, STuple.Concat[A, B]] =
+  inline given [A <: STuple, B <: STuple] => Merge.Aux[A, B, STuple.Concat[A, B]] =
     val size = erasedValue[STuple.Size[A]]
     Merge[A, B, STuple.Concat[A, B]] { case (a, b) => a ++ b } { ab =>
       val (a, b) = ab.splitAt(size)
@@ -33,19 +33,19 @@ object Merge extends Merge1:
     }
 
 trait Merge1 extends Merge2:
-  given [A, B <: STuple]: Merge.Aux[A, B, A *: B] = new Merge[A, B]:
+  given [A, B <: STuple] => Merge.Aux[A, B, A *: B] = new Merge[A, B]:
     override type Out = A *: B
     override def apply(ab: (A, B)): Out = ab._1 *: ab._2
     override def unapply(ab: A *: B): (A, B) = (ab.head, ab.tail)
 
-  given [A <: STuple, B]: Merge.Aux[A, B, STuple.Append[A, B]] = new Merge[A, B]:
+  given [A <: STuple, B] => Merge.Aux[A, B, STuple.Append[A, B]] = new Merge[A, B]:
     override type Out = STuple.Append[A, B]
     override def apply(ab: (A, B)): Out = ab._1 :* ab._2
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
     override def unapply(ab: Out): (A, B) = (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
 
 trait Merge2:
-  given [A, B]: Merge.Aux[A, B, (A, B)] = new Merge[A, B]:
+  given [A, B] => Merge.Aux[A, B, (A, B)] = new Merge[A, B]:
     override type Out = (A, B)
     override def apply(ab: (A, B)): (A, B) = ab
     override def unapply(ab: (A, B)): (A, B) = ab

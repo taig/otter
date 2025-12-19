@@ -19,17 +19,17 @@ object Prepend extends Prepend1:
     override def apply(ab: (A, B)): Out = f(ab)
     override def unapply(out: C): (A, B) = g(out)
 
-  given [A]: Prepend.Aux[A, Unit, A] = Prepend[A, Unit, A](_._1)((_, ()))
+  given [A] => Prepend.Aux[A, Unit, A] = Prepend[A, Unit, A](_._1)((_, ()))
 
-  given [A]: Prepend.Aux[Unit, A, A] = Prepend[Unit, A, A](_._2)(((), _))
+  given [A] => Prepend.Aux[Unit, A, A] = Prepend[Unit, A, A](_._2)(((), _))
 
-  given [A, B <: STuple]: Prepend.Aux[A, B, A *: B] = new Prepend[A, B]:
+  given [A, B <: STuple] => Prepend.Aux[A, B, A *: B] = new Prepend[A, B]:
     override type Out = A *: B
     override def apply(ab: (A, B)): Out = ab._1 *: ab._2
     override def unapply(ab: Out): (A, B) = (ab.head, ab.tail)
 
 trait Prepend1:
-  given [A, B]: Prepend.Aux[A, B, (A, B)] = new Prepend[A, B]:
+  given [A, B] => Prepend.Aux[A, B, (A, B)] = new Prepend[A, B]:
     override type Out = (A, B)
     override def apply(ab: (A, B)): (A, B) = ab
     override def unapply(ab: (A, B)): (A, B) = ab

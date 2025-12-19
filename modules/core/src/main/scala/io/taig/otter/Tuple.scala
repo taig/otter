@@ -1,90 +1,112 @@
 package io.taig.otter
 
+import io.taig.otter.operation.TupleOperation
+import scala.annotation.targetName
 import cats.data.Chain
+import io.taig.otter as Self
+import cats.Invariant
 
-trait Tuple[F[+_[a] <: G[a], _], G[_]]:
-  self =>
+sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:
+  final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
 
-  def apply[H[a] <: G[a], A](schema: Reference[H, A]): F[H, A]
-
-  def empty: F[G, Unit]
-
-  extension [H[a] <: G[a], A](fha: F[H, A])
-    def schemas: Chain[Reference[H, ?]]
-
-    def zip[I[a] >: H[a] <: G[a], B](schema: F[I, B]): F[I, (A, B)]
-
-  def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-      gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-  ): Tuple[H, G] = new Tuple[H, G]:
-    override def apply[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] =
-      fK(self.apply(schema))
-
-    override def empty: H[G, Unit] = fK(self.empty)
-
-    extension [I[a] <: G[a], A](hia: H[I, A]) override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(hia))
-
-    extension [I[a] <: G[a], A](hia: H[I, A])
-      override def zip[J[a] >: I[a] <: G[a], B](schema: H[J, B]): H[J, (A, B)] =
-        fK(self.zip(gK(hia))(gK(schema)))
+  final def zip[S1[a] >: S[a], B](schema: Tuple[S1, B]): Tuple[S1, (A, B)] = Tuple.Zip(left = this, right = schema)
 
 object Tuple:
-  trait Read[F[+_[a] <: G[a], _], G[_]] extends Tuple[F, G]:
-    self =>
+  sealed trait Read[+S[_], +A]:
+    def schemas: Chain[Reference[S, ?]]
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Tuple.Read[H, G] = new Read[H, G]:
-      override def apply[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] =
-        fK(self.apply(schema))
-
-      override def empty: H[G, Unit] = fK(self.empty)
-
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(hia))
-
-        override def zip[J[a] >: I[a] <: G[a], B](schema: H[J, B]): H[J, (A, B)] =
-          fK(self.zip(gK(hia))(gK(schema)))
+    final def zip[S1[a] >: S[a], B](schema: Tuple.Read[S1, B]): Tuple.Read[S1, (A, B)] =
+      Read.Zip(left = this, right = schema)
 
   object Read:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Read[F, G]): Tuple.Read[F, G] = self
+    final case class Zip[S[_], A, B](left: Tuple.Read[S, A], right: Tuple.Read[S, B]) extends Tuple.Read[S, (A, B)]:
+      override def schemas: Chain[Self.Reference[S, ?]] = left.schemas ++ right.schemas
 
-    given InvariantK2[Tuple.Read] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Tuple.Read[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Tuple.Read[H, G] = fa.imapK(fK)(gK)
+    given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Read[Tuple.Read, Schema, Bound]:
+      @targetName("applyRead")
+      override def apply[S[+s[a] <: Bound[a], a] <: Schema[s, a], T[a] <: Bound[a], A](
+          schema: Reference[S[T, *], A]
+      ): Tuple.Read[S[T, *], A] = Root(schema)
 
-  trait Write[F[+_[a] <: G[a], _], G[_]] extends Tuple[F, G]:
-    self =>
+      override def empty: Tuple.Read[Nothing, Unit] = Empty
 
-    override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-        gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-    ): Tuple.Write[H, G] = new Write[H, G]:
-      override def apply[I[a] <: G[a], A](schema: Reference[I, A]): H[I, A] =
-        fK(self.apply(schema))
+      extension [F[a] <: Bound[a], A](self: Tuple.Read[F, A])
+        @targetName("zipRead")
+        override def zip[G[a] >: F[a] <: Bound[a], B](schema: Tuple.Read[G, B]): Tuple.Read[G, (A, B)] =
+          self.zip(schema)
 
-      override def empty: H[G, Unit] = fK(self.empty)
+  sealed trait Write[+S[_], -A]:
+    def schemas: Chain[Reference[S, ?]]
 
-      extension [I[a] <: G[a], A](hia: H[I, A])
-        override def schemas: Chain[Reference[I, ?]] = self.schemas(gK(hia))
-
-        override def zip[J[a] >: I[a] <: G[a], B](schema: H[J, B]): H[J, (A, B)] =
-          fK(self.zip(gK(hia))(gK(schema)))
+    final def zip[S1[a] >: S[a], B](schema: Tuple.Write[S1, B]): Tuple.Write[S1, (A, B)] =
+      Write.Zip(left = this, right = schema)
 
   object Write:
-    inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple.Write[F, G]): Tuple.Write[F, G] = self
+    final case class Zip[S[_], A, B](left: Tuple.Write[S, A], right: Tuple.Write[S, B]) extends Tuple.Write[S, (A, B)]:
+      override def schemas: Chain[Self.Reference[S, ?]] = left.schemas ++ right.schemas
 
-    given InvariantK2[Tuple.Write] with
-      extension [F[+_[a] <: G[a], _], G[_]](fa: Tuple.Write[F, G])
-        override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-            gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-        ): Tuple.Write[H, G] = fa.imapK(fK)(gK)
+    given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Write[Tuple.Write, Schema, Bound]:
+      @targetName("applyWrite")
+      override def apply[S[+s[a] <: Bound[a], a] <: Schema[s, a], T[a] <: Bound[a], A](
+          schema: Reference[S[T, *], A]
+      ): Tuple.Write[S[T, *], A] = Root(schema)
 
-  inline def apply[F[+_[a] <: G[a], _], G[_]](using self: Tuple[F, G]): Tuple[F, G] = self
+      override def empty: Tuple.Write[Nothing, Unit] = Empty
 
-  given InvariantK2[Tuple] with
-    extension [F[+_[a] <: G[a], _], G[_]](fa: Tuple[F, G])
-      override def imapK[H[+_[a] <: G[a], _]](fK: [S[a] <: G[a], A] => F[S, A] => H[S, A])(
-          gK: [S[a] <: G[a], A] => H[S, A] => F[S, A]
-      ): Tuple[H, G] = fa.imapK(fK)(gK)
+      extension [F[a] <: Bound[a], A](self: Tuple.Write[F, A])
+        @targetName("zipWrite")
+        override def zip[G[a] >: F[a] <: Bound[a], B](schema: Tuple.Write[G, B]): Tuple.Write[G, (A, B)] =
+          self.zip(schema)
+
+  case object Empty extends Tuple[Nothing, Unit]:
+    override def schemas: Chain[Nothing] = Chain.empty
+
+  final case class Modify[S[_], A, B](self: Tuple[S, A], f: A => B, g: B => A) extends Tuple[S, B]:
+    export self.schemas
+
+  final case class Root[S[_], A](schema: Reference[S, A]) extends Tuple[S, A]:
+    override def schemas: Chain[Reference[S, A]] = Chain.one(schema)
+
+  final case class Zip[S[_], A, B](left: Tuple[S, A], right: Tuple[S, B]) extends Tuple[S, (A, B)]:
+    override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
+
+  given [S[_]] => Invariant[Tuple[S, *]]:
+    override def imap[A, B](self: Self.Tuple[S, A])(f: A => B)(g: B => A): Self.Tuple[S, B] = self.imap(f)(g)
+
+  given [
+      Schema[+_[a] <: Bound[a], a] <: Bound[a],
+      SchemaRead[+_[a] <: BoundRead[a], a] <: BoundRead[a],
+      SchemaWrite[+_[a] <: BoundWrite[a], a] <: BoundWrite[a],
+      Bound[a] <: BoundRead[a] & BoundWrite[a],
+      BoundRead[+_],
+      BoundWrite[-_]
+  ] => TupleOperation[
+        Tuple,
+        Tuple.Read,
+        Tuple.Write,
+        Schema,
+        SchemaRead,
+        SchemaWrite,
+        Bound,
+        BoundRead,
+        BoundWrite
+      ]:
+    override def apply[S[+_[a] <: Bound[a], a] <: Bound[a], T[a] <: Bound[a], A](
+        schema: Reference[S[T, *], A]
+    ): Tuple[S[T, *], A] = Root(schema)
+
+    override def empty: Tuple[Nothing, Unit] = Empty
+
+    extension [F[a] <: Bound[a], A](self: Tuple[F, A])
+      override def zip[G[a] >: F[a] <: Bound[a], B](schema: Tuple[G, B]): Tuple[G, (A, B)] =
+        self.zip(schema)
+
+    extension [F[a] <: BoundRead[a], A](self: Tuple.Read[F, A])
+      @targetName("zipRead")
+      override def zip[G[a] >: F[a] <: BoundRead[a], B](schema: Tuple.Read[G, B]): Tuple.Read[G, (A, B)] =
+        self.zip(schema)
+
+    extension [F[a] <: BoundWrite[a], A](self: Tuple.Write[F, A])
+      @targetName("zipWrite")
+      override def zip[G[a] >: F[a] <: BoundWrite[a], B](schema: Tuple.Write[G, B]): Tuple.Write[G, (A, B)] =
+        self.zip(schema)

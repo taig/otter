@@ -27,7 +27,7 @@ object Constraint:
 
   export ValidationConstraint.{Collection, Object, Primitive}
 
-  given Eq[Constraint] with
+  given Eq[Constraint]:
     def eqv(x: Constraint, y: Constraint): Boolean = (x, y) match
       case (x: Constraint.Generic, y: Constraint.Generic)     => x === y
       case (x: ValidationConstraint, y: ValidationConstraint) => x === y
