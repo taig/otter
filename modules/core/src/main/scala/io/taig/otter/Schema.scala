@@ -4,6 +4,9 @@ import io.taig.otter as Self
 import io.taig.otter.syntax.AllSyntax.*
 import io.taig.otter.operation.TupleOperation
 import cats.Invariant
+import cats.Contravariant
+import cats.Functor
+import Self.operation.TupleableOperation
 
 sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
   override type Of[a] <: Schema[a]
@@ -95,6 +98,8 @@ object Schema:
     sealed trait Write[-A] extends Schema.Write[A]:
       override type Of[a] = Nothing
 
+    given Invariant[Schema.Primitive] = ???
+
   sealed abstract class Tuple[A] extends Schema[A], Schema.Tuple.Read[A], Schema.Tuple.Write[A]:
     override type Of[a] <: Schema[a]
 
@@ -122,6 +127,11 @@ object Schema:
 
           override def self: Self.Annotation[Self.Tuple.Read[S, A]] = annotation
 
+      given [S[a] <: Schema.Read[a]] => Functor[Schema.Tuple.Read.Of[S, *]] =
+        Functor[[a] =>> Annotation[Self.Tuple.Read[S, a]]].imapK([A] =>
+          (self: Annotation[Self.Tuple.Read[S, A]]) => Schema.Tuple.Read[S, A](self)
+        )([A] => (schema: Schema.Tuple.Read.Of[S, A]) => schema.self)
+
     sealed trait Write[-A] extends Schema.Write[A]:
       override type Of[a] <: Schema.Write[a]
 
@@ -137,6 +147,11 @@ object Schema:
           override type Of[a] = S[a]
 
           override def self: Self.Annotation[Self.Tuple.Write[S, A]] = annotation
+
+      given [S[a] <: Schema.Write[a]] => Contravariant[Schema.Tuple.Write.Of[S, *]] =
+        Contravariant[[a] =>> Annotation[Self.Tuple.Write[S, a]]].imapK([A] =>
+          (self: Annotation[Self.Tuple.Write[S, A]]) => Schema.Tuple.Write[S, A](self)
+        )([A] => (schema: Schema.Tuple.Write.Of[S, A]) => schema.self)
 
     given [S[a] <: Schema[a]] => Invariant[Schema.Tuple.Of[S, *]] =
       Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK([A] =>
@@ -174,9 +189,20 @@ object Schema:
       [S[a] <: Schema.Write[a], A] => (schema: Schema.Tuple.Write.Of[S, A]) => schema.self
     )
 
-object Playground:
-  val a: Schema.Tuple.Of[Schema.Primitive, String] = ???
-  val b: Schema[String] = ???
-  val c: Schema.Primitive[Int] = ???
+  given [S[a] <: Schema[a]] => Invariant[Schema.Of[S, *]] = ???
 
-  val x: Schema.Tuple.Of[Schema, (String, Int)] = a :* c
+  given ttt: [
+    Self[+s[a] <: Schema[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
+    SelfRead[+_[a] <: Schema.Read[a], _],
+    SelfWrite[+_[a] <: Schema.Write[a], _],
+  ] => TupleableOperation[
+    Self,
+    SelfRead,
+    SelfWrite,
+    Schema.Tuple.Of,
+    Schema.Tuple.Read.Of,
+    Schema.Tuple.Write.Of,
+    Schema,
+    Schema.Read,
+    Schema.Write
+  ] = ???

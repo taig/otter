@@ -5,6 +5,8 @@ import scala.annotation.targetName
 import cats.data.Chain
 import io.taig.otter as Self
 import cats.Invariant
+import cats.Contravariant
+import cats.Functor
 
 sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:
   final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
@@ -13,14 +15,23 @@ sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A
 
 object Tuple:
   sealed trait Read[+S[_], +A]:
+    final def map[B](f: A => B): Tuple.Read[S, B] = Read.Modify(self = this, f)
+
     def schemas: Chain[Reference[S, ?]]
 
     final def zip[S1[a] >: S[a], B](schema: Tuple.Read[S1, B]): Tuple.Read[S1, (A, B)] =
       Read.Zip(left = this, right = schema)
 
   object Read:
+    final case class Modify[S[_], A, B](self: Tuple.Read[S, A], f: A => B) extends Tuple.Read[S, B]:
+      export self.schemas
+
     final case class Zip[S[_], A, B](left: Tuple.Read[S, A], right: Tuple.Read[S, B]) extends Tuple.Read[S, (A, B)]:
       override def schemas: Chain[Self.Reference[S, ?]] = left.schemas ++ right.schemas
+
+    given [S[_]] => Functor[Tuple.Read[S, *]]:
+      override def map[A, B](fa: Self.Tuple.Read[S, A])(f: A => B): Self.Tuple.Read[S, B] =
+        fa.map(f)
 
     given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Read[Tuple.Read, Schema, Bound]:
       @targetName("applyRead")
@@ -36,14 +47,23 @@ object Tuple:
           self.zip(schema)
 
   sealed trait Write[+S[_], -A]:
+    final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
+
     def schemas: Chain[Reference[S, ?]]
 
     final def zip[S1[a] >: S[a], B](schema: Tuple.Write[S1, B]): Tuple.Write[S1, (A, B)] =
       Write.Zip(left = this, right = schema)
 
   object Write:
+    final case class Modify[S[_], A, B](self: Tuple.Write[S, A], f: B => A) extends Tuple.Write[S, B]:
+      export self.schemas
+
     final case class Zip[S[_], A, B](left: Tuple.Write[S, A], right: Tuple.Write[S, B]) extends Tuple.Write[S, (A, B)]:
       override def schemas: Chain[Self.Reference[S, ?]] = left.schemas ++ right.schemas
+
+    given [S[_]] => Contravariant[Tuple.Write[S, *]]:
+      override def contramap[A, B](fa: Self.Tuple.Write[S, A])(f: B => A): Self.Tuple.Write[S, B] =
+        fa.contramap(f)
 
     given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Write[Tuple.Write, Schema, Bound]:
       @targetName("applyWrite")

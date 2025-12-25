@@ -3,11 +3,7 @@ package io.taig.otter.operation
 import scala.annotation.targetName
 import io.taig.otter.InvariantK3
 import io.taig.otter.Reference
-import io.taig.otter.Append
-import cats.Invariant
-import cats.syntax.all.*
 import io.taig.otter.InvariantK9
-import io.taig.otter.Prepend
 
 abstract class TupleOperation[
     Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
@@ -32,15 +28,15 @@ abstract class TupleOperation[
   extension [F[a] <: Bound[a], A](self: Self[F, A])
     def zip[G[a] >: F[a] <: Bound[a], B](schema: Self[G, B]): Self[G, (A, B)]
 
-    final def :*[S[+_[a] <: Bound[a], a] >: F[a] <: Bound[a], T[a] >: F[a] <: Bound[a], B](schema: => S[T, B])(using
-        append: Append[A, B]
-    )(using Invariant[Self[S[T, *], *]]): Self[S[T, *], append.Out] =
-      self.zip(apply(schema = Reference.later(schema))).imap(append.apply)(append.unapply)
+    // final def :*[S[+_[a] <: Bound[a], a] >: F[a] <: Bound[a], T[a] >: F[a] <: Bound[a], B](schema: => S[T, B])(using
+    //     append: Append[A, B]
+    // )(using Invariant[Self[S[T, *], *]]): Self[S[T, *], append.Out] =
+    //   self.zip(apply(schema = Reference.later(schema))).imap(append.apply)(append.unapply)
 
-    final def *:[S[+_[a] <: Bound[a], a] >: F[a] <: Bound[a], T[a] >: F[a] <: Bound[a], B](schema: => S[T, B])(using
-        prepend: Prepend[A, B]
-    )(using Invariant[Self[S[T, *], *]]): Self[S[T, *], prepend.Out] =
-      self.zip(apply(schema = Reference.later(schema))).imap(prepend.apply)(prepend.unapply)
+    // final def *:[S[+_[a] <: Bound[a], a] >: F[a] <: Bound[a], T[a] >: F[a] <: Bound[a], B](schema: => S[T, B])(using
+    //     prepend: Prepend[A, B]
+    // )(using Invariant[Self[S[T, *], *]]): Self[S[T, *], prepend.Out] =
+    //   self.zip(apply(schema = Reference.later(schema))).imap(prepend.apply)(prepend.unapply)
 
   extension [F[a] <: Bound[a], A](self: Self[F, A])
     @targetName("zipWithRead")
