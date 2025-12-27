@@ -1,6 +1,6 @@
 package io.taig.otter.component
 
-import io.taig.otter.shape.SchemaShape.*
+import io.taig.otter.Schema
 
 trait SchemaComponent
     extends TupleComponent[

@@ -78,9 +78,7 @@ object TupleableOperation:
       Bound[a] <: BoundRead[a] & BoundWrite[a],
       BoundRead[_],
       BoundWrite[_]
-  ](using
-      F: TupleOperation[Tuple, TupleRead, TupleWrite, Bound, BoundRead, BoundWrite]
-  ): TupleableOperation[
+  ](using TupleOperation[Tuple, TupleRead, TupleWrite, Bound, BoundRead, BoundWrite]): TupleableOperation[
     Self,
     SelfRead,
     SelfWrite,
