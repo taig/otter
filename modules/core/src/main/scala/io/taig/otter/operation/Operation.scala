@@ -1,7 +1,7 @@
 package io.taig.otter.operation
 
 trait Operation[
-    Self[+s[a] <: Bound[a], _],
+    Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
     SelfRead[+_[a] <: BoundRead[a], _],
     SelfWrite[+_[a] <: BoundWrite[a], _],
     Bound[a] <: BoundRead[a] & BoundWrite[a],
@@ -9,10 +9,10 @@ trait Operation[
     BoundWrite[_]
 ] extends Operation.Read[SelfRead, BoundRead],
       Operation.Write[SelfWrite, BoundWrite]:
-  extension [F[a] <: Bound[a], A](self: Self[F, A])
-    def asRead: SelfRead[F, A]
+  extension [S[a] <: Bound[a], A](self: Self[S, A])
+    final inline def asRead: SelfRead[S, A] = self
 
-    def asWrite: SelfWrite[F, A]
+    final inline def asWrite: SelfWrite[S, A] = self
 
 object Operation:
   trait Read[Self[+_[a] <: Bound[a], _], Bound[_]]
