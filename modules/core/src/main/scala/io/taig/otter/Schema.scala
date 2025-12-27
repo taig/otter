@@ -2,10 +2,10 @@ package io.taig.otter
 
 import io.taig.otter as Self
 import cats.Invariant
-import io.taig.otter.operation.TupleableOperation
 import io.taig.otter.operation.TupleOperation
 import io.taig.otter.syntax.AllSyntax.*
 import cats.Functor
+import Self.operation.TupleableOperation
 
 sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
   type Of[a] <: Schema[a]
@@ -186,25 +186,18 @@ object Schema:
 
   given [S[a] <: Schema[a]] => Invariant[Schema.Of[S, *]] = ???
 
-  given [S[a] <: Schema[a] & R[a] & W[a], R[a] <: Schema.Read[a], W[a] <: Schema.Write[a]]
-    => TupleableOperation[
-      S,
-      R,
-      W,
-      Schema.Tuple.Of,
-      Schema.Tuple.Read.Of,
-      Schema.Tuple.Write.Of,
-      Schema,
-      Schema.Read,
-      Schema.Write
-    ] = TupleableOperation.derived[
-      S,
-      R,
-      W,
-      Schema.Tuple.Of,
-      Schema.Tuple.Read.Of,
-      Schema.Tuple.Write.Of,
-      Schema,
-      Schema.Read,
-      Schema.Write
-    ]
+  given TupleableOperation[
+    Schema.Tuple.Of,
+    Schema.Tuple.Read.Of,
+    Schema.Tuple.Write.Of,
+    Schema,
+    Schema.Read,
+    Schema.Write
+  ] = TupleableOperation.derived[
+    Schema.Tuple.Of,
+    Schema.Tuple.Read.Of,
+    Schema.Tuple.Write.Of,
+    Schema,
+    Schema.Read,
+    Schema.Write
+  ]
