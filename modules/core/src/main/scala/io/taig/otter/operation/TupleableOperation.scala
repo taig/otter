@@ -1,37 +1,40 @@
 package io.taig.otter.operation
 
 import scala.annotation.targetName
+import io.taig.otter.Append
+import io.taig.otter.Prepend
 
 abstract class TupleableOperation[
     Tuple[+_[a] <: Bound[a], _],
     TupleRead[+_[a] <: BoundRead[a], _],
     TupleWrite[+_[a] <: BoundWrite[a], _],
-    Bound[_],
+    Bound[a] <: BoundRead[a] & BoundWrite[a],
     BoundRead[_],
     BoundWrite[_]
 ] extends TupleableOperation.Read[TupleRead, BoundRead],
       TupleableOperation.Write[TupleWrite, BoundWrite]:
-  extension [S[a] <: Bound[a], A](self: S[A]) def toTuple: Tuple[S, A]
+  extension [S[a] <: Bound[a], A](self: S[A])
+    def toTuple: Tuple[S, A]
 
-  //   @targetName("append")
-  //   def :*[S[a] >: Self[a] <: Bound[a], B](schema: => S[B])(using append: Append[A, B]): Tuple[S, append.Out]
+    @targetName("append")
+    def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
 
-  //   @targetName("prepend")
-  //   def *:[S[a] >: Self[a] <: Bound[a], B](schema: => S[B])(using prepend: Prepend[A, B]): Tuple[S, prepend.Out]
+    @targetName("prepend")
+    def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
 
-  //   @targetName("appendWithRead")
-  //   final def :*[S[a] >: SelfRead[a] <: BoundRead[a], B](schema: => S[B])(using
-  //       append: Append[A, B]
-  //   ): TupleRead[S, append.Out] = (self: SelfRead[A]) :* schema
+    @targetName("appendWithRead")
+    final def :*[T[a] >: S[a] <: BoundRead[a], B](schema: => T[B])(using
+        append: Append[A, B]
+    ): TupleRead[T, append.Out] = (self: T[A]) :* schema
 
-  //   @targetName("appendWithWrite")
-  //   final def :*[S[a] >: SelfWrite[a] <: BoundWrite[a], B](schema: => S[B])(using
-  //       append: Append[A, B]
-  //   ): TupleWrite[S, append.Out] = (self: SelfWrite[A]) :* schema
+    @targetName("appendWithWrite")
+    final def :*[T[a] >: S[a] <: BoundWrite[a], B](schema: => T[B])(using
+        append: Append[A, B]
+    ): TupleWrite[T, append.Out] = (self: T[A]) :* schema
 
-  // extension [S[a] >: SelfRead[a] <: BoundRead[a], A](self: S[A])
-  //   @targetName("prependRead")
-  //   override def *:[B](schema: => SelfRead[B])(using prepend: Prepend[A, B]): TupleRead[S, prepend.Out]
+  extension [S[a] >: T[a] <: BoundRead[a], T[a] <: Bound[a], A](self: S[A])
+    // @targetName("prependRead")
+    def *:[B](schema: => T[B])(using prepend: Prepend[A, B]): TupleRead[S, prepend.Out]
 
   // extension [S[a] >: SelfWrite[a] <: BoundWrite[a], A](self: S[A])
   //   @targetName("prependWrite")
@@ -43,24 +46,22 @@ object TupleableOperation:
       @targetName("toTupleRead")
       def toTuple: Tuple[S, A]
 
-  //   @targetName("appendRead")
-  //   def :*[S[a] >: Self[a] <: Bound[a], B](schema: => S[B])(using append: Append[A, B]): Tuple[S, append.Out]
+      @targetName("appendRead")
+      def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
 
-  // extension [S[a] >: Self[a] <: Bound[a], A](self: S[A])
-  //   @targetName("prependRead")
-  //   def *:[B](schema: => Self[B])(using prepend: Prepend[A, B]): Tuple[S, prepend.Out]
+      @targetName("prependRead")
+      def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
 
   trait Write[Tuple[+_[a] <: Bound[a], _], Bound[_]]:
     extension [S[a] <: Bound[a], A](self: S[A])
       @targetName("toTupleWrite")
       def toTuple: Tuple[S, A]
 
-  //   @targetName("appendWrite")
-  //   def :*[S[a] >: Self[a] <: Bound[a], B](schema: => S[B])(using append: Append[A, B]): Tuple[S, append.Out]
+      @targetName("appendWrite")
+      def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
 
-  // extension [S[a] >: Self[a] <: Bound[a], A](self: S[A])
-  //   @targetName("prependWrite")
-  //   def *:[B](schema: => Self[B])(using prepend: Prepend[A, B]): Tuple[S, prepend.Out]
+      @targetName("prependWrite")
+      def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
 
   def derived[
       Tuple[+s[a] <: Bound[a], a] <: TupleRead[s, a] & TupleWrite[s, a],
