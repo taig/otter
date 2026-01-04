@@ -46,3 +46,5 @@ object Playground:
   val _: Schema.Tuple.Read[(Int, String)] = s *: pr
   val _: Schema.Tuple.Read.Of[Schema.Read, (String, Int)] = pr *: s
   val _: Schema.Tuple.Read[(Int, String)] = sr *: p
+  val _: Schema.Tuple.Write.Of[Schema.Write, (String, Int)] = pw *: s
+  val _: Schema.Tuple.Write[(Int, String)] = sw *: p

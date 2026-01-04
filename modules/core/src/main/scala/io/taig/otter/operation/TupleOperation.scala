@@ -4,9 +4,6 @@ import scala.annotation.targetName
 import io.taig.otter.Append
 import cats.Invariant
 import cats.syntax.all.*
-import cats.Functor
-import cats.Contravariant
-import io.taig.otter.Prepend
 
 abstract class TupleOperation[
     Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
@@ -30,11 +27,6 @@ abstract class TupleOperation[
     )(using Invariant[Self[T, *]]): Self[T, append.Out] =
       self.zip(apply(schema)).imap(append.apply)(append.unapply)
 
-    final def *:[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B])(using
-        prepend: Prepend[A, B]
-    )(using Invariant[Self[T, *]]): Self[T, prepend.Out] =
-      self.zip(schema).imap(prepend.apply)(prepend.unapply)
-
 object TupleOperation:
   trait Read[Self[+_[a] <: Bound[a], _], Bound[_]] extends Operation.Read[Self, Bound]:
     @targetName("applyRead")
@@ -46,16 +38,6 @@ object TupleOperation:
       @targetName("zipRead")
       def zip[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B]): Self[T, (A, B)]
 
-      final def :*[T[a] >: S[a] <: Bound[a], B](schema: T[B])(using
-          append: Append[A, B]
-      )(using Functor[Self[T, *]]): Self[T, append.Out] =
-        self.zip(apply(schema)).map(append.apply)
-
-      final def *:[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B])(using
-          prepend: Prepend[A, B]
-      )(using Functor[Self[T, *]]): Self[T, prepend.Out] =
-        self.zip(schema).map(prepend.apply)
-
   trait Write[Self[+_[a] <: Bound[a], _], Bound[_]] extends Operation.Write[Self, Bound]:
     @targetName("applyWrite")
     def apply[S[a] <: Bound[a], A](schema: => S[A]): Self[S, A]
@@ -65,13 +47,3 @@ object TupleOperation:
     extension [S[a] <: Bound[a], A](self: Self[S, A])
       @targetName("zipWrite")
       def zip[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B]): Self[T, (A, B)]
-
-      final def :*[T[a] >: S[a] <: Bound[a], B](schema: T[B])(using
-          append: Append[A, B]
-      )(using Contravariant[Self[T, *]]): Self[T, append.Out] =
-        self.zip(apply(schema)).contramap(append.unapply)
-
-      final def *:[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B])(using
-          prepend: Prepend[A, B]
-      )(using Contravariant[Self[T, *]]): Self[T, prepend.Out] =
-        self.zip(schema).contramap(prepend.unapply)

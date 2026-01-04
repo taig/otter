@@ -2,7 +2,11 @@ package io.taig.otter.operation
 
 import scala.annotation.targetName
 import io.taig.otter.Append
+import cats.Invariant
+import cats.Functor
+import cats.Contravariant
 import io.taig.otter.Prepend
+import cats.syntax.all.*
 
 abstract class TupleableOperation[
     Tuple[+_[a] <: Bound[a], _],
@@ -13,32 +17,39 @@ abstract class TupleableOperation[
     BoundWrite[_]
 ] extends TupleableOperation.Read[TupleRead, BoundRead],
       TupleableOperation.Write[TupleWrite, BoundWrite]:
-  extension [S[a] <: Bound[a], A](self: S[A])
-    def toTuple: Tuple[S, A]
+  extension [S[a] <: Bound[a], A](self: S[A]) def toTuple: Tuple[S, A]
 
+  extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: S[A])
     @targetName("append")
-    def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
+    def :*[B](schema: => T[B])(using append: Append[A, B])(using Invariant[Tuple[T, *]]): Tuple[T, append.Out]
 
-    @targetName("prepend")
-    def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
-
+  extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundRead[a], A](self: S[A])
     @targetName("appendWithRead")
-    final def :*[T[a] >: S[a] <: BoundRead[a], B](schema: => T[B])(using
+    final def :*[B](schema: => T[B])(using
         append: Append[A, B]
-    ): TupleRead[T, append.Out] = (self: T[A]) :* schema
+    )(using Functor[TupleRead[T, *]]): TupleRead[T, append.Out] = (self: T[A]) :* schema
 
+  extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundWrite[a], A](self: S[A])
     @targetName("appendWithWrite")
-    final def :*[T[a] >: S[a] <: BoundWrite[a], B](schema: => T[B])(using
+    final def :*[B](schema: => T[B])(using
         append: Append[A, B]
-    ): TupleWrite[T, append.Out] = (self: T[A]) :* schema
+    )(using Contravariant[TupleWrite[T, *]]): TupleWrite[T, append.Out] = (self: T[A]) :* schema
+
+  extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
+    @targetName("prepend")
+    def *:[B](schema: => T[B])(using prepend: Prepend[A, B])(using Invariant[Tuple[S, *]]): Tuple[S, prepend.Out]
 
   extension [S[a] >: T[a] <: BoundRead[a], T[a] <: Bound[a], A](self: S[A])
-    // @targetName("prependRead")
-    def *:[B](schema: => T[B])(using prepend: Prepend[A, B]): TupleRead[S, prepend.Out]
+    @targetName("prependWithRead")
+    final def *:[B](schema: => T[B])(using
+        prepend: Prepend[A, B]
+    )(using Functor[TupleRead[S, *]]): TupleRead[S, prepend.Out] = self *: (schema: S[B])
 
-  // extension [S[a] >: SelfWrite[a] <: BoundWrite[a], A](self: S[A])
-  //   @targetName("prependWrite")
-  //   override def *:[B](schema: => SelfWrite[B])(using prepend: Prepend[A, B]): TupleWrite[S, prepend.Out]
+  extension [S[a] >: T[a] <: BoundWrite[a], T[a] <: Bound[a], A](self: S[A])
+    @targetName("prependWithWrite")
+    final def *:[B](schema: => T[B])(using
+        prepend: Prepend[A, B]
+    )(using Contravariant[TupleWrite[S, *]]): TupleWrite[S, prepend.Out] = self *: (schema: S[B])
 
 object TupleableOperation:
   trait Read[Tuple[+_[a] <: Bound[a], _], Bound[_]]:
@@ -46,22 +57,26 @@ object TupleableOperation:
       @targetName("toTupleRead")
       def toTuple: Tuple[S, A]
 
+    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: S[A])
       @targetName("appendRead")
-      def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
+      def :*[B](schema: => T[B])(using append: Append[A, B])(using Functor[Tuple[T, *]]): Tuple[T, append.Out]
 
+    extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
       @targetName("prependRead")
-      def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
+      def *:[B](schema: => T[B])(using prepend: Prepend[A, B])(using Functor[Tuple[S, *]]): Tuple[S, prepend.Out]
 
   trait Write[Tuple[+_[a] <: Bound[a], _], Bound[_]]:
     extension [S[a] <: Bound[a], A](self: S[A])
       @targetName("toTupleWrite")
       def toTuple: Tuple[S, A]
 
+    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: S[A])
       @targetName("appendWrite")
-      def :*[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using append: Append[A, B]): Tuple[T, append.Out]
+      def :*[B](schema: => T[B])(using append: Append[A, B])(using Contravariant[Tuple[T, *]]): Tuple[T, append.Out]
 
+    extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
       @targetName("prependWrite")
-      def *:[T[a] >: S[a] <: Bound[a], B](schema: => T[B])(using prepend: Prepend[A, B]): Tuple[T, prepend.Out]
+      def *:[B](schema: => T[B])(using prepend: Prepend[A, B])(using Contravariant[Tuple[S, *]]): Tuple[S, prepend.Out]
 
   def derived[
       Tuple[+s[a] <: Bound[a], a] <: TupleRead[s, a] & TupleWrite[s, a],
@@ -71,7 +86,7 @@ object TupleableOperation:
       BoundRead[_],
       BoundWrite[_]
   ](using
-      TupleOperation[Tuple, TupleRead, TupleWrite, Bound, BoundRead, BoundWrite]
+      F: TupleOperation[Tuple, TupleRead, TupleWrite, Bound, BoundRead, BoundWrite]
   ): TupleableOperation[
     Tuple,
     TupleRead,
@@ -79,4 +94,27 @@ object TupleableOperation:
     Bound,
     BoundRead,
     BoundWrite
-  ] = ???
+  ] = new TupleableOperation[
+    Tuple,
+    TupleRead,
+    TupleWrite,
+    Bound,
+    BoundRead,
+    BoundWrite
+  ]:
+    extension [S[a] <: Bound[a], A](self: S[A])
+      override def toTuple: Tuple[S, A] = F.apply(self)
+
+    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: S[A])
+      @targetName("append")
+      override def :*[B](schema: => T[B])(using
+          append: Append[A, B]
+      )(using Invariant[Tuple[T, *]]): Tuple[T, append.Out] =
+        F.zip(self.toTuple)(schema.toTuple).imap(append.apply)(append.unapply)
+
+    extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
+      @targetName("prepend")
+      override def *:[B](schema: => T[B])(using
+          prepend: Prepend[A, B]
+      )(using Invariant[Tuple[S, *]]): Tuple[S, prepend.Out] =
+        F.zip(self.toTuple)(schema.toTuple).imap(prepend.apply)(prepend.unapply)

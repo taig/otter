@@ -6,6 +6,7 @@ import io.taig.otter.operation.TupleOperation
 import io.taig.otter.syntax.AllSyntax.*
 import cats.Functor
 import Self.operation.TupleableOperation
+import cats.Contravariant
 
 sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
   type Of[a] <: Schema[a]
@@ -146,10 +147,10 @@ object Schema:
 
         override def self: Self.Annotation[Self.Tuple.Write[S, A]] = annotation
 
-      // given [S[a] <: Schema.Write[?, a]] => Contravariant[Schema.Tuple.Write[S, *]] =
-      //   Contravariant[[a] =>> Annotation[Self.Tuple.Write[S, a]]].imapK([A] =>
-      //     (self: Annotation[Self.Tuple.Write[S, A]]) => Schema.Tuple.Write[S, A](self)
-      //   )([A] => (schema: Schema.Tuple.Write[S, A]) => schema.self)
+      given [S[a] <: Schema.Write[a]] => Contravariant[Schema.Tuple.Write.Of[S, *]] =
+        Contravariant[[a] =>> Annotation[Self.Tuple.Write[S, a]]].imapK([A] =>
+          (self: Annotation[Self.Tuple.Write[S, A]]) => Schema.Tuple.Write[S, A](self)
+        )([A] => (schema: Schema.Tuple.Write.Of[S, A]) => schema.self)
 
     given [S[a] <: Schema[a]] => Invariant[Schema.Tuple.Of[S, *]] =
       Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK([A] =>
