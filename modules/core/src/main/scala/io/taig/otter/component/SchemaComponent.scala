@@ -48,3 +48,6 @@ object Playground:
   val _: Schema.Tuple.Read[(Int, String)] = sr *: p
   val _: Schema.Tuple.Write.Of[Schema.Write, (String, Int)] = pw *: s
   val _: Schema.Tuple.Write[(Int, String)] = sw *: p
+
+  val _: Schema.Tuple.Of[Schema.Primitive, (String, String, String)] = p :* p :* p
+  val _: Schema.Tuple.Of[Schema.Primitive, (String, String, String)] = p *: p *: p

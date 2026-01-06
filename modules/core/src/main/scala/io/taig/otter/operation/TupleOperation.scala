@@ -4,6 +4,7 @@ import scala.annotation.targetName
 import io.taig.otter.Append
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter.Prepend
 
 abstract class TupleOperation[
     Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
@@ -19,13 +20,17 @@ abstract class TupleOperation[
 
   override def empty: Self[Nothing, Unit]
 
-  extension [S[a] <: Bound[a], A](self: Self[S, A])
-    def zip[T[a] >: S[a] <: Bound[a], B](schema: Self[T, B]): Self[T, (A, B)]
+  extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Self[S, A])
+    def zip[B](schema: Self[T, B]): Self[T, (A, B)]
 
-    final def :*[T[a] >: S[a] <: Bound[a], B](schema: T[B])(using
-        append: Append[A, B]
-    )(using Invariant[Self[T, *]]): Self[T, append.Out] =
+    final def :*[B](schema: T[B])(using append: Append[A, B])(using Invariant[Self[T, *]]): Self[T, append.Out] =
       self.zip(apply(schema)).imap(append.apply)(append.unapply)
+
+  extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
+    final def *:[B](schema: Self[T, B])(using
+        prepend: Prepend[A, B]
+    )(using Invariant[Self[S, *]]): Self[S, prepend.Out] =
+      apply(self).zip(schema).imap(prepend.apply)(prepend.unapply)
 
 object TupleOperation:
   trait Read[Self[+_[a] <: Bound[a], _], Bound[_]] extends Operation.Read[Self, Bound]:

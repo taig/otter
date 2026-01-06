@@ -32,19 +32,6 @@ object Tuple:
       override def map[A, B](fa: Tuple.Read[S, A])(f: A => B): Tuple.Read[S, B] =
         fa.map(f)
 
-    // given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Read[Tuple.Read, Schema, Bound]:
-    //   @targetName("applyRead")
-    //   override def apply[S[+s[a] <: Bound[a], a] <: Schema[s, a], T[a] <: Bound[a], A](
-    //       schema: Reference[S[T, *], A]
-    //   ): Tuple.Read[S[T, *], A] = Root(schema)
-
-    //   override def empty: Tuple.Read[Nothing, Unit] = Empty
-
-    //   extension [F[a] <: Bound[a], A](self: Tuple.Read[F, A])
-    //     @targetName("zipRead")
-    //     override def zip[G[a] >: F[a] <: Bound[a], B](schema: Tuple.Read[G, B]): Tuple.Read[G, (A, B)] =
-    //       self.zip(schema)
-
   sealed trait Write[+S[_], -A]:
     final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
 
@@ -64,19 +51,6 @@ object Tuple:
       override def contramap[A, B](fa: Tuple.Write[S, A])(f: B => A): Tuple.Write[S, B] =
         fa.contramap(f)
 
-    // given [Schema[+_[a] <: Bound[a], a] <: Bound[a], Bound[_]] => TupleOperation.Write[Tuple.Write, Schema, Bound]:
-    //   @targetName("applyWrite")
-    //   override def apply[S[+s[a] <: Bound[a], a] <: Schema[s, a], T[a] <: Bound[a], A](
-    //       schema: Reference[S[T, *], A]
-    //   ): Tuple.Write[S[T, *], A] = Root(schema)
-
-    //   override def empty: Tuple.Write[Nothing, Unit] = Empty
-
-    //   extension [F[a] <: Bound[a], A](self: Tuple.Write[F, A])
-    //     @targetName("zipWrite")
-    //     override def zip[G[a] >: F[a] <: Bound[a], B](schema: Tuple.Write[G, B]): Tuple.Write[G, (A, B)] =
-    //       self.zip(schema)
-
   case object Empty extends Tuple[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
 
@@ -93,25 +67,20 @@ object Tuple:
     override def imap[A, B](self: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = self.imap(f)(g)
 
   given [Bound[a] <: BoundRead[a] & BoundWrite[a], BoundRead[_], BoundWrite[_]]
-      => TupleOperation[
-        Tuple,
-        Tuple.Read,
-        Tuple.Write,
-        Bound,
-        BoundRead,
-        BoundWrite
-      ]:
+      => TupleOperation[Tuple, Tuple.Read, Tuple.Write, Bound, BoundRead, BoundWrite]:
     override def apply[S[a] <: Bound[a], A](schema: => S[A]): Tuple[S, A] = Root(schema = Reference.later(schema))
 
     override def empty: Tuple[Nothing, Unit] = Empty
 
-    extension [S[a] <: Bound[a], A](self: Tuple[S, A])
-      override def zip[T[a] >: S[a] <: Bound[a], B](schema: Tuple[T, B]): Tuple[T, (A, B)] = self.zip(schema)
+    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Tuple[S, A])
+      override def zip[B](schema: Tuple[T, B]): Tuple[T, (A, B)] = self.zip(schema)
 
     extension [S[a] <: BoundRead[a], A](self: Tuple.Read[S, A])
       @targetName("zipRead")
-      override def zip[T[a] >: S[a] <: BoundRead[a], B](schema: Tuple.Read[T, B]): Tuple.Read[T, (A, B)] = ???
+      override def zip[T[a] >: S[a] <: BoundRead[a], B](schema: Tuple.Read[T, B]): Tuple.Read[T, (A, B)] =
+        self.zip(schema)
 
     extension [S[a] <: BoundWrite[a], A](self: Tuple.Write[S, A])
       @targetName("zipWrite")
-      override def zip[T[a] >: S[a] <: BoundWrite[a], B](schema: Tuple.Write[T, B]): Tuple.Write[T, (A, B)] = ???
+      override def zip[T[a] >: S[a] <: BoundWrite[a], B](schema: Tuple.Write[T, B]): Tuple.Write[T, (A, B)] =
+        self.zip(schema)

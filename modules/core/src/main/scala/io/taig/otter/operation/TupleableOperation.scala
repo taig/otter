@@ -102,8 +102,7 @@ object TupleableOperation:
     BoundRead,
     BoundWrite
   ]:
-    extension [S[a] <: Bound[a], A](self: S[A])
-      override def toTuple: Tuple[S, A] = F.apply(self)
+    extension [S[a] <: Bound[a], A](self: S[A]) override def toTuple: Tuple[S, A] = F.apply(self)
 
     extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: S[A])
       @targetName("append")
