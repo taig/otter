@@ -1,36 +1,39 @@
 package io.taig.otter
 
 import scala.Tuple as STuple
+import cats.InvariantSemigroupal
+import cats.syntax.all.*
 
-trait Append[A, B]:
-  type Out
-  def apply(ab: (A, B)): Out
-  def unapply(out: Out): (A, B)
+type Append[A, B] = A match
+  case STuple =>
+    B match
+      case Unit => A
+      case _    => STuple.Append[A, B]
+  case Unit => B
+  case _    =>
+    B match
+      case Unit => A
+      case _    => A *: B *: EmptyTuple
 
-object Append extends Append1:
-  type Aux[A, B, C] = Append[A, B] { type Out = C }
-
-  inline def apply[A, B](using self: Append[A, B]): Append.Aux[A, B, self.Out] = self
-
-  inline def apply[A, B, C](using self: Append.Aux[A, B, C]): Append.Aux[A, B, C] = self
-
-  def apply[A, B, C](f: ((A, B)) => C)(g: C => (A, B)): Append.Aux[A, B, C] = new Append[A, B]:
-    override type Out = C
-    override def apply(ab: (A, B)): Out = f(ab)
-    override def unapply(out: C): (A, B) = g(out)
-
-  given [A] => Append.Aux[A, Unit, A] = Append[A, Unit, A](_._1)((_, ()))
-
-  given [A] => Append.Aux[Unit, A, A] = Append[Unit, A, A](_._2)(((), _))
-
-  given [A <: STuple, B] => Append.Aux[A, B, STuple.Append[A, B]] = new Append[A, B]:
-    override type Out = STuple.Append[A, B]
-    override def apply(ab: (A, B)): Out = ab._1 :* ab._2
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    override def unapply(ab: Out): (A, B) = (ab.init.asInstanceOf[A], ab.last.asInstanceOf[B])
-
-trait Append1:
-  given [A, B] => Append.Aux[A, B, (A, B)] = new Append[A, B]:
-    override type Out = (A, B)
-    override def apply(ab: (A, B)): (A, B) = ab
-    override def unapply(ab: (A, B)): (A, B) = ab
+object Append:
+  inline def apply[F[_] <: Matchable: InvariantSemigroupal, G[a] <: F[a], A, B](fa: F[A], gb: G[B]): F[Append[A, B]] =
+    inline fa match
+      case fxy: F[x *: y] =>
+        inline gb match
+          case gb: F[Unit] =>
+            fxy.product(gb).imap[x *: y]((xy, _) => xy)(xy => (xy, ())).asInstanceOf[F[Append[A, B]]]
+          case _ =>
+            fxy
+              .product(gb)
+              .imap[STuple.Append[x *: y, B]](_ :* _)(xyb => (xyb.init, xyb.last).asInstanceOf[(x *: y, B)])
+              .asInstanceOf[F[Append[A, B]]]
+      case fa: F[Unit] =>
+        fa.product(gb).imap[B]((_, b) => b)(b => ((), b)).asInstanceOf[F[Append[A, B]]]
+      case _ =>
+        inline gb match
+          case gb: F[Unit] =>
+            fa.product(gb).imap[A]((a, _) => a)(a => (a, ())).asInstanceOf[F[Append[A, B]]]
+          case _ =>
+            fa.product(gb)
+              .imap[A *: B *: EmptyTuple]((a, b) => a *: b *: EmptyTuple) { case a *: b *: EmptyTuple => (a, b) }
+              .asInstanceOf[F[Append[A, B]]]

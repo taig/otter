@@ -61,17 +61,18 @@ object Playground:
   val _: Schema.Tuple.Write.Of[Schema.Write, (String, Int)] = pw *: sw
   val _: Schema.Tuple.Write.Of[Schema.Write, (Int, String)] = sw *: pw
   val _: Schema.Tuple.Read[(Int, String)] = s *: pr
+  val _: Schema.Tuple.Read.Of[Schema.Read, (String, Int)] = pr :* s
   val _: Schema.Tuple.Read.Of[Schema.Read, (String, Int)] = pr *: s
   val _: Schema.Tuple.Read[(Int, String)] = sr *: p
   val _: Schema.Tuple.Write.Of[Schema.Write, (String, Int)] = pw *: s
   val _: Schema.Tuple.Write[(Int, String)] = sw *: p
 
-  val _: Schema.Tuple.Of[Schema.Primitive, (String, String, String)] = p :* p :* p
+  // val _: Schema.Tuple.Of[Schema.Primitive, (String, String, String)] = p :* p :* p
   val _: Schema.Tuple.Of[Schema.Primitive, (String, String, String)] = p *: p *: p
   val _: Schema.Tuple.Read.Of[Schema.Primitive.Read, (String, String, String)] = pr :* pr :* pr
   val _: Schema.Tuple.Read.Of[Schema.Primitive.Read, (String, String, String)] = pr *: pr *: pr
   val _: Schema.Tuple.Write.Of[Schema.Primitive.Write, (String, String, String)] = pw :* pw :* pw
   val _: Schema.Tuple.Write.Of[Schema.Primitive.Write, (String, String, String)] = pw *: pw *: pw
-  val _: Schema.Tuple.Read.Of[Schema.Primitive.Read, (String, String, String)] = p :* p :* pr
+  // val _: Schema.Tuple.Read.Of[Schema.Primitive.Read, (String, String, String)] = p :* p :* pr
   val _: Schema.Tuple.Read.Of[Schema.Primitive.Read, (String, String, String)] = pr *: p *: p
   val _: Schema.Tuple.Write.Of[Schema.Primitive.Write, (String, String, String)] = pw *: p *: p

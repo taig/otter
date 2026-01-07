@@ -6,6 +6,7 @@ import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter as Self
+import cats.InvariantSemigroupal
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -40,6 +41,13 @@ object Annotation:
   given invariant: [F[_]: Invariant] => Invariant[[a] =>> Annotation[F[a]]]:
     override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
       fa.map(_.imap(f)(g))
+
+  given invariantSemigroupal: [F[_]: InvariantSemigroupal] => InvariantSemigroupal[[a] =>> Annotation[F[a]]]:
+    override def imap[A, B](fa: Annotation[F[A]])(f: A => B)(g: B => A): Annotation[F[B]] =
+      fa.map(_.imap(f)(g))
+
+    override def product[A, B](fa: Annotation[F[A]], fb: Annotation[F[B]]): Annotation[F[(A, B)]] =
+      Annotation(metadata = Metadata.Empty, self = fa.self.product(fb.self))
 
   given invariantK: [F[_[_]]: InvariantK, G[_]] => (F: F[G]) => F[[a] =>> Annotation[G[a]]] =
     F.imapK[[a] =>> Annotation[G[a]]]([a] => (ga: G[a]) => Annotation(ga))([a] =>

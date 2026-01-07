@@ -3,12 +3,12 @@ package io.taig.otter.operation
 import scala.annotation.targetName
 import io.taig.otter.Append
 import cats.Invariant
-import cats.syntax.all.*
 import io.taig.otter.Prepend
 import cats.Functor
 import cats.Contravariant
 import io.taig.otter.InvariantK6
 import io.taig.otter.InvariantK2
+import cats.InvariantSemigroupal
 
 abstract class TupleOperation[
     Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
@@ -46,7 +46,7 @@ abstract class TupleOperation[
       override def empty: SelfK[Nothing, Unit] = fK(self.empty)
 
       extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](selfK: SelfK[S, A])
-        override def zip[B](schema: SelfK[T, B]): SelfK[T, (A, B)] = fK(self.zip(gK(selfK))(gK(schema)))
+        override def zip[B](schema: SelfK[T, B]): SelfK[T, (A, B)] = ??? // fK(self.zip(gK(selfK))(gK(schema)))
 
       extension [S[a] <: BoundRead[a], T[a] >: S[a] <: BoundRead[a], A](selfK: SelfReadK[S, A])
         @targetName("zipRead")
@@ -56,42 +56,37 @@ abstract class TupleOperation[
         @targetName("zipWrite")
         override def zip[B](schema: SelfWriteK[T, B]): SelfWriteK[T, (A, B)] = fKW(self.zip(gKW(selfK))(gKW(schema)))
 
-  extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Self[S, A])
+  extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a] & Matchable, A](self: Self[S, A])
     def zip[B](schema: Self[T, B]): Self[T, (A, B)]
 
     @targetName("append")
-    final def :*[B](schema: T[B])(using append: Append[A, B])(using Invariant[Self[T, *]]): Self[T, append.Out] =
-      self.zip(apply(schema)).imap(append.apply)(append.unapply)
+    final def :*[B](schema: T[B])(using InvariantSemigroupal[Self[T, *]]): Self[T, Append[A, B]] =
+      ??? // Append[Self[S, *], T, A, B](self, schema)
 
   extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundRead[a], A](self: Self[S, A])
     @targetName("appendWithRead")
-    final def :*[B](schema: T[B])(using append: Append[A, B])(using Functor[SelfRead[T, *]]): SelfRead[T, append.Out] =
+    final def :*[B](schema: T[B])(using Functor[SelfRead[T, *]]): SelfRead[T, Append[A, B]] =
       (self: SelfRead[S, A]) :* schema
 
   extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundWrite[a], A](self: Self[S, A])
     @targetName("appendWithWrite")
-    final def :*[B](schema: T[B])(using
-        append: Append[A, B]
-    )(using Contravariant[SelfWrite[T, *]]): SelfWrite[T, append.Out] = (self: SelfWrite[S, A]) :* schema
+    final def :*[B](schema: T[B])(using Contravariant[SelfWrite[T, *]]): SelfWrite[T, Append[A, B]] =
+      (self: SelfWrite[S, A]) :* schema
 
   extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
     @targetName("prepend")
-    final def *:[B](schema: Self[T, B])(using
-        prepend: Prepend[A, B]
-    )(using Invariant[Self[S, *]]): Self[S, prepend.Out] = apply(self).zip(schema).imap(prepend.apply)(prepend.unapply)
+    final def *:[B](schema: Self[T, B])(using Invariant[Self[S, *]]): Self[S, Prepend[A, B]] =
+      ??? // apply(self).zip(schema).imap(prepend.apply)(prepend.unapply)
 
   extension [S[a] >: T[a] <: BoundRead[a], T[a] <: Bound[a], A](self: S[A])
     @targetName("prependWithRead")
-    final def *:[B](schema: Self[T, B])(using
-        prepend: Prepend[A, B]
-    )(using Functor[SelfRead[S, *]]): SelfRead[S, prepend.Out] =
+    final def *:[B](schema: Self[T, B])(using Functor[SelfRead[S, *]]): SelfRead[S, Prepend[A, B]] =
       self *: (schema: SelfRead[T, B])
 
   extension [S[a] >: T[a] <: BoundWrite[a], T[a] <: Bound[a], A](self: S[A])
     @targetName("prependWithWrite")
-    final def *:[B](schema: Self[T, B])(using
-        prepend: Prepend[A, B]
-    )(using Contravariant[SelfWrite[S, *]]): SelfWrite[S, prepend.Out] = self *: (schema: SelfWrite[T, B])
+    final def *:[B](schema: Self[T, B])(using Contravariant[SelfWrite[S, *]]): SelfWrite[S, Prepend[A, B]] =
+      self *: (schema: SelfWrite[T, B])
 
 object TupleOperation:
   trait Read[Self[+_[a] <: Bound[a], _], Bound[_]] extends Operation.Read[Self, Bound]:
@@ -107,14 +102,13 @@ object TupleOperation:
       def zip[B](schema: Self[T, B]): Self[T, (A, B)]
 
       @targetName("appendRead")
-      final def :*[B](schema: T[B])(using append: Append[A, B])(using Functor[Self[T, *]]): Self[T, append.Out] =
-        self.zip(apply(schema)).map(append.apply)
+      final def :*[B](schema: T[B])(using Functor[Self[T, *]]): Self[T, Append[A, B]] =
+        ??? // self.zip(apply(schema)).map(append.apply)
 
     extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
       @targetName("prependRead")
-      final def *:[B](schema: Self[T, B])(using
-          prepend: Prepend[A, B]
-      )(using Functor[Self[S, *]]): Self[S, prepend.Out] = apply(self).zip(schema).map(prepend.apply)
+      final def *:[B](schema: Self[T, B])(using Functor[Self[S, *]]): Self[S, Prepend[A, B]] =
+        ??? // apply(self).zip(schema).map(prepend.apply)
 
     final def imapK[H[+_[a] <: Bound[a], _]](fK: [S[a] <: Bound[a], A] => Self[S, A] => H[S, A])(
         gK: [S[a] <: Bound[a], A] => H[S, A] => Self[S, A]
@@ -152,14 +146,13 @@ object TupleOperation:
       def zip[B](schema: Self[T, B]): Self[T, (A, B)]
 
       @targetName("appendWrite")
-      final def :*[B](schema: T[B])(using append: Append[A, B])(using Contravariant[Self[T, *]]): Self[T, append.Out] =
-        self.zip(apply(schema)).contramap(append.unapply)
+      final def :*[B](schema: T[B])(using Contravariant[Self[T, *]]): Self[T, Append[A, B]] =
+        ??? // self.zip(apply(schema)).contramap(append.unapply)
 
     extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
       @targetName("prependWrite")
-      final def *:[B](schema: Self[T, B])(using
-          prepend: Prepend[A, B]
-      )(using Contravariant[Self[S, *]]): Self[S, prepend.Out] = apply(self).zip(schema).contramap(prepend.unapply)
+      final def *:[B](schema: Self[T, B])(using Contravariant[Self[S, *]]): Self[S, Prepend[A, B]] =
+        ??? // apply(self).zip(schema).contramap(prepend.unapply)
 
     final def imapK[H[+_[a] <: Bound[a], _]](fK: [S[a] <: Bound[a], A] => Self[S, A] => H[S, A])(
         gK: [S[a] <: Bound[a], A] => H[S, A] => Self[S, A]

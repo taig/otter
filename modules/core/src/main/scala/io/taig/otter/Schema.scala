@@ -9,6 +9,7 @@ import cats.syntax.all.*
 import io.taig.otter.operation.TupleableOperation
 import cats.Contravariant
 import Self.operation.CollectionOperation
+import cats.InvariantSemigroupal
 
 sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
   type Of[a] <: Schema[a]
@@ -205,8 +206,8 @@ object Schema:
           (self: Annotation[Self.Tuple.Write[S, A]]) => Schema.Tuple.Write[S, A](self)
         )([A] => (schema: Schema.Tuple.Write.Of[S, A]) => schema.self)
 
-    given [S[a] <: Schema[a]] => Invariant[Schema.Tuple.Of[S, *]] =
-      Invariant[[a] =>> Annotation[Self.Tuple[S, a]]].imapK([A] =>
+    given [S[a] <: Schema[a]] => InvariantSemigroupal[Schema.Tuple.Of[S, *]] =
+      InvariantSemigroupal[[a] =>> Annotation[Self.Tuple[S, a]]].imapK([A] =>
         (self: Annotation[Self.Tuple[S, A]]) => Schema.Tuple[S, A](self)
       )([A] => (schema: Schema.Tuple.Of[S, A]) => schema.self)
 

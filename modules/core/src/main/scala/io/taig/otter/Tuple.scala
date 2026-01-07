@@ -1,11 +1,11 @@
 package io.taig.otter
 
 import cats.data.Chain
-import cats.Invariant
-import cats.Contravariant
-import cats.Functor
 import scala.annotation.targetName
 import io.taig.otter.operation.TupleOperation
+import cats.InvariantSemigroupal
+import cats.Apply
+import cats.ContravariantSemigroupal
 
 sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:
   final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
@@ -28,8 +28,11 @@ object Tuple:
     final case class Zip[S[_], A, B](left: Tuple.Read[S, A], right: Tuple.Read[S, B]) extends Tuple.Read[S, (A, B)]:
       override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
 
-    given [S[_]] => Functor[Tuple.Read[S, *]]:
+    given [S[_]] => Apply[Tuple.Read[S, *]]:
       override def map[A, B](fa: Tuple.Read[S, A])(f: A => B): Tuple.Read[S, B] = fa.map(f)
+
+      override def ap[A, B](ff: Tuple.Read[S, A => B])(fa: Tuple.Read[S, A]): Tuple.Read[S, B] =
+        ff.zip(fa).map(_ apply _)
 
   sealed trait Write[+S[_], -A]:
     final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
@@ -46,9 +49,11 @@ object Tuple:
     final case class Zip[S[_], A, B](left: Tuple.Write[S, A], right: Tuple.Write[S, B]) extends Tuple.Write[S, (A, B)]:
       override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
 
-    given [S[_]] => Contravariant[Tuple.Write[S, *]]:
+    given [S[_]] => ContravariantSemigroupal[Tuple.Write[S, *]]:
       override def contramap[A, B](fa: Tuple.Write[S, A])(f: B => A): Tuple.Write[S, B] =
         fa.contramap(f)
+
+      override def product[A, B](fa: Tuple.Write[S, A], fb: Tuple.Write[S, B]): Tuple.Write[S, (A, B)] = fa.zip(fb)
 
   case object Empty extends Tuple[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
@@ -62,8 +67,10 @@ object Tuple:
   final case class Zip[S[_], A, B](left: Tuple[S, A], right: Tuple[S, B]) extends Tuple[S, (A, B)]:
     override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
 
-  given [S[_]] => Invariant[Tuple[S, *]]:
+  given [S[_]] => InvariantSemigroupal[Tuple[S, *]]:
     override def imap[A, B](self: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = self.imap(f)(g)
+
+    override def product[A, B](fa: Tuple[S, A], fb: Tuple[S, B]): Tuple[S, (A, B)] = fa.zip(fb)
 
   given [Bound[a] <: BoundRead[a] & BoundWrite[a], BoundRead[_], BoundWrite[_]]
       => TupleOperation[Tuple, Tuple.Read, Tuple.Write, Bound, BoundRead, BoundWrite]:
