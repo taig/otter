@@ -29,8 +29,7 @@ object Tuple:
       override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
 
     given [S[_]] => Functor[Tuple.Read[S, *]]:
-      override def map[A, B](fa: Tuple.Read[S, A])(f: A => B): Tuple.Read[S, B] =
-        fa.map(f)
+      override def map[A, B](fa: Tuple.Read[S, A])(f: A => B): Tuple.Read[S, B] = fa.map(f)
 
   sealed trait Write[+S[_], -A]:
     final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
@@ -75,12 +74,10 @@ object Tuple:
     extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Tuple[S, A])
       override def zip[B](schema: Tuple[T, B]): Tuple[T, (A, B)] = self.zip(schema)
 
-    extension [S[a] <: BoundRead[a], A](self: Tuple.Read[S, A])
+    extension [S[a] <: BoundRead[a], T[a] >: S[a] <: BoundRead[a], A](self: Tuple.Read[S, A])
       @targetName("zipRead")
-      override def zip[T[a] >: S[a] <: BoundRead[a], B](schema: Tuple.Read[T, B]): Tuple.Read[T, (A, B)] =
-        self.zip(schema)
+      override def zip[B](schema: Tuple.Read[T, B]): Tuple.Read[T, (A, B)] = self.zip(schema)
 
-    extension [S[a] <: BoundWrite[a], A](self: Tuple.Write[S, A])
+    extension [S[a] <: BoundWrite[a], T[a] >: S[a] <: BoundWrite[a], A](self: Tuple.Write[S, A])
       @targetName("zipWrite")
-      override def zip[T[a] >: S[a] <: BoundWrite[a], B](schema: Tuple.Write[T, B]): Tuple.Write[T, (A, B)] =
-        self.zip(schema)
+      override def zip[B](schema: Tuple.Write[T, B]): Tuple.Write[T, (A, B)] = self.zip(schema)

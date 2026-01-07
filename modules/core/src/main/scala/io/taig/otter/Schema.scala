@@ -5,8 +5,10 @@ import cats.Invariant
 import io.taig.otter.operation.TupleOperation
 import io.taig.otter.syntax.AllSyntax.*
 import cats.Functor
-import Self.operation.TupleableOperation
+import cats.syntax.all.*
+import io.taig.otter.operation.TupleableOperation
 import cats.Contravariant
+import Self.operation.CollectionOperation
 
 sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
   type Of[a] <: Schema[a]
@@ -50,14 +52,6 @@ object Schema:
     override def self: Annotation[Self.Collection[Of, A]]
 
   object Collection:
-    type Of[+S[a] <: Schema[a], A] = Schema.Collection[A] { type Of[a] <: S[a] }
-
-    def apply[S[a] <: Schema[a], A](annotation: Annotation[Self.Collection[S, A]]): Schema.Collection.Of[S, A] =
-      new Collection[A]:
-        override type Of[a] = S[a]
-
-        override def self: Self.Annotation[Self.Collection[S, A]] = annotation
-
     sealed trait Read[+A] extends Schema.Read[A]:
       override type Of[a] <: Schema.Read[a]
 
@@ -72,6 +66,11 @@ object Schema:
         override type Of[a] = S[a]
 
         override def self: Self.Annotation[Self.Collection.Read[S, A]] = annotation
+
+      given [S[a] <: Schema.Read[a]] => Functor[Schema.Collection.Read.Of[S, *]] =
+        Functor[[a] =>> Annotation[Self.Collection.Read[S, a]]].imapK([A] =>
+          (self: Annotation[Self.Collection.Read[S, A]]) => Schema.Collection.Read[S, A](self)
+        )([A] => (schema: Schema.Collection.Read.Of[S, A]) => schema.self)
 
     sealed trait Write[-A] extends Schema.Write[A]:
       override type Of[a] <: Schema.Write[a]
@@ -88,6 +87,55 @@ object Schema:
 
         override def self: Self.Annotation[Self.Collection.Write[S, A]] = annotation
 
+      given [S[a] <: Schema.Write[a]] => Contravariant[Schema.Collection.Write.Of[S, *]] =
+        Contravariant[[a] =>> Annotation[Self.Collection.Write[S, a]]].imapK([A] =>
+          (self: Annotation[Self.Collection.Write[S, A]]) => Schema.Collection.Write[S, A](self)
+        )([A] => (schema: Schema.Collection.Write.Of[S, A]) => schema.self)
+
+    type Of[+S[a] <: Schema[a], A] = Schema.Collection[A] { type Of[a] <: S[a] }
+
+    def apply[S[a] <: Schema[a], A](annotation: Annotation[Self.Collection[S, A]]): Schema.Collection.Of[S, A] =
+      new Collection[A]:
+        override type Of[a] = S[a]
+
+        override def self: Self.Annotation[Self.Collection[S, A]] = annotation
+
+    def unapply[S[a] <: Schema[a], A](schema: Schema.Collection.Of[S, A]): Annotation[Self.Collection[S, A]] =
+      schema.self
+
+    given [S[a] <: Schema[a]] => Invariant[Schema.Collection.Of[S, *]] =
+      Invariant[[a] =>> Annotation[Self.Collection[S, a]]].imapK([A] =>
+        (self: Annotation[Self.Collection[S, A]]) => Schema.Collection[S, A](self)
+      )([A] => (schema: Schema.Collection.Of[S, A]) => schema.self)
+
+    given CollectionOperation[
+      Schema.Collection.Of,
+      Schema.Collection.Read.Of,
+      Schema.Collection.Write.Of,
+      Schema,
+      Schema.Read,
+      Schema.Write
+    ] = CollectionOperation[
+      [S[a] <: Schema[a], A] =>> Annotation[Self.Collection[S, A]],
+      [S[a] <: Schema.Read[a], A] =>> Annotation[Self.Collection.Read[S, A]],
+      [S[a] <: Schema.Write[a], A] =>> Annotation[Self.Collection.Write[S, A]],
+      Schema,
+      Schema.Read,
+      Schema.Write
+    ].mapK[
+      Schema.Collection.Of,
+      Schema.Collection.Read.Of,
+      Schema.Collection.Write.Of
+    ](
+      fK = [S[a] <: Schema[a], A] => (self: Annotation[Self.Collection[S, A]]) => Schema.Collection(self)
+    )(
+      fKR =
+        [S[a] <: Schema.Read[a], A] => (self: Annotation[Self.Collection.Read[S, A]]) => Schema.Collection.Read(self)
+    )(
+      fKW =
+        [S[a] <: Schema.Write[a], A] => (self: Annotation[Self.Collection.Write[S, A]]) => Schema.Collection.Write(self)
+    )
+
   sealed abstract class Primitive[A] extends Schema[A], Schema.Primitive.Read[A], Schema.Primitive.Write[A]:
     override type Of[_] = Nothing
 
@@ -95,8 +143,14 @@ object Schema:
     sealed trait Read[+A] extends Schema.Read[A]:
       override type Of[_] = Nothing
 
+    object Read:
+      given Functor[Schema.Primitive.Read] = ???
+
     sealed trait Write[-A] extends Schema.Write[A]:
       override type Of[_] = Nothing
+
+    object Write:
+      given Contravariant[Schema.Primitive.Write] = ???
 
     given Invariant[Schema.Primitive] = ???
 
@@ -144,7 +198,6 @@ object Schema:
           annotation: Annotation[Self.Tuple.Write[S, A]]
       ): Schema.Tuple.Write.Of[S, A] = new Write[A]:
         override type Of[a] = S[a]
-
         override def self: Self.Annotation[Self.Tuple.Write[S, A]] = annotation
 
       given [S[a] <: Schema.Write[a]] => Contravariant[Schema.Tuple.Write.Of[S, *]] =
@@ -164,28 +217,31 @@ object Schema:
       Schema,
       Schema.Read,
       Schema.Write
-    ] = ??? // TupleOperation[
-    //   [S[a] <: Schema[?, a], A] =>> Annotation[Self.Tuple[S, A]],
-    //   [S[a] <: Schema.Read[?, a], A] =>> Annotation[Self.Tuple.Read[S, A]],
-    //   [S[a] <: Schema.Write[?, a], A] =>> Annotation[Self.Tuple.Write[S, A]],
-    //   Schema,
-    //   Schema.Read,
-    //   Schema.Write,
-    //   Schema[?, *],
-    //   Schema.Read[?, *],
-    //   Schema.Write[?, *]
-    // ].imapK[Schema.Tuple, Schema.Tuple.Read, Schema.Tuple.Write](
-    //   [S[a] <: Schema[?, a], A] => (annotation: Annotation[Self.Tuple[S, A]]) => Tuple(annotation),
-    //   [S[a] <: Schema[?, a], A] => (schema: Schema.Tuple[S, A]) => schema.self
-    // )(
-    //   [S[a] <: Schema.Read[?, a], A] => (annotation: Annotation[Self.Tuple.Read[S, A]]) => Tuple.Read(annotation),
-    //   [S[a] <: Schema.Read[?, a], A] => (schema: Schema.Tuple.Read[S, A]) => schema.self
-    // )(
-    //   [S[a] <: Schema.Write[?, a], A] => (annotation: Annotation[Self.Tuple.Write[S, A]]) => Tuple.Write(annotation),
-    //   [S[a] <: Schema.Write[?, a], A] => (schema: Schema.Tuple.Write[S, A]) => schema.self
-    // )
+    ] = TupleOperation[
+      [S[a] <: Schema[a], A] =>> Annotation[Self.Tuple[S, A]],
+      [S[a] <: Schema.Read[a], A] =>> Annotation[Self.Tuple.Read[S, A]],
+      [S[a] <: Schema.Write[a], A] =>> Annotation[Self.Tuple.Write[S, A]],
+      Schema,
+      Schema.Read,
+      Schema.Write
+    ].imapK[
+      Schema.Tuple.Of,
+      Schema.Tuple.Read.Of,
+      Schema.Tuple.Write.Of
+    ](
+      fK = [S[a] <: Schema[a], A] => (self: Annotation[Self.Tuple[S, A]]) => Schema.Tuple(self),
+      gK = [S[a] <: Schema[a], A] => (schema: Schema.Tuple.Of[S, A]) => schema.self
+    )(
+      fKR = [S[a] <: Schema.Read[a], A] => (self: Annotation[Self.Tuple.Read[S, A]]) => Schema.Tuple.Read(self),
+      gKR = [S[a] <: Schema.Read[a], A] => (schema: Schema.Tuple.Read.Of[S, A]) => schema.self
+    )(
+      fKW = [S[a] <: Schema.Write[a], A] => (self: Annotation[Self.Tuple.Write[S, A]]) => Schema.Tuple.Write(self),
+      gKW = [S[a] <: Schema.Write[a], A] => (schema: Schema.Tuple.Write.Of[S, A]) => schema.self
+    )
 
-  given [S[a] <: Schema[a]] => Invariant[Schema.Of[S, *]] = ???
+  given [S[a] <: Schema[a]] => Invariant[Schema.Of[S, *]]:
+    override def imap[A, B](fa: Schema.Of[S, A])(f: A => B)(g: B => A): Schema.Of[S, B] = fa match
+      case schema: Schema.Tuple.Of[S, A] => schema.imap(f)(g)
 
   given TupleableOperation[
     Schema.Tuple.Of,

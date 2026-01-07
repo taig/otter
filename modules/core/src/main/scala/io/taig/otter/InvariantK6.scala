@@ -2,24 +2,24 @@ package io.taig.otter
 
 trait InvariantK6[F[
     _[+s[a] <: bound[a], a] <: read[s, a] & write[s, a],
-    read[+_[a] <: boundRead[a], +_],
-    write[+_[a] <: boundWrite[a], -_],
+    read[+_[a] <: boundRead[a], _],
+    write[+_[a] <: boundWrite[a], _],
     bound[a] <: boundRead[a] & boundWrite[a],
     boundRead[_],
     boundWrite[_]
 ]]:
   extension [
       Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-      SelfRead[+_[a] <: BoundRead[a], +_],
-      SelfWrite[+_[a] <: BoundWrite[a], -_],
+      SelfRead[+_[a] <: BoundRead[a], _],
+      SelfWrite[+_[a] <: BoundWrite[a], _],
       Bound[a] <: BoundRead[a] & BoundWrite[a],
       BoundRead[_],
       BoundWrite[_]
   ](fa: F[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite])
     def imapK[
         SelfK[+s[a] <: Bound[a], a] <: SelfReadK[s, a] & SelfWriteK[s, a],
-        SelfReadK[+_[a] <: BoundRead[a], +_],
-        SelfWriteK[+_[a] <: BoundWrite[a], -_]
+        SelfReadK[+_[a] <: BoundRead[a], _],
+        SelfWriteK[+_[a] <: BoundWrite[a], _]
     ](
         fK: [S[a] <: Bound[a], A] => Self[S, A] => SelfK[S, A],
         gK: [S[a] <: Bound[a], A] => SelfK[S, A] => Self[S, A]
@@ -34,8 +34,8 @@ trait InvariantK6[F[
 object InvariantK6:
   inline def apply[F[
       _[+s[a] <: bound[a], a] <: read[s, a] & write[s, a],
-      read[+_[a] <: boundRead[a], +_],
-      write[+_[a] <: boundWrite[a], -_],
+      read[+_[a] <: boundRead[a], _],
+      write[+_[a] <: boundWrite[a], _],
       bound[a] <: boundRead[a] & boundWrite[a],
       boundRead[_],
       boundWrite[_]

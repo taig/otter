@@ -67,6 +67,48 @@ object Annotation:
       [s[a] <: I[a], a] => (annotation: Annotation[G[s, a]]) => annotation.self
     )
 
+  given invariantK6: [
+      F[
+          _[+s[a] <: bound[a], a] <: read[s, a] & write[s, a],
+          read[+_[a] <: boundRead[a], _],
+          write[+_[a] <: boundWrite[a], _],
+          bound[a] <: boundRead[a] & boundWrite[a],
+          boundRead[_],
+          boundWrite[_]
+      ]: InvariantK6,
+      Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
+      SelfRead[+_[a] <: BoundRead[a], _],
+      SelfWrite[+_[a] <: BoundWrite[a], _],
+      Bound[a] <: BoundRead[a] & BoundWrite[a],
+      BoundRead[_],
+      BoundWrite[_]
+  ]
+    => (
+        F: F[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite]
+  )
+    => F[
+      [s[a] <: Bound[a], a] =>> Annotation[Self[s, a]],
+      [s[a] <: BoundRead[a], a] =>> Annotation[SelfRead[s, a]],
+      [s[a] <: BoundWrite[a], a] =>> Annotation[SelfWrite[s, a]],
+      Bound,
+      BoundRead,
+      BoundWrite
+    ] =
+    InvariantK6[F].imapK[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite](F)[
+      [s[a] <: Bound[a], a] =>> Annotation[Self[s, a]],
+      [s[a] <: BoundRead[a], a] =>> Annotation[SelfRead[s, a]],
+      [s[a] <: BoundWrite[a], a] =>> Annotation[SelfWrite[s, a]]
+    ](
+      [s[a] <: Bound[a], a] => (self: Self[s, a]) => Annotation(self),
+      [s[a] <: Bound[a], a] => (annotation: Annotation[Self[s, a]]) => annotation.self
+    )(
+      [s[a] <: BoundRead[a], a] => (selfRead: SelfRead[s, a]) => Annotation(selfRead),
+      [s[a] <: BoundRead[a], a] => (annotation: Annotation[SelfRead[s, a]]) => annotation.self
+    )(
+      [s[a] <: BoundWrite[a], a] => (selfWrite: SelfWrite[s, a]) => Annotation(selfWrite),
+      [s[a] <: BoundWrite[a], a] => (annotation: Annotation[SelfWrite[s, a]]) => annotation.self
+    )
+
   given invariantK9: [
       F[
           _[+s[a] <: bound[a], a] <: read[s, a] & write[s, a],
