@@ -76,8 +76,8 @@ object TupleableOperation:
 
   def derived[
       Tuple[+s[a] <: Bound[a], a] <: TupleRead[s, a] & TupleWrite[s, a] & Matchable,
-      TupleRead[+_[a] <: BoundRead[a], _],
-      TupleWrite[+_[a] <: BoundWrite[a], _],
+      TupleRead[+_[a] <: BoundRead[a], _] <: Matchable,
+      TupleWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
       Bound[a] <: BoundRead[a] & BoundWrite[a],
       BoundRead[_],
       BoundWrite[_]

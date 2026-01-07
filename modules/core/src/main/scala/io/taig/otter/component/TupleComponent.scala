@@ -4,8 +4,8 @@ import io.taig.otter.operation.TupleOperation
 
 trait TupleComponent[
     Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-    SelfRead[+_[a] <: BoundRead[a], _],
-    SelfWrite[+_[a] <: BoundWrite[a], _],
+    SelfRead[+_[a] <: BoundRead[a], _] <: Matchable,
+    SelfWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
     Bound[a] <: BoundRead[a] & BoundWrite[a],
     BoundRead[_],
     BoundWrite[_]

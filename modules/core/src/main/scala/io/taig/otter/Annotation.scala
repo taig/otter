@@ -7,6 +7,8 @@ import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter as Self
 import cats.InvariantSemigroupal
+import cats.Apply
+import cats.ContravariantSemigroupal
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
@@ -30,9 +32,23 @@ object Annotation:
     override def modify(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
       self.modify(metadata)
 
+  given apply: [F[_]: Apply] => Apply[[a] =>> Annotation[F[a]]]:
+    override def ap[A, B](ff: Annotation[F[A => B]])(fa: Annotation[F[A]]): Annotation[F[B]] =
+      Annotation(metadata = Metadata.Empty, self = ff.self.ap(fa.self))
+
+    override def map[A, B](fa: Annotation[F[A]])(f: A => B): Annotation[F[B]] =
+      fa.map(_.map(f))
+
   given contravariant: [F[_]: Contravariant] => Contravariant[[a] =>> Annotation[F[a]]]:
     override def contramap[A, B](fa: Annotation[F[A]])(f: B => A): Annotation[F[B]] =
       fa.map(_.contramap(f))
+
+  given contravariantSemigroupal: [F[_]: ContravariantSemigroupal] => ContravariantSemigroupal[[a] =>> Annotation[F[a]]]:
+    override def contramap[A, B](fa: Annotation[F[A]])(f: B => A): Annotation[F[B]] =
+      fa.map(_.contramap(f))
+
+    override def product[A, B](fa: Annotation[F[A]], fb: Annotation[F[B]]): Annotation[F[(A, B)]] =
+      Annotation(metadata = Metadata.Empty, self = fa.self.product(fb.self))
 
   given functor: [F[_]: Functor] => Functor[[a] =>> Annotation[F[a]]]:
     override def map[A, B](fa: Annotation[F[A]])(f: A => B): Annotation[F[B]] =
@@ -54,10 +70,10 @@ object Annotation:
       (annotation: Annotation[G[a]]) => annotation.self
     )
 
-  given invariantK2: [F[_[+_[a] <: f[a], _], f[_]]: InvariantK2, G[+_[a] <: H[a], _], H[_]]
+  given invariantK2: [F[_[+_[a] <: f[a], _], f[_]]: InvariantK2, G[+_[a] <: H[a], _] <: Matchable, H[_]]
     => (
         F: F[G, H]
-  ) => F[[s[a] <: H[a], a] =>> Annotation[G[s, a]], H] =
+  ) => F[[s[a] <: H[a], a] =>> Annotation[G[s, a]], H] = 
     F.imapK[[s[a] <: H[a], a] =>> Annotation[G[s, a]]]([s[a] <: H[a], a] => (gsa: G[s, a]) => Annotation(gsa))(
       [s[a] <: H[a], a] => (annotation: Annotation[G[s, a]]) => annotation.self
     )
@@ -85,8 +101,8 @@ object Annotation:
           boundWrite[_]
       ]: InvariantK6,
       Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-      SelfRead[+_[a] <: BoundRead[a], _],
-      SelfWrite[+_[a] <: BoundWrite[a], _],
+      SelfRead[+_[a] <: BoundRead[a], _] <: Matchable,
+      SelfWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
       Bound[a] <: BoundRead[a] & BoundWrite[a],
       BoundRead[_],
       BoundWrite[_]
@@ -101,8 +117,7 @@ object Annotation:
       Bound,
       BoundRead,
       BoundWrite
-    ] =
-    InvariantK6[F].imapK[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite](F)[
+    ] = InvariantK6[F].imapK[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite](F)[
       [s[a] <: Bound[a], a] =>> Annotation[Self[s, a]],
       [s[a] <: BoundRead[a], a] =>> Annotation[SelfRead[s, a]],
       [s[a] <: BoundWrite[a], a] =>> Annotation[SelfWrite[s, a]]
