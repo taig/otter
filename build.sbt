@@ -112,8 +112,8 @@ lazy val core = module(identifier = Some("core"))
 //   )
 //   .dependsOn(core)
 
-// lazy val coreJson = module(identifier = Some("core-json"))
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val coreJson = module(identifier = Some("core-json"))
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
 //   .dependsOn(coreJson % "compile->compile;test->test")

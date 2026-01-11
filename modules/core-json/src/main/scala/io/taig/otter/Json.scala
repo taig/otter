@@ -1,227 +1,143 @@
 package io.taig.otter
 
-import cats.Invariant
-import cats.derived.*
 import io.taig.otter as Self
-import io.taig.otter.operation.*
+import io.taig.otter.syntax.all.*
+import cats.syntax.all.*
+import cats.Invariant
+import cats.Contravariant
+import cats.Functor
+import io.taig.otter.operation.TupleableOperation
+import io.taig.otter.operation.TupleOperation
+import cats.InvariantSemigroupal
+import cats.Apply
+import cats.ContravariantSemigroupal
 
-sealed abstract class Json[A] extends Product, Serializable derives Invariant
+sealed abstract class Json[A] extends Json.Read[A], Json.Write[A]:
+  override def self: Annotation[Json.Of[A]]
 
 object Json:
-  final case class Coerce[A](annotation: Annotation[Self.Coerce[Json.Primitive, A]]) extends Json[A] derives Invariant
+  sealed trait Read[+A]:
+    def self: Annotation[Json.Read.Of[A]]
 
-  object Coerce:
-    given [A]: Annotated[Coerce[A]] = Annotated[Annotation[Self.Coerce[Json.Primitive, A]]]
-      .imap(Coerce.apply)(_.annotation)
+  object Read:
+    type Of[+A] = Self.Primitive.Read[A] | Self.Tuple.Read[Json.Read, A]
 
-    given CoerceOperation[Json.Coerce, Json.Primitive] =
-      CoerceOperation[[a] =>> Annotation[Self.Coerce[Json.Primitive, a]], Json.Primitive]
-        .imapK[Json.Coerce]([A] => (self: Annotation[Self.Coerce[Json.Primitive, A]]) => Coerce(self))([A] =>
-          (schema: Json.Coerce[A]) => schema.annotation
-        )
+    given Functor[Json.Read]:
+      override def map[A, B](json: Json.Read[A])(f: A => B): Read[B] = json match
+        case json: Json.Primitive.Read[A] => json.map(f)
+        case json: Json.Tuple.Read[A]     => ??? // json.map(f)
 
-  final case class Collection[A](annotation: Annotation[Self.Collection[Json, A]]) extends Json[A] derives Invariant
+    given TupleableOperation[Json.Tuple.Read, Json.Read] = TupleableOperation.derived
 
-  object Collection:
-    given [A]: Annotated[Json.Collection[A]] = Annotated[Annotation[Self.Collection[Json, A]]]
-      .imap(Collection.apply)(_.annotation)
+  sealed trait Write[-A]:
+    def self: Annotation[Json.Write.Of[A]]
 
-    given CollectionOperation[Json.Collection, Json] =
-      CollectionOperation[[a] =>> Annotation[Self.Collection[Json, a]], Json]
-        .imapK([A] => (self: Annotation[Self.Collection[Json, A]]) => Collection(self))([A] =>
-          (schema: Json.Collection[A]) => schema.annotation
-        )
+  object Write:
+    type Of[-A] = Self.Primitive.Write[A] | Self.Tuple.Write[Json.Write, A]
 
-  final case class Constant[A](annotation: Annotation[Self.Constant[Json.Primitive, A]]) extends Json[A]
-      derives Invariant
+    given Contravariant[Json.Write]:
+      override def contramap[A, B](json: Json.Write[A])(f: B => A): Write[B] = json match
+        case json: Json.Primitive.Write[A] => json.contramap(f)
+        case json: Json.Tuple.Write[A]     => ??? // json.contramap(f)
 
-  object Constant:
-    given [A]: Annotated[Json.Constant[A]] = Annotated[Annotation[Self.Constant[Json.Primitive, A]]]
-      .imap(Constant.apply)(_.annotation)
+    given TupleableOperation[Json.Tuple.Write, Json.Write] = TupleableOperation.derived
 
-    given ConstantOperation[Json.Constant, Json.Primitive] =
-      ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive]
-        .imapK([A] => (self: Annotation[Self.Constant[Json.Primitive, A]]) => Constant(self))([A] =>
-          (schema: Json.Constant[A]) => schema.annotation
-        )
-
-  final case class Dictionary[A](annotation: Annotation[Self.Dictionary[Json, A]]) extends Json[A] derives Invariant
-
-  object Dictionary:
-    given [A]: Annotated[Json.Dictionary[A]] =
-      Annotated[Annotation[Self.Dictionary[Json, A]]].imap(Dictionary.apply)(_.annotation)
-
-    given DictionaryOperation[Json.Dictionary, Json] =
-      DictionaryOperation[[a] =>> Annotation[Self.Dictionary[Json, a]], Json]
-        .imapK([A] => (self: Annotation[Self.Dictionary[Json, A]]) => Dictionary(self))([A] =>
-          (schema: Json.Dictionary[A]) => schema.annotation
-        )
-
-  final case class Enumeration[A](annotation: Annotation[Self.Enumeration[Json.Primitive, A]]) extends Json[A]
-      derives Invariant
-
-  object Enumeration:
-    given [A]: Annotated[Json.Enumeration[A]] =
-      Annotated[Annotation[Self.Enumeration[Json.Primitive, A]]].imap(Enumeration.apply)(_.annotation)
-
-    given EnumerationOperation[Json.Enumeration, Json.Primitive] =
-      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Json.Primitive, a]], Json.Primitive]
-        .imapK([A] => (self: Annotation[Self.Enumeration[Json.Primitive, A]]) => Enumeration(self))([A] =>
-          (schema: Json.Enumeration[A]) => schema.annotation
-        )
-
-  final case class Nullable[A](annotation: Annotation[Self.Nullable[Json, A]]) extends Json[A] derives Invariant
-
-  object Nullable:
-    given [A]: Annotated[Json.Nullable[A]] =
-      Annotated[Annotation[Self.Nullable[Json, A]]].imap(Nullable.apply)(_.annotation)
-
-    given NullableOperation[Json.Nullable, Json] =
-      NullableOperation[[a] =>> Annotation[Self.Nullable[Json, a]], Json]
-        .imapK([A] => (self: Annotation[Self.Nullable[Json, A]]) => Nullable(self))([A] =>
-          (schema: Json.Nullable[A]) => schema.annotation
-        )
-
-  sealed abstract class Primitive[A] extends Json[A] derives Invariant:
-    def annotation: Annotation[Self.Primitive[A]]
+  sealed abstract class Primitive[A] extends Json[A], Json.Primitive.Read[A], Json.Primitive.Write[A]:
+    def self: Annotation[Self.Primitive[A]]
 
   object Primitive:
-    final case class Boolean[A](annotation: Annotation[Self.Primitive.Boolean[A]]) extends Json.Primitive[A]
-        derives Invariant
+    sealed trait Read[+A] extends Json.Read[A]:
+      def self: Annotation[Self.Primitive.Read[A]]
 
-    object Boolean:
-      given [A]: Annotated[Json.Primitive.Boolean[A]] = Annotated[Annotation[Self.Primitive.Boolean[A]]]
-        .imap(Boolean.apply)(_.annotation)
+    object Read:
+      def apply[A](annotation: Annotation[Self.Primitive.Read[A]]): Json.Primitive.Read[A] = new Read[A]:
+        override def self: Annotation[Self.Primitive.Read[A]] = annotation
 
-      given BooleanOperation[Json.Primitive.Boolean] =
-        BooleanOperation[[a] =>> Annotation[Self.Primitive.Boolean[a]]].mapK([A] =>
-          (self: Annotation[Self.Primitive.Boolean[A]]) => Boolean(self)
+      def unapply[A](json: Json.Primitive.Read[A]): Annotation[Self.Primitive.Read[A]] = json.self
+
+      given Functor[Json.Primitive.Read] = Functor[[a] =>> Annotation[Self.Primitive.Read[a]]]
+        .imapK([A] => (self: Annotation[Self.Primitive.Read[A]]) => Read(self))([A] =>
+          (json: Json.Primitive.Read[A]) => json.self
         )
 
-    final case class Number[A](annotation: Annotation[Self.Primitive.Number[A]]) extends Json.Primitive[A]
-        derives Invariant
+    sealed trait Write[-A] extends Json.Write[A]:
+      def self: Annotation[Self.Primitive.Write[A]]
 
-    object Number:
-      given [A]: Annotated[Json.Primitive.Number[A]] = Annotated[Annotation[Self.Primitive.Number[A]]]
-        .imap(Number.apply)(_.annotation)
+    object Write:
+      def apply[A](annotation: Annotation[Self.Primitive.Write[A]]): Json.Primitive.Write[A] = new Write[A]:
+        override def self: Annotation[Self.Primitive.Write[A]] = annotation
 
-      given NumberOperation[Json.Primitive.Number] =
-        NumberOperation[[a] =>> Annotation[Self.Primitive.Number[a]]].imapK([A] =>
-          (self: Annotation[Self.Primitive.Number[A]]) => Number(self)
-        )([A] => (schema: Number[A]) => schema.annotation)
+      def unapply[A](json: Json.Primitive.Write[A]): Annotation[Self.Primitive.Write[A]] = json.self
 
-    final case class String[A](annotation: Annotation[Self.Primitive.String[A]]) extends Json.Primitive[A]
-        derives Invariant
+      given Contravariant[Json.Primitive.Write] = Contravariant[[a] =>> Annotation[Self.Primitive.Write[a]]]
+        .imapK([A] => (self: Annotation[Self.Primitive.Write[A]]) => Write(self))([A] =>
+          (json: Json.Primitive.Write[A]) => json.self
+        )
 
-    object String:
-      given [A]: Annotated[Json.Primitive.String[A]] = Annotated[Annotation[Self.Primitive.String[A]]]
-        .imap(String.apply)(_.annotation)
+    def apply[A](annotation: Annotation[Self.Primitive[A]]): Json.Primitive[A] = new Primitive[A]:
+      override def self: Annotation[Self.Primitive[A]] = annotation
 
-      given StringOperation[Json.Primitive.String] =
-        StringOperation[[a] =>> Annotation[Self.Primitive.String[a]]].imapK([A] =>
-          (self: Annotation[Self.Primitive.String[A]]) => String(self)
-        )([A] => (schema: String[A]) => schema.annotation)
+    def unapply[A](json: Json.Primitive[A]): Annotation[Self.Primitive[A]] = json.self
 
-    given [A]: Annotated[Json.Primitive[A]] = Annotated[Annotation[Self.Primitive[A]]]
-      .imap { self =>
-        self.self match
-          case schema: Self.Primitive.Boolean[A] => Boolean(self.copy(self = schema))
-          case schema: Self.Primitive.Number[A]  => Number(self.copy(self = schema))
-          case schema: Self.Primitive.String[A]  => String(self.copy(self = schema))
-      }(_.annotation)
+    given Invariant[Json.Primitive] = Invariant[[a] =>> Annotation[Self.Primitive[a]]]
+      .imapK([A] => (self: Annotation[Self.Primitive[A]]) => Primitive(self))([A] =>
+        (json: Json.Primitive[A]) => json.self
+      )
 
-    given PrimitiveOperation[Json.Primitive] = PrimitiveOperation[[a] =>> Annotation[Self.Primitive[a]]].imapK([A] =>
-      (self: Annotation[Self.Primitive[A]]) =>
-        self.self match
-          case schema: Self.Primitive.Boolean[A] => Json.Primitive.Boolean(self.copy(self = schema))
-          case schema: Self.Primitive.Number[A]  => Json.Primitive.Number(self.copy(self = schema))
-          case schema: Self.Primitive.String[A]  => Json.Primitive.String(self.copy(self = schema))
-    )([A] =>
-      (schema: Json.Primitive[A]) =>
-        schema match
-          case Json.Primitive.Boolean(self) => self
-          case Json.Primitive.Number(self)  => self
-          case Json.Primitive.String(self)  => self
-    )
-
-  final case class Record[A](annotation: Annotation[Self.Record[Json.Field, A]]) extends Json[A] derives Invariant
-
-  object Record:
-    given [A]: Annotated[Json.Record[A]] =
-      Annotated[Annotation[Self.Record[Json.Field, A]]].imap(Record.apply)(_.annotation)
-
-    given RecordOperation[Json.Record, Json.Field] =
-      RecordOperation[[a] =>> Annotation[Self.Record[Json.Field, a]], Json.Field].imapK([A] =>
-        (self: Annotation[Self.Record[Json.Field, A]]) => Record(self)
-      )([A] => (schema: Json.Record[A]) => schema.annotation)
-
-  final case class Tuple[A](annotation: Annotation[Self.Tuple[Json, A]]) extends Json[A] derives Invariant
+  sealed abstract class Tuple[A] extends Json[A], Json.Tuple.Read[A], Json.Tuple.Write[A]:
+    def self: Annotation[Self.Tuple[Json, A]]
 
   object Tuple:
-    given [A]: Annotated[Json.Tuple[A]] =
-      Annotated[Annotation[Self.Tuple[Json, A]]].imap(Tuple.apply)(_.annotation)
+    sealed trait Read[+A] extends Json.Read[A]:
+      def self: Annotation[Self.Tuple.Read[Json.Read, A]]
 
-    given TupleOperation[Json.Tuple, Json] = TupleOperation[[a] =>> Annotation[Self.Tuple[Json, a]], Json]
-      .imapK([A] => (self: Annotation[Self.Tuple[Json, A]]) => Tuple(self))([A] =>
-        (schema: Json.Tuple[A]) => schema.annotation
-      )
+    object Read:
+      def apply[A](annotation: Annotation[Self.Tuple.Read[Json.Read, A]]): Json.Tuple.Read[A] =
+        new Json.Tuple.Read[A]:
+          override def self: Annotation[Self.Tuple.Read[Json.Read, A]] = annotation
 
-  final case class Union[A](annotation: Annotation[Self.Union[Json.Branch, A]]) extends Json[A] derives Invariant
+      def unapply[A](json: Json.Tuple.Read[A]): Annotation[Self.Tuple.Read[Json.Read, A]] = json.self
 
-  object Union:
-    given [A]: Annotated[Json.Union[A]] =
-      Annotated[Annotation[Self.Union[Json.Branch, A]]].imap(Union.apply)(_.annotation)
+      given Apply[Json.Tuple.Read] = Apply[[a] =>> Annotation[Self.Tuple.Read[Json.Read, a]]]
+        .imapK([A] => (self: Annotation[Self.Tuple.Read[Json.Read, A]]) => Read(self))([A] =>
+          (json: Json.Tuple.Read[A]) => json.self
+        )
 
-    given UnionOperation[Json.Union, Json.Branch] =
-      UnionOperation[[a] =>> Annotation[Self.Union[Json.Branch, a]], Json.Branch].imapK([A] =>
-        (self: Annotation[Self.Union[Json.Branch, A]]) => Union(self)
-      )([A] => (schema: Json.Union[A]) => schema.annotation)
+      given TupleOperation[Json.Tuple.Read, Json.Read] = ???
 
-  final case class Branch[A](annotation: Annotation[Self.Branch[Json, A]]) derives Invariant
+    sealed trait Write[-A] extends Json.Write[A]:
+      def self: Annotation[Self.Tuple.Write[Json.Write, A]]
 
-  object Branch:
-    given [A]: Annotated[Json.Branch[A]] = Annotated[Annotation[Self.Branch[Json, A]]].imap(Branch.apply)(_.annotation)
+    object Write:
+      def apply[A](annotation: Annotation[Self.Tuple.Write[Json.Write, A]]): Json.Tuple.Write[A] =
+        new Json.Tuple.Write[A]:
+          override def self: Annotation[Self.Tuple.Write[Json.Write, A]] = annotation
 
-    given BranchOperation[Json.Branch, Json] = BranchOperation[[a] =>> Annotation[Self.Branch[Json, a]], Json]
-      .imapK([A] => (annotation: Annotation[Self.Branch[Json, A]]) => Branch(annotation))([A] =>
-        (json: Json.Branch[A]) => json.annotation
-      )
+      def unapply[A](json: Json.Tuple.Write[A]): Annotation[Self.Tuple.Write[Json.Write, A]] = json.self
 
-  final case class Field[A](annotation: Annotation[Self.Field[Json, A]]) derives Invariant
+      given ContravariantSemigroupal[Json.Tuple.Write] =
+        ContravariantSemigroupal[[a] =>> Annotation[Self.Tuple.Write[Json.Write, a]]]
+          .imapK([A] => (self: Annotation[Self.Tuple.Write[Json.Write, A]]) => Write(self))([A] =>
+            (json: Json.Tuple.Write[A]) => json.self
+          )
 
-  object Field:
-    given [A]: Annotated[Json.Field[A]] = Annotated[Annotation[Self.Field[Json, A]]].imap(Field.apply)(_.annotation)
+      given TupleOperation[Json.Tuple.Write, Json.Write] = ???
 
-    given FieldOperation[Json.Field, Json] = FieldOperation[[a] =>> Annotation[Self.Field[Json, a]], Json]
-      .imapK([A] => (annotation: Annotation[Self.Field[Json, A]]) => Field(annotation))([A] =>
-        (json: Json.Field[A]) => json.annotation
-      )
+    def apply[A](annotation: Annotation[Self.Tuple[Json, A]]): Json.Tuple[A] = new Tuple[A]:
+      override def self: Annotation[Self.Tuple[Json, A]] = annotation
 
-  given [A]: Annotated[Json[A]] with
-    override def get(self: Json[A]): Metadata = self match
-      case json @ Json.Coerce(_)            => Annotated[Json.Coerce[A]].get(self = json)
-      case json @ Json.Collection(_)        => Annotated[Json.Collection[A]].get(self = json)
-      case json @ Json.Constant(_)          => Annotated[Json.Constant[A]].get(self = json)
-      case json @ Json.Dictionary(_)        => Annotated[Json.Dictionary[A]].get(self = json)
-      case json @ Json.Enumeration(_)       => Annotated[Json.Enumeration[A]].get(self = json)
-      case json @ Json.Nullable(_)          => Annotated[Json.Nullable[A]].get(self = json)
-      case json @ Json.Primitive.Boolean(_) => Annotated[Json.Primitive.Boolean[A]].get(self = json)
-      case json @ Json.Primitive.Number(_)  => Annotated[Json.Primitive.Number[A]].get(self = json)
-      case json @ Json.Primitive.String(_)  => Annotated[Json.Primitive.String[A]].get(self = json)
-      case json @ Json.Record(_)            => Annotated[Json.Record[A]].get(self = json)
-      case json @ Json.Tuple(_)             => Annotated[Json.Tuple[A]].get(self = json)
-      case json @ Json.Union(_)             => Annotated[Json.Union[A]].get(self = json)
+    def unapply[A](json: Json.Tuple[A]): Annotation[Self.Tuple[Json, A]] = json.self
 
-    override def update(self: Json[A], metadata: Metadata => Metadata): Json[A] = self match
-      case json @ Json.Coerce(_)            => Annotated[Json.Coerce[A]].update(self = json, metadata)
-      case json @ Json.Collection(_)        => Annotated[Json.Collection[A]].update(self = json, metadata)
-      case json @ Json.Constant(_)          => Annotated[Json.Constant[A]].update(self = json, metadata)
-      case json @ Json.Dictionary(_)        => Annotated[Json.Dictionary[A]].update(self = json, metadata)
-      case json @ Json.Enumeration(_)       => Annotated[Json.Enumeration[A]].update(self = json, metadata)
-      case json @ Json.Nullable(_)          => Annotated[Json.Nullable[A]].update(self = json, metadata)
-      case json @ Json.Primitive.Boolean(_) => Annotated[Json.Primitive.Boolean[A]].update(self = json, metadata)
-      case json @ Json.Primitive.Number(_)  => Annotated[Json.Primitive.Number[A]].update(self = json, metadata)
-      case json @ Json.Primitive.String(_)  => Annotated[Json.Primitive.String[A]].update(self = json, metadata)
-      case json @ Json.Record(_)            => Annotated[Json.Record[A]].update(self = json, metadata)
-      case json @ Json.Tuple(_)             => Annotated[Json.Tuple[A]].update(self = json, metadata)
-      case json @ Json.Union(_)             => Annotated[Json.Union[A]].update(self = json, metadata)
+    given InvariantSemigroupal[Json.Tuple] = InvariantSemigroupal[[a] =>> Annotation[Self.Tuple[Json, a]]]
+      .imapK([A] => (self: Annotation[Self.Tuple[Json, A]]) => Tuple(self))([A] => (json: Json.Tuple[A]) => json.self)
+
+    given TupleOperation[Json.Tuple, Json] = ???
+
+  type Of[A] = Self.Primitive[A] | Self.Tuple[Json, A]
+
+  given Invariant[Json]:
+    override def imap[A, B](json: Json[A])(f: A => B)(g: B => A): Json[B] = json match
+      case json: Json.Primitive[A] => json.imap(f)(g)
+      case json: Json.Tuple[A]     => ??? // json.imap(f)(g)
+
+  given TupleableOperation[Json.Tuple, Json] = TupleableOperation.derived

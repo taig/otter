@@ -1,213 +1,71 @@
 package io.taig.otter.operation
 
-import scala.annotation.targetName
+import io.taig.otter.Reference
 import io.taig.otter.Append
-import io.taig.otter.Prepend
-import io.taig.otter.InvariantK6
-import io.taig.otter.InvariantK2
 import cats.InvariantSemigroupal
-import cats.Apply
-import cats.ContravariantSemigroupal
 
-abstract class TupleOperation[
-    Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-    SelfRead[+_[a] <: BoundRead[a], _] <: Matchable,
-    SelfWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
-    Bound[a] <: BoundRead[a] & BoundWrite[a],
-    BoundRead[_],
-    BoundWrite[_]
-] extends Operation[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite],
-      TupleOperation.Read[SelfRead, BoundRead],
-      TupleOperation.Write[SelfWrite, BoundWrite]:
+trait TupleOperation[Self[_[a] <: Bound[a], _], Bound[_]]:
   self =>
 
-  def apply[S[a] <: Bound[a], A](schema: => S[A]): Self[S, A]
+  def empty: Self[Nothing, Unit]
 
-  override def empty: Self[Nothing, Unit]
+  def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): Self[S, A]
 
-  final def imapK[
-      SelfK[+s[a] <: Bound[a], a] <: SelfReadK[s, a] & SelfWriteK[s, a],
-      SelfReadK[+_[a] <: BoundRead[a], _] <: Matchable,
-      SelfWriteK[+_[a] <: BoundWrite[a], _] <: Matchable
-  ](
-      fK: [S[a] <: Bound[a], A] => Self[S, A] => SelfK[S, A],
-      gK: [S[a] <: Bound[a], A] => SelfK[S, A] => Self[S, A]
-  )(
-      fKR: [S[a] <: BoundRead[a], A] => SelfRead[S, A] => SelfReadK[S, A],
-      gKR: [S[a] <: BoundRead[a], A] => SelfReadK[S, A] => SelfRead[S, A]
-  )(
-      fKW: [S[a] <: BoundWrite[a], A] => SelfWrite[S, A] => SelfWriteK[S, A],
-      gKW: [S[a] <: BoundWrite[a], A] => SelfWriteK[S, A] => SelfWrite[S, A]
-  ): TupleOperation[SelfK, SelfReadK, SelfWriteK, Bound, BoundRead, BoundWrite] =
-    new TupleOperation[SelfK, SelfReadK, SelfWriteK, Bound, BoundRead, BoundWrite]:
-      override def apply[S[a] <: Bound[a], A](schema: => S[A]): SelfK[S, A] = fK(self.apply(schema))
+  extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: Self[S, A])
+    final def :*[B](schema: => T[B])(using InvariantSemigroupal[Self[S, *]]): Self[S, Append[A, B]] =
+      Append(self, lift(schema = Reference.later(schema)))
 
-      override def empty: SelfK[Nothing, Unit] = fK(self.empty)
+  extension [
+      Self1[s[a] <: Bound1[a], a],
+      Bound1[a] >: Bound[a],
+      S[a] <: Bound[a],
+      T[a] >: S[a] <: Bound1[a],
+      A
+  ](self: Self[S, A])
+    final def :*[B](schema: => T[B])(using
+        TupleOperation[Self1, Bound1]
+    )(using InvariantSemigroupal[Self1[T, *]])(using evidence: Self[S, A] <:< Self1[T, A]): Self1[T, Append[A, B]] =
+      Append(evidence(self), TupleOperation[Self1, Bound1].lift(schema = Reference.later(schema)))
 
-      extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](selfK: SelfK[S, A])
-        override def zip[B](schema: SelfK[T, B]): SelfK[T, (A, B)] = fK(self.zip(gK(selfK))(gK(schema)))
+  def mapK[F[_[a] <: Bound[a], _]](fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]): TupleOperation[F, Bound] =
+    new TupleOperation[F, Bound]:
+      override def empty: F[Nothing, Unit] = fK(self.empty)
 
-      extension [S[a] <: BoundRead[a], T[a] >: S[a] <: BoundRead[a], A](selfK: SelfReadK[S, A])
-        @targetName("zipRead")
-        override def zip[B](schema: SelfReadK[T, B]): SelfReadK[T, (A, B)] = fKR(self.zip(gKR(selfK))(gKR(schema)))
-
-      extension [S[a] <: BoundWrite[a], T[a] >: S[a] <: BoundWrite[a], A](selfK: SelfWriteK[S, A])
-        @targetName("zipWrite")
-        override def zip[B](schema: SelfWriteK[T, B]): SelfWriteK[T, (A, B)] = fKW(self.zip(gKW(selfK))(gKW(schema)))
-
-  extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Self[S, A])
-    def zip[B](schema: Self[T, B]): Self[T, (A, B)]
-
-    @targetName("append")
-    final def :*[B](schema: T[B])(using InvariantSemigroupal[Self[T, *]]): Self[T, Append[A, B]] =
-      Append(self, apply(schema))
-
-  extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundRead[a], A](self: Self[S, A])
-    @targetName("appendWithRead")
-    final def :*[B](schema: T[B])(using Apply[SelfRead[T, *]]): SelfRead[T, Append[A, B]] =
-      (self: SelfRead[S, A]) :* schema
-
-  extension [S[a] <: Bound[a], T[a] >: S[a] <: BoundWrite[a], A](self: Self[S, A])
-    @targetName("appendWithWrite")
-    final def :*[B](schema: T[B])(using ContravariantSemigroupal[SelfWrite[T, *]]): SelfWrite[T, Append[A, B]] =
-      (self: SelfWrite[S, A]) :* schema
-
-  extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
-    @targetName("prepend")
-    final def *:[B](schema: Self[T, B])(using InvariantSemigroupal[Self[S, *]]): Self[S, Prepend[A, B]] =
-      Prepend(apply(self), schema)
-
-  extension [S[a] >: T[a] <: BoundRead[a], T[a] <: Bound[a], A](self: S[A])
-    @targetName("prependWithRead")
-    final def *:[B](schema: Self[T, B])(using Apply[SelfRead[S, *]]): SelfRead[S, Prepend[A, B]] =
-      self *: (schema: SelfRead[T, B])
-
-  extension [S[a] >: T[a] <: BoundWrite[a], T[a] <: Bound[a], A](self: S[A])
-    @targetName("prependWithWrite")
-    final def *:[B](schema: Self[T, B])(using ContravariantSemigroupal[SelfWrite[S, *]]): SelfWrite[S, Prepend[A, B]] =
-      self *: (schema: SelfWrite[T, B])
+      override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
 
 object TupleOperation:
-  trait Read[Self[+_[a] <: Bound[a], _] <: Matchable, Bound[_]] extends Operation.Read[Self, Bound]:
+  trait Read[Self[_[a] <: Bound[a], _], Bound[_]] extends TupleOperation[Self, Bound]:
     self =>
 
-    @targetName("applyRead")
-    def apply[S[a] <: Bound[a], A](schema: => S[A]): Self[S, A]
+    final override def mapK[F[_[a] <: Bound[a], _]](
+        fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]
+    ): TupleOperation.Read[F, Bound] =
+      new Read[F, Bound]:
+        override def empty: F[Nothing, Unit] = fK(self.empty)
 
-    def empty: Self[Nothing, Unit]
-
-    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Self[S, A])
-      @targetName("zipRead")
-      def zip[B](schema: Self[T, B]): Self[T, (A, B)]
-
-      @targetName("appendRead")
-      final def :*[B](schema: T[B])(using Apply[Self[T, *]]): Self[T, Append[A, B]] =
-        Append(self, apply(schema))
-
-    extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
-      @targetName("prependRead")
-      final def *:[B](schema: Self[T, B])(using Apply[Self[S, *]]): Self[S, Prepend[A, B]] =
-        Prepend(apply(self), schema)
-
-    final def imapK[H[+_[a] <: Bound[a], _] <: Matchable](fK: [S[a] <: Bound[a], A] => Self[S, A] => H[S, A])(
-        gK: [S[a] <: Bound[a], A] => H[S, A] => Self[S, A]
-    ): TupleOperation.Read[H, Bound] = new TupleOperation.Read[H, Bound]:
-      @targetName("applyRead")
-      def apply[S[a] <: Bound[a], A](schema: => S[A]): H[S, A] = fK(self.apply(schema))
-
-      def empty: H[Nothing, Unit] = fK(self.empty)
-
-      extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](selfH: H[S, A])
-        @targetName("zipRead")
-        def zip[B](schema: H[T, B]): H[T, (A, B)] = fK(self.zip(gK(selfH))(gK(schema)))
+        override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
 
   object Read:
-    inline def apply[Self[+_[a] <: Bound[a], _] <: Matchable, Bound[_]](using
+    inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
         self: TupleOperation.Read[Self, Bound]
     ): TupleOperation.Read[Self, Bound] = self
 
-    given InvariantK2[TupleOperation.Read]:
-      extension [H[+_[a] <: G[a], _] <: Matchable, G[_]](fa: TupleOperation.Read[H, G])
-        def imapK[I[+_[a] <: G[a], _] <: Matchable](fK: [S[a] <: G[a], A] => H[S, A] => I[S, A])(
-            gK: [S[a] <: G[a], A] => I[S, A] => H[S, A]
-        ): TupleOperation.Read[I, G] = fa.imapK(fK)(gK)
-
-  trait Write[Self[+_[a] <: Bound[a], _] <: Matchable, Bound[_]] extends Operation.Write[Self, Bound]:
+  trait Write[Self[_[a] <: Bound[a], _], Bound[_]] extends TupleOperation[Self, Bound]:
     self =>
 
-    @targetName("applyWrite")
-    def apply[S[a] <: Bound[a], A](schema: => S[A]): Self[S, A]
+    final override def mapK[F[_[a] <: Bound[a], _]](
+        fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]
+    ): TupleOperation.Write[F, Bound] =
+      new Write[F, Bound]:
+        override def empty: F[Nothing, Unit] = fK(self.empty)
 
-    def empty: Self[Nothing, Unit]
-
-    extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](self: Self[S, A])
-      @targetName("zipWrite")
-      def zip[B](schema: Self[T, B]): Self[T, (A, B)]
-
-      @targetName("appendWrite")
-      final def :*[B](schema: T[B])(using ContravariantSemigroupal[Self[T, *]]): Self[T, Append[A, B]] =
-        Append(self, apply(schema))
-
-    extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: S[A])
-      @targetName("prependWrite")
-      final def *:[B](schema: Self[T, B])(using ContravariantSemigroupal[Self[S, *]]): Self[S, Prepend[A, B]] =
-        Prepend(apply(self), schema)
-
-    final def imapK[H[+_[a] <: Bound[a], _] <: Matchable](fK: [S[a] <: Bound[a], A] => Self[S, A] => H[S, A])(
-        gK: [S[a] <: Bound[a], A] => H[S, A] => Self[S, A]
-    ): TupleOperation.Write[H, Bound] = new TupleOperation.Write[H, Bound]:
-      @targetName("applyWrite")
-      def apply[S[a] <: Bound[a], A](schema: => S[A]): H[S, A] = fK(self.apply(schema))
-
-      def empty: H[Nothing, Unit] = fK(self.empty)
-
-      extension [S[a] <: Bound[a], T[a] >: S[a] <: Bound[a], A](selfH: H[S, A])
-        @targetName("zipWrite")
-        def zip[B](schema: H[T, B]): H[T, (A, B)] = fK(self.zip(gK(selfH))(gK(schema)))
+        override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
 
   object Write:
-    inline def apply[Self[+_[a] <: Bound[a], _] <: Matchable, Bound[_]](using
+    inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
         self: TupleOperation.Write[Self, Bound]
     ): TupleOperation.Write[Self, Bound] = self
 
-    given InvariantK2[TupleOperation.Write]:
-      extension [H[+_[a] <: G[a], _] <: Matchable, G[_]](fa: TupleOperation.Write[H, G])
-        def imapK[I[+_[a] <: G[a], _] <: Matchable](fK: [S[a] <: G[a], A] => H[S, A] => I[S, A])(
-            gK: [S[a] <: G[a], A] => I[S, A] => H[S, A]
-        ): TupleOperation.Write[I, G] = fa.imapK(fK)(gK)
-
-  inline def apply[
-      Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-      SelfRead[+_[a] <: BoundRead[a], _] <: Matchable,
-      SelfWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
-      Bound[a] <: BoundRead[a] & BoundWrite[a],
-      BoundRead[_],
-      BoundWrite[_]
-  ](using
-      self: TupleOperation[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite]
-  ): TupleOperation[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite] = self
-
-  given InvariantK6[TupleOperation]:
-    extension [
-        Self[+s[a] <: Bound[a], a] <: SelfRead[s, a] & SelfWrite[s, a],
-        SelfRead[+_[a] <: BoundRead[a], _] <: Matchable,
-        SelfWrite[+_[a] <: BoundWrite[a], _] <: Matchable,
-        Bound[a] <: BoundRead[a] & BoundWrite[a],
-        BoundRead[_],
-        BoundWrite[_]
-    ](fa: TupleOperation[Self, SelfRead, SelfWrite, Bound, BoundRead, BoundWrite])
-      def imapK[
-          SelfK[+s[a] <: Bound[a], a] <: SelfReadK[s, a] & SelfWriteK[s, a],
-          SelfReadK[+_[a] <: BoundRead[a], _] <: Matchable,
-          SelfWriteK[+_[a] <: BoundWrite[a], _] <: Matchable
-      ](
-          fK: [S[a] <: Bound[a], A] => Self[S, A] => SelfK[S, A],
-          gK: [S[a] <: Bound[a], A] => SelfK[S, A] => Self[S, A]
-      )(
-          fKR: [S[a] <: BoundRead[a], A] => SelfRead[S, A] => SelfReadK[S, A],
-          gKR: [S[a] <: BoundRead[a], A] => SelfReadK[S, A] => SelfRead[S, A]
-      )(
-          fKW: [S[a] <: BoundWrite[a], A] => SelfWrite[S, A] => SelfWriteK[S, A],
-          gKW: [S[a] <: BoundWrite[a], A] => SelfWriteK[S, A] => SelfWrite[S, A]
-      ): TupleOperation[SelfK, SelfReadK, SelfWriteK, Bound, BoundRead, BoundWrite] =
-        fa.imapK[SelfK, SelfReadK, SelfWriteK](fK, gK)(fKR, gKR)(fKW, gKW)
+  inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
+      self: TupleOperation[Self, Bound]
+  ): TupleOperation[Self, Bound] = self

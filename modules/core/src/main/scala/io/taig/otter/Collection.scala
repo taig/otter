@@ -4,9 +4,7 @@ import cats.Contravariant
 import cats.Functor
 import cats.Invariant
 import cats.data.Chain
-import io.taig.otter.operation.CollectionOperation
 import io.taig.validation.Validation
-import scala.annotation.targetName
 
 sealed abstract class Collection[+S[_], A] extends Collection.Read[S, A], Collection.Write[S, A]:
   final def imap[B](f: A => B)(g: B => A): Collection[S, B] = Collection.Modify(self = this, f, g)
@@ -50,32 +48,3 @@ object Collection:
 
   given [S[_]] => Invariant[Collection[S, *]]:
     override def imap[A, B](self: Collection[S, A])(f: A => B)(g: B => A): Collection[S, B] = self.imap(f)(g)
-
-  given [Bound[a] <: BoundRead[a] & BoundWrite[a], BoundRead[_], BoundWrite[_]]
-      => CollectionOperation[Collection, Collection.Read, Collection.Write, Bound, BoundRead, BoundWrite]:
-    override def chained[S[a] <: Bound[a], A](
-        schema: => S[A],
-        validation: Validation[Constraint.Collection, Chain[A]]
-    ): Collection[S, Chain[A]] = Chained(schema = Reference.later(schema), validation)
-
-    override def indexed[S[a] <: Bound[a], A](
-        schema: => S[A],
-        validation: Validation[Constraint.Collection, Vector[A]]
-    ): Collection[S, Vector[A]] = Indexed(schema = Reference.later(schema), validation)
-
-    override def linked[S[a] <: Bound[a], A](
-        schema: => S[A],
-        validation: Validation[Constraint.Collection, List[A]]
-    ): Collection[S, List[A]] = Linked(schema = Reference.later(schema), validation)
-
-    @targetName("chainedWrite")
-    override def chained[S[a] <: BoundWrite[a], A](schema: => S[A]): Collection.Write[S, Chain[A]] =
-      Chained(schema = Reference.later(schema), validation = Validation.valid)
-
-    @targetName("indexedWrite")
-    override def indexed[S[a] <: BoundWrite[a], A](schema: => S[A]): Collection.Write[S, Vector[A]] =
-      Indexed(schema = Reference.later(schema), validation = Validation.valid)
-
-    @targetName("linkedWrite")
-    override def linked[S[a] <: BoundWrite[a], A](schema: => S[A]): Collection.Write[S, List[A]] =
-      Linked(schema = Reference.later(schema), validation = Validation.valid)

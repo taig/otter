@@ -1,11 +1,10 @@
 package io.taig.otter
 
-import scala.Tuple as STuple
 import cats.InvariantSemigroupal
 import cats.syntax.all.*
 
 type Prepend[A, B] = B match
-  case STuple =>
+  case _ *: _ =>
     A match
       case Unit => B
       case _    => A *: B
