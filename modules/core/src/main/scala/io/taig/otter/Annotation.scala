@@ -70,3 +70,9 @@ object Annotation:
     F.imapK[[a] =>> Annotation[G[a]]]([a] => (ga: G[a]) => Annotation(ga))([a] =>
       (annotation: Annotation[G[a]]) => annotation.self
     )
+
+  given invariantK2: [F[_[_], _[_]], G[_], H[_]] => (InvariantK[[f[_]] =>> F[f, H]]) => (F: F[G, H])
+    => F[[a] =>> Annotation[G[a]], H] =
+    F.imapK[[a] =>> Annotation[G[a]]]([a] => (ga: G[a]) => Annotation(ga))([a] =>
+      (annotation: Annotation[G[a]]) => annotation.self
+    )

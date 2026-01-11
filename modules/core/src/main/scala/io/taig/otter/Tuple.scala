@@ -34,10 +34,12 @@ object Tuple:
       override def ap[A, B](ff: Tuple.Read[S, A => B])(fa: Tuple.Read[S, A]): Tuple.Read[S, B] =
         ff.product(fa).map(_ apply _)
 
-    given [S[_]] => TupleOperation[Tuple.Read, S]:
-      override def empty: Tuple.Read[Nothing, Unit] = Tuple.Empty
+    given [S[_]] => TupleOperation.Read[Tuple.Read[S, *], S]:
+      override def empty: Tuple.Read[Nothing, Unit] = Empty
 
-      override def lift[T[a] <: S[a], A](schema: Reference[T, A]): Tuple.Read[T, A] = ???
+      override def lift[A](schema: Reference[S, A]): Tuple.Read[S, A] = Root(schema)
+
+      extension [A](self: Tuple.Read[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas
 
   sealed trait Write[+S[_], -A]:
     final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
@@ -61,6 +63,13 @@ object Tuple:
 
       override def product[A, B](fa: Tuple.Write[S, A], fb: Tuple.Write[S, B]): Tuple.Write[S, (A, B)] = fa.product(fb)
 
+    given [S[_]] => TupleOperation.Write[Tuple.Write[S, *], S]:
+      override def empty: Tuple.Write[Nothing, Unit] = Empty
+
+      override def lift[A](schema: Reference[S, A]): Tuple.Write[S, A] = Root(schema)
+
+      extension [A](self: Tuple.Write[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas
+
   case object Empty extends Tuple[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
 
@@ -77,3 +86,10 @@ object Tuple:
     override def imap[A, B](self: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = self.imap(f)(g)
 
     override def product[A, B](fa: Tuple[S, A], fb: Tuple[S, B]): Tuple[S, (A, B)] = fa.product(fb)
+
+  given [S[_]] => TupleOperation[Tuple[S, *], S]:
+    override def empty: Tuple[S, Unit] = Empty
+
+    override def lift[A](schema: Reference[S, A]): Tuple[S, A] = Root(schema)
+
+    extension [A](self: Tuple[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas

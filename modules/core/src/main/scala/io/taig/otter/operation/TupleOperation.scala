@@ -1,71 +1,68 @@
 package io.taig.otter.operation
 
 import io.taig.otter.Reference
-import io.taig.otter.Append
-import cats.InvariantSemigroupal
+import cats.data.Chain
+import io.taig.otter.InvariantK
 
-trait TupleOperation[Self[_[a] <: Bound[a], _], Bound[_]]:
+trait TupleOperation[F[_], G[_]]:
   self =>
 
-  def empty: Self[Nothing, Unit]
+  def empty: F[Unit]
 
-  def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): Self[S, A]
+  def lift[A](schema: Reference[G, A]): F[A]
 
-  extension [S[a] >: T[a] <: Bound[a], T[a] <: Bound[a], A](self: Self[S, A])
-    final def :*[B](schema: => T[B])(using InvariantSemigroupal[Self[S, *]]): Self[S, Append[A, B]] =
-      Append(self, lift(schema = Reference.later(schema)))
+  extension [A](fa: F[A]) def schemas: Chain[Reference[G, ?]]
 
-  extension [
-      Self1[s[a] <: Bound1[a], a],
-      Bound1[a] >: Bound[a],
-      S[a] <: Bound[a],
-      T[a] >: S[a] <: Bound1[a],
-      A
-  ](self: Self[S, A])
-    final def :*[B](schema: => T[B])(using
-        TupleOperation[Self1, Bound1]
-    )(using InvariantSemigroupal[Self1[T, *]])(using evidence: Self[S, A] <:< Self1[T, A]): Self1[T, Append[A, B]] =
-      Append(evidence(self), TupleOperation[Self1, Bound1].lift(schema = Reference.later(schema)))
+  def imapK[H[_]](f: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation[H, G] =
+    new TupleOperation[H, G]:
+      override def empty: H[Unit] = f(self.empty)
 
-  def mapK[F[_[a] <: Bound[a], _]](fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]): TupleOperation[F, Bound] =
-    new TupleOperation[F, Bound]:
-      override def empty: F[Nothing, Unit] = fK(self.empty)
+      override def lift[A](schema: Reference[G, A]): H[A] = f(self.lift(schema))
 
-      override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
+      extension [A](ha: H[A]) override def schemas: Chain[Reference[G, ?]] = self.schemas(gK(ha))
 
 object TupleOperation:
-  trait Read[Self[_[a] <: Bound[a], _], Bound[_]] extends TupleOperation[Self, Bound]:
+  trait Read[F[_], G[_]] extends TupleOperation[F, G]:
     self =>
 
-    final override def mapK[F[_[a] <: Bound[a], _]](
-        fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]
-    ): TupleOperation.Read[F, Bound] =
-      new Read[F, Bound]:
-        override def empty: F[Nothing, Unit] = fK(self.empty)
+    final override def imapK[H[_]](f: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation.Read[H, G] =
+      new TupleOperation.Read[H, G]:
+        override def empty: H[Unit] = f(self.empty)
 
-        override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
+        override def lift[A](schema: Reference[G, A]): H[A] = f(self.lift(schema))
+
+        extension [A](ha: H[A]) override def schemas: Chain[Reference[G, ?]] = self.schemas(gK(ha))
 
   object Read:
-    inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
-        self: TupleOperation.Read[Self, Bound]
-    ): TupleOperation.Read[Self, Bound] = self
+    inline def apply[F[_], G[_]](using self: TupleOperation.Read[F, G]): TupleOperation.Read[F, G] = self
 
-  trait Write[Self[_[a] <: Bound[a], _], Bound[_]] extends TupleOperation[Self, Bound]:
+    given [F[_]] => InvariantK[[f[_]] =>> TupleOperation.Read[f, F]]:
+      extension [G[_]](fa: TupleOperation.Read[G, F])
+        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): TupleOperation.Read[H, F] =
+          fa.imapK(fK)(gK)
+
+  trait Write[F[_], G[_]] extends TupleOperation[F, G]:
     self =>
 
-    final override def mapK[F[_[a] <: Bound[a], _]](
-        fK: [S[a] <: Bound[a], A] => Self[S, A] => F[S, A]
-    ): TupleOperation.Write[F, Bound] =
-      new Write[F, Bound]:
-        override def empty: F[Nothing, Unit] = fK(self.empty)
+    final override def imapK[H[_]](f: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation.Write[H, G] =
+      new TupleOperation.Write[H, G]:
+        override def empty: H[Unit] = f(self.empty)
 
-        override def lift[S[a] <: Bound[a], A](schema: Reference[S, A]): F[S, A] = fK(self.lift(schema))
+        override def lift[A](schema: Reference[G, A]): H[A] = f(self.lift(schema))
+
+        extension [A](ha: H[A]) override def schemas: Chain[Reference[G, ?]] = self.schemas(gK(ha))
 
   object Write:
-    inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
-        self: TupleOperation.Write[Self, Bound]
-    ): TupleOperation.Write[Self, Bound] = self
+    inline def apply[F[_], G[_]](using self: TupleOperation.Write[F, G]): TupleOperation.Write[F, G] = self
 
-  inline def apply[Self[_[a] <: Bound[a], _], Bound[_]](using
-      self: TupleOperation[Self, Bound]
-  ): TupleOperation[Self, Bound] = self
+    given [F[_]] => InvariantK[[f[_]] =>> TupleOperation.Write[f, F]]:
+      extension [G[_]](fa: TupleOperation.Write[G, F])
+        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): TupleOperation.Write[H, F] =
+          fa.imapK(fK)(gK)
+
+  inline def apply[F[_], G[_]](using self: TupleOperation[F, G]): TupleOperation[F, G] = self
+
+  given [F[_]] => InvariantK[[f[_]] =>> TupleOperation[f, F]]:
+    extension [G[_]](fa: TupleOperation[G, F])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): TupleOperation[H, F] =
+        fa.imapK(fK)(gK)
