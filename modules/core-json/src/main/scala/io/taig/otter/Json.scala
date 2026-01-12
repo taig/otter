@@ -8,6 +8,7 @@ import cats.Invariant
 import cats.InvariantSemigroupal
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.operation.CollectionOperation
 import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.otter.operation.RecordOperation
@@ -15,7 +16,6 @@ import io.taig.otter.operation.RecordableOperation
 import io.taig.otter.operation.TupleOperation
 import io.taig.otter.operation.TupleableOperation
 import io.taig.otter.syntax.all.*
-import Self.operation.CollectionOperation
 
 sealed abstract class Json[A] extends Json.Read[A], Json.Write[A]:
   override def self: Annotation[Json.Of[A]]
