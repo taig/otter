@@ -1,8 +1,11 @@
 package io.taig.otter
 
-import cats.Functor
 import cats.Contravariant
+import cats.Functor
 import cats.Invariant
+import io.taig.otter.operation.PrimitiveOperation
+import io.taig.validation.Validation
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
@@ -10,8 +13,6 @@ import scala.Double as SDouble
 import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
-import io.taig.validation.Validation
-import io.taig.otter.operation.PrimitiveOperation
 
 sealed abstract class Primitive[A] extends Primitive.Read[A], Primitive.Write[A]:
   def imap[B](f: A => B)(g: B => A): Primitive[B]

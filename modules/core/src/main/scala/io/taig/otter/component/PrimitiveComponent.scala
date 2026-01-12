@@ -1,13 +1,14 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.PrimitiveOperation
-import scala.Boolean as SBoolean
-import io.taig.validation.Validation
-import io.taig.otter.Constraint
-import java.math.BigDecimal as JBigDecimal
-import java.math.BigInteger as JBigInteger
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter.Constraint
+import io.taig.otter.operation.PrimitiveOperation
+import io.taig.validation.Validation
+
+import java.math.BigDecimal as JBigDecimal
+import java.math.BigInteger as JBigInteger
+import scala.Boolean as SBoolean
 
 object PrimitiveComponent:
   trait Boolean[F[_]](using F: PrimitiveOperation.Boolean[F]):
@@ -50,19 +51,17 @@ object PrimitiveComponent:
 
     val long: F[Long] = long(validation = Validation.valid)
 
-  trait Text[F[_], G[_], H[_]](using
-      F: PrimitiveOperation.Text[F],
-      G: PrimitiveOperation.Text.Read[G],
-      H: PrimitiveOperation.Text.Write[H]
-  ):
+  trait Text[F[_]](using F: PrimitiveOperation.Text[F]):
     def codec[A](name: String, parse: String => Either[String, A], print: A => String): F[A] =
       F.codec(name, parse, print)
 
-    def parser[A](name: String, parse: String => Either[String, A]): G[A] = G.parser(name, parse)
-
-    def printer[A](name: String, print: A => String): H[A] = H.printer(name, print)
-
-    def string(validation: Validation[Constraint.Primitive.Text, String]): F[String] =
-      F.string(validation)
+    def string(validation: Validation[Constraint.Primitive.Text, String]): F[String] = F.string(validation)
 
     val string: F[String] = string(validation = Validation.valid)
+
+  object Text:
+    trait Read[F[_]](using F: PrimitiveOperation.Text.Read[F]):
+      def parser[A](name: String, parse: String => Either[String, A]): F[A] = F.parser(name, parse)
+
+    trait Write[F[_]](using F: PrimitiveOperation.Text.Write[F]):
+      def printer[A](name: String, print: A => String): F[A] = F.printer(name, print)

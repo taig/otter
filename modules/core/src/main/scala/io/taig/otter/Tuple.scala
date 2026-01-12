@@ -1,9 +1,9 @@
 package io.taig.otter
 
-import cats.data.Chain
-import cats.InvariantSemigroupal
 import cats.Apply
 import cats.ContravariantSemigroupal
+import cats.InvariantSemigroupal
+import cats.data.Chain
 import io.taig.otter.operation.TupleOperation
 
 sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:

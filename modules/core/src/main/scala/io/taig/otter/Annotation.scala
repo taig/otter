@@ -1,14 +1,14 @@
 package io.taig.otter
 
 import cats.Applicative
+import cats.Apply
 import cats.Contravariant
+import cats.ContravariantSemigroupal
 import cats.Functor
 import cats.Invariant
+import cats.InvariantSemigroupal
 import cats.syntax.all.*
 import io.taig.otter as Self
-import cats.InvariantSemigroupal
-import cats.Apply
-import cats.ContravariantSemigroupal
 
 final case class Annotation[+A](metadata: Metadata, self: A):
   def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))

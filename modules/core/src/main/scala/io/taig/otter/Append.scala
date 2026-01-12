@@ -1,8 +1,9 @@
 package io.taig.otter
 
-import scala.Tuple as STuple
 import cats.InvariantSemigroupal
 import cats.syntax.all.*
+
+import scala.Tuple as STuple
 
 type Append[A, B] = A match
   case _ *: _ =>
@@ -16,6 +17,7 @@ type Append[A, B] = A match
       case _    => A *: B *: EmptyTuple
 
 object Append:
+  @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   inline def apply[F[_] <: Matchable: InvariantSemigroupal, A, B](fa: F[A], fb: F[B]): F[Append[A, B]] =
     inline fa match
       case fxy: F[x *: y] =>

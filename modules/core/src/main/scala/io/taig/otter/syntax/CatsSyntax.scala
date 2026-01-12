@@ -1,11 +1,11 @@
 package io.taig.otter.syntax
 
+import cats.Apply
 import cats.Contravariant
+import cats.ContravariantSemigroupal
 import cats.Functor
 import cats.Invariant
 import cats.InvariantSemigroupal
-import cats.Apply
-import cats.ContravariantSemigroupal
 
 trait CatsSyntax:
   extension [F[_]](fa: Apply[F])

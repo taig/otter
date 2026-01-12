@@ -15,6 +15,7 @@ type Prepend[A, B] = B match
       case _    => A *: B *: EmptyTuple
 
 object Prepend:
+  @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   inline def apply[F[_] <: Matchable: InvariantSemigroupal, G[a] <: F[a], A, B](fa: F[A], gb: G[B]): F[Prepend[A, B]] =
     inline gb match
       case gxy: G[x *: y] =>

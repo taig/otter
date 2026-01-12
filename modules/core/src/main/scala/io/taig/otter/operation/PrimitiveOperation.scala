@@ -1,11 +1,12 @@
 package io.taig.otter.operation
 
-import io.taig.validation.Validation
 import io.taig.otter.Constraint
-import scala.Boolean as SBoolean
+import io.taig.otter.InvariantK
+import io.taig.validation.Validation
+
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
-import io.taig.otter.InvariantK
+import scala.Boolean as SBoolean
 
 object PrimitiveOperation:
   trait Boolean[F[_]]:

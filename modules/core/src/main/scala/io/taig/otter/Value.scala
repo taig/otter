@@ -1,7 +1,7 @@
 package io.taig.otter
 
-import cats.Functor
 import cats.Contravariant
+import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter as Self

@@ -1,8 +1,10 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Reference
+import cats.InvariantSemigroupal
 import cats.data.Chain
+import io.taig.otter.Append
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
 trait TupleOperation[F[_], G[_]]:
   self =>
@@ -13,11 +15,15 @@ trait TupleOperation[F[_], G[_]]:
 
   extension [A](fa: F[A]) def schemas: Chain[Reference[G, ?]]
 
-  def imapK[H[_]](f: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation[H, G] =
-    new TupleOperation[H, G]:
-      override def empty: H[Unit] = f(self.empty)
+  extension [F1[a] >: F[a] <: Matchable, G1[a] >: G[a], A](fa: F[A])
+    final def :*[B](schema: => G1[B])(using TupleOperation[F1, G1], InvariantSemigroupal[F1]): F1[Append[A, B]] =
+      Append(fa, TupleOperation[F1, G1].lift(schema = Reference.later(schema)))
 
-      override def lift[A](schema: Reference[G, A]): H[A] = f(self.lift(schema))
+  def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation[H, G] =
+    new TupleOperation[H, G]:
+      override def empty: H[Unit] = fK(self.empty)
+
+      override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
 
       extension [A](ha: H[A]) override def schemas: Chain[Reference[G, ?]] = self.schemas(gK(ha))
 
