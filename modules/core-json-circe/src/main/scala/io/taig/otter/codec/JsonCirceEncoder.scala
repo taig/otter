@@ -1,10 +1,10 @@
-// package io.taig.otter.codec
+package io.taig.otter.codec
 
-// import io.circe.Json as CirceJson
-// import io.taig.otter.Json
+import io.circe.Json as CirceJson
+import io.taig.otter.Json
 
-// object JsonCirceEncoder extends Encoder[Json, CirceJson]:
-//   override def encode[A](schema: Json[A], a: A): CirceJson = schema match
+object JsonCirceEncoder extends Encoder[Json, CirceJson]:
+  override def encode[A](schema: Json[A], a: A): CirceJson = ??? // schema match
 //     case Json.Coerce(annotation)     => CoerceEncoder(encoder = this).encode(schema = annotation.self, a)
 //     case Json.Collection(annotation) =>
 //       CirceJson.fromValues(CollectionEncoder(encoder = this).encode(schema = annotation.self, a))

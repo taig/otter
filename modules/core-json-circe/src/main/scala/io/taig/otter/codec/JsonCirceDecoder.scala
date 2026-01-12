@@ -1,18 +1,13 @@
-// package io.taig.otter.codec
+package io.taig.otter.codec
 
-// import cats.data.Chain
-// import cats.data.Validated
-// import cats.syntax.all.*
-// import io.circe.Json as CirceJson
-// import io.taig.data.circe.*
-// import io.taig.otter.Constraint
-// import io.taig.otter.Json
-// import io.taig.otter.Violations
-// import io.taig.otter.typeOf
-// import io.taig.validation.Violation
+import cats.data.Validated
+import io.circe.Json as CirceJson
+import io.taig.otter.Json
+import io.taig.otter.Violations
 
-// object JsonCirceDecoder extends Decoder[Json, CirceJson]:
-//   override def decode[A](schema: Json[A], json: CirceJson): Validated[Violations, A] = schema match
+object JsonCirceDecoder extends Decoder[Json, CirceJson]:
+  override def decode[A](schema: Json[A], json: CirceJson): Validated[Violations, A] = ???
+  // schema match
 //     case Json.Coerce(annotation)     => CoerceDecoder(decoder = this).decode(schema = annotation.self, json)
 //     case Json.Collection(annotation) =>
 //       json.asArray
