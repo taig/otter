@@ -5,14 +5,16 @@ import cats.Invariant
 trait Annotated[A]:
   self =>
 
-  def get(self: A): Metadata
+  extension (self: A)
+    def metadata: Metadata
 
-  def modify(self: A, metadata: Metadata => Metadata): A
+    def modify(f: Metadata => Metadata): A
 
   final def imap[B](f: A => B)(g: B => A): Annotated[B] = new Annotated[B]:
-    def get(b: B): Metadata = self.get(g(b))
+    extension (b: B)
+      override def metadata: Metadata = self.metadata(g(b))
 
-    def modify(b: B, metadata: Metadata => Metadata): B = f(self.modify(g(b), metadata))
+      override def modify(h: Metadata => Metadata): B = f(self.modify(g(b))(h))
 
 object Annotated:
   inline def apply[A](using annotated: Annotated[A]): Annotated[A] = annotated

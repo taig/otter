@@ -17,10 +17,10 @@ object Decoder:
 
     def decodeRemaining[B](fb: F[B], a: A): Validated[Violations, (A, B)]
 
-    override final def decode[B](fb: F[B], a: A): Validated[Violations, B] =
+    final override def decode[B](fb: F[B], a: A): Validated[Violations, B] =
       decodeRemaining(fb, a).map(_._2)
 
-    override def contramapK[G[_]](fK: [A] => G[A] => F[A]): Decoder.Remaining[G, A] = 
+    override def contramapK[G[_]](fK: [A] => G[A] => F[A]): Decoder.Remaining[G, A] =
       new Remaining[G, A]:
-        override def decodeRemaining[B](gb: G[B], a: A): Validated[Violations, (A, B)] = 
+        override def decodeRemaining[B](gb: G[B], a: A): Validated[Violations, (A, B)] =
           self.decodeRemaining(fK(gb), a)

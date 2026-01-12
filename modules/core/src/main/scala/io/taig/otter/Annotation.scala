@@ -27,10 +27,10 @@ object Annotation:
     override def pure[A](a: A): Annotation[A] = Annotation(self = a)
 
   given annotated: [A] => Annotated[Annotation[A]]:
-    override def get(self: Annotation[A]): Metadata = self.metadata
+    extension (self: Annotation[A])
+      override def metadata: Metadata = self.metadata
 
-    override def modify(self: Annotation[A], metadata: Metadata => Metadata): Annotation[A] =
-      self.modify(metadata)
+      override def modify(f: Metadata => Metadata): Annotation[A] = self.modify(f)
 
   given apply: [F[_]: Apply] => Apply[[a] =>> Annotation[F[a]]]:
     override def ap[A, B](ff: Annotation[F[A => B]])(fa: Annotation[F[A]]): Annotation[F[B]] =

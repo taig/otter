@@ -68,12 +68,13 @@ object Json:
         new Json.Collection.Read[A]:
           override def self: Annotation[Self.Collection.Read[Json.Read, A]] = annotation
 
-      def unapply[A](json: Json.Collection.Read[A]): Annotation[Self.Collection.Read[Json.Read, A]] = json.self
-
       given Functor[Json.Collection.Read] = Functor[[a] =>> Annotation[Self.Collection.Read[Json.Read, a]]]
         .imapK([A] => (self: Annotation[Self.Collection.Read[Json.Read, A]]) => Read(self))([A] =>
           (json: Json.Collection.Read[A]) => json.self
         )
+
+      given [A] => Annotated[Json.Collection.Read[A]] =
+        Annotated[Annotation[Self.Collection.Read[Json.Read, A]]].imap(Read.apply)(_.self)
 
       given CollectionOperation.Read[Json.Collection.Read, Json.Read] =
         CollectionOperation
@@ -90,13 +91,14 @@ object Json:
         new Json.Collection.Write[A]:
           override def self: Annotation[Self.Collection.Write[Json.Write, A]] = annotation
 
-      def unapply[A](json: Json.Collection.Write[A]): Annotation[Self.Collection.Write[Json.Write, A]] = json.self
-
       given Contravariant[Json.Collection.Write] =
         Contravariant[[a] =>> Annotation[Self.Collection.Write[Json.Write, a]]]
           .imapK([A] => (self: Annotation[Self.Collection.Write[Json.Write, A]]) => Write(self))([A] =>
             (json: Json.Collection.Write[A]) => json.self
           )
+
+      given [A] => Annotated[Json.Collection.Write[A]] =
+        Annotated[Annotation[Self.Collection.Write[Json.Write, A]]].imap(Write.apply)(_.self)
 
       given CollectionOperation.Write[Json.Collection.Write, Json.Write] =
         CollectionOperation
@@ -105,15 +107,16 @@ object Json:
             (json: Json.Collection.Write[A]) => json.self
           )
 
-    def apply[A](annotation: Annotation[Self.Collection[Json, A]]): Json.Collection[A] = new Json.Collection[A]:
+    def apply[A](annotation: Annotation[Self.Collection[Json, A]]): Json.Collection[A] = new Collection[A]:
       override def self: Annotation[Self.Collection[Json, A]] = annotation
-
-    def unapply[A](json: Json.Collection[A]): Annotation[Self.Collection[Json, A]] = json.self
 
     given Invariant[Json.Collection] = Invariant[[a] =>> Annotation[Self.Collection[Json, a]]]
       .imapK([A] => (self: Annotation[Self.Collection[Json, A]]) => Collection(self))([A] =>
         (json: Json.Collection[A]) => json.self
       )
+
+    given [A] => Annotated[Json.Collection[A]] =
+      Annotated[Annotation[Self.Collection[Json, A]]].imap(Collection.apply)(_.self)
 
     given CollectionOperation[Json.Collection, Json] =
       CollectionOperation[[a] =>> Annotation[Self.Collection[Json, a]], Json]
@@ -132,8 +135,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Dictionary.Read[Json.Read, A]]): Json.Dictionary.Read[A] =
         new Json.Dictionary.Read[A]:
           override def self: Annotation[Self.Dictionary.Read[Json.Read, A]] = annotation
-
-      def unapply[A](json: Json.Dictionary.Read[A]): Annotation[Self.Dictionary.Read[Json.Read, A]] = json.self
 
       given Functor[Json.Dictionary.Read] = Functor[[a] =>> Annotation[Self.Dictionary.Read[Json.Read, a]]]
         .imapK([A] => (self: Annotation[Self.Dictionary.Read[Json.Read, A]]) => Read(self))([A] =>
@@ -155,8 +156,6 @@ object Json:
         new Json.Dictionary.Write[A]:
           override def self: Annotation[Self.Dictionary.Write[Json.Write, A]] = annotation
 
-      def unapply[A](json: Json.Dictionary.Write[A]): Annotation[Self.Dictionary.Write[Json.Write, A]] = json.self
-
       given Contravariant[Json.Dictionary.Write] =
         Contravariant[[a] =>> Annotation[Self.Dictionary.Write[Json.Write, a]]]
           .imapK([A] => (self: Annotation[Self.Dictionary.Write[Json.Write, A]]) => Write(self))([A] =>
@@ -172,8 +171,6 @@ object Json:
 
     def apply[A](annotation: Annotation[Self.Dictionary[Json, A]]): Json.Dictionary[A] = new Dictionary[A]:
       override def self: Annotation[Self.Dictionary[Json, A]] = annotation
-
-    def unapply[A](json: Json.Dictionary[A]): Annotation[Self.Dictionary[Json, A]] = json.self
 
     given Invariant[Json.Dictionary] = Invariant[[a] =>> Annotation[Self.Dictionary[Json, a]]]
       .imapK([A] => (self: Annotation[Self.Dictionary[Json, A]]) => Dictionary(self))([A] =>
@@ -197,8 +194,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Primitive.Read[A]]): Json.Primitive.Read[A] = new Read[A]:
         override def self: Annotation[Self.Primitive.Read[A]] = annotation
 
-      def unapply[A](json: Json.Primitive.Read[A]): Annotation[Self.Primitive.Read[A]] = json.self
-
       given Functor[Json.Primitive.Read] = Functor[[a] =>> Annotation[Self.Primitive.Read[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Read[A]]) => Read(self))([A] =>
           (json: Json.Primitive.Read[A]) => json.self
@@ -210,8 +205,6 @@ object Json:
     object Write:
       def apply[A](annotation: Annotation[Self.Primitive.Write[A]]): Json.Primitive.Write[A] = new Write[A]:
         override def self: Annotation[Self.Primitive.Write[A]] = annotation
-
-      def unapply[A](json: Json.Primitive.Write[A]): Annotation[Self.Primitive.Write[A]] = json.self
 
       given Contravariant[Json.Primitive.Write] = Contravariant[[a] =>> Annotation[Self.Primitive.Write[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Write[A]]) => Write(self))([A] =>
@@ -229,9 +222,6 @@ object Json:
         def apply[A](annotation: Annotation[Self.Primitive.Boolean.Read[A]]): Json.Primitive.Boolean.Read[A] =
           new Json.Primitive.Boolean.Read[A]:
             override def self: Annotation[Self.Primitive.Boolean.Read[A]] = annotation
-
-        def unapply[A](json: Json.Primitive.Boolean.Read[A]): Annotation[Self.Primitive.Boolean.Read[A]] =
-          json.self
 
         given Functor[Json.Primitive.Boolean.Read] = Functor[[a] =>> Annotation[Self.Primitive.Boolean.Read[a]]]
           .imapK([A] => (self: Annotation[Self.Primitive.Boolean.Read[A]]) => Read(self))([A] =>
@@ -252,9 +242,6 @@ object Json:
           new Json.Primitive.Boolean.Write[A]:
             override def self: Annotation[Self.Primitive.Boolean.Write[A]] = annotation
 
-        def unapply[A](json: Json.Primitive.Boolean.Write[A]): Annotation[Self.Primitive.Boolean.Write[A]] =
-          json.self
-
         given Contravariant[Json.Primitive.Boolean.Write] =
           Contravariant[[a] =>> Annotation[Self.Primitive.Boolean.Write[a]]]
             .imapK([A] => (self: Annotation[Self.Primitive.Boolean.Write[A]]) => Write(self))([A] =>
@@ -270,8 +257,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Primitive.Boolean[A]]): Json.Primitive.Boolean[A] =
         new Json.Primitive.Boolean[A]:
           override def self: Annotation[Self.Primitive.Boolean[A]] = annotation
-
-      def unapply[A](json: Json.Primitive.Boolean[A]): Annotation[Self.Primitive.Boolean[A]] = json.self
 
       given Invariant[Json.Primitive.Boolean] = Invariant[[a] =>> Annotation[Self.Primitive.Boolean[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Boolean[A]]) => Boolean(self))([A] =>
@@ -296,9 +281,6 @@ object Json:
           new Json.Primitive.Number.Read[A]:
             override def self: Annotation[Self.Primitive.Number.Read[A]] = annotation
 
-        def unapply[A](json: Json.Primitive.Number.Read[A]): Annotation[Self.Primitive.Number.Read[A]] =
-          json.self
-
         given Functor[Json.Primitive.Number.Read] = Functor[[a] =>> Annotation[Self.Primitive.Number.Read[a]]]
           .imapK([A] => (self: Annotation[Self.Primitive.Number.Read[A]]) => Read(self))([A] =>
             (json: Json.Primitive.Number.Read[A]) => json.self
@@ -318,9 +300,6 @@ object Json:
           new Json.Primitive.Number.Write[A]:
             override def self: Annotation[Self.Primitive.Number.Write[A]] = annotation
 
-        def unapply[A](json: Json.Primitive.Number.Write[A]): Annotation[Self.Primitive.Number.Write[A]] =
-          json.self
-
         given Contravariant[Json.Primitive.Number.Write] =
           Contravariant[[a] =>> Annotation[Self.Primitive.Number.Write[a]]]
             .imapK([A] => (self: Annotation[Self.Primitive.Number.Write[A]]) => Write(self))([A] =>
@@ -336,8 +315,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Primitive.Number[A]]): Json.Primitive.Number[A] =
         new Json.Primitive.Number[A]:
           override def self: Annotation[Self.Primitive.Number[A]] = annotation
-
-      def unapply[A](json: Json.Primitive.Number[A]): Annotation[Self.Primitive.Number[A]] = json.self
 
       given Invariant[Json.Primitive.Number] = Invariant[[a] =>> Annotation[Self.Primitive.Number[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Number[A]]) => Number(self))([A] =>
@@ -362,9 +339,6 @@ object Json:
           new Json.Primitive.Text.Read[A]:
             override def self: Annotation[Self.Primitive.Text.Read[A]] = annotation
 
-        def unapply[A](json: Json.Primitive.Text.Read[A]): Annotation[Self.Primitive.Text.Read[A]] =
-          json.self
-
         given Functor[Json.Primitive.Text.Read] = Functor[[a] =>> Annotation[Self.Primitive.Text.Read[a]]]
           .imapK([A] => (self: Annotation[Self.Primitive.Text.Read[A]]) => Read(self))([A] =>
             (json: Json.Primitive.Text.Read[A]) => json.self
@@ -384,9 +358,6 @@ object Json:
           new Json.Primitive.Text.Write[A]:
             override def self: Annotation[Self.Primitive.Text.Write[A]] = annotation
 
-        def unapply[A](json: Json.Primitive.Text.Write[A]): Annotation[Self.Primitive.Text.Write[A]] =
-          json.self
-
         given Contravariant[Json.Primitive.Text.Write] =
           Contravariant[[a] =>> Annotation[Self.Primitive.Text.Write[a]]]
             .imapK([A] => (self: Annotation[Self.Primitive.Text.Write[A]]) => Write(self))([A] =>
@@ -402,8 +373,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Primitive.Text[A]]): Json.Primitive.Text[A] = new Text[A]:
         override def self: Annotation[Self.Primitive.Text[A]] = annotation
 
-      def unapply[A](json: Json.Primitive.Text[A]): Annotation[Self.Primitive.Text[A]] = json.self
-
       given Invariant[Json.Primitive.Text] = Invariant[[a] =>> Annotation[Self.Primitive.Text[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Text[A]]) => Text(self))([A] =>
           (json: Json.Primitive.Text[A]) => json.self
@@ -417,8 +386,6 @@ object Json:
 
     def apply[A](annotation: Annotation[Self.Primitive[A]]): Json.Primitive[A] = new Primitive[A]:
       override def self: Annotation[Self.Primitive[A]] = annotation
-
-    def unapply[A](json: Json.Primitive[A]): Annotation[Self.Primitive[A]] = json.self
 
     given Invariant[Json.Primitive] = Invariant[[a] =>> Annotation[Self.Primitive[a]]]
       .imapK([A] => (self: Annotation[Self.Primitive[A]]) => Primitive(self))([A] =>
@@ -436,8 +403,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Record.Read[Json.Field.Read, A]]): Json.Record.Read[A] =
         new Json.Record.Read[A]:
           override def self: Annotation[Self.Record.Read[Json.Field.Read, A]] = annotation
-
-      def unapply[A](json: Json.Record.Read[A]): Annotation[Self.Record.Read[Json.Field.Read, A]] = json.self
 
       given Apply[Json.Record.Read] = Apply[[a] =>> Annotation[Self.Record.Read[Json.Field.Read, a]]]
         .imapK([A] => (self: Annotation[Self.Record.Read[Json.Field.Read, A]]) => Read(self))([A] =>
@@ -458,8 +423,6 @@ object Json:
         new Json.Record.Write[A]:
           override def self: Annotation[Self.Record.Write[Json.Field.Write, A]] = annotation
 
-      def unapply[A](json: Json.Record.Write[A]): Annotation[Self.Record.Write[Json.Field.Write, A]] = json.self
-
       given ContravariantSemigroupal[Json.Record.Write] =
         ContravariantSemigroupal[[a] =>> Annotation[Self.Record.Write[Json.Field.Write, a]]]
           .imapK([A] => (self: Annotation[Self.Record.Write[Json.Field.Write, A]]) => Write(self))([A] =>
@@ -474,8 +437,6 @@ object Json:
 
     def apply[A](annotation: Annotation[Self.Record[Json.Field, A]]): Json.Record[A] = new Record[A]:
       override def self: Annotation[Self.Record[Json.Field, A]] = annotation
-
-    def unapply[A](json: Json.Record[A]): Annotation[Self.Record[Json.Field, A]] = json.self
 
     given InvariantSemigroupal[Json.Record] = InvariantSemigroupal[[a] =>> Annotation[Self.Record[Json.Field, a]]]
       .imapK([A] => (self: Annotation[Self.Record[Json.Field, A]]) => Record(self))([A] =>
@@ -500,8 +461,6 @@ object Json:
         new Json.Tuple.Read[A]:
           override def self: Annotation[Self.Tuple.Read[Json.Read, A]] = annotation
 
-      def unapply[A](json: Json.Tuple.Read[A]): Annotation[Self.Tuple.Read[Json.Read, A]] = json.self
-
       given Apply[Json.Tuple.Read] = Apply[[a] =>> Annotation[Self.Tuple.Read[Json.Read, a]]]
         .imapK([A] => (self: Annotation[Self.Tuple.Read[Json.Read, A]]) => Read(self))([A] =>
           (json: Json.Tuple.Read[A]) => json.self
@@ -521,8 +480,6 @@ object Json:
         new Json.Tuple.Write[A]:
           override def self: Annotation[Self.Tuple.Write[Json.Write, A]] = annotation
 
-      def unapply[A](json: Json.Tuple.Write[A]): Annotation[Self.Tuple.Write[Json.Write, A]] = json.self
-
       given ContravariantSemigroupal[Json.Tuple.Write] =
         ContravariantSemigroupal[[a] =>> Annotation[Self.Tuple.Write[Json.Write, a]]]
           .imapK([A] => (self: Annotation[Self.Tuple.Write[Json.Write, A]]) => Write(self))([A] =>
@@ -537,8 +494,6 @@ object Json:
 
     def apply[A](annotation: Annotation[Self.Tuple[Json, A]]): Json.Tuple[A] = new Tuple[A]:
       override def self: Annotation[Self.Tuple[Json, A]] = annotation
-
-    def unapply[A](json: Json.Tuple[A]): Annotation[Self.Tuple[Json, A]] = json.self
 
     given InvariantSemigroupal[Json.Tuple] = InvariantSemigroupal[[a] =>> Annotation[Self.Tuple[Json, a]]]
       .imapK([A] => (self: Annotation[Self.Tuple[Json, A]]) => Tuple(self))([A] => (json: Json.Tuple[A]) => json.self)
@@ -556,8 +511,6 @@ object Json:
     object Read:
       def apply[A](annotation: Annotation[Self.Field.Read[Json.Read, A]]): Json.Field.Read[A] = new Read[A]:
         override def self: Annotation[Self.Field.Read[Json.Read, A]] = annotation
-
-      def unapply[A](json: Json.Field.Read[A]): Annotation[Self.Field.Read[Json.Read, A]] = json.self
 
       given Functor[Json.Field.Read]:
         override def map[A, B](fa: Json.Field.Read[A])(f: A => B): Json.Field.Read[B] = fa.map(f)
@@ -577,8 +530,6 @@ object Json:
       def apply[A](annotation: Annotation[Self.Field.Write[Json.Write, A]]): Json.Field.Write[A] = new Write[A]:
         override def self: Annotation[Self.Field.Write[Json.Write, A]] = annotation
 
-      def unapply[A](json: Json.Field.Write[A]): Annotation[Self.Field.Write[Json.Write, A]] = json.self
-
       given operation: FieldOperation.Write[Json.Field.Write, Json.Write] = FieldOperation
         .Write[[a] =>> Annotation[Self.Field.Write[Json.Write, a]], Json.Write]
         .imapK([A] => (self: Annotation[Self.Field.Write[Json.Write, A]]) => Write(self))([A] =>
@@ -590,8 +541,6 @@ object Json:
 
     def apply[A](annotation: Annotation[Self.Field[Json, A]]): Json.Field[A] = new Field[A]:
       override def self: Annotation[Self.Field[Json, A]] = annotation
-
-    def unapply[A](json: Json.Field[A]): Annotation[Self.Field[Json, A]] = json.self
 
     given operation: FieldOperation[Json.Field, Json] = FieldOperation[[a] =>> Annotation[Self.Field[Json, a]], Json]
       .imapK([A] => (self: Annotation[Self.Field[Json, A]]) => Field(self))([A] => (json: Json.Field[A]) => json.self)

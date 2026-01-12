@@ -4,5 +4,5 @@ import cats.data.Chain
 import io.circe.Json as CirceJson
 import io.taig.otter.Json
 
-val JsonFieldCirceEncoder: Encoder[Json.Field, Chain[(String, CirceJson)]] =
-  FieldEncoder(encoder = JsonCirceEncoder).contramapK([A] => (json: Json.Field[A]) => json.self.self)
+val JsonFieldCirceEncoder: Encoder[Json.Field.Write, Chain[(String, CirceJson)]] =
+  FieldEncoder(encoder = JsonCirceEncoder).contramapK([A] => (json: Json.Field.Write[A]) => json.self.self)
