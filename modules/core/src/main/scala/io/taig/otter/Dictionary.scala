@@ -5,6 +5,7 @@ import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.DictionaryOperation
 import io.taig.validation.Validation
+
 import scala.collection.immutable.SortedMap
 
 sealed abstract class Dictionary[+S[_], A] extends Dictionary.Read[S, A], Dictionary.Write[S, A]:

@@ -118,14 +118,14 @@ lazy val coreJson = module(identifier = Some("core-json"))
 // lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
 //   .dependsOn(coreJson % "compile->compile;test->test")
 
-// lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %%% "circe-core" % Version.Circe ::
-//         "io.taig" %%% "data-circe" % Version.Data ::
-//         Nil
-//   )
-//   .dependsOn(coreJson % "compile->compile;test->test")
+lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
+  .settings(
+    libraryDependencies ++=
+      "io.circe" %%% "circe-core" % Version.Circe ::
+        "io.taig" %%% "data-circe" % Version.Data ::
+        Nil
+  )
+  .dependsOn(coreJson % "compile->compile;test->test")
 
 // lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
 //   .settings(

@@ -4,6 +4,7 @@ import io.taig.otter.Constraint
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 import io.taig.validation.Validation
+
 import scala.collection.immutable.SortedMap
 
 trait DictionaryOperation[F[_], G[_]]:

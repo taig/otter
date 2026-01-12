@@ -1,16 +1,16 @@
 package io.taig.otter.component
 
+import cats.Invariant
+import cats.data.NonEmptyList
+import cats.syntax.all.*
 import io.taig.otter.Constraint
 import io.taig.otter.Reference
 import io.taig.otter.operation.DictionaryOperation
-import io.taig.validation.std
 import io.taig.validation.Validation
+import io.taig.validation.std
 
 import scala.annotation.targetName
 import scala.collection.immutable.SortedMap
-import cats.data.NonEmptyList
-import cats.Invariant
-import cats.syntax.all.*
 
 trait DictionaryComponent[F[_], G[_]](using F: DictionaryOperation[F, G]):
   final def list[A](
