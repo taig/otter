@@ -18,6 +18,11 @@ trait JsonComponent
         CollectionComponent.Read[Json.Collection.Read, Json.Read],
         CollectionComponent.Write[Json.Collection.Write, Json.Write]
 
+  object dictionary
+      extends DictionaryComponent[Json.Dictionary, Json],
+        DictionaryComponent.Read[Json.Dictionary.Read, Json.Read],
+        DictionaryComponent.Write[Json.Dictionary.Write, Json.Write]
+
 object JsonComponent extends JsonComponent
 
 object Playground:
