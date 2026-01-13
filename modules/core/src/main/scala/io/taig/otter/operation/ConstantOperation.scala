@@ -4,6 +4,7 @@ import io.taig.otter.Reference
 import cats.Eq
 import io.taig.otter.InvariantK
 import cats.Eval
+import io.taig.data.Data
 
 trait ConstantOperation[F[_], G[_]]:
   self =>
@@ -13,7 +14,7 @@ trait ConstantOperation[F[_], G[_]]:
   extension [A](fa: F[A])
     def schema: Reference[G, ?]
 
-    def value: Eval[A]
+    def value: Eval[Data]
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation[H, G] =
     new ConstantOperation[H, G]:
@@ -22,7 +23,7 @@ trait ConstantOperation[F[_], G[_]]:
       extension [A](ha: H[A])
         override def schema: Reference[G, ?] = self.schema(gK(ha))
 
-        override def value: Eval[A] = self.value(gK(ha))
+        override def value: Eval[Data] = self.value(gK(ha))
 
 object ConstantOperation:
   trait Read[F[_], G[_]] extends ConstantOperation[F, G]:
@@ -36,7 +37,7 @@ object ConstantOperation:
         extension [A](ha: H[A])
           override def schema: Reference[G, ?] = self.schema(gK(ha))
 
-          override def value: Eval[A] = self.value(gK(ha))
+          override def value: Eval[Data] = self.value(gK(ha))
 
   object Read:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Read[F, G]): ConstantOperation.Read[F, G] = self
@@ -60,7 +61,7 @@ object ConstantOperation:
         extension [A](ha: H[A])
           override def schema: Reference[G, ?] = self.schema(gK(ha))
 
-          override def value: Eval[A] = self.value(gK(ha))
+          override def value: Eval[Data] = self.value(gK(ha))
 
   object Write:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Write[F, G]): ConstantOperation.Write[F, G] = self
