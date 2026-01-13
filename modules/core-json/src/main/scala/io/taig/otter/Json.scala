@@ -27,7 +27,7 @@ object Json:
     def self: Annotation[Json.Read.Of[A]]
 
   object Read:
-    type Of[+A] = Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive.Read, A] |
+    type Of[+A] = Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive, A] |
       Self.Dictionary.Read[Json.Read, A] | Self.Primitive.Read[A] | Self.Record.Read[Json.Field.Read, A] |
       Self.Tuple.Read[Json.Read, A]
 
@@ -134,21 +134,21 @@ object Json:
 
   object Constant:
     sealed trait Read[+A] extends Json.Read[A]:
-      def self: Annotation[Self.Constant.Read[Json.Primitive.Read, A]]
+      def self: Annotation[Self.Constant.Read[Json.Primitive, A]]
 
     object Read:
-      def apply[A](annotation: Annotation[Self.Constant.Read[Json.Primitive.Read, A]]): Json.Constant.Read[A] =
+      def apply[A](annotation: Annotation[Self.Constant.Read[Json.Primitive, A]]): Json.Constant.Read[A] =
         new Json.Constant.Read[A]:
-          override def self: Annotation[Self.Constant.Read[Json.Primitive.Read, A]] = annotation
+          override def self: Annotation[Self.Constant.Read[Json.Primitive, A]] = annotation
 
-      given Functor[Json.Constant.Read] = Functor[[a] =>> Annotation[Self.Constant.Read[Json.Primitive.Read, a]]]
-        .imapK([A] => (self: Annotation[Self.Constant.Read[Json.Primitive.Read, A]]) => Read(self))([A] =>
+      given Functor[Json.Constant.Read] = Functor[[a] =>> Annotation[Self.Constant.Read[Json.Primitive, a]]]
+        .imapK([A] => (self: Annotation[Self.Constant.Read[Json.Primitive, A]]) => Read(self))([A] =>
           (json: Json.Constant.Read[A]) => json.self
         )
 
-      given ConstantOperation.Read[Json.Constant.Read, Json.Primitive.Read] = ConstantOperation
-        .Read[[a] =>> Annotation[Self.Constant.Read[Json.Primitive.Read, a]], Json.Primitive.Read]
-        .imapK([A] => (self: Annotation[Self.Constant.Read[Json.Primitive.Read, A]]) => Read(self))([A] =>
+      given ConstantOperation.Read[Json.Constant.Read, Json.Primitive] = ConstantOperation
+        .Read[[a] =>> Annotation[Self.Constant.Read[Json.Primitive, a]], Json.Primitive]
+        .imapK([A] => (self: Annotation[Self.Constant.Read[Json.Primitive, A]]) => Read(self))([A] =>
           (json: Json.Constant.Read[A]) => json.self
         )
 

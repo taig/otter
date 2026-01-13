@@ -16,7 +16,7 @@ object Value:
     def self: Annotation[Value.Read.Of[A]]
 
   object Read:
-    type Of[+A] = Self.Constant.Read[Value.Read, A] | Self.Primitive.Read[A]
+    type Of[+A] = Self.Constant.Read[Value, A] | Self.Primitive.Read[A]
 
     given Functor[Value.Read]:
       override def map[A, B](value: Value.Read[A])(f: A => B): Value.Read[B] = value match
@@ -39,24 +39,23 @@ object Value:
 
   object Constant:
     sealed trait Read[+A] extends Value.Read[A]:
-      override def self: Annotation[Self.Constant.Read[Value.Read, A]]
+      override def self: Annotation[Self.Constant.Read[Value, A]]
 
     object Read:
-      def apply[A](annotation: Annotation[Self.Constant.Read[Value.Read, A]]): Value.Constant.Read[A] =
+      def apply[A](annotation: Annotation[Self.Constant.Read[Value, A]]): Value.Constant.Read[A] =
         new Read[A]:
-          override def self: Self.Annotation[Self.Constant.Read[Value.Read, A]] = annotation
+          override def self: Self.Annotation[Self.Constant.Read[Value, A]] = annotation
 
       given Functor[Value.Constant.Read] =
-        Functor[[a] =>> Annotation[Self.Constant.Read[Value.Read, a]]].imapK([A] =>
-          (self: Annotation[Self.Constant.Read[Value.Read, A]]) => Read(self)
+        Functor[[a] =>> Annotation[Self.Constant.Read[Value, a]]].imapK([A] =>
+          (self: Annotation[Self.Constant.Read[Value, A]]) => Read(self)
         )([A] => (value: Value.Constant.Read[A]) => value.self)
 
-      given ConstantOperation.Read[Value.Constant.Read, Value.Read] =
-        ConstantOperation
-          .Read[[a] =>> Annotation[Self.Constant.Read[Value.Read, a]], Value.Read]
-          .imapK([A] => (self: Annotation[Self.Constant.Read[Value.Read, A]]) => Read(self))([A] =>
-            (value: Value.Constant.Read[A]) => value.self
-          )
+      given ConstantOperation.Read[Value.Constant.Read, Value] = ConstantOperation
+        .Read[[a] =>> Annotation[Self.Constant.Read[Value, a]], Value]
+        .imapK([A] => (self: Annotation[Self.Constant.Read[Value, A]]) => Read(self))([A] =>
+          (value: Value.Constant.Read[A]) => value.self
+        )
 
     sealed trait Write[-A] extends Value.Write[A]:
       override def self: Annotation[Self.Constant.Write[Value.Write, A]]

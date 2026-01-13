@@ -5,91 +5,125 @@ import cats.ContravariantSemigroupal
 import cats.InvariantSemigroupal
 import cats.data.Chain
 import io.taig.otter.operation.TupleOperation
+import cats.Eval
 
-sealed abstract class Tuple[+S[_], A] extends Tuple.Read[S, A], Tuple.Write[S, A]:
-  final def imap[B](f: A => B)(g: B => A): Tuple[S, B] = Tuple.Modify(self = this, f, g)
+sealed abstract class Tuple[+F[_], A] extends Tuple.Read[F, A], Tuple.Write[F, A]:
+  final def imap[B](f: A => B)(g: B => A): Tuple[F, B] = Tuple.Modify(self = this, f, g)
 
-  final def product[S1[a] >: S[a], B](schema: Tuple[S1, B]): Tuple[S1, (A, B)] =
+  override final def optional: Tuple[F, Option[A]] = Tuple.Optional(self = this)
+
+  final def product[F1[a] >: F[a], B](schema: Tuple[F1, B]): Tuple[F1, (A, B)] =
     Tuple.Product(left = this, right = schema)
 
 object Tuple:
-  sealed trait Read[+S[_], +A]:
-    final def map[B](f: A => B): Tuple.Read[S, B] = Read.Modify(self = this, f)
+  sealed trait Read[+F[_], +A]:
+    final def map[B](f: A => B): Tuple.Read[F, B] = Read.Modify(self = this, f)
 
-    def schemas: Chain[Reference[S, ?]]
+    def optional: Tuple.Read[F, Option[A]] = Read.Optional(self = this)
 
-    final def product[S1[a] >: S[a], B](schema: Tuple.Read[S1, B]): Tuple.Read[S1, (A, B)] =
+    def optional[A1 >: A](default: Eval[A1]): Tuple.Read[F, A1] = Read.Default(self = this, value = default)
+
+    final def product[F1[a] >: F[a], B](schema: Tuple.Read[F1, B]): Tuple.Read[F1, (A, B)] =
       Read.Product(left = this, right = schema)
+    
+    def schemas: Chain[Reference[F, ?]]
 
   object Read:
-    final case class Modify[S[_], A, B](self: Tuple.Read[S, A], f: A => B) extends Tuple.Read[S, B]:
+    final case class Default[F[_], A](self: Tuple.Read[F, A], value: Eval[A]) extends Tuple.Read[F, A]:
       export self.schemas
 
-    final case class Product[S[_], A, B](left: Tuple.Read[S, A], right: Tuple.Read[S, B]) extends Tuple.Read[S, (A, B)]:
-      override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
+    final case class Modify[F[_], A, B](self: Tuple.Read[F, A], f: A => B) extends Tuple.Read[F, B]:
+      export self.schemas
 
-    given [S[_]] => Apply[Tuple.Read[S, *]]:
-      override def map[A, B](fa: Tuple.Read[S, A])(f: A => B): Tuple.Read[S, B] = fa.map(f)
+    final case class Optional[F[_], A](self: Tuple.Read[F, A]) extends Tuple.Read[F, Option[A]]:
+      export self.schemas
 
-      override def ap[A, B](ff: Tuple.Read[S, A => B])(fa: Tuple.Read[S, A]): Tuple.Read[S, B] =
+    final case class Product[F[_], A, B](left: Tuple.Read[F, A], right: Tuple.Read[F, B]) extends Tuple.Read[F, (A, B)]:
+      override def schemas: Chain[Reference[F, ?]] = left.schemas ++ right.schemas
+
+    given [F[_]] => Apply[Tuple.Read[F, *]]:
+      override def map[A, B](fa: Tuple.Read[F, A])(f: A => B): Tuple.Read[F, B] = fa.map(f)
+
+      override def ap[A, B](ff: Tuple.Read[F, A => B])(fa: Tuple.Read[F, A]): Tuple.Read[F, B] =
         ff.product(fa).map(_ apply _)
 
-    given [S[_]] => TupleOperation.Read[Tuple.Read[S, *], S]:
+    given [F[_]] => TupleOperation.Read[Tuple.Read[F, *], F]:
       override def empty: Tuple.Read[Nothing, Unit] = Empty
 
-      override def lift[A](schema: Reference[S, A]): Tuple.Read[S, A] = Root(schema)
+      override def lift[A](schema: Reference[F, A]): Tuple.Read[F, A] = Root(schema)
 
-      extension [A](self: Tuple.Read[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas
+      extension [A](self: Tuple.Read[F, A])
+        override def optional: Tuple.Read[F, Option[A]] = self.optional
+        
+        override def schemas: Chain[Reference[F, ?]] = self.schemas
+      
 
-  sealed trait Write[+S[_], -A]:
-    final def contramap[B](f: B => A): Tuple.Write[S, B] = Write.Modify(self = this, f)
+  sealed trait Write[+F[_], -A]:
+    final def contramap[B](f: B => A): Tuple.Write[F, B] = Write.Modify(self = this, f)
 
-    def schemas: Chain[Reference[S, ?]]
+    def optional: Tuple.Write[F, Option[A]] = Tuple.Write.Optional(self = this)
 
-    final def product[S1[a] >: S[a], B](schema: Tuple.Write[S1, B]): Tuple.Write[S1, (A, B)] =
+    def schemas: Chain[Reference[F, ?]]
+
+    final def product[F1[a] >: F[a], B](schema: Tuple.Write[F1, B]): Tuple.Write[F1, (A, B)] =
       Write.Product(left = this, right = schema)
 
   object Write:
-    final case class Modify[S[_], A, B](self: Tuple.Write[S, A], f: B => A) extends Tuple.Write[S, B]:
+    final case class Modify[F[_], A, B](self: Tuple.Write[F, A], f: B => A) extends Tuple.Write[F, B]:
       export self.schemas
 
-    final case class Product[S[_], A, B](left: Tuple.Write[S, A], right: Tuple.Write[S, B])
-        extends Tuple.Write[S, (A, B)]:
-      override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
+    final case class Optional[F[_], A](self: Tuple.Write[F, A]) extends Tuple.Write[F, Option[A]]:
+      export self.schemas
 
-    given [S[_]] => ContravariantSemigroupal[Tuple.Write[S, *]]:
-      override def contramap[A, B](fa: Tuple.Write[S, A])(f: B => A): Tuple.Write[S, B] =
+    final case class Product[F[_], A, B](left: Tuple.Write[F, A], right: Tuple.Write[F, B])
+        extends Tuple.Write[F, (A, B)]:
+      override def schemas: Chain[Reference[F, ?]] = left.schemas ++ right.schemas
+
+    given [F[_]] => ContravariantSemigroupal[Tuple.Write[F, *]]:
+      override def contramap[A, B](fa: Tuple.Write[F, A])(f: B => A): Tuple.Write[F, B] =
         fa.contramap(f)
 
-      override def product[A, B](fa: Tuple.Write[S, A], fb: Tuple.Write[S, B]): Tuple.Write[S, (A, B)] = fa.product(fb)
+      override def product[A, B](fa: Tuple.Write[F, A], fb: Tuple.Write[F, B]): Tuple.Write[F, (A, B)] = fa.product(fb)
 
-    given [S[_]] => TupleOperation.Write[Tuple.Write[S, *], S]:
+    given [F[_]] => TupleOperation.Write[Tuple.Write[F, *], F]:
       override def empty: Tuple.Write[Nothing, Unit] = Empty
 
-      override def lift[A](schema: Reference[S, A]): Tuple.Write[S, A] = Root(schema)
+      override def lift[A](schema: Reference[F, A]): Tuple.Write[F, A] = Root(schema)
 
-      extension [A](self: Tuple.Write[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas
+      extension [A](self: Tuple.Write[F, A])
+        override def optional: Tuple.Write[F, Option[A]] = self.optional
+        
+        override def schemas: Chain[Reference[F, ?]] = self.schemas
+
+  final case class Default[F[_], A](self: Tuple[F, A], value: Eval[A]) extends Tuple[F, A]:
+    export self.schemas
 
   case object Empty extends Tuple[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
 
-  final case class Modify[S[_], A, B](self: Tuple[S, A], f: A => B, g: B => A) extends Tuple[S, B]:
+  final case class Modify[F[_], A, B](self: Tuple[F, A], f: A => B, g: B => A) extends Tuple[F, B]:
     export self.schemas
 
-  final case class Product[S[_], A, B](left: Tuple[S, A], right: Tuple[S, B]) extends Tuple[S, (A, B)]:
-    override def schemas: Chain[Reference[S, ?]] = left.schemas ++ right.schemas
+  final case class Optional[F[_], A](self: Tuple[F, A]) extends Tuple[F, Option[A]]:
+    export self.schemas
 
-  final case class Root[S[_], A](schema: Reference[S, A]) extends Tuple[S, A]:
-    override def schemas: Chain[Reference[S, A]] = Chain.one(schema)
+  final case class Product[F[_], A, B](left: Tuple[F, A], right: Tuple[F, B]) extends Tuple[F, (A, B)]:
+    override def schemas: Chain[Reference[F, ?]] = left.schemas ++ right.schemas
 
-  given [S[_]] => InvariantSemigroupal[Tuple[S, *]]:
-    override def imap[A, B](self: Tuple[S, A])(f: A => B)(g: B => A): Tuple[S, B] = self.imap(f)(g)
+  final case class Root[F[_], A](schema: Reference[F, A]) extends Tuple[F, A]:
+    override def schemas: Chain[Reference[F, A]] = Chain.one(schema)
 
-    override def product[A, B](fa: Tuple[S, A], fb: Tuple[S, B]): Tuple[S, (A, B)] = fa.product(fb)
+  given [F[_]] => InvariantSemigroupal[Tuple[F, *]]:
+    override def imap[A, B](self: Tuple[F, A])(f: A => B)(g: B => A): Tuple[F, B] = self.imap(f)(g)
 
-  given [S[_]] => TupleOperation[Tuple[S, *], S]:
-    override def empty: Tuple[S, Unit] = Empty
+    override def product[A, B](fa: Tuple[F, A], fb: Tuple[F, B]): Tuple[F, (A, B)] = fa.product(fb)
 
-    override def lift[A](schema: Reference[S, A]): Tuple[S, A] = Root(schema)
+  given [F[_]] => TupleOperation[Tuple[F, *], F]:
+    override def empty: Tuple[F, Unit] = Empty
 
-    extension [A](self: Tuple[S, A]) override def schemas: Chain[Reference[S, ?]] = self.schemas
+    override def lift[A](schema: Reference[F, A]): Tuple[F, A] = Root(schema)
+
+    extension [A](self: Tuple[F, A])
+      override def optional: Tuple[F, Option[A]] = Tuple.Optional(self)
+
+      override def schemas: Chain[Reference[F, ?]] = self.schemas

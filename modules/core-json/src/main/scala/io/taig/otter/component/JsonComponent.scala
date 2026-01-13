@@ -4,7 +4,7 @@ import io.taig.otter.Json
 
 trait JsonComponent
     extends ConstantComponent[Json.Constant, Json.Primitive],
-      ConstantComponent.Read[Json.Constant.Read, Json.Primitive.Read],
+      ConstantComponent.Read[Json.Constant.Read, Json.Primitive],
       ConstantComponent.Write[Json.Constant.Write, Json.Primitive.Write],
       FieldComponent[Json.Field, Json],
       FieldComponent.Read[Json.Field.Read, Json.Read],

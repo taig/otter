@@ -19,7 +19,8 @@ object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
         .leftMap(Violations.apply)
         .andThen(CollectionDecoder(decoder = this).decode(schema = self.self.self, _))
     case self: Json.Constant.Read[A] =>
-      ConstantDecoder(decoder = this, render = _.toData).decode(schema = self.self.self, json)
+      ConstantDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData)
+        .decode(schema = self.self.self, json)
     case self: Json.Dictionary.Read[A] =>
       json.asObject
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
@@ -39,10 +40,10 @@ object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
 //         .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
 //         .leftMap(Violations.apply)
 //         .andThen(RecordDecoder(decoder = JsonFieldCirceDecoder).decode(annotation.self, _))
-//     case Json.Tuple(annotation) =>
-//       json.asArray
-//         .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))
-//         .leftMap(Violations.apply)
-//         .andThen(TupleDecoder(decoder = this, empty = _.isNull).decode(schema = annotation.self, _))
+    case self: Json.Tuple.Read[A] =>
+      json.asArray
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))
+        .leftMap(Violations.apply)
+        .andThen(TupleDecoder(decoder = this, empty = _.isNull).decode(schema = self.self.self, _))
 //     case Json.Union(annotation) =>
 //       UnionDecoder(decoder = JsonBranchCirceDecoder).decode(schema = annotation.self, json)
