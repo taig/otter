@@ -10,13 +10,19 @@ trait ConstantOperation[F[_], G[_]]:
 
   def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[A]
 
-  extension [A](fa: F[A]) def schema: Reference[G, ?]
+  extension [A](fa: F[A])
+    def schema: Reference[G, ?]
+
+    def value: Eval[A]
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation[H, G] =
     new ConstantOperation[H, G]:
       override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[A] = fK(self.lift(schema, value, eq))
 
-      extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+      extension [A](ha: H[A])
+        override def schema: Reference[G, ?] = self.schema(gK(ha))
+
+        override def value: Eval[A] = self.value(gK(ha))
 
 object ConstantOperation:
   trait Read[F[_], G[_]] extends ConstantOperation[F, G]:
@@ -24,11 +30,13 @@ object ConstantOperation:
 
     final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation.Read[H, G] =
       new Read[H, G]:
-        override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[A] = fK(
-          self.lift(schema, value, eq)
-        )
+        override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[A] =
+          fK(self.lift(schema, value, eq))
 
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+        extension [A](ha: H[A])
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
+
+          override def value: Eval[A] = self.value(gK(ha))
 
   object Read:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Read[F, G]): ConstantOperation.Read[F, G] = self
@@ -48,7 +56,11 @@ object ConstantOperation:
     final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation.Write[H, G] =
       new Write[H, G]:
         override def lift[A](schema: Reference[G, A], value: Eval[A]): H[A] = fK(self.lift(schema, value))
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+
+        extension [A](ha: H[A])
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
+
+          override def value: Eval[A] = self.value(gK(ha))
 
   object Write:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Write[F, G]): ConstantOperation.Write[F, G] = self

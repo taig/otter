@@ -3,7 +3,7 @@ package io.taig.otter.codec
 import cats.data.Validated
 import io.taig.otter.Violations
 
-trait Decoder[F[_], A]:
+trait Decoder[-F[_], A]:
   self =>
 
   def decode[B](fb: F[B], a: A): Validated[Violations, B]
@@ -12,7 +12,7 @@ trait Decoder[F[_], A]:
     override def decode[B](gb: G[B], a: A): Validated[Violations, B] = self.decode(fK(gb), a)
 
 object Decoder:
-  trait Remaining[F[_], A] extends Decoder[F, A]:
+  trait Remaining[-F[_], A] extends Decoder[F, A]:
     self =>
 
     def decodeRemaining[B](fb: F[B], a: A): Validated[Violations, (A, B)]

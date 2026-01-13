@@ -6,7 +6,7 @@ import io.taig.otter.Json
 object JsonCirceEncoder extends Encoder[Json.Write, CirceJson]:
   override def encode[A](schema: Json.Write[A], a: A): CirceJson = schema match
 //     case Json.Coerce(annotation)     => CoerceEncoder(encoder = this).encode(schema = annotation.self, a)
-//     case Json.Constant(annotation)   => ConstantEncoder(encoder = this).encode(schema = annotation.self, a)
+    case self: Json.Constant.Write[A]   => ConstantEncoder(encoder = this).encode(schema = self.self.self, a)
     case self: Json.Collection.Write[A] =>
       CirceJson.fromValues(CollectionEncoder(encoder = this).encode(schema = self.self.self, a))
     case self: Json.Dictionary.Write[A] =>
