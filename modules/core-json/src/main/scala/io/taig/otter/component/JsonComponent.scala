@@ -3,7 +3,10 @@ package io.taig.otter.component
 import io.taig.otter.Json
 
 trait JsonComponent
-    extends FieldComponent[Json.Field, Json],
+    extends ConstantComponent[Json.Constant, Json.Primitive],
+      ConstantComponent.Read[Json.Constant.Read, Json.Primitive.Read],
+      ConstantComponent.Write[Json.Constant.Write, Json.Primitive.Write],
+      FieldComponent[Json.Field, Json],
       FieldComponent.Read[Json.Field.Read, Json.Read],
       FieldComponent.Write[Json.Field.Write, Json.Write],
       PrimitiveComponent.Boolean[Json.Primitive.Boolean],
@@ -66,3 +69,5 @@ object Playground:
   val _: Json.Collection[List[String]] = json.collection.list(p)
   val _: Json.Collection.Read[List[Int]] = json.collection.list(pr)
   val _: Json.Collection.Write[List[Long]] = json.collection.list(pw)
+
+  val _: Json.Constant[String] = json.constant(p, value = "constant")
