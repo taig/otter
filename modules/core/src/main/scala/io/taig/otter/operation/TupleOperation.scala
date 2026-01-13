@@ -65,7 +65,7 @@ object TupleOperation:
         override def empty: H[Unit] = fK(self.empty)
 
         override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
-        
+
         extension [A](ha: H[A])
           override def optional: H[Option[A]] = fK(self.optional(gK(ha)))
 

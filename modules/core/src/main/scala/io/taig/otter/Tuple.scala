@@ -10,7 +10,7 @@ import cats.Eval
 sealed abstract class Tuple[+F[_], A] extends Tuple.Read[F, A], Tuple.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Tuple[F, B] = Tuple.Modify(self = this, f, g)
 
-  override final def optional: Tuple[F, Option[A]] = Tuple.Optional(self = this)
+  final override def optional: Tuple[F, Option[A]] = Tuple.Optional(self = this)
 
   final def product[F1[a] >: F[a], B](schema: Tuple[F1, B]): Tuple[F1, (A, B)] =
     Tuple.Product(left = this, right = schema)
@@ -25,7 +25,7 @@ object Tuple:
 
     final def product[F1[a] >: F[a], B](schema: Tuple.Read[F1, B]): Tuple.Read[F1, (A, B)] =
       Read.Product(left = this, right = schema)
-    
+
     def schemas: Chain[Reference[F, ?]]
 
   object Read:
@@ -54,9 +54,8 @@ object Tuple:
 
       extension [A](self: Tuple.Read[F, A])
         override def optional: Tuple.Read[F, Option[A]] = self.optional
-        
+
         override def schemas: Chain[Reference[F, ?]] = self.schemas
-      
 
   sealed trait Write[+F[_], -A]:
     final def contramap[B](f: B => A): Tuple.Write[F, B] = Write.Modify(self = this, f)
@@ -92,7 +91,7 @@ object Tuple:
 
       extension [A](self: Tuple.Write[F, A])
         override def optional: Tuple.Write[F, Option[A]] = self.optional
-        
+
         override def schemas: Chain[Reference[F, ?]] = self.schemas
 
   final case class Default[F[_], A](self: Tuple[F, A], value: Eval[A]) extends Tuple[F, A]:
