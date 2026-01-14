@@ -4,15 +4,7 @@ import io.taig.otter.Json
 import io.taig.enumeration.ext.Mapping
 
 trait JsonComponent
-    extends ConstantComponent[Json.Constant, Json.Primitive],
-      ConstantComponent.Read[Json.Constant.Read, Json.Primitive],
-      ConstantComponent.Write[Json.Constant.Write, Json.Primitive.Write],
-      EnumerationComponent[Json.Enumeration, Json],
-      EnumerationComponent.Write[Json.Enumeration.Write, Json.Write],
-      FieldComponent[Json.Field, Json],
-      FieldComponent.Read[Json.Field.Read, Json.Read],
-      FieldComponent.Write[Json.Field.Write, Json.Write],
-      PrimitiveComponent.Boolean[Json.Primitive.Boolean],
+    extends PrimitiveComponent.Boolean[Json.Primitive.Boolean],
       PrimitiveComponent.Number[Json.Primitive.Number],
       PrimitiveComponent.Text[Json.Primitive.Text],
       PrimitiveComponent.Text.Read[Json.Primitive.Text.Read],
@@ -24,10 +16,23 @@ trait JsonComponent
         CollectionComponent.Read[Json.Collection.Read, Json.Read],
         CollectionComponent.Write[Json.Collection.Write, Json.Write]
 
+  object constant
+      extends ConstantComponent[Json.Constant, Json.Primitive],
+        ConstantComponent.Write[Json.Constant.Write, Json.Primitive.Write]
+
   object dictionary
       extends DictionaryComponent[Json.Dictionary, Json],
         DictionaryComponent.Read[Json.Dictionary.Read, Json.Read],
         DictionaryComponent.Write[Json.Dictionary.Write, Json.Write]
+
+  object enumeration
+      extends EnumerationComponent[Json.Enumeration, Json],
+        EnumerationComponent.Write[Json.Enumeration.Write, Json.Write]
+
+  object field
+      extends FieldComponent[Json.Field, Json],
+        FieldComponent.Read[Json.Field.Read, Json.Read],
+        FieldComponent.Write[Json.Field.Write, Json.Write]
 
 object JsonComponent extends JsonComponent
 
@@ -75,4 +80,4 @@ object Playground:
 
   val _: Json.Constant[String] = json.constant(p, value = "constant")
 
-  json.enumeration(p, ??? : Mapping[String, String])
+  val _: Json.Enumeration["foobar"] = json.enumeration(p, Mapping.constant("foobar"))
