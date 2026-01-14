@@ -2,14 +2,14 @@ package io.taig.otter
 
 import cats.Eval
 
-final case class Reference[+S[_], A](self: Eval[S[A]]) extends AnyVal:
-  def value: S[A] = self.value
+final case class Reference[+F[_], A](self: Eval[F[A]]) extends AnyVal:
+  def value: F[A] = self.value
 
-  def map[S1[a] >: S[a], B](f: S1[A] => S1[B]): Reference[S1, B] = copy(self = self.map(f))
+  def map[F1[a] >: F[a], B](f: F1[A] => F1[B]): Reference[F1, B] = copy(self = self.map(f))
 
-  def mapK[S1[a] >: S[a], T[_]](fK: [A] => S1[A] => T[A]): Reference[T, A] = copy(self = self.map(fK.apply))
+  def mapK[F1[a] >: F[a], G[_]](fK: [A] => F1[A] => G[A]): Reference[G, A] = copy(self = self.map(fK.apply))
 
 object Reference:
-  def later[S[_], A](sa: => S[A]): Reference[S, A] = Reference(Eval.later(sa))
+  def later[F[_], A](sa: => F[A]): Reference[F, A] = Reference(Eval.later(sa))
 
-  def now[S[_], A](sa: S[A]): Reference[S, A] = Reference(Eval.now(sa))
+  def now[F[_], A](sa: F[A]): Reference[F, A] = Reference(Eval.now(sa))

@@ -6,18 +6,10 @@ import cats.ContravariantSemigroupal
 import cats.Functor
 import cats.Invariant
 import cats.InvariantSemigroupal
-import io.taig.otter.operation.CollectionOperation
-import io.taig.otter.operation.DictionaryOperation
-import io.taig.otter.operation.FieldOperation
-import io.taig.otter.operation.PrimitiveOperation
-import io.taig.otter.operation.RecordOperation
-import io.taig.otter.operation.RecordableOperation
-import io.taig.otter.operation.TupleOperation
-import io.taig.otter.operation.TupleableOperation
+import io.taig.otter.operation.*
 import io.taig.otter.syntax.all.*
 import io.taig.otter as Self
 import cats.syntax.all.*
-import Self.operation.ConstantOperation
 
 sealed abstract class Json[A] extends Json.Read[A], Json.Write[A]:
   override def self: Annotation[Json.Of[A]]
@@ -28,17 +20,18 @@ object Json:
 
   object Read:
     type Of[+A] = Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive, A] |
-      Self.Dictionary.Read[Json.Read, A] | Self.Primitive.Read[A] | Self.Record.Read[Json.Field.Read, A] |
-      Self.Tuple.Read[Json.Read, A]
+      Self.Dictionary.Read[Json.Read, A] | Self.Enumeration.Read[Json, A] | Self.Primitive.Read[A] |
+      Self.Record.Read[Json.Field.Read, A] | Self.Tuple.Read[Json.Read, A]
 
     given Functor[Json.Read]:
       override def map[A, B](json: Json.Read[A])(f: A => B): Read[B] = json match
-        case json: Json.Collection.Read[A] => json.map(f)
-        case json: Json.Constant.Read[A]   => json.map(f)
-        case json: Json.Dictionary.Read[A] => json.map(f)
-        case json: Json.Primitive.Read[A]  => json.map(f)
-        case json: Json.Record.Read[A]     => json.map(f)
-        case json: Json.Tuple.Read[A]      => json.map(f)
+        case json: Json.Collection.Read[A]  => json.map(f)
+        case json: Json.Constant.Read[A]    => json.map(f)
+        case json: Json.Dictionary.Read[A]  => json.map(f)
+        case json: Json.Enumeration.Read[A] => json.map(f)
+        case json: Json.Primitive.Read[A]   => json.map(f)
+        case json: Json.Record.Read[A]      => json.map(f)
+        case json: Json.Tuple.Read[A]       => json.map(f)
 
     given TupleableOperation[Json.Read, Json.Tuple.Read] = TupleableOperation.derived
 
@@ -47,17 +40,18 @@ object Json:
 
   object Write:
     type Of[-A] = Self.Collection.Write[Json.Write, A] | Self.Constant.Write[Json.Primitive.Write, A] |
-      Self.Dictionary.Write[Json.Write, A] | Self.Primitive.Write[A] | Self.Record.Write[Json.Field.Write, A] |
-      Self.Tuple.Write[Json.Write, A]
+      Self.Dictionary.Write[Json.Write, A] | Self.Enumeration.Write[Json.Write, A] | Self.Primitive.Write[A] |
+      Self.Record.Write[Json.Field.Write, A] | Self.Tuple.Write[Json.Write, A]
 
     given Contravariant[Json.Write]:
       override def contramap[A, B](json: Json.Write[A])(f: B => A): Write[B] = json match
-        case json: Json.Collection.Write[A] => json.contramap(f)
-        case json: Json.Constant.Write[A]   => json.contramap(f)
-        case json: Json.Dictionary.Write[A] => json.contramap(f)
-        case json: Json.Primitive.Write[A]  => json.contramap(f)
-        case json: Json.Record.Write[A]     => json.contramap(f)
-        case json: Json.Tuple.Write[A]      => json.contramap(f)
+        case json: Json.Collection.Write[A]  => json.contramap(f)
+        case json: Json.Constant.Write[A]    => json.contramap(f)
+        case json: Json.Dictionary.Write[A]  => json.contramap(f)
+        case json: Json.Enumeration.Write[A] => json.contramap(f)
+        case json: Json.Primitive.Write[A]   => json.contramap(f)
+        case json: Json.Record.Write[A]      => json.contramap(f)
+        case json: Json.Tuple.Write[A]       => json.contramap(f)
 
     given TupleableOperation[Json.Write, Json.Tuple.Write] = TupleableOperation.derived
 
@@ -70,7 +64,7 @@ object Json:
 
     object Read:
       def apply[A](annotation: Annotation[Self.Collection.Read[Json.Read, A]]): Json.Collection.Read[A] =
-        new Json.Collection.Read[A]:
+        new Read[A]:
           override def self: Annotation[Self.Collection.Read[Json.Read, A]] = annotation
 
       given Functor[Json.Collection.Read] = Functor[[a] =>> Annotation[Self.Collection.Read[Json.Read, a]]]
@@ -78,22 +72,21 @@ object Json:
           (json: Json.Collection.Read[A]) => json.self
         )
 
-      given [A] => Annotated[Json.Collection.Read[A]] =
-        Annotated[Annotation[Self.Collection.Read[Json.Read, A]]].imap(Read.apply)(_.self)
+      given [A] => Annotated[Json.Collection.Read[A]] = Annotated[Annotation[Self.Collection.Read[Json.Read, A]]]
+        .imap(Read.apply)(_.self)
 
-      given CollectionOperation.Read[Json.Collection.Read, Json.Read] =
-        CollectionOperation
-          .Read[[a] =>> Annotation[Self.Collection.Read[Json.Read, a]], Json.Read]
-          .imapK([A] => (self: Annotation[Self.Collection.Read[Json.Read, A]]) => Read(self))([A] =>
-            (json: Json.Collection.Read[A]) => json.self
-          )
+      given CollectionOperation.Read[Json.Collection.Read, Json.Read] = CollectionOperation
+        .Read[[a] =>> Annotation[Self.Collection.Read[Json.Read, a]], Json.Read]
+        .imapK([A] => (self: Annotation[Self.Collection.Read[Json.Read, A]]) => Read(self))([A] =>
+          (json: Json.Collection.Read[A]) => json.self
+        )
 
     sealed trait Write[-A] extends Json.Write[A]:
       def self: Annotation[Self.Collection.Write[Json.Write, A]]
 
     object Write:
       def apply[A](annotation: Annotation[Self.Collection.Write[Json.Write, A]]): Json.Collection.Write[A] =
-        new Json.Collection.Write[A]:
+        new Write[A]:
           override def self: Annotation[Self.Collection.Write[Json.Write, A]] = annotation
 
       given Contravariant[Json.Collection.Write] =
@@ -102,15 +95,14 @@ object Json:
             (json: Json.Collection.Write[A]) => json.self
           )
 
-      given [A] => Annotated[Json.Collection.Write[A]] =
-        Annotated[Annotation[Self.Collection.Write[Json.Write, A]]].imap(Write.apply)(_.self)
+      given [A] => Annotated[Json.Collection.Write[A]] = Annotated[Annotation[Self.Collection.Write[Json.Write, A]]]
+        .imap(Write.apply)(_.self)
 
-      given CollectionOperation.Write[Json.Collection.Write, Json.Write] =
-        CollectionOperation
-          .Write[[a] =>> Annotation[Self.Collection.Write[Json.Write, a]], Json.Write]
-          .imapK([A] => (self: Annotation[Self.Collection.Write[Json.Write, A]]) => Write(self))([A] =>
-            (json: Json.Collection.Write[A]) => json.self
-          )
+      given CollectionOperation.Write[Json.Collection.Write, Json.Write] = CollectionOperation
+        .Write[[a] =>> Annotation[Self.Collection.Write[Json.Write, a]], Json.Write]
+        .imapK([A] => (self: Annotation[Self.Collection.Write[Json.Write, A]]) => Write(self))([A] =>
+          (json: Json.Collection.Write[A]) => json.self
+        )
 
     def apply[A](annotation: Annotation[Self.Collection[Json, A]]): Json.Collection[A] = new Collection[A]:
       override def self: Annotation[Self.Collection[Json, A]] = annotation
@@ -120,8 +112,8 @@ object Json:
         (json: Json.Collection[A]) => json.self
       )
 
-    given [A] => Annotated[Json.Collection[A]] =
-      Annotated[Annotation[Self.Collection[Json, A]]].imap(Collection.apply)(_.self)
+    given [A] => Annotated[Json.Collection[A]] = Annotated[Annotation[Self.Collection[Json, A]]]
+      .imap(Collection.apply)(_.self)
 
     given CollectionOperation[Json.Collection, Json] =
       CollectionOperation[[a] =>> Annotation[Self.Collection[Json, a]], Json]
@@ -138,7 +130,7 @@ object Json:
 
     object Read:
       def apply[A](annotation: Annotation[Self.Constant.Read[Json.Primitive, A]]): Json.Constant.Read[A] =
-        new Json.Constant.Read[A]:
+        new Read[A]:
           override def self: Annotation[Self.Constant.Read[Json.Primitive, A]] = annotation
 
       given Functor[Json.Constant.Read] = Functor[[a] =>> Annotation[Self.Constant.Read[Json.Primitive, a]]]
@@ -194,21 +186,19 @@ object Json:
       def self: Annotation[Self.Dictionary.Read[Json.Read, A]]
 
     object Read:
-      def apply[A](annotation: Annotation[Self.Dictionary.Read[Json.Read, A]]): Json.Dictionary.Read[A] =
-        new Json.Dictionary.Read[A]:
-          override def self: Annotation[Self.Dictionary.Read[Json.Read, A]] = annotation
+      def apply[A](annotation: Annotation[Self.Dictionary.Read[Json.Read, A]]): Json.Dictionary.Read[A] = new Read[A]:
+        override def self: Annotation[Self.Dictionary.Read[Json.Read, A]] = annotation
 
       given Functor[Json.Dictionary.Read] = Functor[[a] =>> Annotation[Self.Dictionary.Read[Json.Read, a]]]
         .imapK([A] => (self: Annotation[Self.Dictionary.Read[Json.Read, A]]) => Read(self))([A] =>
           (json: Json.Dictionary.Read[A]) => json.self
         )
 
-      given DictionaryOperation.Read[Json.Dictionary.Read, Json.Read] =
-        DictionaryOperation
-          .Read[[a] =>> Annotation[Self.Dictionary.Read[Json.Read, a]], Json.Read]
-          .imapK([A] => (self: Annotation[Self.Dictionary.Read[Json.Read, A]]) => Read(self))([A] =>
-            (json: Json.Dictionary.Read[A]) => json.self
-          )
+      given DictionaryOperation.Read[Json.Dictionary.Read, Json.Read] = DictionaryOperation
+        .Read[[a] =>> Annotation[Self.Dictionary.Read[Json.Read, a]], Json.Read]
+        .imapK([A] => (self: Annotation[Self.Dictionary.Read[Json.Read, A]]) => Read(self))([A] =>
+          (json: Json.Dictionary.Read[A]) => json.self
+        )
 
     sealed trait Write[-A] extends Json.Write[A]:
       def self: Annotation[Self.Dictionary.Write[Json.Write, A]]
@@ -224,12 +214,11 @@ object Json:
             (json: Json.Dictionary.Write[A]) => json.self
           )
 
-      given DictionaryOperation.Write[Json.Dictionary.Write, Json.Write] =
-        DictionaryOperation
-          .Write[[a] =>> Annotation[Self.Dictionary.Write[Json.Write, a]], Json.Write]
-          .imapK([A] => (self: Annotation[Self.Dictionary.Write[Json.Write, A]]) => Write(self))([A] =>
-            (json: Json.Dictionary.Write[A]) => json.self
-          )
+      given DictionaryOperation.Write[Json.Dictionary.Write, Json.Write] = DictionaryOperation
+        .Write[[a] =>> Annotation[Self.Dictionary.Write[Json.Write, a]], Json.Write]
+        .imapK([A] => (self: Annotation[Self.Dictionary.Write[Json.Write, A]]) => Write(self))([A] =>
+          (json: Json.Dictionary.Write[A]) => json.self
+        )
 
     def apply[A](annotation: Annotation[Self.Dictionary[Json, A]]): Json.Dictionary[A] = new Dictionary[A]:
       override def self: Annotation[Self.Dictionary[Json, A]] = annotation
@@ -243,6 +232,71 @@ object Json:
       DictionaryOperation[[a] =>> Annotation[Self.Dictionary[Json, a]], Json]
         .imapK([A] => (self: Annotation[Self.Dictionary[Json, A]]) => Dictionary(self))([A] =>
           (json: Json.Dictionary[A]) => json.self
+        )
+
+  sealed abstract class Enumeration[A] extends Json[A], Json.Enumeration.Read[A], Json.Enumeration.Write[A]:
+    override def self: Annotation[Self.Enumeration[Json, A]]
+
+  object Enumeration:
+    sealed trait Read[+A] extends Json.Read[A]:
+      def self: Annotation[Self.Enumeration.Read[Json, A]]
+
+    object Read:
+      def apply[A](annotation: Annotation[Self.Enumeration.Read[Json, A]]): Json.Enumeration.Read[A] = new Read[A]:
+        override def self: Annotation[Self.Enumeration.Read[Json, A]] = annotation
+
+      given Functor[Json.Enumeration.Read] = Functor[[a] =>> Annotation[Self.Enumeration.Read[Json, a]]]
+        .imapK([A] => (self: Annotation[Self.Enumeration.Read[Json, A]]) => Read(self))([A] =>
+          (json: Json.Enumeration.Read[A]) => json.self
+        )
+
+      given [A] => Annotated[Json.Enumeration.Read[A]] = Annotated[Annotation[Self.Enumeration.Read[Json, A]]]
+        .imap(Read.apply)(_.self)
+
+      given EnumerationOperation.Read[Json.Enumeration.Read, Json] = EnumerationOperation
+        .Read[[a] =>> Annotation[Self.Enumeration.Read[Json, a]], Json]
+        .imapK([A] => (self: Annotation[Self.Enumeration.Read[Json, A]]) => Read(self))([A] =>
+          (json: Json.Enumeration.Read[A]) => json.self
+        )
+
+    sealed trait Write[-A] extends Json.Write[A]:
+      def self: Annotation[Self.Enumeration.Write[Json.Write, A]]
+
+    object Write:
+      def apply[A](annotation: Annotation[Self.Enumeration.Write[Json.Write, A]]): Json.Enumeration.Write[A] =
+        new Write[A]:
+          override def self: Annotation[Self.Enumeration.Write[Json.Write, A]] = annotation
+
+      given Contravariant[Json.Enumeration.Write] =
+        Contravariant[[a] =>> Annotation[Self.Enumeration.Write[Json.Write, a]]]
+          .imapK([A] => (self: Annotation[Self.Enumeration.Write[Json.Write, A]]) => Write(self))([A] =>
+            (json: Json.Enumeration.Write[A]) => json.self
+          )
+
+      given [A] => Annotated[Json.Enumeration.Write[A]] = Annotated[Annotation[Self.Enumeration.Write[Json.Write, A]]]
+        .imap(Write.apply)(_.self)
+
+      given EnumerationOperation.Write[Json.Enumeration.Write, Json.Write] = EnumerationOperation
+        .Write[[a] =>> Annotation[Self.Enumeration.Write[Json.Write, a]], Json.Write]
+        .imapK([A] => (self: Annotation[Self.Enumeration.Write[Json.Write, A]]) => Write(self))([A] =>
+          (json: Json.Enumeration.Write[A]) => json.self
+        )
+
+    def apply[A](annotation: Annotation[Self.Enumeration[Json, A]]): Json.Enumeration[A] = new Enumeration[A]:
+      override def self: Annotation[Self.Enumeration[Json, A]] = annotation
+
+    given Invariant[Json.Enumeration] = Invariant[[a] =>> Annotation[Self.Enumeration[Json, a]]]
+      .imapK([A] => (self: Annotation[Self.Enumeration[Json, A]]) => Enumeration(self))([A] =>
+        (json: Json.Enumeration[A]) => json.self
+      )
+
+    given [A] => Annotated[Json.Enumeration[A]] = Annotated[Annotation[Self.Enumeration[Json, A]]]
+      .imap(Enumeration.apply)(_.self)
+
+    given EnumerationOperation[Json.Enumeration, Json] =
+      EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Json, a]], Json]
+        .imapK([A] => (self: Annotation[Self.Enumeration[Json, A]]) => Enumeration(self))([A] =>
+          (json: Json.Enumeration[A]) => json.self
         )
 
   sealed abstract class Primitive[A] extends Json[A], Json.Primitive.Read[A], Json.Primitive.Write[A]:
@@ -610,15 +664,16 @@ object Json:
     given recordable: RecordableOperation[Json.Field, Json.Record] = RecordableOperation.derived
 
   type Of[A] = Self.Collection[Json, A] | Self.Constant[Json.Primitive, A] | Self.Dictionary[Json, A] |
-    Self.Primitive[A] | Self.Record[Json.Field, A] | Self.Tuple[Json, A]
+    Self.Enumeration[Json, A] | Self.Primitive[A] | Self.Record[Json.Field, A] | Self.Tuple[Json, A]
 
   given Invariant[Json]:
     override def imap[A, B](json: Json[A])(f: A => B)(g: B => A): Json[B] = json match
-      case json: Json.Collection[A] => json.imap(f)(g)
-      case json: Json.Constant[A]   => json.imap(f)(g)
-      case json: Json.Dictionary[A] => json.imap(f)(g)
-      case json: Json.Primitive[A]  => json.imap(f)(g)
-      case json: Json.Record[A]     => json.imap(f)(g)
-      case json: Json.Tuple[A]      => json.imap(f)(g)
+      case json: Json.Collection[A]  => json.imap(f)(g)
+      case json: Json.Constant[A]    => json.imap(f)(g)
+      case json: Json.Dictionary[A]  => json.imap(f)(g)
+      case json: Json.Enumeration[A] => json.imap(f)(g)
+      case json: Json.Primitive[A]   => json.imap(f)(g)
+      case json: Json.Record[A]      => json.imap(f)(g)
+      case json: Json.Tuple[A]       => json.imap(f)(g)
 
   given TupleableOperation[Json, Json.Tuple] = TupleableOperation.derived

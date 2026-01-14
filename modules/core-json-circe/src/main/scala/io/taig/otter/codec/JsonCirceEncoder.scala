@@ -11,11 +11,11 @@ object JsonCirceEncoder extends Encoder[Json.Write, CirceJson]:
       CirceJson.fromValues(CollectionEncoder(encoder = this).encode(schema = self.self.self, a))
     case self: Json.Dictionary.Write[A] =>
       CirceJson.fromFields(DictionaryEncoder(encoder = this).encode(schema = self.self.self, a))
-//     case Json.Enumeration(annotation) => EnumerationEncoder(encoder = this).encode(schema = annotation.self, a)
+    case self: Json.Enumeration.Write[A] => EnumerationEncoder(encoder = this).encode(schema = self.self.self, a)
     case schema: Json.Primitive.Write[A] => JsonPrimitiveCirceEncoder.encode(schema, a)
     case self: Json.Record.Write[A]      => ???
-//     case Json.Nullable(annotation)    =>
-//       NullableEncoder(encoder = this, empty = CirceJson.Null).encode(schema = annotation.self, a)
+    // case self: Json.Optional[A]    =>
+    //   NullableEncoder(encoder = this, empty = CirceJson.Null).encode(schema = annotation.self, a)
 //     case Json.Record(annotation)   =>
 //       CirceJson.fromFields(RecordEncoder(encoder = JsonFieldCirceEncoder).encode(schema = annotation.self, a).toList)
     case self: Json.Tuple.Write[A] =>

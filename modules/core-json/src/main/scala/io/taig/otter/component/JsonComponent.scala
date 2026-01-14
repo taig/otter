@@ -1,11 +1,14 @@
 package io.taig.otter.component
 
 import io.taig.otter.Json
+import io.taig.enumeration.ext.Mapping
 
 trait JsonComponent
     extends ConstantComponent[Json.Constant, Json.Primitive],
       ConstantComponent.Read[Json.Constant.Read, Json.Primitive],
       ConstantComponent.Write[Json.Constant.Write, Json.Primitive.Write],
+      EnumerationComponent[Json.Enumeration, Json],
+      EnumerationComponent.Write[Json.Enumeration.Write, Json.Write],
       FieldComponent[Json.Field, Json],
       FieldComponent.Read[Json.Field.Read, Json.Read],
       FieldComponent.Write[Json.Field.Write, Json.Write],
@@ -71,3 +74,5 @@ object Playground:
   val _: Json.Collection.Write[List[Long]] = json.collection.list(pw)
 
   val _: Json.Constant[String] = json.constant(p, value = "constant")
+
+  json.enumeration(p, ??? : Mapping[String, String])

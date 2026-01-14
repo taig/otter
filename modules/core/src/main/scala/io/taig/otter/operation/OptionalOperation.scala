@@ -24,7 +24,7 @@ object OptionalOperation:
   trait Read[F[_], G[_]] extends OptionalOperation[F, G]:
     self =>
 
-    override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): OptionalOperation.Read[H, G] =
+    final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): OptionalOperation.Read[H, G] =
       new Read[H, G]:
         override def lift[A](schema: => Reference[G, A]): H[Option[A]] = fK(self.lift(schema))
 
@@ -43,7 +43,7 @@ object OptionalOperation:
   trait Write[F[_], G[_]] extends OptionalOperation[F, G]:
     self =>
 
-    override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): OptionalOperation.Write[H, G] =
+    final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): OptionalOperation.Write[H, G] =
       new Write[H, G]:
         override def lift[A](schema: => Reference[G, A]): H[Option[A]] = fK(self.lift(schema))
 

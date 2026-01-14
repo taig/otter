@@ -27,9 +27,9 @@ object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
         .leftMap(Violations.apply)
         .map(_.toList)
         .andThen(DictionaryDecoder(decoder = this).decode(schema = self.self.self, _))
-//     case Json.Enumeration(annotation) =>
-//       EnumerationDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData)
-//         .decode(schema = annotation.self, json)
+    case self: Json.Enumeration.Read[A] =>
+      EnumerationDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData)
+        .decode(schema = self.self.self, json)
 //     case Json.Nullable(annotation) =>
 //       NullableDecoder(decoder = this, empty = _.isNull).decode(schema = annotation.self, json)
     case schema: Json.Primitive.Read[A] => JsonPrimitiveCirceDecoder.decode(schema, json)
