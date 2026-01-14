@@ -193,6 +193,7 @@ object PrimitiveOperation:
     def mapK[G[_]](fK: [A] => F[A] => G[A]): PrimitiveOperation.Text[G] = new Text[G]:
       override def codec[A](name: String, parse: String => Either[String, A], print: A => String): G[A] =
         fK(self.codec(name, parse, print))
+
       override def string(
           validation: Validation[Constraint.Primitive.Text, String]
       ): G[String] = fK(self.string(validation))
@@ -209,6 +210,7 @@ object PrimitiveOperation:
       final override def mapK[G[_]](fK: [A] => F[A] => G[A]): PrimitiveOperation.Text.Read[G] = new Read[G]:
         override def parser[A](name: String, parse: String => Either[String, A]): G[A] =
           fK(self.parser(name, parse))
+
         override def string(
             validation: Validation[Constraint.Primitive.Text, String]
         ): G[String] = fK(self.string(validation))
@@ -232,6 +234,7 @@ object PrimitiveOperation:
 
       final override def mapK[G[_]](fK: [A] => F[A] => G[A]): PrimitiveOperation.Text.Write[G] = new Write[G]:
         override def printer[A](name: String, print: A => String): G[A] = fK(self.printer(name, print))
+
         override def string(
             validation: Validation[Constraint.Primitive.Text, String]
         ): G[String] = fK(self.string(validation))
