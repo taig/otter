@@ -20,8 +20,9 @@ object Json:
 
   object Read:
     type Of[+A] = Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive, A] |
-      Self.Dictionary.Read[Json.Read, A] | Self.Enumeration.Read[Json, A] | Self.Primitive.Read[A] |
-      Self.Record.Read[Json.Field.Read, A] | Self.Tuple.Read[Json.Read, A] | Self.Union.Read[Json.Branch.Read, A]
+      Self.Dictionary.Read[Json.Read, A] | Self.Enumeration.Read[Json, A] | Self.Optional.Read[Json.Read, A] |
+      Self.Primitive.Read[A] | Self.Record.Read[Json.Field.Read, A] | Self.Tuple.Read[Json.Read, A] |
+      Self.Union.Read[Json.Branch.Read, A]
 
     given Functor[Json.Read]:
       override def map[A, B](json: Json.Read[A])(f: A => B): Read[B] = json match
@@ -29,6 +30,7 @@ object Json:
         case json: Json.Constant.Read[A]    => json.map(f)
         case json: Json.Dictionary.Read[A]  => json.map(f)
         case json: Json.Enumeration.Read[A] => json.map(f)
+        case json: Json.Optional.Read[A]    => json.map(f)
         case json: Json.Primitive.Read[A]   => json.map(f)
         case json: Json.Record.Read[A]      => json.map(f)
         case json: Json.Tuple.Read[A]       => json.map(f)
@@ -40,8 +42,9 @@ object Json:
 
   object Write:
     type Of[-A] = Self.Collection.Write[Json.Write, A] | Self.Constant.Write[Json.Primitive.Write, A] |
-      Self.Dictionary.Write[Json.Write, A] | Self.Enumeration.Write[Json.Write, A] | Self.Primitive.Write[A] |
-      Self.Record.Write[Json.Field.Write, A] | Self.Tuple.Write[Json.Write, A] | Self.Union.Write[Json.Branch.Write, A]
+      Self.Dictionary.Write[Json.Write, A] | Self.Enumeration.Write[Json.Write, A] |
+      Self.Optional.Write[Json.Write, A] | Self.Primitive.Write[A] | Self.Record.Write[Json.Field.Write, A] |
+      Self.Tuple.Write[Json.Write, A] | Self.Union.Write[Json.Branch.Write, A]
 
     given Contravariant[Json.Write]:
       override def contramap[A, B](json: Json.Write[A])(f: B => A): Write[B] = json match
@@ -49,6 +52,7 @@ object Json:
         case json: Json.Constant.Write[A]    => json.contramap(f)
         case json: Json.Dictionary.Write[A]  => json.contramap(f)
         case json: Json.Enumeration.Write[A] => json.contramap(f)
+        case json: Json.Optional.Write[A]    => json.contramap(f)
         case json: Json.Primitive.Write[A]   => json.contramap(f)
         case json: Json.Record.Write[A]      => json.contramap(f)
         case json: Json.Tuple.Write[A]       => json.contramap(f)
@@ -294,6 +298,56 @@ object Json:
       EnumerationOperation[[a] =>> Annotation[Self.Enumeration[Json, a]], Json]
         .imapK([A] => (self: Annotation[Self.Enumeration[Json, A]]) => Enumeration(self))([A] =>
           (json: Json.Enumeration[A]) => json.self
+        )
+
+  final case class Optional[A](self: Annotation[Self.Optional[Json, A]])
+      extends Json[A],
+        Json.Optional.Read[A],
+        Json.Optional.Write[A]
+
+  object Optional:
+    sealed trait Read[+A] extends Json.Read[A]:
+      def self: Annotation[Self.Optional.Read[Json.Read, A]]
+
+    object Read:
+      def apply[A](annotation: Annotation[Self.Optional.Read[Json.Read, A]]): Json.Optional.Read[A] = new Read[A]:
+        override def self: Annotation[Self.Optional.Read[Json.Read, A]] = annotation
+
+      given Functor[Json.Optional.Read]:
+        override def map[A, B](fa: Json.Optional.Read[A])(f: A => B): Json.Optional.Read[B] = fa.map(f)
+
+      given operation: OptionalOperation.Read[Json.Optional.Read, Json.Read] = OptionalOperation
+        .Read[[a] =>> Annotation[Self.Optional.Read[Json.Read, a]], Json.Read]
+        .imapK([A] => (self: Annotation[Self.Optional.Read[Json.Read, A]]) => Read(self))([A] =>
+          (json: Json.Optional.Read[A]) => json.self
+        )
+
+    sealed trait Write[-A] extends Json.Write[A]:
+      def self: Annotation[Self.Optional.Write[Json.Write, A]]
+
+    object Write:
+      def apply[A](annotation: Annotation[Self.Optional.Write[Json.Write, A]]): Json.Optional.Write[A] =
+        new Write[A]:
+          override def self: Annotation[Self.Optional.Write[Json.Write, A]] = annotation
+
+      given Contravariant[Json.Optional.Write]:
+        override def contramap[A, B](fa: Json.Optional.Write[A])(f: B => A): Json.Optional.Write[B] = fa.contramap(f)
+
+      given operation: OptionalOperation.Write[Json.Optional.Write, Json.Write] = OptionalOperation
+        .Write[[a] =>> Annotation[Self.Optional.Write[Json.Write, a]], Json.Write]
+        .imapK([A] => (self: Annotation[Self.Optional.Write[Json.Write, A]]) => Write(self))([A] =>
+          (json: Json.Optional.Write[A]) => json.self
+        )
+
+    given Invariant[Json.Optional] = Invariant[[a] =>> Annotation[Self.Optional[Json, a]]]
+      .imapK([A] => (self: Annotation[Self.Optional[Json, A]]) => Optional(self))([A] =>
+        (json: Json.Optional[A]) => json.self
+      )
+
+    given operation: OptionalOperation[Json.Optional, Json] =
+      OptionalOperation[[a] =>> Annotation[Self.Optional[Json, a]], Json]
+        .imapK([A] => (self: Annotation[Self.Optional[Json, A]]) => Optional(self))([A] =>
+          (json: Json.Optional[A]) => json.self
         )
 
   sealed abstract class Primitive[A] extends Json[A], Json.Primitive.Read[A], Json.Primitive.Write[A]:
@@ -745,8 +799,8 @@ object Json:
     given recordable: RecordableOperation[Json.Field, Json.Record] = RecordableOperation.derived
 
   type Of[A] = Self.Collection[Json, A] | Self.Constant[Json.Primitive, A] | Self.Dictionary[Json, A] |
-    Self.Enumeration[Json, A] | Self.Primitive[A] | Self.Record[Json.Field, A] | Self.Tuple[Json, A] |
-    Self.Union[Json.Branch, A]
+    Self.Enumeration[Json, A] | Self.Optional[Json, A] | Self.Primitive[A] | Self.Record[Json.Field, A] |
+    Self.Tuple[Json, A] | Self.Union[Json.Branch, A]
 
   given Invariant[Json]:
     override def imap[A, B](json: Json[A])(f: A => B)(g: B => A): Json[B] = json match
@@ -754,6 +808,7 @@ object Json:
       case json: Json.Constant[A]    => json.imap(f)(g)
       case json: Json.Dictionary[A]  => json.imap(f)(g)
       case json: Json.Enumeration[A] => json.imap(f)(g)
+      case json: Json.Optional[A]    => json.imap(f)(g)
       case json: Json.Primitive[A]   => json.imap(f)(g)
       case json: Json.Record[A]      => json.imap(f)(g)
       case json: Json.Tuple[A]       => json.imap(f)(g)
