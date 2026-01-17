@@ -11,6 +11,8 @@ import io.taig.otter.operation.ConstantOperation
 sealed abstract class Constant[+F[_], A] extends Constant.Read[F, A], Constant.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Constant[F, B] = Constant.Modify(self = this, f, g)
 
+  final def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A] = ???
+
 object Constant:
   sealed trait Read[+F[_], +A]:
     def schema: Reference[F, ?]

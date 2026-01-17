@@ -181,6 +181,15 @@ object Json:
           (json: Json.Constant[A]) => json.self
         )
 
+    given Translator[Value.Constant, Json.Constant]:
+      override def translate[A](value: Value.Constant[A]): Json.Constant[A] =
+        val c = value.self.self.mapK(
+          [A] => (value: Value.Primitive.Text[A]) =>
+            Translator[Value.Primitive.Text, Json.Primitive.Text](using ???).translate(value)
+        )
+
+        Json.Constant(value.self.copy(self = c))
+
   final case class Dictionary[A](self: Annotation[Self.Dictionary[Json, A]])
       extends Json[A],
         Json.Dictionary.Read[A],
@@ -1079,3 +1088,5 @@ object Json:
       case json: Json.Union[A]       => json.imap(f)(g)
 
   given TupleableOperation[Json, Json.Tuple] = TupleableOperation.derived
+
+  given Translator[Value, Json] = ???
