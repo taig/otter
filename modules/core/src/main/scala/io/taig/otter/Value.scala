@@ -61,7 +61,9 @@ object Value:
       override def self: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]
 
     object Write:
-      def apply[A](annotation: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]): Value.Constant.Write[A] =
+      def apply[A](
+          annotation: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]
+      ): Value.Constant.Write[A] =
         new Write[A]:
           override def self: Self.Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]] = annotation
 
@@ -73,9 +75,9 @@ object Value:
       given ConstantOperation.Write[Value.Constant.Write, Value.Primitive.Text.Write] =
         ConstantOperation
           .Write[[a] =>> Annotation[Self.Constant.Write[Value.Primitive.Text.Write, a]], Value.Primitive.Text.Write]
-          .imapK([A] => (annotation: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]) => Write(annotation))([A] =>
-            (value: Value.Constant.Write[A]) => value.self
-          )
+          .imapK([A] =>
+            (annotation: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]) => Write(annotation)
+          )([A] => (value: Value.Constant.Write[A]) => value.self)
 
     def apply[A](annotation: Annotation[Self.Constant[Value.Primitive.Text, A]]): Value.Constant[A] =
       new Constant[A]:

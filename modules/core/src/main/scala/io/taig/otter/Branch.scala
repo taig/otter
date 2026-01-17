@@ -5,57 +5,70 @@ import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.BranchOperation
 
-sealed abstract class Branch[+S[_], A] extends Branch.Read[S, A], Branch.Write[S, A]:
-  final def imap[B](f: A => B)(g: B => A): Branch[S, B] = Branch.Modify(self = this, f, g)
+sealed abstract class Branch[+F[_], A] extends Branch.Read[F, A], Branch.Write[F, A]:
+  final def imap[B](f: A => B)(g: B => A): Branch[F, B] = Branch.Modify(self = this, f, g)
+
+  def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, A]
 
 object Branch:
-  sealed trait Read[+S[_], +A]:
+  sealed trait Read[+F[_], +A]:
+    final def map[B](f: A => B): Branch.Read[F, B] = Read.Modify(self = this, f)
+
+    def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch.Read[G, A]
+
     def name: String
 
-    def schema: Reference[S, ?]
-
-    final def map[B](f: A => B): Branch.Read[S, B] = Read.Modify(self = this, f)
+    def schema: Reference[F, ?]
 
   object Read:
-    final case class Modify[S[_], A, B](self: Branch.Read[S, A], f: A => B) extends Branch.Read[S, B]:
+    final case class Modify[F[_], A, B](self: Branch.Read[F, A], f: A => B) extends Branch.Read[F, B]:
       export self.{name, schema}
 
-    given [S[_]] => Functor[Branch.Read[S, *]]:
-      override def map[A, B](fa: Branch.Read[S, A])(f: A => B): Branch.Read[S, B] = fa.map(f)
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch.Read[G, B] = copy(self = self.mapK(fK))
 
-    given [S[_]] => BranchOperation.Read[Branch.Read[S, *], S]:
-      override def lift[A](name: String, schema: Reference[S, A]): Branch.Read[S, A] = Root(name, schema)
+    given [F[_]] => Functor[Branch.Read[F, *]]:
+      override def map[A, B](fa: Branch.Read[F, A])(f: A => B): Branch.Read[F, B] = fa.map(f)
 
-      extension [A](fa: Branch.Read[S, A]) override def schema: Reference[S, ?] = fa.schema
+    given [F[_]] => BranchOperation.Read[Branch.Read[F, *], F]:
+      override def lift[A](name: String, schema: Reference[F, A]): Branch.Read[F, A] = Root(name, schema)
 
-  sealed trait Write[+S[_], -A]:
+      extension [A](fa: Branch.Read[F, A]) override def schema: Reference[F, ?] = fa.schema
+
+  sealed trait Write[+F[_], -A]:
+    final def contramap[B](f: B => A): Branch.Write[F, B] = Write.Modify(self = this, f)
+
+    def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch.Write[G, A]
+
     def name: String
 
-    def schema: Reference[S, ?]
-
-    final def contramap[B](f: B => A): Branch.Write[S, B] = Write.Modify(self = this, f)
+    def schema: Reference[F, ?]
 
   object Write:
-    final case class Modify[S[_], A, B](self: Branch.Write[S, A], f: B => A) extends Branch.Write[S, B]:
+    final case class Modify[F[_], A, B](self: Branch.Write[F, A], f: B => A) extends Branch.Write[F, B]:
       export self.{name, schema}
 
-    given [S[_]] => Contravariant[Branch.Write[S, *]]:
-      override def contramap[A, B](fa: Branch.Write[S, A])(f: B => A): Branch.Write[S, B] = fa.contramap(f)
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch.Write[G, B] = copy(self = self.mapK(fK))
 
-    given [S[_]] => BranchOperation.Write[Branch.Write[S, *], S]:
-      override def lift[A](name: String, schema: Reference[S, A]): Branch.Write[S, A] = Root(name, schema)
+    given [F[_]] => Contravariant[Branch.Write[F, *]]:
+      override def contramap[A, B](fa: Branch.Write[F, A])(f: B => A): Branch.Write[F, B] = fa.contramap(f)
 
-      extension [A](fa: Branch.Write[S, A]) override def schema: Reference[S, ?] = fa.schema
+    given [F[_]] => BranchOperation.Write[Branch.Write[F, *], F]:
+      override def lift[A](name: String, schema: Reference[F, A]): Branch.Write[F, A] = Root(name, schema)
 
-  final case class Modify[S[_], A, B](self: Branch[S, A], f: A => B, g: B => A) extends Branch[S, B]:
+      extension [A](fa: Branch.Write[F, A]) override def schema: Reference[F, ?] = fa.schema
+
+  final case class Modify[F[_], A, B](self: Branch[F, A], f: A => B, g: B => A) extends Branch[F, B]:
     export self.{name, schema}
 
-  final case class Root[S[_], A](name: String, schema: Reference[S, A]) extends Branch[S, A]
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, B] = copy(self = self.mapK(fK))
 
-  given [S[_]] => Invariant[Branch[S, *]]:
-    override def imap[A, B](fa: Branch[S, A])(f: A => B)(g: B => A): Branch[S, B] = fa.imap(f)(g)
+  final case class Root[F[_], A](name: String, schema: Reference[F, A]) extends Branch[F, A]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, A] = copy(schema = schema.mapK[F, G](fK))
 
-  given [S[_]] => BranchOperation[Branch[S, *], S]:
-    override def lift[A](name: String, schema: Reference[S, A]): Branch[S, A] = Root(name, schema)
+  given [F[_]] => Invariant[Branch[F, *]]:
+    override def imap[A, B](fa: Branch[F, A])(f: A => B)(g: B => A): Branch[F, B] = fa.imap(f)(g)
 
-    extension [A](fa: Branch[S, A]) override def schema: Reference[S, ?] = fa.schema
+  given [F[_]] => BranchOperation[Branch[F, *], F]:
+    override def lift[A](name: String, schema: Reference[F, A]): Branch[F, A] = Root(name, schema)
+
+    extension [A](fa: Branch[F, A]) override def schema: Reference[F, ?] = fa.schema

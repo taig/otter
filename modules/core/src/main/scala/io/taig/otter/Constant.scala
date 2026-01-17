@@ -9,19 +9,25 @@ import cats.Eval
 import io.taig.otter.operation.ConstantOperation
 
 sealed abstract class Constant[+F[_], A] extends Constant.Read[F, A], Constant.Write[F, A]:
+  self =>
+
   final def imap[B](f: A => B)(g: B => A): Constant[F, B] = Constant.Modify(self = this, f, g)
 
-  final def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A] = ???
+  def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A]
 
 object Constant:
   sealed trait Read[+F[_], +A]:
-    def schema: Reference[F, ?]
-
     final def map[B](f: A => B): Constant.Read[F, B] = Read.Modify(self = this, f)
+
+    def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Read[G, A]
+
+    def schema: Reference[F, ?]
 
   object Read:
     final case class Modify[F[_], A, B](self: Constant.Read[F, A], f: A => B) extends Constant.Read[F, B]:
       export self.schema
+
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Read[G, B] = copy(self = self.mapK(fK))
 
     given [F[_]] => Functor[Constant.Read[F, *]]:
       override def map[A, B](fa: Constant.Read[F, A])(f: A => B): Constant.Read[F, B] = fa.map(f)
@@ -33,15 +39,20 @@ object Constant:
       extension [A](fa: Constant.Read[F, A]) override def schema: Reference[F, ?] = fa.schema
 
   sealed trait Write[+F[_], -A]:
-    def schema: Reference[F, ?]
-
     final def contramap[B](f: B => A): Constant.Write[F, B] = Write.Modify(self = this, f)
+
+    def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, A]
+
+    def schema: Reference[F, ?]
 
   object Write:
     final case class Modify[F[_], A, B](self: Constant.Write[F, A], f: B => A) extends Constant.Write[F, B]:
       export self.schema
 
-    final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A]) extends Constant.Write[F, A]
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, B] = copy(self = self.mapK(fK))
+
+    final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A]) extends Constant.Write[F, A]:
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, A] = copy(schema = schema.mapK[F, G](fK))
 
     given [F[_]] => Contravariant[Constant.Write[F, *]]:
       override def contramap[A, B](fa: Constant.Write[F, A])(f: B => A): Constant.Write[F, B] = fa.contramap(f)
@@ -54,7 +65,10 @@ object Constant:
   final case class Modify[F[_], A, B](self: Constant[F, A], f: A => B, g: B => A) extends Constant[F, B]:
     export self.schema
 
-  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]) extends Constant[F, A]
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, B] = copy(self = self.mapK(fK))
+
+  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]) extends Constant[F, A]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Constant[F, *]]:
     override def imap[A, B](self: Constant[F, A])(f: A => B)(g: B => A): Constant[F, B] = self.imap(f)(g)

@@ -183,8 +183,8 @@ object Json:
 
     given Translator[Value.Constant, Json.Constant]:
       override def translate[A](value: Value.Constant[A]): Json.Constant[A] =
-        val c = value.self.self.mapK(
-          [A] => (value: Value.Primitive.Text[A]) =>
+        val c = value.self.self.mapK([A] =>
+          (value: Value.Primitive.Text[A]) =>
             Translator[Value.Primitive.Text, Json.Primitive.Text](using ???).translate(value)
         )
 
