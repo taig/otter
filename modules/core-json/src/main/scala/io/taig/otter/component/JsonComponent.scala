@@ -35,8 +35,8 @@ trait JsonComponent
         DictionaryComponent.Write[Json.Dictionary.Write, Json.Write]
 
   object enumeration
-      extends EnumerationComponent[Json.Enumeration, Json],
-        EnumerationComponent.Write[Json.Enumeration.Write, Json.Write]
+      extends EnumerationComponent[Json.Enumeration, Json.Primitive],
+        EnumerationComponent.Write[Json.Enumeration.Write, Json.Primitive.Write]
 
   object field
       extends FieldComponent[Json.Field, Json],

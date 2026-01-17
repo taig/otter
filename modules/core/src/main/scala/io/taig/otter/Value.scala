@@ -63,9 +63,8 @@ object Value:
     object Write:
       def apply[A](
           annotation: Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]]
-      ): Value.Constant.Write[A] =
-        new Write[A]:
-          override def self: Self.Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]] = annotation
+      ): Value.Constant.Write[A] = new Write[A]:
+        override def self: Self.Annotation[Self.Constant.Write[Value.Primitive.Text.Write, A]] = annotation
 
       given Contravariant[Value.Constant.Write] =
         Contravariant[[a] =>> Annotation[Self.Constant.Write[Value.Primitive.Text.Write, a]]].imapK([A] =>
