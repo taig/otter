@@ -23,6 +23,35 @@ object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Read, CirceJson]
             Violation(constraint = Constraint.Generic.Type(name = "boolean"), actual = typeOf(json), hint = none)
           )
           .leftMap(Violations.apply)
+      case Primitive.Coerce.Boolean.Root(schema) =>
+        val value = json.withString:
+          case "true"  => CirceJson.fromBoolean(true)
+          case "false" => CirceJson.fromBoolean(false)
+          case value   => CirceJson.fromString(value)
+
+        decode(schema = schema.value, value)
+      case Primitive.Coerce.Number.Root(schema) =>
+        val value = json.withString: value =>
+          schema.value.self.self match
+            case Primitive.Number.Int(_) =>
+              value.toIntOption.map(CirceJson.fromInt).getOrElse(CirceJson.fromString(value))
+            case Primitive.Number.Long(_) =>
+              value.toLongOption.map(CirceJson.fromLong).getOrElse(CirceJson.fromString(value))
+            case Primitive.Number.Float(_) =>
+              value.toFloatOption.flatMap(CirceJson.fromFloat).getOrElse(CirceJson.fromString(value))
+            case Primitive.Number.Double(_) =>
+              value.toDoubleOption.flatMap(CirceJson.fromDouble).getOrElse(CirceJson.fromString(value))
+            case Primitive.Number.BigInteger(_) =>
+              Either
+                .catchOnly[NumberFormatException](CirceJson.fromBigInt(BigInt(value)))
+                .getOrElse(CirceJson.fromString(value))
+            case Primitive.Number.BigDecimal(_) =>
+              Either
+                .catchOnly[NumberFormatException](CirceJson.fromBigDecimal(BigDecimal(value)))
+                .getOrElse(CirceJson.fromString(value))
+            case _ => CirceJson.fromString(value)
+
+        decode(schema = schema.value, value)
       case Primitive.Number.BigDecimal(validation) =>
         json.asNumber
           .flatMap(_.toBigDecimal)

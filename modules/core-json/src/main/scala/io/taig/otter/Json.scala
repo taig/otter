@@ -561,14 +561,13 @@ object Json:
         object Read:
           def apply[A](
               annotation: Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, A]]
-          ): Json.Primitive.Coerce.Number.Read[A] = new Json.Primitive.Coerce.Number.Read[A]:
+          ): Json.Primitive.Coerce.Number.Read[A] = new Read[A]:
             override def self: Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, A]] = annotation
 
           given Functor[Json.Primitive.Coerce.Number.Read] =
-            Functor[[a] =>> Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, a]]]
-              .imapK([A] =>
-                (self: Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, A]]) => Read(self)
-              )([A] => (json: Json.Primitive.Coerce.Number.Read[A]) => json.self)
+            Functor[[a] =>> Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, a]]].imapK([A] =>
+              (self: Annotation[Self.Primitive.Coerce.Number.Read[Json.Primitive.Number.Read, A]]) => Read(self)
+            )([A] => (json: Json.Primitive.Coerce.Number.Read[A]) => json.self)
 
           given PrimitiveOperation.Coerce.Number.Read[Json.Primitive.Coerce.Number.Read, Json.Primitive.Number.Read] =
             PrimitiveOperation.Coerce.Number
@@ -586,7 +585,7 @@ object Json:
         object Write:
           def apply[A](
               annotation: Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, A]]
-          ): Json.Primitive.Coerce.Number.Write[A] = new Json.Primitive.Coerce.Number.Write[A]:
+          ): Json.Primitive.Coerce.Number.Write[A] = new Write[A]:
             override def self: Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, A]] =
               annotation
 
@@ -599,15 +598,14 @@ object Json:
           given PrimitiveOperation.Coerce.Number.Write[
             Json.Primitive.Coerce.Number.Write,
             Json.Primitive.Number.Write
-          ] =
-            PrimitiveOperation.Coerce.Number
-              .Write[
-                [a] =>> Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, a]],
-                Json.Primitive.Number.Write
-              ]
-              .imapK([A] =>
-                (self: Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, A]]) => Write(self)
-              )([A] => (json: Json.Primitive.Coerce.Number.Write[A]) => json.self)
+          ] = PrimitiveOperation.Coerce.Number
+            .Write[
+              [a] =>> Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, a]],
+              Json.Primitive.Number.Write
+            ]
+            .imapK([A] =>
+              (self: Annotation[Self.Primitive.Coerce.Number.Write[Json.Primitive.Number.Write, A]]) => Write(self)
+            )([A] => (json: Json.Primitive.Coerce.Number.Write[A]) => json.self)
 
         given Invariant[Json.Primitive.Coerce.Number] =
           Invariant[[a] =>> Annotation[Self.Primitive.Coerce.Number[Json.Primitive.Number, a]]]
@@ -634,7 +632,7 @@ object Json:
         object Read:
           def apply[A](
               annotation: Annotation[Self.Primitive.Coerce.Text.Read[Json.Primitive.Text.Read, A]]
-          ): Json.Primitive.Coerce.Text.Read[A] = new Json.Primitive.Coerce.Text.Read[A]:
+          ): Json.Primitive.Coerce.Text.Read[A] = new Read[A]:
             override def self: Annotation[Self.Primitive.Coerce.Text.Read[Json.Primitive.Text.Read, A]] = annotation
 
           given Functor[Json.Primitive.Coerce.Text.Read] =
@@ -645,9 +643,10 @@ object Json:
 
           given PrimitiveOperation.Coerce.Text.Read[Json.Primitive.Coerce.Text.Read, Json.Primitive.Text.Read] =
             PrimitiveOperation.Coerce.Text
-              .Read[[a] =>> Annotation[
-                Self.Primitive.Coerce.Text.Read[Json.Primitive.Text.Read, a]
-              ], Json.Primitive.Text.Read]
+              .Read[
+                [a] =>> Annotation[Self.Primitive.Coerce.Text.Read[Json.Primitive.Text.Read, a]],
+                Json.Primitive.Text.Read
+              ]
               .imapK([A] =>
                 (self: Annotation[Self.Primitive.Coerce.Text.Read[Json.Primitive.Text.Read, A]]) => Read(self)
               )([A] => (json: Json.Primitive.Coerce.Text.Read[A]) => json.self)

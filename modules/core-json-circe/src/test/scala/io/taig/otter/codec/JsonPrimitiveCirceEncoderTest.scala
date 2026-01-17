@@ -1,4 +1,4 @@
-package io.taig.otter
+package io.taig.otter.codec
 
 import zio.test.ZIOSpecDefault
 import zio.Scope
