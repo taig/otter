@@ -11,7 +11,7 @@ sealed abstract class Field[+S[_], A] extends Field.Read[S, A], Field.Write[S, A
 
   final override def optional: Field[S, Option[A]] = Field.Optional(self = this)
 
-  def optional(default: Eval[A]): Field[S, A] = Field.Default(self = this, value = default)
+  final def optional(default: Eval[A]): Field[S, A] = Field.Default(self = this, value = default)
 
 object Field:
   sealed trait Read[+S[_], +A]:
