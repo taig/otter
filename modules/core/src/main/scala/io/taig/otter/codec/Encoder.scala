@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
-trait Encoder[-F[_], A]:
+trait Encoder[-F[_], T]:
   self =>
 
-  def encode[B](fb: F[B], b: B): A
+  def encode[A](fa: F[A], a: A): T
 
-  def contramapK[G[_]](fK: [A] => G[A] => F[A]): Encoder[G, A] = new Encoder[G, A]:
-    override def encode[B](gb: G[B], b: B): A = self.encode(fK(gb), b)
+  def contramapK[G[_]](fK: [A] => G[A] => F[A]): Encoder[G, T] = new Encoder[G, T]:
+    override def encode[A](ga: G[A], a: A): T = self.encode(fK(ga), a)

@@ -8,9 +8,9 @@ import io.taig.otter.Violations
 import io.taig.validation.Comparison
 import io.taig.validation.Violation
 
-final class TupleDecoder[F[_], A](decoder: Decoder[F, A], empty: A => Boolean)
-    extends Decoder[Tuple.Read[F, *], Vector[A]]:
-  override def decode[B](schema: Tuple.Read[F, B], values: Vector[A]): Validated[Violations, B] =
+final class TupleDecoder[F[_], T](decoder: Decoder[F, T], empty: T => Boolean)
+    extends Decoder[Tuple.Read[F, *], Vector[T]]:
+  override def decode[A](schema: Tuple.Read[F, A], values: Vector[T]): Validated[Violations, A] =
     val reference = schema.schemas.length
     val actual = values.length
 
@@ -38,7 +38,7 @@ final class TupleDecoder[F[_], A](decoder: Decoder[F, A], empty: A => Boolean)
       ).invalid
     else unsafeDecode(schema, values, index = 0)
 
-  def unsafeDecode[B](schema: Tuple.Read[F, B], values: Vector[A], index: Int): Validated[Violations, B] = schema match
+  def unsafeDecode[A](schema: Tuple.Read[F, A], values: Vector[T], index: Int): Validated[Violations, A] = schema match
     case Tuple.Default(self, default) =>
       if values.forall(empty)
       then default.value.valid

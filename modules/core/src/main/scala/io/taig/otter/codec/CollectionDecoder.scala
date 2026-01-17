@@ -6,8 +6,8 @@ import io.taig.otter.Collection
 import io.taig.otter.Violations
 import cats.data.Chain
 
-final class CollectionDecoder[F[_], A](decoder: Decoder[F, A]) extends Decoder[Collection.Read[F, *], Seq[A]]:
-  override def decode[B](schema: Collection.Read[F, B], values: Seq[A]): Validated[Violations, B] = schema match
+final class CollectionDecoder[F[_], T](decoder: Decoder[F, T]) extends Decoder[Collection.Read[F, *], Seq[T]]:
+  override def decode[A](schema: Collection.Read[F, A], values: Seq[T]): Validated[Violations, A] = schema match
     case Collection.Chained(schema, validation) =>
       values.zipWithIndex
         .traverse((value, index) => decoder.decode(schema.value, value).leftMap(index /: _))

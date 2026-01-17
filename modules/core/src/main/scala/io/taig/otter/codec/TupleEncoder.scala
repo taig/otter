@@ -2,8 +2,8 @@ package io.taig.otter.codec
 
 import io.taig.otter.Tuple
 
-final class TupleEncoder[S[_], T](encoder: Encoder[S, T], empty: T) extends Encoder[Tuple.Write[S, *], Vector[T]]:
-  override def encode[B](schema: Tuple.Write[S, B], a: B): Vector[T] = schema match
+final class TupleEncoder[F[_], T](encoder: Encoder[F, T], empty: T) extends Encoder[Tuple.Write[F, *], Vector[T]]:
+  override def encode[A](schema: Tuple.Write[F, A], a: A): Vector[T] = schema match
     case Tuple.Default(self, _)           => encode(schema = self, a)
     case Tuple.Empty                      => Vector.empty
     case Tuple.Modify(self, _, f)         => encode(schema = self, f(a))

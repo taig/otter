@@ -10,12 +10,12 @@ import io.taig.otter.Violations
 import io.taig.otter.collectFirstWithRemainders
 import io.taig.validation.Violation
 
-final class FieldDecoder[F[_], A](decoder: Decoder[F, A])
-    extends Decoder.Remaining[Field.Read[F, *], Chain[(String, A)]]:
-  override def decodeRemaining[B](
-      schema: Field.Read[F, B],
-      values: Chain[(String, A)]
-  ): Validated[Violations, (Chain[(String, A)], B)] = schema match
+final class FieldDecoder[F[_], T](decoder: Decoder[F, T])
+    extends Decoder.Remaining[Field.Read[F, *], Chain[(String, T)]]:
+  override def decodeRemaining[A](
+      schema: Field.Read[F, A],
+      values: Chain[(String, T)]
+  ): Validated[Violations, (Chain[(String, T)], A)] = schema match
     case Field.Default(self, default) =>
       if values.exists((key, _) => key === schema.name)
       then decodeRemaining(schema = self, values)

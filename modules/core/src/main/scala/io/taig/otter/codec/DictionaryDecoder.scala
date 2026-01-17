@@ -6,9 +6,9 @@ import io.taig.otter.Dictionary
 import io.taig.otter.Violations
 import scala.collection.immutable.SortedMap
 
-final class DictionaryDecoder[S[_], T](decoder: Decoder[S, T])
-    extends Decoder[Dictionary.Read[S, *], List[(String, T)]]:
-  override def decode[A](schema: Dictionary.Read[S, A], values: List[(String, T)]): Validated[Violations, A] =
+final class DictionaryDecoder[F[_], T](decoder: Decoder[F, T])
+    extends Decoder[Dictionary.Read[F, *], List[(String, T)]]:
+  override def decode[A](schema: Dictionary.Read[F, A], values: List[(String, T)]): Validated[Violations, A] =
     schema match
       case Dictionary.Hashed(schema, validation) =>
         values

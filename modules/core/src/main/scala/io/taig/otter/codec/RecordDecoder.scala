@@ -8,12 +8,12 @@ import cats.syntax.all.*
 import io.taig.otter.Record
 import io.taig.otter.Violations
 
-final class RecordDecoder[F[_], A](decoder: Decoder.Remaining[F, Chain[(String, A)]])
-    extends Decoder.Remaining[Record.Read[F, *], Chain[(String, A)]]:
-  override def decodeRemaining[B](
-      schema: Record.Read[F, B],
-      values: Chain[(String, A)]
-  ): Validated[Violations, (Chain[(String, A)], B)] = schema match
+final class RecordDecoder[F[_], T](decoder: Decoder.Remaining[F, Chain[(String, T)]])
+    extends Decoder.Remaining[Record.Read[F, *], Chain[(String, T)]]:
+  override def decodeRemaining[A](
+      schema: Record.Read[F, A],
+      values: Chain[(String, T)]
+  ): Validated[Violations, (Chain[(String, T)], A)] = schema match
     case Record.Empty                     => (values, ()).valid
     case Record.Modify(self, f, _)        => decodeRemaining(self, values).map(_.map(f))
     case Record.Read.Modify(self, f)      => decodeRemaining(self, values).map(_.map(f))
@@ -21,11 +21,11 @@ final class RecordDecoder[F[_], A](decoder: Decoder.Remaining[F, Chain[(String, 
     case Record.Root(field)               => decoder.decodeRemaining(field.value, values)
     case Record.Product(left, right)      => decodeProduct(left, right, values)
 
-  def decodeProduct[B, C](
-      left: Record.Read[F, B],
-      right: Record.Read[F, C],
-      values: Chain[(String, A)]
-  ): Validated[Violations, (Chain[(String, A)], (B, C))] =
+  def decodeProduct[A, B](
+      left: Record.Read[F, A],
+      right: Record.Read[F, B],
+      values: Chain[(String, T)]
+  ): Validated[Violations, (Chain[(String, T)], (A, B))] =
     decodeRemaining(left, values) match
       case Validated.Valid((values, a)) =>
         decodeRemaining(right, values) match

@@ -8,9 +8,9 @@ import io.taig.otter.Violations
 import cats.syntax.all.*
 import io.taig.validation.Violation
 
-final class EnumerationDecoder[F[_], A](decoder: Decoder[F, A], encoder: Encoder[F, A], render: A => Data)
-    extends Decoder[Enumeration.Read[F, *], A]:
-  override def decode[B](schema: Enumeration.Read[F, B], value: A): Validated[Violations, B] = schema match
+final class EnumerationDecoder[F[_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
+    extends Decoder[Enumeration.Read[F, *], T]:
+  override def decode[A](schema: Enumeration.Read[F, A], value: T): Validated[Violations, A] = schema match
     case Enumeration.Modify(self, f, _)                => decode(schema = self, value).map(f)
     case schema @ Enumeration.Root(reference, mapping) =>
       decoder
