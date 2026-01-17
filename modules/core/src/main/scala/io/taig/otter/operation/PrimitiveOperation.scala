@@ -7,6 +7,7 @@ import io.taig.validation.Validation
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
+import io.taig.otter.Reference
 
 object PrimitiveOperation:
   trait Boolean[F[_]]:
@@ -58,6 +59,172 @@ object PrimitiveOperation:
         override def imapK[H[_]](fK: [A] => G[A] => H[A])(
             gK: [A] => H[A] => G[A]
         ): PrimitiveOperation.Boolean[H] = fa.mapK(fK)
+
+  object Coerce:
+    trait Boolean[F[_], G[_]]:
+      self =>
+
+      def lift[A](schema: Reference[G, A]): F[A]
+
+      def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Boolean[H, G] = new Boolean[H, G]:
+        override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+    object Boolean:
+      trait Read[F[_], G[_]] extends PrimitiveOperation.Coerce.Boolean[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Boolean.Read[H, G] =
+          new Read[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Read:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Boolean.Read[F, G]
+        ): PrimitiveOperation.Coerce.Boolean.Read[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Boolean.Read[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Boolean.Read[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Boolean.Read[H, F] = fa.mapK(fK)
+
+      trait Write[F[_], G[_]] extends PrimitiveOperation.Coerce.Boolean[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Boolean.Write[H, G] =
+          new Write[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Write:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Boolean.Write[F, G]
+        ): PrimitiveOperation.Coerce.Boolean.Write[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Boolean.Write[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Boolean.Write[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Boolean.Write[H, F] = fa.mapK(fK)
+
+      inline def apply[F[_], G[_]](using
+          self: PrimitiveOperation.Coerce.Boolean[F, G]
+      ): PrimitiveOperation.Coerce.Boolean[F, G] = self
+
+      given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Boolean[f, F]]:
+        extension [G[_]](fa: PrimitiveOperation.Coerce.Boolean[G, F])
+          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+              gK: [A] => H[A] => G[A]
+          ): PrimitiveOperation.Coerce.Boolean[H, F] = fa.mapK(fK)
+
+    trait Number[F[_], G[_]]:
+      self =>
+
+      def lift[A](schema: Reference[G, A]): F[A]
+
+      def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Number[H, G] = new Number[H, G]:
+        override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+    object Number:
+      trait Read[F[_], G[_]] extends PrimitiveOperation.Coerce.Number[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Number.Read[H, G] =
+          new Read[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Read:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Number.Read[F, G]
+        ): PrimitiveOperation.Coerce.Number.Read[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Number.Read[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Number.Read[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Number.Read[H, F] = fa.mapK(fK)
+
+      trait Write[F[_], G[_]] extends PrimitiveOperation.Coerce.Number[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Number.Write[H, G] =
+          new Write[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Write:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Number.Write[F, G]
+        ): PrimitiveOperation.Coerce.Number.Write[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Number.Write[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Number.Write[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Number.Write[H, F] = fa.mapK(fK)
+
+      inline def apply[F[_], G[_]](using
+          self: PrimitiveOperation.Coerce.Number[F, G]
+      ): PrimitiveOperation.Coerce.Number[F, G] = self
+
+      given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Number[f, F]]:
+        extension [G[_]](fa: PrimitiveOperation.Coerce.Number[G, F])
+          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+              gK: [A] => H[A] => G[A]
+          ): PrimitiveOperation.Coerce.Number[H, F] = fa.mapK(fK)
+
+    trait Text[F[_], G[_]]:
+      self =>
+
+      def lift[A](schema: Reference[G, A]): F[A]
+
+      def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Text[H, G] = new Text[H, G]:
+        override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+    object Text:
+      trait Read[F[_], G[_]] extends PrimitiveOperation.Coerce.Text[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Text.Read[H, G] =
+          new Read[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Read:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Text.Read[F, G]
+        ): PrimitiveOperation.Coerce.Text.Read[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Text.Read[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Text.Read[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Text.Read[H, F] = fa.mapK(fK)
+
+      trait Write[F[_], G[_]] extends PrimitiveOperation.Coerce.Text[F, G]:
+        self =>
+
+        final override def mapK[H[_]](fK: [A] => F[A] => H[A]): PrimitiveOperation.Coerce.Text.Write[H, G] =
+          new Write[H, G]:
+            override def lift[A](schema: Reference[G, A]): H[A] = fK(self.lift(schema))
+
+      object Write:
+        inline def apply[F[_], G[_]](using
+            self: PrimitiveOperation.Coerce.Text.Write[F, G]
+        ): PrimitiveOperation.Coerce.Text.Write[F, G] = self
+
+        given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Text.Write[f, F]]:
+          extension [G[_]](fa: PrimitiveOperation.Coerce.Text.Write[G, F])
+            override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+                gK: [A] => H[A] => G[A]
+            ): PrimitiveOperation.Coerce.Text.Write[H, F] = fa.mapK(fK)
+
+      inline def apply[F[_], G[_]](using
+          self: PrimitiveOperation.Coerce.Text[F, G]
+      ): PrimitiveOperation.Coerce.Text[F, G] = self
+
+      given [F[_]] => InvariantK[[f[_]] =>> PrimitiveOperation.Coerce.Text[f, F]]:
+        extension [G[_]](fa: PrimitiveOperation.Coerce.Text[G, F])
+          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
+              gK: [A] => H[A] => G[A]
+          ): PrimitiveOperation.Coerce.Text[H, F] = fa.mapK(fK)
 
   trait Number[F[_]]:
     self =>
@@ -132,10 +299,10 @@ object PrimitiveOperation:
       inline def apply[F[_]](using self: PrimitiveOperation.Number.Read[F]): PrimitiveOperation.Number.Read[F] = self
 
       given InvariantK[PrimitiveOperation.Number.Read]:
-        extension [G[_]](fa: PrimitiveOperation.Number.Read[G])
-          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-              gK: [A] => H[A] => G[A]
-          ): PrimitiveOperation.Number.Read[H] = fa.mapK(fK)
+        extension [F[_]](fa: PrimitiveOperation.Number.Read[F])
+          override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+              gK: [A] => G[A] => F[A]
+          ): PrimitiveOperation.Number.Read[G] = fa.mapK(fK)
 
     trait Write[F[_]] extends PrimitiveOperation.Number[F]:
       self =>
@@ -170,18 +337,18 @@ object PrimitiveOperation:
         self
 
       given InvariantK[PrimitiveOperation.Number.Write]:
-        extension [G[_]](fa: PrimitiveOperation.Number.Write[G])
-          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-              gK: [A] => H[A] => G[A]
-          ): PrimitiveOperation.Number.Write[H] = fa.mapK(fK)
+        extension [F[_]](fa: PrimitiveOperation.Number.Write[F])
+          override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+              gK: [A] => G[A] => F[A]
+          ): PrimitiveOperation.Number.Write[G] = fa.mapK(fK)
 
     inline def apply[F[_]](using self: PrimitiveOperation.Number[F]): PrimitiveOperation.Number[F] = self
 
     given InvariantK[PrimitiveOperation.Number]:
-      extension [G[_]](fa: PrimitiveOperation.Number[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-            gK: [A] => H[A] => G[A]
-        ): PrimitiveOperation.Number[H] = fa.mapK(fK)
+      extension [F[_]](fa: PrimitiveOperation.Number[F])
+        override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+            gK: [A] => G[A] => F[A]
+        ): PrimitiveOperation.Number[G] = fa.mapK(fK)
 
   trait Text[F[_]]:
     self =>
@@ -219,10 +386,10 @@ object PrimitiveOperation:
       inline def apply[F[_]](using self: PrimitiveOperation.Text.Read[F]): PrimitiveOperation.Text.Read[F] = self
 
       given InvariantK[PrimitiveOperation.Text.Read]:
-        extension [G[_]](fa: PrimitiveOperation.Text.Read[G])
-          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-              gK: [A] => H[A] => G[A]
-          ): PrimitiveOperation.Text.Read[H] = fa.mapK(fK)
+        extension [F[_]](fa: PrimitiveOperation.Text.Read[F])
+          override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+              gK: [A] => G[A] => F[A]
+          ): PrimitiveOperation.Text.Read[G] = fa.mapK(fK)
 
     trait Write[F[_]] extends PrimitiveOperation.Text[F]:
       self =>
@@ -243,15 +410,15 @@ object PrimitiveOperation:
       inline def apply[F[_]](using self: PrimitiveOperation.Text.Write[F]): PrimitiveOperation.Text.Write[F] = self
 
       given InvariantK[PrimitiveOperation.Text.Write]:
-        extension [G[_]](fa: PrimitiveOperation.Text.Write[G])
-          override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-              gK: [A] => H[A] => G[A]
-          ): PrimitiveOperation.Text.Write[H] = fa.mapK(fK)
+        extension [F[_]](fa: PrimitiveOperation.Text.Write[F])
+          override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+              gK: [A] => G[A] => F[A]
+          ): PrimitiveOperation.Text.Write[G] = fa.mapK(fK)
 
     inline def apply[F[_]](using self: PrimitiveOperation.Text[F]): PrimitiveOperation.Text[F] = self
 
     given InvariantK[PrimitiveOperation.Text]:
-      extension [G[_]](fa: PrimitiveOperation.Text[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(
-            gK: [A] => H[A] => G[A]
-        ): PrimitiveOperation.Text[H] = fa.mapK(fK)
+      extension [F[_]](fa: PrimitiveOperation.Text[F])
+        override def imapK[G[_]](fK: [A] => F[A] => G[A])(
+            gK: [A] => G[A] => F[A]
+        ): PrimitiveOperation.Text[G] = fa.mapK(fK)
