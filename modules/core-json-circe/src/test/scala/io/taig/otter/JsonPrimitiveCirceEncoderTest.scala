@@ -16,6 +16,26 @@ object JsonPrimitiveCirceEncoderTest extends ZIOSpecDefault:
       val result = JsonPrimitiveCirceEncoder.encode(boolean, true)
       assertTrue(result == CirceJson.fromBoolean(true))
     ,
+    test("Primitive.Coerce.Boolean: true"):
+      val result = JsonPrimitiveCirceEncoder.encode(coerce(boolean), true)
+      assertTrue(result == CirceJson.fromBoolean(true))
+    ,
+    test("Primitive.Coerce.Boolean: false"):
+      val result = JsonPrimitiveCirceEncoder.encode(coerce(boolean), false)
+      assertTrue(result == CirceJson.fromBoolean(false))
+    ,
+    test("Primitive.Coerce.Number: Int"):
+      val result = JsonPrimitiveCirceEncoder.encode(coerce(int), 42)
+      assertTrue(result == CirceJson.fromInt(42))
+    ,
+    test("Primitive.Coerce.Text: Boolean"):
+      val result = JsonPrimitiveCirceEncoder.encode(coerce(string), "true")
+      assertTrue(result == CirceJson.fromString("true"))
+    ,
+    test("Primitive.Coerce.Text: String"):
+      val result = JsonPrimitiveCirceEncoder.encode(coerce(string), "foobar")
+      assertTrue(result == CirceJson.fromString("foobar"))
+    ,
     test("Primitive.Boolean: false"):
       val result = JsonPrimitiveCirceEncoder.encode(boolean, false)
       assertTrue(result == CirceJson.fromBoolean(false))

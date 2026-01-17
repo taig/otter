@@ -5,6 +5,15 @@ import io.taig.enumeration.ext.Mapping
 
 trait JsonComponent
     extends PrimitiveComponent.Boolean[Json.Primitive.Boolean],
+      PrimitiveComponent.Coerce.Boolean[Json.Primitive.Coerce.Boolean, Json.Primitive.Boolean],
+      PrimitiveComponent.Coerce.Boolean.Read[Json.Primitive.Coerce.Boolean.Read, Json.Primitive.Boolean.Read],
+      PrimitiveComponent.Coerce.Boolean.Write[Json.Primitive.Coerce.Boolean.Write, Json.Primitive.Boolean.Write],
+      PrimitiveComponent.Coerce.Number[Json.Primitive.Coerce.Number, Json.Primitive.Number],
+      PrimitiveComponent.Coerce.Number.Read[Json.Primitive.Coerce.Number.Read, Json.Primitive.Number.Read],
+      PrimitiveComponent.Coerce.Number.Write[Json.Primitive.Coerce.Number.Write, Json.Primitive.Number.Write],
+      PrimitiveComponent.Coerce.Text[Json.Primitive.Coerce.Text, Json.Primitive.Text],
+      PrimitiveComponent.Coerce.Text.Read[Json.Primitive.Coerce.Text.Read, Json.Primitive.Text.Read],
+      PrimitiveComponent.Coerce.Text.Write[Json.Primitive.Coerce.Text.Write, Json.Primitive.Text.Write],
       PrimitiveComponent.Number[Json.Primitive.Number],
       PrimitiveComponent.Text[Json.Primitive.Text],
       PrimitiveComponent.Text.Read[Json.Primitive.Text.Read],
