@@ -10,10 +10,10 @@ trait RecordableOperation[F[_], G[_]]:
   extension [A](fa: F[A]) def toRecord: G[A]
 
   extension [F1[a] >: F[a], G1[a] >: G[a] <: Matchable, A](fa: F[A])
-    final def :*[B](
-        schema: => F1[B]
-    )(using TupleOperation[G1, F1], InvariantSemigroupal[G1]): G1[Append[A, B]] =
-      Append(fa.toRecord, TupleOperation[G1, F1].lift(schema = Reference.later(schema)))
+    final inline def :*[B](
+        field: => F1[B]
+    )(using RecordOperation[G1, F1], InvariantSemigroupal[G1]): G1[Append[A, B]] =
+      Append(fa.toRecord, RecordOperation[G1, F1].lift(field = Reference.later(field)))
 
 object RecordableOperation:
   trait Read[F[_], G[_]] extends RecordableOperation[F, G]

@@ -21,7 +21,7 @@ trait TupleOperation[F[_], G[_]]:
     final def size: Long = schemas.length
 
   extension [F1[a] >: F[a] <: Matchable, G1[a] >: G[a], A](fa: F[A])
-    final def :*[B](schema: => G1[B])(using TupleOperation[F1, G1], InvariantSemigroupal[F1]): F1[Append[A, B]] =
+    final inline def :*[B](schema: => G1[B])(using TupleOperation[F1, G1], InvariantSemigroupal[F1]): F1[Append[A, B]] =
       Append(fa, TupleOperation[F1, G1].lift(schema = Reference.later(schema)))
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): TupleOperation[H, G] =

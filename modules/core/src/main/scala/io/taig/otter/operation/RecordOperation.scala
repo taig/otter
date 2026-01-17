@@ -16,7 +16,7 @@ trait RecordOperation[F[_], G[_]]:
   extension [A](fa: F[A]) def fields: Chain[Reference[G, ?]]
 
   extension [F1[a] >: F[a] <: Matchable, G1[a] >: G[a], A](fa: F[A])
-    final def :*[B](field: => G1[B])(using RecordOperation[F1, G1], InvariantSemigroupal[F1]): F1[Append[A, B]] =
+    final inline def :*[B](field: => G1[B])(using RecordOperation[F1, G1], InvariantSemigroupal[F1]): F1[Append[A, B]] =
       Append(fa, RecordOperation[F1, G1].lift(field = Reference.later(field)))
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): RecordOperation[H, G] =

@@ -10,7 +10,7 @@ trait TupleableOperation[F[_], G[_]]:
   extension [A](fa: F[A]) def toTuple: G[A]
 
   extension [F1[a] >: F[a], G1[a] >: G[a] <: Matchable, A](fa: F[A])
-    final def :*[B](
+    final inline def :*[B](
         schema: => F1[B]
     )(using TupleOperation[G1, F1], InvariantSemigroupal[G1]): G1[Append[A, B]] =
       Append(fa.toTuple, TupleOperation[G1, F1].lift(schema = Reference.later(schema)))
