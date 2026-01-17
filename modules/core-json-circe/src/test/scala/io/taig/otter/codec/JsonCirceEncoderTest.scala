@@ -13,6 +13,19 @@ import cats.syntax.all.*
 
 object JsonCirceEncoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceEncoderTest")(
+    test("Constant"):
+      val result = JsonCirceEncoder.encode(constant(string, "foobar"), "foo")
+      assertTrue(result == CirceJson.fromString("foobar"))
+    ,
+    test("Collection"):
+      val result = JsonCirceEncoder.encode(collection.list(string), List("foo", "bar", "baz"))
+      assertTrue(result == CirceJson.arr("foo".asJson, "bar".asJson, "baz".asJson))
+    ,
+    test("Dictionary"):
+      val result =
+        JsonCirceEncoder.encode(dictionary.list(string), List("foo" -> "foo", "bar" -> "bar", "baz" -> "baz"))
+      assertTrue(result == CirceJson.obj("foo" := "foo".asJson, "bar" := "bar".asJson, "baz" := "baz".asJson))
+    ,
     test("Record"):
       val result = JsonCirceEncoder.encode(
         field("foo", string) :* field("bar", int) :* field("baz", boolean),
@@ -34,6 +47,12 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
       val result = JsonCirceEncoder.encode(RNil, ())
 
       assertTrue(result == CirceJson.obj())
+    ,
+    test("Tuple"):
+      val result = JsonCirceEncoder.encode(string :* int :* boolean, ("John Doe", 42, true))
+      val expected = CirceJson.arr("John Doe".asJson, 42.asJson, true.asJson)
+
+      assertTrue(result == expected)
     ,
     test("Tuple: TNil"):
       val result = JsonCirceEncoder.encode(TNil, ())

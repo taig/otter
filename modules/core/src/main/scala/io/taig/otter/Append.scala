@@ -21,7 +21,6 @@ object Append:
   inline def apply[F[_] <: Matchable: InvariantSemigroupal, A, B](fa: F[A], fb: F[B]): F[Append[A, B]] =
     inline fa match
       case fxy: F[x *: y] =>
-        println("TUPLE")
         inline fb match
           case fb: F[Unit] =>
             fxy.product(fb).imap[x *: y]((xy, _) => xy)(xy => (xy, ())).asInstanceOf[F[Append[A, B]]]
