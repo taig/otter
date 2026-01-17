@@ -434,6 +434,165 @@ object Json:
           (json: Json.Primitive.Boolean[A]) => json.self
         )
 
+    sealed abstract class Coerce[A] extends Json.Primitive[A], Json.Primitive.Coerce.Read[A], Json.Primitive.Coerce.Write[A]:
+      override def self: Annotation[Self.Primitive.Coerce[A]]
+
+    object Coerce:
+      sealed trait Read[+A] extends Json.Primitive.Read[A]:
+        override def self: Annotation[Self.Primitive.Coerce.Read[A]]
+
+      object Read:
+        def apply[A](annotation: Annotation[Self.Primitive.Coerce.Read[A]]): Json.Primitive.Coerce.Read[A] =
+          new Json.Primitive.Coerce.Read[A]:
+            override def self: Annotation[Self.Primitive.Coerce.Read[A]] = annotation
+
+        given Functor[Json.Primitive.Coerce.Read] = Functor[[a] =>> Annotation[Self.Primitive.Coerce.Read[a]]]
+          .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Read[A]]) => Read(self))([A] =>
+            (json: Json.Primitive.Coerce.Read[A]) => json.self
+          )
+
+      sealed trait Write[-A] extends Json.Primitive.Write[A]:
+        override def self: Annotation[Self.Primitive.Coerce.Write[A]]
+
+      object Write:
+        def apply[A](annotation: Annotation[Self.Primitive.Coerce.Write[A]]): Json.Primitive.Coerce.Write[A] =
+          new Json.Primitive.Coerce.Write[A]:
+            override def self: Annotation[Self.Primitive.Coerce.Write[A]] = annotation
+
+        given Contravariant[Json.Primitive.Coerce.Write] =
+          Contravariant[[a] =>> Annotation[Self.Primitive.Coerce.Write[a]]]
+            .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Write[A]]) => Write(self))([A] =>
+              (json: Json.Primitive.Coerce.Write[A]) => json.self
+            )
+
+      final case class Boolean[A](self: Annotation[Self.Primitive.Coerce.Boolean[A]])
+          extends Json.Primitive.Coerce[A],
+            Json.Primitive.Coerce.Boolean.Read[A],
+            Json.Primitive.Coerce.Boolean.Write[A]
+
+      object Boolean:
+        sealed trait Read[+A] extends Json.Primitive.Coerce.Read[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Boolean.Read[A]]
+
+        object Read:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Boolean.Read[A]]): Json.Primitive.Coerce.Boolean.Read[A] =
+            new Json.Primitive.Coerce.Boolean.Read[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Boolean.Read[A]] = annotation
+
+          given Functor[Json.Primitive.Coerce.Boolean.Read] =
+            Functor[[a] =>> Annotation[Self.Primitive.Coerce.Boolean.Read[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Boolean.Read[A]]) => Read(self))([A] =>
+                (json: Json.Primitive.Coerce.Boolean.Read[A]) => json.self
+              )
+
+        sealed trait Write[-A] extends Json.Primitive.Coerce.Write[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Boolean.Write[A]]
+
+        object Write:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Boolean.Write[A]]): Json.Primitive.Coerce.Boolean.Write[A] =
+            new Json.Primitive.Coerce.Boolean.Write[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Boolean.Write[A]] = annotation
+
+          given Contravariant[Json.Primitive.Coerce.Boolean.Write] =
+            Contravariant[[a] =>> Annotation[Self.Primitive.Coerce.Boolean.Write[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Boolean.Write[A]]) => Write(self))([A] =>
+                (json: Json.Primitive.Coerce.Boolean.Write[A]) => json.self
+              )
+
+        given Invariant[Json.Primitive.Coerce.Boolean] =
+          Invariant[[a] =>> Annotation[Self.Primitive.Coerce.Boolean[a]]]
+            .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Boolean[A]]) => Boolean(self))([A] =>
+              (json: Json.Primitive.Coerce.Boolean[A]) => json.self
+            )
+
+      final case class Number[A](self: Annotation[Self.Primitive.Coerce.Number[A]])
+          extends Json.Primitive.Coerce[A],
+            Json.Primitive.Coerce.Number.Read[A],
+            Json.Primitive.Coerce.Number.Write[A]
+
+      object Number:
+        sealed trait Read[+A] extends Json.Primitive.Coerce.Read[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Number.Read[A]]
+
+        object Read:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Number.Read[A]]): Json.Primitive.Coerce.Number.Read[A] =
+            new Json.Primitive.Coerce.Number.Read[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Number.Read[A]] = annotation
+
+          given Functor[Json.Primitive.Coerce.Number.Read] =
+            Functor[[a] =>> Annotation[Self.Primitive.Coerce.Number.Read[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Number.Read[A]]) => Read(self))([A] =>
+                (json: Json.Primitive.Coerce.Number.Read[A]) => json.self
+              )
+
+        sealed trait Write[-A] extends Json.Primitive.Coerce.Write[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Number.Write[A]]
+
+        object Write:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Number.Write[A]]): Json.Primitive.Coerce.Number.Write[A] =
+            new Json.Primitive.Coerce.Number.Write[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Number.Write[A]] = annotation
+
+          given Contravariant[Json.Primitive.Coerce.Number.Write] =
+            Contravariant[[a] =>> Annotation[Self.Primitive.Coerce.Number.Write[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Number.Write[A]]) => Write(self))([A] =>
+                (json: Json.Primitive.Coerce.Number.Write[A]) => json.self
+              )
+
+        given Invariant[Json.Primitive.Coerce.Number] =
+          Invariant[[a] =>> Annotation[Self.Primitive.Coerce.Number[a]]]
+            .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Number[A]]) => Number(self))([A] =>
+              (json: Json.Primitive.Coerce.Number[A]) => json.self
+            )
+
+      final case class Text[A](self: Annotation[Self.Primitive.Coerce.Text[A]])
+          extends Json.Primitive.Coerce[A],
+            Json.Primitive.Coerce.Text.Read[A],
+            Json.Primitive.Coerce.Text.Write[A]
+
+      object Text:
+        sealed trait Read[+A] extends Json.Primitive.Coerce.Read[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Text.Read[A]]
+
+        object Read:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Text.Read[A]]): Json.Primitive.Coerce.Text.Read[A] =
+            new Json.Primitive.Coerce.Text.Read[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Text.Read[A]] = annotation
+
+          given Functor[Json.Primitive.Coerce.Text.Read] =
+            Functor[[a] =>> Annotation[Self.Primitive.Coerce.Text.Read[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Text.Read[A]]) => Read(self))([A] =>
+                (json: Json.Primitive.Coerce.Text.Read[A]) => json.self
+              )
+
+        sealed trait Write[-A] extends Json.Primitive.Coerce.Write[A]:
+          override def self: Annotation[Self.Primitive.Coerce.Text.Write[A]]
+
+        object Write:
+          def apply[A](annotation: Annotation[Self.Primitive.Coerce.Text.Write[A]]): Json.Primitive.Coerce.Text.Write[A] =
+            new Json.Primitive.Coerce.Text.Write[A]:
+              override def self: Annotation[Self.Primitive.Coerce.Text.Write[A]] = annotation
+
+          given Contravariant[Json.Primitive.Coerce.Text.Write] =
+            Contravariant[[a] =>> Annotation[Self.Primitive.Coerce.Text.Write[a]]]
+              .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Text.Write[A]]) => Write(self))([A] =>
+                (json: Json.Primitive.Coerce.Text.Write[A]) => json.self
+              )
+
+        given Invariant[Json.Primitive.Coerce.Text] =
+          Invariant[[a] =>> Annotation[Self.Primitive.Coerce.Text[a]]]
+            .imapK([A] => (self: Annotation[Self.Primitive.Coerce.Text[A]]) => Text(self))([A] =>
+              (json: Json.Primitive.Coerce.Text[A]) => json.self
+            )
+
+      def apply[A](annotation: Annotation[Self.Primitive.Coerce[A]]): Json.Primitive.Coerce[A] = new Coerce[A]:
+        override def self: Annotation[Self.Primitive.Coerce[A]] = annotation
+
+      given Invariant[Json.Primitive.Coerce] = Invariant[[a] =>> Annotation[Self.Primitive.Coerce[a]]]
+        .imapK([A] => (self: Annotation[Self.Primitive.Coerce[A]]) => Coerce(self))([A] =>
+          (json: Json.Primitive.Coerce[A]) => json.self
+        )
+
     final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
         extends Json.Primitive[A],
           Json.Primitive.Number.Read[A],
