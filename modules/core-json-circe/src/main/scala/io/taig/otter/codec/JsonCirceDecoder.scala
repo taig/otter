@@ -9,10 +9,10 @@ import io.taig.otter.Json
 import io.taig.otter.Violations
 import cats.syntax.all.*
 import io.taig.validation.Violation
+import cats.data.Chain
 
 object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
   override def decode[A](schema: Json.Read[A], json: CirceJson): Validated[Violations, A] = schema match
-//     case Json.Coerce(annotation)     => CoerceDecoder(decoder = this).decode(schema = annotation.self, json)
     case self: Json.Collection.Read[A] =>
       json.asArray
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))
@@ -30,20 +30,20 @@ object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
     case self: Json.Enumeration.Read[A] =>
       EnumerationDecoder(decoder = this, encoder = JsonCirceEncoder, render = _.toData)
         .decode(schema = self.self.self, json)
-//     case Json.Nullable(annotation) =>
-//       NullableDecoder(decoder = this, empty = _.isNull).decode(schema = annotation.self, json)
+    case self: Json.Optional.Read[A] =>
+      OptionalDecoder(decoder = this, empty = _.isNull).decode(schema = self.self.self, json)
     case schema: Json.Primitive.Read[A] => JsonPrimitiveCirceDecoder.decode(schema, json)
-//     case Json.Record(annotation)   =>
-//       json.asObject
-//         .map(_.toList)
-//         .map(Chain.fromSeq)
-//         .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
-//         .leftMap(Violations.apply)
-//         .andThen(RecordDecoder(decoder = JsonFieldCirceDecoder).decode(annotation.self, _))
+    case self: Json.Record.Read[A]      =>
+      json.asObject
+        .map(_.toList)
+        .map(Chain.fromSeq)
+        .toValid(Violation(constraint = Constraint.Generic.Type(name = "object"), actual = typeOf(json), hint = none))
+        .leftMap(Violations.apply)
+        .andThen(RecordDecoder(decoder = JsonFieldCirceDecoder).decode(self.self.self, _))
     case self: Json.Tuple.Read[A] =>
       json.asArray
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))
         .leftMap(Violations.apply)
         .andThen(TupleDecoder(decoder = this, empty = _.isNull).decode(schema = self.self.self, _))
-//     case Json.Union(annotation) =>
-//       UnionDecoder(decoder = JsonBranchCirceDecoder).decode(schema = annotation.self, json)
+    case self: Json.Union.Read[A] =>
+      UnionDecoder(decoder = JsonBranchCirceDecoder).decode(schema = self.self.self, json)
