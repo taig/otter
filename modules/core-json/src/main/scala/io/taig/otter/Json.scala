@@ -144,6 +144,9 @@ object Json:
           (json: Json.Constant.Read[A]) => json.self
         )
 
+      given [A] => Annotated[Json.Constant.Read[A]] = Annotated[Annotation[Self.Constant.Read[Json.Primitive, A]]]
+        .imap(Read.apply)(_.self)
+
       given ConstantOperation.Read[Json.Constant.Read, Json.Primitive] = ConstantOperation
         .Read[[a] =>> Annotation[Self.Constant.Read[Json.Primitive, a]], Json.Primitive]
         .imapK([A] => (self: Annotation[Self.Constant.Read[Json.Primitive, A]]) => Read(self))([A] =>
@@ -164,6 +167,9 @@ object Json:
             (json: Json.Constant.Write[A]) => json.self
           )
 
+      given [A] => Annotated[Json.Constant.Write[A]] =
+        Annotated[Annotation[Self.Constant.Write[Json.Primitive.Write, A]]].imap(Write.apply)(_.self)
+
       given ConstantOperation.Write[Json.Constant.Write, Json.Primitive.Write] = ConstantOperation
         .Write[[a] =>> Annotation[Self.Constant.Write[Json.Primitive.Write, a]], Json.Primitive.Write]
         .imapK([A] => (self: Annotation[Self.Constant.Write[Json.Primitive.Write, A]]) => Write(self))([A] =>
@@ -175,6 +181,9 @@ object Json:
         (json: Json.Constant[A]) => json.self
       )
 
+    given [A] => Annotated[Json.Constant[A]] =
+      Annotated[Annotation[Self.Constant[Json.Primitive, A]]].imap(Constant.apply)(_.self)
+
     given ConstantOperation[Json.Constant, Json.Primitive] =
       ConstantOperation[[a] =>> Annotation[Self.Constant[Json.Primitive, a]], Json.Primitive]
         .imapK([A] => (self: Annotation[Self.Constant[Json.Primitive, A]]) => Constant(self))([A] =>
@@ -182,13 +191,13 @@ object Json:
         )
 
     given Translator[Value.Constant, Json.Constant]:
-      override def translate[A](value: Value.Constant[A]): Json.Constant[A] =
-        val c = value.self.self.mapK([A] =>
-          (value: Value.Primitive.Text[A]) =>
-            Translator[Value.Primitive.Text, Json.Primitive.Text](using ???).translate(value)
+      override def translate[A](value: Value.Constant[A]): Json.Constant[A] = Json.Constant(
+        value.self.map(
+          _.mapK([A] =>
+            (value: Value.Primitive.Text[A]) => Translator[Value.Primitive.Text, Json.Primitive.Text].translate(value)
+          )
         )
-
-        Json.Constant(value.self.copy(self = c))
+      )
 
   final case class Dictionary[A](self: Annotation[Self.Dictionary[Json, A]])
       extends Json[A],
@@ -207,6 +216,9 @@ object Json:
         .imapK([A] => (self: Annotation[Self.Dictionary.Read[Json.Read, A]]) => Read(self))([A] =>
           (json: Json.Dictionary.Read[A]) => json.self
         )
+
+      given [A] => Annotated[Json.Dictionary.Read[A]] = Annotated[Annotation[Self.Dictionary.Read[Json.Read, A]]]
+        .imap(Read.apply)(_.self)
 
       given DictionaryOperation.Read[Json.Dictionary.Read, Json.Read] = DictionaryOperation
         .Read[[a] =>> Annotation[Self.Dictionary.Read[Json.Read, a]], Json.Read]
@@ -228,6 +240,9 @@ object Json:
             (json: Json.Dictionary.Write[A]) => json.self
           )
 
+      given [A] => Annotated[Json.Dictionary.Write[A]] =
+        Annotated[Annotation[Self.Dictionary.Write[Json.Write, A]]].imap(Write.apply)(_.self)
+
       given DictionaryOperation.Write[Json.Dictionary.Write, Json.Write] = DictionaryOperation
         .Write[[a] =>> Annotation[Self.Dictionary.Write[Json.Write, a]], Json.Write]
         .imapK([A] => (self: Annotation[Self.Dictionary.Write[Json.Write, A]]) => Write(self))([A] =>
@@ -238,6 +253,9 @@ object Json:
       .imapK([A] => (self: Annotation[Self.Dictionary[Json, A]]) => Dictionary(self))([A] =>
         (json: Json.Dictionary[A]) => json.self
       )
+
+    given [A] => Annotated[Json.Dictionary[A]] = Annotated[Annotation[Self.Dictionary[Json, A]]]
+      .imap(Dictionary.apply)(_.self)
 
     given DictionaryOperation[Json.Dictionary, Json] =
       DictionaryOperation[[a] =>> Annotation[Self.Dictionary[Json, a]], Json]
@@ -326,6 +344,9 @@ object Json:
       given Functor[Json.Optional.Read]:
         override def map[A, B](fa: Json.Optional.Read[A])(f: A => B): Json.Optional.Read[B] = fa.map(f)
 
+      given [A] => Annotated[Json.Optional.Read[A]] = Annotated[Annotation[Self.Optional.Read[Json.Read, A]]]
+        .imap(Read.apply)(_.self)
+
       given operation: OptionalOperation.Read[Json.Optional.Read, Json.Read] = OptionalOperation
         .Read[[a] =>> Annotation[Self.Optional.Read[Json.Read, a]], Json.Read]
         .imapK([A] => (self: Annotation[Self.Optional.Read[Json.Read, A]]) => Read(self))([A] =>
@@ -343,6 +364,9 @@ object Json:
       given Contravariant[Json.Optional.Write]:
         override def contramap[A, B](fa: Json.Optional.Write[A])(f: B => A): Json.Optional.Write[B] = fa.contramap(f)
 
+      given [A] => Annotated[Json.Optional.Write[A]] =
+        Annotated[Annotation[Self.Optional.Write[Json.Write, A]]].imap(Write.apply)(_.self)
+
       given operation: OptionalOperation.Write[Json.Optional.Write, Json.Write] = OptionalOperation
         .Write[[a] =>> Annotation[Self.Optional.Write[Json.Write, a]], Json.Write]
         .imapK([A] => (self: Annotation[Self.Optional.Write[Json.Write, A]]) => Write(self))([A] =>
@@ -353,6 +377,9 @@ object Json:
       .imapK([A] => (self: Annotation[Self.Optional[Json, A]]) => Optional(self))([A] =>
         (json: Json.Optional[A]) => json.self
       )
+
+    given [A] => Annotated[Json.Optional[A]] = Annotated[Annotation[Self.Optional[Json, A]]]
+      .imap(Optional.apply)(_.self)
 
     given operation: OptionalOperation[Json.Optional, Json] =
       OptionalOperation[[a] =>> Annotation[Self.Optional[Json, a]], Json]
@@ -789,6 +816,10 @@ object Json:
             (json: Json.Primitive.Text.Read[A]) => json.self
           )
 
+        given Translator[Value.Primitive.Text.Read, Json.Primitive.Text.Read]:
+          override def translate[A](value: Value.Primitive.Text.Read[A]): Json.Primitive.Text.Read[A] =
+            Json.Primitive.Text.Read(value.self)
+
       sealed trait Write[-A] extends Json.Primitive.Write[A]:
         override def self: Annotation[Self.Primitive.Text.Write[A]]
 
@@ -809,6 +840,10 @@ object Json:
             (json: Json.Primitive.Text.Write[A]) => json.self
           )
 
+        given Translator[Value.Primitive.Text.Write, Json.Primitive.Text.Write]:
+          override def translate[A](value: Value.Primitive.Text.Write[A]): Json.Primitive.Text.Write[A] =
+            Json.Primitive.Text.Write(value.self)
+
       given Invariant[Json.Primitive.Text] = Invariant[[a] =>> Annotation[Self.Primitive.Text[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Text[A]]) => Text(self))([A] =>
           (json: Json.Primitive.Text[A]) => json.self
@@ -819,6 +854,10 @@ object Json:
         .imapK([A] => (self: Annotation[Self.Primitive.Text[A]]) => Text(self))([A] =>
           (json: Json.Primitive.Text[A]) => json.self
         )
+
+      given Translator[Value.Primitive.Text, Json.Primitive.Text]:
+        override def translate[A](value: Value.Primitive.Text[A]): Json.Primitive.Text[A] =
+          Json.Primitive.Text(value.self)
 
     def apply[A](annotation: Annotation[Self.Primitive[Json.Primitive, A]]): Json.Primitive[A] = new Primitive[A]:
       override def self: Annotation[Self.Primitive[Json.Primitive, A]] = annotation
@@ -1090,4 +1129,7 @@ object Json:
 
   given TupleableOperation[Json, Json.Tuple] = TupleableOperation.derived
 
-  given Translator[Value, Json] = ???
+  given Translator[Value, Json]:
+    override def translate[A](value: Value[A]): Json[A] = value match
+      case value: Value.Constant[A]       => Translator[Value.Constant, Json.Constant].translate(value)
+      case value: Value.Primitive.Text[A] => Translator[Value.Primitive.Text, Json.Primitive.Text].translate(value)
