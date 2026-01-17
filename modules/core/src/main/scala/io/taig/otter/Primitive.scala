@@ -14,29 +14,29 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-sealed abstract class Primitive[A] extends Primitive.Read[A], Primitive.Write[A]:
-  def imap[B](f: A => B)(g: B => A): Primitive[B]
+sealed abstract class Primitive[+F[_], A] extends Primitive.Read[F, A], Primitive.Write[F, A]:
+  def imap[B](f: A => B)(g: B => A): Primitive[F, B]
 
 object Primitive:
-  sealed trait Read[+A]:
-    def map[B](f: A => B): Primitive.Read[B]
+  sealed trait Read[+F[_], +A]:
+    def map[B](f: A => B): Primitive.Read[F, B]
 
   object Read:
-    given Functor[Primitive.Read]:
-      override def map[A, B](fa: Primitive.Read[A])(f: A => B): Primitive.Read[B] = fa.map(f)
+    given [G[_]] => Functor[Primitive.Read[G, *]]:
+      override def map[A, B](fa: Primitive.Read[G, A])(f: A => B): Primitive.Read[G, B] = fa.map(f)
 
-  sealed trait Write[-A]:
-    def contramap[B](f: B => A): Primitive.Write[B]
+  sealed trait Write[+F[_], -A]:
+    def contramap[B](f: B => A): Primitive.Write[F, B]
 
   object Write:
-    given Contravariant[Primitive.Write]:
-      override def contramap[A, B](fa: Primitive.Write[A])(f: B => A): Primitive.Write[B] = fa.contramap(f)
+    given [G[_]] => Contravariant[Primitive.Write[G, *]]:
+      override def contramap[A, B](fa: Primitive.Write[G, A])(f: B => A): Primitive.Write[G, B] = fa.contramap(f)
 
-  sealed abstract class Boolean[A] extends Primitive[A], Primitive.Boolean.Read[A], Primitive.Boolean.Write[A]:
+  sealed abstract class Boolean[A] extends Primitive[Nothing, A], Primitive.Boolean.Read[A], Primitive.Boolean.Write[A]:
     final override def imap[B](f: A => B)(g: B => A): Primitive.Boolean[B] = Boolean.Modify(self = this, f, g)
 
   object Boolean:
-    sealed trait Read[+A] extends Primitive.Read[A]:
+    sealed trait Read[+A] extends Primitive.Read[Nothing, A]:
       override def map[B](f: A => B): Primitive.Boolean.Read[B] = Read.Modify(self = this, f)
 
     object Read:
@@ -49,7 +49,7 @@ object Primitive:
       given PrimitiveOperation.Boolean.Read[Primitive.Boolean.Read]:
         override def boolean: Primitive.Boolean.Read[SBoolean] = Root
 
-    sealed trait Write[-A] extends Primitive.Write[A]:
+    sealed trait Write[-A] extends Primitive.Write[Nothing, A]:
       override def contramap[B](f: B => A): Primitive.Boolean.Write[B] = Write.Modify(self = this, f)
 
     object Write:
@@ -73,151 +73,164 @@ object Primitive:
     given PrimitiveOperation.Boolean[Primitive.Boolean]:
       override def boolean: Primitive.Boolean[SBoolean] = Root
 
-  sealed abstract class Coerce[A] extends Primitive[A], Primitive.Coerce.Read[A], Primitive.Coerce.Write[A]:
-    def imap[B](f: A => B)(g: B => A): Primitive.Coerce[B] = Coerce.Modify(self = this, f, g)
+  sealed abstract class Coerce[+F[_], A] extends Primitive[F, A], Primitive.Coerce.Read[F, A], Primitive.Coerce.Write[F, A]:
+    def schema: Reference[F, ?]
+    def imap[B](f: A => B)(g: B => A): Primitive.Coerce[F, B] = Coerce.Modify(self = this, f, g)
 
   object Coerce:
-    sealed trait Read[+A] extends Primitive.Read[A]:
-      override def map[B](f: A => B): Primitive.Coerce.Read[B] = Read.Modify(self = this, f)
+    sealed trait Read[+F[_], +A] extends Primitive.Read[F, A]:
+      def schema: Reference[F, ?]
+      override def map[B](f: A => B): Primitive.Coerce.Read[F, B] = Read.Modify(self = this, f)
 
     object Read:
-      final case class Modify[A, B](self: Primitive.Coerce.Read[A], f: A => B) extends Primitive.Coerce.Read[B]
+      final case class Modify[F[_], A, B](self: Primitive.Coerce.Read[F, A], f: A => B) extends Primitive.Coerce.Read[F, B]:
+        export self.schema
 
-      given Functor[Primitive.Coerce.Read]:
-        override def map[A, B](fa: Primitive.Coerce.Read[A])(f: A => B): Primitive.Coerce.Read[B] = fa.map(f)
+      given [F[_]] => Functor[Primitive.Coerce.Read[F, *]]:
+        override def map[A, B](fa: Primitive.Coerce.Read[F, A])(f: A => B): Primitive.Coerce.Read[F, B] = fa.map(f)
 
-    sealed trait Write[-A] extends Primitive.Write[A]:
-      override def contramap[B](f: B => A): Primitive.Coerce.Write[B] = Write.Modify(self = this, f)
+    sealed trait Write[+F[_], -A] extends Primitive.Write[F, A]:
+      def schema: Reference[F, ?]
+      override def contramap[B](f: B => A): Primitive.Coerce.Write[F, B] = Write.Modify(self = this, f)
 
     object Write:
-      final case class Modify[A, B](self: Primitive.Coerce.Write[A], f: B => A) extends Primitive.Coerce.Write[B]
+      final case class Modify[F[_], A, B](self: Primitive.Coerce.Write[F, A], f: B => A) extends Primitive.Coerce.Write[F, B]:
+        export self.schema
 
-      given Contravariant[Primitive.Coerce.Write]:
-        override def contramap[A, B](fa: Primitive.Coerce.Write[A])(f: B => A): Primitive.Coerce.Write[B] =
+      given [F[_]] => Contravariant[Primitive.Coerce.Write[F, *]]:
+        override def contramap[A, B](fa: Primitive.Coerce.Write[F, A])(f: B => A): Primitive.Coerce.Write[F, B] =
           fa.contramap(f)
 
-    final case class Modify[A, B](self: Primitive.Coerce[A], f: A => B, g: B => A) extends Primitive.Coerce[B]
+    final case class Modify[F[_], A, B](self: Primitive.Coerce[F, A], f: A => B, g: B => A) extends Primitive.Coerce[F, B]:
+      export self.schema
 
-    given Invariant[Primitive.Coerce]:
-      override def imap[A, B](fa: Primitive.Coerce[A])(f: A => B)(g: B => A): Primitive.Coerce[B] = fa.imap(f)(g)
+    given [F[_]] => Invariant[Primitive.Coerce[F, *]]:
+      override def imap[A, B](fa: Primitive.Coerce[F, A])(f: A => B)(g: B => A): Primitive.Coerce[F, B] = fa.imap(f)(g)
 
-    sealed abstract class Boolean[A]
-        extends Primitive.Coerce[A],
-          Primitive.Coerce.Boolean.Read[A],
-          Primitive.Coerce.Boolean.Write[A]:
-      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Boolean[B] = Boolean.Modify(self = this, f, g)
+    sealed abstract class Boolean[F[_], A]
+        extends Primitive.Coerce[F, A],
+          Primitive.Coerce.Boolean.Read[F, A],
+          Primitive.Coerce.Boolean.Write[F, A]:
+      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Boolean[F, B] = Boolean.Modify(self = this, f, g)
 
     object Boolean:
-      sealed trait Read[+A] extends Primitive.Coerce.Read[A]:
-        override def map[B](f: A => B): Primitive.Coerce.Boolean.Read[B] = Read.Modify(self = this, f)
+      sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:
+        override def map[B](f: A => B): Primitive.Coerce.Boolean.Read[F, B] = Read.Modify(self = this, f)
 
       object Read:
-        final case class Modify[A, B](self: Primitive.Coerce.Boolean.Read[A], f: A => B)
-            extends Primitive.Coerce.Boolean.Read[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Boolean.Read[F, A], f: A => B)
+            extends Primitive.Coerce.Boolean.Read[F, B]:
+          export self.schema
 
-        given Functor[Primitive.Coerce.Boolean.Read]:
-          override def map[A, B](fa: Primitive.Coerce.Boolean.Read[A])(f: A => B): Primitive.Coerce.Boolean.Read[B] =
+        given [F[_]] => Functor[Primitive.Coerce.Boolean.Read[F, *]]:
+          override def map[A, B](fa: Primitive.Coerce.Boolean.Read[F, A])(f: A => B): Primitive.Coerce.Boolean.Read[F, B] =
             fa.map(f)
 
-      sealed trait Write[-A] extends Primitive.Coerce.Write[A]:
-        override def contramap[B](f: B => A): Primitive.Coerce.Boolean.Write[B] = Write.Modify(self = this, f)
+      sealed trait Write[+F[_], -A] extends Primitive.Coerce.Write[F, A]:
+        override def contramap[B](f: B => A): Primitive.Coerce.Boolean.Write[F, B] = Write.Modify(self = this, f)
 
       object Write:
-        final case class Modify[A, B](self: Primitive.Coerce.Boolean.Write[A], f: B => A)
-            extends Primitive.Coerce.Boolean.Write[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Boolean.Write[F, A], f: B => A)
+            extends Primitive.Coerce.Boolean.Write[F, B]:
+          export self.schema
 
-        given Contravariant[Primitive.Coerce.Boolean.Write]:
-          override def contramap[A, B](fa: Primitive.Coerce.Boolean.Write[A])(
+        given [F[_]] => Contravariant[Primitive.Coerce.Boolean.Write[F, *]]:
+          override def contramap[A, B](fa: Primitive.Coerce.Boolean.Write[F, A])(
               f: B => A
-          ): Primitive.Coerce.Boolean.Write[B] =
-            fa.contramap(f)
+          ): Primitive.Coerce.Boolean.Write[F, B] = fa.contramap(f)
 
-      final case class Modify[A, B](self: Primitive.Coerce.Boolean[A], f: A => B, g: B => A)
-          extends Primitive.Coerce.Boolean[B]
+      final case class Modify[F[_], A, B](self: Primitive.Coerce.Boolean[F, A], f: A => B, g: B => A)
+          extends Primitive.Coerce.Boolean[F, B]:
+        export self.schema
 
-      given Invariant[Primitive.Coerce.Boolean]:
-        override def imap[A, B](fa: Primitive.Coerce.Boolean[A])(f: A => B)(g: B => A): Primitive.Coerce.Boolean[B] =
+      given [F[_]] => Invariant[Primitive.Coerce.Boolean[F, *]]:
+        override def imap[A, B](fa: Primitive.Coerce.Boolean[F, A])(f: A => B)(g: B => A): Primitive.Coerce.Boolean[F, B] =
           fa.imap(f)(g)
 
-    sealed abstract class Number[A]
-        extends Primitive.Coerce[A],
-          Primitive.Coerce.Number.Read[A],
-          Primitive.Coerce.Number.Write[A]:
-      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Number[B] = Number.Modify(self = this, f, g)
+    sealed abstract class Number[F[_], A]
+        extends Primitive.Coerce[F, A],
+          Primitive.Coerce.Number.Read[F, A],
+          Primitive.Coerce.Number.Write[F, A]:
+      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Number[F, B] = Number.Modify(self = this, f, g)
 
     object Number:
-      sealed trait Read[+A] extends Primitive.Coerce.Read[A]:
-        override def map[B](f: A => B): Primitive.Coerce.Number.Read[B] = Read.Modify(self = this, f)
+      sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:
+        override def map[B](f: A => B): Primitive.Coerce.Number.Read[F, B] = Read.Modify(self = this, f)
 
       object Read:
-        final case class Modify[A, B](self: Primitive.Coerce.Number.Read[A], f: A => B)
-            extends Primitive.Coerce.Number.Read[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Number.Read[F, A], f: A => B)
+            extends Primitive.Coerce.Number.Read[F, B]:
+          export self.schema
 
-        given Functor[Primitive.Coerce.Number.Read]:
-          override def map[A, B](fa: Primitive.Coerce.Number.Read[A])(f: A => B): Primitive.Coerce.Number.Read[B] =
+        given [F[_]] => Functor[Primitive.Coerce.Number.Read[F, *]]:
+          override def map[A, B](fa: Primitive.Coerce.Number.Read[F, A])(f: A => B): Primitive.Coerce.Number.Read[F, B] =
             fa.map(f)
 
-      sealed trait Write[-A] extends Primitive.Coerce.Write[A]:
-        override def contramap[B](f: B => A): Primitive.Coerce.Number.Write[B] = Write.Modify(self = this, f)
+      sealed trait Write[+F[_], -A] extends Primitive.Coerce.Write[F, A]:
+        override def contramap[B](f: B => A): Primitive.Coerce.Number.Write[F, B] = Write.Modify(self = this, f)
 
       object Write:
-        final case class Modify[A, B](self: Primitive.Coerce.Number.Write[A], f: B => A)
-            extends Primitive.Coerce.Number.Write[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Number.Write[F, A], f: B => A)
+            extends Primitive.Coerce.Number.Write[F, B]:
+          export self.schema
 
-        given Contravariant[Primitive.Coerce.Number.Write]:
-          override def contramap[A, B](fa: Primitive.Coerce.Number.Write[A])(
+        given [F[_]] => Contravariant[Primitive.Coerce.Number.Write[F, *]]:
+          override def contramap[A, B](fa: Primitive.Coerce.Number.Write[F, A])(
               f: B => A
-          ): Primitive.Coerce.Number.Write[B] =
-            fa.contramap(f)
+          ): Primitive.Coerce.Number.Write[F, B] = fa.contramap(f)
 
-      final case class Modify[A, B](self: Primitive.Coerce.Number[A], f: A => B, g: B => A)
-          extends Primitive.Coerce.Number[B]
+      final case class Modify[F[_], A, B](self: Primitive.Coerce.Number[F, A], f: A => B, g: B => A)
+          extends Primitive.Coerce.Number[F, B]:
+        export self.schema
 
-      given Invariant[Primitive.Coerce.Number]:
-        override def imap[A, B](fa: Primitive.Coerce.Number[A])(f: A => B)(g: B => A): Primitive.Coerce.Number[B] =
+      given [F[_]] => Invariant[Primitive.Coerce.Number[F, *]]:
+        override def imap[A, B](fa: Primitive.Coerce.Number[F, A])(f: A => B)(g: B => A): Primitive.Coerce.Number[F, B] =
           fa.imap(f)(g)
 
-    sealed abstract class Text[A]
-        extends Primitive.Coerce[A],
-          Primitive.Coerce.Text.Read[A],
-          Primitive.Coerce.Text.Write[A]:
-      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Text[B] = Text.Modify(self = this, f, g)
+    sealed abstract class Text[F[_], A]
+        extends Primitive.Coerce[F, A],
+          Primitive.Coerce.Text.Read[F, A],
+          Primitive.Coerce.Text.Write[F, A]:
+      override def imap[B](f: A => B)(g: B => A): Primitive.Coerce.Text[F, B] = Text.Modify(self = this, f, g)
 
     object Text:
-      sealed trait Read[+A] extends Primitive.Coerce.Read[A]:
-        override def map[B](f: A => B): Primitive.Coerce.Text.Read[B] = Read.Modify(self = this, f)
+      sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:
+        override def map[B](f: A => B): Primitive.Coerce.Text.Read[F, B] = Read.Modify(self = this, f)
 
       object Read:
-        final case class Modify[A, B](self: Primitive.Coerce.Text.Read[A], f: A => B)
-            extends Primitive.Coerce.Text.Read[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Text.Read[F, A], f: A => B)
+            extends Primitive.Coerce.Text.Read[F, B]:
+          export self.schema
 
-        given Functor[Primitive.Coerce.Text.Read]:
-          override def map[A, B](fa: Primitive.Coerce.Text.Read[A])(f: A => B): Primitive.Coerce.Text.Read[B] =
+        given [F[_]] => Functor[Primitive.Coerce.Text.Read[F, *]]:
+          override def map[A, B](fa: Primitive.Coerce.Text.Read[F, A])(f: A => B): Primitive.Coerce.Text.Read[F, B] =
             fa.map(f)
 
-      sealed trait Write[-A] extends Primitive.Coerce.Write[A]:
-        override def contramap[B](f: B => A): Primitive.Coerce.Text.Write[B] = Write.Modify(self = this, f)
+      sealed trait Write[+F[_], -A] extends Primitive.Coerce.Write[F, A]:
+        override def contramap[B](f: B => A): Primitive.Coerce.Text.Write[F, B] = Write.Modify(self = this, f)
 
       object Write:
-        final case class Modify[A, B](self: Primitive.Coerce.Text.Write[A], f: B => A)
-            extends Primitive.Coerce.Text.Write[B]
+        final case class Modify[F[_], A, B](self: Primitive.Coerce.Text.Write[F, A], f: B => A)
+            extends Primitive.Coerce.Text.Write[F, B]:
+          export self.schema
 
-        given Contravariant[Primitive.Coerce.Text.Write]:
-          override def contramap[A, B](fa: Primitive.Coerce.Text.Write[A])(f: B => A): Primitive.Coerce.Text.Write[B] =
+        given [F[_]] => Contravariant[Primitive.Coerce.Text.Write[F, *]]:
+          override def contramap[A, B](fa: Primitive.Coerce.Text.Write[F, A])(f: B => A): Primitive.Coerce.Text.Write[F, B] =
             fa.contramap(f)
 
-      final case class Modify[A, B](self: Primitive.Coerce.Text[A], f: A => B, g: B => A)
-          extends Primitive.Coerce.Text[B]
+      final case class Modify[F[_], A, B](self: Primitive.Coerce.Text[F, A], f: A => B, g: B => A)
+          extends Primitive.Coerce.Text[F, B]:
+        export self.schema
 
-      given Invariant[Primitive.Coerce.Text]:
-        override def imap[A, B](fa: Primitive.Coerce.Text[A])(f: A => B)(g: B => A): Primitive.Coerce.Text[B] =
+      given [F[_]] => Invariant[Primitive.Coerce.Text[F, *]]:
+        override def imap[A, B](fa: Primitive.Coerce.Text[F, A])(f: A => B)(g: B => A): Primitive.Coerce.Text[F, B] =
           fa.imap(f)(g)
 
-  sealed abstract class Number[A] extends Primitive[A], Primitive.Number.Read[A], Primitive.Number.Write[A]:
+  sealed abstract class Number[A] extends Primitive[Nothing, A], Primitive.Number.Read[A], Primitive.Number.Write[A]:
     final def imap[B](f: A => B)(g: B => A): Primitive.Number[B] = Number.Modify(self = this, f, g)
 
   object Number:
-    sealed trait Read[+A] extends Primitive.Read[A]:
+    sealed trait Read[+A] extends Primitive.Read[Nothing, A]:
       override def map[B](f: A => B): Primitive.Number.Read[B] = Read.Modify(self = this, f)
 
     object Read:
@@ -243,7 +256,7 @@ object Primitive:
         override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Primitive.Number.Read[SLong] =
           Long(validation)
 
-    sealed trait Write[-A] extends Primitive.Write[A]:
+    sealed trait Write[-A] extends Primitive.Write[Nothing, A]:
       override def contramap[B](f: B => A): Primitive.Number.Write[B] = Write.Modify(self = this, f)
 
     object Write:
@@ -309,11 +322,11 @@ object Primitive:
       override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Primitive.Number[SLong] =
         Long(validation)
 
-  sealed abstract class Text[A] extends Primitive[A], Primitive.Text.Read[A], Primitive.Text.Write[A]:
+  sealed abstract class Text[A] extends Primitive[Nothing, A], Primitive.Text.Read[A], Primitive.Text.Write[A]:
     final override def imap[B](f: A => B)(g: B => A): Primitive.Text[B] = Text.Modify(self = this, f, g)
 
   object Text:
-    sealed trait Read[+A] extends Primitive.Read[A]:
+    sealed trait Read[+A] extends Primitive.Read[Nothing, A]:
       override def map[B](f: A => B): Primitive.Text.Read[B] = Read.Modify(self = this, f)
 
     object Read:
@@ -332,7 +345,7 @@ object Primitive:
             validation: Validation[Constraint.Primitive.Text, String]
         ): Primitive.Text.Read[String] = Root(validation)
 
-    sealed trait Write[-A] extends Primitive.Write[A]:
+    sealed trait Write[-A] extends Primitive.Write[Nothing, A]:
       override def contramap[B](f: B => A): Primitive.Text.Write[B] = Write.Modify(self = this, f)
 
     object Write:
@@ -370,5 +383,5 @@ object Primitive:
           validation: Validation[Constraint.Primitive.Text, String]
       ): Primitive.Text[String] = Root(validation)
 
-  given Invariant[Primitive]:
-    override def imap[A, B](fa: Primitive[A])(f: A => B)(g: B => A): Primitive[B] = fa.imap(f)(g)
+  given [F[_]] => Invariant[Primitive[F, *]]:
+    override def imap[A, B](fa: Primitive[F, A])(f: A => B)(g: B => A): Primitive[F, B] = fa.imap(f)(g)

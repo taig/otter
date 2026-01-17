@@ -16,7 +16,7 @@ object Value:
     def self: Annotation[Value.Read.Of[A]]
 
   object Read:
-    type Of[+A] = Self.Constant.Read[Value, A] | Self.Primitive.Read[A]
+    type Of[+A] = Self.Constant.Read[Value, A] | Self.Primitive.Read[Value, A]
 
     given Functor[Value.Read]:
       override def map[A, B](value: Value.Read[A])(f: A => B): Value.Read[B] = value match
@@ -27,7 +27,7 @@ object Value:
     def self: Annotation[Value.Write.Of[A]]
 
   object Write:
-    type Of[-A] = Self.Constant.Write[Value.Write, A] | Self.Primitive.Write[A]
+    type Of[-A] = Self.Constant.Write[Value.Write, A] | Self.Primitive.Write[Value.Write, A]
 
     given Contravariant[Value.Write]:
       override def contramap[A, B](value: Value.Write[A])(f: B => A): Value.Write[B] = value match
@@ -129,7 +129,7 @@ object Value:
           (annotation: Annotation[Self.Primitive.Text[A]]) => Text(annotation)
         )([A] => (value: Value.Primitive.Text[A]) => value.self)
 
-  type Of[A] = Self.Constant[Value, A] | Self.Primitive[A]
+  type Of[A] = Self.Constant[Value, A] | Self.Primitive[Value, A]
 
   given Invariant[Value]:
     override def imap[A, B](value: Value[A])(f: A => B)(g: B => A): Value[B] = value match
