@@ -17,11 +17,13 @@ final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Rea
       s"z.enum(${json.encode(ZodJsonPrimitivePrinter).mkString_("[", ", ", "]")})".pure
     case json: Json.Optional.Read[A] =>
       renderer.render(json.schema.value).map(expression => s"z.nullable($expression)")
-    case _: Json.Primitive.Boolean.Read[A] => "z.boolean()".pure
-    case _: Json.Primitive.Coerce.Read[A]  => ???
-    case _: Json.Primitive.Number.Read[A]  => "z.number()".pure
-    case _: Json.Primitive.Text.Read[A]    => "z.string()".pure
-    case json: Json.Record.Read[A]         =>
+    case _: Json.Primitive.Boolean.Read[A]        => "z.boolean()".pure
+    case _: Json.Primitive.Coerce.Boolean.Read[A] => "z.coerce.boolean()".pure
+    case _: Json.Primitive.Coerce.Number.Read[A]  => "z.coerce.number()".pure
+    case _: Json.Primitive.Coerce.Text.Read[A]    => "z.coerce.string()".pure
+    case _: Json.Primitive.Number.Read[A]         => "z.number()".pure
+    case _: Json.Primitive.Text.Read[A]           => "z.string()".pure
+    case json: Json.Record.Read[A]                =>
       json.fields
         .map(_.value)
         .traverse: field =>
