@@ -68,6 +68,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     }
   )
 
+/** Base data class definitions */
 lazy val core = module(identifier = Some("core"))
   .settings(
     Compile / sourceGenerators += Def.task {
@@ -87,6 +88,7 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
+/** Component extensions for org.typelevel / case-insensitive */
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
   .settings(
     libraryDependencies ++=
@@ -96,6 +98,7 @@ lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive")
   )
   .dependsOn(core)
 
+/** Component extensions for io.github.iltotore / iron */
 lazy val coreIron = module(identifier = Some("core-iron"))
   .settings(
     libraryDependencies ++=
@@ -104,6 +107,7 @@ lazy val coreIron = module(identifier = Some("core-iron"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
+/** Component extensions for java.time */
 lazy val coreJavaTime = module(identifier = Some("core-java-time"))
   .settings(
     libraryDependencies ++=
@@ -112,12 +116,19 @@ lazy val coreJavaTime = module(identifier = Some("core-java-time"))
   )
   .dependsOn(core)
 
+/** JSON data class definitions */
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
-//   .dependsOn(coreJson % "compile->compile;test->test")
+/** zod integration */
+lazy val coreZod = module(identifier = Some("core-zod"))
+  .dependsOn(core % "compile->compile;test->test")
 
+/** zod codegen for JSON */
+lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreZod % "compile->compile;test->test")
+
+/** JSON codecs for io.circe / circe */
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   .settings(
     libraryDependencies ++=
@@ -176,6 +187,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 //   )
 //   .dependsOn(http % "compile->compile;test->test")
 
+/** Opinionated dsl presets */
 lazy val dsl = module(identifier = Some("dsl"))
   .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson)
 

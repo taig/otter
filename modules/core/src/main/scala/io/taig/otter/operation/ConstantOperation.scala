@@ -4,21 +4,27 @@ import cats.Eq
 import cats.Eval
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
+import io.taig.otter.codec.Encoder
 
 trait ConstantOperation[F[_], G[_]]:
   self =>
 
   def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[Unit]
 
-  extension [A](fa: F[A]) def schema: Reference[G, ?]
+  extension [A](fa: F[A])
+    def encode[T](encoder: Encoder[G, T]): T
+
+    def schema: Reference[G, ?]
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation[H, G] =
     new ConstantOperation[H, G]:
-      override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[Unit] = fK(
-        self.lift(schema, value, eq)
-      )
+      override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[Unit] =
+        fK(self.lift(schema, value, eq))
 
-      extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+      extension [A](ha: H[A])
+        override def encode[T](encoder: Encoder[G, T]): T = self.encode(gK(ha))(encoder)
+
+        override def schema: Reference[G, ?] = self.schema(gK(ha))
 
 object ConstantOperation:
   trait Read[F[_], G[_]] extends ConstantOperation[F, G]:
@@ -29,7 +35,10 @@ object ConstantOperation:
         override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[Unit] =
           fK(self.lift(schema, value, eq))
 
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+        extension [A](ha: H[A])
+          override def encode[T](encoder: Encoder[G, T]): T = self.encode(gK(ha))(encoder)
+
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
 
   object Read:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Read[F, G]): ConstantOperation.Read[F, G] = self
@@ -50,7 +59,10 @@ object ConstantOperation:
       new Write[H, G]:
         override def lift[A](schema: Reference[G, A], value: Eval[A]): H[Unit] = fK(self.lift(schema, value))
 
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+        extension [A](ha: H[A])
+          override def encode[T](encoder: Encoder[G, T]): T = self.encode(gK(ha))(encoder)
+
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
 
   object Write:
     inline def apply[F[_], G[_]](using self: ConstantOperation.Write[F, G]): ConstantOperation.Write[F, G] = self

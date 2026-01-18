@@ -13,7 +13,11 @@ object Metadata:
 
   object Key:
     object Namespace:
-      val Global: String = "*"
+      val Global: "*" = "*"
+
+    extension [A](self: Metadata.Key[A])
+      def @@(value: String): Metadata.Key[A] =
+        self.copy(namespace = value)
 
     def apply[A](identifier: String): Metadata.Key[A] =
       Key(namespace = Namespace.Global, identifier)

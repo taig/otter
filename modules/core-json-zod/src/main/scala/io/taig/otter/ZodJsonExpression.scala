@@ -2,7 +2,7 @@ package io.taig.otter
 
 import cats.Show
 
-enum ZodTypescriptExpression:
+enum ZodJsonExpression:
   case Inline(expression: String)
   case Reference(name: String)
 
@@ -10,5 +10,5 @@ enum ZodTypescriptExpression:
     case Inline(expression) => expression
     case Reference(name)    => name
 
-object ZodTypescriptExpression:
-  given Show[ZodTypescriptExpression] = Show.fromToString
+object ZodJsonExpression:
+  given Show[ZodJsonExpression] = Show.fromToString

@@ -2,7 +2,6 @@ package io.taig.otter.operation
 
 import cats.data.Chain
 import io.taig.otter.Constraint
-import io.taig.otter.Constraint.Collection
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 import io.taig.validation.Validation
@@ -20,10 +19,16 @@ trait CollectionOperation[F[_], G[_]]:
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): CollectionOperation[H, G] =
     new CollectionOperation[H, G]:
-      override def chained[A](schema: Reference[G, A], validation: Validation[Collection, Chain[A]]): H[Chain[A]] =
+      override def chained[A](
+          schema: Reference[G, A],
+          validation: Validation[Constraint.Collection, Chain[A]]
+      ): H[Chain[A]] =
         fK(self.chained(schema, validation))
 
-      override def indexed[A](schema: Reference[G, A], validation: Validation[Collection, Vector[A]]): H[Vector[A]] =
+      override def indexed[A](
+          schema: Reference[G, A],
+          validation: Validation[Constraint.Collection, Vector[A]]
+      ): H[Vector[A]] =
         fK(self.indexed(schema, validation))
 
       override def linked[A](
@@ -39,10 +44,16 @@ object CollectionOperation:
 
     override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): CollectionOperation.Read[H, G] =
       new Read[H, G]:
-        override def chained[A](schema: Reference[G, A], validation: Validation[Collection, Chain[A]]): H[Chain[A]] =
+        override def chained[A](
+            schema: Reference[G, A],
+            validation: Validation[Constraint.Collection, Chain[A]]
+        ): H[Chain[A]] =
           fK(self.chained(schema, validation))
 
-        override def indexed[A](schema: Reference[G, A], validation: Validation[Collection, Vector[A]]): H[Vector[A]] =
+        override def indexed[A](
+            schema: Reference[G, A],
+            validation: Validation[Constraint.Collection, Vector[A]]
+        ): H[Vector[A]] =
           fK(self.indexed(schema, validation))
 
         override def linked[A](
@@ -65,14 +76,17 @@ object CollectionOperation:
 
     def chained[A](schema: Reference[G, A]): F[Chain[A]]
 
-    final override def chained[A](schema: Reference[G, A], validation: Validation[Collection, Chain[A]]): F[Chain[A]] =
+    final override def chained[A](
+        schema: Reference[G, A],
+        validation: Validation[Constraint.Collection, Chain[A]]
+    ): F[Chain[A]] =
       chained(schema)
 
     def indexed[A](schema: Reference[G, A]): F[Vector[A]]
 
     final override def indexed[A](
         schema: Reference[G, A],
-        validation: Validation[Collection, Vector[A]]
+        validation: Validation[Constraint.Collection, Vector[A]]
     ): F[Vector[A]] = indexed(schema)
 
     def linked[A](schema: Reference[G, A]): F[List[A]]

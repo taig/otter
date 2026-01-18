@@ -6,6 +6,7 @@ import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.EnumerationOperation
+import io.taig.otter.codec.Encoder
 
 sealed abstract class Enumeration[+F[_], A] extends Enumeration.Read[F, A], Enumeration.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = Enumeration.Modify(self = this, f, g)
@@ -14,17 +15,19 @@ sealed abstract class Enumeration[+F[_], A] extends Enumeration.Read[F, A], Enum
 
 object Enumeration:
   sealed trait Read[+F[_], +A]:
+    def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T]
+
+    final def map[B](f: A => B): Enumeration.Read[F, B] = Read.Modify(self = this, f)
+
+    def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration.Read[G, A]
+
     def schema: Reference[F, ?]
 
     def values: NonEmptyChain[A]
 
-    def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration.Read[G, A]
-
-    final def map[B](f: A => B): Enumeration.Read[F, B] = Read.Modify(self = this, f)
-
   object Read:
     final case class Modify[F[_], A, B](self: Enumeration.Read[F, A], f: A => B) extends Enumeration.Read[F, B]:
-      export self.schema
+      export self.{encode, schema}
 
       override def values: NonEmptyChain[B] = self.values.map(f)
 
@@ -37,18 +40,23 @@ object Enumeration:
       override def lift[A, B](schema: Reference[F, A], mapping: Mapping[B, A]): Enumeration.Read[F, B] =
         Root(schema, mapping)
 
-      extension [A](fa: Enumeration.Read[F, A]) override def schema: Reference[F, ?] = fa.schema
+      extension [A](fa: Enumeration.Read[F, A])
+        override def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T] = fa.encode(encoder)
+
+        override def schema: Reference[F, ?] = fa.schema
 
   sealed trait Write[+F[_], -A]:
-    def schema: Reference[F, ?]
+    final def contramap[B](f: B => A): Enumeration.Write[F, B] = Write.Modify(self = this, f)
+
+    def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T]
 
     def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration.Write[G, A]
 
-    final def contramap[B](f: B => A): Enumeration.Write[F, B] = Write.Modify(self = this, f)
+    def schema: Reference[F, ?]
 
   object Write:
     final case class Modify[F[_], A, B](self: Enumeration.Write[F, A], f: B => A) extends Enumeration.Write[F, B]:
-      export self.schema
+      export self.{encode, schema}
 
       override def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration.Write[G, B] = copy(self = self.mapK(fK))
 
@@ -59,16 +67,22 @@ object Enumeration:
       override def lift[A, B](schema: Reference[F, A], mapping: Mapping[B, A]): Enumeration.Write[F, B] =
         Root(schema, mapping)
 
-      extension [A](fa: Enumeration.Write[F, A]) override def schema: Reference[F, ?] = fa.schema
+      extension [A](fa: Enumeration.Write[F, A])
+        override def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T] = fa.encode(encoder)
+
+        override def schema: Reference[F, ?] = fa.schema
 
   final case class Modify[F[_], A, B](self: Enumeration[F, A], f: A => B, g: B => A) extends Enumeration[F, B]:
-    export self.schema
+    export self.{encode, schema}
 
     override def values: NonEmptyChain[B] = self.values.map(f)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration[G, B] = copy(self = self.mapK(fK))
 
   final case class Root[F[_], A, B](schema: Reference[F, A], mapping: Mapping[B, A]) extends Enumeration[F, B]:
+    override def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T] =
+      NonEmptyChain.fromNonEmptyList(mapping.values).map(mapping.apply).map(encoder.encode(schema.value, _))
+
     override def values: NonEmptyChain[B] = NonEmptyChain.fromNonEmptyList(mapping.values)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration[G, B] = copy(schema = schema.mapK[F, G](fK))
@@ -80,4 +94,7 @@ object Enumeration:
     override def lift[A, B](schema: Reference[F, A], mapping: Mapping[B, A]): Enumeration[F, B] =
       Root(schema, mapping)
 
-    extension [A](fa: Enumeration[F, A]) override def schema: Reference[F, ?] = fa.schema
+    extension [A](fa: Enumeration[F, A])
+      override def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T] = fa.encode(encoder)
+
+      override def schema: Reference[F, ?] = fa.schema
