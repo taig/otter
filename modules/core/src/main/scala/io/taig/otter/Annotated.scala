@@ -6,6 +6,9 @@ trait Annotated[A]:
   self =>
 
   extension (self: A)
+    final def attr[A](key: Metadata.Key[A], keys: Metadata.Key[A]*): Option[A] =
+      keys.foldLeft(metadata.get(key))((result, key) => result.orElse(metadata.get(key)))
+
     def metadata: Metadata
 
     def modify(f: Metadata => Metadata): A

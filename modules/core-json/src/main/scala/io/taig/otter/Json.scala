@@ -35,6 +35,9 @@ object Json:
         case json: Json.Record.Read[A]      => json.map(f)
         case json: Json.Tuple.Read[A]       => json.map(f)
         case json: Json.Union.Read[A]       => json.map(f)
+
+    given [A] => Annotated[Json.Read[A]] = ???
+
     given TupleableOperation[Json.Read, Json.Tuple.Read] = TupleableOperation.derived
 
   sealed trait Write[-A]:

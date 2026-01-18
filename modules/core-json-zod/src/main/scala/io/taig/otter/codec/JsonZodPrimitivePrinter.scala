@@ -2,7 +2,7 @@ package io.taig.otter.codec
 
 import io.taig.otter.Json
 
-object ZodJsonPrimitivePrinter extends Printer[Json.Primitive.Write]:
+object JsonZodPrimitivePrinter extends Printer[Json.Primitive.Write]:
   val printer = PrimitivePrinter(printer = this)
     .contramapK[Json.Primitive.Write]([A] => (json: Json.Primitive.Write[A]) => json.self.self)
     .mapWith: [A] =>

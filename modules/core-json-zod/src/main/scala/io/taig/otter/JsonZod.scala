@@ -1,7 +1,7 @@
 package io.taig.otter
 
-object ZodJson:
-  val Namespace: "zod-json" = "zod-json"
+object JsonZod:
+  val Namespace: "json-zod" = "json-zod"
 
   def key[A](name: String): Metadata.Key[A] = Metadata.Key(namespace = Namespace, name)
 
