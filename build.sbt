@@ -15,7 +15,7 @@ val Version = new {
   val Kittens = "3.5.0"
   val Log4Cats = "2.7.1"
   val Mouse = "1.3.2"
-  val Scala3 = "3.8.0-RC3"
+  val Scala3 = "3.8.0"
   val ScalaJavaTime = "2.6.0"
   val Slf4j = "2.0.17"
   val Validation = "0.0.0+9-923780f2-SNAPSHOT"
@@ -96,13 +96,13 @@ lazy val core = module(identifier = Some("core"))
 //   )
 //   .dependsOn(core)
 
-// lazy val coreIron = module(identifier = Some("core-iron"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.taig" %%% "validation-iron" % Version.Validation ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val coreIron = module(identifier = Some("core-iron"))
+  .settings(
+    libraryDependencies ++=
+      "io.taig" %%% "validation-iron" % Version.Validation ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val coreJavaTime = module(identifier = Some("core-java-time"))
 //   .settings(
@@ -176,8 +176,8 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 //   )
 //   .dependsOn(http % "compile->compile;test->test")
 
-// lazy val dsl = module(identifier = Some("dsl"))
-//   .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson, coreJsonSchema)
+lazy val dsl = module(identifier = Some("dsl"))
+  .dependsOn(coreIron, coreJson)
 
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")

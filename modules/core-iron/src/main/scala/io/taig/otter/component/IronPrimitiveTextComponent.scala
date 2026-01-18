@@ -4,12 +4,12 @@ import io.taig.otter.Constraint
 import io.taig.validation.Validation
 import io.taig.validation.iron.DerivedValidation
 
-trait IronStringComponent[Self[_]]:
+trait IronPrimitiveTextComponent:
   final class text[A]:
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    def apply[B](schema: Validation[Constraint.Primitive.Text, B] => Self[B])(using
+    def apply[F[_], B](schema: Validation[Constraint.Primitive.Text, B] => F[B])(using
         validation: DerivedValidation[Constraint.Primitive.Text, B, A]
-    ): Self[B :| A] = schema(validation).asInstanceOf[Self[B :| A]]
+    ): F[B :| A] = schema(validation).asInstanceOf[F[B :| A]]
 
   object text:
     def apply[A]: text[A] = new text[A]

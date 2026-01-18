@@ -4,12 +4,12 @@ import io.taig.otter.Constraint
 import io.taig.validation.Validation
 import io.taig.validation.iron.DerivedValidation
 
-trait IronNumberComponent[Self[_]]:
+trait IronPrimitiveNumberComponent:
   final class number[A]:
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    def apply[B](schema: Validation[Constraint.Primitive.Number, B] => Self[B])(using
+    def apply[F[_], B](schema: Validation[Constraint.Primitive.Number, B] => F[B])(using
         validation: DerivedValidation[Constraint.Primitive.Number, B, A]
-    ): Self[B :| A] = schema(validation).asInstanceOf[Self[B :| A]]
+    ): F[B :| A] = schema(validation).asInstanceOf[F[B :| A]]
 
   object number:
     def apply[A]: number[A] = new number[A]
