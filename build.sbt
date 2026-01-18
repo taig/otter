@@ -104,13 +104,13 @@ lazy val coreIron = module(identifier = Some("core-iron"))
   )
   .dependsOn(core % "compile->compile;test->test")
 
-// lazy val coreJavaTime = module(identifier = Some("core-java-time"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
-//         Nil
-//   )
-//   .dependsOn(core)
+lazy val coreJavaTime = module(identifier = Some("core-java-time"))
+  .settings(
+    libraryDependencies ++=
+      "io.github.cquiroz" %%% "scala-java-time" % Version.ScalaJavaTime % "test" ::
+        Nil
+  )
+  .dependsOn(core)
 
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
@@ -177,7 +177,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 //   .dependsOn(http % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(coreIron, coreJson)
+  .dependsOn(coreIron, coreJavaTime, coreJson)
 
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")

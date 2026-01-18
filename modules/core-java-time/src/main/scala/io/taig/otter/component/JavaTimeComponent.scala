@@ -1,7 +1,6 @@
 package io.taig.otter.component
 
 import cats.syntax.all.*
-import io.taig.otter.operation.StringOperation
 
 import java.time.Duration
 import java.time.Instant
@@ -18,25 +17,28 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
+import io.taig.otter.operation.PrimitiveOperation
 
-trait JavaTimeComponent[+Self[_]](using operation: StringOperation[Self]):
-  private def parse[A](name: String, decode: String => A): Self[A] = operation.parser(
+trait JavaTimeComponent[F[_]](using F: PrimitiveOperation.Text[F]):
+  private def parse[A](name: String, decode: String => A): F[A] = F.codec(
     name,
-    decode = value => Either.catchOnly[DateTimeParseException](decode(value)).leftMap(_.getMessage),
-    encode = _.toString
+    parse = value => Either.catchOnly[DateTimeParseException](decode(value)).leftMap(_.getMessage),
+    print = _.toString
   )
 
-  val duration: Self[Duration] = parse(name = "iso8601[duration]", decode = Duration.parse)
-  val instant: Self[Instant] = parse(name = "iso8601[instant]", decode = Instant.parse)
-  val localDate: Self[LocalDate] = parse(name = "iso8601[localDate]", decode = LocalDate.parse)
-  val localDateTime: Self[LocalDateTime] = parse(name = "iso8601[localDateTime]", decode = LocalDateTime.parse)
-  val localTime: Self[LocalTime] = parse(name = "iso8601[localTime]", decode = LocalTime.parse)
-  val monthDay: Self[MonthDay] = parse(name = "iso8601[monthDay]", decode = MonthDay.parse)
-  val offsetDateTime: Self[OffsetDateTime] = parse(name = "iso8601[offsetDateTime]", decode = OffsetDateTime.parse)
-  val offsetTime: Self[OffsetTime] = parse(name = "iso8601[offsetTime]", decode = OffsetTime.parse)
-  val period: Self[Period] = parse(name = "iso8601[period]", decode = Period.parse)
-  val year: Self[Year] = parse(name = "iso8601[year]", decode = Year.parse)
-  val yearMonth: Self[YearMonth] = parse(name = "iso8601[yearMonth]", decode = YearMonth.parse)
-  val zonedDateTime: Self[ZonedDateTime] = parse(name = "iso8601[zonedDateTime]", decode = ZonedDateTime.parse)
-  val zoneId: Self[ZoneId] = parse(name = "zoneId", decode = ZoneId.of)
-  val zoneOffset: Self[ZoneOffset] = parse(name = "iso8601[zoneOffset]", decode = ZoneOffset.of)
+  private def isoType(name: String): String = s"iso8601[$name]"
+
+  val duration: F[Duration] = parse(name = isoType("duration"), decode = Duration.parse)
+  val instant: F[Instant] = parse(name = isoType("instant"), decode = Instant.parse)
+  val localDate: F[LocalDate] = parse(name = isoType("localDate"), decode = LocalDate.parse)
+  val localDateTime: F[LocalDateTime] = parse(name = isoType("localDateTime"), decode = LocalDateTime.parse)
+  val localTime: F[LocalTime] = parse(name = isoType("localTime"), decode = LocalTime.parse)
+  val monthDay: F[MonthDay] = parse(name = isoType("monthDay"), decode = MonthDay.parse)
+  val offsetDateTime: F[OffsetDateTime] = parse(name = isoType("offsetDateTime"), decode = OffsetDateTime.parse)
+  val offsetTime: F[OffsetTime] = parse(name = isoType("offsetTime"), decode = OffsetTime.parse)
+  val period: F[Period] = parse(name = isoType("period"), decode = Period.parse)
+  val year: F[Year] = parse(name = isoType("year"), decode = Year.parse)
+  val yearMonth: F[YearMonth] = parse(name = isoType("yearMonth"), decode = YearMonth.parse)
+  val zonedDateTime: F[ZonedDateTime] = parse(name = isoType("zonedDateTime"), decode = ZonedDateTime.parse)
+  val zoneId: F[ZoneId] = parse(name = "zoneId", decode = ZoneId.of)
+  val zoneOffset: F[ZoneOffset] = parse(name = isoType("zoneOffset"), decode = ZoneOffset.of)
