@@ -87,14 +87,14 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
-// lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.taig" %%% "validation-cistring" % Version.Validation ::
-//         "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//         Nil
-//   )
-//   .dependsOn(core)
+lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
+  .settings(
+    libraryDependencies ++=
+      "io.taig" %%% "validation-cistring" % Version.Validation ::
+        "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
+  .dependsOn(core)
 
 lazy val coreIron = module(identifier = Some("core-iron"))
   .settings(
@@ -177,7 +177,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
 //   .dependsOn(http % "compile->compile;test->test")
 
 lazy val dsl = module(identifier = Some("dsl"))
-  .dependsOn(coreIron, coreJavaTime, coreJson)
+  .dependsOn(coreCaseInsensitive, coreIron, coreJavaTime, coreJson)
 
 // lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
 //   .dependsOn(http % "compile->compile;test->test", coreJsonTypescriptEffect % "compile->compile;test->test")

@@ -6,11 +6,15 @@ import io.taig.otter.syntax.AllSyntax
 import io.github.iltotore.iron.constraint.all.*
 import io.github.iltotore.iron.*
 import io.taig.otter.component.JavaTimeComponent
+import io.taig.otter.component.CaseInsensitiveComponent
 
 trait Dsl extends AllSyntax, Keys:
   object iron extends IronPrimitiveComponent
 
-  object json extends JsonComponent, JavaTimeComponent[Json.Primitive.Text]
+  object json
+      extends JsonComponent,
+        CaseInsensitiveComponent[Json.Primitive.Text],
+        JavaTimeComponent[Json.Primitive.Text]
 
   // val jsonSchema: JsonSchemaKeys = JsonSchemaKeys
 
