@@ -32,7 +32,10 @@ object Branch:
     given [S[_]] => BranchOperation.Read[Branch.Read[S, *], S]:
       override def lift[A](name: String, schema: Reference[S, A]): Branch.Read[S, A] = Root(name, schema)
 
-      extension [A](fa: Branch.Read[S, A]) override def schema: Reference[S, ?] = fa.schema
+      extension [A](fa: Branch.Read[S, A])
+        override def name: String = fa.name
+
+        override def schema: Reference[S, ?] = fa.schema
 
   sealed trait Write[+S[_], -A]:
     final def contramap[B](f: B => A): Branch.Write[S, B] = Write.Modify(self = this, f)
@@ -55,7 +58,10 @@ object Branch:
     given [S[_]] => BranchOperation.Write[Branch.Write[S, *], S]:
       override def lift[A](name: String, schema: Reference[S, A]): Branch.Write[S, A] = Root(name, schema)
 
-      extension [A](fa: Branch.Write[S, A]) override def schema: Reference[S, ?] = fa.schema
+      extension [A](fa: Branch.Write[S, A])
+        override def name: String = fa.name
+
+        override def schema: Reference[S, ?] = fa.schema
 
   final case class Modify[S[_], A, B](self: Branch[S, A], f: A => B, g: B => A) extends Branch[S, B]:
     export self.{name, schema}
@@ -71,4 +77,7 @@ object Branch:
   given [S[_]] => BranchOperation[Branch[S, *], S]:
     override def lift[A](name: String, schema: Reference[S, A]): Branch[S, A] = Root(name, schema)
 
-    extension [A](fa: Branch[S, A]) override def schema: Reference[S, ?] = fa.schema
+    extension [A](fa: Branch[S, A])
+      override def name: String = fa.name
+
+      override def schema: Reference[S, ?] = fa.schema

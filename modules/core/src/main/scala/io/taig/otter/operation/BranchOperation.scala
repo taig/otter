@@ -8,13 +8,19 @@ trait BranchOperation[F[_], G[_]]:
 
   def lift[A](name: String, schema: Reference[G, A]): F[A]
 
-  extension [A](fa: F[A]) def schema: Reference[G, ?]
+  extension [A](fa: F[A])
+    def name: String
+
+    def schema: Reference[G, ?]
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): BranchOperation[H, G] =
     new BranchOperation[H, G]:
       override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
-      extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+      extension [A](ha: H[A])
+        override def name: String = self.name(gK(ha))
+
+        override def schema: Reference[G, ?] = self.schema(gK(ha))
 
 object BranchOperation:
   trait Read[F[_], G[_]] extends BranchOperation[F, G]:
@@ -24,7 +30,10 @@ object BranchOperation:
       new Read[H, G]:
         override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+        extension [A](ha: H[A])
+          override def name: String = self.name(gK(ha))
+
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
 
   object Read:
     inline def apply[F[_], G[_]](using self: BranchOperation.Read[F, G]): BranchOperation.Read[F, G] = self
@@ -41,7 +50,10 @@ object BranchOperation:
       new Write[H, G]:
         override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
-        extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
+        extension [A](ha: H[A])
+          override def name: String = self.name(gK(ha))
+
+          override def schema: Reference[G, ?] = self.schema(gK(ha))
 
   object Write:
     inline def apply[F[_], G[_]](using self: BranchOperation.Write[F, G]): BranchOperation.Write[F, G] = self

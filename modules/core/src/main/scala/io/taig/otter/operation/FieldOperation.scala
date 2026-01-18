@@ -9,6 +9,10 @@ trait FieldOperation[F[_], G[_]]:
   def lift[A](name: String, schema: Reference[G, A]): F[A]
 
   extension [A](fa: F[A])
+    def isOptional: Boolean
+
+    def name: String
+
     def optional: F[Option[A]]
 
     def optional(default: => A): F[A]
@@ -20,6 +24,10 @@ trait FieldOperation[F[_], G[_]]:
       override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
       extension [A](ha: H[A])
+        override def isOptional: Boolean = self.isOptional(gK(ha))
+
+        override def name: String = self.name(gK(ha))
+
         override def optional: H[Option[A]] = fK(self.optional(gK(ha)))
 
         override def optional(default: => A): H[A] = fK(self.optional(gK(ha))(default))
@@ -35,6 +43,10 @@ object FieldOperation:
         override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
         extension [A](ha: H[A])
+          override def isOptional: Boolean = self.isOptional(gK(ha))
+
+          override def name: String = self.name(gK(ha))
+
           override def optional: H[Option[A]] = fK(self.optional(gK(ha)))
 
           override def optional(default: => A): H[A] = fK(self.optional(gK(ha))(default))
@@ -59,6 +71,10 @@ object FieldOperation:
         override def lift[A](name: String, schema: Reference[G, A]): H[A] = fK(self.lift(name, schema))
 
         extension [A](ha: H[A])
+          override def isOptional: Boolean = self.isOptional(gK(ha))
+
+          override def name: String = self.name(gK(ha))
+
           override def optional: H[Option[A]] = fK(self.optional(gK(ha)))
 
           override def schema: Reference[G, ?] = self.schema(gK(ha))

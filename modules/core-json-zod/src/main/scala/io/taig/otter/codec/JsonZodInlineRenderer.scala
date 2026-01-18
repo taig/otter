@@ -8,29 +8,29 @@ import cats.syntax.all.*
 final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Read, F[ZodJsonExpression]])
     extends Renderer[Json.Read, F[String]]:
   override def render[A](json: Json.Read[A]): F[String] = json match
-    //   case json @ Json.Coerce(_)     => JsonCoerceZodRenderer.render(json).pure
-    case json: Json.Constant.Read[A] => s"z.literal(${json.encode(ZodJsonPrimitivePrinter)})".pure
-    case json @ Json.Collection(_)   =>
+    case json: Json.Constant.Read[A]   => s"z.literal(${json.encode(ZodJsonPrimitivePrinter)})".pure
+    case json: Json.Collection.Read[A] =>
       renderer.render(json.schema.value).map(expression => s"z.array($expression)")
-    case json @ Json.Dictionary(_) =>
+    case json: Json.Dictionary.Read[A] =>
       renderer.render(json.schema.value).map(expression => s"z.record(z.string(), $expression)")
     case json: Json.Enumeration.Read[A] =>
       s"z.enum(${json.encode(ZodJsonPrimitivePrinter).mkString_("[", ", ", "]")})".pure
+    case json: Json.Optional.Read[A] =>
+      renderer.render(json.schema.value).map(expression => s"z.nullable($expression)")
     case _: Json.Primitive.Boolean.Read[A] => "z.boolean()".pure
+    case _: Json.Primitive.Coerce.Read[A]  => ???
     case _: Json.Primitive.Number.Read[A]  => "z.number()".pure
     case _: Json.Primitive.Text.Read[A]    => "z.string()".pure
-    //   case json @ Json.Nullable(_)   =>
-    //     renderer.render(json.schema.value).map(expression => s"z.nullable($expression)")
-    //   case json @ Json.Record(_) =>
-    //     json.fields
-    //       .map(_.value)
-    //       .traverse: field =>
-    //         renderer
-    //           .render(field.schema.value)
-    //           .map: expression =>
-    //             val value = if field.isOptional then s"z.optional($expression)" else expression
-    //             s""""${field.name}": $value"""
-    //       .map(fields => s"z.object(${fields.mkString_("{\n", ",\n", "\n}")})")
+    case json: Json.Record.Read[A]         =>
+      json.fields
+        .map(_.value)
+        .traverse: field =>
+          renderer
+            .render(field.schema.value)
+            .map: expression =>
+              val value = if field.isOptional then s"z.optional($expression)" else expression
+              s""""${field.name}": $value"""
+        .map(fields => s"z.object(${fields.mkString_("{\n", ",\n", "\n}")})")
     case json: Json.Tuple.Read[A] =>
       json.schemas
         .map(_.value)
@@ -40,4 +40,4 @@ final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Rea
       json.branches
         .map(_.value.schema.value)
         .traverse(renderer.render)
-        .map(expressions => expressions.mkString_("z.union([", ", ", "])"))
+        .map(_.mkString_("z.union([", ", ", "])"))
