@@ -33,7 +33,7 @@ object Constant:
       override def map[A, B](fa: Constant.Read[F, A])(f: A => B): Constant.Read[F, B] = fa.map(f)
 
     given [F[_]] => ConstantOperation.Read[Constant.Read[F, *], F]:
-      override def lift[A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]): Constant.Read[F, A] =
+      override def lift[A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]): Constant.Read[F, Unit] =
         Root(schema, value, eq)
 
       extension [A](fa: Constant.Read[F, A]) override def schema: Reference[F, ?] = fa.schema
@@ -51,14 +51,14 @@ object Constant:
 
       override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, B] = copy(self = self.mapK(fK))
 
-    final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A]) extends Constant.Write[F, A]:
-      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, A] = copy(schema = schema.mapK[F, G](fK))
+    final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A]) extends Constant.Write[F, Unit]:
+      override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant.Write[G, Unit] = copy(schema = schema.mapK[F, G](fK))
 
     given [F[_]] => Contravariant[Constant.Write[F, *]]:
       override def contramap[A, B](fa: Constant.Write[F, A])(f: B => A): Constant.Write[F, B] = fa.contramap(f)
 
     given [F[_]] => ConstantOperation.Write[Constant.Write[F, *], F]:
-      override def lift[A](schema: Reference[F, A], value: Eval[A]): Constant.Write[F, A] = Root(schema, value)
+      override def lift[A](schema: Reference[F, A], value: Eval[A]): Constant.Write[F, Unit] = Root(schema, value)
 
       extension [A](fa: Constant.Write[F, A]) override def schema: Reference[F, ?] = fa.schema
 
@@ -67,14 +67,14 @@ object Constant:
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, B] = copy(self = self.mapK(fK))
 
-  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]) extends Constant[F, A]:
-    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A] = copy(schema = schema.mapK[F, G](fK))
+  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]) extends Constant[F, Unit]:
+    override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, Unit] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Constant[F, *]]:
     override def imap[A, B](self: Constant[F, A])(f: A => B)(g: B => A): Constant[F, B] = self.imap(f)(g)
 
   given [F[_]] => ConstantOperation[Constant[F, *], F]:
-    override def lift[A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]): Constant[F, A] =
+    override def lift[A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]): Constant[F, Unit] =
       Root(schema, value, eq)
 
     extension [A](fa: Constant[F, A]) override def schema: Reference[F, ?] = fa.schema

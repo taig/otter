@@ -87,6 +87,6 @@ object Playground:
   val _: Json.Collection.Read[List[Int]] = json.collection.list(pr)
   val _: Json.Collection.Write[List[Long]] = json.collection.list(pw)
 
-  val _: Json.Constant[String] = json.constant(p, value = "constant")
+  val _: Json.Constant[Unit] = json.constant(p, value = "constant")
 
   val _: Json.Enumeration["foobar"] = json.enumeration(p, Mapping.constant("foobar"))

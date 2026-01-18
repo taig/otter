@@ -8,13 +8,15 @@ import cats.Eval
 trait ConstantOperation[F[_], G[_]]:
   self =>
 
-  def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[A]
+  def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[Unit]
 
   extension [A](fa: F[A]) def schema: Reference[G, ?]
 
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation[H, G] =
     new ConstantOperation[H, G]:
-      override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[A] = fK(self.lift(schema, value, eq))
+      override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[Unit] = fK(
+        self.lift(schema, value, eq)
+      )
 
       extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
 
@@ -24,7 +26,7 @@ object ConstantOperation:
 
     final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation.Read[H, G] =
       new Read[H, G]:
-        override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[A] =
+        override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): H[Unit] =
           fK(self.lift(schema, value, eq))
 
         extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
@@ -40,13 +42,13 @@ object ConstantOperation:
   trait Write[F[_], G[_]] extends ConstantOperation[F, G]:
     self =>
 
-    def lift[A](schema: Reference[G, A], value: Eval[A]): F[A]
+    def lift[A](schema: Reference[G, A], value: Eval[A]): F[Unit]
 
-    final override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[A] = lift(schema, value)
+    final override def lift[A](schema: Reference[G, A], value: Eval[A], eq: Eq[A]): F[Unit] = lift(schema, value)
 
     final override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): ConstantOperation.Write[H, G] =
       new Write[H, G]:
-        override def lift[A](schema: Reference[G, A], value: Eval[A]): H[A] = fK(self.lift(schema, value))
+        override def lift[A](schema: Reference[G, A], value: Eval[A]): H[Unit] = fK(self.lift(schema, value))
 
         extension [A](ha: H[A]) override def schema: Reference[G, ?] = self.schema(gK(ha))
 

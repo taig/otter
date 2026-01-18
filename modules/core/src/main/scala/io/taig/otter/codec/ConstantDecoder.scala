@@ -28,4 +28,5 @@ final class ConstantDecoder[F[_], T](decoder: Decoder[F, T], encoder: Encoder[F,
               )
             )
             .leftMap(Violations.apply)
+            .as(())
     case Constant.Read.Modify(self, f) => decode(schema = self, value).map(f)

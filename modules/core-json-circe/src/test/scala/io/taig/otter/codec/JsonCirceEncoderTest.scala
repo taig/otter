@@ -14,7 +14,7 @@ import cats.syntax.all.*
 object JsonCirceEncoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceEncoderTest")(
     test("Constant"):
-      val result = JsonCirceEncoder.encode(constant(string, "foobar"), "foo")
+      val result = JsonCirceEncoder.encode(constant(string, "foobar"), ())
       assertTrue(result == CirceJson.fromString("foobar"))
     ,
     test("Collection"):
