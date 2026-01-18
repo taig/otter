@@ -1,6 +1,7 @@
 package io.taig.otter.component
 
 import cats.syntax.all.*
+import io.taig.otter.operation.PrimitiveOperation
 
 import java.time.Duration
 import java.time.Instant
@@ -17,7 +18,6 @@ import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeParseException
-import io.taig.otter.operation.PrimitiveOperation
 
 trait JavaTimeComponent[F[_]](using F: PrimitiveOperation.Text[F]):
   private def parse[A](name: String, decode: String => A): F[A] = F.codec(

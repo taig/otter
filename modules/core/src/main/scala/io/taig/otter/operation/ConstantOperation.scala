@@ -1,9 +1,9 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Reference
 import cats.Eq
-import io.taig.otter.InvariantK
 import cats.Eval
+import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
 trait ConstantOperation[F[_], G[_]]:
   self =>

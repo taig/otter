@@ -5,9 +5,9 @@ import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter as Self
+import io.taig.otter.operation.ConstantOperation
+import io.taig.otter.operation.PrimitiveOperation
 import io.taig.otter.syntax.all.*
-import Self.operation.ConstantOperation
-import Self.operation.PrimitiveOperation
 
 sealed abstract class Value[A] extends Value.Read[A], Value.Write[A]:
   override def self: Annotation[Value.Of[A]]

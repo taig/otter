@@ -1,10 +1,11 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.EnumerationOperation
-import io.taig.otter.Reference
-import io.taig.enumeration.ext.Mapping
-import io.taig.enumeration.ext.EnumerationValues
 import cats.Order
+import io.taig.enumeration.ext.EnumerationValues
+import io.taig.enumeration.ext.Mapping
+import io.taig.otter.Reference
+import io.taig.otter.operation.EnumerationOperation
+
 import scala.annotation.targetName
 
 trait EnumerationComponent[F[_], G[_]](using F: EnumerationOperation[F, G]):

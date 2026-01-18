@@ -1,7 +1,7 @@
 package io.taig.otter.component
 
-import io.taig.otter.Json
 import io.taig.enumeration.ext.Mapping
+import io.taig.otter.Json
 
 trait JsonComponent
     extends PrimitiveComponent.Boolean[Json.Primitive.Boolean],

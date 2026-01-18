@@ -3,13 +3,13 @@ package io.taig.otter.component
 import cats.Invariant
 import cats.syntax.all.*
 import io.taig.otter.Constraint
+import io.taig.otter.Reference
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.validation.Validation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
-import io.taig.otter.Reference
 import scala.annotation.targetName
 
 object PrimitiveComponent:

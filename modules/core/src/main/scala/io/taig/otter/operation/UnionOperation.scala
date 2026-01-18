@@ -1,8 +1,8 @@
 package io.taig.otter.operation
 
+import cats.data.NonEmptyChain
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
-import cats.data.NonEmptyChain
 
 trait UnionOperation[F[_], G[_]]:
   self =>

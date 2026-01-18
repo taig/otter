@@ -2,11 +2,11 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import cats.syntax.all.*
+import io.taig.data.Data
 import io.taig.otter.Constant
 import io.taig.otter.Constraint
 import io.taig.otter.Violations
 import io.taig.validation.Violation
-import io.taig.data.Data
 
 final class ConstantDecoder[F[_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
     extends Decoder[Constant.Read[F, *], T]:

@@ -1,11 +1,11 @@
 package io.taig.otter
 
 import cats.Contravariant
+import cats.Eq
+import cats.Eval
 import cats.Functor
 import cats.Invariant
 import io.taig.otter.Reference
-import cats.Eq
-import cats.Eval
 import io.taig.otter.operation.ConstantOperation
 
 sealed abstract class Constant[+F[_], A] extends Constant.Read[F, A], Constant.Write[F, A]:

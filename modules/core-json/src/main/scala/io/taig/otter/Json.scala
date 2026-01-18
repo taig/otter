@@ -6,10 +6,10 @@ import cats.ContravariantSemigroupal
 import cats.Functor
 import cats.Invariant
 import cats.InvariantSemigroupal
+import cats.syntax.all.*
+import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.otter.syntax.all.*
-import io.taig.otter as Self
-import cats.syntax.all.*
 
 sealed abstract class Json[A] extends Json.Read[A], Json.Write[A]:
   override def self: Annotation[Json.Of[A]]

@@ -2,10 +2,10 @@ package io.taig.otter
 
 import cats.Apply
 import cats.ContravariantSemigroupal
+import cats.Eval
 import cats.InvariantSemigroupal
 import cats.data.Chain
 import io.taig.otter.operation.TupleOperation
-import cats.Eval
 
 sealed abstract class Tuple[+F[_], A] extends Tuple.Read[F, A], Tuple.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Tuple[F, B] = Tuple.Modify(self = this, f, g)

@@ -1,12 +1,12 @@
 package io.taig.otter
 
+import io.github.iltotore.iron.*
+import io.github.iltotore.iron.constraint.all.*
+import io.taig.otter.component.CaseInsensitiveComponent
 import io.taig.otter.component.IronPrimitiveComponent
+import io.taig.otter.component.JavaTimeComponent
 import io.taig.otter.component.JsonComponent
 import io.taig.otter.syntax.AllSyntax
-import io.github.iltotore.iron.constraint.all.*
-import io.github.iltotore.iron.*
-import io.taig.otter.component.JavaTimeComponent
-import io.taig.otter.component.CaseInsensitiveComponent
 
 trait Dsl extends AllSyntax, Keys:
   object iron extends IronPrimitiveComponent

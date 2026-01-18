@@ -1,9 +1,10 @@
 package io.taig.otter.component
 
-import io.taig.otter.operation.ConstantOperation
 import cats.Eq
-import io.taig.otter.Reference
 import cats.Eval
+import io.taig.otter.Reference
+import io.taig.otter.operation.ConstantOperation
+
 import scala.annotation.targetName
 
 trait ConstantComponent[F[_], G[_]](using F: ConstantOperation[F, G]):

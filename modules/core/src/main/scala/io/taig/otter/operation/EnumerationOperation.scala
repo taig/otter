@@ -1,8 +1,8 @@
 package io.taig.otter.operation
 
-import io.taig.otter.Reference
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
 trait EnumerationOperation[F[_], G[_]]:
   self =>

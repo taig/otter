@@ -3,9 +3,9 @@ package io.taig.otter
 import cats.Contravariant
 import cats.Functor
 import cats.Invariant
+import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.operation.EnumerationOperation
-import cats.data.NonEmptyChain
 
 sealed abstract class Enumeration[+F[_], A] extends Enumeration.Read[F, A], Enumeration.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = Enumeration.Modify(self = this, f, g)

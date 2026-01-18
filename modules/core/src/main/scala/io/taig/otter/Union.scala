@@ -1,10 +1,10 @@
 package io.taig.otter
 
-import cats.Functor
 import cats.Contravariant
+import cats.Functor
 import cats.Invariant
-import io.taig.otter.operation.UnionOperation
 import cats.data.NonEmptyChain
+import io.taig.otter.operation.UnionOperation
 
 sealed abstract class Union[+F[_], A] extends Union.Read[F, A], Union.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Union[F, B] = Union.Modify(self = this, f, g)

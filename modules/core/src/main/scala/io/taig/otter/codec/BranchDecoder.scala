@@ -1,9 +1,8 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
-
-import io.taig.otter.Violations
 import io.taig.otter.Branch
+import io.taig.otter.Violations
 
 final class BranchDecoder[F[_], T](decoder: Decoder[F, T]) extends Decoder[Branch.Read[F, *], T]:
   override def decode[A](schema: Branch.Read[F, A], value: T): Validated[Violations, A] = schema match

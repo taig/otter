@@ -2,12 +2,12 @@ package io.taig.otter.operation
 
 import io.taig.otter.Constraint
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 import io.taig.validation.Validation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
-import io.taig.otter.Reference
 
 object PrimitiveOperation:
   trait Boolean[F[_]]:

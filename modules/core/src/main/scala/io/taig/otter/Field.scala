@@ -1,10 +1,10 @@
 package io.taig.otter
 
 import cats.Contravariant
+import cats.Eval
 import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.FieldOperation
-import cats.Eval
 
 sealed abstract class Field[+S[_], A] extends Field.Read[S, A], Field.Write[S, A]:
   final def imap[B](f: A => B)(g: B => A): Field[S, B] = Field.Modify(self = this, f, g)

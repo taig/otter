@@ -1,15 +1,15 @@
 package io.taig.otter.codec
 
+import cats.data.Chain
 import cats.data.Validated
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
-import io.taig.otter.typeOf
-import io.taig.otter.Constraint
 import io.taig.data.circe.toData
+import io.taig.otter.Constraint
 import io.taig.otter.Json
 import io.taig.otter.Violations
-import cats.syntax.all.*
+import io.taig.otter.typeOf
 import io.taig.validation.Violation
-import cats.data.Chain
 
 object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
   override def decode[A](schema: Json.Read[A], json: CirceJson): Validated[Violations, A] = schema match

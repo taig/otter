@@ -1,9 +1,9 @@
 package io.taig.otter
 
 import cats.Contravariant
+import cats.Eval
 import cats.Functor
 import cats.Invariant
-import cats.Eval
 import io.taig.otter.operation.OptionalOperation
 
 sealed abstract class Optional[+F[_], A] extends Optional.Read[F, A], Optional.Write[F, A]:

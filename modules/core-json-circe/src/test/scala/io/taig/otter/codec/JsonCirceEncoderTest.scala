@@ -1,15 +1,15 @@
 package io.taig.otter.codec
 
-import zio.test.ZIOSpecDefault
-import zio.Scope
-import zio.test.Spec
-import zio.test.TestEnvironment
-import zio.*
-import zio.test.*
-import io.taig.otter.component.JsonComponent.*
+import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
-import cats.syntax.all.*
+import io.taig.otter.component.JsonComponent.*
+import zio.*
+import zio.Scope
+import zio.test.*
+import zio.test.Spec
+import zio.test.TestEnvironment
+import zio.test.ZIOSpecDefault
 
 object JsonCirceEncoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceEncoderTest")(

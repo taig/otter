@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
+import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Collection
 import io.taig.otter.Violations
-import cats.data.Chain
 
 final class CollectionDecoder[F[_], T](decoder: Decoder[F, T]) extends Decoder[Collection.Read[F, *], Seq[T]]:
   override def decode[A](schema: Collection.Read[F, A], values: Seq[T]): Validated[Violations, A] = schema match

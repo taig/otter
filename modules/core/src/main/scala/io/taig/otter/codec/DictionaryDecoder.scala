@@ -4,6 +4,7 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Dictionary
 import io.taig.otter.Violations
+
 import scala.collection.immutable.SortedMap
 
 final class DictionaryDecoder[F[_], T](decoder: Decoder[F, T])
