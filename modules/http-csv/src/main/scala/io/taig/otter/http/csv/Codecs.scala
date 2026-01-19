@@ -21,7 +21,7 @@ trait Codecs extends Http.Types, Http.Codecs:
         case codec: Record.Of[Data.Primitive, A] =>
           Csv(
             headers = codec.fields.toVector.map(_.name).toList.some,
-            values = as.map(codec.printObject(_).toList.map { case (_, value) => ??? })
+            values = as.map(codec.printObject(_).toList.map { case (_, _) => ??? })
           )
         // case codec: Tuple.Required.Of[Data.Primitive, A] =>
         //   Csv(headers = none, values = as.map(codec.printArray(_).toList))

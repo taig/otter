@@ -2,7 +2,6 @@ package io.taig.otter
 
 import cats.data.NonEmptyChain
 import cats.data.NonEmptyChainImpl.Type
-import cats.data.Validated
 import cats.data.Validated.Invalid
 import cats.data.Validated.Valid
 import cats.syntax.all.*

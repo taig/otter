@@ -3,7 +3,6 @@ package io.taig.otter
 import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
-import io.taig.otter.Codec.Result
 
 sealed abstract class Record[+O <: Data, A] extends Codec[Data.Object[O], A]:
   self =>

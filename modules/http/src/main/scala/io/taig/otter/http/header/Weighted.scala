@@ -2,7 +2,6 @@ package io.taig.otter.http.header
 
 import cats.Order
 import cats.Show
-import cats.syntax.all.*
 import io.taig.otter.http.Printers
 
 final case class Weighted[A](self: A, weight: Option[BigDecimal])

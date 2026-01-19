@@ -1,7 +1,6 @@
 package io.taig.otter.sample
 
 import cats.Order
-import cats.syntax.all.*
 import io.circe.JsonObject
 
 import scala.collection.immutable.SortedSet

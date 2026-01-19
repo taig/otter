@@ -63,8 +63,8 @@ def toHttp4sResponse[F[_]: MonadThrow](response: Http.Response): F[Http4sRespons
   entity = toHttp4sEntity(response.body)
 yield Http4sResponse(status, headers = headers, entity = entity)
 
-def toHttp4sEntity[F[_]: MonadThrow](body: Array[Byte]): Http4sEntity[F] =
+def toHttp4sEntity[F[_]](body: Array[Byte]): Http4sEntity[F] =
   if body.isEmpty then Http4sEntity.empty else Http4sEntity.strict(ByteVector(body))
 
-def toHttp4sApp[F[_]: Concurrent](app: App[F], onError: Throwable => F[Unit])(using F: MonadThrow[F]): Http4sApp[F] =
+def toHttp4sApp[F[_]: Concurrent](app: App[F], onError: Throwable => F[Unit]): Http4sApp[F] =
   Http4sApp(toHttpRequest(_).flatMap(app(_, onError)).flatMap(toHttp4sResponse))

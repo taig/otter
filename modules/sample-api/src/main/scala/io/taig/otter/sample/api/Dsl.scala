@@ -1,6 +1,5 @@
 package io.taig.otter.sample.api
 
-import cats.syntax.all.*
 import io.taig.otter.http.csv as Csv
 import io.taig.otter.http.json as Json
 import io.taig.otter.openapi as Openapi

@@ -118,7 +118,7 @@ trait Codecs extends Types:
         minLength: Option[Int] = none,
         maxLength: Option[Int] = none
     ): Primitive.Of[Data.String, A] =
-      apply(minLength = none, maxLength = none, matches = Pattern.compile(Pattern.quote(pattern)).some)
+      apply(minLength, maxLength, matches = Pattern.compile(Pattern.quote(pattern)).some)
     final def required(maxLength: Option[Int] = none, matches: Option[Pattern] = none): Primitive.Of[Data.String, A] =
       apply(minLength = 1.some, maxLength, matches)
     final def required(maxLength: Int, matches: Pattern): Primitive.Of[Data.String, A] =
