@@ -1,10 +1,10 @@
 package io.taig.otter.operation
 
+import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
 import io.taig.otter.InvariantK
 import io.taig.otter.Reference
 import io.taig.otter.codec.Encoder
-import cats.data.NonEmptyChain
 
 trait EnumerationOperation[F[_], G[_]]:
   self =>

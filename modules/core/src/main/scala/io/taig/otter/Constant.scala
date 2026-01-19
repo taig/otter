@@ -6,8 +6,8 @@ import cats.Eval
 import cats.Functor
 import cats.Invariant
 import io.taig.otter.Reference
-import io.taig.otter.operation.ConstantOperation
 import io.taig.otter.codec.Encoder
+import io.taig.otter.operation.ConstantOperation
 
 sealed abstract class Constant[+F[_], A] extends Constant.Read[F, A], Constant.Write[F, A]:
   self =>

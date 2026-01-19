@@ -5,8 +5,8 @@ import cats.Functor
 import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.enumeration.ext.Mapping
-import io.taig.otter.operation.EnumerationOperation
 import io.taig.otter.codec.Encoder
+import io.taig.otter.operation.EnumerationOperation
 
 sealed abstract class Enumeration[+F[_], A] extends Enumeration.Read[F, A], Enumeration.Write[F, A]:
   final def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = Enumeration.Modify(self = this, f, g)

@@ -1,14 +1,14 @@
 package io.taig.otter.codec
 
-import cats.syntax.all.*
 import cats.data.State
+import cats.syntax.all.*
 import io.taig.otter.Json
-
-import scala.collection.immutable.ListMap
+import io.taig.otter.JsonZod
 import io.taig.otter.JsonZodExpression
 import io.taig.otter.Keys
-import io.taig.otter.JsonZod
 import io.taig.otter.Zod
+
+import scala.collection.immutable.ListMap
 
 object JsonZodExpressionRenderer extends Renderer[Json.Read, State[ListMap[String, String], JsonZodExpression]]:
   val renderer = JsonZodInlineRenderer(renderer = this)

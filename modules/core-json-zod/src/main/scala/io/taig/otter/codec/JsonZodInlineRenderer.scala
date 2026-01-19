@@ -1,9 +1,9 @@
 package io.taig.otter.codec
 
 import cats.Applicative
+import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.JsonZodExpression
-import cats.syntax.all.*
 
 final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Read, F[JsonZodExpression]])
     extends Renderer[Json.Read, F[String]]:
