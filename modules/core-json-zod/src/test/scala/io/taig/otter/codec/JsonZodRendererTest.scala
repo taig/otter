@@ -27,13 +27,13 @@ object JsonZodRendererTest extends ZIOSpecDefault:
         field("gender", constant(string, "unknown")) :*
         field("pet", Animal.json.optional)
 
-      val obtained = JsonZodExpressionRenderer.render(schema).runA(ListMap.empty).value.show
+      val obtained = JsonZodExpressionRenderer.render(schema).runA(ListMap.empty).value.render
 
       val expected = """z.object({
-                       |"name": z.string(),
-                       |"age": z.optional(z.number()),
-                       |"gender": z.literal("unknown"),
-                       |"pet": z.nullable(z.enum(["bird", "cat", "dog"]))
+                       |  "name": z.string(),
+                       |  "age": z.optional(z.number()),
+                       |  "gender": z.literal("unknown"),
+                       |  "pet": z.nullable(z.enum(["bird", "cat", "dog"]))
                        |})""".stripMargin
 
       assertTrue(obtained == expected)

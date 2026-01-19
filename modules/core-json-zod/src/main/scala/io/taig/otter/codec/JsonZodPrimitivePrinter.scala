@@ -1,14 +1,10 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Json
+import io.taig.otter.Typescript
 
-object JsonZodPrimitivePrinter extends Printer[Json.Primitive.Write]:
-  val printer = PrimitivePrinter(printer = this)
+object JsonZodPrimitivePrinter extends Encoder[Json.Primitive.Write, Typescript.Expression]:
+  val printer = TypescriptExpressionPrimitivePrinter(printer = this)
     .contramapK[Json.Primitive.Write]([A] => (json: Json.Primitive.Write[A]) => json.self.self)
-    .mapWith: [A] =>
-      (json: Json.Primitive.Write[A], value: String) =>
-        json match
-          case _: Json.Primitive.Text.Write[?] => s"\"${value.replace("\"", "\\\"")}\""
-          case _                               => value
 
-  override def encode[A](json: Json.Primitive.Write[A], a: A): String = printer.encode(json, a)
+  override def encode[A](json: Json.Primitive.Write[A], a: A): Typescript.Expression = printer.encode(json, a)

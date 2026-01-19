@@ -120,13 +120,21 @@ lazy val coreJavaTime = module(identifier = Some("core-java-time"))
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
 
+/** TypeScript data class definitions */
+lazy val coreTypescript = module(identifier = Some("core-typescript"))
+  .settings(
+    libraryDependencies ++=
+      "dev.zio" %%% "zio-test-sbt" % Version.Zio % "test" ::
+        Nil
+  )
+
 /** zod integration */
 lazy val coreZod = module(identifier = Some("core-zod"))
   .dependsOn(core % "compile->compile;test->test")
 
 /** zod codegen for JSON */
 lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
-  .dependsOn(coreJson % "compile->compile;test->test", coreZod % "compile->compile;test->test")
+  .dependsOn(coreJson % "compile->compile;test->test", coreZod, coreTypescript)
 
 /** JSON codecs for io.circe / circe */
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))

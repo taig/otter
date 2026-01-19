@@ -1,45 +1,112 @@
 package io.taig.otter.codec
 
 import cats.Applicative
-import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.JsonZodExpression
+import io.taig.otter.Typescript
+import cats.syntax.all.*
 
-final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Read, F[JsonZodExpression]])
-    extends Renderer[Json.Read, F[String]]:
-  override def render[A](json: Json.Read[A]): F[String] = json match
-    case json: Json.Constant.Read[A]   => s"z.literal(${json.encode(JsonZodPrimitivePrinter)})".pure
+final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Read, F[Typescript.Expression]])
+    extends Renderer[Json.Read, F[Typescript.Expression]]:
+  private def z(property: Typescript.Expression): Typescript.Expression =
+    Typescript.Expression.Member(namespace = "z", property)
+
+  override def render[A](json: Json.Read[A]): F[Typescript.Expression] = json match
+    case json: Json.Constant.Read[A] =>
+      z(
+        Typescript.Expression.Call(
+          name = "literal",
+          arguments = List(json.encode(JsonZodPrimitivePrinter))
+        )
+      ).pure
     case json: Json.Collection.Read[A] =>
-      renderer.render(json.schema.value).map(expression => s"z.array($expression)")
+      renderer
+        .render(json.schema.value)
+        .map(expression => z(Typescript.Expression.Call(name = "array", arguments = List(expression))))
     case json: Json.Dictionary.Read[A] =>
-      renderer.render(json.schema.value).map(expression => s"z.record(z.string(), $expression)")
+      renderer
+        .render(json.schema.value)
+        .map: expression =>
+          z(
+            Typescript.Expression.Call(
+              name = "record",
+              arguments = List(Typescript.Expression.Identifier("string"), expression)
+            )
+          )
+
     case json: Json.Enumeration.Read[A] =>
-      s"z.enum(${json.encode(JsonZodPrimitivePrinter).mkString_("[", ", ", "]")})".pure
+      z(
+        Typescript.Expression.Call(
+          name = "enum",
+          arguments = List(
+            Typescript.Expression.Array(
+              elements = json.encode(JsonZodPrimitivePrinter).toList
+            )
+          )
+        )
+      ).pure
     case json: Json.Optional.Read[A] =>
-      renderer.render(json.schema.value).map(expression => s"z.nullable($expression)")
-    case _: Json.Primitive.Boolean.Read[A]        => "z.boolean()".pure
-    case _: Json.Primitive.Coerce.Boolean.Read[A] => "z.coerce.boolean()".pure
-    case _: Json.Primitive.Coerce.Number.Read[A]  => "z.coerce.number()".pure
-    case _: Json.Primitive.Coerce.Text.Read[A]    => "z.coerce.string()".pure
-    case _: Json.Primitive.Number.Read[A]         => "z.number()".pure
-    case _: Json.Primitive.Text.Read[A]           => "z.string()".pure
-    case json: Json.Record.Read[A]                =>
+      renderer
+        .render(json.schema.value)
+        .map(expression => z(Typescript.Expression.Call(name = "nullable", arguments = List(expression))))
+    case _: Json.Primitive.Boolean.Read[A] =>
+      z(Typescript.Expression.Call(name = "boolean", arguments = Nil)).pure
+    case _: Json.Primitive.Coerce.Boolean.Read[A] =>
+      z(
+        Typescript.Expression
+          .Member(
+            namespace = "coerce",
+            property = Typescript.Expression.Call(name = "boolean", arguments = Nil)
+          )
+      ).pure
+    case _: Json.Primitive.Coerce.Number.Read[A] =>
+      z(
+        Typescript.Expression
+          .Member(
+            namespace = "coerce",
+            property = Typescript.Expression.Call(name = "number", arguments = Nil)
+          )
+      ).pure
+    case _: Json.Primitive.Coerce.Text.Read[A] =>
+      z(
+        Typescript.Expression
+          .Member(
+            namespace = "coerce",
+            property = Typescript.Expression.Call(name = "string", arguments = Nil)
+          )
+      ).pure
+    case _: Json.Primitive.Number.Read[A] =>
+      z(Typescript.Expression.Call(name = "number", arguments = Nil)).pure
+    case _: Json.Primitive.Text.Read[A] =>
+      z(Typescript.Expression.Call(name = "string", arguments = Nil)).pure
+    case json: Json.Record.Read[A] =>
       json.fields
         .map(_.value)
         .traverse: field =>
           renderer
             .render(field.schema.value)
             .map: expression =>
-              val value = if field.isOptional then s"z.optional($expression)" else expression
-              s""""${field.name}": $value"""
-        .map(fields => s"z.object(${fields.mkString_("{\n", ",\n", "\n}")})")
+              if field.isOptional
+              then z(Typescript.Expression.Call(name = "optional", arguments = List(expression)))
+              else expression
+            .map(field.name -> _)
+        .map: fields =>
+          z(
+            Typescript.Expression.Call(
+              name = "object",
+              arguments = List(Typescript.Expression.Object(fields = fields.toList))
+            )
+          )
     case json: Json.Tuple.Read[A] =>
       json.schemas
         .map(_.value)
         .traverse(renderer.render)
-        .map(expressions => s"z.tuple(${expressions.mkString_("[", ", ", "]")})")
+        .map(expressions => Typescript.Expression.Array(elements = expressions.toList))
+        .map: expression =>
+          z(Typescript.Expression.Call(name = "tuple", arguments = List(expression)))
     case json: Json.Union.Read[A] =>
       json.branches
         .map(_.value.schema.value)
         .traverse(renderer.render)
-        .map(_.mkString_("z.union([", ", ", "])"))
+        .map(expressions => Typescript.Expression.Array(elements = expressions.toList))
+        .map: expression =>
+          z(Typescript.Expression.Call(name = "union", arguments = List(expression)))
