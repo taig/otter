@@ -9,10 +9,10 @@ object TypescriptTest extends ZIOSpecDefault:
     test("render: Expression.Array"):
       val expression = Typescript.Expression.Array(
         elements = List(
-          Typescript.Expression.Identifier("bar"),
+          Typescript.Expression.Symbol("bar"),
           Typescript.Expression.Member(
             namespace = "foo",
-            property = Typescript.Expression.Identifier("bar")
+            property = Typescript.Expression.Symbol("bar")
           )
         )
       )
@@ -30,17 +30,17 @@ object TypescriptTest extends ZIOSpecDefault:
     ,
     test("render: Expression.Array (single)"):
       val expression = Typescript.Expression.Array(
-        elements = List(Typescript.Expression.Identifier(name = "foo"))
+        elements = List(Typescript.Expression.Symbol(name = "foo"))
       )
       assertTrue(expression.render == "[foo]")
     ,
     test("render: Expression.Object"):
       val expression = Typescript.Expression.Object(
         fields = List(
-          "foo" -> Typescript.Expression.Identifier("bar"),
+          "foo" -> Typescript.Expression.Symbol("bar"),
           "bar" -> Typescript.Expression.Member(
             namespace = "foo",
-            property = Typescript.Expression.Identifier("bar")
+            property = Typescript.Expression.Symbol("bar")
           )
         )
       )
@@ -57,6 +57,6 @@ object TypescriptTest extends ZIOSpecDefault:
       assertTrue(expression.render == "{}")
     ,
     test("render: Expression.Object (single)"):
-      val expression = Typescript.Expression.Object(fields = List("foo" -> Typescript.Expression.Identifier("bar")))
+      val expression = Typescript.Expression.Object(fields = List("foo" -> Typescript.Expression.Symbol("bar")))
       assertTrue(expression.render == "{ \"foo\": bar }")
   )

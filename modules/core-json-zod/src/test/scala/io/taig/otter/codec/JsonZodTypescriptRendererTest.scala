@@ -36,7 +36,7 @@ object JsonZodTypescriptRendererTest extends ZIOSpecDefault:
 
       assertTrue(obtained == expected)
     ,
-    test("object: name"):
+    test("name"):
       val name = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
 
       val schema = field("name", name) :* field("age", int).optional
@@ -52,6 +52,23 @@ object JsonZodTypescriptRendererTest extends ZIOSpecDefault:
                        |  "name": Name,
                        |  "age": z.optional(z.number())
                        |})""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("recursion"):
+      lazy val person: Json.Record.Read[(String, Option[Any])] = (
+        field("name", string) :*
+          field("mother", person).optional
+      ).attr(Keys.name, "Person")
+
+      val obtained = JsonZodTypescriptRenderer.render(person).mkString("\n\n")
+
+      val expected = """const Person = z.object({
+                       |  "name": z.string(),
+                       |  "mother": z.optional(z.lazy(() => Person))
+                       |});
+                       |
+                       |Person""".stripMargin
 
       assertTrue(obtained == expected)
   )

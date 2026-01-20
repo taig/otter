@@ -16,9 +16,9 @@ object Typescript:
   object Expression:
     final case class Array(elements: List[Typescript.Expression]) extends Typescript.Expression
 
-    final case class Call(name: String, arguments: List[Typescript.Expression]) extends Typescript.Expression
+    final case class Arrow(body: Typescript) extends Typescript.Expression
 
-    final case class Identifier(name: String) extends Typescript.Expression
+    final case class Call(name: String, arguments: List[Typescript.Expression]) extends Typescript.Expression
 
     sealed abstract class Literal extends Typescript.Expression
 
@@ -31,13 +31,19 @@ object Typescript:
 
     final case class Object(fields: List[(String, Typescript.Expression)]) extends Typescript.Expression
 
+    final case class Symbol(name: String) extends Typescript.Expression
+
   sealed abstract class Statement extends Typescript:
     final override def render: String = renderTypescriptStatement(this)
 
   object Statement:
+    final case class Block(statements: List[Typescript.Statement]) extends Typescript.Statement
+
     sealed abstract class Declaration extends Typescript.Statement
 
     object Declaration:
       final case class Constant(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
 
       final case class Variable(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
+
+    final case class Evaluate(expression: Typescript.Expression) extends Typescript.Statement

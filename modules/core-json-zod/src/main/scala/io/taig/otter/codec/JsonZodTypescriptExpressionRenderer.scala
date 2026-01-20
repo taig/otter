@@ -1,6 +1,7 @@
 package io.taig.otter.codec
 
 import cats.Applicative
+import io.taig.otter.z
 import io.taig.otter.Json
 import io.taig.otter.Typescript
 import cats.syntax.all.*
@@ -8,9 +9,6 @@ import cats.syntax.all.*
 final class JsonZodTypescriptExpressionRenderer[F[_]: Applicative](
     renderer: Renderer[Json.Read, F[Typescript.Expression]]
 ) extends Renderer[Json.Read, F[Typescript.Expression]]:
-  private def z(property: Typescript.Expression): Typescript.Expression =
-    Typescript.Expression.Member(namespace = "z", property)
-
   override def render[A](json: Json.Read[A]): F[Typescript.Expression] = json match
     case json: Json.Constant.Read[A] =>
       z(
@@ -30,7 +28,7 @@ final class JsonZodTypescriptExpressionRenderer[F[_]: Applicative](
           z(
             Typescript.Expression.Call(
               name = "record",
-              arguments = List(Typescript.Expression.Identifier("string"), expression)
+              arguments = List(Typescript.Expression.Symbol("string"), expression)
             )
           )
 

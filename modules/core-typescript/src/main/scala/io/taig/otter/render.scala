@@ -20,6 +20,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Array(Nil)                  => "[]"
   case Typescript.Expression.Array(element :: Nil)       => s"[$element]"
   case Typescript.Expression.Array(elements)             => elements.map(indent).mkString("[\n", ",\n", "\n]")
+  case Typescript.Expression.Arrow(body)                 => s"() => $body"
   case Typescript.Expression.Call(name, Nil)             => s"$name()"
   case Typescript.Expression.Call(name, argument :: Nil) =>
     renderTypescriptExpression(argument).pipe:
@@ -32,7 +33,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
     s"""$name(
        |${arguments.map(indent).mkString("\n,")}
        |)""".stripMargin
-  case Typescript.Expression.Identifier(name)             => name
+  case Typescript.Expression.Symbol(name)                 => name
   case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property}"
   case Typescript.Expression.Literal.Boolean(value)       => String.valueOf(value)
   case Typescript.Expression.Literal.Number(value)        => value.toPlainString
@@ -52,5 +53,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
       .mkString("{\n", ",\n", "\n}")
 
 private val renderTypescriptStatement: Typescript.Statement => String =
+  case Typescript.Statement.Block(statements)                 => statements.map(indent).mkString("{\n", "\n", "\n}")
+  case Typescript.Statement.Evaluate(expression)              => s"$expression;"
   case Typescript.Statement.Declaration.Constant(name, value) => s"const $name = $value;"
   case Typescript.Statement.Declaration.Variable(name, value) => s"let $name = $value;"
