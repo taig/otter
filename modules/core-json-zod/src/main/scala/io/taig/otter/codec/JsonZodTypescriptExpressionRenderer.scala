@@ -5,8 +5,9 @@ import io.taig.otter.Json
 import io.taig.otter.Typescript
 import cats.syntax.all.*
 
-final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Read, F[Typescript.Expression]])
-    extends Renderer[Json.Read, F[Typescript.Expression]]:
+final class JsonZodTypescriptExpressionRenderer[F[_]: Applicative](
+    renderer: Renderer[Json.Read, F[Typescript.Expression]]
+) extends Renderer[Json.Read, F[Typescript.Expression]]:
   private def z(property: Typescript.Expression): Typescript.Expression =
     Typescript.Expression.Member(namespace = "z", property)
 
@@ -15,7 +16,7 @@ final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Rea
       z(
         Typescript.Expression.Call(
           name = "literal",
-          arguments = List(json.encode(JsonZodPrimitivePrinter))
+          arguments = List(json.encode(JsonZodPrimitiveTypescriptExpressionEncoder))
         )
       ).pure
     case json: Json.Collection.Read[A] =>
@@ -39,7 +40,7 @@ final class JsonZodInlineRenderer[F[_]: Applicative](renderer: Renderer[Json.Rea
           name = "enum",
           arguments = List(
             Typescript.Expression.Array(
-              elements = json.encode(JsonZodPrimitivePrinter).toList
+              elements = json.encode(JsonZodPrimitiveTypescriptExpressionEncoder).toList
             )
           )
         )

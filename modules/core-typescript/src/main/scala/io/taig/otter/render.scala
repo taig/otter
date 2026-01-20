@@ -8,23 +8,18 @@ private val isMultiline: String => Boolean = _.linesIterator.drop(1).hasNext
 
 private val isObject: String => Boolean = value => value.startsWith("{") && value.endsWith("}")
 
-private val indent: String => String = _.linesIterator.map(Indent + _).mkString("\n")
+private val indent: Any => String = _.toString.linesIterator.map(Indent + _).mkString("\n")
 
-private val align: String => String = _.linesIterator.zipWithIndex
+private val align: Any => String = _.toString.linesIterator.zipWithIndex
   .map:
     case (line, 0) => line
     case (line, _) => Indent + line
   .mkString("\n")
 
-private val renderTypescript: Typescript => String =
-  case typescript: Typescript.Expression => renderTypescriptExpression(typescript)
-  case typescript: Typescript.Statement  => renderTypescriptStatement(typescript)
-
 private val renderTypescriptExpression: Typescript.Expression => String =
-  case Typescript.Expression.Array(Nil)            => "[]"
-  case Typescript.Expression.Array(element :: Nil) => s"[$element]"
-  case Typescript.Expression.Array(elements)       =>
-    elements.map(element => Indent + s"$element").mkString("[\n", ",\n", "\n]")
+  case Typescript.Expression.Array(Nil)                  => "[]"
+  case Typescript.Expression.Array(element :: Nil)       => s"[$element]"
+  case Typescript.Expression.Array(elements)             => elements.map(indent).mkString("[\n", ",\n", "\n]")
   case Typescript.Expression.Call(name, Nil)             => s"$name()"
   case Typescript.Expression.Call(name, argument :: Nil) =>
     renderTypescriptExpression(argument).pipe:
@@ -35,7 +30,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
       case argument => s"$name($argument)"
   case Typescript.Expression.Call(name, arguments) =>
     s"""$name(
-       |${arguments.map(renderTypescriptExpression).map(indent).mkString("\n,")}
+       |${arguments.map(indent).mkString("\n,")}
        |)""".stripMargin
   case Typescript.Expression.Identifier(name)             => name
   case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property}"
@@ -44,7 +39,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Literal.String(value)        => s"\"$value\""
   case Typescript.Expression.Object(Nil)                  => "{}"
   case Typescript.Expression.Object((name, value) :: Nil) =>
-    renderTypescriptExpression(value).pipe:
+    s"$value".pipe:
       case value if isMultiline(value) =>
         s"""{ 
            |${indent(s"\"$name\": $value")}
@@ -52,7 +47,8 @@ private val renderTypescriptExpression: Typescript.Expression => String =
       case value => s"{ \"$name\": $value }"
   case Typescript.Expression.Object(fields) =>
     fields
-      .map((name, value) => Indent + s"\"$name\": ${align(renderTypescriptExpression(value))}")
+      .map((name, value) => s"\"$name\": $value")
+      .map(indent)
       .mkString("{\n", ",\n", "\n}")
 
 private val renderTypescriptStatement: Typescript.Statement => String =

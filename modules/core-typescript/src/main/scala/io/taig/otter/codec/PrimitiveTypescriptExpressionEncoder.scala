@@ -6,7 +6,7 @@ import scala.annotation.tailrec
 import io.taig.otter.Typescript
 import java.math.BigDecimal as JBigDecimal
 
-final class TypescriptExpressionPrimitivePrinter[F[_]](printer: Encoder[F, Typescript.Expression])
+final class PrimitiveTypescriptExpressionEncoder[F[_]](encoder: => Encoder[F, Typescript.Expression])
     extends Encoder[Primitive.Write[F, *], Typescript.Expression]:
   @tailrec
   override def encode[A](schema: Primitive.Write[F, A], a: A): Typescript.Expression = schema match
@@ -14,14 +14,14 @@ final class TypescriptExpressionPrimitivePrinter[F[_]](printer: Encoder[F, Types
     case Primitive.Boolean.Root                         => Typescript.Expression.Literal.Boolean(a)
     case Primitive.Boolean.Write.Modify(self, f)        => encode(schema = self, f(a))
     case Primitive.Coerce.Boolean.Modify(self, _, f)    => encode(schema = self, f(a))
-    case Primitive.Coerce.Boolean.Root(schema)          => printer.encode(schema.value, a)
+    case Primitive.Coerce.Boolean.Root(schema)          => encoder.encode(schema.value, a)
     case Primitive.Coerce.Boolean.Write.Modify(self, f) => encode(schema = self, f(a))
     case Primitive.Coerce.Modify(self, _, f)            => encode(schema = self, f(a))
     case Primitive.Coerce.Number.Modify(self, _, f)     => encode(schema = self, f(a))
-    case Primitive.Coerce.Number.Root(schema)           => printer.encode(schema.value, a)
+    case Primitive.Coerce.Number.Root(schema)           => encoder.encode(schema.value, a)
     case Primitive.Coerce.Number.Write.Modify(self, f)  => encode(schema = self, f(a))
     case Primitive.Coerce.Text.Modify(self, _, f)       => encode(schema = self, f(a))
-    case Primitive.Coerce.Text.Root(schema)             => printer.encode(schema.value, a)
+    case Primitive.Coerce.Text.Root(schema)             => encoder.encode(schema.value, a)
     case Primitive.Coerce.Text.Write.Modify(self, f)    => encode(schema = self, f(a))
     case Primitive.Coerce.Write.Modify(self, f)         => encode(schema = self, f(a))
     case Primitive.Number.BigDecimal(_)                 => Typescript.Expression.Literal.Number(a)

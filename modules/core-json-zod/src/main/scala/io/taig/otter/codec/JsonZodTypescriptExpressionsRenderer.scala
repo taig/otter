@@ -9,9 +9,9 @@ import io.taig.otter.Zod
 import scala.collection.immutable.ListMap
 import io.taig.otter.Typescript
 
-object JsonZodExpressionRenderer
+object JsonZodTypescriptExpressionsRenderer
     extends Renderer[Json.Read, State[ListMap[String, Typescript.Expression], Typescript.Expression]]:
-  val renderer = JsonZodInlineRenderer(renderer = this)
+  val renderer = JsonZodTypescriptExpressionRenderer(renderer = this)
 
   override def render[A](json: Json.Read[A]): State[ListMap[String, Typescript.Expression], Typescript.Expression] =
     State: definitions =>

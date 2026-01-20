@@ -7,11 +7,11 @@ import java.math.BigDecimal as JBigDecimal
 sealed abstract class Typescript extends Product, Serializable:
   final override def toString: String = render
 
-  def render: String = renderTypescript(this)
+  def render: String
 
 object Typescript:
   sealed abstract class Expression extends Typescript:
-    override def render: String = renderTypescriptExpression(this)
+    final override def render: String = renderTypescriptExpression(this)
 
   object Expression:
     final case class Array(elements: List[Typescript.Expression]) extends Typescript.Expression
@@ -32,7 +32,7 @@ object Typescript:
     final case class Object(fields: List[(String, Typescript.Expression)]) extends Typescript.Expression
 
   sealed abstract class Statement extends Typescript:
-    override def render: String = renderTypescriptStatement(this)
+    final override def render: String = renderTypescriptStatement(this)
 
   object Statement:
     sealed abstract class Declaration extends Typescript.Statement

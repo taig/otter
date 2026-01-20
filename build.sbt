@@ -122,11 +122,7 @@ lazy val coreJson = module(identifier = Some("core-json"))
 
 /** TypeScript data class definitions */
 lazy val coreTypescript = module(identifier = Some("core-typescript"))
-  .settings(
-    libraryDependencies ++=
-      "dev.zio" %%% "zio-test-sbt" % Version.Zio % "test" ::
-        Nil
-  )
+  .dependsOn(core % "compile->compile;test->test")
 
 /** zod integration */
 lazy val coreZod = module(identifier = Some("core-zod"))
