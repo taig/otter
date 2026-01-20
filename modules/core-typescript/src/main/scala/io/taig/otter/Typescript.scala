@@ -7,31 +7,11 @@ import java.math.BigDecimal as JBigDecimal
 sealed abstract class Typescript extends Product, Serializable:
   final override def toString: String = render
 
-  final def render: String = render(level = 0)
-
-  protected def render(level: Int): String
+  def render: String = renderTypescript(this)
 
 object Typescript:
-  private val Indent: String = "  "
-
   sealed abstract class Expression extends Typescript:
-    override protected def render(level: Int): String = this match
-      case Typescript.Expression.Array(Nil)            => "[]"
-      case Typescript.Expression.Array(element :: Nil) => s"[${element.render(level)}]"
-      case Typescript.Expression.Array(elements)       =>
-        elements.map(element => Indent + element.render(level)).mkString("[\n", ",\n", "\n]")
-      case Typescript.Expression.Call(name, arguments) => s"$name(${arguments.map(_.render(level)).mkString(", ")})"
-      case Typescript.Expression.Identifier(name)      => name
-      case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property.render(level)}"
-      case Typescript.Expression.Literal.Boolean(value)       => String.valueOf(value)
-      case Typescript.Expression.Literal.Number(value)        => value.toPlainString
-      case Typescript.Expression.Literal.String(value)        => s"\"$value\""
-      case Typescript.Expression.Object(Nil)                  => "{}"
-      case Typescript.Expression.Object((name, value) :: Nil) => s"{ \"$name\": ${value.render(level)} }"
-      case Typescript.Expression.Object(fields)               =>
-        fields
-          .map((name, value) => Indent + s"\"$name\": ${value.render(level)}")
-          .mkString("{\n", ",\n", "\n}")
+    override def render: String = renderTypescriptExpression(this)
 
   object Expression:
     final case class Array(elements: List[Typescript.Expression]) extends Typescript.Expression
@@ -52,11 +32,7 @@ object Typescript:
     final case class Object(fields: List[(String, Typescript.Expression)]) extends Typescript.Expression
 
   sealed abstract class Statement extends Typescript:
-    override protected def render(level: Int): String = this match
-      case Typescript.Statement.Declaration.Constant(name, value) =>
-        s"const $name = ${value.render(level)};"
-      case Typescript.Statement.Declaration.Variable(name, value) =>
-        s"let $name = ${value.render(level)};"
+    override def render: String = renderTypescriptStatement(this)
 
   object Statement:
     sealed abstract class Declaration extends Typescript.Statement
