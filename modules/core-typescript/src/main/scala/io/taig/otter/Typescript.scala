@@ -42,8 +42,31 @@ object Typescript:
     sealed abstract class Declaration extends Typescript.Statement
 
     object Declaration:
-      final case class Constant(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
+      final case class Constant(name: String, tpe: Option[Typescript.Type], value: Typescript.Expression)
+          extends Typescript.Statement.Declaration
 
-      final case class Variable(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
+      final case class Variable(name: String, tpe: Option[Typescript.Type], value: Typescript.Expression)
+          extends Typescript.Statement.Declaration
+
+      final case class Type(name: String, tpe: Typescript.Type) extends Typescript.Statement.Declaration
 
     final case class Evaluate(expression: Typescript.Expression) extends Typescript.Statement
+
+  sealed abstract class Type extends Typescript:
+    final override def render: String = renderTypescriptType(this)
+
+  object Type:
+    sealed abstract class Literal extends Typescript.Type
+
+    object Literal:
+      final case class Boolean(value: SBoolean) extends Typescript.Type.Literal
+      final case class Number(value: JBigDecimal) extends Typescript.Type.Literal
+      final case class String(value: JString) extends Typescript.Type.Literal
+
+    final case class Member(namespace: String, property: Typescript.Type) extends Typescript.Type
+
+    final case class Object(fields: List[(String, Typescript.Type)]) extends Typescript.Type
+
+    final case class Symbol(name: String, parameters: List[Typescript.Type]) extends Typescript.Type
+
+    final case class TypeOf(expression: Typescript.Expression) extends Typescript.Type
