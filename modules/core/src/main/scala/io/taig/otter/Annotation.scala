@@ -11,8 +11,6 @@ import cats.syntax.all.*
 import io.taig.otter as Self
 
 final case class Annotation[+A](metadata: Metadata, self: A):
-  def modify(f: Metadata => Metadata): Annotation[A] = copy(metadata = f(metadata))
-
   def map[B](f: A => B): Annotation[B] = copy(self = f(self))
 
 object Annotation:
@@ -28,9 +26,8 @@ object Annotation:
 
   given annotated: [A] => Annotated[Annotation[A]]:
     extension (self: Annotation[A])
-      override def metadata: Metadata = self.metadata
-
-      override def modify(f: Metadata => Metadata): Annotation[A] = self.modify(f)
+      override def lens: (Metadata, Metadata => Annotation[A]) =
+        (self.metadata, metadata => self.copy(metadata = metadata))
 
   given apply: [F[_]: Apply] => Apply[[a] =>> Annotation[F[a]]]:
     override def ap[A, B](ff: Annotation[F[A => B]])(fa: Annotation[F[A]]): Annotation[F[B]] =

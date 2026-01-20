@@ -38,27 +38,16 @@ object Json:
 
     given [A] => Annotated[Json.Read[A]]:
       extension (self: Json.Read[A])
-        override def metadata: Metadata = self match
-          case json: Json.Collection.Read[A]  => Annotated[Json.Collection.Read[A]].metadata(json)
-          case json: Json.Constant.Read[A]    => Annotated[Json.Constant.Read[A]].metadata(json)
-          case json: Json.Dictionary.Read[A]  => Annotated[Json.Dictionary.Read[A]].metadata(json)
-          case json: Json.Enumeration.Read[A] => Annotated[Json.Enumeration.Read[A]].metadata(json)
-          case json: Json.Optional.Read[A]    => Annotated[Json.Optional.Read[A]].metadata(json)
-          case json: Json.Primitive.Read[A]   => Annotated[Json.Primitive.Read[A]].metadata(json)
-          case json: Json.Record.Read[A]      => Annotated[Json.Record.Read[A]].metadata(json)
-          case json: Json.Tuple.Read[A]       => Annotated[Json.Tuple.Read[A]].metadata(json)
-          case json: Json.Union.Read[A]       => Annotated[Json.Union.Read[A]].metadata(json)
-
-        override def modify(f: Metadata => Metadata): Json.Read[A] = self match
-          case json: Json.Collection.Read[A]  => Annotated[Json.Collection.Read[A]].modify(json)(f)
-          case json: Json.Constant.Read[A]    => Annotated[Json.Constant.Read[A]].modify(json)(f)
-          case json: Json.Dictionary.Read[A]  => Annotated[Json.Dictionary.Read[A]].modify(json)(f)
-          case json: Json.Enumeration.Read[A] => Annotated[Json.Enumeration.Read[A]].modify(json)(f)
-          case json: Json.Optional.Read[A]    => Annotated[Json.Optional.Read[A]].modify(json)(f)
-          case json: Json.Primitive.Read[A]   => Annotated[Json.Primitive.Read[A]].modify(json)(f)
-          case json: Json.Record.Read[A]      => Annotated[Json.Record.Read[A]].modify(json)(f)
-          case json: Json.Tuple.Read[A]       => Annotated[Json.Tuple.Read[A]].modify(json)(f)
-          case json: Json.Union.Read[A]       => Annotated[Json.Union.Read[A]].modify(json)(f)
+        override def lens: (Metadata, Metadata => Json.Read[A]) = self match
+          case json: Json.Collection.Read[A]  => Annotated[Json.Collection.Read[A]].lens(json)
+          case json: Json.Constant.Read[A]    => Annotated[Json.Constant.Read[A]].lens(json)
+          case json: Json.Dictionary.Read[A]  => Annotated[Json.Dictionary.Read[A]].lens(json)
+          case json: Json.Enumeration.Read[A] => Annotated[Json.Enumeration.Read[A]].lens(json)
+          case json: Json.Optional.Read[A]    => Annotated[Json.Optional.Read[A]].lens(json)
+          case json: Json.Primitive.Read[A]   => Annotated[Json.Primitive.Read[A]].lens(json)
+          case json: Json.Record.Read[A]      => Annotated[Json.Record.Read[A]].lens(json)
+          case json: Json.Tuple.Read[A]       => Annotated[Json.Tuple.Read[A]].lens(json)
+          case json: Json.Union.Read[A]       => Annotated[Json.Union.Read[A]].lens(json)
 
     given optionalable: OptionalableOperation.Read[Json.Read, Json.Optional.Read] = OptionalableOperation.Read.derived
 
@@ -87,27 +76,16 @@ object Json:
 
     given [A] => Annotated[Json.Write[A]]:
       extension (self: Json.Write[A])
-        override def metadata: Metadata = self match
-          case json: Json.Collection.Write[A]  => json.metadata
-          case json: Json.Constant.Write[A]    => json.metadata
-          case json: Json.Dictionary.Write[A]  => json.metadata
-          case json: Json.Enumeration.Write[A] => json.metadata
-          case json: Json.Optional.Write[A]    => json.metadata
-          case json: Json.Primitive.Write[A]   => json.metadata
-          case json: Json.Record.Write[A]      => json.metadata
-          case json: Json.Tuple.Write[A]       => json.metadata
-          case json: Json.Union.Write[A]       => json.metadata
-
-        override def modify(f: Metadata => Metadata): Json.Write[A] = self match
-          case json: Json.Collection.Write[A]  => json.modify(f)
-          case json: Json.Constant.Write[A]    => json.modify(f)
-          case json: Json.Dictionary.Write[A]  => json.modify(f)
-          case json: Json.Enumeration.Write[A] => json.modify(f)
-          case json: Json.Optional.Write[A]    => json.modify(f)
-          case json: Json.Primitive.Write[A]   => json.modify(f)
-          case json: Json.Record.Write[A]      => json.modify(f)
-          case json: Json.Tuple.Write[A]       => json.modify(f)
-          case json: Json.Union.Write[A]       => json.modify(f)
+        override def lens: (Metadata, Metadata => Json.Write[A]) = self match
+          case json: Json.Collection.Write[A]  => Annotated[Json.Collection.Write[A]].lens(json)
+          case json: Json.Constant.Write[A]    => Annotated[Json.Constant.Write[A]].lens(json)
+          case json: Json.Dictionary.Write[A]  => Annotated[Json.Dictionary.Write[A]].lens(json)
+          case json: Json.Enumeration.Write[A] => Annotated[Json.Enumeration.Write[A]].lens(json)
+          case json: Json.Optional.Write[A]    => Annotated[Json.Optional.Write[A]].lens(json)
+          case json: Json.Primitive.Write[A]   => Annotated[Json.Primitive.Write[A]].lens(json)
+          case json: Json.Record.Write[A]      => Annotated[Json.Record.Write[A]].lens(json)
+          case json: Json.Tuple.Write[A]       => Annotated[Json.Tuple.Write[A]].lens(json)
+          case json: Json.Union.Write[A]       => Annotated[Json.Union.Write[A]].lens(json)
 
     given optionalable: OptionalableOperation.Write[Json.Write, Json.Optional.Write] =
       OptionalableOperation.Write.derived
@@ -451,17 +429,11 @@ object Json:
     object Read:
       given [A] => Annotated[Json.Primitive.Read[A]]:
         extension (self: Json.Primitive.Read[A])
-          override def metadata: Metadata = self match
-            case json: Json.Primitive.Boolean.Read[A] => json.metadata
-            case json: Json.Primitive.Coerce.Read[A]  => json.metadata
-            case json: Json.Primitive.Number.Read[A]  => Annotated[Json.Primitive.Number.Read[A]].metadata(json)
-            case json: Json.Primitive.Text.Read[A]    => Annotated[Json.Primitive.Text.Read[A]].metadata(json)
-
-          override def modify(f: Metadata => Metadata): Json.Primitive.Read[A] = self match
-            case json: Json.Primitive.Boolean.Read[A] => json.modify(f)
-            case json: Json.Primitive.Coerce.Read[A]  => json.modify(f)
-            case json: Json.Primitive.Number.Read[A]  => Annotated[Json.Primitive.Number.Read[A]].modify(json)(f)
-            case json: Json.Primitive.Text.Read[A]    => Annotated[Json.Primitive.Text.Read[A]].modify(json)(f)
+          override def lens: (Metadata, Metadata => Json.Primitive.Read[A]) = self match
+            case json: Json.Primitive.Boolean.Read[A] => Annotated[Json.Primitive.Boolean.Read[A]].lens(json)
+            case json: Json.Primitive.Coerce.Read[A]  => Annotated[Json.Primitive.Coerce.Read[A]].lens(json)
+            case json: Json.Primitive.Number.Read[A]  => Annotated[Json.Primitive.Number.Read[A]].lens(json)
+            case json: Json.Primitive.Text.Read[A]    => Annotated[Json.Primitive.Text.Read[A]].lens(json)
 
       given Functor[Json.Primitive.Read]:
         override def map[A, B](json: Json.Primitive.Read[A])(f: A => B): Json.Primitive.Read[B] = json match
@@ -476,17 +448,11 @@ object Json:
     object Write:
       given [A] => Annotated[Json.Primitive.Write[A]]:
         extension (self: Json.Primitive.Write[A])
-          override def metadata: Metadata = self match
-            case json: Json.Primitive.Boolean.Write[A] => json.metadata
-            case json: Json.Primitive.Coerce.Write[A]  => json.metadata
-            case json: Json.Primitive.Number.Write[A]  => json.metadata
-            case json: Json.Primitive.Text.Write[A]    => json.metadata
-
-          override def modify(f: Metadata => Metadata): Json.Primitive.Write[A] = self match
-            case json: Json.Primitive.Boolean.Write[A] => json.modify(f)
-            case json: Json.Primitive.Coerce.Write[A]  => json.modify(f)
-            case json: Json.Primitive.Number.Write[A]  => json.modify(f)
-            case json: Json.Primitive.Text.Write[A]    => json.modify(f)
+          override def lens: (Metadata, Metadata => Json.Primitive.Write[A]) = self match
+            case json: Json.Primitive.Boolean.Write[A] => Annotated[Json.Primitive.Boolean.Write[A]].lens(json)
+            case json: Json.Primitive.Coerce.Write[A]  => Annotated[Json.Primitive.Coerce.Write[A]].lens(json)
+            case json: Json.Primitive.Number.Write[A]  => Annotated[Json.Primitive.Number.Write[A]].lens(json)
+            case json: Json.Primitive.Text.Write[A]    => Annotated[Json.Primitive.Text.Write[A]].lens(json)
 
       given Contravariant[Json.Primitive.Write]:
         override def contramap[A, B](json: Json.Primitive.Write[A])(f: B => A): Json.Primitive.Write[B] =
@@ -574,15 +540,12 @@ object Json:
       object Read:
         given [A] => Annotated[Json.Primitive.Coerce.Read[A]]:
           extension (self: Json.Primitive.Coerce.Read[A])
-            override def metadata: Metadata = self match
-              case json: Json.Primitive.Coerce.Boolean.Read[A] => json.metadata
-              case json: Json.Primitive.Coerce.Number.Read[A]  => json.metadata
-              case json: Json.Primitive.Coerce.Text.Read[A]    => json.metadata
-
-            override def modify(f: Metadata => Metadata): Json.Primitive.Coerce.Read[A] = self match
-              case json: Json.Primitive.Coerce.Boolean.Read[A] => json.modify(f)
-              case json: Json.Primitive.Coerce.Number.Read[A]  => json.modify(f)
-              case json: Json.Primitive.Coerce.Text.Read[A]    => json.modify(f)
+            override def lens: (Metadata, Metadata => Json.Primitive.Coerce.Read[A]) = self match
+              case json: Json.Primitive.Coerce.Boolean.Read[A] =>
+                Annotated[Json.Primitive.Coerce.Boolean.Read[A]].lens(json)
+              case json: Json.Primitive.Coerce.Number.Read[A] =>
+                Annotated[Json.Primitive.Coerce.Number.Read[A]].lens(json)
+              case json: Json.Primitive.Coerce.Text.Read[A] => Annotated[Json.Primitive.Coerce.Text.Read[A]].lens(json)
 
         given Functor[Json.Primitive.Coerce.Read]:
           override def map[A, B](json: Json.Primitive.Coerce.Read[A])(f: A => B): Json.Primitive.Coerce.Read[B] =
@@ -597,15 +560,13 @@ object Json:
       object Write:
         given [A] => Annotated[Json.Primitive.Coerce.Write[A]]:
           extension (self: Json.Primitive.Coerce.Write[A])
-            override def metadata: Metadata = self match
-              case json: Json.Primitive.Coerce.Boolean.Write[A] => json.metadata
-              case json: Json.Primitive.Coerce.Number.Write[A]  => json.metadata
-              case json: Json.Primitive.Coerce.Text.Write[A]    => json.metadata
-
-            override def modify(f: Metadata => Metadata): Json.Primitive.Coerce.Write[A] = self match
-              case json: Json.Primitive.Coerce.Boolean.Write[A] => json.modify(f)
-              case json: Json.Primitive.Coerce.Number.Write[A]  => json.modify(f)
-              case json: Json.Primitive.Coerce.Text.Write[A]    => json.modify(f)
+            override def lens: (Metadata, Metadata => Json.Primitive.Coerce.Write[A]) = self match
+              case json: Json.Primitive.Coerce.Boolean.Write[A] =>
+                Annotated[Json.Primitive.Coerce.Boolean.Write[A]].lens(json)
+              case json: Json.Primitive.Coerce.Number.Write[A] =>
+                Annotated[Json.Primitive.Coerce.Number.Write[A]].lens(json)
+              case json: Json.Primitive.Coerce.Text.Write[A] =>
+                Annotated[Json.Primitive.Coerce.Text.Write[A]].lens(json)
 
         given Contravariant[Json.Primitive.Coerce.Write]:
           override def contramap[A, B](json: Json.Primitive.Coerce.Write[A])(
@@ -871,15 +832,10 @@ object Json:
 
       given [A] => Annotated[Json.Primitive.Coerce[A]]:
         extension (self: Json.Primitive.Coerce[A])
-          override def metadata: Metadata = self match
-            case json: Json.Primitive.Coerce.Boolean[A] => json.metadata
-            case json: Json.Primitive.Coerce.Number[A]  => json.metadata
-            case json: Json.Primitive.Coerce.Text[A]    => json.metadata
-
-          override def modify(f: Metadata => Metadata): Json.Primitive.Coerce[A] = self match
-            case json: Json.Primitive.Coerce.Boolean[A] => json.modify(f)
-            case json: Json.Primitive.Coerce.Number[A]  => json.modify(f)
-            case json: Json.Primitive.Coerce.Text[A]    => json.modify(f)
+          override def lens: (Metadata, Metadata => Json.Primitive.Coerce[A]) = self match
+            case json: Json.Primitive.Coerce.Boolean[A] => Annotated[Json.Primitive.Coerce.Boolean[A]].lens(json)
+            case json: Json.Primitive.Coerce.Number[A]  => Annotated[Json.Primitive.Coerce.Number[A]].lens(json)
+            case json: Json.Primitive.Coerce.Text[A]    => Annotated[Json.Primitive.Coerce.Text[A]].lens(json)
 
       given Invariant[Json.Primitive.Coerce]:
         override def imap[A, B](fa: Json.Primitive.Coerce[A])(f: A => B)(g: B => A): Json.Primitive.Coerce[B] =
@@ -1039,17 +995,11 @@ object Json:
 
     given [A] => Annotated[Json.Primitive[A]]:
       extension (self: Json.Primitive[A])
-        override def metadata: Metadata = self match
-          case json: Json.Primitive.Boolean[A] => json.metadata
-          case json: Json.Primitive.Coerce[A]  => json.metadata
-          case json: Json.Primitive.Number[A]  => json.metadata
-          case json: Json.Primitive.Text[A]    => json.metadata
-
-        override def modify(f: Metadata => Metadata): Json.Primitive[A] = self match
-          case json: Json.Primitive.Boolean[A] => json.modify(f)
-          case json: Json.Primitive.Coerce[A]  => json.modify(f)
-          case json: Json.Primitive.Number[A]  => json.modify(f)
-          case json: Json.Primitive.Text[A]    => json.modify(f)
+        override def lens: (Metadata, Metadata => Json.Primitive[A]) = self match
+          case json: Json.Primitive.Boolean[A] => Annotated[Json.Primitive.Boolean[A]].lens(json)
+          case json: Json.Primitive.Coerce[A]  => Annotated[Json.Primitive.Coerce[A]].lens(json)
+          case json: Json.Primitive.Number[A]  => Annotated[Json.Primitive.Number[A]].lens(json)
+          case json: Json.Primitive.Text[A]    => Annotated[Json.Primitive.Text[A]].lens(json)
 
   final case class Record[A](self: Annotation[Self.Record[Json.Field, A]])
       extends Json[A],
@@ -1358,27 +1308,16 @@ object Json:
 
   given [A] => Annotated[Json[A]]:
     extension (self: Json[A])
-      override def metadata: Metadata = self match
-        case json: Json.Collection[A]  => json.metadata
-        case json: Json.Constant[A]    => json.metadata
-        case json: Json.Dictionary[A]  => json.metadata
-        case json: Json.Enumeration[A] => json.metadata
-        case json: Json.Optional[A]    => json.metadata
-        case json: Json.Primitive[A]   => json.metadata
-        case json: Json.Record[A]      => json.metadata
-        case json: Json.Tuple[A]       => json.metadata
-        case json: Json.Union[A]       => json.metadata
-
-      override def modify(f: Metadata => Metadata): Json[A] = self match
-        case json: Json.Collection[A]  => json.modify(f)
-        case json: Json.Constant[A]    => json.modify(f)
-        case json: Json.Dictionary[A]  => json.modify(f)
-        case json: Json.Enumeration[A] => json.modify(f)
-        case json: Json.Optional[A]    => json.modify(f)
-        case json: Json.Primitive[A]   => json.modify(f)
-        case json: Json.Record[A]      => json.modify(f)
-        case json: Json.Tuple[A]       => json.modify(f)
-        case json: Json.Union[A]       => json.modify(f)
+      override def lens: (Metadata, Metadata => Json[A]) = self match
+        case json: Json.Collection[A]  => Annotated[Json.Collection[A]].lens(json)
+        case json: Json.Constant[A]    => Annotated[Json.Constant[A]].lens(json)
+        case json: Json.Dictionary[A]  => Annotated[Json.Dictionary[A]].lens(json)
+        case json: Json.Enumeration[A] => Annotated[Json.Enumeration[A]].lens(json)
+        case json: Json.Optional[A]    => Annotated[Json.Optional[A]].lens(json)
+        case json: Json.Primitive[A]   => Annotated[Json.Primitive[A]].lens(json)
+        case json: Json.Record[A]      => Annotated[Json.Record[A]].lens(json)
+        case json: Json.Tuple[A]       => Annotated[Json.Tuple[A]].lens(json)
+        case json: Json.Union[A]       => Annotated[Json.Union[A]].lens(json)
 
   given optionalable: OptionalableOperation[Json, Json.Optional] = OptionalableOperation.derived
 

@@ -33,7 +33,15 @@ object JsonZodRendererTest extends ZIOSpecDefault:
                        |  "name": z.string(),
                        |  "age": z.optional(z.number()),
                        |  "gender": z.literal("unknown"),
-                       |  "pet": z.nullable(z.enum(["bird", "cat", "dog"]))
+                       |  "pet": z.nullable(
+                       |    z.enum(
+                       |      [
+                       |        "bird",
+                       |        "cat",
+                       |        "dog"
+                       |      ]
+                       |    )
+                       |  )
                        |})""".stripMargin
 
       assertTrue(obtained == expected)
