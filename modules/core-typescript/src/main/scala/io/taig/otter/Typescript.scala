@@ -4,16 +4,22 @@ import scala.Boolean as SBoolean
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
 
+sealed abstract class Typescript extends Product, Serializable:
+  final override def toString: String = render
+
+  final def render: String = render(level = 0)
+
+  protected def render(level: Int): String
+
 object Typescript:
   private val Indent: String = "  "
 
-  sealed abstract class Expression extends Product, Serializable:
-    final override def toString: String = render
-
-    final def render: String = render(level = 0)
-
-    private def render(level: Int): String = this match
-      case Typescript.Expression.Array(elements)       => s"[${elements.map(_.render(level)).mkString(", ")}]"
+  sealed abstract class Expression extends Typescript:
+    override protected def render(level: Int): String = this match
+      case Typescript.Expression.Array(Nil)            => "[]"
+      case Typescript.Expression.Array(element :: Nil) => s"[${element.render(level)}]"
+      case Typescript.Expression.Array(elements)       =>
+        elements.map(element => Indent + element.render(level)).mkString("[\n", ",\n", "\n]")
       case Typescript.Expression.Call(name, arguments) => s"$name(${arguments.map(_.render(level)).mkString(", ")})"
       case Typescript.Expression.Identifier(name)      => name
       case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property.render(level)}"
@@ -24,7 +30,7 @@ object Typescript:
       case Typescript.Expression.Object((name, value) :: Nil) => s"{ \"$name\": ${value.render(level)} }"
       case Typescript.Expression.Object(fields)               =>
         fields
-          .map((name, value) => (Indent * (level + 1)) + s"\"$name\": ${value.render(level)}")
+          .map((name, value) => Indent + s"\"$name\": ${value.render(level)}")
           .mkString("{\n", ",\n", "\n}")
 
   object Expression:
@@ -44,3 +50,18 @@ object Typescript:
     final case class Member(namespace: String, property: Typescript.Expression) extends Typescript.Expression
 
     final case class Object(fields: List[(String, Typescript.Expression)]) extends Typescript.Expression
+
+  sealed abstract class Statement extends Typescript:
+    override protected def render(level: Int): String = this match
+      case Typescript.Statement.Declaration.Constant(name, value) =>
+        s"const $name = ${value.render(level)};"
+      case Typescript.Statement.Declaration.Variable(name, value) =>
+        s"let $name = ${value.render(level)};"
+
+  object Statement:
+    sealed abstract class Declaration extends Typescript.Statement
+
+    object Declaration:
+      final case class Constant(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
+
+      final case class Variable(name: String, value: Typescript.Expression) extends Typescript.Statement.Declaration
