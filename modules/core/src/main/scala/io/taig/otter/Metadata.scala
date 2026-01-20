@@ -6,42 +6,45 @@ import cats.implicits.*
 
 import scala.collection.immutable.SortedMap
 
-opaque type Metadata = SortedMap[Metadata.Key[?], Any]
+opaque type Metadata = SortedMap[(Metadata.Namespace, Metadata.Key[Any]), Any]
 
 object Metadata:
-  final case class Key[+A](namespace: String, identifier: String)
+  opaque type Key[+A] = String
 
   object Key:
-    object Namespace:
-      val Global: "*" = "*"
+    def apply[A](identifier: String): Metadata.Key[A] = identifier
 
-    extension [A](self: Metadata.Key[A])
-      def @@(value: String): Metadata.Key[A] =
-        self.copy(namespace = value)
+    given [A] => (order: Order[String]) => Order[Metadata.Key[A]] = order
 
-    def apply[A](identifier: String): Metadata.Key[A] =
-      Key(namespace = Namespace.Global, identifier)
+  opaque type Namespace = String
 
-    given [A] => Order[Metadata.Key[A]] = Order.by(key => (key.namespace, key.identifier))
+  object Namespace:
+    val Global: Metadata.Namespace = "*"
+
+    def apply(identifier: String): Metadata.Namespace = identifier
 
   extension (self: Metadata)
-    inline def toSortedMap: SortedMap[Metadata.Key[?], Any] = self
+    inline def toSortedMap: SortedMap[(Metadata.Namespace, Metadata.Key[Any]), Any] = self
 
-    def contains[A](key: Metadata.Key[A]): Boolean = toSortedMap.contains(key)
+    def contains[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Boolean =
+      toSortedMap.contains((namespace, key))
 
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    def get[A](key: Metadata.Key[A]): Option[A] = toSortedMap
-      .get(key)
+    def get[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Option[A] = toSortedMap
+      .get((namespace, key))
       .flatMap(value => Either.catchOnly[ClassCastException](value.asInstanceOf[A]).toOption)
 
-    def put[A](key: Metadata.Key[A], value: A): Metadata = toSortedMap.updated(key, value)
+    def put[A](namespace: Metadata.Namespace, key: Metadata.Key[A], value: A): Metadata =
+      toSortedMap.updated((namespace, key), value)
 
-    def remove[A](key: Metadata.Key[A]): Metadata = toSortedMap.removed(key)
+    def remove[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Metadata =
+      toSortedMap.removed((namespace, key))
 
     def ++(metadata: Metadata): Metadata = toSortedMap ++ metadata.toSortedMap
 
   val Empty: Metadata = SortedMap.empty
 
-  def one[A](key: Metadata.Key[A], value: A): Metadata = SortedMap(key -> value)
+  def one[A](namespace: Metadata.Namespace, key: Metadata.Key[A], value: A): Metadata =
+    SortedMap((namespace, key) -> value)
 
   given Show[Metadata] = _.toSortedMap.map((key, value) => s"$key=$value").mkString("[", ",", "]")

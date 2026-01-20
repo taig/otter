@@ -37,10 +37,7 @@ object JsonZodTypescriptRendererTest extends ZIOSpecDefault:
       assertTrue(obtained == expected)
     ,
     test("object: name"):
-      val name = (
-        field("first", string) :*
-          field("last", string)
-      ).attr(Keys.name, "Name")
+      val name = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
 
       val schema = field("name", name) :* field("age", int).optional
 

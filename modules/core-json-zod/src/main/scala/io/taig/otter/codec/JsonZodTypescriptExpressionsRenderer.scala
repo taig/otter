@@ -8,6 +8,7 @@ import io.taig.otter.Zod
 
 import scala.collection.immutable.ListMap
 import io.taig.otter.Typescript
+import io.taig.otter.Metadata
 
 object JsonZodTypescriptExpressionsRenderer
     extends Renderer[Json.Read, State[ListMap[String, Typescript.Expression], Typescript.Expression]]:
@@ -15,7 +16,7 @@ object JsonZodTypescriptExpressionsRenderer
 
   override def render[A](json: Json.Read[A]): State[ListMap[String, Typescript.Expression], Typescript.Expression] =
     State: definitions =>
-      json.attr(JsonZod.Key.name, Zod.Key.name, Keys.name) match
+      json.attr(JsonZod.Namespace, Zod.Namespace, Metadata.Namespace.Global)(key = Keys.name) match
         case Some(name) =>
           definitions.get(name) match
             case Some(_) => (definitions, Typescript.Expression.Identifier(name))
