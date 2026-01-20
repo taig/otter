@@ -128,6 +128,9 @@ lazy val coreTypescript = module(identifier = Some("core-typescript"))
 lazy val coreZod = module(identifier = Some("core-zod"))
   .dependsOn(coreTypescript % "compile->compile;test->test")
 
+lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreTypescript)
+
 /** zod codegen for JSON */
 lazy val coreJsonZod = module(identifier = Some("core-json-zod"))
   .dependsOn(coreJson % "compile->compile;test->test", coreZod, coreTypescript)

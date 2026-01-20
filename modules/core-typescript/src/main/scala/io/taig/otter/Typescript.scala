@@ -3,6 +3,7 @@ package io.taig.otter
 import scala.Boolean as SBoolean
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
+import cats.data.NonEmptyList
 
 sealed abstract class Typescript extends Product, Serializable:
   final override def toString: String = render
@@ -70,3 +71,5 @@ object Typescript:
     final case class Symbol(name: String, parameters: List[Typescript.Type]) extends Typescript.Type
 
     final case class TypeOf(expression: Typescript.Expression) extends Typescript.Type
+
+    final case class Union(types: NonEmptyList[Typescript.Type]) extends Typescript.Type

@@ -75,3 +75,4 @@ private val renderTypescriptType: Typescript.Type => String =
   case Typescript.Type.Symbol(name, Nil)        => name
   case Typescript.Type.Symbol(name, parameters) => s"$name<${parameters.mkString(", ")}>"
   case Typescript.Type.TypeOf(expression)       => s"typeof $expression"
+  case Typescript.Type.Union(types)             => types.map(_.toString).toList.mkString(" | ")
