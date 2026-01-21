@@ -57,6 +57,8 @@ object Typescript:
     final override def render: String = renderTypescriptType(this)
 
   object Type:
+    final case class Field(name: String, tpe: Typescript.Type, optional: Boolean)
+
     sealed abstract class Literal extends Typescript.Type
 
     object Literal:
@@ -68,7 +70,7 @@ object Typescript:
 
     case object Null extends Typescript.Type
 
-    final case class Object(fields: List[(String, Typescript.Type)]) extends Typescript.Type
+    final case class Object(fields: List[Typescript.Type.Field]) extends Typescript.Type
 
     final case class Symbol(name: String, parameters: List[Typescript.Type]) extends Typescript.Type
 

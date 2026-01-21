@@ -62,7 +62,11 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](renderer: Renderer[Jso
       json.fields
         .map(_.value)
         .toList
-        .traverse(field => renderer.render(field.schema.value).tupleLeft(field.name))
+        .traverse: field =>
+          renderer
+            .render(field.schema.value)
+            .map: tpe =>
+              Typescript.Type.Field(name = field.name, tpe, optional = field.isOptional)
         .map(Typescript.Type.Object.apply)
     case json: Json.Tuple.Write[A] =>
       json.schemas.map(_.value).toList.traverse(renderer.render).map(Typescript.Type.Tuple.apply)

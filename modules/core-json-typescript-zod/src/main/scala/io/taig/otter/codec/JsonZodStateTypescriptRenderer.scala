@@ -2,6 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.State
 import io.taig.otter.Json
+import io.taig.otter.codec.JsonStateTypescriptExpressionZodRenderer.Context
 import io.taig.otter.JsonTypescriptZod
 import io.taig.otter.Keys
 import io.taig.otter.TypescriptZod
@@ -16,8 +17,7 @@ import cats.syntax.all.*
 import io.taig.otter.Json.Write
 import cats.Id
 
-object JsonZodStateTypescriptRenderer
-    extends Renderer[Json.Write, State[JsonZodStateTypescriptRenderer.Context, Typescript.Expression]]:
+object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, State[Context, Typescript.Expression]]:
   // TODO is a recursion flag sufficient? Will this break nested recursions?
   final case class Context(
       definitions: ListMap[String, (Typescript.Type, Typescript.Expression)],
@@ -28,7 +28,7 @@ object JsonZodStateTypescriptRenderer
         name: String,
         tpe: Typescript.Type,
         expression: Typescript.Expression
-    ): JsonZodStateTypescriptRenderer.Context =
+    ): JsonStateTypescriptExpressionZodRenderer.Context =
       copy(definitions = definitions.updated(name, (tpe, expression)))
 
     def declarations: List[Typescript.Statement.Declaration] = definitions.toList.flatMap:
@@ -48,12 +48,14 @@ object JsonZodStateTypescriptRenderer
           Typescript.Statement.Declaration.Constant(name, tpe = annotation, expression)
         )
 
-    def +(name: String): JsonZodStateTypescriptRenderer.Context = copy(stack = stack.enqueue(name))
+    def +(name: String): JsonStateTypescriptExpressionZodRenderer.Context = copy(stack = stack.enqueue(name))
 
-    def cyclic: JsonZodStateTypescriptRenderer.Context = copy(recursion = true)
-    def acyclic: JsonZodStateTypescriptRenderer.Context = copy(recursion = false)
+    def cyclic: JsonStateTypescriptExpressionZodRenderer.Context = copy(recursion = true)
+    def acyclic: JsonStateTypescriptExpressionZodRenderer.Context = copy(recursion = false)
 
-    def combine(context: JsonZodStateTypescriptRenderer.Context): JsonZodStateTypescriptRenderer.Context =
+    def combine(
+        context: JsonStateTypescriptExpressionZodRenderer.Context
+    ): JsonStateTypescriptExpressionZodRenderer.Context =
       Context(
         definitions = definitions ++ context.definitions,
         stack = stack ++ context.stack,
@@ -61,27 +63,32 @@ object JsonZodStateTypescriptRenderer
       )
 
   object Context:
-    val Empty: JsonZodStateTypescriptRenderer.Context =
+    val Empty: JsonStateTypescriptExpressionZodRenderer.Context =
       Context(definitions = ListMap.empty, stack = Queue.empty, recursion = false)
 
-    given Monoid[JsonZodStateTypescriptRenderer.Context]:
+    given Monoid[JsonStateTypescriptExpressionZodRenderer.Context]:
       override def empty: Context = Empty
 
       override def combine(x: Context, y: Context): Context = x.combine(y)
 
-  val renderer = JsonTypescriptExpressionZodRenderer(renderer = this)
+  val name: Json.Write[?] => Option[String] = _.attr(
+    JsonTypescriptZod.Namespace,
+    TypescriptZod.Namespace,
+    Metadata.Namespace.Global
+  )(key = Keys.name)
 
-  val name: Json.Write[?] => Option[String] = json =>
-    json.attr(JsonTypescriptZod.Namespace, TypescriptZod.Namespace, Metadata.Namespace.Global)(key = Keys.name)
+  object renderer:
+    val expression: Renderer[Json.Write, State[Context, Typescript.Expression]] =
+      JsonTypescriptExpressionZodRenderer(renderer = JsonStateTypescriptExpressionZodRenderer)
 
-  val tpeRenderer: Renderer[Json.Write, Typescript.Type] = JsonTypescriptTypeRenderer[Id](renderer =
-    Renderer([A] =>
-      (json: Json.Write[A]) =>
-        name(json) match
-          case Some(name) => Typescript.Type.Symbol(name, parameters = Nil)
-          case None       => tpeRenderer.render(json)
+    val tpe: Renderer[Json.Write, Typescript.Type] = JsonTypescriptTypeRenderer[Id](renderer =
+      Renderer([A] =>
+        (json: Json.Write[A]) =>
+          name(json) match
+            case Some(name) => Typescript.Type.Symbol(name, parameters = Nil)
+            case None       => tpe.render(json)
+      )
     )
-  )
 
   override def render[A](json: Json.Write[A]): State[Context, Typescript.Expression] = State: context =>
     name(json) match
@@ -103,12 +110,12 @@ object JsonZodStateTypescriptRenderer
           context.definitions.get(name) match
             case Some(_) => (context, symbol)
             case None    =>
-              val (update, expression) = renderer.render(json).run(context + name).value
+              val (update, expression) = renderer.expression.render(json).run(context + name).value
 
               val tpe =
                 if update.recursion
-                then tpeRenderer.render(json)
+                then renderer.tpe.render(json)
                 else z(property = Typescript.Type.Symbol("infer", List(Typescript.Type.TypeOf(expression = symbol))))
 
               ((context |+| update).acyclic.updated(name, tpe, expression), symbol)
-      case None => renderer.render(json).run(context).value.leftMap(context |+| _)
+      case None => renderer.expression.render(json).run(context).value.leftMap(context |+| _)

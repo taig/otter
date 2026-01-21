@@ -14,7 +14,7 @@ final class JsonTypescriptExpressionZodRenderer[F[_]: Applicative](
       z(
         Typescript.Expression.Call(
           name = "literal",
-          arguments = List(json.encode(JsonPrimitiveTypescriptExpressionZodEncoder))
+          arguments = List(json.encode(JsonPrimitiveTypescriptExpressionLiteralEncoder))
         )
       ).pure
     case json: Json.Collection.Write[A] =>
@@ -38,7 +38,7 @@ final class JsonTypescriptExpressionZodRenderer[F[_]: Applicative](
           name = "enum",
           arguments = List(
             Typescript.Expression.Array(
-              elements = json.encode(JsonPrimitiveTypescriptExpressionZodEncoder).toList
+              elements = json.encode(JsonPrimitiveTypescriptExpressionLiteralEncoder).toList
             )
           )
         )

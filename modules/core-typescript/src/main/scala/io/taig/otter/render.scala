@@ -62,16 +62,16 @@ private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Declaration.Type(name, tpe)                  => s"type $name = $tpe;"
 
 private val renderTypescriptType: Typescript.Type => String =
-  case Typescript.Type.Literal.Boolean(value)       => String.valueOf(value)
-  case Typescript.Type.Literal.Number(value)        => value.toPlainString
-  case Typescript.Type.Literal.String(value)        => s"\"$value\""
-  case Typescript.Type.Member(namespace, property)  => s"$namespace.$property"
-  case Typescript.Type.Null                         => "null"
-  case Typescript.Type.Object(Nil)                  => "{}"
-  case Typescript.Type.Object((name, value) :: Nil) => s"{ \"$name\": $value }"
-  case Typescript.Type.Object(fields)               =>
+  case Typescript.Type.Literal.Boolean(value)      => String.valueOf(value)
+  case Typescript.Type.Literal.Number(value)       => value.toPlainString
+  case Typescript.Type.Literal.String(value)       => s"\"$value\""
+  case Typescript.Type.Member(namespace, property) => s"$namespace.$property"
+  case Typescript.Type.Null                        => "null"
+  case Typescript.Type.Object(Nil)                 => "{}"
+  case Typescript.Type.Object(field :: Nil)        => s"{ ${renderTypescriptTypeField(field)} }"
+  case Typescript.Type.Object(fields)              =>
     fields
-      .map((name, value) => s"\"$name\": $value;")
+      .map(renderTypescriptTypeField)
       .map(indent)
       .mkString("{\n", "\n", "\n}")
   case Typescript.Type.Symbol(name, Nil)        => name
@@ -79,4 +79,8 @@ private val renderTypescriptType: Typescript.Type => String =
   case Typescript.Type.Tuple(elements)          => elements.mkString("[\n", ",", "\n]")
   case Typescript.Type.TypeOf(expression)       => s"typeof $expression"
   case Typescript.Type.Undefined                => "undefined"
-  case Typescript.Type.Union(types)             => types.map(_.toString).toList.mkString(" | ")
+  case Typescript.Type.Union(types)             => types.toList.mkString(" | ")
+
+private val renderTypescriptTypeField: Typescript.Type.Field => String =
+  case Typescript.Type.Field(name, tpe, false) => s"\"$name\": $tpe;"
+  case Typescript.Type.Field(name, tpe, true)  => s"\"$name\"?: $tpe | undefined;"
