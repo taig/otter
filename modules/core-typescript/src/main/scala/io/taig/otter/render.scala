@@ -62,17 +62,18 @@ private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Declaration.Type(name, tpe)                  => s"type $name = $tpe;"
 
 private val renderTypescriptType: Typescript.Type => String =
-  case Typescript.Type.Literal.Boolean(value)      => String.valueOf(value)
-  case Typescript.Type.Literal.Number(value)       => value.toPlainString
-  case Typescript.Type.Literal.String(value)       => s"\"$value\""
-  case Typescript.Type.Member(namespace, property) => s"$namespace.$property"
-  case Typescript.Type.Null                        => "null"
-  case Typescript.Type.Object(Nil)                 => "{}"
-  case Typescript.Type.Object(fields)              =>
+  case Typescript.Type.Literal.Boolean(value)       => String.valueOf(value)
+  case Typescript.Type.Literal.Number(value)        => value.toPlainString
+  case Typescript.Type.Literal.String(value)        => s"\"$value\""
+  case Typescript.Type.Member(namespace, property)  => s"$namespace.$property"
+  case Typescript.Type.Null                         => "null"
+  case Typescript.Type.Object(Nil)                  => "{}"
+  case Typescript.Type.Object((name, value) :: Nil) => s"{ \"$name\": $value }"
+  case Typescript.Type.Object(fields)               =>
     fields
-      .map((name, value) => s"\"$name\": $value")
+      .map((name, value) => s"\"$name\": $value;")
       .map(indent)
-      .mkString("{\n", ",\n", "\n}")
+      .mkString("{\n", "\n", "\n}")
   case Typescript.Type.Symbol(name, Nil)        => name
   case Typescript.Type.Symbol(name, parameters) => s"$name<${parameters.mkString(", ")}>"
   case Typescript.Type.Tuple(elements)          => elements.mkString("[\n", ",", "\n]")

@@ -10,3 +10,7 @@ trait Renderer[-F[_], T]:
 
   def contramapK[G[_]](fK: [A] => G[A] => F[A]): Renderer[G, T] = new Renderer[G, T]:
     override def render[A](fa: G[A]): T = self.render(fK(fa))
+
+object Renderer:
+  def apply[F[_], T](f: [A] => F[A] => T): Renderer[F, T] = new Renderer[F, T]:
+    override def render[A](fa: F[A]): T = f(fa)
