@@ -14,8 +14,8 @@ import cats.Monoid
 import io.taig.otter.z
 import cats.syntax.all.*
 
-object JsonZodTypescriptStateRenderer
-    extends Renderer[Json.Read, State[JsonZodTypescriptStateRenderer.Context, Typescript.Expression]]:
+object JsonZodStateTypescriptRenderer
+    extends Renderer[Json.Read, State[JsonZodStateTypescriptRenderer.Context, Typescript.Expression]]:
   // TODO is a recursion flag sufficient? Will this break nested recursions?
   final case class Context(
       definitions: ListMap[String, (Typescript.Type, Typescript.Expression)],
@@ -26,7 +26,7 @@ object JsonZodTypescriptStateRenderer
         name: String,
         tpe: Typescript.Type,
         expression: Typescript.Expression
-    ): JsonZodTypescriptStateRenderer.Context =
+    ): JsonZodStateTypescriptRenderer.Context =
       copy(definitions = definitions.updated(name, (tpe, expression)))
 
     def declarations: List[Typescript.Statement.Declaration] = definitions.toList.flatMap:
@@ -46,12 +46,12 @@ object JsonZodTypescriptStateRenderer
           Typescript.Statement.Declaration.Constant(name, tpe = annotation, expression)
         )
 
-    def +(name: String): JsonZodTypescriptStateRenderer.Context = copy(stack = stack.enqueue(name))
+    def +(name: String): JsonZodStateTypescriptRenderer.Context = copy(stack = stack.enqueue(name))
 
-    def cyclic: JsonZodTypescriptStateRenderer.Context = copy(recursion = true)
-    def acyclic: JsonZodTypescriptStateRenderer.Context = copy(recursion = false)
+    def cyclic: JsonZodStateTypescriptRenderer.Context = copy(recursion = true)
+    def acyclic: JsonZodStateTypescriptRenderer.Context = copy(recursion = false)
 
-    def combine(context: JsonZodTypescriptStateRenderer.Context): JsonZodTypescriptStateRenderer.Context =
+    def combine(context: JsonZodStateTypescriptRenderer.Context): JsonZodStateTypescriptRenderer.Context =
       Context(
         definitions = definitions ++ context.definitions,
         stack = stack ++ context.stack,
@@ -59,15 +59,15 @@ object JsonZodTypescriptStateRenderer
       )
 
   object Context:
-    val Empty: JsonZodTypescriptStateRenderer.Context =
+    val Empty: JsonZodStateTypescriptRenderer.Context =
       Context(definitions = ListMap.empty, stack = Queue.empty, recursion = false)
 
-    given Monoid[JsonZodTypescriptStateRenderer.Context]:
+    given Monoid[JsonZodStateTypescriptRenderer.Context]:
       override def empty: Context = Empty
 
       override def combine(x: Context, y: Context): Context = x.combine(y)
 
-  val renderer = JsonZodTypescriptExpressionRenderer(renderer = this)
+  val renderer = JsonZodFTypescriptExpressionRenderer(renderer = this)
 
   override def render[A](json: Json.Read[A]): State[Context, Typescript.Expression] = State: context =>
     json.attr(JsonZod.Namespace, Zod.Namespace, Metadata.Namespace.Global)(key = Keys.name) match

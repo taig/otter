@@ -6,7 +6,7 @@ import io.taig.otter.Json
 import io.taig.otter.Typescript
 import cats.syntax.all.*
 
-final class JsonZodTypescriptExpressionRenderer[F[_]: Applicative](
+final class JsonZodFTypescriptExpressionRenderer[F[_]: Applicative](
     renderer: Renderer[Json.Read, F[Typescript.Expression]]
 ) extends Renderer[Json.Read, F[Typescript.Expression]]:
   override def render[A](json: Json.Read[A]): F[Typescript.Expression] = json match

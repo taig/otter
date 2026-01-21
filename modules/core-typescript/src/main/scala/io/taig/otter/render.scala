@@ -66,6 +66,7 @@ private val renderTypescriptType: Typescript.Type => String =
   case Typescript.Type.Literal.Number(value)       => value.toPlainString
   case Typescript.Type.Literal.String(value)       => s"\"$value\""
   case Typescript.Type.Member(namespace, property) => s"$namespace.$property"
+  case Typescript.Type.Null                        => "null"
   case Typescript.Type.Object(Nil)                 => "{}"
   case Typescript.Type.Object(fields)              =>
     fields
@@ -74,5 +75,7 @@ private val renderTypescriptType: Typescript.Type => String =
       .mkString("{\n", ",\n", "\n}")
   case Typescript.Type.Symbol(name, Nil)        => name
   case Typescript.Type.Symbol(name, parameters) => s"$name<${parameters.mkString(", ")}>"
+  case Typescript.Type.Tuple(elements)          => elements.mkString("[\n", ",", "\n]")
   case Typescript.Type.TypeOf(expression)       => s"typeof $expression"
+  case Typescript.Type.Undefined                => "undefined"
   case Typescript.Type.Union(types)             => types.map(_.toString).toList.mkString(" | ")

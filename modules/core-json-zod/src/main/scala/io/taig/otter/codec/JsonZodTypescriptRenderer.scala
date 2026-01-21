@@ -4,6 +4,6 @@ import io.taig.otter.Json
 import io.taig.otter.Typescript
 
 val JsonZodTypescriptRenderer: Renderer[Json.Read, List[Typescript]] =
-  JsonZodTypescriptStateRenderer
+  JsonZodStateTypescriptRenderer
     .map(_.runEmpty.value)
     .map((context, expression) => context.declarations :+ expression)

@@ -66,10 +66,16 @@ object Typescript:
 
     final case class Member(namespace: String, property: Typescript.Type) extends Typescript.Type
 
+    case object Null extends Typescript.Type
+
     final case class Object(fields: List[(String, Typescript.Type)]) extends Typescript.Type
 
     final case class Symbol(name: String, parameters: List[Typescript.Type]) extends Typescript.Type
 
+    final case class Tuple(elements: List[Typescript.Type]) extends Typescript.Type
+
     final case class TypeOf(expression: Typescript.Expression) extends Typescript.Type
+
+    case object Undefined extends Typescript.Type
 
     final case class Union(types: NonEmptyList[Typescript.Type]) extends Typescript.Type
