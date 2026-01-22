@@ -124,12 +124,20 @@ lazy val coreJson = module(identifier = Some("core-json"))
 lazy val coreTypescript = module(identifier = Some("core-typescript"))
   .dependsOn(core % "compile->compile;test->test")
 
+/** Effect integration */
+lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
+  .dependsOn(coreTypescript % "compile->compile;test->test")
+
 /** zod integration */
 lazy val coreTypescriptZod = module(identifier = Some("core-typescript-zod"))
   .dependsOn(coreTypescript % "compile->compile;test->test")
 
 lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript)
+
+/** Effect codegen for JSON */
+lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreTypescriptEffect, coreJsonTypescript)
 
 /** zod codegen for JSON */
 lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod"))
@@ -144,28 +152,6 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")
-
-// lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
-//   .settings(
-//     libraryDependencies ++=
-//       "io.circe" %%% "circe-core" % Version.Circe ::
-//         "io.taig" %%% "data-circe" % Version.Data ::
-//         Nil
-//   )
-//   .dependsOn(coreJson % "compile->compile;test->test", coreJsonCirce % "compile->test")
-
-// lazy val coreJsonEffect = module(identifier = Some("core-json-effect"))
-//   .dependsOn(coreJson % "compile->compile;test->test", coreEffect % "compile->compile;test->test")
-
-// lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
-//   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
-
-// lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
-//   .dependsOn(
-//     coreTypescriptEffect % "compile->compile;test->test",
-//     coreJsonEffect % "compile->compile;test->test",
-//     coreJsonTypescript % "compile->compile;test->test"
-//   )
 
 // lazy val http = module(identifier = Some("http"))
 //   .settings(
