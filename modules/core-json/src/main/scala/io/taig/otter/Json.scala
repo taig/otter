@@ -12,18 +12,22 @@ import io.taig.otter.operation.*
 import io.taig.otter.syntax.all.*
 
 sealed abstract class Json[A] extends Json.Read[A], Json.Write[A]:
-  override def self: Annotation[Json.Of[A]]
+  override def self: Annotation[
+    Self.Collection[Json, A] | Self.Constant[Json.Primitive, A] | Self.Dictionary[Json, A] | Self.Enumeration[Json, A] |
+      Self.Optional[Json, A] | Self.Primitive[Json.Primitive, A] | Self.Record[Json.Field, A] | Self.Tuple[Json, A] |
+      Self.Union[Json.Branch, A]
+  ]
 
 object Json:
   sealed trait Read[+A]:
-    def self: Annotation[Json.Read.Of[A]]
+    def self: Annotation[
+      Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive, A] | Self.Dictionary.Read[Json.Read, A] |
+        Self.Enumeration.Read[Json, A] | Self.Optional.Read[Json.Read, A] |
+        Self.Primitive.Read[Json.Primitive.Read, A] | Self.Record.Read[Json.Field.Read, A] |
+        Self.Tuple.Read[Json.Read, A] | Self.Union.Read[Json.Branch.Read, A]
+    ]
 
   object Read:
-    type Of[+A] = Self.Collection.Read[Json.Read, A] | Self.Constant.Read[Json.Primitive, A] |
-      Self.Dictionary.Read[Json.Read, A] | Self.Enumeration.Read[Json, A] | Self.Optional.Read[Json.Read, A] |
-      Self.Primitive.Read[Json.Primitive.Read, A] | Self.Record.Read[Json.Field.Read, A] |
-      Self.Tuple.Read[Json.Read, A] | Self.Union.Read[Json.Branch.Read, A]
-
     given Functor[Json.Read]:
       override def map[A, B](json: Json.Read[A])(f: A => B): Json.Read[B] = json match
         case json: Json.Collection.Read[A]  => json.map(f)
@@ -54,14 +58,15 @@ object Json:
     given tupleable: TupleableOperation.Read[Json.Read, Json.Tuple.Read] = TupleableOperation.Read.derived
 
   sealed trait Write[-A]:
-    def self: Annotation[Json.Write.Of[A]]
+    def self: Annotation[
+      Self.Collection.Write[Json.Write, A] | Self.Constant.Write[Json.Primitive.Write, A] |
+        Self.Dictionary.Write[Json.Write, A] | Self.Enumeration.Write[Json.Write, A] |
+        Self.Optional.Write[Json.Write, A] | Self.Primitive.Write[Json.Primitive.Write, A] |
+        Self.Record.Write[Json.Field.Write, A] | Self.Tuple.Write[Json.Write, A] |
+        Self.Union.Write[Json.Branch.Write, A]
+    ]
 
   object Write:
-    type Of[-A] = Self.Collection.Write[Json.Write, A] | Self.Constant.Write[Json.Primitive.Write, A] |
-      Self.Dictionary.Write[Json.Write, A] | Self.Enumeration.Write[Json.Write, A] |
-      Self.Optional.Write[Json.Write, A] | Self.Primitive.Write[Json.Primitive.Write, A] |
-      Self.Record.Write[Json.Field.Write, A] | Self.Tuple.Write[Json.Write, A] | Self.Union.Write[Json.Branch.Write, A]
-
     given Contravariant[Json.Write]:
       override def contramap[A, B](json: Json.Write[A])(f: B => A): Write[B] = json match
         case json: Json.Collection.Write[A]  => json.contramap(f)
@@ -1289,10 +1294,6 @@ object Json:
       .imapK([A] => (self: Annotation[Self.Field[Json, A]]) => Field(self))([A] => (json: Json.Field[A]) => json.self)
 
     given recordable: RecordableOperation[Json.Field, Json.Record] = RecordableOperation.derived
-
-  type Of[A] = Self.Collection[Json, A] | Self.Constant[Json.Primitive, A] | Self.Dictionary[Json, A] |
-    Self.Enumeration[Json, A] | Self.Optional[Json, A] | Self.Primitive[Json.Primitive, A] |
-    Self.Record[Json.Field, A] | Self.Tuple[Json, A] | Self.Union[Json.Branch, A]
 
   given Invariant[Json]:
     override def imap[A, B](json: Json[A])(f: A => B)(g: B => A): Json[B] = json match

@@ -6,13 +6,7 @@ import cats.Invariant
 import cats.data.NonEmptyChain
 import io.taig.otter.operation.UnionOperation
 
-sealed abstract class Union[+F[_], A] extends Union.Read[F, A], Union.Write[F, A]:
-  final def imap[B](f: A => B)(g: B => A): Union[F, B] = Union.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): Union[G, A]
-
-  final def coproduct[F1[a] >: F[a], B](union: Union[F1, B]): Union[F1, Either[A, B]] =
-    Union.Coproduct(left = this, right = union)
+type Union[+F[_], A] = Union.Read[F, A] & Union.Write[F, A]
 
 object Union:
   sealed trait Read[+F[_], +A]:
@@ -46,6 +40,10 @@ object Union:
 
       extension [A](fa: Union.Read[F, A]) override def branches: NonEmptyChain[Reference[F, ?]] = fa.branches
 
+      extension [A](fa: Union.Read[F, A])
+        override def orElse[B](schema: Union.Read[F, B]): Union.Read[F, Either[A, B]] =
+          fa.coproduct(schema)
+
   sealed trait Write[+F[_], -A]:
     def branches: NonEmptyChain[Reference[F, ?]]
 
@@ -77,26 +75,38 @@ object Union:
 
       extension [A](fa: Union.Write[F, A]) override def branches: NonEmptyChain[Reference[F, ?]] = fa.branches
 
-  final case class Modify[F[_], A, B](self: Union[F, A], f: A => B, g: B => A) extends Union[F, B]:
+      extension [A](fa: Write[F, A])
+        override def orElse[B](schema: Union.Write[F, B]): Union.Write[F, Either[A, B]] =
+          fa.coproduct(schema)
+
+  final case class Modify[F[_], A, B](self: Union[F, A], f: A => B, g: B => A)
+      extends Union.Read[F, B],
+        Union.Write[F, B]:
     export self.branches
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Union[G, B] = copy(self = self.mapK(fK))
 
-  final case class Coproduct[F[_], A, B](left: Union[F, A], right: Union[F, B]) extends Union[F, Either[A, B]]:
+  final case class Coproduct[F[_], A, B](left: Union[F, A], right: Union[F, B])
+      extends Union.Read[F, Either[A, B]],
+        Union.Write[F, Either[A, B]]:
     override def branches: NonEmptyChain[Reference[F, ?]] = left.branches ++ right.branches
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Union[G, Either[A, B]] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
 
-  final case class Root[F[_], A](branch: Reference[F, A]) extends Union[F, A]:
+  final case class Root[F[_], A](branch: Reference[F, A]) extends Union.Read[F, A], Union.Write[F, A]:
     override def branches: NonEmptyChain[Reference[F, ?]] = NonEmptyChain.one(branch)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Union[G, A] = copy(branch = branch.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Union[F, *]]:
-    override def imap[A, B](fa: Union[F, A])(f: A => B)(g: B => A): Union[F, B] = fa.imap(f)(g)
+    override def imap[A, B](fa: Union[F, A])(f: A => B)(g: B => A): Union[F, B] = Modify(fa, f, g)
 
   given [F[_]] => UnionOperation[Union[F, *], F]:
     override def lift[A](branch: Reference[F, A]): Union[F, A] = Root(branch)
 
     extension [A](fa: Union[F, A]) override def branches: NonEmptyChain[Reference[F, ?]] = fa.branches
+
+    extension [A](fa: Union[F, A])
+      override def orElse[B](schema: Union[F, B]): Union[F, Either[A, B]] =
+        Coproduct(left = fa, right = schema)

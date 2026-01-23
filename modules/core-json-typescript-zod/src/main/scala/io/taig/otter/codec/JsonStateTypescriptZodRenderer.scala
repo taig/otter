@@ -28,8 +28,7 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
         name: String,
         tpe: Typescript.Type,
         expression: Typescript.Expression
-    ): JsonStateTypescriptExpressionZodRenderer.Context =
-      copy(definitions = definitions.updated(name, (tpe, expression)))
+    ): Context = copy(definitions = definitions.updated(name, (tpe, expression)))
 
     def declarations: List[Typescript.Statement.Declaration] = definitions.toList.flatMap:
       case (name, (tpe, expression)) =>
@@ -48,25 +47,22 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
           Typescript.Statement.Declaration.Constant(name, tpe = annotation, expression)
         )
 
-    def +(name: String): JsonStateTypescriptExpressionZodRenderer.Context = copy(stack = stack.enqueue(name))
+    def +(name: String): Context = copy(stack = stack.enqueue(name))
 
-    def cyclic: JsonStateTypescriptExpressionZodRenderer.Context = copy(recursion = true)
-    def acyclic: JsonStateTypescriptExpressionZodRenderer.Context = copy(recursion = false)
+    def cyclic: Context = copy(recursion = true)
+    def acyclic: Context = copy(recursion = false)
 
-    def combine(
-        context: JsonStateTypescriptExpressionZodRenderer.Context
-    ): JsonStateTypescriptExpressionZodRenderer.Context =
-      Context(
-        definitions = definitions ++ context.definitions,
-        stack = stack ++ context.stack,
-        recursion = recursion || context.recursion
-      )
+    def combine(context: Context): Context = Context(
+      definitions = definitions ++ context.definitions,
+      stack = stack ++ context.stack,
+      recursion = recursion || context.recursion
+    )
 
   object Context:
-    val Empty: JsonStateTypescriptExpressionZodRenderer.Context =
+    val Empty: Context =
       Context(definitions = ListMap.empty, stack = Queue.empty, recursion = false)
 
-    given Monoid[JsonStateTypescriptExpressionZodRenderer.Context]:
+    given Monoid[Context]:
       override def empty: Context = Empty
 
       override def combine(x: Context, y: Context): Context = x.combine(y)

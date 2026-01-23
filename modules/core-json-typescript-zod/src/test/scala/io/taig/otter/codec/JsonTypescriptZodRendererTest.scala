@@ -11,7 +11,7 @@ import cats.syntax.all.*
 
 object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptZodRendererTest")(
-    test("object"):
+    test("record"):
       val schema = field("name", string) :*
         field("age", int).optional :*
         field("gender", constant(string, "unknown")) :*

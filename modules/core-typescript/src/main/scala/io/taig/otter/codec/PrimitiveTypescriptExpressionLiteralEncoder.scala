@@ -24,6 +24,7 @@ final class PrimitiveTypescriptExpressionLiteralEncoder[F[_]](encoder: Encoder[F
     case Primitive.Coerce.Text.Root(schema)             => encoder.encode(schema.value, a)
     case Primitive.Coerce.Text.Write.Modify(self, f)    => encode(schema = self, f(a))
     case Primitive.Coerce.Write.Modify(self, f)         => encode(schema = self, f(a))
+    case Primitive.Modify(self, _, f)                   => encode(schema = self, f(a))
     case Primitive.Number.BigDecimal(_)                 => Typescript.Expression.Literal.Number(a)
     case Primitive.Number.BigInteger(_)                 => Typescript.Expression.Literal.Number(new JBigDecimal(a))
     case Primitive.Number.Double(_)                     => Typescript.Expression.Literal.Number(new JBigDecimal(a))

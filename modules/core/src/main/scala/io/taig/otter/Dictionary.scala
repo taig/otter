@@ -8,10 +8,7 @@ import io.taig.validation.Validation
 
 import scala.collection.immutable.SortedMap
 
-sealed abstract class Dictionary[+S[_], A] extends Dictionary.Read[S, A], Dictionary.Write[S, A]:
-  final def imap[B](f: A => B)(g: B => A): Dictionary[S, B] = Dictionary.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => S[A] => G[A]): Dictionary[G, A]
+type Dictionary[+S[_], A] = Dictionary.Read[S, A] & Dictionary.Write[S, A]
 
 object Dictionary:
   sealed trait Read[+S[_], +A]:
@@ -71,24 +68,28 @@ object Dictionary:
   final case class Hashed[S[_], A](
       schema: Reference[S, A],
       validation: Validation[Constraint.Object, SortedMap[String, A]]
-  ) extends Dictionary[S, SortedMap[String, A]]:
+  ) extends Dictionary.Read[S, SortedMap[String, A]],
+        Dictionary.Write[S, SortedMap[String, A]]:
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Dictionary[G, SortedMap[String, A]] =
       copy(schema = schema.mapK[S, G](fK))
 
   final case class Linked[S[_], A](
       schema: Reference[S, A],
       validation: Validation[Constraint.Object, List[(String, A)]]
-  ) extends Dictionary[S, List[(String, A)]]:
+  ) extends Dictionary.Read[S, List[(String, A)]],
+        Dictionary.Write[S, List[(String, A)]]:
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Dictionary[G, List[(String, A)]] =
       copy(schema = schema.mapK[S, G](fK))
 
-  final case class Modify[S[_], A, B](self: Dictionary[S, A], f: A => B, g: B => A) extends Dictionary[S, B]:
+  final case class Modify[S[_], A, B](self: Dictionary[S, A], f: A => B, g: B => A)
+      extends Dictionary.Read[S, B],
+        Dictionary.Write[S, B]:
     export self.schema
 
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Dictionary[G, B] = copy(self = self.mapK(fK))
 
   given [F[_]] => Invariant[Dictionary[F, *]]:
-    override def imap[A, B](self: Dictionary[F, A])(f: A => B)(g: B => A): Dictionary[F, B] = self.imap(f)(g)
+    override def imap[A, B](self: Dictionary[F, A])(f: A => B)(g: B => A): Dictionary[F, B] = Modify(self, f, g)
 
   given [F[_]] => DictionaryOperation[Dictionary[F, *], F]:
     override def hashed[A](

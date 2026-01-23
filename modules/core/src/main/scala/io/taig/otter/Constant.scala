@@ -4,17 +4,12 @@ import cats.Contravariant
 import cats.Eq
 import cats.Eval
 import cats.Functor
-import cats.Invariant
 import io.taig.otter.Reference
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.ConstantOperation
+import cats.Invariant
 
-sealed abstract class Constant[+F[_], A] extends Constant.Read[F, A], Constant.Write[F, A]:
-  self =>
-
-  final def imap[B](f: A => B)(g: B => A): Constant[F, B] = Constant.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, A]
+type Constant[+F[_], A] = Constant.Read[F, A] & Constant.Write[F, A]
 
 object Constant:
   sealed trait Read[+F[_], +A]:
@@ -75,18 +70,22 @@ object Constant:
 
         override def schema: Reference[F, ?] = fa.schema
 
-  final case class Modify[F[_], A, B](self: Constant[F, A], f: A => B, g: B => A) extends Constant[F, B]:
+  final case class Modify[F[_], A, B](self: Constant[F, A], f: A => B, g: B => A)
+      extends Constant.Read[F, B],
+        Constant.Write[F, B]:
     export self.{encode, schema}
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, B] = copy(self = self.mapK(fK))
 
-  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]) extends Constant[F, Unit]:
+  final case class Root[F[_], A](schema: Reference[F, A], value: Eval[A], eq: Eq[A])
+      extends Constant.Read[F, Unit],
+        Constant.Write[F, Unit]:
     override def encode[T](encoder: Encoder[F, T]): T = encoder.encode(schema.value, value.value)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Constant[G, Unit] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Constant[F, *]]:
-    override def imap[A, B](self: Constant[F, A])(f: A => B)(g: B => A): Constant[F, B] = self.imap(f)(g)
+    override def imap[A, B](self: Constant[F, A])(f: A => B)(g: B => A): Constant[F, B] = Modify(self, f, g)
 
   given [F[_]] => ConstantOperation[Constant[F, *], F]:
     override def lift[A](schema: Reference[F, A], value: Eval[A], eq: Eq[A]): Constant[F, Unit] =

@@ -7,15 +7,7 @@ import cats.InvariantSemigroupal
 import cats.data.Chain
 import io.taig.otter.operation.TupleOperation
 
-sealed abstract class Tuple[+F[_], A] extends Tuple.Read[F, A], Tuple.Write[F, A]:
-  final def imap[B](f: A => B)(g: B => A): Tuple[F, B] = Tuple.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, A]
-
-  final override def optional: Tuple[F, Option[A]] = Tuple.Optional(self = this)
-
-  final def product[F1[a] >: F[a], B](schema: Tuple[F1, B]): Tuple[F1, (A, B)] =
-    Tuple.Product(left = this, right = schema)
+type Tuple[+F[_], A] = Tuple.Read[F, A] & Tuple.Write[F, A]
 
 object Tuple:
   sealed trait Read[+F[_], +A]:
@@ -116,41 +108,57 @@ object Tuple:
 
         override def schemas: Chain[Reference[F, ?]] = self.schemas
 
-  final case class Default[F[_], A](self: Tuple[F, A], value: Eval[A]) extends Tuple[F, A]:
+  final case class Default[F[_], A](self: Tuple[F, A], value: Eval[A]) extends Tuple.Read[F, A], Tuple.Write[F, A]:
     export self.schemas
+
+    override def optional: Tuple[F, Option[A]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, A] = copy(self = self.mapK(fK))
 
-  case object Empty extends Tuple[Nothing, Unit]:
+  case object Empty extends Tuple.Read[Nothing, Unit], Tuple.Write[Nothing, Unit]:
     override def schemas: Chain[Nothing] = Chain.empty
+
+    override def optional: Tuple[Nothing, Option[Unit]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => Nothing => G[A]): Tuple[G, Unit] = this
 
-  final case class Modify[F[_], A, B](self: Tuple[F, A], f: A => B, g: B => A) extends Tuple[F, B]:
+  final case class Modify[F[_], A, B](self: Tuple[F, A], f: A => B, g: B => A)
+      extends Tuple.Read[F, B],
+        Tuple.Write[F, B]:
     export self.schemas
+
+    override def optional: Tuple[F, Option[B]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, B] = copy(self = self.mapK(fK))
 
-  final case class Optional[F[_], A](self: Tuple[F, A]) extends Tuple[F, Option[A]]:
+  final case class Optional[F[_], A](self: Tuple[F, A]) extends Tuple.Read[F, Option[A]], Tuple.Write[F, Option[A]]:
     export self.schemas
+
+    override def optional: Tuple[F, Option[Option[A]]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, Option[A]] = copy(self = self.mapK(fK))
 
-  final case class Product[F[_], A, B](left: Tuple[F, A], right: Tuple[F, B]) extends Tuple[F, (A, B)]:
+  final case class Product[F[_], A, B](left: Tuple[F, A], right: Tuple[F, B])
+      extends Tuple.Read[F, (A, B)],
+        Tuple.Write[F, (A, B)]:
     override def schemas: Chain[Reference[F, ?]] = left.schemas ++ right.schemas
+
+    override def optional: Tuple[F, Option[(A, B)]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, (A, B)] =
       copy(left = left.mapK(fK), right = right.mapK(fK))
 
-  final case class Root[F[_], A](schema: Reference[F, A]) extends Tuple[F, A]:
+  final case class Root[F[_], A](schema: Reference[F, A]) extends Tuple.Read[F, A], Tuple.Write[F, A]:
     override def schemas: Chain[Reference[F, A]] = Chain.one(schema)
+
+    override def optional: Tuple[F, Option[A]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Tuple[G, A] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => InvariantSemigroupal[Tuple[F, *]]:
-    override def imap[A, B](self: Tuple[F, A])(f: A => B)(g: B => A): Tuple[F, B] = self.imap(f)(g)
+    override def imap[A, B](self: Tuple[F, A])(f: A => B)(g: B => A): Tuple[F, B] = Modify(self, f, g)
 
-    override def product[A, B](fa: Tuple[F, A], fb: Tuple[F, B]): Tuple[F, (A, B)] = fa.product(fb)
+    override def product[A, B](fa: Tuple[F, A], fb: Tuple[F, B]): Tuple[F, (A, B)] = Product(fa, fb)
 
   given [F[_]] => TupleOperation[Tuple[F, *], F]:
     override def empty: Tuple[F, Unit] = Empty
@@ -158,6 +166,6 @@ object Tuple:
     override def lift[A](schema: Reference[F, A]): Tuple[F, A] = Root(schema)
 
     extension [A](self: Tuple[F, A])
-      override def optional: Tuple[F, Option[A]] = Tuple.Optional(self)
+      override def optional: Tuple[F, Option[A]] = Optional(self)
 
       override def schemas: Chain[Reference[F, ?]] = self.schemas

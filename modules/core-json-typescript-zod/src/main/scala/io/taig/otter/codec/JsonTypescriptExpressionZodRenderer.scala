@@ -31,7 +31,6 @@ final class JsonTypescriptExpressionZodRenderer[F[_]: Applicative](
               arguments = List(Typescript.Expression.Symbol("string"), expression)
             )
           )
-
     case json: Json.Enumeration.Write[A] =>
       z(
         Typescript.Expression.Call(

@@ -11,9 +11,17 @@ trait UnionOperation[F[_], G[_]]:
 
   extension [A](fa: F[A]) def branches: NonEmptyChain[Reference[G, ?]]
 
+  extension [A](fa: F[A]) def orElse[B](schema: F[B]): F[Either[A, B]]
+
+  extension [F1[a] >: F[a], A](fa: F[A])
+    final def :+[B](branch: => G[B]): F1[Either[A, B]] = fa.orElse(lift(Reference.later(branch)))
+
   def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): UnionOperation[H, G] =
     new UnionOperation[H, G]:
       override def lift[A](branch: Reference[G, A]): H[A] = fK(self.lift(branch))
+
+      extension [A](fa: H[A])
+        override def orElse[B](schema: H[B]): H[Either[A, B]] = fK(self.orElse(gK(fa))(gK(schema)))
 
       extension [A](fa: H[A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(fa))
 
@@ -24,6 +32,9 @@ object UnionOperation:
     override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): UnionOperation.Read[H, G] =
       new Read[H, G]:
         override def lift[A](branch: Reference[G, A]): H[A] = fK(self.lift(branch))
+
+        extension [A](fa: H[A])
+          override def orElse[B](schema: H[B]): H[Either[A, B]] = fK(self.orElse(gK(fa))(gK(schema)))
 
         extension [A](fa: H[A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(fa))
 
@@ -41,6 +52,10 @@ object UnionOperation:
     override def imapK[H[_]](fK: [A] => F[A] => H[A])(gK: [A] => H[A] => F[A]): UnionOperation.Write[H, G] =
       new Write[H, G]:
         override def lift[A](branch: Reference[G, A]): H[A] = fK(self.lift(branch))
+
+        extension [A](fa: H[A])
+          override def orElse[B](schema: H[B]): H[Either[A, B]] =
+            fK(self.orElse(gK(fa))(gK(schema)))
 
         extension [A](fa: H[A]) override def branches: NonEmptyChain[Reference[G, ?]] = self.branches(gK(fa))
 

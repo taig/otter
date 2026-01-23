@@ -6,14 +6,7 @@ import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.FieldOperation
 
-sealed abstract class Field[+S[_], A] extends Field.Read[S, A], Field.Write[S, A]:
-  final def imap[B](f: A => B)(g: B => A): Field[S, B] = Field.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => S[A] => G[A]): Field[G, A]
-
-  final override def optional: Field[S, Option[A]] = Field.Optional(self = this)
-
-  final def optional(default: Eval[A]): Field[S, A] = Field.Default(self = this, value = default)
+type Field[+S[_], A] = Field.Read[S, A] & Field.Write[S, A]
 
 object Field:
   sealed trait Read[+S[_], +A]:
@@ -109,32 +102,42 @@ object Field:
 
         override def schema: Reference[S, ?] = fa.schema
 
-  final case class Default[S[_], A](self: Field[S, A], value: Eval[A]) extends Field[S, A]:
+  final case class Default[S[_], A](self: Field[S, A], value: Eval[A]) extends Field.Read[S, A], Field.Write[S, A]:
     export self.{name, schema}
 
     override def isOptional: Boolean = true
+
+    override def optional: Field[S, Option[A]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Field[G, A] = copy(self = self.mapK(fK))
 
-  final case class Modify[S[_], A, B](self: Field[S, A], f: A => B, g: B => A) extends Field[S, B]:
+  final case class Modify[S[_], A, B](self: Field[S, A], f: A => B, g: B => A)
+      extends Field.Read[S, B],
+        Field.Write[S, B]:
     export self.{isOptional, name, schema}
+
+    override def optional: Field[S, Option[B]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Field[G, B] = copy(self = self.mapK(fK))
 
-  final case class Optional[S[_], A](self: Field[S, A]) extends Field[S, Option[A]]:
+  final case class Optional[S[_], A](self: Field[S, A]) extends Field.Read[S, Option[A]], Field.Write[S, Option[A]]:
     export self.{name, schema}
 
     override def isOptional: Boolean = true
 
+    override def optional: Field[S, Option[Option[A]]] = Optional(self = this)
+
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Field[G, Option[A]] = copy(self = self.mapK(fK))
 
-  final case class Root[S[_], A](name: String, schema: Reference[S, A]) extends Field[S, A]:
+  final case class Root[S[_], A](name: String, schema: Reference[S, A]) extends Field.Read[S, A], Field.Write[S, A]:
     override def isOptional: Boolean = false
+
+    override def optional: Field[S, Option[A]] = Optional(self = this)
 
     override def mapK[G[_]](fK: [A] => S[A] => G[A]): Field[G, A] = copy(schema = schema.mapK[S, G](fK))
 
   given [S[_]] => Invariant[Field[S, *]]:
-    override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = fa.imap(f)(g)
+    override def imap[A, B](fa: Field[S, A])(f: A => B)(g: B => A): Field[S, B] = Modify(fa, f, g)
 
   given [S[_]] => FieldOperation[Field[S, *], S]:
     override def lift[A](name: String, schema: Reference[S, A]): Field[S, A] = Root(name, schema)
@@ -144,8 +147,8 @@ object Field:
 
       override def name: String = fa.name
 
-      override def optional: Field[S, Option[A]] = fa.optional
+      override def optional: Field[S, Option[A]] = Optional(fa)
 
-      override def optional(default: => A): Field[S, A] = fa.optional(default = Eval.later(default))
+      override def optional(default: => A): Field[S, A] = Default(fa, value = Eval.later(default))
 
       override def schema: Reference[S, ?] = fa.schema

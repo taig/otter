@@ -6,10 +6,7 @@ import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.OptionalOperation
 
-sealed abstract class Optional[+F[_], A] extends Optional.Read[F, A], Optional.Write[F, A]:
-  final def imap[B](f: A => B)(g: B => A): Optional[F, B] = Optional.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): Optional[G, A]
+type Optional[+F[_], A] = Optional.Read[F, A] & Optional.Write[F, A]
 
 object Optional:
   sealed trait Read[+F[_], +A]:
@@ -59,19 +56,25 @@ object Optional:
         Default(schema, default = Eval.later(default))
       extension [A](fa: Optional.Write[F, A]) override def schema: Reference[F, ?] = fa.schema
 
-  final case class Default[F[_], A](schema: Reference[F, A], default: Eval[A]) extends Optional[F, A]:
+  final case class Default[F[_], A](schema: Reference[F, A], default: Eval[A])
+      extends Optional.Read[F, A],
+        Optional.Write[F, A]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Optional[G, A] = copy(schema = schema.mapK[F, G](fK))
 
-  final case class Modify[F[_], A, B](self: Optional[F, A], f: A => B, g: B => A) extends Optional[F, B]:
+  final case class Modify[F[_], A, B](self: Optional[F, A], f: A => B, g: B => A)
+      extends Optional.Read[F, B],
+        Optional.Write[F, B]:
     export self.schema
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Optional[G, B] = copy(self = self.mapK(fK))
 
-  final case class Root[F[_], A](schema: Reference[F, A]) extends Optional[F, Option[A]]:
+  final case class Root[F[_], A](schema: Reference[F, A])
+      extends Optional.Read[F, Option[A]],
+        Optional.Write[F, Option[A]]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Optional[G, Option[A]] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Optional[F, *]]:
-    override def imap[A, B](self: Optional[F, A])(f: A => B)(g: B => A): Optional[F, B] = self.imap(f)(g)
+    override def imap[A, B](self: Optional[F, A])(f: A => B)(g: B => A): Optional[F, B] = Modify(self, f, g)
 
   given [F[_]] => OptionalOperation[Optional[F, *], F]:
     override def lift[A](schema: => Reference[F, A]): Optional[F, Option[A]] = Root(schema)

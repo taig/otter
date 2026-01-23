@@ -15,10 +15,8 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](renderer: Renderer[Jso
     case json: Json.Dictionary.Write[A] =>
       renderer
         .render(json.schema.value)
-        .map(tpe =>
-          Typescript.Type
-            .Symbol(name = "Record", parameters = List(Typescript.Type.Symbol(name = "string", parameters = Nil), tpe))
-        )
+        .map(List(Typescript.Type.Symbol(name = "string", parameters = Nil), _))
+        .map(Typescript.Type.Symbol(name = "Record", _))
     case json: Json.Enumeration.Write[A] =>
       Typescript.Type
         .Union(types = json.encode(JsonPrimitiveTypescriptTypeLiteralEncoder).toNonEmptyList)
@@ -26,7 +24,8 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](renderer: Renderer[Jso
     case json: Json.Optional.Write[A] =>
       renderer
         .render(json.schema.value)
-        .map(tpe => Typescript.Type.Union(types = NonEmptyList.of(tpe, Typescript.Type.Null)))
+        .map(NonEmptyList.of(_, Typescript.Type.Null))
+        .map(Typescript.Type.Union.apply)
     case _: Json.Primitive.Boolean.Write[A]        => Typescript.Type.Symbol(name = "boolean", parameters = Nil).pure
     case _: Json.Primitive.Coerce.Boolean.Write[A] =>
       Typescript.Type
@@ -65,8 +64,7 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](renderer: Renderer[Jso
         .traverse: field =>
           renderer
             .render(field.schema.value)
-            .map: tpe =>
-              Typescript.Type.Field(name = field.name, tpe, optional = field.isOptional)
+            .map(Typescript.Type.Field(name = field.name, _, optional = field.isOptional))
         .map(Typescript.Type.Object.apply)
     case json: Json.Tuple.Write[A] =>
       json.schemas.map(_.value).toList.traverse(renderer.render).map(Typescript.Type.Tuple.apply)

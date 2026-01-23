@@ -31,7 +31,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
       case argument => s"$name($argument)"
   case Typescript.Expression.Call(name, arguments) =>
     s"""$name(
-       |${arguments.map(indent).mkString("\n,")}
+       |${arguments.map(indent).mkString(",\n")}
        |)""".stripMargin
   case Typescript.Expression.Symbol(name)                 => name
   case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property}"

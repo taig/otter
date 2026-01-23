@@ -8,10 +8,7 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.EnumerationOperation
 
-sealed abstract class Enumeration[+F[_], A] extends Enumeration.Read[F, A], Enumeration.Write[F, A]:
-  final def imap[B](f: A => B)(g: B => A): Enumeration[F, B] = Enumeration.Modify(self = this, f, g)
-
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration[G, A]
+type Enumeration[+F[_], A] = Enumeration.Read[F, A] & Enumeration.Write[F, A]
 
 object Enumeration:
   sealed trait Read[+F[_], +A]:
@@ -72,14 +69,18 @@ object Enumeration:
 
         override def schema: Reference[F, ?] = fa.schema
 
-  final case class Modify[F[_], A, B](self: Enumeration[F, A], f: A => B, g: B => A) extends Enumeration[F, B]:
+  final case class Modify[F[_], A, B](self: Enumeration[F, A], f: A => B, g: B => A)
+      extends Enumeration.Read[F, B],
+        Enumeration.Write[F, B]:
     export self.{encode, schema}
 
     override def values: NonEmptyChain[B] = self.values.map(f)
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration[G, B] = copy(self = self.mapK(fK))
 
-  final case class Root[F[_], A, B](schema: Reference[F, A], mapping: Mapping[B, A]) extends Enumeration[F, B]:
+  final case class Root[F[_], A, B](schema: Reference[F, A], mapping: Mapping[B, A])
+      extends Enumeration.Read[F, B],
+        Enumeration.Write[F, B]:
     override def encode[T](encoder: Encoder[F, T]): NonEmptyChain[T] =
       NonEmptyChain.fromNonEmptyList(mapping.values).map(mapping.apply).map(encoder.encode(schema.value, _))
 
@@ -88,7 +89,7 @@ object Enumeration:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Enumeration[G, B] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Enumeration[F, *]]:
-    override def imap[A, B](self: Enumeration[F, A])(f: A => B)(g: B => A): Enumeration[F, B] = self.imap(f)(g)
+    override def imap[A, B](self: Enumeration[F, A])(f: A => B)(g: B => A): Enumeration[F, B] = Modify(self, f, g)
 
   given [F[_]] => EnumerationOperation[Enumeration[F, *], F]:
     override def lift[A, B](schema: Reference[F, A], mapping: Mapping[B, A]): Enumeration[F, B] =
