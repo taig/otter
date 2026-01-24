@@ -55,11 +55,16 @@ private val renderTypescriptExpression: Typescript.Expression => String =
 private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Block(statements)    => statements.map(indent).mkString("{\n", "\n", "\n}")
   case Typescript.Statement.Evaluate(expression) => s"$expression;"
-  case Typescript.Statement.Declaration.Constant(name, None, value)      => s"const $name = $value;"
-  case Typescript.Statement.Declaration.Constant(name, Some(tpe), value) => s"const $name: $tpe = $value;"
-  case Typescript.Statement.Declaration.Variable(name, None, value)      => s"let $name = $value;"
-  case Typescript.Statement.Declaration.Variable(name, Some(tpe), value) => s"let $name: $tpe = $value;"
-  case Typescript.Statement.Declaration.Type(name, tpe)                  => s"type $name = $tpe;"
+  case Typescript.Statement.Declaration.Constant(true, name, None, value)       => s"export const $name = $value;"
+  case Typescript.Statement.Declaration.Constant(false, name, None, value)      => s"const $name = $value;"
+  case Typescript.Statement.Declaration.Constant(true, name, Some(tpe), value)  => s"export const $name: $tpe = $value;"
+  case Typescript.Statement.Declaration.Constant(false, name, Some(tpe), value) => s"const $name: $tpe = $value;"
+  case Typescript.Statement.Declaration.Variable(true, name, None, value)       => s"export let $name = $value;"
+  case Typescript.Statement.Declaration.Variable(false, name, None, value)      => s"let $name = $value;"
+  case Typescript.Statement.Declaration.Variable(true, name, Some(tpe), value)  => s"export let $name: $tpe = $value;"
+  case Typescript.Statement.Declaration.Variable(false, name, Some(tpe), value) => s"let $name: $tpe = $value;"
+  case Typescript.Statement.Declaration.Type(true, name, tpe)                   => s"export type $name = $tpe;"
+  case Typescript.Statement.Declaration.Type(false, name, tpe)                  => s"type $name = $tpe;"
 
 private val renderTypescriptType: Typescript.Type => String =
   case Typescript.Type.Literal.Boolean(value)      => String.valueOf(value)

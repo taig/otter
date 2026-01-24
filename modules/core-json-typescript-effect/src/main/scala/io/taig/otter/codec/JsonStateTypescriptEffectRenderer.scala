@@ -44,8 +44,8 @@ object JsonStateTypescriptExpressionEffectRenderer
             ).some
 
         List(
-          Typescript.Statement.Declaration.Type(name, tpe),
-          Typescript.Statement.Declaration.Constant(name, tpe = annotation, expression)
+          Typescript.Statement.Declaration.Type(exported = true, name, tpe),
+          Typescript.Statement.Declaration.Constant(exported = true, name, tpe = annotation, expression)
         )
 
     def +(name: String): Context = copy(stack = stack.enqueue(name))

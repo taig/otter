@@ -132,9 +132,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
 
-      val expected = """type Name = Schema.Schema.Type<typeof Name>;
+      val expected = """export type Name = Schema.Schema.Type<typeof Name>;
                        |
-                       |const Name = Schema.Struct({
+                       |export const Name = Schema.Struct({
                        |  "first": Schema.String,
                        |  "last": Schema.String
                        |});
@@ -159,19 +159,19 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(course).mkString("\n\n")
 
-      val expected = """type Student = {
+      val expected = """export type Student = {
                        |  "name": string;
                        |  "courses": ReadonlyArray<Course>;
                        |};
                        |
-                       |const Student: Schema.Schema<Student> = Schema.Struct({
+                       |export const Student: Schema.Schema<Student> = Schema.Struct({
                        |  "name": Schema.String,
                        |  "courses": Schema.Array(Schema.suspend(() => Course))
                        |});
                        |
-                       |type Course = Schema.Schema.Type<typeof Course>;
+                       |export type Course = Schema.Schema.Type<typeof Course>;
                        |
-                       |const Course = Schema.Struct({
+                       |export const Course = Schema.Struct({
                        |  "title": Schema.String,
                        |  "members": Schema.Array(Student)
                        |});
@@ -188,12 +188,12 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(person).mkString("\n\n")
 
-      val expected = """type Person = {
+      val expected = """export type Person = {
                        |  "name": string;
                        |  "mother"?: Person | undefined;
                        |};
                        |
-                       |const Person: Schema.Schema<Person> = Schema.Struct({
+                       |export const Person: Schema.Schema<Person> = Schema.Struct({
                        |  "name": Schema.String,
                        |  "mother": Schema.optional(Schema.suspend(() => Person))
                        |});
@@ -228,9 +228,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
 
-      val expected = """type Bar = Schema.Schema.Type<typeof Bar>;
+      val expected = """export type Bar = Schema.Schema.Type<typeof Bar>;
                        |
-                       |const Bar = Schema.NumberFromString;
+                       |export const Bar = Schema.NumberFromString;
                        |
                        |Schema.Struct({
                        |  "foo": Schema.String,
@@ -251,9 +251,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
 
-      val expected = """type Bar = unknown;
+      val expected = """export type Bar = unknown;
                        |
-                       |const Bar: Schema.Schema<Bar> = Schema.Number;
+                       |export const Bar: Schema.Schema<Bar> = Schema.Number;
                        |
                        |Schema.Struct({
                        |  "foo": Schema.String,

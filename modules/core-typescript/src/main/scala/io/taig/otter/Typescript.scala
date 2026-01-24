@@ -43,13 +43,22 @@ object Typescript:
     sealed abstract class Declaration extends Typescript.Statement
 
     object Declaration:
-      final case class Constant(name: String, tpe: Option[Typescript.Type], value: Typescript.Expression)
-          extends Typescript.Statement.Declaration
+      final case class Constant(
+          exported: Boolean,
+          name: String,
+          tpe: Option[Typescript.Type],
+          value: Typescript.Expression
+      ) extends Typescript.Statement.Declaration
 
-      final case class Variable(name: String, tpe: Option[Typescript.Type], value: Typescript.Expression)
-          extends Typescript.Statement.Declaration
+      final case class Variable(
+          exported: Boolean,
+          name: String,
+          tpe: Option[Typescript.Type],
+          value: Typescript.Expression
+      ) extends Typescript.Statement.Declaration
 
-      final case class Type(name: String, tpe: Typescript.Type) extends Typescript.Statement.Declaration
+      final case class Type(exported: Boolean, name: String, tpe: Typescript.Type)
+          extends Typescript.Statement.Declaration
 
     final case class Evaluate(expression: Typescript.Expression) extends Typescript.Statement
 
