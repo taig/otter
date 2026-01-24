@@ -80,19 +80,34 @@ object JsonStateTypescriptExpressionEffectRenderer
 
   object renderer:
     val expression: Renderer[[a] =>> Json.Read[a] | Json.Write[a], State[Context, Typescript.Expression]] =
-      JsonTypescriptExpressionEffectOverwriteRenderer(
+      JsonTypescriptExpressionOverrideRenderer(
+        namespaces = NonEmptyList.of(
+          JsonTypescriptEffect.Namespace,
+          TypescriptEffect.Namespace,
+          Metadata.Namespace.Global
+        ),
         renderer = JsonTypescriptExpressionEffectRenderer(
           renderer = JsonStateTypescriptExpressionEffectRenderer
         )
       )
 
-    val tpe: Renderer[[a] =>> Json.Read[a] | Json.Write[a], Typescript.Type] = JsonTypescriptTypeRenderer[Id](renderer =
-      Renderer([A] =>
-        (json: (Json.Read[A] | Json.Write[A])) =>
-          name(json) match
-            case Some(name) => Typescript.Type.Symbol(name, parameters = Nil)
-            case None       => tpe.render(json)
+    val typescriptType: Renderer[[a] =>> Json.Read[a] | Json.Write[a], Typescript.Type] =
+      JsonTypescriptTypeRenderer[Id](
+        renderer = Renderer([A] =>
+          (json: (Json.Read[A] | Json.Write[A])) =>
+            name(json) match
+              case Some(name) => Typescript.Type.Symbol(name, parameters = Nil)
+              case None       => typescriptType.render(json)
+        )
       )
+
+    def effectType(symbol: Typescript.Expression) = JsonTypescriptTypeOverrideRenderer[Id](
+      namespaces = NonEmptyList.of(
+        JsonTypescriptEffect.Namespace,
+        TypescriptEffect.Namespace,
+        Metadata.Namespace.Global
+      ),
+      renderer = Renderer.pure(Schema.tpe(Typescript.Type.TypeOf(symbol)))
     )
 
   override def render[A](json: Json.Read[A] | Json.Write[A]): State[Context, Typescript.Expression] = State: context =>
@@ -101,26 +116,16 @@ object JsonStateTypescriptExpressionEffectRenderer
         val symbol = Typescript.Expression.Symbol(name)
 
         if context.stack.contains(name)
-        then
-          (
-            context.recursive(true),
-            Schema(
-              Typescript.Expression.Call(
-                name = "suspend",
-                arguments = List(Typescript.Expression.Arrow(body = symbol))
-              )
-            )
-          )
+        then (context.recursive(true), Schema.suspend(symbol))
         else
           context.definitions.get(name) match
             case Some(_) => (context, symbol)
             case None    =>
               val (update, expression) = renderer.expression.render(json).run(context + name).value
-
               val tpe =
                 if update.recursive
-                then renderer.tpe.render(json)
-                else Schema(Schema(Typescript.Type.Symbol("Type", List(Typescript.Type.TypeOf(expression = symbol)))))
+                then renderer.typescriptType.render(json)
+                else renderer.effectType(symbol).render(json)
 
               ((context |+| update).recursive(false).updated(name, tpe, expression), symbol)
       case None => renderer.expression.render(json).run(context).value.leftMap(context |+| _)

@@ -33,7 +33,6 @@ private val renderTypescriptExpression: Typescript.Expression => String =
     s"""$name(
        |${arguments.map(indent).mkString(",\n")}
        |)""".stripMargin
-  case Typescript.Expression.Eval(expression)             => expression
   case Typescript.Expression.Symbol(name)                 => name
   case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property}"
   case Typescript.Expression.Literal.Boolean(value)       => String.valueOf(value)

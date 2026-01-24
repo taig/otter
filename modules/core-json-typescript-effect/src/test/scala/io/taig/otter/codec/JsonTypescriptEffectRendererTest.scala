@@ -7,7 +7,9 @@ import zio.test.*
 import zio.test.ZIOSpecDefault
 import io.taig.otter.Keys
 import io.taig.otter.Json
-import io.taig.otter.TypescriptEffect
+import io.taig.otter.TypescriptKeys
+import io.taig.otter.Typescript
+import io.taig.otter.Schema
 
 object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectRendererTest")(
@@ -200,11 +202,10 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       assertTrue(obtained == expected)
     ,
-    test("overwrite"):
+    test("override: expression"):
       val value = int.attr(
-        namespace = TypescriptEffect.Namespace,
-        key = Keys.overwrite,
-        "Schema.NumberFromString"
+        key = TypescriptKeys.expression,
+        value = Schema(Typescript.Expression.Symbol("NumberFromString"))
       )
 
       val schema = field("foo", string) :* field("bar", value)
@@ -218,10 +219,10 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       assertTrue(obtained == expected)
     ,
-    test("overwrite: name"):
+    test("override: expression (named)"):
       val value = int
         .attr(key = Keys.name, value = "Bar")
-        .attr(namespace = TypescriptEffect.Namespace, key = Keys.overwrite, value = "Schema.NumberFromString")
+        .attr(key = TypescriptKeys.expression, value = Schema(Typescript.Expression.Symbol("NumberFromString")))
 
       val schema = field("foo", string) :* field("bar", value)
 
@@ -230,6 +231,29 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       val expected = """type Bar = Schema.Schema.Type<typeof Bar>;
                        |
                        |const Bar = Schema.NumberFromString;
+                       |
+                       |Schema.Struct({
+                       |  "foo": Schema.String,
+                       |  "bar": Bar
+                       |})""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("override: type"):
+      val value = int
+        .attr(
+          key = TypescriptKeys.tpe,
+          value = Typescript.Type.Symbol("unknown", parameters = Nil)
+        )
+        .attr(key = Keys.name, value = "Bar")
+
+      val schema = (field("foo", string) :* field("bar", value))
+
+      val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
+
+      val expected = """type Bar = unknown;
+                       |
+                       |const Bar: Schema.Schema<Bar> = Schema.Number;
                        |
                        |Schema.Struct({
                        |  "foo": Schema.String,

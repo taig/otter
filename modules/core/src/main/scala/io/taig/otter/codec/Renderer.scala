@@ -14,3 +14,5 @@ trait Renderer[-F[_], T]:
 object Renderer:
   def apply[F[_], T](f: [A] => F[A] => T): Renderer[F, T] = new Renderer[F, T]:
     override def render[A](fa: F[A]): T = f(fa)
+
+  def pure[F[_], T](value: => T): Renderer[F, T] = apply([A] => _ => value)
