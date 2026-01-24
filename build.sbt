@@ -153,13 +153,13 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   )
   .dependsOn(coreJson % "compile->compile;test->test")
 
-// lazy val http = module(identifier = Some("http"))
-//   .settings(
-//     libraryDependencies ++=
-//       "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
-//         Nil
-//   )
-//   .dependsOn(core % "compile->compile;test->test")
+lazy val http = module(identifier = Some("http"))
+  .settings(
+    libraryDependencies ++=
+      "org.typelevel" %%% "case-insensitive" % Version.CaseInsensitive ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
 
 // lazy val httpJson = module(identifier = Some("http-json"))
 //   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
