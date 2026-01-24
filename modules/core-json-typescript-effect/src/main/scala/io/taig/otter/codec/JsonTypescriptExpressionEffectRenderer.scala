@@ -105,7 +105,7 @@ final class JsonReadTypescriptExpressionEffectRenderer[F[_]: Applicative](
       renderer
         .render(json.schema.value)
         .map(List(_))
-        .map(Typescript.Expression.Call(name = "Array", _))
+        .map(Typescript.Expression.Call(name = "ReadonlyArray", _))
         .map(Schema.apply)
     case json: Json.Dictionary.Read[A] =>
       renderer

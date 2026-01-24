@@ -57,6 +57,40 @@ object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
 
       assertTrue(obtained == expected)
     ,
+    test("recursion"):
+      lazy val student: Json.Record[?] = (
+        field("name", string) :*
+          field("courses", collection.list(course))
+      ).attr(Keys.name, "Student")
+
+      lazy val course = (
+        field("title", string) :*
+          field("members", collection.list(student))
+      ).attr(Keys.name, "Course")
+
+      val obtained = JsonTypescriptZodRenderer.render(course).mkString("\n\n")
+
+      val expected = """type Student = {
+                       |  "name": string;
+                       |  "courses": ReadonlyArray<Course>;
+                       |};
+                       |
+                       |const Student: z.ZodType<Student> = z.object({
+                       |  "name": z.string(),
+                       |  "courses": z.array(z.lazy(() => Course))
+                       |});
+                       |
+                       |type Course = z.infer<typeof Course>;
+                       |
+                       |const Course = z.object({
+                       |  "title": z.string(),
+                       |  "members": z.array(Student)
+                       |});
+                       |
+                       |Course""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
     test("recursion: self"):
       lazy val person: Json.Record[?] = (
         field("name", string) :*
@@ -76,40 +110,6 @@ object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
                        |});
                        |
                        |Person""".stripMargin
-
-      assertTrue(obtained == expected)
-    ,
-    test("recursion: self"):
-      lazy val student: Json.Record[?] = (
-        field("name", string) :*
-          field("courses", collection.list(course))
-      ).attr(Keys.name, "Student")
-
-      lazy val course = (
-        field("title", string) :*
-          field("members", collection.list(student))
-      ).attr(Keys.name, "Course")
-
-      val obtained = JsonTypescriptZodRenderer.render(course).mkString("\n\n")
-
-      val expected = """type Student = {
-                       |  "name": string;
-                       |  "courses": Array<Course>;
-                       |};
-                       |
-                       |const Student: z.ZodType<Student> = z.object({
-                       |  "name": z.string(),
-                       |  "courses": z.array(z.lazy(() => Course))
-                       |});
-                       |
-                       |type Course = z.infer<typeof Course>;
-                       |
-                       |const Course = z.object({
-                       |  "title": z.string(),
-                       |  "members": z.array(Student)
-                       |});
-                       |
-                       |Course""".stripMargin
 
       assertTrue(obtained == expected)
   )

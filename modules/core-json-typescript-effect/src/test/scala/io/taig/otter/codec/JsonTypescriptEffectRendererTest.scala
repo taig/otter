@@ -143,6 +143,40 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       assertTrue(obtained == expected)
     ,
+    test("recursion"):
+      lazy val student: Json.Record[?] = (
+        field("name", string) :*
+          field("courses", collection.list(course))
+      ).attr(Keys.name, "Student")
+
+      lazy val course = (
+        field("title", string) :*
+          field("members", collection.list(student))
+      ).attr(Keys.name, "Course")
+
+      val obtained = JsonTypescriptEffectRenderer.render(course).mkString("\n\n")
+
+      val expected = """type Student = {
+                       |  "name": string;
+                       |  "courses": ReadonlyArray<Course>;
+                       |};
+                       |
+                       |const Student: Schema.Schema<Student> = Schema.Struct({
+                       |  "name": Schema.String,
+                       |  "courses": Schema.Array(Schema.suspend(() => Course))
+                       |});
+                       |
+                       |type Course = Schema.Schema.Type<typeof Course>;
+                       |
+                       |const Course = Schema.Struct({
+                       |  "title": Schema.String,
+                       |  "members": Schema.Array(Student)
+                       |});
+                       |
+                       |Course""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
     test("recursion: self"):
       lazy val person: Json.Record[?] = (
         field("name", string) :*

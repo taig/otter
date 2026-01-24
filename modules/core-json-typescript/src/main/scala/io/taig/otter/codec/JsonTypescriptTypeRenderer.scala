@@ -11,7 +11,10 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](renderer: Renderer[Jso
   override def render[A](json: Json.Write[A]): F[Typescript.Type] = json match
     case json: Json.Constant.Write[A]   => json.encode(JsonPrimitiveTypescriptTypeLiteralEncoder).pure
     case json: Json.Collection.Write[A] =>
-      renderer.render(json.schema.value).map(tpe => Typescript.Type.Symbol(name = "Array", parameters = List(tpe)))
+      renderer
+        .render(json.schema.value)
+        .map(List(_))
+        .map(Typescript.Type.Symbol(name = "ReadonlyArray", _))
     case json: Json.Dictionary.Write[A] =>
       renderer
         .render(json.schema.value)
