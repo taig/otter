@@ -56,11 +56,73 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
     ,
     test("Json.Primitive: coerce boolean"):
       val obtained = JsonTypescriptEffectRenderer.render(coerce(boolean)).mkString("\n\n")
-      val expected = """CoerceBoolean"""
+
+      val expected = """export type CoerceBoolean = Schema.Schema.Type<typeof CoerceBoolean>;
+                       |
+                       |export const CoerceBoolean = Schema.Union(
+                       |  Schema.Boolean,
+                       |  Schema.transform(
+                       |    Schema.Union(
+                       |      Schema.Literal("true"),
+                       |      Schema.Literal("false")
+                       |    ),
+                       |    Schema.Boolean,
+                       |    {
+                       |      "decode": (value) => value === "true",
+                       |      "encode": (value) => value ? "true" : "false"
+                       |    }
+                       |  )
+                       |);
+                       |
+                       |CoerceBoolean""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("Json.Primitive: coerce number"):
+      val obtained = JsonTypescriptEffectRenderer.render(coerce(int)).mkString("\n\n")
+
+      val expected = """export type CoerceNumber = Schema.Schema.Type<typeof CoerceNumber>;
+                       |
+                       |export const CoerceNumber = Schema.Union(
+                       |  Schema.Number,
+                       |  Schema.NumberFromString
+                       |);
+                       |
+                       |CoerceNumber""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("Json.Primitive: coerce string"):
+      val obtained = JsonTypescriptEffectRenderer.render(coerce(string)).mkString("\n\n")
+
+      val expected = """export type CoerceString = Schema.Schema.Type<typeof CoerceString>;
+                       |
+                       |export const CoerceString = Schema.Union(
+                       |  Schema.String,
+                       |  Schema.transform(
+                       |    Schema.Number,
+                       |    Schema.String,
+                       |    {
+                       |      "decode": (value) => String(value),
+                       |      "encode": (value) => Number(value)
+                       |    }
+                       |  ),
+                       |  Schema.transform(
+                       |    Schema.Boolean,
+                       |    Schema.String,
+                       |    {
+                       |      "decode": (value) => value ? "true" : "false",
+                       |      "encode": (value) => value === "true"
+                       |    }
+                       |  )
+                       |);
+                       |
+                       |CoerceString""".stripMargin
+
       assertTrue(obtained == expected)
     ,
     test("Json.Primitive: number"):
-      val obtained = JsonTypescriptEffectRenderer.render(float).mkString("\n\n")
+      val obtained = JsonTypescriptEffectRenderer.render(int).mkString("\n\n")
       val expected = """Schema.Number"""
       assertTrue(obtained == expected)
     ,

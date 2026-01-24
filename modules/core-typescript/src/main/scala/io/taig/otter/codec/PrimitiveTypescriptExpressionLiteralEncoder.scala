@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
 import io.taig.otter.Primitive
-
-import scala.annotation.tailrec
 import io.taig.otter.Typescript
+
 import java.math.BigDecimal as JBigDecimal
+import scala.annotation.tailrec
 
 final class PrimitiveTypescriptExpressionLiteralEncoder[F[_]](encoder: Encoder[F, Typescript.Expression.Literal])
     extends Encoder[Primitive.Write[F, *], Typescript.Expression.Literal]:

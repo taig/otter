@@ -1,12 +1,12 @@
 package io.taig.otter
 
-import io.taig.otter.syntax.all.*
-import io.taig.otter as Self
-import cats.Functor
 import cats.Contravariant
+import cats.Functor
 import cats.Invariant
 import cats.syntax.all.*
+import io.taig.otter as Self
 import io.taig.otter.operation.*
+import io.taig.otter.syntax.all.*
 
 sealed abstract class Value[A] extends Value.Read[A], Value.Write[A]:
   override def self: Annotation[

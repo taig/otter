@@ -1,11 +1,11 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Typescript
-import io.taig.otter.Json
-import cats.syntax.all.*
 import cats.Applicative
-import io.taig.otter.Metadata
 import cats.data.NonEmptyList
+import cats.syntax.all.*
+import io.taig.otter.Json
+import io.taig.otter.Metadata
+import io.taig.otter.Typescript
 import io.taig.otter.TypescriptKeys
 
 final class JsonTypescriptTypeOverrideRenderer[F[_]: Applicative](

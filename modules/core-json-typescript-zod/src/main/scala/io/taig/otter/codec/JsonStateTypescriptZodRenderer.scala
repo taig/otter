@@ -1,22 +1,22 @@
 package io.taig.otter.codec
 
+import cats.Id
+import cats.Monoid
+import cats.data.NonEmptyList
 import cats.data.State
+import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.codec.JsonStateTypescriptExpressionZodRenderer.Context
+import io.taig.otter.Json.Write
 import io.taig.otter.JsonTypescriptZod
 import io.taig.otter.Keys
+import io.taig.otter.Metadata
+import io.taig.otter.Typescript
 import io.taig.otter.TypescriptZod
+import io.taig.otter.codec.JsonStateTypescriptExpressionZodRenderer.Context
+import io.taig.otter.z
 
 import scala.collection.immutable.ListMap
-import io.taig.otter.Typescript
-import io.taig.otter.Metadata
 import scala.collection.immutable.Queue
-import cats.Monoid
-import io.taig.otter.z
-import cats.syntax.all.*
-import io.taig.otter.Json.Write
-import cats.Id
-import cats.data.NonEmptyList
 
 object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, State[Context, Typescript.Expression]]:
   // TODO is a recursion flag sufficient? Will this break nested recursions?
@@ -44,8 +44,8 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
             ).some
 
         List(
-          Typescript.Statement.Declaration.Type(name, tpe),
-          Typescript.Statement.Declaration.Constant(name, tpe = annotation, expression)
+          Typescript.Statement.Declaration.Type(exported = true, name, tpe),
+          Typescript.Statement.Declaration.Constant(exported = true, name, tpe = annotation, expression)
         )
 
     def +(name: String): Context = copy(stack = stack.enqueue(name))
@@ -103,7 +103,7 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
             z(
               Typescript.Expression.Call(
                 name = "lazy",
-                arguments = List(Typescript.Expression.Arrow(body = symbol))
+                arguments = List(Typescript.Expression.Arrow(arguments = Nil, body = symbol))
               )
             )
           )

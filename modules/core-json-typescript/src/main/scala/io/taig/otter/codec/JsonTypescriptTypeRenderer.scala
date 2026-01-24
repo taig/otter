@@ -1,12 +1,12 @@
 package io.taig.otter.codec
 
+import cats.Applicative
+import cats.data.Chain
+import cats.data.NonEmptyChain
+import cats.data.NonEmptyList
+import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Typescript
-import cats.Applicative
-import cats.syntax.all.*
-import cats.data.NonEmptyList
-import cats.data.NonEmptyChain
-import cats.data.Chain
 
 final class JsonTypescriptTypeRenderer[F[_]: Applicative](
     renderer: Renderer[[a] =>> Json.Read[a] | Json.Write[a], F[Typescript.Type]]

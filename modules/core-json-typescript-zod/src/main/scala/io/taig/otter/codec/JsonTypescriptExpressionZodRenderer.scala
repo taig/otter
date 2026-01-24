@@ -1,10 +1,10 @@
 package io.taig.otter.codec
 
 import cats.Applicative
-import io.taig.otter.z
+import cats.syntax.all.*
 import io.taig.otter.Json
 import io.taig.otter.Typescript
-import cats.syntax.all.*
+import io.taig.otter.z
 
 final class JsonTypescriptExpressionZodRenderer[F[_]: Applicative](
     renderer: Renderer[Json.Write, F[Typescript.Expression]]

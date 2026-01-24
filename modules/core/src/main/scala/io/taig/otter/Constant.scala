@@ -4,10 +4,10 @@ import cats.Contravariant
 import cats.Eq
 import cats.Eval
 import cats.Functor
+import cats.Invariant
 import io.taig.otter.Reference
 import io.taig.otter.codec.Encoder
 import io.taig.otter.operation.ConstantOperation
-import cats.Invariant
 
 type Constant[+F[_], A] = Constant.Read[F, A] & Constant.Write[F, A]
 

@@ -20,7 +20,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Array(Nil)                  => "[]"
   case Typescript.Expression.Array(element :: Nil)       => s"[$element]"
   case Typescript.Expression.Array(elements)             => elements.map(indent).mkString("[\n", ",\n", "\n]")
-  case Typescript.Expression.Arrow(body)                 => s"() => $body"
+  case Typescript.Expression.Arrow(arguments, body)      => s"(${arguments.mkString(", ")}) => $body"
   case Typescript.Expression.Call(name, Nil)             => s"$name()"
   case Typescript.Expression.Call(name, argument :: Nil) =>
     renderTypescriptExpression(argument).pipe:
@@ -33,6 +33,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
     s"""$name(
        |${arguments.map(indent).mkString(",\n")}
        |)""".stripMargin
+  case Typescript.Expression.Equal(left, right)           => s"$left == $right"
   case Typescript.Expression.Symbol(name)                 => name
   case Typescript.Expression.Member(namespace, property)  => s"$namespace.${property}"
   case Typescript.Expression.Literal.Boolean(value)       => String.valueOf(value)
@@ -51,6 +52,8 @@ private val renderTypescriptExpression: Typescript.Expression => String =
       .map((name, value) => s"\"$name\": $value")
       .map(indent)
       .mkString("{\n", ",\n", "\n}")
+  case Typescript.Expression.Ternary(condition, valid, invalid) => s"$condition ? $valid : $invalid"
+  case Typescript.Expression.TripleEqual(left, right)           => s"$left === $right"
 
 private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Block(statements)    => statements.map(indent).mkString("{\n", "\n", "\n}")

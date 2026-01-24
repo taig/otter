@@ -1,9 +1,10 @@
 package io.taig.otter
 
-import scala.Boolean as SBoolean
+import cats.data.NonEmptyList
+
 import java.lang.String as JString
 import java.math.BigDecimal as JBigDecimal
-import cats.data.NonEmptyList
+import scala.Boolean as SBoolean
 
 sealed abstract class Typescript extends Product, Serializable:
   final override def toString: String = render
@@ -17,9 +18,11 @@ object Typescript:
   object Expression:
     final case class Array(elements: List[Typescript.Expression]) extends Typescript.Expression
 
-    final case class Arrow(body: Typescript) extends Typescript.Expression
+    final case class Arrow(arguments: List[Typescript.Expression], body: Typescript) extends Typescript.Expression
 
     final case class Call(name: String, arguments: List[Typescript.Expression]) extends Typescript.Expression
+
+    final case class Equal(left: Typescript.Expression, right: Typescript.Expression) extends Typescript.Expression
 
     sealed abstract class Literal extends Typescript.Expression
 
@@ -33,6 +36,15 @@ object Typescript:
     final case class Object(fields: List[(String, Typescript.Expression)]) extends Typescript.Expression
 
     final case class Symbol(name: String) extends Typescript.Expression
+
+    final case class Ternary(
+        condition: Typescript.Expression,
+        valid: Typescript.Expression,
+        invalid: Typescript.Expression
+    ) extends Typescript.Expression
+
+    final case class TripleEqual(left: Typescript.Expression, right: Typescript.Expression)
+        extends Typescript.Expression
 
   sealed abstract class Statement extends Typescript:
     final override def render: String = renderTypescriptStatement(this)

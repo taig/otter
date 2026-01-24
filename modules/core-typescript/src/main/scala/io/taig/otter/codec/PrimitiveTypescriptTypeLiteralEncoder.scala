@@ -1,7 +1,8 @@
 package io.taig.otter.codec
 
-import io.taig.otter.Typescript
 import io.taig.otter.Primitive
+import io.taig.otter.Typescript
+
 import java.math.BigDecimal as JBigDecimal
 import scala.annotation.tailrec
 

@@ -1,8 +1,8 @@
 package io.taig.otter
 
 import cats.Invariant
-import cats.syntax.all.*
 import cats.data.NonEmptyList
+import cats.syntax.all.*
 
 trait Annotated[T]:
   self =>
