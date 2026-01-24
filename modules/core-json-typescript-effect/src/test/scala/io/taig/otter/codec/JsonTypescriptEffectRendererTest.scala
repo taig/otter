@@ -6,6 +6,7 @@ import zio.Scope
 import zio.test.*
 import zio.test.ZIOSpecDefault
 import io.taig.otter.Keys
+import io.taig.otter.Json
 
 object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectRendererTest")(
@@ -128,17 +129,39 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
 
-      val expected = """|type Name = Schema.Schema.Type<typeof Name>;
-                        |
-                        |const Name = Schema.Struct({
-                        |  "first": Schema.String,
-                        |  "last": Schema.String
-                        |});
-                        |
-                        |Schema.Struct({
-                        |  "name": Name,
-                        |  "age": Schema.optional(Schema.Number)
-                        |})""".stripMargin
+      val expected = """type Name = Schema.Schema.Type<typeof Name>;
+                       |
+                       |const Name = Schema.Struct({
+                       |  "first": Schema.String,
+                       |  "last": Schema.String
+                       |});
+                       |
+                       |Schema.Struct({
+                       |  "name": Name,
+                       |  "age": Schema.optional(Schema.Number)
+                       |})""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("recursion: self"):
+      lazy val person: Json.Record[?] = (
+        field("name", string) :*
+          field("mother", person).optional
+      ).attr(Keys.name, "Person")
+
+      val obtained = JsonTypescriptEffectRenderer.render(person).mkString("\n\n")
+
+      val expected = """type Person = {
+                       |  "name": string;
+                       |  "mother"?: Person | undefined;
+                       |};
+                       |
+                       |const Person: Schema.Schema<Person> = Schema.Struct({
+                       |  "name": Schema.String,
+                       |  "mother": Schema.optional(Schema.suspend(() => Person))
+                       |});
+                       |
+                       |Person""".stripMargin
 
       assertTrue(obtained == expected)
   )

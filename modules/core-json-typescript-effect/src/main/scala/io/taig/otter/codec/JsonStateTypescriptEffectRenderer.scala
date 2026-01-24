@@ -33,12 +33,11 @@ object JsonStateTypescriptExpressionEffectRenderer extends Renderer[Json.Write, 
     def declarations: List[Typescript.Statement.Declaration] = definitions.toList.flatMap:
       case (name, (tpe, expression)) =>
         val annotation = tpe match
-          case Typescript.Type.Member("Schema", Typescript.Type.Member("Schema", Typescript.Type.Symbol("Type", _))) =>
-            none
-          case _ =>
+          case Schema(Schema(Typescript.Type.Symbol("Type", _))) => none
+          case _                                                 =>
             Schema(
               Typescript.Type.Symbol(
-                name = "ZodType",
+                name = "Schema",
                 parameters = List(Typescript.Type.Symbol(name, parameters = Nil))
               )
             ).some
@@ -99,7 +98,7 @@ object JsonStateTypescriptExpressionEffectRenderer extends Renderer[Json.Write, 
             context.cyclic,
             Schema(
               Typescript.Expression.Call(
-                name = "lazy",
+                name = "suspend",
                 arguments = List(Typescript.Expression.Arrow(body = symbol))
               )
             )

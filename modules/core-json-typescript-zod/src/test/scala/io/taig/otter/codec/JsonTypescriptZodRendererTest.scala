@@ -43,17 +43,17 @@ object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptZodRenderer.render(schema).mkString("\n\n")
 
-      val expected = """|type Name = z.infer<typeof Name>;
-                        |
-                        |const Name = z.object({
-                        |  "first": z.string(),
-                        |  "last": z.string()
-                        |});
-                        |
-                        |z.object({
-                        |  "name": Name,
-                        |  "age": z.optional(z.number())
-                        |})""".stripMargin
+      val expected = """type Name = z.infer<typeof Name>;
+                       |
+                       |const Name = z.object({
+                       |  "first": z.string(),
+                       |  "last": z.string()
+                       |});
+                       |
+                       |z.object({
+                       |  "name": Name,
+                       |  "age": z.optional(z.number())
+                       |})""".stripMargin
 
       assertTrue(obtained == expected)
     ,
@@ -65,17 +65,17 @@ object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptZodRenderer.render(person).mkString("\n\n")
 
-      val expected = """|type Person = {
-                        |  "name": string;
-                        |  "mother"?: Person | undefined;
-                        |};
-                        |
-                        |const Person: z.ZodType<Person> = z.object({
-                        |  "name": z.string(),
-                        |  "mother": z.optional(z.lazy(() => Person))
-                        |});
-                        |
-                        |Person""".stripMargin
+      val expected = """type Person = {
+                       |  "name": string;
+                       |  "mother"?: Person | undefined;
+                       |};
+                       |
+                       |const Person: z.ZodType<Person> = z.object({
+                       |  "name": z.string(),
+                       |  "mother": z.optional(z.lazy(() => Person))
+                       |});
+                       |
+                       |Person""".stripMargin
 
       assertTrue(obtained == expected)
     ,
@@ -92,24 +92,24 @@ object JsonTypescriptZodRendererTest extends ZIOSpecDefault:
 
       val obtained = JsonTypescriptZodRenderer.render(course).mkString("\n\n")
 
-      val expected = """|type Student = {
-                        |  "name": string;
-                        |  "courses": Array<Course>;
-                        |};
-                        |
-                        |const Student: z.ZodType<Student> = z.object({
-                        |  "name": z.string(),
-                        |  "courses": z.array(z.lazy(() => Course))
-                        |});
-                        |
-                        |type Course = z.infer<typeof Course>;
-                        |
-                        |const Course = z.object({
-                        |  "title": z.string(),
-                        |  "members": z.array(Student)
-                        |});
-                        |
-                        |Course""".stripMargin
+      val expected = """type Student = {
+                       |  "name": string;
+                       |  "courses": Array<Course>;
+                       |};
+                       |
+                       |const Student: z.ZodType<Student> = z.object({
+                       |  "name": z.string(),
+                       |  "courses": z.array(z.lazy(() => Course))
+                       |});
+                       |
+                       |type Course = z.infer<typeof Course>;
+                       |
+                       |const Course = z.object({
+                       |  "title": z.string(),
+                       |  "members": z.array(Student)
+                       |});
+                       |
+                       |Course""".stripMargin
 
       assertTrue(obtained == expected)
   )

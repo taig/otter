@@ -33,9 +33,9 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
     def declarations: List[Typescript.Statement.Declaration] = definitions.toList.flatMap:
       case (name, (tpe, expression)) =>
         val annotation = tpe match
-          case Typescript.Type.Member("z", Typescript.Type.Symbol("infer", _)) => none
-          case _                                                               =>
-            z(property =
+          case z(Typescript.Type.Symbol("infer", _)) => none
+          case _                                     =>
+            z(
               Typescript.Type.Symbol(
                 name = "ZodType",
                 parameters = List(Typescript.Type.Symbol(name, parameters = Nil))
@@ -95,7 +95,7 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
         then
           (
             context.cyclic,
-            z(property =
+            z(
               Typescript.Expression.Call(
                 name = "lazy",
                 arguments = List(Typescript.Expression.Arrow(body = symbol))
@@ -111,7 +111,7 @@ object JsonStateTypescriptExpressionZodRenderer extends Renderer[Json.Write, Sta
               val tpe =
                 if update.recursion
                 then renderer.tpe.render(json)
-                else z(property = Typescript.Type.Symbol("infer", List(Typescript.Type.TypeOf(expression = symbol))))
+                else z.infer(Typescript.Type.TypeOf(expression = symbol))
 
               ((context |+| update).acyclic.updated(name, tpe, expression), symbol)
       case None => renderer.expression.render(json).run(context).value.leftMap(context |+| _)
