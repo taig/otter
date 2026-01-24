@@ -7,6 +7,7 @@ import zio.test.*
 import zio.test.ZIOSpecDefault
 import io.taig.otter.Keys
 import io.taig.otter.Json
+import io.taig.otter.TypescriptEffect
 
 object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectRendererTest")(
@@ -105,7 +106,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                        |)""".stripMargin
       assertTrue(obtained == expected)
     ,
-    test("Union"):
+    test("Json.Union"):
       val schema = branch("foo", string) :+
         branch("bar", int) :+
         branch("foobar", fixture.json.animal)
@@ -196,6 +197,44 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                        |});
                        |
                        |Person""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("overwrite"):
+      val value = int.attr(
+        namespace = TypescriptEffect.Namespace,
+        key = Keys.overwrite,
+        "Schema.NumberFromString"
+      )
+
+      val schema = field("foo", string) :* field("bar", value)
+
+      val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
+
+      val expected = """Schema.Struct({
+                       |  "foo": Schema.String,
+                       |  "bar": Schema.NumberFromString
+                       |})""".stripMargin
+
+      assertTrue(obtained == expected)
+    ,
+    test("overwrite: name"):
+      val value = int
+        .attr(key = Keys.name, value = "Bar")
+        .attr(namespace = TypescriptEffect.Namespace, key = Keys.overwrite, value = "Schema.NumberFromString")
+
+      val schema = field("foo", string) :* field("bar", value)
+
+      val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
+
+      val expected = """type Bar = Schema.Schema.Type<typeof Bar>;
+                       |
+                       |const Bar = Schema.NumberFromString;
+                       |
+                       |Schema.Struct({
+                       |  "foo": Schema.String,
+                       |  "bar": Bar
+                       |})""".stripMargin
 
       assertTrue(obtained == expected)
   )

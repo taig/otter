@@ -21,6 +21,8 @@ object Typescript:
 
     final case class Call(name: String, arguments: List[Typescript.Expression]) extends Typescript.Expression
 
+    final case class Eval(expression: String) extends Typescript.Expression
+
     sealed abstract class Literal extends Typescript.Expression
 
     object Literal:

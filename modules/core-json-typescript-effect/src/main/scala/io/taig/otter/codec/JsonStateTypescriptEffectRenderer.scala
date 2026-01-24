@@ -80,7 +80,11 @@ object JsonStateTypescriptExpressionEffectRenderer
 
   object renderer:
     val expression: Renderer[[a] =>> Json.Read[a] | Json.Write[a], State[Context, Typescript.Expression]] =
-      JsonTypescriptExpressionEffectRenderer(renderer = JsonStateTypescriptExpressionEffectRenderer)
+      JsonTypescriptExpressionEffectOverwriteRenderer(
+        renderer = JsonTypescriptExpressionEffectRenderer(
+          renderer = JsonStateTypescriptExpressionEffectRenderer
+        )
+      )
 
     val tpe: Renderer[[a] =>> Json.Read[a] | Json.Write[a], Typescript.Type] = JsonTypescriptTypeRenderer[Id](renderer =
       Renderer([A] =>
