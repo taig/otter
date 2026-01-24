@@ -5,6 +5,7 @@ import io.taig.otter.component.JsonComponent.*
 import zio.Scope
 import zio.test.*
 import zio.test.ZIOSpecDefault
+import io.taig.otter.Keys
 
 object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectRendererTest")(
@@ -118,5 +119,26 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                        |    "dog"
                        |  )
                        |)""".stripMargin
+      assertTrue(obtained == expected)
+    ,
+    test("name"):
+      val name = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
+
+      val schema = field("name", name) :* field("age", int).optional
+
+      val obtained = JsonTypescriptEffectRenderer.render(schema).mkString("\n\n")
+
+      val expected = """|type Name = Schema.Schema.Type<typeof Name>;
+                        |
+                        |const Name = Schema.Struct({
+                        |  "first": Schema.String,
+                        |  "last": Schema.String
+                        |});
+                        |
+                        |Schema.Struct({
+                        |  "name": Name,
+                        |  "age": Schema.optional(Schema.Number)
+                        |})""".stripMargin
+
       assertTrue(obtained == expected)
   )
