@@ -7,9 +7,6 @@ import cats.ContravariantSemigroupal
 import cats.InvariantSemigroupal
 import io.taig.otter.http.operation.PathOperation
 
-// sealed abstract class Path[A] extends Path.Read[A], Path.Write[A]:
-//   override def segments: Chain[Reference[Segment, ?]]
-
 type Path[+F[_], A] = Path.Read[F, A] & Path.Write[F, A]
 
 object Path:

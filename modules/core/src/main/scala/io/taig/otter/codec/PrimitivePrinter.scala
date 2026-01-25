@@ -21,6 +21,7 @@ final class PrimitivePrinter[F[_]](printer: Printer[F]) extends Printer[Primitiv
     case Primitive.Coerce.Text.Root(schema)             => printer.encode(schema.value, a)
     case Primitive.Coerce.Text.Write.Modify(self, f)    => encode(schema = self, f(a))
     case Primitive.Coerce.Write.Modify(self, f)         => encode(schema = self, f(a))
+    case Primitive.Modify(self, _, f)                   => encode(schema = self, f(a))
     case Primitive.Number.BigDecimal(_)                 => a.toPlainString
     case Primitive.Number.BigInteger(_)                 => String.valueOf(a)
     case Primitive.Number.Double(_)                     => String.valueOf(a)

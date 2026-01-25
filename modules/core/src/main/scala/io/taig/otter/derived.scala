@@ -61,8 +61,6 @@ object Impl:
                 )
             )
 
-            val companionRef = Ref(companion)
-
             val applyMethod = companion
               .methodMember("apply")
               .headOption
@@ -81,7 +79,7 @@ object Impl:
                             // Call F.apply(annotation)
                             val annotationExpr = '{ annotation }.asTerm
                             Apply(
-                              TypeApply(Select(companionRef, applyMethod), List(TypeTree.of[A])),
+                              TypeApply(Select(Ref(companion), applyMethod), List(TypeTree.of[A])),
                               List(annotationExpr)
                             ).asExprOf[F[A]]
                           }

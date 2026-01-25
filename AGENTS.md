@@ -22,6 +22,7 @@ sbt "core-json-typescript-effect/testOnly io.taig.otter.codec.JsonTypescriptEffe
 - Scalafmt enforced (maxColumn: 120, Scala 3 dialect)
 - No comments explaining obvious code changes
 - Follow existing patterns in neighboring files
+- Fully qualified namespaces: When referring to a type, always start with the root type of the current file instead of using relative references
 
 ## Boundaries
 
