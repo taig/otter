@@ -21,9 +21,11 @@ object Segment:
 
       def name: String
 
+      def schema: Reference[Value.Read, ?]
+
     object Read:
       final case class Modify[A, B](self: Segment.Parameter.Read[A], f: A => B) extends Segment.Parameter.Read[B]:
-        export self.name
+        export self.{schema, name}
 
       final case class Root[A](name: String, schema: Reference[Value.Read, A]) extends Segment.Parameter.Read[A]
 
@@ -36,9 +38,11 @@ object Segment:
 
       def name: String
 
+      def schema: Reference[Value.Write, ?]
+
     object Write:
       final case class Modify[A, B](self: Segment.Parameter.Write[A], f: B => A) extends Segment.Parameter.Write[B]:
-        export self.name
+        export self.{schema, name}
 
       final case class Root[A](name: String, schema: Reference[Value.Write, A]) extends Segment.Parameter.Write[A]
 
@@ -49,7 +53,7 @@ object Segment:
     final case class Modify[A, B](self: Segment.Parameter[A], f: A => B, g: B => A)
         extends Segment.Parameter.Read[B],
           Segment.Parameter.Write[B]:
-      export self.name
+      export self.{schema, name}
 
     final case class Root[A](name: String, schema: Reference[Value, A])
         extends Segment.Parameter.Read[A],

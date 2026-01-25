@@ -128,20 +128,12 @@ lazy val coreTypescript = module(identifier = Some("core-typescript"))
 lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
   .dependsOn(coreTypescript % "compile->compile;test->test")
 
-/** zod integration */
-lazy val coreTypescriptZod = module(identifier = Some("core-typescript-zod"))
-  .dependsOn(coreTypescript % "compile->compile;test->test")
-
 lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
   .dependsOn(coreJson % "compile->compile;test->test", coreTypescript)
 
 /** Effect codegen for JSON */
 lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
   .dependsOn(coreJson % "compile->compile;test->test", coreTypescriptEffect, coreJsonTypescript)
-
-/** zod codegen for JSON */
-lazy val coreJsonTypescriptZod = module(identifier = Some("core-json-typescript-zod"))
-  .dependsOn(coreJson % "compile->compile;test->test", coreTypescriptZod, coreJsonTypescript)
 
 /** JSON codecs for io.circe / circe */
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))

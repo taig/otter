@@ -269,12 +269,11 @@ object Parameter:
         given [A] => Annotated[Parameter.Primitive.Text.Write[A]] =
           Annotated[Annotation[Self.Primitive.Text.Write[A]]].imap(Write.apply)(_.self)
 
-        given PrimitiveOperation.Text.Write[Parameter.Primitive.Text.Write] =
-          PrimitiveOperation.Text
-            .Write[[a] =>> Annotation[Self.Primitive.Text.Write[a]]]
-            .imapK([A] => (self: Annotation[Self.Primitive.Text.Write[A]]) => Write(self))([A] =>
-              (parameter: Parameter.Primitive.Text.Write[A]) => parameter.self
-            )
+        given PrimitiveOperation.Text.Write[Parameter.Primitive.Text.Write] = PrimitiveOperation.Text
+          .Write[[a] =>> Annotation[Self.Primitive.Text.Write[a]]]
+          .imapK([A] => (self: Annotation[Self.Primitive.Text.Write[A]]) => Write(self))([A] =>
+            (parameter: Parameter.Primitive.Text.Write[A]) => parameter.self
+          )
 
       given Invariant[Parameter.Primitive.Text] = Invariant[[a] =>> Annotation[Self.Primitive.Text[a]]]
         .imapK([A] => (self: Annotation[Self.Primitive.Text[A]]) => Text(self))([A] =>
