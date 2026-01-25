@@ -5,7 +5,7 @@ import cats.Contravariant
 import cats.Invariant
 import io.taig.otter.operation.CoerceOperation
 
-type Coerce[+F[_], A] = Coerce.Read[F, A] & Coerce.Write[F, A]
+sealed abstract class Coerce[+F[_], A] extends Coerce.Read[F, A], Coerce.Write[F, A]
 
 object Coerce:
   sealed trait Read[+F[_], +A]:
@@ -42,12 +42,10 @@ object Coerce:
 
       extension [A](self: Coerce.Write[F, A]) override def schema: Reference[F, ?] = self.schema
 
-  final case class Modify[F[_], A, B](self: Coerce[F, A], f: A => B, g: B => A)
-      extends Coerce.Read[F, B],
-        Coerce.Write[F, B]:
+  final case class Modify[F[_], A, B](self: Coerce[F, A], f: A => B, g: B => A) extends Coerce[F, B]:
     export self.schema
 
-  final case class Root[F[_], A](schema: Reference[F, A]) extends Coerce.Read[F, A], Coerce.Write[F, A]
+  final case class Root[F[_], A](schema: Reference[F, A]) extends Coerce[F, A]
 
   given [F[_]] => Invariant[Coerce[F, *]]:
     override def imap[A, B](self: Coerce[F, A])(f: A => B)(g: B => A): Coerce[F, B] = Modify(self, f, g)

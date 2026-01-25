@@ -13,6 +13,7 @@ import io.taig.validation.Violation
 
 object JsonCirceDecoder extends Decoder[Json.Read, CirceJson]:
   override def decode[A](schema: Json.Read[A], json: CirceJson): Validated[Violations, A] = schema match
+    case self: Json.Coerce.Read[A]     => JsonCoerceCirceDecoder.decode(schema = self, json)
     case self: Json.Collection.Read[A] =>
       json.asArray
         .toValid(Violation(constraint = Constraint.Generic.Type(name = "array"), actual = typeOf(json), hint = none))

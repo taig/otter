@@ -13,20 +13,20 @@ import zio.test.ZIOSpecDefault
 
 object JsonCirceEncoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceEncoderTest")(
-    test("Constant"):
+    test("Json.Constant"):
       val result = JsonCirceEncoder.encode(constant(string, "foobar"), ())
       assertTrue(result == CirceJson.fromString("foobar"))
     ,
-    test("Collection"):
+    test("Json.Collection"):
       val result = JsonCirceEncoder.encode(collection.list(string), List("foo", "bar", "baz"))
       assertTrue(result == CirceJson.arr("foo".asJson, "bar".asJson, "baz".asJson))
     ,
-    test("Dictionary"):
+    test("Json.Dictionary"):
       val result =
         JsonCirceEncoder.encode(dictionary.list(string), List("foo" -> "foo", "bar" -> "bar", "baz" -> "baz"))
       assertTrue(result == CirceJson.obj("foo" := "foo".asJson, "bar" := "bar".asJson, "baz" := "baz".asJson))
     ,
-    test("Record"):
+    test("Json.Record"):
       val result = JsonCirceEncoder.encode(
         field("foo", string) :* field("bar", int) :* field("baz", boolean),
         ("John Doe", 42, true)
@@ -35,7 +35,7 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
 
       assertTrue(result == expected)
     ,
-    test("Record: optional"):
+    test("Json.Record: optional"):
       val schema = field("foo", string) :* field("bar", int).optional
 
       assertTrue(
@@ -43,18 +43,18 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
         JsonCirceEncoder.encode(schema, ("John Doe", none)) == CirceJson.obj("foo" := "John Doe")
       )
     ,
-    test("Record: RNil"):
+    test("Json.Record: RNil"):
       val result = JsonCirceEncoder.encode(RNil, ())
 
       assertTrue(result == CirceJson.obj())
     ,
-    test("Tuple"):
+    test("Json.Tuple"):
       val result = JsonCirceEncoder.encode(string :* int :* boolean, ("John Doe", 42, true))
       val expected = CirceJson.arr("John Doe".asJson, 42.asJson, true.asJson)
 
       assertTrue(result == expected)
     ,
-    test("Tuple: TNil"):
+    test("Json.Tuple: TNil"):
       val result = JsonCirceEncoder.encode(TNil, ())
 
       assertTrue(result == CirceJson.arr())
