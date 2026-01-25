@@ -6,19 +6,19 @@ import scala.annotation.targetName
 
 object SegmentOperation:
   trait Parameter[F[_]]:
-    def lift[A](name: String, schema: Reference[Segment.Parameter.Value, A]): F[A]
+    def lift[A](name: String, schema: Reference[Segment.Value, A]): F[A]
 
   object Parameter:
     trait Read[F[_]] extends SegmentOperation.Parameter[F]:
       @targetName("liftRead")
-      def lift[A](name: String, schema: Reference[Segment.Parameter.Value.Read, A]): F[A]
+      def lift[A](name: String, schema: Reference[Segment.Value.Read, A]): F[A]
 
-      final override def lift[A](name: String, schema: Reference[Segment.Parameter.Value, A]): F[A] =
-        lift(name, schema: Reference[Segment.Parameter.Value.Read, A])
+      final override def lift[A](name: String, schema: Reference[Segment.Value, A]): F[A] =
+        lift(name, schema: Reference[Segment.Value.Read, A])
 
     trait Write[F[_]] extends SegmentOperation.Parameter[F]:
       @targetName("liftRead")
-      def lift[A](name: String, schema: Reference[Segment.Parameter.Value.Write, A]): F[A]
+      def lift[A](name: String, schema: Reference[Segment.Value.Write, A]): F[A]
 
   trait Static[F[_]]:
     def lift(name: String): F[Unit]

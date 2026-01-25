@@ -7,7 +7,7 @@ import cats.ContravariantSemigroupal
 import cats.InvariantSemigroupal
 import io.taig.otter.http.operation.PathOperation
 
-type Path[+F[_], A] = Path.Read[F, A] & Path.Write[F, A]
+sealed abstract class Path[+F[_], A] extends Path.Read[F, A], Path.Write[F, A]
 
 object Path:
   sealed trait Read[+F[_], +A]:
@@ -42,18 +42,16 @@ object Path:
 
       override def contramap[A, B](self: Path.Write[F, A])(f: B => A): Path.Write[F, B] = Modify(self, f)
 
-  case object Empty extends Path.Read[Nothing, Unit], Path.Write[Nothing, Unit]:
+  case object Empty extends Path[Nothing, Unit]:
     override def segments: Chain[Nothing] = Chain.empty
 
-  final case class Modify[F[_], A, B](self: Path[F, A], f: A => B, g: B => A) extends Path.Read[F, B], Path.Write[F, B]:
+  final case class Modify[F[_], A, B](self: Path[F, A], f: A => B, g: B => A) extends Path[F, B]:
     override def segments: Chain[Reference[F, ?]] = self.segments
 
-  final case class Product[F[_], A, B](left: Path[F, A], right: Path[F, B])
-      extends Path.Read[F, (A, B)],
-        Path.Write[F, (A, B)]:
+  final case class Product[F[_], A, B](left: Path[F, A], right: Path[F, B]) extends Path[F, (A, B)]:
     override def segments: Chain[Reference[F, ?]] = left.segments ++ right.segments
 
-  final case class Root[F[_], A](segment: Reference[F, A]) extends Path.Read[F, A], Path.Write[F, A]:
+  final case class Root[F[_], A](segment: Reference[F, A]) extends Path[F, A]:
     override def segments: Chain[Reference[F, ?]] = Chain.one(segment)
 
   given [F[_]] => InvariantSemigroupal[Path[F, *]]:
