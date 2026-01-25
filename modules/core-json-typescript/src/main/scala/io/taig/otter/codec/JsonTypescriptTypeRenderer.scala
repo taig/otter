@@ -24,34 +24,34 @@ final class JsonTypescriptTypeRenderer[F[_]: Applicative](
     case json: Json.Optional.Write[?]    => optional(json.schema.value)
     case _: (Json.Primitive.Boolean.Read[?] | Json.Primitive.Boolean.Write[?]) =>
       Typescript.Type.Symbol(name = "boolean", parameters = Nil).pure
-    case _: (Json.Primitive.Coerce.Boolean.Read[?] | Json.Primitive.Coerce.Boolean.Write[?]) =>
-      Typescript.Type
-        .Union(
-          types = NonEmptyList.of(
-            Typescript.Type.Symbol(name = "boolean", parameters = Nil),
-            Typescript.Type.Symbol(name = "string", parameters = Nil)
-          )
-        )
-        .pure
-    case _: (Json.Primitive.Coerce.Number.Read[?] | Json.Primitive.Coerce.Number.Write[?]) =>
-      Typescript.Type
-        .Union(
-          types = NonEmptyList.of(
-            Typescript.Type.Symbol(name = "number", parameters = Nil),
-            Typescript.Type.Symbol(name = "string", parameters = Nil)
-          )
-        )
-        .pure
-    case _: (Json.Primitive.Coerce.Text.Read[?] | Json.Primitive.Coerce.Text.Write[?]) =>
-      Typescript.Type
-        .Union(
-          types = NonEmptyList.of(
-            Typescript.Type.Symbol(name = "boolean", parameters = Nil),
-            Typescript.Type.Symbol(name = "number", parameters = Nil),
-            Typescript.Type.Symbol(name = "string", parameters = Nil)
-          )
-        )
-        .pure
+    // case _: (Json.Primitive.Coerce.Boolean.Read[?] | Json.Primitive.Coerce.Boolean.Write[?]) =>
+    //   Typescript.Type
+    //     .Union(
+    //       types = NonEmptyList.of(
+    //         Typescript.Type.Symbol(name = "boolean", parameters = Nil),
+    //         Typescript.Type.Symbol(name = "string", parameters = Nil)
+    //       )
+    //     )
+    //     .pure
+    // case _: (Json.Primitive.Coerce.Number.Read[?] | Json.Primitive.Coerce.Number.Write[?]) =>
+    //   Typescript.Type
+    //     .Union(
+    //       types = NonEmptyList.of(
+    //         Typescript.Type.Symbol(name = "number", parameters = Nil),
+    //         Typescript.Type.Symbol(name = "string", parameters = Nil)
+    //       )
+    //     )
+    //     .pure
+    // case _: (Json.Primitive.Coerce.Text.Read[?] | Json.Primitive.Coerce.Text.Write[?]) =>
+    //   Typescript.Type
+    //     .Union(
+    //       types = NonEmptyList.of(
+    //         Typescript.Type.Symbol(name = "boolean", parameters = Nil),
+    //         Typescript.Type.Symbol(name = "number", parameters = Nil),
+    //         Typescript.Type.Symbol(name = "string", parameters = Nil)
+    //       )
+    //     )
+    //     .pure
     case _: (Json.Primitive.Number.Read[?] | Json.Primitive.Number.Write[?]) =>
       Typescript.Type.Symbol(name = "number", parameters = Nil).pure
     case _: (Json.Primitive.Text.Read[?] | Json.Primitive.Text.Write[?]) =>

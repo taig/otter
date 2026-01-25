@@ -77,31 +77,21 @@ object Segment:
 
     sealed abstract class Value[A] extends Value.Read[A], Value.Write[A]:
       override def self: Annotation[
-        Self.Constant[Value.Primitive.Text, A] | Self.Enumeration[Value.Primitive.Text, A] |
-          Self.Primitive.Coerce[
-            [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
-            A
-          ] | Self.Primitive.Text[A] | Self.Union[Value.Branch, A]
+        Self.Constant[Value.Primitive.Text, A] | Self.Enumeration[Value.Primitive.Text, A] | Self.Primitive.Text[A] |
+          Self.Union[Value.Branch, A]
       ]
 
     object Value:
       sealed trait Read[+A]:
         def self: Annotation[
           Self.Constant.Read[Value.Primitive.Text.Read, A] | Self.Enumeration.Read[Value.Primitive.Text.Read, A] |
-            Self.Primitive.Coerce.Read[
-              [a] =>> Value.Primitive.Boolean.Read[a] | Value.Primitive.Number.Read[a] | Value.Primitive.Text.Read[a],
-              A
-            ] | Self.Primitive.Text.Read[A] | Self.Union.Read[Value.Branch.Read, A]
+            Self.Primitive.Text.Read[A] | Self.Union.Read[Value.Branch.Read, A]
         ]
 
       sealed trait Write[-A]:
         def self: Annotation[
           Self.Constant.Write[Value.Primitive.Text.Write, A] | Self.Enumeration.Write[Value.Primitive.Text.Write, A] |
-            Self.Primitive.Coerce.Write[
-              [a] =>> Value.Primitive.Boolean.Write[a] | Value.Primitive.Number.Write[a] |
-                Value.Primitive.Text.Write[a],
-              A
-            ] | Self.Primitive.Text.Write[A] | Self.Union.Write[Value.Branch.Write, A]
+            Self.Primitive.Text.Write[A] | Self.Union.Write[Value.Branch.Write, A]
         ]
 
       final case class Constant[A](self: Annotation[Self.Constant[Value.Primitive.Text, A]])
@@ -259,18 +249,6 @@ object Segment:
 
           sealed trait Write[-A]:
             def self: Annotation[Self.Primitive.Boolean.Write[A]]
-
-        final case class Coerce[A](self: Annotation[Self.Primitive.Coerce.Text[Value.Primitive.Text, A]])
-            extends Value.Primitive[A],
-              Value.Primitive.Coerce.Read[A],
-              Value.Primitive.Coerce.Write[A]
-
-        object Coerce:
-          sealed trait Read[+A] extends Value.Primitive.Read[A]:
-            def self: Annotation[Self.Primitive.Coerce.Text.Read[Value.Primitive.Text.Read, A]]
-
-          sealed trait Write[-A] extends Value.Primitive.Write[A]:
-            def self: Annotation[Self.Primitive.Coerce.Text.Write[Value.Primitive.Text.Write, A]]
 
         final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
             extends Value.Primitive.Number.Read[A],
