@@ -126,7 +126,7 @@ object Primitive:
 
       override def mapK[G[_]](fK: [A] => F[A] => G[A]): Primitive.Coerce[G, B] = copy(self = self.mapK(fK))
 
-    type Boolean[F[_], A] = Primitive.Coerce.Boolean.Read[F, A] & Primitive.Coerce.Boolean.Write[F, A]
+    type Boolean[+F[_], A] = Primitive.Coerce.Boolean.Read[F, A] & Primitive.Coerce.Boolean.Write[F, A]
 
     object Boolean:
       sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:
@@ -192,7 +192,7 @@ object Primitive:
       given [F[_]] => PrimitiveOperation.Coerce.Boolean[Primitive.Coerce.Boolean[F, *], F]:
         override def lift[A](schema: Reference[F, A]): Primitive.Coerce.Boolean[F, A] = Root(schema)
 
-    type Number[F[_], A] = Primitive.Coerce.Number.Read[F, A] & Primitive.Coerce.Number.Write[F, A]
+    type Number[+F[_], A] = Primitive.Coerce.Number.Read[F, A] & Primitive.Coerce.Number.Write[F, A]
 
     object Number:
       sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:
@@ -258,7 +258,7 @@ object Primitive:
       given [F[_]] => PrimitiveOperation.Coerce.Number[Primitive.Coerce.Number[F, *], F]:
         override def lift[A](schema: Reference[F, A]): Primitive.Coerce.Number[F, A] = Root(schema)
 
-    type Text[F[_], A] = Primitive.Coerce.Text.Read[F, A] & Primitive.Coerce.Text.Write[F, A]
+    type Text[+F[_], A] = Primitive.Coerce.Text.Read[F, A] & Primitive.Coerce.Text.Write[F, A]
 
     object Text:
       sealed trait Read[+F[_], +A] extends Primitive.Coerce.Read[F, A]:

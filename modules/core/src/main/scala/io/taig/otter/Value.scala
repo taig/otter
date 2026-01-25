@@ -10,35 +10,45 @@ import io.taig.otter.syntax.all.*
 
 sealed abstract class Value[A] extends Value.Read[A], Value.Write[A]:
   override def self: Annotation[
-    Self.Constant[Value.Primitive.Text, A] | Self.Primitive[Value.Primitive.Text, A] | Self.Union[Value.Branch, A]
+    Self.Constant[Value.Primitive.Text, A] |
+      Self.Primitive.Coerce.Text[
+        [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
+        A
+      ] | Self.Primitive.Text[A] | Self.Union[Value.Branch, A]
   ]
 
 object Value:
   sealed trait Read[+A]:
     def self: Annotation[
-      Self.Constant.Read[Value.Primitive.Text.Read, A] | Self.Primitive.Read[Value.Primitive.Text.Read, A] |
-        Self.Union.Read[Value.Branch.Read, A]
+      Self.Constant.Read[Value.Primitive.Text.Read, A] |
+        Self.Primitive.Coerce.Text.Read[
+          [a] =>> Value.Primitive.Boolean.Read[a] | Value.Primitive.Number.Read[a] | Value.Primitive.Text.Read[a],
+          A
+        ] | Self.Primitive.Text.Read[A] | Self.Union.Read[Value.Branch.Read, A]
     ]
 
   object Read:
     given Functor[Value.Read]:
       override def map[A, B](value: Value.Read[A])(f: A => B): Value.Read[B] = value match
-        case value: Value.Constant.Read[A]  => value.map(f)
-        case value: Value.Primitive.Read[A] => value.map(f)
-        case value: Value.Union.Read[A]     => value.map(f)
+        case value: Value.Constant.Read[A]       => value.map(f)
+        case value: Value.Primitive.Text.Read[A] => value.map(f)
+        case value: Value.Union.Read[A]          => value.map(f)
 
   sealed trait Write[-A]:
     def self: Annotation[
-      Self.Constant.Write[Value.Primitive.Text.Write, A] | Self.Primitive.Write[Value.Primitive.Text.Write, A] |
+      Self.Constant.Write[Value.Primitive.Text.Write, A] |
+        Self.Primitive.Coerce.Text.Write[[a] =>> Value.Primitive.Boolean.Write[
+          a
+        ] | Value.Primitive.Number.Write[a] | Value.Primitive.Text.Write[a], A] | Self.Primitive.Text.Write[A] |
         Self.Union.Write[Value.Branch.Write, A]
     ]
 
   object Write:
     given Contravariant[Value.Write]:
       override def contramap[A, B](value: Value.Write[A])(f: B => A): Value.Write[B] = value match
-        case value: Value.Constant.Write[A]  => value.contramap(f)
-        case value: Value.Primitive.Write[A] => value.contramap(f)
-        case value: Value.Union.Write[A]     => value.contramap(f)
+        case value: Value.Constant.Write[A]       => value.contramap(f)
+        case value: Value.Primitive.Text.Write[A] => value.contramap(f)
+        case value: Value.Union.Write[A]          => value.contramap(f)
 
   sealed abstract class Constant[A] extends Value[A], Value.Constant.Read[A], Value.Constant.Write[A]:
     override def self: Annotation[Self.Constant[Value.Primitive.Text, A]]
@@ -99,36 +109,35 @@ object Value:
       )([A] => (value: Value.Constant[A]) => value.self)
 
   sealed abstract class Primitive[A] extends Value[A], Value.Primitive.Read[A], Value.Primitive.Write[A]:
-    override def self: Annotation[Self.Primitive[Value.Primitive.Text, A]]
+    override def self: Annotation[
+      Self.Primitive.Coerce.Text[
+        [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
+        A
+      ] | Self.Primitive.Text[A]
+    ]
 
   object Primitive:
     sealed trait Read[+A] extends Value.Read[A]:
-      override def self: Annotation[Self.Primitive.Read[Value.Primitive.Text.Read, A]]
+      override def self: Annotation[
+        Self.Primitive.Coerce.Text.Read[
+          [a] =>> Value.Primitive.Boolean.Read[a] | Value.Primitive.Number.Read[a] | Value.Primitive.Text.Read[a],
+          A
+        ] | Self.Primitive.Text.Read[A]
+      ]
 
     object Read:
-      def apply[A](annotation: Annotation[Self.Primitive.Read[Value.Primitive.Text.Read, A]]): Value.Primitive.Read[A] =
-        new Read[A]:
-          override def self: Self.Annotation[Self.Primitive.Read[Value.Primitive.Text.Read, A]] = annotation
-
-      given Functor[Value.Primitive.Read] =
-        Functor[[a] =>> Annotation[Self.Primitive.Read[Value.Primitive.Text.Read, a]]].imapK([A] =>
-          (self: Annotation[Self.Primitive.Read[Value.Primitive.Text.Read, A]]) => Read(self)
-        )([A] => (value: Value.Primitive.Read[A]) => value.self)
+      given Functor[Value.Primitive.Read] = ???
 
     sealed trait Write[-A] extends Value.Write[A]:
-      override def self: Annotation[Self.Primitive.Write[Value.Primitive.Text.Write, A]]
+      override def self: Annotation[
+        Self.Primitive.Coerce.Text.Write[
+          [a] =>> Value.Primitive.Boolean.Write[a] | Value.Primitive.Number.Write[a] | Value.Primitive.Text.Write[a],
+          A
+        ] | Self.Primitive.Text.Write[A]
+      ]
 
     object Write:
-      def apply[A](
-          annotation: Annotation[Self.Primitive.Write[Value.Primitive.Text.Write, A]]
-      ): Value.Primitive.Write[A] =
-        new Write[A]:
-          override def self: Self.Annotation[Self.Primitive.Write[Value.Primitive.Text.Write, A]] = annotation
-
-      given Contravariant[Value.Primitive.Write] =
-        Contravariant[[a] =>> Annotation[Self.Primitive.Write[Value.Primitive.Text.Write, a]]].imapK([A] =>
-          (annotation: Annotation[Self.Primitive.Write[Value.Primitive.Text.Write, A]]) => Write(annotation)
-        )([A] => (value: Value.Primitive.Write[A]) => value.self)
+      given Contravariant[Value.Primitive.Write] = ???
 
     final case class Boolean[A](self: Annotation[Self.Primitive.Boolean[A]])
         extends Value.Primitive.Boolean.Read[A],
@@ -192,6 +201,57 @@ object Value:
         .imapK([A] => (annotation: Annotation[Self.Primitive.Boolean[A]]) => Boolean(annotation))([A] =>
           (value: Value.Primitive.Boolean[A]) => value.self
         )
+
+    final case class Coerce[A](
+        self: Annotation[Self.Primitive.Coerce.Text[[a] =>> Value.Primitive.Boolean[
+          a
+        ] | Value.Primitive.Number[a] | Value.Primitive.Text[a], A]]
+    ) extends Value.Primitive[A]
+
+    object Coerce:
+      sealed trait Read[+A] extends Value.Primitive.Read[A]:
+        def self: Annotation[Self.Primitive.Coerce.Text.Read[
+          [a] =>> Value.Primitive.Boolean.Read[a] | Value.Primitive.Number.Read[a] | Value.Primitive.Text.Read[a],
+          A
+        ]]
+
+      sealed trait Write[-A] extends Value.Primitive.Write[A]:
+        def self: Annotation[Self.Primitive.Coerce.Text.Write[
+          [a] =>> Value.Primitive.Boolean.Write[a] | Value.Primitive.Number.Write[a] | Value.Primitive.Text.Write[a],
+          A
+        ]]
+
+      given Invariant[Value.Primitive.Coerce] = Invariant[
+        [a] =>> Annotation[
+          Self.Primitive.Coerce.Text[
+            [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
+            a
+          ]
+        ]
+      ].imapK([A] => Coerce(_))([A] => _.self)
+
+      given [A] => Annotated[Value.Primitive.Coerce[A]] = Annotated[
+        Annotation[
+          Self.Primitive.Coerce.Text[
+            [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
+            A
+          ]
+        ]
+      ].imap(Coerce.apply)(_.self)
+
+      given PrimitiveOperation.Coerce.Text[Value.Primitive.Coerce, [a] =>> Value.Primitive.Boolean[
+        a
+      ] | Value.Primitive.Number[a] | Value.Primitive.Text[a]] = PrimitiveOperation.Coerce
+        .Text[
+          [a] =>> Annotation[
+            Self.Primitive.Coerce.Text[
+              [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a],
+              a
+            ]
+          ],
+          [a] =>> Value.Primitive.Boolean[a] | Value.Primitive.Number[a] | Value.Primitive.Text[a]
+        ]
+        .imapK([A] => Coerce(_))([A] => _.self)
 
     final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
         extends Value.Primitive.Number.Read[A],

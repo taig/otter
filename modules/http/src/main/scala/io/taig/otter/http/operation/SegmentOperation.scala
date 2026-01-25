@@ -13,7 +13,7 @@ object SegmentOperation:
       @targetName("liftRead")
       def lift[A](name: String, schema: Reference[Segment.Parameter.Value.Read, A]): F[A]
 
-      override final def lift[A](name: String, schema: Reference[Segment.Parameter.Value, A]): F[A] =
+      final override def lift[A](name: String, schema: Reference[Segment.Parameter.Value, A]): F[A] =
         lift(name, schema: Reference[Segment.Parameter.Value.Read, A])
 
     trait Write[F[_]] extends SegmentOperation.Parameter[F]:
