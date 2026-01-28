@@ -5,7 +5,8 @@ import cats.Functor
 import cats.Invariant
 import io.taig.otter.operation.BranchOperation
 
-type Branch[+F[_], A] = Branch.Read[F, A] & Branch.Write[F, A]
+sealed abstract class Branch[+F[_], A] extends Branch.Read[F, A], Branch.Write[F, A]:
+  override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, A]
 
 object Branch:
   sealed trait Read[+F[_], +A]:
@@ -60,14 +61,12 @@ object Branch:
 
         override def schema: Reference[F, ?] = fa.schema
 
-  final case class Modify[F[_], A, B](self: Branch[F, A], f: A => B, g: B => A)
-      extends Branch.Read[F, B],
-        Branch.Write[F, B]:
+  final case class Modify[F[_], A, B](self: Branch[F, A], f: A => B, g: B => A) extends Branch[F, B]:
     export self.{name, schema}
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, B] = copy(self = self.mapK(fK))
 
-  final case class Root[F[_], A](name: String, schema: Reference[F, A]) extends Branch.Read[F, A], Branch.Write[F, A]:
+  final case class Root[F[_], A](name: String, schema: Reference[F, A]) extends Branch[F, A]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Branch[G, A] = copy(schema = schema.mapK[F, G](fK))
 
   given [F[_]] => Invariant[Branch[F, *]]:

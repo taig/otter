@@ -10,6 +10,6 @@ final case class Reference[+F[_], A](self: Eval[F[A]]) extends AnyVal:
   def mapK[F1[a] >: F[a], G[_]](fK: [A] => F1[A] => G[A]): Reference[G, A] = copy(self = self.map(fK.apply))
 
 object Reference:
-  def later[F[_], A](sa: => F[A]): Reference[F, A] = Reference(Eval.later(sa))
+  def later[F[_], A](fa: => F[A]): Reference[F, A] = Reference(Eval.later(fa))
 
-  def now[F[_], A](sa: F[A]): Reference[F, A] = Reference(Eval.now(sa))
+  def now[F[_], A](fa: F[A]): Reference[F, A] = Reference(Eval.now(fa))

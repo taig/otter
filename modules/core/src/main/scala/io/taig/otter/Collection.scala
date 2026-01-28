@@ -7,7 +7,8 @@ import cats.data.Chain
 import io.taig.otter.operation.CollectionOperation
 import io.taig.validation.Validation
 
-type Collection[+F[_], A] = Collection.Read[F, A] & Collection.Write[F, A]
+sealed abstract class Collection[+F[_], A] extends Collection.Read[F, A], Collection.Write[F, A]:
+  override def mapK[G[_]](fK: [A] => F[A] => G[A]): Collection[G, A]
 
 object Collection:
   sealed trait Read[+F[_], +A]:
@@ -73,23 +74,18 @@ object Collection:
       extension [A](fa: Collection.Write[F, A]) override def schema: Reference[F, ?] = fa.schema
 
   final case class Chained[F[_], A](schema: Reference[F, A], validation: Validation[Constraint.Collection, Chain[A]])
-      extends Collection.Read[F, Chain[A]],
-        Collection.Write[F, Chain[A]]:
+      extends Collection[F, Chain[A]]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Collection[G, Chain[A]] = copy(schema = schema.mapK[F, G](fK))
 
   final case class Indexed[F[_], A](schema: Reference[F, A], validation: Validation[Constraint.Collection, Vector[A]])
-      extends Collection.Read[F, Vector[A]],
-        Collection.Write[F, Vector[A]]:
+      extends Collection[F, Vector[A]]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Collection[G, Vector[A]] = copy(schema = schema.mapK[F, G](fK))
 
   final case class Linked[F[_], A](schema: Reference[F, A], validation: Validation[Constraint.Collection, List[A]])
-      extends Collection.Read[F, List[A]],
-        Collection.Write[F, List[A]]:
+      extends Collection[F, List[A]]:
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Collection[G, List[A]] = copy(schema = schema.mapK[F, G](fK))
 
-  final case class Modify[F[_], A, B](self: Collection[F, A], f: A => B, g: B => A)
-      extends Collection.Read[F, B],
-        Collection.Write[F, B]:
+  final case class Modify[F[_], A, B](self: Collection[F, A], f: A => B, g: B => A) extends Collection[F, B]:
     export self.schema
 
     override def mapK[G[_]](fK: [A] => F[A] => G[A]): Collection[G, B] = copy(self = self.mapK(fK))

@@ -12,7 +12,7 @@ trait Annotated[T]:
 
     final def metadata: Metadata = lens._1
 
-    final def modify(f: Metadata => Metadata): T = lens._2(f(lens._1))
+    final def metadata(f: Metadata => Metadata): T = lens._2(f(lens._1))
 
     final def attr[A](key: Metadata.Key[A]): Option[A] = metadata.get(namespace = Metadata.Namespace.Global, key)
 
@@ -27,7 +27,7 @@ trait Annotated[T]:
       attr(namespace = namespaces.head, namespaces = namespaces.tail*)(key)
 
     final def attr[A](namespace: Metadata.Namespace, key: Metadata.Key[A], value: A): T =
-      modify(_.put(namespace, key, value))
+      metadata(_.put(namespace, key, value))
 
     final def attr[A](key: Metadata.Key[A], value: A): T = attr(namespace = Metadata.Namespace.Global, key, value)
 

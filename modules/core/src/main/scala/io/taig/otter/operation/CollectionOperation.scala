@@ -22,14 +22,12 @@ trait CollectionOperation[F[_], G[_]]:
       override def chained[A](
           schema: Reference[G, A],
           validation: Validation[Constraint.Collection, Chain[A]]
-      ): H[Chain[A]] =
-        fK(self.chained(schema, validation))
+      ): H[Chain[A]] = fK(self.chained(schema, validation))
 
       override def indexed[A](
           schema: Reference[G, A],
           validation: Validation[Constraint.Collection, Vector[A]]
-      ): H[Vector[A]] =
-        fK(self.indexed(schema, validation))
+      ): H[Vector[A]] = fK(self.indexed(schema, validation))
 
       override def linked[A](
           schema: Reference[G, A],
@@ -79,8 +77,7 @@ object CollectionOperation:
     final override def chained[A](
         schema: Reference[G, A],
         validation: Validation[Constraint.Collection, Chain[A]]
-    ): F[Chain[A]] =
-      chained(schema)
+    ): F[Chain[A]] = chained(schema)
 
     def indexed[A](schema: Reference[G, A]): F[Vector[A]]
 
