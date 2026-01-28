@@ -8,10 +8,14 @@ import cats.InvariantSemigroupal
 import io.taig.otter.http.operation.PathOperation
 
 sealed abstract class Path[A] extends Path.Read[A], Path.Write[A]:
+  final def product[B](path: Path[B]): Path[(A, B)] = Path.Product(left = this, right = path)
+
   override def segments: Chain[Reference[Http.Segment, ?]]
 
 object Path:
   sealed trait Read[+A]:
+    final def product[B](path: Path.Read[B]): Path.Read[(A, B)] = Path.Read.Product(left = this, right = path)
+
     def segments: Chain[Reference[Http.Segment.Read, ?]]
 
   object Read:
@@ -28,6 +32,8 @@ object Path:
       override def map[A, B](self: Path.Read[A])(f: A => B): Path.Read[B] = Modify(self, f)
 
   sealed trait Write[-A]:
+    final def product[B](path: Path.Write[B]): Path.Write[(A, B)] = Path.Write.Product(left = this, right = path)
+
     def segments: Chain[Reference[Http.Segment.Write, ?]]
 
   object Write:

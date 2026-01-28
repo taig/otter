@@ -268,7 +268,8 @@ object Segment:
           )([A] => (parameter: Segment.Parameter.Enumeration.Read[A]) => parameter.self)
 
         given [A] => Annotated[Segment.Parameter.Enumeration.Read[A]] =
-          Annotated[Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]].imap(Read.apply)(_.self)
+          Annotated[Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]]
+            .imap(Read.apply)(_.self)
 
         given EnumerationOperation.Read[Segment.Parameter.Enumeration.Read, Segment.Parameter.Primitive.Text.Read] =
           EnumerationOperation
@@ -293,7 +294,8 @@ object Segment:
             .imapK([A] => Write(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Enumeration.Write[A]] =
-          Annotated[Annotation[Self.Enumeration.Write[Segment.Parameter.Primitive.Text.Write, A]]].imap(Write.apply)(_.self)
+          Annotated[Annotation[Self.Enumeration.Write[Segment.Parameter.Primitive.Text.Write, A]]]
+            .imap(Write.apply)(_.self)
 
         given EnumerationOperation.Write[Segment.Parameter.Enumeration.Write, Segment.Parameter.Primitive.Text.Write] =
           EnumerationOperation
