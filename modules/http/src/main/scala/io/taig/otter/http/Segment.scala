@@ -12,11 +12,11 @@ import io.taig.otter.Reference
 import Self.http.operation.SegmentOperation
 import scala.annotation.targetName
 
-abstract class Segment[A] extends Segment.Read[A], Segment.Write[A]:
+sealed abstract class Segment[A] extends Segment.Read[A], Segment.Write[A]:
   def imap[B](f: A => B)(g: B => A): Segment[B]
 
 object Segment:
-  trait Read[+A]:
+  sealed trait Read[+A]:
     def map[B](f: A => B): Segment.Read[B]
 
     def name: String
@@ -25,7 +25,7 @@ object Segment:
     given Functor[Segment.Read]:
       override def map[A, B](segment: Segment.Read[A])(f: A => B): Segment.Read[B] = segment.map(f)
 
-  trait Write[-A]:
+  sealed trait Write[-A]:
     def contramap[B](f: B => A): Segment.Write[B]
 
     def name: String
@@ -34,13 +34,13 @@ object Segment:
     given Contravariant[Segment.Write]:
       override def contramap[A, B](segment: Segment.Write[A])(f: B => A): Segment.Write[B] = segment.contramap(f)
 
-  abstract class Dynamic[A] extends Segment[A], Segment.Dynamic.Read[A], Segment.Dynamic.Write[A]:
+  sealed abstract class Dynamic[A] extends Segment[A], Segment.Dynamic.Read[A], Segment.Dynamic.Write[A]:
     final override def imap[B](f: A => B)(g: B => A): Segment.Dynamic[B] = Dynamic.Modify(self = this, f, g)
 
     override def parameter: Reference[Segment.Parameter, ?]
 
   object Dynamic:
-    trait Read[+A] extends Segment.Read[A]:
+    sealed trait Read[+A] extends Segment.Read[A]:
       final def map[B](f: A => B): Segment.Dynamic.Read[B] = Read.Modify(self = this, f)
 
       def name: String
@@ -63,7 +63,7 @@ object Segment:
         override def lift[A](name: String, schema: Reference[Http.Segment.Parameter.Read, A]): Segment.Dynamic.Read[A] =
           Root(name, schema)
 
-    trait Write[-A] extends Segment.Write[A]:
+    sealed trait Write[-A] extends Segment.Write[A]:
       final override def contramap[B](f: B => A): Segment.Dynamic.Write[B] = Write.Modify(self = this, f)
 
       def parameter: Reference[Segment.Parameter.Write, ?]
@@ -100,11 +100,11 @@ object Segment:
       override def lift[A](name: String, schema: Reference[Http.Segment.Parameter, A]): Segment.Dynamic[A] =
         Root(name, schema)
 
-  abstract class Static[A] extends Segment[A], Segment.Static.Read[A], Segment.Static.Write[A]:
+  sealed abstract class Static[A] extends Segment[A], Segment.Static.Read[A], Segment.Static.Write[A]:
     override def imap[B](f: A => B)(g: B => A): Segment.Static[B] = Segment.Static.Modify(self = this, f, g)
 
   object Static:
-    trait Read[+A] extends Segment.Read[A]:
+    sealed trait Read[+A] extends Segment.Read[A]:
       final def map[B](f: A => B): Segment.Static.Read[B] = Read.Modify(self = this, f)
 
     object Read:
@@ -118,7 +118,7 @@ object Segment:
       given SegmentOperation.Static.Read[Segment.Static.Read]:
         override def lift(name: String): Segment.Static.Read[Unit] = Root(name)
 
-    trait Write[-A] extends Segment.Write[A]:
+    sealed trait Write[-A] extends Segment.Write[A]:
       final override def contramap[B](f: B => A): Segment.Static.Write[B] = Write.Modify(self = this, f)
 
     object Write:
@@ -150,24 +150,92 @@ object Segment:
 
   sealed abstract class Parameter[A] extends Segment.Parameter.Read[A], Segment.Parameter.Write[A]:
     override def self: Annotation[
-      Self.Constant[Segment.Parameter.Primitive.Text, A] | Self.Enumeration[Segment.Parameter.Primitive.Text, A] |
-        Self.Primitive.Text[A] | Self.Union[Segment.Parameter.Branch, A]
+      Self.Coerce[Segment.Parameter.Primitive, A] | Self.Constant[Segment.Parameter.Primitive.Text, A] |
+        Self.Enumeration[Segment.Parameter.Primitive.Text, A] | Self.Primitive.Text[A] |
+        Self.Union[Segment.Parameter.Branch, A]
     ]
 
   object Parameter:
     sealed trait Read[+A]:
       def self: Annotation[
-        Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A] |
-          Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A] | Self.Primitive.Text.Read[A] |
+        Self.Coerce.Read[Segment.Parameter.Primitive.Read, A] |
+          Self.Constant.Read[Segment.Parameter.Primitive.Text, A] |
+          Self.Enumeration.Read[Segment.Parameter.Primitive.Text, A] | Self.Primitive.Text.Read[A] |
           Self.Union.Read[Segment.Parameter.Branch.Read, A]
       ]
 
     sealed trait Write[-A]:
       def self: Annotation[
-        Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A] |
+        Self.Coerce.Write[Segment.Parameter.Primitive.Write, A] |
+          Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A] |
           Self.Enumeration.Write[Segment.Parameter.Primitive.Text.Write, A] | Self.Primitive.Text.Write[A] |
           Self.Union.Write[Segment.Parameter.Branch.Write, A]
       ]
+
+    final case class Coerce[A](self: Annotation[Self.Coerce[Segment.Parameter.Primitive, A]])
+        extends Segment.Parameter[A],
+          Segment.Parameter.Coerce.Read[A],
+          Segment.Parameter.Coerce.Write[A]
+
+    object Coerce:
+      sealed trait Read[+A] extends Segment.Parameter.Read[A]:
+        def self: Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, A]]
+
+      object Read:
+        def apply[A](
+            annotation: Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, A]]
+        ): Segment.Parameter.Coerce.Read[A] = new Read[A]:
+          override def self: Self.Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, A]] = annotation
+
+        given Functor[Segment.Parameter.Coerce.Read] =
+          Functor[[a] =>> Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, a]]]
+            .imapK([A] => Read(_))([A] => _.self)
+
+        given [A] => Annotated[Segment.Parameter.Coerce.Read[A]] =
+          Annotated[Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, A]]].imap(Read.apply)(_.self)
+
+        given CoerceOperation.Read[Segment.Parameter.Coerce.Read, Segment.Parameter.Primitive.Read] = CoerceOperation
+          .Read[
+            [a] =>> Annotation[Self.Coerce.Read[Segment.Parameter.Primitive.Read, a]],
+            Segment.Parameter.Primitive.Read
+          ]
+          .imapK([A] => Read(_))([A] => _.self)
+
+      sealed trait Write[-A] extends Segment.Parameter.Write[A]:
+        def self: Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, A]]
+
+      object Write:
+        def apply[A](
+            annotation: Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, A]]
+        ): Segment.Parameter.Coerce.Write[A] = new Write[A]:
+          override def self: Self.Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, A]] = annotation
+
+        given Contravariant[Segment.Parameter.Coerce.Write] =
+          Contravariant[[a] =>> Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, a]]]
+            .imapK([A] => Write(_))([A] => _.self)
+
+        given [A] => Annotated[Segment.Parameter.Coerce.Write[A]] =
+          Annotated[Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, A]]].imap(Write.apply)(_.self)
+
+        given CoerceOperation.Write[Segment.Parameter.Coerce.Write, Segment.Parameter.Primitive.Write] =
+          CoerceOperation
+            .Write[
+              [a] =>> Annotation[Self.Coerce.Write[Segment.Parameter.Primitive.Write, a]],
+              Segment.Parameter.Primitive.Write
+            ]
+            .imapK([A] => Write(_))([A] => _.self)
+
+      given Invariant[Segment.Parameter.Coerce] =
+        Invariant[[a] =>> Annotation[Self.Coerce[Segment.Parameter.Primitive, a]]]
+          .imapK([A] => Coerce(_))([A] => _.self)
+
+      given [A] => Annotated[Segment.Parameter.Coerce[A]] =
+        Annotated[Annotation[Self.Coerce[Segment.Parameter.Primitive, A]]].imap(Coerce.apply)(_.self)
+
+      given CoerceOperation[Segment.Parameter.Coerce, Segment.Parameter.Primitive] = CoerceOperation[
+        [a] =>> Annotation[Self.Coerce[Segment.Parameter.Primitive, a]],
+        Segment.Parameter.Primitive
+      ].imapK([A] => Coerce(_))([A] => _.self)
 
     final case class Constant[A](self: Annotation[Self.Constant[Segment.Parameter.Primitive.Text, A]])
         extends Segment.Parameter[A],
@@ -176,31 +244,28 @@ object Segment:
 
     object Constant:
       sealed trait Read[+A] extends Segment.Parameter.Read[A]:
-        def self: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]]
+        def self: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, A]]
 
       object Read:
         def apply[A](
-            annotation: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]]
+            annotation: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, A]]
         ): Segment.Parameter.Constant.Read[A] = new Read[A]:
-          override def self: Self.Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]] = annotation
+          override def self: Self.Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, A]] = annotation
 
         given Functor[Segment.Parameter.Constant.Read] =
-          Functor[[a] =>> Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, a]]].imapK([A] =>
-            (self: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]]) => Read(self)
-          )([A] => (parameter: Segment.Parameter.Constant.Read[A]) => parameter.self)
+          Functor[[a] =>> Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, a]]]
+            .imapK([A] => Read(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Constant.Read[A]] =
-          Annotated[Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]]].imap(Read.apply)(_.self)
+          Annotated[Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, A]]].imap(Read.apply)(_.self)
 
-        given ConstantOperation.Read[Segment.Parameter.Constant.Read, Segment.Parameter.Primitive.Text.Read] =
+        given ConstantOperation.Read[Segment.Parameter.Constant.Read, Segment.Parameter.Primitive.Text] =
           ConstantOperation
             .Read[
-              [a] =>> Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, a]],
-              Segment.Parameter.Primitive.Text.Read
+              [a] =>> Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text, a]],
+              Segment.Parameter.Primitive.Text
             ]
-            .imapK([A] =>
-              (self: Annotation[Self.Constant.Read[Segment.Parameter.Primitive.Text.Read, A]]) => Read(self)
-            )([A] => (parameter: Segment.Parameter.Constant.Read[A]) => parameter.self)
+            .imapK([A] => Read(_))([A] => _.self)
 
       sealed trait Write[-A] extends Segment.Parameter.Write[A]:
         def self: Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A]]
@@ -214,9 +279,8 @@ object Segment:
 
         given Contravariant[Segment.Parameter.Constant.Write] =
           Contravariant[[a] =>> Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, a]]].imapK([A] =>
-            (annotation: Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A]]) =>
-              Write(annotation)
-          )([A] => (parameter: Segment.Parameter.Constant.Write[A]) => parameter.self)
+            Write(_)
+          )([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Constant.Write[A]] =
           Annotated[Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A]]]
@@ -228,15 +292,11 @@ object Segment:
               [a] =>> Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, a]],
               Segment.Parameter.Primitive.Text.Write
             ]
-            .imapK([A] =>
-              (annotation: Annotation[Self.Constant.Write[Segment.Parameter.Primitive.Text.Write, A]]) =>
-                Write(annotation)
-            )([A] => (parameter: Segment.Parameter.Constant.Write[A]) => parameter.self)
+            .imapK([A] => Write(_))([A] => _.self)
 
       given Invariant[Segment.Parameter.Constant] =
-        Invariant[[a] =>> Annotation[Self.Constant[Segment.Parameter.Primitive.Text, a]]].imapK([A] =>
-          (self: Annotation[Self.Constant[Segment.Parameter.Primitive.Text, A]]) => Constant(self)
-        )([A] => (parameter: Segment.Parameter.Constant[A]) => parameter.self)
+        Invariant[[a] =>> Annotation[Self.Constant[Segment.Parameter.Primitive.Text, a]]]
+          .imapK([A] => Constant(_))([A] => _.self)
 
       given [A] => Annotated[Segment.Parameter.Constant[A]] =
         Annotated[Annotation[Self.Constant[Segment.Parameter.Primitive.Text, A]]].imap(Constant.apply)(_.self)
@@ -253,29 +313,28 @@ object Segment:
 
     object Enumeration:
       sealed trait Read[+A] extends Segment.Parameter.Read[A]:
-        override def self: Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]
+        override def self: Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, A]]
 
       object Read:
         def apply[A](
-            annotation: Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]
+            annotation: Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, A]]
         ): Segment.Parameter.Enumeration.Read[A] = new Read[A]:
-          override def self: Self.Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]] =
+          override def self: Self.Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, A]] =
             annotation
 
         given Functor[Segment.Parameter.Enumeration.Read] =
-          Functor[[a] =>> Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, a]]].imapK([A] =>
-            (self: Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]) => Read(self)
-          )([A] => (parameter: Segment.Parameter.Enumeration.Read[A]) => parameter.self)
+          Functor[[a] =>> Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, a]]]
+            .imapK([A] => Read(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Enumeration.Read[A]] =
-          Annotated[Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, A]]]
+          Annotated[Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, A]]]
             .imap(Read.apply)(_.self)
 
-        given EnumerationOperation.Read[Segment.Parameter.Enumeration.Read, Segment.Parameter.Primitive.Text.Read] =
+        given EnumerationOperation.Read[Segment.Parameter.Enumeration.Read, Segment.Parameter.Primitive.Text] =
           EnumerationOperation
             .Read[
-              [a] =>> Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text.Read, a]],
-              Segment.Parameter.Primitive.Text.Read
+              [a] =>> Annotation[Self.Enumeration.Read[Segment.Parameter.Primitive.Text, a]],
+              Segment.Parameter.Primitive.Text
             ]
             .imapK([A] => Read(_))([A] => _.self)
 
@@ -318,22 +377,23 @@ object Segment:
           Segment.Parameter.Primitive.Text
         ].imapK([A] => Enumeration(_))([A] => _.self)
 
-    sealed abstract class Primitive[A]
-        extends Segment.Parameter[A],
-          Segment.Parameter.Primitive.Read[A],
-          Segment.Parameter.Primitive.Write[A]
+    sealed trait Primitive[A] extends Segment.Parameter.Primitive.Read[A], Segment.Parameter.Primitive.Write[A]:
+      override def self: Annotation[Self.Primitive[A]]
 
     object Primitive:
-      sealed trait Read[+A] extends Segment.Parameter.Read[A]
+      sealed trait Read[+A]:
+        def self: Annotation[Self.Primitive.Read[A]]
 
-      sealed trait Write[-A] extends Segment.Parameter.Write[A]
+      sealed trait Write[-A]:
+        def self: Annotation[Self.Primitive.Write[A]]
 
       final case class Boolean[A](self: Annotation[Self.Primitive.Boolean[A]])
-          extends Segment.Parameter.Primitive.Boolean.Read[A],
+          extends Segment.Parameter.Primitive[A],
+            Segment.Parameter.Primitive.Boolean.Read[A],
             Segment.Parameter.Primitive.Boolean.Write[A]
 
       object Boolean:
-        sealed trait Read[+A]:
+        sealed trait Read[+A] extends Segment.Parameter.Primitive.Read[A]:
           def self: Annotation[Self.Primitive.Boolean.Read[A]]
 
         object Read:
@@ -352,7 +412,7 @@ object Segment:
             .Read[[a] =>> Annotation[Self.Primitive.Boolean.Read[a]]]
             .imapK([A] => Read(_))([A] => _.self)
 
-        sealed trait Write[-A]:
+        sealed trait Write[-A] extends Segment.Parameter.Primitive.Write[A]:
           def self: Annotation[Self.Primitive.Boolean.Write[A]]
 
         object Write:
@@ -382,11 +442,12 @@ object Segment:
           .imapK([A] => Primitive.Boolean(_))([A] => _.self)
 
       final case class Number[A](self: Annotation[Self.Primitive.Number[A]])
-          extends Segment.Parameter.Primitive.Number.Read[A],
+          extends Segment.Parameter.Primitive[A],
+            Segment.Parameter.Primitive.Number.Read[A],
             Segment.Parameter.Primitive.Number.Write[A]
 
       object Number:
-        sealed trait Read[+A]:
+        sealed trait Read[+A] extends Segment.Parameter.Primitive.Read[A]:
           def self: Annotation[Self.Primitive.Number.Read[A]]
 
         object Read:
@@ -405,7 +466,7 @@ object Segment:
             .Read[[a] =>> Annotation[Self.Primitive.Number.Read[a]]]
             .imapK([A] => Read(_))([A] => _.self)
 
-        sealed trait Write[-A]:
+        sealed trait Write[-A] extends Segment.Parameter.Primitive.Write[A]:
           def self: Annotation[Self.Primitive.Number.Write[A]]
 
         object Write:
@@ -435,12 +496,13 @@ object Segment:
           .imapK([A] => Primitive.Number(_))([A] => _.self)
 
       final case class Text[A](self: Annotation[Self.Primitive.Text[A]])
-          extends Segment.Parameter.Primitive[A],
+          extends Segment.Parameter[A],
+            Segment.Parameter.Primitive[A],
             Segment.Parameter.Primitive.Text.Read[A],
             Segment.Parameter.Primitive.Text.Write[A]
 
       object Text:
-        sealed trait Read[+A] extends Segment.Parameter.Read[A]:
+        sealed trait Read[+A] extends Segment.Parameter.Read[A], Segment.Parameter.Primitive.Read[A]:
           def self: Annotation[Self.Primitive.Text.Read[A]]
 
         object Read:
@@ -458,7 +520,7 @@ object Segment:
             .Read[[a] =>> Annotation[Self.Primitive.Text.Read[a]]]
             .imapK([A] => Read(_))([A] => _.self)
 
-        sealed trait Write[-A] extends Segment.Parameter.Write[A]:
+        sealed trait Write[-A] extends Segment.Parameter.Write[A], Segment.Parameter.Primitive.Write[A]:
           def self: Annotation[Self.Primitive.Text.Write[A]]
 
         object Write:
@@ -504,9 +566,8 @@ object Segment:
           override def self: Self.Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, A]] = annotation
 
         given Functor[Segment.Parameter.Union.Read] =
-          Functor[[a] =>> Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, a]]].imapK([A] =>
-            (self: Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, A]]) => Read(self)
-          )([A] => (parameter: Segment.Parameter.Union.Read[A]) => parameter.self)
+          Functor[[a] =>> Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, a]]]
+            .imapK([A] => Read(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Union.Read[A]] =
           Annotated[Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, A]]].imap(Read.apply)(_.self)
@@ -516,9 +577,7 @@ object Segment:
             [a] =>> Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, a]],
             Segment.Parameter.Branch.Read
           ]
-          .imapK([A] => (self: Annotation[Self.Union.Read[Segment.Parameter.Branch.Read, A]]) => Read(self))([A] =>
-            (parameter: Segment.Parameter.Union.Read[A]) => parameter.self
-          )
+          .imapK([A] => Read(_))([A] => _.self)
 
       sealed trait Write[-A] extends Segment.Parameter.Write[A]:
         def self: Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, A]]
@@ -530,9 +589,8 @@ object Segment:
           override def self: Self.Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, A]] = annotation
 
         given Contravariant[Segment.Parameter.Union.Write] =
-          Contravariant[[a] =>> Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, a]]].imapK([A] =>
-            (annotation: Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, A]]) => Write(annotation)
-          )([A] => (parameter: Segment.Parameter.Union.Write[A]) => parameter.self)
+          Contravariant[[a] =>> Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, a]]]
+            .imapK([A] => Write(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Union.Write[A]] =
           Annotated[Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, A]]].imap(Write.apply)(_.self)
@@ -542,14 +600,10 @@ object Segment:
             [a] =>> Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, a]],
             Segment.Parameter.Branch.Write
           ]
-          .imapK([A] =>
-            (annotation: Annotation[Self.Union.Write[Segment.Parameter.Branch.Write, A]]) => Write(annotation)
-          )([A] => (parameter: Segment.Parameter.Union.Write[A]) => parameter.self)
+          .imapK([A] => Write(_))([A] => _.self)
 
-    given Invariant[Segment.Parameter.Union] =
-      Invariant[[a] =>> Annotation[Self.Union[Segment.Parameter.Branch, a]]].imapK([A] =>
-        (annotation: Annotation[Self.Union[Segment.Parameter.Branch, A]]) => Union(annotation)
-      )([A] => (parameter: Segment.Parameter.Union[A]) => parameter.self)
+    given Invariant[Segment.Parameter.Union] = Invariant[[a] =>> Annotation[Self.Union[Segment.Parameter.Branch, a]]]
+      .imapK([A] => Union(_))([A] => _.self)
 
     given [A] => Annotated[Segment.Parameter.Union[A]] =
       Annotated[Annotation[Self.Union[Segment.Parameter.Branch, A]]].imap(Union.apply)(_.self)
@@ -557,9 +611,7 @@ object Segment:
     given UnionOperation[Segment.Parameter.Union, Segment.Parameter.Branch] = UnionOperation[
       [a] =>> Annotation[Self.Union[Segment.Parameter.Branch, a]],
       Segment.Parameter.Branch
-    ].imapK([A] => (annotation: Annotation[Self.Union[Segment.Parameter.Branch, A]]) => Union(annotation))([A] =>
-      (parameter: Segment.Parameter.Union[A]) => parameter.self
-    )
+    ].imapK([A] => Union(_))([A] => _.self)
 
     final case class Branch[A](self: Annotation[Self.Branch[Segment.Parameter, A]])
         extends Segment.Parameter.Branch.Read[A],
@@ -576,9 +628,8 @@ object Segment:
           override def self: Self.Annotation[Self.Branch.Read[Segment.Parameter.Read, A]] = annotation
 
         given Functor[Segment.Parameter.Branch.Read] =
-          Functor[[a] =>> Annotation[Self.Branch.Read[Segment.Parameter.Read, a]]].imapK([A] =>
-            (self: Annotation[Self.Branch.Read[Segment.Parameter.Read, A]]) => Read(self)
-          )([A] => (parameter: Segment.Parameter.Branch.Read[A]) => parameter.self)
+          Functor[[a] =>> Annotation[Self.Branch.Read[Segment.Parameter.Read, a]]]
+            .imapK([A] => Read(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Branch.Read[A]] =
           Annotated[Annotation[Self.Branch.Read[Segment.Parameter.Read, A]]].imap(Read.apply)(_.self)
@@ -593,17 +644,14 @@ object Segment:
           override def self: Self.Annotation[Self.Branch.Write[Segment.Parameter.Write, A]] = annotation
 
         given Contravariant[Segment.Parameter.Branch.Write] =
-          Contravariant[[a] =>> Annotation[Self.Branch.Write[Segment.Parameter.Write, a]]].imapK([A] =>
-            (annotation: Annotation[Self.Branch.Write[Segment.Parameter.Write, A]]) => Write(annotation)
-          )([A] => (parameter: Segment.Parameter.Branch.Write[A]) => parameter.self)
+          Contravariant[[a] =>> Annotation[Self.Branch.Write[Segment.Parameter.Write, a]]]
+            .imapK([A] => Write(_))([A] => _.self)
 
         given [A] => Annotated[Segment.Parameter.Branch.Write[A]] =
           Annotated[Annotation[Self.Branch.Write[Segment.Parameter.Write, A]]].imap(Write.apply)(_.self)
 
       given Invariant[Segment.Parameter.Branch] =
-        Invariant[[a] =>> Annotation[Self.Branch[Segment.Parameter, a]]].imapK([A] =>
-          (annotation: Annotation[Self.Branch[Segment.Parameter, A]]) => Segment.Parameter.Branch(annotation)
-        )([A] => (parameter: Segment.Parameter.Branch[A]) => parameter.self)
+        Invariant[[a] =>> Annotation[Self.Branch[Segment.Parameter, a]]].imapK([A] => Branch(_))([A] => _.self)
 
       given [A] => Annotated[Segment.Parameter.Branch[A]] =
-        Annotated[Annotation[Self.Branch[Segment.Parameter, A]]].imap(Segment.Parameter.Branch.apply)(_.self)
+        Annotated[Annotation[Self.Branch[Segment.Parameter, A]]].imap(Branch.apply)(_.self)
