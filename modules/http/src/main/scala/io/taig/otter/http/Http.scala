@@ -5,6 +5,26 @@ import io.taig.otter.Annotation
 import Self.operation.SegmentOperation
 
 object Http:
+  final case class Path[A](self: Annotation[Self.Path[A]]) extends Http.Path.Read[A], Http.Path.Write[A]
+
+  object Path:
+    sealed trait Read[+A]:
+      def self: Annotation[Self.Path.Read[A]]
+
+    sealed trait Write[-A]:
+      def self: Annotation[Self.Path.Write[A]]
+
+  final case class Query[A](self: Annotation[Self.Query[A]]) extends Http.Query.Read[A], Http.Query.Write[A]
+
+  object Query:
+    sealed trait Read[+A]:
+      def self: Annotation[Self.Query.Read[A]]
+
+    sealed trait Write[-A]:
+      def self: Annotation[Self.Query.Write[A]]
+
+    export Self.Query.Parameter
+
   sealed abstract class Segment[A] extends Http.Segment.Read[A], Http.Segment.Write[A]:
     def self: Annotation[Self.Segment[A]]
 
