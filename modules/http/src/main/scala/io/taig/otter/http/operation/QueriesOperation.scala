@@ -1,61 +1,54 @@
 package io.taig.otter.http.operation
 
-import io.taig.otter.http.Http
 import io.taig.otter.InvariantK
 
-trait QueriesOperation[F[_]]:
+trait QueriesOperation[F[_], G[_]]:
   self =>
 
   def empty: F[Unit]
 
-  def lift[A](query: Http.Query[A]): F[A]
+  def lift[A](query: G[A]): F[A]
 
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): QueriesOperation[G] = new QueriesOperation[G]:
-    override def empty: G[Unit] = fK(self.empty)
+  def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation[H, G] = new QueriesOperation[H, G]:
+    override def empty: H[Unit] = fK(self.empty)
 
-    override def lift[A](query: Http.Query[A]): G[A] = fK(self.lift(query))
+    override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
 
 object QueriesOperation:
-  inline def apply[F[_]](using self: QueriesOperation[F]): QueriesOperation[F] = self
+  inline def apply[F[_], G[_]](using self: QueriesOperation[F, G]): QueriesOperation[F, G] = self
 
-  given InvariantK[QueriesOperation]:
-    extension [G[_]](self: QueriesOperation[G])
-      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): QueriesOperation[H] = self.mapK(fK)
+  given [F[_]] => InvariantK[[f[_]] =>> QueriesOperation[f, F]]:
+    extension [G[_]](self: QueriesOperation[G, F])
+      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): QueriesOperation[H, F] =
+        self.mapK(fK)
 
-  trait Read[F[_]] extends QueriesOperation[F]:
+  trait Read[F[_], G[_]] extends QueriesOperation[F, G]:
     self =>
 
-    def lift[A](query: Http.Query.Read[A]): F[A]
+    override def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation.Read[H, G] = new Read[H, G]:
+      override def empty: H[Unit] = fK(self.empty)
 
-    final override def lift[A](query: Http.Query[A]): F[A] = lift(query: Http.Query.Read[A])
-
-    override def mapK[G[_]](fK: [A] => F[A] => G[A]): QueriesOperation.Read[G] = new Read[G]:
-      override def empty: G[Unit] = fK(self.empty)
-
-      override def lift[A](query: Http.Query.Read[A]): G[A] = fK(self.lift(query))
+      override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
 
   object Read:
-    inline def apply[F[_]](using self: QueriesOperation.Read[F]): QueriesOperation.Read[F] = self
+    inline def apply[F[_], G[_]](using self: QueriesOperation.Read[F, G]): QueriesOperation.Read[F, G] = self
 
-    given InvariantK[QueriesOperation.Read]:
-      extension [G[_]](self: QueriesOperation.Read[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Read[H] = self.mapK(fK)
+    given [F[_]] => InvariantK[[f[_]] =>> QueriesOperation.Read[f, F]]:
+      extension [G[_]](self: QueriesOperation.Read[G, F])
+        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): QueriesOperation.Read[H, F] =
+          self.mapK(fK)
 
-  trait Write[F[_]] extends QueriesOperation[F]:
+  trait Write[F[_], G[_]] extends QueriesOperation[F, G]:
     self =>
 
-    def lift[A](query: Http.Query.Write[A]): F[A]
+    override def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation.Write[H, G] = new Write[H, G]:
+      override def empty: H[Unit] = fK(self.empty)
 
-    final override def lift[A](query: Http.Query[A]): F[A] = lift(query: Http.Query.Write[A])
-
-    override def mapK[G[_]](fK: [A] => F[A] => G[A]): QueriesOperation.Write[G] = new Write[G]:
-      override def empty: G[Unit] = fK(self.empty)
-
-      override def lift[A](query: Http.Query.Write[A]): G[A] = fK(self.lift(query))
+      override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
 
   object Write:
-    inline def apply[F[_]](using self: QueriesOperation.Write[F]): QueriesOperation.Write[F] = self
+    inline def apply[F[_], G[_]](using self: QueriesOperation.Write[F, G]): QueriesOperation.Write[F, G] = self
 
-    given InvariantK[QueriesOperation.Write]:
-      extension [G[_]](self: QueriesOperation.Write[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Write[H] = self.mapK(fK)
+    given [F[_]] => InvariantK[[f[_]] =>> QueriesOperation.Write[f, F]]:
+      extension [G[_]](self: QueriesOperation.Write[G, F])
+        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Write[H, F] = self.mapK(fK)

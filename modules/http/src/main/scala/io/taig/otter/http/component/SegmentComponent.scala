@@ -6,8 +6,8 @@ import io.taig.otter.Reference
 import io.taig.otter.component.PrimitiveComponent
 
 object SegmentComponent:
-  trait Dynamic[F[_]](using F: SegmentOperation.Dynamic[F]):
-    final def apply[A](name: String, parameter: Http.Segment.Parameter[A]): F[A] =
+  trait Dynamic[F[_], G[_]](using F: SegmentOperation.Dynamic[F, G]):
+    final def apply[A](name: String, parameter: => G[A]): F[A] =
       F.lift(name, parameter = Reference.later(parameter))
 
   trait Parameter
