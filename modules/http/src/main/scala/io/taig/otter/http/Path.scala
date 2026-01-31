@@ -6,64 +6,73 @@ import cats.Apply
 import cats.ContravariantSemigroupal
 import cats.InvariantSemigroupal
 import io.taig.otter.http.operation.PathOperation
+import io.taig.otter.Annotated
 
-sealed abstract class Path[A] extends Path.Read[A], Path.Write[A]:
-  final def product[B](path: Path[B]): Path[(A, B)] = Path.Product(left = this, right = path)
-
-  override def segments: Chain[Reference[Http.Segment, ?]]
+type Path[A] = Annotated[Path.Schema[A]]
 
 object Path:
-  sealed trait Read[+A]:
-    final def product[B](path: Path.Read[B]): Path.Read[(A, B)] = Path.Read.Product(left = this, right = path)
+  type Read[A] = Annotated[Path.Schema.Read[A]]
 
-    def segments: Chain[Reference[Http.Segment.Read, ?]]
+  type Write[A] = Annotated[Path.Schema.Write[A]]
 
-  object Read:
-    final case class Modify[A, B](self: Path.Read[A], f: A => B) extends Path.Read[B]:
-      export self.segments
+  sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
+    final def product[B](path: Schema[B]): Schema[(A, B)] = Schema.Product(left = this, right = path)
 
-    final case class Product[A, B](left: Path.Read[A], right: Path.Read[B]) extends Path.Read[(A, B)]:
-      override def segments: Chain[Reference[Http.Segment.Read, ?]] = left.segments ++ right.segments
+    override def segments: Chain[Reference[Segment, ?]]
 
-    given Apply[Path.Read]:
-      override def ap[A, B](ff: Path.Read[A => B])(fa: Path.Read[A]): Path.Read[B] =
-        map(Product(ff, fa))(_ apply _)
+  object Schema:
+    sealed trait Read[+A]:
+      final def product[B](path: Schema.Read[B]): Schema.Read[(A, B)] =
+        Schema.Read.Product(left = this, right = path)
 
-      override def map[A, B](self: Path.Read[A])(f: A => B): Path.Read[B] = Modify(self, f)
+      def segments: Chain[Reference[Segment.Read, ?]]
 
-  sealed trait Write[-A]:
-    final def product[B](path: Path.Write[B]): Path.Write[(A, B)] = Path.Write.Product(left = this, right = path)
+    object Read:
+      final case class Modify[A, B](self: Schema.Read[A], f: A => B) extends Schema.Read[B]:
+        export self.segments
 
-    def segments: Chain[Reference[Http.Segment.Write, ?]]
+      final case class Product[A, B](left: Schema.Read[A], right: Schema.Read[B]) extends Schema.Read[(A, B)]:
+        override def segments: Chain[Reference[Segment.Read, ?]] = left.segments ++ right.segments
 
-  object Write:
-    final case class Modify[A, B](self: Path.Write[A], f: B => A) extends Path.Write[B]:
-      export self.segments
+      given Apply[Schema.Read]:
+        override def ap[A, B](ff: Schema.Read[A => B])(fa: Schema.Read[A]): Schema.Read[B] =
+          map(Product(ff, fa))(_ apply _)
 
-    final case class Product[A, B](left: Path.Write[A], right: Path.Write[B]) extends Path.Write[(A, B)]:
-      override def segments: Chain[Reference[Http.Segment.Write, ?]] =
-        left.segments ++ right.segments
+        override def map[A, B](self: Schema.Read[A])(f: A => B): Schema.Read[B] = Modify(self, f)
 
-    given ContravariantSemigroupal[Path.Write]:
-      override def product[A, B](fa: Path.Write[A], fb: Path.Write[B]): Path.Write[(A, B)] = Product(fa, fb)
+    sealed trait Write[-A]:
+      final def product[B](path: Schema.Write[B]): Schema.Write[(A, B)] =
+        Schema.Write.Product(left = this, right = path)
 
-      override def contramap[A, B](self: Path.Write[A])(f: B => A): Path.Write[B] = Modify(self, f)
+      def segments: Chain[Reference[Segment.Write, ?]]
 
-  case object Empty extends Path[Unit]:
-    override def segments: Chain[Nothing] = Chain.empty
+    object Write:
+      final case class Modify[A, B](self: Schema.Write[A], f: B => A) extends Schema.Write[B]:
+        export self.segments
 
-  final case class Modify[A, B](self: Path[A], f: A => B, g: B => A) extends Path[B]:
-    override def segments: Chain[Reference[Http.Segment, ?]] = self.segments
+      final case class Product[A, B](left: Schema.Write[A], right: Schema.Write[B]) extends Schema.Write[(A, B)]:
+        override def segments: Chain[Reference[Segment.Write, ?]] = left.segments ++ right.segments
 
-  final case class Product[A, B](left: Path[A], right: Path[B]) extends Path[(A, B)]:
-    override def segments: Chain[Reference[Http.Segment, ?]] = left.segments ++ right.segments
+      given ContravariantSemigroupal[Schema.Write]:
+        override def product[A, B](fa: Schema.Write[A], fb: Schema.Write[B]): Schema.Write[(A, B)] = Product(fa, fb)
 
-  final case class Root[A](segment: Reference[Http.Segment, A]) extends Path[A]:
-    override def segments: Chain[Reference[Http.Segment, ?]] = Chain.one(segment)
+        override def contramap[A, B](self: Schema.Write[A])(f: B => A): Schema.Write[B] = Modify(self, f)
 
-  given InvariantSemigroupal[Path]:
-    override def imap[A, B](self: Path[A])(f: A => B)(g: B => A): Path[B] = Modify(self, f, g)
+    case object Empty extends Schema[Unit]:
+      override def segments: Chain[Nothing] = Chain.empty
 
-    override def product[A, B](fa: Path[A], fb: Path[B]): Path[(A, B)] = Product(fa, fb)
+    final case class Modify[A, B](self: Schema[A], f: A => B, g: B => A) extends Schema[B]:
+      override def segments: Chain[Reference[Segment, ?]] = self.segments
 
-  given PathOperation[Path] = ???
+    final case class Product[A, B](left: Schema[A], right: Schema[B]) extends Schema[(A, B)]:
+      override def segments: Chain[Reference[Segment, ?]] = left.segments ++ right.segments
+
+    final case class Root[A](segment: Reference[Segment, A]) extends Schema[A]:
+      override def segments: Chain[Reference[Segment, ?]] = Chain.one(segment)
+
+    given InvariantSemigroupal[Path.Schema]:
+      override def imap[A, B](self: Path.Schema[A])(f: A => B)(g: B => A): Path.Schema[B] = Modify(self, f, g)
+
+      override def product[A, B](fa: Path.Schema[A], fb: Path.Schema[B]): Path.Schema[(A, B)] = Product(fa, fb)
+
+    given PathOperation[Segment, Path] = ???

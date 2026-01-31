@@ -1,18 +1,19 @@
 package io.taig.otter.http.operation
 
 import io.taig.otter.InvariantK
+import io.taig.otter.Reference
 
 trait QueriesOperation[F[_], G[_]]:
   self =>
 
   def empty: F[Unit]
 
-  def lift[A](query: G[A]): F[A]
+  def lift[A](query: Reference[G, A]): F[A]
 
   def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation[H, G] = new QueriesOperation[H, G]:
     override def empty: H[Unit] = fK(self.empty)
 
-    override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
+    override def lift[A](query: Reference[G, A]): H[A] = fK(self.lift(query))
 
 object QueriesOperation:
   inline def apply[F[_], G[_]](using self: QueriesOperation[F, G]): QueriesOperation[F, G] = self
@@ -28,7 +29,7 @@ object QueriesOperation:
     override def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation.Read[H, G] = new Read[H, G]:
       override def empty: H[Unit] = fK(self.empty)
 
-      override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
+      override def lift[A](query: Reference[G, A]): H[A] = fK(self.lift(query))
 
   object Read:
     inline def apply[F[_], G[_]](using self: QueriesOperation.Read[F, G]): QueriesOperation.Read[F, G] = self
@@ -44,7 +45,7 @@ object QueriesOperation:
     override def mapK[H[_]](fK: [A] => F[A] => H[A]): QueriesOperation.Write[H, G] = new Write[H, G]:
       override def empty: H[Unit] = fK(self.empty)
 
-      override def lift[A](query: G[A]): H[A] = fK(self.lift(query))
+      override def lift[A](query: Reference[G, A]): H[A] = fK(self.lift(query))
 
   object Write:
     inline def apply[F[_], G[_]](using self: QueriesOperation.Write[F, G]): QueriesOperation.Write[F, G] = self

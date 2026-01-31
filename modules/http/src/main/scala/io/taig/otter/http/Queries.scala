@@ -34,6 +34,11 @@ object Queries:
 
       override def map[A, B](self: Queries.Read[F, A])(f: A => B): Queries.Read[F, B] = Modify(self, f)
 
+    given [F[_]] => QueriesOperation.Read[Queries.Read[F, *], F]:
+      override def empty: Queries.Read[Nothing, Unit] = Empty
+
+      override def lift[A](reference: Reference[F, A]): Queries.Read[F, A] = Root(reference)
+
   sealed trait Write[+F[_], -A]:
     final def product[F1[a] >: F[a], B](queries: Queries.Write[F1, B]): Queries.Write[F1, (A, B)] =
       Queries.Write.Product(left = this, right = queries)
@@ -55,6 +60,11 @@ object Queries:
 
       override def contramap[A, B](self: Queries.Write[F, A])(f: B => A): Queries.Write[F, B] = Modify(self, f)
 
+    given [F[_]] => QueriesOperation.Write[Queries.Write[F, *], F]:
+      override def empty: Queries.Write[Nothing, Unit] = Empty
+
+      override def lift[A](reference: Reference[F, A]): Queries.Write[F, A] = Root(reference)
+
   case object Empty extends Queries[Nothing, Unit]:
     override def queries: Chain[Nothing] = Chain.empty
 
@@ -72,4 +82,7 @@ object Queries:
 
     override def product[A, B](fa: Queries[F, A], fb: Queries[F, B]): Queries[F, (A, B)] = Product(fa, fb)
 
-  given [F[_]] => QueriesOperation[Queries[F, *], F] = ???
+  given [F[_]] => QueriesOperation[Queries[F, *], F]:
+    override def empty: Queries[Nothing, Unit] = Empty
+
+    override def lift[A](reference: Reference[F, A]): Queries[F, A] = Root(reference)

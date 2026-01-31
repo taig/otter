@@ -1,61 +1,52 @@
 package io.taig.otter.http.operation
 
-import io.taig.otter.http.Http
 import io.taig.otter.InvariantK
 
-trait PathOperation[F[_]]:
+trait PathOperation[F[_], G[_]]:
   self =>
 
-  def empty: F[Unit]
+  def empty: G[Unit]
 
-  def lift[A](segment: Http.Segment[A]): F[A]
+  def lift[A](segment: F[A]): G[A]
 
-  def mapK[G[_]](fK: [A] => F[A] => G[A]): PathOperation[G] = new PathOperation[G]:
-    override def empty: G[Unit] = fK(self.empty)
+  def mapK[H[_]](fK: [A] => G[A] => H[A]): PathOperation[F, H] = new PathOperation[F, H]:
+    override def empty: H[Unit] = fK(self.empty)
 
-    override def lift[A](segment: Http.Segment[A]): G[A] = fK(self.lift(segment))
+    override def lift[A](segment: F[A]): H[A] = fK(self.lift(segment))
 
 object PathOperation:
-  inline def apply[F[_]](using self: PathOperation[F]): PathOperation[F] = self
+  // trait Read[F[_], G[_]] extends PathOperation[F, G]:
+  //   self =>
 
-  given InvariantK[PathOperation]:
-    extension [G[_]](self: PathOperation[G])
-      override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): PathOperation[H] = self.mapK(fK)
+  //   override def mapK[H[_]](fK: [A] => F[A] => H[A]): PathOperation.Read[H, G] = new Read[H, G]:
+  //     override def empty: H[Unit] = fK(self.empty)
 
-  trait Read[F[_]] extends PathOperation[F]:
-    self =>
+  //     override def lift[A](segment: G[A]): H[A] = fK(self.lift(segment))
 
-    def lift[A](segment: Http.Segment.Read[A]): F[A]
+  // object Read:
+  //   inline def apply[F[_], G[_]](using self: PathOperation.Read[F, G]): PathOperation.Read[F, G] = self
 
-    final override def lift[A](segment: Http.Segment[A]): F[A] = lift(segment: Http.Segment.Read[A])
+  //   given [F[_]] => InvariantK[[f[_]] =>> PathOperation.Read[f, F]]:
+  //     extension [G[_]](self: PathOperation.Read[G, F])
+  //       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): PathOperation.Read[H, F] =
+  //         self.mapK(fK)
 
-    override def mapK[G[_]](fK: [A] => F[A] => G[A]): PathOperation.Read[G] = new Read[G]:
-      override def empty: G[Unit] = fK(self.empty)
+  // trait Write[F[_], G[_]] extends PathOperation[F, G]:
+  //   self =>
 
-      override def lift[A](segment: Http.Segment.Read[A]): G[A] = fK(self.lift(segment))
+  //   override def mapK[H[_]](fK: [A] => F[A] => H[A]): PathOperation.Write[H, G] = new Write[H, G]:
+  //     override def empty: H[Unit] = fK(self.empty)
 
-  object Read:
-    inline def apply[F[_]](using self: PathOperation.Read[F]): PathOperation.Read[F] = self
+  //     override def lift[A](segment: G[A]): H[A] = fK(self.lift(segment))
 
-    given InvariantK[PathOperation.Read]:
-      extension [G[_]](self: PathOperation.Read[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Read[H] = self.mapK(fK)
+  // object Write:
+  //   inline def apply[F[_], G[_]](using self: PathOperation.Write[F, G]): PathOperation.Write[F, G] = self
 
-  trait Write[F[_]] extends PathOperation[F]:
-    self =>
+  //   given [F[_]] => InvariantK[[f[_]] =>> PathOperation.Write[f, F]]:
+  //     extension [G[_]](self: PathOperation.Write[G, F])
+  //       override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): PathOperation.Write[H, F] =
+  //         self.mapK(fK)
 
-    def lift[A](segment: Http.Segment.Write[A]): F[A]
+  inline def apply[F[_], G[_]](using self: PathOperation[F, G]): PathOperation[F, G] = self
 
-    final override def lift[A](segment: Http.Segment[A]): F[A] = lift(segment: Http.Segment.Write[A])
-
-    override def mapK[G[_]](fK: [A] => F[A] => G[A]): PathOperation.Write[G] = new Write[G]:
-      override def empty: G[Unit] = fK(self.empty)
-
-      override def lift[A](segment: Http.Segment.Write[A]): G[A] = fK(self.lift(segment))
-
-  object Write:
-    inline def apply[F[_]](using self: PathOperation.Write[F]): PathOperation.Write[F] = self
-
-    given InvariantK[PathOperation.Write]:
-      extension [G[_]](self: PathOperation.Write[G])
-        override def imapK[H[_]](fK: [A] => G[A] => H[A])(gK: [A] => H[A] => G[A]): Write[H] = self.mapK(fK)
+  given [F[_]] => InvariantK[[f[_]] =>> PathOperation[F, f]] = ???

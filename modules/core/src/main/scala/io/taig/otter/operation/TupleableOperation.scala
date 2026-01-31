@@ -5,8 +5,6 @@ import io.taig.otter.Append
 import io.taig.otter.Reference
 
 trait TupleableOperation[F[_], G[_]]:
-  self =>
-
   extension [A](fa: F[A]) def toTuple: G[A]
 
   extension [F1[a] >: F[a], G1[a] >: G[a] <: Matchable, A](fa: F[A])

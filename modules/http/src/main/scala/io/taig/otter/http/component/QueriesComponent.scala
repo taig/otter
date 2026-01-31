@@ -1,6 +1,6 @@
-package io.taig.otter.http.component
+// package io.taig.otter.http.component
 
-import io.taig.otter.http.operation.QueriesOperation
+// import io.taig.otter.http.operation.QueriesOperation
 
-trait QueriesComponent[F[_], G[_]](F: QueriesOperation[F, G]):
-  val QNil: F[Unit] = F.empty
+// trait QueriesComponent[F[_], G[_]](F: QueriesOperation[F, G]):
+//   val QNil: F[Unit] = F.empty
