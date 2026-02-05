@@ -11,19 +11,19 @@ import io.taig.otter.Annotation
 import io.taig.otter.Annotated
 import io.taig.otter.operation.*
 
-type Segment[A] = Annotation[Segment.Schema[A]]
+type Segment[A] = Annotation[Segment.Schema[Segment.Parameter, A]]
 
 object Segment:
-  type Read[A] = Annotation[Segment.Schema.Read[A]]
+  type Read[A] = Annotation[Segment.Schema.Read[Segment.Parameter.Read, A]]
 
-  type Write[A] = Annotation[Segment.Schema.Write[A]]
+  type Write[A] = Annotation[Segment.Schema.Write[Segment.Parameter.Write, A]]
 
-  type Dynamic[A] = Annotation[Segment.Schema.Dynamic[A]]
+  type Dynamic[A] = Annotation[Segment.Schema.Dynamic[Segment.Parameter, A]]
 
   object Dynamic:
-    type Read[A] = Segment.Read[A]
+    type Read[A] = Annotation[Segment.Schema.Dynamic.Read[Segment.Parameter.Read, A]]
 
-    type Write[A] = Segment.Write[A]
+    type Write[A] = Annotation[Segment.Schema.Dynamic.Write[Segment.Parameter.Write, A]]
 
   type Static[A] = Annotation[Segment.Schema.Static[A]]
 
@@ -32,96 +32,93 @@ object Segment:
 
     type Write[A] = Segment.Write[A]
 
-  sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
-    def imap[B](f: A => B)(g: B => A): Schema[B]
+  sealed abstract class Schema[+F[_], A] extends Schema.Read[F, A], Schema.Write[F, A]:
+    def imap[B](f: A => B)(g: B => A): Schema[F, B]
 
   object Schema:
-    sealed trait Read[+A]:
-      def map[B](f: A => B): Schema.Read[B]
+    sealed trait Read[+F[_], +A]:
+      def map[B](f: A => B): Schema.Read[F, B]
 
       def name: String
 
     object Read:
-      given Functor[Schema.Read]:
-        override def map[A, B](segment: Schema.Read[A])(f: A => B): Schema.Read[B] = segment.map(f)
+      given [F[_]] => Functor[Schema.Read[F, *]]:
+        override def map[A, B](segment: Schema.Read[F, A])(f: A => B): Schema.Read[F, B] = segment.map(f)
 
-    sealed trait Write[-A]:
-      def contramap[B](f: B => A): Schema.Write[B]
+    sealed trait Write[+F[_], -A]:
+      def contramap[B](f: B => A): Schema.Write[F, B]
 
       def name: String
 
     object Write:
-      given Contravariant[Schema.Write]:
-        override def contramap[A, B](segment: Schema.Write[A])(f: B => A): Schema.Write[B] = segment.contramap(f)
+      given [F[_]] => Contravariant[Schema.Write[F, *]]:
+        override def contramap[A, B](segment: Schema.Write[F, A])(f: B => A): Schema.Write[F, B] = segment.contramap(f)
 
-    sealed abstract class Dynamic[A] extends Schema[A], Schema.Dynamic.Read[A], Schema.Dynamic.Write[A]:
-      final override def imap[B](f: A => B)(g: B => A): Schema.Dynamic[B] = Dynamic.Modify(self = this, f, g)
+    sealed abstract class Dynamic[+F[_], A] extends Schema[F, A], Schema.Dynamic.Read[F, A], Schema.Dynamic.Write[F, A]:
+      final override def imap[B](f: A => B)(g: B => A): Schema.Dynamic[F, B] = Dynamic.Modify(self = this, f, g)
 
-      override def parameter: Reference[Segment.Parameter, ?]
+      override def parameter: Reference[F, ?]
 
     object Dynamic:
-      sealed trait Read[+A] extends Schema.Read[A]:
-        final def map[B](f: A => B): Schema.Dynamic.Read[B] = Read.Modify(self = this, f)
+      sealed trait Read[+F[_], +A] extends Schema.Read[F, A]:
+        final def map[B](f: A => B): Schema.Dynamic.Read[F, B] = Read.Modify(self = this, f)
 
         def name: String
 
-        def parameter: Reference[Segment.Parameter.Read, ?]
+        def parameter: Reference[F, ?]
 
       object Read:
-        final case class Modify[A, B](self: Schema.Dynamic.Read[A], f: A => B) extends Schema.Dynamic.Read[B]:
+        final case class Modify[F[_], A, B](self: Schema.Dynamic.Read[F, A], f: A => B) extends Schema.Dynamic.Read[F, B]:
           export self.{name, parameter}
 
-        final case class Root[A](name: String, parameter: Reference[Segment.Parameter.Read, A])
-            extends Schema.Dynamic.Read[A]
-
-        given Functor[Schema.Dynamic.Read]:
-          override def map[A, B](segment: Schema.Dynamic.Read[A])(f: A => B): Schema.Dynamic.Read[B] =
+        given [F[_]] => Functor[Schema.Dynamic.Read[F, *]]:
+          override def map[A, B](segment: Schema.Dynamic.Read[F, A])(f: A => B): Schema.Dynamic.Read[F, B] =
             segment.map(f)
 
-        given SegmentOperation.Dynamic.Read[Schema.Dynamic.Read, Segment.Parameter.Read]:
-          override def lift[A](name: String, schema: Reference[Segment.Parameter.Read, A]): Schema.Dynamic.Read[A] =
+        given [F[_]] => SegmentOperation.Dynamic.Read[Schema.Dynamic.Read[F, *], F]:
+          override def lift[A](name: String, schema: Reference[F, A]): Schema.Dynamic.Read[F, A] =
             Root(name, schema)
 
-      sealed trait Write[-A] extends Schema.Write[A]:
-        final override def contramap[B](f: B => A): Schema.Dynamic.Write[B] = Write.Modify(self = this, f)
+      sealed trait Write[+F[_], -A] extends Schema.Write[F, A]:
+        final override def contramap[B](f: B => A): Schema.Dynamic.Write[F, B] = Write.Modify(self = this, f)
 
-        def parameter: Reference[Segment.Parameter.Write, ?]
+        def parameter: Reference[F, ?]
 
       object Write:
-        final case class Modify[A, B](self: Schema.Dynamic.Write[A], f: B => A) extends Schema.Dynamic.Write[B]:
+        final case class Modify[F[_], A, B](self: Schema.Dynamic.Write[F, A], f: B => A) extends Schema.Dynamic.Write[F, B]:
           export self.{name, parameter}
 
-        final case class Root[A](name: String, parameter: Reference[Segment.Parameter.Write, A])
-            extends Schema.Dynamic.Write[A]
+        final case class Root[F[_], A](name: String, parameter: Reference[F, A])
+            extends Schema.Dynamic.Write[F, A]
 
-        given Contravariant[Schema.Dynamic.Write]:
-          override def contramap[A, B](segment: Schema.Dynamic.Write[A])(f: B => A): Schema.Dynamic.Write[B] =
+        given [F[_]] => Contravariant[Schema.Dynamic.Write[F, *]]:
+          override def contramap[A, B](segment: Schema.Dynamic.Write[F, A])(f: B => A): Schema.Dynamic.Write[F, B] =
             segment.contramap(f)
 
-        given SegmentOperation.Dynamic.Write[Schema.Dynamic.Write, Segment.Parameter.Write]:
+        given [F[_]] => SegmentOperation.Dynamic.Write[Schema.Dynamic.Write[F, *], F]:
           override def lift[A](
               name: String,
-              schema: Reference[Segment.Parameter.Write, A]
-          ): Schema.Dynamic.Write[A] = Root(name, schema)
+              schema: Reference[F, A]
+          ): Schema.Dynamic.Write[F, A] = Root(name, schema)
 
-      final case class Modify[A, B](self: Schema.Dynamic[A], f: A => B, g: B => A) extends Schema.Dynamic[B]:
+      final case class Modify[F[_], A, B](self: Schema.Dynamic[F, A], f: A => B, g: B => A) extends Schema.Dynamic[F, B]:
         export self.{name, parameter}
 
-      final case class Root[A](name: String, parameter: Reference[Segment.Parameter, A]) extends Schema.Dynamic[A]
+      final case class Root[F[_], A](name: String, parameter: Reference[F, A]) extends Schema.Dynamic[F, A]
 
-      given Invariant[Schema.Dynamic]:
-        override def imap[A, B](self: Schema.Dynamic[A])(f: A => B)(g: B => A): Schema.Dynamic[B] =
+      given [F[_]] => Invariant[Schema.Dynamic[F, *]]:
+        override def imap[A, B](self: Schema.Dynamic[F, A])(f: A => B)(g: B => A): Schema.Dynamic[F, B] =
           Modify(self, f, g)
 
-      given SegmentOperation.Dynamic[Schema.Dynamic, Segment.Parameter]:
-        override def lift[A](name: String, schema: Reference[Segment.Parameter, A]): Schema.Dynamic[A] =
+      given [F[_]] => SegmentOperation.Dynamic[Schema.Dynamic[F, *], F]:
+        override def lift[A](name: String, schema: Reference[F, A]): Schema.Dynamic[F, A] =
           Root(name, schema)
 
-    sealed abstract class Static[A] extends Schema[A], Schema.Static.Read[A], Schema.Static.Write[A]:
+    sealed abstract class Static[A] extends Schema[Nothing, A], Schema.Static.Read[A], Schema.Static.Write[A]:
       override def imap[B](f: A => B)(g: B => A): Schema.Static[B] = Schema.Static.Modify(self = this, f, g)
 
     object Static:
-      sealed trait Read[+A] extends Schema.Read[A]:
+      sealed trait Read[+A] extends Schema.Read[Nothing, A]:
         final def map[B](f: A => B): Schema.Static.Read[B] = Read.Modify(self = this, f)
 
       object Read:
@@ -135,7 +132,7 @@ object Segment:
         given SegmentOperation.Static.Read[Schema.Static.Read]:
           override def lift(name: String): Schema.Static.Read[Unit] = Root(name)
 
-      sealed trait Write[-A] extends Schema.Write[A]:
+      sealed trait Write[-A] extends Schema.Write[Nothing, A]:
         final override def contramap[B](f: B => A): Schema.Static.Write[B] = Write.Modify(self = this, f)
 
       object Write:
@@ -160,9 +157,9 @@ object Segment:
       given SegmentOperation.Static[Schema.Static]:
         override def lift(name: String): Schema.Static[Unit] = Root(name)
 
-    given Invariant[Schema]:
-      override def imap[A, B](self: Schema[A])(f: A => B)(g: B => A): Schema[B] = self match
-        case segment: Schema.Dynamic[A] => segment.imap(f)(g)
+    given [F[_]] => Invariant[Segment.Schema[F, *]]:
+      override def imap[A, B](self: Schema[F, A])(f: A => B)(g: B => A): Schema[F, B] = self match
+        case segment: Schema.Dynamic[F, A] => segment.imap(f)(g)
         case segment: Schema.Static[A]  => segment.imap(f)(g)
 
     given PathableOperation[Segment, Path] = ???

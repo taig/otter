@@ -6,14 +6,14 @@ import cats.Apply
 import cats.ContravariantSemigroupal
 import cats.InvariantSemigroupal
 import io.taig.otter.http.operation.PathOperation
-import io.taig.otter.Annotated
+import io.taig.otter.Annotation
 
-type Path[A] = Annotated[Path.Schema[A]]
+type Path[A] = Annotation[Path.Schema[A]]
 
 object Path:
-  type Read[A] = Annotated[Path.Schema.Read[A]]
+  type Read[A] = Annotation[Path.Schema.Read[A]]
 
-  type Write[A] = Annotated[Path.Schema.Write[A]]
+  type Write[A] = Annotation[Path.Schema.Write[A]]
 
   sealed abstract class Schema[A] extends Schema.Read[A], Schema.Write[A]:
     final def product[B](path: Schema[B]): Schema[(A, B)] = Schema.Product(left = this, right = path)
@@ -75,4 +75,4 @@ object Path:
 
       override def product[A, B](fa: Path.Schema[A], fb: Path.Schema[B]): Path.Schema[(A, B)] = Product(fa, fb)
 
-    given PathOperation[Segment, Path] = ???
+    given PathOperation[Path, Segment] = ???
