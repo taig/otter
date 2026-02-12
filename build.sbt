@@ -7,7 +7,7 @@ val Version = new {
   val CatsParse = "1.1.0"
   val Circe = "0.14.15"
   val Ducktape = "0.2.12"
-  val EnumerationExt = "0.6.0"
+  val Mapping = "0.7.0"
   val Fs2 = "3.12.2"
   val Http4s = "1.0.0-M46"
   val Java = "17"
@@ -93,7 +93,7 @@ lazy val core = module(identifier = Some("core"))
       Seq(sumInstances)
     }.taskValue,
     libraryDependencies ++=
-      "io.taig" %%% "enumeration-ext-core" % Version.EnumerationExt ::
+      "io.taig" %%% "mapping-core" % Version.Mapping ::
         "org.typelevel" %%% "cats-core" % Version.Cats ::
         "org.typelevel" %%% "cats-parse" % Version.CatsParse ::
         "org.typelevel" %%% "kittens" % Version.Kittens ::

@@ -9,8 +9,8 @@ import cats.data.NonEmptySeq
 import cats.data.NonEmptySet
 import cats.data.NonEmptyVector
 import cats.implicits.*
-import io.taig.enumeration.ext.EnumerationValues
-import io.taig.enumeration.ext.Mapping
+import io.taig.mapping.Mapping
+import io.taig.mapping.SingletonValues
 import io.taig.otter as Base
 
 import java.math.BigDecimal as JBigDecimal
@@ -389,9 +389,8 @@ trait Codecs extends Types:
       Base.Enumeration(codec = Eval.later(codec), mapping)
 
     inline def apply[O <: Data.Primitive, B: Order](codec: => Codec.Of[O, B])(f: A => B)(using
-        EnumerationValues.Aux[A, A]
-    ): Enumeration.Of[O, A] =
-      apply(codec)(using Mapping.enumeration(f))
+        SingletonValues[A]
+    ): Enumeration.Of[O, A] = apply(codec)(using Mapping.of(f))
 
   def enumeration[A]: EnumerationCodecBuilder[A] = new EnumerationCodecBuilder
 
