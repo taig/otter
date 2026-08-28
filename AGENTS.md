@@ -2,7 +2,10 @@
 
 Extensible schema definition library for serialization formats (e.g. JSON, XML and CSV) with self-documenting API definition capabilities.
 
-## Devlopment workflow
+## Development workflow
+
+Modules: `core`, `core-json`, `core-json-circe`. Each cross builds to the JVM and Scala.js;
+the Scala.js project ids carry a `JS` suffix (`core-json-circeJS`).
 
 ### Fast loop
 
@@ -10,11 +13,23 @@ Stay in one project.
 
 ```
 # Compile to check for errors quickly
-sbt core-json-typescript-effect/compile
+sbt core-json-circe/compile
 
-# Run tests for current project
-sbt core-json-typescript-effect/test
-sbt "core-json-typescript-effect/testOnly io.taig.otter.codec.JsonTypescriptEffectRendererTest"
+# Run tests for the current project
+sbt core-json-circe/testFull
+sbt "core-json-circe/testOnly io.taig.otter.codec.JsonCirceDecoderTest"
+```
+
+`test` in sbt 2 only runs what it thinks changed, and reports "No tests to run" after a
+clean. Use `testFull` to actually run a suite.
+
+Note that zio-test's Scala.js runner under-reports its summary count: the per-test `+` lines
+are the truth, not the "N tests passed" line.
+
+### Before pushing
+
+```
+sbt testFull scalafmtCheckAll scalafixCheckAll blowoutCheck
 ```
 
 ## Code Style
