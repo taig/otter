@@ -8,6 +8,11 @@ object json:
   val book: Json.Record[Book, Book] =
     (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]
 
+  val genre: Json.Enumeration[Genre, Genre] = enumeration(string):
+    case Genre.Fiction => "fiction"
+    case Genre.History => "history"
+    case Genre.Poetry  => "poetry"
+
   val circle: Json.Record[Shape.Circle, Shape.Circle] = field("radius", double).toRecord.to[Shape.Circle]
 
   val square: Json.Record[Shape.Square, Shape.Square] = field("side", double).toRecord.to[Shape.Square]

@@ -11,6 +11,8 @@ object JsonCirceEncoder extends Encoder[Json, CirceJson]:
     case json: Json.Constant[W, ?]   => ConstantEncoder(JsonPrimitiveCirceEncoder).encode(json.self.self, w)
     case json: Json.Dictionary[W, ?] =>
       CirceJson.fromFields(DictionaryEncoder(this).encode(json.self.self, w))
+    case json: Json.Enumeration[W, ?] =>
+      EnumerationEncoder(JsonPrimitiveCirceEncoder).encode(json.self.self, w)
     case json: Json.Optional[W, ?] =>
       OptionalEncoder(this, empty = CirceJson.Null).encode(json.self.self, w)
     case json: Json.Primitive[W, ?] => JsonPrimitiveCirceEncoder.encode(json, w)

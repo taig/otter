@@ -86,6 +86,12 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
         )
       )
     ,
+    test("Json.Enumeration"):
+      assertTrue(
+        JsonCirceEncoder.encode(json.genre, Genre.Fiction) == CirceJson.fromString("fiction"),
+        JsonCirceEncoder.encode(json.genre, Genre.Poetry) == CirceJson.fromString("poetry")
+      )
+    ,
     test("write only schema"):
       assertTrue(JsonCirceEncoder.encode(json.title, Book("Dune", 412, true)) == CirceJson.fromString("Dune"))
   )

@@ -9,6 +9,10 @@ final case class Isbn(value: String)
 object Isbn:
   given Eq[Isbn] = Eq.fromUniversalEquals
 
+/** Exercises enumerations: a closed set of values written as text. */
+enum Genre:
+  case Fiction, History, Poetry
+
 /** Exercises unions and, through them, nested records. */
 enum Shape:
   case Circle(radius: Double)

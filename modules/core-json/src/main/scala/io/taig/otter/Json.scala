@@ -53,6 +53,14 @@ object Json:
         [w, r] => (json: Json.Dictionary[w, r]) => json.self
       )
 
+  final case class Enumeration[-W, +R](self: Annotation[Self.Enumeration[Json.Primitive, W, R]]) extends Json[W, R]
+
+  object Enumeration
+      extends Wrapper.Enumeration[Json.Enumeration, Json.Primitive](
+        [w, r] => (annotation: Annotation[Self.Enumeration[Json.Primitive, w, r]]) => new Json.Enumeration(annotation),
+        [w, r] => (json: Json.Enumeration[w, r]) => json.self
+      )
+
   final case class Optional[-W, +R](self: Annotation[Self.Optional[Json, W, R]]) extends Json[W, R]
 
   object Optional
@@ -150,15 +158,16 @@ object Json:
   given Profunctor[Json]:
     override def dimap[W0, R0, W, R](self: Json[W0, R0])(f: W => W0)(g: R0 => R): Json[W, R] =
       (self: @unchecked) match
-        case self: Json.Coerce[W0, R0]     => Json.Coerce.profunctor.dimap(self)(f)(g)
-        case self: Json.Collection[W0, R0] => Json.Collection.profunctor.dimap(self)(f)(g)
-        case self: Json.Constant[W0, R0]   => Json.Constant.profunctor.dimap(self)(f)(g)
-        case self: Json.Dictionary[W0, R0] => Json.Dictionary.profunctor.dimap(self)(f)(g)
-        case self: Json.Optional[W0, R0]   => Json.Optional.profunctor.dimap(self)(f)(g)
-        case self: Json.Primitive[W0, R0]  => Json.Primitive.given_Profunctor_Primitive.dimap(self)(f)(g)
-        case self: Json.Record[W0, R0]     => Json.Record.profunctor.dimap(self)(f)(g)
-        case self: Json.Tuple[W0, R0]      => Json.Tuple.profunctor.dimap(self)(f)(g)
-        case self: Json.Union[W0, R0]      => Json.Union.profunctor.dimap(self)(f)(g)
+        case self: Json.Coerce[W0, R0]      => Json.Coerce.profunctor.dimap(self)(f)(g)
+        case self: Json.Collection[W0, R0]  => Json.Collection.profunctor.dimap(self)(f)(g)
+        case self: Json.Constant[W0, R0]    => Json.Constant.profunctor.dimap(self)(f)(g)
+        case self: Json.Dictionary[W0, R0]  => Json.Dictionary.profunctor.dimap(self)(f)(g)
+        case self: Json.Enumeration[W0, R0] => Json.Enumeration.profunctor.dimap(self)(f)(g)
+        case self: Json.Optional[W0, R0]    => Json.Optional.profunctor.dimap(self)(f)(g)
+        case self: Json.Primitive[W0, R0]   => Json.Primitive.given_Profunctor_Primitive.dimap(self)(f)(g)
+        case self: Json.Record[W0, R0]      => Json.Record.profunctor.dimap(self)(f)(g)
+        case self: Json.Tuple[W0, R0]       => Json.Tuple.profunctor.dimap(self)(f)(g)
+        case self: Json.Union[W0, R0]       => Json.Union.profunctor.dimap(self)(f)(g)
 
   given OptionalableOperation[Json, Json.Optional] = OptionalableOperation.derived
 

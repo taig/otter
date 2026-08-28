@@ -103,6 +103,12 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
 
       assertTrue(steps == List(List(Step.Field("bar"), Step.Index(1))))
     ,
+    test("Json.Enumeration"):
+      assertTrue(
+        JsonCirceDecoder.decode(json.genre, CirceJson.fromString("history")) == Genre.History.valid,
+        JsonCirceDecoder.decode(json.genre, CirceJson.fromString("nope")).isInvalid
+      )
+    ,
     test("read only schema"):
       assertTrue(JsonCirceDecoder.decode(json.isbn, CirceJson.fromString("978")) == Isbn("978").valid)
   )

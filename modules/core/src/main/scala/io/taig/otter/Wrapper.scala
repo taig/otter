@@ -5,6 +5,7 @@ import cats.Eval
 import cats.arrow.Profunctor
 import cats.data.Chain
 import cats.data.NonEmptyChain
+import io.taig.enumeration.ext.Mapping
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 import io.taig.validation.Validation
@@ -169,6 +170,16 @@ object Wrapper:
       override def lift[W, R](schema: Reference[G, W, R]): Outer[W, R] = Tuple.this.apply(Self.Tuple.Root(schema))
 
       extension [W, R](fa: Outer[W, R]) override def schemas: Chain[Reference[G, ?, ?]] = node(fa).schemas
+
+  abstract class Enumeration[Outer[-_, +_], G[-_, +_]](
+      wrap: [w, r] => Annotation[Self.Enumeration[G, w, r]] => Outer[w, r],
+      unwrap: [w, r] => Outer[w, r] => Annotation[Self.Enumeration[G, w, r]]
+  ) extends Wrapper[Outer, [w, r] =>> Self.Enumeration[G, w, r]](wrap, unwrap):
+    given operation: EnumerationOperation[Outer, G]:
+      override def lift[A, B](schema: Reference[G, A, A], mapping: Mapping[B, A]): Outer[B, B] =
+        Enumeration.this.apply(Self.Enumeration.Root(schema, mapping))
+
+      extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
   abstract class Coerce[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Coerce[G, w, r]] => Outer[w, r],

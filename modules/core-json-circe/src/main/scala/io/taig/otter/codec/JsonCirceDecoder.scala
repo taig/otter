@@ -23,6 +23,9 @@ object JsonCirceDecoder extends Decoder[Json, CirceJson]:
           .decode(schema.self.self, json)
       case schema: Json.Dictionary[?, R] =>
         obj(json).map(_.toList).andThen(DictionaryDecoder(this).decode(schema.self.self, _))
+      case schema: Json.Enumeration[?, R] =>
+        EnumerationDecoder(JsonPrimitiveCirceDecoder, JsonPrimitiveCirceEncoder, _.toData)
+          .decode(schema.self.self, json)
       case schema: Json.Optional[?, R] =>
         OptionalDecoder(this, empty = _.isNull).decode(schema.self.self, json)
       case schema: Json.Primitive[?, R] => JsonPrimitiveCirceDecoder.decode(schema, json)

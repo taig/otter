@@ -36,6 +36,9 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
     test("enum through a union"):
       check(shape)(roundTrips(json.shape, _))
     ,
+    test("enumeration"):
+      check(Gen.fromIterable(Genre.values.toList))(roundTrips(json.genre, _))
+    ,
     test("recursive schema"):
       check(tree(depth = 3))(roundTrips(json.tree, _))
   )

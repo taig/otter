@@ -54,6 +54,7 @@ lazy val core = module(identifier = Some("core"))
     }.taskValue,
     libraryDependencies ++=
       "io.taig" %% "data-core" % Version.Data ::
+        "io.taig" %% "enumeration-ext-core" % Version.EnumerationExt ::
         "io.taig" %% "validation-core" % Version.Validation ::
         "org.typelevel" %% "cats-core" % Version.Cats ::
         "org.typelevel" %% "cats-parse" % Version.CatsParse ::

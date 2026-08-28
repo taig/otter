@@ -21,6 +21,8 @@ trait JsonComponent
 
   object constant extends ConstantComponent[Json.Constant, Json.Primitive]
 
+  object enumeration extends EnumerationComponent[Json.Enumeration, Json.Primitive]
+
   object coerce extends CoerceComponent[Json.Coerce, Json.Primitive]
 
 object JsonComponent extends JsonComponent
