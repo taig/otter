@@ -22,3 +22,7 @@ object UnionableOperation:
   def derived[F[- _, + _], G[- _, + _]](using G: UnionOperation[G, F]): UnionableOperation[F, G] =
     new UnionableOperation[F, G]:
       extension [W, R](fa: F[W, R]) override def toUnion: G[W, R] = G.lift(Reference.now(fa))
+
+  /** A union is already a union. Lets one `:+` serve both `branch :+ branch` and `union :+ branch`. */
+  def identity[F[- _, + _]]: UnionableOperation[F, F] = new UnionableOperation[F, F]:
+    extension [W, R](fa: F[W, R]) override def toUnion: F[W, R] = fa

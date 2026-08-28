@@ -2,6 +2,7 @@ package io.taig.otter
 
 import cats.arrow.Profunctor
 import io.taig.otter as Self
+import io.taig.otter.operation.*
 
 /** The JSON schema alphabet.
   *
@@ -66,7 +67,8 @@ object Json:
       extends Wrapper.Record[Json.Record, Json.Field](
         [w, r] => (annotation: Annotation[Self.Record[Json.Field, w, r]]) => new Json.Record(annotation),
         [w, r] => (json: Json.Record[w, r]) => json.self
-      )
+      ):
+    given RecordableOperation[Json.Record, Json.Record] = RecordableOperation.identity
 
   final case class Tuple[-W, +R](self: Annotation[Self.Tuple[Json, W, R]]) extends Json[W, R]
 
@@ -82,7 +84,8 @@ object Json:
       extends Wrapper.Union[Json.Union, Json.Branch](
         [w, r] => (annotation: Annotation[Self.Union[Json.Branch, w, r]]) => new Json.Union(annotation),
         [w, r] => (json: Json.Union[w, r]) => json.self
-      )
+      ):
+    given UnionableOperation[Json.Union, Json.Union] = UnionableOperation.identity
 
   sealed abstract class Primitive[-W, +R] extends Json[W, R]
 
@@ -125,7 +128,8 @@ object Json:
       extends Wrapper.Field[Json.Field, Json](
         [w, r] => (annotation: Annotation[Self.Field[Json, w, r]]) => new Json.Field(annotation),
         [w, r] => (json: Json.Field[w, r]) => json.self
-      )
+      ):
+    given RecordableOperation[Json.Field, Json.Record] = RecordableOperation.derived
 
   final case class Branch[-W, +R](self: Annotation[Self.Branch[Json, W, R]])
 
@@ -133,7 +137,8 @@ object Json:
       extends Wrapper.Branch[Json.Branch, Json](
         [w, r] => (annotation: Annotation[Self.Branch[Json, w, r]]) => new Json.Branch(annotation),
         [w, r] => (json: Json.Branch[w, r]) => json.self
-      )
+      ):
+    given UnionableOperation[Json.Branch, Json.Union] = UnionableOperation.derived
 
   given Profunctor[Json]:
     override def dimap[W0, R0, W, R](self: Json[W0, R0])(f: W => W0)(g: R0 => R): Json[W, R] =
@@ -147,3 +152,7 @@ object Json:
         case self: Json.Record[W0, R0]     => Json.Record.profunctor.dimap(self)(f)(g)
         case self: Json.Tuple[W0, R0]      => Json.Tuple.profunctor.dimap(self)(f)(g)
         case self: Json.Union[W0, R0]      => Json.Union.profunctor.dimap(self)(f)(g)
+
+  given OptionalableOperation[Json, Json.Optional] = OptionalableOperation.derived
+
+  given TupleableOperation[Json, Json.Tuple] = TupleableOperation.derived

@@ -24,3 +24,7 @@ object RecordableOperation:
   def derived[F[- _, + _], G[- _, + _]](using G: RecordOperation[G, F]): RecordableOperation[F, G] =
     new RecordableOperation[F, G]:
       extension [W, R](fa: F[W, R]) override def toRecord: G[W, R] = G.lift(Reference.now(fa))
+
+  /** A record is already a record. Lets one `:*` serve both `field :* field` and `record :* field`. */
+  def identity[F[- _, + _]]: RecordableOperation[F, F] = new RecordableOperation[F, F]:
+    extension [W, R](fa: F[W, R]) override def toRecord: F[W, R] = fa

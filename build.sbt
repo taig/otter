@@ -11,7 +11,8 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
       Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" ::
         "-Xmax-inlines" :: "64" :: Nil,
-      name := "otter" + identifier.fold("")("-" + _)
+      name := "otter" + identifier.fold("")("-" + _),
+      testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
     )
 }
 
@@ -59,8 +60,7 @@ lazy val core = module(identifier = Some("core"))
         "org.typelevel" %% "cats-parse" % Version.CatsParse ::
         "dev.zio" %% "zio-test" % Version.Zio % Test ::
         "dev.zio" %% "zio-test-sbt" % Version.Zio % Test ::
-        Nil,
-    testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+        Nil
   )
 
 /** JSON schema definitions */
