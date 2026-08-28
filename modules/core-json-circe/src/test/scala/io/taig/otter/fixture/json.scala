@@ -5,30 +5,30 @@ import io.taig.otter.Void
 import io.taig.otter.component.JsonComponent.*
 
 object json:
-  val book: Json.Record[Book, Book] =
+  val book: Json.Record[Book] =
     (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]
 
-  val genre: Json.Enumeration[Genre, Genre] = enumeration(string):
+  val genre: Json.Enumeration[Genre] = enumeration(string):
     case Genre.Fiction => "fiction"
     case Genre.History => "history"
     case Genre.Poetry  => "poetry"
 
-  val circle: Json.Record[Shape.Circle, Shape.Circle] = field("radius", double).toRecord.to[Shape.Circle]
+  val circle: Json.Record[Shape.Circle] = field("radius", double).toRecord.to[Shape.Circle]
 
-  val square: Json.Record[Shape.Square, Shape.Square] = field("side", double).toRecord.to[Shape.Square]
+  val square: Json.Record[Shape.Square] = field("side", double).toRecord.to[Shape.Square]
 
-  val triangle: Json.Record[Shape.Triangle, Shape.Triangle] =
+  val triangle: Json.Record[Shape.Triangle] =
     (field("base", double) :* field("height", double)).to[Shape.Triangle]
 
   /** Three branches, so the union nests two levels deep. */
-  val shape: Json.Union[Shape, Shape] =
+  val shape: Json.Union[Shape] =
     (branch("circle", circle) :+ branch("square", square) :+ branch("triangle", triangle)).to[Shape]
 
-  lazy val tree: Json.Record[Tree, Tree] =
+  lazy val tree: Json.Record[Tree] =
     (field("value", int) :* field("children", collection.list(tree))).to[Tree]
 
   /** Can be written but not read: there is no way back from a title to a book. */
-  val title: Json.Primitive.Text[Book, Void] = printer("title", _.title)
+  val title: Json.Primitive.Text.Of[Book, Void] = printer("title", _.title)
 
   /** Can be read but not written. */
-  val isbn: Json.Primitive.Text[Void, Isbn] = parser("isbn", value => Right(Isbn(value)))
+  val isbn: Json.Primitive.Text.Of[Void, Isbn] = parser("isbn", value => Right(Isbn(value)))

@@ -14,12 +14,12 @@ import io.taig.validation.Validation
 import io.taig.validation.Violation
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive, CirceJson]:
-  override def decode[R](json: Json.Primitive[Nothing, R], value: CirceJson): Validated[Violations, R] =
+object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Of, CirceJson]:
+  override def decode[R](json: Json.Primitive.Of[Nothing, R], value: CirceJson): Validated[Violations, R] =
     (json: @unchecked) match
-      case json: Json.Primitive.Boolean[?, R] => decode(json.self.self, value)
-      case json: Json.Primitive.Number[?, R]  => decode(json.self.self, value)
-      case json: Json.Primitive.Text[?, R]    => decode(json.self.self, value)
+      case json: Json.Primitive.Boolean.Of[?, R] => decode(json.self.self, value)
+      case json: Json.Primitive.Number.Of[?, R]  => decode(json.self.self, value)
+      case json: Json.Primitive.Text.Of[?, R]    => decode(json.self.self, value)
 
   def decode[R](schema: Primitive[Nothing, R], json: CirceJson): Validated[Violations, R] = (schema: @unchecked) match
     case schema: Primitive.Modify[?, ?, ?, R]         => decode(schema.self, json).map(schema.f)

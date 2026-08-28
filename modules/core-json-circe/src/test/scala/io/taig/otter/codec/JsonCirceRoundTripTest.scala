@@ -7,7 +7,7 @@ import zio.Scope
 import zio.test.*
 
 object JsonCirceRoundTripTest extends ZIOSpecDefault:
-  private def roundTrips[A](schema: Json.Bi[A], value: A): TestResult =
+  private def roundTrips[A](schema: Json[A], value: A): TestResult =
     val encoded = JsonCirceEncoder.encode(schema, value)
     assertTrue(JsonCirceDecoder.decode(schema, encoded) == Validated.valid(value))
 
