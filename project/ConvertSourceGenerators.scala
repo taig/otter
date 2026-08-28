@@ -19,7 +19,7 @@ object ConvertSourceGenerators {
            |      override def to(a: $eithers): B = a match
            |        ${(0 until n).map(i => s"case ${nested(i, "b")} => b").mkString("\n        ")}
            |      override def from(b: B): $eithers =
-           |        mirror.ordinal(b) match
+           |        (mirror.ordinal(b): @unchecked) match
            |          ${(0 until n)
             .map(i => s"case $i => ${nested(i, s"b.asInstanceOf[A${i + 1}]")}")
             .mkString("\n          ")}""".stripMargin
