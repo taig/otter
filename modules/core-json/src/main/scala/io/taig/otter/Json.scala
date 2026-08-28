@@ -174,6 +174,8 @@ object Json:
         ):
       given UnionableOperation[Json.Union.Of, Json.Union.Of] = UnionableOperation.identity
 
+      given AlternableOperation[Json.Union.Of, Json.Union.Of, Json.Branch.Of] = AlternableOperation.union
+
   type Primitive[A] = Json.Primitive.Of[A, A]
 
   object Primitive:
@@ -270,6 +272,8 @@ object Json:
           [w, r] => (json: Json.Branch.Of[w, r]) => json.self
         ):
       given UnionableOperation[Json.Branch.Of, Json.Union.Of] = UnionableOperation.derived
+
+      given AlternableOperation[Json.Branch.Of, Json.Union.Of, Json.Branch.Of] = AlternableOperation.union
 
   given profunctor: Profunctor[Json.Of]:
     override def dimap[W0, R0, W, R](self: Json.Of[W0, R0])(f: W => W0)(g: R0 => R): Json.Of[W, R] =

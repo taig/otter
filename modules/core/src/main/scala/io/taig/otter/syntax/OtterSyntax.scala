@@ -4,7 +4,6 @@ import cats.arrow.Profunctor
 import io.taig.otter.Alt
 import io.taig.otter.Append
 import io.taig.otter.Convert
-import io.taig.otter.Reference
 import io.taig.otter.Zip
 import io.taig.otter.operation.*
 
@@ -23,10 +22,9 @@ trait OtterSyntax:
 
     /** Appends a branch to a union, lifting the receiver into a union first. */
     def :+[G[-_, +_], H[-_, +_], W2, R2](fb: => H[W2, R2])(using
-        U: UnionableOperation[F, G],
-        O: UnionOperation[G, H],
-        A: Alt[G]
-    ): G[Either[W1, W2], Either[R1, R2]] = A.alt(U.toUnion(fa), O.lift(Reference.later(fb)))
+        A: AlternableOperation[F, G, H],
+        L: Alt[G]
+    ): G[Either[W1, W2], Either[R1, R2]] = L.alt(A.lift(fa), A.element(fb))
 
   extension [F[-_, +_], W, R](fa: F[W, R])
     /** Maps a round tripping schema onto a nominal type. */
