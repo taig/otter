@@ -20,11 +20,11 @@ object JsonCoerceCirceDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.N
 
   private def coerce[R](schema: Json.Primitive.Node[Nothing, R], json: CirceJson): CirceJson =
     (schema: @unchecked) match
-      case _: Json.Primitive.Boolean.Of[?, ?] =>
+      case _: Json.Primitive.Boolean.Schema[?, ?] =>
         json.asString.flatMap(_.toBooleanOption).fold(json)(CirceJson.fromBoolean)
-      case _: Json.Primitive.Number.Of[?, ?] =>
+      case _: Json.Primitive.Number.Schema[?, ?] =>
         json.asString.flatMap(value => CirceJson.fromString(value).asString).flatMap(parseNumber).getOrElse(json)
-      case _: Json.Primitive.Text.Of[?, ?] =>
+      case _: Json.Primitive.Text.Schema[?, ?] =>
         json.asNumber
           .map(number => CirceJson.fromString(number.toString))
           .orElse(json.asBoolean.map(value => CirceJson.fromString(value.toString)))

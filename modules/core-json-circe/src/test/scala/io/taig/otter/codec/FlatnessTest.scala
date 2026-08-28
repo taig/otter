@@ -3,6 +3,7 @@ package io.taig.otter.codec
 import io.taig.otter.Json
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.Book
+import io.taig.otter.fixture.Isbn
 import io.taig.otter.fixture.json
 import zio.Scope
 import zio.test.*
@@ -15,15 +16,15 @@ import scala.compiletime.testing.typeChecks
 object FlatnessTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("FlatnessTest")(
     test("a record whose fields are all primitives is flat"):
-      assertTrue(typeChecks("""val schema: Json.Record.Flat[Book] =
+      assertTrue(typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, Book] =
         (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]"""))
     ,
     test("a record holding a record is not flat"):
-      assertTrue(!typeChecks("""val schema: Json.Record.Flat[(Book, Int)] =
+      assertTrue(!typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, (Book, Int)] =
         field("book", json.flatBook) :* field("pages", int)"""))
     ,
     test("a record holding a collection is not flat"):
-      assertTrue(!typeChecks("""val schema: Json.Record.Flat[(List[String], Int)] =
+      assertTrue(!typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, (List[String], Int)] =
         field("tags", collection.list(string)) :* field("pages", int)"""))
     ,
     test("a flat record is still an ordinary schema"):
@@ -34,4 +35,13 @@ object FlatnessTest extends ZIOSpecDefault:
         typeChecks("""JsonCirceEncoder.encode(json.flatBook, Book("a", 1, true))"""),
         typeChecks("""JsonCirceDecoder.decode(json.flatBook, io.circe.Json.Null)""")
       )
+    ,
+    test("a one directional schema can also say what it holds"):
+      assertTrue(
+        typeChecks("""val w: Json.Writer.Of[Json.Primitive.Text.Node, Book] = json.title"""),
+        typeChecks("""val r: Json.Reader.Of[Json.Primitive.Text.Node, Isbn] = json.isbn""")
+      )
+    ,
+    test("a one directional schema is still rejected in the wrong direction"):
+      assertTrue(!typeChecks("""val r: Json.Reader.Of[Json.Primitive.Text.Node, Book] = json.title"""))
   )

@@ -6,28 +6,28 @@ import io.taig.otter.syntax.AllSyntax
 /** The user facing vocabulary for defining JSON schemas.
   *
   * Each component is applied to a node's general form. What a combinator holds is inferred at the call site, so
-  * `field("title", string)` is a `Json.Field.Of[Json.Primitive.Text.Of, String, String]` and carries the fact that its
-  * child is a text primitive.
+  * `field("title", string)` is a `Json.Field.Of[Json.Primitive.Text.Schema, String, String]` and carries the fact that
+  * its child is a text primitive.
   */
 trait JsonComponent
     extends AllSyntax,
-      PrimitiveComponent.Boolean[Json.Primitive.Boolean.Of],
-      PrimitiveComponent.Number[Json.Primitive.Number.Of],
-      PrimitiveComponent.Text[Json.Primitive.Text.Of],
-      RecordComponent[Json.Record.Of, Json.Field.Of],
-      TupleComponent[Json.Tuple.Of]:
-  object field extends RecordComponent.Field[Json.Field.Of]
+      PrimitiveComponent.Boolean[Json.Primitive.Boolean.Schema],
+      PrimitiveComponent.Number[Json.Primitive.Number.Schema],
+      PrimitiveComponent.Text[Json.Primitive.Text.Schema],
+      RecordComponent[Json.Record.Schema, Json.Field.Schema],
+      TupleComponent[Json.Tuple.Schema]:
+  object field extends RecordComponent.Field[Json.Field.Schema]
 
-  object branch extends BranchComponent[Json.Branch.Of]
+  object branch extends BranchComponent[Json.Branch.Schema]
 
-  object collection extends CollectionComponent[Json.Collection.Of]
+  object collection extends CollectionComponent[Json.Collection.Schema]
 
-  object dictionary extends DictionaryComponent[Json.Dictionary.Of]
+  object dictionary extends DictionaryComponent[Json.Dictionary.Schema]
 
-  object constant extends ConstantComponent[Json.Constant.Of]
+  object constant extends ConstantComponent[Json.Constant.Schema]
 
-  object enumeration extends EnumerationComponent[Json.Enumeration.Of]
+  object enumeration extends EnumerationComponent[Json.Enumeration.Schema]
 
-  object coerce extends CoerceComponent[Json.Coerce.Of]
+  object coerce extends CoerceComponent[Json.Coerce.Schema]
 
 object JsonComponent extends JsonComponent

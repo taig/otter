@@ -17,9 +17,9 @@ import io.taig.validation.Violation
 object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Node, CirceJson]:
   override def decode[R](json: Json.Primitive.Node[Nothing, R], value: CirceJson): Validated[Violations, R] =
     (json: @unchecked) match
-      case json: Json.Primitive.Boolean.Of[?, R] => decode(json.self.self, value)
-      case json: Json.Primitive.Number.Of[?, R]  => decode(json.self.self, value)
-      case json: Json.Primitive.Text.Of[?, R]    => decode(json.self.self, value)
+      case json: Json.Primitive.Boolean.Schema[?, R] => decode(json.self.self, value)
+      case json: Json.Primitive.Number.Schema[?, R]  => decode(json.self.self, value)
+      case json: Json.Primitive.Text.Schema[?, R]    => decode(json.self.self, value)
 
   def decode[R](schema: Primitive[Nothing, R], json: CirceJson): Validated[Violations, R] = (schema: @unchecked) match
     case schema: Primitive.Modify[?, ?, ?, R]         => decode(schema.self, json).map(schema.f)
