@@ -1,3 +1,0 @@
-package io.taig.otter.component
-
-trait IronPrimitiveComponent extends IronPrimitiveNumberComponent, IronPrimitiveTextComponent
