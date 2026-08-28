@@ -11,7 +11,7 @@ type Append[A, B] = A match
       case Unit => A
       case _    => STuple.Append[A, B]
   case Unit => B
-  case _ =>
+  case _    =>
     B match
       case Unit => A
       case _    => A *: B *: EmptyTuple
@@ -23,7 +23,7 @@ object Append:
     * suffices instead of one per direction.
     */
   @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-  inline def apply[F[- _, + _] <: Matchable, W1, R1, W2, R2](fa: F[W1, R1], fb: F[W2, R2])(using
+  inline def apply[F[-_, +_] <: Matchable, W1, R1, W2, R2](fa: F[W1, R1], fb: F[W2, R2])(using
       P: Profunctor[F],
       Z: Zip[F]
   ): F[Append[W1, W2], Append[R1, R2]] =

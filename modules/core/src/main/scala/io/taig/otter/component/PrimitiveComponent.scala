@@ -11,10 +11,10 @@ import java.math.BigInteger as JBigInteger
 import scala.Boolean as SBoolean
 
 object PrimitiveComponent:
-  trait Boolean[F[- _, + _]](using F: PrimitiveOperation.Boolean[F]):
+  trait Boolean[F[-_, +_]](using F: PrimitiveOperation.Boolean[F]):
     val boolean: F[SBoolean, SBoolean] = F.boolean
 
-  trait Number[F[- _, + _]](using F: PrimitiveOperation.Number[F]):
+  trait Number[F[-_, +_]](using F: PrimitiveOperation.Number[F]):
     def jBigDecimal(validation: Validation[Constraint.Primitive.Number, JBigDecimal]): F[JBigDecimal, JBigDecimal] =
       F.bigDecimal(validation)
 
@@ -55,7 +55,7 @@ object PrimitiveComponent:
 
     val long: F[Long, Long] = long(Validation.valid)
 
-  trait Text[F[- _, + _]](using F: PrimitiveOperation.Text[F]):
+  trait Text[F[-_, +_]](using F: PrimitiveOperation.Text[F]):
     def string(validation: Validation[Constraint.Primitive.Text, String]): F[String, String] = F.string(validation)
 
     val string: F[String, String] = string(Validation.valid)

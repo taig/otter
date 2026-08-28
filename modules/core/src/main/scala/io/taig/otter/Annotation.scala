@@ -24,7 +24,7 @@ object Annotation:
         (self.metadata, metadata => self.copy(metadata = metadata))
 
   /** Lifts a schema node's [[Profunctor]] through the annotation. */
-  given profunctor: [F[- _, + _]] => (F: Profunctor[F]) => Profunctor[[w, r] =>> Annotation[F[w, r]]]:
+  given profunctor: [F[-_, +_]] => (F: Profunctor[F]) => Profunctor[[w, r] =>> Annotation[F[w, r]]]:
     override def dimap[W0, R0, W, R](
         fab: Annotation[F[W0, R0]]
     )(f: W => W0)(g: R0 => R): Annotation[F[W, R]] = fab.map(F.dimap(_)(f)(g))

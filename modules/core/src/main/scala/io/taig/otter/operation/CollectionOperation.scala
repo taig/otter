@@ -6,7 +6,7 @@ import io.taig.otter.Reference
 import io.taig.validation.Validation
 
 /** Constructs the collection type `F` over element schemas of type `G`. */
-trait CollectionOperation[F[- _, + _], G[- _, + _]]:
+trait CollectionOperation[F[-_, +_], G[-_, +_]]:
   def chained[W, R](
       schema: Reference[G, W, R],
       validation: Validation[Constraint.Collection, Chain[R]]
@@ -25,4 +25,4 @@ trait CollectionOperation[F[- _, + _], G[- _, + _]]:
   extension [W, R](fa: F[W, R]) def schema: Reference[G, ?, ?]
 
 object CollectionOperation:
-  inline def apply[F[- _, + _], G[- _, + _]](using self: CollectionOperation[F, G]): CollectionOperation[F, G] = self
+  inline def apply[F[-_, +_], G[-_, +_]](using self: CollectionOperation[F, G]): CollectionOperation[F, G] = self

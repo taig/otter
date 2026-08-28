@@ -1,6 +1,5 @@
 import sbtcrossproject.CrossProject
 
-
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
   val platforms = List(JVMPlatform) ++ (if (jvmOnly) Nil else List(JSPlatform))
   CrossProject(identifier.getOrElse("root"), file(identifier.fold(".")("modules/" + _)))(platforms *)

@@ -11,7 +11,7 @@ import io.taig.otter.collectFirstWithRemainders
 import io.taig.validation.Violation
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-final class FieldDecoder[F[- _, + _], T](decoder: Decoder[F, T])
+final class FieldDecoder[F[-_, +_], T](decoder: Decoder[F, T])
     extends Decoder.Remaining[[w, r] =>> Field[F, w, r], Chain[(String, T)]]:
   override def decodeRemaining[R](
       field: Field[F, Nothing, R],

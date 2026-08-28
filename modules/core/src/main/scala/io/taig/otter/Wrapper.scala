@@ -24,7 +24,7 @@ import scala.collection.immutable.SortedMap
   * `Json.Record` is distinct from `Json.Collection`. Without this bundle every one of those wrappers would have to
   * restate the same instance for every type class it supports.
   */
-abstract class Wrapper[Outer[- _, + _], Inner[- _, + _]](
+abstract class Wrapper[Outer[-_, +_], Inner[-_, +_]](
     wrap: [w, r] => Annotation[Inner[w, r]] => Outer[w, r],
     unwrap: [w, r] => Outer[w, r] => Annotation[Inner[w, r]]
 ):
@@ -55,7 +55,7 @@ abstract class Wrapper[Outer[- _, + _], Inner[- _, + _]](
     ): Outer[Either[W1, W2], Either[R1, R2]] = wrap(Annotation(A.alt(unwrap(left).self, unwrap(right).self)))
 
 object Wrapper:
-  abstract class Field[Outer[- _, + _], G[- _, + _]](
+  abstract class Field[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Field[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Field[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Field[G, w, r]](wrap, unwrap):
@@ -71,7 +71,7 @@ object Wrapper:
           Field.this.apply(Self.Field.Default(node(fa), Eval.later(default)))
         override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Record[Outer[- _, + _], G[- _, + _]](
+  abstract class Record[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Record[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Record[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Record[G, w, r]](wrap, unwrap):
@@ -83,7 +83,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def fields: Chain[Reference[G, ?, ?]] = node(fa).fields
 
-  abstract class Branch[Outer[- _, + _], G[- _, + _]](
+  abstract class Branch[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Branch[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Branch[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Branch[G, w, r]](wrap, unwrap):
@@ -95,7 +95,7 @@ object Wrapper:
         override def name: String = node(fa).name
         override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Union[Outer[- _, + _], G[- _, + _]](
+  abstract class Union[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Union[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Union[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Union[G, w, r]](wrap, unwrap):
@@ -105,7 +105,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def branches: NonEmptyChain[Reference[G, ?, ?]] = node(fa).branches
 
-  abstract class Collection[Outer[- _, + _], G[- _, + _]](
+  abstract class Collection[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Collection[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Collection[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Collection[G, w, r]](wrap, unwrap):
@@ -127,7 +127,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Dictionary[Outer[- _, + _], G[- _, + _]](
+  abstract class Dictionary[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Dictionary[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Dictionary[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Dictionary[G, w, r]](wrap, unwrap):
@@ -146,7 +146,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Optional[Outer[- _, + _], G[- _, + _]](
+  abstract class Optional[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Optional[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Optional[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Optional[G, w, r]](wrap, unwrap):
@@ -159,7 +159,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Tuple[Outer[- _, + _], G[- _, + _]](
+  abstract class Tuple[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Tuple[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Tuple[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Tuple[G, w, r]](wrap, unwrap):
@@ -170,7 +170,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def schemas: Chain[Reference[G, ?, ?]] = node(fa).schemas
 
-  abstract class Coerce[Outer[- _, + _], G[- _, + _]](
+  abstract class Coerce[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Coerce[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Coerce[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Coerce[G, w, r]](wrap, unwrap):
@@ -179,7 +179,7 @@ object Wrapper:
 
       extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
-  abstract class Constant[Outer[- _, + _], G[- _, + _]](
+  abstract class Constant[Outer[-_, +_], G[-_, +_]](
       wrap: [w, r] => Annotation[Self.Constant[G, w, r]] => Outer[w, r],
       unwrap: [w, r] => Outer[w, r] => Annotation[Self.Constant[G, w, r]]
   ) extends Wrapper[Outer, [w, r] =>> Self.Constant[G, w, r]](wrap, unwrap):
@@ -190,14 +190,14 @@ object Wrapper:
       extension [W, R](fa: Outer[W, R]) override def schema: Reference[G, ?, ?] = node(fa).schema
 
   object Primitive:
-    abstract class Boolean[Outer[- _, + _]](
+    abstract class Boolean[Outer[-_, +_]](
         wrap: [w, r] => Annotation[Self.Primitive.Boolean[w, r]] => Outer[w, r],
         unwrap: [w, r] => Outer[w, r] => Annotation[Self.Primitive.Boolean[w, r]]
     ) extends Wrapper[Outer, Self.Primitive.Boolean](wrap, unwrap):
       given operation: PrimitiveOperation.Boolean[Outer]:
         override def boolean: Outer[SBoolean, SBoolean] = Boolean.this.apply(Self.Primitive.Boolean.Root)
 
-    abstract class Number[Outer[- _, + _]](
+    abstract class Number[Outer[-_, +_]](
         wrap: [w, r] => Annotation[Self.Primitive.Number[w, r]] => Outer[w, r],
         unwrap: [w, r] => Outer[w, r] => Annotation[Self.Primitive.Number[w, r]]
     ) extends Wrapper[Outer, Self.Primitive.Number](wrap, unwrap):
@@ -223,7 +223,7 @@ object Wrapper:
         override def long(validation: Validation[Constraint.Primitive.Number, SLong]): Outer[SLong, SLong] =
           Number.this.apply(Self.Primitive.Number.Long(validation))
 
-    abstract class Text[Outer[- _, + _]](
+    abstract class Text[Outer[-_, +_]](
         wrap: [w, r] => Annotation[Self.Primitive.Text[w, r]] => Outer[w, r],
         unwrap: [w, r] => Outer[w, r] => Annotation[Self.Primitive.Text[w, r]]
     ) extends Wrapper[Outer, Self.Primitive.Text](wrap, unwrap):

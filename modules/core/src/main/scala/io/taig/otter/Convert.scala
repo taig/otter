@@ -23,14 +23,12 @@ object Convert extends ConvertInstances:
     override def from(b: A): A = b
 
   given product1: [A, B <: Product]
-    => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple })
-    => Convert[A, B]:
+    => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple }) => Convert[A, B]:
     override def to(a: A): B = mirror.fromProduct(a *: EmptyTuple)
     override def from(b: B): A = STuple.fromProductTyped(b).head
 
   given productN: [A <: STuple, B <: Product]
-    => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A })
-    => Convert[A, B]:
+    => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A }) => Convert[A, B]:
     override def to(a: A): B = mirror.fromProduct(a)
     override def from(b: B): A = STuple.fromProductTyped(b)
 

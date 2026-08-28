@@ -49,8 +49,7 @@ object Primitive:
     final case class Float(validation: Validation[Constraint.Primitive.Number, SFloat])
         extends Primitive.Number[SFloat, SFloat]
 
-    final case class Int(validation: Validation[Constraint.Primitive.Number, SInt])
-        extends Primitive.Number[SInt, SInt]
+    final case class Int(validation: Validation[Constraint.Primitive.Number, SInt]) extends Primitive.Number[SInt, SInt]
 
     final case class Long(validation: Validation[Constraint.Primitive.Number, SLong])
         extends Primitive.Number[SLong, SLong]

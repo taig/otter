@@ -70,13 +70,18 @@ object Json:
       ):
     given RecordableOperation[Json.Record, Json.Record] = RecordableOperation.identity
 
+    given AppendableOperation[Json.Record, Json.Record, Json.Field] = AppendableOperation.record
+
   final case class Tuple[-W, +R](self: Annotation[Self.Tuple[Json, W, R]]) extends Json[W, R]
 
   object Tuple
       extends Wrapper.Tuple[Json.Tuple, Json](
         [w, r] => (annotation: Annotation[Self.Tuple[Json, w, r]]) => new Json.Tuple(annotation),
         [w, r] => (json: Json.Tuple[w, r]) => json.self
-      )
+      ):
+    given TupleableOperation[Json.Tuple, Json.Tuple] = TupleableOperation.identity
+
+    given AppendableOperation[Json.Tuple, Json.Tuple, Json] = AppendableOperation.tuple
 
   final case class Union[-W, +R](self: Annotation[Self.Union[Json.Branch, W, R]]) extends Json[W, R]
 
@@ -130,6 +135,8 @@ object Json:
         [w, r] => (json: Json.Field[w, r]) => json.self
       ):
     given RecordableOperation[Json.Field, Json.Record] = RecordableOperation.derived
+
+    given AppendableOperation[Json.Field, Json.Record, Json.Field] = AppendableOperation.record
 
   final case class Branch[-W, +R](self: Annotation[Self.Branch[Json, W, R]])
 

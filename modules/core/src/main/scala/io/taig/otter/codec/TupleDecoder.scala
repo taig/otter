@@ -9,7 +9,7 @@ import io.taig.validation.Comparison
 import io.taig.validation.Violation
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-final class TupleDecoder[F[- _, + _], T](decoder: Decoder[F, T], empty: T => Boolean)
+final class TupleDecoder[F[-_, +_], T](decoder: Decoder[F, T], empty: T => Boolean)
     extends Decoder[[w, r] =>> Tuple[F, w, r], Vector[T]]:
   override def decode[R](schema: Tuple[F, Nothing, R], values: Vector[T]): Validated[Violations, R] =
     val expected = schema.schemas.length

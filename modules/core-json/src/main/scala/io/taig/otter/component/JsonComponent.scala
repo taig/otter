@@ -23,5 +23,4 @@ trait JsonComponent
 
   object coerce extends CoerceComponent[Json.Coerce, Json.Primitive]
 
-
 object JsonComponent extends JsonComponent

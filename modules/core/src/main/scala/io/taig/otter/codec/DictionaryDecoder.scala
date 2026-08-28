@@ -10,7 +10,7 @@ import io.taig.validation.Validation
 import scala.collection.immutable.SortedMap
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-final class DictionaryDecoder[F[- _, + _], T](decoder: Decoder[F, T])
+final class DictionaryDecoder[F[-_, +_], T](decoder: Decoder[F, T])
     extends Decoder[[w, r] =>> Dictionary[F, w, r], List[(String, T)]]:
   override def decode[R](
       schema: Dictionary[F, Nothing, R],

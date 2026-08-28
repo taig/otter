@@ -9,16 +9,17 @@ import io.taig.otter.Violations
 import io.taig.validation.Validation
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-final class CollectionDecoder[F[- _, + _], T](decoder: Decoder[F, T])
+final class CollectionDecoder[F[-_, +_], T](decoder: Decoder[F, T])
     extends Decoder[[w, r] =>> Collection[F, w, r], Seq[T]]:
-  override def decode[R](schema: Collection[F, Nothing, R], values: Seq[T]): Validated[Violations, R] = (schema: @unchecked) match
-    case schema: Collection.Chained[F, ?, ?] =>
-      elements(schema.reference.value, values, schema.validation)(Chain.fromSeq).map(_.asInstanceOf[R])
-    case schema: Collection.Indexed[F, ?, ?] =>
-      elements(schema.reference.value, values, schema.validation)(_.toVector).map(_.asInstanceOf[R])
-    case schema: Collection.Linked[F, ?, ?] =>
-      elements(schema.reference.value, values, schema.validation)(_.toList).map(_.asInstanceOf[R])
-    case schema: Collection.Modify[F, ?, ?, ?, R] => decode(schema.self, values).map(schema.f)
+  override def decode[R](schema: Collection[F, Nothing, R], values: Seq[T]): Validated[Violations, R] =
+    (schema: @unchecked) match
+      case schema: Collection.Chained[F, ?, ?] =>
+        elements(schema.reference.value, values, schema.validation)(Chain.fromSeq).map(_.asInstanceOf[R])
+      case schema: Collection.Indexed[F, ?, ?] =>
+        elements(schema.reference.value, values, schema.validation)(_.toVector).map(_.asInstanceOf[R])
+      case schema: Collection.Linked[F, ?, ?] =>
+        elements(schema.reference.value, values, schema.validation)(_.toList).map(_.asInstanceOf[R])
+      case schema: Collection.Modify[F, ?, ?, ?, R] => decode(schema.self, values).map(schema.f)
 
   private def elements[R, C](
       schema: F[Nothing, R],

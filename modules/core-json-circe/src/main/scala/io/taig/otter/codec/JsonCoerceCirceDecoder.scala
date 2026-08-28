@@ -14,7 +14,7 @@ object JsonCoerceCirceDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive, 
   override def decode[R](schema: Coerce[Json.Primitive, Nothing, R], json: CirceJson): Validated[Violations, R] =
     (schema: @unchecked) match
       case schema: Coerce.Modify[Json.Primitive, ?, ?, ?, R] => decode(schema.self, json).map(schema.f)
-      case schema: Coerce.Root[Json.Primitive, ?, R] =>
+      case schema: Coerce.Root[Json.Primitive, ?, R]         =>
         val primitive = schema.reference.value
         JsonPrimitiveCirceDecoder.decode(primitive, coerce(primitive, json))
 

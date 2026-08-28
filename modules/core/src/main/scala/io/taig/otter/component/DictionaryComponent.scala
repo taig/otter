@@ -7,7 +7,7 @@ import io.taig.validation.Validation
 
 import scala.collection.immutable.SortedMap
 
-trait DictionaryComponent[F[- _, + _], G[- _, + _]](using F: DictionaryOperation[F, G]):
+trait DictionaryComponent[F[-_, +_], G[-_, +_]](using F: DictionaryOperation[F, G]):
   def map[W, R](
       schema: => G[W, R],
       validation: Validation[Constraint.Object, SortedMap[String, R]]

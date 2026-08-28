@@ -3,7 +3,7 @@ package io.taig.otter.codec
 import io.taig.otter.Collection
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-final class CollectionEncoder[F[- _, + _], T](encoder: Encoder[F, T])
+final class CollectionEncoder[F[-_, +_], T](encoder: Encoder[F, T])
     extends Encoder[[w, r] =>> Collection[F, w, r], Seq[T]]:
   override def encode[W](schema: Collection[F, W, Any], w: W): Seq[T] = (schema: @unchecked) match
     case schema: Collection.Chained[F, w0, ?] =>

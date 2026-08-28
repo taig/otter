@@ -6,7 +6,7 @@ import io.taig.otter.Reference
 import io.taig.otter.operation.CollectionOperation
 import io.taig.validation.Validation
 
-trait CollectionComponent[F[- _, + _], G[- _, + _]](using F: CollectionOperation[F, G]):
+trait CollectionComponent[F[-_, +_], G[-_, +_]](using F: CollectionOperation[F, G]):
   def chain[W, R](schema: => G[W, R], validation: Validation[Constraint.Collection, Chain[R]]): F[Chain[W], Chain[R]] =
     F.chained(Reference.later(schema), validation)
 
