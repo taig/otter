@@ -10,17 +10,16 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
       Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" ::
         "-Xmax-inlines" :: "64" :: Nil,
-      name := "otter" + identifier.fold("")("-" + _),
-      testFrameworks += new TestFramework("zio.test.sbt.ZTestFramework")
+      name := "otter" + identifier.fold("")("-" + _)
     )
 }
 
 inThisBuild(
   Def.settings(
-    developers := List(Developer("taig", "Niklas Klein", "mail@taig.io", url("https://taig.io/"))),
+    developers := List(Developer("taig", "Niklas Klein", "mail@taig.io", uri("https://taig.io/"))),
     dynverVTagPrefix := false,
-    homepage := Some(url("https://github.com/taig/otter/")),
-    licenses := List("MIT" -> url("https://raw.githubusercontent.com/taig/otter/main/LICENSE")),
+    homepage := Some(uri("https://github.com/taig/otter/")),
+    licenses := List("MIT" -> uri("https://raw.githubusercontent.com/taig/otter/main/LICENSE")),
     organization := "io.taig",
     scalaVersion := Version.Scala3,
     versionScheme := Some("early-semver")
@@ -47,11 +46,6 @@ lazy val root = module(identifier = None, jvmOnly = true)
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
   .settings(
-    Compile / sourceGenerators += Def.task {
-      val file = (Compile / sourceManaged).value / "ConvertInstances.scala"
-      IO.write(file, ConvertSourceGenerators.sumInstances(organization.value + ".otter"))
-      Seq(file)
-    }.taskValue,
     libraryDependencies ++=
       "io.taig" %% "data-core" % Version.Data ::
         "io.taig" %% "enumeration-ext-core" % Version.EnumerationExt ::

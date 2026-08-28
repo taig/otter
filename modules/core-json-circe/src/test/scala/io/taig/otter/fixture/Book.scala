@@ -17,6 +17,7 @@ enum Genre:
 enum Shape:
   case Circle(radius: Double)
   case Square(side: Double)
+  case Triangle(base: Double, height: Double)
 
 /** Exercises `Reference` laziness: the schema refers to itself. */
 final case class Tree(value: Int, children: List[Tree])

@@ -90,7 +90,9 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
     test("Json.Union: enum"):
       assertTrue(
         JsonCirceDecoder.decode(json.shape, CirceJson.obj("radius" := 1.5)) == Shape.Circle(1.5).valid,
-        JsonCirceDecoder.decode(json.shape, CirceJson.obj("side" := 2.0)) == Shape.Square(2.0).valid
+        JsonCirceDecoder.decode(json.shape, CirceJson.obj("side" := 2.0)) == Shape.Square(2.0).valid,
+        JsonCirceDecoder.decode(json.shape, CirceJson.obj("base" := 3.0, "height" := 4.0)) ==
+          Shape.Triangle(3.0, 4.0).valid
       )
     ,
     test("violations carry the path to the failure"):

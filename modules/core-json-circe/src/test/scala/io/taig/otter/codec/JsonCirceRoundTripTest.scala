@@ -19,7 +19,11 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
     yield Book(title, pages, read)
 
   private val shape: Gen[Any, Shape] =
-    Gen.oneOf(Gen.double.map(Shape.Circle.apply), Gen.double.map(Shape.Square.apply))
+    Gen.oneOf(
+      Gen.double.map(Shape.Circle.apply),
+      Gen.double.map(Shape.Square.apply),
+      Gen.double.zip(Gen.double).map(Shape.Triangle.apply)
+    )
 
   private def tree(depth: Int): Gen[Any, Tree] =
     if depth <= 0 then Gen.int.map(Tree(_, Nil))

@@ -17,7 +17,12 @@ object json:
 
   val square: Json.Record[Shape.Square, Shape.Square] = field("side", double).toRecord.to[Shape.Square]
 
-  val shape: Json.Union[Shape, Shape] = (branch("circle", circle) :+ branch("square", square)).to[Shape]
+  val triangle: Json.Record[Shape.Triangle, Shape.Triangle] =
+    (field("base", double) :* field("height", double)).to[Shape.Triangle]
+
+  /** Three branches, so the union nests two levels deep. */
+  val shape: Json.Union[Shape, Shape] =
+    (branch("circle", circle) :+ branch("square", square) :+ branch("triangle", triangle)).to[Shape]
 
   lazy val tree: Json.Record[Tree, Tree] =
     (field("value", int) :* field("children", collection.list(tree))).to[Tree]

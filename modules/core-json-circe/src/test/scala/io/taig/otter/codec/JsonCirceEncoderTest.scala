@@ -71,7 +71,9 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
     test("Json.Union: enum"):
       assertTrue(
         JsonCirceEncoder.encode(json.shape, Shape.Circle(1.5)) == CirceJson.obj("radius" := 1.5),
-        JsonCirceEncoder.encode(json.shape, Shape.Square(2.0)) == CirceJson.obj("side" := 2.0)
+        JsonCirceEncoder.encode(json.shape, Shape.Square(2.0)) == CirceJson.obj("side" := 2.0),
+        JsonCirceEncoder.encode(json.shape, Shape.Triangle(3.0, 4.0)) ==
+          CirceJson.obj("base" := 3.0, "height" := 4.0)
       )
     ,
     test("recursive schema"):
