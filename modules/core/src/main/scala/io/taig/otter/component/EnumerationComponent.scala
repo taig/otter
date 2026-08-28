@@ -6,9 +6,12 @@ import io.taig.enumeration.ext.Mapping
 import io.taig.otter.Reference
 import io.taig.otter.operation.EnumerationOperation
 
-trait EnumerationComponent[F[-_, +_], G[-_, +_]](using F: EnumerationOperation[F, G]):
-  def apply[A, B](schema: => G[A, A], mapping: Mapping[B, A]): F[B, B] =
-    F.lift(Reference.later(schema), mapping)
+trait EnumerationComponent[F[_[-_, +_], -_, +_]]:
+  def apply[S[-_, +_], A, B](schema: => S[A, A], mapping: Mapping[B, A])(using
+      F: EnumerationOperation[[w, r] =>> F[S, w, r], S]
+  ): F[S, B, B] = F.lift(Reference.later(schema), mapping)
 
-  def apply[A: Order, B](schema: => G[A, A])(f: B => A)(using EnumerationValues.Aux[B, B]): F[B, B] =
-    apply(schema, Mapping.enumeration(f))
+  def apply[S[-_, +_], A: Order, B](schema: => S[A, A])(f: B => A)(using
+      EnumerationValues.Aux[B, B],
+      EnumerationOperation[[w, r] =>> F[S, w, r], S]
+  ): F[S, B, B] = apply(schema, Mapping.enumeration(f))

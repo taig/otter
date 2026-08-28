@@ -2,6 +2,6 @@ package io.taig.otter.component
 
 import io.taig.otter.operation.TupleOperation
 
-trait TupleComponent[F[-_, +_], G[-_, +_]](using F: TupleOperation[F, G]):
-  /** The empty tuple. */
-  val TNil: F[Unit, Unit] = F.empty
+trait TupleComponent[F[_[-_, +_], -_, +_]]:
+  /** The empty tuple. It holds nothing, so its `S` is the bottom constructor and widens to any other. */
+  def TNil(using F: TupleOperation[[w, r] =>> F[Nothing, w, r], Nothing]): F[Nothing, Unit, Unit] = F.empty

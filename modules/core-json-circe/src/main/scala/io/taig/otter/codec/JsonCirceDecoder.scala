@@ -12,30 +12,30 @@ import io.taig.otter.Violations
 import io.taig.otter.typeOf
 import io.taig.validation.Violation
 
-object JsonCirceDecoder extends Decoder[Json.Of, CirceJson]:
-  override def decode[R](schema: Json.Of[Nothing, R], json: CirceJson): Validated[Violations, R] =
+object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
+  override def decode[R](schema: Json.Node[Nothing, R], json: CirceJson): Validated[Violations, R] =
     (schema: @unchecked) match
-      case schema: Json.Coerce.Of[?, R]     => JsonCoerceCirceDecoder.decode(schema.self.self, json)
-      case schema: Json.Collection.Of[?, R] =>
+      case schema: Json.Coerce.Node[?, R]     => JsonCoerceCirceDecoder.decode(schema.self.self, json)
+      case schema: Json.Collection.Node[?, R] =>
         array(json).andThen(CollectionDecoder(this).decode(schema.self.self, _))
-      case schema: Json.Constant.Of[?, R] =>
+      case schema: Json.Constant.Node[?, R] =>
         ConstantDecoder(JsonPrimitiveCirceDecoder, JsonPrimitiveCirceEncoder, _.toData)
           .decode(schema.self.self, json)
-      case schema: Json.Dictionary.Of[?, R] =>
+      case schema: Json.Dictionary.Node[?, R] =>
         obj(json).map(_.toList).andThen(DictionaryDecoder(this).decode(schema.self.self, _))
-      case schema: Json.Enumeration.Of[?, R] =>
+      case schema: Json.Enumeration.Node[?, R] =>
         EnumerationDecoder(JsonPrimitiveCirceDecoder, JsonPrimitiveCirceEncoder, _.toData)
           .decode(schema.self.self, json)
-      case schema: Json.Optional.Of[?, R] =>
+      case schema: Json.Optional.Node[?, R] =>
         OptionalDecoder(this, empty = _.isNull).decode(schema.self.self, json)
-      case schema: Json.Primitive.Of[?, R] => JsonPrimitiveCirceDecoder.decode(schema, json)
-      case schema: Json.Record.Of[?, R]    =>
+      case schema: Json.Primitive.Node[?, R] => JsonPrimitiveCirceDecoder.decode(schema, json)
+      case schema: Json.Record.Node[?, R]    =>
         obj(json)
           .map(values => Chain.fromSeq(values.toList))
           .andThen(RecordDecoder(JsonFieldCirceDecoder).decode(schema.self.self, _))
-      case schema: Json.Tuple.Of[?, R] =>
+      case schema: Json.Tuple.Node[?, R] =>
         array(json).andThen(values => TupleDecoder(this, empty = _.isNull).decode(schema.self.self, values.toVector))
-      case schema: Json.Union.Of[?, R] => UnionDecoder(JsonBranchCirceDecoder).decode(schema.self.self, json)
+      case schema: Json.Union.Node[?, R] => UnionDecoder(JsonBranchCirceDecoder).decode(schema.self.self, json)
 
   private def mismatch(name: String, json: CirceJson): Violations =
     Violations(Violation(constraint = Constraint.Generic.Type(name), actual = typeOf(json).asData, hint = none))

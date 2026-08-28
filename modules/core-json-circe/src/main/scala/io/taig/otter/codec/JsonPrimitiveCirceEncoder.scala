@@ -8,8 +8,8 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive.Of, CirceJson]:
-  override def encode[W](json: Json.Primitive.Of[W, Any], w: W): CirceJson = (json: @unchecked) match
+object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive.Node, CirceJson]:
+  override def encode[W](json: Json.Primitive.Node[W, Any], w: W): CirceJson = (json: @unchecked) match
     case json: Json.Primitive.Boolean.Of[W, ?] => encode(json.self.self, w)
     case json: Json.Primitive.Number.Of[W, ?]  => encode(json.self.self, w)
     case json: Json.Primitive.Text.Of[W, ?]    => encode(json.self.self, w)

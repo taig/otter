@@ -7,17 +7,23 @@ import io.taig.validation.Validation
 
 import scala.collection.immutable.SortedMap
 
-trait DictionaryComponent[F[-_, +_], G[-_, +_]](using F: DictionaryOperation[F, G]):
-  def map[W, R](
-      schema: => G[W, R],
+trait DictionaryComponent[F[_[-_, +_], -_, +_]]:
+  def map[S[-_, +_], W, R](
+      schema: => S[W, R],
       validation: Validation[Constraint.Object, SortedMap[String, R]]
-  ): F[SortedMap[String, W], SortedMap[String, R]] = F.hashed(Reference.later(schema), validation)
+  )(using F: DictionaryOperation[[w, r] =>> F[S, w, r], S]): F[S, SortedMap[String, W], SortedMap[String, R]] =
+    F.hashed(Reference.later(schema), validation)
 
-  def map[W, R](schema: => G[W, R]): F[SortedMap[String, W], SortedMap[String, R]] = map(schema, Validation.valid)
+  def map[S[-_, +_], W, R](schema: => S[W, R])(using
+      DictionaryOperation[[w, r] =>> F[S, w, r], S]
+  ): F[S, SortedMap[String, W], SortedMap[String, R]] = map(schema, Validation.valid)
 
-  def list[W, R](
-      schema: => G[W, R],
+  def list[S[-_, +_], W, R](
+      schema: => S[W, R],
       validation: Validation[Constraint.Object, List[(String, R)]]
-  ): F[List[(String, W)], List[(String, R)]] = F.linked(Reference.later(schema), validation)
+  )(using F: DictionaryOperation[[w, r] =>> F[S, w, r], S]): F[S, List[(String, W)], List[(String, R)]] =
+    F.linked(Reference.later(schema), validation)
 
-  def list[W, R](schema: => G[W, R]): F[List[(String, W)], List[(String, R)]] = list(schema, Validation.valid)
+  def list[S[-_, +_], W, R](schema: => S[W, R])(using
+      DictionaryOperation[[w, r] =>> F[S, w, r], S]
+  ): F[S, List[(String, W)], List[(String, R)]] = list(schema, Validation.valid)

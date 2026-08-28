@@ -10,15 +10,15 @@ import io.taig.otter.Violations
   * accepted where one is expected, and a boolean or number is accepted where a string is expected.
   */
 @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-object JsonCoerceCirceDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.Of, w, r], CirceJson]:
-  override def decode[R](schema: Coerce[Json.Primitive.Of, Nothing, R], json: CirceJson): Validated[Violations, R] =
+object JsonCoerceCirceDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.Node, w, r], CirceJson]:
+  override def decode[R](schema: Coerce[Json.Primitive.Node, Nothing, R], json: CirceJson): Validated[Violations, R] =
     (schema: @unchecked) match
-      case schema: Coerce.Modify[Json.Primitive.Of, ?, ?, ?, R] => decode(schema.self, json).map(schema.f)
-      case schema: Coerce.Root[Json.Primitive.Of, ?, R]         =>
+      case schema: Coerce.Modify[Json.Primitive.Node, ?, ?, ?, R] => decode(schema.self, json).map(schema.f)
+      case schema: Coerce.Root[Json.Primitive.Node, ?, R]         =>
         val primitive = schema.reference.value
         JsonPrimitiveCirceDecoder.decode(primitive, coerce(primitive, json))
 
-  private def coerce[R](schema: Json.Primitive.Of[Nothing, R], json: CirceJson): CirceJson =
+  private def coerce[R](schema: Json.Primitive.Node[Nothing, R], json: CirceJson): CirceJson =
     (schema: @unchecked) match
       case _: Json.Primitive.Boolean.Of[?, ?] =>
         json.asString.flatMap(_.toBooleanOption).fold(json)(CirceJson.fromBoolean)

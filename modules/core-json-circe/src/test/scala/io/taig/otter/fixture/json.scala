@@ -26,6 +26,12 @@ object json:
   lazy val tree: Json.Record[Tree] =
     (field("value", int) :* field("children", collection.list(tree))).to[Tree]
 
+  /** The same three fields, ascribed to say that every one of them is a primitive. That is what a flat format can
+    * represent, and it is a compile error to write this down for a schema that nests.
+    */
+  val flatBook: Json.Record.Flat[Book] =
+    (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]
+
   /** Can be written but not read: there is no way back from a title to a book. */
   val title: Json.Primitive.Text.Writer[Book] = printer("title", _.title)
 
