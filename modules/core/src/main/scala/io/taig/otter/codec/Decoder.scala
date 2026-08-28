@@ -4,8 +4,10 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Violations
 
-/** Reads a value described by the schema `F`. Only the read direction of the schema is produced, so a schema whose read
-  * side is [[io.taig.otter.Void]] can never yield a value.
+/** Reads a value described by the schema `F`.
+  *
+  * The schema is demanded as `F[Nothing, R]`, so any schema that reads `R` is accepted and a write only schema, whose
+  * read side is `Any`, can only yield an `Any`.
   */
 trait Decoder[-F[-_, +_], T]:
   self =>

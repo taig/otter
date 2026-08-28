@@ -11,7 +11,7 @@ import scala.Float as SFloat
 import scala.Int as SInt
 import scala.Long as SLong
 
-/** Leaf of a schema. `W` is the type it writes, `R` the type it reads; see [[Void]] for one directional primitives. */
+/** Leaf of a schema. `W` is the type it writes, `R` the type it reads. */
 sealed trait Primitive[-W, +R]
 
 object Primitive:
@@ -68,7 +68,8 @@ object Primitive:
     final case class Root(validation: Validation[Constraint.Primitive.Text, String])
         extends Primitive.Text[String, String]
 
-    /** A named, partial text codec. Either half may be absent by instantiating its type parameter to [[Void]]. */
+    /** A named, partial text codec. Either half may be absent, see [[io.taig.otter.operation.PrimitiveOperation.Text]].
+      */
     final case class Codec[W, R](name: String, parse: String => Either[String, R], print: W => String)
         extends Primitive.Text[W, R]
 

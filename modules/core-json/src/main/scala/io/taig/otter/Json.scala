@@ -6,9 +6,9 @@ import io.taig.otter.operation.*
 
 /** A JSON schema that round trips `A`.
   *
-  * Every node comes in four forms: `Json.Record[A]` round trips, `Json.Record.Writer[A]` only writes,
-  * `Json.Record.Reader[A]` only reads, and `Json.Record.Of[-W, +R]` is the general two parameter form the other three
-  * abbreviate.
+  * Every node comes in four forms: `Json.Record[A]` round trips, `Json.Record.Reader[A]` reads, `Json.Record.Writer[A]`
+  * writes, and `Json.Record.Of[-W, +R]` is the general two parameter form the other three abbreviate. A round tripping
+  * schema is both a reader and a writer.
   */
 type Json[A] = Json.Of[A, A]
 
@@ -20,23 +20,22 @@ object Json:
     */
   sealed abstract class Of[-W, +R]
 
-  /** A schema that only writes `A`.
+  /** A schema that reads `A`, whatever it writes.
     *
-    * Every node carries the same pair, `Json.Record.Writer[A]` and so on. The missing direction is [[Void]], which is
-    * uninhabited but, unlike `Nothing`, not a bottom type, so the compiler rejects handing one of these to the
-    * interpreter for the direction it does not have.
+    * Every node carries the same pair. `Json.Record[A] <: Json.Record.Reader[A]`, so a round tripping schema is
+    * accepted wherever a reader is asked for.
     */
-  type Writer[-A] = Json.Of[A, Void]
+  type Reader[+A] = Json.Of[Nothing, A]
 
-  /** A schema that only reads `A`. */
-  type Reader[+A] = Json.Of[Void, A]
+  /** A schema that writes `A`, whatever it reads. */
+  type Writer[-A] = Json.Of[A, Any]
 
   type Coerce[A] = Json.Coerce.Of[A, A]
 
   object Coerce:
-    type Writer[-A] = Json.Coerce.Of[A, Void]
+    type Reader[+A] = Json.Coerce.Of[Nothing, A]
 
-    type Reader[+A] = Json.Coerce.Of[Void, A]
+    type Writer[-A] = Json.Coerce.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Coerce[Json.Primitive.Of, W, R]]) extends Json.Of[W, R]
 
@@ -49,9 +48,9 @@ object Json:
   type Collection[A] = Json.Collection.Of[A, A]
 
   object Collection:
-    type Writer[-A] = Json.Collection.Of[A, Void]
+    type Reader[+A] = Json.Collection.Of[Nothing, A]
 
-    type Reader[+A] = Json.Collection.Of[Void, A]
+    type Writer[-A] = Json.Collection.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Collection[Json.Of, W, R]]) extends Json.Of[W, R]
 
@@ -64,9 +63,9 @@ object Json:
   type Constant[A] = Json.Constant.Of[A, A]
 
   object Constant:
-    type Writer[-A] = Json.Constant.Of[A, Void]
+    type Reader[+A] = Json.Constant.Of[Nothing, A]
 
-    type Reader[+A] = Json.Constant.Of[Void, A]
+    type Writer[-A] = Json.Constant.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Constant[Json.Primitive.Of, W, R]]) extends Json.Of[W, R]
 
@@ -80,9 +79,9 @@ object Json:
   type Dictionary[A] = Json.Dictionary.Of[A, A]
 
   object Dictionary:
-    type Writer[-A] = Json.Dictionary.Of[A, Void]
+    type Reader[+A] = Json.Dictionary.Of[Nothing, A]
 
-    type Reader[+A] = Json.Dictionary.Of[Void, A]
+    type Writer[-A] = Json.Dictionary.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Dictionary[Json.Of, W, R]]) extends Json.Of[W, R]
 
@@ -95,9 +94,9 @@ object Json:
   type Enumeration[A] = Json.Enumeration.Of[A, A]
 
   object Enumeration:
-    type Writer[-A] = Json.Enumeration.Of[A, Void]
+    type Reader[+A] = Json.Enumeration.Of[Nothing, A]
 
-    type Reader[+A] = Json.Enumeration.Of[Void, A]
+    type Writer[-A] = Json.Enumeration.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Enumeration[Json.Primitive.Of, W, R]]) extends Json.Of[W, R]
 
@@ -111,9 +110,9 @@ object Json:
   type Optional[A] = Json.Optional.Of[A, A]
 
   object Optional:
-    type Writer[-A] = Json.Optional.Of[A, Void]
+    type Reader[+A] = Json.Optional.Of[Nothing, A]
 
-    type Reader[+A] = Json.Optional.Of[Void, A]
+    type Writer[-A] = Json.Optional.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Optional[Json.Of, W, R]]) extends Json.Of[W, R]
 
@@ -126,9 +125,9 @@ object Json:
   type Record[A] = Json.Record.Of[A, A]
 
   object Record:
-    type Writer[-A] = Json.Record.Of[A, Void]
+    type Reader[+A] = Json.Record.Of[Nothing, A]
 
-    type Reader[+A] = Json.Record.Of[Void, A]
+    type Writer[-A] = Json.Record.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Record[Json.Field.Of, W, R]]) extends Json.Of[W, R]
 
@@ -144,9 +143,9 @@ object Json:
   type Tuple[A] = Json.Tuple.Of[A, A]
 
   object Tuple:
-    type Writer[-A] = Json.Tuple.Of[A, Void]
+    type Reader[+A] = Json.Tuple.Of[Nothing, A]
 
-    type Reader[+A] = Json.Tuple.Of[Void, A]
+    type Writer[-A] = Json.Tuple.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Tuple[Json.Of, W, R]]) extends Json.Of[W, R]
 
@@ -162,9 +161,9 @@ object Json:
   type Union[A] = Json.Union.Of[A, A]
 
   object Union:
-    type Writer[-A] = Json.Union.Of[A, Void]
+    type Reader[+A] = Json.Union.Of[Nothing, A]
 
-    type Reader[+A] = Json.Union.Of[Void, A]
+    type Writer[-A] = Json.Union.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Union[Json.Branch.Of, W, R]]) extends Json.Of[W, R]
 
@@ -178,18 +177,18 @@ object Json:
   type Primitive[A] = Json.Primitive.Of[A, A]
 
   object Primitive:
-    type Writer[-A] = Json.Primitive.Of[A, Void]
+    type Reader[+A] = Json.Primitive.Of[Nothing, A]
 
-    type Reader[+A] = Json.Primitive.Of[Void, A]
+    type Writer[-A] = Json.Primitive.Of[A, Any]
 
     sealed abstract class Of[-W, +R] extends Json.Of[W, R]
 
     type Boolean[A] = Json.Primitive.Boolean.Of[A, A]
 
     object Boolean:
-      type Writer[-A] = Json.Primitive.Boolean.Of[A, Void]
+      type Reader[+A] = Json.Primitive.Boolean.Of[Nothing, A]
 
-      type Reader[+A] = Json.Primitive.Boolean.Of[Void, A]
+      type Writer[-A] = Json.Primitive.Boolean.Of[A, Any]
 
       final case class Of[-W, +R](self: Annotation[Self.Primitive.Boolean[W, R]]) extends Json.Primitive.Of[W, R]
 
@@ -203,9 +202,9 @@ object Json:
     type Number[A] = Json.Primitive.Number.Of[A, A]
 
     object Number:
-      type Writer[-A] = Json.Primitive.Number.Of[A, Void]
+      type Reader[+A] = Json.Primitive.Number.Of[Nothing, A]
 
-      type Reader[+A] = Json.Primitive.Number.Of[Void, A]
+      type Writer[-A] = Json.Primitive.Number.Of[A, Any]
 
       final case class Of[-W, +R](self: Annotation[Self.Primitive.Number[W, R]]) extends Json.Primitive.Of[W, R]
 
@@ -218,9 +217,9 @@ object Json:
     type Text[A] = Json.Primitive.Text.Of[A, A]
 
     object Text:
-      type Writer[-A] = Json.Primitive.Text.Of[A, Void]
+      type Reader[+A] = Json.Primitive.Text.Of[Nothing, A]
 
-      type Reader[+A] = Json.Primitive.Text.Of[Void, A]
+      type Writer[-A] = Json.Primitive.Text.Of[A, Any]
 
       final case class Of[-W, +R](self: Annotation[Self.Primitive.Text[W, R]]) extends Json.Primitive.Of[W, R]
 
@@ -241,9 +240,9 @@ object Json:
   type Field[A] = Json.Field.Of[A, A]
 
   object Field:
-    type Writer[-A] = Json.Field.Of[A, Void]
+    type Reader[+A] = Json.Field.Of[Nothing, A]
 
-    type Reader[+A] = Json.Field.Of[Void, A]
+    type Writer[-A] = Json.Field.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Field[Json.Of, W, R]])
 
@@ -259,9 +258,9 @@ object Json:
   type Branch[A] = Json.Branch.Of[A, A]
 
   object Branch:
-    type Writer[-A] = Json.Branch.Of[A, Void]
+    type Reader[+A] = Json.Branch.Of[Nothing, A]
 
-    type Reader[+A] = Json.Branch.Of[Void, A]
+    type Writer[-A] = Json.Branch.Of[A, Any]
 
     final case class Of[-W, +R](self: Annotation[Self.Branch[Json.Of, W, R]])
 

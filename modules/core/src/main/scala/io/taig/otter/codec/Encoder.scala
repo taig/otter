@@ -1,7 +1,9 @@
 package io.taig.otter.codec
 
-/** Writes a value described by the schema `F`. Only the write direction of the schema is consumed, so a schema whose
-  * write side is [[io.taig.otter.Void]] cannot be passed here.
+/** Writes a value described by the schema `F`.
+  *
+  * The schema is demanded as `F[W, Any]`, so any schema that writes `W` is accepted and a read only schema, whose write
+  * side is `Nothing`, admits no value to write.
   */
 trait Encoder[-F[-_, +_], T]:
   self =>

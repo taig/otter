@@ -26,5 +26,10 @@ object PrimitiveOperation:
   trait Text[F[-_, +_]]:
     def string(validation: Validation[Constraint.Primitive.Text, String]): F[String, String]
 
-    /** A named, partial text codec. Instantiate `W` or `R` to [[io.taig.otter.Void]] for a one directional schema. */
+    /** A named, partial text codec.
+      *
+      * Instantiate `W` to `Nothing` for a schema that can only be read, or `R` to `Any` for one that can only be
+      * written. Those are the maximal elements of their slots, so nothing can be encoded through the first and nothing
+      * usable decoded out of the second.
+      */
     def codec[W, R](name: String, parse: String => Either[String, R], print: W => String): F[W, R]
