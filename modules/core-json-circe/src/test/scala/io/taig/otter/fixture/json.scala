@@ -1,7 +1,6 @@
 package io.taig.otter.fixture
 
 import io.taig.otter.Json
-import io.taig.otter.Void
 import io.taig.otter.component.JsonComponent.*
 
 object json:
@@ -28,7 +27,7 @@ object json:
     (field("value", int) :* field("children", collection.list(tree))).to[Tree]
 
   /** Can be written but not read: there is no way back from a title to a book. */
-  val title: Json.Primitive.Text.Of[Book, Void] = printer("title", _.title)
+  val title: Json.Primitive.Text.Writer[Book] = printer("title", _.title)
 
   /** Can be read but not written. */
-  val isbn: Json.Primitive.Text.Of[Void, Isbn] = parser("isbn", value => Right(Isbn(value)))
+  val isbn: Json.Primitive.Text.Reader[Isbn] = parser("isbn", value => Right(Isbn(value)))
