@@ -8,26 +8,24 @@ import io.taig.otter.Constraint
 import io.taig.otter.Violations
 import io.taig.validation.Violation
 
-@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 final class ConstantDecoder[F[-_, +_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
     extends Decoder[[w, r] =>> Constant[F, w, r], T]:
   override def decode[R](schema: Constant[F, Nothing, R], value: T): Validated[Violations, R] =
-    (schema: @unchecked) match
-      case schema: Constant.Modify[F, ?, ?, ?, R] => decode(schema.self, value).map(schema.f)
-      case schema: Constant.Root[F, ?]            =>
+    schema match
+      case Constant.Modify(self, f, _)            => decode(self, value).map(f)
+      case Constant.Root(reference, expected, eq) =>
         decoder
-          .decode(schema.reference.value, value)
+          .decode(reference.value, value)
           .andThen: a =>
             Validated
               .cond(
-                schema.eq.eqv(schema.value.value, a),
+                eq.eqv(expected.value, a),
                 (),
                 Violation(
                   constraint = Constraint.Generic
-                    .Equals(reference = render(encoder.encode(schema.reference.value, schema.value.value))),
+                    .Equals(reference = render(encoder.encode(reference.value, expected.value))),
                   actual = render(value),
                   hint = none
                 )
               )
               .leftMap(Violations.apply)
-          .map(_.asInstanceOf[R])

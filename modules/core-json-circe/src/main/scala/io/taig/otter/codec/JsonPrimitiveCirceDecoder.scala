@@ -13,40 +13,35 @@ import io.taig.otter.typeOf
 import io.taig.validation.Validation
 import io.taig.validation.Violation
 
-@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Node, CirceJson]:
   override def decode[R](json: Json.Primitive.Node[Nothing, R], value: CirceJson): Validated[Violations, R] =
-    (json: @unchecked) match
-      case json: Json.Primitive.Boolean.Schema[?, R] => decode(json.self.self, value)
-      case json: Json.Primitive.Number.Schema[?, R]  => decode(json.self.self, value)
-      case json: Json.Primitive.Text.Schema[?, R]    => decode(json.self.self, value)
+    json match
+      case Json.Primitive.Boolean.Schema(annotation) => decode(annotation.self, value)
+      case Json.Primitive.Number.Schema(annotation)  => decode(annotation.self, value)
+      case Json.Primitive.Text.Schema(annotation)    => decode(annotation.self, value)
 
-  def decode[R](schema: Primitive[Nothing, R], json: CirceJson): Validated[Violations, R] = (schema: @unchecked) match
-    case schema: Primitive.Modify[?, ?, ?, R]         => decode(schema.self, json).map(schema.f)
-    case schema: Primitive.Boolean.Modify[?, ?, ?, R] => decode(schema.self, json).map(schema.f)
-    case Primitive.Boolean.Root                       =>
-      json.asBoolean.toValid(mismatch("boolean", json)).leftMap(Violations.apply).map(_.asInstanceOf[R])
+  def decode[R](schema: Primitive[Nothing, R], json: CirceJson): Validated[Violations, R] = schema match
+    case Primitive.Modify(self, f, _)         => decode(self, json).map(f)
+    case Primitive.Boolean.Modify(self, f, _) => decode(self, json).map(f)
+    case Primitive.Boolean.Root               =>
+      json.asBoolean.toValid(mismatch("boolean", json)).leftMap(Violations.apply)
     case Primitive.Number.BigDecimal(validation) =>
       number("bigDecimal", json, _.toBigDecimal.map(_.bigDecimal), validation)
     case Primitive.Number.BigInteger(validation) =>
       number("bigInteger", json, _.toBigInt.map(_.bigInteger), validation)
-    case Primitive.Number.Double(validation)         => number("double", json, _.toDouble.some, validation)
-    case Primitive.Number.Float(validation)          => number("float", json, _.toFloat.some, validation)
-    case Primitive.Number.Int(validation)            => number("int", json, _.toInt, validation)
-    case Primitive.Number.Long(validation)           => number("long", json, _.toLong, validation)
-    case schema: Primitive.Number.Modify[?, ?, ?, R] => decode(schema.self, json).map(schema.f)
-    case schema: Primitive.Text.Codec[?, R]          =>
+    case Primitive.Number.Double(validation)  => number("double", json, _.toDouble.some, validation)
+    case Primitive.Number.Float(validation)   => number("float", json, _.toFloat.some, validation)
+    case Primitive.Number.Int(validation)     => number("int", json, _.toInt, validation)
+    case Primitive.Number.Long(validation)    => number("long", json, _.toLong, validation)
+    case Primitive.Number.Modify(self, f, _)  => decode(self, json).map(f)
+    case Primitive.Text.Codec(name, parse, _) =>
       text(json).andThen: input =>
-        schema
-          .parse(input)
-          .toValidated
-          .leftMap(error => Violation(Constraint.Generic.Type(schema.name), actual = json.toData, hint = error.some))
+        parse(input).toValidated
+          .leftMap(error => Violation(Constraint.Generic.Type(name), actual = json.toData, hint = error.some))
           .leftMap(Violations.apply)
-    case schema: Primitive.Text.Modify[?, ?, ?, R] => decode(schema.self, json).map(schema.f)
-    case Primitive.Text.Root(validation)           =>
-      text(json)
-        .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
-        .map(_.asInstanceOf[R])
+    case Primitive.Text.Modify(self, f, _) => decode(self, json).map(f)
+    case Primitive.Text.Root(validation)   =>
+      text(json).andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
 
   private def mismatch(name: String, json: CirceJson): Violation[Constraint] =
     Violation(constraint = Constraint.Generic.Type(name), actual = typeOf(json).asData, hint = none)
@@ -54,15 +49,14 @@ object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Node, CirceJson]
   private def text(json: CirceJson): Validated[Violations, String] =
     json.asString.toValid(mismatch("string", json)).leftMap(Violations.apply)
 
-  private def number[A, R](
+  private def number[A](
       name: String,
       json: CirceJson,
       extract: io.circe.JsonNumber => Option[A],
       validation: Validation[Constraint.Primitive.Number, A]
-  ): Validated[Violations, R] =
+  ): Validated[Violations, A] =
     json.asNumber
       .flatMap(extract)
       .toValid(mismatch(name, json))
       .leftMap(Violations.apply)
       .andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
-      .map(_.asInstanceOf[R])

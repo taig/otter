@@ -7,24 +7,23 @@ import io.taig.otter.Primitive
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 
-@SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
 object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive.Node, CirceJson]:
-  override def encode[W](json: Json.Primitive.Node[W, Any], w: W): CirceJson = (json: @unchecked) match
-    case json: Json.Primitive.Boolean.Schema[W, ?] => encode(json.self.self, w)
-    case json: Json.Primitive.Number.Schema[W, ?]  => encode(json.self.self, w)
-    case json: Json.Primitive.Text.Schema[W, ?]    => encode(json.self.self, w)
+  override def encode[W](json: Json.Primitive.Node[W, Any], w: W): CirceJson = json match
+    case Json.Primitive.Boolean.Schema(annotation) => encode(annotation.self, w)
+    case Json.Primitive.Number.Schema(annotation)  => encode(annotation.self, w)
+    case Json.Primitive.Text.Schema(annotation)    => encode(annotation.self, w)
 
-  def encode[W](schema: Primitive[W, Any], w: W): CirceJson = (schema: @unchecked) match
-    case schema: Primitive.Modify[?, ?, W, ?]         => encode(schema.self, schema.g(w))
-    case schema: Primitive.Boolean.Modify[?, ?, W, ?] => encode(schema.self, schema.g(w))
-    case Primitive.Boolean.Root                       => CirceJson.fromBoolean(w.asInstanceOf[Boolean])
-    case Primitive.Number.BigDecimal(_)               => CirceJson.fromBigDecimal(w.asInstanceOf[JBigDecimal])
-    case Primitive.Number.BigInteger(_)               => CirceJson.fromBigInt(w.asInstanceOf[JBigInteger])
-    case Primitive.Number.Double(_)                   => CirceJson.fromDoubleOrString(w.asInstanceOf[Double])
-    case Primitive.Number.Float(_)                    => CirceJson.fromFloatOrString(w.asInstanceOf[Float])
-    case Primitive.Number.Int(_)                      => CirceJson.fromInt(w.asInstanceOf[Int])
-    case Primitive.Number.Long(_)                     => CirceJson.fromLong(w.asInstanceOf[Long])
-    case schema: Primitive.Number.Modify[?, ?, W, ?]  => encode(schema.self, schema.g(w))
-    case schema: Primitive.Text.Codec[W, ?]           => CirceJson.fromString(schema.print(w))
-    case schema: Primitive.Text.Modify[?, ?, W, ?]    => encode(schema.self, schema.g(w))
-    case Primitive.Text.Root(_)                       => CirceJson.fromString(w.asInstanceOf[String])
+  def encode[W](schema: Primitive[W, Any], w: W): CirceJson = schema match
+    case Primitive.Modify(self, _, g)         => encode(self, g(w))
+    case Primitive.Boolean.Modify(self, _, g) => encode(self, g(w))
+    case Primitive.Boolean.Root               => CirceJson.fromBoolean(w)
+    case Primitive.Number.BigDecimal(_)       => CirceJson.fromBigDecimal(w: JBigDecimal)
+    case Primitive.Number.BigInteger(_)       => CirceJson.fromBigInt(w: JBigInteger)
+    case Primitive.Number.Double(_)           => CirceJson.fromDoubleOrString(w)
+    case Primitive.Number.Float(_)            => CirceJson.fromFloatOrString(w)
+    case Primitive.Number.Int(_)              => CirceJson.fromInt(w)
+    case Primitive.Number.Long(_)             => CirceJson.fromLong(w)
+    case Primitive.Number.Modify(self, _, g)  => encode(self, g(w))
+    case Primitive.Text.Codec(_, _, print)    => CirceJson.fromString(print(w))
+    case Primitive.Text.Modify(self, _, g)    => encode(self, g(w))
+    case Primitive.Text.Root(_)               => CirceJson.fromString(w)

@@ -14,7 +14,7 @@ import io.taig.validation.Violation
 
 object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
   override def decode[R](schema: Json.Node[Nothing, R], json: CirceJson): Validated[Violations, R] =
-    (schema: @unchecked) match
+    schema match
       case schema: Json.Coerce.Node[?, R]     => JsonCoerceCirceDecoder.decode(schema.self.self, json)
       case schema: Json.Collection.Node[?, R] =>
         array(json).andThen(CollectionDecoder(this).decode(schema.self.self, _))

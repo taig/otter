@@ -443,7 +443,7 @@ object Json:
     given profunctor: [S[-_, +_]] => Profunctor[[w, r] =>> Json.Primitive.Schema[S, w, r]]:
       override def dimap[W0, R0, W, R](
           self: Json.Primitive.Schema[S, W0, R0]
-      )(f: W => W0)(g: R0 => R): Json.Primitive.Schema[S, W, R] = (self: @unchecked) match
+      )(f: W => W0)(g: R0 => R): Json.Primitive.Schema[S, W, R] = self match
         case self: Json.Primitive.Boolean.Schema[W0, R0] => Json.Primitive.Boolean.Schema.profunctor.dimap(self)(f)(g)
         case self: Json.Primitive.Number.Schema[W0, R0]  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self: Json.Primitive.Text.Schema[W0, R0]    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
@@ -536,7 +536,7 @@ object Json:
 
   given profunctor: [S[-_, +_]] => Profunctor[[w, r] =>> Json.Schema[S, w, r]]:
     override def dimap[W0, R0, W, R](self: Json.Schema[S, W0, R0])(f: W => W0)(g: R0 => R): Json.Schema[S, W, R] =
-      (self: @unchecked) match
+      self match
         case self: Json.Coerce.Schema[S, W0, R0]      => Json.Coerce.Schema.profunctor.dimap(self)(f)(g)
         case self: Json.Collection.Schema[S, W0, R0]  => Json.Collection.Schema.profunctor.dimap(self)(f)(g)
         case self: Json.Constant.Schema[S, W0, R0]    => Json.Constant.Schema.profunctor.dimap(self)(f)(g)

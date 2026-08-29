@@ -4,7 +4,7 @@ import io.circe.Json as CirceJson
 import io.taig.otter.Json
 
 object JsonCirceEncoder extends Encoder[Json.Node, CirceJson]:
-  override def encode[W](json: Json.Node[W, Any], w: W): CirceJson = (json: @unchecked) match
+  override def encode[W](json: Json.Node[W, Any], w: W): CirceJson = json match
     case json: Json.Coerce.Node[W, ?]     => CoerceEncoder(JsonPrimitiveCirceEncoder).encode(json.self.self, w)
     case json: Json.Collection.Node[W, ?] =>
       CirceJson.fromValues(CollectionEncoder(this).encode(json.self.self, w))

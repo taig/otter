@@ -11,18 +11,18 @@ import io.taig.validation.Violation
 final class EnumerationDecoder[F[-_, +_], T](decoder: Decoder[F, T], encoder: Encoder[F, T], render: T => Data)
     extends Decoder[[w, r] =>> Enumeration[F, w, r], T]:
   override def decode[R](schema: Enumeration[F, Nothing, R], value: T): Validated[Violations, R] =
-    (schema: @unchecked) match
-      case schema: Enumeration.Modify[F, ?, ?, ?, R] => decode(schema.self, value).map(schema.f)
-      case schema: Enumeration.Root[F, a, R]         =>
+    schema match
+      case Enumeration.Modify(self, f, _)       => decode(self, value).map(f)
+      case Enumeration.Root(reference, mapping) =>
         decoder
-          .decode(schema.reference.value, value)
+          .decode(reference.value, value)
           .andThen: decoded =>
-            schema.mapping
+            mapping
               .prj(decoded)
               .toValid:
-                val references = schema.mapping.values.toList
-                  .map(schema.mapping.inj)
-                  .map(encoder.encode(schema.reference.value, _))
+                val references = mapping.values.toList
+                  .map(mapping.inj)
+                  .map(encoder.encode(reference.value, _))
                   .map(render)
                 Violation(constraint = Constraint.Generic.OneOf(references), actual = render(value), hint = none)
               .leftMap(Violations.apply)
