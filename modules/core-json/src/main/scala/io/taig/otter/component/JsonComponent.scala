@@ -14,20 +14,20 @@ trait JsonComponent
       PrimitiveComponent.Boolean[Json.Primitive.Boolean.Schema],
       PrimitiveComponent.Number[Json.Primitive.Number.Schema],
       PrimitiveComponent.Text[Json.Primitive.Text.Schema],
-      RecordComponent[Json.Record.Schema, Json.Field.Schema],
-      TupleComponent[Json.Tuple.Schema]:
-  object field extends RecordComponent.Field[Json.Field.Schema]
+      RecordComponent[Json.Node, Json.Record.Schema, Json.Field.Schema],
+      TupleComponent[Json.Node, Json.Tuple.Schema]:
+  object field extends RecordComponent.Field[Json.Node, Json.Field.Schema]
 
-  object branch extends BranchComponent[Json.Branch.Schema]
+  object branch extends BranchComponent[Json.Node, Json.Branch.Schema]
 
-  object collection extends CollectionComponent[Json.Collection.Schema]
+  object collection extends CollectionComponent[Json.Node, Json.Collection.Schema]
 
-  object dictionary extends DictionaryComponent[Json.Dictionary.Schema]
+  object dictionary extends DictionaryComponent[Json.Node, Json.Dictionary.Schema]
 
-  object constant extends ConstantComponent[Json.Constant.Schema]
+  object constant extends ConstantComponent[Json.Primitive.Node, Json.Constant.Schema]
 
-  object enumeration extends EnumerationComponent[Json.Enumeration.Schema]
+  object enumeration extends EnumerationComponent[Json.Primitive.Node, Json.Enumeration.Schema]
 
-  object coerce extends CoerceComponent[Json.Coerce.Schema]
+  object coerce extends CoerceComponent[Json.Primitive.Node, Json.Coerce.Schema]
 
 object JsonComponent extends JsonComponent

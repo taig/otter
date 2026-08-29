@@ -24,10 +24,10 @@ object Json:
     * It is not a witness the DSL maintains by hand: a field of type `Json.Field.Schema[S, W, R]` genuinely holds an
     * `S`.
     */
-  sealed abstract class Schema[+S[-_, +_], -W, +R]
+  sealed abstract class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R]
 
   /** A schema holding `S` and round tripping `A`. `Json[A]` is this with `S` left open. */
-  type Of[S[-_, +_], A] = Json.Schema[S, A, A]
+  type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Schema[S, A, A]
 
   /** The general form, whatever the schema holds. This is what an interpreter that accepts any node is written against:
     * `Decoder[Json.Node, CirceJson]`.
@@ -40,7 +40,7 @@ object Json:
   type Leaf = Nothing
 
   /** The `S` of a node holding both an `S1` and an `S2`, which is what `:*` and `:+` accumulate. */
-  type Or[S1[-_, +_], S2[-_, +_]] = [w, r] =>> S1[w, r] | S2[w, r]
+  type Or[S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]] = [w, r] =>> S1[w, r] | S2[w, r]
 
   /** A schema that reads `A`, whatever it writes.
     *
@@ -51,20 +51,20 @@ object Json:
 
   object Reader:
     /** A reader that additionally says what it holds. */
-    type Of[S[-_, +_], +A] = Json.Schema[S, Nothing, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Schema[S, Nothing, A]
 
   /** A schema that writes `A`, whatever it reads. */
   type Writer[-A] = Json.Writer.Of[Json.Node, A]
 
   object Writer:
     /** A writer that additionally says what it holds. */
-    type Of[S[-_, +_], -A] = Json.Schema[S, A, Any]
+    type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Schema[S, A, Any]
 
   type Coerce[A] = Json.Coerce.Of[Json.Primitive.Node, A]
 
   object Coerce:
     /** A coercion holding `S` and round tripping `A`. `Json.Coerce[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Coerce.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Primitive.Node[w, r], A] = Json.Coerce.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Coerce.Schema[Json.Primitive.Node, w, r]
@@ -72,26 +72,29 @@ object Json:
     type Reader[+A] = Json.Coerce.Reader.Of[Json.Primitive.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Coerce.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], +A] = Json.Coerce.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Coerce.Writer.Of[Json.Primitive.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Coerce.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], -A] = Json.Coerce.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Coerce[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Primitive.Schema[?, w, r], -W, +R](
+        self: Annotation[Self.Coerce[S, W, R]]
+    ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Coerce[Json.Coerce.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Coerce[s, w, r]]) => new Json.Coerce.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Coerce.Schema[s, w, r]) => json.self
+        extends Wrapper.Coerce[Json.Primitive.Node, Json.Coerce.Schema](
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Coerce[s, w, r]]) => new Json.Coerce.Schema(annotation),
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] => (json: Json.Coerce.Schema[s, w, r]) => json.self
         )
 
   type Collection[A] = Json.Collection.Of[Json.Node, A]
 
   object Collection:
     /** A collection holding `S` and round tripping `A`. `Json.Collection[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Collection.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Collection.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Collection.Schema[Json.Node, w, r]
@@ -99,27 +102,28 @@ object Json:
     type Reader[+A] = Json.Collection.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Collection.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Collection.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Collection.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Collection.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Collection.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Collection[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Collection[S, W, R]])
+        extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Collection[Json.Collection.Schema](
-          [s[-_, +_], w, r] =>
+        extends Wrapper.Collection[Json.Node, Json.Collection.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
             (annotation: Annotation[Self.Collection[s, w, r]]) => new Json.Collection.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Collection.Schema[s, w, r]) => json.self
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Collection.Schema[s, w, r]) => json.self
         )
 
   type Constant[A] = Json.Constant.Of[Json.Primitive.Node, A]
 
   object Constant:
     /** A constant holding `S` and round tripping `A`. `Json.Constant[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Constant.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Primitive.Node[w, r], A] = Json.Constant.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Constant.Schema[Json.Primitive.Node, w, r]
@@ -127,26 +131,29 @@ object Json:
     type Reader[+A] = Json.Constant.Reader.Of[Json.Primitive.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Constant.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], +A] = Json.Constant.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Constant.Writer.Of[Json.Primitive.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Constant.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], -A] = Json.Constant.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Constant[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Primitive.Schema[?, w, r], -W, +R](
+        self: Annotation[Self.Constant[S, W, R]]
+    ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Constant[Json.Constant.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Constant[s, w, r]]) => new Json.Constant.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Constant.Schema[s, w, r]) => json.self
+        extends Wrapper.Constant[Json.Primitive.Node, Json.Constant.Schema](
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Constant[s, w, r]]) => new Json.Constant.Schema(annotation),
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] => (json: Json.Constant.Schema[s, w, r]) => json.self
         )
 
   type Dictionary[A] = Json.Dictionary.Of[Json.Node, A]
 
   object Dictionary:
     /** A dictionary holding `S` and round tripping `A`. `Json.Dictionary[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Dictionary.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Dictionary.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Dictionary.Schema[Json.Node, w, r]
@@ -154,27 +161,28 @@ object Json:
     type Reader[+A] = Json.Dictionary.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Dictionary.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Dictionary.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Dictionary.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Dictionary.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Dictionary.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Dictionary[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Dictionary[S, W, R]])
+        extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Dictionary[Json.Dictionary.Schema](
-          [s[-_, +_], w, r] =>
+        extends Wrapper.Dictionary[Json.Node, Json.Dictionary.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
             (annotation: Annotation[Self.Dictionary[s, w, r]]) => new Json.Dictionary.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Dictionary.Schema[s, w, r]) => json.self
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Dictionary.Schema[s, w, r]) => json.self
         )
 
   type Enumeration[A] = Json.Enumeration.Of[Json.Primitive.Node, A]
 
   object Enumeration:
     /** An enumeration holding `S` and round tripping `A`. `Json.Enumeration[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Enumeration.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Primitive.Node[w, r], A] = Json.Enumeration.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Enumeration.Schema[Json.Primitive.Node, w, r]
@@ -182,28 +190,29 @@ object Json:
     type Reader[+A] = Json.Enumeration.Reader.Of[Json.Primitive.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Enumeration.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], +A] = Json.Enumeration.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Enumeration.Writer.Of[Json.Primitive.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Enumeration.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Primitive.Node[w, r], -A] = Json.Enumeration.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Enumeration[S, W, R]])
-        extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Primitive.Schema[?, w, r], -W, +R](
+        self: Annotation[Self.Enumeration[S, W, R]]
+    ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Enumeration[Json.Enumeration.Schema](
-          [s[-_, +_], w, r] =>
+        extends Wrapper.Enumeration[Json.Primitive.Node, Json.Enumeration.Schema](
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] =>
             (annotation: Annotation[Self.Enumeration[s, w, r]]) => new Json.Enumeration.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Enumeration.Schema[s, w, r]) => json.self
+          [s[-w, +r] <: Json.Primitive.Node[w, r], w, r] => (json: Json.Enumeration.Schema[s, w, r]) => json.self
         )
 
   type Optional[A] = Json.Optional.Of[Json.Node, A]
 
   object Optional:
     /** An optional schema holding `S` and round tripping `A`. `Json.Optional[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Optional.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Optional.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Optional.Schema[Json.Node, w, r]
@@ -211,26 +220,28 @@ object Json:
     type Reader[+A] = Json.Optional.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Optional.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Optional.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Optional.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Optional.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Optional.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Optional[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Optional[S, W, R]])
+        extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Optional[Json.Optional.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Optional[s, w, r]]) => new Json.Optional.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Optional.Schema[s, w, r]) => json.self
+        extends Wrapper.Optional[Json.Node, Json.Optional.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Optional[s, w, r]]) => new Json.Optional.Schema(annotation),
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Optional.Schema[s, w, r]) => json.self
         )
 
   type Record[A] = Json.Record.Of[Json.Node, A]
 
   object Record:
     /** A record holding `S` and round tripping `A`. `Json.Record[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Record.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Record.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Record.Schema[Json.Node, w, r]
@@ -238,30 +249,30 @@ object Json:
     type Reader[+A] = Json.Record.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Record.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Record.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Record.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Record.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Record.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
         self: Annotation[Self.Record[[w, r] =>> Json.Field.Schema[S, w, r], W, R]]
     ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Record[Json.Record.Schema, Json.Field.Schema](
-          [s[-_, +_], w, r] =>
+        extends Wrapper.Record[Json.Node, Json.Record.Schema, Json.Field.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
             (annotation: Annotation[Self.Record[[a, b] =>> Json.Field.Schema[s, a, b], w, r]]) =>
               new Json.Record.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Record.Schema[s, w, r]) => json.self
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Record.Schema[s, w, r]) => json.self
         ):
-      given recordable: [S[-_, +_]]
+      given recordable: [S[-w, +r] <: Json.Node[w, r]]
         => RecordableOperation[[w, r] =>> Json.Record.Schema[S, w, r], [w, r] =>> Json.Record.Schema[S, w, r]] =
         RecordableOperation.identity
 
       /** `record :* field`. The result carries both children's `S`, so the union accumulates down the chain. */
-      given appendable: [S1[-_, +_], S2[-_, +_]]
+      given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
             [w, r] =>> Json.Record.Schema[S1, w, r],
             [w, r] =>> Json.Record.Schema[Json.Or[S1, S2], w, r],
@@ -276,7 +287,7 @@ object Json:
 
   object Tuple:
     /** A tuple holding `S` and round tripping `A`. `Json.Tuple[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Tuple.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Tuple.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Tuple.Schema[Json.Node, w, r]
@@ -284,26 +295,28 @@ object Json:
     type Reader[+A] = Json.Tuple.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Tuple.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Tuple.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Tuple.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Tuple.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Tuple.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Tuple[S, W, R]]) extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Tuple[S, W, R]])
+        extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Tuple[Json.Tuple.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Tuple[s, w, r]]) => new Json.Tuple.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Tuple.Schema[s, w, r]) => json.self
+        extends Wrapper.Tuple[Json.Node, Json.Tuple.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Tuple[s, w, r]]) => new Json.Tuple.Schema(annotation),
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Tuple.Schema[s, w, r]) => json.self
         ):
-      given tupleable: [S[-_, +_]]
+      given tupleable: [S[-w, +r] <: Json.Node[w, r]]
         => TupleableOperation[[w, r] =>> Json.Tuple.Schema[S, w, r], [w, r] =>> Json.Tuple.Schema[S, w, r]] =
         TupleableOperation.identity
 
       /** `tuple :* schema`. */
-      given appendable: [S1[-_, +_], S2[-_, +_]]
+      given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
             [w, r] =>> Json.Tuple.Schema[S1, w, r],
             [w, r] =>> Json.Tuple.Schema[Json.Or[S1, S2], w, r],
@@ -318,7 +331,7 @@ object Json:
 
   object Union:
     /** A union holding `S` and round tripping `A`. `Json.Union[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Union.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Union.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Union.Schema[Json.Node, w, r]
@@ -326,30 +339,30 @@ object Json:
     type Reader[+A] = Json.Union.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Union.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Union.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Union.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Union.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Union.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
         self: Annotation[Self.Union[[w, r] =>> Json.Branch.Schema[S, w, r], W, R]]
     ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Union[Json.Union.Schema, Json.Branch.Schema](
-          [s[-_, +_], w, r] =>
+        extends Wrapper.Union[Json.Node, Json.Union.Schema, Json.Branch.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
             (annotation: Annotation[Self.Union[[a, b] =>> Json.Branch.Schema[s, a, b], w, r]]) =>
               new Json.Union.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Union.Schema[s, w, r]) => json.self
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Union.Schema[s, w, r]) => json.self
         ):
-      given unionable: [S[-_, +_]]
+      given unionable: [S[-w, +r] <: Json.Node[w, r]]
         => UnionableOperation[[w, r] =>> Json.Union.Schema[S, w, r], [w, r] =>> Json.Union.Schema[S, w, r]] =
         UnionableOperation.identity
 
       /** `union :+ branch`. */
-      given alternable: [S1[-_, +_], S2[-_, +_]]
+      given alternable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AlternableOperation[
             [w, r] =>> Json.Union.Schema[S1, w, r],
             [w, r] =>> Json.Union.Schema[Json.Or[S1, S2], w, r],
@@ -364,7 +377,7 @@ object Json:
 
   object Primitive:
     /** A primitive holding `S` and round tripping `A`. `Json.Primitive[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Primitive.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Primitive.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Primitive.Schema[Json.Node, w, r]
@@ -372,14 +385,14 @@ object Json:
     type Reader[+A] = Json.Primitive.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Primitive.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Primitive.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Primitive.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Primitive.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Primitive.Schema[S, A, Any]
 
-    sealed abstract class Schema[+S[-_, +_], -W, +R] extends Json.Schema[S, W, R]
+    sealed abstract class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R] extends Json.Schema[S, W, R]
 
     type Boolean[A] = Json.Primitive.Boolean.Schema[A, A]
 
@@ -440,19 +453,19 @@ object Json:
             [w, r] => (json: Json.Primitive.Text.Schema[w, r]) => json.self
           )
 
-    given profunctor: [S[-_, +_]] => Profunctor[[w, r] =>> Json.Primitive.Schema[S, w, r]]:
+    given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[[w, r] =>> Json.Primitive.Schema[S, w, r]]:
       override def dimap[W0, R0, W, R](
           self: Json.Primitive.Schema[S, W0, R0]
       )(f: W => W0)(g: R0 => R): Json.Primitive.Schema[S, W, R] = self match
-        case self: Json.Primitive.Boolean.Schema[W0, R0] => Json.Primitive.Boolean.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Primitive.Number.Schema[W0, R0]  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Primitive.Text.Schema[W0, R0]    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Boolean.Schema(_) => Json.Primitive.Boolean.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Number.Schema(_)  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Text.Schema(_)    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
   type Field[A] = Json.Field.Of[Json.Node, A]
 
   object Field:
     /** A field holding `S` and round tripping `A`. `Json.Field[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Field.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Field.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Field.Schema[Json.Node, w, r]
@@ -460,26 +473,27 @@ object Json:
     type Reader[+A] = Json.Field.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Field.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Field.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Field.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Field.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Field.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Field[S, W, R]])
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Field[S, W, R]])
 
     object Schema
-        extends Wrapper.Field[Json.Field.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Field[s, w, r]]) => new Json.Field.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Field.Schema[s, w, r]) => json.self
+        extends Wrapper.Field[Json.Node, Json.Field.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Field[s, w, r]]) => new Json.Field.Schema(annotation),
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Field.Schema[s, w, r]) => json.self
         ):
-      given recordable: [S[-_, +_]]
+      given recordable: [S[-w, +r] <: Json.Node[w, r]]
         => RecordableOperation[[w, r] =>> Json.Field.Schema[S, w, r], [w, r] =>> Json.Record.Schema[S, w, r]] =
         RecordableOperation.derived
 
       /** `field :* field`. */
-      given appendable: [S1[-_, +_], S2[-_, +_]]
+      given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AppendableOperation[
             [w, r] =>> Json.Field.Schema[S1, w, r],
             [w, r] =>> Json.Record.Schema[Json.Or[S1, S2], w, r],
@@ -495,7 +509,7 @@ object Json:
 
   object Branch:
     /** A branch holding `S` and round tripping `A`. `Json.Branch[A]` is this with `S` left open. */
-    type Of[S[-_, +_], A] = Json.Branch.Schema[S, A, A]
+    type Of[S[-w, +r] <: Json.Node[w, r], A] = Json.Branch.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
     type Node = [w, r] =>> Json.Branch.Schema[Json.Node, w, r]
@@ -503,26 +517,27 @@ object Json:
     type Reader[+A] = Json.Branch.Reader.Of[Json.Node, A]
 
     object Reader:
-      type Of[S[-_, +_], +A] = Json.Branch.Schema[S, Nothing, A]
+      type Of[S[-w, +r] <: Json.Node[w, r], +A] = Json.Branch.Schema[S, Nothing, A]
 
     type Writer[-A] = Json.Branch.Writer.Of[Json.Node, A]
 
     object Writer:
-      type Of[S[-_, +_], -A] = Json.Branch.Schema[S, A, Any]
+      type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Branch.Schema[S, A, Any]
 
-    final case class Schema[+S[-_, +_], -W, +R](self: Annotation[Self.Branch[S, W, R]])
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Branch[S, W, R]])
 
     object Schema
-        extends Wrapper.Branch[Json.Branch.Schema](
-          [s[-_, +_], w, r] => (annotation: Annotation[Self.Branch[s, w, r]]) => new Json.Branch.Schema(annotation),
-          [s[-_, +_], w, r] => (json: Json.Branch.Schema[s, w, r]) => json.self
+        extends Wrapper.Branch[Json.Node, Json.Branch.Schema](
+          [s[-w, +r] <: Json.Node[w, r], w, r] =>
+            (annotation: Annotation[Self.Branch[s, w, r]]) => new Json.Branch.Schema(annotation),
+          [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Branch.Schema[s, w, r]) => json.self
         ):
-      given unionable: [S[-_, +_]]
+      given unionable: [S[-w, +r] <: Json.Node[w, r]]
         => UnionableOperation[[w, r] =>> Json.Branch.Schema[S, w, r], [w, r] =>> Json.Union.Schema[S, w, r]] =
         UnionableOperation.derived
 
       /** `branch :+ branch`. */
-      given alternable: [S1[-_, +_], S2[-_, +_]]
+      given alternable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
           => AlternableOperation[
             [w, r] =>> Json.Branch.Schema[S1, w, r],
             [w, r] =>> Json.Union.Schema[Json.Or[S1, S2], w, r],
@@ -534,19 +549,21 @@ object Json:
         override def element[W, R](fb: => Json.Branch.Schema[S2, W, R]): Json.Union.Schema[Json.Or[S1, S2], W, R] =
           Json.Union.Schema.apply[Json.Or[S1, S2], W, R](Self.Union.Root(Reference.later(fb)))
 
-  given profunctor: [S[-_, +_]] => Profunctor[[w, r] =>> Json.Schema[S, w, r]]:
+  given profunctor: [S[-w, +r] <: Json.Node[w, r]] => Profunctor[[w, r] =>> Json.Schema[S, w, r]]:
     override def dimap[W0, R0, W, R](self: Json.Schema[S, W0, R0])(f: W => W0)(g: R0 => R): Json.Schema[S, W, R] =
       self match
-        case self: Json.Coerce.Schema[S, W0, R0]      => Json.Coerce.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Collection.Schema[S, W0, R0]  => Json.Collection.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Constant.Schema[S, W0, R0]    => Json.Constant.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Dictionary.Schema[S, W0, R0]  => Json.Dictionary.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Enumeration.Schema[S, W0, R0] => Json.Enumeration.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Optional.Schema[S, W0, R0]    => Json.Optional.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Primitive.Schema[S, W0, R0]   => Json.Primitive.profunctor.dimap(self)(f)(g)
-        case self: Json.Record.Schema[S, W0, R0]      => Json.Record.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Tuple.Schema[S, W0, R0]       => Json.Tuple.Schema.profunctor.dimap(self)(f)(g)
-        case self: Json.Union.Schema[S, W0, R0]       => Json.Union.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Coerce.Schema(_)            => Json.Coerce.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Collection.Schema(_)        => Json.Collection.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Constant.Schema(_)          => Json.Constant.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Dictionary.Schema(_)        => Json.Dictionary.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Enumeration.Schema(_)       => Json.Enumeration.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Optional.Schema(_)          => Json.Optional.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Boolean.Schema(_) => Json.Primitive.Boolean.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Number.Schema(_)  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Primitive.Text.Schema(_)    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Record.Schema(_)            => Json.Record.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Tuple.Schema(_)             => Json.Tuple.Schema.profunctor.dimap(self)(f)(g)
+        case self @ Json.Union.Schema(_)             => Json.Union.Schema.profunctor.dimap(self)(f)(g)
 
   /** `S` is bounded to a schema so that these do not also offer `.optional` and `.toTuple` on a field or a branch,
     * which are not schemas and already carry their own `optional`.
