@@ -64,9 +64,27 @@ object PrimitiveComponent:
     def codec[A](name: String, parse: String => Either[String, A], print: A => String): F[A, A] =
       F.format(name, parse, print)
 
-    /** A schema that can only be read. The print half is total: no value of type `Nothing` can reach it. */
-    def parser[A](name: String, parse: String => Either[String, A]): F[Nothing, A] =
-      F.format(name, parse, identity[Nothing])
+    /** Text parsed on the way in and written back verbatim on the way out.
+      *
+      * The write side is the wire text itself, which is what the node genuinely does: `print` is `identity[String]`, so
+      * encoding a `String` yields that `String`. It is not the read side's inverse, and a schema built on this does not
+      * round trip -- ascribe it as a reader where only the read side is meant to be reachable.
+      */
+    def parser[A](name: String, parse: String => Either[String, A]): F[String, A] =
+      F.format(name, parse, identity[String])
+
+    /** Text brought into a normal form on the way in and written back verbatim on the way out.
+      *
+      * [[parser]] at `String` with a parse that cannot fail. `decode(encode(a))` is `a` for every value already in
+      * normal form, which is every value that leaves a decoder, so this composes into a record that keeps both
+      * directions. `encode(decode(document))` is not `document`, which is the point: a test writes the raw text and the
+      * read side normalises it.
+      *
+      * Prefer this to `string.map(f)`, which describes the same wire behaviour and discards the write side. Spell the
+      * result out as `Text.Schema[String, String]` rather than the round tripping `Text[String]` alias: the two
+      * `String`s are not the same `String`.
+      */
+    def normalized(name: String, f: String => String): F[String, String] = parser(name, f(_).asRight)
 
     /** A schema that can only be written. */
     def printer[A](name: String, print: A => String): F[A, Any] =

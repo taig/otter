@@ -29,6 +29,11 @@ trait OtterSyntax:
   extension [F[-_, +_], W, R](fa: F[W, R])
     /** Maps the read side. What the schema writes is forgotten rather than broken, so the result is a reader: mapping
       * one side of a round trip leaves something that no longer round trips, and the type has to say so.
+      *
+      * Forgetting is only the honest answer when `f` loses what the write side would need. A normalisation -- a trim, a
+      * case fold -- does not: the wire text is still writable, and
+      * [[io.taig.otter.component.PrimitiveComponent.Text.normalized]] keeps it. Reach for that first, and for
+      * [[io.taig.otter.component.PrimitiveComponent.Text.codec]] whenever a print function exists at all.
       */
     def map[B](f: R => B)(using P: Profunctor[F]): F[Nothing, B] = P.rmap(fa)(f)
 

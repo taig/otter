@@ -49,3 +49,14 @@ object json:
 
   /** Can be read but not written. */
   val isbn: Json.Primitive.Text.Reader[Isbn] = parser("isbn", value => Right(Isbn(value)))
+
+  /** Normalised on the way in, written back verbatim.
+    *
+    * Spelled out rather than given the round tripping `Json.Primitive.Text[String]` alias, because the two `String`s
+    * are not the same one: the write side is the raw wire text, the read side is its normal form.
+    */
+  val trimmed: Json.Primitive.Text.Schema[String, String] = normalized("trimmed", _.trim)
+
+  /** A record holding a normalised field still writes. Spelled out for the same reason [[trimmed]] is. */
+  val trimmedNote: Json.Record.Schema[Json.Node, Note, Note] =
+    (field("title", trimmed) :* field("tag", int).optional).to
