@@ -41,7 +41,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreJson, coreJsonCirce)
+  .aggregate(core, coreCsv, coreCsvFs2Data, coreJson, coreJsonCirce)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -70,3 +70,12 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")
+
+/** CSV schema definitions */
+lazy val coreCsv = module(identifier = Some("core-csv"))
+  .dependsOn(core % "compile->compile;test->test")
+
+/** CSV codecs for fs2-data */
+lazy val coreCsvFs2Data = module(identifier = Some("core-csv-fs2-data"))
+  .settings(libraryDependencies += "org.gnieh" %% "fs2-data-csv" % Version.Fs2Data)
+  .dependsOn(coreCsv % "compile->compile;test->test")

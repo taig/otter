@@ -4,8 +4,12 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 
 ## Development workflow
 
-Modules: `core`, `core-json`, `core-json-circe`. Each cross builds to the JVM and Scala.js;
-the Scala.js project ids carry a `JS` suffix (`core-json-circeJS`).
+Modules: `core`, `core-json`, `core-json-circe`, `core-csv`, `core-csv-fs2-data`. Each cross
+builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
+(`core-json-circeJS`).
+
+`core-json`/`core-json-circe` and `core-csv`/`core-csv-fs2-data` are the same pair twice: a
+module defining a format's alphabet, and a module interpreting it into a library's data model.
 
 ### Fast loop
 
