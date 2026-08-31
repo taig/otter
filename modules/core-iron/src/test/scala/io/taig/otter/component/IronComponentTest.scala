@@ -1,9 +1,12 @@
 package io.taig.otter.component
 
+import cats.Eq
+import cats.arrow.Profunctor
 import cats.data.Chain
 import cats.syntax.all.*
 import io.github.iltotore.iron.*
 import io.github.iltotore.iron.constraint.all.*
+import io.taig.data.Encoder
 import io.taig.otter.Collection
 import io.taig.otter.Constraint
 import io.taig.otter.Primitive
@@ -12,11 +15,14 @@ import io.taig.otter.operation.CollectionOperation
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.validation.Comparison
 import io.taig.validation.Validation
+import io.taig.validation.operation.Count
+import io.taig.validation.operation.Matches
 import zio.Scope
 import zio.test.*
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.regex.Pattern
 
 object IronComponentTest extends ZIOSpecDefault:
   /** The bare AST is a format too, and the only one `core` offers. */
@@ -76,10 +82,30 @@ object IronComponentTest extends ZIOSpecDefault:
 
   private val string: Primitive.Text[String, String] = Primitive.Text.Root(Validation.valid)
 
+  /** A text carried as something other than a `String`, standing in for the `CIString` `core-case-insensitive` brings.
+    * Three instances is all the derivation asks of a carrier, and the constructor is the shape
+    * [[IronComponent.Text.text]] takes.
+    */
+  final case class Name(value: String)
+
+  private given Count[Name]:
+    extension (self: Name) override def count: Long = self.value.length
+
+  private given Matches[Name] = Matches[String].contramap(_.value)
+
+  private given Encoder[Name] = Encoder[String].contramap(_.value)
+
+  private def name(validation: Validation[Constraint.Primitive.Text, Name]): Primitive.Text[Name, Name] =
+    Profunctor[Primitive.Text].dimap(Primitive.Text.Root(validation.contramap(Name.apply)))((_: Name).value)(Name.apply)
+
   /** The refined type is what a caller gets, which is why every schema below is ascribed rather than inferred: the
     * ascription is the assertion, and it either compiles or it does not.
     */
-  private def check[S, A](
+  /** Constraints are compared through `Eq` rather than `==`, because
+    * [[io.taig.validation.Constraint.Primitive.Text.Matches]] wraps a `java.util.regex.Pattern`, which has no
+    * structural `equals`.
+    */
+  private def check[S: Eq, A](
       validation: Option[Validation[S, A]],
       constraints: List[S],
       accepted: A,
@@ -87,7 +113,7 @@ object IronComponentTest extends ZIOSpecDefault:
   ): TestResult = validation match
     case Some(validation) =>
       assertTrue(
-        validation.constraints.toList == constraints,
+        validation.constraints.toList === constraints,
         validation.validate(accepted).isEmpty,
         validation.validate(rejected).isDefined
       )
@@ -121,6 +147,12 @@ object IronComponentTest extends ZIOSpecDefault:
     schema match
       case Primitive.Text.Root(validation) => validation.some
       case _                               => none
+
+  /** The carrier's conversion is a real `Modify`, unlike the refinement, so this reaches through exactly one. */
+  private def carried(schema: Primitive.Text[Nothing, Name]): Option[Validation[Constraint.Primitive.Text, String]] =
+    schema match
+      case Primitive.Text.Modify(Primitive.Text.Root(validation), _, _) => validation.some
+      case _                                                            => none
 
   private def chained(
       schema: Collection[Primitive.Text, Nothing, Chain[String]]
@@ -208,6 +240,31 @@ object IronComponentTest extends ZIOSpecDefault:
         textMinimum(1L, exclusive = false) :: textMaximum(3L, exclusive = false) :: Nil,
         accepted = "abc",
         rejected = ""
+      )
+    ,
+    test("a pattern derives, which only a text constraint can express"):
+      val schema: Primitive.Text[String :| Match["[a-z]+"], String :| Match["[a-z]+"]] =
+        refined.string[Match["[a-z]+"]]
+      check(
+        text(schema),
+        Constraint.Primitive.Text.Matches(Pattern.compile("[a-z]+")) :: Nil,
+        accepted = "abc",
+        rejected = "A1"
+      )
+    ,
+    /** The carrier is inferred from the constructor, which is the whole point of taking one. */
+    test("a carrier that is not String refines through its constructor"):
+      val schema: Primitive.Text[Name :| MinLength[2], Name :| MinLength[2]] = refined.text[MinLength[2]](name)
+      check(carried(schema), textMinimum(2L, exclusive = false) :: Nil, accepted = "ab", rejected = "a")
+    ,
+    test("a carrier carries a pattern too, through its own Matches and Encoder"):
+      val schema: Primitive.Text[Name :| Match["[a-z]+"], Name :| Match["[a-z]+"]] =
+        refined.text[Match["[a-z]+"]](name)
+      check(
+        carried(schema),
+        Constraint.Primitive.Text.Matches(Pattern.compile("[a-z]+")) :: Nil,
+        accepted = "abc",
+        rejected = "A1"
       )
     ,
     test("chain carries the derived size bounds"):

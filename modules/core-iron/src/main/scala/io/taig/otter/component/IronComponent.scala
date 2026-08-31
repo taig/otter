@@ -6,6 +6,7 @@ import io.taig.otter.Constraint
 import io.taig.otter.Reference
 import io.taig.otter.operation.CollectionOperation
 import io.taig.otter.operation.PrimitiveOperation
+import io.taig.validation.Validation
 import io.taig.validation.iron.DerivedValidation
 
 /** The iron vocabulary: a schema whose type carries the constraint its validation checks.
@@ -56,14 +57,29 @@ object IronComponent:
     def long[A](using validation: DerivedValidation[Constraint.Primitive.Number, Long, A]): F[Long :| A, Long :| A] =
       F.long(validation).asInstanceOf[F[Long :| A, Long :| A]]
 
-  /** [[string]] alone, because [[io.taig.validation.iron.DerivedValidation]] derives a text constraint against `String`
-    * and nothing else. A named conversion carried as text stays with [[PrimitiveComponent.Text.codec]].
+  /** [[text]] takes the constructor rather than naming the carrier, so a text carried as something other than a
+    * `String` -- a `CIString`, a wrapper of your own -- refines without this module having to know the type. Anything
+    * of the shape `Validation => F[B, B]` fits, [[string]] being that constructor at `String`:
+    *
+    * ```scala
+    * json.refined.text[Match[Email.Pattern] & MaxLength[64]](json.ciString)
+    * ```
+    *
+    * The derivation asks the carrier for a `Count`, and a pattern constraint asks it for a `Matches` and an `Encoder`.
+    * `io.taig.validation.cistring` carries all three for `CIString`.
     */
   trait Text[F[-_, +_]](using F: PrimitiveOperation.Text[F]):
-    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    def string[A](using
-        validation: DerivedValidation[Constraint.Primitive.Text, String, A]
-    ): F[String :| A, String :| A] = F.string(validation).asInstanceOf[F[String :| A, String :| A]]
+    final class text[A]:
+      @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+      def apply[B](schema: Validation[Constraint.Primitive.Text, B] => F[B, B])(using
+          validation: DerivedValidation[Constraint.Primitive.Text, B, A]
+      ): F[B :| A, B :| A] = schema(validation).asInstanceOf[F[B :| A, B :| A]]
+
+    object text:
+      def apply[A]: text[A] = new text[A]
+
+    def string[A](using DerivedValidation[Constraint.Primitive.Text, String, A]): F[String :| A, String :| A] =
+      text[A](F.string)
 
   /** Each member is applied twice, because the constraint is given where the element schema is inferred and Scala has
     * no partial type application: `list[MaxLength[10]](json.string)` is `list.apply[MaxLength[10]].apply(json.string)`.

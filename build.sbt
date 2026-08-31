@@ -40,7 +40,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCsv, coreCsvFs2Data, coreIron, coreJavaTime, coreJson, coreJsonCirce)
+  .aggregate(core, coreCaseInsensitive, coreCsv, coreCsvFs2Data, coreIron, coreJavaTime, coreJson, coreJsonCirce)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -69,6 +69,11 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")
+
+/** Component extensions for org.typelevel / case-insensitive */
+lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
+  .settings(libraryDependencies += "io.taig" %% "validation-cistring" % Version.Validation)
+  .dependsOn(core % "compile->compile;test->test", coreIron % "test->compile")
 
 /** CSV schema definitions */
 lazy val coreCsv = module(identifier = Some("core-csv"))
