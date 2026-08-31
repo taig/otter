@@ -40,7 +40,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCsv, coreCsvFs2Data, coreJson, coreJsonCirce)
+  .aggregate(core, coreCsv, coreCsvFs2Data, coreJavaTime, coreJson, coreJsonCirce)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -78,3 +78,13 @@ lazy val coreCsv = module(identifier = Some("core-csv"))
 lazy val coreCsvFs2Data = module(identifier = Some("core-csv-fs2-data"))
   .settings(libraryDependencies += "org.gnieh" %% "fs2-data-csv" % Version.Fs2Data)
   .dependsOn(coreCsv % "compile->compile;test->test")
+
+/** java.time primitives */
+lazy val coreJavaTime = module(identifier = Some("core-java-time"))
+  .jsSettings(
+    libraryDependencies ++=
+      "io.github.cquiroz" %% "scala-java-time" % Version.ScalaJavaTime % Test ::
+        "io.github.cquiroz" %% "scala-java-time-tzdb" % Version.ScalaJavaTime % Test ::
+        Nil
+  )
+  .dependsOn(core % "compile->compile;test->test")
