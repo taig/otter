@@ -40,7 +40,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCsv, coreCsvFs2Data, coreJavaTime, coreJson, coreJsonCirce)
+  .aggregate(core, coreCsv, coreCsvFs2Data, coreIron, coreJavaTime, coreJson, coreJsonCirce)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -78,6 +78,11 @@ lazy val coreCsv = module(identifier = Some("core-csv"))
 lazy val coreCsvFs2Data = module(identifier = Some("core-csv-fs2-data"))
   .settings(libraryDependencies += "org.gnieh" %% "fs2-data-csv" % Version.Fs2Data)
   .dependsOn(coreCsv % "compile->compile;test->test")
+
+/** Component extensions for io.github.iltotore / iron */
+lazy val coreIron = module(identifier = Some("core-iron"))
+  .settings(libraryDependencies += "io.taig" %% "validation-iron" % Version.Validation)
+  .dependsOn(core % "compile->compile;test->test")
 
 /** java.time primitives */
 lazy val coreJavaTime = module(identifier = Some("core-java-time"))
