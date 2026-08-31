@@ -34,6 +34,14 @@ object Metadata:
       .get((namespace, key))
       .flatMap(value => Either.catchOnly[ClassCastException](value.asInstanceOf[A]).toOption)
 
+    /** The value under the first namespace that has one, so that a format specific attribute can fall back to a format
+      * agnostic one.
+      */
+    def get[A](namespace: Metadata.Namespace, namespaces: Metadata.Namespace*)(key: Metadata.Key[A]): Option[A] =
+      namespaces.foldl(get[A](namespace = namespace, key = key)):
+        case (None, namespace)     => get[A](namespace = namespace, key = key)
+        case (result @ Some(_), _) => result
+
     def put[A](namespace: Metadata.Namespace, key: Metadata.Key[A], value: A): Metadata =
       toSortedMap.updated((namespace, key), value)
 
