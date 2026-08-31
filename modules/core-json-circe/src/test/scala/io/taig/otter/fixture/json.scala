@@ -7,6 +7,16 @@ object json:
   val book: Json.Record[Book] =
     (field("title", string) :* field("pages", int) :* field("read", boolean)).to
 
+  /** The same note twice: once dropping the key when the tag is absent, once writing an explicit null. */
+  val omittedTag: Json.Record[Note] = (field("title", string) :* field("tag", int).optional).to
+
+  val nullableTag: Json.Record[Note] = (field("title", string) :* field("tag", int).optional.nullable).to
+
+  /** Two layers of absence, which only a strict field can tell apart: no key at all is the outer one, a null is the
+    * inner one.
+    */
+  val nestedTag: Json[Option[Option[Int]]] = field("tag", int.optional).optional.omitted.strict.toRecord
+
   val genre: Json.Enumeration[Genre] = enumeration(string):
     case Genre.Fiction => "fiction"
     case Genre.History => "history"
@@ -25,7 +35,7 @@ object json:
 
   lazy val tree: Json.Record[Tree] = (
     field("value", int) :*
-    field("children", collection.list(tree))
+      field("children", collection.list(tree))
   ).to
 
   /** The same three fields, ascribed to say that every one of them is a primitive. That is what a flat format can

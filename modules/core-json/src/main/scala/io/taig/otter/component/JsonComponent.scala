@@ -2,6 +2,7 @@ package io.taig.otter.component
 
 import io.taig.otter.Json
 import io.taig.otter.syntax.AllSyntax
+import io.taig.otter.syntax.JsonSyntax
 
 /** The user facing vocabulary for defining JSON schemas.
   *
@@ -11,6 +12,7 @@ import io.taig.otter.syntax.AllSyntax
   */
 trait JsonComponent
     extends AllSyntax,
+      JsonSyntax,
       PrimitiveComponent.Boolean[Json.Primitive.Boolean.Schema],
       PrimitiveComponent.Number[Json.Primitive.Number.Schema],
       PrimitiveComponent.Text[Json.Primitive.Text.Schema],

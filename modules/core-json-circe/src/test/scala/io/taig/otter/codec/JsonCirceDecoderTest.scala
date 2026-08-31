@@ -63,6 +63,66 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
         JsonCirceDecoder.decode(schema, CirceJson.obj("foo" := "x")) == ("x", none).valid
       )
     ,
+    test("Json.Record: an optional field accepts an explicit null"):
+      val schema = field("foo", string) :* field("bar", int).optional
+      assertTrue(
+        JsonCirceDecoder.decode(schema, CirceJson.obj("foo" := "x", "bar" := CirceJson.Null)) ==
+          ("x", none).valid
+      )
+    ,
+    test("Json.Record: a defaulted field accepts an explicit null"):
+      val schema = field("bar", int).optional(7).toRecord
+      assertTrue(
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := CirceJson.Null)) == 7.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj()) == 7.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := 1)) == 1.valid
+      )
+    ,
+    test("Json.Record: a required field still rejects null"):
+      val schema = field("bar", int).toRecord
+      assertTrue(JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := CirceJson.Null)).isInvalid)
+    ,
+    test("Json.Record: a field holding an optional schema wants its key"):
+      val schema = field("bar", int.optional).toRecord
+      assertTrue(
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := CirceJson.Null)) == none.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := 1)) == 1.some.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj()).isInvalid
+      )
+    ,
+    test("Json.Record: a strict omitted field rejects a null"):
+      val schema = field("bar", int).optional.omitted.strict.toRecord
+      assertTrue(
+        JsonCirceDecoder.decode(schema, CirceJson.obj()) == none.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := 1)) == 1.some.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := CirceJson.Null)).isInvalid
+      )
+    ,
+    test("Json.Record: a strict nullable field rejects a missing key"):
+      val schema = field("bar", int).optional.nullable.strict.toRecord
+      assertTrue(
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := CirceJson.Null)) == none.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj("bar" := 1)) == 1.some.valid,
+        JsonCirceDecoder.decode(schema, CirceJson.obj()).isInvalid
+      )
+    ,
+    test("Json.Record: leniency is what reading does anyway"):
+      val nullable = field("bar", int).optional.nullable.toRecord
+      val omitted = field("bar", int).optional.omitted.toRecord
+      val value = CirceJson.obj("bar" := CirceJson.Null)
+      assertTrue(JsonCirceDecoder.decode(nullable, value) == JsonCirceDecoder.decode(omitted, value))
+    ,
+    test("Json.Record: only a strict field tells two layers of absence apart"):
+      val strict = field("bar", int.optional).optional.omitted.strict.toRecord
+      val lenient = field("bar", int.optional).optional.toRecord
+      val value = CirceJson.obj("bar" := CirceJson.Null)
+      assertTrue(
+        JsonCirceDecoder.decode(strict, CirceJson.obj()) == none.valid,
+        JsonCirceDecoder.decode(strict, value) == none.some.valid,
+        JsonCirceDecoder.decode(strict, CirceJson.obj("bar" := 1)) == 1.some.some.valid,
+        JsonCirceDecoder.decode(lenient, value) == none.valid
+      )
+    ,
     test("Json.Record: missing field"):
       val schema = field("foo", string) :* field("bar", int)
       val result = JsonCirceDecoder.decode(schema, CirceJson.obj("foo" := "x"))

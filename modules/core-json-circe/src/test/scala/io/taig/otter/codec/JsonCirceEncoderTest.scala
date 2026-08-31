@@ -3,6 +3,9 @@ package io.taig.otter.codec
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.circe.syntax.*
+import io.taig.otter.Absence
+import io.taig.otter.Json
+import io.taig.otter.Keys
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.*
 import zio.Scope
@@ -47,6 +50,48 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
       assertTrue(
         JsonCirceEncoder.encode(schema, ("John Doe", 42.some)) == CirceJson.obj("foo" := "John Doe", "bar" := 42),
         JsonCirceEncoder.encode(schema, ("John Doe", none)) == CirceJson.obj("foo" := "John Doe")
+      )
+    ,
+    test("Json.Record: nullable optional field"):
+      val schema = field("foo", string) :* field("bar", int).optional.nullable
+      assertTrue(
+        JsonCirceEncoder.encode(schema, ("John Doe", 42.some)) == CirceJson.obj("foo" := "John Doe", "bar" := 42),
+        JsonCirceEncoder.encode(schema, ("John Doe", none)) ==
+          CirceJson.obj("foo" := "John Doe", "bar" := CirceJson.Null)
+      )
+    ,
+    test("Json.Record: omitting is what a field does anyway"):
+      val implicitly = field("foo", string) :* field("bar", int).optional
+      val explicitly = field("foo", string) :* field("bar", int).optional.omitted
+      assertTrue(
+        JsonCirceEncoder.encode(implicitly, ("John Doe", none)) ==
+          JsonCirceEncoder.encode(explicitly, ("John Doe", none))
+      )
+    ,
+    test("Json.Record: the attribute survives .optional"):
+      val before = field("bar", int).nullable.optional.toRecord
+      val after = field("bar", int).optional.nullable.toRecord
+      assertTrue(
+        JsonCirceEncoder.encode(before, none) == CirceJson.obj("bar" := CirceJson.Null),
+        JsonCirceEncoder.encode(after, none) == CirceJson.obj("bar" := CirceJson.Null)
+      )
+    ,
+    test("Json.Record: a globally set attribute is read"):
+      val schema = field("bar", int).optional.attr(Keys.absence, Absence.Empty).toRecord
+      assertTrue(JsonCirceEncoder.encode(schema, none) == CirceJson.obj("bar" := CirceJson.Null))
+    ,
+    test("Json.Record: the json namespace wins over the global one"):
+      val schema = field("bar", int).optional
+        .attr(Keys.absence, Absence.Empty)
+        .attr(Json.Namespace, Keys.absence, Absence.Omit)
+        .toRecord
+      assertTrue(JsonCirceEncoder.encode(schema, none) == CirceJson.obj())
+    ,
+    test("Json.Record: a defaulted field writes whatever it holds"):
+      val schema = field("bar", int).optional(0).nullable.toRecord
+      assertTrue(
+        JsonCirceEncoder.encode(schema, 42) == CirceJson.obj("bar" := 42),
+        JsonCirceEncoder.encode(schema, 0) == CirceJson.obj("bar" := 0)
       )
     ,
     test("Json.Record: RNil"):

@@ -45,6 +45,25 @@ object Json:
   /** The `S` of a node holding both an `S1` and an `S2`, which is what `:*` and `:+` accumulate. */
   type Or[S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]] = [w, r] =>> S1[w, r] | S2[w, r]
 
+  /** The [[Metadata.Namespace]] the JSON interpreters read their attributes from.
+    *
+    * An attribute set here wins over the same attribute set globally, so a schema can say one thing to every format and
+    * another to JSON alone.
+    */
+  val Namespace: Metadata.Namespace = Metadata.Namespace("json")
+
+  /** The [[Absence]] a schema's metadata asks for. Asking for nothing is [[Absence.Omit]], so a field that says nothing
+    * about absence drops its key, the way a field always has.
+    */
+  private[otter] def absence(metadata: Metadata): Absence =
+    metadata.get(Json.Namespace, Metadata.Namespace.Global)(Keys.absence).getOrElse(Absence.Omit)
+
+  /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a field round
+    * trips whichever way it is written.
+    */
+  private[otter] def tolerance(metadata: Metadata): Tolerance =
+    metadata.get(Json.Namespace, Metadata.Namespace.Global)(Keys.tolerance).getOrElse(Tolerance.Lenient)
+
   /** A schema that reads `A`, whatever it writes.
     *
     * Every node carries the same pair. `Json.Record[A] <: Json.Record.Reader[A]`, so a round tripping schema is

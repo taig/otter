@@ -4,6 +4,7 @@ import io.taig.otter.Json
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.Book
 import io.taig.otter.fixture.Isbn
+import io.taig.otter.fixture.Note
 import io.taig.otter.fixture.json
 import zio.Scope
 import zio.test.*
@@ -18,6 +19,10 @@ object FlatnessTest extends ZIOSpecDefault:
     test("a record whose fields are all primitives is flat"):
       assertTrue(typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, Book] =
         (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]"""))
+    ,
+    test("an attribute leaves a record as flat as it was"):
+      assertTrue(typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, Note] =
+        (field("title", string) :* field("tag", int).optional.nullable).to[Note]"""))
     ,
     test("a record holding a record is not flat"):
       assertTrue(!typeChecks("""val schema: Json.Record.Of[Json.Primitive.Node, (Book, Int)] =

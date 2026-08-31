@@ -4,6 +4,9 @@ import cats.Eq
 
 final case class Book(title: String, pages: Int, read: Boolean)
 
+/** Exercises an optional field, which can be written either way round. */
+final case class Note(title: String, tag: Option[Int])
+
 final case class Isbn(value: String)
 
 object Isbn:

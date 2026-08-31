@@ -18,6 +18,12 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
       read <- Gen.boolean
     yield Book(title, pages, read)
 
+  private val note: Gen[Any, Note] =
+    for
+      title <- Gen.alphaNumericString
+      tag <- Gen.option(Gen.int)
+    yield Note(title, tag)
+
   private val shape: Gen[Any, Shape] =
     Gen.oneOf(
       Gen.double.map(Shape.Circle.apply),
@@ -39,6 +45,15 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
     ,
     test("enum through a union"):
       check(shape)(roundTrips(json.shape, _))
+    ,
+    test("optional field, omitted"):
+      check(note)(roundTrips(json.omittedTag, _))
+    ,
+    test("optional field, nullable"):
+      check(note)(roundTrips(json.nullableTag, _))
+    ,
+    test("two layers of absence, kept apart by a strict field"):
+      check(Gen.option(Gen.option(Gen.int)))(roundTrips(json.nestedTag, _))
     ,
     test("enumeration"):
       check(Gen.fromIterable(Genre.values.toList))(roundTrips(json.genre, _))
