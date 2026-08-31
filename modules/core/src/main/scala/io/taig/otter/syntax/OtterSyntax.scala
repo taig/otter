@@ -27,6 +27,14 @@ trait OtterSyntax:
     ): G[Either[W1, W2], Either[R1, R2]] = L.alt(A.lift(fa), A.element(fb))
 
   extension [F[-_, +_], W, R](fa: F[W, R])
+    /** Maps the read side. What the schema writes is forgotten rather than broken, so the result is a reader: mapping
+      * one side of a round trip leaves something that no longer round trips, and the type has to say so.
+      */
+    def map[B](f: R => B)(using P: Profunctor[F]): F[Nothing, B] = P.rmap(fa)(f)
+
+    /** Maps the write side, leaving a writer for the same reason. */
+    def contramap[B](f: B => W)(using P: Profunctor[F]): F[B, Any] = P.lmap(fa)(f)
+
     /** Maps a round tripping schema onto a nominal type. */
     def to[B](using w: Convert[W, B], r: Convert[R, B], P: Profunctor[F]): F[B, B] =
       P.dimap(fa)(w.from)(r.to)

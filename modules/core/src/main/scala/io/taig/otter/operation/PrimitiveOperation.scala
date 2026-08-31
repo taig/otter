@@ -26,10 +26,11 @@ object PrimitiveOperation:
   trait Text[F[-_, +_]]:
     def string(validation: Validation[Constraint.Primitive.Text, String]): F[String, String]
 
-    /** A named, partial text codec.
+    /** A value carried as text under a named conversion, in the sense of JSON Schema's `format`: `uuid`, `date-time`,
+      * `isbn`. The name is what a failure to parse is reported against.
       *
-      * Instantiate `W` to `Nothing` for a schema that can only be read, or `R` to `Any` for one that can only be
-      * written. Those are the maximal elements of their slots, so nothing can be encoded through the first and nothing
-      * usable decoded out of the second.
+      * Either half may be vacuous. Instantiate `W` to `Nothing` for a schema that can only be read, or `R` to `Any` for
+      * one that can only be written. Those are the maximal elements of their slots, so nothing can be encoded through
+      * the first and nothing usable decoded out of the second.
       */
-    def codec[W, R](name: String, parse: String => Either[String, R], print: W => String): F[W, R]
+    def format[W, R](name: String, parse: String => Either[String, R], print: W => String): F[W, R]

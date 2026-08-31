@@ -60,12 +60,12 @@ object PrimitiveComponent:
     val string: F[String, String] = string(Validation.valid)
 
     def codec[A](name: String, parse: String => Either[String, A], print: A => String): F[A, A] =
-      F.codec(name, parse, print)
+      F.format(name, parse, print)
 
     /** A schema that can only be read. The print half is total: no value of type `Nothing` can reach it. */
     def parser[A](name: String, parse: String => Either[String, A]): F[Nothing, A] =
-      F.codec(name, parse, identity[Nothing])
+      F.format(name, parse, identity[Nothing])
 
     /** A schema that can only be written. */
     def printer[A](name: String, print: A => String): F[A, Any] =
-      F.codec(name, _ => Left(s"$name is write only"), print)
+      F.format(name, _ => Left(s"$name is write only"), print)

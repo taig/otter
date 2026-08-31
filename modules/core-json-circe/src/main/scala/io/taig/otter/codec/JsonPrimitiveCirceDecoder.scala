@@ -29,12 +29,12 @@ object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Node, CirceJson]
       number("bigDecimal", json, _.toBigDecimal.map(_.bigDecimal), validation)
     case Primitive.Number.BigInteger(validation) =>
       number("bigInteger", json, _.toBigInt.map(_.bigInteger), validation)
-    case Primitive.Number.Double(validation)  => number("double", json, _.toDouble.some, validation)
-    case Primitive.Number.Float(validation)   => number("float", json, _.toFloat.some, validation)
-    case Primitive.Number.Int(validation)     => number("int", json, _.toInt, validation)
-    case Primitive.Number.Long(validation)    => number("long", json, _.toLong, validation)
-    case Primitive.Number.Modify(self, f, _)  => decode(self, json).map(f)
-    case Primitive.Text.Codec(name, parse, _) =>
+    case Primitive.Number.Double(validation)   => number("double", json, _.toDouble.some, validation)
+    case Primitive.Number.Float(validation)    => number("float", json, _.toFloat.some, validation)
+    case Primitive.Number.Int(validation)      => number("int", json, _.toInt, validation)
+    case Primitive.Number.Long(validation)     => number("long", json, _.toLong, validation)
+    case Primitive.Number.Modify(self, f, _)   => decode(self, json).map(f)
+    case Primitive.Text.Format(name, parse, _) =>
       text(json).andThen: input =>
         parse(input).toValidated
           .leftMap(error => Violation(Constraint.Generic.Type(name), actual = json.toData, hint = error.some))

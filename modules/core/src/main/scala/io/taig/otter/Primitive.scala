@@ -68,9 +68,7 @@ object Primitive:
     final case class Root(validation: Validation[Constraint.Primitive.Text, String])
         extends Primitive.Text[String, String]
 
-    /** A named, partial text codec. Either half may be absent, see [[io.taig.otter.operation.PrimitiveOperation.Text]].
-      */
-    final case class Codec[W, R](name: String, parse: String => Either[String, R], print: W => String)
+    final case class Format[W, R](name: String, parse: String => Either[String, R], print: W => String)
         extends Primitive.Text[W, R]
 
     final case class Modify[W0, R0, W, R](self: Primitive.Text[W0, R0], f: R0 => R, g: W => W0)

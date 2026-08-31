@@ -5,32 +5,34 @@ import io.taig.otter.component.JsonComponent.*
 
 object json:
   val book: Json.Record[Book] =
-    (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]
+    (field("title", string) :* field("pages", int) :* field("read", boolean)).to
 
   val genre: Json.Enumeration[Genre] = enumeration(string):
     case Genre.Fiction => "fiction"
     case Genre.History => "history"
     case Genre.Poetry  => "poetry"
 
-  val circle: Json.Record[Shape.Circle] = field("radius", double).toRecord.to[Shape.Circle]
+  val circle: Json.Record[Shape.Circle] = field("radius", double).toRecord.to
 
-  val square: Json.Record[Shape.Square] = field("side", double).toRecord.to[Shape.Square]
+  val square: Json.Record[Shape.Square] = field("side", double).toRecord.to
 
   val triangle: Json.Record[Shape.Triangle] =
-    (field("base", double) :* field("height", double)).to[Shape.Triangle]
+    (field("base", double) :* field("height", double)).to
 
   /** Three branches, so the union nests two levels deep. */
   val shape: Json.Union[Shape] =
-    (branch("circle", circle) :+ branch("square", square) :+ branch("triangle", triangle)).to[Shape]
+    (branch("circle", circle) :+ branch("square", square) :+ branch("triangle", triangle)).to
 
-  lazy val tree: Json.Record[Tree] =
-    (field("value", int) :* field("children", collection.list(tree))).to[Tree]
+  lazy val tree: Json.Record[Tree] = (
+    field("value", int) :*
+    field("children", collection.list(tree))
+  ).to
 
   /** The same three fields, ascribed to say that every one of them is a primitive. That is what a flat format can
     * represent, and it is a compile error to write this down for a schema that nests.
     */
   val flatBook: Json.Record.Of[Json.Primitive.Node, Book] =
-    (field("title", string) :* field("pages", int) :* field("read", boolean)).to[Book]
+    (field("title", string) :* field("pages", int) :* field("read", boolean)).to
 
   /** Can be written but not read: there is no way back from a title to a book. */
   val title: Json.Primitive.Text.Writer[Book] = printer("title", _.title)

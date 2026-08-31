@@ -1,5 +1,8 @@
 package io.taig.otter
 
+import cats.Contravariant
+import cats.Functor
+import cats.Invariant
 import cats.arrow.Profunctor
 import io.taig.otter as Self
 import io.taig.otter.operation.*
@@ -461,6 +464,15 @@ object Json:
         case self @ Json.Primitive.Number.Schema(_)  => Json.Primitive.Number.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Primitive.Text.Schema(_)    => Json.Primitive.Text.Schema.profunctor.dimap(self)(f)(g)
 
+    given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[[a] =>> Json.Primitive.Schema[S, Nothing, a]] =
+      Direction.functor[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+
+    given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[[a] =>> Json.Primitive.Schema[S, a, Any]] =
+      Direction.contravariant[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+
+    given invariant: [S[-w, +r] <: Json.Node[w, r]] => Invariant[[a] =>> Json.Primitive.Schema[S, a, a]] =
+      Direction.invariant[[w, r] =>> Json.Primitive.Schema[S, w, r]]
+
   type Field[A] = Json.Field.Of[Json.Node, A]
 
   object Field:
@@ -564,6 +576,15 @@ object Json:
         case self @ Json.Record.Schema(_)            => Json.Record.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Tuple.Schema(_)             => Json.Tuple.Schema.profunctor.dimap(self)(f)(g)
         case self @ Json.Union.Schema(_)             => Json.Union.Schema.profunctor.dimap(self)(f)(g)
+
+  given functor: [S[-w, +r] <: Json.Node[w, r]] => Functor[[a] =>> Json.Schema[S, Nothing, a]] =
+    Direction.functor[[w, r] =>> Json.Schema[S, w, r]]
+
+  given contravariant: [S[-w, +r] <: Json.Node[w, r]] => Contravariant[[a] =>> Json.Schema[S, a, Any]] =
+    Direction.contravariant[[w, r] =>> Json.Schema[S, w, r]]
+
+  given invariant: [S[-w, +r] <: Json.Node[w, r]] => Invariant[[a] =>> Json.Schema[S, a, a]] =
+    Direction.invariant[[w, r] =>> Json.Schema[S, w, r]]
 
   /** `S` is bounded to a schema so that these do not also offer `.optional` and `.toTuple` on a field or a branch,
     * which are not schemas and already carry their own `optional`.

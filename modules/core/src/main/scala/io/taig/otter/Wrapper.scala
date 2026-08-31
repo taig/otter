@@ -1,7 +1,10 @@
 package io.taig.otter
 
+import cats.Contravariant
 import cats.Eq
 import cats.Eval
+import cats.Functor
+import cats.Invariant
 import cats.arrow.Profunctor
 import cats.data.Chain
 import cats.data.NonEmptyChain
@@ -45,6 +48,12 @@ abstract class Wrapper[Outer[-_, +_], Inner[-_, +_]](
     override def dimap[W0, R0, W, R](self: Outer[W0, R0])(f: W => W0)(g: R0 => R): Outer[W, R] =
       wrap(unwrap(self).map(P.dimap(_)(f)(g)))
 
+  given functor: (P: Profunctor[Inner]) => Functor[[a] =>> Outer[Nothing, a]] = Direction.functor[Outer]
+
+  given contravariant: (P: Profunctor[Inner]) => Contravariant[[a] =>> Outer[a, Any]] = Direction.contravariant[Outer]
+
+  given invariant: (P: Profunctor[Inner]) => Invariant[[a] =>> Outer[a, a]] = Direction.invariant[Outer]
+
   given zip: (Z: Zip[Inner]) => Zip[Outer]:
     override def zip[W1, R1, W2, R2](left: Outer[W1, R1], right: Outer[W2, R2]): Outer[(W1, W2), (R1, R2)] =
       wrap(Annotation(Z.zip(unwrap(left).self, unwrap(right).self)))
@@ -87,6 +96,15 @@ object Wrapper:
       => (P: Profunctor[[w, r] =>> Inner[S, w, r]]) => Profunctor[[w, r] =>> Outer[S, w, r]]:
       override def dimap[W0, R0, W, R](self: Outer[S, W0, R0])(f: W => W0)(g: R0 => R): Outer[S, W, R] =
         wrap(unwrap(self).map(P.dimap(_)(f)(g)))
+
+    given functor: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
+      => Functor[[a] =>> Outer[S, Nothing, a]] = Direction.functor[[w, r] =>> Outer[S, w, r]]
+
+    given contravariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
+      => Contravariant[[a] =>> Outer[S, a, Any]] = Direction.contravariant[[w, r] =>> Outer[S, w, r]]
+
+    given invariant: [S[-w, +r] <: Bound[w, r]] => (P: Profunctor[[w, r] =>> Inner[S, w, r]])
+      => Invariant[[a] =>> Outer[S, a, a]] = Direction.invariant[[w, r] =>> Outer[S, w, r]]
 
     given zip: [S[-w, +r] <: Bound[w, r]] => (Z: Zip[[w, r] =>> Inner[S, w, r]]) => Zip[[w, r] =>> Outer[S, w, r]]:
       override def zip[W1, R1, W2, R2](
@@ -302,8 +320,8 @@ object Wrapper:
         override def string(validation: Validation[Constraint.Primitive.Text, String]): Outer[String, String] =
           Text.this.apply(Self.Primitive.Text.Root(validation))
 
-        override def codec[W, R](
+        override def format[W, R](
             name: String,
             parse: String => Either[String, R],
             print: W => String
-        ): Outer[W, R] = Text.this.apply(Self.Primitive.Text.Codec(name, parse, print))
+        ): Outer[W, R] = Text.this.apply(Self.Primitive.Text.Format(name, parse, print))

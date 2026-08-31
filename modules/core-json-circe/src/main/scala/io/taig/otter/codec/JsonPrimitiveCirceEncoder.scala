@@ -24,6 +24,6 @@ object JsonPrimitiveCirceEncoder extends Encoder[Json.Primitive.Node, CirceJson]
     case Primitive.Number.Int(_)              => CirceJson.fromInt(w)
     case Primitive.Number.Long(_)             => CirceJson.fromLong(w)
     case Primitive.Number.Modify(self, _, g)  => encode(self, g(w))
-    case Primitive.Text.Codec(_, _, print)    => CirceJson.fromString(print(w))
+    case Primitive.Text.Format(_, _, print)   => CirceJson.fromString(print(w))
     case Primitive.Text.Modify(self, _, g)    => encode(self, g(w))
     case Primitive.Text.Root(_)               => CirceJson.fromString(w)
