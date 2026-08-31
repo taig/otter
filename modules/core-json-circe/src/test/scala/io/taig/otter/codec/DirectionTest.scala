@@ -70,4 +70,30 @@ object DirectionTest extends ZIOSpecDefault:
         .imap(json.book)(_.title)(Book(_, 1, true))
       val encoded = JsonCirceEncoder.encode(schema, "Dune")
       assertTrue(JsonCirceDecoder.decode(schema, encoded) == Validated.valid("Dune"))
+    ,
+    /** Appending a child that only reads leaves `Append` unable to reduce the write side, because Scala does not reduce
+      * a match type over `Nothing`. The stuck type is harmless: `Nothing` conforms to it, so the reader ascription
+      * absorbs it and the direction that does exist still works.
+      */
+    test("a record appending a read only child still reads"):
+      val schema: Json.Record.Reader[DirectionTest.Catalogue] =
+        (field("title", string) :* field("isbn", json.isbn)).mapTo
+      val document = CirceJson.obj("title" -> CirceJson.fromString("Dune"), "isbn" -> CirceJson.fromString("978"))
+      assertTrue(
+        JsonCirceDecoder.decode(schema, document) == Validated.valid(DirectionTest.Catalogue("Dune", Isbn("978")))
+      )
+    ,
+    /** The same, with the read only child first, so that its `Nothing` lands in the left slot instead of the right. */
+    test("a record appending a read only child first still reads"):
+      val schema: Json.Record.Reader[DirectionTest.Listing] =
+        (field("isbn", json.isbn) :* field("title", string)).mapTo
+      val document = CirceJson.obj("isbn" -> CirceJson.fromString("978"), "title" -> CirceJson.fromString("Dune"))
+      assertTrue(
+        JsonCirceDecoder.decode(schema, document) == Validated.valid(DirectionTest.Listing(Isbn("978"), "Dune"))
+      )
   )
+
+  final private case class Catalogue(title: String, isbn: Isbn)
+
+  final private case class Listing(isbn: Isbn, title: String)
+
