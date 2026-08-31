@@ -10,7 +10,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
       Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" ::
         "-Xmax-inlines" :: "64" :: Nil,
-      name := "otter" + identifier.fold("")("-" + _)
+      name := "otter-next" + identifier.fold("")("-" + _)
     )
 }
 
@@ -21,12 +21,11 @@ inThisBuild(
     homepage := Some(uri("https://github.com/taig/otter/")),
     licenses := List("MIT" -> uri("https://raw.githubusercontent.com/taig/otter/main/LICENSE")),
     organization := "io.taig",
+    resolvers += Resolver.sonatypeCentralSnapshots,
     scalaVersion := Version.Scala3,
     versionScheme := Some("early-semver")
   )
 )
-
-noPublishSettings
 
 lazy val root = module(identifier = None, jvmOnly = true)
   .enablePlugins(BlowoutYamlPlugin)

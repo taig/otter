@@ -23,6 +23,13 @@ object CsvDecoderTest extends ZIOSpecDefault:
         CsvCellDecoder.decode(long, "42") == 42L.valid
       )
     ,
+    test("Csv.Primitive: uuid"):
+      val id = java.util.UUID.fromString("1c1a5f8e-6e33-4e34-8d2e-3f8b2f0e1a2b")
+      assertTrue(
+        CsvCellDecoder.decode(uuid, id.toString) == id.valid,
+        CsvCellDecoder.decode(uuid, "not-a-uuid").isInvalid
+      )
+    ,
     test("Csv.Primitive: the cell that failed is what the violation reports"):
       val result = CsvCellDecoder.decode(int, "4 2")
       val expected = Violations(

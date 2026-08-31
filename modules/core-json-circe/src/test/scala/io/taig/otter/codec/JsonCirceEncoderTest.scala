@@ -20,6 +20,10 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
         JsonCirceEncoder.encode(boolean, true) == CirceJson.fromBoolean(true)
       )
     ,
+    test("Json.Primitive: uuid"):
+      val id = java.util.UUID.fromString("1c1a5f8e-6e33-4e34-8d2e-3f8b2f0e1a2b")
+      assertTrue(JsonCirceEncoder.encode(uuid, id) == CirceJson.fromString(id.toString))
+    ,
     test("Json.Constant"):
       assertTrue(JsonCirceEncoder.encode(constant(string, "foobar"), ()) == CirceJson.fromString("foobar"))
     ,

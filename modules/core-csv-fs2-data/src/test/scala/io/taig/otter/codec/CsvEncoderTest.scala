@@ -21,6 +21,10 @@ object CsvEncoderTest extends ZIOSpecDefault:
         CsvCellEncoder.encode(long, 42L) == "42"
       )
     ,
+    test("Csv.Primitive: uuid"):
+      val id = java.util.UUID.fromString("1c1a5f8e-6e33-4e34-8d2e-3f8b2f0e1a2b")
+      assertTrue(CsvCellEncoder.encode(uuid, id) == id.toString)
+    ,
     test("Csv.Primitive: a number has no cell of its own to be written in"):
       assertTrue(
         CsvCellEncoder.encode(int, 42) == CsvCellEncoder.encode(string, "42"),

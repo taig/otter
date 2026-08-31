@@ -22,6 +22,13 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
         JsonCirceDecoder.decode(boolean, CirceJson.fromBoolean(true)) == true.valid
       )
     ,
+    test("Json.Primitive: uuid"):
+      val id = java.util.UUID.fromString("1c1a5f8e-6e33-4e34-8d2e-3f8b2f0e1a2b")
+      assertTrue(
+        JsonCirceDecoder.decode(uuid, CirceJson.fromString(id.toString)) == id.valid,
+        JsonCirceDecoder.decode(uuid, CirceJson.fromString("not-a-uuid")).isInvalid
+      )
+    ,
     test("Json.Primitive: type mismatch"):
       val result = JsonCirceDecoder.decode(int, CirceJson.fromString("foobar"))
       val expected = Violations(

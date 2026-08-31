@@ -1,12 +1,14 @@
 package io.taig.otter.component
 
 import cats.arrow.Profunctor
+import cats.syntax.all.*
 import io.taig.otter.Constraint
 import io.taig.otter.operation.PrimitiveOperation
 import io.taig.validation.Validation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.util.UUID
 import scala.Boolean as SBoolean
 
 object PrimitiveComponent:
@@ -69,3 +71,9 @@ object PrimitiveComponent:
     /** A schema that can only be written. */
     def printer[A](name: String, print: A => String): F[A, Any] =
       F.format(name, _ => Left(s"$name is write only"), print)
+
+    val uuid: F[UUID, UUID] = codec(
+      "uuid",
+      value => Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_ => s"invalid uuid: $value"),
+      _.toString
+    )
