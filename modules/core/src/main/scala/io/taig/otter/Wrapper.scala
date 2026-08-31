@@ -130,9 +130,9 @@ object Wrapper:
         override def name: String = node(fa).name
         override def isOptional: Boolean = node(fa).isOptional
         override def optional: Outer[S, Option[W], Option[R]] =
-          Field.this.apply[S, Option[W], Option[R]](Self.Field.Optional(node(fa)))
+          wrap(unwrap(fa).map(Self.Field.Optional(_)))
         override def optional(default: => R): Outer[S, W, R] =
-          Field.this.apply[S, W, R](Self.Field.Default(node(fa), Eval.later(default)))
+          wrap(unwrap(fa).map(Self.Field.Default(_, Eval.later(default))))
         override def schema: Reference[S, ?, ?] = node(fa).schema
 
   abstract class Record[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w, +r] <: Bound[w, r], -_, +_]](
