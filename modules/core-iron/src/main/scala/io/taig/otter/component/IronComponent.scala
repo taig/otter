@@ -117,3 +117,22 @@ object IronComponent:
 
     object list:
       def apply[A]: list[A] = new list[A]
+
+  /** Widens the write side back to the carrier the refinement sits on, so that a value the read side must reject can be
+    * written at all.
+    *
+    * The read side keeps its claim, so the result reads a refined value and writes an unrefined one. That is what a
+    * test of a constraint needs: it submits the carrier, and the decoder is the thing under test.
+    *
+    * Sound for the same reason the refinement above it is. Iron erases `B :| A` to `B`, so the node this widens was
+    * built at `B` in the first place; no encoder reads the [[io.taig.validation.Validation]] a node carries, so nothing
+    * that was going to check the constraint is bypassed; and the cast leaves the node alone rather than wrapping it in
+    * a `Modify`, which is the property [[IronComponent]]'s own tests pin.
+    *
+    * It says nothing about a write side that was mapped through a function assuming the refinement. Widen before
+    * composing, not after.
+    */
+  trait Unrefined:
+    extension [F[-_, +_], B, A, R](fa: F[B :| A, R])
+      @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+      def unrefined: F[B, R] = fa.asInstanceOf[F[B, R]]

@@ -24,7 +24,7 @@ import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
 import java.util.regex.Pattern
 
-object IronComponentTest extends ZIOSpecDefault:
+object IronComponentTest extends ZIOSpecDefault, IronComponent.Unrefined:
   /** The bare AST is a format too, and the only one `core` offers. */
   private given PrimitiveOperation.Number[Primitive.Number]:
     override def bigDecimal(
@@ -311,4 +311,25 @@ object IronComponentTest extends ZIOSpecDefault:
       val schema: Collection[Primitive.Text, List[String] :| MinLength[1], List[String] :| MinLength[1]] =
         refined.list[MinLength[1]](string)
       assertTrue(schema.schema.value == string)
+    ,
+    /** The ascription is the assertion here as everywhere else: the write side is the carrier, the read side keeps the
+      * refinement. Running it through the same extractor pins the other half, that widening is a cast and not a
+      * mapping, because an extractor naming one constructor falls through on a `Modify`.
+      */
+    test("unrefined widens an int write side to its carrier"):
+      val schema: Primitive.Number[Int, Int :| Greater[0]] = refined.int[Greater[0]].unrefined
+      check(int(schema), numberMinimum(0, exclusive = true) :: Nil, accepted = 1, rejected = 0)
+    ,
+    test("unrefined widens a string write side to its carrier"):
+      val schema: Primitive.Text[String, String :| MinLength[1]] = refined.string[MinLength[1]].unrefined
+      check(text(schema), textMinimum(1L, exclusive = false) :: Nil, accepted = "a", rejected = "")
+    ,
+    test("unrefined widens a carried text write side to its carrier"):
+      val schema: Primitive.Text[Name, Name :| MinLength[2]] = refined.text[MinLength[2]](name).unrefined
+      check(carried(schema), textMinimum(2L, exclusive = false) :: Nil, accepted = "ab", rejected = "a")
+    ,
+    test("unrefined widens a collection write side to its carrier"):
+      val schema: Collection[Primitive.Text, List[String], List[String] :| MinLength[1]] =
+        refined.list[MinLength[1]](string).unrefined
+      check(linked(schema), collectionMinimum(1L, exclusive = false) :: Nil, accepted = List("a"), rejected = Nil)
   )
