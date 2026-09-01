@@ -17,42 +17,61 @@ type Append[A, B] = A match
       case _    => A *: B *: EmptyTuple
 
 object Append:
-  /** Appends `fb` to `fa`, flattening both directions at once.
+  /** Appends `fb` to `fa`, flattening each direction on its own terms.
     *
-    * One `inline match` classifies both directions together rather than one per direction, which is right as long as
-    * they agree on shape. A one directional child is where they part: its write slot is `Nothing`, so the pair falls
-    * through to the general branch and `Append` cannot reduce the write side at all, Scala declining to reduce a match
-    * type over an uninhabited selector. That is harmless in itself -- `Nothing` conforms to the stuck type, so a reader
-    * ascription absorbs it -- but it means the write side has to be projected out by index and cast. `head` and `tail`
-    * are match types too, and they refuse to reduce for the same reason. The read side builds its tuple rather than
-    * taking one apart, so it needs no such care.
+    * The two directions are classified separately, because they do not always agree on shape: a child that only writes
+    * reads `Any`, and a child that only reads writes `Nothing`. Classifying them together let the direction a schema
+    * does not have decide the shape of the one it does, so appending anything after a write only member took the record
+    * apart against the wrong shape and put every later member in the wrong slot.
     */
-  @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-  inline def apply[F[-_, +_] <: Matchable, W1, R1, W2, R2](fa: F[W1, R1], fb: F[W2, R2])(using
+  def apply[F[-_, +_], W1, R1, W2, R2](fa: F[W1, R1], fb: F[W2, R2])(using
       P: Profunctor[F],
-      Z: Zip[F]
+      Z: Zip[F],
+      W: Append.Shape[W1, W2],
+      R: Append.Shape[R1, R2]
   ): F[Append[W1, W2], Append[R1, R2]] =
-    inline fa match
-      case fa: F[wx *: wy, rx *: ry] =>
-        inline fb match
-          case fb: F[Unit, Unit] =>
-            P.dimap(Z.zip(fa, fb))((w: wx *: wy) => (w, ()))((r: (rx *: ry, Unit)) => r._1)
-              .asInstanceOf[F[Append[W1, W2], Append[R1, R2]]]
-          case fb =>
-            P.dimap(Z.zip(fa, fb))((w: STuple.Append[wx *: wy, W2]) =>
-              (w.init.asInstanceOf[wx *: wy], w.last.asInstanceOf[W2])
-            )((r: (rx *: ry, R2)) => r._1 :* r._2)
-              .asInstanceOf[F[Append[W1, W2], Append[R1, R2]]]
-      case fa: F[Unit, Unit] =>
-        P.dimap(Z.zip(fa, fb))((w: W2) => ((), w))((r: (Unit, R2)) => r._2)
-          .asInstanceOf[F[Append[W1, W2], Append[R1, R2]]]
-      case fa =>
-        inline fb match
-          case fb: F[Unit, Unit] =>
-            P.dimap(Z.zip(fa, fb))((w: W1) => (w, ()))((r: (R1, Unit)) => r._1)
-              .asInstanceOf[F[Append[W1, W2], Append[R1, R2]]]
-          case fb =>
-            P.dimap(Z.zip(fa, fb))((w: W1 *: W2 *: EmptyTuple) =>
-              (w.productElement(0).asInstanceOf[W1], w.productElement(1).asInstanceOf[W2])
-            )((r: (R1, R2)) => r._1 *: r._2 *: EmptyTuple)
-              .asInstanceOf[F[Append[W1, W2], Append[R1, R2]]]
+    P.dimap(Z.zip(fa, fb))(W.split)((r: (R1, R2)) => R.join(r._1, r._2))
+
+  /** How a value of `Append[A, B]` is put together and taken apart.
+    *
+    * Found by implicit search rather than by matching on the schema itself, for two reasons. Search is total, so a
+    * direction a schema does not have still yields an instance instead of leaving the append undecided -- and an
+    * instance for a direction nothing can reach is never asked to do anything. And nothing is inlined per member, where
+    * matching on the schema copied it into every branch, which cost a wide record exponentially more to compile than a
+    * narrow one: five members compiled in a second, ten in forty, thirteen not at all.
+    */
+  sealed abstract class Shape[A, B]:
+    def split(value: Append[A, B]): (A, B)
+
+    def join(a: A, b: B): Append[A, B]
+
+  object Shape extends Append.LeftUnit:
+    /** Appending nothing leaves the receiver as it is, whatever the receiver is, so this comes before every other. */
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    given right: [A] => Append.Shape[A, Unit]:
+      override def split(value: Append[A, Unit]): (A, Unit) = (value.asInstanceOf[A], ())
+
+      override def join(a: A, b: Unit): Append[A, Unit] = a.asInstanceOf[Append[A, Unit]]
+
+  private[otter] trait LeftUnit extends Append.TupleLeft:
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    given left: [B] => Append.Shape[Unit, B]:
+      override def split(value: Append[Unit, B]): (Unit, B) = ((), value.asInstanceOf[B])
+
+      override def join(a: Unit, b: B): Append[Unit, B] = b.asInstanceOf[Append[Unit, B]]
+
+  private[otter] trait TupleLeft extends Append.Pair:
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    given tuple: [A <: NonEmptyTuple, B] => Append.Shape[A, B]:
+      override def split(value: Append[A, B]): (A, B) =
+        val tuple = value.asInstanceOf[NonEmptyTuple]
+        (tuple.init.asInstanceOf[A], tuple.last.asInstanceOf[B])
+
+      override def join(a: A, b: B): Append[A, B] = (a :* b).asInstanceOf[Append[A, B]]
+
+  private[otter] trait Pair:
+    @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
+    given pair: [A, B] => Append.Shape[A, B]:
+      override def split(value: Append[A, B]): (A, B) = value.asInstanceOf[(A, B)]
+
+      override def join(a: A, b: B): Append[A, B] = (a, b).asInstanceOf[Append[A, B]]

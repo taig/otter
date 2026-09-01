@@ -14,10 +14,12 @@ trait OtterSyntax:
       * One operator serves `field :* field`, `record :* field` and `TNil :* string`: the receiver is lifted into the
       * container that accumulates, which is the identity when it already is one.
       */
-    inline def :*[G[-_, +_] <: Matchable, H[-_, +_], W2, R2](fb: => H[W2, R2])(using
+    def :*[G[-_, +_], H[-_, +_], W2, R2](fb: => H[W2, R2])(using
         A: AppendableOperation[F, G, H],
         P: Profunctor[G],
-        Z: Zip[G]
+        Z: Zip[G],
+        W: Append.Shape[W1, W2],
+        R: Append.Shape[R1, R2]
     ): G[Append[W1, W2], Append[R1, R2]] = Append(A.lift(fa), A.element(fb))
 
     /** Appends a branch to a union, lifting the receiver into a union first. */

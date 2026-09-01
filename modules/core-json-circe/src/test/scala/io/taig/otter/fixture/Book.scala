@@ -24,3 +24,27 @@ enum Shape:
 
 /** Exercises `Reference` laziness: the schema refers to itself. */
 final case class Tree(value: Int, children: List[Tree])
+
+/** Exercises a record whose first member can only be written: appending anything after such a member used to take the
+  * record apart against the shape of its read side, which a write only member leaves at `Any`.
+  */
+final case class Shelf(label: Isbn, pages: Int, read: Boolean)
+
+/** Exercises a record wide enough that copying the schema per member would be felt. */
+final case class Census(
+    first: String,
+    second: String,
+    third: String,
+    fourth: String,
+    fifth: String,
+    sixth: String,
+    seventh: String,
+    eighth: String,
+    ninth: String,
+    tenth: String,
+    eleventh: String,
+    twelfth: String,
+    thirteenth: String,
+    fourteenth: String,
+    fifteenth: String
+)

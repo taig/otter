@@ -145,4 +145,52 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
     ,
     test("write only schema"):
       assertTrue(JsonCirceEncoder.encode(json.title, Book("Dune", 412, true)) == CirceJson.fromString("Dune"))
+    ,
+    test("a member that only writes leaves the members after it where they are"):
+      assertTrue(
+        JsonCirceEncoder.encode(json.shelf, Shelf(Isbn("978"), 412, true)) ==
+          CirceJson.obj("label" := "978", "pages" := 412, "read" := true)
+      )
+    ,
+    test("a wide record writes every member, in order"):
+      val census = Census(
+        "1st",
+        "2nd",
+        "3rd",
+        "4th",
+        "5th",
+        "6th",
+        "7th",
+        "8th",
+        "9th",
+        "10th",
+        "11th",
+        "12th",
+        "13th",
+        "14th",
+        "15th"
+      )
+
+      val expected = CirceJson.obj(
+        "first" := "1st",
+        "second" := "2nd",
+        "third" := "3rd",
+        "fourth" := "4th",
+        "fifth" := "5th",
+        "sixth" := "6th",
+        "seventh" := "7th",
+        "eighth" := "8th",
+        "ninth" := "9th",
+        "tenth" := "10th",
+        "eleventh" := "11th",
+        "twelfth" := "12th",
+        "thirteenth" := "13th",
+        "fourteenth" := "14th",
+        "fifteenth" := "15th"
+      )
+
+      assertTrue(
+        JsonCirceEncoder.encode(json.census, census) == expected,
+        JsonCirceDecoder.decode(json.census, expected) == census.valid
+      )
   )

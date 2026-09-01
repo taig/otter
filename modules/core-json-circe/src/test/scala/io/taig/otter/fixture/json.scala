@@ -60,3 +60,28 @@ object json:
   /** A record holding a normalised field still writes. Spelled out for the same reason [[trimmed]] is. */
   val trimmedNote: Json.Record.Schema[Json.Node, Note, Note] =
     (field("title", trimmed) :* field("tag", int).optional).to
+
+  /** Can be written but not read, the way [[title]] cannot be read. */
+  val label: Json.Primitive.Text.Writer[Isbn] = printer("label", _.value)
+
+  /** A member that can only be written, with members after it. */
+  val shelf: Json.Record.Writer[Shelf] =
+    (field("label", json.label) :* field("pages", int) :* field("read", boolean)).contramapTo
+
+  val census: Json.Record[Census] = (
+    field("first", string) :*
+      field("second", string) :*
+      field("third", string) :*
+      field("fourth", string) :*
+      field("fifth", string) :*
+      field("sixth", string) :*
+      field("seventh", string) :*
+      field("eighth", string) :*
+      field("ninth", string) :*
+      field("tenth", string) :*
+      field("eleventh", string) :*
+      field("twelfth", string) :*
+      field("thirteenth", string) :*
+      field("fourteenth", string) :*
+      field("fifteenth", string)
+  ).to
