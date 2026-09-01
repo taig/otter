@@ -15,7 +15,19 @@ object ConvertTest extends ZIOSpecDefault:
     case C01, C02, C03, C04, C05, C06, C07, C08, C09, C10, C11, C12, C13, C14, C15, C16, C17, C18, C19, C20, C21, C22,
       C23, C24, C25
 
+  final case class Empty()
+
   override val spec: Spec[TestEnvironment & Scope, Any] = suite("ConvertTest")(
+    test("an enum case declared without parameters converts from and to Unit"):
+      val convert = Convert[Unit, Three.A.type]
+
+      assertTrue(convert.to(()) == Three.A, convert.from(Three.A) == ())
+    ,
+    test("an empty case class converts from and to Unit"):
+      val convert = Convert[Unit, Empty]
+
+      assertTrue(convert.to(()) == Empty(), convert.from(Empty()) == ())
+    ,
     test("the nesting matches the association of :+"):
       val convert = Convert[Either[Either[Three.A.type, Three.B.type], Three.C.type], Three]
 

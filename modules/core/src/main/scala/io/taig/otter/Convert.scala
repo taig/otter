@@ -35,6 +35,17 @@ object Convert:
     override def to(a: A): A = a
     override def from(b: A): A = b
 
+  /** A product with no fields: an empty case class, or an enum case declared without parameters.
+    *
+    * There is nothing to carry, so `Unit` is the whole of its structural shape. That is what a record of constants
+    * writes -- a branch tagged by its `type` and nothing else -- and without this instance such a record has to be
+    * mapped onto its case by hand.
+    */
+  given product0: [B <: Product]
+    => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = EmptyTuple }) => Convert[Unit, B]:
+    override def to(a: Unit): B = mirror.fromProduct(EmptyTuple)
+    override def from(b: B): Unit = ()
+
   given product1: [A, B <: Product]
     => (mirror: Mirror.ProductOf[B] { type MirroredElemTypes = A *: EmptyTuple }) => Convert[A, B]:
     override def to(a: A): B = mirror.fromProduct(a *: EmptyTuple)
