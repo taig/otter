@@ -18,6 +18,7 @@ import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 /** The `java.time` vocabulary, carried as text.
   *
@@ -36,32 +37,46 @@ import java.time.ZonedDateTime
   * failure is reported against, so sharing one costs nothing.
   */
 trait JavaTimeComponent[F[-_, +_]](using F: PrimitiveOperation.Text[F]):
-  /** Every member is a round trip through `toString`, so only the way back has to be given.
+  /** Every member is a round trip through `toString`, so only the way back has to be given; where `toString` writes
+    * something the format's name does not promise, the way out is given too.
+    *
+    * That is every member carrying a time of day: `toString` leaves the seconds off a whole minute and writes `12:00`,
+    * which RFC 3339 has no reading of -- its `time-second` is not optional. The `ISO_*` formatters always spell the
+    * seconds out. Nothing changes on the way in, where both spellings are read.
     *
     * `DateTimeException` rather than `DateTimeParseException`, because `ZoneId.of` and `ZoneOffset.of` throw the
     * former. It is the supertype of both, so one catch covers parsing and zone lookup alike.
     */
-  private def temporal[A](name: String, parse: String => A): F[A, A] = F.format(
+  private def temporal[A](
+      name: String,
+      parse: String => A,
+      print: A => String = (value: A) => value.toString
+  ): F[A, A] = F.format(
     name,
     value => Either.catchOnly[DateTimeException](parse(value)).leftMap(_.getMessage),
-    _.toString
+    print
   )
 
   val instant: F[Instant, Instant] = temporal("date-time", Instant.parse)
 
-  val offsetDateTime: F[OffsetDateTime, OffsetDateTime] = temporal("date-time", OffsetDateTime.parse)
+  val offsetDateTime: F[OffsetDateTime, OffsetDateTime] =
+    temporal("date-time", OffsetDateTime.parse, DateTimeFormatter.ISO_OFFSET_DATE_TIME.format)
 
   /** Not `date-time`: the text ends in a bracketed region, which RFC 3339 has no room for. */
-  val zonedDateTime: F[ZonedDateTime, ZonedDateTime] = temporal("zoned-date-time", ZonedDateTime.parse)
+  val zonedDateTime: F[ZonedDateTime, ZonedDateTime] =
+    temporal("zoned-date-time", ZonedDateTime.parse, DateTimeFormatter.ISO_ZONED_DATE_TIME.format)
 
-  val localDateTime: F[LocalDateTime, LocalDateTime] = temporal("local-date-time", LocalDateTime.parse)
+  val localDateTime: F[LocalDateTime, LocalDateTime] =
+    temporal("local-date-time", LocalDateTime.parse, DateTimeFormatter.ISO_LOCAL_DATE_TIME.format)
 
   val localDate: F[LocalDate, LocalDate] = temporal("date", LocalDate.parse)
 
   /** Not `time`: that is RFC 3339 full time, which carries an offset. [[offsetTime]] is the one that does. */
-  val localTime: F[LocalTime, LocalTime] = temporal("local-time", LocalTime.parse)
+  val localTime: F[LocalTime, LocalTime] =
+    temporal("local-time", LocalTime.parse, DateTimeFormatter.ISO_LOCAL_TIME.format)
 
-  val offsetTime: F[OffsetTime, OffsetTime] = temporal("time", OffsetTime.parse)
+  val offsetTime: F[OffsetTime, OffsetTime] =
+    temporal("time", OffsetTime.parse, DateTimeFormatter.ISO_OFFSET_TIME.format)
 
   val duration: F[Duration, Duration] = temporal("duration", Duration.parse)
 

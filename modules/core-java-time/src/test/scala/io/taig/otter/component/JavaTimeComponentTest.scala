@@ -43,6 +43,10 @@ object JavaTimeComponentTest extends ZIOSpecDefault:
         assertTrue(actual == name, parse(text) == Right(value), print(value) == text)
       case _ => assertTrue(false)
 
+  private def reads[A](schema: Primitive.Text[A, A], text: String, value: A): TestResult = schema match
+    case Primitive.Text.Format(_, parse, _) => assertTrue(parse(text) == Right(value))
+    case _                                  => assertTrue(false)
+
   private def rejects[A](schema: Primitive.Text[A, A], text: String): TestResult = schema match
     case Primitive.Text.Format(_, parse, _) => assertTrue(parse(text).isLeft)
     case _                                  => assertTrue(false)
@@ -53,25 +57,25 @@ object JavaTimeComponentTest extends ZIOSpecDefault:
     ,
     test("offsetDateTime"):
       val value = OffsetDateTime.of(2026, 8, 31, 12, 0, 0, 0, ZoneOffset.ofHours(2))
-      roundTrip(time.offsetDateTime, "date-time", value, "2026-08-31T12:00+02:00")
+      roundTrip(time.offsetDateTime, "date-time", value, "2026-08-31T12:00:00+02:00")
     ,
     test("zonedDateTime"):
       val value = ZonedDateTime.of(2026, 8, 31, 12, 0, 0, 0, ZoneId.of("Europe/Berlin"))
-      roundTrip(time.zonedDateTime, "zoned-date-time", value, "2026-08-31T12:00+02:00[Europe/Berlin]")
+      roundTrip(time.zonedDateTime, "zoned-date-time", value, "2026-08-31T12:00:00+02:00[Europe/Berlin]")
     ,
     test("localDateTime"):
       val value = LocalDateTime.of(2026, 8, 31, 12, 0)
-      roundTrip(time.localDateTime, "local-date-time", value, "2026-08-31T12:00")
+      roundTrip(time.localDateTime, "local-date-time", value, "2026-08-31T12:00:00")
     ,
     test("localDate"):
       roundTrip(time.localDate, "date", LocalDate.of(2026, 8, 31), "2026-08-31")
     ,
     test("localTime"):
-      roundTrip(time.localTime, "local-time", LocalTime.of(12, 0), "12:00")
+      roundTrip(time.localTime, "local-time", LocalTime.of(12, 0), "12:00:00")
     ,
     test("offsetTime"):
       val value = OffsetTime.of(12, 0, 0, 0, ZoneOffset.ofHours(2))
-      roundTrip(time.offsetTime, "time", value, "12:00+02:00")
+      roundTrip(time.offsetTime, "time", value, "12:00:00+02:00")
     ,
     test("duration"):
       roundTrip(time.duration, "duration", Duration.ofMinutes(510), "PT8H30M")
@@ -93,6 +97,20 @@ object JavaTimeComponentTest extends ZIOSpecDefault:
     ,
     test("zoneOffset"):
       roundTrip(time.zoneOffset, "zone-offset", ZoneOffset.ofHours(2), "+02:00")
+    ,
+    /** What `toString` writes, which is what a client that formats one of its own sends back. */
+    test("text whose seconds are left out is read all the same"):
+      val offset = ZoneOffset.ofHours(2)
+
+      reads(time.offsetDateTime, "2026-08-31T12:00+02:00", OffsetDateTime.of(2026, 8, 31, 12, 0, 0, 0, offset)) &&
+      reads(
+        time.zonedDateTime,
+        "2026-08-31T12:00+02:00[Europe/Berlin]",
+        ZonedDateTime.of(2026, 8, 31, 12, 0, 0, 0, ZoneId.of("Europe/Berlin"))
+      ) &&
+      reads(time.localDateTime, "2026-08-31T12:00", LocalDateTime.of(2026, 8, 31, 12, 0)) &&
+      reads(time.localTime, "12:00", LocalTime.of(12, 0)) &&
+      reads(time.offsetTime, "12:00+02:00", OffsetTime.of(12, 0, 0, 0, offset))
     ,
     test("text that does not parse is a failure, not an exception"):
       rejects(time.instant, "nope") &&
