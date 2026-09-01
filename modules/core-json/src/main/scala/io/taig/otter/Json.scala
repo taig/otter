@@ -42,7 +42,13 @@ object Json:
     */
   type Leaf = Nothing
 
-  /** The `S` of a node holding both an `S1` and an `S2`, which is what `:*` and `:+` accumulate. */
+  /** The `S` of a node holding both an `S1` and an `S2`, which is what `:*` and `:+` accumulate.
+    *
+    * Leave both sides to inference. Ascribing an operand to [[Json.Node]] asks the compiler to decide
+    * `S1[w, r] | S2[w, r] <: Json.Schema[?, w, r]` before it has solved either side, which dotty answers with an
+    * `AssertionError` out of `TypeOps.orDominator` rather than with a type error. Naming a constructor it can already
+    * see is fine -- `Json.Record.Node`, for a branch that holds any record -- naming the top of the lattice is not.
+    */
   type Or[S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]] = [w, r] =>> S1[w, r] | S2[w, r]
 
   /** The [[Metadata.Namespace]] the JSON interpreters read their attributes from.
@@ -349,6 +355,12 @@ object Json:
         override def element[W, R](fb: => S2[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
           Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.later(fb)))
 
+  /** A choice between branches: written as whichever branch the value matches, read by trying them in turn.
+    *
+    * Nothing on the wire says which branch a document belongs to. The name a branch carries labels the path a violation
+    * is reported at and is never written out, so a format that discriminates on a `type` field is a union whose
+    * branches each hold that field as a [[Json.Constant]], and reading one costs an attempt per branch ahead of it.
+    */
   type Union[A] = Json.Union.Of[Json.Node, A]
 
   object Union:
