@@ -5,12 +5,19 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 ## Development workflow
 
 Modules: `core`, `core-json`, `core-json-circe`, `core-csv`, `core-csv-fs2-data`, `core-iron`, `core-java-time`,
-`core-case-insensitive`.
+`core-case-insensitive`, `core-typescript`, `core-typescript-effect`, `core-json-typescript`,
+`core-json-typescript-effect`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
 `core-json`/`core-json-circe` and `core-csv`/`core-csv-fs2-data` are the same pair twice: a
 module defining a format's alphabet, and a module interpreting it into a library's data model.
+
+The four typescript modules are a lattice, not a chain: `core-typescript` is the TypeScript source
+model and printer, `core-typescript-effect` the vocabulary of one target library, `core-json-typescript`
+everything a JSON renderer needs whatever the target (including the recursion fixpoint), and
+`core-json-typescript-effect` the generator itself. A second target -- zod, say -- is a
+`core-typescript-zod`/`core-json-typescript-zod` pair beside the two `-effect` ones.
 
 ### Fast loop
 

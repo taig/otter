@@ -11,6 +11,9 @@ import cats.arrow.Profunctor
   * `Contravariant` only once the read side is. Instantiating the other slot to its maximal element is what does that:
   * nothing can be encoded through `Nothing` and nothing usable decoded out of `Any`, which is exactly what
   * `Json.Reader` and `Json.Writer` already say.
+  *
+  * This is not [[Side]], which is the runtime choice an interpreter that involves no value makes about which of a
+  * schema's two wire shapes it describes.
   */
 object Direction:
   /** The read side of a schema that writes nothing. */

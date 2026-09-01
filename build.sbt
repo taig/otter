@@ -40,7 +40,20 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(core, coreCaseInsensitive, coreCsv, coreCsvFs2Data, coreIron, coreJavaTime, coreJson, coreJsonCirce)
+  .aggregate(
+    core,
+    coreCaseInsensitive,
+    coreCsv,
+    coreCsvFs2Data,
+    coreIron,
+    coreJavaTime,
+    coreJson,
+    coreJsonCirce,
+    coreJsonTypescript,
+    coreJsonTypescriptEffect,
+    coreTypescript,
+    coreTypescriptEffect
+  )
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -98,3 +111,27 @@ lazy val coreJavaTime = module(identifier = Some("core-java-time"))
         Nil
   )
   .dependsOn(core % "compile->compile;test->test")
+
+/** TypeScript source definitions and printer */
+lazy val coreTypescript = module(identifier = Some("core-typescript"))
+  .dependsOn(core % "compile->compile;test->test")
+
+/** TypeScript vocabulary of the effect Schema module */
+lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect"))
+  .dependsOn(coreTypescript % "compile->compile;test->test")
+
+/** TypeScript renderers for JSON, whatever the target library
+  *
+  * The test dependency on `core-json-circe` is for its fixtures, which are the schemas every JSON interpreter is
+  * measured against, and for asserting that a rendered shape agrees with the document circe writes.
+  */
+lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
+  .dependsOn(
+    coreJson % "compile->compile;test->test",
+    coreTypescript % "compile->compile;test->test",
+    coreJsonCirce % "test->test"
+  )
+
+/** effect Schema code generation for JSON */
+lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
+  .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptEffect)
