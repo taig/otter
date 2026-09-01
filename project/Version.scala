@@ -8,6 +8,6 @@ object Version {
   val Java = "17"
   val Scala3 = "3.9.0"
   val ScalaJavaTime = "2.7.0"
-  val Validation = "0.0.0+12-9f2ae4e1-SNAPSHOT"
+  val Validation = "0.0.0+13-7bc8c23a-SNAPSHOT"
   val Zio = "2.1.26"
 }

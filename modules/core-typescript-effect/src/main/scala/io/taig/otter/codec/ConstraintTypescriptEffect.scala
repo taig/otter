@@ -15,9 +15,9 @@ import java.math.BigInteger as JBigInteger
   * through.
   *
   * A `Validation` is introspectable: `and` concatenates `constraints`, so what a primitive was built with is still
-  * there to be read. Not every constraint has a counterpart -- effect has no filter for a unique collection or for the
-  * size of a record -- and rather than approximate one, those render as nothing. A generated schema that validates less
-  * than the server does is safe; one that validates something else is not.
+  * there to be read. Not every constraint has a counterpart -- effect has no filter for a unique or sorted collection
+  * or for the size of a record -- and rather than approximate one, those render as nothing. A generated schema that
+  * validates less than the server does is safe; one that validates something else is not.
   */
 object ConstraintTypescriptEffect:
   def filters(constraints: Chain[Constraint]): List[Typescript.Expression] =
@@ -39,6 +39,7 @@ object ConstraintTypescriptEffect:
     case Constraint.Collection.Minimum(comparison) => length("minItems", comparison, offset = 1).some
     case Constraint.Collection.Maximum(comparison) => length("maxItems", comparison, offset = -1).some
     case Constraint.Collection.Unique              => none
+    case _: Constraint.Collection.Sorted           => none
     case _: Constraint.Object                      => none
     case _: Constraint.Generic                     => none
 
