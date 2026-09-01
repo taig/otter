@@ -28,6 +28,17 @@ trait OtterSyntax:
         L: Alt[G]
     ): G[Either[W1, W2], Either[R1, R2]] = L.alt(A.lift(fa), A.element(fb))
 
+    /** Puts a whole record beside another, where `:*` puts a single field beside one.
+      *
+      * That is what a schema decorating another schema is made of: a summary with a distance written in front of it, a
+      * union branch that writes a type's members beside the record's own rather than nested under a key.
+      *
+      * The pair stays nested, where `:*` flattens. Flattening is [[io.taig.otter.Append]]'s decision and it turns on
+      * whether the left side already is a tuple, so routing this through it would leave the shape a call site sees to
+      * depend on what happens to be standing on the left.
+      */
+    def zip[W2, R2](fb: F[W2, R2])(using Z: Zip[F]): F[(W1, W2), (R1, R2)] = Z.zip(fa, fb)
+
   extension [F[-_, +_], W, R](fa: F[W, R])
     /** Maps the read side. What the schema writes is forgotten rather than broken, so the result is a reader: mapping
       * one side of a round trip leaves something that no longer round trips, and the type has to say so.
