@@ -6,19 +6,26 @@ import io.taig.validation.Validation
 
 import scala.collection.immutable.SortedMap
 
-/** Constructs the dictionary type `F` over value schemas of type `G`. */
-trait DictionaryOperation[F[-_, +_], G[-_, +_]]:
-  def hashed[W, R](
+/** Constructs the dictionary type `F` over keys of type `K` and value schemas of type `G`. */
+trait DictionaryOperation[F[-_, +_], K[-_, +_], G[-_, +_]]:
+  def hashed[KW, KR, W, R](
+      key: Reference[K, KW, KR],
       schema: Reference[G, W, R],
-      validation: Validation[Constraint.Object, SortedMap[String, R]]
-  ): F[SortedMap[String, W], SortedMap[String, R]]
+      ordering: Ordering[KR],
+      validation: Validation[Constraint.Object, SortedMap[KR, R]]
+  ): F[SortedMap[KW, W], SortedMap[KR, R]]
 
-  def linked[W, R](
+  def linked[KW, KR, W, R](
+      key: Reference[K, KW, KR],
       schema: Reference[G, W, R],
-      validation: Validation[Constraint.Object, List[(String, R)]]
-  ): F[List[(String, W)], List[(String, R)]]
+      validation: Validation[Constraint.Object, List[(KR, R)]]
+  ): F[List[(KW, W)], List[(KR, R)]]
 
-  extension [W, R](fa: F[W, R]) def schema: Reference[G, ?, ?]
+  extension [W, R](fa: F[W, R])
+    def key: Reference[K, ?, ?]
+    def schema: Reference[G, ?, ?]
 
 object DictionaryOperation:
-  inline def apply[F[-_, +_], G[-_, +_]](using self: DictionaryOperation[F, G]): DictionaryOperation[F, G] = self
+  inline def apply[F[-_, +_], K[-_, +_], G[-_, +_]](using
+      self: DictionaryOperation[F, K, G]
+  ): DictionaryOperation[F, K, G] = self

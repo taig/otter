@@ -5,10 +5,11 @@ import io.taig.otter.Json
 
 object JsonCirceEncoder extends Encoder[Json.Node, CirceJson]:
   override def encode[W](json: Json.Node[W, Any], w: W): CirceJson = json match
-    case Json.Coerce.Schema(node)                => CoerceEncoder(JsonPrimitiveCirceEncoder).encode(node.self, w)
-    case Json.Collection.Schema(node)            => CirceJson.fromValues(CollectionEncoder(this).encode(node.self, w))
-    case Json.Constant.Schema(node)              => ConstantEncoder(JsonPrimitiveCirceEncoder).encode(node.self, w)
-    case Json.Dictionary.Schema(node)            => CirceJson.fromFields(DictionaryEncoder(this).encode(node.self, w))
+    case Json.Coerce.Schema(node)     => CoerceEncoder(JsonPrimitiveCirceEncoder).encode(node.self, w)
+    case Json.Collection.Schema(node) => CirceJson.fromValues(CollectionEncoder(this).encode(node.self, w))
+    case Json.Constant.Schema(node)   => ConstantEncoder(JsonPrimitiveCirceEncoder).encode(node.self, w)
+    case Json.Dictionary.Schema(node) =>
+      CirceJson.fromFields(DictionaryEncoder(JsonTextEncoder, this).encode(node.self, w))
     case Json.Enumeration.Schema(node)           => EnumerationEncoder(JsonPrimitiveCirceEncoder).encode(node.self, w)
     case Json.Optional.Schema(node)              => OptionalEncoder(this, empty = CirceJson.Null).encode(node.self, w)
     case json @ Json.Primitive.Boolean.Schema(_) => JsonPrimitiveCirceEncoder.encode(json, w)

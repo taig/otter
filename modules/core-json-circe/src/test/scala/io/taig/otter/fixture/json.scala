@@ -3,6 +3,9 @@ package io.taig.otter.fixture
 import io.taig.otter.Json
 import io.taig.otter.component.JsonComponent.*
 
+import java.util.UUID
+import scala.collection.immutable.SortedMap
+
 object json:
   val book: Json.Record[Book] =
     (field("title", string) :* field("pages", int) :* field("read", boolean)).to
@@ -32,6 +35,30 @@ object json:
   /** Three branches, so the union nests two levels deep. */
   val shape: Json.Union[Shape] =
     (branch("circle", circle) :+ branch("square", square) :+ branch("triangle", triangle)).to
+
+  /** How a [[Tag]] is written where a name is expected. Only the write side is ever reachable, which is honest: a name
+    * is printed where the schema is built and never reaches the wire.
+    */
+  val tag: Json.Primitive.Text.Writer[Tag] = printer("tag", _.toString.toLowerCase)
+
+  /** The same union as [[shape]], every branch named by a [[Tag]] rather than by a literal. Naming is the only
+    * difference, so the two schemas read and write alike.
+    */
+  val taggedShape: Json.Union[Shape] =
+    (branch(Tag.Circle, tag, circle) :+ branch(Tag.Square, tag, square) :+ branch(Tag.Triangle, tag, triangle)).to
+
+  /** An integer carried as text. JSON has no numeric keys, so an integer key is a named format the way [[isbn]] is,
+    * rather than `int`, which would claim the document holds a number.
+    */
+  val counter: Json.Primitive.Text[Int] = codec("int", _.toIntOption.toRight("not an int"), _.toString)
+
+  /** A dictionary whose keys are parsed rather than taken verbatim. */
+  val editions: Json.Dictionary[SortedMap[UUID, Int]] = dictionary.map(uuid, int)
+
+  val printings: Json.Dictionary[List[(Int, String)]] = dictionary.list(counter, string)
+
+  /** A dictionary whose keys can be read but not written, the way [[isbn]] cannot be written. */
+  val catalogue: Json.Dictionary.Reader[List[(Isbn, String)]] = dictionary.list(json.isbn, string)
 
   lazy val tree: Json.Record[Tree] = (
     field("value", int) :*

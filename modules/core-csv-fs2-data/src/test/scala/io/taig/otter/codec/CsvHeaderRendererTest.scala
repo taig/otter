@@ -2,6 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.Chain
 import cats.syntax.all.*
+import io.taig.otter.Csv
 import io.taig.otter.component.CsvComponent.*
 import io.taig.otter.fixture.*
 import zio.Scope
@@ -31,6 +32,11 @@ object CsvHeaderRendererTest extends ZIOSpecDefault:
       val present = CsvRecordEncoder.encode(csv.blankTag, Note("Dune", 42.some))
 
       assertTrue(absent.map(_._1) == header, present.map(_._1) == header)
+    ,
+    test("a column may be named by a value rather than by a literal"):
+      val column: Csv.Primitive.Text.Writer[Genre] = printer("column", _.toString.toLowerCase)
+      val schema = field(Genre.Fiction, column, string) :* field(Genre.History, column, int)
+      assertTrue(CsvHeaderRenderer.render(schema) == Chain("fiction", "history"))
     ,
     test("a schema that reads only still has a header, because no value takes part"):
       val schema = field("isbn", csv.isbn).toRecord

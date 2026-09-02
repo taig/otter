@@ -21,7 +21,7 @@ object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
       case Json.Constant.Schema(node) =>
         ConstantDecoder(JsonPrimitiveCirceDecoder, JsonPrimitiveCirceEncoder, _.toData).decode(node.self, json)
       case Json.Dictionary.Schema(node) =>
-        obj(json).map(_.toList).andThen(DictionaryDecoder(this).decode(node.self, _))
+        obj(json).map(_.toList).andThen(DictionaryDecoder(JsonTextDecoder, this).decode(node.self, _))
       case Json.Enumeration.Schema(node) =>
         EnumerationDecoder(JsonPrimitiveCirceDecoder, JsonPrimitiveCirceEncoder, _.toData).decode(node.self, json)
       case Json.Optional.Schema(node) =>

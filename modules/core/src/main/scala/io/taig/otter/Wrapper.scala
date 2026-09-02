@@ -202,26 +202,34 @@ object Wrapper:
 
       extension [W, R](fa: Outer[S, W, R]) override def schema: Reference[S, ?, ?] = node(fa).schema
 
-  abstract class Dictionary[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
-      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Dictionary[s, w, r]] => Outer[s, w, r],
-      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Dictionary[s, w, r]]
-  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Dictionary[s, w, r]](wrap, unwrap):
-    given operation: [S[-w, +r] <: Bound[w, r]] => DictionaryOperation[[w, r] =>> Outer[S, w, r], S]:
-      override def hashed[W, R](
+  abstract class Dictionary[Bound[-_, +_], K[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
+      wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Dictionary[K, s, w, r]] => Outer[s, w, r],
+      unwrap: [s[-w, +r] <: Bound[w, r], w, r] => Outer[s, w, r] => Annotation[Self.Dictionary[K, s, w, r]]
+  ) extends Wrapper.Nested[Bound, Outer, [s[-w, +r] <: Bound[w, r], w, r] =>> Self.Dictionary[K, s, w, r]](
+        wrap,
+        unwrap
+      ):
+    given operation: [S[-w, +r] <: Bound[w, r]] => DictionaryOperation[[w, r] =>> Outer[S, w, r], K, S]:
+      override def hashed[KW, KR, W, R](
+          key: Reference[K, KW, KR],
           schema: Reference[S, W, R],
-          validation: Validation[Constraint.Object, SortedMap[String, R]]
-      ): Outer[S, SortedMap[String, W], SortedMap[String, R]] =
-        Dictionary.this.apply[S, SortedMap[String, W], SortedMap[String, R]](
-          Self.Dictionary.Hashed(schema, validation)
+          ordering: Ordering[KR],
+          validation: Validation[Constraint.Object, SortedMap[KR, R]]
+      ): Outer[S, SortedMap[KW, W], SortedMap[KR, R]] =
+        Dictionary.this.apply[S, SortedMap[KW, W], SortedMap[KR, R]](
+          Self.Dictionary.Hashed(key, schema, ordering, validation)
         )
 
-      override def linked[W, R](
+      override def linked[KW, KR, W, R](
+          key: Reference[K, KW, KR],
           schema: Reference[S, W, R],
-          validation: Validation[Constraint.Object, List[(String, R)]]
-      ): Outer[S, List[(String, W)], List[(String, R)]] =
-        Dictionary.this.apply[S, List[(String, W)], List[(String, R)]](Self.Dictionary.Linked(schema, validation))
+          validation: Validation[Constraint.Object, List[(KR, R)]]
+      ): Outer[S, List[(KW, W)], List[(KR, R)]] =
+        Dictionary.this.apply[S, List[(KW, W)], List[(KR, R)]](Self.Dictionary.Linked(key, schema, validation))
 
-      extension [W, R](fa: Outer[S, W, R]) override def schema: Reference[S, ?, ?] = node(fa).schema
+      extension [W, R](fa: Outer[S, W, R])
+        override def key: Reference[K, ?, ?] = node(fa).key
+        override def schema: Reference[S, ?, ?] = node(fa).schema
 
   abstract class Optional[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Optional[s, w, r]] => Outer[s, w, r],

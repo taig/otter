@@ -27,6 +27,18 @@ object DirectionTest extends ZIOSpecDefault:
       assertTrue(!typeChecks("""val isbn: io.taig.otter.fixture.Isbn =
         JsonCirceDecoder.decode(json.title, io.circe.Json.Null).getOrElse(???)"""))
     ,
+    test("a dictionary key is text, so a number schema cannot name one"):
+      assertTrue(
+        typeChecks("""dictionary.map(json.counter, string)"""),
+        !typeChecks("""dictionary.map(int, string)""")
+      )
+    ,
+    test("a dictionary whose key can only be read can only be decoded"):
+      assertTrue(
+        typeChecks("""JsonCirceDecoder.decode(json.catalogue, io.circe.Json.obj())"""),
+        !typeChecks("""JsonCirceEncoder.encode(json.catalogue, Nil)""")
+      )
+    ,
     test("a read only schema can be decoded"):
       assertTrue(typeChecks("""JsonCirceDecoder.decode(json.isbn, io.circe.Json.fromString("978"))"""))
     ,

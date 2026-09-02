@@ -1,6 +1,7 @@
 package io.taig.otter.component
 
 import io.taig.otter.Json
+import io.taig.otter.codec.JsonTextEncoder
 import io.taig.otter.syntax.AllSyntax
 import io.taig.otter.syntax.JsonSyntax
 
@@ -18,13 +19,14 @@ trait JsonComponent
       PrimitiveComponent.Text[Json.Primitive.Text.Schema],
       RecordComponent[Json.Node, Json.Record.Schema, Json.Field.Schema],
       TupleComponent[Json.Node, Json.Tuple.Schema]:
-  object field extends RecordComponent.Field[Json.Node, Json.Field.Schema]
+  object field
+      extends RecordComponent.Field[Json.Node, Json.Primitive.Text.Node, Json.Field.Schema](using JsonTextEncoder)
 
-  object branch extends BranchComponent[Json.Node, Json.Branch.Schema]
+  object branch extends BranchComponent[Json.Node, Json.Primitive.Text.Node, Json.Branch.Schema](using JsonTextEncoder)
 
   object collection extends CollectionComponent[Json.Node, Json.Collection.Schema]
 
-  object dictionary extends DictionaryComponent[Json.Node, Json.Dictionary.Schema]
+  object dictionary extends DictionaryComponent[Json.Node, Json.Primitive.Text.Node, Json.Dictionary.Schema]
 
   object constant extends ConstantComponent[Json.Primitive.Node, Json.Constant.Schema]
 

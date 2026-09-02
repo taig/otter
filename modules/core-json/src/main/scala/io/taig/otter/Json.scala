@@ -196,13 +196,15 @@ object Json:
     object Writer:
       type Of[S[-w, +r] <: Json.Node[w, r], -A] = Json.Dictionary.Schema[S, A, Any]
 
-    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](self: Annotation[Self.Dictionary[S, W, R]])
-        extends Json.Schema[S, W, R]
+    final case class Schema[+S[-w, +r] <: Json.Schema[?, w, r], -W, +R](
+        self: Annotation[Self.Dictionary[Json.Primitive.Text.Node, S, W, R]]
+    ) extends Json.Schema[S, W, R]
 
     object Schema
-        extends Wrapper.Dictionary[Json.Node, Json.Dictionary.Schema](
+        extends Wrapper.Dictionary[Json.Node, Json.Primitive.Text.Node, Json.Dictionary.Schema](
           [s[-w, +r] <: Json.Node[w, r], w, r] =>
-            (annotation: Annotation[Self.Dictionary[s, w, r]]) => new Json.Dictionary.Schema(annotation),
+            (annotation: Annotation[Self.Dictionary[Json.Primitive.Text.Node, s, w, r]]) =>
+              new Json.Dictionary.Schema(annotation),
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Dictionary.Schema[s, w, r]) => json.self
         )
 

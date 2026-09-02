@@ -6,6 +6,9 @@ import io.taig.otter.fixture.*
 import zio.Scope
 import zio.test.*
 
+import java.util.UUID
+import scala.collection.immutable.SortedMap
+
 object JsonCirceRoundTripTest extends ZIOSpecDefault:
   private def roundTrips[A](schema: Json[A], value: A): TestResult =
     val encoded = JsonCirceEncoder.encode(schema, value)
@@ -39,6 +42,9 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
         children <- Gen.listOfBounded(0, 2)(tree(depth - 1))
       yield Tree(value, children)
 
+  private val editions: Gen[Any, SortedMap[UUID, Int]] =
+    Gen.listOf(Gen.uuid.zip(Gen.int)).map(SortedMap.from)
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceRoundTripTest")(
     test("case class"):
       check(book)(roundTrips(json.book, _))
@@ -60,4 +66,13 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
     ,
     test("recursive schema"):
       check(tree(depth = 3))(roundTrips(json.tree, _))
+    ,
+    test("enum through a union whose branches are named by a value"):
+      check(shape)(roundTrips(json.taggedShape, _))
+    ,
+    test("dictionary with a typed key"):
+      check(editions)(roundTrips(json.editions, _))
+    ,
+    test("dictionary with an integer key, which the document holds as text"):
+      check(Gen.listOf(Gen.int.zip(Gen.alphaNumericString)))(roundTrips(json.printings, _))
   )

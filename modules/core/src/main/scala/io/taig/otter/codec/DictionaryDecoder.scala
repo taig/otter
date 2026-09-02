@@ -9,22 +9,30 @@ import io.taig.validation.Validation
 
 import scala.collection.immutable.SortedMap
 
-final class DictionaryDecoder[F[-_, +_], T](decoder: Decoder[F, T])
-    extends Decoder[[w, r] =>> Dictionary[F, w, r], List[(String, T)]]:
+final class DictionaryDecoder[K[-_, +_], F[-_, +_], T](key: Decoder[K, String], decoder: Decoder[F, T])
+    extends Decoder[[w, r] =>> Dictionary[K, F, w, r], List[(String, T)]]:
   override def decode[R](
-      schema: Dictionary[F, Nothing, R],
+      schema: Dictionary[K, F, Nothing, R],
       values: List[(String, T)]
   ): Validated[Violations, R] = schema match
-    case Dictionary.Hashed(reference, validation) => entries(reference.value, values, validation)(SortedMap.from)
-    case Dictionary.Linked(reference, validation) => entries(reference.value, values, validation)(identity)
-    case Dictionary.Modify(self, f, _)            => decode(self, values).map(f)
+    case Dictionary.Hashed(keys, reference, ordering, validation) =>
+      entries(keys.value, reference.value, values, validation)(SortedMap.from(_)(using ordering))
+    case Dictionary.Linked(keys, reference, validation) =>
+      entries(keys.value, reference.value, values, validation)(identity)
+    case Dictionary.Modify(self, f, _) => decode(self, values).map(f)
 
-  private def entries[R, C](
+  /** A key that failed to parse has no read side to report under, so a violation stays at the text the document
+    * actually holds. Both halves of an entry are read before either is given up on, so a bad key and a bad value in the
+    * same entry are reported together.
+    */
+  private def entries[KR, R, C](
+      key: K[Nothing, KR],
       schema: F[Nothing, R],
       values: List[(String, T)],
       validation: Validation[Constraint.Object, C]
-  )(collect: List[(String, R)] => C): Validated[Violations, C] =
+  )(collect: List[(KR, R)] => C): Validated[Violations, C] =
     values
-      .traverse((key, value) => decoder.decode(schema, value).tupleLeft(key).leftMap(key /: _))
+      .traverse: (raw, value) =>
+        (this.key.decode(key, raw), decoder.decode(schema, value)).tupled.leftMap(raw /: _)
       .map(collect)
       .andThen(values => validation.validate(values).toInvalid(values).leftMap(Violations.apply))

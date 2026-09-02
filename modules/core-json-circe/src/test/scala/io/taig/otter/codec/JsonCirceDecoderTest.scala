@@ -13,6 +13,9 @@ import io.taig.validation.Violation
 import zio.Scope
 import zio.test.*
 
+import java.util.UUID
+import scala.collection.immutable.SortedMap
+
 object JsonCirceDecoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceDecoderTest")(
     test("Json.Primitive"):
@@ -57,6 +60,44 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
     test("Json.Dictionary"):
       val value = CirceJson.obj("foo" := "1", "bar" := "2")
       assertTrue(JsonCirceDecoder.decode(dictionary.list(string), value) == List("foo" -> "1", "bar" -> "2").valid)
+    ,
+    test("Json.Dictionary: a map collects its entries by key"):
+      val value = CirceJson.obj("foo" := "1", "bar" := "2")
+      assertTrue(
+        JsonCirceDecoder.decode(dictionary.map(string), value) == SortedMap("bar" -> "2", "foo" -> "1").valid
+      )
+    ,
+    test("Json.Dictionary: a typed key is parsed by its schema"):
+      val id = UUID.fromString("6b1a4a5c-3a1e-4f0e-9b7e-2f0f5b3c9a11")
+      val value = CirceJson.obj(id.toString := 3)
+      assertTrue(JsonCirceDecoder.decode(json.editions, value) == SortedMap(id -> 3).valid)
+    ,
+    test("Json.Dictionary: an integer key is read out of the text it is written as"):
+      assertTrue(JsonCirceDecoder.decode(json.printings, CirceJson.obj("5" := "first")) == List(5 -> "first").valid)
+    ,
+    test("Json.Dictionary: a key that cannot be parsed is reported under the text the document holds"):
+      val value = CirceJson.obj("nope" := 3)
+
+      val result = JsonCirceDecoder.decode(json.editions, value)
+
+      val steps = result match
+        case Validated.Invalid(violations) => paths(violations)
+        case Validated.Valid(_)            => Nil
+
+      val reported = result match
+        case Validated.Invalid(violations) => constraints(violations)
+        case Validated.Valid(_)            => Nil
+
+      assertTrue(steps == List(List(Step.Field("nope"))), reported == List(Constraint.Generic.Type("uuid")))
+    ,
+    test("Json.Dictionary: a bad key and a bad value in the same entry are reported together"):
+      val value = CirceJson.obj("nope" := "three")
+
+      val constraint = JsonCirceDecoder.decode(json.editions, value) match
+        case Validated.Invalid(violations) => constraints(violations)
+        case Validated.Valid(_)            => Nil
+
+      assertTrue(constraint == List(Constraint.Generic.Type("uuid"), Constraint.Generic.Type("int")))
     ,
     test("Json.Record"):
       val schema = field("foo", string) :* field("bar", int) :* field("baz", boolean)
@@ -181,6 +222,11 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
     test("read only schema"):
       assertTrue(JsonCirceDecoder.decode(json.isbn, CirceJson.fromString("978")) == Isbn("978").valid)
   )
+
+  private def constraints(violations: Violations): List[Constraint] = violations match
+    case Violations.Root(values, violations) =>
+      violations.toList.map(_.constraint) ++ values.toList.flatMap((_, nested) => constraints(nested))
+    case Violations.Namespace(values) => values.toSortedMap.toList.flatMap((_, nested) => constraints(nested))
 
   private def paths(violations: Violations): List[List[Step]] = violations match
     case Violations.Root(values, _) =>

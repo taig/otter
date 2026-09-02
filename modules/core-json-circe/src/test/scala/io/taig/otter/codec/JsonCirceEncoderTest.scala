@@ -11,6 +11,9 @@ import io.taig.otter.fixture.*
 import zio.Scope
 import zio.test.*
 
+import java.util.UUID
+import scala.collection.immutable.SortedMap
+
 object JsonCirceEncoderTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonCirceEncoderTest")(
     test("Json.Primitive"):
@@ -41,6 +44,27 @@ object JsonCirceEncoderTest extends ZIOSpecDefault:
         JsonCirceEncoder.encode(dictionary.list(string), List("foo" -> "1", "bar" -> "2")) ==
           CirceJson.obj("foo" := "1", "bar" := "2")
       )
+    ,
+    test("Json.Dictionary: a map is written in key order"):
+      assertTrue(
+        JsonCirceEncoder.encode(dictionary.map(string), SortedMap("foo" -> "1", "bar" -> "2")) ==
+          CirceJson.obj("bar" := "2", "foo" := "1")
+      )
+    ,
+    test("Json.Dictionary: a typed key is printed by its schema"):
+      val id = UUID.fromString("6b1a4a5c-3a1e-4f0e-9b7e-2f0f5b3c9a11")
+      assertTrue(
+        JsonCirceEncoder.encode(json.editions, SortedMap(id -> 3)) == CirceJson.obj(id.toString := 3)
+      )
+    ,
+    test("Json.Dictionary: an integer key is written as the text it is"):
+      assertTrue(
+        JsonCirceEncoder.encode(json.printings, List(5 -> "first")) == CirceJson.obj("5" := "first")
+      )
+    ,
+    test("Json.Branch: a name spelled as a value is the name it prints to"):
+      val value = Shape.Circle(1.5)
+      assertTrue(JsonCirceEncoder.encode(json.taggedShape, value) == JsonCirceEncoder.encode(json.shape, value))
     ,
     test("Json.Record"):
       val schema = field("foo", string) :* field("bar", int) :* field("baz", boolean)

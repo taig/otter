@@ -16,6 +16,10 @@ object Isbn:
 enum Genre:
   case Fiction, History, Poetry
 
+/** Exercises a name spelled as a value rather than as a literal. */
+enum Tag:
+  case Circle, Square, Triangle
+
 /** Exercises unions and, through them, nested records. */
 enum Shape:
   case Circle(radius: Double)
