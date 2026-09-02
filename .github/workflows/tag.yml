@@ -81,7 +81,7 @@ jobs:
         cache: sbt
     - name: Setup sbt
       uses: sbt/setup-sbt@v1
-    - run: sbt test
+    - run: sbt testFull
   deploy:
     name: Deploy
     runs-on: ubuntu-latest

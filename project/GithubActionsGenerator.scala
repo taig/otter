@@ -63,7 +63,7 @@ object GithubActionsGenerator {
       Step.Checkout,
       Step.setupJava(javaVersion),
       Step.SetupSbt,
-      Json.obj("run" := "sbt test")
+      Json.obj("run" := "sbt testFull")
     )
 
     def deploy(javaVersion: String): Json = Job(
