@@ -1,8 +1,13 @@
 import sbtcrossproject.CrossProject
 
+/** True on a CI runner, which has an order of magnitude less memory than a development machine and links every project
+  * exactly once, so nothing it holds on to for a second run is ever read.
+  */
+val ci: Boolean = sys.env.contains("CI")
+
 def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject = {
   val platforms = List(JVMPlatform) ++ (if (jvmOnly) Nil else List(JSPlatform))
-  CrossProject(identifier.getOrElse("root"), file(identifier.fold(".")("modules/" + _)))(platforms *)
+  val project = CrossProject(identifier.getOrElse("root"), file(identifier.fold(".")("modules/" + _)))(platforms *)
     .crossType(CrossType.Pure)
     .withoutSuffixFor(JVMPlatform)
     .build()
@@ -12,7 +17,13 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
         "-Xmax-inlines" :: "64" :: Nil,
       name := "otter" + identifier.fold("")("-" + _)
     )
+
+  if (jvmOnly) project else project.jsSettings(scalaJSLinkerConfig ~= { _.withBatchMode(ci) })
 }
+
+// A linker holds the IR of its entire classpath, and there are thirteen of them. Two at once is what a runner with two
+// cores would otherwise attempt, and one is what it can afford.
+Global / concurrentRestrictions ++= (if (ci) Tags.limitAll(1) :: Nil else Nil)
 
 inThisBuild(
   Def.settings(
