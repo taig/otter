@@ -3,7 +3,6 @@ package io.taig.otter.codec
 import cats.data.NonEmptyList
 import io.taig.otter.Coerce
 import io.taig.otter.Json
-import io.taig.otter.JsonTypescript
 import io.taig.otter.Optional
 import io.taig.otter.Side
 import io.taig.otter.Tuple
@@ -47,12 +46,12 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
   def field(json: Json.Field.Node[?, ?]): Typescript.Type.Field =
     val tpe = child(json.self.self.schema.value)
 
-    JsonTypescript.presence(side, json.self.metadata, json.self.self) match
-      case JsonTypescript.Presence.Required => Typescript.Type.Field(json.self.self.name, tpe, optional = false)
-      case JsonTypescript.Presence.Nullable =>
+    Json.presence(side, json.self.metadata, json.self.self) match
+      case Json.Presence.Required => Typescript.Type.Field(json.self.self.name, tpe, optional = false)
+      case Json.Presence.Nullable =>
         Typescript.Type.Field(json.self.self.name, nullable(tpe), optional = false)
-      case JsonTypescript.Presence.Optional         => Typescript.Type.Field(json.self.self.name, tpe, optional = true)
-      case JsonTypescript.Presence.OptionalNullable =>
+      case Json.Presence.Optional         => Typescript.Type.Field(json.self.self.name, tpe, optional = true)
+      case Json.Presence.OptionalNullable =>
         Typescript.Type.Field(json.self.self.name, nullable(tpe), optional = true)
 
   /** The laxer wire forms the decoder normalises before handing over, which only the read side sees. */
@@ -86,7 +85,7 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
     val elements = schema.schemas.toList.map(reference => child(reference.value))
     val self = Typescript.Type.Tuple(elements)
 
-    if JsonTypescript.absent(side, schema)
+    if Json.absent(side, schema)
     then Typescript.Type.Union(NonEmptyList.of(self, Typescript.Type.Tuple(elements.map(_ => Typescript.Type.Null))))
     else self
 

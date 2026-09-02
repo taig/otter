@@ -4,7 +4,6 @@ import cats.data.NonEmptyList
 import cats.data.State
 import cats.syntax.all.*
 import io.taig.otter.Json
-import io.taig.otter.JsonTypescript
 import io.taig.otter.Metadata
 import io.taig.otter.Side
 import io.taig.otter.Typescript
@@ -62,7 +61,7 @@ final class JsonStateTypescriptRenderer(
     )
   )
 
-  private def name(json: Json.Node[?, ?]): Option[String] = JsonTypescript.name(namespaces, json).map(rename)
+  private def name(json: Json.Node[?, ?]): Option[String] = Json.name(namespaces, json).map(rename)
 
   override def render[W, R](json: Json.Node[W, R]): State[JsonTypescriptContext, Typescript.Expression] =
     State: context =>
@@ -79,8 +78,8 @@ final class JsonStateTypescriptRenderer(
             /* A type the schema asked for wins, and a cycle forces one; anything else is inferred from the value.
              * Declaring a type at all is what makes the constant need an ascription, because inference would otherwise
              * disagree with what was just declared. */
-            val declared = JsonTypescript
-              .attr(namespaces, JsonTypescript.metadata(json), TypescriptKeys.tpe)
+            val declared = Json
+              .attr(namespaces, Json.metadata(json), TypescriptKeys.tpe)
               .orElse(Option.when(update.recursive)(structural.render(json)))
 
             val definition = declared.fold(JsonTypescriptDefinition(target.inferred(symbol), none, expression)): tpe =>

@@ -8,7 +8,6 @@ import io.taig.otter.Coerce
 import io.taig.otter.Collection
 import io.taig.otter.Constraint
 import io.taig.otter.Json
-import io.taig.otter.JsonTypescript
 import io.taig.otter.Optional
 import io.taig.otter.Primitive
 import io.taig.otter.Side
@@ -53,11 +52,11 @@ final class JsonTypescriptExpressionEffectRenderer(
   /** A record's member, whose key may be absent and whose value may be empty, depending on the side. */
   private def field(json: Json.Field.Node[?, ?]): State[JsonTypescriptContext, (String, Typescript.Expression)] =
     child(json.self.self.schema.value).map: expression =>
-      val presence = JsonTypescript.presence(side, json.self.metadata, json.self.self) match
-        case JsonTypescript.Presence.Required         => expression
-        case JsonTypescript.Presence.Nullable         => TypescriptEffect.nullOr(expression)
-        case JsonTypescript.Presence.Optional         => TypescriptEffect.optional(expression)
-        case JsonTypescript.Presence.OptionalNullable => TypescriptEffect.optionalNullable(expression)
+      val presence = Json.presence(side, json.self.metadata, json.self.self) match
+        case Json.Presence.Required         => expression
+        case Json.Presence.Nullable         => TypescriptEffect.nullOr(expression)
+        case Json.Presence.Optional         => TypescriptEffect.optional(expression)
+        case Json.Presence.OptionalNullable => TypescriptEffect.optionalNullable(expression)
 
       json.self.self.name -> presence
 
@@ -112,7 +111,7 @@ final class JsonTypescriptExpressionEffectRenderer(
       .map: elements =>
         val self = TypescriptEffect.tuple(elements)
 
-        if JsonTypescript.absent(side, schema)
+        if Json.absent(side, schema)
         then
           TypescriptEffect.union(
             NonEmptyList.of(self, TypescriptEffect.tuple(elements.map(_ => TypescriptEffect.Null)))
