@@ -63,8 +63,8 @@ jobs:
     - name: Setup sbt
       uses: sbt/setup-sbt@v1
     - run: sbt scalafixCheckAll
-  tests:
-    name: Tests
+  testsJvm:
+    name: Tests (JVM)
     runs-on: ubuntu-latest
     env:
       SBT_TPOLECAT_DEV: 'true'
@@ -81,7 +81,26 @@ jobs:
         cache: sbt
     - name: Setup sbt
       uses: sbt/setup-sbt@v1
-    - run: sbt testFull
+    - run: sbt testJVM
+  testsJs:
+    name: Tests (JS)
+    runs-on: ubuntu-latest
+    env:
+      SBT_TPOLECAT_DEV: 'true'
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+    - name: Setup Java
+      uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: '17'
+        cache: sbt
+    - name: Setup sbt
+      uses: sbt/setup-sbt@v1
+    - run: sbt testJS
   deploy:
     name: Deploy
     runs-on: ubuntu-latest
@@ -89,7 +108,8 @@ jobs:
     - blowout
     - scalafmt
     - scalafix
-    - tests
+    - testsJvm
+    - testsJs
     env:
       SBT_TPOLECAT_RELEASE: 'true'
     steps:

@@ -59,18 +59,18 @@ object GithubActionsGenerator {
       Json.obj("run" := "sbt scalafixCheckAll")
     )
 
-    def tests(javaVersion: String): Json = Job(name = "Tests", javaVersion)(
+    def tests(javaVersion: String, platform: String): Json = Job(name = s"Tests ($platform)", javaVersion)(
       Step.Checkout,
       Step.setupJava(javaVersion),
       Step.SetupSbt,
-      Json.obj("run" := "sbt testFull")
+      Json.obj("run" := s"sbt test$platform")
     )
 
     def deploy(javaVersion: String): Json = Job(
       name = "Deploy",
       javaVersion,
       mode = "RELEASE",
-      needs = List("blowout", "scalafmt", "scalafix", "tests")
+      needs = List("blowout", "scalafmt", "scalafix", "testsJvm", "testsJs")
     )(
       Step.Checkout,
       Step.setupJava(javaVersion),
@@ -97,7 +97,8 @@ object GithubActionsGenerator {
       "blowout" := Job.blowout(javaVersion),
       "scalafmt" := Job.scalafmt(javaVersion),
       "scalafix" := Job.scalafix(javaVersion),
-      "tests" := Job.tests(javaVersion),
+      "testsJvm" := Job.tests(javaVersion, "JVM"),
+      "testsJs" := Job.tests(javaVersion, "JS"),
       "deploy" := Job.deploy(javaVersion)
     )
   )
@@ -111,7 +112,8 @@ object GithubActionsGenerator {
       "blowout" := Job.blowout(javaVersion),
       "scalafmt" := Job.scalafmt(javaVersion),
       "scalafix" := Job.scalafix(javaVersion),
-      "tests" := Job.tests(javaVersion),
+      "testsJvm" := Job.tests(javaVersion, "JVM"),
+      "testsJs" := Job.tests(javaVersion, "JS"),
       "deploy" := Job.deploy(javaVersion)
     )
   )
@@ -127,7 +129,8 @@ object GithubActionsGenerator {
       "blowout" := Job.blowout(javaVersion),
       "scalafmt" := Job.scalafmt(javaVersion),
       "scalafix" := Job.scalafix(javaVersion),
-      "tests" := Job.tests(javaVersion)
+      "testsJvm" := Job.tests(javaVersion, "JVM"),
+      "testsJs" := Job.tests(javaVersion, "JS")
     )
   )
 }

@@ -51,21 +51,24 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(
-    core,
-    coreCaseInsensitive,
-    coreCsv,
-    coreCsvFs2Data,
-    coreIron,
-    coreJavaTime,
-    coreJson,
-    coreJsonCirce,
-    coreJsonSchema,
-    coreJsonTypescript,
-    coreJsonTypescriptEffect,
-    coreTypescript,
-    coreTypescriptEffect
-  )
+  .aggregate(modules *)
+
+/** Every module that cross builds, which is every module but the root: what there is to test, twice over. */
+lazy val modules: List[CrossProject] = List(
+  core,
+  coreCaseInsensitive,
+  coreCsv,
+  coreCsvFs2Data,
+  coreIron,
+  coreJavaTime,
+  coreJson,
+  coreJsonCirce,
+  coreJsonSchema,
+  coreJsonTypescript,
+  coreJsonTypescriptEffect,
+  coreTypescript,
+  coreTypescriptEffect
+)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -159,3 +162,8 @@ lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
 /** effect Schema code generation for JSON */
 lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
   .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptEffect)
+
+// One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
+// say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
+addCommandAlias("testJVM", modules.map(_.jvm.id + "/testFull").mkString("; "))
+addCommandAlias("testJS", modules.map(_.js.id + "/testFull").mkString("; "))
