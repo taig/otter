@@ -8,7 +8,15 @@ import io.taig.validation.Validation
 
 import java.math.BigDecimal as JBigDecimal
 import java.math.BigInteger as JBigInteger
+import java.net.URI
+import java.net.URISyntaxException
+import java.nio.charset.Charset
+import java.util.Currency
+import java.util.IllformedLocaleException
+import java.util.Locale
 import java.util.UUID
+import java.util.regex.Pattern
+import java.util.regex.PatternSyntaxException
 import scala.Boolean as SBoolean
 
 object PrimitiveComponent:
@@ -94,4 +102,58 @@ object PrimitiveComponent:
       "uuid",
       value => Either.catchOnly[IllegalArgumentException](UUID.fromString(value)).leftMap(_ => s"invalid uuid: $value"),
       _.toString
+    )
+
+    /** A locale as the BCP 47 language tag it is written as everywhere else in the API. */
+    val locale: F[Locale, Locale] = codec(
+      "locale",
+      value =>
+        Either
+          .catchOnly[IllformedLocaleException](new Locale.Builder().setLanguageTag(value).build())
+          .leftMap(_ => s"invalid locale: $value"),
+      _.toLanguageTag
+    )
+
+    /** An ISO 4217 currency code, the same shape as [[locale]]: a JDK factory that rejects anything not in its
+      * registry, and a carrier whose own `toString` is that registry's code.
+      */
+    val currency: F[Currency, Currency] = codec(
+      "currency",
+      value =>
+        Either
+          .catchOnly[IllegalArgumentException](Currency.getInstance(value))
+          .leftMap(_ => s"invalid currency: $value"),
+      _.getCurrencyCode
+    )
+
+    /** A `URI`, not a `URL`: `URL`'s `equals` and `hashCode` resolve hostnames over the network, which a schema must
+      * never do. `URI` carries the same text without reaching out.
+      */
+    val uri: F[URI, URI] = codec(
+      "uri",
+      value => Either.catchOnly[URISyntaxException](new URI(value)).leftMap(_ => s"invalid uri: $value"),
+      _.toString
+    )
+
+    /** A charset name or alias, canonicalised the way [[locale]] is: `"utf8"` reads back out as `"UTF-8"`.
+      *
+      * `Charset.forName` throws `IllegalCharsetNameException` for text no charset could ever be named and
+      * `UnsupportedCharsetException` for a name this JVM does not have registered; both are `IllegalArgumentException`,
+      * so one catch covers either.
+      */
+    val charset: F[Charset, Charset] = codec(
+      "charset",
+      value =>
+        Either.catchOnly[IllegalArgumentException](Charset.forName(value)).leftMap(_ => s"invalid charset: $value"),
+      _.name
+    )
+
+    /** A regular expression, carried as the source text `Pattern.compile` accepts and `.pattern` hands back unchanged.
+      * Named `regex` rather than `pattern` so the value and the `java.util.regex.Pattern` it is built from never share
+      * a name.
+      */
+    val regex: F[Pattern, Pattern] = codec(
+      "regex",
+      value => Either.catchOnly[PatternSyntaxException](Pattern.compile(value)).leftMap(_ => s"invalid regex: $value"),
+      _.pattern
     )

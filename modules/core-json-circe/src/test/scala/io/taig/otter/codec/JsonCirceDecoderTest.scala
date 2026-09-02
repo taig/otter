@@ -32,6 +32,41 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
         JsonCirceDecoder.decode(uuid, CirceJson.fromString("not-a-uuid")).isInvalid
       )
     ,
+    test("Json.Primitive: locale"):
+      val value = new java.util.Locale.Builder().setLanguageTag("en-US").build()
+      assertTrue(
+        JsonCirceDecoder.decode(locale, CirceJson.fromString("en-US")) == value.valid,
+        JsonCirceDecoder.decode(locale, CirceJson.fromString("not a locale")).isInvalid
+      )
+    ,
+    test("Json.Primitive: currency"):
+      val value = java.util.Currency.getInstance("USD")
+      assertTrue(
+        JsonCirceDecoder.decode(currency, CirceJson.fromString("USD")) == value.valid,
+        JsonCirceDecoder.decode(currency, CirceJson.fromString("not-a-currency")).isInvalid
+      )
+    ,
+    test("Json.Primitive: uri"):
+      val value = new java.net.URI("https://example.com/path")
+      assertTrue(
+        JsonCirceDecoder.decode(uri, CirceJson.fromString("https://example.com/path")) == value.valid,
+        JsonCirceDecoder.decode(uri, CirceJson.fromString("not a uri")).isInvalid
+      )
+    ,
+    test("Json.Primitive: charset"):
+      val value = java.nio.charset.Charset.forName("UTF-8")
+      assertTrue(
+        JsonCirceDecoder.decode(charset, CirceJson.fromString("utf8")) == value.valid,
+        JsonCirceDecoder.decode(charset, CirceJson.fromString("not a charset")).isInvalid
+      )
+    ,
+    test("Json.Primitive: regex"):
+      val value = java.util.regex.Pattern.compile("a+b*")
+      assertTrue(
+        JsonCirceDecoder.decode(regex, CirceJson.fromString("a+b*")).map(_.pattern) == value.pattern.valid,
+        JsonCirceDecoder.decode(regex, CirceJson.fromString("(")).isInvalid
+      )
+    ,
     test("Json.Primitive: type mismatch"):
       val result = JsonCirceDecoder.decode(int, CirceJson.fromString("foobar"))
       val expected = Violations(
