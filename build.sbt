@@ -31,7 +31,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
     .settings(
       Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" :: Nil,
-      name := "otter" + identifier.fold("")("-" + _)
+      name := "otter-legacy" + identifier.fold("")("-" + _)
     )
 }
 
