@@ -12,7 +12,6 @@ import java.net.URI
 import java.net.URISyntaxException
 import java.nio.charset.Charset
 import java.util.Currency
-import java.util.IllformedLocaleException
 import java.util.Locale
 import java.util.UUID
 import java.util.regex.Pattern
@@ -104,25 +103,36 @@ object PrimitiveComponent:
       _.toString
     )
 
-    /** A locale as the BCP 47 language tag it is written as everywhere else in the API. */
-    val locale: F[Locale, Locale] = codec(
+    /** A locale as the BCP 47 language tag it is written as everywhere else in the API.
+      *
+      * `Locale.forLanguageTag` rather than `Locale.Builder.setLanguageTag`, which Scala.js has no implementation of.
+      * The factory never rejects anything: it keeps the longest prefix of the text that is a language tag and drops the
+      * rest, so the tag it prints back is what says whether it understood all of the input. Case is the one difference
+      * it is allowed to make -- `"en-us"` reads back out as `"en-US"`, the way [[charset]] canonicalises -- and
+      * anything the factory dropped, a `_` separator or a trailing subtag that is not one, leaves a shorter tag than
+      * went in and reads as invalid.
+      */
+    lazy val locale: F[Locale, Locale] = codec(
       "locale",
       value =>
-        Either
-          .catchOnly[IllformedLocaleException](new Locale.Builder().setLanguageTag(value).build())
-          .leftMap(_ => s"invalid locale: $value"),
+        Locale
+          .forLanguageTag(value)
+          .some
+          .filter(_.toLanguageTag.equalsIgnoreCase(value))
+          .toRight(s"invalid locale: $value"),
       _.toLanguageTag
     )
 
-    /** An ISO 4217 currency code, the same shape as [[locale]]: a JDK factory that rejects anything not in its
-      * registry, and a carrier whose own `toString` is that registry's code.
+    /** An ISO 4217 currency code, the same shape as [[locale]]: a factory that rejects anything not in its registry,
+      * and a carrier whose own `toString` is that registry's code.
+      *
+      * `catchNonFatal` rather than the `IllegalArgumentException` the JVM's factory throws, because the registry is not
+      * the same registry on both platforms: Scala.js has no `Currency` of its own, and the scala-java-locales one is a
+      * lookup in whichever CLDR currency data the application registered, which fails with `NoSuchElementException`.
       */
-    val currency: F[Currency, Currency] = codec(
+    lazy val currency: F[Currency, Currency] = codec(
       "currency",
-      value =>
-        Either
-          .catchOnly[IllegalArgumentException](Currency.getInstance(value))
-          .leftMap(_ => s"invalid currency: $value"),
+      value => Either.catchNonFatal(Currency.getInstance(value)).leftMap(_ => s"invalid currency: $value"),
       _.getCurrencyCode
     )
 

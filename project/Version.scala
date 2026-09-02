@@ -7,6 +7,7 @@ object Version:
   val Fs2Data = "1.14.1"
   val Java = "17"
   val Scala3 = "3.9.0"
+  val ScalaJavaLocales = "1.5.4"
   val ScalaJavaTime = "2.7.0"
   val Validation = "0.0.0+13-7bc8c23a-SNAPSHOT"
   val Zio = "2.1.26"

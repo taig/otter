@@ -58,6 +58,9 @@ lazy val root = module(identifier = None, jvmOnly = true)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
+  .jsSettings(
+    libraryDependencies += "io.github.cquiroz" %% "locales-full-currencies-db" % Version.ScalaJavaLocales % Test
+  )
   .settings(
     libraryDependencies ++=
       "io.taig" %% "data-core" % Version.Data ::

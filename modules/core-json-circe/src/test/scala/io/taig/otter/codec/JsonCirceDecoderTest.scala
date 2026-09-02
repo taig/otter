@@ -33,7 +33,7 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Json.Primitive: locale"):
-      val value = new java.util.Locale.Builder().setLanguageTag("en-US").build()
+      val value = java.util.Locale.forLanguageTag("en-US")
       assertTrue(
         JsonCirceDecoder.decode(locale, CirceJson.fromString("en-US")) == value.valid,
         JsonCirceDecoder.decode(locale, CirceJson.fromString("not a locale")).isInvalid
