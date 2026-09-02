@@ -10,7 +10,7 @@ def module(identifier: Option[String], jvmOnly: Boolean = false): CrossProject =
       Compile / console / scalacOptions -= "-Wunused:all",
       Compile / scalacOptions ++= "-source:future" :: "-rewrite" :: "-new-syntax" :: "-Wunused:all" ::
         "-Xmax-inlines" :: "64" :: Nil,
-      name := "otter-next" + identifier.fold("")("-" + _)
+      name := "otter" + identifier.fold("")("-" + _)
     )
 }
 
