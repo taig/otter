@@ -54,11 +54,11 @@ trait OtterSyntax:
     def contramap[B](f: B => W)(using P: Profunctor[F]): F[B, Any] = P.lmap(fa)(f)
 
     /** Maps a round tripping schema onto a nominal type. */
-    def to[B](using w: Convert[W, B], r: Convert[R, B], P: Profunctor[F]): F[B, B] =
+    def to[B](using w: Convert[W, B], r: Convert.Reader[R, B], P: Profunctor[F]): F[B, B] =
       P.dimap(fa)(w.from)(r.to)
 
     /** Maps only the read side; for a schema that cannot be written. */
-    def mapTo[B](using r: Convert[R, B], P: Profunctor[F]): F[W, B] = P.rmap(fa)(r.to)
+    def mapTo[B](using r: Convert.Reader[R, B], P: Profunctor[F]): F[W, B] = P.rmap(fa)(r.to)
 
     /** Maps only the write side; for a schema that cannot be read. */
     def contramapTo[B](using w: Convert[W, B], P: Profunctor[F]): F[B, R] = P.lmap(fa)(w.from)

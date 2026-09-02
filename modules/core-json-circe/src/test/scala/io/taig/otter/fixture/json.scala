@@ -47,6 +47,19 @@ object json:
   val taggedShape: Json.Union[Shape] =
     (branch(Tag.Circle, tag, circle) :+ branch(Tag.Square, tag, square) :+ branch(Tag.Triangle, tag, triangle)).to
 
+  /** A union whose two cases without members read a singleton type, which is widened on the way in and leaves those
+    * branches indistinguishable. The write side keeps them apart, so this still round trips under the same `to` every
+    * other union is written with.
+    */
+  val verdict: Json.Union[Verdict] = (
+    branch("accepted", field("type", constant(string, "accepted")).toRecord.to[Verdict.Accepted.type]) :+
+      branch("rejected", field("type", constant(string, "rejected")).toRecord.to[Verdict.Rejected.type]) :+
+      branch(
+        "deferred",
+        (field("type", constant(string, "deferred")) :* field("reason", string)).to[Verdict.Deferred]
+      )
+  ).to[Verdict]
+
   /** An integer carried as text. JSON has no numeric keys, so an integer key is a named format the way [[isbn]] is,
     * rather than `int`, which would claim the document holds a number.
     */

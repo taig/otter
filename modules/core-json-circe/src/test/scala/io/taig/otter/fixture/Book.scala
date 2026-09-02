@@ -26,6 +26,14 @@ enum Shape:
   case Square(side: Double)
   case Triangle(base: Double, height: Double)
 
+/** Exercises a union whose branches are told apart by a tag rather than by their members: the two that hold none read a
+  * singleton type, which is widened on the way into the union and leaves the branches indistinguishable.
+  */
+enum Verdict:
+  case Accepted
+  case Rejected
+  case Deferred(reason: String)
+
 /** Exercises `Reference` laziness: the schema refers to itself. */
 final case class Tree(value: Int, children: List[Tree])
 

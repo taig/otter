@@ -34,6 +34,13 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
       Gen.double.zip(Gen.double).map(Shape.Triangle.apply)
     )
 
+  private val verdict: Gen[Any, Verdict] =
+    Gen.oneOf(
+      Gen.const(Verdict.Accepted),
+      Gen.const(Verdict.Rejected),
+      Gen.alphaNumericString.map(Verdict.Deferred.apply)
+    )
+
   private def tree(depth: Int): Gen[Any, Tree] =
     if depth <= 0 then Gen.int.map(Tree(_, Nil))
     else
@@ -51,6 +58,9 @@ object JsonCirceRoundTripTest extends ZIOSpecDefault:
     ,
     test("enum through a union"):
       check(shape)(roundTrips(json.shape, _))
+    ,
+    test("enum through a union whose branches read the same type"):
+      check(verdict)(roundTrips(json.verdict, _))
     ,
     test("optional field, omitted"):
       check(note)(roundTrips(json.omittedTag, _))

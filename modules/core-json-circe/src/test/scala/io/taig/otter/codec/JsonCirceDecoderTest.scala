@@ -238,6 +238,15 @@ object JsonCirceDecoderTest extends ZIOSpecDefault:
           Shape.Triangle(3.0, 4.0).valid
       )
     ,
+    test("Json.Union: branches that all read the same enum"):
+      assertTrue(
+        JsonCirceDecoder.decode(json.verdict, CirceJson.obj("type" := "accepted")) == Verdict.Accepted.valid,
+        JsonCirceDecoder.decode(json.verdict, CirceJson.obj("type" := "rejected")) == Verdict.Rejected.valid,
+        JsonCirceDecoder.decode(json.verdict, CirceJson.obj("type" := "deferred", "reason" := "late")) ==
+          Verdict.Deferred("late").valid,
+        JsonCirceDecoder.decode(json.verdict, CirceJson.obj("type" := "withdrawn")).isInvalid
+      )
+    ,
     test("violations carry the path to the failure"):
       val schema = field("foo", string) :* field("bar", collection.list(int))
       val value = CirceJson.obj("foo" := "x", "bar" := CirceJson.arr(1.asJson, "nope".asJson))

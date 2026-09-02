@@ -4,19 +4,59 @@ import scala.Tuple as STuple
 import scala.annotation.implicitNotFound
 import scala.annotation.tailrec
 import scala.deriving.*
+import scala.util.NotGiven
 
 /** Bridges the structural shapes a schema produces (tuples for records, nested `Either` for unions) to nominal types
   * (case classes and enums).
+  *
+  * Both directions at once, which is what a schema that round trips asks for. A schema that only reads asks for
+  * [[Convert.Reader]], and gets further with it: putting a value together is a weaker demand than taking one apart.
   */
 @implicitNotFound(
   "Can not construct a Convert[${A}, ${B}]: Make sure that all fields or branches are covered in the correct order"
 )
-trait Convert[A, B]:
-  def to(a: A): B
-
+trait Convert[A, B] extends Convert.Reader[A, B]:
   def from(b: B): A
 
 object Convert:
+  /** The read half, which is all a schema that only reads can ask for.
+    *
+    * Taking a `B` apart has to know which member of the shape it belongs to, so [[Convert.sum]] pins the branches to
+    * the target's members by type and reaches them by position. Putting one together does not: a union hands back the
+    * branch that matched, and that branch has already read whatever it reads, so the nesting is all there is to
+    * discard.
+    *
+    * That difference is what lets a union of branches that have stopped being distinguishable still be read. A branch
+    * reading a case that holds no members is typed by that case's singleton, and a schema's read side is covariant, so
+    * the type variable it is inferred into is instantiated from below and widened to the enum. Nothing is lost with the
+    * singleton -- the branch still reads that very case -- and nothing here needs it back.
+    */
+  @implicitNotFound("Can not construct a Convert.Reader[${A}, ${B}]: Make sure that every branch reads a ${B}")
+  trait Reader[A, B]:
+    def to(a: A): B
+
+  object Reader extends Convert.ReaderBranch:
+    inline def apply[A, B](using reader: Convert.Reader[A, B]): Convert.Reader[A, B] = reader
+
+    /** The nesting `:+` builds, read from both sides, so a union collapses at any depth.
+      *
+      * Only where [[Convert]] has nothing to offer, so a union whose branches can still be told apart is still put back
+      * together by position -- and still has the order of its branches checked while it is.
+      */
+    given union: [L, R, B] => (
+        absent: NotGiven[Convert[Either[L, R], B]],
+        left: Convert.Reader[L, B],
+        right: Convert.Reader[R, B]
+    ) => Convert.Reader[Either[L, R], B]:
+      override def to(a: Either[L, R]): B = a.fold(left.to, right.to)
+
+  /** A branch, which is where the nesting ends. Comes after [[Convert.Reader.union]] so that a union read as an
+    * `Either` -- or as `Any` -- collapses rather than standing for one of its branches.
+    */
+  private[otter] trait ReaderBranch:
+    given branch: [A, B] => (absent: NotGiven[Convert[A, B]], evidence: A <:< B) => Convert.Reader[A, B]:
+      override def to(a: A): B = evidence(a)
+
   /** The left nested `Either` that `:+` builds for a sum whose members are `T`.
     *
     * `(A, B, C)` becomes `Either[Either[A, B], C]`, matching the association of `a :+ b :+ c`.
