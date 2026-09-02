@@ -7,9 +7,9 @@ import io.taig.data.circe.toData
 import io.taig.data.syntax.*
 import io.taig.otter.Constraint
 import io.taig.otter.Json
+import io.taig.otter.JsonCirce
 import io.taig.otter.Primitive
 import io.taig.otter.Violations
-import io.taig.otter.typeOf
 import io.taig.validation.Validation
 import io.taig.validation.Violation
 
@@ -44,7 +44,7 @@ object JsonPrimitiveCirceDecoder extends Decoder[Json.Primitive.Node, CirceJson]
       text(json).andThen(input => validation.validate(input).toInvalid(input).leftMap(Violations.apply))
 
   private def mismatch(name: String, json: CirceJson): Violation[Constraint] =
-    Violation(constraint = Constraint.Generic.Type(name), actual = typeOf(json).asData, hint = none)
+    Violation(constraint = Constraint.Generic.Type(name), actual = JsonCirce.typeOf(json).asData, hint = none)
 
   private def text(json: CirceJson): Validated[Violations, String] =
     json.asString.toValid(mismatch("string", json)).leftMap(Violations.apply)
