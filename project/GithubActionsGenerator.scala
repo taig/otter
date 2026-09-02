@@ -29,13 +29,13 @@ object GithubActionsGenerator {
 
   object Job {
     def apply(name: String, javaVersion: String, mode: String = "DEV", needs: List[String] = Nil)(steps: Json*): Json =
-      Json.obj(
-        "name" := name,
-        "runs-on" := "ubuntu-latest",
-        "env" := Json.obj(
-          s"SBT_TPOLECAT_$mode" := "true"
-        ),
-        "steps" := steps
+      Json.fromFields(
+        List("name" := name, "runs-on" := "ubuntu-latest") ++
+          (if (needs.isEmpty) Nil else List("needs" := needs)) ++
+          List(
+            "env" := Json.obj(s"SBT_TPOLECAT_$mode" := "true"),
+            "steps" := steps
+          )
       )
 
     def blowout(javaVersion: String): Json = Job(name = "Blowout", javaVersion)(
