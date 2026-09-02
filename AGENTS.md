@@ -4,14 +4,20 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 
 ## Development workflow
 
-Modules: `core`, `core-json`, `core-json-circe`, `core-csv`, `core-csv-fs2-data`, `core-iron`, `core-java-time`,
-`core-case-insensitive`, `core-typescript`, `core-typescript-effect`, `core-json-typescript`,
+Modules: `core`, `core-json`, `core-json-circe`, `core-json-schema`, `core-csv`, `core-csv-fs2-data`, `core-iron`,
+`core-java-time`, `core-case-insensitive`, `core-typescript`, `core-typescript-effect`, `core-json-typescript`,
 `core-json-typescript-effect`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
 `core-json`/`core-json-circe` and `core-csv`/`core-csv-fs2-data` are the same pair twice: a
 module defining a format's alphabet, and a module interpreting it into a library's data model.
+
+`core-json-schema` renders a JSON schema as a JSON Schema document. It is one module rather than a pair because a
+JSON Schema *is* a JSON document and `core-json-circe` already says what one of those is, so there is no second
+library's data model to interpret into. What varies is the consumer -- draft 2020-12, a strict structured output
+profile -- and that is a `JsonSchemaProfile` value rather than a module. A renderer is given a `Side`: the document you
+hand a producer is the side you will read, and the two differ wherever a field is optional or holds a default.
 
 The four typescript modules are a lattice, not a chain: `core-typescript` is the TypeScript source
 model and printer, `core-typescript-effect` the vocabulary of one target library, `core-json-typescript`

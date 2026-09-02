@@ -49,6 +49,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
     coreJavaTime,
     coreJson,
     coreJsonCirce,
+    coreJsonSchema,
     coreJsonTypescript,
     coreJsonTypescriptEffect,
     coreTypescript,
@@ -82,6 +83,15 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")
+
+/** JSON Schema documents rendered from a JSON schema
+  *
+  * A renderer, not an alphabet, so it needs no second module to interpret into: a JSON Schema is a JSON document, and
+  * core-json-circe already says what one of those is. What varies is not the target library but the consumer -- draft
+  * 2020-12, a strict structured output profile -- and that is a JsonSchemaProfile value rather than a module.
+  */
+lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
+  .dependsOn(coreJsonCirce % "compile->compile;test->test")
 
 /** Component extensions for org.typelevel / case-insensitive */
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
