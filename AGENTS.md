@@ -6,7 +6,7 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 
 Modules: `core`, `core-json`, `core-json-circe`, `core-json-schema`, `core-csv`, `core-csv-fs2-data`, `core-iron`,
 `core-java-time`, `core-case-insensitive`, `core-typescript`, `core-typescript-effect`, `core-json-typescript`,
-`core-json-typescript-effect`.
+`core-json-typescript-effect`, `http`, `http-json`, `http-openapi`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
@@ -18,6 +18,42 @@ JSON Schema *is* a JSON document and `core-json-circe` already says what one of 
 library's data model to interpret into. What varies is the consumer -- draft 2020-12, a strict structured output
 profile -- and that is a `JsonSchemaProfile` value rather than a module. A renderer is given a `Side`: the document you
 hand a producer is the side you will read, and the two differ wherever a field is optional or holds a default.
+
+`http` describes HTTP endpoints. It is an alphabet like `core-json` and `core-csv`, but it needs no paired
+interpretation module, and where the pairing breaks is the whole design. `core-json`/`core-json-circe` works because
+circe supplies a *document data model* -- a pure, total value both sides can name. HTTP has no such shared model: every
+backend has its own request type, and a request is not a pure value because its body arrives over time. So the split
+runs through the middle of a request rather than between two modules:
+
+- The **envelope** -- method, path, query string, headers -- is text and nothing more, so `http` ships the pure
+  `Encoder`/`Decoder` instances for it. Their `T` is the narrow wire slice each concerns (`Vector[String]` for path
+  segments, `Chain[(String, Option[String])]` for a query string, `Chain[(String, String)]` for headers), so path
+  matching, parsing and violation paths are written once and a backend adapts its own types with a few trivial
+  functions.
+- The **body** gets no representation here at all. `http` says what a body is -- a media type over a payload schema,
+  over bytes, or over a framed sequence of elements -- and stops. Interpreting one is a backend's business, and its
+  signatures may freely mention `F[_]` and that backend's stream type. There is no `Request.Data`, and so no
+  `Array[Byte]` field to force a request to be buffered before it can be routed.
+
+Almost every tier is an existing core node rearranged, which is why the module is small: a path is a `Tuple` of
+segments, a static segment is a `Constant` (it writes its literal, requires it on read, and erases to `Unit`, so
+`Append` drops it), a dynamic one is a `Branch`, a query string and a header set are `Record`s of `Field`s, and
+alternatives -- `Bodies`, `Results` -- are `Union`s. `Multipart` is a `Record` of `Part`s, which is the *product* of
+bodies that makes a file upload describable; a multipart body is not a case of `Body` but a payload for one, exactly as
+it is in HTTP. A streamed body names its element and its framing and contributes nothing to what the endpoint holds:
+what a sequence of elements *is* belongs to whoever has an effect type to say it in, and `Body.Streamed.Schema` keeps
+the element type so a backend can pin it in the compiler.
+
+`Endpoint.Server` and `Endpoint.Client` are `Side` one tier up: a server reads the request and writes the response, and
+a caller does the reverse. The two differ wherever a field is optional or holds a default, so the same endpoint value
+renders as two different documents.
+
+`http-json` makes a JSON schema usable as a body payload, and is the shape any second payload alphabet takes.
+`http-openapi` renders endpoints as an OpenAPI 3.1 document -- a renderer rather than a pair, on the same reasoning
+`core-json-schema` is one, with `OpenApiProfile.V31` as the `JsonSchemaProfile` value that says which JSON Schema its
+schemas are written in. Payload alphabets are rendered by an `OpenApiPayload`, which dispatches at runtime because a
+payload's alphabet is existential by the time a renderer holds one; an alphabet it does not recognise is reported as an
+issue and the body is still listed.
 
 The four typescript modules are a lattice, not a chain: `core-typescript` is the TypeScript source
 model and printer, `core-typescript-effect` the vocabulary of one target library, `core-json-typescript`

@@ -69,7 +69,8 @@ lazy val modules: List[CrossProject] = List(
   coreTypescript,
   coreTypescriptEffect,
   http,
-  httpJson
+  httpJson,
+  httpOpenapi
 )
 
 /** Format agnostic schema definitions and interpreters */
@@ -183,6 +184,15 @@ lazy val http = module(identifier = Some("http"))
   */
 lazy val httpJson = module(identifier = Some("http-json"))
   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+
+/** OpenAPI documents rendered from an endpoint
+  *
+  * A renderer, on the same reasoning `core-json-schema` is one: an OpenAPI document is a JSON document, and
+  * `core-json-circe` already says what one of those is. The payload schemas inside it are rendered by a parameter, so a
+  * payload alphabet other than JSON contributes its own renderer rather than being named here.
+  */
+lazy val httpOpenapi = module(identifier = Some("http-openapi"))
+  .dependsOn(httpJson % "compile->compile;test->test", coreJsonSchema % "compile->compile;test->test")
 
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
