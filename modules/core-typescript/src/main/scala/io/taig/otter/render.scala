@@ -116,6 +116,8 @@ private val renderTypescriptType: Typescript.Type => String =
       case rendered                          => s"{ $rendered }"
   case Typescript.Type.Object(fields) =>
     fields.map(renderTypescriptTypeField).map(_ + ";").map(indent).mkString("{\n", "\n", "\n}")
+  case Typescript.Type.Readonly(self)           => s"readonly $self"
+  case Typescript.Type.Rest(self)               => s"...$self"
   case Typescript.Type.Symbol(name, Nil)        => name
   case Typescript.Type.Symbol(name, parameters) => s"$name<${parameters.mkString(", ")}>"
   case Typescript.Type.Tuple(Nil)               => "[]"

@@ -44,26 +44,11 @@ object ConstraintTypescriptEffect:
     case _: Constraint.Object                      => none
     case _: Constraint.Generic                     => none
 
-  /** The rest of the constraints, when they say the collection is never empty.
-    *
-    * `Schema.Array(x).pipe(Schema.minItems(1))` and `Schema.NonEmptyArray(x)` accept the same documents, and only the
-    * second one types as `readonly [T, ...T[]]`. Which is the whole reason to tell them apart: a caller that has to
-    * check whether the first element is there has lost something the schema already knew. The minimum is taken out of
-    * what is left, because the array now says it.
-    */
-  def nonEmpty(constraints: Chain[Constraint]): Option[Chain[Constraint]] =
-    Option.when(constraints.exists(isNonEmpty))(constraints.filterNot(isNonEmpty))
-
-  private val isNonEmpty: Constraint => Boolean =
-    case Constraint.Collection.Minimum(comparison) => inclusive(comparison, offset = 1) == 1
-    case _                                         => false
-
-  /** An exclusive bound on a length is the inclusive one next to it, because a length is an integer. */
-  private def inclusive(comparison: Comparison[Long], offset: Long): Long =
-    if comparison.exclusive then comparison.reference + offset else comparison.reference
-
   private def length(name: String, comparison: Comparison[Long], offset: Long): Typescript.Expression =
-    TypescriptEffect.filter(name, TypescriptEffect.number(new JBigDecimal(inclusive(comparison, offset))))
+    TypescriptEffect.filter(
+      name,
+      TypescriptEffect.number(new JBigDecimal(TypescriptConstraint.inclusive(comparison, offset)))
+    )
 
   private def bound(name: String, reference: Data.Number): Typescript.Expression =
     TypescriptEffect.filter(name, TypescriptEffect.number(decimal(reference)))

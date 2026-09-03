@@ -279,6 +279,20 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                      |
                                      |Tree""".stripMargin)
       ,
+      /** A declared type has to say what the value beside it says: a schema is invariant in the type it is ascribed, so
+        * a structural type that widened a non empty array back to a plain one would not compile against its own value.
+        */
+      test("a recursive declaration says non empty in its type as well as in its value"):
+        lazy val tree: Json.Record.Writer[Tree] = (
+          field("value", int) :*
+            field("children", collection.list(tree, collections.minimum[List[Any]](1)))
+        ).attr(Keys.name, "Tree").contramap(tree => (tree.value, tree.children))
+
+        assertTrue(
+          render(tree).contains("children: readonly [Tree, ...ReadonlyArray<Tree>];"),
+          render(tree).contains("children: Schema.NonEmptyArray(Schema.suspend(() => Tree))")
+        )
+      ,
       /** A cycle belongs to the definition that closes it and to no other. `Genre` is reached after the suspension and
         * has no cycle of its own, so it infers its type like any other name; it used to be told one, because the flag
         * the suspension set was still standing when its body was rendered.
