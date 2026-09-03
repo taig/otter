@@ -31,12 +31,12 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       test("an omitted field is optional out and optional or null in"):
         assertTrue(
           write(json.omittedTag) == """Schema.Struct({
-                                      |  title: Schema.String,
-                                      |  tag: Schema.optional(Schema.Int)
+                                      |  "title": Schema.String,
+                                      |  "tag": Schema.optional(Schema.Int)
                                       |})""".stripMargin,
           read(json.omittedTag) == """Schema.Struct({
-                                     |  title: Schema.String,
-                                     |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                     |  "title": Schema.String,
+                                     |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                      |})""".stripMargin
         )
       ,
@@ -44,12 +44,12 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       test("a nullable field is required and null out, and optional or null in"):
         assertTrue(
           write(json.nullableTag) == """Schema.Struct({
-                                       |  title: Schema.String,
-                                       |  tag: Schema.NullOr(Schema.Int)
+                                       |  "title": Schema.String,
+                                       |  "tag": Schema.NullOr(Schema.Int)
                                        |})""".stripMargin,
           read(json.nullableTag) == """Schema.Struct({
-                                      |  title: Schema.String,
-                                      |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                      |  "title": Schema.String,
+                                      |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                       |})""".stripMargin
         )
       ,
@@ -60,9 +60,9 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
 
         assertTrue(
           read(omitted) == write(omitted),
-          write(omitted) == """Schema.Struct({ tag: Schema.optional(Schema.Int) })""",
+          write(omitted) == """Schema.Struct({ "tag": Schema.optional(Schema.Int) })""",
           read(nulled) == write(nulled),
-          write(nulled) == """Schema.Struct({ tag: Schema.NullOr(Schema.Int) })"""
+          write(nulled) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int) })"""
         )
       ,
       /** Two layers of absence: no key at all is the outer one, a null the inner. Only a strict field can tell them
@@ -71,7 +71,7 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       test("a strict field over an optional schema keeps both layers"):
         assertTrue(
           read(json.nestedTag) == write(json.nestedTag),
-          write(json.nestedTag) == """Schema.Struct({ tag: Schema.optional(Schema.NullOr(Schema.Int)) })"""
+          write(json.nestedTag) == """Schema.Struct({ "tag": Schema.optional(Schema.NullOr(Schema.Int)) })"""
         )
       ,
       /** A field holding a default is never absent when written, and may always be absent when read. The default is an
@@ -81,16 +81,16 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         val schema = field("tag", int).optional(0).toRecord
 
         assertTrue(
-          write(schema) == """Schema.Struct({ tag: Schema.Int })""",
-          read(schema) == """Schema.Struct({ tag: Schema.optionalWith(Schema.Int, { nullable: true }) })"""
+          write(schema) == """Schema.Struct({ "tag": Schema.Int })""",
+          read(schema) == """Schema.Struct({ "tag": Schema.optionalWith(Schema.Int, { "nullable": true }) })"""
         )
       ,
       test("a defaulted schema is required out and nullable in"):
         val schema = field("tag", int.optional(0)).toRecord
 
         assertTrue(
-          write(schema) == """Schema.Struct({ tag: Schema.Int })""",
-          read(schema) == """Schema.Struct({ tag: Schema.NullOr(Schema.Int) })"""
+          write(schema) == """Schema.Struct({ "tag": Schema.Int })""",
+          read(schema) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int) })"""
         )
     ),
     suite("coerce")(
@@ -132,8 +132,8 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
                                      |    Schema.Union(Schema.Literal("true"), Schema.Literal("false")),
                                      |    Schema.Boolean,
                                      |    {
-                                     |      decode: (value) => value === "true",
-                                     |      encode: (value) => value ? "true" : "false"
+                                     |      "decode": (value) => value === "true",
+                                     |      "encode": (value) => value ? "true" : "false"
                                      |    }
                                      |  )
                                      |);
@@ -147,16 +147,16 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
                                     |    Schema.Number,
                                     |    Schema.String,
                                     |    {
-                                    |      decode: (value) => String(value),
-                                    |      encode: (value) => Number(value)
+                                    |      "decode": (value) => String(value),
+                                    |      "encode": (value) => Number(value)
                                     |    }
                                     |  ),
                                     |  Schema.transform(
                                     |    Schema.Boolean,
                                     |    Schema.String,
                                     |    {
-                                    |      decode: (value) => value ? "true" : "false",
-                                    |      encode: (value) => value === "true"
+                                    |      "decode": (value) => value ? "true" : "false",
+                                    |      "encode": (value) => value === "true"
                                     |    }
                                     |  )
                                     |);
@@ -234,7 +234,7 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           JsonCirceDecoder.decode(json.omittedTag, omitted).isValid,
           JsonCirceDecoder.decode(json.omittedTag, nulled).isValid,
-          read(json.omittedTag).contains("""Schema.optionalWith(Schema.Int, { nullable: true })""")
+          read(json.omittedTag).contains("""Schema.optionalWith(Schema.Int, { "nullable": true })""")
         )
       ,
       /** A strict omitted field is the one that refuses the null, and it is also the one whose two sides agree. */

@@ -36,9 +36,9 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       assertTrue(module(book) == """export type Book = Schema.Schema.Type<typeof Book>;
                                    |
                                    |export const Book = Schema.Struct({
-                                   |  title: Schema.String,
-                                   |  pages: Schema.Int,
-                                   |  read: Schema.Boolean
+                                   |  "title": Schema.String,
+                                   |  "pages": Schema.Int,
+                                   |  "read": Schema.Boolean
                                    |});""".stripMargin)
     ,
     /** A nullable field is written one way and read another, so there are two things to say and two names to say them
@@ -48,15 +48,15 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       assertTrue(module(note) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
                                    |
                                    |export const NoteRead = Schema.Struct({
-                                   |  title: Schema.String,
-                                   |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                   |  "title": Schema.String,
+                                   |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                    |});
                                    |
                                    |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
                                    |
                                    |export const NoteWrite = Schema.Struct({
-                                   |  title: Schema.String,
-                                   |  tag: Schema.NullOr(Schema.Int)
+                                   |  "title": Schema.String,
+                                   |  "tag": Schema.NullOr(Schema.Int)
                                    |});""".stripMargin)
     ,
     /** Comparing a declaration to its counterpart once is not enough. `Outer` has the same shape on both sides -- one
@@ -69,24 +69,24 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       assertTrue(module(outer) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
                                     |
                                     |export const NoteRead = Schema.Struct({
-                                    |  title: Schema.String,
-                                    |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                    |  "title": Schema.String,
+                                    |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                     |});
                                     |
                                     |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
                                     |
-                                    |export const OuterRead = Schema.Struct({ note: NoteRead });
+                                    |export const OuterRead = Schema.Struct({ "note": NoteRead });
                                     |
                                     |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
                                     |
                                     |export const NoteWrite = Schema.Struct({
-                                    |  title: Schema.String,
-                                    |  tag: Schema.NullOr(Schema.Int)
+                                    |  "title": Schema.String,
+                                    |  "tag": Schema.NullOr(Schema.Int)
                                     |});
                                     |
                                     |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
                                     |
-                                    |export const OuterWrite = Schema.Struct({ note: NoteWrite });""".stripMargin)
+                                    |export const OuterWrite = Schema.Struct({ "note": NoteWrite });""".stripMargin)
     ,
     /** A symmetric definition under an asymmetric one is still shared, and is declared before either side needs it. */
     test("only what has to split does"):
@@ -97,22 +97,22 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       assertTrue(module(outer) == """export type Name = Schema.Schema.Type<typeof Name>;
                                     |
                                     |export const Name = Schema.Struct({
-                                    |  first: Schema.String,
-                                    |  last: Schema.String
+                                    |  "first": Schema.String,
+                                    |  "last": Schema.String
                                     |});
                                     |
                                     |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
                                     |
                                     |export const OuterRead = Schema.Struct({
-                                    |  author: Name,
-                                    |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                    |  "author": Name,
+                                    |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                     |});
                                     |
                                     |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
                                     |
                                     |export const OuterWrite = Schema.Struct({
-                                    |  author: Name,
-                                    |  tag: Schema.NullOr(Schema.Int)
+                                    |  "author": Name,
+                                    |  "tag": Schema.NullOr(Schema.Int)
                                     |});""".stripMargin)
     ,
     /** Collapsing makes a name depend on whether the schema happens to be symmetric, so there is a policy that never
@@ -122,17 +122,17 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       assertTrue(suffixed(book) == """export type BookRead = Schema.Schema.Type<typeof BookRead>;
                                      |
                                      |export const BookRead = Schema.Struct({
-                                     |  title: Schema.String,
-                                     |  pages: Schema.Int,
-                                     |  read: Schema.Boolean
+                                     |  "title": Schema.String,
+                                     |  "pages": Schema.Int,
+                                     |  "read": Schema.Boolean
                                      |});
                                      |
                                      |export type BookWrite = Schema.Schema.Type<typeof BookWrite>;
                                      |
                                      |export const BookWrite = Schema.Struct({
-                                     |  title: Schema.String,
-                                     |  pages: Schema.Int,
-                                     |  read: Schema.Boolean
+                                     |  "title": Schema.String,
+                                     |  "pages": Schema.Int,
+                                     |  "read": Schema.Boolean
                                      |});""".stripMargin)
     ,
     /** Several schemas share one run, so a definition two of them reach is declared once. */
@@ -161,14 +161,14 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
         side(Side.Write, note) == """export type Note = Schema.Schema.Type<typeof Note>;
                                     |
                                     |export const Note = Schema.Struct({
-                                    |  title: Schema.String,
-                                    |  tag: Schema.NullOr(Schema.Int)
+                                    |  "title": Schema.String,
+                                    |  "tag": Schema.NullOr(Schema.Int)
                                     |});""".stripMargin,
         side(Side.Read, note) == """export type Note = Schema.Schema.Type<typeof Note>;
                                    |
                                    |export const Note = Schema.Struct({
-                                   |  title: Schema.String,
-                                   |  tag: Schema.optionalWith(Schema.Int, { nullable: true })
+                                   |  "title": Schema.String,
+                                   |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
                                    |});""".stripMargin
       )
     ,

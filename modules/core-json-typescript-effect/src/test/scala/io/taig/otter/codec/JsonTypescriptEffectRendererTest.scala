@@ -57,9 +57,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
     suite("structure")(
       test("a record"):
         assertTrue(render(json.book) == """Schema.Struct({
-                                          |  title: Schema.String,
-                                          |  pages: Schema.Int,
-                                          |  read: Schema.Boolean
+                                          |  "title": Schema.String,
+                                          |  "pages": Schema.Int,
+                                          |  "read": Schema.Boolean
                                           |})""".stripMargin)
       ,
       test("an empty record"):
@@ -70,8 +70,8 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       ,
       test("a dictionary names the key it does not otherwise describe"):
         assertTrue(render(dictionary.list(boolean)) == """Schema.Record({
-                                                         |  key: Schema.String,
-                                                         |  value: Schema.Boolean
+                                                         |  "key": Schema.String,
+                                                         |  "value": Schema.Boolean
                                                          |})""".stripMargin)
       ,
       test("a tuple"):
@@ -96,11 +96,11 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             schema
           ) == """Schema.Union(Schema.String, Schema.Int, Schema.Literal("fiction", "history", "poetry"))""",
           render(json.shape) == """Schema.Union(
-                                  |  Schema.Struct({ radius: Schema.Number }),
-                                  |  Schema.Struct({ side: Schema.Number }),
+                                  |  Schema.Struct({ "radius": Schema.Number }),
+                                  |  Schema.Struct({ "side": Schema.Number }),
                                   |  Schema.Struct({
-                                  |    base: Schema.Number,
-                                  |    height: Schema.Number
+                                  |    "base": Schema.Number,
+                                  |    "height": Schema.Number
                                   |  })
                                   |)""".stripMargin
         )
@@ -132,9 +132,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           field("tags", collection.list(string, collections.maximum[List[String]](5)))
 
         assertTrue(render(schema) == """Schema.Struct({
-                                       |  title: Schema.String.pipe(Schema.minLength(3)),
-                                       |  pages: Schema.Int.pipe(Schema.greaterThanOrEqualTo(1)),
-                                       |  tags: Schema.Array(Schema.String).pipe(Schema.maxItems(5))
+                                       |  "title": Schema.String.pipe(Schema.minLength(3)),
+                                       |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(1)),
+                                       |  "tags": Schema.Array(Schema.String).pipe(Schema.maxItems(5))
                                        |})""".stripMargin)
       ,
       /** A bound on a length is a bound on an integer, so the exclusive form is the inclusive one next to it. */
@@ -220,13 +220,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(render(schema) == """export type Name = Schema.Schema.Type<typeof Name>;
                                        |
                                        |export const Name = Schema.Struct({
-                                       |  first: Schema.String,
-                                       |  last: Schema.String
+                                       |  "first": Schema.String,
+                                       |  "last": Schema.String
                                        |});
                                        |
                                        |Schema.Struct({
-                                       |  name: Name,
-                                       |  age: Schema.optional(Schema.Int)
+                                       |  "name": Name,
+                                       |  "age": Schema.optional(Schema.Int)
                                        |})""".stripMargin)
       ,
       /** Reaching the same name twice is not recursion. It used to be read as one, because the name was left behind on
@@ -239,13 +239,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(render(schema) == """export type Name = Schema.Schema.Type<typeof Name>;
                                        |
                                        |export const Name = Schema.Struct({
-                                       |  first: Schema.String,
-                                       |  last: Schema.String
+                                       |  "first": Schema.String,
+                                       |  "last": Schema.String
                                        |});
                                        |
                                        |Schema.Struct({
-                                       |  author: Name,
-                                       |  editor: Name
+                                       |  "author": Name,
+                                       |  "editor": Name
                                        |})""".stripMargin)
     ),
     suite("recursion")(
@@ -258,13 +258,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           (field("value", int) :* field("children", collection.list(tree))).to[Tree].attr(Keys.name, "Tree")
 
         assertTrue(render(tree) == """export type Tree = {
-                                     |  value: number;
-                                     |  children: ReadonlyArray<Tree>;
+                                     |  "value": number;
+                                     |  "children": ReadonlyArray<Tree>;
                                      |};
                                      |
                                      |export const Tree: Schema.Schema<Tree> = Schema.Struct({
-                                     |  value: Schema.Int,
-                                     |  children: Schema.Array(Schema.suspend(() => Tree))
+                                     |  "value": Schema.Int,
+                                     |  "children": Schema.Array(Schema.suspend(() => Tree))
                                      |});
                                      |
                                      |Tree""".stripMargin)
@@ -279,8 +279,8 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         ).attr(Keys.name, "Tree").contramap(tree => (tree.value, tree.children))
 
         assertTrue(
-          render(tree).contains("children: readonly [Tree, ...ReadonlyArray<Tree>];"),
-          render(tree).contains("children: Schema.NonEmptyArray(Schema.suspend(() => Tree))")
+          render(tree).contains("\"children\": readonly [Tree, ...ReadonlyArray<Tree>];"),
+          render(tree).contains("\"children\": Schema.NonEmptyArray(Schema.suspend(() => Tree))")
         )
       ,
       /** A cycle belongs to the definition that closes it and to no other. `Genre` is reached after the suspension and
@@ -316,20 +316,20 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             .attr(Keys.name, "Course")
 
         assertTrue(render(course) == """export type Student = {
-                                       |  name: string;
-                                       |  courses: ReadonlyArray<Course>;
+                                       |  "name": string;
+                                       |  "courses": ReadonlyArray<Course>;
                                        |};
                                        |
                                        |export const Student: Schema.Schema<Student> = Schema.Struct({
-                                       |  name: Schema.String,
-                                       |  courses: Schema.Array(Schema.suspend(() => Course))
+                                       |  "name": Schema.String,
+                                       |  "courses": Schema.Array(Schema.suspend(() => Course))
                                        |});
                                        |
                                        |export type Course = Schema.Schema.Type<typeof Course>;
                                        |
                                        |export const Course = Schema.Struct({
-                                       |  title: Schema.String,
-                                       |  members: Schema.Array(Student)
+                                       |  "title": Schema.String,
+                                       |  "members": Schema.Array(Student)
                                        |});
                                        |
                                        |Course""".stripMargin)
@@ -340,8 +340,8 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           field("bar", int.attr(TypescriptKeys.expression, TypescriptEffect.symbol("NumberFromString")))
 
         assertTrue(render(schema) == """Schema.Struct({
-                                       |  foo: Schema.String,
-                                       |  bar: Schema.NumberFromString
+                                       |  "foo": Schema.String,
+                                       |  "bar": Schema.NumberFromString
                                        |})""".stripMargin)
       ,
       test("an overridden expression is still hoisted when it is named"):
@@ -353,7 +353,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                                            |
                                                            |export const Bar = Schema.NumberFromString;
                                                            |
-                                                           |Schema.Struct({ bar: Bar })""".stripMargin)
+                                                           |Schema.Struct({ "bar": Bar })""".stripMargin)
       ,
       /** Declaring a type is what makes the constant need an ascription: inference would otherwise contradict what was
         * just declared.
@@ -365,7 +365,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                                            |
                                                            |export const Bar: Schema.Schema<Bar> = Schema.Int;
                                                            |
-                                                           |Schema.Struct({ bar: Bar })""".stripMargin)
+                                                           |Schema.Struct({ "bar": Bar })""".stripMargin)
     )
   )
 
