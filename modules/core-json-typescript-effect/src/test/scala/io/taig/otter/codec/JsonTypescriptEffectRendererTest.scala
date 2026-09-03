@@ -191,12 +191,15 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             "Schema.Array(Schema.String).pipe(Schema.minItems(2))"
         )
     ),
+    /** That a pattern reaches the filter at all, and that [[TypescriptRegex]] is what decides whether there is one.
+      * Which patterns translate is asked of that directly, in `TypescriptRegexTest`: a `java.util.regex.Pattern` cannot
+      * even be built out of the interesting ones on Scala.js.
+      */
     suite("pattern")(
-      /** A pattern both flavours read the same way, carrying the flag that makes them read it the same way. */
-      test("a pattern JavaScript agrees with is a literal, under the unicode flag"):
+      test("a pattern JavaScript agrees with becomes a filter, under the unicode flag"):
         assertTrue(
-          render(string(text.matches[String](Pattern.compile("^[\\p{L}0-9]+$")))) ==
-            "Schema.String.pipe(Schema.pattern(/^[\\p{L}0-9]+$/u))"
+          render(string(text.matches[String](Pattern.compile("^[a-z]+$")))) ==
+            "Schema.String.pipe(Schema.pattern(/^[a-z]+$/u))"
         )
       ,
       /** `/` ends the literal, so a pattern that means one as a character has to say so. */
@@ -204,19 +207,6 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(
           render(string(text.matches[String](Pattern.compile("^a/b$")))) ==
             "Schema.String.pipe(Schema.pattern(/^a\\/b$/u))"
-        )
-      ,
-      /** An inline flag is a syntax error in a JavaScript literal, and a schema that will not parse is worse than one
-        * that checks less. The rest of `java.util.regex` that JavaScript either lacks or reads differently goes the
-        * same way -- silently meaning something else is the failure worth avoiding.
-        */
-      test("a pattern JavaScript cannot read is left out rather than emitted"):
-        assertTrue(
-          render(string(text.matches[String](Pattern.compile("^(?i)[A-Z]{2}$")))) == "Schema.String",
-          render(string(text.matches[String](Pattern.compile("^\\p{Alpha}+$")))) == "Schema.String",
-          render(string(text.matches[String](Pattern.compile("^\\h+$")))) == "Schema.String",
-          render(string(text.matches[String](Pattern.compile("^a++$")))) == "Schema.String",
-          render(string(text.matches[String](Pattern.compile("^(?>a)$")))) == "Schema.String"
         )
     ),
     suite("name")(
