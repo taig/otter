@@ -21,8 +21,7 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
     extends Renderer[Json.Node, Typescript.Type]:
   override def render[W, R](json: Json.Node[W, R]): Typescript.Type = json match
     case Json.Coerce.Schema(node)     => coerce(node.self)
-    case Json.Collection.Schema(node) =>
-      Typescript.Type.Symbol("ReadonlyArray", List(child(node.self.schema.value)))
+    case Json.Collection.Schema(node) => collection(node.self)
     case Json.Constant.Schema(node)   => JsonTypescriptTypeRenderer.literal(JsonTypescriptLiteral.constant(node.self))
     case Json.Dictionary.Schema(node) =>
       Typescript.Type.Symbol("Record", List(JsonTypescriptTypeRenderer.Text, child(node.self.schema.value)))
@@ -41,6 +40,19 @@ final class JsonTypescriptTypeRenderer(side: Side, renderer: Renderer[Json.Node,
       )
 
   private def child(json: Json.Node[?, ?]): Typescript.Type = renderer.render(json)
+
+  /** An array, and the tuple with a rest that an array which is never empty is.
+    *
+    * The value the target emits already says the difference; a declared type that did not would disagree with the very
+    * value it is declared for, and a schema is invariant in the type it is ascribed.
+    */
+  private def collection[W, R](schema: io.taig.otter.Collection[Json.Node, W, R]): Typescript.Type =
+    val element = child(schema.schema.value)
+    val array = Typescript.Type.Symbol("ReadonlyArray", List(element))
+
+    if TypescriptConstraint.isNonEmpty(JsonTypescriptCollection.constraints(schema))
+    then Typescript.Type.Readonly(Typescript.Type.Tuple(List(element, Typescript.Type.Rest(array))))
+    else array
 
   /** A record's member, whose key may be absent and whose value may be empty, depending on the side. */
   def field(json: Json.Field.Node[?, ?]): Typescript.Type.Field =

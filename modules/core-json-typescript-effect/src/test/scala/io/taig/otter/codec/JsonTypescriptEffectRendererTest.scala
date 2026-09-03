@@ -15,6 +15,8 @@ import io.taig.validation.std.text
 import zio.Scope
 import zio.test.*
 
+import java.util.regex.Pattern
+
 /** One node of the alphabet at a time, on the side where both agree. The two sides are
   * [[JsonTypescriptEffectDirectionTest]]; naming a schema and putting both sides in one module is
   * [[JsonTypescriptEffectModuleTest]].
@@ -161,6 +163,51 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       test("a constraint with no counterpart is left out rather than approximated"):
         val schema = collection.list(string, collections.uniqueItemsF[List, String])
         assertTrue(render(schema) == "Schema.Array(Schema.String)")
+      ,
+      /** effect has an array that says it holds something, and only that array types as one. A minimum of one is
+        * therefore spent on the array rather than on a filter beside it, however it was spelled.
+        */
+      test("a collection that is never empty is the array effect has a name for"):
+        assertTrue(
+          render(collection.list(string, collections.minimum[List[String]](1))) ==
+            "Schema.NonEmptyArray(Schema.String)",
+          render(collection.list(string, collections.minimum[List[String]](Comparison(0L, exclusive = true)))) ==
+            "Schema.NonEmptyArray(Schema.String)"
+        )
+      ,
+      /** Only the minimum is spent; whatever else the collection was built with still has to be said. */
+      test("a non empty collection keeps the constraints the array does not say"):
+        val schema = collection.list(
+          string,
+          collections.minimum[List[String]](1).and(collections.maximum[List[String]](5))
+        )
+
+        assertTrue(render(schema) == "Schema.NonEmptyArray(Schema.String).pipe(Schema.maxItems(5))")
+      ,
+      /** A minimum of anything else is a bound, not a promise that there is a first element. */
+      test("a collection with a larger minimum is still an array with a filter"):
+        assertTrue(
+          render(collection.list(string, collections.minimum[List[String]](2))) ==
+            "Schema.Array(Schema.String).pipe(Schema.minItems(2))"
+        )
+    ),
+    /** That a pattern reaches the filter at all, and that [[TypescriptRegex]] is what decides whether there is one.
+      * Which patterns translate is asked of that directly, in `TypescriptRegexTest`: a `java.util.regex.Pattern` cannot
+      * even be built out of the interesting ones on Scala.js.
+      */
+    suite("pattern")(
+      test("a pattern JavaScript agrees with becomes a filter, under the unicode flag"):
+        assertTrue(
+          render(string(text.matches[String](Pattern.compile("^[a-z]+$")))) ==
+            "Schema.String.pipe(Schema.pattern(/^[a-z]+$/u))"
+        )
+      ,
+      /** `/` ends the literal, so a pattern that means one as a character has to say so. */
+      test("a slash in a pattern is escaped rather than closing the literal"):
+        assertTrue(
+          render(string(text.matches[String](Pattern.compile("^a/b$")))) ==
+            "Schema.String.pipe(Schema.pattern(/^a\\/b$/u))"
+        )
     ),
     suite("name")(
       /** A name is the only thing that can make a declaration: `.to[Book]` is two closures by the time a renderer sees
@@ -221,6 +268,38 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                      |});
                                      |
                                      |Tree""".stripMargin)
+      ,
+      /** A declared type has to say what the value beside it says: a schema is invariant in the type it is ascribed, so
+        * a structural type that widened a non empty array back to a plain one would not compile against its own value.
+        */
+      test("a recursive declaration says non empty in its type as well as in its value"):
+        lazy val tree: Json.Record.Writer[Tree] = (
+          field("value", int) :*
+            field("children", collection.list(tree, collections.minimum[List[Any]](1)))
+        ).attr(Keys.name, "Tree").contramap(tree => (tree.value, tree.children))
+
+        assertTrue(
+          render(tree).contains("\"children\": readonly [Tree, ...ReadonlyArray<Tree>];"),
+          render(tree).contains("\"children\": Schema.NonEmptyArray(Schema.suspend(() => Tree))")
+        )
+      ,
+      /** A cycle belongs to the definition that closes it and to no other. `Genre` is reached after the suspension and
+        * has no cycle of its own, so it infers its type like any other name; it used to be told one, because the flag
+        * the suspension set was still standing when its body was rendered.
+        */
+      test("a name after a cycle in the same body is not itself recursive"):
+        val size = (field("height", int) :* field("width", int)).attr(Keys.name, "Size")
+
+        lazy val tree: Json.Record.Writer[Tree] = (
+          field("value", int) :*
+            field("children", collection.list(tree)) :*
+            field("size", size)
+        ).attr(Keys.name, "Tree").contramap(tree => (tree.value, tree.children, (0, 0)))
+
+        assertTrue(
+          render(tree).contains("export type Size = Schema.Schema.Type<typeof Size>;"),
+          !render(tree).contains("export const Size: Schema.Schema<Size>")
+        )
       ,
       /** Only the declaration that holds the suspension cannot infer its type. `Student` is entered first and refers
         * forward, so it is the one told its shape; `Course` reaches an already declared `Student` and infers.

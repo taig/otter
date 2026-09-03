@@ -39,6 +39,10 @@ object TypescriptEffect:
 
   def array(element: Typescript.Expression): Typescript.Expression = call("Array", element)
 
+  /** An array that always holds at least one element, which effect types as a tuple with a rest rather than as a list.
+    */
+  def nonEmptyArray(element: Typescript.Expression): Typescript.Expression = call("NonEmptyArray", element)
+
   def literal(values: NonEmptyList[Typescript.Expression.Literal]): Typescript.Expression =
     call("Literal", values.toList*)
 

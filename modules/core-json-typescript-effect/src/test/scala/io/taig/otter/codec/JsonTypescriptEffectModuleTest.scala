@@ -2,6 +2,7 @@ package io.taig.otter.codec
 
 import io.taig.otter.Json
 import io.taig.otter.Keys
+import io.taig.otter.Side
 import io.taig.otter.Typescript
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.json
@@ -18,6 +19,9 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
 
   private def module(schemas: Json.Node[?, ?]*): String =
     JsonTypescriptEffectRenderer.module(schemas*).mkString("\n\n")
+
+  private def side(side: Side, schemas: Json.Node[?, ?]*): String =
+    JsonTypescriptEffectRenderer.module(side, schemas*).mkString("\n\n")
 
   private def suffixed(schemas: Json.Node[?, ?]*): String =
     JsonTypescriptEffectRenderer.module(JsonTypescriptEffectRenderer.Naming.Suffixed, schemas*).mkString("\n\n")
@@ -148,4 +152,35 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
     /** Only a named schema has a declaration to contribute; an anonymous one has nowhere to go. */
     test("an anonymous schema contributes nothing to a module"):
       assertTrue(JsonTypescriptEffectRenderer.module(json.book).isEmpty)
+    ,
+    /** One side is the whole module for a consumer that only meets one of them, and there is then no second side for a
+      * name to have to be told apart from.
+      */
+    test("a single side is named once, however asymmetric the schema is"):
+      assertTrue(
+        side(Side.Write, note) == """export type Note = Schema.Schema.Type<typeof Note>;
+                                    |
+                                    |export const Note = Schema.Struct({
+                                    |  "title": Schema.String,
+                                    |  "tag": Schema.NullOr(Schema.Int)
+                                    |});""".stripMargin,
+        side(Side.Read, note) == """export type Note = Schema.Schema.Type<typeof Note>;
+                                   |
+                                   |export const Note = Schema.Struct({
+                                   |  "title": Schema.String,
+                                   |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
+                                   |});""".stripMargin
+      )
+    ,
+    /** What several schemas share is shared on one side too, which is what lets a module be rendered in one run. */
+    test("a single side shares what schemas rendered together have in common"):
+      val name = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
+      val author = field("author", name).toRecord.attr(Keys.name, "Author")
+      val editor = field("editor", name).toRecord.attr(Keys.name, "Editor")
+
+      val declared = JsonTypescriptEffectRenderer
+        .module(Side.Write, author, editor)
+        .collect { case Typescript.Statement.Declaration.Type(_, name, _) => name }
+
+      assertTrue(declared == List("Name", "Author", "Editor"))
   )

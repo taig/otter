@@ -71,6 +71,33 @@ object TypescriptTest extends ZIOSpecDefault:
             """{ "nullable": true }"""
         )
       ,
+      /** Every key is quoted, and what goes between the quotes is escaped. A JSON document may be keyed by anything,
+        * and a key dropped between quotes unexamined would stop being a key: a quote of its own ends the string early,
+        * and a newline ends it before the line does.
+        */
+      test("a key is quoted, and escaped inside the quotes"):
+        def obj(name: String): String =
+          Typescript.Expression.Object(List(name -> Typescript.Expression.Literal.Boolean(true))).render
+
+        assertTrue(
+          obj("nullable") == """{ "nullable": true }""",
+          obj("accept-language") == """{ "accept-language": true }""",
+          obj("2fa") == """{ "2fa": true }""",
+          obj("") == """{ "": true }""",
+          obj("a\"b") == "{ \"a\\\"b\": true }",
+          obj("a\\b") == "{ \"a\\\\b\": true }",
+          obj("a\nb") == "{ \"a\\nb\": true }",
+          obj("a\u0001b") == "{ \"a\\u0001b\": true }",
+          obj("a\u2028b") == "{ \"a\\u2028b\": true }"
+        )
+      ,
+      /** The same escaping on the literal, which is a string in the source for the same reason a key is. */
+      test("a string literal is escaped too"):
+        assertTrue(
+          Typescript.Expression.Literal.String("a\"b").render == "\"a\\\"b\"",
+          Typescript.Type.Literal.String("a\nb").render == "\"a\\nb\""
+        )
+      ,
       test("an array, empty, short and broken"):
         val long = symbol("SomethingWithAVeryLongNameIndeedYesReally")
 

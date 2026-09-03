@@ -48,6 +48,15 @@ object JsonTypescriptEffectRenderer:
   def module(schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
     module(Naming.Collapsed, schemas*)
 
+  /** Every named schema on one side, under the name it was given.
+    *
+    * For a consumer that only ever meets one of the two shapes: a client reading what a server writes describes the
+    * write side and nothing else, and would rather call the type `Place` than `PlaceWrite`. There is no [[Naming]] to
+    * make, because there is no second side to tell the first one apart from.
+    */
+  def module(side: Side, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
+    declarations(definitions(side, split = Set.empty, schemas))
+
   def module(naming: Naming, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
     val names = definitions(Side.Read, Set.empty, schemas).keySet ++ definitions(Side.Write, Set.empty, schemas).keySet
 

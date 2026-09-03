@@ -113,6 +113,14 @@ object Typescript:
 
     final case class Symbol(name: JString, parameters: List[Typescript.Type]) extends Typescript.Type
 
+    /** `readonly T`, which is what a tuple or an array a schema produces is. Only tuples and arrays carry it: on an
+      * object member `readonly` says nothing about assignability, and the members already say what they are.
+      */
+    final case class Readonly(self: Typescript.Type) extends Typescript.Type
+
+    /** The `...T` that stands for the rest of a tuple's elements, where `T` is the array type they make up. */
+    final case class Rest(self: Typescript.Type) extends Typescript.Type
+
     final case class Tuple(elements: List[Typescript.Type]) extends Typescript.Type
 
     final case class TypeOf(expression: Typescript.Expression) extends Typescript.Type
