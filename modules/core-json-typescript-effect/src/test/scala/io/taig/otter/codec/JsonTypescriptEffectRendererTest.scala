@@ -279,6 +279,24 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                      |
                                      |Tree""".stripMargin)
       ,
+      /** A cycle belongs to the definition that closes it and to no other. `Genre` is reached after the suspension and
+        * has no cycle of its own, so it infers its type like any other name; it used to be told one, because the flag
+        * the suspension set was still standing when its body was rendered.
+        */
+      test("a name after a cycle in the same body is not itself recursive"):
+        val size = (field("height", int) :* field("width", int)).attr(Keys.name, "Size")
+
+        lazy val tree: Json.Record.Writer[Tree] = (
+          field("value", int) :*
+            field("children", collection.list(tree)) :*
+            field("size", size)
+        ).attr(Keys.name, "Tree").contramap(tree => (tree.value, tree.children, (0, 0)))
+
+        assertTrue(
+          render(tree).contains("export type Size = Schema.Schema.Type<typeof Size>;"),
+          !render(tree).contains("export const Size: Schema.Schema<Size>")
+        )
+      ,
       /** Only the declaration that holds the suspension cannot infer its type. `Student` is entered first and refers
         * forward, so it is the one told its shape; `Course` reaches an already declared `Student` and infers.
         */
