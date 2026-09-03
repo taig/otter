@@ -68,7 +68,8 @@ lazy val modules: List[CrossProject] = List(
   coreJsonTypescriptEffect,
   coreTypescript,
   coreTypescriptEffect,
-  http
+  http,
+  httpJson
 )
 
 /** Format agnostic schema definitions and interpreters */
@@ -174,6 +175,14 @@ lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescri
 lazy val http = module(identifier = Some("http"))
   .settings(libraryDependencies += "org.scodec" %% "scodec-bits" % Version.ScodecBits)
   .dependsOn(core % "compile->compile;test->test")
+
+/** JSON payloads for HTTP bodies
+  *
+  * A module rather than a few lines in `http`, so that describing an endpoint does not drag in a JSON alphabet. A
+  * payload is any schema at all, and this is what says one of them may be a JSON one.
+  */
+lazy val httpJson = module(identifier = Some("http-json"))
+  .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
 
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
