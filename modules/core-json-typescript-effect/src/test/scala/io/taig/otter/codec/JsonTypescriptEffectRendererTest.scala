@@ -15,6 +15,8 @@ import io.taig.validation.std.text
 import zio.Scope
 import zio.test.*
 
+import java.util.regex.Pattern
+
 /** One node of the alphabet at a time, on the side where both agree. The two sides are
   * [[JsonTypescriptEffectDirectionTest]]; naming a schema and putting both sides in one module is
   * [[JsonTypescriptEffectModuleTest]].
@@ -55,9 +57,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
     suite("structure")(
       test("a record"):
         assertTrue(render(json.book) == """Schema.Struct({
-                                          |  "title": Schema.String,
-                                          |  "pages": Schema.Int,
-                                          |  "read": Schema.Boolean
+                                          |  title: Schema.String,
+                                          |  pages: Schema.Int,
+                                          |  read: Schema.Boolean
                                           |})""".stripMargin)
       ,
       test("an empty record"):
@@ -68,8 +70,8 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       ,
       test("a dictionary names the key it does not otherwise describe"):
         assertTrue(render(dictionary.list(boolean)) == """Schema.Record({
-                                                         |  "key": Schema.String,
-                                                         |  "value": Schema.Boolean
+                                                         |  key: Schema.String,
+                                                         |  value: Schema.Boolean
                                                          |})""".stripMargin)
       ,
       test("a tuple"):
@@ -94,11 +96,11 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             schema
           ) == """Schema.Union(Schema.String, Schema.Int, Schema.Literal("fiction", "history", "poetry"))""",
           render(json.shape) == """Schema.Union(
-                                  |  Schema.Struct({ "radius": Schema.Number }),
-                                  |  Schema.Struct({ "side": Schema.Number }),
+                                  |  Schema.Struct({ radius: Schema.Number }),
+                                  |  Schema.Struct({ side: Schema.Number }),
                                   |  Schema.Struct({
-                                  |    "base": Schema.Number,
-                                  |    "height": Schema.Number
+                                  |    base: Schema.Number,
+                                  |    height: Schema.Number
                                   |  })
                                   |)""".stripMargin
         )
@@ -130,9 +132,9 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           field("tags", collection.list(string, collections.maximum[List[String]](5)))
 
         assertTrue(render(schema) == """Schema.Struct({
-                                       |  "title": Schema.String.pipe(Schema.minLength(3)),
-                                       |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(1)),
-                                       |  "tags": Schema.Array(Schema.String).pipe(Schema.maxItems(5))
+                                       |  title: Schema.String.pipe(Schema.minLength(3)),
+                                       |  pages: Schema.Int.pipe(Schema.greaterThanOrEqualTo(1)),
+                                       |  tags: Schema.Array(Schema.String).pipe(Schema.maxItems(5))
                                        |})""".stripMargin)
       ,
       /** A bound on a length is a bound on an integer, so the exclusive form is the inclusive one next to it. */
@@ -161,6 +163,61 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       test("a constraint with no counterpart is left out rather than approximated"):
         val schema = collection.list(string, collections.uniqueItemsF[List, String])
         assertTrue(render(schema) == "Schema.Array(Schema.String)")
+      ,
+      /** effect has an array that says it holds something, and only that array types as one. A minimum of one is
+        * therefore spent on the array rather than on a filter beside it, however it was spelled.
+        */
+      test("a collection that is never empty is the array effect has a name for"):
+        assertTrue(
+          render(collection.list(string, collections.minimum[List[String]](1))) ==
+            "Schema.NonEmptyArray(Schema.String)",
+          render(collection.list(string, collections.minimum[List[String]](Comparison(0L, exclusive = true)))) ==
+            "Schema.NonEmptyArray(Schema.String)"
+        )
+      ,
+      /** Only the minimum is spent; whatever else the collection was built with still has to be said. */
+      test("a non empty collection keeps the constraints the array does not say"):
+        val schema = collection.list(
+          string,
+          collections.minimum[List[String]](1).and(collections.maximum[List[String]](5))
+        )
+
+        assertTrue(render(schema) == "Schema.NonEmptyArray(Schema.String).pipe(Schema.maxItems(5))")
+      ,
+      /** A minimum of anything else is a bound, not a promise that there is a first element. */
+      test("a collection with a larger minimum is still an array with a filter"):
+        assertTrue(
+          render(collection.list(string, collections.minimum[List[String]](2))) ==
+            "Schema.Array(Schema.String).pipe(Schema.minItems(2))"
+        )
+    ),
+    suite("pattern")(
+      /** A pattern both flavours read the same way, carrying the flag that makes them read it the same way. */
+      test("a pattern JavaScript agrees with is a literal, under the unicode flag"):
+        assertTrue(
+          render(string(text.matches[String](Pattern.compile("^[\\p{L}0-9]+$")))) ==
+            "Schema.String.pipe(Schema.pattern(/^[\\p{L}0-9]+$/u))"
+        )
+      ,
+      /** `/` ends the literal, so a pattern that means one as a character has to say so. */
+      test("a slash in a pattern is escaped rather than closing the literal"):
+        assertTrue(
+          render(string(text.matches[String](Pattern.compile("^a/b$")))) ==
+            "Schema.String.pipe(Schema.pattern(/^a\\/b$/u))"
+        )
+      ,
+      /** An inline flag is a syntax error in a JavaScript literal, and a schema that will not parse is worse than one
+        * that checks less. The rest of `java.util.regex` that JavaScript either lacks or reads differently goes the
+        * same way -- silently meaning something else is the failure worth avoiding.
+        */
+      test("a pattern JavaScript cannot read is left out rather than emitted"):
+        assertTrue(
+          render(string(text.matches[String](Pattern.compile("^(?i)[A-Z]{2}$")))) == "Schema.String",
+          render(string(text.matches[String](Pattern.compile("^\\p{Alpha}+$")))) == "Schema.String",
+          render(string(text.matches[String](Pattern.compile("^\\h+$")))) == "Schema.String",
+          render(string(text.matches[String](Pattern.compile("^a++$")))) == "Schema.String",
+          render(string(text.matches[String](Pattern.compile("^(?>a)$")))) == "Schema.String"
+        )
     ),
     suite("name")(
       /** A name is the only thing that can make a declaration: `.to[Book]` is two closures by the time a renderer sees
@@ -173,13 +230,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(render(schema) == """export type Name = Schema.Schema.Type<typeof Name>;
                                        |
                                        |export const Name = Schema.Struct({
-                                       |  "first": Schema.String,
-                                       |  "last": Schema.String
+                                       |  first: Schema.String,
+                                       |  last: Schema.String
                                        |});
                                        |
                                        |Schema.Struct({
-                                       |  "name": Name,
-                                       |  "age": Schema.optional(Schema.Int)
+                                       |  name: Name,
+                                       |  age: Schema.optional(Schema.Int)
                                        |})""".stripMargin)
       ,
       /** Reaching the same name twice is not recursion. It used to be read as one, because the name was left behind on
@@ -192,13 +249,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(render(schema) == """export type Name = Schema.Schema.Type<typeof Name>;
                                        |
                                        |export const Name = Schema.Struct({
-                                       |  "first": Schema.String,
-                                       |  "last": Schema.String
+                                       |  first: Schema.String,
+                                       |  last: Schema.String
                                        |});
                                        |
                                        |Schema.Struct({
-                                       |  "author": Name,
-                                       |  "editor": Name
+                                       |  author: Name,
+                                       |  editor: Name
                                        |})""".stripMargin)
     ),
     suite("recursion")(
@@ -211,13 +268,13 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           (field("value", int) :* field("children", collection.list(tree))).to[Tree].attr(Keys.name, "Tree")
 
         assertTrue(render(tree) == """export type Tree = {
-                                     |  "value": number;
-                                     |  "children": ReadonlyArray<Tree>;
+                                     |  value: number;
+                                     |  children: ReadonlyArray<Tree>;
                                      |};
                                      |
                                      |export const Tree: Schema.Schema<Tree> = Schema.Struct({
-                                     |  "value": Schema.Int,
-                                     |  "children": Schema.Array(Schema.suspend(() => Tree))
+                                     |  value: Schema.Int,
+                                     |  children: Schema.Array(Schema.suspend(() => Tree))
                                      |});
                                      |
                                      |Tree""".stripMargin)
@@ -237,20 +294,20 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             .attr(Keys.name, "Course")
 
         assertTrue(render(course) == """export type Student = {
-                                       |  "name": string;
-                                       |  "courses": ReadonlyArray<Course>;
+                                       |  name: string;
+                                       |  courses: ReadonlyArray<Course>;
                                        |};
                                        |
                                        |export const Student: Schema.Schema<Student> = Schema.Struct({
-                                       |  "name": Schema.String,
-                                       |  "courses": Schema.Array(Schema.suspend(() => Course))
+                                       |  name: Schema.String,
+                                       |  courses: Schema.Array(Schema.suspend(() => Course))
                                        |});
                                        |
                                        |export type Course = Schema.Schema.Type<typeof Course>;
                                        |
                                        |export const Course = Schema.Struct({
-                                       |  "title": Schema.String,
-                                       |  "members": Schema.Array(Student)
+                                       |  title: Schema.String,
+                                       |  members: Schema.Array(Student)
                                        |});
                                        |
                                        |Course""".stripMargin)
@@ -261,8 +318,8 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           field("bar", int.attr(TypescriptKeys.expression, TypescriptEffect.symbol("NumberFromString")))
 
         assertTrue(render(schema) == """Schema.Struct({
-                                       |  "foo": Schema.String,
-                                       |  "bar": Schema.NumberFromString
+                                       |  foo: Schema.String,
+                                       |  bar: Schema.NumberFromString
                                        |})""".stripMargin)
       ,
       test("an overridden expression is still hoisted when it is named"):
@@ -274,7 +331,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                                            |
                                                            |export const Bar = Schema.NumberFromString;
                                                            |
-                                                           |Schema.Struct({ "bar": Bar })""".stripMargin)
+                                                           |Schema.Struct({ bar: Bar })""".stripMargin)
       ,
       /** Declaring a type is what makes the constant need an ascription: inference would otherwise contradict what was
         * just declared.
@@ -286,7 +343,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                                            |
                                                            |export const Bar: Schema.Schema<Bar> = Schema.Int;
                                                            |
-                                                           |Schema.Struct({ "bar": Bar })""".stripMargin)
+                                                           |Schema.Struct({ bar: Bar })""".stripMargin)
     )
   )
 

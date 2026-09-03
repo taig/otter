@@ -34,8 +34,8 @@ object TypescriptTest extends ZIOSpecDefault:
         )
 
         assertTrue(expression.render == """Schema.Struct({
-                                          |  "first": Schema.String,
-                                          |  "last": Schema.String
+                                          |  first: Schema.String,
+                                          |  last: Schema.String
                                           |})""".stripMargin)
       ,
       test("a call with several short arguments stays on the line"):
@@ -60,15 +60,32 @@ object TypescriptTest extends ZIOSpecDefault:
         assertTrue(expression.render == """Schema.Union(
                                           |  Schema.String,
                                           |  Schema.Struct({
-                                          |    "a": Schema.String,
-                                          |    "b": Schema.String
+                                          |    a: Schema.String,
+                                          |    b: Schema.String
                                           |  })
                                           |)""".stripMargin)
       ,
       test("an object with one short field stays on the line"):
         assertTrue(
           Typescript.Expression.Object(List("nullable" -> Typescript.Expression.Literal.Boolean(true))).render ==
-            """{ "nullable": true }"""
+            """{ nullable: true }"""
+        )
+      ,
+      /** A key that is already a name is written as one; a key that is only a key when quoted keeps its quotes. A JSON
+        * document may be keyed by anything, and the generated source has to say what the schema said.
+        */
+      test("a key is quoted only where it has to be"):
+        def obj(name: String): String =
+          Typescript.Expression.Object(List(name -> Typescript.Expression.Literal.Boolean(true))).render
+
+        assertTrue(
+          obj("nullable") == "{ nullable: true }",
+          obj("$ref") == "{ $ref: true }",
+          obj("_private") == "{ _private: true }",
+          obj("accept-language") == """{ "accept-language": true }""",
+          obj("two words") == """{ "two words": true }""",
+          obj("2fa") == """{ "2fa": true }""",
+          obj("") == """{ "": true }"""
         )
       ,
       test("an array, empty, short and broken"):
@@ -106,8 +123,8 @@ object TypescriptTest extends ZIOSpecDefault:
         )
 
         assertTrue(expression.render == """Schema.Struct({
-                                          |  "a": Schema.String,
-                                          |  "b": Schema.String
+                                          |  a: Schema.String,
+                                          |  b: Schema.String
                                           |}).pipe(
                                           |  Schema.filter(Schema.String)
                                           |)""".stripMargin)
@@ -178,14 +195,14 @@ object TypescriptTest extends ZIOSpecDefault:
         )
 
         assertTrue(value.render == """{
-                                     |  "title": string;
-                                     |  "tag"?: number | undefined;
+                                     |  title: string;
+                                     |  tag?: number | undefined;
                                      |}""".stripMargin)
       ,
       /** A single member is short enough to read inline, and then the separator would be the last thing on the line. */
       test("an object with one member needs no separator"):
         val value = Typescript.Type.Object(List(Typescript.Type.Field("tag", tpe("number"), optional = false)))
-        assertTrue(value.render == """{ "tag": number }""")
+        assertTrue(value.render == """{ tag: number }""")
       ,
       test("a short union stays on the line"):
         val value = Typescript.Type.Union(NonEmptyList.of(tpe("number"), Typescript.Type.Null))
@@ -203,10 +220,10 @@ object TypescriptTest extends ZIOSpecDefault:
           NonEmptyList.of(Typescript.Type.Object(List(Typescript.Type.Field("side", tpe("number"), false))), member)
         )
 
-        assertTrue(value.render == """#| { "side": number }
+        assertTrue(value.render == """#| { side: number }
                                       #| {
-                                      #    "base": number;
-                                      #    "height": number;
+                                      #    base: number;
+                                      #    height: number;
                                       #  }""".stripMargin('#'))
       ,
       test("a parameterised symbol, a tuple and a typeof"):

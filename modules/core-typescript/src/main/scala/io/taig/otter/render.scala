@@ -23,6 +23,17 @@ private val isMultiline: String => Boolean = _.linesIterator.drop(1).hasNext
 /* An object literal is already delimited, so breaking around it would only add a line that says nothing. */
 private val isBraced: String => Boolean = value => value.startsWith("{") && value.endsWith("}")
 
+/* A key that is already a name needs no quotes to be one, and reads as what a hand would have written. Anything else --
+ * a key with a dash or a space in it, one that starts with a digit, the empty one -- is only a key when quoted. The
+ * reserved words are deliberately not excluded: a property may be called `class` or `default`, and quoting those would
+ * be the exception that has to be explained rather than the rule. */
+private val isName: String => Boolean = name =>
+  name.nonEmpty &&
+    (name.head.isUnicodeIdentifierStart || name.head == '$' || name.head == '_') &&
+    name.tail.forall(character => character.isUnicodeIdentifierPart || character == '$')
+
+private val key: String => String = name => if isName(name) then name else s"\"$name\""
+
 private val indent: Any => String = _.toString.linesIterator.map(Indent + _).mkString("\n")
 
 /* Indents everything but the first line, for a value that begins where something else left off. */
@@ -62,11 +73,11 @@ private val renderTypescriptExpression: Typescript.Expression => String =
     value.render.pipe:
       case value if isMultiline(value) =>
         s"""{
-           |${indent(s"\"$name\": $value")}
+           |${indent(s"${key(name)}: $value")}
            |}""".stripMargin
-      case value => s"{ \"$name\": $value }"
+      case value => s"{ ${key(name)}: $value }"
   case Typescript.Expression.Object(fields) =>
-    fields.map((name, value) => s"\"$name\": $value").map(indent).mkString("{\n", ",\n", "\n}")
+    fields.map((name, value) => s"${key(name)}: $value").map(indent).mkString("{\n", ",\n", "\n}")
   case Typescript.Expression.Pipe(self, arguments) =>
     (self.render :: arguments.toList.map(_.render)).pipe: rendered =>
       if rendered.exists(isMultiline)
@@ -129,6 +140,6 @@ private val renderTypescriptType: Typescript.Type => String =
 
 /* Without its separator, which only the object that holds it knows whether to add. */
 private val renderTypescriptTypeField: Typescript.Type.Field => String =
-  case Typescript.Type.Field(name, tpe, false) => s"\"$name\": ${align(tpe)}"
+  case Typescript.Type.Field(name, tpe, false) => s"${key(name)}: ${align(tpe)}"
   case Typescript.Type.Field(name, tpe, true)  =>
-    s"\"$name\"?: ${align(Typescript.Type.Union(NonEmptyList.of(tpe, Typescript.Type.Undefined)))}"
+    s"${key(name)}?: ${align(Typescript.Type.Union(NonEmptyList.of(tpe, Typescript.Type.Undefined)))}"

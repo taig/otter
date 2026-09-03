@@ -28,9 +28,18 @@ final class JsonTypescriptExpressionEffectRenderer(
   override def render[W, R](json: Json.Node[W, R]): State[JsonTypescriptContext, Typescript.Expression] = json match
     case Json.Coerce.Schema(node)     => coerce(node.self)
     case Json.Collection.Schema(node) =>
+      val constraints = collection(node.self)
+
+      /* A minimum of one is the array effect has its own name for, and taking that name is what keeps the element's
+       * presence in the type rather than only in the validation. */
+      val rest = ConstraintTypescriptEffect.nonEmpty(constraints)
+
+      val array: Typescript.Expression => Typescript.Expression =
+        if rest.isDefined then TypescriptEffect.nonEmptyArray else TypescriptEffect.array
+
       child(node.self.schema.value)
-        .map(TypescriptEffect.array)
-        .map(TypescriptEffect.filtered(_, ConstraintTypescriptEffect.filters(collection(node.self))))
+        .map(array)
+        .map(TypescriptEffect.filtered(_, ConstraintTypescriptEffect.filters(rest.getOrElse(constraints))))
     case Json.Constant.Schema(node) =>
       TypescriptEffect.literal(NonEmptyList.one(JsonTypescriptLiteral.constant(node.self))).pure
     case Json.Dictionary.Schema(node)     => child(node.self.schema.value).map(TypescriptEffect.record)

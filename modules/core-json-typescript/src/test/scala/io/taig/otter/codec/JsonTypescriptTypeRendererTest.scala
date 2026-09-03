@@ -22,9 +22,9 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
       assertTrue(
         read(json.book) == write(json.book),
         both(json.book) == """{
-                             |  "title": string;
-                             |  "pages": number;
-                             |  "read": boolean;
+                             |  title: string;
+                             |  pages: number;
+                             |  read: boolean;
                              |}""".stripMargin
       )
     ,
@@ -46,11 +46,11 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     ,
     /** A branch's name is only an error label -- the encoder never writes it -- so a union is untagged. */
     test("a union is untagged, and breaks once a member has"):
-      assertTrue(both(json.shape) == """#| { "radius": number }
-                                        #| { "side": number }
+      assertTrue(both(json.shape) == """#| { radius: number }
+                                        #| { side: number }
                                         #| {
-                                        #    "base": number;
-                                        #    "height": number;
+                                        #    base: number;
+                                        #    height: number;
                                         #  }""".stripMargin('#'))
     ,
     /** The key is dropped when the value is absent, so on the way out it is only ever missing. Coming back in, a
@@ -59,12 +59,12 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     test("an omitted field reads laxer than it writes"):
       assertTrue(
         write(json.omittedTag) == """{
-                                    |  "title": string;
-                                    |  "tag"?: number | undefined;
+                                    |  title: string;
+                                    |  tag?: number | undefined;
                                     |}""".stripMargin,
         read(json.omittedTag) == """{
-                                   |  "title": string;
-                                   |  "tag"?: number | null | undefined;
+                                   |  title: string;
+                                   |  tag?: number | null | undefined;
                                    |}""".stripMargin
       )
     ,
@@ -72,12 +72,12 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     test("a nullable field reads laxer than it writes"):
       assertTrue(
         write(json.nullableTag) == """{
-                                     |  "title": string;
-                                     |  "tag": number | null;
+                                     |  title: string;
+                                     |  tag: number | null;
                                      |}""".stripMargin,
         read(json.nullableTag) == """{
-                                    |  "title": string;
-                                    |  "tag"?: number | null | undefined;
+                                    |  title: string;
+                                    |  tag?: number | null | undefined;
                                     |}""".stripMargin
       )
     ,
@@ -88,9 +88,9 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
 
       assertTrue(
         read(omitted) == write(omitted),
-        both(omitted) == """{ "tag"?: number | undefined }""",
+        both(omitted) == """{ tag?: number | undefined }""",
         read(nulled) == write(nulled),
-        both(nulled) == """{ "tag": number | null }"""
+        both(nulled) == """{ tag: number | null }"""
       )
     ,
     /** Two layers of absence, which only a strict field can tell apart: no key at all is the outer one, a null the
@@ -99,7 +99,7 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
     test("a strict field over an optional schema keeps the layers apart"):
       assertTrue(
         read(json.nestedTag) == write(json.nestedTag),
-        both(json.nestedTag) == """{ "tag"?: number | null | undefined }"""
+        both(json.nestedTag) == """{ tag?: number | null | undefined }"""
       )
     ,
     /** A field holding a default is never absent when written, and may always be absent when read. */
@@ -107,16 +107,16 @@ object JsonTypescriptTypeRendererTest extends ZIOSpecDefault:
       val schema = field("tag", int).optional(0).toRecord
 
       assertTrue(
-        write(schema) == """{ "tag": number }""",
-        read(schema) == """{ "tag"?: number | null | undefined }"""
+        write(schema) == """{ tag: number }""",
+        read(schema) == """{ tag?: number | null | undefined }"""
       )
     ,
     test("a defaulted schema is required on the way out and nullable on the way in"):
       val schema = field("tag", int.optional(0)).toRecord
 
       assertTrue(
-        write(schema) == """{ "tag": number }""",
-        read(schema) == """{ "tag": number | null }"""
+        write(schema) == """{ tag: number }""",
+        read(schema) == """{ tag: number | null }"""
       )
     ,
     /** The decoder normalises a quoted number and a stringified boolean before it looks at them, so the read side
