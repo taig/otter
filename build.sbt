@@ -67,7 +67,8 @@ lazy val modules: List[CrossProject] = List(
   coreJsonTypescript,
   coreJsonTypescriptEffect,
   coreTypescript,
-  coreTypescriptEffect
+  coreTypescriptEffect,
+  http
 )
 
 /** Format agnostic schema definitions and interpreters */
@@ -162,6 +163,17 @@ lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
 /** effect Schema code generation for JSON */
 lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
   .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptEffect)
+
+/** HTTP endpoint definitions
+  *
+  * An alphabet, but not a paired one: an endpoint's envelope -- its path, its query string, its headers -- is text and
+  * nothing more, so the codecs that read and write it live here and every backend adapts its own request type to the
+  * `Chain`s they speak. A body is the one part that cannot be a pure value, because its bytes arrive over time, so this
+  * module describes a body and stops. What a sequence of bytes is, is the interpreter's word.
+  */
+lazy val http = module(identifier = Some("http"))
+  .settings(libraryDependencies += "org.scodec" %% "scodec-bits" % Version.ScodecBits)
+  .dependsOn(core % "compile->compile;test->test")
 
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
