@@ -103,6 +103,10 @@ differs per alphabet -- a cell is not a row, a segment is not a path, and JSON, 
 than a left and a right. What it gives up is the by-name element: the left operand of a right-associative operator is
 the extension parameter, and Scala evaluates it first.
 
+`++` is `zip` written as an operator. It concatenates what the container holds like the other two -- `record ++ record`
+writes both sets of fields into one object -- and differs in the Scala value, which stays a pair rather than flattening,
+because neither operand is a member of the other. It binds tighter than `:*` and looser than `*:`.
+
 ## Code Style
 
 - Scalafmt enforced (maxColumn: 120, Scala 3 dialect)

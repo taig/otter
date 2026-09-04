@@ -61,6 +61,22 @@ trait OtterSyntax:
       */
     def zip[W2, R2](fb: F[W2, R2])(using Z: Zip[F]): F[(W1, W2), (R1, R2)] = Z.zip(fa, fb)
 
+    /** [[zip]] written as an operator, so that a schema assembled from several reads as one expression rather than as a
+      * chain of calls.
+      *
+      * `++` rather than a third appending operator, because concatenating what the container holds is the part all
+      * three have in common: `record ++ record` writes both sets of fields into one object, as `field :* field` does.
+      * What the two operands are to each other is the part that differs, and it is the Scala value that says so --
+      * nested here, flat under `:*`, for the reason [[zip]] gives.
+      *
+      * Precedence puts it between the two: tighter than `:*`, so `record ++ record :* field` zips before it appends,
+      * and looser than `*:`. What it appends to is a pair, which [[io.taig.otter.Append]] then flattens like any other
+      * tuple standing on the left, so that reads `(A, B, C)` rather than `((A, B), C)`.
+      *
+      * Both operands have to be the same container, which `toRecord` and `toTuple` are for.
+      */
+    def ++[W2, R2](fb: F[W2, R2])(using Z: Zip[F]): F[(W1, W2), (R1, R2)] = Z.zip(fa, fb)
+
   extension [F[-_, +_], W, R](fa: F[W, R])
     /** Maps the read side. What the schema writes is forgotten rather than broken, so the result is a reader: mapping
       * one side of a round trip leaves something that no longer round trips, and the type has to say so.
