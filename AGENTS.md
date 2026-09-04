@@ -21,10 +21,28 @@ and neither `encodeDocument` nor `printDocument` is one of them: `encodeDocument
 tree, so `encodeVoid` -- the same walk with nothing built, via `JsonVoidEncoder` -- is what you subtract.
 `(encodeDocument - encodeVoid) + printDocument` is the document model's share of a write.
 
-Measured, that share is **64% of a flat record's write, 79% of a nested document's and ~95% of a small one**, against
-10% to 28% on reads. The schema interpreter is the other 14-29% of a write and allocates almost nothing (24B to 1.2KB
-per op, against 5.4KB to 39KB for the whole write). That asymmetry is why `core-json-borer` exists and why its encoder
-carries a deferred write rather than a document.
+Measured, that share is **64% of a flat record's write, 79% of a nested document's and ~95% of a small one**. The
+schema interpreter is the other 14-29% of a write and allocates almost nothing (24B to 1.2KB per op, against 5.4KB to
+39KB for the whole write). That asymmetry is why `core-json-borer` exists and why its encoder carries a deferred write
+rather than a document.
+
+Reads are the other way round and used to be worse: the interpreter was 72-90% of a read and allocated 0.9-3.4KB *per
+node*. It is now 493ns and 3.3KB for a fifteen field record where it was 2070ns and 16.2KB, so parsing is 21% to 53% of
+a read rather than 10% to 28%, and for a small record the read is essentially the parse.
+
+**Read allocation before you read timings, and only count allocation that escapes.** `-prof gc`'s
+`gc.alloc.rate.norm` is exact -- it reproduces to the byte across runs and fork counts -- but it is measured *after*
+JIT, so escape analysis has already deleted every allocation it could prove non-escaping. Counting `new`s in the source
+therefore over-states the prize, and the two changes that paid here both removed *escaping* objects: a hash index
+stored into a `HashMap`, and a tuple returned up a recursive `decodeRemaining`, which recursion keeps the JIT from
+inlining through.
+
+The corollary is sharper, and cost two commits to learn: **removing allocations from the source can make things
+worse.** Hand-inlining cats combinators at the primitive leaf added 224B to a record and 3.5KB to a tree; guarding
+`Metadata.get` on an empty map added 168B to a small record and 22% to its time. cats' combinators are small, inline,
+and their garbage is scalar-replaced; a hand-written generic helper is megamorphic across its call sites, does not
+inline, and its result escapes. Both were reverted. Measure each change on its own and keep only what the number
+supports.
 
 `core-json` has two interpreters, and they are worth comparing. `core-json-circe` builds an `io.circe.Json` both ways.
 `core-json-borer` reads through borer's `Dom` -- a schema driven read needs random access, so a streaming reader
