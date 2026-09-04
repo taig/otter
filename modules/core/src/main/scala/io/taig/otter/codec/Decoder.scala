@@ -1,7 +1,6 @@
 package io.taig.otter.codec
 
 import cats.data.Validated
-import cats.syntax.all.*
 import io.taig.otter.Violations
 
 /** Reads a value described by the schema `F`.
@@ -31,10 +30,6 @@ object Decoder:
 
     final override def decode[R](fa: F[Nothing, R], t: T): Validated[Violations, R] =
       decodeRemaining(fa, t).map(_._2)
-
-    final def verify(f: T => Option[Violations]): Decoder[F, T] = new Decoder[F, T]:
-      override def decode[R](fa: F[Nothing, R], t: T): Validated[Violations, R] =
-        self.decode(fa, t).andThen(f(t).toInvalid)
 
     override def contramapK[G[-_, +_]](fK: [w, r] => G[w, r] => F[w, r]): Decoder.Remaining[G, T] =
       new Decoder.Remaining[G, T]:
