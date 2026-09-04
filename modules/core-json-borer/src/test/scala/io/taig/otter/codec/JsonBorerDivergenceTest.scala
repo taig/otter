@@ -18,7 +18,7 @@ import scala.util.Try
   */
 object JsonBorerDivergenceTest extends ZIOSpecDefault:
   private def borer(lexeme: String): Either[String, Dom.Element] =
-    Try(Doc.toBorer(Doc.Num(lexeme))).toEither.left.map:
+    Try(BorerDoc.toBorer(Doc.Num(lexeme))).toEither.left.map:
       case error: Borer.Error[?] => error.getMessage
       case error                 => error.toString
 
@@ -42,17 +42,17 @@ object JsonBorerDivergenceTest extends ZIOSpecDefault:
         val doc = Doc.Obj(List("title" -> Doc.Str("Dune"), "title" -> Doc.Str("Messiah"), "tag" -> Doc.Num("1")))
 
         assertTrue(
-          JsonBorerDecoder.decode(json.omittedTag, Doc.toBorer(doc)) == Validated.valid(Note("Dune", 1.some)),
-          JsonCirceDecoder.decode(json.omittedTag, Doc.toCirce(doc)) == Validated.valid(Note("Messiah", 1.some))
+          JsonBorerDecoder.decode(json.omittedTag, BorerDoc.toBorer(doc)) == Validated.valid(Note("Dune", 1.some)),
+          JsonCirceDecoder.decode(json.omittedTag, CirceDoc.toCirce(doc)) == Validated.valid(Note("Messiah", 1.some))
         )
       ,
       test("a dictionary keeps it, where circe's object has already collapsed it"):
         val doc = Doc.Obj(List("1" -> Doc.Str("a"), "1" -> Doc.Str("a"), "2" -> Doc.Str("b")))
 
         assertTrue(
-          JsonBorerDecoder.decode(json.printings, Doc.toBorer(doc)) ==
+          JsonBorerDecoder.decode(json.printings, BorerDoc.toBorer(doc)) ==
             Validated.valid(List(1 -> "a", 1 -> "a", 2 -> "b")),
-          JsonCirceDecoder.decode(json.printings, Doc.toCirce(doc)) == Validated.valid(List(1 -> "a", 2 -> "b"))
+          JsonCirceDecoder.decode(json.printings, CirceDoc.toCirce(doc)) == Validated.valid(List(1 -> "a", 2 -> "b"))
         )
     )
   )

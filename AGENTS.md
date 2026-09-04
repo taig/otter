@@ -122,17 +122,42 @@ sbt core-json-circe/testFull
 sbt "core-json-circe/testOnly io.taig.otter.codec.JsonCirceDecoderTest"
 ```
 
-`core-json-borer`'s suite is shaped differently from `core-json-circe`'s, on purpose. `JsonBorerAgreementTest` is a
-differential test: every fixture schema, over its canonical document and one edit at a time, asserting that borer and
-circe produce the *same* `Validated[Violations, A]`. That covers strictly more than a second copy of
-`JsonCirceDecoderTest` would, so the absolute assertions that remain are only the ones agreement structurally cannot
-make -- the number ladder, hand built `Dom` values no JSON parser produces, and the three documented divergences in
-`JsonBorerDivergenceTest`. The same reasoning is why `DirectionTest`, `FlatnessTest` and `ZipTest` are *not* mirrored:
-they assert properties of the schema algebra through `compiletime.testing.typeChecks` and mention an interpreter only
-as an arbitrary witness.
+What a JSON interpreter owes is written down once, in `core-json`'s test sources, and every interpreter is held to
+it. `JsonInterpreter` names the three points -- read a document, write one, round trip a value -- and
+`JsonDecoderSuite`, `JsonEncoderSuite` and `JsonRoundTripSuite` are the claims. A module's own suite is the one line
+that binds them (`object JsonCirceEncoderTest extends JsonEncoderSuite(JsonCirceInterpreter)`) plus an `extra` list for
+what the contract structurally cannot ask about.
 
-Both sides of the agreement test are fed from `Doc`, which is the document as *text*. That is deliberate: deriving one
-library's model from the other would need the conversion that is itself under test, and its bugs would cancel out.
+A document is **text** on both sides of the contract, which is the only form every interpreter has in common:
+`core-json-borer` builds no document on the way out at all. Reading text means reading it through the interpreter's own
+parser, so the contract holds the bridge and the parser together rather than the interpreter alone -- which is the
+intent, since bytes are what a caller actually hands a JSON library.
+
+`Doc` is a separate thing and is *not* what the contract uses. It is the document as text for a **differential** test,
+where the same document has to reach two interpreters in two models and neither may be derived from the other -- that
+derivation is the code under test, and its bugs would cancel out. It lives in `core-json` rather than beside either
+interpreter so that a third one can write its own differential test without depending on a second one's test sources;
+`CirceDoc` and `BorerDoc`, which turn it into a library's model, live beside the library.
+
+Three kinds of claim live in three places, and it is worth knowing which is which before adding a test:
+
+- **The contract**, in `core-json`. What the alphabet says, stated absolutely, over the documents a person wrote down.
+  It is what an interpreter with no oracle to compare against is measured by.
+- **Agreement**, in `core-json-borer`. `JsonBorerAgreementTest` reads every fixture schema over its canonical document
+  and one edit at a time, asserting borer and circe produce the *same* `Validated[Violations, A]`;
+  `JsonBorerEncodeAgreementTest` does the same for what they write, over generated values. Together they cover a corpus
+  far wider than anything written down, and compare whole violation trees -- but only relative to circe.
+- **A module's own**, in that module. What neither can reach: the bridge objects (`JsonCirceTest`, `JsonBorerTest`),
+  the number ladder, hand built `Dom` values no parser produces, `Float` spelling and whether a renderer refuses a NaN,
+  and the documented differences in `JsonBorerDivergenceTest`.
+
+Duplicate keys are outside the contract on purpose rather than configurable in it. borer's record reads the first
+occurrence where circe's `JsonObject` has already kept the last, and JSON does not say which is right; a contract with
+a knob per difference would have stopped asserting anything. It is stated the other way round, per module, instead.
+
+`DirectionTest`, `FlatnessTest` and `ZipTest` are not part of the contract and are not mirrored: they assert properties
+of the schema algebra through `compiletime.testing.typeChecks` and mention an interpreter only as an arbitrary witness.
+One witness suffices.
 
 `test` in sbt 2 only runs what it thinks changed, and reports "No tests to run" after a
 clean. Use `testFull` to actually run a suite.

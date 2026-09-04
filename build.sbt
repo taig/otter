@@ -78,14 +78,14 @@ lazy val modules: List[CrossProject] = List(
   *
   * Not one of the [[modules]], which are what cross builds and what `testJVM` and `testJS` run: this publishes nothing,
   * links nothing and is not a test. Aggregated all the same, so that compiling, formatting and linting the build still
-  * reach it. It measures the JSON fixtures, which live in `core-json-circe`'s test sources, and parses text, which
+  * reach it. It measures the JSON fixtures, which live in `core-json`'s test sources, and parses text, which
   * `circe-parser` is the only dependency here for.
   */
 lazy val benchmark = module(identifier = Some("benchmark"), jvmOnly = true)
   .enablePlugins(JmhPlugin)
   .settings(noPublishSettings)
   .settings(libraryDependencies += "io.circe" %% "circe-parser" % Version.Circe)
-  .dependsOn(coreJsonBorer, coreJsonCirce % "compile->compile;compile->test")
+  .dependsOn(coreJson % "compile->test", coreJsonBorer, coreJsonCirce)
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -104,7 +104,13 @@ lazy val core = module(identifier = Some("core"))
         Nil
   )
 
-/** JSON schema definitions */
+/** JSON schema definitions, and the conformance suite every interpreter of them is held to
+  *
+  * The test sources here are a contract rather than a suite of their own. `JsonInterpreter` names the three points an
+  * interpreter is measured at, `JsonDecoderSuite`, `JsonEncoderSuite` and `JsonRoundTripSuite` are what every one of
+  * them must pass, and the fixtures are the schemas -- not one library's reading of them, which is why they live here
+  * and not beside an interpreter.
+  */
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
 
@@ -136,6 +142,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
     libraryDependencies ++=
       "io.circe" %% "circe-core" % Version.Circe ::
         "io.taig" %% "data-circe" % Version.Data ::
+        "io.circe" %% "circe-parser" % Version.Circe % Test ::
         Nil
   )
   .dependsOn(coreJson % "compile->compile;test->test")
@@ -147,7 +154,7 @@ lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
   * 2020-12, a strict structured output profile -- and that is a JsonSchemaProfile value rather than a module.
   */
 lazy val coreJsonSchema = module(identifier = Some("core-json-schema"))
-  .dependsOn(coreJsonCirce % "compile->compile;test->test")
+  .dependsOn(coreJson % "test->test", coreJsonCirce)
 
 /** Component extensions for org.typelevel / case-insensitive */
 lazy val coreCaseInsensitive = module(identifier = Some("core-case-insensitive"))
@@ -188,19 +195,24 @@ lazy val coreTypescriptEffect = module(identifier = Some("core-typescript-effect
 
 /** TypeScript renderers for JSON, whatever the target library
   *
-  * The test dependency on `core-json-circe` is for its fixtures, which are the schemas every JSON interpreter is
-  * measured against, and for asserting that a rendered shape agrees with the document circe writes.
+  * The test dependency on `core-json` is for its fixtures, which are the schemas every JSON interpreter and every
+  * renderer of one is measured against. No interpreter is named here, because a rendered shape is a claim about the
+  * schema rather than about any library's reading of it.
   */
 lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
+  .dependsOn(coreJson % "compile->compile;test->test", coreTypescript % "compile->compile;test->test")
+
+/** effect Schema code generation for JSON
+  *
+  * The test dependency on `core-json-circe` is where an interpreter *is* named: this is the module that asserts a
+  * generated type accepts exactly the documents circe writes, so it is the one that says so in its build.
+  */
+lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
   .dependsOn(
-    coreJson % "compile->compile;test->test",
-    coreTypescript % "compile->compile;test->test",
+    coreJsonTypescript % "compile->compile;test->test",
+    coreTypescriptEffect,
     coreJsonCirce % "test->test"
   )
-
-/** effect Schema code generation for JSON */
-lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
-  .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptEffect)
 
 /** HTTP endpoint definitions
   *

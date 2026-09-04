@@ -23,7 +23,7 @@ object JsonBorerNumberTest extends ZIOSpecDefault:
     */
   private val Jvm: Boolean = String.valueOf(0.1f) == "0.1"
 
-  private def element(lexeme: String): Dom.Element = Doc.toBorer(Doc.Num(lexeme))
+  private def element(lexeme: String): Dom.Element = BorerDoc.toBorer(Doc.Num(lexeme))
 
   private def number(lexeme: String): Option[JsonBorerNumber] = JsonBorerNumber.unapply(element(lexeme))
 
