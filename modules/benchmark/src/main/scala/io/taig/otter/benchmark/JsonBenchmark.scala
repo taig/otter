@@ -37,9 +37,18 @@ import java.util.concurrent.TimeUnit
 @Warmup(iterations = 5, time = 1)
 @Measurement(iterations = 10, time = 1)
 abstract class JsonBenchmark[A](schema: Json[A], value: A):
-  private val document: CirceJson = JsonCirceEncoder.encode(schema, value)
+  private val text: String = JsonCirceEncoder.encode(schema, value).noSpaces
 
-  private val text: String = document.noSpaces
+  /** Parsed rather than encoded, and the difference is not cosmetic.
+    *
+    * circe has two `JsonObject` implementations and they do different work at the one line the record decoder calls.
+    * `JsonCirceDecoder` reads a record through `Fields.from(values.toIterable)`; the parser's
+    * `LinkedHashMapJsonObject.toIterable` is an anonymous `Iterable` over the map's iterator, so `Vector.from` runs a
+    * full builder pass over it, while the encoder's `MapAndVectorJsonObject.toIterable` is already a `Vector` and is
+    * returned as it stands. A `decodeDocument` over an encoder built document therefore measures work no read does, and
+    * `decodeText - parseText` does not separate parsing from interpreting.
+    */
+  private val document: CirceJson = parser.parse(text).getOrElse(sys.error(s"unparsable fixture: $text"))
 
   private val bytes: Array[Byte] = text.getBytes(UTF_8)
 
