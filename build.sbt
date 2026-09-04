@@ -67,7 +67,10 @@ lazy val modules: List[CrossProject] = List(
   coreJsonTypescript,
   coreJsonTypescriptEffect,
   coreTypescript,
-  coreTypescriptEffect
+  coreTypescriptEffect,
+  http,
+  httpJson,
+  httpOpenapi
 )
 
 /** Format agnostic schema definitions and interpreters */
@@ -162,6 +165,34 @@ lazy val coreJsonTypescript = module(identifier = Some("core-json-typescript"))
 /** effect Schema code generation for JSON */
 lazy val coreJsonTypescriptEffect = module(identifier = Some("core-json-typescript-effect"))
   .dependsOn(coreJsonTypescript % "compile->compile;test->test", coreTypescriptEffect)
+
+/** HTTP endpoint definitions
+  *
+  * An alphabet, but not a paired one: an endpoint's envelope -- its path, its query string, its headers -- is text and
+  * nothing more, so the codecs that read and write it live here and every backend adapts its own request type to the
+  * `Chain`s they speak. A body is the one part that cannot be a pure value, because its bytes arrive over time, so this
+  * module describes a body and stops. What a sequence of bytes is, is the interpreter's word.
+  */
+lazy val http = module(identifier = Some("http"))
+  .settings(libraryDependencies += "org.scodec" %% "scodec-bits" % Version.ScodecBits)
+  .dependsOn(core % "compile->compile;test->test")
+
+/** JSON payloads for HTTP bodies
+  *
+  * A module rather than a few lines in `http`, so that describing an endpoint does not drag in a JSON alphabet. A
+  * payload is any schema at all, and this is what says one of them may be a JSON one.
+  */
+lazy val httpJson = module(identifier = Some("http-json"))
+  .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+
+/** OpenAPI documents rendered from an endpoint
+  *
+  * A renderer, on the same reasoning `core-json-schema` is one: an OpenAPI document is a JSON document, and
+  * `core-json-circe` already says what one of those is. The payload schemas inside it are rendered by a parameter, so a
+  * payload alphabet other than JSON contributes its own renderer rather than being named here.
+  */
+lazy val httpOpenapi = module(identifier = Some("http-openapi"))
+  .dependsOn(httpJson % "compile->compile;test->test", coreJsonSchema % "compile->compile;test->test")
 
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
