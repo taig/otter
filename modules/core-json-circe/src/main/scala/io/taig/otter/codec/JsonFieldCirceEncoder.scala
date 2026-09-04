@@ -12,9 +12,10 @@ import io.taig.otter.Json
   * exactly what would throw the metadata away.
   */
 object JsonFieldCirceEncoder extends Encoder[Json.Field.Node, Chain[(String, CirceJson)]]:
-  private val omitting: FieldEncoder[Json.Node, CirceJson] = FieldEncoder(JsonCirceEncoder, absent = none)
+  private val omitting: FieldEncoder[Json.Node, CirceJson, Chain[(String, CirceJson)]] =
+    FieldEncoder(JsonCirceEncoder, absent = none)
 
-  private val nulling: FieldEncoder[Json.Node, CirceJson] =
+  private val nulling: FieldEncoder[Json.Node, CirceJson, Chain[(String, CirceJson)]] =
     FieldEncoder(JsonCirceEncoder, absent = CirceJson.Null.some)
 
   override def encode[W](json: Json.Field.Node[W, Any], w: W): Chain[(String, CirceJson)] =

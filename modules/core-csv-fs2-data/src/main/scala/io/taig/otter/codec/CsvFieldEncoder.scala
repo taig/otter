@@ -14,9 +14,11 @@ import io.taig.otter.Csv
   * exactly what would throw the metadata away.
   */
 object CsvFieldEncoder extends Encoder[Csv.Field.Node, Chain[(String, String)]]:
-  private val blanking: FieldEncoder[Csv.Cell.Node, String] = FieldEncoder(CsvCellEncoder, absent = "".some)
+  private val blanking: FieldEncoder[Csv.Cell.Node, String, Chain[(String, String)]] =
+    FieldEncoder(CsvCellEncoder, absent = "".some)
 
-  private val omitting: FieldEncoder[Csv.Cell.Node, String] = FieldEncoder(CsvCellEncoder, absent = none)
+  private val omitting: FieldEncoder[Csv.Cell.Node, String, Chain[(String, String)]] =
+    FieldEncoder(CsvCellEncoder, absent = none)
 
   override def encode[W](csv: Csv.Field.Node[W, Any], w: W): Chain[(String, String)] =
     val encoder = Csv.absence(csv.self.metadata) match
