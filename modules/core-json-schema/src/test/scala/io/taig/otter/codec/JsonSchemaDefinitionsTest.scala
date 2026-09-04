@@ -55,9 +55,7 @@ object JsonSchemaDefinitionsTest extends ZIOSpecDefault:
       )
     ,
     test("a profile that will not follow a reference inlines instead, and says so where it cannot"):
-      val inlining = new JsonSchemaProfile:
-        export JsonSchemaProfile.Draft202012.{definitions as _, *}
-        override val definitions: Option[String] = None
+      val inlining = JsonSchemaProfile.Draft202012.copy(definitions = None)
 
       val named = JsonSchemaRenderer.writer(inlining).render(json.book.attr(Keys.name, "Book"))
       val recursive = JsonSchemaRenderer.writer(inlining).render(tree)
