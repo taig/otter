@@ -37,10 +37,10 @@ object Http:
     * columns are fixed by a header.
     */
   private[otter] def absence(metadata: Metadata): Absence =
-    metadata.get(Http.Namespace, Metadata.Namespace.Global)(Keys.absence).getOrElse(Absence.Omit)
+    metadata.get(Http.Namespace, Metadata.Namespace.Global, Keys.absence).getOrElse(Absence.Omit)
 
   /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a parameter
     * round trips whether its name is missing or merely present with nothing after the `=`.
     */
   private[otter] def tolerance(metadata: Metadata): Tolerance =
-    metadata.get(Http.Namespace, Metadata.Namespace.Global)(Keys.tolerance).getOrElse(Tolerance.Lenient)
+    metadata.get(Http.Namespace, Metadata.Namespace.Global, Keys.tolerance).getOrElse(Tolerance.Lenient)
