@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.NonEmptyList
 import fs2.data.csv.CsvRow
 import fs2.data.csv.Row
@@ -35,7 +34,7 @@ object CsvKeyedRowEncoder extends Encoder[Csv.Record.Node, Option[CsvRow[String]
       .flatMap(headers => CsvRow(headers.map(cells.getOrElse(_, "")), headers).toOption)
 
 val CsvKeyedRowDecoder: Decoder[Csv.Record.Node, CsvRow[String]] =
-  CsvRecordDecoder.contramap(row => Chain.fromSeq(row.headers.value.toList.zip(row.values.toList)))
+  CsvRecordDecoder.contramap(row => Fields.from(row.headers.value.toList.zip(row.values.toList)))
 
 val CsvRowEncoder: Encoder[Csv.Tuple.Node, Option[Row]] =
   CsvTupleEncoder.map(cells => NonEmptyList.fromList(cells.toList).map(Row(_)))

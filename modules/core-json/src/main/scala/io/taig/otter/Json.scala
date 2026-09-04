@@ -63,13 +63,13 @@ object Json:
     * about absence drops its key, the way a field always has.
     */
   private[otter] def absence(metadata: Metadata): Absence =
-    metadata.get(Json.Namespace, Metadata.Namespace.Global)(Keys.absence).getOrElse(Absence.Omit)
+    metadata.get(Json.Namespace, Metadata.Namespace.Global, Keys.absence).getOrElse(Absence.Omit)
 
   /** The [[Tolerance]] a schema's metadata asks for. Asking for nothing is [[Tolerance.Lenient]], so that a field round
     * trips whichever way it is written.
     */
   private[otter] def tolerance(metadata: Metadata): Tolerance =
-    metadata.get(Json.Namespace, Metadata.Namespace.Global)(Keys.tolerance).getOrElse(Tolerance.Lenient)
+    metadata.get(Json.Namespace, Metadata.Namespace.Global, Keys.tolerance).getOrElse(Tolerance.Lenient)
 
   /** The [[Metadata]] of a node, whichever node it is.
     *

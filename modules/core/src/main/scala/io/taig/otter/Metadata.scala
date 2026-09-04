@@ -42,6 +42,19 @@ object Metadata:
         case (None, namespace)     => get[A](namespace = namespace, key = key)
         case (result @ Some(_), _) => result
 
+    /** The two namespace case, which is every format's own attribute falling back to the global one.
+      *
+      * Spelled out rather than reached through the varargs overload, which allocates a `Seq` and a fold closure per
+      * lookup. A field's [[Keys.absence]] and [[Keys.tolerance]] are read once per field per write and twice per field
+      * per read, to answer a question that was fixed when the schema was built.
+      */
+    def get[A](
+        namespace: Metadata.Namespace,
+        fallback: Metadata.Namespace,
+        key: Metadata.Key[A]
+    ): Option[A] =
+      get[A](namespace = namespace, key = key).orElse(get[A](namespace = fallback, key = key))
+
     def put[A](namespace: Metadata.Namespace, key: Metadata.Key[A], value: A): Metadata =
       toSortedMap.updated((namespace, key), value)
 

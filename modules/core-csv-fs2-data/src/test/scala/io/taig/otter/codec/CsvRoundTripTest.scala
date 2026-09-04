@@ -10,7 +10,7 @@ import zio.test.*
 object CsvRoundTripTest extends ZIOSpecDefault:
   private def roundTrips[A](schema: Csv[A], value: A): TestResult =
     val encoded = CsvRecordEncoder.encode(schema, value)
-    assertTrue(CsvRecordDecoder.decode(schema, encoded) == Validated.valid(value))
+    assertTrue(CsvRecordDecoder.decode(schema, Fields.from(encoded.toList)) == Validated.valid(value))
 
   private def roundTripsPositionally[A](schema: Csv.Tuple[A], value: A): TestResult =
     val encoded = CsvTupleEncoder.encode(schema, value)

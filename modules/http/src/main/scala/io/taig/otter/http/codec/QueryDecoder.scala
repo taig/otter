@@ -7,6 +7,7 @@ import io.taig.otter.Tolerance
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.FieldDecoder
+import io.taig.otter.codec.Fields
 import io.taig.otter.http.Http
 import io.taig.otter.http.Query
 
@@ -16,7 +17,7 @@ import io.taig.otter.http.Query
   * missing name and a name given without a value alike, so `?page=` round trips as nothing whichever way it was
   * written; a strict one takes only the form its [[Absence]] asks for.
   */
-object QueryDecoder extends Decoder.Remaining[Query.Node, Chain[(String, Chain[String])]]:
+object QueryDecoder extends Decoder.Remaining[Query.Node, Fields[Chain[String]]]:
   private val lenient = FieldDecoder(ParameterDecoder.Repeated, absent = _.forall(_.forall(_.isEmpty)))
 
   private val omitted = FieldDecoder(ParameterDecoder.Repeated, absent = _.isEmpty)
@@ -25,8 +26,8 @@ object QueryDecoder extends Decoder.Remaining[Query.Node, Chain[(String, Chain[S
 
   override def decodeRemaining[R](
       query: Query.Node[Nothing, R],
-      values: Chain[(String, Chain[String])]
-  ): Validated[Violations, (Chain[(String, Chain[String])], R)] =
+      values: Fields[Chain[String]]
+  ): Validated[Violations, (Fields[Chain[String]], R)] =
     val decoder = Http.tolerance(query.self.metadata) match
       case Tolerance.Lenient => lenient
       case Tolerance.Strict  =>
