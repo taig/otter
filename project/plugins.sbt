@@ -1,5 +1,6 @@
 addSbtPlugin("com.github.sbt" % "sbt-ci-release" % "1.12.1")
 addSbtPlugin("io.taig" % "sbt-blowout-yaml-circe" % "0.3.0")
 addSbtPlugin("io.taig" % "sbt-houserules" % "0.12.0")
+addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.4.8")
 addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.4.0")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.22.0")

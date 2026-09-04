@@ -51,7 +51,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(modules *)
+  .aggregate(modules.appended(benchmark) *)
 
 /** Every module that cross builds, which is every module but the root: what there is to test, twice over. */
 lazy val modules: List[CrossProject] = List(
@@ -72,6 +72,19 @@ lazy val modules: List[CrossProject] = List(
   httpJson,
   httpOpenapi
 )
+
+/** JMH benchmarks
+  *
+  * Not one of the [[modules]], which are what cross builds and what `testJVM` and `testJS` run: this publishes nothing,
+  * links nothing and is not a test. Aggregated all the same, so that compiling, formatting and linting the build still
+  * reach it. It measures the JSON fixtures, which live in `core-json-circe`'s test sources, and parses text, which
+  * `circe-parser` is the only dependency here for.
+  */
+lazy val benchmark = module(identifier = Some("benchmark"), jvmOnly = true)
+  .enablePlugins(JmhPlugin)
+  .settings(noPublishSettings)
+  .settings(libraryDependencies += "io.circe" %% "circe-parser" % Version.Circe)
+  .dependsOn(coreJsonCirce % "compile->compile;compile->test")
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))

@@ -10,6 +10,13 @@ Modules: `core`, `core-json`, `core-json-circe`, `core-json-schema`, `core-csv`,
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
+`benchmark` is apart from all of them: JVM only, published nowhere, and not run by `testJVM`. It holds the JMH
+benchmarks that say where a read and a write actually spend their time -- `sbt "benchmark/Jmh/run -wi 3 -i 5 -f 1"`
+-- and it measures the `core-json-circe` fixtures, which is why it depends on that module's test sources. Read a
+result against `parseText` and `printDocument`, which are circe's document model on its own: those two are the whole
+of what swapping in a JSON library without a document model could win, and the rest of the number is the schema
+interpreter, which such a library would not touch.
+
 `core-json`/`core-json-circe` and `core-csv`/`core-csv-fs2-data` are the same pair twice: a
 module defining a format's alphabet, and a module interpreting it into a library's data model.
 
