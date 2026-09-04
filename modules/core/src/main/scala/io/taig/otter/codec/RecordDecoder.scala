@@ -1,17 +1,16 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Record
 import io.taig.otter.Violations
 
-final class RecordDecoder[F[-_, +_], T](decoder: Decoder.Remaining[F, Chain[(String, T)]])
-    extends Decoder.Remaining[[w, r] =>> Record[F, w, r], Chain[(String, T)]]:
+final class RecordDecoder[F[-_, +_], T](decoder: Decoder.Remaining[F, Fields[T]])
+    extends Decoder.Remaining[[w, r] =>> Record[F, w, r], Fields[T]]:
   override def decodeRemaining[R](
       schema: Record[F, Nothing, R],
-      values: Chain[(String, T)]
-  ): Validated[Violations, (Chain[(String, T)], R)] = schema match
+      values: Fields[T]
+  ): Validated[Violations, (Fields[T], R)] = schema match
     case Record.Empty                => (values, ()).valid
     case Record.Modify(self, f, _)   => decodeRemaining(self, values).map(_.map(f))
     case Record.Product(left, right) => product(left, right, values)
@@ -20,8 +19,8 @@ final class RecordDecoder[F[-_, +_], T](decoder: Decoder.Remaining[F, Chain[(Str
   private def product[R1, R2](
       left: Record[F, Nothing, R1],
       right: Record[F, Nothing, R2],
-      values: Chain[(String, T)]
-  ): Validated[Violations, (Chain[(String, T)], (R1, R2))] =
+      values: Fields[T]
+  ): Validated[Violations, (Fields[T], (R1, R2))] =
     decodeRemaining(left, values) match
       case Validated.Valid((values, a)) =>
         decodeRemaining(right, values) match

@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.taig.otter.Constraint
@@ -76,50 +75,50 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("Csv.Record"):
-      val row = Chain("title" -> "Dune", "pages" -> "412", "read" -> "true")
+      val row = Fields("title" -> "Dune", "pages" -> "412", "read" -> "true")
       assertTrue(CsvRecordDecoder.decode(csv.book, row) == Book("Dune", 412, true).valid)
     ,
     test("Csv.Record: a missing column fails"):
-      assertTrue(CsvRecordDecoder.decode(csv.book, Chain("title" -> "Dune", "pages" -> "412")).isInvalid)
+      assertTrue(CsvRecordDecoder.decode(csv.book, Fields("title" -> "Dune", "pages" -> "412")).isInvalid)
     ,
     test("Csv.Record: leniency takes a missing column and an empty cell alike"):
       assertTrue(
-        CsvRecordDecoder.decode(csv.blankTag, Chain("title" -> "Dune", "tag" -> "")) == Note("Dune", none).valid,
-        CsvRecordDecoder.decode(csv.blankTag, Chain("title" -> "Dune")) == Note("Dune", none).valid,
-        CsvRecordDecoder.decode(csv.blankTag, Chain("title" -> "Dune", "tag" -> "42")) == Note("Dune", 42.some).valid
+        CsvRecordDecoder.decode(csv.blankTag, Fields("title" -> "Dune", "tag" -> "")) == Note("Dune", none).valid,
+        CsvRecordDecoder.decode(csv.blankTag, Fields("title" -> "Dune")) == Note("Dune", none).valid,
+        CsvRecordDecoder.decode(csv.blankTag, Fields("title" -> "Dune", "tag" -> "42")) == Note("Dune", 42.some).valid
       )
     ,
     test("Csv.Record: a strict blank column wants its column, empty"):
       val schema = field("tag", int).optional.strict.toRecord
       assertTrue(
-        CsvRecordDecoder.decode(schema, Chain("tag" -> "")) == none.valid,
-        CsvRecordDecoder.decode(schema, Chain("tag" -> "42")) == 42.some.valid,
-        CsvRecordDecoder.decode(schema, Chain.empty).isInvalid
+        CsvRecordDecoder.decode(schema, Fields("tag" -> "")) == none.valid,
+        CsvRecordDecoder.decode(schema, Fields("tag" -> "42")) == 42.some.valid,
+        CsvRecordDecoder.decode(schema, Fields.empty).isInvalid
       )
     ,
     test("Csv.Record: a strict omitted column wants no column at all"):
       val schema = field("tag", int).optional.omitted.strict.toRecord
       assertTrue(
-        CsvRecordDecoder.decode(schema, Chain.empty) == none.valid,
-        CsvRecordDecoder.decode(schema, Chain("tag" -> "42")) == 42.some.valid,
-        CsvRecordDecoder.decode(schema, Chain("tag" -> "")).isInvalid
+        CsvRecordDecoder.decode(schema, Fields.empty) == none.valid,
+        CsvRecordDecoder.decode(schema, Fields("tag" -> "42")) == 42.some.valid,
+        CsvRecordDecoder.decode(schema, Fields("tag" -> "")).isInvalid
       )
     ,
     test("Csv.Record: only a strict column tells two layers of absence apart"):
       val lenient = field("tag", int.optional).optional.toRecord
       assertTrue(
-        CsvRecordDecoder.decode(csv.nestedTag, Chain.empty) == none.valid,
-        CsvRecordDecoder.decode(csv.nestedTag, Chain("tag" -> "")) == none.some.valid,
-        CsvRecordDecoder.decode(csv.nestedTag, Chain("tag" -> "42")) == 42.some.some.valid,
-        CsvRecordDecoder.decode(lenient, Chain("tag" -> "")) == none.valid
+        CsvRecordDecoder.decode(csv.nestedTag, Fields.empty) == none.valid,
+        CsvRecordDecoder.decode(csv.nestedTag, Fields("tag" -> "")) == none.some.valid,
+        CsvRecordDecoder.decode(csv.nestedTag, Fields("tag" -> "42")) == 42.some.some.valid,
+        CsvRecordDecoder.decode(lenient, Fields("tag" -> "")) == none.valid
       )
     ,
     test("Csv.Record: a defaulted column falls back when its cell is empty"):
       val schema = field("pages", int).optional(0).toRecord
       assertTrue(
-        CsvRecordDecoder.decode(schema, Chain("pages" -> "412")) == 412.valid,
-        CsvRecordDecoder.decode(schema, Chain("pages" -> "")) == 0.valid,
-        CsvRecordDecoder.decode(schema, Chain.empty) == 0.valid
+        CsvRecordDecoder.decode(schema, Fields("pages" -> "412")) == 412.valid,
+        CsvRecordDecoder.decode(schema, Fields("pages" -> "")) == 0.valid,
+        CsvRecordDecoder.decode(schema, Fields.empty) == 0.valid
       )
     ,
     test("Csv.Tuple"):
@@ -132,9 +131,10 @@ object CsvDecoderTest extends ZIOSpecDefault:
       )
     ,
     test("violations carry the path to the failure"):
-      val steps = CsvRecordDecoder.decode(csv.book, Chain("title" -> "Dune", "pages" -> "nope", "read" -> "true")) match
-        case Validated.Invalid(violations) => paths(violations)
-        case Validated.Valid(_)            => Nil
+      val steps =
+        CsvRecordDecoder.decode(csv.book, Fields("title" -> "Dune", "pages" -> "nope", "read" -> "true")) match
+          case Validated.Invalid(violations) => paths(violations)
+          case Validated.Valid(_)            => Nil
 
       assertTrue(steps == List(List(Step.Field("pages"))))
     ,

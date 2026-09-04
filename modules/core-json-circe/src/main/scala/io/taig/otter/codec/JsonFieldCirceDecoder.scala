@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.Validated
 import io.circe.Json as CirceJson
 import io.taig.otter.Absence
@@ -14,7 +13,7 @@ import io.taig.otter.Violations
   * written. A strict one takes only the form it writes, which is what makes a field holding `Option[Option[A]]` able to
   * tell its two layers apart again.
   */
-object JsonFieldCirceDecoder extends Decoder.Remaining[Json.Field.Node, Chain[(String, CirceJson)]]:
+object JsonFieldCirceDecoder extends Decoder.Remaining[Json.Field.Node, Fields[CirceJson]]:
   private val lenient: FieldDecoder[Json.Node, CirceJson] =
     FieldDecoder(JsonCirceDecoder, absent = _.forall(_.isNull))
 
@@ -25,8 +24,8 @@ object JsonFieldCirceDecoder extends Decoder.Remaining[Json.Field.Node, Chain[(S
 
   override def decodeRemaining[R](
       json: Json.Field.Node[Nothing, R],
-      values: Chain[(String, CirceJson)]
-  ): Validated[Violations, (Chain[(String, CirceJson)], R)] =
+      values: Fields[CirceJson]
+  ): Validated[Violations, (Fields[CirceJson], R)] =
     val metadata = json.self.metadata
 
     val decoder = Json.tolerance(metadata) match

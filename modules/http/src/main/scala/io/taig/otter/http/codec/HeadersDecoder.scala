@@ -5,6 +5,7 @@ import cats.data.Validated
 import io.taig.otter as Self
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
+import io.taig.otter.codec.Fields
 import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Header
 import io.taig.otter.http.Headers
@@ -38,17 +39,16 @@ object HeadersDecoder extends Decoder[Headers.Node, Chain[(String, String)]]:
     * [[ParameterDecoder]] as the one parameter it is. A name the schema never mentions keeps the spelling it arrived
     * with, since there is nothing to prefer over it.
     */
-  private def respell(names: Chain[String], values: Chain[(String, String)]): Chain[(String, Chain[String])] =
+  private def respell(names: Chain[String], values: Chain[(String, String)]): Fields[Chain[String]] =
     val canonical = names.toList.map(name => HeadersDecoder.fold(name) -> name).toMap
 
-    Chain.fromSeq:
+    Fields.from:
       values
         .foldLeft(ListMap.empty[String, Chain[String]]): (grouped, line) =>
           val (name, value) = line
           val key = canonical.getOrElse(HeadersDecoder.fold(name), name)
 
           grouped.updated(key, grouped.getOrElse(key, Chain.empty) :+ value)
-        .toSeq
 
   /** `Locale.ROOT` rather than the default locale, which would fold `I` to `ı` in Turkish and lose `Content-Type` to a
     * machine's regional settings.

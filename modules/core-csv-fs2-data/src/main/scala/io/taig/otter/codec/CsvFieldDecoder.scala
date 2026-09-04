@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.Validated
 import io.taig.otter.Absence
 import io.taig.otter.Csv
@@ -13,7 +12,7 @@ import io.taig.otter.Violations
   * A strict one takes only the form it writes. The three predicates are the same three JSON uses, with an empty cell
   * standing where `null` stands there — which is the whole of what changes between the two formats here.
   */
-object CsvFieldDecoder extends Decoder.Remaining[Csv.Field.Node, Chain[(String, String)]]:
+object CsvFieldDecoder extends Decoder.Remaining[Csv.Field.Node, Fields[String]]:
   private val lenient: FieldDecoder[Csv.Cell.Node, String] =
     FieldDecoder(CsvCellDecoder, absent = _.forall(_.isEmpty))
 
@@ -24,8 +23,8 @@ object CsvFieldDecoder extends Decoder.Remaining[Csv.Field.Node, Chain[(String, 
 
   override def decodeRemaining[R](
       csv: Csv.Field.Node[Nothing, R],
-      values: Chain[(String, String)]
-  ): Validated[Violations, (Chain[(String, String)], R)] =
+      values: Fields[String]
+  ): Validated[Violations, (Fields[String], R)] =
     val metadata = csv.self.metadata
 
     val decoder = Csv.tolerance(metadata) match

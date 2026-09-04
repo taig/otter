@@ -7,6 +7,7 @@ import io.taig.otter.Tolerance
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
 import io.taig.otter.codec.FieldDecoder
+import io.taig.otter.codec.Fields
 import io.taig.otter.http.Header
 import io.taig.otter.http.Http
 
@@ -15,7 +16,7 @@ import io.taig.otter.http.Http
   * What counts as absent is read off [[HeaderEncoder]], the same way [[QueryDecoder]] reads it off [[QueryEncoder]]: a
   * lenient header takes a missing name and a name sent with nothing after the colon alike.
   */
-object HeaderDecoder extends Decoder.Remaining[Header.Node, Chain[(String, Chain[String])]]:
+object HeaderDecoder extends Decoder.Remaining[Header.Node, Fields[Chain[String]]]:
   private val lenient = FieldDecoder(ParameterDecoder.Delimited, absent = _.forall(_.forall(_.isEmpty)))
 
   private val omitted = FieldDecoder(ParameterDecoder.Delimited, absent = _.isEmpty)
@@ -24,8 +25,8 @@ object HeaderDecoder extends Decoder.Remaining[Header.Node, Chain[(String, Chain
 
   override def decodeRemaining[R](
       header: Header.Node[Nothing, R],
-      values: Chain[(String, Chain[String])]
-  ): Validated[Violations, (Chain[(String, Chain[String])], R)] =
+      values: Fields[Chain[String]]
+  ): Validated[Violations, (Fields[Chain[String]], R)] =
     val decoder = Http.tolerance(header.self.metadata) match
       case Tolerance.Lenient => lenient
       case Tolerance.Strict  =>

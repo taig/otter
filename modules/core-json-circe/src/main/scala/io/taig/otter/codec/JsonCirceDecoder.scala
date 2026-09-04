@@ -1,6 +1,5 @@
 package io.taig.otter.codec
 
-import cats.data.Chain
 import cats.data.Validated
 import cats.syntax.all.*
 import io.circe.Json as CirceJson
@@ -31,7 +30,7 @@ object JsonCirceDecoder extends Decoder[Json.Node, CirceJson]:
       case schema @ Json.Primitive.Text.Schema(_)    => JsonPrimitiveCirceDecoder.decode(schema, json)
       case Json.Record.Schema(node)                  =>
         obj(json)
-          .map(values => Chain.fromSeq(values.toList))
+          .map(values => Fields.from(values.toIterable))
           .andThen(RecordDecoder(JsonFieldCirceDecoder).decode(node.self, _))
       case Json.Tuple.Schema(node) =>
         array(json).andThen(values => TupleDecoder(this, empty = _.isNull).decode(node.self, values.toVector))

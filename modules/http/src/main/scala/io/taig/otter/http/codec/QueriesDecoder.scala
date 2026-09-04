@@ -5,6 +5,7 @@ import cats.data.Validated
 import io.taig.otter as Self
 import io.taig.otter.Violations
 import io.taig.otter.codec.Decoder
+import io.taig.otter.codec.Fields
 import io.taig.otter.codec.RecordDecoder
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Queries
@@ -52,13 +53,12 @@ object QueriesDecoder extends Decoder[Queries.Node, Chain[(String, Option[String
   private def group(
       repetitions: Chain[String],
       values: Chain[(String, Option[String])]
-  ): Chain[(String, Chain[String])] =
+  ): Fields[Chain[String]] =
     val seeded = repetitions.foldLeft(ListMap.empty[String, Chain[String]])(_.updated(_, Chain.empty))
 
-    Chain.fromSeq:
+    Fields.from:
       values
         .foldLeft(seeded): (grouped, pair) =>
           val (name, value) = pair
 
           grouped.updated(name, grouped.getOrElse(name, Chain.empty) :+ value.getOrElse(""))
-        .toSeq
