@@ -49,7 +49,7 @@ object JsonBorerTest extends ZIOSpecDefault:
 
   /** What [[document]] fails with. A `Valid` reports as nothing at all, which every assertion below fails on. */
   private val violations: Option[Violations] =
-    JsonBorerDecoder.decode(schema, Doc.toBorer(document)).swap.toOption
+    JsonBorerDecoder.decode(schema, BorerDoc.toBorer(document)).swap.toOption
 
   private val failures: List[String] = violations.toList.flatMap(JsonBorer.failures(_).toList)
 
@@ -124,5 +124,5 @@ object JsonBorerTest extends ZIOSpecDefault:
     test("a document with no violations decodes to the value"):
       val book = Doc.Obj(List("title" -> Doc.Str("Dune"), "pages" -> Doc.Num("412"), "read" -> Doc.Bool(true)))
 
-      assertTrue(JsonBorerDecoder.decode(json.book, Doc.toBorer(book)) == Validated.valid(Book("Dune", 412, true)))
+      assertTrue(JsonBorerDecoder.decode(json.book, BorerDoc.toBorer(book)) == Validated.valid(Book("Dune", 412, true)))
   )

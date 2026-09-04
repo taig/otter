@@ -23,7 +23,9 @@ object JsonBorerAgreementTest extends ZIOSpecDefault:
     */
   final private case class Subject[A](name: String, schema: Json.Reader[A], canonical: Doc):
     def agrees(doc: Doc): TestResult =
-      assertTrue(JsonBorerDecoder.decode(schema, Doc.toBorer(doc)) == JsonCirceDecoder.decode(schema, Doc.toCirce(doc)))
+      assertTrue(
+        JsonBorerDecoder.decode(schema, BorerDoc.toBorer(doc)) == JsonCirceDecoder.decode(schema, CirceDoc.toCirce(doc))
+      )
 
     def documents: List[Doc] = canonical :: JsonBorerAgreementTest.mutations(canonical)
 
@@ -137,5 +139,5 @@ object JsonBorerAgreementTest extends ZIOSpecDefault:
   private val Lexemes: List[String] = DocTest.Lexemes
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonBorerAgreementTest")(
-    subjects.map(subject => test(subject.name)(TestResult.all(subject.documents.map(subject.agrees)*)))*
+    subjects.map(subject => test(subject.name)(TestResult.allSuccesses(subject.documents.map(subject.agrees))))*
   )

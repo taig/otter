@@ -8,8 +8,8 @@ import zio.test.*
 
 import java.math.BigDecimal as JBigDecimal
 
-/** [[Doc.toCirce]] is the one hand written conversion the agreement test rests on, and a wrong one would be wrong in
-  * the direction that makes an agreement pass. This is the proof rather than the argument: the same text, through
+/** [[CirceDoc.toCirce]] is the one hand written conversion the agreement test rests on, and a wrong one would be wrong
+  * in the direction that makes an agreement pass. This is the proof rather than the argument: the same text, through
   * circe's own parser.
   */
 object DocTest extends ZIOSpecDefault:
@@ -39,8 +39,8 @@ object DocTest extends ZIOSpecDefault:
     *
     * borer's JSON parser refuses an absolute exponent over `Json.DecodingConfig.maxNumberAbsExponent`, 64 by default,
     * where circe reads it and only refuses later. Both libraries cap what a twelve character document may ask for; they
-    * cap in different places. `Doc.toCirce` cannot follow circe's parser here either, because `JsonNumber.fromString`
-    * and circe's parser disagree about a number this large.
+    * cap in different places. `CirceDoc.toCirce` cannot follow circe's parser here either, because
+    * `JsonNumber.fromString` and circe's parser disagree about a number this large.
     */
   val Divergent: List[String] = List("1e400", "1e-400")
 
@@ -48,12 +48,12 @@ object DocTest extends ZIOSpecDefault:
 
   private val doc: Gen[Any, Doc] = DocTest.document(DocTest.Lexemes)
 
-  /** Whether circe's own parser can be trusted to agree with [[Doc.toCirce]] about a lexeme.
+  /** Whether circe's own parser can be trusted to agree with [[CirceDoc.toCirce]] about a lexeme.
     *
     * On Scala.js it widens a number no `Double` holds exactly -- `9223372036854775807` comes back as
     * `JsonDouble(9223372036854776000)` -- where `JsonNumber.fromString` keeps the lexeme as a `JsonBiggerDecimal`.
-    * `Doc.toCirce` is built on the latter and is the more faithful of the two, so the fidelity property is pinned over
-    * the lexemes where the parser is itself faithful, and the rest are covered by the agreement test, which both
+    * `CirceDoc.toCirce` is built on the latter and is the more faithful of the two, so the fidelity property is pinned
+    * over the lexemes where the parser is itself faithful, and the rest are covered by the agreement test, which both
     * platforms pass.
     */
   private def exactlyDouble(lexeme: String): Boolean =
@@ -81,16 +81,16 @@ object DocTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("DocTest")(
     /** Numbers beyond a `Long` are left out, and the reason is worth knowing: circe's *own* parser reads
       * `9223372036854775808` as a `JsonDouble` on Scala.js where `JsonNumber.fromString` keeps it as a
-      * `JsonBiggerDecimal`. [[Doc.toCirce]] is the more faithful of the two, so this pins it against the parser
+      * `JsonBiggerDecimal`. [[CirceDoc.toCirce]] is the more faithful of the two, so this pins it against the parser
       * everywhere the parser is itself faithful.
       */
     test("circe's own parser reads the text as Doc says circe reads it"):
       check(portable): doc =>
-        assertTrue(parser.parse(Doc.render(doc)) == Right(Doc.toCirce(doc)))
+        assertTrue(parser.parse(Doc.render(doc)) == Right(CirceDoc.toCirce(doc)))
     ,
     test("borer's own parser reads the text as the same kind of value circe reads"):
       check(doc): doc =>
-        assertTrue(JsonBorer.typeOf(Doc.toBorer(doc)) == JsonCirce.typeOf(Doc.toCirce(doc)))
+        assertTrue(JsonBorer.typeOf(BorerDoc.toBorer(doc)) == JsonCirce.typeOf(CirceDoc.toCirce(doc)))
     ,
     test("every lexeme is a number both libraries accept"):
       assertTrue(DocTest.Lexemes.forall(lexeme => parser.parse(lexeme).isRight))
