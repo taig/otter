@@ -70,8 +70,13 @@ object json:
 
   val printings: Json.Dictionary[List[(Int, String)]] = dictionary.list(counter, string)
 
-  /** A dictionary whose keys can be read but not written, the way [[isbn]] cannot be written. */
-  val catalogue: Json.Dictionary.Reader[List[(Isbn, String)]] = dictionary.list(json.isbn, string)
+  /** A dictionary whose keys can be read but not written, the way [[isbn]] cannot be written.
+    *
+    * Lazy because [[isbn]] is declared below it: a `val` here captures the forward reference as `null`, and a
+    * dictionary only forces its key schema once it has a key to read, so the failure waits for the first document that
+    * actually holds one.
+    */
+  lazy val catalogue: Json.Dictionary.Reader[List[(Isbn, String)]] = dictionary.list(json.isbn, string)
 
   lazy val tree: Json.Record[Tree] = (
     field("value", int) :*
