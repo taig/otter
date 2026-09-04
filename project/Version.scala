@@ -1,5 +1,6 @@
 object Version:
   val Cats = "2.13.0"
+  val Borer = "1.18.0"
   val CatsParse = "1.1.0"
   val Circe = "0.14.16"
   val Data = "0.0.4"

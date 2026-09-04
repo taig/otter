@@ -62,6 +62,7 @@ lazy val modules: List[CrossProject] = List(
   coreIron,
   coreJavaTime,
   coreJson,
+  coreJsonBorer,
   coreJsonCirce,
   coreJsonSchema,
   coreJsonTypescript,
@@ -84,7 +85,7 @@ lazy val benchmark = module(identifier = Some("benchmark"), jvmOnly = true)
   .enablePlugins(JmhPlugin)
   .settings(noPublishSettings)
   .settings(libraryDependencies += "io.circe" %% "circe-parser" % Version.Circe)
-  .dependsOn(coreJsonCirce % "compile->compile;compile->test")
+  .dependsOn(coreJsonBorer, coreJsonCirce % "compile->compile;compile->test")
 
 /** Format agnostic schema definitions and interpreters */
 lazy val core = module(identifier = Some("core"))
@@ -106,6 +107,28 @@ lazy val core = module(identifier = Some("core"))
 /** JSON schema definitions */
 lazy val coreJson = module(identifier = Some("core-json"))
   .dependsOn(core % "compile->compile;test->test")
+
+/** JSON codecs for io.bullet borer
+  *
+  * The core-json/core-json-circe pairing again, against a library of a different shape, and the shape is the whole
+  * interest of it. borer has a document model, which is what makes an interpreter possible at all -- a schema driven
+  * read needs random access, because a record reads its members by name and a union retries its branches, and neither
+  * borer's reader nor any other streaming reader can be asked to go back. But borer has no `Either` returning decoder
+  * typeclass and no cursor history, so the bridge object is where the two modules genuinely differ rather than mirror.
+  * And it writes into a `Writer` rather than building a value, which is why this module's encoder carries a deferred
+  * write and no document is built on the way out.
+  *
+  * The test dependency on core-json-circe is for its fixtures and for the circe interpreter itself: the strongest claim
+  * this module can make is that it reads a document exactly as circe reads it, violation tree and all.
+  */
+lazy val coreJsonBorer = module(identifier = Some("core-json-borer"))
+  .settings(
+    libraryDependencies ++=
+      "io.bullet" %% "borer-core" % Version.Borer ::
+        "io.circe" %% "circe-parser" % Version.Circe % Test ::
+        Nil
+  )
+  .dependsOn(coreJson % "compile->compile;test->test", coreJsonCirce % "test->test")
 
 /** JSON codecs for io.circe */
 lazy val coreJsonCirce = module(identifier = Some("core-json-circe"))
