@@ -17,12 +17,6 @@ import java.math.BigInteger as JBigInteger
   * one of these answers depends on. So the first test here guards borer's parser and the rest state the answers.
   */
 object JsonBorerNumberTest extends ZIOSpecDefault:
-  /** Scala.js emulates `java.math.BigDecimal` and formats a `Float` by widening it to a `Double`, so a handful of
-    * answers below are the platform's rather than this module's. `1.0f.toString` is `"1"` on the JVM and `"1"` on
-    * Scala.js, but `0.1f.toString` is `"0.1"` and `"0.10000000149011612"`.
-    */
-  private val Jvm: Boolean = String.valueOf(0.1f) == "0.1"
-
   private def element(lexeme: String): Dom.Element = BorerDoc.toBorer(Doc.Num(lexeme))
 
   private def number(lexeme: String): Option[JsonBorerNumber] = JsonBorerNumber.unapply(element(lexeme))
@@ -145,17 +139,16 @@ object JsonBorerNumberTest extends ZIOSpecDefault:
         new JBigDecimal("1e100").precision.toLong - new JBigDecimal("1e100").scale.toLong == 101L
       )
     ,
-    /** The one answer that is not the same on both platforms, and the reason it does not matter.
+    /** `1e2147483648` has a scale of exactly `Int.MinValue`, and whether a `BigDecimal` will hold one is nobody's
+      * answer to give here: Scala.js's emulation refuses it, the JVM's accepts it since 21 and refused it on 17. It is
+      * a fact about `java.math`, and pinning a direction would pin whichever JDK the suite last ran on.
       *
-      * `1e2147483648` has a scale of exactly `Int.MinValue`, which the JVM's `BigDecimal` accepts and Scala.js's
-      * emulation refuses. Reaching it needs a hand built `NumberStringElem`: borer's parser caps an absolute exponent
-      * at 64 and would never produce one. And both platforms refuse it as a `BigInteger` regardless, which is the
-      * answer a schema actually asks for.
+      * What is invariant is what a schema actually asks for. Every platform and every JDK refuses the lexeme as a
+      * `BigInteger`, and no document can reach it in the first place -- borer's parser caps an absolute exponent at 64,
+      * so producing one needs a hand built `NumberStringElem`.
       */
-    test("a scale at the very edge of Int is where the two platforms part, out of reach of any document"):
-      val parses = JsonBorerNumber.Lexeme("1e2147483648").toBigDecimal.nonEmpty
-
-      assertTrue(parses == JsonBorerNumberTest.Jvm)
+    test("a scale at the very edge of Int is refused as an integer, and out of reach of any document"):
+      assertTrue(JsonBorerNumber.Lexeme("1e2147483648").toBigInteger == none)
     ,
     test("lexeme, which is what a coercion to text writes"):
       assertTrue(

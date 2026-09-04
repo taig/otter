@@ -139,5 +139,5 @@ object JsonBorerAgreementTest extends ZIOSpecDefault:
   private val Lexemes: List[String] = DocTest.Lexemes
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonBorerAgreementTest")(
-    subjects.map(subject => test(subject.name)(TestResult.all(subject.documents.map(subject.agrees)*)))*
+    subjects.map(subject => test(subject.name)(TestResult.allSuccesses(subject.documents.map(subject.agrees))))*
   )
