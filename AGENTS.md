@@ -86,6 +86,23 @@ are the truth, not the "N tests passed" line.
 sbt testFull scalafmtCheckAll scalafixCheckAll blowoutCheck
 ```
 
+## Concatenation
+
+Products are built with two operators. `:*` is left-associative and carries what it has built on the left; `*:` is
+right-associative and carries it on the right, so `TNil :* foo :* bar` and `foo *: bar *: TNil` are one schema.
+`Append` and `Prepend` are the match types that keep each flat, and each drops a `Unit` operand, which is how a static
+path segment stays out of a path's value type.
+
+Neither needs an empty root: two schemas beside each other already are the container that holds them, so `foo :* bar`
+and `foo *: bar` say the same thing, and `TNil`, `RNil`, `PNil`, `QNil` and `HNil` are places to start rather than
+requirements. What keeps a root-less instance off the toes of the one for a receiver that already is a container
+differs per alphabet -- a cell is not a row, a segment is not a path, and JSON, which has no such tier, asks
+`NotGiven` instead.
+
+`*:` reuses every `AppendableOperation` that `:*` does, because the type class names a container and an element rather
+than a left and a right. What it gives up is the by-name element: the left operand of a right-associative operator is
+the extension parameter, and Scala evaluates it first.
+
 ## Code Style
 
 - Scalafmt enforced (maxColumn: 120, Scala 3 dialect)

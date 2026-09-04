@@ -8,6 +8,8 @@ import cats.data.NonEmptyList
 import io.taig.otter as Self
 import io.taig.otter.operation.*
 
+import scala.util.NotGiven
+
 /** A JSON schema that round trips `A`.
   *
   * Every node reads the same way. `Json.Record[A]` round trips, `Json.Record.Reader[A]` reads and
@@ -431,6 +433,9 @@ object Json:
             (annotation: Annotation[Self.Tuple[s, w, r]]) => new Json.Tuple.Schema(annotation),
           [s[-w, +r] <: Json.Node[w, r], w, r] => (json: Json.Tuple.Schema[s, w, r]) => json.self
         ):
+      /** A tuple is already a tuple, and [[Json.appendable]] asks for exactly this to tell a receiver that accumulates
+        * from one that has to be lifted first, so it is load bearing rather than a convenience.
+        */
       given tupleable: [S[-w, +r] <: Json.Node[w, r]]
         => TupleableOperation[[w, r] =>> Json.Tuple.Schema[S, w, r], [w, r] =>> Json.Tuple.Schema[S, w, r]] =
         TupleableOperation.identity
@@ -717,3 +722,20 @@ object Json:
 
   given tupleable: [S[-w, +r] <: Json.Node[w, r]] => TupleableOperation[S, [w, r] =>> Json.Tuple.Schema[S, w, r]] =
     TupleableOperation.derived
+
+  /** `schema :* schema`, and `schema *: schema`: two schemas beside each other are the tuple that holds them, which is
+    * what [[io.taig.otter.component.TupleComponent.TNil]] would otherwise have to be named for.
+    *
+    * Guarded on the receiver not already being a tuple. A tuple is a [[Json.Node]] like any other, so without the guard
+    * this would stand beside [[Json.Tuple.Schema.appendable]] on `tuple :* schema` and nest what that appends. The
+    * identity [[TupleableOperation]] is registered on exactly the types that already are one, which is what the guard
+    * asks about.
+    */
+  given appendable: [S1[-w, +r] <: Json.Node[w, r], S2[-w, +r] <: Json.Node[w, r]]
+    => NotGiven[TupleableOperation[S1, S1]]
+      => AppendableOperation[S1, [w, r] =>> Json.Tuple.Schema[Json.Or[S1, S2], w, r], S2]:
+    override def lift[W, R](fa: S1[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
+      Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
+
+    override def element[W, R](fb: => S2[W, R]): Json.Tuple.Schema[Json.Or[S1, S2], W, R] =
+      Json.Tuple.Schema.apply[Json.Or[S1, S2], W, R](Self.Tuple.Root(Reference.later(fb)))

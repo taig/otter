@@ -22,11 +22,28 @@ object CsvShapeTest extends ZIOSpecDefault:
     test("a row is flat, so it is also a row of primitives"):
       assertTrue(typeChecks("""val schema: Csv.Record.Of[Csv.Primitive.Node, Book] = csv.flatBook"""))
     ,
+    /** A row is a row however it is spelled: the empty root is a place to start rather than something to name, and `*:`
+      * is the same chain read the other way round.
+      */
+    test("the empty root is optional, in either direction"):
+      assertTrue(
+        typeChecks("""val schema: Csv[Book] =
+          (field("title", string) *: field("pages", int) *: field("read", boolean) *: RNil).to[Book]"""),
+        typeChecks("""val schema: Csv.Tuple[(String, Int, Boolean)] = string :* int :* boolean"""),
+        typeChecks("""val schema: Csv.Tuple[(String, Int, Boolean)] = string *: int *: boolean *: TNil"""),
+        !typeChecks("""val schema: Csv.Tuple[((String, Int), Boolean)] = string :* int :* boolean""")
+      )
+    ,
+    /** A row is still not a cell, so neither spelling can put one in a column. */
     test("a column cannot hold another row"):
       assertTrue(!typeChecks("""field("book", csv.book) :* field("pages", int)"""))
     ,
     test("a cell cannot hold a row either"):
-      assertTrue(!typeChecks("""field("book", csv.positional)"""))
+      assertTrue(
+        !typeChecks("""field("book", csv.positional)"""),
+        !typeChecks("""string :* csv.positional"""),
+        !typeChecks("""csv.positional *: string""")
+      )
     ,
     test("a row is not something a cell can hold, so it has no .optional"):
       assertTrue(

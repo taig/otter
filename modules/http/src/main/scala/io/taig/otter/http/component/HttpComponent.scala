@@ -46,7 +46,9 @@ trait HttpComponent
       PrimitiveComponent.Boolean[Parameter.Primitive.Boolean.Schema],
       PrimitiveComponent.Number[Parameter.Primitive.Number.Schema],
       PrimitiveComponent.Text[Parameter.Primitive.Text.Schema]:
-  /** The root path, which holds nothing. `PNil :* segment("health")` is `/health`. */
+  /** The root path, which holds nothing. `PNil :* segment("health")` is `/health`, and so is `segment("health")` on its
+    * own: two segments beside each other already are the path that holds them.
+    */
   def PNil(using F: TupleOperation[[w, r] =>> Path.Schema[Nothing, w, r], Nothing]): Path.Schema[Nothing, Unit, Unit] =
     F.empty
 

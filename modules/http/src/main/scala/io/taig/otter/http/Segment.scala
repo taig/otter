@@ -7,7 +7,9 @@ import cats.arrow.Profunctor
 import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Direction
+import io.taig.otter.Reference
 import io.taig.otter.Wrapper
+import io.taig.otter.operation.*
 
 /** One piece of a [[Path]], round tripping `A`. */
 type Segment[A] = Segment.Of[Parameter.Value.Node, A]
@@ -120,3 +122,17 @@ object Segment:
 
   given invariant: [S[-w, +r] <: Parameter.Value.Node[w, r]] => Invariant[[a] =>> Segment.Schema[S, a, a]] =
     Direction.invariant[[w, r] =>> Segment.Schema[S, w, r]]
+
+  /** `segment :* segment`, and `segment *: segment`: two segments beside each other are the path that holds them, which
+    * is what [[io.taig.otter.http.component.HttpComponent.PNil]] would otherwise have to be named for.
+    *
+    * No guard, unlike [[io.taig.otter.Json.appendable]]: a path is not a segment, so a receiver that already is one
+    * falls outside this instance's bound and keeps appending into itself through [[Path.Schema.appendable]].
+    */
+  given appendable: [S1[-w, +r] <: Segment.Node[w, r], S2[-w, +r] <: Segment.Node[w, r]]
+      => AppendableOperation[S1, [w, r] =>> Path.Schema[Path.Or[S1, S2], w, r], S2]:
+    override def lift[W, R](fa: S1[W, R]): Path.Schema[Path.Or[S1, S2], W, R] =
+      Path.Schema.apply[Path.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
+
+    override def element[W, R](fb: => S2[W, R]): Path.Schema[Path.Or[S1, S2], W, R] =
+      Path.Schema.apply[Path.Or[S1, S2], W, R](Self.Tuple.Root(Reference.later(fb)))
