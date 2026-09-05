@@ -6,6 +6,7 @@ object Version:
   val Data = "0.0.4"
   val EnumerationExt = "0.6.0"
   val Fs2Data = "1.14.1"
+  val Http4s = "1.0.0-M47"
   val Java = "17"
   val Scala3 = "3.9.0"
   val ScalaJavaLocales = "1.5.4"
