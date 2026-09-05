@@ -7,7 +7,7 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-schema`, `core-csv`,
 `core-csv-fs2-data`, `core-iron`, `core-java-time`, `core-case-insensitive`, `core-typescript`,
 `core-typescript-effect`, `core-json-typescript`, `core-json-typescript-effect`, `http`, `http-json`,
-`http-openapi`.
+`http-http4s`, `http-http4s-circe`, `http-openapi`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
@@ -102,6 +102,30 @@ renders as two different documents.
 schemas are written in. Payload alphabets are rendered by an `OpenApiPayload`, which dispatches at runtime because a
 payload's alphabet is existential by the time a renderer holds one; an alphabet it does not recognise is reported as an
 issue and the body is still listed.
+
+`http-http4s` runs one. Not the paired interpretation module the section above says HTTP cannot have -- there is still
+no shared document model -- but the demonstration that the seam was cut in the right place: `Query` is
+`Vector[(String, Option[String])]` in both directions and `Headers` a list of raw name and value pairs, so the envelope
+crossing is a container conversion and `Http4sEnvelope` is the whole adapter. It is http4s 1.0 rather than 0.23 for
+`Entity`, which is a sealed `Strict(ByteVector) | Streamed(body, length) | Empty` whose first and last are
+`Entity[Pure]`: a whole body is bytes already held, so it reaches a codec with no effect type in sight, and only a
+streamed one ever needs `F`. Nothing is buffered before a route matches -- routing reads the method and the path, and
+the entity is touched afterwards and only if the endpoint describes a body.
+
+Two things there are worth reading before extending it. `Http4sPayload` is `OpenApiPayload` again and for the same
+reason, but *polymorphic* -- `decode[R](payload: Any, bytes: ByteVector)` -- so an instance recovers `R` through the
+type test it was making anyway and the erasure is crossed inside a pattern match, once, in the instance; nothing above
+that line casts, which `DisableSyntax.asInstanceOf` would refuse in any case. And a router asks a different question
+from `PathDecoder`: arity and literals only, via `PathTemplate`, because a decode failure cannot tell "some other
+endpoint" (fall through, 404) from "this endpoint, called wrongly" (stop, 400).
+
+It carries the envelope, `Body.Whole` and `Body.Binary`, both sides. A streamed body and a `Multipart` payload are
+reported as an `Http4sIssue` rather than half served, on the reasoning `OpenApiIssue` is a value. `http-http4s-circe`
+supplies the JSON payload, and is a module of its own where `http-openapi` needed none: there circe *is* the document
+model a JSON Schema is, here it is one of two interpreters of one alphabet and which to reach for is the caller's
+measured trade. `Http4sRoundTripTest` is what the module rests on -- `Client.fromHttpApp` over the same endpoint value
+read as both sides, so neither half can agree by being written twice the same wrong way, and no socket means it runs on
+Scala.js too.
 
 The four typescript modules are a lattice, not a chain: `core-typescript` is the TypeScript source
 model and printer, `core-typescript-effect` the vocabulary of one target library, `core-json-typescript`
