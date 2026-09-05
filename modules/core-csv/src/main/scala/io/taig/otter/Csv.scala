@@ -502,3 +502,17 @@ object Csv:
 
   given tupleable: [S[-w, +r] <: Csv.Cell.Node[w, r]]
     => TupleableOperation[S, [w, r] =>> Csv.Tuple.Schema[S, w, r]] = TupleableOperation.derived
+
+  /** `cell :* cell`, and `cell *: cell`: two cells beside each other are the positional row that holds them, which is
+    * what [[io.taig.otter.component.TupleComponent.TNil]] would otherwise have to be named for.
+    *
+    * No guard, unlike [[Json.appendable]]: a positional row is not a cell, so a receiver that already is one falls
+    * outside this instance's bound and keeps appending into itself through [[Csv.Tuple.Schema.appendable]].
+    */
+  given appendable: [S1[-w, +r] <: Csv.Cell.Node[w, r], S2[-w, +r] <: Csv.Cell.Node[w, r]]
+      => AppendableOperation[S1, [w, r] =>> Csv.Tuple.Schema[Csv.Or[S1, S2], w, r], S2]:
+    override def lift[W, R](fa: S1[W, R]): Csv.Tuple.Schema[Csv.Or[S1, S2], W, R] =
+      Csv.Tuple.Schema.apply[Csv.Or[S1, S2], W, R](Self.Tuple.Root(Reference.now(fa)))
+
+    override def element[W, R](fb: => S2[W, R]): Csv.Tuple.Schema[Csv.Or[S1, S2], W, R] =
+      Csv.Tuple.Schema.apply[Csv.Or[S1, S2], W, R](Self.Tuple.Root(Reference.later(fb)))

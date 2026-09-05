@@ -10,6 +10,12 @@ object http:
   /** `/users/{id}`. The two literals contribute nothing, so the path holds an `Int` and not a `(Unit, Int, Unit)`. */
   val user: Path[Int] = PNil :* segment("users") :* segment("id", int)
 
+  /** The same path with no root named, which is what two segments beside each other already are. */
+  val rootless: Path[Int] = segment("users") :* segment("id", int)
+
+  /** The same path again, spelled the way Scala spells a cons. */
+  val consed: Path[Int] = segment("users") *: segment("id", int) *: PNil
+
   /** `/users/{id}/posts`, to show that a literal after a placeholder drops out just the same. */
   val posts: Path[Int] = PNil :* segment("users") :* segment("id", int) :* segment("posts")
 

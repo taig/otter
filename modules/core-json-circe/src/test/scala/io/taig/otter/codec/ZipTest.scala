@@ -2,6 +2,7 @@ package io.taig.otter.codec
 
 import cats.data.Validated
 import io.circe.Json as CirceJson
+import io.circe.syntax.*
 import io.taig.otter.Json
 import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.Book
@@ -13,7 +14,10 @@ import zio.test.*
 
 import scala.compiletime.testing.typeChecks
 
-/** `zip` is what `:*` cannot express: a whole record beside another, rather than one field beside a record. */
+/** `zip` is what `:*` does not mean for a whole record beside another. Both compile now that a schema beside a schema
+  * is the tuple holding them, and they say different things: `:*` writes the two records as two elements of an array,
+  * where `zip` writes both sets of fields into one object.
+  */
 object ZipTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("ZipTest")(
     /** The decorating shape `zip` exists for: a record written in front of one that already has a name of its own. Both
@@ -127,6 +131,49 @@ object ZipTest extends ZIOSpecDefault:
     /** `Zip` is not the record's alone, so neither is the operator. */
     test("a tuple zips as a record does"):
       assertTrue(typeChecks("""val schema: Json.Tuple[(String, Int)] = string.toTuple.zip(int.toTuple)"""))
+    ,
+    /** The two records the class comment tells apart, side by side: one document each way. */
+    test("appending two records is not zipping them"):
+      val zipped: Json.Record[(Book, Book)] = json.book ++ json.book
+      val appended: Json.Tuple[(Book, Book)] = json.book :* json.book
+      val book = Book("Dune", 412, true)
+      val object_ = CirceJson.obj("title" := "Dune", "pages" := 412, "read" := true)
+
+      assertTrue(
+        JsonCirceEncoder.encode(zipped, (book, book)) == object_,
+        JsonCirceEncoder.encode(appended, (book, book)) == CirceJson.arr(object_, object_)
+      )
+    ,
+    /** `++` is the operator spelling and nothing more, so it holds what the method holds and nests the same way. */
+    test("the operator is the method"):
+      val book = Book("Dune", 412, true)
+      val operator: Json.Record[ZipTest.Detour] = (field("distance", double).toRecord ++ json.book).to
+      val method: Json.Record[ZipTest.Detour] = field("distance", double).toRecord.zip(json.book).to
+
+      assertTrue(
+        JsonCirceEncoder.encode(operator, ZipTest.Detour(1.5, book)) ==
+          JsonCirceEncoder.encode(method, ZipTest.Detour(1.5, book)),
+        typeChecks("""val schema: Json.Record[((String, Int), Boolean)] = field("title", string).toRecord ++
+          field("pages", int).toRecord ++ field("read", boolean).toRecord"""),
+        !typeChecks("""val schema: Json.Record[(String, Int, Boolean)] = field("title", string).toRecord ++
+          field("pages", int).toRecord ++ field("read", boolean).toRecord""")
+      )
+    ,
+    /** Precedence, which is the one thing an operator says that a method does not: `++` binds tighter than `:*` and
+      * looser than `*:`, so a chain needs no parentheses to mean what it reads as.
+      *
+      * `++` leaves a pair and `:*` then flattens it, because [[io.taig.otter.Append]] asks whether what stands on the
+      * left is a tuple already and this one is. So appending after zipping gives a flat triple rather than a pair
+      * holding a pair -- which is the same rule as everywhere else, and the reason `zip` does not route through it.
+      */
+    test("the operators group as they read"):
+      assertTrue(
+        typeChecks("""val schema: Json.Record[(Double, Book, Int)] =
+          field("distance", double).toRecord ++ json.book :* field("pages", int)"""),
+        !typeChecks("""val schema: Json.Record[(Double, (Book, Int))] =
+          field("distance", double).toRecord ++ json.book :* field("pages", int)"""),
+        typeChecks("""val schema: Json.Tuple[(String, Int, Boolean)] = string *: int :* boolean""")
+      )
   )
 
   final private case class Detour(distance: Double, book: Book)

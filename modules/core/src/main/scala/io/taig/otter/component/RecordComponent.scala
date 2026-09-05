@@ -6,7 +6,11 @@ import io.taig.otter.operation.FieldOperation
 import io.taig.otter.operation.RecordOperation
 
 trait RecordComponent[Bound[-_, +_], F[_[-w, +r] <: Bound[w, r], -_, +_], G[_[-w, +r] <: Bound[w, r], -_, +_]]:
-  /** The empty record. It holds nothing, so its `S` is the bottom constructor and widens to any other. */
+  /** The empty record. It holds nothing, so its `S` is the bottom constructor and widens to any other.
+    *
+    * A place to start a chain rather than something a chain needs: `field :* field` and `field *: field *: RNil` are
+    * the same record.
+    */
   def RNil(using
       F: RecordOperation[[w, r] =>> F[Nothing, w, r], [w, r] =>> G[Nothing, w, r]]
   ): F[Nothing, Unit, Unit] = F.empty
