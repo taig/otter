@@ -10,10 +10,11 @@ import io.taig.otter.Keys
 import io.taig.otter.Metadata
 import io.taig.otter.Side
 import io.taig.otter.codec.JsonSchemaAnnotation
+import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.Header
+import io.taig.otter.http.Headers
 import io.taig.otter.http.HttpKeys
 import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
@@ -21,9 +22,7 @@ import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiKeys
-import io.taig.otter.http.Parameter
-import io.taig.otter.http.Part
-import io.taig.otter.http.Query
+import io.taig.otter.http.Queries
 import io.taig.otter.http.Request
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
@@ -132,7 +131,7 @@ final class OpenApiRenderer(
     val queries = Chain
       .fromOption(schema.queries)
       .flatMap(reference =>
-        OpenApiRenderer.fields(reference.value.self.self).map { field =>
+        Queries.fields(reference.value).map { field =>
           (OpenApi.InQuery, field.name, field.schema.value, OpenApiParameterRenderer.required(field))
         }
       )
@@ -140,7 +139,7 @@ final class OpenApiRenderer(
     val headers = Chain
       .fromOption(schema.headers)
       .flatMap(reference =>
-        OpenApiRenderer.headers(reference.value.self.self).map { field =>
+        Headers.fields(reference.value).map { field =>
           (OpenApi.InHeader, field.name, field.schema.value, OpenApiParameterRenderer.required(field))
         }
       )
@@ -156,7 +155,7 @@ final class OpenApiRenderer(
   /** The one entity an operation reads, if it reads one. */
   private def requestBody(operation: String, schema: Request.Schema[?, ?, ?]): (Option[CirceJson], Collected) =
     val (whole, described) = schema.bodies
-      .map(reference => this.content(operation, request, reference.value.self.self))
+      .map(reference => this.content(operation, request, reference.value))
       .getOrElse((Nil, Collected.Empty))
 
     val (streamed, framed) = schema.streamed
@@ -172,8 +171,8 @@ final class OpenApiRenderer(
     (rendered, described ++ framed)
 
   private def responses(operation: String, schema: Results.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
-    OpenApiRenderer
-      .results(schema.self.self)
+    Results
+      .branches(schema)
       .foldLeft((ListMap.empty[String, CirceJson], Collected.Empty)): (accumulated, result) =>
         val (responses, collected) = accumulated
         val (rendered, found) = this.result(operation, result)
@@ -182,7 +181,7 @@ final class OpenApiRenderer(
 
   private def result(operation: String, schema: Result.Schema[?, ?, ?]): (CirceJson, Collected) =
     val (whole, described) = schema.bodies
-      .map(reference => this.content(operation, response, reference.value.self.self))
+      .map(reference => this.content(operation, response, reference.value))
       .getOrElse((Nil, Collected.Empty))
 
     val (streamed, framed) = schema.streamed
@@ -191,7 +190,7 @@ final class OpenApiRenderer(
       .getOrElse((Nil, Collected.Empty))
 
     val (headers, reported) = schema.headers
-      .map(reference => this.headers(operation, reference.value.self.self))
+      .map(reference => this.headers(operation, reference.value))
       .getOrElse((ListMap.empty, Collected.Empty))
 
     val entries = whole ++ streamed
@@ -216,10 +215,10 @@ final class OpenApiRenderer(
   /** The headers a result writes, which OpenAPI keys by name rather than listing as parameters. */
   private def headers(
       operation: String,
-      schema: Self.Record[Header.Node, ?, ?]
+      schema: Headers.Node[?, ?]
   ): (ListMap[String, CirceJson], Collected) =
-    OpenApiRenderer
-      .headers(schema)
+    Headers
+      .fields(schema)
       .foldLeft((ListMap.empty[String, CirceJson], Collected.Empty)): (accumulated, field) =>
         val (headers, collected) = accumulated
         val document = parameter.render(field.schema.value)
@@ -236,10 +235,10 @@ final class OpenApiRenderer(
   private def content(
       operation: String,
       side: Side,
-      schema: Self.Union[Body.Node, ?, ?]
+      schema: Bodies.Node[?, ?]
   ): (List[(String, CirceJson)], Collected) =
-    OpenApiRenderer
-      .bodies(schema)
+    Bodies
+      .branches(schema)
       .foldLeft((List.empty[(String, CirceJson)], Collected.Empty)): (accumulated, body) =>
         val (entries, collected) = accumulated
         val (entry, found) = this.entity(operation, side, body)
@@ -274,7 +273,7 @@ final class OpenApiRenderer(
          * type arguments are erased and irrelevant -- what is being asked is whether this is a `Multipart.Schema` at
          * all, which the class tag answers exactly, and every one of them is walked the same way whatever it holds. */
         content.value.asMatchable match
-          case parts: Multipart.Node[?, ?] @unchecked => this.parts(operation, side, parts.self.self)
+          case parts: Multipart.Node[?, ?] @unchecked => this.parts(operation, side, parts)
           case _                                      => this.document(operation, side, content.value, media)
 
   /** A multipart body, which OpenAPI spells as an object of properties with an `encoding` map beside it.
@@ -285,9 +284,9 @@ final class OpenApiRenderer(
   private def parts(
       operation: String,
       side: Side,
-      schema: Self.Record[Part.Node, ?, ?]
+      schema: Multipart.Node[?, ?]
   ): (CirceJson, Collected) =
-    val (properties, encoding, required, collected) = OpenApiRenderer
+    val (properties, encoding, required, collected) = Multipart
       .parts(schema)
       .foldLeft(
         (
@@ -390,39 +389,6 @@ object OpenApiRenderer:
   /** The same endpoints as a caller sees them: it writes the request and reads the response. */
   def client(profile: JsonSchemaProfile, payload: OpenApiPayload): OpenApiRenderer =
     new OpenApiRenderer(profile, payload, Side.Write, Side.Read, OpenApi.Namespaces)
-
-  private def fields(schema: Self.Record[Query.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
-    case Self.Record.Empty                => Chain.empty
-    case Self.Record.Modify(self, _, _)   => OpenApiRenderer.fields(self)
-    case Self.Record.Product(left, right) => OpenApiRenderer.fields(left) ++ OpenApiRenderer.fields(right)
-    case Self.Record.Root(field)          => Chain.one(field.value.self.self)
-
-  private def headers(schema: Self.Record[Header.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
-    case Self.Record.Empty                => Chain.empty
-    case Self.Record.Modify(self, _, _)   => OpenApiRenderer.headers(self)
-    case Self.Record.Product(left, right) => OpenApiRenderer.headers(left) ++ OpenApiRenderer.headers(right)
-    case Self.Record.Root(field)          => Chain.one(field.value.self.self)
-
-  /** Every part, with the metadata it carries of its own -- which is where a filename lives, and is not the same
-    * metadata as the body it holds carries.
-    */
-  private def parts(
-      schema: Self.Record[Part.Node, ?, ?]
-  ): Chain[(Self.Field[Body.Node, ?, ?], Metadata)] = schema match
-    case Self.Record.Empty                => Chain.empty
-    case Self.Record.Modify(self, _, _)   => OpenApiRenderer.parts(self)
-    case Self.Record.Product(left, right) => OpenApiRenderer.parts(left) ++ OpenApiRenderer.parts(right)
-    case Self.Record.Root(field)          => Chain.one((field.value.self.self, field.value.self.metadata))
-
-  private def bodies(schema: Self.Union[Body.Node, ?, ?]): Chain[Body.Schema[?, ?, ?]] = schema match
-    case Self.Union.Modify(self, _, _)     => OpenApiRenderer.bodies(self)
-    case Self.Union.Coproduct(left, right) => OpenApiRenderer.bodies(left) ++ OpenApiRenderer.bodies(right)
-    case Self.Union.Root(branch)           => Chain.one(branch.value)
-
-  private def results(schema: Self.Union[Result.Node, ?, ?]): Chain[Result.Schema[?, ?, ?]] = schema match
-    case Self.Union.Modify(self, _, _)     => OpenApiRenderer.results(self)
-    case Self.Union.Coproduct(left, right) => OpenApiRenderer.results(left) ++ OpenApiRenderer.results(right)
-    case Self.Union.Root(branch)           => Chain.one(branch.value)
 
   /** The shared schemas a payload document declared, lifted out of it.
     *

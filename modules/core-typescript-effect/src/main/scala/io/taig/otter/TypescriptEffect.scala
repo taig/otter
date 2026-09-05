@@ -91,6 +91,14 @@ object TypescriptEffect:
   /** `Schema.Schema.Type<tpe>`, the type a non recursive definition infers from its own value. */
   def inferred(tpe: Typescript.Type): Typescript.Type = apply(apply(Typescript.Type.Symbol("Type", List(tpe))))
 
+  /** `Schema.Schema.Encoded<tpe>`, what a value looks like before it is decoded.
+    *
+    * The counterpart of [[TypescriptEffect.inferred]], and not a symmetry for its own sake: the encoded side is the one
+    * that is still made of the things JSON has, so it is the side that survives being serialised, cached and handed
+    * back. A caller who has to hold a response across such a boundary has to be able to name it.
+    */
+  def encoded(tpe: Typescript.Type): Typescript.Type = apply(apply(Typescript.Type.Symbol("Encoded", List(tpe))))
+
   /** `Schema.Schema<tpe>`, the annotation a recursive definition needs because inference cannot see through the cycle.
     */
   def annotation(tpe: Typescript.Type): Typescript.Type = apply(Typescript.Type.Symbol("Schema", List(tpe)))

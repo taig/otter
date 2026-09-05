@@ -48,6 +48,15 @@ private val quoted: String => String = value =>
       case character => character.toString
     .mkString("\"", "", "\"")
 
+/* The body of an arrow, parenthesised when it would otherwise be read as a block.
+ *
+ * `(value) => { "a": 1 }` is a function whose body is a labelled statement, not one returning an object, and the two
+ * differ in what they do rather than in how they look. A statement body is a block and is meant to be one, so what
+ * decides is whether the body is an expression that begins with a brace. */
+private val arrowed: Typescript => String =
+  case body: Typescript.Expression if body.render.startsWith("{") => s"(${body.render})"
+  case body                                                       => body.render
+
 private val indent: Any => String = _.toString.linesIterator.map(Indent + _).mkString("\n")
 
 /* Indents everything but the first line, for a value that begins where something else left off. */
@@ -61,7 +70,8 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Array(Nil)                  => "[]"
   case Typescript.Expression.Array(element :: Nil)       => s"[$element]"
   case Typescript.Expression.Array(elements)             => elements.map(indent).mkString("[\n", ",\n", "\n]")
-  case Typescript.Expression.Arrow(arguments, body)      => s"(${arguments.mkString(", ")}) => $body"
+  case Typescript.Expression.Arrow(arguments, body)      => s"(${arguments.mkString(", ")}) => ${arrowed(body)}"
+  case Typescript.Expression.AsConst(self)               => s"$self as const"
   case Typescript.Expression.Call(name, Nil)             => s"$name()"
   case Typescript.Expression.Call(name, argument :: Nil) =>
     argument.render.pipe:
@@ -77,7 +87,12 @@ private val renderTypescriptExpression: Typescript.Expression => String =
         s"""$name(
            |${arguments.map(indent).mkString(",\n")}
            |)""".stripMargin
-  case Typescript.Expression.Equal(left, right)           => s"$left == $right"
+  case Typescript.Expression.Equal(left, right)         => s"$left == $right"
+  case Typescript.Expression.Function(parameters, body) =>
+    s"(${parameters.map((name, tpe) => s"$name: $tpe").mkString(", ")}) => ${arrowed(body)}"
+  case Typescript.Expression.Index(self, index)            => s"$self[$index]"
+  case Typescript.Expression.Invoke(self, name, arguments) =>
+    s"$self.${renderTypescriptExpression(Typescript.Expression.Call(name, arguments))}"
   case Typescript.Expression.Literal.Boolean(value)       => String.valueOf(value)
   case Typescript.Expression.Literal.Number(value)        => value.toPlainString
   case Typescript.Expression.Literal.String(value)        => quoted(value)
@@ -102,10 +117,13 @@ private val renderTypescriptExpression: Typescript.Expression => String =
   case Typescript.Expression.Symbol(name)                       => name
   case Typescript.Expression.Ternary(condition, valid, invalid) => s"$condition ? $valid : $invalid"
   case Typescript.Expression.TripleEqual(left, right)           => s"$left === $right"
+  case Typescript.Expression.Undefined                          => "undefined"
 
 private val renderTypescriptStatement: Typescript.Statement => String =
-  case Typescript.Statement.Block(statements)    => statements.map(indent).mkString("{\n", "\n", "\n}")
-  case Typescript.Statement.Evaluate(expression) => s"$expression;"
+  case Typescript.Statement.Block(statements)     => statements.map(indent).mkString("{\n", "\n", "\n}")
+  case Typescript.Statement.Evaluate(expression)  => s"$expression;"
+  case Typescript.Statement.Import(names, module) =>
+    s"import { ${names.toList.mkString(", ")} } from ${quoted(module)};"
   case Typescript.Statement.Declaration.Constant(true, name, None, value)       => s"export const $name = $value;"
   case Typescript.Statement.Declaration.Constant(false, name, None, value)      => s"const $name = $value;"
   case Typescript.Statement.Declaration.Constant(true, name, Some(tpe), value)  => s"export const $name: $tpe = $value;"
@@ -118,9 +136,11 @@ private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Declaration.Type(false, name, tpe)                  => s"type $name = $tpe;"
 
 private val renderTypescriptType: Typescript.Type => String =
-  case Typescript.Type.Literal.Boolean(value)      => String.valueOf(value)
-  case Typescript.Type.Literal.Number(value)       => value.toPlainString
-  case Typescript.Type.Literal.String(value)       => quoted(value)
+  case Typescript.Type.Literal.Boolean(value)       => String.valueOf(value)
+  case Typescript.Type.Literal.Number(value)        => value.toPlainString
+  case Typescript.Type.Literal.String(value)        => quoted(value)
+  case Typescript.Type.Function(parameters, result) =>
+    s"(${parameters.map((name, tpe) => s"$name: $tpe").mkString(", ")}) => $result"
   case Typescript.Type.Member(namespace, property) => s"$namespace.$property"
   case Typescript.Type.Null                        => "null"
   case Typescript.Type.Object(Nil)                 => "{}"

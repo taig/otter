@@ -7,7 +7,7 @@ Extensible schema definition library for serialization formats (e.g. JSON, XML a
 Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-schema`, `core-csv`,
 `core-csv-fs2-data`, `core-iron`, `core-java-time`, `core-case-insensitive`, `core-typescript`,
 `core-typescript-effect`, `core-json-typescript`, `core-json-typescript-effect`, `http`, `http-json`,
-`http-http4s`, `http-http4s-circe`, `http-openapi`.
+`http-http4s`, `http-http4s-circe`, `http-openapi`, `http-typescript`, `http-typescript-effect`.
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
@@ -132,6 +132,40 @@ model and printer, `core-typescript-effect` the vocabulary of one target library
 everything a JSON renderer needs whatever the target (including the recursion fixpoint), and
 `core-json-typescript-effect` the generator itself. A second target -- zod, say -- is a
 `core-typescript-zod`/`core-json-typescript-zod` pair beside the two `-effect` ones.
+
+`http-typescript`/`http-typescript-effect` are that lattice one tier up, and split where it splits: what
+an endpoint contributes to generated source -- the shape of its input, the pieces of its path and query
+string, which status codes it answers under -- is the same whatever library reads its payloads, and only
+the payloads are written in a target's vocabulary. `TypescriptPayload` is `OpenApiPayload` again, for the
+same reason and with the same runtime dispatch, and `TypescriptIssue` carries `OpenApiIssue`'s contract:
+what cannot be said is recorded and a module still comes back.
+
+**What is generated is a descriptor and not a client, and that is the whole design.** A generated function
+that fetched and decoded before returning would never let its caller hold the response as the serialisable
+thing it arrived as, and a cache that requires serialisable values -- Next.js' is the one that prompted
+this -- cannot keep what a schema decoded into a `Date`. So a descriptor carries the builders that write a
+request out of an input, the `Schema` for each body keyed by media type, and *both* the decoded and the
+encoded type of every answer: a caller names their cache at the encoded type and decodes past it, and when
+to decode is theirs. Nothing generated calls `fetch`, and `TypescriptEndpointRendererTest` asserts that
+outright rather than leaving it to be noticed. A streamed body and a `Multipart` payload are reported
+rather than half emitted, which is the stand `http-http4s` already takes.
+
+Response headers are deliberately not in a generated answer type. A descriptor decodes no headers -- they
+are text the caller reads off the `Response` -- and a type claiming a header is a `number` would be
+describing a value nothing produces.
+
+`core-typescript` grew the nodes a descriptor needs, all additive: `Expression.Function` (an arrow whose
+parameters carry types), `Index` (how a member is read, since every key the printer writes is quoted),
+`Undefined`, `AsConst`, `Statement.Import` and `Type.Function`. One of those additions uncovered a bug
+worth remembering: an arrow whose body is an object literal has to be parenthesised, because
+`(value) => { "a": 1 }` is a function whose body is a labelled statement and not one returning an object.
+The two parse differently rather than merely looking different, which is the kind of mistake the source
+model exists to prevent and which building strings would never have caught.
+
+The walks over a `Record` or a `Union` that both renderers need -- `Queries.fields`, `Headers.fields`,
+`Multipart.parts`, `Bodies.branches`, `Results.branches` -- live in `http` beside `Path.segments` rather
+than privately in each renderer, on the reasoning `Path.segments` already records: what is asked of a
+record is always the list of its leaves, and its shape says nothing a caller wants to know.
 
 ### Fast loop
 

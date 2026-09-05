@@ -152,6 +152,74 @@ object TypescriptTest extends ZIOSpecDefault:
         )
 
         assertTrue(expression.render == """(value) => value === "true" ? "yes" : "no"""")
+      ,
+      /** `(value) => { "a": 1 }` is a function whose body is a labelled statement and not one returning an object, so
+        * an arrow whose body is an object literal has to be parenthesised. The two parse differently rather than merely
+        * looking different, which is why this is a correctness claim and not a layout one.
+        */
+      test("an arrow returning an object literal is parenthesised"):
+        val body = Typescript.Expression.Object(List(("a", symbol("String"))))
+        val value = Typescript.Expression.Symbol("value")
+
+        assertTrue(
+          Typescript.Expression.Arrow(List(value), body).render == """(value) => ({ "a": Schema.String })""",
+          Typescript.Expression
+            .Function(List(("value", tpe("Input"))), body)
+            .render == """(value: Input) => ({ "a": Schema.String })"""
+        )
+      ,
+      /** A block is a block and is meant to be one, so it is left alone. */
+      test("an arrow whose body is a block is not parenthesised"):
+        val block = Typescript.Statement.Block(List(Typescript.Statement.Evaluate(symbol("String"))))
+
+        assertTrue(Typescript.Expression.Arrow(Nil, block).render == """() => {
+                                                                       |  Schema.String;
+                                                                       |}""".stripMargin)
+      ,
+      test("an arrow with typed parameters"):
+        val value = Typescript.Expression.Symbol("value")
+
+        assertTrue(
+          Typescript.Expression.Function(Nil, value).render == "() => value",
+          Typescript.Expression
+            .Function(List(("a", tpe("string")), ("b", tpe("number"))), value)
+            .render == "(a: string, b: number) => value"
+        )
+      ,
+      /** Every key the printer writes is quoted, so a member is read by index and never by identifier. */
+      test("a member is read by index"):
+        val value = Typescript.Expression.Index(Typescript.Expression.Symbol("input"), literal("a b"))
+
+        assertTrue(
+          value.render == """input["a b"]""",
+          Typescript.Expression.Index(value, literal("c")).render == """input["a b"]["c"]"""
+        )
+      ,
+      test("undefined, and a comparison against it"):
+        val value = Typescript.Expression.Symbol("value")
+
+        assertTrue(
+          Typescript.Expression.Undefined.render == "undefined",
+          Typescript.Expression
+            .TripleEqual(value, Typescript.Expression.Undefined)
+            .render == "value === undefined"
+        )
+      ,
+      /** [[Typescript.Expression.Member]] reaches a name and a pipe reaches the one property a refinement uses; this
+        * reaches any property of any value.
+        */
+      test("a method call reaches a property of a value"):
+        val value = Typescript.Expression.Symbol("value")
+
+        assertTrue(
+          Typescript.Expression.Invoke(value, "map", List(symbol("String"))).render == "value.map(Schema.String)",
+          Typescript.Expression.Invoke(value, "join", Nil).render == "value.join()"
+        )
+      ,
+      test("a constant assertion keeps a literal at the type it spells"):
+        val value = Typescript.Expression.Object(List(("method", literal("GET"))))
+
+        assertTrue(Typescript.Expression.AsConst(value).render == """{ "method": "GET" } as const""")
     ),
     suite("statement")(
       test("a constant, exported and not, with and without a type"):
@@ -193,6 +261,14 @@ object TypescriptTest extends ZIOSpecDefault:
         assertTrue(
           Typescript.Statement.Declaration.Type(true, "A", tpe("string")).render == "export type A = string;",
           Typescript.Statement.Declaration.Type(false, "A", tpe("string")).render == "type A = string;"
+        )
+      ,
+      test("an import names what it takes and where from"):
+        assertTrue(
+          Typescript.Statement.Import(NonEmptyList.one("Schema"), "effect").render ==
+            """import { Schema } from "effect";""",
+          Typescript.Statement.Import(NonEmptyList.of("A", "B"), "./api.js").render ==
+            """import { A, B } from "./api.js";"""
         )
     ),
     suite("type")(
@@ -242,6 +318,14 @@ object TypescriptTest extends ZIOSpecDefault:
           Typescript.Type.Tuple(List(tpe("string"), tpe("number"))).render == "[string, number]",
           Typescript.Type.Tuple(Nil).render == "[]",
           Typescript.Type.TypeOf(Typescript.Expression.Symbol("Book")).render == "typeof Book"
+        )
+      ,
+      test("a function type names its parameters"):
+        assertTrue(
+          Typescript.Type.Function(Nil, tpe("void")).render == "() => void",
+          Typescript.Type
+            .Function(List(("input", tpe("Input"))), Typescript.Type.Symbol("Promise", List(tpe("Output"))))
+            .render == "(input: Input) => Promise<Output>"
         )
     )
   )

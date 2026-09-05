@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Reference
@@ -29,6 +30,19 @@ object Queries:
 
   object Writer:
     type Of[S[-w, +r] <: Parameter.Node[w, r], -A] = Queries.Schema[S, A, Any]
+
+  /** Every parameter the query string names, in the order it names them.
+    *
+    * Here rather than in a renderer because every renderer needs the same walk, and a record is a tree whose shape says
+    * nothing a caller wants to know: what is asked of it is always the list of its leaves.
+    */
+  def fields(schema: Queries.Node[?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = Queries.walk(schema.self.self)
+
+  private def walk(schema: Self.Record[Query.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
+    case Self.Record.Empty                => Chain.empty
+    case Self.Record.Modify(self, _, _)   => Queries.walk(self)
+    case Self.Record.Product(left, right) => Queries.walk(left) ++ Queries.walk(right)
+    case Self.Record.Root(field)          => Chain.one(field.value.self.self)
 
   final case class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R](
       self: Annotation[Self.Record[[w, r] =>> Query.Schema[S, w, r], W, R]]
