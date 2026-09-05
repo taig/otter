@@ -71,6 +71,8 @@ lazy val modules: List[CrossProject] = List(
   coreTypescriptEffect,
   http,
   httpJson,
+  httpHttp4s,
+  httpHttp4sCirce,
   httpOpenapi
 )
 
@@ -232,6 +234,46 @@ lazy val http = module(identifier = Some("http"))
   */
 lazy val httpJson = module(identifier = Some("http-json"))
   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
+
+/** Endpoints served and called through org.http4s
+  *
+  * The interpreter the pairing said could not exist, and the reason it can is that http4s draws the distinction this
+  * module needs: an `Entity` is `Strict` over a `ByteVector`, `Streamed` over an fs2 stream, or `Empty`, and the first
+  * and last of those are `Entity[Pure]`. So a whole body is a pure value after all -- not a shared document model, but
+  * enough of one that reading and writing it needs no effect type, and the codecs here are the same `Encoder` and
+  * `Decoder` every other alphabet is interpreted by. Only a streamed body has to mention `F`.
+  *
+  * The envelope needs no adapting worth the name: `Query` is `Vector[(String, Option[String])]` in both directions and
+  * `Headers` is a list of raw name and value pairs, which is what `http`'s codecs already speak. That they line up this
+  * exactly is the evidence the wire slices were drawn in the right place.
+  *
+  * `http4s-server` is deliberately absent. `HttpRoutes` lives in `http4s-core`, and nothing here builds a server or
+  * routes between several -- what to listen on is the caller's, and one fewer dependency is one fewer thing pinned to a
+  * milestone.
+  */
+lazy val httpHttp4s = module(identifier = Some("http-http4s"))
+  .settings(
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-core" % Version.Http4s ::
+        "org.http4s" %% "http4s-client" % Version.Http4s ::
+        Nil
+  )
+  .dependsOn(http % "compile->compile;test->test")
+
+/** JSON payloads read and written by io.circe, for the http4s interpreter
+  *
+  * A module of its own where `http-openapi` needed none, and the difference is what circe is being asked for. There,
+  * circe is the document model a JSON Schema *is*, so naming it settles nothing a caller would want to choose. Here it
+  * is one of two interpreters of the same alphabet, and `core-json-borer` measurably writes faster while `circe` reads
+  * faster -- a trade an HTTP server is entitled to make for itself. A `http-http4s-borer` sits beside this one.
+  */
+lazy val httpHttp4sCirce = module(identifier = Some("http-http4s-circe"))
+  .settings(libraryDependencies += "io.circe" %% "circe-parser" % Version.Circe)
+  .dependsOn(
+    httpHttp4s % "compile->compile;test->test",
+    coreJsonCirce % "compile->compile;test->test",
+    httpJson % "compile->compile;test->test"
+  )
 
 /** OpenAPI documents rendered from an endpoint
   *

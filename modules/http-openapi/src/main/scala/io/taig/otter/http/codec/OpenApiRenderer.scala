@@ -2,7 +2,6 @@ package io.taig.otter.http.codec
 
 import cats.data.Chain
 import cats.data.NonEmptyList
-import cats.syntax.all.*
 import io.circe.Json as CirceJson
 import io.taig.otter as Self
 import io.taig.otter.JsonSchema
@@ -24,12 +23,10 @@ import io.taig.otter.http.OpenApiIssue
 import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Part
-import io.taig.otter.http.Path
 import io.taig.otter.http.Query
 import io.taig.otter.http.Request
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
-import io.taig.otter.http.Segment
 
 import scala.collection.immutable.ListMap
 import scala.compiletime.asMatchable
@@ -94,7 +91,7 @@ final class OpenApiRenderer(
   /** One operation, and the path and method it is filed under. */
   private def operation(endpoint: Endpoint.Node): (String, String, CirceJson, Collected) =
     val schema = endpoint.request
-    val name = s"${schema.method.name} ${OpenApiRenderer.template(schema.path.value)}"
+    val name = s"${schema.method.name} ${PathTemplate.render(schema.path.value)}"
 
     val (parameters, found) = this.parameters(name, schema)
     val (body, requested) = this.requestBody(name, schema)
@@ -122,7 +119,7 @@ final class OpenApiRenderer(
     )
 
     (
-      OpenApiRenderer.template(schema.path.value),
+      PathTemplate.render(schema.path.value),
       schema.method.name.toLowerCase(java.util.Locale.ROOT),
       rendered,
       found ++ requested ++ answered
@@ -130,7 +127,7 @@ final class OpenApiRenderer(
 
   /** Every parameter an operation reads, in the order OpenAPI lists them: path, then query, then header. */
   private def parameters(operation: String, schema: Request.Schema[?, ?, ?]): (Chain[CirceJson], Collected) =
-    val path = OpenApiRenderer.placeholders(schema.path.value).map((name, value) => (OpenApi.InPath, name, value, true))
+    val path = PathTemplate.placeholders(schema.path.value).map((name, value) => (OpenApi.InPath, name, value, true))
 
     val queries = Chain
       .fromOption(schema.queries)
@@ -393,39 +390,6 @@ object OpenApiRenderer:
   /** The same endpoints as a caller sees them: it writes the request and reads the response. */
   def client(profile: JsonSchemaProfile, payload: OpenApiPayload): OpenApiRenderer =
     new OpenApiRenderer(profile, payload, Side.Write, Side.Read, OpenApi.Namespaces)
-
-  /** The path, with a placeholder where every dynamic segment stands. */
-  private def template(schema: Path.Node[?, ?]): String =
-    val pieces = OpenApiRenderer.segments(schema.self.self).map {
-      case Left(literal)    => literal
-      case Right((name, _)) => s"{$name}"
-    }
-
-    "/" ++ pieces.toList.mkString("/")
-
-  /** The dynamic segments, in the order they appear. */
-  private def placeholders(schema: Path.Node[?, ?]): Chain[(String, Parameter.Node[?, ?])] =
-    OpenApiRenderer.segments(schema.self.self).collect { case Right(placeholder) => placeholder }
-
-  /** Every segment, as either the literal it spells or the name and value it stands for. */
-  private def segments(
-      schema: Self.Tuple[Segment.Node, ?, ?]
-  ): Chain[Either[String, (String, Parameter.Node[?, ?])]] = schema match
-    case Self.Tuple.Empty                => Chain.empty
-    case Self.Tuple.Modify(self, _, _)   => OpenApiRenderer.segments(self)
-    case Self.Tuple.Optional(self)       => OpenApiRenderer.segments(self)
-    case Self.Tuple.Default(self, _)     => OpenApiRenderer.segments(self)
-    case Self.Tuple.Product(left, right) => OpenApiRenderer.segments(left) ++ OpenApiRenderer.segments(right)
-    case Self.Tuple.Root(schema)         =>
-      schema.value match
-        case Segment.Static.Schema(node)  => Chain.one(OpenApiRenderer.literal(node.self).asLeft)
-        case Segment.Dynamic.Schema(node) =>
-          Chain.one((node.self.name, node.self.schema.value: Parameter.Node[?, ?]).asRight)
-
-  /** The text a static segment spells, pushed back through the schema that writes it. */
-  private def literal(schema: Self.Constant[Parameter.Primitive.Node, ?, ?]): String = schema match
-    case Self.Constant.Modify(self, _, _)        => OpenApiRenderer.literal(self)
-    case Self.Constant.Root(reference, value, _) => ParameterPrimitiveEncoder.encode(reference.value, value.value)
 
   private def fields(schema: Self.Record[Query.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
     case Self.Record.Empty                => Chain.empty

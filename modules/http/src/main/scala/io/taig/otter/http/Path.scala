@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Reference
@@ -33,6 +34,14 @@ object Path:
 
   object Writer:
     type Of[S[-w, +r] <: Segment.Node[w, r], -A] = Path.Schema[S, A, Any]
+
+  /** Every segment, in the order the path names them.
+    *
+    * [[Self.Tuple]] already walks the product and reads through the wrappers, so this is the widening and nothing else.
+    * It is here rather than written out twice because two callers need the same walk for opposite reasons: a renderer
+    * asking what a path looks like with no request in hand, and a router asking whether a request is this path at all.
+    */
+  def segments(schema: Path.Node[?, ?]): Chain[Segment.Node[?, ?]] = schema.self.self.schemas.map(_.value)
 
   final case class Schema[+S[-w, +r] <: Segment.Schema[?, w, r], -W, +R](self: Annotation[Self.Tuple[S, W, R]])
 
