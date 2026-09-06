@@ -35,6 +35,14 @@ final class Http4sRequestDecoder(payload: Http4sPayload) extends Decoder[Request
       (decode(self, value), HeadersDecoder.decode(headers.value, value.headers).leftMap("header" /: _)).tupled
     case Request.Value.Payload(self, values) =>
       (decode(self, value), bodies.decode(values.value.self.self, value.body).leftMap("body" /: _)).tupled
+    // An entity that was not sent is zero bytes, which is the only signal there is: a caller that sends nothing sends
+    // no `Content-Type` either, so there is nothing else to tell absence from a body that failed to arrive.
+    case Request.Value.OptionalPayload(self, values) =>
+      val body =
+        if value.body._2.isEmpty then Validated.valid(None)
+        else bodies.decode(values.value.self.self, value.body).map(Some(_)).leftMap("body" /: _)
+
+      (decode(self, value), body).tupled
     // A streamed body changes what the request describes and not what it holds, so there is nothing to read here.
     case Request.Value.Streaming(self, _) => decode(self, value)
     case Request.Value.Modify(self, f, _) => decode(self, value).map(f)
