@@ -159,14 +159,6 @@ object OpenApiRendererTest extends ZIOSpecDefault:
         assertTrue(
           document.at("paths", "/reports/{id}", "put", "requestBody", "required").flatMap(_.asBoolean) == Some(true)
         )
-      ,
-      test("a body that need not be sent says so, where one that must says the opposite"):
-        val rendered = server.render(info, Chain(api.amend))
-
-        assertTrue(
-          rendered.at("paths", "/settings", "patch", "requestBody", "required").flatMap(_.asBoolean) == Some(false),
-          rendered.at("paths", "/settings", "patch", "requestBody", "content").isDefined
-        )
     ),
     suite("streamed")(
       test("is keyed by its framing media type and described by one element"):

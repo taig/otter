@@ -37,13 +37,5 @@ final class Http4sRequestEncoder(payload: Http4sPayload)
         wire <- encode(self, w._1)
         body <- bodies.encode(values.value.self.self, w._2)
       yield wire.copy(body = (Some(body._1), body._2))
-    case Request.Value.OptionalPayload(self, values) =>
-      w._2 match
-        case Some(body) =>
-          for
-            wire <- encode(self, w._1)
-            written <- bodies.encode(values.value.self.self, body)
-          yield wire.copy(body = (Some(written._1), written._2))
-        case None => encode(self, w._1)
     case Request.Value.Streaming(self, _) => encode(self, w)
     case Request.Value.Modify(self, _, g) => encode(self, g(w))

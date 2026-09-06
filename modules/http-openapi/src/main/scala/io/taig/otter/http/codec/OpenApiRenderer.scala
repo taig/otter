@@ -166,7 +166,7 @@ final class OpenApiRenderer(
     val entries = whole ++ streamed
 
     val rendered = Option.when(entries.nonEmpty):
-      OpenApi.obj("required" -> CirceJson.fromBoolean(schema.required), "content" -> OpenApi.content(entries))
+      OpenApi.obj("required" -> CirceJson.True, "content" -> OpenApi.content(entries))
 
     (rendered, described ++ framed)
 
