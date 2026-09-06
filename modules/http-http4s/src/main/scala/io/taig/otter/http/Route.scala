@@ -2,6 +2,7 @@ package io.taig.otter.http
 
 import cats.effect.Concurrent
 import cats.syntax.all.*
+import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sResultEncoder
 import io.taig.otter.http.codec.PathTemplate
@@ -36,6 +37,7 @@ final case class Route[F[_], A, B](endpoint: Endpoint.Server[Body.Payload, A, B]
   def run(
       decoder: Http4sRequestDecoder,
       encoder: Http4sResultEncoder,
+      malformed: Violations => Http4sWire.Response,
       request: Http4sRequest[F],
       segments: Vector[String]
   )(using
@@ -53,7 +55,7 @@ final case class Route[F[_], A, B](endpoint: Endpoint.Server[Body.Payload, A, B]
 
         decoder.decode(endpoint.request, wire) match
           case cats.data.Validated.Valid(value)        => handler(value).map(encoder.encode(endpoint.responses, _))
-          case cats.data.Validated.Invalid(violations) => F.pure(Http4s.malformed(violations))
+          case cats.data.Validated.Invalid(violations) => F.pure(Right(malformed(violations)))
       .flatMap(Http4s.respond[F])
 
 object Route:

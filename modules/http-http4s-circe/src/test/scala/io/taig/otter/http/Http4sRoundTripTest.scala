@@ -3,14 +3,20 @@ package io.taig.otter.http
 import cats.data.Chain
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
+import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sResultDecoder
 import io.taig.otter.http.fixture.*
 import io.taig.otter.http.fixture.dsl.*
+import org.http4s.Entity
+import org.http4s.Header as Http4sHeader
+import org.http4s.Headers as Http4sHeaders
+import org.http4s.Method as Http4sMethod
 import org.http4s.Request as Http4sRequest
 import org.http4s.Uri
 import org.http4s.client.Client as Http4sClient
 import org.http4s.implicits.*
+import org.typelevel.ci.CIString
 import scodec.bits.ByteVector
 import zio.Scope
 import zio.Task
@@ -97,6 +103,35 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .run(request)
         .map(_.status.code)
         .unsafeToFuture()
+
+  /** The whole answer, so a malformed request can be asked about its status and its body at once. */
+  private def answer[A](endpoint: Endpoint[A, Unit], malformed: Violations => Http4sWire.Response)(
+      request: Http4sRequest[IO]
+  ): Task[(Int, String)] =
+    ZIO.fromFuture: _ =>
+      Http4s
+        .routes[IO](Http4sCirce.Payload, malformed)(Route(endpoint, (_: A) => IO.unit))
+        .orNotFound
+        .run(request)
+        .flatMap(response =>
+          Http4sEnvelope.toBytes(response.entity).map(bytes => (response.status.code, bytes.decodeUtf8.getOrElse("")))
+        )
+        .unsafeToFuture()
+
+  private def sent(method: Http4sMethod, uri: Uri, body: String): Http4sRequest[IO] =
+    Http4sRequest[IO](
+      method = method,
+      uri = uri,
+      headers = Http4sHeaders(Http4sHeader.Raw(CIString("Content-Type"), "application/json")),
+      entity = Entity.strict(ByteVector.encodeUtf8(body).getOrElse(ByteVector.empty))
+    )
+
+  /** `PUT /reports/{id}?page` taking a body, so one request can be wrong in two positions at once. */
+  private val amend: Endpoint[(Int, Int, Settings), Unit] =
+    endpoint(
+      request(Method.Put, api.one).queries(api.paging).body(json(api.settings)),
+      result(Code.NoContent).toUnion
+    )
 
   /** `GET /reports/{id}?page` answering with nothing, which is enough to ask a router questions with. */
   private val ping: Endpoint[(Int, Int), Unit] =
@@ -221,5 +256,34 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
           .map(Http4s.report)
 
         assertTrue(report.exists(_.contains(".path"))) && assertTrue(report.exists(_.contains(".id")))
+    ),
+    suite("a request that does not hold what the endpoint describes")(
+      test("a body that parses and breaks the schema is unprocessable, not malformed"):
+        answer(configure, Http4s.malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
+          .map((code, body) => assertTrue(code == 422, body.contains("$.body.theme")))
+      ,
+      test("a body that is not a document at all is unprocessable too, because it is still the content"):
+        answer(configure, Http4s.malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", "not json"))
+          .map((code, _) => assertTrue(code == 422))
+      ,
+      test("a query alongside a body drops the answer back to a bad request"):
+        answer(amend, Http4s.malformed)(
+          sent(Http4sMethod.PUT, uri"http://otter.test/reports/42?page=soon", """{"theme":42}""")
+        ).map((code, body) => assertTrue(code == 400, body.contains("$.query.page"), body.contains("$.body.theme")))
+      ,
+      test("a path alone is a bad request, since there is no content to be unprocessable"):
+        answer(ping, Http4s.malformed)(Http4sRequest[IO](uri = uri"http://otter.test/reports/nope"))
+          .map((code, _) => assertTrue(code == 400))
+      ,
+      test("what the answer looks like is the caller's, and the violations reach it whole"):
+        val malformed = (violations: Violations) =>
+          Http4sWire.Response(
+            Code(418),
+            Chain.one(("X-Violations", Http4s.report(violations).linesIterator.size.toString)),
+            Some((MediaType.Json, ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)))
+          )
+
+        answer(configure, malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
+          .map((code, body) => assertTrue(code == 418, body == """{"error":"invalid"}"""))
     )
   )

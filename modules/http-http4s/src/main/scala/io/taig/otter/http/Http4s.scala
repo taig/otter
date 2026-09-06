@@ -31,8 +31,16 @@ object Http4s:
     *
     * `HttpRoutes` and not `HttpApp`, because falling through is the honest answer to a path none of these describe:
     * composing with `<+>` is then somebody else's decision, and so is what a `404` looks like.
+    *
+    * `malformed` is what a request that this set described but did not hold is answered with, and it is a parameter
+    * because that answer is an API's own vocabulary rather than this module's. [[Http4s.malformed]] is the default and
+    * says the true thing in plain text; an API whose errors have a schema passes a function that renders one, and keeps
+    * its callers reading a single error shape.
     */
-  def routes[F[_]: Concurrent](payload: Http4sPayload)(routes: Route[F, ?, ?]*): HttpRoutes[F] =
+  def routes[F[_]: Concurrent](
+      payload: Http4sPayload,
+      malformed: Violations => Http4sWire.Response = Http4s.malformed
+  )(routes: Route[F, ?, ?]*): HttpRoutes[F] =
     val decoder = Http4sRequestDecoder(payload)
     val encoder = Http4sResultEncoder(payload)
     val chain = Chain.fromSeq(routes)
@@ -43,7 +51,7 @@ object Http4s:
 
       OptionT
         .fromOption[F](chain.find(_.matches(method, segments)))
-        .semiflatMap(_.run(decoder, encoder, request, segments))
+        .semiflatMap(_.run(decoder, encoder, malformed, request, segments))
 
   /** An endpoint, as a function that calls it.
     *
@@ -73,17 +81,35 @@ object Http4s:
           .liftTo[F]
       yield decoded
 
+  /** The status a violation report goes out under.
+    *
+    * RFC 9110 draws the line by what failed rather than by how badly. `400` is a request whose *syntax* the server will
+    * not process; `422` is one whose content type is understood and whose content parses, but whose instructions cannot
+    * be carried out. A body that is JSON and breaks the schema is squarely the second, and a path segment or a query
+    * parameter that will not parse is squarely the first -- there is no content there to be unprocessable, the request
+    * line itself is wrong.
+    *
+    * So the position decides, and the position is already in the tree:
+    * [[io.taig.otter.http.codec.Http4sRequestDecoder]] labels each half it reads, and accumulates them, so a request
+    * may hold violations under several at once. `422` only when every one of them is under `body`, because a report
+    * that also names a query parameter is not describing a request whose syntax was correct.
+    */
+  def code(violations: Violations): Code = violations match
+    case Violations.Namespace(values) if values.keys.forall(_ == Step.Field("body")) => Code.UnprocessableEntity
+    case _                                                                           => Code.BadRequest
+
   /** What a request that this endpoint described, but that did not hold what it described, is answered with.
     *
-    * `400` and a plain text report. Plain text because a violation report is not a payload the endpoint declared, so
-    * answering in the endpoint's own alphabet would be describing something the document does not mention; and because
-    * a module that renders JSON would need a JSON interpreter, which is exactly the dependency the payload trait was
-    * made open to avoid.
+    * [[Http4s.code]] and a plain text report. Plain text because a violation report is not a payload the endpoint
+    * declared, so answering in the endpoint's own alphabet would be describing something the document does not mention;
+    * and because a module that renders JSON would need a JSON interpreter, which is exactly the dependency the payload
+    * trait was made open to avoid. A caller that wants its own vocabulary passes one to [[Http4s.routes]] rather than
+    * being given a second interpreter here.
     */
-  private[http] def malformed(violations: Violations): Either[Http4sIssue, Http4sWire.Response] =
+  def malformed(violations: Violations): Http4sWire.Response =
     val bytes = ByteVector.encodeUtf8(Http4s.report(violations)).getOrElse(ByteVector.empty)
 
-    Right(Http4sWire.Response(Code.BadRequest, Chain.empty, Some((MediaType.Text, bytes))))
+    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((MediaType.Text, bytes)))
 
   /** A violation tree, one line per violation, each named by where it was found and by what was found there.
     *
