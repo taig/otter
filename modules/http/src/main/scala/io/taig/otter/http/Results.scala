@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Reference
@@ -29,6 +30,14 @@ object Results:
 
   object Writer:
     type Of[S[-w, +r], -A] = Results.Schema[S, A, Any]
+
+  /** Every answer, in the order the endpoint names them. */
+  def branches(schema: Results.Node[?, ?]): Chain[Result.Schema[?, ?, ?]] = Results.walk(schema.self.self)
+
+  private def walk(schema: Self.Union[Result.Node, ?, ?]): Chain[Result.Schema[?, ?, ?]] = schema match
+    case Self.Union.Modify(self, _, _)     => Results.walk(self)
+    case Self.Union.Coproduct(left, right) => Results.walk(left) ++ Results.walk(right)
+    case Self.Union.Root(branch)           => Chain.one(branch.value)
 
   final case class Schema[+S[-w, +r], -W, +R](
       self: Annotation[Self.Union[[w, r] =>> Result.Schema[S, w, r], W, R]]

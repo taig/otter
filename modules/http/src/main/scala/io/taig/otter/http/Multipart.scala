@@ -1,7 +1,9 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.Annotation
+import io.taig.otter.Metadata
 import io.taig.otter.Reference
 import io.taig.otter.Wrapper
 import io.taig.otter.operation.*
@@ -37,6 +39,21 @@ object Multipart:
 
   object Writer:
     type Of[B[-w, +r], -A] = Multipart.Schema[B, A, Any]
+
+  /** Every part, with the metadata it carries of its own.
+    *
+    * The metadata comes back beside the field because it is not the body's: a filename is said about the part, and a
+    * caller reading the body's metadata would find nothing there.
+    */
+  def parts(schema: Multipart.Node[?, ?]): Chain[(Self.Field[Body.Node, ?, ?], Metadata)] =
+    Multipart.walk(schema.self.self)
+
+  private def walk(schema: Self.Record[Part.Node, ?, ?]): Chain[(Self.Field[Body.Node, ?, ?], Metadata)] =
+    schema match
+      case Self.Record.Empty                => Chain.empty
+      case Self.Record.Modify(self, _, _)   => Multipart.walk(self)
+      case Self.Record.Product(left, right) => Multipart.walk(left) ++ Multipart.walk(right)
+      case Self.Record.Root(field)          => Chain.one((field.value.self.self, field.value.self.metadata))
 
   final case class Schema[+B[-w, +r], -W, +R](
       self: Annotation[Self.Record[[w, r] =>> Part.Schema[B, w, r], W, R]]

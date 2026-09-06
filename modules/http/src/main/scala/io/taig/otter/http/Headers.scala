@@ -1,5 +1,6 @@
 package io.taig.otter.http
 
+import cats.data.Chain
 import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Reference
@@ -29,6 +30,15 @@ object Headers:
 
   object Writer:
     type Of[S[-w, +r] <: Parameter.Node[w, r], -A] = Headers.Schema[S, A, Any]
+
+  /** Every header the set names, in the order it names them. */
+  def fields(schema: Headers.Node[?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = Headers.walk(schema.self.self)
+
+  private def walk(schema: Self.Record[Header.Node, ?, ?]): Chain[Self.Field[Parameter.Node, ?, ?]] = schema match
+    case Self.Record.Empty                => Chain.empty
+    case Self.Record.Modify(self, _, _)   => Headers.walk(self)
+    case Self.Record.Product(left, right) => Headers.walk(left) ++ Headers.walk(right)
+    case Self.Record.Root(field)          => Chain.one(field.value.self.self)
 
   final case class Schema[+S[-w, +r] <: Parameter.Schema[?, w, r], -W, +R](
       self: Annotation[Self.Record[[w, r] =>> Header.Schema[S, w, r], W, R]]

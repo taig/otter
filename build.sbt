@@ -73,7 +73,9 @@ lazy val modules: List[CrossProject] = List(
   httpJson,
   httpHttp4s,
   httpHttp4sCirce,
-  httpOpenapi
+  httpOpenapi,
+  httpTypescript,
+  httpTypescriptEffect
 )
 
 /** JMH benchmarks
@@ -283,6 +285,34 @@ lazy val httpHttp4sCirce = module(identifier = Some("http-http4s-circe"))
   */
 lazy val httpOpenapi = module(identifier = Some("http-openapi"))
   .dependsOn(httpJson % "compile->compile;test->test", coreJsonSchema % "compile->compile;test->test")
+
+/** TypeScript renderers for endpoints, whatever the target
+  *
+  * The `core-json-typescript` / `core-json-typescript-effect` split one tier up, and for the same reason: what an
+  * endpoint contributes to generated source -- the shape of its input, the pieces of its path and query string, which
+  * status codes it answers under -- is the same whatever library reads the payloads, and only the payloads are written
+  * in a target's vocabulary. A second target contributes a module beside `http-typescript-effect` rather than a
+  * parameter here.
+  *
+  * The dependency on `core-json-typescript` is for `JsonTypescriptContext`, which is the accumulator every payload of
+  * every endpoint is rendered into so that a schema two endpoints share is declared once.
+  */
+lazy val httpTypescript = module(identifier = Some("http-typescript"))
+  .dependsOn(httpJson % "compile->compile;test->test", coreJsonTypescript % "compile->compile;test->test")
+
+/** effect Schema endpoint descriptors, generated from an endpoint
+  *
+  * What is generated is a description of a call and not a call. A client that fetched and decoded before it returned
+  * would never let its caller see the response as the serialisable thing it arrived as, and a cache that requires
+  * serialisable values -- Next.js' is the one that prompted this -- cannot hold what a schema decoded into a `Date`. So
+  * the descriptor carries the builders that write a request, the schemas that read one, and both the decoded and the
+  * encoded type of every answer; when to decode is the caller's.
+  */
+lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect"))
+  .dependsOn(
+    httpTypescript % "compile->compile;test->test",
+    coreJsonTypescriptEffect % "compile->compile;test->test"
+  )
 
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.

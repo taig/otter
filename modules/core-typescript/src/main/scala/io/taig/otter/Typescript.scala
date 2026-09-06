@@ -29,9 +29,41 @@ object Typescript:
 
     final case class Arrow(arguments: List[Typescript.Expression], body: Typescript) extends Typescript.Expression
 
+    /** `self as const`, which keeps a literal at the type it spells rather than widening it.
+      *
+      * A descriptor whose `method` is `"GET"` and not `string` is the whole reason this exists: what a generated value
+      * says about itself is as much of the output as its shape is.
+      */
+    final case class AsConst(self: Typescript.Expression) extends Typescript.Expression
+
     final case class Call(name: JString, arguments: List[Typescript.Expression]) extends Typescript.Expression
 
     final case class Equal(left: Typescript.Expression, right: Typescript.Expression) extends Typescript.Expression
+
+    /** An arrow whose parameters carry types, `(value: T) => body`.
+      *
+      * A node of its own rather than a field on [[Typescript.Expression.Arrow]], which is what a generator reaches for
+      * when the position it writes into already types the parameter and there is nothing to say. Widening `Arrow` would
+      * have made every one of those call sites spell out an empty list of types.
+      */
+    final case class Function(parameters: List[(JString, Typescript.Type)], body: Typescript)
+        extends Typescript.Expression
+
+    /** `self.name(a, b)`, a call whose receiver is an expression.
+      *
+      * [[Typescript.Expression.Call]] reaches a name and [[Typescript.Expression.Pipe]] reaches the one property every
+      * refinement uses; this reaches any property of any value, which is what mapping over what a caller handed in
+      * needs.
+      */
+    final case class Invoke(self: Typescript.Expression, name: JString, arguments: List[Typescript.Expression])
+        extends Typescript.Expression
+
+    /** `self[index]`.
+      *
+      * How a member is read, because [[io.taig.otter.render]] quotes every key it writes: there is no rule about which
+      * names are identifiers to get right, so there is none to rely on when reading one back either.
+      */
+    final case class Index(self: Typescript.Expression, index: Typescript.Expression) extends Typescript.Expression
 
     sealed abstract class Literal extends Typescript.Expression
 
@@ -63,6 +95,9 @@ object Typescript:
     final case class TripleEqual(left: Typescript.Expression, right: Typescript.Expression)
         extends Typescript.Expression
 
+    /** The value a key that was never written holds, which is not [[Typescript.Type.Null]] and not an omission. */
+    case object Undefined extends Typescript.Expression
+
   sealed abstract class Statement extends Typescript:
     final override def render: JString = renderTypescriptStatement(this)
 
@@ -91,6 +126,14 @@ object Typescript:
 
     final case class Evaluate(expression: Typescript.Expression) extends Typescript.Statement
 
+    /** `import { a, b } from "module";`
+      *
+      * A renderer still does not decide where a module goes -- what to import from where is the caller's, because only
+      * the caller knows that. What this adds is that the answer can be said in the source model rather than pasted in
+      * beside it.
+      */
+    final case class Import(names: NonEmptyList[JString], module: JString) extends Typescript.Statement
+
   sealed abstract class Type extends Typescript:
     final override def render: JString = renderTypescriptType(this)
 
@@ -104,6 +147,10 @@ object Typescript:
       final case class Boolean(value: SBoolean) extends Typescript.Type.Literal
       final case class Number(value: JBigDecimal) extends Typescript.Type.Literal
       final case class String(value: JString) extends Typescript.Type.Literal
+
+    /** `(name: T, name: U) => R`, which is what a value holding a function is declared as. */
+    final case class Function(parameters: List[(JString, Typescript.Type)], result: Typescript.Type)
+        extends Typescript.Type
 
     final case class Member(namespace: JString, property: Typescript.Type) extends Typescript.Type
 
