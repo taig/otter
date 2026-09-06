@@ -75,9 +75,14 @@ object JsonSchemaProfile:
     * [[Nullability.AnyOf]] is one rule with no case analysis, and it composes with a `$ref`, a `const` and an `enum`,
     * none of which [[Nullability.TypeArray]] can rewrite because none of them is a `type`. [[Nullability.TypeArray]]
     * reads better where it applies, and falls back to the other where it does not.
+    *
+    * [[Nullability.Flag]] is neither: it is OpenAPI 3.0's keyword, and it is here because a consumer that reads that
+    * dialect -- Gemini's `responseSchema` is one -- has no `null` among its types at all, so both of the others
+    * describe something it will refuse. It says nothing about the schema it is merged onto, which is why it composes
+    * where [[Nullability.TypeArray]] does not and why it cannot be expressed as a rewrite of either.
     */
   enum Nullability:
-    case AnyOf, TypeArray
+    case AnyOf, TypeArray, Flag
 
     def apply(schema: CirceJson): CirceJson = this match
       case Nullability.AnyOf     => JsonSchema.anyOf(JsonSchema.alternatives(schema) :+ JsonSchema.Null)
@@ -86,6 +91,7 @@ object JsonSchemaProfile:
           case Some(name) =>
             JsonSchema.merge(schema, "type" -> CirceJson.arr(CirceJson.fromString(name), CirceJson.fromString("null")))
           case None => Nullability.AnyOf(schema)
+      case Nullability.Flag => JsonSchema.merge(schema, "nullable" -> CirceJson.True)
 
   /** The `format` names JSON Schema itself registers, which is what a strict consumer recognises. */
   val Formats: Set[String] =
