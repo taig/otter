@@ -161,7 +161,12 @@ final class TypescriptEndpointRenderer(
       body.map((TypescriptEnvelope.Section.Body, _))
     ).flatten
 
-    Typescript.Type.Object(sections.map((name, tpe) => Typescript.Type.Field(name, tpe, optional = false)))
+    // Only the body is ever optional, and only where the request said the entity need not be sent: every other section
+    // is either described or absent from the list entirely.
+    Typescript.Type.Object(
+      sections.map: (name, tpe) =>
+        Typescript.Type.Field(name, tpe, optional = name == TypescriptEnvelope.Section.Body && !schema.required)
+    )
 
   /** The answer, as the union of what each status code carries.
     *

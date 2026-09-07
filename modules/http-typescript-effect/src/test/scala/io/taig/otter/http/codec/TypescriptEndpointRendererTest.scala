@@ -94,6 +94,15 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
           source(api.fetch).contains("""  "body": undefined,""")
         )
       ,
+      /** The one section of an input that may be absent, and the only place `?` appears in a rendered input type. */
+      test("a body that need not be sent is an optional field of the input"):
+        val module = render(api.amend)
+
+        assertTrue(
+          module.render.contains(""""body"?: """),
+          source(api.configure).contains("""export type PutSettingsInput = { "body": """)
+        )
+      ,
       test("the results name a schema per status code"):
         assertTrue(source(api.fetch).contains("""  "results": {
                                                 |    "200": { "application/json": GetReportsIdResponse200 },
