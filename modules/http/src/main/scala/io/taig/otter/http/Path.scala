@@ -35,6 +35,15 @@ object Path:
   object Writer:
     type Of[S[-w, +r] <: Segment.Node[w, r], -A] = Path.Schema[S, A, Any]
 
+  /** The path that holds nothing, which is where a path written down as a URL starts.
+    *
+    * It is a place to start rather than a requirement, for the reason [[Segment.appendable]] gives: two segments beside
+    * each other already are the path that holds them, so `Path.Root / "users"` and `segment("users")` are one schema.
+    * What it is good for is the leading `/` a URL is read with, which is why
+    * [[io.taig.otter.http.component.HttpComponent.__]] spells it that way.
+    */
+  val Root: Path.Schema[Nothing, Unit, Unit] = Path.Schema.apply[Nothing, Unit, Unit](Self.Tuple.Empty)
+
   /** Every segment, in the order the path names them.
     *
     * [[Self.Tuple]] already walks the product and reads through the wrappers, so this is the widening and nothing else.

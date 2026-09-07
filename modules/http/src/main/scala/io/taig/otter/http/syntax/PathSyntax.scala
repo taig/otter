@@ -18,15 +18,15 @@ import io.taig.validation.Validation
   *
   * It is `:*` under another name and with a narrower type, and deliberately nothing more: the very same
   * [[io.taig.otter.operation.AppendableOperation]] instances answer it, so `segment("users") / segment("id", int)` and
-  * `PNil :* segment("users") :* segment("id", int)` are one schema built by one code path rather than two spellings
-  * that have to be kept in step. Everything `:*` does it therefore does too -- a receiver that already is a path keeps
+  * `__ :* segment("users") :* segment("id", int)` are one schema built by one code path rather than two spellings that
+  * have to be kept in step. Everything `:*` does it therefore does too -- a receiver that already is a path keeps
   * appending into itself, two segments beside each other are the path that holds them, and a literal stays out of the
   * value type because [[io.taig.otter.Append]] drops the `Unit` a [[Segment.Static]] erases to.
   *
   * What narrows it is the element and the result, not the receiver. The element is bounded to a [[Segment]] and the
   * result to a [[Path]], which is the whole of what this operator may build; the receiver is left as
   * [[io.taig.otter.syntax.OtterSyntax]] leaves it, because bounding it is what would cost precision -- a bound is an
-  * upper bound, and inferring `PNil` against one widens what it holds from nothing to any segment at all, where
+  * upper bound, and inferring [[Path.Root]] against one widens what it holds from nothing to any segment at all, where
   * unifying against the instance keeps it exact.
   *
   * A literal may be given as a bare [[String]], which is the one place a schema is not asked for by name. There is
@@ -48,7 +48,7 @@ trait PathSyntax:
         R: Append.Shape[R1, R2]
     ): G[Append[W1, W2], Append[R1, R2]] = Append(A.lift(fa), A.element(fb))
 
-    /** The same, with a segment the request has to spell exactly: `PNil / "users" / segment("id", int)`. */
+    /** The same, with a segment the request has to spell exactly: `__ / "users" / segment("id", int)`. */
     def /[G[-w, +r] <: Path.Node[w, r]](name: String)(using
         A: AppendableOperation[F, G, PathSyntax.Literal],
         P: Profunctor[G],
