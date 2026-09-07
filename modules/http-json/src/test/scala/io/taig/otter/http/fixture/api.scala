@@ -133,7 +133,7 @@ object api:
     */
   val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, PNil :* segment("settings")).optionalBody(json(api.settings)),
+      request(Method.Patch, __ :* segment("settings")).optionalBody(json(api.settings)),
       result(Code.NoContent).toUnion
     )
 
