@@ -51,7 +51,7 @@ lazy val root = module(identifier = None, jvmOnly = true)
         Nil
     }
   )
-  .aggregate(modules.appended(benchmark) *)
+  .aggregate(modules ++ (benchmark :: sampleLibrary :: Nil) *)
 
 /** Every module that cross builds, which is every module but the root: what there is to test, twice over. */
 lazy val modules: List[CrossProject] = List(
@@ -314,7 +314,55 @@ lazy val httpTypescriptEffect = module(identifier = Some("http-typescript-effect
     coreJsonTypescriptEffect % "compile->compile;test->test"
   )
 
+/** A library management API, written the way this library means one to be written
+  *
+  * Not one of the [[modules]] and published nowhere. Every seam already has a suite asserting what it does, and each of
+  * those fixtures is shaped by what its own suite had to ask; what none of them is, is a value a reader can follow from
+  * a domain type through a schema to a served route without first working out which test's needs bent it. That is what
+  * this is for, and it is why it is one module rather than the three the earlier attempt split into: the split was the
+  * thing a reader had to reconstruct.
+  *
+  * JVM only, because it binds a socket -- the one thing no other module here does. `http-http4s` hands back an
+  * `HttpRoutes` and stops, on the reasoning that what to listen on is the caller's, and this is the caller. That is
+  * also the whole of the new dependency: `http4s-ember-server` and nothing else, since iron and `CIString` arrive with
+  * the component modules and the round trip tests call `Client.fromHttpApp` rather than a port.
+  *
+  * The test framework is named here rather than inherited through a `test->test` edge, which every other module uses.
+  * That edge would bring the fixtures of six modules into scope, and a reader who found `api.report` in a sample's test
+  * would have to work out which of the two it was. Nothing here is measured against another module's fixture.
+  *
+  * It depends on `core-csv` for an alphabet it cannot serve, which is deliberate: a CSV body is what
+  * [[io.taig.otter.http.component.BodyComponent]]'s own documentation offers as the second payload alphabet, and an
+  * endpoint describing one is how a reader sees the extension point from outside. It is reported rather than half
+  * served, alongside a streamed body and a multipart payload, and a test says so.
+  */
+lazy val sampleLibrary = module(identifier = Some("sample-library"), jvmOnly = true)
+  .settings(noPublishSettings)
+  .settings(
+    Compile / run / fork := true,
+    // Two `IOApp`s live here -- the server and the document generator -- so `run` is told which one it is.
+    // `runMain io.taig.otter.sample.Documents` reaches the other.
+    Compile / mainClass := Some("io.taig.otter.sample.Main"),
+    libraryDependencies ++=
+      "org.http4s" %% "http4s-ember-server" % Version.Http4s ::
+        "dev.zio" %% "zio-test" % Version.Zio % Test ::
+        "dev.zio" %% "zio-test-sbt" % Version.Zio % Test ::
+        Nil
+  )
+  .dependsOn(
+    coreCaseInsensitive,
+    coreCsv,
+    coreIron,
+    coreJavaTime,
+    httpHttp4sCirce,
+    httpOpenapi,
+    httpTypescriptEffect
+  )
+
 // One CI job per platform. A runner has the memory to link one of them, not both, and the two halves have nothing to
 // say to each other -- `testFull` because `test` in sbt 2 is testQuick and would report most of this as nothing to run.
-addCommandAlias("testJVM", modules.map(_.jvm.id + "/testFull").mkString("; "))
+// The sample is JVM only, so it cannot be one of `modules` -- that list is read at both platforms -- and is appended to
+// the one alias that can run it.
+addCommandAlias("testJVM", (modules.map(_.jvm.id) :+ sampleLibrary.jvm.id).map(_ + "/testFull").mkString("; "))
 addCommandAlias("testJS", modules.map(_.js.id + "/testFull").mkString("; "))
+addCommandAlias("start", s"${sampleLibrary.jvm.id}/run")
