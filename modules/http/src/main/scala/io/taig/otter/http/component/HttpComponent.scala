@@ -27,7 +27,6 @@ import io.taig.otter.http.syntax.EndpointSyntax
 import io.taig.otter.http.syntax.HttpSyntax
 import io.taig.otter.http.syntax.PathSyntax
 import io.taig.otter.operation.RecordOperation
-import io.taig.otter.operation.TupleOperation
 import io.taig.otter.syntax.AllSyntax
 
 /** The user facing vocabulary for defining HTTP endpoints.
@@ -36,9 +35,9 @@ import io.taig.otter.syntax.AllSyntax
   * `query("page", int)` is a `Query.Of[Parameter.Primitive.Number.Schema, Int]` and carries the fact that its value is
   * a number, which is what lets a position that only accepts text refuse it.
   *
-  * The three empty roots are spelled out rather than inherited from [[RecordComponent]] and
-  * [[io.taig.otter.component.TupleComponent]], which would collide: a query string and a header set are both records,
-  * and one `RNil` cannot be both.
+  * The empty query string and the empty header set are spelled out rather than inherited from [[RecordComponent]],
+  * which would collide: both are records, and one `RNil` cannot be both. The empty path is spelled out for a different
+  * reason, which [[__]] gives.
   */
 trait HttpComponent
     extends AllSyntax,
@@ -48,11 +47,16 @@ trait HttpComponent
       PrimitiveComponent.Boolean[Parameter.Primitive.Boolean.Schema],
       PrimitiveComponent.Number[Parameter.Primitive.Number.Schema],
       PrimitiveComponent.Text[Parameter.Primitive.Text.Schema]:
-  /** The root path, which holds nothing. `PNil :* segment("health")` is `/health`, and so is `segment("health")` on its
-    * own: two segments beside each other already are the path that holds them.
+  /** [[io.taig.otter.http.Path.Root]] under the name a URL starts with, so `__ / "users"` is `/users`.
+    *
+    * It is the one root spelled as its wire syntax rather than after the product it is, because a path is the one tier
+    * whose wire syntax has an operator of its own -- the same reason [[io.taig.otter.http.syntax.PathSyntax]] gives it
+    * `/`. `QNil` and `HNil` keep the family spelling, having no such syntax to be named after.
+    *
+    * It names a place to start and not a requirement: `__ :* segment("health")` is `/health`, and so is
+    * `segment("health")` on its own.
     */
-  def PNil(using F: TupleOperation[[w, r] =>> Path.Schema[Nothing, w, r], Nothing]): Path.Schema[Nothing, Unit, Unit] =
-    F.empty
+  export Path.Root as __
 
   /** The empty query string, which asks for nothing. */
   def QNil(using

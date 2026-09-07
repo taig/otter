@@ -237,10 +237,16 @@ right-associative and carries it on the right, so `TNil :* foo :* bar` and `foo 
 path segment stays out of a path's value type.
 
 Neither needs an empty root: two schemas beside each other already are the container that holds them, so `foo :* bar`
-and `foo *: bar` say the same thing, and `TNil`, `RNil`, `PNil`, `QNil` and `HNil` are places to start rather than
+and `foo *: bar` say the same thing, and `TNil`, `RNil`, `QNil`, `HNil` and `Path.Root` are places to start rather than
 requirements. What keeps a root-less instance off the toes of the one for a receiver that already is a container
 differs per alphabet -- a cell is not a row, a segment is not a path, and JSON, which has no such tier, asks
 `NotGiven` instead.
+
+The path tier is the one whose root is not named after the product it is. It is `Path.Root`, and `HttpComponent`
+exports it as `__` so a path begins the way a URL does: `__ / "users" / segment("id", int)`. That is the same argument
+that gave the tier `/` -- a path is the one product with a wire syntax of its own -- so a query string and a header set
+keep `QNil` and `HNil`, having no such syntax to be named after. The two names are one value and not two code paths:
+`__` is an `export` of `Path.Root`, so nothing has to be kept in step.
 
 `*:` reuses every `AppendableOperation` that `:*` does, because the type class names a container and an element rather
 than a left and a right. What it gives up is the by-name element: the left operand of a right-associative operator is
@@ -251,14 +257,14 @@ writes both sets of fields into one object -- and differs in the Scala value, wh
 because neither operand is a member of the other. It binds tighter than `:*` and looser than `*:`.
 
 `/` is `:*` restricted to the path tier, in `http`'s `PathSyntax`. It reuses the same `AppendableOperation` instances
-rather than adding any, so `segment("users") / segment("id", int)` and `PNil :* segment("users") :* segment("id", int)`
+rather than adding any, so `segment("users") / segment("id", int)` and `__ :* segment("users") :* segment("id", int)`
 are one schema; what it narrows is the element, which has to be a `Segment`, and the result, which has to be a `Path`.
-The receiver is left unbounded, because a bound is an upper bound and inferring `PNil` against one widens what it holds
-from nothing to any segment at all. A literal may be written as a bare `String` -- `PNil / "users"` builds exactly what
-`segment("users")` builds -- which is the one place a schema is not asked for by name, since a position holding a fixed
-piece of text has nothing else to say. Scala reads it left-associatively at the precedence of `*` and `/`, tighter than
-`:*` and `++`, which is the direction and the grouping a URL is read with. Two whole paths beside each other is `++`
-like anywhere else: `/` puts a segment after a path, as `:*` puts a field beside one.
+The receiver is left unbounded, because a bound is an upper bound and inferring `Path.Root` against one widens what it
+holds from nothing to any segment at all. A literal may be written as a bare `String` -- `__ / "users"` builds exactly
+what `segment("users")` builds -- which is the one place a schema is not asked for by name, since a position holding a
+fixed piece of text has nothing else to say. Scala reads it left-associatively at the precedence of `*` and `/`, tighter
+than `:*` and `++`, which is the direction and the grouping a URL is read with. Two whole paths beside each other is
+`++` like anywhere else: `/` puts a segment after a path, as `:*` puts a field beside one.
 
 ## Code Style
 

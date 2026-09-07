@@ -69,7 +69,7 @@ object api:
   val reports: Body.Streamed.Of[Json.Node, Report] = ndjson(api.report)
 
   /** `/reports/{id}` */
-  val one: Path[Int] = PNil :* segment("reports") :* segment("id", int)
+  val one: Path[Int] = __ :* segment("reports") :* segment("id", int)
 
   /** `?page`, defaulted, so a caller that says nothing still gets an answer. */
   val paging: Queries[Int] = query("page", int).optional(1).toRecord
@@ -88,7 +88,7 @@ object api:
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
   val create: Endpoint.Server[Body.Payload, Upload, Report] =
     endpoint(
-      request(Method.Post, PNil :* segment("reports")).body(api.uploaded),
+      request(Method.Post, __ :* segment("reports")).body(api.uploaded),
       result(Code.Created).body(json(api.report)).toUnion
     )
 
@@ -96,7 +96,7 @@ object api:
     */
   val stream: Endpoint.Server[Body.Payload, Unit, Unit] =
     endpoint(
-      request(Method.Get, PNil :* segment("reports")),
+      request(Method.Get, __ :* segment("reports")),
       result(Code.Ok).streaming(api.reports).toUnion
     )
 
@@ -124,7 +124,7 @@ object api:
 
   /** `PUT /settings`, to be rendered from both sides and compared. */
   val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
-    endpoint(request(Method.Put, PNil :* segment("settings")).body(json(api.settings)), result(Code.NoContent).toUnion)
+    endpoint(request(Method.Put, __ :* segment("settings")).body(json(api.settings)), result(Code.NoContent).toUnion)
 
   /** `PATCH /settings`, whose body need not be sent at all.
     *
@@ -133,7 +133,7 @@ object api:
     */
   val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, PNil :* segment("settings")).optionalBody(json(api.settings)),
+      request(Method.Patch, __ :* segment("settings")).optionalBody(json(api.settings)),
       result(Code.NoContent).toUnion
     )
 
@@ -145,4 +145,4 @@ object api:
 
   /** `GET /trees` answering with one. */
   val trees: Endpoint.Server[Body.Payload, Unit, Tree] =
-    endpoint(request(Method.Get, PNil :* segment("trees")), result(Code.Ok).body(json(api.tree)).toUnion)
+    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(json(api.tree)).toUnion)

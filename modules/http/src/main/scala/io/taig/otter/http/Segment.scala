@@ -124,7 +124,7 @@ object Segment:
     Direction.invariant[[w, r] =>> Segment.Schema[S, w, r]]
 
   /** `segment :* segment`, and `segment *: segment`: two segments beside each other are the path that holds them, which
-    * is what [[io.taig.otter.http.component.HttpComponent.PNil]] would otherwise have to be named for.
+    * is what [[Path.Root]] would otherwise have to be named for.
     *
     * No guard, unlike [[io.taig.otter.Json.appendable]]: a path is not a segment, so a receiver that already is one
     * falls outside this instance's bound and keeps appending into itself through [[Path.Schema.appendable]].
