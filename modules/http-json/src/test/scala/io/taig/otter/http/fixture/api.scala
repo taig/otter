@@ -126,6 +126,17 @@ object api:
   val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
     endpoint(request(Method.Put, __ :* segment("settings")).body(json(api.settings)), result(Code.NoContent).toUnion)
 
+  /** `PATCH /settings`, whose body need not be sent at all.
+    *
+    * The absence reaches the handler as one, which is what an `Option` on the request's own value says: a body that was
+    * not sent is not a body that held the schema's defaults.
+    */
+  val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
+    endpoint(
+      request(Method.Patch, PNil :* segment("settings")).optionalBody(json(api.settings)),
+      result(Code.NoContent).toUnion
+    )
+
   /** A payload that refers to itself, which only works because it is named: a definition is what a `$ref` points at. */
   lazy val tree: Json.Record[Tree] =
     (payload.field("value", payload.int) :* payload.field("children", payload.collection.list(api.tree)))

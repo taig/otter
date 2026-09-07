@@ -37,5 +37,15 @@ final class Http4sRequestEncoder(payload: Http4sPayload)
         wire <- encode(self, w._1)
         body <- bodies.encode(values.value.self.self, w._2)
       yield wire.copy(body = (Some(body._1), body._2))
+    // Nothing is written for an absence: the wire body stays `(None, ByteVector.empty)`, which reaches http4s as an
+    // empty entity with no `Content-Type`, and that is what a request carrying no entity looks like.
+    case Request.Value.OptionalPayload(self, values) =>
+      w._2 match
+        case Some(value) =>
+          for
+            wire <- encode(self, w._1)
+            body <- bodies.encode(values.value.self.self, value)
+          yield wire.copy(body = (Some(body._1), body._2))
+        case None => encode(self, w._1)
     case Request.Value.Streaming(self, _) => encode(self, w)
     case Request.Value.Modify(self, _, g) => encode(self, g(w))

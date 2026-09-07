@@ -76,6 +76,34 @@ trait EndpointSyntax:
         )
       )
 
+    /** The body this request carries, which need not be sent at all. */
+    def optionalBody[S2[-w, +r], W2, R2, W3, R3](value: => Body.Schema[S2, W2, R2])(using
+        O: Request.Optionality[W2, R2, W3, R3],
+        W: Append.Shape[W1, W3],
+        R: Append.Shape[R1, R3]
+    ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
+      fa.optionalBodies(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
+
+    /** The body this request carries, as a choice between alternatives, which need not be sent at all.
+      *
+      * `W3` and `R3` are the body's own halves under an `Option`, named by [[Request.Optionality]] rather than written
+      * as one here, which is what keeps the append reducible.
+      */
+    def optionalBodies[S2[-w, +r], W2, R2, W3, R3](values: => Bodies.Schema[S2, W2, R2])(using
+        O: Request.Optionality[W2, R2, W3, R3],
+        W: Append.Shape[W1, W3],
+        R: Append.Shape[R1, R3]
+    ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
+      Request.Schema(
+        Request.Value.Modify(
+          Request.Value.OptionalPayload[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
+          (values: (R1, Option[R2])) => R.join(values._1, O.read(values._2)),
+          (value: Append[W1, W3]) =>
+            val (self, body) = W.split(value)
+            (self, O.write(body))
+        )
+      )
+
     /** The streamed body this request carries, which changes what it describes and not what it holds. */
     def streaming[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Request.Schema[S2, W1, R1] =
       Request.Schema(Request.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))

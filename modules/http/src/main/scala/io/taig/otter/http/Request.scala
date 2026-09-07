@@ -40,7 +40,7 @@ object Request:
     type Of[S[-w, +r], -A] = Request.Schema[S, A, Any]
 
   final case class Schema[+S[-w, +r], -W, +R](self: Annotation[Request.Value[S, W, R]]):
-    export self.self.{bodies, headers, method, path, queries, streamed}
+    export self.self.{bodies, headers, method, path, queries, required, streamed}
 
   object Schema:
     def apply[S[-w, +r], W, R](self: Request.Value[S, W, R]): Request.Schema[S, W, R] =
@@ -66,6 +66,25 @@ object Request:
     given invariant: [S[-w, +r]] => Invariant[[a] =>> Request.Schema[S, a, a]] =
       Direction.invariant[[w, r] =>> Request.Schema[S, w, r]]
 
+  /** How the optional halves of a body are named, so that [[io.taig.otter.Append]] is only ever handed a variable.
+    *
+    * `W2` and `R2` are `Option[W1]` and `Option[R1]`, which is what the one instance below pins them to. Naming them as
+    * parameters rather than writing `Option` inside the append is not a decoration: `Append` is a match type, every
+    * other caller in this build hands it a bare type variable, and handing it a constructor application instead leaves
+    * it unable to reduce wherever a caller pins one side to `Nothing` -- which [[Endpoint.Server]] does to every write.
+    */
+  sealed abstract class Optionality[W1, R1, W2, R2]:
+    def write(value: W2): Option[W1]
+
+    def read(value: Option[R1]): R2
+
+  object Optionality:
+    given optional: [W, R] => Request.Optionality[W, R, Option[W], Option[R]] =
+      new Request.Optionality[W, R, Option[W], Option[R]]:
+        override def write(value: Option[W]): Option[W] = value
+
+        override def read(value: Option[R]): Option[R] = value
+
   /** What a request is made of.
     *
     * Every case but [[Request.Value.Root]] wraps another, so the accessors read down the chain and answer for the whole
@@ -83,11 +102,19 @@ object Request:
 
     def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]]
 
+    /** Whether the entity this request describes has to be sent at all.
+      *
+      * Vacuously true where there is no entity, so a reader consults it only once [[bodies]] has said there is one.
+      */
+    def required: Boolean
+
     def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]]
 
   object Value:
     final case class Root[-W, +R](override val method: Method, override val path: Reference[Path.Node, W, R])
         extends Request.Value[Nothing, W, R]:
+      override def required: Boolean = true
+
       override def queries: Option[Reference[io.taig.otter.http.Queries.Node, ?, ?]] = None
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = None
@@ -100,7 +127,7 @@ object Request:
         self: Request.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Queries.Node, W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
-      export self.{bodies, headers, method, path, streamed}
+      export self.{bodies, headers, method, path, required, streamed}
 
       override def queries: Option[Reference[io.taig.otter.http.Queries.Node, ?, ?]] = Some(values)
 
@@ -108,7 +135,7 @@ object Request:
         self: Request.Value[S, W1, R1],
         values: Reference[io.taig.otter.http.Headers.Node, W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
-      export self.{bodies, method, path, queries, streamed}
+      export self.{bodies, method, path, queries, required, streamed}
 
       override def headers: Option[Reference[io.taig.otter.http.Headers.Node, ?, ?]] = Some(values)
 
@@ -117,6 +144,32 @@ object Request:
         values: Reference[[w, r] =>> Bodies.Schema[S, w, r], W2, R2]
     ) extends Request.Value[S, (W1, W2), (R1, R2)]:
       export self.{headers, method, path, queries, streamed}
+
+      override def required: Boolean = true
+
+      override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]] = Some(values)
+
+    /** A body that need not be sent at all, which is a different question from which entity arrived.
+      *
+      * Optionality belongs to the request rather than to the body, and the two are genuinely different questions: a
+      * [[Bodies]] union says *which* entity arrived, and this says whether one had to. A body that carried its own
+      * absence would have to name a media type for having none, and there is no such type -- an absent entity is zero
+      * bytes and no `Content-Type`, which is a fact about the message and not about any alphabet.
+      *
+      * `W2` and `R2` are the body's, and what the request holds is an `Option` of them, so a handler is handed the
+      * absence rather than a default it cannot tell apart from a value that was sent.
+      *
+      * Zero bytes is the whole of the test an interpreter can make, and the corollary is worth knowing before reaching
+      * for this over a payload whose own alphabet can say `null`: a body of bytes cannot tell `Some` of none of them
+      * from `None`, because HTTP does not.
+      */
+    final case class OptionalPayload[+S[-w, +r], W1, R1, W2, R2](
+        self: Request.Value[S, W1, R1],
+        values: Reference[[w, r] =>> Bodies.Schema[S, w, r], W2, R2]
+    ) extends Request.Value[S, (W1, Option[W2]), (R1, Option[R2])]:
+      export self.{headers, method, path, queries, streamed}
+
+      override def required: Boolean = false
 
       override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[S, w, r], ?, ?]] = Some(values)
 
@@ -129,7 +182,7 @@ object Request:
         self: Request.Value[S, W1, R1],
         value: Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], W2, R2]
     ) extends Request.Value[S, W1, R1]:
-      export self.{bodies, headers, method, path, queries}
+      export self.{bodies, headers, method, path, queries, required}
 
       override def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]] = Some(value)
 
@@ -138,4 +191,4 @@ object Request:
         f: R0 => R,
         g: W => W0
     ) extends Request.Value[S, W, R]:
-      export self.{bodies, headers, method, path, queries, streamed}
+      export self.{bodies, headers, method, path, queries, required, streamed}
