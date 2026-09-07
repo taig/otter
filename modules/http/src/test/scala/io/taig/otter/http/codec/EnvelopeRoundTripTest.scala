@@ -21,16 +21,27 @@ object EnvelopeRoundTripTest extends ZIOSpecDefault:
         assertTrue(encoded == Vector("users", "42")) &&
         assertTrue(PathDecoder.decode(http.user, encoded) == Validated.valid(42))
       ,
-      /** The empty root is a place to start rather than something to name, and `*:` is the same chain read the other
-        * way round, so all three spell one path: two literals dropped and an `Int` left standing.
+      /** The empty root is a place to start rather than something to name, `*:` is the same chain read the other way
+        * round, and `/` is `:*` with the name a path is written under, so all of these spell one path: two literals
+        * dropped and an `Int` left standing.
         */
       test("the same path however it is spelled"):
         assertTrue(
           PathEncoder.encode(http.rootless, 42) == Vector("users", "42"),
           PathEncoder.encode(http.consed, 42) == Vector("users", "42"),
+          PathEncoder.encode(http.sliced, 42) == Vector("users", "42"),
+          PathEncoder.encode(http.slicedRootless, 42) == Vector("users", "42"),
+          PathEncoder.encode(http.named, 42) == Vector("users", "42"),
           PathDecoder.decode(http.rootless, Vector("users", "42")) == Validated.valid(42),
-          PathDecoder.decode(http.consed, Vector("users", "42")) == Validated.valid(42)
+          PathDecoder.decode(http.consed, Vector("users", "42")) == Validated.valid(42),
+          PathDecoder.decode(http.sliced, Vector("users", "42")) == Validated.valid(42),
+          PathDecoder.decode(http.slicedRootless, Vector("users", "42")) == Validated.valid(42),
+          PathDecoder.decode(http.named, Vector("users", "42")) == Validated.valid(42)
         )
+      ,
+      /** A literal given as text is the same literal, so it is required on a read exactly as `segment("users")` is. */
+      test("a bare literal is required just as a named one is"):
+        assertTrue(PathDecoder.decode(http.named, Vector("posts", "42")).isInvalid)
       ,
       test("a literal after a placeholder drops out of the value too"):
         val encoded = PathEncoder.encode(http.posts, 7)
