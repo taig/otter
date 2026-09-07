@@ -25,6 +25,7 @@ import io.taig.otter.http.Segment
 import io.taig.otter.http.codec.ParameterPrimitiveEncoder
 import io.taig.otter.http.syntax.EndpointSyntax
 import io.taig.otter.http.syntax.HttpSyntax
+import io.taig.otter.http.syntax.PathSyntax
 import io.taig.otter.operation.RecordOperation
 import io.taig.otter.operation.TupleOperation
 import io.taig.otter.syntax.AllSyntax
@@ -43,6 +44,7 @@ trait HttpComponent
     extends AllSyntax,
       EndpointSyntax,
       HttpSyntax,
+      PathSyntax,
       PrimitiveComponent.Boolean[Parameter.Primitive.Boolean.Schema],
       PrimitiveComponent.Number[Parameter.Primitive.Number.Schema],
       PrimitiveComponent.Text[Parameter.Primitive.Text.Schema]:

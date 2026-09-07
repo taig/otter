@@ -250,6 +250,16 @@ the extension parameter, and Scala evaluates it first.
 writes both sets of fields into one object -- and differs in the Scala value, which stays a pair rather than flattening,
 because neither operand is a member of the other. It binds tighter than `:*` and looser than `*:`.
 
+`/` is `:*` restricted to the path tier, in `http`'s `PathSyntax`. It reuses the same `AppendableOperation` instances
+rather than adding any, so `segment("users") / segment("id", int)` and `PNil :* segment("users") :* segment("id", int)`
+are one schema; what it narrows is the element, which has to be a `Segment`, and the result, which has to be a `Path`.
+The receiver is left unbounded, because a bound is an upper bound and inferring `PNil` against one widens what it holds
+from nothing to any segment at all. A literal may be written as a bare `String` -- `PNil / "users"` builds exactly what
+`segment("users")` builds -- which is the one place a schema is not asked for by name, since a position holding a fixed
+piece of text has nothing else to say. Scala reads it left-associatively at the precedence of `*` and `/`, tighter than
+`:*` and `++`, which is the direction and the grouping a URL is read with. Two whole paths beside each other is `++`
+like anywhere else: `/` puts a segment after a path, as `:*` puts a field beside one.
+
 ## Code Style
 
 - Scalafmt enforced (maxColumn: 120, Scala 3 dialect)
