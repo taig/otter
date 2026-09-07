@@ -11,6 +11,9 @@ Modules: `core`, `core-json`, `core-json-borer`, `core-json-circe`, `core-json-s
 Each cross builds to the JVM and Scala.js; the Scala.js project ids carry a `JS` suffix
 (`core-json-circeJS`).
 
+`sample-library` is apart from them the way `benchmark` is: JVM only, published nowhere, not one of the cross built
+`modules`. Unlike `benchmark` it has tests worth running, so it is appended to the `testJVM` alias by hand.
+
 `benchmark` is apart from all of them: JVM only, published nowhere, and not run by `testJVM`. It holds the JMH
 benchmarks that say where a read and a write actually spend their time -- `sbt "benchmark/Jmh/run -wi 3 -i 5 -f 1"`,
 and add `-prof gc` for `gc.alloc.rate.norm`, which is deterministic and so says more than a timing does. It measures
@@ -166,6 +169,38 @@ The walks over a `Record` or a `Union` that both renderers need -- `Queries.fiel
 `Multipart.parts`, `Bodies.branches`, `Results.branches` -- live in `http` beside `Path.segments` rather
 than privately in each renderer, on the reasoning `Path.segments` already records: what is asked of a
 record is always the list of its leaves, and its shape says nothing a caller wants to know.
+
+`sample-library` is the whole tier used at once: a library management API defined, served over ember, called back over
+the same endpoint values, and rendered as an OpenAPI document and a TypeScript module. It exists because the fixtures
+cannot be that. Each of them is shaped by what its own suite had to ask, and a reader wanting to know how a domain type
+becomes a served route has to work out which test's needs bent which fixture first. Nothing in it is measured against
+another module's fixture, and it names `zio-test` itself rather than taking a `test->test` edge, so no other module's
+`api` or `json` object is in scope to be mistaken for its own.
+
+What it deliberately does *not* serve is the more useful half. `POST /books/{isbn}/cover` carries a `Multipart`
+payload, `GET /books/export` answers with an ndjson stream, and `GET /books/report` answers with a stream whose
+elements are written in the CSV alphabet -- one payload no interpreter recognises, one shape no interpreter carries,
+and one of each. All three are rendered into both documents and reported by name, and `LibraryShortfallTest` asserts
+that each is *reported* rather than half served. Those tests failing is the signal that a shortfall has been fixed.
+
+Two sharp edges it ran into are worth knowing before writing anything against this library.
+
+**An opaque type needs an upper bound to be a record member.** `Append` is a match type that asks whether what it is
+appending is a tuple or a `Unit`, and a match type cannot reduce against a type it knows nothing about. An unbounded
+`opaque type Isbn = String` is abstract outside its own file, so a record holding one fails to find its `Convert` and
+says its fields are not covered in the correct order -- which points nowhere near the cause. `opaque type Isbn <:
+String = String` reduces and gives nothing away.
+
+**`.to` needs a branch that carries a body.** Mapping a result union onto a sealed sum -- the thing that turns
+`Either[Either[Loan, Problem], Problem]` into three named cases -- converts each branch first, and that conversion goes
+through the `Profunctor` for `Result.Schema[S, ?, ?]`. A result with no entity has `S = Nothing`, which does not
+eta-expand to the kind the instance asks for. So an answer with no entity stays a `Unit` inside an `Either`, and a sum
+is worth reaching for once every branch has something to say. `books.create` and `loans.borrow` are the sums;
+`books.delete` and `books.fetch` are the `Either`s.
+
+A third thing it records rather than leaves to be discovered: **a placeholder shadows a literal of the same arity**.
+`/books/{isbn}` matches `/books/export` on arity and on its one literal, so whichever is registered first wins, and a
+literal path must come before the placeholder path that would otherwise swallow it.
 
 ### Fast loop
 
