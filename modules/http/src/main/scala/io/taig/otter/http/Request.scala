@@ -66,6 +66,25 @@ object Request:
     given invariant: [S[-w, +r]] => Invariant[[a] =>> Request.Schema[S, a, a]] =
       Direction.invariant[[w, r] =>> Request.Schema[S, w, r]]
 
+  /** How the optional halves of a body are named, so that [[io.taig.otter.Append]] is only ever handed a variable.
+    *
+    * `W2` and `R2` are `Option[W1]` and `Option[R1]`, which is what the one instance below pins them to. Naming them as
+    * parameters rather than writing `Option` inside the append is not a decoration: `Append` is a match type, every
+    * other caller in this build hands it a bare type variable, and handing it a constructor application instead leaves
+    * it unable to reduce wherever a caller pins one side to `Nothing` -- which [[Endpoint.Server]] does to every write.
+    */
+  sealed abstract class Optionality[W1, R1, W2, R2]:
+    def write(value: W2): Option[W1]
+
+    def read(value: Option[R1]): R2
+
+  object Optionality:
+    given optional: [W, R] => Request.Optionality[W, R, Option[W], Option[R]] =
+      new Request.Optionality[W, R, Option[W], Option[R]]:
+        override def write(value: Option[W]): Option[W] = value
+
+        override def read(value: Option[R]): Option[R] = value
+
   /** What a request is made of.
     *
     * Every case but [[Request.Value.Root]] wraps another, so the accessors read down the chain and answer for the whole
