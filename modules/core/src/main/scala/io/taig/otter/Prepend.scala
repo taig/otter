@@ -31,7 +31,8 @@ object Prepend:
     P.dimap(Z.zip(fa, fb))(W.split)((r: (R1, R2)) => R.join(r._1, r._2))
 
   /** How a value of `Prepend[A, B]` is put together and taken apart. Found by implicit search rather than by matching
-    * on the schema, for the reasons [[Append.Shape]] is.
+    * on the schema, for the reasons [[Append.Shape]] is -- including the measured one against writing the four
+    * instances as a single `inline given`.
     */
   sealed abstract class Shape[A, B]:
     def split(value: Prepend[A, B]): (A, B)

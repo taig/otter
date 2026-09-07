@@ -39,6 +39,15 @@ object Append:
     * instance for a direction nothing can reach is never asked to do anything. And nothing is inlined per member, where
     * matching on the schema copied it into every branch, which cost a wide record exponentially more to compile than a
     * narrow one: five members compiled in a second, ten in forty, thirteen not at all.
+    *
+    * Writing the four instances as one `inline given` over `summonFrom` was measured and rejected. It is the only
+    * inline formulation that is even correct -- an `inline match` on `erasedValue` errors where the scrutinee is
+    * neither a subtype of a pattern nor provably disjoint from one, and `Any` and `Nothing` both arrive here from a
+    * member that goes only one way -- and it stays linear in the width of a record, so it does not bring the blowup
+    * above back. It is simply slower: a record of forty members cost 29% more to compile and one of eighty 34% more.
+    * And it has to cast at the dispatch as well as inside each instance, because `summonFrom` gives every case one
+    * result type where search unifies each instance at its own. The ladder is what Scala 3 offers for ordering
+    * instances, and here it is also the cheaper of the two.
     */
   sealed abstract class Shape[A, B]:
     def split(value: Append[A, B]): (A, B)

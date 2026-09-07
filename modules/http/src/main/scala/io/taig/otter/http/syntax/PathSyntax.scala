@@ -52,11 +52,7 @@ trait PathSyntax:
     def /[G[-w, +r] <: Path.Node[w, r]](name: String)(using
         A: AppendableOperation[F, G, PathSyntax.Literal],
         P: Profunctor[G],
-        Z: Zip[G],
-        C: ConstantOperation[PathSyntax.Literal, Parameter.Primitive.Text.Node],
-        T: PrimitiveOperation.Text[Parameter.Primitive.Text.Schema],
-        W: Append.Shape[W1, Unit],
-        R: Append.Shape[R1, Unit]
+        Z: Zip[G]
     ): G[Append[W1, Unit], Append[R1, Unit]] = fa / PathSyntax.literal(name)
 
 object PathSyntax extends PathSyntax:
@@ -69,8 +65,7 @@ object PathSyntax extends PathSyntax:
     * [[io.taig.otter.http.component.SegmentComponent]] gives: the literal is text, and text is what universal equality
     * is exactly right for.
     */
-  private def literal(name: String)(using
-      C: ConstantOperation[PathSyntax.Literal, Parameter.Primitive.Text.Node],
-      T: PrimitiveOperation.Text[Parameter.Primitive.Text.Schema]
-  ): Segment.Static.Of[Parameter.Primitive.Text.Node] =
+  private def literal(name: String): Segment.Static.Of[Parameter.Primitive.Text.Node] =
+    val C = summon[ConstantOperation[PathSyntax.Literal, Parameter.Primitive.Text.Node]]
+    val T = summon[PrimitiveOperation.Text[Parameter.Primitive.Text.Schema]]
     C.lift(Reference.now(T.string(Validation.valid)), Eval.now(name), Eq.fromUniversalEquals[String])

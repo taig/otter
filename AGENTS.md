@@ -256,6 +256,18 @@ the extension parameter, and Scala evaluates it first.
 writes both sets of fields into one object -- and differs in the Scala value, which stays a pair rather than flattening,
 because neither operand is a member of the other. It binds tighter than `:*` and looser than `*:`.
 
+**Neither operator may become `inline`, and neither may the shape evidence they summon.** `Append` and `Prepend` are
+match types, but which of their branches a pair of types took is found by implicit search -- `Append.Shape`, a ladder of
+four instances -- and that is a measured choice rather than a leftover. Matching on the schema instead copies it into
+every branch, so each member roughly doubles the cost of the one before: ten members took forty seconds and thirteen did
+not finish. Writing the four instances as one `inline given` over `summonFrom` avoids that and is the only inline
+formulation that is even correct -- an `inline match` on `erasedValue` is an error where the scrutinee is neither a
+subtype of a pattern nor disjoint from one, and both `Any` and `Nothing` reach it from a member that goes only one way
+-- but it was measured 29% slower at forty members and 34% at eighty, and rejected. `Convert.Reader`'s ladder was
+measured the same way and rejected for a sharper reason: its union case recurses, so an inline given makes the depth a
+union may reach `-Xmax-inlines`, and it fails at 65 where the ladder compiles a hundred. Both scaladocs carry the
+numbers. The rule that follows is one line: reach for implicit search here, not for `inline`.
+
 `/` is `:*` restricted to the path tier, in `http`'s `PathSyntax`. It reuses the same `AppendableOperation` instances
 rather than adding any, so `segment("users") / segment("id", int)` and `__ :* segment("users") :* segment("id", int)`
 are one schema; what it narrows is the element, which has to be a `Segment`, and the result, which has to be a `Path`.
