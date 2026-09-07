@@ -41,8 +41,15 @@ object Path:
     * each other already are the path that holds them, so `Path.Root / "users"` and `segment("users")` are one schema.
     * What it is good for is the leading `/` a URL is read with, which is why
     * [[io.taig.otter.http.component.HttpComponent.__]] spells it that way.
+    *
+    * `lazy` is load bearing and not a style choice. [[Path.Schema]] reads this object to build the two arguments it
+    * hands `Wrapper.Tuple`, so a strict `val` here would have `Path`'s initializer call `Path.Schema.apply` while
+    * `Path.Schema` may still be initializing -- a cycle whose outcome depends on which of the two a caller touches
+    * first. Reaching `Path.Schema` first, which any `:*` or `/` does by summoning its `appendable`, left
+    * `Path.Schema.MODULE$` null and threw an `ExceptionInInitializerError` from a JVM that had done nothing wrong.
+    * Deferring the call out of the initializer is what keeps the two orders one behaviour.
     */
-  val Root: Path.Schema[Nothing, Unit, Unit] = Path.Schema.apply[Nothing, Unit, Unit](Self.Tuple.Empty)
+  lazy val Root: Path.Schema[Nothing, Unit, Unit] = Path.Schema.apply[Nothing, Unit, Unit](Self.Tuple.Empty)
 
   /** Every segment, in the order the path names them.
     *
