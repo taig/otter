@@ -76,6 +76,26 @@ trait EndpointSyntax:
         )
       )
 
+    /** The body this request carries, which need not be sent at all. */
+    def optionalBody[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
+        W: Append.Shape[W1, Option[W2]],
+        R: Append.Shape[R1, Option[R2]]
+    ): Request.Schema[S2, Append[W1, Option[W2]], Append[R1, Option[R2]]] =
+      fa.optionalBodies(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
+
+    /** The body this request carries, as a choice between alternatives, which need not be sent at all. */
+    def optionalBodies[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
+        W: Append.Shape[W1, Option[W2]],
+        R: Append.Shape[R1, Option[R2]]
+    ): Request.Schema[S2, Append[W1, Option[W2]], Append[R1, Option[R2]]] =
+      Request.Schema(
+        Request.Value.Modify(
+          Request.Value.OptionalPayload[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
+          (values: (R1, Option[R2])) => R.join(values._1, values._2),
+          W.split
+        )
+      )
+
     /** The streamed body this request carries, which changes what it describes and not what it holds. */
     def streaming[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Request.Schema[S2, W1, R1] =
       Request.Schema(Request.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))

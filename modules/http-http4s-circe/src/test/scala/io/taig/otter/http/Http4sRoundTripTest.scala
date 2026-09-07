@@ -104,6 +104,13 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .map(_.status.code)
         .unsafeToFuture()
 
+  /** `PATCH /settings`, whose body need not be sent at all. */
+  private val amendable: Endpoint[Option[Settings], Unit] =
+    endpoint(
+      request(Method.Patch, PNil :* segment("settings")).optionalBody(json(api.settings)),
+      result(Code.NoContent).toUnion
+    )
+
   /** The whole answer, so a malformed request can be asked about its status and its body at once. */
   private def answer[A](endpoint: Endpoint[A, Unit], malformed: Violations => Http4sWire.Response)(
       request: Http4sRequest[IO]
@@ -285,5 +292,21 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
 
         answer(configure, malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))
           .map((code, body) => assertTrue(code == 418, body == """{"error":"invalid"}"""))
+    ),
+    suite("a body that need not be sent")(
+      test("a body the caller sent reaches the handler as a value"):
+        received(amendable, ())(Some(Settings("light"))).map(seen => assertTrue(seen == Some(Settings("light"))))
+      ,
+      test("a body the caller left out reaches the handler as the absence, not as a default"):
+        received(amendable, ())(None).map(seen => assertTrue(seen == None))
+      ,
+      test("an empty entity is the absence even when the caller announced a content type"):
+        answer(amendable, Http4s.malformed)(sent(Http4sMethod.PATCH, uri"http://otter.test/settings", ""))
+          .map((code, _) => assertTrue(code == 204))
+      ,
+      test("a body that was sent is still held to the schema"):
+        answer(amendable, Http4s.malformed)(
+          sent(Http4sMethod.PATCH, uri"http://otter.test/settings", """{"theme":42}""")
+        ).map((code, body) => assertTrue(code == 422, body.contains("$.body.theme")))
     )
   )
