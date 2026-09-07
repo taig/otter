@@ -52,6 +52,14 @@ object Convert:
 
   /** A branch, which is where the nesting ends. Comes after [[Convert.Reader.union]] so that a union read as an
     * `Either` -- or as `Any` -- collapses rather than standing for one of its branches.
+    *
+    * A rung of a ladder rather than a case of one `inline given` over `summonFrom`, which was measured and rejected.
+    * Both guards here are negative because [[Convert]] extends [[Convert.Reader]], so every `Convert` instance is
+    * already a candidate for a reader search and the question is which of two applicable instances wins rather than
+    * which of two is found -- and a `summonFrom` reads better for saying that in one place. What it costs is that
+    * [[Convert.Reader.union]] recurses: each level of nesting is then an inline expansion, so the depth a union may
+    * reach becomes `-Xmax-inlines`, and it fails at exactly 65 with "cannot reduce summonFrom" where this scales
+    * indefinitely and compiles a hundred in the time it takes to compile one.
     */
   private[otter] trait ReaderBranch:
     given branch: [A, B] => (absent: NotGiven[Convert[A, B]], evidence: A <:< B) => Convert.Reader[A, B]:

@@ -72,6 +72,12 @@ object Request:
     * parameters rather than writing `Option` inside the append is not a decoration: `Append` is a match type, every
     * other caller in this build hands it a bare type variable, and handing it a constructor application instead leaves
     * it unable to reduce wherever a caller pins one side to `Nothing` -- which [[Endpoint.Server]] does to every write.
+    *
+    * Written out, the failure is `Match type reduction failed since selector Unit matches none of the cases`, an [E184]
+    * on the `Endpoint.Server` fixture in `http-json`'s test sources. Two things make it easy to lose and worth writing
+    * down here. It is a *warning*, so only the job that runs with `-Werror` catches it. And the round trip test is not
+    * a witness: [[Endpoint]] is invariant, so its read side constrains `W2` and the minimisation to `Nothing` that
+    * stalls the reduction never happens there.
     */
   sealed abstract class Optionality[W1, R1, W2, R2]:
     def write(value: W2): Option[W1]
