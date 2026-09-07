@@ -22,8 +22,8 @@ object EnvelopeRoundTripTest extends ZIOSpecDefault:
         assertTrue(PathDecoder.decode(http.user, encoded) == Validated.valid(42))
       ,
       /** The empty root is a place to start rather than something to name, `*:` is the same chain read the other way
-        * round, and `/` is `:*` with the name a path is written under, so all of these spell one path: two literals
-        * dropped and an `Int` left standing.
+        * round, `/` is `:*` with the name a path is written under, and `__` is `Path.Root` under the name a URL starts
+        * with, so all of these spell one path: two literals dropped and an `Int` left standing.
         */
       test("the same path however it is spelled"):
         assertTrue(
@@ -32,11 +32,13 @@ object EnvelopeRoundTripTest extends ZIOSpecDefault:
           PathEncoder.encode(http.sliced, 42) == Vector("users", "42"),
           PathEncoder.encode(http.slicedRootless, 42) == Vector("users", "42"),
           PathEncoder.encode(http.named, 42) == Vector("users", "42"),
+          PathEncoder.encode(http.spelled, 42) == Vector("users", "42"),
           PathDecoder.decode(http.rootless, Vector("users", "42")) == Validated.valid(42),
           PathDecoder.decode(http.consed, Vector("users", "42")) == Validated.valid(42),
           PathDecoder.decode(http.sliced, Vector("users", "42")) == Validated.valid(42),
           PathDecoder.decode(http.slicedRootless, Vector("users", "42")) == Validated.valid(42),
-          PathDecoder.decode(http.named, Vector("users", "42")) == Validated.valid(42)
+          PathDecoder.decode(http.named, Vector("users", "42")) == Validated.valid(42),
+          PathDecoder.decode(http.spelled, Vector("users", "42")) == Validated.valid(42)
         )
       ,
       /** A literal given as text is the same literal, so it is required on a read exactly as `segment("users")` is. */
