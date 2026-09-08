@@ -56,15 +56,32 @@ abstract class Wrapper[Outer[-_, +_], Inner[-_, +_]](
 
   given zip: (Z: Zip[Inner]) => Zip[Outer]:
     override def zip[W1, R1, W2, R2](left: Outer[W1, R1], right: Outer[W2, R2]): Outer[(W1, W2), (R1, R2)] =
-      wrap(Annotation(Z.zip(unwrap(left).self, unwrap(right).self)))
+      wrap(Wrapper.combined(unwrap(left), unwrap(right), Z.zip(unwrap(left).self, unwrap(right).self)))
 
   given alt: (A: Alt[Inner]) => Alt[Outer]:
     override def alt[W1, R1, W2, R2](
         left: Outer[W1, R1],
         right: Outer[W2, R2]
-    ): Outer[Either[W1, W2], Either[R1, R2]] = wrap(Annotation(A.alt(unwrap(left).self, unwrap(right).self)))
+    ): Outer[Either[W1, W2], Either[R1, R2]] =
+      wrap(Wrapper.combined(unwrap(left), unwrap(right), A.alt(unwrap(left).self, unwrap(right).self)))
 
 object Wrapper:
+  /** A node built out of two others, keeping what both of them said.
+    *
+    * `zip` and `alt` used to wrap the combined node in a bare [[Annotation]], whose one argument constructor starts
+    * from [[Metadata.Empty]], so both operands' metadata was dropped. That is every product and sum operator -- `:*`,
+    * `*:`, `++`, `:+`, and `/` in the http tier, which reuses the same instances -- and the attribute it lost most
+    * often was [[Keys.name]]: a named record put beside anything stopped being a definition, so a JSON Schema inlined
+    * it where it should have written a `$ref` and a TypeScript module inlined it where it should have declared a
+    * `lazy val`. Nothing caught it because a name is almost always attached last, after the operators have run.
+    *
+    * Combined the way [[Metadata.++]] combines anywhere else, so the right operand wins a key both of them set. In the
+    * shape that matters that never arises: the element side of an append is a node this library just built, and it
+    * carries nothing.
+    */
+  private[otter] def combined[A](left: Annotation[?], right: Annotation[?], self: A): Annotation[A] =
+    Annotation(left.metadata ++ right.metadata, self)
+
   /** The same bundle, for a node that carries the type of what is inside it.
     *
     * A container's `S` is the type of its children, so its instances have to exist for every `S` rather than for one
@@ -110,13 +127,15 @@ object Wrapper:
       override def zip[W1, R1, W2, R2](
           left: Outer[S, W1, R1],
           right: Outer[S, W2, R2]
-      ): Outer[S, (W1, W2), (R1, R2)] = wrap(Annotation(Z.zip(unwrap(left).self, unwrap(right).self)))
+      ): Outer[S, (W1, W2), (R1, R2)] =
+        wrap(Wrapper.combined(unwrap(left), unwrap(right), Z.zip(unwrap(left).self, unwrap(right).self)))
 
     given alt: [S[-w, +r] <: Bound[w, r]] => (A: Alt[[w, r] =>> Inner[S, w, r]]) => Alt[[w, r] =>> Outer[S, w, r]]:
       override def alt[W1, R1, W2, R2](
           left: Outer[S, W1, R1],
           right: Outer[S, W2, R2]
-      ): Outer[S, Either[W1, W2], Either[R1, R2]] = wrap(Annotation(A.alt(unwrap(left).self, unwrap(right).self)))
+      ): Outer[S, Either[W1, W2], Either[R1, R2]] =
+        wrap(Wrapper.combined(unwrap(left), unwrap(right), A.alt(unwrap(left).self, unwrap(right).self)))
 
   abstract class Field[Bound[-_, +_], Outer[_[-w, +r] <: Bound[w, r], -_, +_]](
       wrap: [s[-w, +r] <: Bound[w, r], w, r] => Annotation[Self.Field[s, w, r]] => Outer[s, w, r],
