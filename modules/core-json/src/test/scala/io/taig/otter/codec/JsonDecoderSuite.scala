@@ -255,6 +255,19 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
         decode(json.verdict, """{"type":"withdrawn"}""").isInvalid
       )
     ,
+    /** Nothing on the wire says which branch a document belongs to, so a union that matches none of them has no single
+      * place to point at and the honest answer is what each branch wanted. Every branch is named, under its own name,
+      * so a caller can see which one they meant rather than being handed whichever happened to be tried last.
+      */
+    test("Json.Union: a document matching no branch is refused by every branch, under its own name"):
+      val refused = decode(json.verdict, """{"type":"withdrawn"}""")
+
+      assertTrue(
+        refused.isInvalid,
+        paths(refused).flatMap(_.headOption).toSet ==
+          Set(Step.Field("accepted"), Step.Field("rejected"), Step.Field("deferred"))
+      )
+    ,
     test("violations carry the path to the failure"):
       val schema = field("foo", string) :* field("bar", collection.list(int))
 
