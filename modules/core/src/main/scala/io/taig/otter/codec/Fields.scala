@@ -24,8 +24,9 @@ import scala.collection.immutable.BitSet
   * would have done anyway, and allocates nothing while it does it.
   *
   * The mask is an `Int` rather than a `Long` because a `Long` is a heap object on Scala.js where an `Int` is a machine
-  * word on both platforms. Positions past the thirty-second are marked in a [[BitSet]] instead, which no record reaches
-  * and only an enormous query string or header set does.
+  * word on both platforms. Positions past the thirty-second are marked in a [[BitSet]] instead. A position indexes what
+  * *arrived*, not what the schema names, so that is reached by any document holding more than thirty-two members
+  * however narrow the schema reading it -- an object with thirty-three keys, a wide CSV header, a long query string.
   */
 final class Fields[+T] private (entries: Vector[(String, T)], claimed: Int, overflow: BitSet):
   private def isClaimed(position: Int): Boolean =
