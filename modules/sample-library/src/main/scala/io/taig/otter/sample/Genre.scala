@@ -18,6 +18,4 @@ enum Genre:
   case Thriller
 
 object Genre:
-  val All: List[Genre] = Genre.values.toList
-
   given Order[Genre] = Order.by(_.ordinal)

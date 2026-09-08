@@ -30,27 +30,25 @@ object loans:
   val one: Path[UUID] = __ / "members" / segment("reference", uuid)
 
   /** `GET /members/{reference}` */
-  val fetch: Endpoint[UUID, Either[Member, Unit]] =
-    endpoint(
-      request(Method.Get, loans.one),
-      result(Code.Ok).body(json(schema.member)) :+ result(Code.NotFound)
-    ).attr(OpenApiKeys.operationId, "fetchMember")
-      .attr(OpenApiKeys.summary, "A member, their membership and what they owe")
-      .attr(OpenApiKeys.tags, List("members"))
+  val fetch: Endpoint[UUID, Either[Member, Unit]] = endpoint(
+    request(Method.Get, loans.one),
+    result(Code.Ok).body(json(schema.member)) :+ result(Code.NotFound)
+  ).attr(OpenApiKeys.operationId, "fetchMember")
+    .attr(OpenApiKeys.summary, "A member, their membership and what they owe")
+    .attr(OpenApiKeys.tags, List("members"))
 
   /** `POST /members/{reference}/loans`, answering three ways and carrying a document in each. */
-  val borrow: Endpoint[(UUID, Loan.Request), Borrowed] =
-    endpoint(
-      request(Method.Post, loans.one / "loans").body(json(schema.borrow)),
-      (result(Code.Created).body(json(schema.loan)).to[Borrowed.Lent] :+
-        result(Code.NotFound).body(json(schema.problem)).to[Borrowed.Unknown] :+
-        result(Code.Conflict).body(json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
-    ).attr(OpenApiKeys.operationId, "borrowBook")
-      .attr(OpenApiKeys.summary, "Lend a book to a member")
-      .attr(OpenApiKeys.tags, List("loans"))
+  val borrow: Endpoint[(UUID, Loan.Request), Borrowed] = endpoint(
+    request(Method.Post, loans.one / "loans").body(json(schema.borrow)),
+    (result(Code.Created).body(json(schema.loan)).to[Borrowed.Lent] :+
+      result(Code.NotFound).body(json(schema.problem)).to[Borrowed.Unknown] :+
+      result(Code.Conflict).body(json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
+  ).attr(OpenApiKeys.operationId, "borrowBook")
+    .attr(OpenApiKeys.summary, "Lend a book to a member")
+    .attr(OpenApiKeys.tags, List("loans"))
 
   /** `GET /health`, which is the smallest endpoint there is: a literal path, nothing read, nothing written. */
-  val health: Endpoint[Unit, Unit] =
-    endpoint(request(Method.Get, __ / "health"), result(Code.NoContent).toUnion)
-      .attr(OpenApiKeys.operationId, "health")
-      .attr(OpenApiKeys.tags, List("service"))
+  val health: Endpoint[Unit, Unit] = endpoint(
+    request(Method.Get, __ / "health"),
+    result(Code.NoContent).toUnion
+  ).attr(OpenApiKeys.operationId, "health").attr(OpenApiKeys.tags, List("service"))

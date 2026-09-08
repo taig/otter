@@ -26,9 +26,6 @@ object Isbn:
     /** The thirteen digits, with nothing between them. */
     def value: String = self
 
-  /** The digits, which is also how one is written back to the wire. */
-  def render(isbn: Isbn): String = isbn
-
   /** Reads an ISBN in any of the spellings people write one in.
     *
     * Hyphens and spaces are separators rather than content, so they are dropped before the length is counted. What is
@@ -49,6 +46,6 @@ object Isbn:
     */
   private[sample] def digits(value: String): Isbn = value
 
-  given Order[Isbn] = Order.by(Isbn.render)
+  given Order[Isbn] = Order.by(_.value)
 
-  given Show[Isbn] = Show.show(Isbn.render)
+  given Show[Isbn] = Show.show(_.value)

@@ -22,14 +22,13 @@ object Main extends IOApp:
     */
   private given LoggerFactory[IO] = NoOpFactory[IO]
 
-  override def run(arguments: List[String]): IO[ExitCode] =
-    Library[IO]()
-      .flatMap: library =>
-        EmberServerBuilder
-          .default[IO]
-          .withHost(host"0.0.0.0")
-          .withPort(port"8080")
-          .withHttpApp(LibraryRoutes(library).orNotFound)
-          .build
-          .use(server => IO.println(s"Listening on ${server.baseUri}") *> IO.never)
-      .as(ExitCode.Success)
+  override def run(arguments: List[String]): IO[ExitCode] = Library[IO]()
+    .flatMap: library =>
+      EmberServerBuilder
+        .default[IO]
+        .withHost(host"0.0.0.0")
+        .withPort(port"8080")
+        .withHttpApp(LibraryRoutes(library).orNotFound)
+        .build
+        .use(server => IO.println(s"Listening on ${server.baseUri}") *> IO.never)
+    .as(ExitCode.Success)

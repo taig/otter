@@ -29,7 +29,7 @@ object schema:
   /** Text on the wire, an [[Isbn]] in Scala, and a round trip rather than a one way read: `codec` is what says a value
     * can be written back, where `parser` would leave a schema that reads but cannot answer.
     */
-  val isbn: Json.Primitive.Text[Isbn] = payload.codec("isbn", Isbn.parse, Isbn.render)
+  val isbn: Json.Primitive.Text[Isbn] = payload.codec("isbn", Isbn.parse, _.value)
 
   /** A closed set, matched exhaustively. Adding a case to [[Genre]] fails to compile here rather than failing to read
     * at runtime.
@@ -170,7 +170,7 @@ object schema:
     * carried is reported rather than quietly dropped.
     */
   val row: Csv[Book.Row] = (
-    rows.field("isbn", rows.codec("isbn", Isbn.parse, Isbn.render)) :*
+    rows.field("isbn", rows.codec("isbn", Isbn.parse, _.value)) :*
       rows.field("title", rows.string) :*
       rows.field("pages", rows.int) :*
       rows.field("published", rows.localDate)
