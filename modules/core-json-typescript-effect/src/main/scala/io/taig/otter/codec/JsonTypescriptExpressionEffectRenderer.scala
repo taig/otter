@@ -102,7 +102,7 @@ final class JsonTypescriptExpressionEffectRenderer(
         expression = expression
       )
 
-      (context.updated(name, definition), symbol)
+      (context.updated(name, definition, side), symbol)
 
   private def optional[W, R](schema: Optional[Json.Node, W, R]): State[JsonTypescriptContext, Typescript.Expression] =
     schema match

@@ -68,9 +68,15 @@ final class TypescriptEndpointRenderer(
 
     val (context, (statements, issues, _)) = program.run(JsonTypescriptContext.Empty).value
 
+    /* A name two schemas asked for and did not agree on. One context is threaded across every endpoint so that a
+     * schema two of them send is declared once, and requests are rendered at one side and responses at the other, so
+     * this is where a schema whose two sides differ shows up. It is reported rather than resolved: the declaration
+     * that stands is the first one reached, and which of the two a caller meant is not something a renderer knows. */
+    val conflicted = Chain.fromSeq(context.conflicts.toList.sorted).map(TypescriptIssue.Conflict.apply)
+
     TypescriptModule(
       TypescriptEndpointRenderer.Import :: context.declarations ++ statements.toList,
-      issues.toList
+      (issues ++ conflicted).toList
     )
 
   /** One endpoint: the type of its input, the two types of its answer, and the descriptor itself. */
@@ -315,7 +321,7 @@ final class TypescriptEndpointRenderer(
       case Some(rendered) =>
         rendered.flatMap: expression =>
           TypescriptEndpointRenderer
-            .named(hint, expression)
+            .named(hint, side, expression)
             .map: symbol =>
               (
                 TypescriptEndpointRenderer.Alternative(media, Some(symbol), Typescript.Type.TypeOf(symbol)),
@@ -379,6 +385,7 @@ object TypescriptEndpointRenderer:
   /** A name for an expression, declaring it when it does not already have one. */
   private def named(
       hint: String,
+      side: Side,
       expression: Typescript.Expression
   ): State[JsonTypescriptContext, Typescript.Expression] =
     expression match
@@ -393,7 +400,7 @@ object TypescriptEndpointRenderer:
             expression = expression
           )
 
-          (context.updated(hint, definition), symbol)
+          (context.updated(hint, definition, side), symbol)
 
   private def value(schema: Body.Value[?, ?, ?]): Body.Value[?, ?, ?] = schema match
     case Body.Value.Modify(self, _, _) => TypescriptEndpointRenderer.value(self)
