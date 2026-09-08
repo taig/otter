@@ -29,10 +29,21 @@ object Metadata:
     def contains[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Boolean =
       toSortedMap.contains((namespace, key))
 
+    /** What the key holds, taken on trust.
+      *
+      * `A` is a type parameter, so it erases to `Object` and the cast below compiles to nothing at all: it cannot throw
+      * here, whatever the map holds. This used to catch a `ClassCastException` around it, which read as a check and was
+      * not one -- the exception is raised in the caller, at the point the value is unboxed or used, with nothing left
+      * to say which key produced it.
+      *
+      * A real check would need a [[scala.reflect.ClassTag]] on [[Metadata.Key]], which is a wider change than the
+      * guarantee is worth: a key is an opaque `String` and two keys of different types sharing one identifier in one
+      * namespace is a collision between the libraries that declared them, not something a schema can do by accident.
+      * Stating that is more honest than a guard that never runs.
+      */
     @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
-    def get[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Option[A] = toSortedMap
-      .get((namespace, key))
-      .flatMap(value => Either.catchOnly[ClassCastException](value.asInstanceOf[A]).toOption)
+    def get[A](namespace: Metadata.Namespace, key: Metadata.Key[A]): Option[A] =
+      toSortedMap.get((namespace, key)).map(_.asInstanceOf[A])
 
     /** The value under the first namespace that has one, so that a format specific attribute can fall back to a format
       * agnostic one.
