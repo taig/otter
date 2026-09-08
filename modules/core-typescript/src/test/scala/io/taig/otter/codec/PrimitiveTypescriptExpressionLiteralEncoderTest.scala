@@ -36,13 +36,14 @@ object PrimitiveTypescriptExpressionLiteralEncoderTest extends ZIOSpecDefault:
     test("a value that is exactly representable is unchanged"):
       assertTrue(render(double, 1.5d) == "1.5", render(float, 1.5f) == "1.5")
     ,
-    /** A whole double keeps the fraction its own text carries, which is the one a JSON document carries too: circe
-      * writes `2.0` for it. TypeScript reads `2.0` and `2` as the same number, so the literal denotes what it should
-      * either way, and agreeing with the document is what matters. An integral primitive has no fraction to keep.
+    /** A whole double keeps whatever fraction its own text carries, which is the text the document carries too -- `2.0`
+      * on the JVM, `2` on Scala.js, where a JavaScript number has no trailing zero to print. Asserted against that text
+      * rather than against either spelling, because agreeing with the document is the claim and the two denote the same
+      * number in TypeScript either way. An integral primitive has no fraction to keep on any platform.
       */
     test("a whole number is spelled as its own type spells it"):
       assertTrue(
-        render(double, 2d) == "2.0",
+        render(double, 2d) == 2d.toString,
         render(Primitive.Number.Int(Validation.valid), 2) == "2",
         render(Primitive.Number.Long(Validation.valid), 2L) == "2"
       )
