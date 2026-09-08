@@ -53,10 +53,15 @@ object ConstraintTypescriptEffect:
   private def bound(name: String, reference: Data.Number): Typescript.Expression =
     TypescriptEffect.filter(name, TypescriptEffect.number(decimal(reference)))
 
+  /** The bound as a decimal, taking a binary float through its own `toString` for the reason
+    * [[PrimitiveTypescriptExpressionLiteralEncoder]] does: `new BigDecimal(double)` is exact, so a bound of `0.1` would
+    * be generated as `Schema.greaterThan(0.1000000000000000055511151231257827021181583404541015625)` and reject a value
+    * the schema it was read from accepts.
+    */
   private def decimal(value: Data.Number): JBigDecimal = value match
     case value: JBigDecimal => value
     case value: JBigInteger => new JBigDecimal(value)
     case value: Long        => new JBigDecimal(value)
     case value: Int         => new JBigDecimal(value)
-    case value: Float       => new JBigDecimal(value.toDouble)
-    case value: Double      => new JBigDecimal(value)
+    case value: Float       => new JBigDecimal(value.toString)
+    case value: Double      => JBigDecimal.valueOf(value)
