@@ -1,11 +1,19 @@
 package io.taig.otter.http.codec
 
 import cats.data.Chain
+import io.taig.otter.Json
+import io.taig.otter.Keys
+import io.taig.otter.http.Body
+import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.HttpTypescriptKeys
+import io.taig.otter.http.Method
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
+import io.taig.otter.http.fixture.Report
+import io.taig.otter.http.fixture.Settings
 import io.taig.otter.http.fixture.api
+import io.taig.otter.http.fixture.dsl.*
 import zio.Scope
 import zio.test.*
 
@@ -22,7 +30,68 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
 
   private def source(endpoints: Endpoint.Node*): String = render(endpoints*).render
 
+  /** A named schema with a defaulted field, which is the shape whose two sides genuinely differ: a writer always
+    * produces the member and a reader accepts its absence.
+    */
+  private val settings: Json.Record[Settings] = api.settings.attr(Keys.name, "Settings")
+
+  private val send: Endpoint.Server[Body.Payload, Settings, Unit] =
+    endpoint(
+      request(Method.Put, __ :* segment("settings")).body(json(settings)),
+      result(Code.NoContent).toUnion
+    )
+
+  private val answer: Endpoint.Server[Body.Payload, Unit, Settings] =
+    endpoint(request(Method.Get, __ :* segment("settings")), result(Code.Ok).body(json(settings)).toUnion)
+
+  /** A second endpoint answering with the same schema, so the name is reached at the read side twice. */
+  private val answerAgain: Endpoint.Server[Body.Payload, Unit, Settings] =
+    endpoint(request(Method.Get, __ :* segment("defaults")), result(Code.Ok).body(json(settings)).toUnion)
+
+  /** The same pairing over a schema with no such member, which the two sides agree about. */
+  private val sendReport: Endpoint.Server[Body.Payload, Report, Unit] =
+    endpoint(
+      request(Method.Put, __ :* segment("reports")).body(json(api.named)),
+      result(Code.NoContent).toUnion
+    )
+
+  private val answerReport: Endpoint.Server[Body.Payload, Unit, Report] =
+    endpoint(request(Method.Get, __ :* segment("reports")), result(Code.Ok).body(json(api.named)).toUnion)
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptEndpointRendererTest")(
+    suite("conflict")(
+      /** One context is threaded across every endpoint so that a schema two of them send is declared once, and a client
+        * renders its requests at one side and its responses at the other. A name reached the second time used to be
+        * answered from the declarations without looking, so a schema whose two sides differ was bound to whichever side
+        * happened to be rendered first and referred to from the other -- describing, on one of them, a value nothing
+        * produces.
+        */
+      test("a schema whose two sides differ, sent and answered with, is reported"):
+        assertTrue(render(send, answer).issues == List(TypescriptIssue.Conflict("Settings")))
+      ,
+      /** Reported once however many endpoints reach it, because it is one name that cannot be bound rather than one per
+        * use.
+        */
+      test("a conflict is reported once however often the name is reached"):
+        assertTrue(render(send, answer, answerAgain).issues == List(TypescriptIssue.Conflict("Settings")))
+      ,
+      /** The declaration that stands is the first one reached, so a module still comes back and still binds the name
+        * exactly once.
+        */
+      test("a module still comes back, binding the name once"):
+        val rendered = source(send, answer)
+
+        assertTrue(rendered.split("const Settings").length == 2, rendered.contains("export type Settings"))
+      ,
+      /** The other half of the claim: a schema the two sides agree about is shared silently, which is what makes the
+        * check worth having rather than noise.
+        */
+      test("a schema the two sides agree about is not a conflict"):
+        assertTrue(render(sendReport, answerReport).issues.isEmpty)
+      ,
+      test("a schema used at one side only is not a conflict"):
+        assertTrue(render(send).issues.isEmpty, render(answer).issues.isEmpty)
+    ),
     suite("module")(
       test("a module imports the Schema it names"):
         assertTrue(source(api.fetch).startsWith("""import { Schema } from "effect";"""))
