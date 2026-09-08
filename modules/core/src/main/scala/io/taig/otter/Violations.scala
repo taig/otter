@@ -17,11 +17,18 @@ enum Violations:
   final def /:(index: Int): Violations = /:(Step.Index(index))
   final def /:(field: String): Violations = /:(Step.Field(field))
 
+  /** Both trees, with the nodes under a shared [[Step]] combined rather than one of them chosen.
+    *
+    * `|+|` in all four cases, and the two mixed ones are why this is spelled out: a `SortedMap.++` would keep whichever
+    * side it was given second and drop the other's whole subtree, so a node reporting violations of its own beside a
+    * failing child would lose that child as soon as a sibling failed at the same step. Nothing here may drop a
+    * violation -- [[io.taig.otter.JsonCirce.failures]] promises the caller every one of them.
+    */
   final def combine(violations: Violations): Violations = (this, violations) match
     case (left: Root, right: Root)           => Root(left.values |+| right.values, left.violations ++ right.violations)
     case (Namespace(left), Namespace(right)) => Namespace(left |+| right)
-    case (left: Root, Namespace(right))      => Root(right.toSortedMap ++ left.values, left.violations)
-    case (Namespace(left), right: Root)      => Root(left.toSortedMap ++ right.values, right.violations)
+    case (left: Root, Namespace(right))      => Root(left.values |+| right.toSortedMap, left.violations)
+    case (Namespace(left), right: Root)      => Root(left.toSortedMap |+| right.values, right.violations)
 
 object Violations:
   def apply(violations: NonEmptyChain[Violation[Constraint]]): Violations = Root(values = SortedMap.empty, violations)
