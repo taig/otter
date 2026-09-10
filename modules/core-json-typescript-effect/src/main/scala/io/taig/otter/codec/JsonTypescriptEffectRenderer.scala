@@ -8,7 +8,6 @@ import io.taig.otter.Side
 import io.taig.otter.Typescript
 
 import scala.annotation.tailrec
-import scala.collection.immutable.ListMap
 
 /** Turns a JSON schema into `effect` `Schema` source.
   *
@@ -20,8 +19,8 @@ import scala.collection.immutable.ListMap
   * where the module is going.
   *
   * A schema that refers to itself must carry [[io.taig.otter.Keys.name]] on the `lazy val` that is reached again, and
-  * not on a wrapper around it: the name is the only thing a cycle can be broken with, and an anonymous cycle does not
-  * terminate.
+  * not on a wrapper around it. Names are allocated to schema instances, so separate schemas requesting the same name
+  * receive distinct declarations.
   */
 object JsonTypescriptEffectRenderer:
   /** What to call the two sides of a schema.
@@ -55,56 +54,57 @@ object JsonTypescriptEffectRenderer:
     * make, because there is no second side to tell the first one apart from.
     */
   def module(side: Side, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
-    declarations(definitions(side, split = Set.empty, schemas))
+    definitions(side, JsonTypescriptContext.Empty, schemas).declarations
 
   def module(naming: Naming, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
-    val names = definitions(Side.Read, Set.empty, schemas).keySet ++ definitions(Side.Write, Set.empty, schemas).keySet
-
+    val read = definitions(Side.Read, JsonTypescriptContext.Empty, schemas)
+    val write = definitions(Side.Write, JsonTypescriptContext.Empty.copy(names = read.names), schemas)
+    val names = write.names
     val split = naming match
-      case Naming.Suffixed  => names
+      case Naming.Suffixed  => names.names.toSet
       case Naming.Collapsed => collapse(names, schemas, Set.empty)
 
-    val read = definitions(Side.Read, split, schemas)
-    val write = definitions(Side.Write, split, schemas)
+    val context = allocated(names, split)
+    val readers = definitions(Side.Read, context, schemas)
+    val writers = definitions(Side.Write, context, schemas)
 
-    /* The read side's order already puts every declaration after what it refers to, and a write side declaration can
-     * only refer to something shared, which the read side has therefore already emitted. */
-    declarations(read) ++ declarations(write.filterNot((name, _) => read.contains(name)))
+    readers.declarations ++ writers
+      .copy(
+        definitions = writers.definitions.filterNot((name, _) => readers.definitions.contains(name))
+      )
+      .declarations
 
-  /** Which names have to be split, as the least set that is closed under the splitting it causes.
-    *
-    * Comparing the two sides once is not enough: a record whose own shape is the same on both sides still differs when
-    * a definition it refers to had to be split, because it then refers to two different names. Rather than analyse
-    * which name reaches which, the whole thing is rendered again under the names decided so far, until a pass finds
-    * nothing new. Each pass can only add, and there are finitely many names, so it stops.
-    */
   @tailrec
-  private def collapse(names: Set[String], schemas: Seq[Json.Node[?, ?]], split: Set[String]): Set[String] =
-    val read = definitions(Side.Read, split, schemas)
-    val write = definitions(Side.Write, split, schemas)
+  private def collapse(names: DefinitionNames, schemas: Seq[Json.Node[?, ?]], split: Set[String]): Set[String] =
+    val context = allocated(names, split)
+    val read = definitions(Side.Read, context, schemas)
+    val write = definitions(Side.Write, context, schemas)
+    val differ = names.names.filter: base =>
+      val reader = context.bindings.get((base, Side.Read)).flatMap(read.definitions.get)
+      val writer = context.bindings.get((base, Side.Write)).flatMap(write.definitions.get)
 
-    val differ = names.filter: name =>
-      !split.contains(name) && read.contains(name) && write.contains(name) && read(name) != write(name)
+      !split.contains(base) && reader.isDefined && writer.isDefined && reader != writer
 
     if differ.isEmpty then split else collapse(names, schemas, split ++ differ)
 
+  private def allocated(names: DefinitionNames, split: Set[String]): JsonTypescriptContext =
+    names.names.foldLeft(JsonTypescriptContext.Empty.copy(names = names)): (context, base) =>
+      if split.contains(base) then
+        val read = context.available(base + suffix(Side.Read))
+        val updated = context.bind(base, Side.Read, read)
+        updated.bind(base, Side.Write, updated.available(base + suffix(Side.Write)))
+      else
+        val name = context.available(base)
+        context.bind(base, Side.Read, name).bind(base, Side.Write, name)
+
   private def definitions(
       side: Side,
-      split: Set[String],
+      context: JsonTypescriptContext,
       schemas: Seq[Json.Node[?, ?]]
-  ): ListMap[String, JsonTypescriptDefinition] =
-    val renderer = stateful(side, name => if split.contains(name) then name + suffix(side) else name)
+  ): JsonTypescriptContext =
+    val renderer = stateful(side, identity)
 
-    schemas.toList
-      .traverse_(schema => renderer.render(schema))
-      .runS(JsonTypescriptContext.Empty)
-      .value
-      .definitions
-
-  private def declarations(
-      definitions: ListMap[String, JsonTypescriptDefinition]
-  ): List[Typescript.Statement.Declaration] =
-    definitions.toList.flatMap((name, definition) => definition.declarations(name))
+    schemas.toList.traverse_(schema => renderer.render(schema)).runS(context).value
 
   private def suffix(side: Side): String = side match
     case Side.Read  => "Read"
