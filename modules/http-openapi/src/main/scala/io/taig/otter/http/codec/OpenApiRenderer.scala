@@ -171,15 +171,22 @@ final class OpenApiRenderer(
     (rendered, described ++ framed)
 
   private def responses(operation: String, schema: Results.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
-    Results
+    val (groups, collected) = Results
       .branches(schema)
-      .foldLeft((ListMap.empty[String, CirceJson], Collected.Empty)): (accumulated, result) =>
+      .foldLeft((ListMap.empty[Int, List[Response]], Collected.Empty)): (accumulated, result) =>
         val (responses, collected) = accumulated
         val (rendered, found) = this.result(operation, result)
+        val code = result.code.value
 
-        (responses.updated(result.code.value.toString, rendered), collected ++ found)
+        (responses.updated(code, responses.getOrElse(code, Nil) :+ rendered), collected ++ found)
 
-  private def result(operation: String, schema: Result.Schema[?, ?, ?]): (CirceJson, Collected) =
+    groups.toList.foldLeft((ListMap.empty[String, CirceJson], collected)):
+      case ((responses, collected), (code, alternatives)) =>
+        val (rendered, found) = this.mergedResponse(operation, code, alternatives)
+
+        (responses.updated(code.toString, rendered), collected ++ found)
+
+  private def result(operation: String, schema: Result.Schema[?, ?, ?]): (Response, Collected) =
     val (whole, described) = schema.bodies
       .map(reference => this.content(operation, response, reference.value))
       .getOrElse((Nil, Collected.Empty))
@@ -202,15 +209,42 @@ final class OpenApiRenderer(
       .orElse(Code.reason(schema.code))
       .getOrElse(schema.code.value.toString)
 
+    (Response(description, entries, headers), described ++ framed ++ reported)
+
+  private def mergedResponse(operation: String, code: Int, alternatives: List[Response]): (CirceJson, Collected) =
+    val entries = alternatives.flatMap(_.content)
+    val names = alternatives
+      .flatMap(_.headers.keys)
+      .foldLeft(List.empty[String]): (names, name) =>
+        if names.exists(_.equalsIgnoreCase(name)) then names else names :+ name
+    val headers = names.map: name =>
+      val variants = alternatives.flatMap(_.headers.toList.filter(_._1.equalsIgnoreCase(name)).map(_._2))
+      val schemas = variants.map(_.hcursor.downField("schema").focus.getOrElse(JsonSchema.Anything)).distinct
+      val required =
+        variants.size == alternatives.size && variants.forall(_.hcursor.get[Boolean]("required").contains(true))
+
+      name -> OpenApi.obj(
+        "required" -> CirceJson.fromBoolean(required),
+        "schema" -> JsonSchema.anyOf(NonEmptyList.fromListUnsafe(schemas))
+      )
+    val descriptions = alternatives.map(_.description).distinct.mkString("\n\n")
+    val loss = alternatives.map(_.headers).distinct.size > 1 || alternatives.map(_.content.isEmpty).distinct.size > 1
+    val issues = if loss then Collected.issue(OpenApiIssue.ResponseAlternatives(operation, code)) else Collected.Empty
     val rendered = JsonSchema.merge(
-      OpenApi.obj("description" -> CirceJson.fromString(description)),
+      OpenApi.obj("description" -> CirceJson.fromString(descriptions)),
       List(
-        Option.when(headers.nonEmpty)("headers" -> CirceJson.obj(headers.toList*)),
+        Option.when(headers.nonEmpty)("headers" -> CirceJson.obj(headers*)),
         Option.when(entries.nonEmpty)("content" -> OpenApi.content(entries))
       ).flatten*
     )
 
-    (rendered, described ++ framed ++ reported)
+    (rendered, issues)
+
+  final private case class Response(
+      description: String,
+      content: List[(String, CirceJson)],
+      headers: ListMap[String, CirceJson]
+  )
 
   /** The headers a result writes, which OpenAPI keys by name rather than listing as parameters. */
   private def headers(

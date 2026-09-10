@@ -28,6 +28,11 @@ enum OpenApiIssue:
     */
   case Duplicate(operation: String)
 
+  /** Alternatives have different headers or mix absent and present bodies. Their merged response cannot express those
+    * dependencies, so it describes their possibilities without preserving the association with each branch.
+    */
+  case ResponseAlternatives(operation: String, status: Int)
+
   /** An issue the payload's own renderer reported, kept with the operation it was found in. */
   case Payload(operation: String, issue: JsonSchemaIssue)
 
