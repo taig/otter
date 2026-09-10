@@ -20,7 +20,8 @@ import scala.annotation.tailrec
   *
   * A schema that refers to itself must carry [[io.taig.otter.Keys.name]] on the `lazy val` that is reached again, and
   * not on a wrapper around it. Names are allocated to schema instances, so separate schemas requesting the same name
-  * receive distinct declarations.
+  * receive distinct declarations. Names are normalized to portable identifiers and cannot shadow imports or globals
+  * referenced by generated code.
   */
 object JsonTypescriptEffectRenderer:
   /** What to call the two sides of a schema.
@@ -54,11 +55,11 @@ object JsonTypescriptEffectRenderer:
     * make, because there is no second side to tell the first one apart from.
     */
   def module(side: Side, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
-    definitions(side, JsonTypescriptContext.Empty, schemas).declarations
+    definitions(side, JsonTypescriptEffect.Context, schemas).declarations
 
   def module(naming: Naming, schemas: Json.Node[?, ?]*): List[Typescript.Statement.Declaration] =
-    val read = definitions(Side.Read, JsonTypescriptContext.Empty, schemas)
-    val write = definitions(Side.Write, JsonTypescriptContext.Empty.copy(names = read.names), schemas)
+    val read = definitions(Side.Read, JsonTypescriptEffect.Context, schemas)
+    val write = definitions(Side.Write, JsonTypescriptEffect.Context.copy(names = read.names), schemas)
     val names = write.names
     val split = naming match
       case Naming.Suffixed  => names.names.toSet
@@ -88,7 +89,7 @@ object JsonTypescriptEffectRenderer:
     if differ.isEmpty then split else collapse(names, schemas, split ++ differ)
 
   private def allocated(names: DefinitionNames, split: Set[String]): JsonTypescriptContext =
-    names.names.foldLeft(JsonTypescriptContext.Empty.copy(names = names)): (context, base) =>
+    names.names.foldLeft(JsonTypescriptEffect.Context.copy(names = names)): (context, base) =>
       if split.contains(base) then
         val read = context.available(base + suffix(Side.Read))
         val updated = context.bind(base, Side.Read, read)
@@ -122,5 +123,5 @@ object JsonTypescriptEffectRenderer:
   )
 
   private def rendered(side: Side): Renderer[Json.Node, List[Typescript]] = stateful(side, identity)
-    .map(_.run(JsonTypescriptContext.Empty).value)
+    .map(_.run(JsonTypescriptEffect.Context).value)
     .map((context, expression) => context.declarations :+ expression)

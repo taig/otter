@@ -66,7 +66,8 @@ final class TypescriptEndpointRenderer(
           case Left(issue)                    => (statements, issues :+ issue, names)
           case Right((name, declared, found)) => (statements ++ declared, issues ++ found, names + name)
 
-    val (context, (statements, issues, _)) = program.run(JsonTypescriptContext.Empty).value
+    val (context, (statements, issues, _)) =
+      program.run(JsonTypescriptContext.Empty.copy(reserved = TypescriptEffect.Reserved)).value
 
     TypescriptModule(
       TypescriptEndpointRenderer.Import :: context.declarations ++ statements.toList,
@@ -88,25 +89,28 @@ final class TypescriptEndpointRenderer(
 
     if taken.contains(name) then State.pure(Left(TypescriptIssue.Duplicate(operation, name)))
     else
-      val declared = TypescriptEndpointRenderer.capitalised(name)
-
       for
+        descriptorName <- State[JsonTypescriptContext, String](_.allocate(name))
+        declared = TypescriptEndpointRenderer.capitalised(descriptorName)
+        inputName <- State[JsonTypescriptContext, String](_.allocate(declared ++ "Input"))
+        outputName <- State[JsonTypescriptContext, String](_.allocate(declared ++ "Output"))
+        encodedName <- State[JsonTypescriptContext, String](_.allocate(declared ++ "Encoded"))
         (body, requested) <- this.body(operation, declared, schema)
         (results, answered) <- this.results(operation, declared, endpoint.responses)
       yield
         val input = this.input(schema, body.map(_._2))
         val statements =
           Chain(
-            Typescript.Statement.Declaration.Type(exported = true, declared ++ "Input", input),
+            Typescript.Statement.Declaration.Type(exported = true, inputName, input),
             Typescript.Statement.Declaration
-              .Type(exported = true, declared ++ "Output", this.answer(results, TypescriptEffect.inferred)),
+              .Type(exported = true, outputName, this.answer(results, TypescriptEffect.inferred)),
             Typescript.Statement.Declaration
-              .Type(exported = true, declared ++ "Encoded", this.answer(results, TypescriptEffect.encoded)),
+              .Type(exported = true, encodedName, this.answer(results, TypescriptEffect.encoded)),
             Typescript.Statement.Declaration.Constant(
               exported = true,
-              name,
+              descriptorName,
               tpe = None,
-              value = Typescript.Expression.AsConst(descriptor(schema, declared, body.map(_._1), results))
+              value = Typescript.Expression.AsConst(descriptor(schema, inputName, body.map(_._1), results))
             )
           )
 
@@ -115,11 +119,11 @@ final class TypescriptEndpointRenderer(
   /** The descriptor: what a caller needs to write a request, and what they need to read an answer. */
   private def descriptor(
       schema: Request.Schema[?, ?, ?],
-      declared: String,
+      inputName: String,
       body: Option[Typescript.Expression],
       results: List[TypescriptEndpointRenderer.Answer]
   ): Typescript.Expression =
-    val input = Typescript.Type.Symbol(declared ++ "Input", parameters = Nil)
+    val input = Typescript.Type.Symbol(inputName, parameters = Nil)
     val queries = TypescriptEnvelope.queries(schema)
     val headers = TypescriptEnvelope.headers(schema)
 

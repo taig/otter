@@ -108,4 +108,61 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       val names = constants(module)
 
       assertTrue(names.distinct == names, names.size == 3, module.mkString("\n").contains("Schema.String"))
+    ,
+    test("invalid identifiers that normalize alike receive distinct names"):
+      val module = JsonTypescriptEffectRenderer.module(
+        Side.Write,
+        int.attr(Keys.name, "not-valid"),
+        string.attr(Keys.name, "not_valid"),
+        boolean.attr(Keys.name, "9lives"),
+        int.attr(Keys.name, "")
+      )
+
+      assertTrue(constants(module) == List("not_valid", "not_valid_2", "_9lives", "_"))
+    ,
+    test("keywords, imports and referenced global names are reserved"):
+      val module = JsonTypescriptEffectRenderer.module(
+        Side.Write,
+        int.attr(Keys.name, "class"),
+        int.attr(Keys.name, "as"),
+        int.attr(Keys.name, "require"),
+        int.attr(Keys.name, "exports"),
+        string.attr(Keys.name, "Schema"),
+        int.attr(Keys.name, "String"),
+        int.attr(Keys.name, "Number"),
+        int.attr(Keys.name, "ReadonlyArray"),
+        int.attr(Keys.name, "Record")
+      )
+
+      assertTrue(
+        constants(module) == List(
+          "class_2",
+          "as_2",
+          "require_2",
+          "exports_2",
+          "Schema_2",
+          "String_2",
+          "Number_2",
+          "ReadonlyArray_2",
+          "Record_2"
+        )
+      )
+    ,
+    test("recursive references and encoded aliases follow normalized names on both sides"):
+      lazy val tree: Json.Record[Tree] =
+        (field("value", coerce(int)) :* field("children", collection.list(tree))).to[Tree].attr(Keys.name, "not-valid")
+      val source = JsonTypescriptEffectRenderer.module(tree).mkString("\n")
+
+      assertTrue(
+        source.contains("export const not_validRead: Schema.Schema<not_validRead, not_validReadEncoded>"),
+        source.contains("ReadonlyArray<not_validReadEncoded>"),
+        source.contains("Schema.suspend(() => not_validRead)"),
+        source.contains("export const not_validWrite: Schema.Schema<not_validWrite>"),
+        !source.contains("not-valid")
+      )
+    ,
+    test("normalizing a declaration does not rename its wire field"):
+      val source = render(field("not-valid", int.attr(Keys.name, "not-valid")).toRecord)
+
+      assertTrue(source.contains("export const not_valid = Schema.Int;"), source.contains("\"not-valid\": not_valid"))
   )

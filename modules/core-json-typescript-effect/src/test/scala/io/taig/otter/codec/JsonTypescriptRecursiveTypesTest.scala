@@ -87,9 +87,9 @@ object JsonTypescriptRecursiveTypesTest extends ZIOSpecDefault:
       val source = JsonTypescriptEffectRenderer.reader.render(transformed).mkString("\n")
 
       assertTrue(
-        source.contains("export type Number = number;"),
-        source.contains("export type NumberEncoded = string;"),
-        source.contains("Schema.Schema<Number, NumberEncoded> = Schema.NumberFromString;")
+        source.contains("export type Number_2 = number;"),
+        source.contains("export type Number_2Encoded = string;"),
+        source.contains("Schema.Schema<Number_2, Number_2Encoded> = Schema.NumberFromString;")
       )
     ,
     test("recursive boolean coercion names only the strings the Effect schema accepts"):

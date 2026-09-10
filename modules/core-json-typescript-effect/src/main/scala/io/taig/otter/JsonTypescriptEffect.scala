@@ -1,6 +1,7 @@
 package io.taig.otter
 
 import cats.data.NonEmptyList
+import io.taig.otter.codec.JsonTypescriptContext
 import io.taig.otter.codec.JsonTypescriptTarget
 import io.taig.otter.codec.JsonTypescriptTypeEffectRenderer
 import io.taig.otter.codec.Renderer
@@ -21,6 +22,8 @@ object JsonTypescriptEffect:
     Typescript.Namespace,
     Metadata.Namespace.Global
   )
+
+  val Context: JsonTypescriptContext = JsonTypescriptContext.Empty.copy(reserved = TypescriptEffect.Reserved)
 
   val Target: JsonTypescriptTarget = new JsonTypescriptTarget:
     override def inferred(symbol: Typescript.Expression): Typescript.Type =
