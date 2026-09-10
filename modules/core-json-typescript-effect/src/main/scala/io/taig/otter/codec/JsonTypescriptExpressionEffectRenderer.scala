@@ -95,14 +95,16 @@ final class JsonTypescriptExpressionEffectRenderer(
       expression: Typescript.Expression
   ): State[JsonTypescriptContext, Typescript.Expression] =
     State: context =>
-      val symbol = Typescript.Expression.Symbol(name)
+      val (names, base) = context.names.assign(expression, name)
+      val assigned = context.bindings.get((base, side)).getOrElse(context.available(base))
+      val symbol = Typescript.Expression.Symbol(assigned)
       val definition = JsonTypescriptDefinition(
         tpe = TypescriptEffect.inferred(Typescript.Type.TypeOf(symbol)),
         annotation = none,
         expression = expression
       )
 
-      (context.updated(name, definition, side), symbol)
+      (context.copy(names = names).bind(base, side, assigned).updated(assigned, definition), symbol)
 
   private def optional[W, R](schema: Optional[Json.Node, W, R]): State[JsonTypescriptContext, Typescript.Expression] =
     schema match

@@ -59,40 +59,57 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
     endpoint(request(Method.Get, __ :* segment("reports")), result(Code.Ok).body(json(api.named)).toUnion)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptEndpointRendererTest")(
-    suite("conflict")(
-      /** One context is threaded across every endpoint so that a schema two of them send is declared once, and a client
-        * renders its requests at one side and its responses at the other. A name reached the second time used to be
-        * answered from the declarations without looking, so a schema whose two sides differ was bound to whichever side
-        * happened to be rendered first and referred to from the other -- describing, on one of them, a value nothing
-        * produces.
-        */
-      test("a schema whose two sides differ, sent and answered with, is reported"):
-        assertTrue(render(send, answer).issues == List(TypescriptIssue.Conflict("Settings")))
-      ,
-      /** Reported once however many endpoints reach it, because it is one name that cannot be bound rather than one per
-        * use.
-        */
-      test("a conflict is reported once however often the name is reached"):
-        assertTrue(render(send, answer, answerAgain).issues == List(TypescriptIssue.Conflict("Settings")))
-      ,
-      /** The declaration that stands is the first one reached, so a module still comes back and still binds the name
-        * exactly once.
-        */
-      test("a module still comes back, binding the name once"):
-        val rendered = source(send, answer)
+    suite("directional names")(
+      test("a schema whose two sides differ gets separate definitions"):
+        val module = render(send, answer)
+        val rendered = module.render
 
-        assertTrue(rendered.split("const Settings").length == 2, rendered.contains("export type Settings"))
+        assertTrue(
+          module.issues.isEmpty,
+          rendered.contains("export const Settings ="),
+          rendered.contains("export const Settings_2 ="),
+          rendered.contains("Schema.optionalWith"),
+          rendered.contains("\"application/json\": Settings_2")
+        )
       ,
-      /** The other half of the claim: a schema the two sides agree about is shared silently, which is what makes the
-        * check worth having rather than noise.
-        */
-      test("a schema the two sides agree about is not a conflict"):
-        assertTrue(render(sendReport, answerReport).issues.isEmpty)
+      test("the same response side reuses its allocated definition"):
+        val rendered = source(send, answer, answerAgain)
+
+        assertTrue(
+          render(send, answer, answerAgain).issues.isEmpty,
+          rendered.sliding("export const Settings_2 =".length).count(_ == "export const Settings_2 =") == 1,
+          !rendered.contains("Settings_3")
+        )
       ,
-      test("a schema used at one side only is not a conflict"):
+      test("a schema the two sides agree about shares its definition"):
+        val rendered = source(sendReport, answerReport)
+
+        assertTrue(render(sendReport, answerReport).issues.isEmpty, !rendered.contains("Report_2"))
+      ,
+      test("a schema used at one side only has no conflict"):
         assertTrue(render(send).issues.isEmpty, render(answer).issues.isEmpty)
     ),
     suite("module")(
+      test("different payloads with the same name stay distinct across endpoints"):
+        val first = endpoint(
+          request(Method.Get, __ / "first"),
+          result(Code.Ok).body(json(api.report.attr(Keys.name, "Shared"))).toUnion
+        )
+        val second = endpoint(
+          request(Method.Get, __ / "second"),
+          result(Code.Ok).body(json(api.settings.attr(Keys.name, "Shared"))).toUnion
+        )
+        val module = render(first, second)
+
+        assertTrue(
+          module.issues.isEmpty,
+          module.render.contains("export const Shared ="),
+          module.render.contains("export const Shared_2 ="),
+          module.render.contains("\"application/json\": Shared_2"),
+          module.render.contains("\"pages\": Schema.Int"),
+          module.render.contains("\"theme\": Schema.optionalWith")
+        )
+      ,
       test("a module imports the Schema it names"):
         assertTrue(source(api.fetch).startsWith("""import { Schema } from "effect";"""))
       ,

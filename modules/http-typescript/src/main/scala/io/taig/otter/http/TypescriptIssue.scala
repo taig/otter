@@ -31,11 +31,3 @@ enum TypescriptIssue:
     * name twice.
     */
   case Duplicate(operation: String, name: String)
-
-  /** Two different schemas asked to be declared under the same name.
-    *
-    * The usual cause is a schema whose two sides differ -- an optional field, or one holding a default -- used in a
-    * request and in a response, where what a reader accepts genuinely is not what a writer produces. The fix is on the
-    * schema's side: name the two apart, or make them agree.
-    */
-  case Conflict(name: String)

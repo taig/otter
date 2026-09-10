@@ -68,15 +68,9 @@ final class TypescriptEndpointRenderer(
 
     val (context, (statements, issues, _)) = program.run(JsonTypescriptContext.Empty).value
 
-    /* A name two schemas asked for and did not agree on. One context is threaded across every endpoint so that a
-     * schema two of them send is declared once, and requests are rendered at one side and responses at the other, so
-     * this is where a schema whose two sides differ shows up. It is reported rather than resolved: the declaration
-     * that stands is the first one reached, and which of the two a caller meant is not something a renderer knows. */
-    val conflicted = Chain.fromSeq(context.conflicts.toList.sorted).map(TypescriptIssue.Conflict.apply)
-
     TypescriptModule(
       TypescriptEndpointRenderer.Import :: context.declarations ++ statements.toList,
-      (issues ++ conflicted).toList
+      issues.toList
     )
 
   /** One endpoint: the type of its input, the two types of its answer, and the descriptor itself. */
@@ -392,7 +386,9 @@ object TypescriptEndpointRenderer:
       case symbol: Typescript.Expression.Symbol => State.pure(symbol)
       case expression                           =>
         State: context =>
-          val symbol = Typescript.Expression.Symbol(hint)
+          val (names, base) = context.names.assign(expression, hint)
+          val assigned = context.bindings.get((base, side)).getOrElse(context.available(base))
+          val symbol = Typescript.Expression.Symbol(assigned)
 
           val definition = JsonTypescriptDefinition(
             tpe = TypescriptEffect.inferred(Typescript.Type.TypeOf(symbol)),
@@ -400,7 +396,7 @@ object TypescriptEndpointRenderer:
             expression = expression
           )
 
-          (context.updated(hint, definition, side), symbol)
+          (context.copy(names = names).bind(base, side, assigned).updated(assigned, definition), symbol)
 
   private def value(schema: Body.Value[?, ?, ?]): Body.Value[?, ?, ?] = schema match
     case Body.Value.Modify(self, _, _) => TypescriptEndpointRenderer.value(self)

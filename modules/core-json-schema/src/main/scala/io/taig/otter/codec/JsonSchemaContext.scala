@@ -7,19 +7,13 @@ import io.taig.otter.JsonSchemaIssue
 import scala.collection.immutable.ListMap
 import scala.collection.immutable.Queue
 
-/** What a renderer carries along while it walks a schema.
-  *
-  * `definitions` are the documents hoisted so far, in the order they were finished. `stack` is the names whose bodies
-  * are still being rendered, which is how a cycle is noticed at all: reaching a name that is already on it means the
-  * schema refers to itself. `recursive` records that such a reference was made, and is read by whichever definition was
-  * being rendered when it happened. `issues` accumulates across the whole walk rather than per definition, because a
-  * caller wants to know what a document does not say, not where in the walk it stopped saying it.
-  */
+/** Definitions, allocated names, and the active traversal of one document. */
 final case class JsonSchemaContext(
     definitions: ListMap[String, CirceJson],
     stack: Queue[String],
     recursive: Boolean,
-    issues: Chain[JsonSchemaIssue]
+    issues: Chain[JsonSchemaIssue],
+    names: DefinitionNames = DefinitionNames.Empty
 ):
   def push(name: String): JsonSchemaContext = copy(stack = stack.enqueue(name))
 
