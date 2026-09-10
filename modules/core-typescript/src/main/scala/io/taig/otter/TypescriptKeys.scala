@@ -7,6 +7,11 @@ package io.taig.otter
   */
 trait TypescriptKeys:
   val expression: Metadata.Key[Typescript.Expression] = Metadata.Key("expression")
+
+  /** The decoded type of a generated schema. */
   val tpe: Metadata.Key[Typescript.Type] = Metadata.Key("type")
+
+  /** The encoded type; when absent, the generator derives the wire representation. */
+  val encodedType: Metadata.Key[Typescript.Type] = Metadata.Key("encoded-type")
 
 object TypescriptKeys extends TypescriptKeys

@@ -2,6 +2,8 @@ package io.taig.otter
 
 import cats.data.NonEmptyList
 import io.taig.otter.codec.JsonTypescriptTarget
+import io.taig.otter.codec.JsonTypescriptTypeEffectRenderer
+import io.taig.otter.codec.Renderer
 
 /** How the `effect` `Schema` module answers what [[io.taig.otter.codec.JsonStateTypescriptRenderer]] asks of a target.
   */
@@ -24,7 +26,16 @@ object JsonTypescriptEffect:
     override def inferred(symbol: Typescript.Expression): Typescript.Type =
       TypescriptEffect.inferred(Typescript.Type.TypeOf(symbol))
 
-    override def annotation(name: String): Typescript.Type =
-      TypescriptEffect.annotation(Typescript.Type.Symbol(name, parameters = Nil))
+    override def encoded(symbol: Typescript.Expression): Typescript.Type =
+      TypescriptEffect.encoded(Typescript.Type.TypeOf(symbol))
+
+    override def annotation(decoded: Typescript.Type, encoded: Typescript.Type): Typescript.Type =
+      TypescriptEffect.annotation(decoded, encoded)
+
+    override def structural(
+        side: Side,
+        projection: JsonTypescriptTarget.Projection,
+        renderer: Renderer[Json.Node, Typescript.Type]
+    ): Renderer[Json.Node, Typescript.Type] = JsonTypescriptTypeEffectRenderer(side, projection, renderer)
 
     override def suspend(self: Typescript.Expression): Typescript.Expression = TypescriptEffect.suspend(self)

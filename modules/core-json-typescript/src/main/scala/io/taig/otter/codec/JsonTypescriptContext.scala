@@ -12,7 +12,8 @@ final case class JsonTypescriptContext(
     stack: Queue[String],
     recursive: Boolean,
     names: DefinitionNames,
-    bindings: Map[(String, Side), String]
+    bindings: Map[(String, Side), String],
+    encodedNames: Map[String, String] = Map.empty
 ):
   def push(name: String): JsonTypescriptContext = copy(stack = stack.enqueue(name), recursive = false)
 
@@ -22,7 +23,7 @@ final case class JsonTypescriptContext(
     copy(bindings = bindings.updated((base, side), name))
 
   def available(hint: String): String =
-    DefinitionNames.available(hint, definitions.keySet ++ bindings.values ++ stack)
+    DefinitionNames.available(hint, definitions.keySet ++ bindings.values ++ encodedNames.values ++ stack)
 
   def updated(name: String, definition: JsonTypescriptDefinition): JsonTypescriptContext =
     copy(definitions = definitions.updated(name, definition))

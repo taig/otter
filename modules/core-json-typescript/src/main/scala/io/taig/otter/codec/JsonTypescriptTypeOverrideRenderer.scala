@@ -9,9 +9,10 @@ import io.taig.otter.TypescriptKeys
 /** [[JsonTypescriptExpressionOverrideRenderer]] for the type sort. */
 final class JsonTypescriptTypeOverrideRenderer(
     namespaces: NonEmptyList[Metadata.Namespace],
-    renderer: Renderer[Json.Node, Typescript.Type]
+    renderer: Renderer[Json.Node, Typescript.Type],
+    key: Metadata.Key[Typescript.Type] = TypescriptKeys.tpe
 ) extends Renderer[Json.Node, Typescript.Type]:
   override def render[W, R](json: Json.Node[W, R]): Typescript.Type =
     Json
-      .attr(namespaces, Json.metadata(json), TypescriptKeys.tpe)
+      .attr(namespaces, Json.metadata(json), key)
       .getOrElse(renderer.render(json))
