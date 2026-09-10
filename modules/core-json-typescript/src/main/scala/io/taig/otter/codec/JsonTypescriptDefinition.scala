@@ -10,9 +10,11 @@ import io.taig.otter.Typescript
 final case class JsonTypescriptDefinition(
     tpe: Typescript.Type,
     annotation: Option[Typescript.Type],
-    expression: Typescript.Expression
+    expression: Typescript.Expression,
+    encoded: Option[(String, Typescript.Type)] = None
 ):
   def declarations(name: String): List[Typescript.Statement.Declaration] =
-    Typescript.Statement.Declaration.Type(exported = true, name, tpe) ::
-      Typescript.Statement.Declaration.Constant(exported = true, name, annotation, expression) ::
-      Nil
+    val types = Typescript.Statement.Declaration.Type(exported = true, name, tpe) :: encoded.toList.map: (name, tpe) =>
+      Typescript.Statement.Declaration.Type(exported = true, name, tpe)
+
+    types :+ Typescript.Statement.Declaration.Constant(exported = true, name, annotation, expression)

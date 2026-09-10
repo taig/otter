@@ -23,18 +23,39 @@ final class JsonStateTypescriptRenderer(
   private lazy val body: Renderer[Json.Node, State[JsonTypescriptContext, Typescript.Expression]] =
     JsonTypescriptExpressionOverrideRenderer(namespaces, expression(this))
 
-  private def structural(json: Json.Node[?, ?], context: JsonTypescriptContext): Typescript.Type =
+  private def structural(
+      json: Json.Node[?, ?],
+      name: String,
+      context: JsonTypescriptContext,
+      projection: JsonTypescriptTarget.Projection,
+      selfEncoded: Option[String] = None
+  ): Typescript.Type =
+    val key = projection match
+      case JsonTypescriptTarget.Projection.Decoded => TypescriptKeys.tpe
+      case JsonTypescriptTarget.Projection.Encoded => TypescriptKeys.encodedType
+
     lazy val renderer: Renderer[Json.Node, Typescript.Type] = JsonTypescriptTypeOverrideRenderer(
       namespaces,
-      new JsonTypescriptTypeRenderer(
+      target.structural(
         side,
+        projection,
         Renderer([w, r] =>
           (child: Json.Node[w, r]) =>
             context.names.get(child).flatMap(base => context.bindings.get((base, side))) match
-              case Some(name) => Typescript.Type.Symbol(name, parameters = Nil)
-              case None       => renderer.render(child)
+              case Some(childName) =>
+                projection match
+                  case JsonTypescriptTarget.Projection.Decoded => Typescript.Type.Symbol(childName, Nil)
+                  case JsonTypescriptTarget.Projection.Encoded =>
+                    if childName == name then Typescript.Type.Symbol(selfEncoded.getOrElse(name), Nil)
+                    else
+                      context.definitions.get(childName) match
+                        case Some(definition) if definition.annotation.isDefined =>
+                          Typescript.Type.Symbol(definition.encoded.fold(childName)(_._1), Nil)
+                        case _ => target.encoded(Typescript.Expression.Symbol(childName))
+              case None => renderer.render(child)
         )
-      )
+      ),
+      key
     )
 
     renderer.render(json)
@@ -86,11 +107,21 @@ final class JsonStateTypescriptRenderer(
   ): (JsonTypescriptContext, JsonTypescriptDefinition) =
     val symbol = Typescript.Expression.Symbol(name)
     val (update, expression) = body.render(json).run(context.push(name)).value
-    val declared = Json
-      .attr(namespaces, Json.metadata(json), TypescriptKeys.tpe)
-      .orElse(Option.when(update.recursive)(structural(json, update)))
+    val explicit = Json.attr(namespaces, Json.metadata(json), TypescriptKeys.tpe).isDefined ||
+      Json.attr(namespaces, Json.metadata(json), TypescriptKeys.encodedType).isDefined
 
-    val definition = declared.fold(JsonTypescriptDefinition(target.inferred(symbol), none, expression)): tpe =>
-      JsonTypescriptDefinition(tpe, target.annotation(name).some, expression)
+    if !update.recursive && !explicit then (update, JsonTypescriptDefinition(target.inferred(symbol), none, expression))
+    else
+      val decoded = structural(json, name, update, JsonTypescriptTarget.Projection.Decoded)
+      val encoded = structural(json, name, update, JsonTypescriptTarget.Projection.Encoded)
+      val tpe = Typescript.Type.Symbol(name, Nil)
 
-    (update, definition)
+      if decoded == encoded then
+        (update, JsonTypescriptDefinition(decoded, target.annotation(tpe, tpe).some, expression))
+      else
+        val encodedName = update.encodedNames.getOrElse(name, update.available(name + "Encoded"))
+        val context = update.copy(encodedNames = update.encodedNames.updated(name, encodedName))
+        val encodedType = structural(json, name, context, JsonTypescriptTarget.Projection.Encoded, encodedName.some)
+        val annotation = target.annotation(tpe, Typescript.Type.Symbol(encodedName, Nil))
+
+        (context, JsonTypescriptDefinition(decoded, annotation.some, expression, (encodedName -> encodedType).some))

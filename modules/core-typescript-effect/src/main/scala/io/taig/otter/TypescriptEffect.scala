@@ -103,6 +103,10 @@ object TypescriptEffect:
     */
   def annotation(tpe: Typescript.Type): Typescript.Type = apply(Typescript.Type.Symbol("Schema", List(tpe)))
 
+  def annotation(decoded: Typescript.Type, encoded: Typescript.Type): Typescript.Type =
+    if decoded == encoded then annotation(decoded)
+    else apply(Typescript.Type.Symbol("Schema", List(decoded, encoded)))
+
   /** Whether a declared type was inferred from its value, which is what decides if the constant needs an annotation. */
   def isInferred(tpe: Typescript.Type): SBoolean = tpe match
     case Typescript.Type.Member("Schema", Typescript.Type.Member("Schema", Typescript.Type.Symbol("Type", _))) => true

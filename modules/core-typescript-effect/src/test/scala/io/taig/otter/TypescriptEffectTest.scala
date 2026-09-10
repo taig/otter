@@ -127,6 +127,15 @@ object TypescriptEffectTest extends ZIOSpecDefault:
           TypescriptEffect.annotation(tpe).render == "Schema.Schema<Book>"
         )
       ,
+      test("annotations distinguish transformations and keep symmetric schemas compact"):
+        val decoded = Typescript.Type.Symbol("Book", Nil)
+        val encoded = Typescript.Type.Symbol("BookEncoded", Nil)
+
+        assertTrue(
+          TypescriptEffect.annotation(decoded, encoded).render == "Schema.Schema<Book, BookEncoded>",
+          TypescriptEffect.annotation(decoded, decoded).render == "Schema.Schema<Book>"
+        )
+      ,
       /** What decides whether a constant needs an ascription: a type it inferred from its own value does not. */
       test("only an inferred type reads as inferred"):
         val tpe = Typescript.Type.Symbol("Book", Nil)

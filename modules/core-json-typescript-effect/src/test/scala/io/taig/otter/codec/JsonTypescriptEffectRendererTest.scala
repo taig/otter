@@ -320,7 +320,12 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
                                        |  "courses": ReadonlyArray<Course>;
                                        |};
                                        |
-                                       |export const Student: Schema.Schema<Student> = Schema.Struct({
+                                       |export type StudentEncoded = {
+                                       |  "name": string;
+                                       |  "courses": ReadonlyArray<Schema.Schema.Encoded<typeof Course>>;
+                                       |};
+                                       |
+                                       |export const Student: Schema.Schema<Student, StudentEncoded> = Schema.Struct({
                                        |  "name": Schema.String,
                                        |  "courses": Schema.Array(Schema.suspend(() => Course))
                                        |});
@@ -361,11 +366,15 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       test("a type a schema asks for wins over inference, and forces an ascription"):
         val bar = int.attr(Keys.name, "Bar").attr(TypescriptKeys.tpe, Typescript.Type.Symbol("unknown", Nil))
 
-        assertTrue(render(field("bar", bar).toRecord) == """export type Bar = unknown;
-                                                           |
-                                                           |export const Bar: Schema.Schema<Bar> = Schema.Int;
-                                                           |
-                                                           |Schema.Struct({ "bar": Bar })""".stripMargin)
+        assertTrue(
+          render(field("bar", bar).toRecord) == """export type Bar = unknown;
+                                                  |
+                                                  |export type BarEncoded = number;
+                                                  |
+                                                  |export const Bar: Schema.Schema<Bar, BarEncoded> = Schema.Int;
+                                                  |
+                                                  |Schema.Struct({ "bar": Bar })""".stripMargin
+        )
     )
   )
 
