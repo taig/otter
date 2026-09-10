@@ -9,7 +9,7 @@ import scala.collection.immutable.SortedMap
 opaque type Metadata = SortedMap[(Metadata.Namespace, Metadata.Key[Any]), Any]
 
 object Metadata:
-  opaque type Key[+A] = String
+  opaque type Key[A] = String
 
   object Key:
     def apply[A](identifier: String): Metadata.Key[A] = identifier
