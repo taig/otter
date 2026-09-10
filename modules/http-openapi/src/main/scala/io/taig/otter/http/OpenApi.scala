@@ -63,7 +63,14 @@ object OpenApi:
 
   /** A media type object: what a body of this type looks like. */
   def content(entries: List[(String, CirceJson)]): CirceJson =
-    CirceJson.obj(entries.map((media, schema) => media -> OpenApi.obj("schema" -> schema))*)
+    val grouped = entries.foldLeft(scala.collection.immutable.ListMap.empty[String, List[CirceJson]]):
+      case (groups, (media, schema)) => groups.updated(media, groups.getOrElse(media, Nil) :+ schema)
+
+    CirceJson.obj(
+      grouped.toList.map((media, schemas) =>
+        media -> OpenApi.obj("schema" -> JsonSchema.anyOf(NonEmptyList.fromListUnsafe(schemas.distinct)))
+      )*
+    )
 
   val InPath: String = "path"
 

@@ -140,7 +140,13 @@ final class TypescriptEndpointRenderer(
         (
           "results",
           Typescript.Expression.Object(
-            results.map(answer => (answer.code.value.toString, TypescriptEndpointRenderer.entries(answer.bodies)))
+            results
+              .map(_.code.value)
+              .distinct
+              .map: code =>
+                code.toString -> TypescriptEndpointRenderer.entries(
+                  results.filter(_.code.value == code).flatMap(_.bodies)
+                )
           )
         )
       )
@@ -356,7 +362,14 @@ object TypescriptEndpointRenderer:
   /** The alternatives of a body, keyed by media type, with `undefined` where nothing describes one. */
   private def entries(bodies: List[TypescriptEndpointRenderer.Alternative]): Typescript.Expression =
     Typescript.Expression.Object(
-      bodies.map(body => (body.media.render, body.schema.getOrElse(Typescript.Expression.Undefined)))
+      bodies
+        .map(_.media.render)
+        .distinct
+        .map: media =>
+          val alternatives = bodies.filter(_.media.render == media)
+          val schemas = alternatives.traverse(_.schema).flatMap(values => NonEmptyList.fromList(values.distinct))
+
+          media -> schemas.fold[Typescript.Expression](Typescript.Expression.Undefined)(TypescriptEffect.union)
     )
 
   /** The union of some types, collapsed to the one member where there is only one.
