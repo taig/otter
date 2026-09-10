@@ -2,6 +2,7 @@ package io.taig.otter.codec
 
 import io.taig.otter.Side
 import io.taig.otter.Typescript
+import io.taig.otter.TypescriptIdentifier
 
 import scala.collection.immutable.ListMap
 import scala.collection.immutable.Queue
@@ -13,7 +14,8 @@ final case class JsonTypescriptContext(
     recursive: Boolean,
     names: DefinitionNames,
     bindings: Map[(String, Side), String],
-    encodedNames: Map[String, String] = Map.empty
+    encodedNames: Map[String, String] = Map.empty,
+    reserved: Set[String] = Set.empty
 ):
   def push(name: String): JsonTypescriptContext = copy(stack = stack.enqueue(name), recursive = false)
 
@@ -23,7 +25,14 @@ final case class JsonTypescriptContext(
     copy(bindings = bindings.updated((base, side), name))
 
   def available(hint: String): String =
-    DefinitionNames.available(hint, definitions.keySet ++ bindings.values ++ encodedNames.values ++ stack)
+    DefinitionNames.available(
+      TypescriptIdentifier(hint),
+      TypescriptIdentifier.Reserved ++ reserved ++ definitions.keySet ++ bindings.values ++ encodedNames.values ++ stack
+    )
+
+  def allocate(hint: String): (JsonTypescriptContext, String) =
+    val name = available(hint)
+    (copy(reserved = reserved + name), name)
 
   def updated(name: String, definition: JsonTypescriptDefinition): JsonTypescriptContext =
     copy(definitions = definitions.updated(name, definition))

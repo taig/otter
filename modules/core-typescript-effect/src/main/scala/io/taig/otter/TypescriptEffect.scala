@@ -15,6 +15,9 @@ object TypescriptEffect:
   /** The [[Metadata.Namespace]] the effect renderers read their attributes from, whatever the format being rendered. */
   val Namespace: Metadata.Namespace = Metadata.Namespace("typescript-effect")
 
+  /** Import and global names referenced by generated schemas and HTTP descriptors. */
+  val Reserved: Set[JString] = Set("Schema", "String", "Number", "ReadonlyArray", "Record", "Blob", "Date")
+
   /** `Schema.<expression>`. */
   def apply(expression: Typescript.Expression): Typescript.Expression =
     Typescript.Expression.Member(namespace = "Schema", expression)

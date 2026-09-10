@@ -8,9 +8,10 @@ import io.taig.otter.Metadata
   * this one rather than editing an enumeration.
   */
 trait HttpTypescriptKeys:
-  /** The name the generated descriptor is bound to. Falls back to a name derived from the method and the path, which is
-    * the fallback [[OpenApiKeys.operationId]] already describes -- and is deliberately the same key by name, so that an
-    * endpoint that has told an OpenAPI document what to call it has told this renderer too.
+  /** The preferred name of the generated descriptor. Invalid identifier characters are replaced and collisions are
+    * suffixed. Falls back to a name derived from the method and the path, which is the fallback
+    * [[OpenApiKeys.operationId]] already describes -- and is deliberately the same key by name, so that an endpoint
+    * that has told an OpenAPI document what to call it has told this renderer too.
     */
   val operationId: Metadata.Key[String] = Metadata.Key("operationId")
 
