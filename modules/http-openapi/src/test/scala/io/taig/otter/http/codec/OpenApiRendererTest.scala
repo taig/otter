@@ -129,26 +129,33 @@ object OpenApiRendererTest extends ZIOSpecDefault:
     suite("multipart")(
       test("is an object of parts with a content type, and a filename, for each"):
         val expected = CirceJson.obj(
-          "type" -> CirceJson.fromString("object"),
-          "properties" -> CirceJson.obj(
-            "report" -> CirceJson.obj("$ref" -> CirceJson.fromString("#/components/schemas/Report")),
-            "attachment" -> CirceJson.obj(
-              "type" -> CirceJson.fromString("string"),
-              "contentMediaType" -> CirceJson.fromString("application/pdf")
-            )
+          "schema" -> CirceJson.obj(
+            "type" -> CirceJson.fromString("object"),
+            "properties" -> CirceJson.obj(
+              "report" -> CirceJson.obj("$ref" -> CirceJson.fromString("#/components/schemas/Report")),
+              "attachment" -> CirceJson.obj(
+                "type" -> CirceJson.fromString("string"),
+                "contentMediaType" -> CirceJson.fromString("application/pdf")
+              )
+            ),
+            "required" -> CirceJson.arr(CirceJson.fromString("report"))
           ),
-          "required" -> CirceJson.arr(CirceJson.fromString("report")),
           "encoding" -> CirceJson.obj(
             "report" -> CirceJson.obj("contentType" -> CirceJson.fromString("application/json")),
             "attachment" -> CirceJson.obj(
               "contentType" -> CirceJson.fromString("application/pdf"),
-              "contentDisposition" -> CirceJson.fromString("""form-data; filename="report.pdf"""")
+              "headers" -> CirceJson.obj(
+                "Content-Disposition" -> CirceJson.obj(
+                  "schema" -> CirceJson.obj("type" -> CirceJson.fromString("string")),
+                  "example" -> CirceJson.fromString("""form-data; name="attachment"; filename="report.pdf"""")
+                )
+              )
             )
           )
         )
 
         assertTrue(
-          document.at("paths", "/reports/{id}", "put", "requestBody", "content", "multipart/form-data", "schema") ==
+          document.at("paths", "/reports/{id}", "put", "requestBody", "content", "multipart/form-data") ==
             Some(expected)
         )
       ,

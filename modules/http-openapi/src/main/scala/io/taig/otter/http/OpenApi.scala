@@ -6,6 +6,8 @@ import io.taig.otter.Json
 import io.taig.otter.JsonSchema
 import io.taig.otter.Metadata
 
+import scala.collection.immutable.ListMap
+
 /** The vocabulary an OpenAPI document is built out of.
   *
   * A document is an `io.circe.Json`, for the reason [[JsonSchema]] gives for the same choice: an OpenAPI document *is*
@@ -61,15 +63,25 @@ object OpenApi:
       "schema" -> schema
     )
 
-  /** A media type object: what a body of this type looks like. */
-  def content(entries: List[(String, CirceJson)]): CirceJson =
-    val grouped = entries.foldLeft(scala.collection.immutable.ListMap.empty[String, List[CirceJson]]):
-      case (groups, (media, schema)) => groups.updated(media, groups.getOrElse(media, Nil) :+ schema)
+  /** A payload schema and the encoding information that belongs to its media type object. */
+  final case class Content(schema: CirceJson, encoding: ListMap[String, CirceJson] = ListMap.empty)
+
+  /** Alternatives share an encoding only when they agree; callers report any lost encoding information. */
+  def content(entries: List[(String, OpenApi.Content)]): CirceJson =
+    val grouped = entries.foldLeft(ListMap.empty[String, List[OpenApi.Content]]):
+      case (groups, (media, content)) => groups.updated(media, groups.getOrElse(media, Nil) :+ content)
 
     CirceJson.obj(
-      grouped.toList.map((media, schemas) =>
-        media -> OpenApi.obj("schema" -> JsonSchema.anyOf(NonEmptyList.fromListUnsafe(schemas.distinct)))
-      )*
+      grouped.toList.map { (media, alternatives) =>
+        val encoding = alternatives.map(_.encoding).distinct match
+          case value :: Nil if value.nonEmpty => List("encoding" -> CirceJson.obj(value.toList*))
+          case _                              => Nil
+
+        media -> JsonSchema.merge(
+          OpenApi.obj("schema" -> JsonSchema.anyOf(NonEmptyList.fromListUnsafe(alternatives.map(_.schema).distinct))),
+          encoding*
+        )
+      }*
     )
 
   val InPath: String = "path"

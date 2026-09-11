@@ -130,6 +130,18 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
           reading.length < writing.length
         )
     ),
+    test("cover uploads put part encodings beside the schema on both sides"):
+      val documents = List(server, client)
+      assertTrue(documents.forall: document =>
+        val media =
+          at(document.value, "paths", "/books/{isbn}/cover", "post", "requestBody", "content", "multipart/form-data")
+            .getOrElse(CirceJson.Null)
+        at(media, "schema", "encoding").isEmpty &&
+        at(media, "encoding", "image", "contentType").flatMap(_.asString).contains("application/octet-stream") &&
+        at(media, "encoding", "image", "headers", "Content-Disposition", "example")
+          .flatMap(_.asString)
+          .contains("""form-data; name="image"; filename="cover.png""""))
+    ,
     suite("what could not be said")(
       test("a streamed body is reported, and the rest of the document still comes back"):
         val framed = server.issues.collect { case issue: OpenApiIssue.Framed => issue }

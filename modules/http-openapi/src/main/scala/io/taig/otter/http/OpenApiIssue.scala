@@ -33,6 +33,11 @@ enum OpenApiIssue:
     */
   case ResponseAlternatives(operation: String, status: Int)
 
+  /** Multipart encoding cannot be represented here: nested parts, responses, a non-multipart media type, or
+    * alternatives with different encoding maps. The schema is retained and the unsupported encoding is omitted.
+    */
+  case Encoding(operation: String, mediaType: String)
+
   /** An issue the payload's own renderer reported, kept with the operation it was found in. */
   case Payload(operation: String, issue: JsonSchemaIssue)
 
