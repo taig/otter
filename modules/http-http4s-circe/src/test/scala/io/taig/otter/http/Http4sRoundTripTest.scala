@@ -57,8 +57,8 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
   private val upload: Endpoint[ByteVector, ByteVector] =
     endpoint(
-      request(method.post, __ :* segment("files"))(body.binary(MediaType.Pdf)),
-      result(code.ok)(body.binary(MediaType.Pdf)).toUnion
+      request(method.post, __ :* segment("files"))(body.binary(dsl.mediaType.pdf)),
+      result(code.ok)(body.binary(dsl.mediaType.pdf)).toUnion
     )
 
   /** `POST /reports` whose body may be either of two alternatives, which is what content negotiation describes. */
@@ -239,7 +239,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
             assertTrue(
               exit.causeOption.exists(_.failures.exists {
                 case Http4sFailure.Interpreter(Http4sIssue.Uninterpreted(mediaType)) =>
-                  mediaType == MediaType.MultipartFormData
+                  mediaType == dsl.mediaType.multipartFormData
                 case _ => false
               })
             )
@@ -290,7 +290,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
           Http4sWire.Response(
             Code(418),
             Chain.one(("X-Violations", Http4s.report(violations).linesIterator.size.toString)),
-            Some((MediaType.Json, ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)))
+            Some((dsl.mediaType.json, ByteVector.encodeUtf8("""{"error":"invalid"}""").getOrElse(ByteVector.empty)))
           )
 
         answer(configure, malformed)(sent(Http4sMethod.PUT, uri"http://otter.test/settings", """{"theme":42}"""))

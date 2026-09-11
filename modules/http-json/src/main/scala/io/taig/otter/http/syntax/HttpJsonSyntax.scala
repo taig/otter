@@ -5,7 +5,7 @@ import io.taig.otter.Json
 import io.taig.otter.Reference
 import io.taig.otter.http.Body
 import io.taig.otter.http.Frame
-import io.taig.otter.http.MediaType
+import io.taig.otter.http.component.MediaTypeComponent
 
 /** Bodies carrying JSON.
   *
@@ -22,7 +22,7 @@ trait HttpJsonSyntax:
   def json[S[-w, +r] <: Json.Node[w, r], W, R](
       schema: => Json.Schema[S, W, R]
   ): Body.Schema[[w, r] =>> Json.Schema[S, w, r], W, R] =
-    Body.Schema(Body.Value.Whole(MediaType.Json, Reference.later(schema)))
+    Body.Schema(Body.Value.Whole(MediaTypeComponent.json, Reference.later(schema)))
 
   /** A body carrying JSON documents one per line, which is what `application/x-ndjson` is.
     *
@@ -32,6 +32,8 @@ trait HttpJsonSyntax:
   def ndjson[S[-w, +r] <: Json.Node[w, r], W, R](
       schema: => Json.Schema[S, W, R]
   ): Body.Streamed.Schema[[w, r] =>> Json.Schema[S, w, r], W, R] =
-    new Body.Streamed.Schema(Annotation(Body.Value.Streamed(MediaType.NdJson, Frame.Lines, Reference.later(schema))))
+    new Body.Streamed.Schema(
+      Annotation(Body.Value.Streamed(MediaTypeComponent.ndJson, Frame.Lines, Reference.later(schema)))
+    )
 
 object HttpJsonSyntax extends HttpJsonSyntax

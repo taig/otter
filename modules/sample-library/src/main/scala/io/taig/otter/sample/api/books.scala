@@ -6,12 +6,12 @@ import io.taig.otter.http.Body
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Frame
 import io.taig.otter.http.Headers
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
 import io.taig.otter.sample.Book
+import io.taig.otter.sample.Category
 import io.taig.otter.sample.Genre
 import io.taig.otter.sample.Isbn
 import io.taig.otter.sample.Problem
@@ -161,13 +161,13 @@ object books:
     * -- which is how a PDF, an image or anything else opaque is described without pretending it has structure.
     */
   val scan: Endpoint[(Isbn, ByteVector), ByteVector] = endpoint(
-    request(method.post, books.one / "scan")(body.binary(MediaType.Pdf)),
-    result(code.ok)(body.binary(MediaType.Pdf))
+    request(method.post, books.one / "scan")(body.binary(mediaType.pdf)),
+    result(code.ok)(body.binary(mediaType.pdf))
   ).attr(openapi.operationId, "scanBook")
     .attr(openapi.tags, "books")
 
   /** A body that may be either of two things, told apart by media type and not by trying to parse each in turn. */
-  val submitted: Bodies[Either[Book.Create, ByteVector]] = body.json(schema.create) :+ body.binary(MediaType.Pdf)
+  val submitted: Bodies[Either[Book.Create, ByteVector]] = body.json(schema.create) :+ body.binary(mediaType.pdf)
 
   /** `POST /intake`: an acquisition, sent as a document or as a scan of the paperwork, or announced with neither.
     *
@@ -190,7 +190,7 @@ object books:
     */
   val cover: Multipart[(Book.Patch, Option[ByteVector])] =
     part("metadata", body.json(schema.patch)) :*
-      part("image", body.binary(MediaType.OctetStream)).filename("cover.png").optional
+      part("image", body.binary(mediaType.octetStream)).filename("cover.png").optional
 
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
   val upload: Endpoint[(Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
@@ -220,12 +220,12 @@ object books:
     */
   val report: Endpoint[Unit, Unit] = endpoint(
     request(method.get, books.all / "report"),
-    result(code.ok)(body.streamed(MediaType.Csv, Frame.Lines, schema.row))
+    result(code.ok)(body.streamed(mediaType.csv, Frame.Lines, schema.row))
   ).attr(openapi.operationId, "reportBooks")
     .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
-  val catalogue: Endpoint[Unit, io.taig.otter.sample.Category] = endpoint(
+  val catalogue: Endpoint[Unit, Category] = endpoint(
     request(method.get, __ / "catalogue"),
     result(code.ok)(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")

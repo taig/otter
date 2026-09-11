@@ -14,7 +14,7 @@ import scala.annotation.targetName
 
 /** The three forms a body comes in.
   *
-  * A payload is any schema at all, so `body(MediaType.Json, someJsonSchema)` and `body(MediaType.Csv, someCsvSchema)`
+  * A payload is any schema at all, so `body(mediaType.json, someJsonSchema)` and `body(mediaType.csv, someCsvSchema)`
   * are the same combinator, and which alphabet the document is written in is recorded in the body's type rather than
   * chosen from a fixed list here.
   *
@@ -35,7 +35,7 @@ trait BodyComponent:
     Body.Schema(Body.Value.Binary(mediaType))
 
   /** Bytes as `application/octet-stream`, which is what they are when nothing more is known. */
-  val binary: Body.Of[Body.Opaque, ByteVector] = binary(MediaType.OctetStream)
+  val binary: Body.Of[Body.Opaque, ByteVector] = binary(MediaTypeComponent.octetStream)
 
   /** A sequence of documents, arriving one at a time.
     *
@@ -51,7 +51,7 @@ trait BodyComponent:
 
   /** Newline delimited JSON, which is what a streamed sequence of documents is written as by default. */
   def streamed[S[-w, +r], W, R](element: => S[W, R]): Body.Streamed.Schema[S, W, R] =
-    streamed(MediaType.NdJson, Frame.Lines, element)
+    streamed(MediaTypeComponent.ndJson, Frame.Lines, element)
 
   /** A body whose content is a set of parts.
     *
@@ -61,7 +61,7 @@ trait BodyComponent:
     */
   def multipart[B[-w, +r], W, R](
       parts: => Multipart.Schema[B, W, R]
-  ): Body.Schema[[w, r] =>> Multipart.Schema[B, w, r], W, R] = apply(MediaType.MultipartFormData, parts)
+  ): Body.Schema[[w, r] =>> Multipart.Schema[B, w, r], W, R] = apply(MediaTypeComponent.multipartFormData, parts)
 
   /** A body that need not be sent at all. */
   @targetName("body")

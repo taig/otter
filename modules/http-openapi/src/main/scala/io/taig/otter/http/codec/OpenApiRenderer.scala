@@ -26,6 +26,7 @@ import io.taig.otter.http.Queries
 import io.taig.otter.http.Request
 import io.taig.otter.http.Result
 import io.taig.otter.http.Results
+import io.taig.otter.http.component.MediaTypeComponent
 
 import scala.collection.immutable.ListMap
 import scala.compiletime.asMatchable
@@ -373,7 +374,7 @@ final class OpenApiRenderer(
 
   /** A payload, handed to whichever renderer knows its alphabet. */
   private def document(operation: String, side: Side, content: Any): (CirceJson, Collected) =
-    this.document(operation, side, content, MediaType.Json)
+    this.document(operation, side, content, MediaTypeComponent.json)
 
   private def document(operation: String, side: Side, content: Any, media: MediaType): (CirceJson, Collected) =
     payload.render(side, content) match

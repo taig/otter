@@ -99,6 +99,8 @@ trait HttpComponent
 
   object code extends CodeComponent
 
+  object mediaType extends MediaTypeComponent
+
   object method extends MethodComponent
 
   object segment extends SegmentComponent

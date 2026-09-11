@@ -4,7 +4,6 @@ import cats.data.Chain
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -37,7 +36,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
         endpoint(
           requestSchema,
           result(code.ok)(body.json(payload.int)).attr(Keys.description, "A number") :+
-            result(code.ok)(body(MediaType.Text, payload.string)).attr(Keys.description, "Text")
+            result(code.ok)(body(mediaType.text, payload.string)).attr(Keys.description, "Text")
         )
       )
       val value = response(document)

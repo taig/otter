@@ -3,7 +3,6 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import io.taig.otter.Keys
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.TypescriptIssue
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.dsl.*
@@ -26,7 +25,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
       val module = render(
         endpoint(
           requestSchema,
-          result(code.ok)(body.json(integer)) :+ result(code.ok)(body(MediaType.Text, text))
+          result(code.ok)(body.json(integer)) :+ result(code.ok)(body(mediaType.text, text))
         )
       )
       val source = module.render
@@ -69,7 +68,7 @@ object TypescriptResponseAlternativesTest extends ZIOSpecDefault:
         endpoint(
           requestSchema,
           result(code.ok)(body.json(integer)) :+ result(code.ok)(
-            body(MediaType.Json, Unknown[String, String]())
+            body(mediaType.json, Unknown[String, String]())
           )
         )
       )

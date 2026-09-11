@@ -12,6 +12,7 @@ import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResultDecoder
 import io.taig.otter.http.codec.Http4sResultEncoder
 import io.taig.otter.http.component.HttpComponent
+import io.taig.otter.http.component.MediaTypeComponent
 import org.http4s.Entity
 import org.http4s.HttpRoutes
 import org.http4s.Request as Http4sRequest
@@ -111,7 +112,7 @@ object Http4s:
   def malformed(violations: Violations): Http4sWire.Response =
     val bytes = ByteVector.encodeUtf8(Http4s.report(violations)).getOrElse(ByteVector.empty)
 
-    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((MediaType.Text, bytes)))
+    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((MediaTypeComponent.text, bytes)))
 
   /** A violation tree, one line per violation, each named by where it was found and by what was found there.
     *
@@ -166,6 +167,8 @@ object Http4s:
       .map: bytes =>
         val mediaType = Http4sEnvelope.toMediaType(response.headers)
         val body =
-          Option.when(mediaType.nonEmpty || bytes.nonEmpty)((mediaType.getOrElse(MediaType.OctetStream), bytes))
+          Option.when(mediaType.nonEmpty || bytes.nonEmpty)(
+            (mediaType.getOrElse(MediaTypeComponent.octetStream), bytes)
+          )
 
         (Http4sEnvelope.toHeaders(response.headers), body)

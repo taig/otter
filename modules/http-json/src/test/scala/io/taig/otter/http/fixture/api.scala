@@ -6,7 +6,6 @@ import io.taig.otter.component.JsonComponent
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Endpoint
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
@@ -52,7 +51,7 @@ object api:
     * in different alphabets -- one a JSON schema, the other no schema at all -- and the union of their payload types is
     * what the body's own type records.
     */
-  val negotiated: Bodies[Either[Report, ByteVector]] = body.json(api.report) :+ body.binary(MediaType.Pdf)
+  val negotiated: Bodies[Either[Report, ByteVector]] = body.json(api.report) :+ body.binary(mediaType.pdf)
 
   /** A multipart upload: a JSON part and a file part, which is the shape neither earlier attempt could write down.
     *
@@ -61,7 +60,7 @@ object api:
     */
   val upload: Multipart[Upload] =
     (part("report", body.json(api.report)) :*
-      part("attachment", body.binary(MediaType.Pdf)).filename("report.pdf")).to
+      part("attachment", body.binary(mediaType.pdf)).filename("report.pdf")).to
 
   /** The same upload as a body, which is all a multipart body is: a body whose payload happens to be a set of parts. */
   val uploaded: Body.Of[Multipart.Node, Upload] = body.multipart(api.upload)
@@ -111,7 +110,7 @@ object api:
   /** An upload whose attachment need not be sent, to show that a part is a field and carries a field's optionality. */
   val partial: Multipart[(Report, Option[ByteVector])] =
     part("report", body.json(api.named)) :*
-      part("attachment", body.binary(MediaType.Pdf)).filename("report.pdf").optional
+      part("attachment", body.binary(mediaType.pdf)).filename("report.pdf").optional
 
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
   val replace: Endpoint.Server[Body.Payload, (Int, (Report, Option[ByteVector])), Report] =

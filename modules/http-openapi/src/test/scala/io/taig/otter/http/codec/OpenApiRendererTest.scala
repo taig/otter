@@ -3,7 +3,6 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import io.circe.ACursor
 import io.circe.Json as CirceJson
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -176,7 +175,7 @@ object OpenApiRendererTest extends ZIOSpecDefault:
       ,
       /** The framing is the one thing OpenAPI has no vocabulary for, so it is reported rather than implied. */
       test("says that the framing went unsaid"):
-        assertTrue(document.issues == List(OpenApiIssue.Framed("GET /reports", MediaType.NdJson.render)))
+        assertTrue(document.issues == List(OpenApiIssue.Framed("GET /reports", mediaType.ndJson.render)))
     ),
     suite("sides")(
       /** The claim the two `Side`s exist for. A field holding a default is absent when read and always written, so a
@@ -266,13 +265,13 @@ object OpenApiRendererTest extends ZIOSpecDefault:
           info,
           Chain(
             endpoint(
-              request(method.post, __ :* segment("opaque"))(body(MediaType.Text, Unknown[String, String]())),
+              request(method.post, __ :* segment("opaque"))(body(mediaType.text, Unknown[String, String]())),
               result(code.ok).toUnion
             )
           )
         )
 
-        assertTrue(rendered.issues == List(OpenApiIssue.Undescribed("POST /opaque", MediaType.Text.render))) &&
+        assertTrue(rendered.issues == List(OpenApiIssue.Undescribed("POST /opaque", mediaType.text.render))) &&
         assertTrue(
           rendered.at("paths", "/opaque", "post", "requestBody", "content", "text/plain", "schema") ==
             Some(CirceJson.obj())

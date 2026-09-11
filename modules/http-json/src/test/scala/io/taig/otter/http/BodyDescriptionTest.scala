@@ -21,7 +21,7 @@ object BodyDescriptionTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("BodyDescriptionTest")(
     suite("whole")(
       test("carries the media type it was written as"):
-        assertTrue(api.reported.mediaType == MediaType.Json)
+        assertTrue(api.reported.mediaType == dsl.mediaType.json)
       ,
       test("reaches its payload, which is a schema of another alphabet entirely"):
         val payload = api.reported.self.self match
@@ -34,11 +34,11 @@ object BodyDescriptionTest extends ZIOSpecDefault:
       test("are one branch per media type, in the order they were offered"):
         val media = api.negotiated.self.self.branches.map(_.value.mediaType)
 
-        assertTrue(media.toChain.toList == List(MediaType.Json, MediaType.Pdf))
+        assertTrue(media.toChain.toList == List(dsl.mediaType.json, dsl.mediaType.pdf))
     ),
     suite("multipart")(
       test("is a body whose payload is a set of parts"):
-        assertTrue(api.uploaded.mediaType == MediaType.MultipartFormData)
+        assertTrue(api.uploaded.mediaType == dsl.mediaType.multipartFormData)
       ,
       test("names its parts in the order they were declared"):
         assertTrue(parts.map(_.self.name).toList == List("report", "attachment"))
@@ -46,14 +46,14 @@ object BodyDescriptionTest extends ZIOSpecDefault:
       test("gives every part a body, and so a content type of its own"):
         val media = parts.map(_.self.schema.value.mediaType)
 
-        assertTrue(media.toList == List(MediaType.Json, MediaType.Pdf))
+        assertTrue(media.toList == List(dsl.mediaType.json, dsl.mediaType.pdf))
       ,
       test("carries a filename on the part that claims one, and on no other"):
         assertTrue(parts.map(part => filename(part.metadata)).toList == List(None, Some("report.pdf")))
     ),
     suite("streamed")(
       test("says how its elements are framed and what they are written as"):
-        assertTrue(api.reports.frame == Frame.Lines) && assertTrue(api.reports.mediaType == MediaType.NdJson)
+        assertTrue(api.reports.frame == Frame.Lines) && assertTrue(api.reports.mediaType == dsl.mediaType.ndJson)
       ,
       test("reaches the schema of one element, which is what a renderer documents"):
         val element = api.reports.self.self match
@@ -67,6 +67,6 @@ object BodyDescriptionTest extends ZIOSpecDefault:
       test("contributes nothing to what the request that holds it reads"):
         val held: Body.Of[Json.Node, Unit] = api.reports.body
 
-        assertTrue(held.mediaType == MediaType.NdJson)
+        assertTrue(held.mediaType == dsl.mediaType.ndJson)
     )
   )

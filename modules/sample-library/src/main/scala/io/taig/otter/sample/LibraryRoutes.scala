@@ -7,9 +7,9 @@ import io.taig.otter.codec.JsonCirceEncoder
 import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sWire
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.Route
 import io.taig.otter.sample.api.books
+import io.taig.otter.sample.api.dsl
 import io.taig.otter.sample.api.loans
 import io.taig.otter.sample.api.schema
 import org.http4s.HttpRoutes
@@ -46,7 +46,7 @@ object LibraryRoutes:
     val document = JsonCirceEncoder.encode(schema.problem, problem).noSpaces
     val bytes = ByteVector.encodeUtf8(document).getOrElse(ByteVector.empty)
 
-    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((MediaType.Json, bytes)))
+    Http4sWire.Response(Http4s.code(violations), Chain.empty, Some((dsl.mediaType.json, bytes)))
 
   /** Every served endpoint, answered by `library`. */
   def apply[F[_]: Concurrent](library: Library[F]): HttpRoutes[F] =

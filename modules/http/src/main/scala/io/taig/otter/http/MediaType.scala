@@ -23,36 +23,13 @@ final case class MediaType(primary: String, secondary: String, parameters: ListM
   def withParameter(name: String, value: String): MediaType =
     MediaType(primary, secondary, parameters.updated(name, value))
 
-  def render: String =
-    parameters.foldLeft(s"$primary/$secondary")((rendered, parameter) => s"$rendered; ${parameter._1}=${parameter._2}")
+  def render: String = parameters.foldLeft(s"$primary/$secondary"):
+    case (rendered, (key, value)) => s"$rendered; $key=$value"
 
 object MediaType:
   def apply(primary: String, secondary: String): MediaType =
     MediaType(primary, secondary, ListMap.empty)
 
-  val Json: MediaType = MediaType("application", "json")
-
-  /** Newline delimited JSON, which is what a streamed sequence of JSON values is written as. */
-  val NdJson: MediaType = MediaType("application", "x-ndjson")
-
-  val Csv: MediaType = MediaType("text", "csv")
-
-  val EventStream: MediaType = MediaType("text", "event-stream")
-
-  val FormUrlencoded: MediaType = MediaType("application", "x-www-form-urlencoded")
-
-  val Html: MediaType = MediaType("text", "html")
-
-  val MultipartFormData: MediaType = MediaType("multipart", "form-data")
-
-  val OctetStream: MediaType = MediaType("application", "octet-stream")
-
-  val Pdf: MediaType = MediaType("application", "pdf")
-
-  val Text: MediaType = MediaType("text", "plain")
-
-  val Xml: MediaType = MediaType("application", "xml")
-
   given order: Order[MediaType] = Order.by(mediaType => (mediaType.primary, mediaType.secondary, mediaType.render))
 
-  given show: Show[MediaType] = Show.show(_.render)
+  given show: Show[MediaType] = _.render

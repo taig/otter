@@ -7,9 +7,9 @@ import io.taig.otter.http.Http4s
 import io.taig.otter.http.Http4sCirce
 import io.taig.otter.http.Http4sFailure
 import io.taig.otter.http.Http4sIssue
-import io.taig.otter.http.MediaType
 import io.taig.otter.http.Route
 import io.taig.otter.sample.api.books
+import io.taig.otter.sample.api.dsl
 import org.http4s.Uri
 import org.http4s.client.Client as Http4sClient
 import org.http4s.implicits.*
@@ -51,7 +51,7 @@ object LibraryShortfallTest extends ZIOSpecDefault:
         (Isbn.digits("9780261102217"), (patch, None))
       ).exit.map: exit =>
         assertTrue(issues(exit).exists:
-          case Http4sIssue.Uninterpreted(mediaType) => mediaType == MediaType.MultipartFormData
+          case Http4sIssue.Uninterpreted(mediaType) => mediaType == dsl.mediaType.multipartFormData
           case _                                    => false)
     ,
     test("a streamed answer is reported rather than answered with an empty body"):

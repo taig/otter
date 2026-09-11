@@ -25,7 +25,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
   private val Base: Uri = uri"http://otter.test"
   private val Png: MediaType = MediaType("image", "png")
   private val png: Body.Of[Body.Opaque, ByteVector] = body.binary(Png)
-  private val text: Body.Of[Body.Opaque, ByteVector] = body.binary(MediaType.Text)
+  private val text: Body.Of[Body.Opaque, ByteVector] = body.binary(dsl.mediaType.text)
   private val EmptyEntities: List[(String, Entity[IO])] = List(
     "empty" -> Entity.empty,
     "strict" -> Entity.Strict(ByteVector.empty),
