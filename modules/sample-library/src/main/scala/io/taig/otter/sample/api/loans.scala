@@ -49,5 +49,5 @@ object loans:
   /** `GET /health`, which is the smallest endpoint there is: a literal path, nothing read, nothing written. */
   val health: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, __ / "health"),
-    result(Code.NoContent).toUnion
+    result(Code.NoContent)
   ).attr(openapi.operationId, "health").attr(openapi.tags, "service")

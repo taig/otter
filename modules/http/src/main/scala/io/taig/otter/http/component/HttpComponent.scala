@@ -86,6 +86,17 @@ trait HttpComponent
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
     Endpoint.Schema(Endpoint.Value[Body.Or[S1, S2], AW, AR, BW, BR](request, responses))
 
+  /** An endpoint that answers in exactly one way, which is most of them.
+    *
+    * The lone result is lifted into the union that holds it, so that the common case is not made to spell out the union
+    * it is a branch of -- the same courtesy `:+` does for the first branch of a chain.
+    */
+  def endpoint[S1[-w, +r], S2[-w, +r], AW, AR, BW, BR](
+      request: Request.Schema[S1, AW, AR],
+      response: Result.Schema[S2, BW, BR]
+  ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
+    endpoint[S1, S2, AW, AR, BW, BR](request, response.toUnion)
+
   object segment extends SegmentComponent
 
   /** A `val` rather than an `object`, so a consumer that layers a format-specific vocabulary on top -- JSON's `json`

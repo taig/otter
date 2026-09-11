@@ -100,7 +100,7 @@ object books:
     */
   val list: Endpoint[(Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] = endpoint(
     request(Method.Get, books.all).queries(books.filter).headers(books.tracing),
-    result(Code.Ok).body(body.json(json.collection.list(schema.book))).toUnion
+    result(Code.Ok).body(body.json(json.collection.list(schema.book)))
   ).attr(openapi.operationId, "listBooks")
     .attr(openapi.summary, "Every book the catalogue holds")
     .attr(openapi.tags, "books")
@@ -151,7 +151,7 @@ object books:
     */
   val scan: Endpoint[(Isbn, ByteVector), ByteVector] = endpoint(
     request(Method.Post, books.one / "scan").body(body.binary(MediaType.Pdf)),
-    result(Code.Ok).body(body.binary(MediaType.Pdf)).toUnion
+    result(Code.Ok).body(body.binary(MediaType.Pdf))
   ).attr(openapi.operationId, "scanBook")
     .attr(openapi.tags, "books")
 
@@ -167,7 +167,7 @@ object books:
     */
   val intake: Endpoint[Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
     request(Method.Post, __ / "intake").optionalBodies(books.submitted),
-    result(Code.Accepted).toUnion
+    result(Code.Accepted)
   ).attr(openapi.operationId, "intake")
     .attr(openapi.tags, "books")
 
@@ -184,7 +184,7 @@ object books:
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
   val upload: Endpoint[(Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
     request(Method.Post, books.one / "cover").body(body.multipart(books.cover)),
-    result(Code.NoContent).toUnion
+    result(Code.NoContent)
   ).attr(openapi.operationId, "uploadCover")
     .attr(openapi.tags, "books")
 
@@ -197,7 +197,7 @@ object books:
     */
   val exported: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, books.all / "export"),
-    result(Code.Ok).streaming(body.ndjson(schema.book)).toUnion
+    result(Code.Ok).streaming(body.ndjson(schema.book))
   ).attr(openapi.operationId, "exportBooks")
     .attr(openapi.tags, "books")
 
@@ -209,14 +209,14 @@ object books:
     */
   val report: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, books.all / "report"),
-    result(Code.Ok).streaming(body.streamed(MediaType.Csv, Frame.Lines, schema.row)).toUnion
+    result(Code.Ok).streaming(body.streamed(MediaType.Csv, Frame.Lines, schema.row))
   ).attr(openapi.operationId, "reportBooks")
     .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
   val catalogue: Endpoint[Unit, io.taig.otter.sample.Category] = endpoint(
     request(Method.Get, __ / "catalogue"),
-    result(Code.Ok).body(body.json(schema.category)).toUnion
+    result(Code.Ok).body(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
     .attr(openapi.tags, "catalogue")
