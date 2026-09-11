@@ -300,9 +300,9 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
       test("a body the caller left out reaches the handler as the absence, not as a default"):
         received(amendable, ())(None).map(seen => assertTrue(seen == None))
       ,
-      test("an empty entity is the absence even when the caller announced a content type"):
+      test("an empty entity announced as JSON must contain a JSON document"):
         answer(amendable, Http4s.malformed)(sent(Http4sMethod.PATCH, uri"http://otter.test/settings", ""))
-          .map((code, _) => assertTrue(code == 204))
+          .map((code, body) => assertTrue(code == 422, body.contains("$.body")))
       ,
       test("a body that was sent is still held to the schema"):
         answer(amendable, Http4s.malformed)(

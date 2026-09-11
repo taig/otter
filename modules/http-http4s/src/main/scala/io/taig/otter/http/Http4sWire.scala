@@ -13,7 +13,9 @@ import scodec.bits.ByteVector
 object Http4sWire:
   /** `body` is a pair rather than an `Option` of one because bytes always arrive, even if there are none of them: a
     * request with no entity is an empty one, and a schema that wanted a document will say so when it fails to read it.
-    * The media type is optional because a sender may decline to name one.
+    * The media type is optional because a sender may decline to name one. An optional body is absent only when both the
+    * bytes and the media type are empty. A content type marks an empty payload as present; `Content-Length: 0` alone
+    * does not distinguish it from an omitted body.
     */
   final case class Request(
       path: Vector[String],
@@ -22,8 +24,8 @@ object Http4sWire:
       body: (Option[MediaType], ByteVector)
   )
 
-  /** `body` is optional here because a result genuinely may have none -- a `204`, a `404` -- and unlike a request,
-    * which is handed whatever arrived, this side chooses.
+  /** `body` distinguishes an omitted body from a present payload, which may contain zero bytes. When reading a
+    * response, either a content type or nonempty bytes preserves the payload; untyped nonempty bytes use octet-stream.
     */
   final case class Response(
       code: Code,
