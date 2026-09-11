@@ -92,7 +92,7 @@ object GithubActionsGenerator {
   def main(javaVersion: String): Json = Json.obj(
     "name" := "CI",
     "on" := Json.obj(
-      "push" := Json.obj("branches" := List("main"))
+      "push" := Json.obj("branches" := List("legacy"))
     ),
     "jobs" := Json.obj(
       "blowout" := Job.blowout(javaVersion),
@@ -121,7 +121,7 @@ object GithubActionsGenerator {
     "name" := "CI",
     "on" := Json.obj(
       "pull_request" := Json.obj(
-        "branches" := List("main")
+        "branches" := List("legacy")
       )
     ),
     "jobs" := Json.obj(
