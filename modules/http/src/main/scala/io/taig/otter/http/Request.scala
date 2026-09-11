@@ -16,7 +16,7 @@ type Request[A] = Request.Of[Body.Payload, A]
 object Request:
   /** A request holding the payload `S` and round tripping `A`.
     *
-    * The parts are added one at a time -- `request(Method.Get, path).queries(q).headers(h).body(b)` -- and each step
+    * The parts are added one at a time -- `request(method.get, path).queries(q).headers(h).body(b)` -- and each step
     * appends to what the request holds, dropping the `Unit`s a part with nothing to say contributes. A request carries
     * at most one body and at most one streamed body, which is not a restriction the earlier attempts' shape imposed by
     * accident but the truth about HTTP: a request has one entity. What used to need several bodies -- a file beside its

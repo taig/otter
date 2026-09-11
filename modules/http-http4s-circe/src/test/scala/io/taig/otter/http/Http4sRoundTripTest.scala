@@ -39,45 +39,45 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `GET /reports/{id}?page`, answering with a report or saying there is none. */
   private val fetch: Endpoint[(Int, Int), Either[Report, Unit]] =
     endpoint(
-      request(Method.Get, api.one).queries(api.paging),
-      result(Code.Ok).body(body.json(api.report)) :+ result(Code.NotFound)
+      request(method.get, api.one).queries(api.paging),
+      result(code.ok).body(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `PUT /settings`, whose payload has a defaulted field and whose answer has no entity at all. */
   private val configure: Endpoint[Settings, Unit] =
     endpoint(
-      request(Method.Put, __ :* segment("settings")).body(body.json(api.settings)),
-      result(Code.NoContent).toUnion
+      request(method.put, __ :* segment("settings")).body(body.json(api.settings)),
+      result(code.noContent).toUnion
     )
 
   /** `GET /trees`, whose payload refers to itself. */
   private val trees: Endpoint[Unit, Tree] =
-    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), result(code.ok).body(body.json(api.tree)).toUnion)
 
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
   private val upload: Endpoint[ByteVector, ByteVector] =
     endpoint(
-      request(Method.Post, __ :* segment("files")).body(body.binary(MediaType.Pdf)),
-      result(Code.Ok).body(body.binary(MediaType.Pdf)).toUnion
+      request(method.post, __ :* segment("files")).body(body.binary(MediaType.Pdf)),
+      result(code.ok).body(body.binary(MediaType.Pdf)).toUnion
     )
 
   /** `POST /reports` whose body may be either of two alternatives, which is what content negotiation describes. */
   private val negotiated: Endpoint[Either[Report, ByteVector], Unit] =
     endpoint(
-      request(Method.Post, __ :* segment("reports")).bodies(api.negotiated),
-      result(Code.NoContent).toUnion
+      request(method.post, __ :* segment("reports")).bodies(api.negotiated),
+      result(code.noContent).toUnion
     )
 
   /** `POST /uploads`, whose payload is a set of parts -- a payload alphabet no interpreter here recognises. */
   private val multipart: Endpoint[Upload, Unit] =
     endpoint(
-      request(Method.Post, __ :* segment("uploads")).body(body.multipart(api.upload)),
-      result(Code.NoContent).toUnion
+      request(method.post, __ :* segment("uploads")).body(body.multipart(api.upload)),
+      result(code.noContent).toUnion
     )
 
   /** `GET /reports`, whose answer this interpreter cannot yet carry. */
   private val streaming: Endpoint[Unit, Unit] =
-    endpoint(request(Method.Get, __ :* segment("reports")), result(Code.Ok).streaming(api.reports).toUnion)
+    endpoint(request(method.get, __ :* segment("reports")), result(code.ok).streaming(api.reports).toUnion)
 
   private def routes[A, B](endpoint: Endpoint[A, B], handler: A => IO[B]): Http4sClient[IO] =
     Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
@@ -110,8 +110,8 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PATCH /settings`, whose body need not be sent at all. */
   private val amendable: Endpoint[Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
-      result(Code.NoContent).toUnion
+      request(method.patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
+      result(code.noContent).toUnion
     )
 
   /** The whole answer, so a malformed request can be asked about its status and its body at once. */
@@ -139,19 +139,19 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PUT /reports/{id}?page` taking a body, so one request can be wrong in two positions at once. */
   private val amend: Endpoint[(Int, Int, Settings), Unit] =
     endpoint(
-      request(Method.Put, api.one).queries(api.paging).body(body.json(api.settings)),
-      result(Code.NoContent).toUnion
+      request(method.put, api.one).queries(api.paging).body(body.json(api.settings)),
+      result(code.noContent).toUnion
     )
 
   /** `GET /reports/{id}?page` answering with nothing, which is enough to ask a router questions with. */
   private val ping: Endpoint[(Int, Int), Unit] =
-    endpoint(request(Method.Get, api.one).queries(api.paging), result(Code.NoContent).toUnion)
+    endpoint(request(method.get, api.one).queries(api.paging), result(code.noContent).toUnion)
 
   /** `GET /ping` reading a header, which is the one envelope position the other fixtures do not use. */
   private val headed: Endpoint[(String, Option[List[String]]), Unit] =
     endpoint(
-      request(Method.Get, __ :* segment("ping")).headers(http.request),
-      result(Code.NoContent).toUnion
+      request(method.get, __ :* segment("ping")).headers(http.request),
+      result(code.noContent).toUnion
     )
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sRoundTripTest")(

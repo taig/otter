@@ -3,12 +3,10 @@ package io.taig.otter.sample.api
 import io.taig.otter.Keys
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Frame
 import io.taig.otter.http.Headers
 import io.taig.otter.http.MediaType
-import io.taig.otter.http.Method
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Path
@@ -99,8 +97,8 @@ object books:
     * and neither is a mistake for the other -- a header set is not four more query parameters.
     */
   val list: Endpoint[(Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] = endpoint(
-    request(Method.Get, books.all).queries(books.filter).headers(books.tracing),
-    result(Code.Ok).body(body.json(json.collection.list(schema.book)))
+    request(method.get, books.all).queries(books.filter).headers(books.tracing),
+    result(code.ok).body(body.json(json.collection.list(schema.book)))
   ).attr(openapi.operationId, "listBooks")
     .attr(openapi.summary, "Every book the catalogue holds")
     .attr(openapi.tags, "books")
@@ -111,24 +109,24 @@ object books:
     * book or a problem", and a caller reads which by the status code rather than by inspecting the document.
     */
   val create: Endpoint[Book.Create, Created] = endpoint(
-    request(Method.Post, books.all).body(body.json(schema.create)),
-    (result(Code.Created).body(body.json(schema.book)).to[Created.Added] :+
-      result(Code.Conflict).body(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
+    request(method.post, books.all).body(body.json(schema.create)),
+    (result(code.created).body(body.json(schema.book)).to[Created.Added] :+
+      result(code.conflict).body(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
   ).attr(openapi.operationId, "createBook")
     .attr(openapi.summary, "Add a book to the catalogue")
     .attr(openapi.tags, "books")
 
   /** `GET /books/{isbn}`, kept as a plain `Either` for contrast: two branches, one of them empty, need no name. */
   val fetch: Endpoint[Isbn, Either[Book, Unit]] = endpoint(
-    request(Method.Get, books.one),
-    result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
+    request(method.get, books.one),
+    result(code.ok).body(body.json(schema.book)) :+ result(code.notFound)
   ).attr(openapi.operationId, "fetchBook")
     .attr(openapi.tags, "books")
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
   val patch: Endpoint[(Isbn, Book.Patch), Either[Book, Unit]] = endpoint(
-    request(Method.Patch, books.one).body(body.json(schema.patch)),
-    result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
+    request(method.patch, books.one).body(body.json(schema.patch)),
+    result(code.ok).body(body.json(schema.book)) :+ result(code.notFound)
   ).attr(openapi.operationId, "patchBook")
     .attr(openapi.tags, "books")
 
@@ -139,8 +137,8 @@ object books:
     * conversion out, and why two branches did not need a name anyway.
     */
   val delete: Endpoint[Isbn, Either[Unit, Problem]] = endpoint(
-    request(Method.Delete, books.one),
-    result(Code.NoContent) :+ result(Code.Conflict).body(body.json(schema.problem))
+    request(method.delete, books.one),
+    result(code.noContent) :+ result(code.conflict).body(body.json(schema.problem))
   ).attr(openapi.operationId, "deleteBook")
     .attr(openapi.tags, "books")
 
@@ -150,8 +148,8 @@ object books:
     * -- which is how a PDF, an image or anything else opaque is described without pretending it has structure.
     */
   val scan: Endpoint[(Isbn, ByteVector), ByteVector] = endpoint(
-    request(Method.Post, books.one / "scan").body(body.binary(MediaType.Pdf)),
-    result(Code.Ok).body(body.binary(MediaType.Pdf))
+    request(method.post, books.one / "scan").body(body.binary(MediaType.Pdf)),
+    result(code.ok).body(body.binary(MediaType.Pdf))
   ).attr(openapi.operationId, "scanBook")
     .attr(openapi.tags, "books")
 
@@ -166,8 +164,8 @@ object books:
     * the handler reads, and a notice that a shipment is coming needs no attachment.
     */
   val intake: Endpoint[Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
-    request(Method.Post, __ / "intake").optionalBodies(books.submitted),
-    result(Code.Accepted)
+    request(method.post, __ / "intake").optionalBodies(books.submitted),
+    result(code.accepted)
   ).attr(openapi.operationId, "intake")
     .attr(openapi.tags, "books")
 
@@ -183,8 +181,8 @@ object books:
 
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
   val upload: Endpoint[(Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
-    request(Method.Post, books.one / "cover").body(body.multipart(books.cover)),
-    result(Code.NoContent)
+    request(method.post, books.one / "cover").body(body.multipart(books.cover)),
+    result(code.noContent)
   ).attr(openapi.operationId, "uploadCover")
     .attr(openapi.tags, "books")
 
@@ -196,8 +194,8 @@ object books:
     * [[api.unserved]].
     */
   val exported: Endpoint[Unit, Unit] = endpoint(
-    request(Method.Get, books.all / "export"),
-    result(Code.Ok).streaming(body.ndjson(schema.book))
+    request(method.get, books.all / "export"),
+    result(code.ok).streaming(body.ndjson(schema.book))
   ).attr(openapi.operationId, "exportBooks")
     .attr(openapi.tags, "books")
 
@@ -208,15 +206,15 @@ object books:
     * schema at all, and what cannot be carried is reported rather than quietly dropped.
     */
   val report: Endpoint[Unit, Unit] = endpoint(
-    request(Method.Get, books.all / "report"),
-    result(Code.Ok).streaming(body.streamed(MediaType.Csv, Frame.Lines, schema.row))
+    request(method.get, books.all / "report"),
+    result(code.ok).streaming(body.streamed(MediaType.Csv, Frame.Lines, schema.row))
   ).attr(openapi.operationId, "reportBooks")
     .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
   val catalogue: Endpoint[Unit, io.taig.otter.sample.Category] = endpoint(
-    request(Method.Get, __ / "catalogue"),
-    result(Code.Ok).body(body.json(schema.category))
+    request(method.get, __ / "catalogue"),
+    result(code.ok).body(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
     .attr(openapi.tags, "catalogue")

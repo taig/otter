@@ -17,7 +17,7 @@ import io.taig.otter.http.Result
   * class parameter cannot appear in it. As extensions, what the schema holds is a method parameter and the constraint
   * is expressible.
   *
-  * Each step drops a `Unit`, exactly as `:*` does, so `request(Method.Get, path).headers(HNil)` holds what the path
+  * Each step drops a `Unit`, exactly as `:*` does, so `request(method.get, path).headers(HNil)` holds what the path
   * holds and nothing more, and only the parts that carry something reach the caller.
   */
 trait EndpointSyntax:

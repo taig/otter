@@ -11,6 +11,7 @@ import io.taig.otter.http.codec.Http4sRequestDecoder
 import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResultDecoder
 import io.taig.otter.http.codec.Http4sResultEncoder
+import io.taig.otter.http.component.HttpComponent
 import org.http4s.Entity
 import org.http4s.HttpRoutes
 import org.http4s.Request as Http4sRequest
@@ -95,8 +96,9 @@ object Http4s:
     * that also names a query parameter is not describing a request whose syntax was correct.
     */
   def code(violations: Violations): Code = violations match
-    case Violations.Namespace(values) if values.keys.forall(_ == Step.Field("body")) => Code.UnprocessableEntity
-    case _                                                                           => Code.BadRequest
+    case Violations.Namespace(values) if values.keys.forall(_ == Step.Field("body")) =>
+      HttpComponent.code.unprocessableEntity
+    case _ => HttpComponent.code.badRequest
 
   /** What a request that this endpoint described, but that did not hold what it described, is answered with.
     *

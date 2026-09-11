@@ -97,6 +97,10 @@ trait HttpComponent
   ): Endpoint.Schema[Body.Or[S1, S2], AW, AR, BW, BR] =
     endpoint[S1, S2, AW, AR, BW, BR](request, response.toUnion)
 
+  object code extends CodeComponent
+
+  object method extends MethodComponent
+
   object segment extends SegmentComponent
 
   /** A `val` rather than an `object`, so a consumer that layers a format-specific vocabulary on top -- JSON's `json`

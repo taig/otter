@@ -3,10 +3,8 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import io.circe.Json as CirceJson
 import io.taig.otter.Keys
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.MediaType
-import io.taig.otter.http.Method
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -18,7 +16,7 @@ import zio.test.*
 
 object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
   private val renderer = OpenApiRenderer.server(OpenApiProfile.V31, OpenApiPayload.json(OpenApiProfile.V31))
-  private val requestSchema = request(Method.Get, __ / "alternatives")
+  private val requestSchema = request(method.get, __ / "alternatives")
 
   private def render(value: Endpoint.Node): OpenApiDocument =
     renderer.render(OpenApi.Info("Alternatives", "1"), Chain.one(value))
@@ -38,8 +36,8 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).body(body.json(payload.int)).attr(Keys.description, "A number") :+
-            result(Code.Ok).body(body(MediaType.Text, payload.string)).attr(Keys.description, "Text")
+          result(code.ok).body(body.json(payload.int)).attr(Keys.description, "A number") :+
+            result(code.ok).body(body(MediaType.Text, payload.string)).attr(Keys.description, "Text")
         )
       )
       val value = response(document)
@@ -60,7 +58,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).body(body.json(payload.int)) :+ result(Code.Ok).body(body.json(payload.double))
+          result(code.ok).body(body.json(payload.int)) :+ result(code.ok).body(body.json(payload.double))
         )
       )
       val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
@@ -78,7 +76,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).body(body.json(payload.int)) :+ result(Code.Ok).body(body.json(payload.int))
+          result(code.ok).body(body.json(payload.int)) :+ result(code.ok).body(body.json(payload.int))
         )
       )
       val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
@@ -92,8 +90,8 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).headers(header("X-Count", int).toRecord).body(body.json(payload.int)) :+
-            result(Code.Ok).body(body.json(payload.string))
+          result(code.ok).headers(header("X-Count", int).toRecord).body(body.json(payload.int)) :+
+            result(code.ok).body(body.json(payload.string))
         )
       )
       val headers = response(document).hcursor.downField("headers")
@@ -107,8 +105,8 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).headers(header("X-Value", int).toRecord).body(body.json(payload.int)) :+
-            result(Code.Ok).headers(header("x-value", string).toRecord).body(body.json(payload.string))
+          result(code.ok).headers(header("X-Value", int).toRecord).body(body.json(payload.int)) :+
+            result(code.ok).headers(header("x-value", string).toRecord).body(body.json(payload.string))
         )
       )
       val headers = response(document).hcursor.downField("headers")
@@ -120,7 +118,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       )
     ,
     test("an empty response alternative is reported without dropping the body"):
-      val document = render(endpoint(requestSchema, result(Code.Ok) :+ result(Code.Ok).body(body.json(payload.int))))
+      val document = render(endpoint(requestSchema, result(code.ok) :+ result(code.ok).body(body.json(payload.int))))
       assertTrue(
         document.issues.contains(OpenApiIssue.ResponseAlternatives("GET /alternatives", 200)),
         response(document).hcursor.downField("content").downField("application/json").focus.isDefined
@@ -129,7 +127,7 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
     test("body alternatives within one result retain every schema"):
       val document =
         render(
-          endpoint(requestSchema, result(Code.Ok).bodies(body.json(payload.int) :+ body.json(payload.string)).toUnion)
+          endpoint(requestSchema, result(code.ok).bodies(body.json(payload.int) :+ body.json(payload.string)).toUnion)
         )
       val schema = response(document).hcursor.downField("content").downField("application/json").downField("schema")
       assertTrue(document.issues.isEmpty, schema.get[List[CirceJson]]("anyOf").map(_.size) == Right(2))
@@ -139,8 +137,8 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
       val document = render(
         endpoint(
           requestSchema,
-          result(Code.Ok).headers(common).body(body.json(payload.int)) :+
-            result(Code.Ok).headers(common).body(body.json(payload.string))
+          result(code.ok).headers(common).body(body.json(payload.int)) :+
+            result(code.ok).headers(common).body(body.json(payload.string))
         )
       )
       assertTrue(

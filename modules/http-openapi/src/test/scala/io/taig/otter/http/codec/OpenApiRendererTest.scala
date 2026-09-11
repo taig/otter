@@ -3,9 +3,7 @@ package io.taig.otter.http.codec
 import cats.data.Chain
 import io.circe.ACursor
 import io.circe.Json as CirceJson
-import io.taig.otter.http.Code
 import io.taig.otter.http.MediaType
-import io.taig.otter.http.Method
 import io.taig.otter.http.OpenApi
 import io.taig.otter.http.OpenApiDocument
 import io.taig.otter.http.OpenApiIssue
@@ -119,7 +117,7 @@ object OpenApiRendererTest extends ZIOSpecDefault:
           info,
           Chain(
             api.replace,
-            endpoint(request(Method.Post, __ :* segment("other")).body(body.json(conflicting)), result(Code.Ok).toUnion)
+            endpoint(request(method.post, __ :* segment("other")).body(body.json(conflicting)), result(code.ok).toUnion)
           )
         )
 
@@ -268,8 +266,8 @@ object OpenApiRendererTest extends ZIOSpecDefault:
           info,
           Chain(
             endpoint(
-              request(Method.Post, __ :* segment("opaque")).body(body(MediaType.Text, Unknown[String, String]())),
-              result(Code.Ok).toUnion
+              request(method.post, __ :* segment("opaque")).body(body(MediaType.Text, Unknown[String, String]())),
+              result(code.ok).toUnion
             )
           )
         )

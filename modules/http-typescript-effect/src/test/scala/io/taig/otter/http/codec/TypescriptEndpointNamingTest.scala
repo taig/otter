@@ -4,10 +4,8 @@ import cats.data.Chain
 import io.taig.otter.Json
 import io.taig.otter.Keys
 import io.taig.otter.Typescript
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.HttpTypescriptKeys
-import io.taig.otter.http.Method
 import io.taig.otter.http.TypescriptModule
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.fixture.payload
@@ -18,7 +16,7 @@ object TypescriptEndpointNamingTest extends ZIOSpecDefault:
   private val renderer = TypescriptEndpointRenderer.client(TypescriptEffectPayload.json)
 
   private def endpointWith(name: String, schema: Json.Node[?, ?]): Endpoint.Node =
-    endpoint(request(Method.Get, __ / "names"), result(Code.Ok).body(body.json(schema)).toUnion)
+    endpoint(request(method.get, __ / "names"), result(code.ok).body(body.json(schema)).toUnion)
       .attr(HttpTypescriptKeys.operationId, name)
 
   private def render(endpoints: Endpoint.Node*): TypescriptModule = renderer.render(Chain.fromSeq(endpoints))

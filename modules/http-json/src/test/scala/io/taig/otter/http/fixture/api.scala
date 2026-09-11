@@ -5,10 +5,8 @@ import io.taig.otter.Keys
 import io.taig.otter.component.JsonComponent
 import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
-import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.MediaType
-import io.taig.otter.http.Method
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
@@ -86,23 +84,23 @@ object api:
     */
   val fetch: Endpoint.Server[Body.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
-      request(Method.Get, api.one).queries(api.paging),
-      result(Code.Ok).body(body.json(api.report)) :+ result(Code.NotFound)
+      request(method.get, api.one).queries(api.paging),
+      result(code.ok).body(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
   val create: Endpoint.Server[Body.Payload, Upload, Report] =
     endpoint(
-      request(Method.Post, __ :* segment("reports")).body(api.uploaded),
-      result(Code.Created).body(body.json(api.report)).toUnion
+      request(method.post, __ :* segment("reports")).body(api.uploaded),
+      result(code.created).body(body.json(api.report)).toUnion
     )
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
     */
   val stream: Endpoint.Server[Body.Payload, Unit, Unit] =
     endpoint(
-      request(Method.Get, __ :* segment("reports")),
-      result(Code.Ok).streaming(api.reports).toUnion
+      request(method.get, __ :* segment("reports")),
+      result(code.ok).streaming(api.reports).toUnion
     )
 
   /** The same report, named, so a document declares it once under `components/schemas` and refers to it from everywhere
@@ -118,8 +116,8 @@ object api:
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
   val replace: Endpoint.Server[Body.Payload, (Int, (Report, Option[ByteVector])), Report] =
     endpoint(
-      request(Method.Put, api.one).body(body.multipart(api.partial)),
-      result(Code.Ok).body(body.json(api.named)).toUnion
+      request(method.put, api.one).body(body.multipart(api.partial)),
+      result(code.ok).body(body.json(api.named)).toUnion
     )
 
   /** A payload with a defaulted field, which is the case where the two sides of a schema genuinely differ: a reader
@@ -130,8 +128,8 @@ object api:
   /** `PUT /settings`, to be rendered from both sides and compared. */
   val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
     endpoint(
-      request(Method.Put, __ :* segment("settings")).body(body.json(api.settings)),
-      result(Code.NoContent).toUnion
+      request(method.put, __ :* segment("settings")).body(body.json(api.settings)),
+      result(code.noContent).toUnion
     )
 
   /** `PATCH /settings`, whose body need not be sent at all.
@@ -141,8 +139,8 @@ object api:
     */
   val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
-      result(Code.NoContent).toUnion
+      request(method.patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
+      result(code.noContent).toUnion
     )
 
   /** A payload that refers to itself, which only works because it is named: a definition is what a `$ref` points at. */
@@ -153,4 +151,4 @@ object api:
 
   /** `GET /trees` answering with one. */
   val trees: Endpoint.Server[Body.Payload, Unit, Tree] =
-    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), result(code.ok).body(body.json(api.tree)).toUnion)
