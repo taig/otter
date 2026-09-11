@@ -18,13 +18,17 @@ import io.taig.validation.Violation
   * A parameter that is not a repetition insists on exactly one piece of text. Given more than one it reports an arity
   * violation rather than picking one, because which one it would pick -- the first, the last -- is a decision no caller
   * ever made, and quietly making it is how a parameter smuggled in twice comes to matter.
+  *
+  * A delimited repetition reads its elements through [[DelimitedText]], which is what makes a line hold the values it
+  * was written from rather than the values the delimiter happens to carve out of it. An empty line is no elements; the
+  * empty element is the quoted one.
   */
 final class ParameterDecoder(delimiter: Option[String]) extends Decoder[Parameter.Node, Chain[String]]:
   override def decode[R](parameter: Parameter.Node[Nothing, R], values: Chain[String]): Validated[Violations, R] =
     parameter match
       case Parameter.Collection.Schema(node) =>
         val elements = delimiter.fold(values): delimiter =>
-          values.flatMap(value => Chain.fromSeq(value.split(delimiter, -1).toIndexedSeq)).map(_.trim)
+          values.flatMap(value => DelimitedText.read(delimiter, value))
 
         CollectionDecoder(ParameterValueDecoder).decode(node.self, elements.toList)
       case parameter @ Parameter.Coerce.Schema(_)            => single(parameter, values)

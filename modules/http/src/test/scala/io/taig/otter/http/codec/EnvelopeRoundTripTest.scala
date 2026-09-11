@@ -127,5 +127,58 @@ object EnvelopeRoundTripTest extends ZIOSpecDefault:
       ,
       test("a header that has to be there and is not fails"):
         assertTrue(HeadersDecoder.decode(http.request, Chain.empty).isInvalid)
+      ,
+      /** The line is the only thing the reader gets, so an element holding the delimiter has to be marked off in it or
+        * it comes back as two. Joining alone wrote `a,b` for one element and for two alike.
+        */
+      test("an element holding the delimiter is quoted rather than split"):
+        val encoded = HeadersEncoder.encode(http.request, ("abc", Some(List("a,b", "c"))))
+
+        assertTrue(encoded == Chain(("X-Request-Id", "abc"), ("Accept-Language", "\"a,b\",c"))) &&
+        assertTrue(HeadersDecoder.decode(http.request, encoded) == Validated.valid(("abc", Some(List("a,b", "c")))))
+      ,
+      /** Quoting makes the quote a mark of its own, so an element holding one has to escape it to stay itself. */
+      test("an element holding a quote escapes it"):
+        val encoded = HeadersEncoder.encode(http.request, ("abc", Some(List("he said \"hi\""))))
+
+        assertTrue(encoded == Chain(("X-Request-Id", "abc"), ("Accept-Language", "\"he said \\\"hi\\\"\""))) &&
+        assertTrue(
+          HeadersDecoder.decode(http.request, encoded) == Validated.valid(("abc", Some(List("he said \"hi\""))))
+        )
+      ,
+      /** Whitespace around the delimiter is dropped from an unquoted element, so an element that *is* whitespace at
+        * either end only survives inside quotes.
+        */
+      test("an element keeps the whitespace it ends with"):
+        val encoded = HeadersEncoder.encode(http.request, ("abc", Some(List(" c "))))
+
+        assertTrue(encoded == Chain(("X-Request-Id", "abc"), ("Accept-Language", "\" c \""))) &&
+        assertTrue(HeadersDecoder.decode(http.request, encoded) == Validated.valid(("abc", Some(List(" c ")))))
+      ,
+      /** An empty line is no elements and the quoted empty string is one, which is the only thing that tells the two
+        * apart once they are a line.
+        */
+      test("an empty element is not an empty list"):
+        val one = HeadersEncoder.encode(http.languages, List(""))
+        val none = HeadersEncoder.encode(http.languages, Nil)
+
+        assertTrue(one == Chain(("Accept-Language", "\"\""))) &&
+        assertTrue(none == Chain(("Accept-Language", ""))) &&
+        assertTrue(HeadersDecoder.decode(http.languages, one) == Validated.valid(List(""))) &&
+        assertTrue(HeadersDecoder.decode(http.languages, none) == Validated.valid(List.empty[String]))
+      ,
+      /** Read leniently the name is gone before the line is looked at, which is what lenient means and why an empty
+        * list needs a strict header to come back as one.
+        */
+      test("a lenient header reads an empty line as an absent one"):
+        val values = Chain(("X-Request-Id", "abc"), ("Accept-Language", ""))
+
+        assertTrue(HeadersDecoder.decode(http.request, values) == Validated.valid(("abc", None)))
+      ,
+      test("round trips any list of languages"):
+        check(Gen.listOf(Gen.string.filter(value => !value.exists(_.isControl))))(languages =>
+          val encoded = HeadersEncoder.encode(http.languages, languages)
+          assertTrue(HeadersDecoder.decode(http.languages, encoded) == Validated.valid(languages))
+        )
     )
   )

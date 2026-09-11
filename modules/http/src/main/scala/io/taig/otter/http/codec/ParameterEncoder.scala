@@ -11,12 +11,16 @@ import io.taig.otter.http.Parameter
   * gives the name again for every element and so has none; a header joins them into one line and so has one. These are
   * OpenAPI's own defaults for the two positions -- `style: form, explode: true` for a query, `style: simple` for a
   * header -- named here as the one place that knows the difference.
+  *
+  * A delimiter also has to say what an element holding it means, which [[DelimitedText]] answers: the line is
+  * `style: simple` with quoting for the elements that would not otherwise survive it. A repetition given again for each
+  * element needs none of that, because there each element already has a piece of text to itself.
   */
 final class ParameterEncoder(delimiter: Option[String]) extends Encoder[Parameter.Node, Chain[String]]:
   override def encode[W](parameter: Parameter.Node[W, Any], w: W): Chain[String] = parameter match
     case Parameter.Collection.Schema(node) =>
       val values = Chain.fromSeq(CollectionEncoder(ParameterValueEncoder).encode(node.self, w))
-      delimiter.fold(values)(delimiter => Chain.one(values.toList.mkString(delimiter)))
+      delimiter.fold(values)(delimiter => Chain.one(DelimitedText.write(delimiter, values)))
     case parameter @ Parameter.Coerce.Schema(_)            => Chain.one(ParameterValueEncoder.encode(parameter, w))
     case parameter @ Parameter.Constant.Schema(_)          => Chain.one(ParameterValueEncoder.encode(parameter, w))
     case parameter @ Parameter.Enumeration.Schema(_)       => Chain.one(ParameterValueEncoder.encode(parameter, w))

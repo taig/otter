@@ -49,6 +49,15 @@ object http:
   val request: Headers[(String, Option[List[String]])] =
     header("X-Request-Id", string) :* header("Accept-Language", collection.list(string)).optional
 
+  /** The same list valued header read strictly, which is what lets it hold no elements at all.
+    *
+    * `strict` is what makes the difference, for the reason it makes it on [[verbose]]. A lenient header reads a name
+    * carrying no text as absence before the line is looked at, so an empty list and an absent header are one thing to
+    * it. Read strictly the name is there, the line is empty, and an empty line is no elements.
+    */
+  val languages: Headers[List[String]] =
+    header("Accept-Language", collection.list(string)).strict.toRecord
+
   /** Ascribed to say that every segment is a primitive, which is the ordinary shape of a path and a compile error for
     * anything that would need more than one piece of text.
     */
