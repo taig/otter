@@ -29,13 +29,13 @@ object schema:
   /** Text on the wire, an [[Isbn]] in Scala, and a round trip rather than a one way read: `codec` is what says a value
     * can be written back, where `parser` would leave a schema that reads but cannot answer.
     */
-  val isbn: Json.Primitive.Text[Isbn] = payload.codec("isbn", Isbn.parse, _.value)
+  val isbn: Json.Primitive.Text[Isbn] = json.codec("isbn", Isbn.parse, _.value)
 
   /** A closed set, matched exhaustively. Adding a case to [[Genre]] fails to compile here rather than failing to read
     * at runtime.
     */
-  val genre: Json.Enumeration[Genre] = payload
-    .enumeration[Json.Primitive.Text.Schema, String, Genre](payload.string):
+  val genre: Json.Enumeration[Genre] = json
+    .enumeration[Json.Primitive.Text.Schema, String, Genre](json.string):
       case Genre.Biography => "biography"
       case Genre.Children  => "children"
       case Genre.Fantasy   => "fantasy"
@@ -45,8 +45,8 @@ object schema:
       case Genre.Thriller  => "thriller"
     .attr(Keys.name, "Genre")
 
-  val membership: Json.Enumeration[Membership] = payload
-    .enumeration[Json.Primitive.Text.Schema, String, Membership](payload.string):
+  val membership: Json.Enumeration[Membership] = json
+    .enumeration[Json.Primitive.Text.Schema, String, Membership](json.string):
       case Membership.Standard => "standard"
       case Membership.Student  => "student"
       case Membership.Staff    => "staff"
@@ -56,25 +56,25 @@ object schema:
     * cannot, because whoever fills it in decides what they are called.
     */
   val metadata: Json.Dictionary[SortedMap[String, String]] =
-    payload.dictionary.map(payload.string)
+    json.dictionary.map(json.string)
 
   /** Held under an ISBN, which is text on the wire like every key -- there are no numeric keys in JSON, so a key that
     * carries something other than a string is spelled as a `codec` and not as that thing's own primitive.
     */
   val fines: Json.Dictionary[SortedMap[String, BigDecimal]] =
-    payload.dictionary.map(payload.string, payload.bigDecimal)
+    json.dictionary.map(json.string, json.bigDecimal)
 
   /** The refinements are the field types, not a check a handler runs: a `Book` that exists has a title of the right
     * length because no decoder produced one that did not.
     */
   val book: Json.Record[Book] = (
-    payload.field("isbn", schema.isbn).description("The thirteen digit ISBN, hyphens optional") :*
-      payload.field("title", payload.refined.string[MinLength[1] & MaxLength[200]]) :*
-      payload.field("pages", payload.refined.int[Positive]).examples(310) :*
-      payload.field("genres", payload.collection.list(schema.genre)) :*
-      payload.field("published", payload.localDate) :*
-      payload.field("summary", payload.string).optional.nullable :*
-      payload.field("metadata", schema.metadata)
+    json.field("isbn", schema.isbn).description("The thirteen digit ISBN, hyphens optional") :*
+      json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]) :*
+      json.field("pages", json.refined.int[Positive]).examples(310) :*
+      json.field("genres", json.collection.list(schema.genre)) :*
+      json.field("published", json.localDate) :*
+      json.field("summary", json.string).optional.nullable :*
+      json.field("metadata", schema.metadata)
   ).to[Book]
     .attr(Keys.name, "Book")
     .title("Book")
@@ -87,15 +87,15 @@ object schema:
     * must not be told the field is required.
     */
   val create: Json.Record[Book.Create] = (
-    payload.field("isbn", schema.isbn) :*
-      payload.field("title", payload.refined.string[MinLength[1] & MaxLength[200]]) :*
-      payload.field("pages", payload.refined.int[Positive]) :*
-      payload
-        .field("genres", payload.refined.list[MaxLength[10]](schema.genre))
+    json.field("isbn", schema.isbn) :*
+      json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]) :*
+      json.field("pages", json.refined.int[Positive]) :*
+      json
+        .field("genres", json.refined.list[MaxLength[10]](schema.genre))
         .optional(List.empty[Genre].assume[MaxLength[10]]) :*
-      payload.field("published", payload.localDate) :*
-      payload.field("summary", payload.string).optional.nullable :*
-      payload.field("metadata", schema.metadata).optional(SortedMap.empty[String, String])
+      json.field("published", json.localDate) :*
+      json.field("summary", json.string).optional.nullable :*
+      json.field("metadata", schema.metadata).optional(SortedMap.empty[String, String])
   ).to[Book.Create].attr(Keys.name, "BookCreate")
 
   /** Two layers of absence, and only a strict field tells them apart: no `summary` key at all means leave it, and an
@@ -103,10 +103,10 @@ object schema:
     * rather than the plain `.optional` every other field gets.
     */
   val patch: Json.Record[Book.Patch] = (
-    payload.field("title", payload.refined.string[MinLength[1] & MaxLength[200]]).optional :*
-      payload.field("pages", payload.refined.int[Positive]).optional :*
-      payload.field("genres", payload.refined.list[MaxLength[10]](schema.genre)).optional :*
-      payload.field("summary", payload.string.optional).optional.omitted.strict
+    json.field("title", json.refined.string[MinLength[1] & MaxLength[200]]).optional :*
+      json.field("pages", json.refined.int[Positive]).optional :*
+      json.field("genres", json.refined.list[MaxLength[10]](schema.genre)).optional :*
+      json.field("summary", json.string.optional).optional.omitted.strict
   ).to[Book.Patch].attr(Keys.name, "BookPatch")
 
   /** A schema that refers to itself, which works only because it is named.
@@ -115,37 +115,37 @@ object schema:
     * forces its element schema once it has an element, so nothing is evaluated until a document is actually read.
     */
   lazy val category: Json.Record[Category] = (
-    payload.field("name", payload.string) :*
-      payload.field("shelves", payload.collection.list(schema.category)) :*
-      payload.field("holdings", payload.int)
+    json.field("name", json.string) :*
+      json.field("shelves", json.collection.list(schema.category)) :*
+      json.field("holdings", json.int)
   ).to[Category].attr(Keys.name, "Category")
 
   val member: Json.Record[Member] = (
-    payload.field("reference", payload.uuid) :*
-      payload.field("email", payload.ciString).description("Matched without regard to case") :*
-      payload.field("joined", payload.instant) :*
-      payload.field("membership", schema.membership) :*
-      payload.field("expires", payload.localDate) :*
-      payload.field("fines", schema.fines)
+    json.field("reference", json.uuid) :*
+      json.field("email", json.ciString).description("Matched without regard to case") :*
+      json.field("joined", json.instant) :*
+      json.field("membership", schema.membership) :*
+      json.field("expires", json.localDate) :*
+      json.field("fines", schema.fines)
   ).to[Member].attr(Keys.name, "Member")
 
   val loan: Json.Record[Loan] = (
-    payload.field("reference", payload.uuid) :*
-      payload.field("isbn", schema.isbn) :*
-      payload.field("member", payload.uuid) :*
-      payload.field("borrowed", payload.localDate) :*
-      payload.field("period", payload.period).description("ISO-8601, so P3W and P21D are different spans") :*
-      payload.field("due", payload.localDate)
+    json.field("reference", json.uuid) :*
+      json.field("isbn", schema.isbn) :*
+      json.field("member", json.uuid) :*
+      json.field("borrowed", json.localDate) :*
+      json.field("period", json.period).description("ISO-8601, so P3W and P21D are different spans") :*
+      json.field("due", json.localDate)
   ).to[Loan].attr(Keys.name, "Loan")
 
   /** `period` may be left out and is then the member's own, which the *server* knows and a caller does not. */
   val borrow: Json.Record[Loan.Request] = (
-    payload.field("isbn", schema.isbn) :*
-      payload.field("period", payload.period).optional
+    json.field("isbn", schema.isbn) :*
+      json.field("period", json.period).optional
   ).to[Loan.Request].attr(Keys.name, "BorrowRequest")
 
-  val kind: Json.Enumeration[Problem.Kind] = payload
-    .enumeration[Json.Primitive.Text.Schema, String, Problem.Kind](payload.string):
+  val kind: Json.Enumeration[Problem.Kind] = json
+    .enumeration[Json.Primitive.Text.Schema, String, Problem.Kind](json.string):
       case Problem.Kind.Malformed => "malformed"
       case Problem.Kind.Conflict  => "conflict"
       case Problem.Kind.Missing   => "missing"
@@ -155,9 +155,9 @@ object schema:
     * the same document whether the request broke the schema or the handler refused it.
     */
   val problem: Json.Record[Problem] = (
-    payload.field("kind", schema.kind) :*
-      payload.field("title", payload.string) :*
-      payload.field("detail", payload.collection.list(payload.string)).optional(Nil)
+    json.field("kind", schema.kind) :*
+      json.field("title", json.string) :*
+      json.field("detail", json.collection.list(json.string)).optional(Nil)
   ).to[Problem]
     .attr(Keys.name, "Problem")
     .description("What this API says when it cannot say what was asked for")
@@ -170,8 +170,8 @@ object schema:
     * carried is reported rather than quietly dropped.
     */
   val row: Csv[Book.Row] = (
-    rows.field("isbn", rows.codec("isbn", Isbn.parse, _.value)) :*
-      rows.field("title", rows.string) :*
-      rows.field("pages", rows.int) :*
-      rows.field("published", rows.localDate)
+    csv.field("isbn", csv.codec("isbn", Isbn.parse, _.value)) :*
+      csv.field("title", csv.string) :*
+      csv.field("pages", csv.int) :*
+      csv.field("published", csv.localDate)
   ).to[Book.Row]

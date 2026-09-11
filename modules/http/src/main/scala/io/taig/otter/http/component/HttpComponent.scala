@@ -88,7 +88,11 @@ trait HttpComponent
 
   object segment extends SegmentComponent
 
-  object body extends BodyComponent
+  /** A `val` rather than an `object`, so a consumer that layers a format-specific vocabulary on top -- JSON's `json`
+    * and `ndjson`, say -- can override it with one that mixes that vocabulary in beside [[BodyComponent]]'s own. An
+    * `object` member cannot be overridden this way; a `val` of the component's own type can.
+    */
+  val body: BodyComponent = new BodyComponent {}
 
   object part
       extends RecordComponent.Field[Body.Node, Parameter.Primitive.Text.Node, Part.Schema](using

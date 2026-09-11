@@ -101,7 +101,7 @@ object books:
     */
   val list: Endpoint[(Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] = endpoint(
     request(Method.Get, books.all).queries(books.filter).headers(books.tracing),
-    result(Code.Ok).body(json(payload.collection.list(schema.book))).toUnion
+    result(Code.Ok).body(body.json(json.collection.list(schema.book))).toUnion
   ).attr(OpenApiKeys.operationId, "listBooks")
     .attr(OpenApiKeys.summary, "Every book the catalogue holds")
     .attr(OpenApiKeys.tags, List("books"))
@@ -112,9 +112,9 @@ object books:
     * book or a problem", and a caller reads which by the status code rather than by inspecting the document.
     */
   val create: Endpoint[Book.Create, Created] = endpoint(
-    request(Method.Post, books.all).body(json(schema.create)),
-    (result(Code.Created).body(json(schema.book)).to[Created.Added] :+
-      result(Code.Conflict).body(json(schema.problem)).to[Created.Duplicate]).to[Created]
+    request(Method.Post, books.all).body(body.json(schema.create)),
+    (result(Code.Created).body(body.json(schema.book)).to[Created.Added] :+
+      result(Code.Conflict).body(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
   ).attr(OpenApiKeys.operationId, "createBook")
     .attr(OpenApiKeys.summary, "Add a book to the catalogue")
     .attr(OpenApiKeys.tags, List("books"))
@@ -122,14 +122,14 @@ object books:
   /** `GET /books/{isbn}`, kept as a plain `Either` for contrast: two branches, one of them empty, need no name. */
   val fetch: Endpoint[Isbn, Either[Book, Unit]] = endpoint(
     request(Method.Get, books.one),
-    result(Code.Ok).body(json(schema.book)) :+ result(Code.NotFound)
+    result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
   ).attr(OpenApiKeys.operationId, "fetchBook")
     .attr(OpenApiKeys.tags, List("books"))
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
   val patch: Endpoint[(Isbn, Book.Patch), Either[Book, Unit]] = endpoint(
-    request(Method.Patch, books.one).body(json(schema.patch)),
-    result(Code.Ok).body(json(schema.book)) :+ result(Code.NotFound)
+    request(Method.Patch, books.one).body(body.json(schema.patch)),
+    result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
   ).attr(OpenApiKeys.operationId, "patchBook")
     .attr(OpenApiKeys.tags, List("books"))
 
@@ -141,7 +141,7 @@ object books:
     */
   val delete: Endpoint[Isbn, Either[Unit, Problem]] = endpoint(
     request(Method.Delete, books.one),
-    result(Code.NoContent) :+ result(Code.Conflict).body(json(schema.problem))
+    result(Code.NoContent) :+ result(Code.Conflict).body(body.json(schema.problem))
   ).attr(OpenApiKeys.operationId, "deleteBook")
     .attr(OpenApiKeys.tags, List("books"))
 
@@ -157,7 +157,7 @@ object books:
     .attr(OpenApiKeys.tags, List("books"))
 
   /** A body that may be either of two things, told apart by media type and not by trying to parse each in turn. */
-  val submitted: Bodies[Either[Book.Create, ByteVector]] = json(schema.create) :+ body.binary(MediaType.Pdf)
+  val submitted: Bodies[Either[Book.Create, ByteVector]] = body.json(schema.create) :+ body.binary(MediaType.Pdf)
 
   /** `POST /intake`: an acquisition, sent as a document or as a scan of the paperwork, or announced with neither.
     *
@@ -179,7 +179,7 @@ object books:
     * it carries a field's optionality too.
     */
   val cover: Multipart[(Book.Patch, Option[ByteVector])] =
-    part("metadata", json(schema.patch)) :*
+    part("metadata", body.json(schema.patch)) :*
       part("image", body.binary(MediaType.OctetStream)).filename("cover.png").optional
 
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
@@ -198,13 +198,13 @@ object books:
     */
   val exported: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, books.all / "export"),
-    result(Code.Ok).streaming(ndjson(schema.book)).toUnion
+    result(Code.Ok).streaming(body.ndjson(schema.book)).toUnion
   ).attr(OpenApiKeys.operationId, "exportBooks")
     .attr(OpenApiKeys.tags, List("books"))
 
   /** `GET /books/report`, a stream of CSV rows.
     *
-    * The media type and the framing are spelled out where `ndjson` defaults them, and the payload is written in an
+    * The media type and the framing are spelled out where `body.ndjson` defaults them, and the payload is written in an
     * alphabet no interpreter in this repository recognises. Both halves of that are deliberate: a body's payload is any
     * schema at all, and what cannot be carried is reported rather than quietly dropped.
     */
@@ -217,7 +217,7 @@ object books:
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
   val catalogue: Endpoint[Unit, io.taig.otter.sample.Category] = endpoint(
     request(Method.Get, __ / "catalogue"),
-    result(Code.Ok).body(json(schema.category)).toUnion
+    result(Code.Ok).body(body.json(schema.category)).toUnion
   ).attr(OpenApiKeys.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
     .attr(OpenApiKeys.tags, List("catalogue"))

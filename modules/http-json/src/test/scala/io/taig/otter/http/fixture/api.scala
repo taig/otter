@@ -12,6 +12,7 @@ import io.taig.otter.http.Method
 import io.taig.otter.http.Multipart
 import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
+import io.taig.otter.http.component.BodyComponent
 import io.taig.otter.http.component.HttpComponent
 import io.taig.otter.http.fixture.dsl.*
 import io.taig.otter.http.syntax.HttpJsonSyntax
@@ -22,8 +23,12 @@ import scodec.bits.ByteVector
   * They collide on every primitive -- both have a `string` -- and that is not an accident to work around but the
   * distinction itself: a piece of a URL and a JSON string are not the same thing, and a position that takes one does
   * not take the other. Naming one and importing the other is how the codebase already recommends mixing vocabularies.
+  *
+  * `body` is overridden rather than inherited as-is, so that `body.json` and `body.ndjson` sit next to `body.binary`
+  * and `body.multipart` -- one namespace for every shape a body comes in, JSON included.
   */
-object dsl extends HttpComponent, HttpJsonSyntax
+object dsl extends HttpComponent:
+  override val body: BodyComponent & HttpJsonSyntax = new BodyComponent with HttpJsonSyntax {}
 
 object payload extends JsonComponent
 
@@ -43,13 +48,13 @@ object api:
     (payload.field("title", payload.string) :* payload.field("pages", payload.int)).to
 
   /** One document. */
-  val reported: Body.Of[Json.Node, Report] = json(api.report)
+  val reported: Body.Of[Json.Node, Report] = body.json(api.report)
 
   /** A body that may be either of two things, which is what content negotiation describes. The alternatives are written
     * in different alphabets -- one a JSON schema, the other no schema at all -- and the union of their payload types is
     * what the body's own type records.
     */
-  val negotiated: Bodies[Either[Report, ByteVector]] = json(api.report) :+ body.binary(MediaType.Pdf)
+  val negotiated: Bodies[Either[Report, ByteVector]] = body.json(api.report) :+ body.binary(MediaType.Pdf)
 
   /** A multipart upload: a JSON part and a file part, which is the shape neither earlier attempt could write down.
     *
@@ -57,7 +62,7 @@ object api:
     * in a flat form alphabet whose only leaf was a string.
     */
   val upload: Multipart[Upload] =
-    (part("report", json(api.report)) :*
+    (part("report", body.json(api.report)) :*
       part("attachment", body.binary(MediaType.Pdf)).filename("report.pdf")).to
 
   /** The same upload as a body, which is all a multipart body is: a body whose payload happens to be a set of parts. */
@@ -66,7 +71,7 @@ object api:
   /** A stream of documents, one per line. The element type is on the body, so a backend handed it knows what its stream
     * yields; the body itself contributes nothing to what a request reads.
     */
-  val reports: Body.Streamed.Of[Json.Node, Report] = ndjson(api.report)
+  val reports: Body.Streamed.Of[Json.Node, Report] = body.ndjson(api.report)
 
   /** `/reports/{id}` */
   val one: Path[Int] = __ :* segment("reports") :* segment("id", int)
@@ -82,14 +87,14 @@ object api:
   val fetch: Endpoint.Server[Body.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(Method.Get, api.one).queries(api.paging),
-      result(Code.Ok).body(json(api.report)) :+ result(Code.NotFound)
+      result(Code.Ok).body(body.json(api.report)) :+ result(Code.NotFound)
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
   val create: Endpoint.Server[Body.Payload, Upload, Report] =
     endpoint(
       request(Method.Post, __ :* segment("reports")).body(api.uploaded),
-      result(Code.Created).body(json(api.report)).toUnion
+      result(Code.Created).body(body.json(api.report)).toUnion
     )
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
@@ -107,14 +112,14 @@ object api:
 
   /** An upload whose attachment need not be sent, to show that a part is a field and carries a field's optionality. */
   val partial: Multipart[(Report, Option[ByteVector])] =
-    part("report", json(api.named)) :*
+    part("report", body.json(api.named)) :*
       part("attachment", body.binary(MediaType.Pdf)).filename("report.pdf").optional
 
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
   val replace: Endpoint.Server[Body.Payload, (Int, (Report, Option[ByteVector])), Report] =
     endpoint(
       request(Method.Put, api.one).body(body.multipart(api.partial)),
-      result(Code.Ok).body(json(api.named)).toUnion
+      result(Code.Ok).body(body.json(api.named)).toUnion
     )
 
   /** A payload with a defaulted field, which is the case where the two sides of a schema genuinely differ: a reader
@@ -124,7 +129,10 @@ object api:
 
   /** `PUT /settings`, to be rendered from both sides and compared. */
   val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
-    endpoint(request(Method.Put, __ :* segment("settings")).body(json(api.settings)), result(Code.NoContent).toUnion)
+    endpoint(
+      request(Method.Put, __ :* segment("settings")).body(body.json(api.settings)),
+      result(Code.NoContent).toUnion
+    )
 
   /** `PATCH /settings`, whose body need not be sent at all.
     *
@@ -133,7 +141,7 @@ object api:
     */
   val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, __ :* segment("settings")).optionalBody(json(api.settings)),
+      request(Method.Patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
       result(Code.NoContent).toUnion
     )
 
@@ -145,4 +153,4 @@ object api:
 
   /** `GET /trees` answering with one. */
   val trees: Endpoint.Server[Body.Payload, Unit, Tree] =
-    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(json(api.tree)).toUnion)
+    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(body.json(api.tree)).toUnion)

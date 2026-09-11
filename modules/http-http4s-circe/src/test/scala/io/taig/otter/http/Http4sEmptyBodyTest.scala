@@ -151,7 +151,7 @@ object Http4sEmptyBodyTest extends ZIOSpecDefault:
     test("an empty JSON response is decoded and rejected as invalid JSON"):
       val endpoint = io.taig.otter.http.fixture.dsl.endpoint(
         request(Method.Get, __),
-        result(Code.Ok).body(json(api.settings)).toUnion
+        result(Code.Ok).body(body.json(api.settings)).toUnion
       )
 
       decoded(endpoint, Http4sResponse[IO](headers = headers(Some("application/json"))))

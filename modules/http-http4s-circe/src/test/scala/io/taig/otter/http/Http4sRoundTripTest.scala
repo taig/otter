@@ -40,16 +40,19 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val fetch: Endpoint[(Int, Int), Either[Report, Unit]] =
     endpoint(
       request(Method.Get, api.one).queries(api.paging),
-      result(Code.Ok).body(json(api.report)) :+ result(Code.NotFound)
+      result(Code.Ok).body(body.json(api.report)) :+ result(Code.NotFound)
     )
 
   /** `PUT /settings`, whose payload has a defaulted field and whose answer has no entity at all. */
   private val configure: Endpoint[Settings, Unit] =
-    endpoint(request(Method.Put, __ :* segment("settings")).body(json(api.settings)), result(Code.NoContent).toUnion)
+    endpoint(
+      request(Method.Put, __ :* segment("settings")).body(body.json(api.settings)),
+      result(Code.NoContent).toUnion
+    )
 
   /** `GET /trees`, whose payload refers to itself. */
   private val trees: Endpoint[Unit, Tree] =
-    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(json(api.tree)).toUnion)
+    endpoint(request(Method.Get, __ :* segment("trees")), result(Code.Ok).body(body.json(api.tree)).toUnion)
 
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
   private val upload: Endpoint[ByteVector, ByteVector] =
@@ -107,7 +110,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PATCH /settings`, whose body need not be sent at all. */
   private val amendable: Endpoint[Option[Settings], Unit] =
     endpoint(
-      request(Method.Patch, __ :* segment("settings")).optionalBody(json(api.settings)),
+      request(Method.Patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
       result(Code.NoContent).toUnion
     )
 
@@ -136,7 +139,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PUT /reports/{id}?page` taking a body, so one request can be wrong in two positions at once. */
   private val amend: Endpoint[(Int, Int, Settings), Unit] =
     endpoint(
-      request(Method.Put, api.one).queries(api.paging).body(json(api.settings)),
+      request(Method.Put, api.one).queries(api.paging).body(body.json(api.settings)),
       result(Code.NoContent).toUnion
     )
 
