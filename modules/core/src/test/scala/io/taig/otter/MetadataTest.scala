@@ -71,4 +71,59 @@ object MetadataTest extends ZIOSpecDefault:
       val annotation = Annotation(()).attr(count, 1).attr(namespace, names, List("Otter"))
 
       assertTrue(annotation.attr(count).contains(1), annotation.attr(namespace, names).contains(List("Otter")))
+    ,
+    test("attr writes a collection valued key from its elements, whatever collection the key holds"):
+      val annotated = Annotated[Annotation[Unit]]
+      import annotated.*
+
+      val tags = Metadata.Key[List[String]]("tags")
+      val names = Metadata.Key[Seq[String]]("names")
+      val codes = Metadata.Key[Set[Int]]("codes")
+      val labels = Metadata.Key[Vector[String]]("labels")
+      val headers = Metadata.Key[Map[String, String]]("headers")
+      val namespace = Metadata.Namespace("test")
+
+      val annotation = Annotation(())
+        .attr(tags, "books", "manuals")
+        .attr(names, "Otter")
+        .attr(codes, 200, 404, 200)
+        .attr(labels, "one", "two")
+        .attr(headers, "Accept" -> "application/json", "Accept-Language" -> "en")
+        .attr(namespace, tags, "loans")
+
+      assertTrue(
+        annotation.attr(tags).contains(List("books", "manuals")),
+        annotation.attr(names).contains(Seq("Otter")),
+        annotation.attr(codes).contains(Set(200, 404)),
+        annotation.attr(labels).contains(Vector("one", "two")),
+        annotation.attr(headers).contains(Map("Accept" -> "application/json", "Accept-Language" -> "en")),
+        annotation.attr(namespace, tags).contains(List("loans")),
+        Annotation(()).attr(tags, Nil).attr(tags).contains(Nil)
+      )
+    ,
+    test("the varargs attr rejects elements of a different type from its key"):
+      assertTrue(!typeChecks("""
+        val annotated = Annotated[Annotation[Unit]]
+        import annotated.*
+        val tags = Metadata.Key[List[String]]("tags")
+        Annotation(()).attr(tags, "books", 1)
+      """))
+    ,
+    test("a collection valued key is still written whole, and a key that holds no collection is unaffected"):
+      val annotated = Annotated[Annotation[Unit]]
+      import annotated.*
+
+      val nested = Metadata.Key[List[List[String]]]("nested")
+      val count = Metadata.Key[Int]("count")
+      val name = Metadata.Key[String]("name")
+      val annotation = Annotation(())
+        .attr(nested, List(List("books"), List("loans")))
+        .attr(count, 1)
+        .attr(name, "Otter")
+
+      assertTrue(
+        annotation.attr(nested).contains(List(List("books"), List("loans"))),
+        annotation.attr(count).contains(1),
+        annotation.attr(name).contains("Otter")
+      )
   )

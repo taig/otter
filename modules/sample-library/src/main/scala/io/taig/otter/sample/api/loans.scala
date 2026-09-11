@@ -35,7 +35,7 @@ object loans:
     result(Code.Ok).body(body.json(schema.member)) :+ result(Code.NotFound)
   ).attr(OpenApiKeys.operationId, "fetchMember")
     .attr(OpenApiKeys.summary, "A member, their membership and what they owe")
-    .attr(OpenApiKeys.tags, List("members"))
+    .attr(OpenApiKeys.tags, "members")
 
   /** `POST /members/{reference}/loans`, answering three ways and carrying a document in each. */
   val borrow: Endpoint[(UUID, Loan.Request), Borrowed] = endpoint(
@@ -45,10 +45,10 @@ object loans:
       result(Code.Conflict).body(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
   ).attr(OpenApiKeys.operationId, "borrowBook")
     .attr(OpenApiKeys.summary, "Lend a book to a member")
-    .attr(OpenApiKeys.tags, List("loans"))
+    .attr(OpenApiKeys.tags, "loans")
 
   /** `GET /health`, which is the smallest endpoint there is: a literal path, nothing read, nothing written. */
   val health: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, __ / "health"),
     result(Code.NoContent).toUnion
-  ).attr(OpenApiKeys.operationId, "health").attr(OpenApiKeys.tags, List("service"))
+  ).attr(OpenApiKeys.operationId, "health").attr(OpenApiKeys.tags, "service")
