@@ -35,12 +35,9 @@ final class Http4sRequestDecoder(payload: Http4sPayload) extends Decoder[Request
       (decode(self, value), HeadersDecoder.decode(headers.value, value.headers).leftMap("header" /: _)).tupled
     case Request.Value.Payload(self, values) =>
       (decode(self, value), bodies.decode(values.value.self.self, value.body).leftMap("body" /: _)).tupled
-    // An entity that was not sent is zero bytes, which is the only signal there is: a caller that sends nothing sends
-    // no `Content-Type` either. The emptiness is tested first because a missing content type passes the media type
-    // check, so an absent entity would otherwise reach the payload decoder and fail there as a malformed document.
     case Request.Value.OptionalPayload(self, values) =>
       val body =
-        if value.body._2.isEmpty then Validated.valid(None)
+        if value.body._1.isEmpty && value.body._2.isEmpty then Validated.valid(None)
         else bodies.decode(values.value.self.self, value.body).map(Some(_)).leftMap("body" /: _)
 
       (decode(self, value), body).tupled

@@ -162,8 +162,8 @@ object Http4s:
     Http4sEnvelope
       .toBytes(response.entity)
       .map: bytes =>
-        val body = Option.when(bytes.nonEmpty)(
-          (Http4sEnvelope.toMediaType(response.headers).getOrElse(MediaType.OctetStream), bytes)
-        )
+        val mediaType = Http4sEnvelope.toMediaType(response.headers)
+        val body =
+          Option.when(mediaType.nonEmpty || bytes.nonEmpty)((mediaType.getOrElse(MediaType.OctetStream), bytes))
 
         (Http4sEnvelope.toHeaders(response.headers), body)
