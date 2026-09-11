@@ -248,6 +248,16 @@ Duplicate keys are outside the contract on purpose rather than configurable in i
 occurrence where circe's `JsonObject` has already kept the last, and JSON does not say which is right; a contract with
 a knob per difference would have stopped asserting anything. It is stated the other way round, per module, instead.
 
+The same holds for a schema that *declares* one name twice, which is legal and not a mistake to be rejected. `Fields`
+hands out the first occurrence nothing has claimed, so `field("x", int) :* field("x", int)` reads a document in arrival
+order; `RecordEncoder` writes a member per declaration and `BorerWrite`'s `Monoid` is left to right, so borer writes
+`{"x":1,"x":2}` and reads `(1, 2)` back. Checking field names for uniqueness would delete that.
+
+circe cannot do it in either direction, and that is its data type rather than a setting: a `JsonObject` is a
+`LinkedHashMap` keyed by name, so the write collapses to the last and the second field then reads as missing.
+`JawnParser`'s `allowDuplicateKeys` is not the knob it sounds like -- it chooses between keeping the last and refusing
+the document outright, and neither preserves one. `JsonBorerDivergenceTest` states both halves.
+
 `DirectionTest`, `FlatnessTest` and `ZipTest` are not part of the contract and are not mirrored: they assert properties
 of the schema algebra through `compiletime.testing.typeChecks` and mention an interpreter only as an arbitrary witness.
 One witness suffices.

@@ -4,6 +4,10 @@ import cats.data.Validated
 import cats.syntax.all.*
 import io.bullet.borer.Borer
 import io.bullet.borer.Dom
+import io.taig.otter.Constraint
+import io.taig.otter.Json
+import io.taig.otter.Step
+import io.taig.otter.component.JsonComponent.*
 import io.taig.otter.fixture.*
 import zio.Scope
 import zio.test.*
@@ -21,6 +25,9 @@ object JsonBorerDivergenceTest extends ZIOSpecDefault:
     Try(BorerDoc.toBorer(Doc.Num(lexeme))).toEither.left.map:
       case error: Borer.Error[?] => error.getMessage
       case error                 => error.toString
+
+  /** One name declared twice, which is legal and read in arrival order by whoever holds the document in that order. */
+  private val duplicated: Json.Record[(Int, Int)] = field("x", int) :* field("x", int)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonBorerDivergenceTest")(
     suite("borer's parser refuses an exponent circe reads")(
@@ -53,6 +60,26 @@ object JsonBorerDivergenceTest extends ZIOSpecDefault:
           JsonBorerDecoder.decode(json.printings, BorerDoc.toBorer(doc)) ==
             Validated.valid(List(1 -> "a", 1 -> "a", 2 -> "b")),
           JsonCirceDecoder.decode(json.printings, CirceDoc.toCirce(doc)) == Validated.valid(List(1 -> "a", 2 -> "b"))
+        )
+      ,
+      /** The same divergence from the schema's side, which is what makes it a capability here rather than an accident.
+        * `RecordEncoder` writes a member per declaration and `BorerWrite`'s `Monoid` is left to right, so borer writes
+        * both and reads both back in the order they were declared.
+        *
+        * circe's `JsonObject` is a `LinkedHashMap` keyed by name and cannot hold two entries under one key at all, so
+        * the write collapses to the last and the second field then reads as missing under a key the document plainly
+        * has. That is the data type and not a setting: `JawnParser`'s `allowDuplicateKeys` only chooses between keeping
+        * the last and refusing the document outright, and neither preserves one.
+        */
+      test("a schema naming one field twice round trips here, where circe collapses what it wrote"):
+        val roundTrip = JsonCirceInterpreter.roundTrip(duplicated, (1, 2))
+
+        assertTrue(
+          JsonBorerInterpreter.encode(duplicated, (1, 2)) == """{"x":1,"x":2}""",
+          JsonBorerInterpreter.roundTrip(duplicated, (1, 2)) == Validated.valid((1, 2)),
+          JsonCirceInterpreter.encode(duplicated, (1, 2)) == """{"x":2}""",
+          roundTrip.leftMap(violations.constraints) == Validated.invalid(List(Constraint.Generic.Required)),
+          roundTrip.leftMap(violations.paths) == Validated.invalid(List(List(Step.Field("x"))))
         )
     )
   )
