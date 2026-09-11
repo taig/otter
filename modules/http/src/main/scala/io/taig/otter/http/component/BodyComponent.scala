@@ -20,11 +20,11 @@ trait BodyComponent:
     Body.Schema(Body.Value.Whole(mediaType, Reference.later(payload)))
 
   /** Bytes, with no schema to describe them. */
-  def binary(mediaType: MediaType): Body.Of[Nothing, ByteVector] =
+  def binary(mediaType: MediaType): Body.Of[Body.Opaque, ByteVector] =
     Body.Schema(Body.Value.Binary(mediaType))
 
   /** Bytes as `application/octet-stream`, which is what they are when nothing more is known. */
-  val binary: Body.Of[Nothing, ByteVector] = binary(MediaType.OctetStream)
+  val binary: Body.Of[Body.Opaque, ByteVector] = binary(MediaType.OctetStream)
 
   /** A sequence of documents, arriving one at a time.
     *

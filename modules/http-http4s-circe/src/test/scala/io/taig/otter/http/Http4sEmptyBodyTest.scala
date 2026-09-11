@@ -3,7 +3,6 @@ package io.taig.otter.http
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
 import fs2.Stream
-import io.taig.otter.Json
 import io.taig.otter.http.fixture.*
 import io.taig.otter.http.fixture.dsl.*
 import org.http4s.Entity
@@ -25,8 +24,8 @@ import zio.test.*
 object Http4sEmptyBodyTest extends ZIOSpecDefault:
   private val Base: Uri = uri"http://otter.test"
   private val Png: MediaType = MediaType("image", "png")
-  private val png: Body.Of[Json.Node, ByteVector] = body.binary(Png)
-  private val text: Body.Of[Json.Node, ByteVector] = body.binary(MediaType.Text)
+  private val png: Body.Of[Body.Opaque, ByteVector] = body.binary(Png)
+  private val text: Body.Of[Body.Opaque, ByteVector] = body.binary(MediaType.Text)
   private val EmptyEntities: List[(String, Entity[IO])] = List(
     "empty" -> Entity.empty,
     "strict" -> Entity.Strict(ByteVector.empty),

@@ -40,6 +40,20 @@ object Body:
     * parameters are invariant and `w` is not.
     */
 
+  /** The payload of a body that has none, which is not the same as a body that is not there.
+    *
+    * Uninhabited, so it says what `Nothing` said before it -- there is no document here, as against an empty one. It is
+    * a type of its own because `Nothing` is also what a request with no entity yet holds, and one type meaning both is
+    * what let `.body(body.binary(...)).body(...)` typecheck: a binary body left the request looking body free, and the
+    * second entity then shadowed the first in [[Body.Value]] while both stayed in what the request holds.
+    *
+    * A declared constructor rather than an alias to `Unit`, for the reason the note above gives. `S` is a type
+    * constructor, so `Unit` is the wrong kind; `[w, r] =>> Unit` is the right kind and still does not conform to
+    * [[Body.Payload]] where alternatives are unioned, an alias's own parameters being invariant where `w` is not. Only
+    * a class or a trait carries the variance the position asks for.
+    */
+  sealed abstract class Opaque[-W, +R]
+
   /** A body holding the payload `S` and round tripping `A`. */
   type Of[S[-w, +r], A] = Body.Schema[S, A, A]
 
@@ -162,7 +176,7 @@ object Body:
       * `ByteVector` rather than `Array[Byte]`, which has reference equality and would make a body holding a literal
       * impossible to compare and a golden test impossible to write.
       */
-    final case class Binary(override val mediaType: MediaType) extends Body.Value[Nothing, ByteVector, ByteVector]
+    final case class Binary(override val mediaType: MediaType) extends Body.Value[Body.Opaque, ByteVector, ByteVector]
 
     /** A sequence of documents, arriving one at a time.
       *
