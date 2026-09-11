@@ -59,6 +59,12 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
           strings(server.value, "paths", "/books", "get", "tags") == List("books"),
           at(server.value, "paths", "/books", "get", "summary").flatMap(_.asString).nonEmpty
         )
+      ,
+      /** `books.fetch` converts its union to an `Option[Book]`, which is a decision about what the handler holds. The
+        * document is the place that would show it if it were anything more than that.
+        */
+      test("an answer converted to another type still renders every status the union named"):
+        assertTrue(keys(server.value, "paths", "/books/{isbn}", "get", "responses") == List("200", "404"))
     ),
     suite("parameters")(
       test("are named by position, and a defaulted one is not required"):

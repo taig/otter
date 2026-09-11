@@ -32,8 +32,9 @@ import scodec.bits.ByteVector
   *
   * The conversion needs a branch that carries a body. `.to` is found through the `Profunctor` for
   * `Result.Schema[S, ?, ?]`, and a result with no entity has `S = Nothing`, which does not eta-expand to the kind the
-  * instance asks for. So an answer with no entity stays a `Unit` inside an `Either` -- which is what [[books.delete]]
-  * does -- and a sum is worth reaching for once every branch has something to say. [[loans.borrow]] is the three branch
+  * instance asks for. So an answer with no entity stays a `Unit` in the union's `Either`, and what can still be
+  * converted is the union as a whole: [[books.fetch]] maps `Either[Book, Unit]` onto `Option[Book]` with neither branch
+  * named. A sum is worth reaching for once every branch has something to say, and [[loans.borrow]] is the three branch
   * case.
   */
 enum Created:
@@ -116,25 +117,37 @@ object books:
     .attr(openapi.summary, "Add a book to the catalogue")
     .attr(openapi.tags, "books")
 
-  /** `GET /books/{isbn}`, kept as a plain `Either` for contrast: two branches, one of them empty, need no name. */
-  val fetch: Endpoint[Isbn, Either[Book, Unit]] = endpoint(
+  /** `GET /books/{isbn}`, whose two answers are a book and no book -- which is what `Option` is.
+    *
+    * Nothing is named here, where [[Created]] names every case: the union is the same `200` beside a `404` it would be
+    * anyway, and `.to` maps the `Either[Book, Unit]` it holds onto the type both ends of the wire hold already --
+    * `Library.fetch` looks a book up in a `Map` and a caller wants an `Option` back. Without it each end pads and
+    * unpads, in opposite directions, around a shape neither of them wants.
+    *
+    * The document is untouched by it. A conversion is a [[io.taig.otter.http.Result.Value.Modify]], which is what the
+    * handler reads and not what the endpoint describes -- the OpenAPI and TypeScript renderings say `200` and `404`
+    * either way.
+    */
+  val fetch: Endpoint[Isbn, Option[Book]] = endpoint(
     request(method.get, books.one),
-    result(code.ok)(body.json(schema.book)) :+ result(code.notFound)
+    (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "fetchBook")
     .attr(openapi.tags, "books")
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
-  val patch: Endpoint[(Isbn, Book.Patch), Either[Book, Unit]] = endpoint(
+  val patch: Endpoint[(Isbn, Book.Patch), Option[Book]] = endpoint(
     request(method.patch, books.one)(body.json(schema.patch)),
-    result(code.ok)(body.json(schema.book)) :+ result(code.notFound)
+    (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "patchBook")
     .attr(openapi.tags, "books")
 
   /** `DELETE /books/{isbn}`, which is idempotent: a book that is not there is already gone, and 204 is the honest
     * answer rather than a 404. What it cannot do is remove a book somebody is holding, and that is the conflict.
     *
-    * A plain `Either` and not a sum, because the first branch carries no entity -- see [[Created]] for why that rules a
-    * conversion out, and why two branches did not need a name anyway.
+    * The one two branch answer left as a plain `Either`, and the contrast [[books.fetch]] is worth reading against: the
+    * branch carrying nothing here is the *success*, so `Option[Problem]` would name the failure as the thing that is
+    * present and get the endpoint exactly backwards. Not a sum either -- see [[Created]] for why a branch with no
+    * entity cannot be converted on its own.
     */
   val delete: Endpoint[Isbn, Either[Unit, Problem]] = endpoint(
     request(method.delete, books.one),

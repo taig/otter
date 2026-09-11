@@ -126,6 +126,24 @@ object Convert:
     override def from(b: B): Either[X, Y] =
       Convert.inject(mirror.ordinal(b), arity.value, b).asInstanceOf[Either[X, Y]]
 
+  /** Two branches, the second of which carries nothing, read as the absence of the first.
+    *
+    * Out of [[Convert.sum]]'s reach, and not for want of a mirror: `Option` has one, but it names its members
+    * `(Some[A], None.type)`, so the generic path asks for `Either[Some[A], None.type]` -- a shape no union builds. A
+    * branch that carries nothing reads `Unit`, which is a fact about the schema and not about `Option`.
+    *
+    * The left is what is there, because `:+` puts the first branch on the left and the branch carrying something is the
+    * one that was named first: a `200` written before a `404`.
+    *
+    * Asked for and never inferred, as every conversion is, so a union whose empty branch means something other than
+    * absence keeps its `Either`. A `204` beside a `409` is that case -- there the branch carrying nothing is the
+    * success, and an `Option` of the other would name the failure as the thing that is present.
+    */
+  given absent: [A] => Convert[Either[A, Unit], Option[A]]:
+    override def to(a: Either[A, Unit]): Option[A] = a.swap.toOption
+
+    override def from(b: Option[A]): Either[A, Unit] = b.toLeft(())
+
   /** Unwraps `arity - 1` levels of nesting to reach the member that is present. */
   @SuppressWarnings(Array("scalafix:DisableSyntax.asInstanceOf"))
   @tailrec

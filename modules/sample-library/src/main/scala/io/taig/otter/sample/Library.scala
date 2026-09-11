@@ -44,16 +44,15 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
         val book = create.toBook
         (current.copy(books = current.books.updated(book.isbn, book)), Created.Added(book))
 
-  def fetch(isbn: Isbn): F[Either[Book, Unit]] =
-    state.get.map(_.books.get(isbn).toLeft(()))
+  def fetch(isbn: Isbn): F[Option[Book]] = state.get.map(_.books.get(isbn))
 
-  def patch(isbn: Isbn, patch: Book.Patch): F[Either[Book, Unit]] =
+  def patch(isbn: Isbn, patch: Book.Patch): F[Option[Book]] =
     state.modify: current =>
       current.books.get(isbn) match
-        case None       => (current, Right(()))
+        case None       => (current, None)
         case Some(book) =>
           val patched = patch(book)
-          (current.copy(books = current.books.updated(isbn, patched)), Left(patched))
+          (current.copy(books = current.books.updated(isbn, patched)), Some(patched))
 
   /** Idempotent: a book that is not there is already gone. A book somebody is holding cannot be removed at all. */
   def delete(isbn: Isbn): F[Either[Unit, Problem]] =
@@ -81,8 +80,7 @@ final class Library[F[_]: Sync](state: Ref[F, Library.State], clock: Clock):
 
   def catalogue: F[Category] = Sync[F].pure(Category.Root)
 
-  def member(reference: UUID): F[Either[Member, Unit]] =
-    state.get.map(_.members.get(reference).toLeft(()))
+  def member(reference: UUID): F[Option[Member]] = state.get.map(_.members.get(reference))
 
   /** The one handler with a rule in it, and the rule is where `java.time` earns its place: a loan period is a `Period`
     * and not a number of days, so adding it to a date is calendar arithmetic rather than counting.

@@ -26,10 +26,10 @@ object loans:
   /** `/members/{reference}` */
   val one: Path[UUID] = __ / "members" / segment("reference", uuid)
 
-  /** `GET /members/{reference}` */
-  val fetch: Endpoint[UUID, Either[Member, Unit]] = endpoint(
+  /** `GET /members/{reference}`, a member or no member -- see [[books.fetch]] for what `.to` is doing to the union. */
+  val fetch: Endpoint[UUID, Option[Member]] = endpoint(
     request(method.get, loans.one),
-    result(code.ok)(body.json(schema.member)) :+ result(code.notFound)
+    (result(code.ok)(body.json(schema.member)) :+ result(code.notFound)).to[Option[Member]]
   ).attr(openapi.operationId, "fetchMember")
     .attr(openapi.summary, "A member, their membership and what they owe")
     .attr(openapi.tags, "members")

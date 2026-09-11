@@ -69,14 +69,6 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
             Http4s.client[IO, A2, B2](Http4sCirce.Payload, Base, client)(second)(a2)
         .unsafeToFuture()
 
-  /** The value a two branch answer carries, where the branch that carries one is the left.
-    *
-    * `:+` puts the first branch on the left, and the first branch here is always the one that found something. So
-    * `Left` is success and `Right(())` is "no such thing", which reads backwards until you remember that the order is
-    * the order the statuses were written in.
-    */
-  private def found[A](answer: Either[A, Unit]): Option[A] = answer.swap.toOption
-
   private val creation: Book.Create = Book.Create(
     isbn = Isbn.digits("9780000000001"),
     title = "A New Book",
@@ -112,34 +104,34 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
         )
       ,
       test("a path placeholder that parses hands the handler the parsed value and not the text"):
-        call(books.fetch)(hobbit).map(answer => assertTrue(found(answer).map(_.title) == Some("The Hobbit")))
+        call(books.fetch)(hobbit).map(answer => assertTrue(answer.map(_.title) == Some("The Hobbit")))
       ,
       test("a branch with no entity is told apart from one with a body by the status code alone"):
-        call(books.fetch)(Isbn.digits("9789999999999")).map(answer => assertTrue(answer == Right(())))
+        call(books.fetch)(Isbn.digits("9789999999999")).map(answer => assertTrue(answer == None))
     ),
     suite("payloads")(
       test("a book written by the handler is the book the caller reads, refinements and all"):
         call(books.fetch)(hobbit).map(answer =>
           assertTrue(
-            found(answer).map(_.pages) == Some(310),
-            found(answer).map(_.genres) == Some(List(Genre.Fantasy, Genre.Children)),
-            found(answer).map(_.published) == Some(LocalDate.of(1937, 9, 21))
+            answer.map(_.pages) == Some(310),
+            answer.map(_.genres) == Some(List(Genre.Fantasy, Genre.Children)),
+            answer.map(_.published) == Some(LocalDate.of(1937, 9, 21))
           )
         )
       ,
       test("a dictionary round trips under keys nobody named in a schema"):
         call(books.fetch)(hobbit).map(answer =>
-          assertTrue(found(answer).map(_.metadata) == Some(SortedMap("condition" -> "good", "shelf" -> "F-TOL")))
+          assertTrue(answer.map(_.metadata) == Some(SortedMap("condition" -> "good", "shelf" -> "F-TOL")))
         )
       ,
       test("a case insensitive email is one value however it was typed"):
-        call(loans.fetch)(ada).map(answer => assertTrue(found(answer).map(_.email.toString) == Some("ada@otter.test")))
+        call(loans.fetch)(ada).map(answer => assertTrue(answer.map(_.email.toString) == Some("ada@otter.test")))
       ,
       test("an instant and a local date survive the trip as themselves"):
         call(loans.fetch)(ada).map(answer =>
           assertTrue(
-            found(answer).map(_.joined) == Some(Instant.parse("2021-03-04T09:15:00Z")),
-            found(answer).map(_.expires) == Some(LocalDate.of(2027, 3, 4))
+            answer.map(_.joined) == Some(Instant.parse("2021-03-04T09:15:00Z")),
+            answer.map(_.expires) == Some(LocalDate.of(2027, 3, 4))
           )
         )
       ,
@@ -222,15 +214,15 @@ object LibraryRoundTripTest extends ZIOSpecDefault:
     suite("a field that may be absent, and a field that may be null")(
       test("a key left out leaves the value as it was"):
         calls(books.patch, books.fetch)((austen, Book.Patch(Some("Pride"), None, None, None)), austen).map(answer =>
-          assertTrue(found(answer).map(_.title) == Some("Pride"), found(answer).map(_.pages) == Some(432))
+          assertTrue(answer.map(_.title) == Some("Pride"), answer.map(_.pages) == Some(432))
         )
       ,
       test("an explicit null is a different thing from a missing key, and clears the value"):
         calls(books.patch, books.fetch)((hobbit, Book.Patch(None, None, None, Some(None))), hobbit).map(answer =>
-          assertTrue(found(answer).map(_.summary) == Some(None))
+          assertTrue(answer.map(_.summary) == Some(None))
         )
       ,
       test("a book whose summary was never set reads back as having none"):
-        call(books.fetch)(austen).map(answer => assertTrue(found(answer).map(_.summary) == Some(None)))
+        call(books.fetch)(austen).map(answer => assertTrue(answer.map(_.summary) == Some(None)))
     )
   )

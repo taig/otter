@@ -40,6 +40,16 @@ object ConvertTest extends ZIOSpecDefault:
         convert.to(Right(Three.C)) == Three.C
       )
     ,
+    test("two branches, the second carrying nothing, convert from and to Option"):
+      val convert = Convert[Either[Int, Unit], Option[Int]]
+
+      assertTrue(
+        convert.to(Left(42)) == Some(42),
+        convert.to(Right(())) == None,
+        convert.from(Some(42)) == Left(42),
+        convert.from(None) == Right(())
+      )
+    ,
     test("a sum of 25 members round trips"):
       val mirror = summon[Mirror.SumOf[Big]]
       val convert = Convert[Convert.Coproduct[mirror.MirroredElemTypes], Big]
