@@ -29,17 +29,17 @@ object loans:
   /** `GET /members/{reference}` */
   val fetch: Endpoint[UUID, Either[Member, Unit]] = endpoint(
     request(method.get, loans.one),
-    result(code.ok).body(body.json(schema.member)) :+ result(code.notFound)
+    result(code.ok)(body.json(schema.member)) :+ result(code.notFound)
   ).attr(openapi.operationId, "fetchMember")
     .attr(openapi.summary, "A member, their membership and what they owe")
     .attr(openapi.tags, "members")
 
   /** `POST /members/{reference}/loans`, answering three ways and carrying a document in each. */
   val borrow: Endpoint[(UUID, Loan.Request), Borrowed] = endpoint(
-    request(method.post, loans.one / "loans").body(body.json(schema.borrow)),
-    (result(code.created).body(body.json(schema.loan)).to[Borrowed.Lent] :+
-      result(code.notFound).body(body.json(schema.problem)).to[Borrowed.Unknown] :+
-      result(code.conflict).body(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
+    request(method.post, loans.one / "loans")(body.json(schema.borrow)),
+    (result(code.created)(body.json(schema.loan)).to[Borrowed.Lent] :+
+      result(code.notFound)(body.json(schema.problem)).to[Borrowed.Unknown] :+
+      result(code.conflict)(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
   ).attr(openapi.operationId, "borrowBook")
     .attr(openapi.summary, "Lend a book to a member")
     .attr(openapi.tags, "loans")

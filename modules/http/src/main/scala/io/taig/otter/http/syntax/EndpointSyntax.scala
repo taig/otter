@@ -10,6 +10,8 @@ import io.taig.otter.http.Queries
 import io.taig.otter.http.Request
 import io.taig.otter.http.Result
 
+import scala.annotation.targetName
+
 /** Adding a part to a request or a result.
   *
   * Extension methods rather than members, for the reason [[io.taig.otter.syntax.OtterSyntax]]'s `:*` is one: appending
@@ -19,6 +21,15 @@ import io.taig.otter.http.Result
   *
   * Each step drops a `Unit`, exactly as `:*` does, so `request(method.get, path).headers(HNil)` holds what the path
   * holds and nothing more, and only the parts that carry something reach the caller.
+  *
+  * The entity is added by application rather than by name -- `result(code.ok)(body.json(schema.book))` -- because there
+  * is only ever one of it and its own type already says which of the shapes it is. A whole document, a choice between
+  * alternatives, one that need not be sent, a stream: four types, four overloads, and nothing for the caller to pick.
+  * The parts there may be several of keep their names, since a name is what tells them apart.
+  *
+  * The overloads carry a `@targetName` because a by-name parameter erases to `Function0`, so `=> Body.Schema`,
+  * `=> Bodies.Schema` and `=> Body.Streamed.Schema` are one signature by the time the JVM sees them. Each is given the
+  * name its method used to have, which is also what a stack trace and a binary compatibility report will say.
   */
 trait EndpointSyntax:
   extension [S[-w, +r], W1, R1](fa: Request.Schema[S, W1, R1])
@@ -51,20 +62,22 @@ trait EndpointSyntax:
   /** A request that carries no body yet.
     *
     * Pinning the payload to `Nothing` is how "at most one entity" becomes a compile error rather than a rule: a request
-    * that already has a body is not one of these, so `.body(a).body(b)` does not typecheck. It is also why nothing here
-    * unions payload types -- there is only ever one -- which keeps `Nothing` out of the unions the earlier shape
-    * accumulated for no reason.
+    * that already has a body is not one of these, so `request(method.post, path)(a)(b)` does not typecheck. It is also
+    * why nothing here unions payload types -- there is only ever one -- which keeps `Nothing` out of the unions the
+    * earlier shape accumulated for no reason.
     */
   extension [W1, R1](fa: Request.Schema[Nothing, W1, R1])
     /** The one body this request carries. */
-    def body[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
+    @targetName("body")
+    def apply[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
-      fa.bodies(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
+      fa.apply(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
 
     /** The body this request carries, as a choice between alternatives. */
-    def bodies[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
+    @targetName("bodies")
+    def apply[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Request.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -76,36 +89,32 @@ trait EndpointSyntax:
         )
       )
 
-    /** The body this request carries, which need not be sent at all. */
-    def optionalBody[S2[-w, +r], W2, R2, W3, R3](value: => Body.Schema[S2, W2, R2])(using
-        O: Request.Optionality[W2, R2, W3, R3],
-        W: Append.Shape[W1, W3],
-        R: Append.Shape[R1, R3]
-    ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
-      fa.optionalBodies(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
-
-    /** The body this request carries, as a choice between alternatives, which need not be sent at all.
+    /** The body this request carries, which need not be sent at all.
+      *
+      * Taken strictly where the others are by name, because [[Bodies.Optional]] is itself the suspension: what it holds
+      * is a [[Reference]], so `body.optional(recursive)` has already deferred everything there was to defer.
       *
       * `W3` and `R3` are the body's own halves under an `Option`, named by [[Request.Optionality]] rather than written
       * as one here, which is what keeps the append reducible.
       */
-    def optionalBodies[S2[-w, +r], W2, R2, W3, R3](values: => Bodies.Schema[S2, W2, R2])(using
+    def apply[S2[-w, +r], W2, R2, W3, R3](value: Bodies.Optional[S2, W2, R2])(using
         O: Request.Optionality[W2, R2, W3, R3],
         W: Append.Shape[W1, W3],
         R: Append.Shape[R1, R3]
     ): Request.Schema[S2, Append[W1, W3], Append[R1, R3]] =
       Request.Schema(
         Request.Value.Modify(
-          Request.Value.OptionalPayload[S2, W1, R1, W2, R2](fa.self.self, Reference.later(values)),
+          Request.Value.OptionalPayload[S2, W1, R1, W2, R2](fa.self.self, value.self),
           (values: (R1, Option[R2])) => R.join(values._1, O.read(values._2)),
-          (value: Append[W1, W3]) =>
-            val (self, body) = W.split(value)
+          (appended: Append[W1, W3]) =>
+            val (self, body) = W.split(appended)
             (self, O.write(body))
         )
       )
 
     /** The streamed body this request carries, which changes what it describes and not what it holds. */
-    def streaming[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Request.Schema[S2, W1, R1] =
+    @targetName("streaming")
+    def apply[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Request.Schema[S2, W1, R1] =
       Request.Schema(Request.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
   extension [S[-w, +r], W1, R1](fa: Result.Schema[S, W1, R1])
@@ -122,17 +131,23 @@ trait EndpointSyntax:
         )
       )
 
-  /** A result that carries no body yet, for the reason the request counterpart is pinned the same way. */
+  /** A result that carries no body yet, for the reason the request counterpart is pinned the same way.
+    *
+    * There is no overload here taking a [[Bodies.Optional]], and that is the statement: an answer that need not carry
+    * its entity is not a thing this library describes, and a caller reaching for one is told so by the compiler.
+    */
   extension [W1, R1](fa: Result.Schema[Nothing, W1, R1])
     /** The one body this result carries. */
-    def body[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
+    @targetName("body")
+    def apply[S2[-w, +r], W2, R2](value: => Body.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Result.Schema[S2, Append[W1, W2], Append[R1, R2]] =
-      fa.bodies(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
+      fa.apply(Bodies.Schema.apply[S2, W2, R2](Self.Union.Root(Reference.later(value))))
 
     /** The body this result carries, as a choice between alternatives. */
-    def bodies[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
+    @targetName("bodies")
+    def apply[S2[-w, +r], W2, R2](values: => Bodies.Schema[S2, W2, R2])(using
         W: Append.Shape[W1, W2],
         R: Append.Shape[R1, R2]
     ): Result.Schema[S2, Append[W1, W2], Append[R1, R2]] =
@@ -145,7 +160,8 @@ trait EndpointSyntax:
       )
 
     /** The streamed body this result carries, which changes what it describes and not what it holds. */
-    def streaming[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Result.Schema[S2, W1, R1] =
+    @targetName("streaming")
+    def apply[S2[-w, +r], W2, R2](value: => Body.Streamed.Schema[S2, W2, R2]): Result.Schema[S2, W1, R1] =
       Result.Schema(Result.Value.Streaming[S2, W1, R1, W2, R2](fa.self.self, Reference.later(value)))
 
 object EndpointSyntax extends EndpointSyntax

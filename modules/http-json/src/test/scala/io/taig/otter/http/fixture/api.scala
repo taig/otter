@@ -85,14 +85,14 @@ object api:
   val fetch: Endpoint.Server[Body.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
-      result(code.ok).body(body.json(api.report)) :+ result(code.notFound)
+      result(code.ok)(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `POST /reports` taking a multipart upload and answering with the report it made. */
   val create: Endpoint.Server[Body.Payload, Upload, Report] =
     endpoint(
-      request(method.post, __ :* segment("reports")).body(api.uploaded),
-      result(code.created).body(body.json(api.report)).toUnion
+      request(method.post, __ :* segment("reports"))(api.uploaded),
+      result(code.created)(body.json(api.report)).toUnion
     )
 
   /** `GET /reports` answering with a stream of reports, which contributes nothing to what the caller is handed here.
@@ -100,7 +100,7 @@ object api:
   val stream: Endpoint.Server[Body.Payload, Unit, Unit] =
     endpoint(
       request(method.get, __ :* segment("reports")),
-      result(code.ok).streaming(api.reports).toUnion
+      result(code.ok)(api.reports).toUnion
     )
 
   /** The same report, named, so a document declares it once under `components/schemas` and refers to it from everywhere
@@ -116,8 +116,8 @@ object api:
   /** `PUT /reports/{id}` taking the partial upload and answering with the named report. */
   val replace: Endpoint.Server[Body.Payload, (Int, (Report, Option[ByteVector])), Report] =
     endpoint(
-      request(method.put, api.one).body(body.multipart(api.partial)),
-      result(code.ok).body(body.json(api.named)).toUnion
+      request(method.put, api.one)(body.multipart(api.partial)),
+      result(code.ok)(body.json(api.named)).toUnion
     )
 
   /** A payload with a defaulted field, which is the case where the two sides of a schema genuinely differ: a reader
@@ -128,7 +128,7 @@ object api:
   /** `PUT /settings`, to be rendered from both sides and compared. */
   val configure: Endpoint.Server[Body.Payload, Settings, Unit] =
     endpoint(
-      request(method.put, __ :* segment("settings")).body(body.json(api.settings)),
+      request(method.put, __ :* segment("settings"))(body.json(api.settings)),
       result(code.noContent).toUnion
     )
 
@@ -139,7 +139,7 @@ object api:
     */
   val amend: Endpoint.Server[Body.Payload, Option[Settings], Unit] =
     endpoint(
-      request(method.patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
+      request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
       result(code.noContent).toUnion
     )
 
@@ -151,4 +151,4 @@ object api:
 
   /** `GET /trees` answering with one. */
   val trees: Endpoint.Server[Body.Payload, Unit, Tree] =
-    endpoint(request(method.get, __ :* segment("trees")), result(code.ok).body(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)

@@ -41,6 +41,19 @@ object Bodies:
     case Self.Union.Coproduct(left, right) => Bodies.walk(left) ++ Bodies.walk(right)
     case Self.Union.Root(branch)           => Chain.one(branch.value)
 
+  /** Bodies that need not be sent at all.
+    *
+    * Not a fourth form a body comes in: optionality belongs to the request, and the two are genuinely different
+    * questions, which [[Request.Value.OptionalPayload]] spells out -- a union says *which* entity arrived, and this
+    * says whether one had to. It is a type of its own rather than a flag so that only a [[Request]] accepts one: a
+    * [[Result]] has no overload taking it, and an answer that need not carry its entity stays a compile error rather
+    * than a rule written down.
+    *
+    * It holds a [[Reference]] rather than the schema, which is what lets the position that takes one take it strictly:
+    * the suspension every child position in this library needs is already here.
+    */
+  final case class Optional[+S[-w, +r], -W, +R](self: Reference[[w, r] =>> Bodies.Schema[S, w, r], W, R])
+
   final case class Schema[+S[-w, +r], -W, +R](
       self: Annotation[Self.Union[[w, r] =>> Body.Schema[S, w, r], W, R]]
   )

@@ -44,8 +44,8 @@ object Body:
     *
     * Uninhabited, so it says what `Nothing` said before it -- there is no document here, as against an empty one. It is
     * a type of its own because `Nothing` is also what a request with no entity yet holds, and one type meaning both is
-    * what let `.body(body.binary(...)).body(...)` typecheck: a binary body left the request looking body free, and the
-    * second entity then shadowed the first in [[Body.Value]] while both stayed in what the request holds.
+    * what let `request(...)(body.binary(...))(...)` typecheck: a binary body left the request looking body free, and
+    * the second entity then shadowed the first in [[Body.Value]] while both stayed in what the request holds.
     *
     * A declared constructor rather than an alias to `Unit`, for the reason the note above gives. `S` is a type
     * constructor, so `Unit` is the wrong kind; `[w, r] =>> Unit` is the right kind and still does not conform to

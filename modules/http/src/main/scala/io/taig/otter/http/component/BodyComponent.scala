@@ -1,18 +1,29 @@
 package io.taig.otter.http.component
 
+import io.taig.otter as Self
 import io.taig.otter.Annotation
 import io.taig.otter.Reference
+import io.taig.otter.http.Bodies
 import io.taig.otter.http.Body
 import io.taig.otter.http.Frame
 import io.taig.otter.http.MediaType
 import io.taig.otter.http.Multipart
 import scodec.bits.ByteVector
 
+import scala.annotation.targetName
+
 /** The three forms a body comes in.
   *
   * A payload is any schema at all, so `body(MediaType.Json, someJsonSchema)` and `body(MediaType.Csv, someCsvSchema)`
   * are the same combinator, and which alphabet the document is written in is recorded in the body's type rather than
   * chosen from a fixed list here.
+  *
+  * [[optional]] is not a fourth form. It is the one thing a position taking a body has to be told that the body cannot
+  * say for itself, and it is spelled here so that `request(method.post, path)(body.optional(entity))` needs no second
+  * name for the position -- which is what [[Bodies.Optional]] records.
+  *
+  * Its two overloads carry a `@targetName` for the reason [[io.taig.otter.http.syntax.EndpointSyntax]]'s do: a by-name
+  * parameter erases to `Function0`, and a body and a choice of them are then one signature.
   */
 trait BodyComponent:
   /** One document, read and written whole. */
@@ -51,3 +62,13 @@ trait BodyComponent:
   def multipart[B[-w, +r], W, R](
       parts: => Multipart.Schema[B, W, R]
   ): Body.Schema[[w, r] =>> Multipart.Schema[B, w, r], W, R] = apply(MediaType.MultipartFormData, parts)
+
+  /** A body that need not be sent at all. */
+  @targetName("body")
+  def optional[S[-w, +r], W, R](value: => Body.Schema[S, W, R]): Bodies.Optional[S, W, R] =
+    optional(Bodies.Schema.apply[S, W, R](Self.Union.Root(Reference.later(value))))
+
+  /** A choice of bodies, none of which need be sent at all. */
+  @targetName("bodies")
+  def optional[S[-w, +r], W, R](values: => Bodies.Schema[S, W, R]): Bodies.Optional[S, W, R] =
+    Bodies.Optional(Reference.later(values))

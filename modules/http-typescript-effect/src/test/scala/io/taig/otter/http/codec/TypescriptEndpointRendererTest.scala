@@ -35,26 +35,26 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
 
   private val send: Endpoint.Server[Body.Payload, Settings, Unit] =
     endpoint(
-      request(method.put, __ :* segment("settings")).body(body.json(settings)),
+      request(method.put, __ :* segment("settings"))(body.json(settings)),
       result(code.noContent).toUnion
     )
 
   private val answer: Endpoint.Server[Body.Payload, Unit, Settings] =
-    endpoint(request(method.get, __ :* segment("settings")), result(code.ok).body(body.json(settings)).toUnion)
+    endpoint(request(method.get, __ :* segment("settings")), result(code.ok)(body.json(settings)).toUnion)
 
   /** A second endpoint answering with the same schema, so the name is reached at the read side twice. */
   private val answerAgain: Endpoint.Server[Body.Payload, Unit, Settings] =
-    endpoint(request(method.get, __ :* segment("defaults")), result(code.ok).body(body.json(settings)).toUnion)
+    endpoint(request(method.get, __ :* segment("defaults")), result(code.ok)(body.json(settings)).toUnion)
 
   /** The same pairing over a schema with no such member, which the two sides agree about. */
   private val sendReport: Endpoint.Server[Body.Payload, Report, Unit] =
     endpoint(
-      request(method.put, __ :* segment("reports")).body(body.json(api.named)),
+      request(method.put, __ :* segment("reports"))(body.json(api.named)),
       result(code.noContent).toUnion
     )
 
   private val answerReport: Endpoint.Server[Body.Payload, Unit, Report] =
-    endpoint(request(method.get, __ :* segment("reports")), result(code.ok).body(body.json(api.named)).toUnion)
+    endpoint(request(method.get, __ :* segment("reports")), result(code.ok)(body.json(api.named)).toUnion)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("TypescriptEndpointRendererTest")(
     suite("directional names")(
@@ -91,11 +91,11 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
       test("different payloads with the same name stay distinct across endpoints"):
         val first = endpoint(
           request(method.get, __ / "first"),
-          result(code.ok).body(body.json(api.report.attr(Keys.name, "Shared"))).toUnion
+          result(code.ok)(body.json(api.report.attr(Keys.name, "Shared"))).toUnion
         )
         val second = endpoint(
           request(method.get, __ / "second"),
-          result(code.ok).body(body.json(api.settings.attr(Keys.name, "Shared"))).toUnion
+          result(code.ok)(body.json(api.settings.attr(Keys.name, "Shared"))).toUnion
         )
         val module = render(first, second)
 

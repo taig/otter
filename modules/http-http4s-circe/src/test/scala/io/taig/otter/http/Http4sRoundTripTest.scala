@@ -40,44 +40,44 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val fetch: Endpoint[(Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
-      result(code.ok).body(body.json(api.report)) :+ result(code.notFound)
+      result(code.ok)(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `PUT /settings`, whose payload has a defaulted field and whose answer has no entity at all. */
   private val configure: Endpoint[Settings, Unit] =
     endpoint(
-      request(method.put, __ :* segment("settings")).body(body.json(api.settings)),
+      request(method.put, __ :* segment("settings"))(body.json(api.settings)),
       result(code.noContent).toUnion
     )
 
   /** `GET /trees`, whose payload refers to itself. */
   private val trees: Endpoint[Unit, Tree] =
-    endpoint(request(method.get, __ :* segment("trees")), result(code.ok).body(body.json(api.tree)).toUnion)
+    endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)
 
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
   private val upload: Endpoint[ByteVector, ByteVector] =
     endpoint(
-      request(method.post, __ :* segment("files")).body(body.binary(MediaType.Pdf)),
-      result(code.ok).body(body.binary(MediaType.Pdf)).toUnion
+      request(method.post, __ :* segment("files"))(body.binary(MediaType.Pdf)),
+      result(code.ok)(body.binary(MediaType.Pdf)).toUnion
     )
 
   /** `POST /reports` whose body may be either of two alternatives, which is what content negotiation describes. */
   private val negotiated: Endpoint[Either[Report, ByteVector], Unit] =
     endpoint(
-      request(method.post, __ :* segment("reports")).bodies(api.negotiated),
+      request(method.post, __ :* segment("reports"))(api.negotiated),
       result(code.noContent).toUnion
     )
 
   /** `POST /uploads`, whose payload is a set of parts -- a payload alphabet no interpreter here recognises. */
   private val multipart: Endpoint[Upload, Unit] =
     endpoint(
-      request(method.post, __ :* segment("uploads")).body(body.multipart(api.upload)),
+      request(method.post, __ :* segment("uploads"))(body.multipart(api.upload)),
       result(code.noContent).toUnion
     )
 
   /** `GET /reports`, whose answer this interpreter cannot yet carry. */
   private val streaming: Endpoint[Unit, Unit] =
-    endpoint(request(method.get, __ :* segment("reports")), result(code.ok).streaming(api.reports).toUnion)
+    endpoint(request(method.get, __ :* segment("reports")), result(code.ok)(api.reports).toUnion)
 
   private def routes[A, B](endpoint: Endpoint[A, B], handler: A => IO[B]): Http4sClient[IO] =
     Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
@@ -110,7 +110,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PATCH /settings`, whose body need not be sent at all. */
   private val amendable: Endpoint[Option[Settings], Unit] =
     endpoint(
-      request(method.patch, __ :* segment("settings")).optionalBody(body.json(api.settings)),
+      request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
       result(code.noContent).toUnion
     )
 
@@ -139,7 +139,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   /** `PUT /reports/{id}?page` taking a body, so one request can be wrong in two positions at once. */
   private val amend: Endpoint[(Int, Int, Settings), Unit] =
     endpoint(
-      request(method.put, api.one).queries(api.paging).body(body.json(api.settings)),
+      request(method.put, api.one).queries(api.paging)(body.json(api.settings)),
       result(code.noContent).toUnion
     )
 

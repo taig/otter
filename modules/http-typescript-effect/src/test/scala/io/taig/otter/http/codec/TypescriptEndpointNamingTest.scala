@@ -16,7 +16,7 @@ object TypescriptEndpointNamingTest extends ZIOSpecDefault:
   private val renderer = TypescriptEndpointRenderer.client(TypescriptEffectPayload.json)
 
   private def endpointWith(name: String, schema: Json.Node[?, ?]): Endpoint.Node =
-    endpoint(request(method.get, __ / "names"), result(code.ok).body(body.json(schema)).toUnion)
+    endpoint(request(method.get, __ / "names"), result(code.ok)(body.json(schema)).toUnion)
       .attr(HttpTypescriptKeys.operationId, name)
 
   private def render(endpoints: Endpoint.Node*): TypescriptModule = renderer.render(Chain.fromSeq(endpoints))
