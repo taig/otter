@@ -3,7 +3,6 @@ package io.taig.otter.sample.api
 import io.taig.otter.http.Code
 import io.taig.otter.http.Endpoint
 import io.taig.otter.http.Method
-import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.Path
 import io.taig.otter.sample.Loan
 import io.taig.otter.sample.Member
@@ -33,9 +32,9 @@ object loans:
   val fetch: Endpoint[UUID, Either[Member, Unit]] = endpoint(
     request(Method.Get, loans.one),
     result(Code.Ok).body(body.json(schema.member)) :+ result(Code.NotFound)
-  ).attr(OpenApiKeys.operationId, "fetchMember")
-    .attr(OpenApiKeys.summary, "A member, their membership and what they owe")
-    .attr(OpenApiKeys.tags, "members")
+  ).attr(openapi.operationId, "fetchMember")
+    .attr(openapi.summary, "A member, their membership and what they owe")
+    .attr(openapi.tags, "members")
 
   /** `POST /members/{reference}/loans`, answering three ways and carrying a document in each. */
   val borrow: Endpoint[(UUID, Loan.Request), Borrowed] = endpoint(
@@ -43,12 +42,12 @@ object loans:
     (result(Code.Created).body(body.json(schema.loan)).to[Borrowed.Lent] :+
       result(Code.NotFound).body(body.json(schema.problem)).to[Borrowed.Unknown] :+
       result(Code.Conflict).body(body.json(schema.problem)).to[Borrowed.Unavailable]).to[Borrowed]
-  ).attr(OpenApiKeys.operationId, "borrowBook")
-    .attr(OpenApiKeys.summary, "Lend a book to a member")
-    .attr(OpenApiKeys.tags, "loans")
+  ).attr(openapi.operationId, "borrowBook")
+    .attr(openapi.summary, "Lend a book to a member")
+    .attr(openapi.tags, "loans")
 
   /** `GET /health`, which is the smallest endpoint there is: a literal path, nothing read, nothing written. */
   val health: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, __ / "health"),
     result(Code.NoContent).toUnion
-  ).attr(OpenApiKeys.operationId, "health").attr(OpenApiKeys.tags, "service")
+  ).attr(openapi.operationId, "health").attr(openapi.tags, "service")

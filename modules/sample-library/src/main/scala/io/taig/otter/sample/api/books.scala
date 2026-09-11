@@ -10,7 +10,6 @@ import io.taig.otter.http.Headers
 import io.taig.otter.http.MediaType
 import io.taig.otter.http.Method
 import io.taig.otter.http.Multipart
-import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.Parameter
 import io.taig.otter.http.Path
 import io.taig.otter.http.Queries
@@ -102,9 +101,9 @@ object books:
   val list: Endpoint[(Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] = endpoint(
     request(Method.Get, books.all).queries(books.filter).headers(books.tracing),
     result(Code.Ok).body(body.json(json.collection.list(schema.book))).toUnion
-  ).attr(OpenApiKeys.operationId, "listBooks")
-    .attr(OpenApiKeys.summary, "Every book the catalogue holds")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "listBooks")
+    .attr(openapi.summary, "Every book the catalogue holds")
+    .attr(openapi.tags, "books")
 
   /** `POST /books`, answering with the book or with the reason it is already there.
     *
@@ -115,23 +114,23 @@ object books:
     request(Method.Post, books.all).body(body.json(schema.create)),
     (result(Code.Created).body(body.json(schema.book)).to[Created.Added] :+
       result(Code.Conflict).body(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
-  ).attr(OpenApiKeys.operationId, "createBook")
-    .attr(OpenApiKeys.summary, "Add a book to the catalogue")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "createBook")
+    .attr(openapi.summary, "Add a book to the catalogue")
+    .attr(openapi.tags, "books")
 
   /** `GET /books/{isbn}`, kept as a plain `Either` for contrast: two branches, one of them empty, need no name. */
   val fetch: Endpoint[Isbn, Either[Book, Unit]] = endpoint(
     request(Method.Get, books.one),
     result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
-  ).attr(OpenApiKeys.operationId, "fetchBook")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "fetchBook")
+    .attr(openapi.tags, "books")
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
   val patch: Endpoint[(Isbn, Book.Patch), Either[Book, Unit]] = endpoint(
     request(Method.Patch, books.one).body(body.json(schema.patch)),
     result(Code.Ok).body(body.json(schema.book)) :+ result(Code.NotFound)
-  ).attr(OpenApiKeys.operationId, "patchBook")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "patchBook")
+    .attr(openapi.tags, "books")
 
   /** `DELETE /books/{isbn}`, which is idempotent: a book that is not there is already gone, and 204 is the honest
     * answer rather than a 404. What it cannot do is remove a book somebody is holding, and that is the conflict.
@@ -142,8 +141,8 @@ object books:
   val delete: Endpoint[Isbn, Either[Unit, Problem]] = endpoint(
     request(Method.Delete, books.one),
     result(Code.NoContent) :+ result(Code.Conflict).body(body.json(schema.problem))
-  ).attr(OpenApiKeys.operationId, "deleteBook")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "deleteBook")
+    .attr(openapi.tags, "books")
 
   /** `POST /books/{isbn}/scan`: bytes in, bytes out, and no document anywhere in it.
     *
@@ -153,8 +152,8 @@ object books:
   val scan: Endpoint[(Isbn, ByteVector), ByteVector] = endpoint(
     request(Method.Post, books.one / "scan").body(body.binary(MediaType.Pdf)),
     result(Code.Ok).body(body.binary(MediaType.Pdf)).toUnion
-  ).attr(OpenApiKeys.operationId, "scanBook")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "scanBook")
+    .attr(openapi.tags, "books")
 
   /** A body that may be either of two things, told apart by media type and not by trying to parse each in turn. */
   val submitted: Bodies[Either[Book.Create, ByteVector]] = body.json(schema.create) :+ body.binary(MediaType.Pdf)
@@ -169,8 +168,8 @@ object books:
   val intake: Endpoint[Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
     request(Method.Post, __ / "intake").optionalBodies(books.submitted),
     result(Code.Accepted).toUnion
-  ).attr(OpenApiKeys.operationId, "intake")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "intake")
+    .attr(openapi.tags, "books")
 
   /** A JSON part and a file part, one of which need not be sent.
     *
@@ -186,8 +185,8 @@ object books:
   val upload: Endpoint[(Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
     request(Method.Post, books.one / "cover").body(body.multipart(books.cover)),
     result(Code.NoContent).toUnion
-  ).attr(OpenApiKeys.operationId, "uploadCover")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "uploadCover")
+    .attr(openapi.tags, "books")
 
   /** `GET /books/export`, a sequence of books one JSON document per line.
     *
@@ -199,8 +198,8 @@ object books:
   val exported: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, books.all / "export"),
     result(Code.Ok).streaming(body.ndjson(schema.book)).toUnion
-  ).attr(OpenApiKeys.operationId, "exportBooks")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "exportBooks")
+    .attr(openapi.tags, "books")
 
   /** `GET /books/report`, a stream of CSV rows.
     *
@@ -211,13 +210,13 @@ object books:
   val report: Endpoint[Unit, Unit] = endpoint(
     request(Method.Get, books.all / "report"),
     result(Code.Ok).streaming(body.streamed(MediaType.Csv, Frame.Lines, schema.row)).toUnion
-  ).attr(OpenApiKeys.operationId, "reportBooks")
-    .attr(OpenApiKeys.tags, "books")
+  ).attr(openapi.operationId, "reportBooks")
+    .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
   val catalogue: Endpoint[Unit, io.taig.otter.sample.Category] = endpoint(
     request(Method.Get, __ / "catalogue"),
     result(Code.Ok).body(body.json(schema.category)).toUnion
-  ).attr(OpenApiKeys.operationId, "catalogue")
+  ).attr(openapi.operationId, "catalogue")
     .attr(Keys.description, "Shelves, and the shelves inside them, to any depth")
-    .attr(OpenApiKeys.tags, "catalogue")
+    .attr(openapi.tags, "catalogue")

@@ -7,6 +7,7 @@ import io.taig.otter.component.CsvComponent
 import io.taig.otter.component.IronComponent
 import io.taig.otter.component.JavaTimeComponent
 import io.taig.otter.component.JsonComponent
+import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.component.BodyComponent
 import io.taig.otter.http.component.HttpComponent
 import io.taig.otter.http.syntax.HttpJsonSyntax
@@ -19,6 +20,16 @@ import io.taig.otter.http.syntax.HttpJsonSyntax
   */
 object dsl extends HttpComponent:
   override val body: BodyComponent & HttpJsonSyntax = new BodyComponent with HttpJsonSyntax {}
+
+  /** The attributes a renderer reads, under the name of the document that reads them.
+    *
+    * [[io.taig.otter.http.OpenApiKeys]] is a trait and an object for exactly this: a key set is mixed in beside the
+    * vocabulary that carries it rather than reached for by its own name, so an endpoint reads
+    * `attr(openapi.tags, "books")` with the same one import every other combinator here arrives through. A second
+    * renderer's keys join as a second namespace, which is why they are not lifted into `dsl` itself -- `operationId` is
+    * a key in two of them, and a renderer is what tells them apart.
+    */
+  object openapi extends OpenApiKeys
 
 /** The payload vocabulary: what a document is made of.
   *
