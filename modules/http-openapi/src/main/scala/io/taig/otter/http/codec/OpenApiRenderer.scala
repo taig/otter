@@ -169,7 +169,7 @@ final class OpenApiRenderer(
     val rendered = Option.when(entries.nonEmpty):
       OpenApi.obj("required" -> CirceJson.fromBoolean(schema.required), "content" -> OpenApi.content(entries))
 
-    (rendered, described ++ framed)
+    (rendered, described ++ framed ++ this.encodingAlternatives(operation, entries))
 
   private def responses(operation: String, schema: Results.Schema[?, ?, ?]): (ListMap[String, CirceJson], Collected) =
     val (groups, collected) = Results
@@ -210,7 +210,13 @@ final class OpenApiRenderer(
       .orElse(Code.reason(schema.code))
       .getOrElse(schema.code.value.toString)
 
-    (Response(description, entries, headers), described ++ framed ++ reported)
+    val unsupported = entries.collect:
+      case (media, content) if content.encoding.nonEmpty => OpenApiIssue.Encoding(operation, media)
+
+    (
+      Response(description, entries.map((media, content) => media -> content.copy(encoding = ListMap.empty)), headers),
+      described ++ framed ++ reported ++ Collected(Chain.fromSeq(unsupported), ListMap.empty)
+    )
 
   private def mergedResponse(operation: String, code: Int, alternatives: List[Response]): (CirceJson, Collected) =
     val entries = alternatives.flatMap(_.content)
@@ -243,7 +249,7 @@ final class OpenApiRenderer(
 
   final private case class Response(
       description: String,
-      content: List[(String, CirceJson)],
+      content: List[(String, OpenApi.Content)],
       headers: ListMap[String, CirceJson]
   )
 
@@ -271,45 +277,66 @@ final class OpenApiRenderer(
       operation: String,
       side: Side,
       schema: Bodies.Node[?, ?]
-  ): (List[(String, CirceJson)], Collected) =
+  ): (List[(String, OpenApi.Content)], Collected) =
     Bodies
       .branches(schema)
-      .foldLeft((List.empty[(String, CirceJson)], Collected.Empty)): (accumulated, body) =>
+      .foldLeft((List.empty[(String, OpenApi.Content)], Collected.Empty)): (accumulated, body) =>
         val (entries, collected) = accumulated
         val (entry, found) = this.entity(operation, side, body)
 
         (entries :+ entry, collected ++ found)
 
-  private def entity(operation: String, side: Side, schema: Body.Schema[?, ?, ?]): ((String, CirceJson), Collected) =
+  private def entity(
+      operation: String,
+      side: Side,
+      schema: Body.Schema[?, ?, ?]
+  ): ((String, OpenApi.Content), Collected) =
     val (rendered, collected) = this.value(operation, side, schema.self.self)
 
-    ((schema.mediaType.render, JsonSchemaAnnotation(namespaces, schema.self.metadata, rendered)), collected)
+    (
+      (
+        schema.mediaType.render,
+        rendered.copy(schema = JsonSchemaAnnotation(namespaces, schema.self.metadata, rendered.schema))
+      ),
+      collected
+    )
 
-  private def value(operation: String, side: Side, schema: Body.Value[?, ?, ?]): (CirceJson, Collected) =
+  private def value(operation: String, side: Side, schema: Body.Value[?, ?, ?]): (OpenApi.Content, Collected) =
     schema match
       case Body.Value.Modify(self, _, _) => this.value(operation, side, self)
       case Body.Value.Binary(media)      =>
         /* OpenAPI 3.1 dropped `format: binary` in favour of saying what the bytes are, which is what the body already
          * carries: a string whose content is this media type. */
         (
-          JsonSchema.merge(
-            JsonSchema.typed("string"),
-            "contentMediaType" -> CirceJson.fromString(media.essence.render)
+          OpenApi.Content(
+            JsonSchema.merge(
+              JsonSchema.typed("string"),
+              "contentMediaType" -> CirceJson.fromString(media.essence.render)
+            )
           ),
           Collected.Empty
         )
       case Body.Value.Streamed(media, _, element) =>
         val (rendered, collected) = this.document(operation, side, element.value)
 
-        (rendered, collected ++ Collected.issue(OpenApiIssue.Framed(operation, media.render)))
+        (OpenApi.Content(rendered), collected ++ Collected.issue(OpenApiIssue.Framed(operation, media.render)))
       case Body.Value.Whole(media, content) =>
         /* The one type test in the module, and the only kind available: a payload's alphabet is existential by
          * construction, so asking whether this one is a set of parts is a runtime question. `@unchecked` because the
          * type arguments are erased and irrelevant -- what is being asked is whether this is a `Multipart.Schema` at
          * all, which the class tag answers exactly, and every one of them is walked the same way whatever it holds. */
         content.value.asMatchable match
-          case parts: Multipart.Node[?, ?] @unchecked => this.parts(operation, side, parts)
-          case _                                      => this.document(operation, side, content.value, media)
+          case parts: Multipart.Node[?, ?] @unchecked =>
+            val (rendered, collected) = this.parts(operation, side, parts)
+            if media.primary.equalsIgnoreCase("multipart") then (rendered, collected)
+            else
+              (
+                rendered.copy(encoding = ListMap.empty),
+                collected ++ Collected.issue(OpenApiIssue.Encoding(operation, media.render))
+              )
+          case _ =>
+            val (rendered, collected) = this.document(operation, side, content.value, media)
+            (OpenApi.Content(rendered), collected)
 
   /** A multipart body, which OpenAPI spells as an object of properties with an `encoding` map beside it.
     *
@@ -320,7 +347,7 @@ final class OpenApiRenderer(
       operation: String,
       side: Side,
       schema: Multipart.Node[?, ?]
-  ): (CirceJson, Collected) =
+  ): (OpenApi.Content, Collected) =
     val (properties, encoding, required, collected) = Multipart
       .parts(schema)
       .foldLeft(
@@ -337,38 +364,58 @@ final class OpenApiRenderer(
 
         val disposition = OpenApiRenderer
           .attr(namespaces, metadata, HttpKeys.filename)
-          .map(value => "contentDisposition" -> CirceJson.fromString(s"""form-data; filename="$value""""))
+          .map: value =>
+            "headers" -> OpenApi.obj(
+              "Content-Disposition" -> OpenApi.obj(
+                "schema" -> JsonSchema.typed("string"),
+                "example" -> CirceJson.fromString(
+                  s"form-data; name=${OpenApiRenderer.quoted(field.name)}; filename=${OpenApiRenderer.quoted(value)}"
+                )
+              )
+            )
           .toList
 
         (
-          properties.updated(field.name, rendered),
+          properties.updated(field.name, rendered.schema),
           encoding.updated(
             field.name,
             JsonSchema.merge(OpenApi.obj("contentType" -> CirceJson.fromString(media)), disposition*)
           ),
           if OpenApiParameterRenderer.required(field) then required :+ field.name else required,
-          collected ++ found
+          collected ++ found ++ (
+            if rendered.encoding.nonEmpty then Collected.issue(OpenApiIssue.Encoding(operation, media))
+            else Collected.Empty
+          )
         )
 
     val rendered = JsonSchema.merge(
       JsonSchema.merge(JsonSchema.typed("object"), "properties" -> CirceJson.obj(properties.toList*)),
       List(
-        Option.when(required.nonEmpty)("required" -> CirceJson.fromValues(required.toList.map(CirceJson.fromString))),
-        Option.when(encoding.nonEmpty)("encoding" -> CirceJson.obj(encoding.toList*))
+        Option.when(required.nonEmpty)("required" -> CirceJson.fromValues(required.toList.map(CirceJson.fromString)))
       ).flatten*
     )
 
-    (rendered, collected)
+    (OpenApi.Content(rendered, encoding), collected)
+
+  private def encodingAlternatives(operation: String, entries: List[(String, OpenApi.Content)]): Collected =
+    val issues = entries
+      .foldLeft(ListMap.empty[String, List[ListMap[String, CirceJson]]]):
+        case (groups, (media, content)) => groups.updated(media, groups.getOrElse(media, Nil) :+ content.encoding)
+      .toList
+      .collect:
+        case (media, alternatives) if alternatives.distinct.size > 1 => OpenApiIssue.Encoding(operation, media)
+
+    Collected(Chain.fromSeq(issues), ListMap.empty)
 
   private def streamed(
       operation: String,
       side: Side,
       schema: Body.Streamed.Schema[?, ?, ?]
-  ): ((String, CirceJson), Collected) =
+  ): ((String, OpenApi.Content), Collected) =
     val (rendered, collected) = this.document(operation, side, schema.self.self.element.value)
 
     (
-      (schema.mediaType.render, JsonSchemaAnnotation(namespaces, schema.self.metadata, rendered)),
+      (schema.mediaType.render, OpenApi.Content(JsonSchemaAnnotation(namespaces, schema.self.metadata, rendered))),
       collected ++ Collected.issue(OpenApiIssue.Framed(operation, schema.mediaType.render))
     )
 
@@ -417,6 +464,15 @@ final class OpenApiRenderer(
     def issue(value: OpenApiIssue): Collected = Collected(Chain.one(value), ListMap.empty)
 
 object OpenApiRenderer:
+  private def quoted(value: String): String =
+    val escaped = value.flatMap:
+      case '\\'                              => "\\\\"
+      case '"'                               => "\\\""
+      case char if char < ' ' || char == 127 => f"%%${char.toInt}%02X"
+      case char                              => char.toString
+
+    s"\"$escaped\""
+
   /** The document a server publishes: it reads the request and writes the response. */
   def server(profile: JsonSchemaProfile, payload: OpenApiPayload): OpenApiRenderer =
     new OpenApiRenderer(profile, payload, Side.Read, Side.Write, OpenApi.Namespaces)
