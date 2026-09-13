@@ -65,7 +65,7 @@ object BodyDescriptionTest extends ZIOSpecDefault:
         * its elements is stays the interpreter's word, so nothing here can name one.
         */
       test("contributes nothing to what the request that holds it reads"):
-        val held: Body.Of[Json.Node, Unit] = api.reports.body
+        val held: Body.Of[Body.Streamed.Requirement[Json.Node], Unit] = api.reports.body
 
         assertTrue(held.mediaType == dsl.mediaType.ndJson)
     )

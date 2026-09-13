@@ -14,31 +14,20 @@ import io.taig.otter.operation.AlternableOperation
 import io.taig.otter.operation.UnionableOperation
 import scodec.bits.ByteVector
 
-/** A body that round trips `A`. */
-type Body[A] = Body.Of[Body.Payload, A]
+/** A body with requirement `S` that round trips `A`. */
+type Body[S[-w, +r], A] = Body.Of[S, A]
 
 object Body:
-  /** A payload schema, whatever alphabet it is written in.
-    *
-    * Deliberately open. Every other tier of this module narrows its `S` to say what may appear inside it, and this one
-    * is the opposite: a body's content is a document, and which language that document is written in is not HTTP's
-    * business.
-    *
-    * `Any` rather than `Matchable`, though a renderer holding a payload does have to pattern match on it. Narrowing the
-    * bound would be the tighter statement and costs more than it buys: a bound on a type constructor has to be written
-    * applied, `Body.Or` accumulates payload alphabets through type parameters that carry no bound of their own, and the
-    * two cannot both be had. The match happens through `asMatchable` at the one place that needs it instead. A JSON
-    * schema, a CSV schema and a [[Multipart]] schema are all payloads, and [[io.taig.otter.Json.Or]]-style unions
-    * accumulate them down a chain of alternatives, so an interpreter written for one alphabet accepts exactly the
-    * bodies it can read by ordinary contravariance.
-    */
+  /** Any body requirement, used by document renderers and other inspection APIs. */
   type Payload = [w, r] =>> Any
 
-  /** No tier below this one carries a bound, and that is the statement: `S` is written `S[-w, +r]` with nothing above
-    * it, because there is nothing every payload alphabet has in common to name. [[Body.Payload]] exists only to spell
-    * "any of them" where a `Node` alias needs an argument -- it cannot be used as a bound, since an alias's own
-    * parameters are invariant and `w` is not.
-    */
+  /** A whole document requires an interpreter for its payload alphabet. */
+  type Whole[P[-w, +r]] = [w, r] =>> Body.Requirement.Whole[P, w, r]
+
+  object Requirement:
+    sealed abstract class Whole[+P[-w, +r], -W, +R]
+
+    sealed abstract class Streamed[+P[-w, +r], -W, +R]
 
   /** The payload of a body that has none, which is not the same as a body that is not there.
     *
@@ -136,6 +125,9 @@ object Body:
     * construction is that the body belongs to that endpoint, which is a value comparison and not a type.
     */
   object Streamed:
+    /** Streaming support is distinct from interpreting a whole element. */
+    type Requirement[P[-w, +r]] = [w, r] =>> Body.Requirement.Streamed[P, w, r]
+
     type Of[S[-w, +r], A] = Body.Streamed.Schema[S, A, A]
 
     /** Holding anything, which is the form an interpreter is written against. */
@@ -143,7 +135,7 @@ object Body:
 
     final case class Schema[+S[-w, +r], -W, +R](self: Annotation[Body.Value.Streamed[S, W, R]]):
       /** The same body as a [[Request]] sees it, which is as something contributing nothing. */
-      def body: Body.Schema[S, Unit, Unit] = new Body.Schema(self)
+      def body: Body.Schema[Body.Streamed.Requirement[S], Unit, Unit] = new Body.Schema(self)
 
       def frame: Frame = self.self.frame
 
@@ -169,7 +161,7 @@ object Body:
     final case class Whole[+S[-w, +r], -W, +R](
         override val mediaType: MediaType,
         payload: Reference[S, W, R]
-    ) extends Body.Value[S, W, R]
+    ) extends Body.Value[Body.Whole[S], W, R]
 
     /** Bytes, with no schema to describe them.
       *
@@ -191,7 +183,7 @@ object Body:
         override val mediaType: MediaType,
         frame: Frame,
         element: Reference[S, W, R]
-    ) extends Body.Value[S, Unit, Unit]
+    ) extends Body.Value[Body.Streamed.Requirement[S], Unit, Unit]
 
     final case class Modify[+S[-w, +r], W0, R0, -W, +R](
         self: Body.Value[S, W0, R0],

@@ -7,6 +7,7 @@ import io.taig.otter.component.CsvComponent
 import io.taig.otter.component.IronComponent
 import io.taig.otter.component.JavaTimeComponent
 import io.taig.otter.component.JsonComponent
+import io.taig.otter.http.Body
 import io.taig.otter.http.OpenApiKeys
 import io.taig.otter.http.component.BodyComponent
 import io.taig.otter.http.component.HttpComponent
@@ -19,6 +20,8 @@ import io.taig.otter.http.syntax.HttpJsonSyntax
   * `json` free for the payload vocabulary below.
   */
 object dsl extends HttpComponent:
+  type Payload = Body.Or[Body.Whole[Json.Node], Body.Opaque]
+
   override val body: BodyComponent & HttpJsonSyntax = new BodyComponent with HttpJsonSyntax {}
 
   /** The attributes a renderer reads, under the name of the document that reads them.

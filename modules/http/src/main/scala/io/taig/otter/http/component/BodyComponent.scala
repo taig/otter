@@ -27,7 +27,7 @@ import scala.annotation.targetName
   */
 trait BodyComponent:
   /** One document, read and written whole. */
-  def apply[S[-w, +r], W, R](mediaType: MediaType, payload: => S[W, R]): Body.Schema[S, W, R] =
+  def apply[S[-w, +r], W, R](mediaType: MediaType, payload: => S[W, R]): Body.Schema[Body.Whole[S], W, R] =
     Body.Schema(Body.Value.Whole(mediaType, Reference.later(payload)))
 
   /** Bytes, with no schema to describe them. */
@@ -61,7 +61,8 @@ trait BodyComponent:
     */
   def multipart[B[-w, +r], W, R](
       parts: => Multipart.Schema[B, W, R]
-  ): Body.Schema[[w, r] =>> Multipart.Schema[B, w, r], W, R] = apply(MediaTypeComponent.multipartFormData, parts)
+  ): Body.Schema[Body.Whole[[w, r] =>> Multipart.Schema[B, w, r]], W, R] =
+    apply(MediaTypeComponent.multipartFormData, parts)
 
   /** A body that need not be sent at all. */
   @targetName("body")

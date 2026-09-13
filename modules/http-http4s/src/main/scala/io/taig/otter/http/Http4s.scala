@@ -7,10 +7,10 @@ import cats.syntax.all.*
 import io.taig.otter.Step
 import io.taig.otter.Violations
 import io.taig.otter.http.codec.Http4sPayload
-import io.taig.otter.http.codec.Http4sRequestDecoder
+import io.taig.otter.http.codec.Http4sRequestDecoderUnchecked
 import io.taig.otter.http.codec.Http4sRequestEncoder
 import io.taig.otter.http.codec.Http4sResultDecoder
-import io.taig.otter.http.codec.Http4sResultEncoder
+import io.taig.otter.http.codec.Http4sResultEncoderUnchecked
 import io.taig.otter.http.component.HttpComponent
 import io.taig.otter.http.component.MediaTypeComponent
 import org.http4s.Entity
@@ -39,21 +39,31 @@ object Http4s:
     * says the true thing in plain text; an API whose errors have a schema passes a function that renders one, and keeps
     * its callers reading a single error shape.
     */
-  def routes[F[_]: Concurrent](
-      payload: Http4sPayload,
-      malformed: Violations => Http4sWire.Response = Http4s.malformed
-  )(routes: Route[F, ?, ?]*): HttpRoutes[F] =
-    val decoder = Http4sRequestDecoder(payload)
-    val encoder = Http4sResultEncoder(payload)
-    val chain = Chain.fromSeq(routes)
+  def routes[F[_]: Concurrent]: Http4s.RoutesBuilder[F] = new Http4s.RoutesBuilder[F]
 
-    HttpRoutes[F]: request =>
-      val method = Http4sEnvelope.toMethod(request.method)
-      val segments = Http4sEnvelope.toPath(request.uri.path)
+  final class RoutesBuilder[F[_]: Concurrent]:
+    def apply[P[-w, +r]](
+        payload: Http4sPayload[P],
+        malformed: Violations => Http4sWire.Response = Http4s.malformed
+    ): Http4s.RoutesWithPayload[F, P] = new Http4s.RoutesWithPayload(payload, malformed)
 
-      OptionT
-        .fromOption[F](chain.find(_.matches(method, segments)))
-        .semiflatMap(_.run(decoder, encoder, malformed, request, segments))
+  final class RoutesWithPayload[F[_]: Concurrent, P[-w, +r]](
+      payload: Http4sPayload[P],
+      malformed: Violations => Http4sWire.Response
+  ):
+    def apply(routes: Route[F, Http4sPayload.Supported[P], ?, ?]*): HttpRoutes[F] = apply(Routes(routes*))
+
+    def apply(routes: Routes[F, Http4sPayload.Supported[P]]): HttpRoutes[F] =
+      val decoder = Http4sRequestDecoderUnchecked(payload)
+      val encoder = Http4sResultEncoderUnchecked(payload)
+
+      HttpRoutes[F]: request =>
+        val method = Http4sEnvelope.toMethod(request.method)
+        val segments = Http4sEnvelope.toPath(request.uri.path)
+
+        OptionT
+          .fromOption[F](routes.values.find(_.matches(method, segments)))
+          .semiflatMap(_.run(decoder, encoder, malformed, request, segments))
 
   /** An endpoint, as a function that calls it.
     *
@@ -61,27 +71,30 @@ object Http4s:
     * value cannot be handed to [[Http4s.routes]] and this without saying which side it is. That is [[Endpoint.Server]]
     * and [[Endpoint.Client]], and it is checked by the compiler rather than remembered.
     */
-  def client[F[_]: Concurrent, A, B](payload: Http4sPayload, base: Uri, client: Http4sClient[F])(
-      endpoint: Endpoint.Client[Body.Payload, A, B]
-  ): A => F[B] =
-    val encoder = Http4sRequestEncoder(payload)
-    val decoder = Http4sResultDecoder(payload)
+  def client[F[_]: Concurrent, A, B]: Http4s.ClientBuilder[F, A, B] = new Http4s.ClientBuilder[F, A, B]
 
-    value =>
-      for
-        wire <- Http4s.raise[F, Http4sWire.Request](encoder.encode(endpoint.request, value))
-        method <- Http4sEnvelope
-          .toHttp4sMethod(endpoint.request.method)
-          .leftMap(failure => Http4sFailure.Method(endpoint.request.method, failure.message))
-          .liftTo[F]
-        response <- client
-          .run(Http4s.toHttp4sRequest[F](method, base, wire))
-          .use(response => Http4s.toWire(response).map((response.status.code, _)))
-        decoded <- decoder
-          .decode(endpoint.responses, Http4sWire.Response(Code(response._1), response._2._1, response._2._2))
-          .leftMap(Http4sFailure.Response.apply)
-          .liftTo[F]
-      yield decoded
+  final class ClientBuilder[F[_]: Concurrent, A, B]:
+    def apply[P[-w, +r]](payload: Http4sPayload[P], base: Uri, client: Http4sClient[F])(
+        endpoint: Endpoint.Client[Http4sPayload.Supported[P], A, B]
+    ): A => F[B] =
+      val encoder = Http4sRequestEncoder(payload)
+      val decoder = Http4sResultDecoder(payload)
+
+      value =>
+        for
+          wire <- Http4s.raise[F, Http4sWire.Request](encoder.encode(endpoint.request, value))
+          method <- Http4sEnvelope
+            .toHttp4sMethod(endpoint.request.method)
+            .leftMap(failure => Http4sFailure.Method(endpoint.request.method, failure.message))
+            .liftTo[F]
+          response <- client
+            .run(Http4s.toHttp4sRequest[F](method, base, wire))
+            .use(response => Http4s.toWire(response).map((response.status.code, _)))
+          decoded <- decoder
+            .decode(endpoint.responses, Http4sWire.Response(Code(response._1), response._2._1, response._2._2))
+            .leftMap(Http4sFailure.Response.apply)
+            .liftTo[F]
+        yield decoded
 
   /** The status a violation report goes out under.
     *

@@ -21,7 +21,7 @@ trait HttpJsonSyntax:
   /** A body carrying one JSON document. */
   def json[S[-w, +r] <: Json.Node[w, r], W, R](
       schema: => Json.Schema[S, W, R]
-  ): Body.Schema[[w, r] =>> Json.Schema[S, w, r], W, R] =
+  ): Body.Schema[Body.Whole[[w, r] =>> Json.Schema[S, w, r]], W, R] =
     Body.Schema(Body.Value.Whole(MediaTypeComponent.json, Reference.later(schema)))
 
   /** A body carrying JSON documents one per line, which is what `application/x-ndjson` is.

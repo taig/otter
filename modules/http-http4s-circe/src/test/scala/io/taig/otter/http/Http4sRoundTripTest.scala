@@ -37,58 +37,58 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
   private val Base: Uri = uri"http://otter.test"
 
   /** `GET /reports/{id}?page`, answering with a report or saying there is none. */
-  private val fetch: Endpoint[(Int, Int), Either[Report, Unit]] =
+  private val fetch: Endpoint.Of[dsl.Payload, (Int, Int), Either[Report, Unit]] =
     endpoint(
       request(method.get, api.one).queries(api.paging),
       result(code.ok)(body.json(api.report)) :+ result(code.notFound)
     )
 
   /** `PUT /settings`, whose payload has a defaulted field and whose answer has no entity at all. */
-  private val configure: Endpoint[Settings, Unit] =
+  private val configure: Endpoint.Of[dsl.Payload, Settings, Unit] =
     endpoint(
       request(method.put, __ :* segment("settings"))(body.json(api.settings)),
       result(code.noContent).toUnion
     )
 
   /** `GET /trees`, whose payload refers to itself. */
-  private val trees: Endpoint[Unit, Tree] =
+  private val trees: Endpoint.Of[dsl.Payload, Unit, Tree] =
     endpoint(request(method.get, __ :* segment("trees")), result(code.ok)(body.json(api.tree)).toUnion)
 
   /** `POST /files` taking and answering with bytes that have no document in them at all. */
-  private val upload: Endpoint[ByteVector, ByteVector] =
+  private val upload: Endpoint.Of[dsl.Payload, ByteVector, ByteVector] =
     endpoint(
       request(method.post, __ :* segment("files"))(body.binary(dsl.mediaType.pdf)),
       result(code.ok)(body.binary(dsl.mediaType.pdf)).toUnion
     )
 
   /** `POST /reports` whose body may be either of two alternatives, which is what content negotiation describes. */
-  private val negotiated: Endpoint[Either[Report, ByteVector], Unit] =
+  private val negotiated: Endpoint.Of[dsl.Payload, Either[Report, ByteVector], Unit] =
     endpoint(
       request(method.post, __ :* segment("reports"))(api.negotiated),
       result(code.noContent).toUnion
     )
 
   /** `POST /uploads`, whose payload is a set of parts -- a payload alphabet no interpreter here recognises. */
-  private val multipart: Endpoint[Upload, Unit] =
+  val multipart: Endpoint.Of[Body.Whole[Multipart.Node], Upload, Unit] =
     endpoint(
       request(method.post, __ :* segment("uploads"))(body.multipart(api.upload)),
       result(code.noContent).toUnion
     )
 
   /** `GET /reports`, whose answer this interpreter cannot yet carry. */
-  private val streaming: Endpoint[Unit, Unit] =
+  val streaming: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] =
     endpoint(request(method.get, __ :* segment("reports")), result(code.ok)(api.reports).toUnion)
 
-  private def routes[A, B](endpoint: Endpoint[A, B], handler: A => IO[B]): Http4sClient[IO] =
+  private def routes[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B]): Http4sClient[IO] =
     Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
 
   /** The value a caller gets back for the value it sent, having gone the whole way round. */
-  private def roundTrip[A, B](endpoint: Endpoint[A, B], handler: A => IO[B])(value: A): Task[B] =
+  private def roundTrip[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], handler: A => IO[B])(value: A): Task[B] =
     ZIO.fromFuture: _ =>
       Http4s.client[IO, A, B](Http4sCirce.Payload, Base, routes(endpoint, handler))(endpoint)(value).unsafeToFuture()
 
   /** The request as the handler saw it, which is the half a returned value cannot show. */
-  private def received[A, B](endpoint: Endpoint[A, B], answer: B)(value: A): Task[A] =
+  private def received[A, B](endpoint: Endpoint.Of[dsl.Payload, A, B], answer: B)(value: A): Task[A] =
     ZIO.fromFuture: _ =>
       IO.ref(Option.empty[A])
         .flatMap: ref =>
@@ -98,7 +98,7 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .map(_.get)
         .unsafeToFuture()
 
-  private def send[A](endpoint: Endpoint[A, Unit], request: Http4sRequest[IO]): Task[Int] =
+  private def send[A](endpoint: Endpoint.Of[dsl.Payload, A, Unit], request: Http4sRequest[IO]): Task[Int] =
     ZIO.fromFuture: _ =>
       Http4s
         .routes[IO](Http4sCirce.Payload)(Route(endpoint, (_: A) => IO.unit))
@@ -108,14 +108,14 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         .unsafeToFuture()
 
   /** `PATCH /settings`, whose body need not be sent at all. */
-  private val amendable: Endpoint[Option[Settings], Unit] =
+  private val amendable: Endpoint.Of[dsl.Payload, Option[Settings], Unit] =
     endpoint(
       request(method.patch, __ :* segment("settings"))(body.optional(body.json(api.settings))),
       result(code.noContent).toUnion
     )
 
   /** The whole answer, so a malformed request can be asked about its status and its body at once. */
-  private def answer[A](endpoint: Endpoint[A, Unit], malformed: Violations => Http4sWire.Response)(
+  private def answer[A](endpoint: Endpoint.Of[dsl.Payload, A, Unit], malformed: Violations => Http4sWire.Response)(
       request: Http4sRequest[IO]
   ): Task[(Int, String)] =
     ZIO.fromFuture: _ =>
@@ -137,18 +137,18 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
     )
 
   /** `PUT /reports/{id}?page` taking a body, so one request can be wrong in two positions at once. */
-  private val amend: Endpoint[(Int, Int, Settings), Unit] =
+  private val amend: Endpoint.Of[dsl.Payload, (Int, Int, Settings), Unit] =
     endpoint(
       request(method.put, api.one).queries(api.paging)(body.json(api.settings)),
       result(code.noContent).toUnion
     )
 
   /** `GET /reports/{id}?page` answering with nothing, which is enough to ask a router questions with. */
-  private val ping: Endpoint[(Int, Int), Unit] =
+  private val ping: Endpoint.Of[dsl.Payload, (Int, Int), Unit] =
     endpoint(request(method.get, api.one).queries(api.paging), result(code.noContent).toUnion)
 
   /** `GET /ping` reading a header, which is the one envelope position the other fixtures do not use. */
-  private val headed: Endpoint[(String, Option[List[String]]), Unit] =
+  private val headed: Endpoint.Of[dsl.Payload, (String, Option[List[String]]), Unit] =
     endpoint(
       request(method.get, __ :* segment("ping")).headers(http.request),
       result(code.noContent).toUnion
@@ -229,21 +229,20 @@ object Http4sRoundTripTest extends ZIOSpecDefault:
         received(negotiated, ())(Right(bytes)).map(seen => assertTrue(seen == Right(bytes)))
     ),
     suite("shortfalls")(
-      test("a streamed answer is reported rather than answered with an empty body"):
-        roundTrip(streaming, (_: Unit) => IO.unit)(()).exit
-          .map(exit => assertTrue(exit.isFailure))
+      test("a streamed answer cannot be served"):
+        assertTrue(!scala.compiletime.testing.typeChecks("""
+          import cats.effect.IO
+          import io.taig.otter.http.*
+          Http4s.routes[IO](Http4sCirce.Payload)(Route(Http4sRoundTripTest.streaming, (_: Unit) => IO.unit))
+        """))
       ,
-      test("a payload alphabet nothing recognises is reported, and names the media type"):
-        roundTrip(multipart, (_: Upload) => IO.unit)(Upload(Report("Quarterly", 12), ByteVector.empty)).exit
-          .map(exit =>
-            assertTrue(
-              exit.causeOption.exists(_.failures.exists {
-                case Http4sFailure.Interpreter(Http4sIssue.Uninterpreted(mediaType)) =>
-                  mediaType == dsl.mediaType.multipartFormData
-                case _ => false
-              })
-            )
-          )
+      test("a payload alphabet without an interpreter cannot be served"):
+        assertTrue(!scala.compiletime.testing.typeChecks("""
+          import cats.effect.IO
+          import io.taig.otter.http.*
+          import io.taig.otter.http.fixture.Upload
+          Http4s.routes[IO](Http4sCirce.Payload)(Route(Http4sRoundTripTest.multipart, (_: Upload) => IO.unit))
+        """))
       ,
       test("a response under a status no branch names says which it expected"):
         val report = Http4sResultDecoder(Http4sCirce.Payload)

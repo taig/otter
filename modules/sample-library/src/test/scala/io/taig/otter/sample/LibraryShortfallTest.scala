@@ -1,24 +1,10 @@
 package io.taig.otter.sample
 
-import cats.effect.IO
-import cats.effect.unsafe.implicits.global
-import io.taig.otter.http.Endpoint
-import io.taig.otter.http.Http4s
-import io.taig.otter.http.Http4sCirce
-import io.taig.otter.http.Http4sFailure
-import io.taig.otter.http.Http4sIssue
-import io.taig.otter.http.Route
-import io.taig.otter.sample.api.books
-import io.taig.otter.sample.api.dsl
-import org.http4s.Uri
-import org.http4s.client.Client as Http4sClient
-import org.http4s.implicits.*
-import scodec.bits.ByteVector
-import zio.Exit
 import zio.Scope
-import zio.Task
-import zio.ZIO
 import zio.test.*
+
+import scala.compiletime.testing.typeCheckErrors
+import scala.compiletime.testing.typeChecks
 
 /** The endpoints this repository can describe and cannot carry.
   *
@@ -31,37 +17,37 @@ import zio.test.*
   * that these tests fail, which is exactly when somebody should look at them.
   */
 object LibraryShortfallTest extends ZIOSpecDefault:
-  private val Base: Uri = uri"http://library.test"
-
-  /** The unserved endpoint, mounted on its own, so that reaching it is not a routing accident. */
-  private def attempt[A, B](endpoint: Endpoint[A, B], handler: A => IO[B])(value: A): Task[B] =
-    ZIO.fromFuture: _ =>
-      val client = Http4sClient.fromHttpApp(Http4s.routes[IO](Http4sCirce.Payload)(Route(endpoint, handler)).orNotFound)
-
-      Http4s.client[IO, A, B](Http4sCirce.Payload, Base, client)(endpoint)(value).unsafeToFuture()
-
-  private def issues(exit: Exit[Throwable, Any]): List[Http4sIssue] =
-    exit.causeOption.toList.flatMap(_.failures).collect { case Http4sFailure.Interpreter(issue) => issue }
-
-  private val patch: Book.Patch = Book.Patch(None, None, None, None)
+  private inline val Multipart = """
+    import cats.effect.IO
+    import io.taig.otter.http.*
+    import io.taig.otter.sample.*
+    import io.taig.otter.sample.api.books
+    import scodec.bits.ByteVector
+    Http4s.routes[IO](Http4sCirce.Payload)(Route(books.upload,
+      (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit))
+  """
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("LibraryShortfallTest")(
-    test("a multipart payload is reported, and names the media type nothing recognised"):
-      attempt(books.upload, (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit)(
-        (Isbn.digits("9780261102217"), (patch, None))
-      ).exit.map: exit =>
-        assertTrue(issues(exit).exists:
-          case Http4sIssue.Uninterpreted(mediaType) => mediaType == dsl.mediaType.multipartFormData
-          case _                                    => false)
+    test("a multipart payload cannot be served without an interpreter"):
+      assertTrue(!typeChecks(LibraryShortfallTest.Multipart))
     ,
-    test("a streamed answer is reported rather than answered with an empty body"):
-      attempt(books.exported, (_: Unit) => IO.unit)(()).exit.map(exit => assertTrue(exit.isFailure))
+    test("a streamed answer cannot be served by a buffered backend"):
+      assertTrue(!typeChecks("""
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import io.taig.otter.sample.api.books
+        Http4s.routes[IO](Http4sCirce.Payload)(Route(books.exported, (_: Unit) => IO.unit))
+      """))
     ,
-    test("a stream whose elements are written in an alphabet nothing interprets is reported too"):
-      attempt(books.report, (_: Unit) => IO.unit)(()).exit.map(exit => assertTrue(exit.isFailure))
+    test("a CSV stream cannot be served by a buffered backend"):
+      assertTrue(!typeChecks("""
+        import cats.effect.IO
+        import io.taig.otter.http.*
+        import io.taig.otter.sample.api.books
+        Http4s.routes[IO](Http4sCirce.Payload)(Route(books.report, (_: Unit) => IO.unit))
+      """))
     ,
-    test("what is reported is a named issue and not an arbitrary exception"):
-      attempt(books.upload, (_: (Isbn, (Book.Patch, Option[ByteVector]))) => IO.unit)(
-        (Isbn.digits("9780261102217"), (patch, None))
-      ).exit.map(exit => assertTrue(issues(exit).nonEmpty))
+    test("the compiler identifies the unsupported requirement"):
+      val errors = typeCheckErrors(LibraryShortfallTest.Multipart)
+      assertTrue(errors.exists(_.message.contains("Multipart")))
   )

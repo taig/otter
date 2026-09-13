@@ -22,22 +22,17 @@ import scala.compiletime.asMatchable
   * [[Http4sPayload.orElse]] put the instances in an order.
   */
 object Http4sCirce:
-  val Payload: Http4sPayload = new Http4sPayload:
-    /** The type test recovers the `R` the caller asked for, which is the erasure being crossed. A cast would say the
-      * same thing and say it outside a pattern, where the codebase does not allow it; matching to the type the schema
-      * is about to be used at keeps the unsoundness where it is visible and `@unchecked` admits to it.
-      */
-    override def decode[R](payload: Any, bytes: ByteVector): Option[Validated[Violations, R]] =
+  val Payload: Http4sPayload[Json.Node] = Http4sPayload[Json.Node]([W, R] =>
+    (payload: Any) =>
       payload.asMatchable match
-        case json: Json.Node[Nothing, R] @unchecked =>
-          Some(Http4sCirce.parse(bytes).andThen(JsonCirceDecoder.decode[R](json, _)))
-        case _ => None
+        case json: Json.Node[W, R] @unchecked => Some[Json.Node[W, R]](json)
+        case _                                => None
+  )(new Http4sPayload.Codec[Json.Node]:
+    override def decode[R](payload: Json.Node[Nothing, R], bytes: ByteVector): Validated[Violations, R] =
+      Http4sCirce.parse(bytes).andThen(JsonCirceDecoder.decode[R](payload, _))
 
-    override def encode[W](payload: Any, value: W): Option[ByteVector] =
-      payload.asMatchable match
-        case json: Json.Node[W, Any] @unchecked =>
-          ByteVector.encodeUtf8(JsonCirceEncoder.encode[W](json, value).noSpaces).toOption
-        case _ => None
+    override def encode[W](payload: Json.Node[W, Any], value: W): Either[String, ByteVector] =
+      ByteVector.encodeUtf8(JsonCirceEncoder.encode[W](payload, value).noSpaces).leftMap(_.getMessage))
 
   /** The bytes as a document, or the one violation a document that is not one can produce.
     *

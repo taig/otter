@@ -71,8 +71,10 @@ lazy val modules: List[CrossProject] = List(
   coreTypescriptEffect,
   http,
   httpJson,
+  httpCsv,
   httpHttp4s,
   httpHttp4sCirce,
+  httpHttp4sFs2Data,
   httpOpenapi,
   httpTypescript,
   httpTypescriptEffect
@@ -237,6 +239,10 @@ lazy val http = module(identifier = Some("http"))
 lazy val httpJson = module(identifier = Some("http-json"))
   .dependsOn(http % "compile->compile;test->test", coreJson % "compile->compile;test->test")
 
+/** Single-row and collection CSV payloads for HTTP bodies. */
+lazy val httpCsv = module(identifier = Some("http-csv"))
+  .dependsOn(http % "compile->compile;test->test", coreCsv % "compile->compile;test->test")
+
 /** Endpoints served and called through org.http4s
   *
   * The interpreter the pairing said could not exist, and the reason it can is that http4s draws the distinction this
@@ -275,6 +281,15 @@ lazy val httpHttp4sCirce = module(identifier = Some("http-http4s-circe"))
     httpHttp4s % "compile->compile;test->test",
     coreJsonCirce % "compile->compile;test->test",
     httpJson % "compile->compile;test->test"
+  )
+
+/** CSV documents read and written with fs2-data, for the http4s interpreter. */
+lazy val httpHttp4sFs2Data = module(identifier = Some("http-http4s-fs2-data"))
+  .dependsOn(
+    httpHttp4s % "compile->compile;test->test",
+    httpCsv % "compile->compile;test->test",
+    coreCsvFs2Data % "compile->compile;test->test",
+    httpHttp4sCirce % "test->compile;test->test"
   )
 
 /** OpenAPI documents rendered from an endpoint

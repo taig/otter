@@ -10,8 +10,8 @@ import io.taig.otter.Direction
 import io.taig.otter.Metadata
 import io.taig.otter.Reference
 
-/** A request that round trips `A`. */
-type Request[A] = Request.Of[Body.Payload, A]
+/** A request with requirement `S` that round trips `A`. */
+type Request[S[-w, +r], A] = Request.Of[S, A]
 
 object Request:
   /** A request holding the payload `S` and round tripping `A`.
@@ -114,7 +114,7 @@ object Request:
       */
     def required: Boolean
 
-    def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]]
+    def streamed: Option[Reference[Body.Streamed.Node, ?, ?]]
 
   object Value:
     final case class Root[-W, +R](override val method: Method, override val path: Reference[Path.Node, W, R])
@@ -127,7 +127,7 @@ object Request:
 
       override def bodies: Option[Reference[[w, r] =>> Bodies.Schema[Nothing, w, r], ?, ?]] = None
 
-      override def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[Nothing, w, r], ?, ?]] = None
+      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = None
 
     final case class Queries[+S[-w, +r], W1, R1, W2, R2](
         self: Request.Value[S, W1, R1],
@@ -185,12 +185,12 @@ object Request:
       * described, and what a sequence of its elements is stays with whoever has an effect type to say it in.
       */
     final case class Streaming[+S[-w, +r], W1, R1, W2, R2](
-        self: Request.Value[S, W1, R1],
+        self: Request.Value[Body.Streamed.Requirement[S], W1, R1],
         value: Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], W2, R2]
-    ) extends Request.Value[S, W1, R1]:
+    ) extends Request.Value[Body.Streamed.Requirement[S], W1, R1]:
       export self.{bodies, headers, method, path, queries, required}
 
-      override def streamed: Option[Reference[[w, r] =>> Body.Streamed.Schema[S, w, r], ?, ?]] = Some(value)
+      override def streamed: Option[Reference[Body.Streamed.Node, ?, ?]] = Some(value)
 
     final case class Modify[+S[-w, +r], W0, R0, -W, +R](
         self: Request.Value[S, W0, R0],

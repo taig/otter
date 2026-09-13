@@ -97,19 +97,20 @@ object books:
     * contributes four values and the header set contributes one pair. `++` is the operator that concatenates instead,
     * and neither is a mistake for the other -- a header set is not four more query parameters.
     */
-  val list: Endpoint[(Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] = endpoint(
-    request(method.get, books.all).queries(books.filter).headers(books.tracing),
-    result(code.ok)(body.json(json.collection.list(schema.book)))
-  ).attr(openapi.operationId, "listBooks")
-    .attr(openapi.summary, "Every book the catalogue holds")
-    .attr(openapi.tags, "books")
+  val list: Endpoint.Of[dsl.Payload, (Int, Int, List[Genre], Boolean, (String, Option[List[String]])), List[Book]] =
+    endpoint(
+      request(method.get, books.all).queries(books.filter).headers(books.tracing),
+      result(code.ok)(body.json(json.collection.list(schema.book)))
+    ).attr(openapi.operationId, "listBooks")
+      .attr(openapi.summary, "Every book the catalogue holds")
+      .attr(openapi.tags, "books")
 
   /** `POST /books`, answering with the book or with the reason it is already there.
     *
     * Both branches carry a body, which is what a two branch union is for: the answer is not "a book or nothing" but "a
     * book or a problem", and a caller reads which by the status code rather than by inspecting the document.
     */
-  val create: Endpoint[Book.Create, Created] = endpoint(
+  val create: Endpoint.Of[dsl.Payload, Book.Create, Created] = endpoint(
     request(method.post, books.all)(body.json(schema.create)),
     (result(code.created)(body.json(schema.book)).to[Created.Added] :+
       result(code.conflict)(body.json(schema.problem)).to[Created.Duplicate]).to[Created]
@@ -128,14 +129,14 @@ object books:
     * handler reads and not what the endpoint describes -- the OpenAPI and TypeScript renderings say `200` and `404`
     * either way.
     */
-  val fetch: Endpoint[Isbn, Option[Book]] = endpoint(
+  val fetch: Endpoint.Of[dsl.Payload, Isbn, Option[Book]] = endpoint(
     request(method.get, books.one),
     (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "fetchBook")
     .attr(openapi.tags, "books")
 
   /** `PATCH /books/{isbn}`, whose body is where the two sides of one schema differ most. */
-  val patch: Endpoint[(Isbn, Book.Patch), Option[Book]] = endpoint(
+  val patch: Endpoint.Of[dsl.Payload, (Isbn, Book.Patch), Option[Book]] = endpoint(
     request(method.patch, books.one)(body.json(schema.patch)),
     (result(code.ok)(body.json(schema.book)) :+ result(code.notFound)).to[Option[Book]]
   ).attr(openapi.operationId, "patchBook")
@@ -149,7 +150,7 @@ object books:
     * present and get the endpoint exactly backwards. Not a sum either -- see [[Created]] for why a branch with no
     * entity cannot be converted on its own.
     */
-  val delete: Endpoint[Isbn, Either[Unit, Problem]] = endpoint(
+  val delete: Endpoint.Of[dsl.Payload, Isbn, Either[Unit, Problem]] = endpoint(
     request(method.delete, books.one),
     result(code.noContent) :+ result(code.conflict)(body.json(schema.problem))
   ).attr(openapi.operationId, "deleteBook")
@@ -160,14 +161,15 @@ object books:
     * A body need not have a schema. `body.binary` says only what the media type is, and what crosses is a `ByteVector`
     * -- which is how a PDF, an image or anything else opaque is described without pretending it has structure.
     */
-  val scan: Endpoint[(Isbn, ByteVector), ByteVector] = endpoint(
+  val scan: Endpoint.Of[dsl.Payload, (Isbn, ByteVector), ByteVector] = endpoint(
     request(method.post, books.one / "scan")(body.binary(mediaType.pdf)),
     result(code.ok)(body.binary(mediaType.pdf))
   ).attr(openapi.operationId, "scanBook")
     .attr(openapi.tags, "books")
 
   /** A body that may be either of two things, told apart by media type and not by trying to parse each in turn. */
-  val submitted: Bodies[Either[Book.Create, ByteVector]] = body.json(schema.create) :+ body.binary(mediaType.pdf)
+  val submitted: Bodies.Of[dsl.Payload, Either[Book.Create, ByteVector]] =
+    body.json(schema.create) :+ body.binary(mediaType.pdf)
 
   /** `POST /intake`: an acquisition, sent as a document or as a scan of the paperwork, or announced with neither.
     *
@@ -176,7 +178,7 @@ object books:
     * sent at all, which is a different thing from sending an empty one. The two compose into the `Option[Either[...]]`
     * the handler reads, and a notice that a shipment is coming needs no attachment.
     */
-  val intake: Endpoint[Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
+  val intake: Endpoint.Of[dsl.Payload, Option[Either[Book.Create, ByteVector]], Unit] = endpoint(
     request(method.post, __ / "intake")(body.optional(books.submitted)),
     result(code.accepted)
   ).attr(openapi.operationId, "intake")
@@ -193,7 +195,7 @@ object books:
       part("image", body.binary(mediaType.octetStream)).filename("cover.png").optional
 
   /** `POST /books/{isbn}/cover`. Described here, and served nowhere -- see [[api.unserved]]. */
-  val upload: Endpoint[(Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
+  val upload: Endpoint.Of[Body.Whole[Multipart.Node], (Isbn, (Book.Patch, Option[ByteVector])), Unit] = endpoint(
     request(method.post, books.one / "cover")(body.multipart(books.cover)),
     result(code.noContent)
   ).attr(openapi.operationId, "uploadCover")
@@ -206,7 +208,7 @@ object books:
     * effect type to say it in, and nothing in this module does. Described here and served nowhere: see
     * [[api.unserved]].
     */
-  val exported: Endpoint[Unit, Unit] = endpoint(
+  val exported: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Json.Node], Unit, Unit] = endpoint(
     request(method.get, books.all / "export"),
     result(code.ok)(body.ndjson(schema.book))
   ).attr(openapi.operationId, "exportBooks")
@@ -218,14 +220,14 @@ object books:
     * alphabet no interpreter in this repository recognises. Both halves of that are deliberate: a body's payload is any
     * schema at all, and what cannot be carried is reported rather than quietly dropped.
     */
-  val report: Endpoint[Unit, Unit] = endpoint(
+  val report: Endpoint.Of[Body.Streamed.Requirement[io.taig.otter.Csv.Record.Node], Unit, Unit] = endpoint(
     request(method.get, books.all / "report"),
     result(code.ok)(body.streamed(mediaType.csv, Frame.Lines, schema.row))
   ).attr(openapi.operationId, "reportBooks")
     .attr(openapi.tags, "books")
 
   /** The catalogue as a tree of shelves, which is the endpoint the recursive schema exists for. */
-  val catalogue: Endpoint[Unit, Category] = endpoint(
+  val catalogue: Endpoint.Of[dsl.Payload, Unit, Category] = endpoint(
     request(method.get, __ / "catalogue"),
     result(code.ok)(body.json(schema.category))
   ).attr(openapi.operationId, "catalogue")
