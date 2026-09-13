@@ -66,7 +66,10 @@ final class OpenApiParameterRenderer(
     val (rendered, issues) = this.rendered(element)
     val (keywords, dropped) = this.keywords(constraints.widen[Constraint])
 
-    (JsonSchema.merge(JsonSchema.merge(JsonSchema.typed("array"), "items" -> rendered), keywords*), issues ++ dropped)
+    (
+      JsonSchema.constrained(JsonSchema.merge(JsonSchema.typed("array"), "items" -> rendered), keywords),
+      issues ++ dropped
+    )
 
   /** The canonical form, which is the whole of what a coercion has to say in a position that is text either way. */
   private def coerce(schema: Self.Coerce[Parameter.Primitive.Node, ?, ?]): (CirceJson, Chain[JsonSchemaIssue]) =
@@ -109,8 +112,15 @@ final class OpenApiParameterRenderer(
     case Self.Primitive.Number.Double(validation)     => numeric("number", validation.constraints)
     case Self.Primitive.Number.Float(validation)      => numeric("number", validation.constraints)
     case Self.Primitive.Number.BigInteger(validation) => numeric("integer", validation.constraints)
-    case Self.Primitive.Number.Int(validation)        => numeric("integer", validation.constraints)
-    case Self.Primitive.Number.Long(validation)       => numeric("integer", validation.constraints)
+    case Self.Primitive.Number.Int(validation)        =>
+      numeric("integer", carrier(Int.MinValue, Int.MaxValue) ++ validation.constraints)
+    case Self.Primitive.Number.Long(validation) =>
+      numeric("integer", carrier(Long.MinValue, Long.MaxValue) ++ validation.constraints)
+
+  private def carrier(minimum: Long, maximum: Long): Chain[Constraint.Primitive.Number] = Chain(
+    Constraint.Primitive.Number.Minimum(io.taig.validation.Comparison(minimum, exclusive = false)),
+    Constraint.Primitive.Number.Maximum(io.taig.validation.Comparison(maximum, exclusive = false))
+  )
 
   private def numeric(
       name: String,
@@ -118,14 +128,14 @@ final class OpenApiParameterRenderer(
   ): (CirceJson, Chain[JsonSchemaIssue]) =
     val (keywords, dropped) = this.keywords(constraints.widen[Constraint])
 
-    (JsonSchema.merge(JsonSchema.typed(name), keywords*), dropped)
+    (JsonSchema.constrained(JsonSchema.typed(name), keywords), dropped)
 
   private def text(schema: Self.Primitive.Text[?, ?]): (CirceJson, Chain[JsonSchemaIssue]) = schema match
     case Self.Primitive.Text.Modify(self, _, _) => text(self)
     case Self.Primitive.Text.Root(validation)   =>
       val (keywords, dropped) = this.keywords(validation.constraints.widen[Constraint])
 
-      (JsonSchema.merge(JsonSchema.typed("string"), keywords*), dropped)
+      (JsonSchema.constrained(JsonSchema.typed("string"), keywords), dropped)
     case Self.Primitive.Text.Format(name, _, _) =>
       profile.format(name) match
         case Some(format) =>

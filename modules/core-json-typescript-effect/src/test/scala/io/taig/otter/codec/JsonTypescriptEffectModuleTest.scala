@@ -33,31 +33,42 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonTypescriptEffectModuleTest")(
     /** Nothing in the schema is asymmetric, so both sides came to the same declaration and one name says it. */
     test("a symmetric schema is named once"):
-      assertTrue(module(book) == """export type Book = Schema.Schema.Type<typeof Book>;
-                                   |
-                                   |export const Book = Schema.Struct({
-                                   |  "title": Schema.String,
-                                   |  "pages": Schema.Int,
-                                   |  "read": Schema.Boolean
-                                   |});""".stripMargin)
+      assertTrue(
+        module(
+          book
+        ) == """export type Book = Schema.Schema.Type<typeof Book>;
+               |
+               |export const Book = Schema.Struct({
+               |  "title": Schema.String,
+               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "read": Schema.Boolean
+               |});""".stripMargin
+      )
     ,
     /** A nullable field is written one way and read another, so there are two things to say and two names to say them
       * under.
       */
     test("an asymmetric schema is named twice"):
-      assertTrue(module(note) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
-                                   |
-                                   |export const NoteRead = Schema.Struct({
-                                   |  "title": Schema.String,
-                                   |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                   |});
-                                   |
-                                   |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
-                                   |
-                                   |export const NoteWrite = Schema.Struct({
-                                   |  "title": Schema.String,
-                                   |  "tag": Schema.NullOr(Schema.Int)
-                                   |});""".stripMargin)
+      assertTrue(
+        module(
+          note
+        ) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
+               |
+               |export const NoteRead = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.optionalWith(
+               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |    { "nullable": true }
+               |  )
+               |});
+               |
+               |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
+               |
+               |export const NoteWrite = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |});""".stripMargin
+      )
     ,
     /** Comparing a declaration to its counterpart once is not enough. `Outer` has the same shape on both sides -- one
       * key, holding `Note` -- and still cannot be named once, because the two `Note`s it would have to refer to are now
@@ -66,27 +77,34 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
     test("a split propagates to whatever refers to it"):
       val outer = field("note", note).toRecord.attr(Keys.name, "Outer")
 
-      assertTrue(module(outer) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
-                                    |
-                                    |export const NoteRead = Schema.Struct({
-                                    |  "title": Schema.String,
-                                    |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                    |});
-                                    |
-                                    |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
-                                    |
-                                    |export const OuterRead = Schema.Struct({ "note": NoteRead });
-                                    |
-                                    |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
-                                    |
-                                    |export const NoteWrite = Schema.Struct({
-                                    |  "title": Schema.String,
-                                    |  "tag": Schema.NullOr(Schema.Int)
-                                    |});
-                                    |
-                                    |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
-                                    |
-                                    |export const OuterWrite = Schema.Struct({ "note": NoteWrite });""".stripMargin)
+      assertTrue(
+        module(
+          outer
+        ) == """export type NoteRead = Schema.Schema.Type<typeof NoteRead>;
+               |
+               |export const NoteRead = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.optionalWith(
+               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |    { "nullable": true }
+               |  )
+               |});
+               |
+               |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
+               |
+               |export const OuterRead = Schema.Struct({ "note": NoteRead });
+               |
+               |export type NoteWrite = Schema.Schema.Type<typeof NoteWrite>;
+               |
+               |export const NoteWrite = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |});
+               |
+               |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
+               |
+               |export const OuterWrite = Schema.Struct({ "note": NoteWrite });""".stripMargin
+      )
     ,
     /** A symmetric definition under an asymmetric one is still shared, and is declared before either side needs it. */
     test("only what has to split does"):
@@ -94,46 +112,57 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
 
       val outer = (field("author", name) :* field("tag", int).optional.nullable).attr(Keys.name, "Outer")
 
-      assertTrue(module(outer) == """export type Name = Schema.Schema.Type<typeof Name>;
-                                    |
-                                    |export const Name = Schema.Struct({
-                                    |  "first": Schema.String,
-                                    |  "last": Schema.String
-                                    |});
-                                    |
-                                    |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
-                                    |
-                                    |export const OuterRead = Schema.Struct({
-                                    |  "author": Name,
-                                    |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                    |});
-                                    |
-                                    |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
-                                    |
-                                    |export const OuterWrite = Schema.Struct({
-                                    |  "author": Name,
-                                    |  "tag": Schema.NullOr(Schema.Int)
-                                    |});""".stripMargin)
+      assertTrue(
+        module(
+          outer
+        ) == """export type Name = Schema.Schema.Type<typeof Name>;
+               |
+               |export const Name = Schema.Struct({
+               |  "first": Schema.String,
+               |  "last": Schema.String
+               |});
+               |
+               |export type OuterRead = Schema.Schema.Type<typeof OuterRead>;
+               |
+               |export const OuterRead = Schema.Struct({
+               |  "author": Name,
+               |  "tag": Schema.optionalWith(
+               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |    { "nullable": true }
+               |  )
+               |});
+               |
+               |export type OuterWrite = Schema.Schema.Type<typeof OuterWrite>;
+               |
+               |export const OuterWrite = Schema.Struct({
+               |  "author": Name,
+               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |});""".stripMargin
+      )
     ,
     /** Collapsing makes a name depend on whether the schema happens to be symmetric, so there is a policy that never
       * does.
       */
     test("suffixing splits whether it has to or not"):
-      assertTrue(suffixed(book) == """export type BookRead = Schema.Schema.Type<typeof BookRead>;
-                                     |
-                                     |export const BookRead = Schema.Struct({
-                                     |  "title": Schema.String,
-                                     |  "pages": Schema.Int,
-                                     |  "read": Schema.Boolean
-                                     |});
-                                     |
-                                     |export type BookWrite = Schema.Schema.Type<typeof BookWrite>;
-                                     |
-                                     |export const BookWrite = Schema.Struct({
-                                     |  "title": Schema.String,
-                                     |  "pages": Schema.Int,
-                                     |  "read": Schema.Boolean
-                                     |});""".stripMargin)
+      assertTrue(
+        suffixed(
+          book
+        ) == """export type BookRead = Schema.Schema.Type<typeof BookRead>;
+               |
+               |export const BookRead = Schema.Struct({
+               |  "title": Schema.String,
+               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "read": Schema.Boolean
+               |});
+               |
+               |export type BookWrite = Schema.Schema.Type<typeof BookWrite>;
+               |
+               |export const BookWrite = Schema.Struct({
+               |  "title": Schema.String,
+               |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |  "read": Schema.Boolean
+               |});""".stripMargin
+      )
     ,
     /** Several schemas share one run, so a definition two of them reach is declared once. */
     test("schemas rendered together share what they have in common"):
@@ -147,7 +176,7 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
     test("a coercion is shared, not split"):
       val schema = (field("count", coerce(int)) :* field("size", coerce(int))).attr(Keys.name, "Counts")
 
-      assertTrue(names(schema) == List("CoerceNumber", "CountsRead", "CountsWrite"))
+      assertTrue(names(schema) == List("CoerceInt", "CountsRead", "CountsWrite"))
     ,
     /** Only a named schema has a declaration to contribute; an anonymous one has nowhere to go. */
     test("an anonymous schema contributes nothing to a module"):
@@ -158,18 +187,27 @@ object JsonTypescriptEffectModuleTest extends ZIOSpecDefault:
       */
     test("a single side is named once, however asymmetric the schema is"):
       assertTrue(
-        side(Side.Write, note) == """export type Note = Schema.Schema.Type<typeof Note>;
-                                    |
-                                    |export const Note = Schema.Struct({
-                                    |  "title": Schema.String,
-                                    |  "tag": Schema.NullOr(Schema.Int)
-                                    |});""".stripMargin,
-        side(Side.Read, note) == """export type Note = Schema.Schema.Type<typeof Note>;
-                                   |
-                                   |export const Note = Schema.Struct({
-                                   |  "title": Schema.String,
-                                   |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                   |});""".stripMargin
+        side(
+          Side.Write,
+          note
+        ) == """export type Note = Schema.Schema.Type<typeof Note>;
+               |
+               |export const Note = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+               |});""".stripMargin,
+        side(
+          Side.Read,
+          note
+        ) == """export type Note = Schema.Schema.Type<typeof Note>;
+               |
+               |export const Note = Schema.Struct({
+               |  "title": Schema.String,
+               |  "tag": Schema.optionalWith(
+               |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+               |    { "nullable": true }
+               |  )
+               |});""".stripMargin
       )
     ,
     /** What several schemas share is shared on one side too, which is what lets a module be rendered in one run. */

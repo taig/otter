@@ -41,21 +41,21 @@ object JsonSchemaNullabilityTest extends ZIOSpecDefault:
       assertTrue(
         anyOf(json.nullableTag).noSpaces ==
           """{"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["title","tag"]}"""
+          """"tag":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":["title","tag"]}"""
       )
     ,
     test("a type array says it in the keyword the value already has"):
       assertTrue(
         typeArray(json.nullableTag).noSpaces ==
           """{"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"type":["integer","null"]}},"required":["title","tag"]}"""
+          """"tag":{"type":["integer","null"],"minimum":-2147483648,"maximum":2147483647}},"required":["title","tag"]}"""
       )
     ,
     test("the flag says it beside the value, and says nothing about the value itself"):
       assertTrue(
         flag(json.nullableTag).noSpaces ==
           """{"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"type":"integer","nullable":true}},"required":["title","tag"]}"""
+          """"tag":{"type":"integer","minimum":-2147483648,"maximum":2147483647,"nullable":true}},"required":["title","tag"]}"""
       )
     ,
     test("a value that is not a bare type widens the type array back to the alternation"):

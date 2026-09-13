@@ -65,7 +65,11 @@ object OpenApiResponseAlternativesTest extends ZIOSpecDefault:
         document.issues.isEmpty,
         schema.get[List[CirceJson]]("anyOf") == Right(
           List(
-            CirceJson.obj("type" -> CirceJson.fromString("integer")),
+            CirceJson.obj(
+              "type" -> CirceJson.fromString("integer"),
+              "minimum" -> CirceJson.fromLong(-2147483648L),
+              "maximum" -> CirceJson.fromLong(2147483647L)
+            ),
             CirceJson.obj("type" -> CirceJson.fromString("number"))
           )
         )

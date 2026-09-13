@@ -53,6 +53,16 @@ object JsonSchema:
   def merge(left: CirceJson, right: (String, CirceJson)*): CirceJson =
     if right.isEmpty then left else JsonSchema.merge(left, CirceJson.obj(right*))
 
+  /** Constraints are conjunctions, including when several use the same keyword. */
+  private[otter] def constrained(schema: CirceJson, keywords: List[(String, CirceJson)]): CirceJson =
+    val distinct = keywords.distinct
+    val repeated = distinct.groupMap(_._1)(_._2).collect { case (key, values) if values.size > 1 => key }.toSet
+    val unique = distinct.filterNot((key, _) => repeated.contains(key))
+    val conjunction = distinct.collect { case (key, value) if repeated.contains(key) => obj(key -> value) }
+    val rendered = merge(schema, unique*)
+    if conjunction.isEmpty then rendered
+    else merge(rendered, "allOf" -> CirceJson.fromValues(conjunction))
+
   /** A reference to a definition, as the JSON Pointer that names it.
     *
     * `~` and `/` are the two characters a pointer segment cannot hold, and [[Keys.name]] is free form, so both are

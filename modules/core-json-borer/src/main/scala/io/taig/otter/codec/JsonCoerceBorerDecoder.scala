@@ -18,9 +18,7 @@ import scala.util.matching.Regex
   * value is the same and the text is not.
   */
 object JsonCoerceBorerDecoder extends Decoder[[w, r] =>> Coerce[Json.Primitive.Node, w, r], Dom.Element]:
-  /** JSON's own number grammar, which is what `io.circe.JsonNumber.fromString` accepts. Deliberately stricter than
-    * `java.math.BigDecimal`, which would take a leading `+` and other things no document can carry.
-    */
+  /** JSON's number grammar. Unlike circe's coercion parser, it refuses `01` and `.1`; neither is a JSON number. */
   private val Number: Regex = """-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?""".r
 
   override def decode[R](

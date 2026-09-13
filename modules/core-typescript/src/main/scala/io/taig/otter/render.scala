@@ -87,8 +87,9 @@ private val renderTypescriptExpression: Typescript.Expression => String =
         s"""$name(
            |${arguments.map(indent).mkString(",\n")}
            |)""".stripMargin
-  case Typescript.Expression.Equal(left, right)         => s"$left == $right"
-  case Typescript.Expression.Function(parameters, body) =>
+  case Typescript.Expression.Binary(left, operator, right) => s"($left ${operator.token} $right)"
+  case Typescript.Expression.Equal(left, right)            => s"$left == $right"
+  case Typescript.Expression.Function(parameters, body)    =>
     s"(${parameters.map((name, tpe) => s"$name: $tpe").mkString(", ")}) => ${arrowed(body)}"
   case Typescript.Expression.Index(self, index)            => s"$self[$index]"
   case Typescript.Expression.Invoke(self, name, arguments) =>
@@ -121,6 +122,7 @@ private val renderTypescriptExpression: Typescript.Expression => String =
 
 private val renderTypescriptStatement: Typescript.Statement => String =
   case Typescript.Statement.Block(statements)     => statements.map(indent).mkString("{\n", "\n", "\n}")
+  case Typescript.Statement.Return(expression)    => s"return $expression;"
   case Typescript.Statement.Evaluate(expression)  => s"$expression;"
   case Typescript.Statement.Import(names, module) =>
     s"import { ${names.toList.mkString(", ")} } from ${quoted(module)};"

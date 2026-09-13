@@ -30,24 +30,36 @@ object ConstraintTypescriptEffect:
     case Constraint.Primitive.Text.Minimum(comparison) => length("minLength", comparison, offset = 1).some
     case Constraint.Primitive.Text.Maximum(comparison) => length("maxLength", comparison, offset = -1).some
     case Constraint.Primitive.Text.Matches(reference)  =>
-      TypescriptRegex(reference.pattern()).map(TypescriptEffect.filter("pattern", _))
+      TypescriptRegex(reference).map(TypescriptEffect.filter("pattern", _))
     case Constraint.Primitive.Number.Minimum(Comparison(reference, true))  => bound("greaterThan", reference).some
     case Constraint.Primitive.Number.Minimum(Comparison(reference, false)) =>
       bound("greaterThanOrEqualTo", reference).some
     case Constraint.Primitive.Number.Maximum(Comparison(reference, true))  => bound("lessThan", reference).some
     case Constraint.Primitive.Number.Maximum(Comparison(reference, false)) => bound("lessThanOrEqualTo", reference).some
     case Constraint.Primitive.Number.Multiple(reference)                   => bound("multipleOf", reference).some
-    case Constraint.Collection.Minimum(comparison) => length("minItems", comparison, offset = 1).some
-    case Constraint.Collection.Maximum(comparison) => length("maxItems", comparison, offset = -1).some
-    case Constraint.Collection.Unique              => none
-    case _: Constraint.Collection.Sorted           => none
-    case _: Constraint.Object                      => none
-    case _: Constraint.Generic                     => none
+    case Constraint.Collection.Minimum(comparison)                         =>
+      Option.when(comparison.reference > 0 || (comparison.reference == 0 && comparison.exclusive))(
+        length("minItems", comparison, offset = 1)
+      )
+    case Constraint.Collection.Maximum(comparison) =>
+      if comparison.reference < 0 || (comparison.reference == 0 && comparison.exclusive) then
+        TypescriptEffect
+          .filter("filter", Typescript.Expression.Arrow(Nil, Typescript.Expression.Literal.Boolean(false)))
+          .some
+      else if comparison.reference == 0 || (comparison.reference == 1 && comparison.exclusive) then
+        TypescriptEffect.filter("itemsCount", TypescriptEffect.number(JBigDecimal.ZERO)).some
+      else length("maxItems", comparison, offset = -1).some
+    case Constraint.Collection.Unique    => none
+    case _: Constraint.Collection.Sorted => none
+    case _: Constraint.Object            => none
+    case _: Constraint.Generic           => none
 
   private def length(name: String, comparison: Comparison[Long], offset: Long): Typescript.Expression =
     TypescriptEffect.filter(
       name,
-      TypescriptEffect.number(new JBigDecimal(TypescriptConstraint.inclusive(comparison, offset)))
+      TypescriptEffect.number(
+        JBigDecimal.valueOf(comparison.reference).add(JBigDecimal.valueOf(if comparison.exclusive then offset else 0L))
+      )
     )
 
   private def bound(name: String, reference: Data.Number): Typescript.Expression =

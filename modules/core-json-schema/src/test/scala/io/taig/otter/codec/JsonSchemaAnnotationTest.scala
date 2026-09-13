@@ -29,7 +29,7 @@ object JsonSchemaAnnotationTest extends ZIOSpecDefault:
     test("a label leads and a default trails, which is where a reader looks for them"):
       assertTrue(
         render(int.title("Pages").description("How long the book is").default(0)) ==
-          """{"title":"Pages","description":"How long the book is","type":"integer","default":0}"""
+          """{"title":"Pages","description":"How long the book is","type":"integer","minimum":-2147483648,"maximum":2147483647,"default":0}"""
       )
     ,
     test("examples and deprecation are said the same way"):
@@ -55,10 +55,10 @@ object JsonSchemaAnnotationTest extends ZIOSpecDefault:
     test("a field describes the property and what it holds describes the type, and the field is the more specific"):
       assertTrue(
         render(field("pages", int.description("a number")).toRecord) ==
-          """{"type":"object","properties":{"pages":{"description":"a number","type":"integer"}},""" +
+          """{"type":"object","properties":{"pages":{"description":"a number","type":"integer","minimum":-2147483648,"maximum":2147483647}},""" +
           """"required":["pages"]}""",
         render(field("pages", int.description("a number")).description("how long").toRecord) ==
-          """{"type":"object","properties":{"pages":{"description":"how long","type":"integer"}},""" +
+          """{"type":"object","properties":{"pages":{"description":"how long","type":"integer","minimum":-2147483648,"maximum":2147483647}},""" +
           """"required":["pages"]}"""
       )
     ,

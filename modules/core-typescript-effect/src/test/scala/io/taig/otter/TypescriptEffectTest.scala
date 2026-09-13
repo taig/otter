@@ -164,7 +164,9 @@ object TypescriptEffectTest extends ZIOSpecDefault:
       ,
       test("a coerced number accepts a number and the text of one"):
         assertTrue(
-          TypescriptEffect.CoerceNumber.render == "Schema.Union(Schema.Number, Schema.NumberFromString)"
+          TypescriptEffect.CoerceNumber.render.contains("Schema.pattern(RegExp("),
+          TypescriptEffect.CoerceNumber.render.contains("\"decode\": (value) => Number(value)"),
+          TypescriptEffect.CoerceNumber.render.contains("\"encode\": (value) => String(value)")
         )
       ,
       /** Both directions of both transforms, because a coercion that decoded correctly and encoded the other way round

@@ -24,7 +24,9 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       val source = render(schema)
 
       assertTrue(
-        source.contains("export const Shared = Schema.Struct({ \"a\": Schema.Int });"),
+        source.contains(
+          "export const Shared = Schema.Struct({ \"a\": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) });"
+        ),
         source.contains("export const Shared_2 = Schema.Struct({ \"b\": Schema.String });"),
         source.contains("\"left\": Shared,"),
         source.contains("\"right\": Shared_2,"),
@@ -62,23 +64,25 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
       val source = render(field("first", first) :* field("tree", tree))
 
       assertTrue(
-        source.contains("export const Tree = Schema.Int;"),
+        source.contains(
+          "export const Tree = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));"
+        ),
         source.contains("export const Tree_2: Schema.Schema<Tree_2>"),
         source.contains("ReadonlyArray<Tree_2>"),
         source.contains("Schema.suspend(() => Tree_2)")
       )
     ,
     test("coercion helpers and user definitions cannot overwrite each other"):
-      val named = string.attr(Keys.name, "CoerceNumber")
+      val named = string.attr(Keys.name, "CoerceInt")
       val schema = field("label", named) :* field("count", coerce(int)) :* field("again", coerce(int))
       val source = JsonTypescriptEffectRenderer.reader.render(schema).mkString("\n")
 
       assertTrue(
-        source.contains("export const CoerceNumber = Schema.String;"),
-        source.contains("export const CoerceNumber_2 = Schema.Union"),
-        source.contains("\"count\": CoerceNumber_2.pipe"),
-        source.contains("\"again\": CoerceNumber_2.pipe"),
-        !source.contains("CoerceNumber_3")
+        source.contains("export const CoerceInt = Schema.String;"),
+        source.contains("export const CoerceInt_2 = Schema.Union"),
+        source.contains("\"count\": CoerceInt_2.pipe"),
+        source.contains("\"again\": CoerceInt_2.pipe"),
+        !source.contains("CoerceInt_3")
       )
     ,
     test("a single-side module keeps distinct schema instances and reuses shared instances"):
@@ -97,8 +101,15 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
 
       assertTrue(
         constants(module) == List("Shared", "Shared_2Read", "Shared_2Write"),
-        source.contains("Schema.optionalWith(Schema.Int, { \"nullable\": true })"),
-        source.contains("Schema.optional(Schema.Int)")
+        source.contains(
+          """Schema.optionalWith(
+            |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+            |    { "nullable": true }
+            |  )""".stripMargin
+        ),
+        source.contains(
+          "Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"
+        )
       )
     ,
     test("read and write suffixes cannot collide with another schema's requested name"):
@@ -164,5 +175,10 @@ object JsonTypescriptNamingTest extends ZIOSpecDefault:
     test("normalizing a declaration does not rename its wire field"):
       val source = render(field("not-valid", int.attr(Keys.name, "not-valid")).toRecord)
 
-      assertTrue(source.contains("export const not_valid = Schema.Int;"), source.contains("\"not-valid\": not_valid"))
+      assertTrue(
+        source.contains(
+          "export const not_valid = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));"
+        ),
+        source.contains("\"not-valid\": not_valid")
+      )
   )

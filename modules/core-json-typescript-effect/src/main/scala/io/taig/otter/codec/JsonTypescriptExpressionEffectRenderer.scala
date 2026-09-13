@@ -83,9 +83,11 @@ final class JsonTypescriptExpressionEffectRenderer(
           case Side.Write => child(reference.value)
           case Side.Read  =>
             val (name, expression) = reference.value match
-              case Json.Primitive.Boolean.Schema(_) => ("CoerceBoolean", TypescriptEffect.CoerceBoolean)
-              case Json.Primitive.Number.Schema(_)  => ("CoerceNumber", TypescriptEffect.CoerceNumber)
-              case Json.Primitive.Text.Schema(_)    => ("CoerceString", TypescriptEffect.CoerceString)
+              case Json.Primitive.Boolean.Schema(_)   => ("CoerceBoolean", TypescriptEffect.CoerceBoolean)
+              case Json.Primitive.Number.Schema(node) =>
+                if isInt(node.self) then ("CoerceInt", TypescriptEffect.CoerceInt)
+                else ("CoerceNumber", TypescriptEffect.CoerceNumber)
+              case Json.Primitive.Text.Schema(_) => ("CoerceString", TypescriptEffect.CoerceString)
 
             hoist(name, expression).map(TypescriptEffect.filtered(_, filters(reference.value)))
 
@@ -128,17 +130,43 @@ final class JsonTypescriptExpressionEffectRenderer(
           )
         else self
 
+  private def isInt(schema: Primitive.Number[?, ?]): Boolean = schema match
+    case Primitive.Number.Int(_)             => true
+    case Primitive.Number.Modify(self, _, _) => isInt(self)
+    case _                                   => false
+
+  private def bounds(schema: Primitive.Number[?, ?]): List[Typescript.Expression] =
+    def bound(name: String, value: String): Typescript.Expression =
+      TypescriptEffect.filter(name, TypescriptEffect.number(new java.math.BigDecimal(value)))
+    schema match
+      case Primitive.Number.Int(_) =>
+        List(
+          bound("greaterThanOrEqualTo", "-2147483648"),
+          bound("lessThanOrEqualTo", "2147483647")
+        )
+      case Primitive.Number.Long(_) =>
+        List(
+          bound("greaterThanOrEqualTo", "-9223372036854775808"),
+          bound("lessThan", "9223372036854775808")
+        )
+      case Primitive.Number.Modify(self, _, _) => bounds(self)
+      case _                                   => Nil
+
   private def number[W, R](schema: Primitive.Number[W, R]): Typescript.Expression =
-    TypescriptEffect.filtered(numeric(schema), ConstraintTypescriptEffect.filters(number(schema, Chain.empty)))
+    TypescriptEffect.filtered(
+      numeric(schema),
+      bounds(schema) ++ ConstraintTypescriptEffect.filters(number(schema, Chain.empty))
+    )
 
   /** An integral number is a number the decoder refuses when it has a fraction, which is a filter and not a type. */
   private def numeric[W, R](schema: Primitive.Number[W, R]): Typescript.Expression = schema match
-    case Primitive.Number.BigDecimal(_)      => TypescriptEffect.Number
-    case Primitive.Number.BigInteger(_)      => TypescriptEffect.Int
-    case Primitive.Number.Double(_)          => TypescriptEffect.Number
-    case Primitive.Number.Float(_)           => TypescriptEffect.Number
-    case Primitive.Number.Int(_)             => TypescriptEffect.Int
-    case Primitive.Number.Long(_)            => TypescriptEffect.Int
+    case Primitive.Number.BigDecimal(_) => TypescriptEffect.Number
+    case Primitive.Number.BigInteger(_) => TypescriptEffect.Int
+    case Primitive.Number.Double(_)     => TypescriptEffect.Number
+    case Primitive.Number.Float(_)      => TypescriptEffect.Number
+    case Primitive.Number.Int(_)        => TypescriptEffect.Int
+    case Primitive.Number.Long(_)       =>
+      TypescriptEffect.filtered(TypescriptEffect.Number, List(TypescriptEffect.IntegralNumber))
     case Primitive.Number.Modify(self, _, _) => numeric(self)
 
   private def number[W, R](schema: Primitive.Number[W, R], constraints: Chain[Constraint]): Chain[Constraint] =
@@ -169,12 +197,17 @@ final class JsonTypescriptExpressionEffectRenderer(
     * says it by being [[TypescriptEffect.Int]], but a coercion has already replaced the node with a union of the forms
     * it accepts, so the same claim has to come back as a filter.
     */
+  private def integral(schema: Primitive.Number[?, ?]): List[Typescript.Expression] = schema match
+    case Primitive.Number.Int(_) | Primitive.Number.BigInteger(_) => List(TypescriptEffect.Integral)
+    case Primitive.Number.Long(_)                                 => List(TypescriptEffect.IntegralNumber)
+    case Primitive.Number.Modify(self, _, _)                      => integral(self)
+    case _                                                        => Nil
+
   private def filters(json: Json.Primitive.Node[?, ?]): List[Typescript.Expression] = json match
     case Json.Primitive.Boolean.Schema(_)       => Nil
     case Json.Primitive.Text.Schema(annotation) =>
       ConstraintTypescriptEffect.filters(text(annotation.self, Chain.empty))
     case Json.Primitive.Number.Schema(annotation) =>
-      val integral =
-        if numeric(annotation.self) == TypescriptEffect.Int then List(TypescriptEffect.Integral) else Nil
-
-      integral ++ ConstraintTypescriptEffect.filters(number(annotation.self, Chain.empty))
+      integral(annotation.self) ++ bounds(annotation.self) ++ ConstraintTypescriptEffect.filters(
+        number(annotation.self, Chain.empty)
+      )

@@ -28,47 +28,65 @@ object JsonSchemaConstraintTest extends ZIOSpecDefault:
       .getOrElse(Map.empty)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaConstraintTest")(
-    test("a length is a length"):
+    test("UTF-16 lengths have no exact code-point keyword"):
       assertTrue(
-        keywords(string(std.text.minimum(1))) == Map("minLength" -> CirceJson.fromInt(1)),
-        keywords(string(std.text.maximum(64))) == Map("maxLength" -> CirceJson.fromInt(64))
+        keywords(string(std.text.minimum(1))) == Map.empty,
+        keywords(string(std.text.maximum(64))) == Map.empty
       )
     ,
-    test("an exclusive bound on a length is the inclusive one next to it, because a length is an integer"):
+    test("exclusive UTF-16 bounds are omitted too"):
       assertTrue(
         keywords(string(std.text.minimum(Comparison(1L, exclusive = true)))) ==
-          Map("minLength" -> CirceJson.fromInt(2)),
+          Map.empty,
         keywords(string(std.text.maximum(Comparison(64L, exclusive = true)))) ==
-          Map("maxLength" -> CirceJson.fromInt(63))
+          Map.empty
       )
     ,
     test("a pattern is anchored, because matches is a whole match and pattern is not"):
       assertTrue(
         keywords(string(std.text.matches(Pattern.compile("[a-z]+")))) ==
-          Map("pattern" -> CirceJson.fromString("^(?:[a-z]+)$")),
+          Map("pattern" -> CirceJson.fromString("^(?:[a-z]+)(?![\\s\\S])")),
         keywords(string(std.text.matches(Pattern.compile("a|b")))) ==
-          Map("pattern" -> CirceJson.fromString("^(?:a|b)$"))
+          Map("pattern" -> CirceJson.fromString("^(?:a|b)(?![\\s\\S])"))
       )
     ,
     test("a numeric bound keeps its strictness rather than being moved, because a number is not an integer"):
       assertTrue(
-        keywords(int(std.number.minimum(Comparison(0, exclusive = false)))) ==
+        keywords(double(std.number.minimum(Comparison(0.0, exclusive = false)))) ==
           Map("minimum" -> CirceJson.fromInt(0)),
-        keywords(int(std.number.minimum(Comparison(0, exclusive = true)))) ==
+        keywords(double(std.number.minimum(Comparison(0.0, exclusive = true)))) ==
           Map("exclusiveMinimum" -> CirceJson.fromInt(0)),
-        keywords(int(std.number.maximum(Comparison(10, exclusive = false)))) ==
+        keywords(double(std.number.maximum(Comparison(10.0, exclusive = false)))) ==
           Map("maximum" -> CirceJson.fromInt(10)),
-        keywords(int(std.number.maximum(Comparison(10, exclusive = true)))) ==
+        keywords(double(std.number.maximum(Comparison(10.0, exclusive = true)))) ==
           Map("exclusiveMaximum" -> CirceJson.fromInt(10)),
-        keywords(int(std.number.multiple(2))) == Map("multipleOf" -> CirceJson.fromInt(2))
+        keywords(int(std.number.multiple(2))) == Map(
+          "minimum" -> CirceJson.fromLong(-2147483648L),
+          "maximum" -> CirceJson.fromLong(2147483647L),
+          "multipleOf" -> CirceJson.fromInt(2)
+        )
       )
     ,
     test("a collection's size and uniqueness carry, and its order does not"):
       assertTrue(
         keywords(collection.list(int, std.collection.minimum(1))) ==
-          Map("items" -> CirceJson.obj("type" -> CirceJson.fromString("integer")), "minItems" -> CirceJson.fromInt(1)),
+          Map(
+            "items" -> CirceJson.obj(
+              "type" -> CirceJson.fromString("integer"),
+              "minimum" -> CirceJson.fromLong(-2147483648L),
+              "maximum" -> CirceJson.fromLong(2147483647L)
+            ),
+            "minItems" -> CirceJson.fromInt(1)
+          ),
         keywords(collection.list(int, std.collection.uniqueItemsF[List, Int])) ==
-          Map("items" -> CirceJson.obj("type" -> CirceJson.fromString("integer")), "uniqueItems" -> CirceJson.True)
+          Map(
+            "items" -> CirceJson.obj(
+              "type" -> CirceJson.fromString("integer"),
+              "minimum" -> CirceJson.fromLong(-2147483648L),
+              "maximum" -> CirceJson.fromLong(2147483647L)
+            ),
+            "uniqueItems" -> CirceJson.True
+          )
       )
     ,
     test("a dictionary's size is a property count"):

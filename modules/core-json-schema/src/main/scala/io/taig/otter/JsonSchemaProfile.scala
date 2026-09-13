@@ -88,10 +88,51 @@ object JsonSchemaProfile:
       case Nullability.AnyOf     => JsonSchema.anyOf(JsonSchema.alternatives(schema) :+ JsonSchema.Null)
       case Nullability.TypeArray =>
         schema.asObject.flatMap(_("type")).flatMap(_.asString) match
-          case Some(name) =>
+          case Some(name) if schema.asObject.exists(_.keys.forall(Nullability.NullCompatible.contains)) =>
             JsonSchema.merge(schema, "type" -> CirceJson.arr(CirceJson.fromString(name), CirceJson.fromString("null")))
-          case None => Nullability.AnyOf(schema)
+          case _ => Nullability.AnyOf(schema)
       case Nullability.Flag => JsonSchema.merge(schema, "nullable" -> CirceJson.True)
+
+  object Nullability:
+    private val NullCompatible: Set[String] = Set(
+      "type",
+      "title",
+      "description",
+      "default",
+      "examples",
+      "deprecated",
+      "readOnly",
+      "writeOnly",
+      "$comment",
+      "minimum",
+      "maximum",
+      "exclusiveMinimum",
+      "exclusiveMaximum",
+      "multipleOf",
+      "minLength",
+      "maxLength",
+      "pattern",
+      "format",
+      "contentEncoding",
+      "contentMediaType",
+      "contentSchema",
+      "items",
+      "prefixItems",
+      "contains",
+      "minContains",
+      "maxContains",
+      "minItems",
+      "maxItems",
+      "uniqueItems",
+      "properties",
+      "patternProperties",
+      "additionalProperties",
+      "propertyNames",
+      "required",
+      "dependentRequired",
+      "minProperties",
+      "maxProperties"
+    )
 
   /** The `format` names JSON Schema itself registers, which is what a strict consumer recognises. */
   val Formats: Set[String] =

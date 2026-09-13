@@ -46,7 +46,7 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
       test("a pattern both flavours read alike becomes one"):
         assertTrue(
           filter(Constraint.Primitive.Text.Matches(Pattern.compile("^[a-z]+$")))
-            .contains("Schema.pattern(/^[a-z]+$/u)")
+            .contains("""Schema.pattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u"))""")
         )
       ,
       /** The one constraint whose counterpart is only sometimes there. Saying nothing is safe; saying something else is
@@ -106,6 +106,16 @@ object ConstraintTypescriptEffectTest extends ZIOSpecDefault:
           filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = false))).contains("Schema.maxItems(9)"),
           filter(Constraint.Collection.Minimum(Comparison(1L, exclusive = true))).contains("Schema.minItems(2)"),
           filter(Constraint.Collection.Maximum(Comparison(9L, exclusive = true))).contains("Schema.maxItems(8)")
+        )
+      ,
+      test("zero and impossible counts do not call Effect constructors with invalid bounds"):
+        assertTrue(
+          filter(Constraint.Collection.Minimum(Comparison(0L, false))).isEmpty,
+          filter(Constraint.Collection.Maximum(Comparison(0L, false))).contains("Schema.itemsCount(0)"),
+          filter(Constraint.Collection.Maximum(Comparison(1L, true))).contains("Schema.itemsCount(0)"),
+          filter(Constraint.Collection.Maximum(Comparison(0L, true))).contains("Schema.filter(() => false)"),
+          filter(Constraint.Collection.Minimum(Comparison(Long.MaxValue, true)))
+            .contains("Schema.minItems(9223372036854775808)")
         )
       ,
       /** effect has no filter for these, and approximating one would validate something other than what the schema

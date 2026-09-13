@@ -35,8 +35,12 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         */
       test("an integral number says so, and a fractional one does not"):
         assertTrue(
-          render(int) == "Schema.Int",
-          render(long) == "Schema.Int",
+          render(
+            int
+          ) == "Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))",
+          render(
+            long
+          ) == "Schema.Number.pipe(Schema.filter(Number.isInteger)).pipe(Schema.greaterThanOrEqualTo(-9223372036854775808), Schema.lessThan(9223372036854775808))",
           render(jBigInteger) == "Schema.Int",
           render(double) == "Schema.Number",
           render(float) == "Schema.Number",
@@ -56,17 +60,25 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
     ),
     suite("structure")(
       test("a record"):
-        assertTrue(render(json.book) == """Schema.Struct({
-                                          |  "title": Schema.String,
-                                          |  "pages": Schema.Int,
-                                          |  "read": Schema.Boolean
-                                          |})""".stripMargin)
+        assertTrue(
+          render(
+            json.book
+          ) == """Schema.Struct({
+                 |  "title": Schema.String,
+                 |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |  "read": Schema.Boolean
+                 |})""".stripMargin
+        )
       ,
       test("an empty record"):
         assertTrue(render(RNil) == "Schema.Struct({})")
       ,
       test("a collection"):
-        assertTrue(render(collection.list(int)) == "Schema.Array(Schema.Int)")
+        assertTrue(
+          render(
+            collection.list(int)
+          ) == "Schema.Array(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"
+        )
       ,
       test("a dictionary names the key it does not otherwise describe"):
         assertTrue(render(dictionary.list(boolean)) == """Schema.Record({
@@ -80,7 +92,7 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
             TNil :* string :* int :* json.genre.optional
           ) == """Schema.Tuple(
                  |  Schema.String,
-                 |  Schema.Int,
+                 |  Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
                  |  Schema.NullOr(Schema.Literal("fiction", "history", "poetry"))
                  |)""".stripMargin
         )
@@ -94,7 +106,11 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         assertTrue(
           render(
             schema
-          ) == """Schema.Union(Schema.String, Schema.Int, Schema.Literal("fiction", "history", "poetry"))""",
+          ) == """Schema.Union(
+                 |  Schema.String,
+                 |  Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |  Schema.Literal("fiction", "history", "poetry")
+                 |)""".stripMargin,
           render(json.shape) == """Schema.Union(
                                   |  Schema.Struct({ "radius": Schema.Number }),
                                   |  Schema.Struct({ "side": Schema.Number }),
@@ -131,11 +147,15 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
           field("pages", int(number.minimum(Comparison(1, exclusive = false)))) :*
           field("tags", collection.list(string, collections.maximum[List[String]](5)))
 
-        assertTrue(render(schema) == """Schema.Struct({
-                                       |  "title": Schema.String.pipe(Schema.minLength(3)),
-                                       |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(1)),
-                                       |  "tags": Schema.Array(Schema.String).pipe(Schema.maxItems(5))
-                                       |})""".stripMargin)
+        assertTrue(
+          render(
+            schema
+          ) == """Schema.Struct({
+                 |  "title": Schema.String.pipe(Schema.minLength(3)),
+                 |  "pages": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647), Schema.greaterThanOrEqualTo(1)),
+                 |  "tags": Schema.Array(Schema.String).pipe(Schema.maxItems(5))
+                 |})""".stripMargin
+        )
       ,
       /** A bound on a length is a bound on an integer, so the exclusive form is the inclusive one next to it. */
       test("an exclusive bound on a length becomes the inclusive one beside it"):
@@ -199,14 +219,14 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
       test("a pattern JavaScript agrees with becomes a filter, under the unicode flag"):
         assertTrue(
           render(string(text.matches[String](Pattern.compile("^[a-z]+$")))) ==
-            "Schema.String.pipe(Schema.pattern(/^[a-z]+$/u))"
+            """Schema.String.pipe(Schema.pattern(RegExp("^(?:^[a-z]+$)(?![\\s\\S])", "u")))"""
         )
       ,
       /** `/` ends the literal, so a pattern that means one as a character has to say so. */
-      test("a slash in a pattern is escaped rather than closing the literal"):
+      test("a slash is passed as pattern text rather than a literal delimiter"):
         assertTrue(
           render(string(text.matches[String](Pattern.compile("^a/b$")))) ==
-            "Schema.String.pipe(Schema.pattern(/^a\\/b$/u))"
+            """Schema.String.pipe(Schema.pattern(RegExp("^(?:^a/b$)(?![\\s\\S])", "u")))"""
         )
     ),
     suite("name")(
@@ -217,17 +237,21 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         val person = (field("first", string) :* field("last", string)).attr(Keys.name, "Name")
         val schema = field("name", person) :* field("age", int).optional.omitted.strict
 
-        assertTrue(render(schema) == """export type Name = Schema.Schema.Type<typeof Name>;
-                                       |
-                                       |export const Name = Schema.Struct({
-                                       |  "first": Schema.String,
-                                       |  "last": Schema.String
-                                       |});
-                                       |
-                                       |Schema.Struct({
-                                       |  "name": Name,
-                                       |  "age": Schema.optional(Schema.Int)
-                                       |})""".stripMargin)
+        assertTrue(
+          render(
+            schema
+          ) == """export type Name = Schema.Schema.Type<typeof Name>;
+                 |
+                 |export const Name = Schema.Struct({
+                 |  "first": Schema.String,
+                 |  "last": Schema.String
+                 |});
+                 |
+                 |Schema.Struct({
+                 |  "name": Name,
+                 |  "age": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |})""".stripMargin
+        )
       ,
       /** Reaching the same name twice is not recursion. It used to be read as one, because the name was left behind on
         * the stack after its own body was finished.
@@ -257,17 +281,21 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         lazy val tree: Json.Record[Tree] =
           (field("value", int) :* field("children", collection.list(tree))).to[Tree].attr(Keys.name, "Tree")
 
-        assertTrue(render(tree) == """export type Tree = {
-                                     |  "value": number;
-                                     |  "children": ReadonlyArray<Tree>;
-                                     |};
-                                     |
-                                     |export const Tree: Schema.Schema<Tree> = Schema.Struct({
-                                     |  "value": Schema.Int,
-                                     |  "children": Schema.Array(Schema.suspend(() => Tree))
-                                     |});
-                                     |
-                                     |Tree""".stripMargin)
+        assertTrue(
+          render(
+            tree
+          ) == """export type Tree = {
+                 |  "value": number;
+                 |  "children": ReadonlyArray<Tree>;
+                 |};
+                 |
+                 |export const Tree: Schema.Schema<Tree> = Schema.Struct({
+                 |  "value": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |  "children": Schema.Array(Schema.suspend(() => Tree))
+                 |});
+                 |
+                 |Tree""".stripMargin
+        )
       ,
       /** A declared type has to say what the value beside it says: a schema is invariant in the type it is ascribed, so
         * a structural type that widened a non empty array back to a plain one would not compile against its own value.
@@ -367,13 +395,15 @@ object JsonTypescriptEffectRendererTest extends ZIOSpecDefault:
         val bar = int.attr(Keys.name, "Bar").attr(TypescriptKeys.tpe, Typescript.Type.Symbol("unknown", Nil))
 
         assertTrue(
-          render(field("bar", bar).toRecord) == """export type Bar = unknown;
-                                                  |
-                                                  |export type BarEncoded = number;
-                                                  |
-                                                  |export const Bar: Schema.Schema<Bar, BarEncoded> = Schema.Int;
-                                                  |
-                                                  |Schema.Struct({ "bar": Bar })""".stripMargin
+          render(
+            field("bar", bar).toRecord
+          ) == """export type Bar = unknown;
+                 |
+                 |export type BarEncoded = number;
+                 |
+                 |export const Bar: Schema.Schema<Bar, BarEncoded> = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));
+                 |
+                 |Schema.Struct({ "bar": Bar })""".stripMargin
         )
     )
   )

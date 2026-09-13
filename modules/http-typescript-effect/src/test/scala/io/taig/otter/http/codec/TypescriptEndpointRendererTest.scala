@@ -104,7 +104,9 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
           module.render.contains("export const Shared ="),
           module.render.contains("export const Shared_2 ="),
           module.render.contains("\"application/json\": Shared_2"),
-          module.render.contains("\"pages\": Schema.Int"),
+          module.render.contains(
+            "\"pages\": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))"
+          ),
           module.render.contains("\"theme\": Schema.optionalWith")
         )
       ,
@@ -230,10 +232,14 @@ object TypescriptEndpointRendererTest extends ZIOSpecDefault:
         * `JsonStateTypescriptRenderer` produces -- and it reaches this renderer unchanged.
         */
       test("a recursive payload is declared under its name and suspended where it recurs"):
-        assertTrue(source(api.trees).contains("""export const Tree: Schema.Schema<Tree> = Schema.Struct({
-                                                |  "value": Schema.Int,
-                                                |  "children": Schema.Array(Schema.suspend(() => Tree))
-                                                |});""".stripMargin))
+        assertTrue(
+          source(api.trees).contains(
+            """export const Tree: Schema.Schema<Tree> = Schema.Struct({
+              |  "value": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+              |  "children": Schema.Array(Schema.suspend(() => Tree))
+              |});""".stripMargin
+          )
+        )
       ,
       /** An anonymous payload has no name for a type alias to point at, so it is given one derived from the endpoint
         * rather than written where it stands.

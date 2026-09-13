@@ -69,7 +69,7 @@ object JsonSchemaAgreementTest extends ZIOSpecDefault:
       val answer = CirceJson.obj("title" -> "Dune".asJson, "pages" -> 412.asJson, "read" -> true.asJson)
 
       assertTrue(
-        schema.toEither.isRight,
+        schema.issues.size == 2,
         required(schema.value) == properties(schema.value),
         schema.value.asObject.flatMap(_("additionalProperties")).contains(CirceJson.False),
         JsonCirceDecoder.decode(json.book, answer) == Validated.valid(book)
@@ -81,7 +81,7 @@ object JsonSchemaAgreementTest extends ZIOSpecDefault:
       val answer = CirceJson.obj("title" -> "Dune".asJson, "tag" -> CirceJson.Null)
 
       assertTrue(
-        schema.issues.isEmpty,
+        schema.issues.size == 2,
         required(schema.value) == Set("title", "tag"),
         JsonCirceDecoder.decode(json.omittedTag, answer) == Validated.valid(Note("Dune", None))
       )

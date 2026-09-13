@@ -22,6 +22,15 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
   private def read(schema: Json.Node[?, ?]): JsonSchemaDocument =
     JsonSchemaRenderer.reader(JsonSchemaProfile.Strict).render(schema)
 
+  private def omittedBounds(definition: Option[String] = None): List[JsonSchemaIssue] = List(
+    JsonSchemaIssue
+      .Dropped(definition, Constraint.Primitive.Number.Minimum(io.taig.validation.Comparison(-2147483648L, false))),
+    JsonSchemaIssue.Dropped(
+      definition,
+      Constraint.Primitive.Number.Maximum(io.taig.validation.Comparison(2147483647L, false))
+    )
+  )
+
   private lazy val tree: Json.Record[Tree] =
     (field("value", int) :* field("children", collection.list(tree))).to[Tree].attr(Keys.name, "Tree")
 
@@ -30,7 +39,7 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
       val document = read(json.book)
 
       assertTrue(
-        document.issues.isEmpty,
+        document.issues == omittedBounds(),
         document.value.noSpaces ==
           """{"type":"object","properties":{"title":{"type":"string"},"pages":{"type":"integer"},""" +
           """"read":{"type":"boolean"}},"required":["title","pages","read"],"additionalProperties":false}"""
@@ -40,7 +49,7 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
       val document = read(json.omittedTag)
 
       assertTrue(
-        document.issues.isEmpty,
+        document.issues == omittedBounds(),
         document.value.noSpaces ==
           """{"type":"object","properties":{"title":{"type":"string"},""" +
           """"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["title","tag"],""" +
@@ -48,7 +57,7 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
       )
     ,
     test("a strict field that drops its key is the one narrowing that is not safe, and it is reported"):
-      assertTrue(read(json.nestedTag).issues == List(JsonSchemaIssue.Total(None, "tag")))
+      assertTrue(read(json.nestedTag).issues == omittedBounds() :+ JsonSchemaIssue.Total(None, "tag"))
     ,
     test("a constraint the consumer will not read is dropped, and the decoder still enforces it"):
       val document = read(string(std.text.minimum[String](1) & std.text.maximum[String](64)))
@@ -83,7 +92,7 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
       assertTrue(
         document.value.noSpaces ==
           """{"type":"array","items":{"anyOf":[{"type":"string"},{"type":"integer"}]}}""",
-        document.issues == List(JsonSchemaIssue.Positional(None))
+        document.issues == omittedBounds() :+ JsonSchemaIssue.Positional(None)
       )
     ,
     test("a coercion says the one form it writes, because a producer writing to order has no reason to be lax"):
@@ -91,7 +100,7 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
 
       assertTrue(
         document.value.noSpaces == """{"type":"integer"}""",
-        document.issues == List(JsonSchemaIssue.Coerced(None))
+        document.issues == JsonSchemaIssue.Coerced(None) :: omittedBounds()
       )
     ,
     test("a schema that refers to itself is still rendered, and refused"):
@@ -99,10 +108,10 @@ object JsonSchemaProfileTest extends ZIOSpecDefault:
 
       assertTrue(
         document.value.noSpaces.contains(""""$ref":"#/$defs/Tree""""),
-        document.issues == List(JsonSchemaIssue.Recursive(Some("Tree"), "Tree")),
+        document.issues == omittedBounds(Some("Tree")) :+ JsonSchemaIssue.Recursive(Some("Tree"), "Tree"),
         document.toEither.isLeft
       )
     ,
     test("a document the profile could say everything of comes back as a right"):
-      assertTrue(read(json.book).toEither.isRight)
+      assertTrue(read(string).toEither.isRight, read(json.book).toEither.isLeft)
   )

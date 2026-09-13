@@ -56,7 +56,7 @@ object JsonSchemaTupleTest extends ZIOSpecDefault:
           .value
           .mapObject(_.remove("$schema"))
           .noSpaces ==
-          """{"anyOf":[{"type":"array","prefixItems":[{"type":"integer"},{"type":"integer"}],""" +
+          """{"anyOf":[{"type":"array","prefixItems":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"integer","minimum":-2147483648,"maximum":2147483647}],""" +
           """"items":false,"minItems":2,"maxItems":2},{"type":"array","prefixItems":[{"type":"null"},""" +
           """{"type":"null"}],"items":false,"minItems":2,"maxItems":2}]}"""
       )

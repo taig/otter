@@ -113,6 +113,29 @@ abstract class JsonDecoderSuite(interpreter: JsonInterpreter) extends ZIOSpecDef
         decode(coerce(string), "42") == "42".valid
       )
     ,
+    test("Json.Coerce: integral decimal strings retain Int bounds without rounding"):
+      val valid =
+        List("1.0" -> 1, "1e2" -> 100, "100e-2" -> 1, "2147483647" -> Int.MaxValue, "-2147483648" -> Int.MinValue)
+      val invalid = List(
+        "2147483648",
+        "-2147483649",
+        "2147483647.00000001",
+        "-2147483648.00000001",
+        "1.0000000000000001",
+        "1e-9999",
+        "0x10",
+        "+1",
+        " 1",
+        "1 ",
+        "",
+        "1.",
+        "1e"
+      )
+      assertTrue(
+        valid.forall((text, value) => decode(coerce(int), "\"" + text + "\"") == value.valid),
+        invalid.forall(text => decode(coerce(int), "\"" + text + "\"").isInvalid)
+      )
+    ,
     test("Json.Coerce: still rejects what it cannot read"):
       assertTrue(decode(coerce(boolean), "42").isInvalid)
     ,
