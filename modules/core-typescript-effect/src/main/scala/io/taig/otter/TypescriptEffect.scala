@@ -16,7 +16,7 @@ object TypescriptEffect:
   val Namespace: Metadata.Namespace = Metadata.Namespace("typescript-effect")
 
   /** Import and global names referenced by generated schemas and HTTP descriptors. */
-  val Reserved: Set[JString] = Set("Schema", "String", "Number", "ReadonlyArray", "Record", "Blob", "Date")
+  val Reserved: Set[JString] = Set("Schema", "String", "Number", "RegExp", "ReadonlyArray", "Record", "Blob", "Date")
 
   /** `Schema.<expression>`. */
   def apply(expression: Typescript.Expression): Typescript.Expression =
@@ -36,6 +36,12 @@ object TypescriptEffect:
   /** `Schema.int()`, the filter that says a number carries no fraction. */
   val Integral: Typescript.Expression = apply(Typescript.Expression.Call("int", Nil))
   val Int: Typescript.Expression = symbol("Int")
+
+  /** Effect's int filter requires a safe integer; Long also admits other representable integral numbers. */
+  val IntegralNumber: Typescript.Expression = filter(
+    "filter",
+    Typescript.Expression.Member("Number", Typescript.Expression.Symbol("isInteger"))
+  )
   val Null: Typescript.Expression = symbol("Null")
   val Number: Typescript.Expression = symbol("Number")
   val String: Typescript.Expression = symbol("String")
@@ -135,8 +141,40 @@ object TypescriptEffect:
   /** The laxer wire forms a [[Coerce]]d boolean, number and text accept, matching what the decoder normalises. */
   val CoerceBoolean: Typescript.Expression = union(NonEmptyList.of(TypescriptEffect.Boolean, BooleanFromString))
 
-  val CoerceNumber: Typescript.Expression =
-    union(NonEmptyList.of(TypescriptEffect.Number, symbol("NumberFromString")))
+  private val NumericText: Typescript.Expression = filtered(
+    String,
+    List(
+      filter(
+        "pattern",
+        Typescript.Expression.Call(
+          "RegExp",
+          List(
+            Typescript.Expression.Literal.String(
+              "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"
+            )
+          )
+        )
+      )
+    )
+  )
+
+  private def numericText(from: Typescript.Expression): Typescript.Expression = transform(
+    from,
+    Number,
+    arrow(Typescript.Expression.Call("Number", List(Value))),
+    arrow(Typescript.Expression.Call("String", List(Value)))
+  )
+
+  val CoerceNumber: Typescript.Expression = union(NonEmptyList.of(Number, numericText(NumericText)))
+
+  val CoerceInt: Typescript.Expression = union(
+    NonEmptyList.of(
+      Number,
+      numericText(
+        filtered(NumericText, List(filter("filter", io.taig.otter.codec.TypescriptIntString.predicate)))
+      )
+    )
+  )
 
   val CoerceString: Typescript.Expression = union(
     NonEmptyList.of(

@@ -20,7 +20,7 @@ object TypescriptConstraint:
   def isNonEmpty(constraints: Chain[Constraint]): Boolean = constraints.exists(isNonEmpty)
 
   private val isNonEmpty: Constraint => Boolean =
-    case Constraint.Collection.Minimum(comparison) => inclusive(comparison, offset = 1) == 1
+    case Constraint.Collection.Minimum(comparison) => comparison.reference == (if comparison.exclusive then 0L else 1L)
     case _                                         => false
 
   /** An exclusive bound on a length is the inclusive one next to it, because a length is an integer. */

@@ -26,7 +26,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
         render(int) ==
           """{
             |  "$schema" : "https://json-schema.org/draft/2020-12/schema",
-            |  "type" : "integer"
+            |  "type" : "integer",
+            |  "minimum" : -2147483648,
+            |  "maximum" : 2147483647
             |}""".stripMargin,
         render(double) ==
           """{
@@ -61,7 +63,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             |      "type" : "string"
             |    },
             |    "pages" : {
-            |      "type" : "integer"
+            |      "type" : "integer",
+            |      "minimum" : -2147483648,
+            |      "maximum" : 2147483647
             |    },
             |    "read" : {
             |      "type" : "boolean"
@@ -89,7 +93,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             |  "$schema" : "https://json-schema.org/draft/2020-12/schema",
             |  "type" : "array",
             |  "items" : {
-            |    "type" : "integer"
+            |    "type" : "integer",
+            |    "minimum" : -2147483648,
+            |    "maximum" : 2147483647
             |  }
             |}""".stripMargin
       )
@@ -105,7 +111,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             |      "type" : "string"
             |    },
             |    {
-            |      "type" : "integer"
+            |      "type" : "integer",
+            |      "minimum" : -2147483648,
+            |      "maximum" : 2147483647
             |    }
             |  ],
             |  "items" : false,
@@ -195,7 +203,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             |  "$schema" : "https://json-schema.org/draft/2020-12/schema",
             |  "type" : "object",
             |  "additionalProperties" : {
-            |    "type" : "integer"
+            |    "type" : "integer",
+            |    "minimum" : -2147483648,
+            |    "maximum" : 2147483647
             |  }
             |}""".stripMargin,
         render(json.editions) ==
@@ -203,7 +213,9 @@ object JsonSchemaRendererTest extends ZIOSpecDefault:
             |  "$schema" : "https://json-schema.org/draft/2020-12/schema",
             |  "type" : "object",
             |  "additionalProperties" : {
-            |    "type" : "integer"
+            |    "type" : "integer",
+            |    "minimum" : -2147483648,
+            |    "maximum" : 2147483647
             |  },
             |  "propertyNames" : {
             |    "type" : "string",

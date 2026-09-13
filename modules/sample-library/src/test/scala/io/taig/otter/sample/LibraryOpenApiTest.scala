@@ -149,7 +149,11 @@ object LibraryOpenApiTest extends ZIOSpecDefault:
         assertTrue(framed.length == 2, keys(server.value, "paths").length == 11)
       ,
       test("every issue names an operation, so a reader can go and look at it"):
-        assertTrue(server.issues.nonEmpty, server.issues.forall(_.toString.contains("/books/")))
+        val paths = keys(server.value, "paths")
+        assertTrue(
+          server.issues.nonEmpty,
+          server.issues.forall(issue => paths.exists(path => issue.toString.contains(path)))
+        )
       ,
       test("the alphabet nothing recognises still leaves the body listed under its media type"):
         val content = keys(server.value, "paths", "/books/report", "get", "responses", "200", "content")

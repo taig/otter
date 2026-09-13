@@ -39,7 +39,7 @@ final class JsonSchemaNodeRenderer(
     case Json.Collection.Schema(node) =>
       child(node.self.schema.value).flatMap: items =>
         keywords(collection(node.self)).map: keywords =>
-          JsonSchema.merge(JsonSchema.merge(JsonSchema.typed("array"), "items" -> items), keywords*)
+          JsonSchema.constrained(JsonSchema.merge(JsonSchema.typed("array"), "items" -> items), keywords)
     case Json.Constant.Schema(node) =>
       child(node.self.schema.value).map(JsonSchema.merge(_, "const" -> JsonSchemaLiteral.constant(node.self)))
     case Json.Dictionary.Schema(node)  => dictionary(node.self)
@@ -150,8 +150,16 @@ final class JsonSchemaNodeRenderer(
             child(reference.value).map: primitive =>
               val laxer = reference.value match
                 case Json.Primitive.Boolean.Schema(_) => List(JsonSchema.typed("string"))
-                case Json.Primitive.Number.Schema(_)  => List(JsonSchema.typed("string"))
-                case Json.Primitive.Text.Schema(_)    => List(JsonSchema.typed("number"), JsonSchema.typed("boolean"))
+                case Json.Primitive.Number.Schema(_)  =>
+                  List(
+                    JsonSchema.merge(
+                      JsonSchema.typed("string"),
+                      "pattern" -> CirceJson.fromString(
+                        "^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"
+                      )
+                    )
+                  )
+                case Json.Primitive.Text.Schema(_) => List(JsonSchema.typed("number"), JsonSchema.typed("boolean"))
 
               JsonSchema.anyOf(JsonSchema.alternatives(primitive) ++ laxer)
 
@@ -174,9 +182,9 @@ final class JsonSchemaNodeRenderer(
             /* A key that says no more than "it is text" says nothing a dictionary does not already say. */
             val names = Option.when(keys.asObject.exists(_.size > 1))("propertyNames" -> keys)
 
-            JsonSchema.merge(
+            JsonSchema.constrained(
               JsonSchema.merge(JsonSchema.typed("object"), "additionalProperties" -> values),
-              names.toList ++ keywords*
+              names.toList ++ keywords
             )
 
   /** A fixed length, positionally typed array.
@@ -223,7 +231,7 @@ final class JsonSchemaNodeRenderer(
   /* -- primitives ---------------------------------------------------------------------------------------------- */
 
   private def number[W, R](schema: Primitive.Number[W, R]): State[JsonSchemaContext, CirceJson] =
-    keywords(number(schema, Chain.empty)).map(JsonSchema.merge(JsonSchema.typed(numeric(schema)), _*))
+    keywords(number(schema, Chain.empty)).map(JsonSchema.constrained(JsonSchema.typed(numeric(schema)), _))
 
   /** An integral number is a number the decoder refuses when it has a fraction, which is what JSON Schema's `integer`
     * means as well, so the two agree and no separate keyword is needed.
@@ -237,15 +245,22 @@ final class JsonSchemaNodeRenderer(
     case Primitive.Number.Long(_)            => "integer"
     case Primitive.Number.Modify(self, _, _) => numeric(self)
 
+  private def carrier(minimum: Long, maximum: Long): Chain[Constraint] = Chain(
+    Constraint.Primitive.Number.Minimum(io.taig.validation.Comparison(minimum, exclusive = false)),
+    Constraint.Primitive.Number.Maximum(io.taig.validation.Comparison(maximum, exclusive = false))
+  )
+
   private def number[W, R](schema: Primitive.Number[W, R], constraints: Chain[Constraint]): Chain[Constraint] =
     schema match
       case Primitive.Number.BigDecimal(validation) => constraints ++ validation.constraints
       case Primitive.Number.BigInteger(validation) => constraints ++ validation.constraints
       case Primitive.Number.Double(validation)     => constraints ++ validation.constraints
       case Primitive.Number.Float(validation)      => constraints ++ validation.constraints
-      case Primitive.Number.Int(validation)        => constraints ++ validation.constraints
-      case Primitive.Number.Long(validation)       => constraints ++ validation.constraints
-      case Primitive.Number.Modify(self, _, _)     => number(self, constraints)
+      case Primitive.Number.Int(validation)        =>
+        constraints ++ carrier(Int.MinValue, Int.MaxValue) ++ validation.constraints
+      case Primitive.Number.Long(validation) =>
+        constraints ++ carrier(Long.MinValue, Long.MaxValue) ++ validation.constraints
+      case Primitive.Number.Modify(self, _, _) => number(self, constraints)
 
   /** Every text is a string on the wire, whatever it parses into. What a named conversion adds is a `format`, and only
     * where the profile's consumer recognises the name: an unknown `format` is an annotation a conforming validator
@@ -254,7 +269,7 @@ final class JsonSchemaNodeRenderer(
   private def text[W, R](schema: Primitive.Text[W, R]): State[JsonSchemaContext, CirceJson] =
     format(schema).flatMap: format =>
       keywords(text(schema, Chain.empty)).map: keywords =>
-        JsonSchema.merge(JsonSchema.merge(JsonSchema.typed("string"), format.toList*), keywords*)
+        JsonSchema.constrained(JsonSchema.merge(JsonSchema.typed("string"), format.toList*), keywords)
 
   private def format[W, R](schema: Primitive.Text[W, R]): State[JsonSchemaContext, Option[(String, CirceJson)]] =
     schema match

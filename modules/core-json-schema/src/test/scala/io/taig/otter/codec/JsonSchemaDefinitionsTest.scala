@@ -34,7 +34,7 @@ object JsonSchemaDefinitionsTest extends ZIOSpecDefault:
       assertTrue(
         render(tree) ==
           s"""{$Dialect,"$$ref":"#/$$defs/Tree","$$defs":{"Tree":{"type":"object","properties":""" +
-          """{"value":{"type":"integer"},"children":{"type":"array","items":{"$ref":"#/$defs/Tree"}}},""" +
+          """{"value":{"type":"integer","minimum":-2147483648,"maximum":2147483647},"children":{"type":"array","items":{"$ref":"#/$defs/Tree"}}},""" +
           """"required":["value","children"]}}}"""
       )
     ,
@@ -45,7 +45,7 @@ object JsonSchemaDefinitionsTest extends ZIOSpecDefault:
         render(schema) ==
           s"""{$Dialect,"type":"object","properties":{"left":{"$$ref":"#/$$defs/Tree"},""" +
           """"right":{"$ref":"#/$defs/Tree"}},"required":["left","right"],""" +
-          """"$defs":{"Tree":{"type":"object","properties":{"value":{"type":"integer"},""" +
+          """"$defs":{"Tree":{"type":"object","properties":{"value":{"type":"integer","minimum":-2147483648,"maximum":2147483647},""" +
           """"children":{"type":"array","items":{"$ref":"#/$defs/Tree"}}},"required":["value","children"]}}}"""
       )
     ,

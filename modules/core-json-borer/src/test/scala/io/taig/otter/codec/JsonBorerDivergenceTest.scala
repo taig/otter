@@ -30,6 +30,14 @@ object JsonBorerDivergenceTest extends ZIOSpecDefault:
   private val duplicated: Json.Record[(Int, Int)] = field("x", int) :* field("x", int)
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonBorerDivergenceTest")(
+    test("circe coerces some non-JSON number spellings that borer refuses"):
+      assertTrue(
+        JsonCirceInterpreter.decode(coerce(int), "\"01\"") == Validated.valid(1),
+        JsonBorerInterpreter.decode(coerce(int), "\"01\"").isInvalid,
+        JsonCirceInterpreter.decode(coerce(double), "\".1\"") == Validated.valid(0.1),
+        JsonBorerInterpreter.decode(coerce(double), "\".1\"").isInvalid
+      )
+    ,
     suite("borer's parser refuses an exponent circe reads")(
       /** borer caps an absolute exponent at `Json.DecodingConfig.maxNumberAbsExponent`, 64 by default, and refuses the
         * document outright. circe reads it and only refuses later, at `toBigInteger`, under its own

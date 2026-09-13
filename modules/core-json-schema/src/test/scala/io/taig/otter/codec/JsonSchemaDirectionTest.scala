@@ -21,32 +21,35 @@ object JsonSchemaDirectionTest extends ZIOSpecDefault:
 
   private val Dialect = """"$schema":"https://json-schema.org/draft/2020-12/schema""""
 
+  private val NumberString =
+    """{"type":"string","pattern":"^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"}"""
+
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("JsonSchemaDirectionTest")(
     test("a field that drops its key is optional when written and takes a null as well when read"):
       assertTrue(
         write(json.omittedTag) ==
           s"""{$Dialect,"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"type":"integer"}},"required":["title"]}""",
+          """"tag":{"type":"integer","minimum":-2147483648,"maximum":2147483647}},"required":["title"]}""",
         read(json.omittedTag) ==
           s"""{$Dialect,"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["title"]}"""
+          """"tag":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":["title"]}"""
       )
     ,
     test("a field that writes an explicit null is required on the way out"):
       assertTrue(
         write(json.nullableTag) ==
           s"""{$Dialect,"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["title","tag"]}""",
+          """"tag":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":["title","tag"]}""",
         read(json.nullableTag) ==
           s"""{$Dialect,"type":"object","properties":{"title":{"type":"string"},""" +
-          """"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["title"]}"""
+          """"tag":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":["title"]}"""
       )
     ,
     test("a strict field that drops its key does not admit a null when read"):
       assertTrue(
         read(json.nestedTag) ==
           s"""{$Dialect,"type":"object","properties":""" +
-          """{"tag":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":[]}"""
+          """{"tag":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":[]}"""
       )
     ,
     test("an optional value is nullable on both sides, because it is a value and not a key"):
@@ -54,13 +57,15 @@ object JsonSchemaDirectionTest extends ZIOSpecDefault:
         write(field("bar", int.optional).toRecord) == read(field("bar", int.optional).toRecord),
         write(field("bar", int.optional).toRecord) ==
           s"""{$Dialect,"type":"object","properties":""" +
-          """{"bar":{"anyOf":[{"type":"integer"},{"type":"null"}]}},"required":["bar"]}"""
+          """{"bar":{"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},{"type":"null"}]}},"required":["bar"]}"""
       )
     ,
     test("a coercion says the laxer forms it takes only on the side that takes them"):
       assertTrue(
-        write(coerce(int)) == s"""{$Dialect,"type":"integer"}""",
-        read(coerce(int)) == s"""{$Dialect,"anyOf":[{"type":"integer"},{"type":"string"}]}""",
+        write(coerce(int)) == s"""{$Dialect,"type":"integer","minimum":-2147483648,"maximum":2147483647}""",
+        read(
+          coerce(int)
+        ) == s"""{$Dialect,"anyOf":[{"type":"integer","minimum":-2147483648,"maximum":2147483647},$NumberString]}""",
         read(coerce(string)) ==
           s"""{$Dialect,"anyOf":[{"type":"string"},{"type":"number"},{"type":"boolean"}]}""",
         read(coerce(boolean)) == s"""{$Dialect,"anyOf":[{"type":"boolean"},{"type":"string"}]}"""

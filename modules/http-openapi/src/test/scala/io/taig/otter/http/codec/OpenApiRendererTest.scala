@@ -63,13 +63,21 @@ object OpenApiRendererTest extends ZIOSpecDefault:
             "name" -> CirceJson.fromString("id"),
             "in" -> CirceJson.fromString("path"),
             "required" -> CirceJson.True,
-            "schema" -> CirceJson.obj("type" -> CirceJson.fromString("integer"))
+            "schema" -> CirceJson.obj(
+              "type" -> CirceJson.fromString("integer"),
+              "minimum" -> CirceJson.fromLong(-2147483648L),
+              "maximum" -> CirceJson.fromLong(2147483647L)
+            )
           ),
           CirceJson.obj(
             "name" -> CirceJson.fromString("page"),
             "in" -> CirceJson.fromString("query"),
             "required" -> CirceJson.False,
-            "schema" -> CirceJson.obj("type" -> CirceJson.fromString("integer"))
+            "schema" -> CirceJson.obj(
+              "type" -> CirceJson.fromString("integer"),
+              "minimum" -> CirceJson.fromLong(-2147483648L),
+              "maximum" -> CirceJson.fromLong(2147483647L)
+            )
           )
         )
 

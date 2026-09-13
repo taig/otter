@@ -46,7 +46,9 @@ object TypescriptEndpointNamingTest extends ZIOSpecDefault:
 
       assertTrue(
         module.issues.isEmpty,
-        source.contains("export const FooInput_2 = Schema.Int;"),
+        source.contains(
+          "export const FooInput_2 = Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647));"
+        ),
         source.contains("export const foo_2 = Schema.String;"),
         source.contains("\"application/json\": FooInput_2"),
         source.contains("\"application/json\": foo_2")

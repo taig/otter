@@ -38,6 +38,21 @@ object Typescript:
 
     final case class Call(name: JString, arguments: List[Typescript.Expression]) extends Typescript.Expression
 
+    enum Operator(val token: JString):
+      case Add extends Operator("+")
+      case Subtract extends Operator("-")
+      case And extends Operator("&&")
+      case Or extends Operator("||")
+      case Otherwise extends Operator("??")
+      case AtLeast extends Operator(">=")
+      case AtMost extends Operator("<=")
+
+    final case class Binary(
+        left: Typescript.Expression,
+        operator: Typescript.Expression.Operator,
+        right: Typescript.Expression
+    ) extends Typescript.Expression
+
     final case class Equal(left: Typescript.Expression, right: Typescript.Expression) extends Typescript.Expression
 
     /** An arrow whose parameters carry types, `(value: T) => body`.
@@ -123,6 +138,8 @@ object Typescript:
 
       final case class Type(exported: SBoolean, name: JString, tpe: Typescript.Type)
           extends Typescript.Statement.Declaration
+
+    final case class Return(expression: Typescript.Expression) extends Typescript.Statement
 
     final case class Evaluate(expression: Typescript.Expression) extends Typescript.Statement
 

@@ -16,6 +16,16 @@ import scala.util.matching.Regex
   * validates something else is not.
   */
 object TypescriptRegex:
+  /** Constraint matching also depends on the compiled flags and must consume the entire string. */
+  def apply(pattern: java.util.regex.Pattern): Option[Typescript.Expression] = RegexPattern(pattern).map: source =>
+    Typescript.Expression.Call(
+      "RegExp",
+      List(
+        Typescript.Expression.Literal.String(source),
+        Typescript.Expression.Literal.String("u")
+      )
+    )
+
   /** Property names a JavaScript engine knows in `u` mode: the general categories, and the lookups that take a value.
     * Java's own spellings -- `Alpha`, `IsAlphabetic`, `javaLowerCase`, `InGreek` -- are not among them, and are refused
     * rather than guessed at.

@@ -30,27 +30,41 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         */
       test("an omitted field is optional out and optional or null in"):
         assertTrue(
-          write(json.omittedTag) == """Schema.Struct({
-                                      |  "title": Schema.String,
-                                      |  "tag": Schema.optional(Schema.Int)
-                                      |})""".stripMargin,
-          read(json.omittedTag) == """Schema.Struct({
-                                     |  "title": Schema.String,
-                                     |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                     |})""".stripMargin
+          write(
+            json.omittedTag
+          ) == """Schema.Struct({
+                 |  "title": Schema.String,
+                 |  "tag": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |})""".stripMargin,
+          read(
+            json.omittedTag
+          ) == """Schema.Struct({
+                 |  "title": Schema.String,
+                 |  "tag": Schema.optionalWith(
+                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |    { "nullable": true }
+                 |  )
+                 |})""".stripMargin
         )
       ,
       /** The key is always there, holding null when the value is absent. */
       test("a nullable field is required and null out, and optional or null in"):
         assertTrue(
-          write(json.nullableTag) == """Schema.Struct({
-                                       |  "title": Schema.String,
-                                       |  "tag": Schema.NullOr(Schema.Int)
-                                       |})""".stripMargin,
-          read(json.nullableTag) == """Schema.Struct({
-                                      |  "title": Schema.String,
-                                      |  "tag": Schema.optionalWith(Schema.Int, { "nullable": true })
-                                      |})""".stripMargin
+          write(
+            json.nullableTag
+          ) == """Schema.Struct({
+                 |  "title": Schema.String,
+                 |  "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))
+                 |})""".stripMargin,
+          read(
+            json.nullableTag
+          ) == """Schema.Struct({
+                 |  "title": Schema.String,
+                 |  "tag": Schema.optionalWith(
+                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |    { "nullable": true }
+                 |  )
+                 |})""".stripMargin
         )
       ,
       /** A strict field takes only the form it writes, which is exactly what makes the two sides agree again. */
@@ -60,9 +74,13 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
 
         assertTrue(
           read(omitted) == write(omitted),
-          write(omitted) == """Schema.Struct({ "tag": Schema.optional(Schema.Int) })""",
+          write(
+            omitted
+          ) == """Schema.Struct({ "tag": Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })""",
           read(nulled) == write(nulled),
-          write(nulled) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int) })"""
+          write(
+            nulled
+          ) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })"""
         )
       ,
       /** Two layers of absence: no key at all is the outer one, a null the inner. Only a strict field can tell them
@@ -71,7 +89,9 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
       test("a strict field over an optional schema keeps both layers"):
         assertTrue(
           read(json.nestedTag) == write(json.nestedTag),
-          write(json.nestedTag) == """Schema.Struct({ "tag": Schema.optional(Schema.NullOr(Schema.Int)) })"""
+          write(
+            json.nestedTag
+          ) == """Schema.Struct({ "tag": Schema.optional(Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))) })"""
         )
       ,
       /** A field holding a default is never absent when written, and may always be absent when read. The default is an
@@ -81,16 +101,29 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         val schema = field("tag", int).optional(0).toRecord
 
         assertTrue(
-          write(schema) == """Schema.Struct({ "tag": Schema.Int })""",
-          read(schema) == """Schema.Struct({ "tag": Schema.optionalWith(Schema.Int, { "nullable": true }) })"""
+          write(
+            schema
+          ) == """Schema.Struct({ "tag": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) })""",
+          read(
+            schema
+          ) == """Schema.Struct({
+                 |  "tag": Schema.optionalWith(
+                 |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+                 |    { "nullable": true }
+                 |  )
+                 |})""".stripMargin
         )
       ,
       test("a defaulted schema is required out and nullable in"):
         val schema = field("tag", int.optional(0)).toRecord
 
         assertTrue(
-          write(schema) == """Schema.Struct({ "tag": Schema.Int })""",
-          read(schema) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int) })"""
+          write(
+            schema
+          ) == """Schema.Struct({ "tag": Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)) })""",
+          read(
+            schema
+          ) == """Schema.Struct({ "tag": Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))) })"""
         )
     ),
     suite("coerce")(
@@ -100,12 +133,39 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         */
       test("a coerced number widens on the way in only"):
         assertTrue(
-          write(coerce(int)) == "Schema.Int",
-          read(coerce(int)) == """export type CoerceNumber = Schema.Schema.Type<typeof CoerceNumber>;
-                                 |
-                                 |export const CoerceNumber = Schema.Union(Schema.Number, Schema.NumberFromString);
-                                 |
-                                 |CoerceNumber.pipe(Schema.int())""".stripMargin
+          write(
+            coerce(int)
+          ) == "Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))",
+          read(
+            coerce(int)
+          ) == """export type CoerceInt = Schema.Schema.Type<typeof CoerceInt>;
+                 |
+                 |export const CoerceInt = Schema.Union(
+                 |  Schema.Number,
+                 |  Schema.transform(
+                 |    Schema.String.pipe(Schema.pattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))).pipe(
+                 |      Schema.filter(
+                 |        (value) => {
+                 |          const parts = value.toLowerCase().split("e");
+                 |          const decimal = (parts[0] ?? "").split(".");
+                 |          const fraction = (decimal[1] ?? "");
+                 |          const coefficient = ((decimal[0] ?? "") + fraction).replace(RegExp("^-", "g"), "").replace(RegExp("^0+", "g"), "");
+                 |          const significant = coefficient.replace(RegExp("0+$", "g"), "");
+                 |          const scale = (((Number((parts[1] ?? "0")) - fraction.length) + coefficient.length) - significant.length);
+                 |          const decoded = Number(value);
+                 |          return (significant === "" || ((((scale >= 0) && ((significant.length + scale) <= 10)) && (decoded >= -2147483648)) && (decoded <= 2147483647)));
+                 |        }
+                 |      )
+                 |    ),
+                 |    Schema.Number,
+                 |    {
+                 |      "decode": (value) => Number(value),
+                 |      "encode": (value) => String(value)
+                 |    }
+                 |  )
+                 |);
+                 |
+                 |CoerceInt.pipe(Schema.int(), Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647))""".stripMargin
         )
       ,
       /** A coercion replaces the node with a union of the forms it accepts, so whatever the node was claiming has to
@@ -113,11 +173,23 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         */
       test("a coercion keeps what the primitive underneath was claiming"):
         assertTrue(
-          read(coerce(double)) == """export type CoerceNumber = Schema.Schema.Type<typeof CoerceNumber>;
-                                    |
-                                    |export const CoerceNumber = Schema.Union(Schema.Number, Schema.NumberFromString);
-                                    |
-                                    |CoerceNumber""".stripMargin
+          read(
+            coerce(double)
+          ) == """export type CoerceNumber = Schema.Schema.Type<typeof CoerceNumber>;
+                 |
+                 |export const CoerceNumber = Schema.Union(
+                 |  Schema.Number,
+                 |  Schema.transform(
+                 |    Schema.String.pipe(Schema.pattern(RegExp("^-?(?:0|[1-9][0-9]*)(?:\\.[0-9]+)?(?:[eE][+-]?[0-9]+)?(?![\\s\\S])"))),
+                 |    Schema.Number,
+                 |    {
+                 |      "decode": (value) => Number(value),
+                 |      "encode": (value) => String(value)
+                 |    }
+                 |  )
+                 |);
+                 |
+                 |CoerceNumber""".stripMargin
         )
       ,
       test("a coerced boolean and a coerced text"):
@@ -213,7 +285,9 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           absent.asObject.map(_.keys.toList) == List("title").some,
           present.asObject.map(_.keys.toList) == List("title", "tag").some,
-          write(json.omittedTag).contains("""Schema.optional(Schema.Int)""")
+          write(json.omittedTag).contains(
+            """Schema.optional(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"""
+          )
         )
       ,
       test("what the write side calls nullable is the key circe fills with null"):
@@ -221,7 +295,9 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
 
         assertTrue(
           absent.asObject.flatMap(_.apply("tag")) == CirceJson.Null.some,
-          write(json.nullableTag).contains("""Schema.NullOr(Schema.Int)""")
+          write(json.nullableTag).contains(
+            """Schema.NullOr(Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)))"""
+          )
         )
       ,
       /** Both documents the encoder can produce are accepted by the decoder, which is what makes the read side of a
@@ -234,7 +310,12 @@ object JsonTypescriptEffectDirectionTest extends ZIOSpecDefault:
         assertTrue(
           JsonCirceDecoder.decode(json.omittedTag, omitted).isValid,
           JsonCirceDecoder.decode(json.omittedTag, nulled).isValid,
-          read(json.omittedTag).contains("""Schema.optionalWith(Schema.Int, { "nullable": true })""")
+          read(json.omittedTag).contains(
+            """Schema.optionalWith(
+              |    Schema.Int.pipe(Schema.greaterThanOrEqualTo(-2147483648), Schema.lessThanOrEqualTo(2147483647)),
+              |    { "nullable": true }
+              |  )""".stripMargin
+          )
         )
       ,
       /** A strict omitted field is the one that refuses the null, and it is also the one whose two sides agree. */
