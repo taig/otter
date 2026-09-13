@@ -88,6 +88,34 @@ object Http4sFs2DataTest extends ZIOSpecDefault:
         .unsafeToFuture()
 
   override def spec: Spec[TestEnvironment & Scope, Any] = suite("Http4sFs2DataTest")(
+    test("single-column records and tuples preserve empty cells and carriage returns"):
+      val tuple = CsvDocument.Tuple(Reference.now(CsvComponent.TNil :* CsvComponent.string))
+      val record = CsvDocument.Record(
+        Reference.now(CsvComponent.RNil :* CsvComponent.field("value", CsvComponent.string))
+      )
+      val values = Vector("", "x", "", "x\r", "\r", "x\r\ny", "a,b", "a\"b", "a\nb", "")
+      val documents: Vector[CsvDocument.Row[String, String]] = Vector(tuple, record)
+
+      assertTrue(documents.forall: document =>
+        val singles = values.forall: value =>
+          val encoded = Http4sFs2Data.Payload.encode(document, value).flatMap(_.toOption)
+          encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _)).flatMap(_.toOption).contains(value)
+        val collection = CsvDocument.Rows(Reference.now(document))
+        val encoded = Http4sFs2Data.Payload.encode(collection, values).flatMap(_.toOption)
+        val decoded = encoded
+          .flatMap(Http4sFs2Data.Payload.decode[Vector[String]](collection, _))
+          .flatMap(_.toOption)
+        singles && decoded.contains(values))
+    ,
+    test("an empty record header is preserved"):
+      val document = CsvDocument.Record(
+        Reference.now(CsvComponent.RNil :* CsvComponent.field("", CsvComponent.string))
+      )
+      val encoded = Http4sFs2Data.Payload.encode(document, "value").flatMap(_.toOption)
+      val decoded = encoded.flatMap(Http4sFs2Data.Payload.decode[String](document, _)).flatMap(_.toOption)
+
+      assertTrue(decoded.contains("value"))
+    ,
     test("a mixed JSON and CSV route requires both interpreters"):
       assertTrue(typeChecks("""
         import cats.effect.IO
